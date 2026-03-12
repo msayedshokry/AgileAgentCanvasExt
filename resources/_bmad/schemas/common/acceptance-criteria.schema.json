@@ -1,0 +1,120 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/common/acceptance-criteria.schema.json",
+  "title": "Acceptance Criteria Schema",
+  "description": "Comprehensive acceptance criteria format using Given/When/Then (Gherkin) syntax with full detail capture",
+  "type": "object",
+  "required": ["given", "when", "then"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Optional identifier for this acceptance criterion",
+      "examples": ["AC-1", "AC-2", "1", "2"]
+    },
+    "title": {
+      "type": "string",
+      "description": "Short descriptive title for the acceptance criterion",
+      "examples": ["Project initialization succeeds", "Folder picker opens correctly"]
+    },
+    "given": {
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Single precondition - capture the FULL text after 'Given'"
+        },
+        {
+          "type": "array",
+          "description": "Multiple preconditions",
+          "items": { "type": "string" }
+        }
+      ],
+      "description": "Precondition(s) that must be true before the action - include complete text",
+      "examples": [
+        "I am starting a new project",
+        "I have opened the BMAD UI application",
+        "I am viewing the Kanban board with story cards",
+        ["user is on login page", "user has valid credentials"]
+      ]
+    },
+    "when": {
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Single action - capture the FULL text after 'When'"
+        },
+        {
+          "type": "array",
+          "description": "Multiple actions in sequence",
+          "items": { "type": "string" }
+        }
+      ],
+      "description": "Action(s) performed by the user or system - include complete text",
+      "examples": [
+        "I run the initialization command `npm create vite@latest bmad-ui -- --template react-ts`",
+        "I click the \"Select Folder\" button",
+        "cards are rendered in each column"
+      ]
+    },
+    "then": {
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Single expected outcome - capture the FULL text after 'Then'"
+        },
+        {
+          "type": "array",
+          "description": "Multiple expected outcomes",
+          "items": { "type": "string" }
+        }
+      ],
+      "description": "Expected outcome(s) after the action - include complete text",
+      "examples": [
+        "the project is created with React 19.2, TypeScript 5.x, and Vite 5.x",
+        "a folder picker dialog appears",
+        "cards in the \"Backlog\" column have a neutral gray color scheme"
+      ]
+    },
+    "and": {
+      "type": "array",
+      "description": "Additional conditions or outcomes following 'And' statements - capture ALL of them",
+      "items": { "type": "string" },
+      "examples": [[
+        "the project structure includes `/src/components`, `/src/hooks`, `/src/stores`, `/src/utils`, `/src/types` directories",
+        "TypeScript is configured with strict mode enabled in `tsconfig.json`",
+        "ESLint is configured with airbnb-typescript rules",
+        "Prettier is configured for code formatting",
+        "the development server starts successfully with `npm run dev`",
+        "the project builds successfully with `npm run build`"
+      ]]
+    },
+    "but": {
+      "type": "array",
+      "description": "Exception conditions following 'But' statements",
+      "items": { "type": "string" },
+      "examples": [["the password is not stored in plain text"]]
+    },
+    "priority": {
+      "type": "string",
+      "description": "Priority level of this acceptance criterion",
+      "enum": ["P0", "P1", "P2", "P3", "must-have", "should-have", "could-have"],
+      "default": "P1"
+    },
+    "testIds": {
+      "type": "array",
+      "description": "References to test IDs that verify this criterion",
+      "items": { "type": "string" },
+      "examples": [["TEST-001", "TEST-002"]]
+    },
+    "automationStatus": {
+      "type": "string",
+      "description": "Whether this criterion has automated tests",
+      "enum": ["not-automated", "automated", "partially-automated"],
+      "default": "not-automated"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes or context for this criterion"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,26 @@
+# Generate API Documentation Workflow Configuration
+name: "generate-api-docs"
+description: 'Generate API documentation from source code analysis. Use when the user says "generate api docs" or "document the api" or "create api reference"'
+author: "BMad"
+
+# Output format configuration
+output_format: markdown
+schema_file: null
+
+# Critical variables load from config_source
+config_source: "{bmad-path}/bmm/config.yaml"
+output_folder: "{config_source}:output_folder"
+user_name: "{config_source}:user_name"
+communication_language: "{config_source}:communication_language"
+document_output_language: "{config_source}:document_output_language"
+date: system-generated
+
+# Module path and component files
+installed_path: "{bmad-path}/bmm/workflows/generate-api-docs"
+instructions: "{installed_path}/instructions.md"
+template: "{installed_path}/api-docs-template.md"
+
+# Output configuration
+default_output_file: "{output_folder}/api-reference.md"
+
+standalone: true

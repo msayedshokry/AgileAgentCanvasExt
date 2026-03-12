@@ -1,0 +1,189 @@
+{
+  "metadata": {
+    "schemaVersion": "1.1.0",
+    "artifactType": "project-overview",
+    "timestamps": {
+      "created": "2026-01-05T08:00:00Z",
+      "lastModified": "2026-02-15T10:00:00Z"
+    },
+    "status": "approved",
+    "tags": [
+      "project-overview",
+      "taskflow-pro",
+      "saas",
+      "ai-productivity"
+    ],
+    "author": "Project Lead"
+  },
+  "content": {
+    "projectInfo": {
+      "name": "TaskFlow Pro",
+      "description": "AI-powered task management SaaS platform for knowledge workers",
+      "type": "web-application",
+      "status": "in-progress"
+    },
+    "projectName": "TaskFlow Pro",
+    "projectDescription": "TaskFlow Pro is an AI-powered task management SaaS platform that eliminates the daily burden of manual task prioritization for knowledge workers. By combining contextual AI prioritization, an immersive Focus Mode, and seamless integrations with existing tools, TaskFlow Pro transforms how teams and individuals manage their work.",
+    "projectGoals": [
+      "Reduce time spent on manual task prioritization by 80% through AI-powered contextual scoring",
+      "Increase deep work time by 40% via Focus Mode's distraction-reducing interface",
+      "Achieve 90% user satisfaction score in first 6 months post-launch",
+      "Reach 10,000 monthly active users within the first year",
+      "Establish TaskFlow Pro as the leading AI-native task management platform"
+    ],
+    "scope": {
+      "inScope": [
+        "Core task management platform with CRUD operations, projects, and labels",
+        "AI-powered priority scoring engine with contextual awareness",
+        "Focus Mode with configurable session lengths and task counts",
+        "Integration platform supporting Slack, Google Calendar, Jira, and GitHub",
+        "Web application (responsive) and API layer",
+        "User authentication and team management",
+        "Analytics dashboard for productivity insights"
+      ],
+      "outOfScope": [
+        "Native mobile applications (deferred to v2.0)",
+        "Offline mode and local-first architecture",
+        "Enterprise SSO (SAML/SCIM) - planned for enterprise tier",
+        "White-label or self-hosted deployment options",
+        "Video conferencing or real-time collaboration features"
+      ]
+    },
+    "timeline": {
+      "startDate": "2026-01-05",
+      "targetLaunchDate": "2026-06-30",
+      "phases": [
+        {
+          "phase": "Discovery & Planning",
+          "startDate": "2026-01-05",
+          "endDate": "2026-01-31",
+          "status": "completed"
+        },
+        {
+          "phase": "EPIC-1: Core Task Platform",
+          "startDate": "2026-02-01",
+          "endDate": "2026-03-15",
+          "status": "in-progress"
+        },
+        {
+          "phase": "EPIC-2: AI Prioritization Engine",
+          "startDate": "2026-03-01",
+          "endDate": "2026-04-15",
+          "status": "in-progress"
+        },
+        {
+          "phase": "EPIC-3: Focus Mode & Productivity",
+          "startDate": "2026-04-01",
+          "endDate": "2026-05-15",
+          "status": "planned"
+        },
+        {
+          "phase": "EPIC-4: Integration Platform",
+          "startDate": "2026-05-01",
+          "endDate": "2026-06-15",
+          "status": "planned"
+        },
+        {
+          "phase": "Launch Preparation & Beta",
+          "startDate": "2026-06-01",
+          "endDate": "2026-06-30",
+          "status": "planned"
+        }
+      ]
+    },
+    "team": {
+      "size": 8,
+      "roles": [
+        {
+          "role": "Product Owner",
+          "name": "Sarah Chen",
+          "responsibilities": "Product vision, backlog prioritization, stakeholder communication"
+        },
+        {
+          "role": "Tech Lead",
+          "name": "Marcus Rodriguez",
+          "responsibilities": "Architecture decisions, code review, technical risk management"
+        },
+        {
+          "role": "Full-Stack Engineers",
+          "name": "3 engineers",
+          "responsibilities": "Feature implementation, testing, deployment"
+        },
+        {
+          "role": "ML Engineer",
+          "name": "Dr. Aisha Patel",
+          "responsibilities": "AI prioritization model development, training, evaluation"
+        },
+        {
+          "role": "UX Designer",
+          "name": "Jordan Kim",
+          "responsibilities": "User research, interaction design, usability testing"
+        },
+        {
+          "role": "QA Engineer",
+          "name": "Tomasz Nowak",
+          "responsibilities": "Test strategy, automation, quality assurance"
+        }
+      ]
+    },
+    "stakeholders": [
+      {
+        "name": "Executive Sponsor - VP Product",
+        "interest": "Product-market fit, revenue targets, competitive positioning",
+        "communicationFrequency": "Bi-weekly steering committee"
+      },
+      {
+        "name": "Engineering Director",
+        "interest": "Technical quality, scalability, team velocity",
+        "communicationFrequency": "Weekly 1:1 with Tech Lead"
+      },
+      {
+        "name": "Beta User Group",
+        "interest": "Feature requests, usability feedback, early access",
+        "communicationFrequency": "Monthly feedback sessions"
+      }
+    ],
+    "successCriteria": [
+      {
+        "criterion": "Core platform supports 100 concurrent users with <200ms p95 latency",
+        "metric": "Performance testing results",
+        "target": "p95 < 200ms at 100 users"
+      },
+      {
+        "criterion": "AI prioritization accuracy rated 'helpful' by >80% of users",
+        "metric": "In-app feedback survey",
+        "target": "> 80% positive rating"
+      },
+      {
+        "criterion": "User onboarding completion rate exceeds 75%",
+        "metric": "Analytics funnel tracking",
+        "target": "> 75% completion"
+      },
+      {
+        "criterion": "Zero critical security vulnerabilities at launch",
+        "metric": "Security audit results",
+        "target": "0 critical, < 3 high"
+      }
+    ],
+    "risks": [
+      {
+        "risk": "AI model accuracy may not meet user expectations in early release",
+        "likelihood": "medium",
+        "impact": "high",
+        "mitigation": "Implement manual override, feedback loop, and progressive trust-building through explainable AI"
+      },
+      {
+        "risk": "Integration API changes from third-party providers could break sync",
+        "likelihood": "medium",
+        "impact": "medium",
+        "mitigation": "Abstract integration layer, webhook monitoring, version-pinned API clients"
+      },
+      {
+        "risk": "Competitive response from established players adding AI features",
+        "likelihood": "high",
+        "impact": "medium",
+        "mitigation": "Speed to market, focus on depth of AI experience rather than surface features"
+      }
+    ]
+  }
+}

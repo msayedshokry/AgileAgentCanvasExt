@@ -1,0 +1,201 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/bmm/success-metrics.schema.json",
+  "title": "Success Metrics Schema",
+  "description": "Schema for defining measurable success metrics organized by category (code quality, operational, customer impact, deployment)",
+  "type": "object",
+  "properties": {
+    "codeQuality": {
+      "type": "array",
+      "description": "Code quality metrics - maintainability, duplication, complexity",
+      "items": {
+        "type": "object",
+        "required": ["metric"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Metric identifier (e.g., 'CQ-01')"
+          },
+          "metric": {
+            "type": "string",
+            "description": "Description of the code quality metric"
+          },
+          "target": {
+            "type": "string",
+            "description": "Target value or state (e.g., 'Zero duplication of retry logic')"
+          },
+          "measurement": {
+            "type": "string",
+            "description": "How this metric will be measured"
+          },
+          "baseline": {
+            "type": "string",
+            "description": "Current/baseline value before implementation"
+          },
+          "achieved": {
+            "type": "boolean",
+            "default": false
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "operational": {
+      "type": "array",
+      "description": "Operational metrics - availability, latency, throughput, resource usage",
+      "items": {
+        "type": "object",
+        "required": ["metric"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Metric identifier (e.g., 'OP-01')"
+          },
+          "metric": {
+            "type": "string",
+            "description": "Description of the operational metric"
+          },
+          "target": {
+            "type": "string",
+            "description": "Target value (e.g., '99.9% availability', '<10ms latency')"
+          },
+          "measurement": {
+            "type": "string",
+            "description": "How this metric will be measured (monitoring tool, benchmark)"
+          },
+          "baseline": {
+            "type": "string",
+            "description": "Current baseline before implementation"
+          },
+          "achieved": {
+            "type": "boolean",
+            "default": false
+          },
+          "actualValue": {
+            "type": "string",
+            "description": "Actual measured value after implementation"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "customerImpact": {
+      "type": "array",
+      "description": "Customer-facing impact metrics - user experience, satisfaction, adoption",
+      "items": {
+        "type": "object",
+        "required": ["metric"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Metric identifier (e.g., 'CI-01')"
+          },
+          "metric": {
+            "type": "string",
+            "description": "Description of the customer impact metric"
+          },
+          "target": {
+            "type": "string",
+            "description": "Target outcome (e.g., 'Faster startup in typical case')"
+          },
+          "measurement": {
+            "type": "string",
+            "description": "How customer impact will be measured"
+          },
+          "baseline": {
+            "type": "string"
+          },
+          "achieved": {
+            "type": "boolean",
+            "default": false
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "deployment": {
+      "type": "array",
+      "description": "Deployment and release metrics - rollout success, backwards compatibility",
+      "items": {
+        "type": "object",
+        "required": ["metric"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Metric identifier (e.g., 'DP-01')"
+          },
+          "metric": {
+            "type": "string",
+            "description": "Description of the deployment metric"
+          },
+          "target": {
+            "type": "string",
+            "description": "Target state (e.g., 'Zero breaking changes')"
+          },
+          "achieved": {
+            "type": "boolean",
+            "default": false
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "business": {
+      "type": "array",
+      "description": "Business metrics - ROI, cost savings, revenue impact",
+      "items": {
+        "type": "object",
+        "required": ["metric"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Metric identifier (e.g., 'BM-01')"
+          },
+          "metric": {
+            "type": "string",
+            "description": "Description of the business metric"
+          },
+          "target": {
+            "type": "string",
+            "description": "Target value or outcome"
+          },
+          "measurement": {
+            "type": "string",
+            "description": "How this will be measured"
+          },
+          "achieved": {
+            "type": "boolean",
+            "default": false
+          },
+          "actualValue": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "description": "Summary of metrics achievement",
+      "properties": {
+        "totalMetrics": { "type": "integer" },
+        "achievedCount": { "type": "integer" },
+        "achievementPercentage": { "type": "string" },
+        "overallStatus": {
+          "type": "string",
+          "enum": ["not-started", "in-progress", "partially-achieved", "achieved", "exceeded"]
+        }
+      }
+    }
+  }
+}

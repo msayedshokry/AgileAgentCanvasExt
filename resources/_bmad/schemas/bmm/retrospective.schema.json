@@ -1,0 +1,309 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/bmm/retrospective.schema.json",
+  "title": "Retrospective Schema",
+  "description": "Schema for epic completion retrospective that reviews success, extracts lessons learned, and identifies impacts on future work",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["epicReference", "summary"],
+      "properties": {
+        "epicReference": {
+          "type": "object",
+          "description": "Reference to the completed epic",
+          "required": ["epicId", "title"],
+          "properties": {
+            "epicId": {
+              "type": "string",
+              "description": "Epic identifier"
+            },
+            "title": {
+              "type": "string",
+              "description": "Epic title"
+            },
+            "goal": {
+              "type": "string",
+              "description": "Original epic goal"
+            },
+            "totalStories": {
+              "type": "integer"
+            },
+            "startDate": {
+              "type": "string",
+              "format": "date"
+            },
+            "completionDate": {
+              "type": "string",
+              "format": "date"
+            },
+            "durationDays": {
+              "type": "integer"
+            }
+          }
+        },
+        "summary": {
+          "type": "object",
+          "description": "High-level retrospective summary",
+          "properties": {
+            "overallSuccess": {
+              "type": "string",
+              "enum": ["exceeded-expectations", "met-expectations", "partially-met", "did-not-meet"],
+              "description": "Overall assessment of epic success"
+            },
+            "keyAchievements": {
+              "type": "array",
+              "description": "Main accomplishments",
+              "items": { "type": "string" }
+            },
+            "mainChallenges": {
+              "type": "array",
+              "description": "Primary challenges encountered",
+              "items": { "type": "string" }
+            },
+            "velocityAnalysis": {
+              "type": "object",
+              "properties": {
+                "estimatedEffort": { "type": "string" },
+                "actualEffort": { "type": "string" },
+                "variance": { "type": "string" },
+                "varianceReason": { "type": "string" }
+              }
+            }
+          }
+        },
+        "whatWentWell": {
+          "type": "array",
+          "description": "Things that worked well during the epic",
+          "items": {
+            "type": "object",
+            "properties": {
+              "item": { "type": "string" },
+              "impact": { "type": "string" },
+              "recommendation": {
+                "type": "string",
+                "description": "How to continue/amplify this"
+              }
+            }
+          }
+        },
+        "whatDidNotGoWell": {
+          "type": "array",
+          "description": "Things that didn't work well",
+          "items": {
+            "type": "object",
+            "properties": {
+              "item": { "type": "string" },
+              "impact": { "type": "string" },
+              "rootCause": { "type": "string" },
+              "recommendation": {
+                "type": "string",
+                "description": "How to avoid/improve this"
+              }
+            }
+          }
+        },
+        "lessonsLearned": {
+          "type": "array",
+          "description": "Key lessons from this epic",
+          "items": {
+            "type": "object",
+            "required": ["lesson"],
+            "properties": {
+              "id": { "type": "string" },
+              "lesson": { "type": "string" },
+              "category": {
+                "type": "string",
+                "enum": ["technical", "process", "communication", "estimation", "architecture", "testing", "tooling"]
+              },
+              "actionable": { "type": "boolean" },
+              "appliesTo": {
+                "type": "array",
+                "description": "Future epics/stories this applies to",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "storyAnalysis": {
+          "type": "array",
+          "description": "Per-story analysis",
+          "items": {
+            "type": "object",
+            "properties": {
+              "storyId": { "type": "string" },
+              "storyTitle": { "type": "string" },
+              "outcome": {
+                "type": "string",
+                "enum": ["smooth", "challenging", "blocked", "reworked"]
+              },
+              "notes": { "type": "string" },
+              "timeSpent": { "type": "string" },
+              "blockers": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "technicalDebt": {
+          "type": "object",
+          "description": "Technical debt incurred or addressed",
+          "properties": {
+            "debtIntroduced": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "description": { "type": "string" },
+                  "reason": { "type": "string" },
+                  "severity": {
+                    "type": "string",
+                    "enum": ["low", "medium", "high"]
+                  },
+                  "remediationPlan": { "type": "string" }
+                }
+              }
+            },
+            "debtAddressed": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "description": { "type": "string" },
+                  "resolution": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "impactOnFutureWork": {
+          "type": "object",
+          "description": "How this epic impacts upcoming work",
+          "properties": {
+            "nextEpicImpacts": {
+              "type": "array",
+              "description": "Direct impacts on the next epic",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "epicId": { "type": "string" },
+                  "impact": { "type": "string" },
+                  "recommendation": { "type": "string" }
+                }
+              }
+            },
+            "architectureChanges": {
+              "type": "array",
+              "description": "Architecture decisions that emerged",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "decision": { "type": "string" },
+                  "rationale": { "type": "string" },
+                  "documentationUpdate": { "type": "string" }
+                }
+              }
+            },
+            "newDiscoveries": {
+              "type": "array",
+              "description": "New information discovered during epic",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "discovery": { "type": "string" },
+                  "implication": { "type": "string" },
+                  "action": { "type": "string" }
+                }
+              }
+            },
+            "suggestedBacklogChanges": {
+              "type": "array",
+              "description": "Suggested changes to future stories/epics",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "targetItem": { "type": "string" },
+                  "changeType": {
+                    "type": "string",
+                    "enum": ["add", "modify", "remove", "reprioritize", "split", "merge"]
+                  },
+                  "description": { "type": "string" },
+                  "rationale": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "teamFeedback": {
+          "type": "object",
+          "description": "Feedback from team members",
+          "properties": {
+            "processImprovements": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "toolingImprovements": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "communicationImprovements": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "actionItems": {
+          "type": "array",
+          "description": "Concrete action items from retrospective",
+          "items": {
+            "type": "object",
+            "required": ["action"],
+            "properties": {
+              "id": { "type": "string" },
+              "action": { "type": "string" },
+              "owner": { "type": "string" },
+              "dueDate": { "type": "string" },
+              "priority": {
+                "type": "string",
+                "enum": ["high", "medium", "low"]
+              },
+              "status": {
+                "type": "string",
+                "enum": ["pending", "in-progress", "done"],
+                "default": "pending"
+              }
+            }
+          }
+        },
+        "metricsSnapshot": {
+          "type": "object",
+          "description": "Metrics captured at epic completion",
+          "properties": {
+            "codeMetrics": {
+              "type": "object",
+              "properties": {
+                "linesAdded": { "type": "integer" },
+                "linesRemoved": { "type": "integer" },
+                "filesChanged": { "type": "integer" },
+                "testCoverage": { "type": "number" }
+              }
+            },
+            "qualityMetrics": {
+              "type": "object",
+              "properties": {
+                "bugsFound": { "type": "integer" },
+                "bugsFixed": { "type": "integer" },
+                "reviewIterations": { "type": "number" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,182 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/bmm/test-summary.schema.json",
+  "title": "Test Summary Schema",
+  "description": "Schema for QA test generation summary - captures test coverage analysis and generated tests",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["summary", "generatedTests"],
+      "properties": {
+        "summary": {
+          "type": "object",
+          "description": "Test generation summary",
+          "properties": {
+            "scope": {
+              "type": "string",
+              "description": "Scope of test generation"
+            },
+            "targetFeatures": {
+              "type": "array",
+              "description": "Features targeted for test generation",
+              "items": { "type": "string" }
+            },
+            "testingApproach": {
+              "type": "string",
+              "description": "Overall testing approach used"
+            },
+            "frameworkUsed": {
+              "type": "string",
+              "description": "Test framework used (Jest, Vitest, Playwright, etc.)"
+            },
+            "totalTestsGenerated": {
+              "type": "integer",
+              "description": "Total number of tests generated"
+            },
+            "totalFilesCreated": {
+              "type": "integer",
+              "description": "Number of test files created"
+            }
+          }
+        },
+        "coverageAnalysis": {
+          "type": "object",
+          "description": "Coverage analysis before and after generation",
+          "properties": {
+            "priorCoverage": {
+              "type": "object",
+              "properties": {
+                "statement": { "type": "string" },
+                "branch": { "type": "string" },
+                "function": { "type": "string" },
+                "line": { "type": "string" }
+              }
+            },
+            "targetCoverage": {
+              "type": "object",
+              "properties": {
+                "statement": { "type": "string" },
+                "branch": { "type": "string" },
+                "function": { "type": "string" },
+                "line": { "type": "string" }
+              }
+            },
+            "gapsIdentified": {
+              "type": "array",
+              "description": "Coverage gaps identified",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "area": { "type": "string" },
+                  "description": { "type": "string" },
+                  "priority": {
+                    "type": "string",
+                    "enum": ["critical", "high", "medium", "low"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "generatedTests": {
+          "type": "array",
+          "description": "List of generated test files",
+          "items": {
+            "type": "object",
+            "properties": {
+              "filePath": {
+                "type": "string",
+                "description": "Path to generated test file"
+              },
+              "targetFile": {
+                "type": "string",
+                "description": "Source file being tested"
+              },
+              "testType": {
+                "type": "string",
+                "enum": ["unit", "integration", "component", "api", "e2e"],
+                "description": "Type of tests in file"
+              },
+              "testCount": {
+                "type": "integer",
+                "description": "Number of tests in file"
+              },
+              "testCases": {
+                "type": "array",
+                "description": "Individual test cases",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "description": { "type": "string" },
+                    "category": {
+                      "type": "string",
+                      "enum": ["happy-path", "edge-case", "error-handling", "boundary", "security"]
+                    }
+                  }
+                }
+              },
+              "patternsUsed": {
+                "type": "array",
+                "description": "Test patterns applied",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "testPatterns": {
+          "type": "array",
+          "description": "Test patterns discovered and applied",
+          "items": {
+            "type": "object",
+            "properties": {
+              "pattern": { "type": "string" },
+              "description": { "type": "string" },
+              "usageCount": { "type": "integer" },
+              "examples": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "recommendations": {
+          "type": "array",
+          "description": "Recommendations for additional testing",
+          "items": {
+            "type": "object",
+            "properties": {
+              "area": { "type": "string" },
+              "recommendation": { "type": "string" },
+              "priority": {
+                "type": "string",
+                "enum": ["high", "medium", "low"]
+              },
+              "effort": { "type": "string" }
+            }
+          }
+        },
+        "executionNotes": {
+          "type": "object",
+          "description": "Notes on test execution",
+          "properties": {
+            "runCommand": { "type": "string" },
+            "prerequisites": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "knownIssues": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

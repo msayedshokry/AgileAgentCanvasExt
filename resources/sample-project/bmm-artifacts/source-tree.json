@@ -1,0 +1,235 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "source-tree",
+    "timestamps": {
+      "created": "2026-01-25T10:00:00Z",
+      "lastModified": "2026-02-12T09:00:00Z"
+    },
+    "status": "approved",
+    "tags": [
+      "source-tree",
+      "project-structure",
+      "monorepo",
+      "architecture"
+    ],
+    "author": "Marcus Rodriguez"
+  },
+  "content": {
+    "overview": {
+      "projectName": "TaskFlow Pro",
+      "summary": "pnpm monorepo with four packages: web (React SPA), api (Fastify server), ml (Python ML service), and shared (common types/utilities). Deployed on AWS ECS Fargate with PostgreSQL, Redis, and BullMQ.",
+      "primaryLanguage": "TypeScript"
+    },
+    "repositoryType": "monorepo",
+    "packageManager": "pnpm workspaces",
+    "rootStructure": {
+      "description": "pnpm monorepo with 4 packages: web (React SPA), api (Fastify server), ml (Python ML service), and shared (common types/utilities)",
+      "entries": [
+        {
+          "path": "packages/web/",
+          "type": "directory",
+          "description": "React 19 SPA — main frontend application with Vite build"
+        },
+        {
+          "path": "packages/api/",
+          "type": "directory",
+          "description": "Fastify 5 REST API — core backend with PostgreSQL and Redis"
+        },
+        {
+          "path": "packages/ml/",
+          "type": "directory",
+          "description": "Python ML service — AI prioritization engine with FastAPI and gRPC"
+        },
+        {
+          "path": "packages/shared/",
+          "type": "directory",
+          "description": "Shared TypeScript types, Zod schemas, and utility functions"
+        },
+        {
+          "path": "docker/",
+          "type": "directory",
+          "description": "Docker configurations for all services and docker-compose files"
+        },
+        {
+          "path": "infrastructure/",
+          "type": "directory",
+          "description": "AWS CDK infrastructure-as-code definitions"
+        },
+        {
+          "path": ".github/workflows/",
+          "type": "directory",
+          "description": "GitHub Actions CI/CD pipelines"
+        },
+        {
+          "path": "pnpm-workspace.yaml",
+          "type": "file",
+          "description": "pnpm workspace configuration"
+        },
+        {
+          "path": "turbo.json",
+          "type": "file",
+          "description": "Turborepo configuration for build orchestration"
+        }
+      ]
+    },
+    "packages": [
+      {
+        "name": "packages/web",
+        "description": "React frontend application",
+        "structure": [
+          {
+            "path": "src/components/",
+            "description": "Shared UI components (TaskCard, PriorityBadge, FocusModePanel, etc.)"
+          },
+          {
+            "path": "src/pages/",
+            "description": "Page-level route components (Dashboard, Settings, Integrations)"
+          },
+          {
+            "path": "src/hooks/",
+            "description": "Custom React hooks (useTaskPriority, useFocusMode, useIntegration)"
+          },
+          {
+            "path": "src/stores/",
+            "description": "Zustand stores (taskStore, userStore, focusStore)"
+          },
+          {
+            "path": "src/api/",
+            "description": "TanStack Query hooks and API client functions"
+          },
+          {
+            "path": "src/styles/",
+            "description": "Tailwind config and global CSS with TFDS design tokens"
+          },
+          {
+            "path": "src/utils/",
+            "description": "Utility functions (formatters, validators, date helpers)"
+          },
+          {
+            "path": "src/__tests__/",
+            "description": "Component and integration tests"
+          }
+        ]
+      },
+      {
+        "name": "packages/api",
+        "description": "Fastify REST API backend",
+        "structure": [
+          {
+            "path": "src/routes/",
+            "description": "API route handlers organized by domain (auth, tasks, projects, focus, integrations)"
+          },
+          {
+            "path": "src/services/",
+            "description": "Business logic services (TaskService, PriorityService, IntegrationService)"
+          },
+          {
+            "path": "src/db/",
+            "description": "Drizzle ORM schema definitions and migrations"
+          },
+          {
+            "path": "src/middleware/",
+            "description": "Fastify plugins (auth, rate-limiting, validation, error-handling)"
+          },
+          {
+            "path": "src/jobs/",
+            "description": "BullMQ job definitions and processors"
+          },
+          {
+            "path": "src/grpc/",
+            "description": "gRPC client for ML service communication"
+          },
+          {
+            "path": "src/__tests__/",
+            "description": "API integration tests with supertest"
+          }
+        ]
+      },
+      {
+        "name": "packages/ml",
+        "description": "Python AI prioritization service",
+        "structure": [
+          {
+            "path": "src/models/",
+            "description": "ML model definitions and training scripts"
+          },
+          {
+            "path": "src/inference/",
+            "description": "Inference server with gRPC endpoints"
+          },
+          {
+            "path": "src/features/",
+            "description": "Feature engineering pipelines for task data"
+          },
+          {
+            "path": "src/evaluation/",
+            "description": "Model evaluation scripts and metrics"
+          },
+          {
+            "path": "data/",
+            "description": "Training data, model checkpoints, and evaluation results"
+          },
+          {
+            "path": "tests/",
+            "description": "Unit and integration tests with pytest"
+          }
+        ]
+      },
+      {
+        "name": "packages/shared",
+        "description": "Shared types and utilities",
+        "structure": [
+          {
+            "path": "src/types/",
+            "description": "TypeScript type definitions shared across web and api"
+          },
+          {
+            "path": "src/schemas/",
+            "description": "Zod validation schemas for API payloads"
+          },
+          {
+            "path": "src/constants/",
+            "description": "Shared constants (status enums, priority ranges, integration providers)"
+          },
+          {
+            "path": "src/utils/",
+            "description": "Shared utility functions (date formatting, ID generation)"
+          }
+        ]
+      }
+    ],
+    "keyFiles": [
+      {
+        "path": "packages/api/src/routes/tasks.ts",
+        "description": "Task CRUD API routes — the most heavily used endpoints",
+        "importance": "critical"
+      },
+      {
+        "path": "packages/api/src/services/priority-service.ts",
+        "description": "Orchestrates AI priority scoring by calling ML service via gRPC and caching results in Redis",
+        "importance": "critical"
+      },
+      {
+        "path": "packages/web/src/components/TaskCard.tsx",
+        "description": "Primary task display component used throughout the application",
+        "importance": "high"
+      },
+      {
+        "path": "packages/web/src/pages/FocusMode.tsx",
+        "description": "Focus Mode page component with session management and timer",
+        "importance": "high"
+      },
+      {
+        "path": "packages/ml/src/inference/priority_scorer.py",
+        "description": "Core AI model inference logic for priority scoring",
+        "importance": "critical"
+      },
+      {
+        "path": "packages/shared/src/schemas/task.schema.ts",
+        "description": "Zod schema for task validation — used by both web and api packages",
+        "importance": "high"
+      }
+    ]
+  }
+}

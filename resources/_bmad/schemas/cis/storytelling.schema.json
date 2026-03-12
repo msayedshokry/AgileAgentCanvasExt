@@ -1,0 +1,679 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/cis/storytelling.schema.json",
+  "title": "Storytelling Schema",
+  "description": "Schema for storytelling artifacts - crafted narratives using storytelling frameworks. IMPORTANT: Capture ALL story elements, narrative content, and variations completely. Do NOT summarize or truncate any story text, emotional beats, or adaptation guidelines.",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["storyType", "frameworkName", "completeStory"],
+      "properties": {
+        "storyType": {
+          "type": "string",
+          "description": "Type of story (pitch, case study, brand story, origin story, customer story, etc.)"
+        },
+        "frameworkName": {
+          "type": "string",
+          "description": "Storytelling framework used (Hero's Journey, STAR, Problem-Agitate-Solve, etc.)"
+        },
+        "storyTitle": {
+          "type": "string",
+          "description": "Title of the story"
+        },
+        "purpose": {
+          "type": "string",
+          "description": "COMPLETE description of the story's purpose and intended outcome"
+        },
+        "targetAudience": {
+          "type": "object",
+          "description": "COMPLETE target audience definition",
+          "properties": {
+            "primary": {
+              "type": "string",
+              "description": "COMPLETE description of primary audience"
+            },
+            "secondary": {
+              "type": "string",
+              "description": "Secondary audience if applicable"
+            },
+            "audienceProfile": {
+              "type": "object",
+              "properties": {
+                "demographics": { "type": "string" },
+                "psychographics": { "type": "string" },
+                "painPoints": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "aspirations": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "knowledgeLevel": {
+                  "type": "string",
+                  "description": "Audience's familiarity with the subject"
+                }
+              }
+            },
+            "stateChange": {
+              "type": "object",
+              "description": "Desired state change in audience",
+              "properties": {
+                "currentState": {
+                  "type": "string",
+                  "description": "How audience currently thinks/feels"
+                },
+                "desiredState": {
+                  "type": "string",
+                  "description": "How we want them to think/feel after"
+                }
+              }
+            }
+          }
+        },
+        "strategicContext": {
+          "type": "object",
+          "description": "Strategic context for this story",
+          "properties": {
+            "brandVoice": {
+              "type": "string",
+              "description": "COMPLETE description of brand voice to maintain"
+            },
+            "keyMessages": {
+              "type": "array",
+              "description": "ALL key messages to convey",
+              "items": { "type": "string" }
+            },
+            "callToAction": {
+              "type": "string",
+              "description": "COMPLETE desired call to action"
+            },
+            "constraints": {
+              "type": "array",
+              "description": "Constraints to work within",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "frameworkApplication": {
+          "type": "object",
+          "description": "COMPLETE application of the storytelling framework",
+          "properties": {
+            "frameworkElements": {
+              "type": "array",
+              "description": "ALL framework elements with content",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "element": {
+                    "type": "string",
+                    "description": "Framework element name"
+                  },
+                  "content": {
+                    "type": "string",
+                    "description": "COMPLETE content for this element - do NOT truncate"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "description": "Purpose of this element in the story"
+                  },
+                  "emotionalGoal": {
+                    "type": "string",
+                    "description": "Emotional response this should evoke"
+                  }
+                }
+              }
+            },
+            "frameworkNotes": {
+              "type": "string",
+              "description": "COMPLETE notes on framework application"
+            }
+          }
+        },
+        "structure": {
+          "type": "object",
+          "description": "COMPLETE story structure elements",
+          "properties": {
+            "openingHook": {
+              "type": "object",
+              "description": "COMPLETE opening hook",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "COMPLETE opening hook text - do NOT truncate"
+                },
+                "technique": {
+                  "type": "string",
+                  "description": "Hook technique used (question, statistic, story, etc.)"
+                },
+                "emotionalTrigger": {
+                  "type": "string",
+                  "description": "Emotion this is designed to trigger"
+                }
+              }
+            },
+            "setup": {
+              "type": "object",
+              "description": "Story setup/context",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "COMPLETE setup text"
+                },
+                "worldBuilding": {
+                  "type": "string",
+                  "description": "World/context established"
+                },
+                "stakesEstablished": {
+                  "type": "string",
+                  "description": "Stakes established for the audience"
+                }
+              }
+            },
+            "coreNarrative": {
+              "type": "string",
+              "description": "COMPLETE main narrative content - this is the full story. Do NOT summarize or truncate."
+            },
+            "storyBeats": {
+              "type": "array",
+              "description": "ALL key story beats/moments - COMPLETE details",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "beatNumber": {
+                    "type": "integer",
+                    "description": "Order in the story"
+                  },
+                  "beat": {
+                    "type": "string",
+                    "description": "COMPLETE story beat content"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "description": "Purpose of this beat"
+                  },
+                  "emotion": {
+                    "type": "string",
+                    "description": "Emotion this beat should evoke"
+                  },
+                  "transition": {
+                    "type": "string",
+                    "description": "How this transitions to the next beat"
+                  }
+                }
+              }
+            },
+            "emotionalArc": {
+              "type": "object",
+              "description": "COMPLETE emotional arc of the story",
+              "properties": {
+                "description": {
+                  "type": "string",
+                  "description": "COMPLETE description of the emotional journey"
+                },
+                "arcPoints": {
+                  "type": "array",
+                  "description": "Key points in the emotional arc",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "point": { "type": "string" },
+                      "emotion": { "type": "string" },
+                      "intensity": {
+                        "type": "string",
+                        "enum": ["low", "medium", "high", "peak"]
+                      }
+                    }
+                  }
+                },
+                "climax": {
+                  "type": "string",
+                  "description": "COMPLETE emotional climax description"
+                }
+              }
+            },
+            "conflict": {
+              "type": "object",
+              "description": "Story conflict/tension",
+              "properties": {
+                "mainConflict": {
+                  "type": "string",
+                  "description": "COMPLETE description of the main conflict"
+                },
+                "obstacles": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "stakes": {
+                  "type": "string",
+                  "description": "What's at stake"
+                }
+              }
+            },
+            "resolution": {
+              "type": "object",
+              "description": "COMPLETE resolution/conclusion",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "COMPLETE resolution text"
+                },
+                "transformation": {
+                  "type": "string",
+                  "description": "Transformation shown"
+                },
+                "callToAction": {
+                  "type": "string",
+                  "description": "COMPLETE call to action"
+                },
+                "lingeringEmotion": {
+                  "type": "string",
+                  "description": "Emotion left with the audience"
+                }
+              }
+            }
+          }
+        },
+        "completeStory": {
+          "type": "string",
+          "description": "THE COMPLETE STORY TEXT. This is the full, polished story ready for use. Do NOT summarize or truncate - include the entire story word for word."
+        },
+        "elements": {
+          "type": "object",
+          "description": "COMPLETE story element analysis",
+          "properties": {
+            "characters": {
+              "type": "array",
+              "description": "ALL characters in the story",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "role": {
+                    "type": "string",
+                    "enum": ["protagonist", "antagonist", "mentor", "ally", "audience-surrogate", "other"]
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "COMPLETE character description"
+                  },
+                  "motivation": { "type": "string" },
+                  "arc": {
+                    "type": "string",
+                    "description": "Character's arc in the story"
+                  }
+                }
+              }
+            },
+            "characterVoice": {
+              "type": "string",
+              "description": "COMPLETE description of the narrative voice/perspective"
+            },
+            "setting": {
+              "type": "object",
+              "description": "Story setting",
+              "properties": {
+                "description": {
+                  "type": "string",
+                  "description": "COMPLETE setting description"
+                },
+                "significance": {
+                  "type": "string",
+                  "description": "Why this setting matters"
+                }
+              }
+            },
+            "conflictTension": {
+              "type": "string",
+              "description": "COMPLETE description of conflict and tension elements"
+            },
+            "transformation": {
+              "type": "string",
+              "description": "COMPLETE description of transformation or change depicted"
+            },
+            "theme": {
+              "type": "string",
+              "description": "COMPLETE description of the story's theme"
+            },
+            "emotionalTouchpoints": {
+              "type": "array",
+              "description": "ALL key emotional moments - COMPLETE details",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "moment": {
+                    "type": "string",
+                    "description": "COMPLETE description of the emotional moment"
+                  },
+                  "emotion": {
+                    "type": "string",
+                    "description": "Emotion evoked"
+                  },
+                  "technique": {
+                    "type": "string",
+                    "description": "Technique used to evoke emotion"
+                  },
+                  "locationInStory": {
+                    "type": "string",
+                    "description": "Where this occurs"
+                  }
+                }
+              }
+            },
+            "keyMessages": {
+              "type": "array",
+              "description": "ALL key messages conveyed through the story",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "description": "COMPLETE message"
+                  },
+                  "howConveyed": {
+                    "type": "string",
+                    "description": "How this is conveyed in the story"
+                  },
+                  "subtlety": {
+                    "type": "string",
+                    "enum": ["explicit", "implicit", "symbolic"]
+                  }
+                }
+              }
+            },
+            "memorableLines": {
+              "type": "array",
+              "description": "Memorable/quotable lines from the story",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "line": { "type": "string" },
+                  "context": { "type": "string" },
+                  "useCase": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "variations": {
+          "type": "object",
+          "description": "COMPLETE story variations for different formats/lengths",
+          "properties": {
+            "elevator": {
+              "type": "object",
+              "description": "30-second elevator version",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "COMPLETE elevator pitch version"
+                },
+                "wordCount": { "type": "integer" },
+                "useCase": { "type": "string" }
+              }
+            },
+            "short": {
+              "type": "object",
+              "description": "Short version (tweet/social media)",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "COMPLETE short version"
+                },
+                "characterCount": { "type": "integer" },
+                "platform": { "type": "string" }
+              }
+            },
+            "medium": {
+              "type": "object",
+              "description": "Medium version (email/blog intro)",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "COMPLETE medium version"
+                },
+                "wordCount": { "type": "integer" },
+                "useCase": { "type": "string" }
+              }
+            },
+            "extended": {
+              "type": "object",
+              "description": "Extended version (article/presentation)",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "COMPLETE extended version - do NOT truncate"
+                },
+                "wordCount": { "type": "integer" },
+                "useCase": { "type": "string" }
+              }
+            },
+            "presentation": {
+              "type": "object",
+              "description": "Presentation/speaking version",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "COMPLETE presentation version with speaker notes"
+                },
+                "duration": { "type": "string" },
+                "slideNotes": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "slide": { "type": "integer" },
+                      "content": { "type": "string" },
+                      "speakerNotes": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            },
+            "video": {
+              "type": "object",
+              "description": "Video script version",
+              "properties": {
+                "script": {
+                  "type": "string",
+                  "description": "COMPLETE video script"
+                },
+                "duration": { "type": "string" },
+                "visualNotes": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "visualElements": {
+          "type": "object",
+          "description": "Visual elements to accompany the story",
+          "properties": {
+            "suggestedImagery": {
+              "type": "array",
+              "description": "Suggested images/visuals",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "description": { "type": "string" },
+                  "purpose": { "type": "string" },
+                  "placement": { "type": "string" }
+                }
+              }
+            },
+            "dataVisualization": {
+              "type": "array",
+              "description": "Data/charts to include",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": { "type": "string" },
+                  "data": { "type": "string" },
+                  "narrative": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "usageGuidelines": {
+          "type": "object",
+          "description": "COMPLETE guidelines for using the story",
+          "properties": {
+            "bestChannels": {
+              "type": "array",
+              "description": "ALL best channels for this story",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "channel": {
+                    "type": "string",
+                    "description": "Channel name"
+                  },
+                  "format": {
+                    "type": "string",
+                    "description": "Best format for this channel"
+                  },
+                  "notes": {
+                    "type": "string",
+                    "description": "COMPLETE notes for this channel"
+                  }
+                }
+              }
+            },
+            "audienceConsiderations": {
+              "type": "string",
+              "description": "COMPLETE audience-specific considerations"
+            },
+            "toneNotes": {
+              "type": "string",
+              "description": "COMPLETE tone and voice notes for delivery"
+            },
+            "deliveryTips": {
+              "type": "array",
+              "description": "Tips for effective delivery",
+              "items": { "type": "string" }
+            },
+            "adaptationSuggestions": {
+              "type": "array",
+              "description": "ALL suggestions for adapting the story",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "scenario": {
+                    "type": "string",
+                    "description": "Scenario for adaptation"
+                  },
+                  "suggestion": {
+                    "type": "string",
+                    "description": "COMPLETE adaptation suggestion"
+                  }
+                }
+              }
+            },
+            "doNotChange": {
+              "type": "array",
+              "description": "Elements that should NOT be changed",
+              "items": { "type": "string" }
+            },
+            "flexibleElements": {
+              "type": "array",
+              "description": "Elements that can be adjusted",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "testing": {
+          "type": "object",
+          "description": "Story testing and feedback",
+          "properties": {
+            "testingPlan": {
+              "type": "string",
+              "description": "Plan for testing the story"
+            },
+            "feedback": {
+              "type": "array",
+              "description": "ALL feedback received",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "source": { "type": "string" },
+                  "feedback": {
+                    "type": "string",
+                    "description": "COMPLETE feedback"
+                  },
+                  "actionTaken": { "type": "string" }
+                }
+              }
+            },
+            "metrics": {
+              "type": "array",
+              "description": "Story effectiveness metrics",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "metric": { "type": "string" },
+                  "result": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "nextSteps": {
+          "type": "object",
+          "description": "COMPLETE next steps for the story",
+          "properties": {
+            "refinementOpportunities": {
+              "type": "array",
+              "description": "ALL refinement opportunities identified",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "area": { "type": "string" },
+                  "opportunity": {
+                    "type": "string",
+                    "description": "COMPLETE description of the opportunity"
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": ["high", "medium", "low"]
+                  }
+                }
+              }
+            },
+            "additionalVersionsNeeded": {
+              "type": "array",
+              "description": "Additional versions to create",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "version": { "type": "string" },
+                  "purpose": { "type": "string" },
+                  "deadline": { "type": "string" }
+                }
+              }
+            },
+            "distributionPlan": {
+              "type": "string",
+              "description": "COMPLETE distribution plan"
+            },
+            "feedbackPlan": {
+              "type": "string",
+              "description": "COMPLETE plan for gathering ongoing feedback"
+            },
+            "relatedStories": {
+              "type": "array",
+              "description": "Related stories to develop",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

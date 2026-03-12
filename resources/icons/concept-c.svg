@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- Dark background -->
+  <rect width="256" height="256" rx="56" fill="#12141C"/>
+
+  <!-- Subtle dot grid -->
+  <g fill="#FFFFFF" opacity="0.04">
+    <circle cx="40" cy="40" r="1.2"/><circle cx="64" cy="40" r="1.2"/><circle cx="88" cy="40" r="1.2"/><circle cx="112" cy="40" r="1.2"/><circle cx="136" cy="40" r="1.2"/><circle cx="160" cy="40" r="1.2"/><circle cx="184" cy="40" r="1.2"/><circle cx="208" cy="40" r="1.2"/>
+    <circle cx="40" cy="64" r="1.2"/><circle cx="64" cy="64" r="1.2"/><circle cx="88" cy="64" r="1.2"/><circle cx="112" cy="64" r="1.2"/><circle cx="136" cy="64" r="1.2"/><circle cx="160" cy="64" r="1.2"/><circle cx="184" cy="64" r="1.2"/><circle cx="208" cy="64" r="1.2"/>
+    <circle cx="40" cy="88" r="1.2"/><circle cx="64" cy="88" r="1.2"/><circle cx="88" cy="88" r="1.2"/><circle cx="112" cy="88" r="1.2"/><circle cx="136" cy="88" r="1.2"/><circle cx="160" cy="88" r="1.2"/><circle cx="184" cy="88" r="1.2"/><circle cx="208" cy="88" r="1.2"/>
+    <circle cx="40" cy="112" r="1.2"/><circle cx="64" cy="112" r="1.2"/><circle cx="88" cy="112" r="1.2"/><circle cx="112" cy="112" r="1.2"/><circle cx="136" cy="112" r="1.2"/><circle cx="160" cy="112" r="1.2"/><circle cx="184" cy="112" r="1.2"/><circle cx="208" cy="112" r="1.2"/>
+    <circle cx="40" cy="136" r="1.2"/><circle cx="64" cy="136" r="1.2"/><circle cx="88" cy="136" r="1.2"/><circle cx="112" cy="136" r="1.2"/><circle cx="136" cy="136" r="1.2"/><circle cx="160" cy="136" r="1.2"/><circle cx="184" cy="136" r="1.2"/><circle cx="208" cy="136" r="1.2"/>
+    <circle cx="40" cy="160" r="1.2"/><circle cx="64" cy="160" r="1.2"/><circle cx="88" cy="160" r="1.2"/><circle cx="112" cy="160" r="1.2"/><circle cx="136" cy="160" r="1.2"/><circle cx="160" cy="160" r="1.2"/><circle cx="184" cy="160" r="1.2"/><circle cx="208" cy="160" r="1.2"/>
+    <circle cx="40" cy="184" r="1.2"/><circle cx="64" cy="184" r="1.2"/><circle cx="88" cy="184" r="1.2"/><circle cx="112" cy="184" r="1.2"/><circle cx="136" cy="184" r="1.2"/><circle cx="160" cy="184" r="1.2"/><circle cx="184" cy="184" r="1.2"/><circle cx="208" cy="184" r="1.2"/>
+    <circle cx="40" cy="208" r="1.2"/><circle cx="64" cy="208" r="1.2"/><circle cx="88" cy="208" r="1.2"/><circle cx="112" cy="208" r="1.2"/><circle cx="136" cy="208" r="1.2"/><circle cx="160" cy="208" r="1.2"/><circle cx="184" cy="208" r="1.2"/><circle cx="208" cy="208" r="1.2"/>
+  </g>
+
+  <!-- Timeline line -->
+  <rect x="56" y="50" width="2.5" height="158" rx="1.25" fill="#FFFFFF" opacity="0.12"/>
+
+  <!-- Timeline dots -->
+  <circle cx="57.25" cy="66" r="5" fill="#4DD0E1"/>
+  <circle cx="57.25" cy="110" r="5" fill="#B388FF"/>
+  <circle cx="57.25" cy="154" r="5" fill="#66BB6A"/>
+  <circle cx="57.25" cy="195" r="5" fill="#FF8A65"/>
+
+  <!-- Three curved dependency arrows (behind cards) -->
+  <defs>
+    <marker id="arrow1" markerWidth="6" markerHeight="5" refX="5" refY="2.5" orient="auto">
+      <polygon points="0,0 6,2.5 0,5" fill="#FFFFFF" opacity="0.22"/>
+    </marker>
+    <marker id="arrow2" markerWidth="6" markerHeight="5" refX="5" refY="2.5" orient="auto">
+      <polygon points="0,0 6,2.5 0,5" fill="#FFFFFF" opacity="0.22"/>
+    </marker>
+    <marker id="arrow3" markerWidth="6" markerHeight="5" refX="5" refY="2.5" orient="auto">
+      <polygon points="0,0 6,2.5 0,5" fill="#FFFFFF" opacity="0.22"/>
+    </marker>
+  </defs>
+
+  <!-- Curve 1: Row1 middle card → Row2 left card (left-ward) -->
+  <path d="M 139,76 C 139,90 93,86 93,100" stroke="#FFFFFF" stroke-width="2" opacity="0.2" fill="none" marker-end="url(#arrow1)"/>
+
+  <!-- Curve 2: Row2 middle card → Row3 right card (right-ward) -->
+  <path d="M 150,120 C 150,134 158,130 158,144" stroke="#FFFFFF" stroke-width="2" opacity="0.2" fill="none" marker-end="url(#arrow2)"/>
+
+  <!-- Curve 3: Row3 left card → Row4 middle card (right-ward) -->
+  <path d="M 105,164 C 105,178 144,172 144,186" stroke="#FFFFFF" stroke-width="2" opacity="0.2" fill="none" marker-end="url(#arrow3)"/>
+
+  <!-- Row 1 — Discovery (cyan): 3 cards -->
+  <rect x="72" y="56" width="38" height="20" rx="6" fill="#4DD0E1"/>
+  <rect x="80" y="63" width="18" height="2.5" rx="1.25" fill="#FFFFFF" opacity="0.55"/>
+  <rect x="80" y="68" width="12" height="2" rx="1" fill="#FFFFFF" opacity="0.25"/>
+
+  <rect x="116" y="56" width="46" height="20" rx="6" fill="#4DD0E1" opacity="0.7"/>
+  <rect x="124" y="63" width="22" height="2.5" rx="1.25" fill="#FFFFFF" opacity="0.45"/>
+  <rect x="124" y="68" width="14" height="2" rx="1" fill="#FFFFFF" opacity="0.2"/>
+
+  <rect x="168" y="56" width="42" height="20" rx="6" fill="#4DD0E1" opacity="0.45"/>
+  <rect x="176" y="63" width="20" height="2.5" rx="1.25" fill="#FFFFFF" opacity="0.35"/>
+
+  <!-- Row 2 — Planning (purple): 3 cards -->
+  <rect x="72" y="100" width="42" height="20" rx="6" fill="#B388FF"/>
+  <rect x="80" y="107" width="20" height="2.5" rx="1.25" fill="#FFFFFF" opacity="0.55"/>
+  <rect x="80" y="112" width="14" height="2" rx="1" fill="#FFFFFF" opacity="0.25"/>
+
+  <rect x="120" y="100" width="52" height="20" rx="6" fill="#B388FF" opacity="0.7"/>
+  <rect x="128" y="107" width="24" height="2.5" rx="1.25" fill="#FFFFFF" opacity="0.45"/>
+  <rect x="128" y="112" width="16" height="2" rx="1" fill="#FFFFFF" opacity="0.2"/>
+
+  <rect x="178" y="100" width="34" height="20" rx="6" fill="#B388FF" opacity="0.45"/>
+  <rect x="186" y="107" width="16" height="2.5" rx="1.25" fill="#FFFFFF" opacity="0.35"/>
+
+  <!-- Row 3 — Solutioning (green): 2 cards -->
+  <rect x="72" y="144" width="56" height="20" rx="6" fill="#66BB6A"/>
+  <rect x="80" y="151" width="24" height="2.5" rx="1.25" fill="#FFFFFF" opacity="0.55"/>
+  <rect x="80" y="156" width="16" height="2" rx="1" fill="#FFFFFF" opacity="0.25"/>
+
+  <rect x="134" y="144" width="48" height="20" rx="6" fill="#66BB6A" opacity="0.7"/>
+  <rect x="142" y="151" width="22" height="2.5" rx="1.25" fill="#FFFFFF" opacity="0.45"/>
+  <rect x="142" y="156" width="14" height="2" rx="1" fill="#FFFFFF" opacity="0.2"/>
+
+  <!-- Row 4 — Implementation (orange): 3 cards -->
+  <rect x="72" y="186" width="40" height="18" rx="6" fill="#FF8A65"/>
+  <rect x="80" y="192" width="18" height="2.5" rx="1.25" fill="#FFFFFF" opacity="0.55"/>
+
+  <rect x="118" y="186" width="52" height="18" rx="6" fill="#FF8A65" opacity="0.7"/>
+  <rect x="126" y="192" width="24" height="2.5" rx="1.25" fill="#FFFFFF" opacity="0.45"/>
+
+  <rect x="176" y="186" width="38" height="18" rx="6" fill="#FF8A65" opacity="0.45"/>
+  <rect x="184" y="192" width="16" height="2.5" rx="1.25" fill="#FFFFFF" opacity="0.35"/>
+
+</svg>

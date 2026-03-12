@@ -1,0 +1,373 @@
+{
+  "metadata": {
+    "schemaVersion": "1.2.0",
+    "artifactType": "ux-design",
+    "timestamps": {
+      "created": "2026-01-20T10:00:00Z",
+      "lastModified": "2026-02-05T14:00:00Z"
+    },
+    "status": "approved",
+    "tags": [
+      "ux-design",
+      "design-system",
+      "user-flows",
+      "accessibility"
+    ],
+    "author": "UX Design Team"
+  },
+  "content": {
+    "designTitle": "TaskFlow Pro - User Experience Design",
+    "designPhase": "detailed-design",
+    "designSystem": {
+      "name": "TaskFlow Design System (TFDS)",
+      "version": "1.0",
+      "description": "A clean, productivity-focused design system built on principles of clarity, calm, and confidence. Emphasizes whitespace, clear hierarchy, and subtle animations that guide without distracting.",
+      "colorPalette": {
+        "description": "Productivity-focused color palette with clear semantic meaning for task states and priorities",
+        "primary": [
+          {
+            "name": "Primary Blue",
+            "value": "#2563EB",
+            "usage": "Primary actions, active states, links, focus indicators"
+          }
+        ],
+        "secondary": [
+          {
+            "name": "Focus Purple",
+            "value": "#7C3AED",
+            "usage": "Focus Mode UI, AI-recommended tasks, priority scores"
+          }
+        ],
+        "neutral": [
+          {
+            "name": "Neutral Gray Scale",
+            "value": "#F8FAFC to #0F172A",
+            "usage": "Backgrounds, borders, text hierarchy, disabled states"
+          }
+        ],
+        "semantic": {
+          "success": {
+            "value": "#16A34A",
+            "usage": "Completed tasks, positive feedback, success states"
+          },
+          "warning": {
+            "value": "#D97706",
+            "usage": "Approaching deadlines, medium-priority indicators"
+          },
+          "error": {
+            "value": "#DC2626",
+            "usage": "Overdue tasks, critical alerts, destructive actions"
+          },
+          "info": {
+            "value": "#2563EB",
+            "usage": "Informational messages and tooltips"
+          }
+        },
+        "darkMode": {
+          "supported": true,
+          "mappings": [
+            {
+              "lightValue": "#F8FAFC",
+              "darkValue": "#0F172A"
+            },
+            {
+              "lightValue": "#FFFFFF",
+              "darkValue": "#1E293B"
+            }
+          ]
+        }
+      },
+      "typography": {
+        "description": "Clean typography system using Inter for UI and JetBrains Mono for technical content",
+        "fontFamilies": [
+          {
+            "name": "Inter",
+            "usage": "Primary UI font for headings and body text",
+            "fallbacks": ["system-ui", "sans-serif"],
+            "source": "Google Fonts",
+            "weights": ["400", "500", "600", "700"]
+          },
+          {
+            "name": "JetBrains Mono",
+            "usage": "Task IDs, technical labels, code references",
+            "fallbacks": ["monospace"],
+            "source": "Google Fonts",
+            "weights": ["400"]
+          }
+        ],
+        "scale": [
+          {
+            "name": "Heading 1",
+            "size": "24px",
+            "lineHeight": "32px",
+            "weight": "700",
+            "usage": "Page titles"
+          },
+          {
+            "name": "Heading 2",
+            "size": "20px",
+            "lineHeight": "28px",
+            "weight": "600",
+            "usage": "Section headers"
+          },
+          {
+            "name": "Body",
+            "size": "14px",
+            "lineHeight": "20px",
+            "weight": "400",
+            "usage": "Body text and descriptions"
+          },
+          {
+            "name": "Caption",
+            "size": "12px",
+            "lineHeight": "16px",
+            "weight": "500",
+            "usage": "Metadata, timestamps, labels"
+          }
+        ],
+        "textStyles": [
+          {
+            "name": "Card Title",
+            "properties": { "size": "16px", "weight": "600", "lineHeight": "24px" },
+            "usage": "Task card and component card titles"
+          }
+        ]
+      },
+      "components": [
+        {
+          "name": "TaskCard",
+          "description": "The primary task display component. Shows task title, priority score badge, due date, project tag, and assignee avatar. Supports drag-and-drop, swipe actions, and expand/collapse for subtasks.",
+          "variants": [
+            "default",
+            "compact",
+            "expanded",
+            "focus-mode",
+            "completed"
+          ]
+        },
+        {
+          "name": "PriorityBadge",
+          "description": "AI-computed priority score displayed as a circular badge (0-100). Color-coded from green (low urgency) through amber to red (critical). Includes a tooltip explaining the AI reasoning.",
+          "variants": [
+            "large",
+            "small",
+            "inline"
+          ]
+        },
+        {
+          "name": "FocusModePanel",
+          "description": "Full-screen overlay that shows only the top 3-5 AI-selected tasks with deep context. Features a timer, distraction blocker integration, and completion animations.",
+          "variants": [
+            "three-task",
+            "five-task",
+            "single-task-deep"
+          ]
+        },
+        {
+          "name": "IntegrationHub",
+          "description": "Dashboard showing all connected integrations with sync status indicators, last-sync timestamp, and quick-action buttons for each integration.",
+          "variants": [
+            "grid",
+            "list",
+            "compact"
+          ]
+        }
+      ],
+      "iconography": {
+        "library": "Lucide Icons",
+        "sizes": [
+          {
+            "name": "Default",
+            "value": "24px",
+            "usage": "Standard icon size for navigation and actions"
+          },
+          {
+            "name": "Small",
+            "value": "16px",
+            "usage": "Inline icons and compact views"
+          }
+        ],
+        "style": "2px stroke weight, open source with custom additions for AI-specific concepts"
+      },
+      "spacing": {
+        "description": "Consistent spacing system based on 8px base unit",
+        "baseUnit": "8px",
+        "scale": [
+          { "name": "xs", "value": "4px", "usage": "Tight spacing between related elements" },
+          { "name": "sm", "value": "8px", "usage": "Default compact spacing" },
+          { "name": "md", "value": "16px", "usage": "Standard spacing between elements" },
+          { "name": "lg", "value": "24px", "usage": "Section spacing" },
+          { "name": "xl", "value": "32px", "usage": "Large section gaps" },
+          { "name": "2xl", "value": "48px", "usage": "Page-level spacing" }
+        ]
+      },
+      "borderRadius": "6px for cards, 4px for buttons, 9999px for badges and avatars"
+    },
+    "userFlows": [
+      {
+        "flowName": "New User Onboarding",
+        "description": "Guides new users through account setup, first project creation, integration connections, and AI calibration. Progressive disclosure pattern ensures users are not overwhelmed.",
+        "steps": [
+          "Welcome screen with value proposition animation (3 seconds)",
+          "Account creation with SSO options (Google, Microsoft, GitHub)",
+          "Choose workspace type (Personal / Team / Enterprise)",
+          "Connect first integration (suggested: Google Calendar or Slack)",
+          "Create first project with AI-suggested template",
+          "Add 5 sample tasks or import from connected tool",
+          "AI calibration mini-quiz (5 questions about work style preferences)",
+          "Focus Mode tutorial with interactive walkthrough",
+          "Dashboard tour with contextual tooltips"
+        ],
+        "successMetrics": [
+          "Onboarding completion rate > 80%",
+          "Time to first Focus Mode session < 5 minutes",
+          "Integration connection rate during onboarding > 60%"
+        ]
+      },
+      {
+        "flowName": "Daily Task Review",
+        "description": "The core daily workflow where users review AI-prioritized tasks, adjust priorities, and enter Focus Mode for deep work sessions.",
+        "steps": [
+          "Open app to personalized dashboard with AI morning briefing",
+          "Review AI-prioritized task list with explanation tooltips",
+          "Optionally adjust task priorities via drag-and-drop or manual score override",
+          "Enter Focus Mode for top tasks",
+          "Complete tasks with one-click or swipe gesture",
+          "AI adapts priorities in real-time based on completions and time of day",
+          "End-of-day summary with productivity score and suggestions"
+        ],
+        "successMetrics": [
+          "Average daily active usage > 15 minutes",
+          "Focus Mode sessions per day > 1.5",
+          "Task completion rate > 70%"
+        ]
+      },
+      {
+        "flowName": "Integration Setup",
+        "description": "User connects external tools to TaskFlow Pro, configures sync rules, and maps external data to TaskFlow projects.",
+        "steps": [
+          "Navigate to Settings > Integrations",
+          "Browse available integrations with categories and search",
+          "Select integration and authenticate via OAuth",
+          "Configure sync direction (one-way or bidirectional)",
+          "Map external projects/channels to TaskFlow projects",
+          "Set sync frequency and conflict resolution rules",
+          "Test connection with preview of synced data",
+          "Activate integration with success confirmation"
+        ],
+        "successMetrics": [
+          "Integration setup completion rate > 85%",
+          "Average setup time < 3 minutes",
+          "First-week integration error rate < 2%"
+        ]
+      }
+    ],
+    "wireframes": [
+      {
+        "name": "Dashboard - Default View",
+        "description": "Main dashboard layout with left sidebar navigation, center task list with AI priority scores, right panel showing task details and AI reasoning. Top bar includes search, notifications, and Focus Mode quick-launch button.",
+        "fidelity": "high",
+        "notes": "Responsive: sidebar collapses to icons at <1024px, task detail panel becomes slide-over at <768px"
+      },
+      {
+        "name": "Focus Mode - Active Session",
+        "description": "Full-screen Focus Mode with current task prominently displayed, minimal chrome, session timer, and subtle progress indicator. Next 2 tasks shown as small cards at bottom. Escape key or swipe-down to exit.",
+        "fidelity": "high",
+        "notes": "Dark mode strongly recommended for focus mode. Consider ambient sound integration."
+      },
+      {
+        "name": "Integration Hub",
+        "description": "Grid of integration cards showing connected status, sync health, and quick actions. Unconnected integrations shown with 'Connect' CTA. Search and category filters at top.",
+        "fidelity": "medium",
+        "notes": "Show most popular integrations first. Include 'Request Integration' link."
+      }
+    ],
+    "accessibilityRequirements": [
+      {
+        "requirement": "WCAG 2.2 Level AA compliance across all views",
+        "priority": "must-have",
+        "notes": "All interactive elements must have visible focus indicators, minimum 4.5:1 contrast ratio for text"
+      },
+      {
+        "requirement": "Full keyboard navigation support including drag-and-drop alternatives",
+        "priority": "must-have",
+        "notes": "Arrow keys for task reordering, Enter/Space for actions, Escape for dismissal"
+      },
+      {
+        "requirement": "Screen reader compatibility with ARIA labels and live regions for dynamic updates",
+        "priority": "must-have",
+        "notes": "AI priority changes must be announced via aria-live. Task completion feedback via aria-alert."
+      },
+      {
+        "requirement": "Reduced motion mode that disables animations and transitions",
+        "priority": "should-have",
+        "notes": "Respect prefers-reduced-motion media query. Provide toggle in settings."
+      },
+      {
+        "requirement": "High contrast mode with increased border widths and inverted color scheme",
+        "priority": "should-have",
+        "notes": "Windows High Contrast Mode support via forced-colors media query"
+      }
+    ],
+    "usabilityTestingPlan": {
+      "approach": "Iterative testing with 5-8 participants per round, 3 rounds planned across design phases. Mix of moderated (remote) and unmoderated (UserTesting.com) sessions.",
+      "rounds": [
+        {
+          "round": "Round 1 - Concept Validation",
+          "participants": 6,
+          "focus": "Validate core task prioritization UX and Focus Mode concept",
+          "status": "completed"
+        },
+        {
+          "round": "Round 2 - Interaction Design",
+          "participants": 8,
+          "focus": "Test drag-and-drop, AI explanation tooltips, and integration setup flow",
+          "status": "in-progress"
+        },
+        {
+          "round": "Round 3 - Accessibility & Edge Cases",
+          "participants": 6,
+          "focus": "Screen reader testing, keyboard navigation, error states, and empty states",
+          "status": "planned"
+        }
+      ],
+      "keyFindings": [
+        "Users overwhelmingly prefer the 3-task Focus Mode over 5-task (Round 1)",
+        "AI priority explanations need to be shorter - users ignored paragraphs but engaged with 1-sentence summaries (Round 1)",
+        "Drag-and-drop for priority override felt natural but needs an undo mechanism (Round 2, preliminary)"
+      ]
+    },
+    "designDecisions": [
+      {
+        "decision": "Use a fixed left sidebar instead of a top navigation bar",
+        "rationale": "Task management benefits from vertical space for lists. Sidebar provides persistent navigation without sacrificing content area.",
+        "alternatives": [
+          "Top nav bar",
+          "Hamburger menu",
+          "Bottom tab bar (mobile)"
+        ],
+        "date": "2026-01-25"
+      },
+      {
+        "decision": "Display AI priority as a 0-100 numeric score rather than High/Medium/Low labels",
+        "rationale": "Numeric scores allow finer-grained prioritization and reduce ties. Users in research preferred granular control. Labels used for color coding only.",
+        "alternatives": [
+          "H/M/L labels",
+          "5-star rating",
+          "Relative ranking only"
+        ],
+        "date": "2026-01-28"
+      },
+      {
+        "decision": "Focus Mode enters full-screen overlay rather than a separate page",
+        "rationale": "Overlay preserves context and allows quick exit. Separate page felt too disconnected in usability testing. Overlay approach aligns with distraction-reduction goals.",
+        "alternatives": [
+          "Separate route/page",
+          "Sidebar panel",
+          "Picture-in-picture widget"
+        ],
+        "date": "2026-02-01"
+      }
+    ]
+  }
+}

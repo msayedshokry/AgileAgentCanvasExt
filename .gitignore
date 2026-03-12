@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+webview-ui/node_modules/
+
+# Build output
+dist/
+webview-ui/build/
+*.vsix
+
+# Test / coverage output
+coverage/
+reports/
+webview-ui/coverage/
+webview-ui/coverage-*.txt
+*test_errors*
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+
+# Archives
+*.7z
+*.zip
+*.tar.gz
+
+# OS files
+nul
+NUL
+Thumbs.db
+.DS_Store
+
+# Editor / IDE
+.vscode/settings.json
+.vscode/launch.json
+*.swp
+*.swo
+*~
+
+# Personal / local files
+opencode.json
+_index_test.py
+
+# Misc generated
+*.tsbuildinfo

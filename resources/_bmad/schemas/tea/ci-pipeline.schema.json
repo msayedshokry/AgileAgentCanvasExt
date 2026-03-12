@@ -1,0 +1,289 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/tea/ci-pipeline.schema.json",
+  "title": "CI Pipeline Schema",
+  "description": "Schema for CI/CD pipeline configuration - captures pipeline structure, jobs, and quality gates",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["platform", "pipeline"],
+      "properties": {
+        "platform": {
+          "type": "object",
+          "description": "CI platform details",
+          "properties": {
+            "name": {
+              "type": "string",
+              "enum": ["github-actions", "gitlab-ci", "circle-ci", "jenkins", "azure-devops", "other"],
+              "description": "CI platform used"
+            },
+            "configFile": {
+              "type": "string",
+              "description": "Path to CI config file"
+            },
+            "selectionRationale": { "type": "string" }
+          }
+        },
+        "pipeline": {
+          "type": "object",
+          "description": "Pipeline structure",
+          "properties": {
+            "name": { "type": "string" },
+            "triggers": {
+              "type": "array",
+              "description": "Events that trigger the pipeline",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "event": {
+                    "type": "string",
+                    "enum": ["push", "pull_request", "schedule", "manual", "tag", "workflow_dispatch"]
+                  },
+                  "branches": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "paths": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "schedule": { "type": "string" }
+                }
+              }
+            },
+            "concurrency": {
+              "type": "object",
+              "properties": {
+                "group": { "type": "string" },
+                "cancelInProgress": { "type": "boolean" }
+              }
+            }
+          }
+        },
+        "jobs": {
+          "type": "array",
+          "description": "Pipeline jobs/stages",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "description": { "type": "string" },
+              "runsOn": { "type": "string" },
+              "dependsOn": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "condition": { "type": "string" },
+              "environment": {
+                "type": "object",
+                "additionalProperties": { "type": "string" }
+              },
+              "steps": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "uses": { "type": "string" },
+                    "run": { "type": "string" },
+                    "with": {
+                      "type": "object",
+                      "additionalProperties": { "type": "string" }
+                    },
+                    "env": {
+                      "type": "object",
+                      "additionalProperties": { "type": "string" }
+                    },
+                    "continueOnError": { "type": "boolean" }
+                  }
+                }
+              },
+              "timeout": { "type": "integer" },
+              "services": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "image": { "type": "string" },
+                    "ports": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "testExecution": {
+          "type": "object",
+          "description": "Test execution configuration",
+          "properties": {
+            "testSuites": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "command": { "type": "string" },
+                  "type": {
+                    "type": "string",
+                    "enum": ["unit", "integration", "e2e", "performance", "security"]
+                  },
+                  "timeout": { "type": "integer" },
+                  "parallelism": { "type": "integer" }
+                }
+              }
+            },
+            "burnIn": {
+              "type": "object",
+              "description": "Burn-in loop configuration",
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "iterations": { "type": "integer" },
+                "targetTests": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "failureThreshold": { "type": "number" }
+              }
+            },
+            "sharding": {
+              "type": "object",
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "shards": { "type": "integer" },
+                "strategy": { "type": "string" }
+              }
+            }
+          }
+        },
+        "qualityGates": {
+          "type": "array",
+          "description": "Quality gates enforced in pipeline",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "type": {
+                "type": "string",
+                "enum": ["coverage", "lint", "security", "performance", "custom"]
+              },
+              "threshold": { "type": "string" },
+              "blocking": { "type": "boolean" },
+              "tool": { "type": "string" }
+            }
+          }
+        },
+        "artifacts": {
+          "type": "array",
+          "description": "Artifacts collected",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "path": { "type": "string" },
+              "type": {
+                "type": "string",
+                "enum": ["test-results", "coverage", "logs", "screenshots", "traces", "reports"]
+              },
+              "retention": { "type": "string" },
+              "uploadCondition": { "type": "string" }
+            }
+          }
+        },
+        "notifications": {
+          "type": "object",
+          "description": "Notification configuration",
+          "properties": {
+            "onFailure": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "channel": {
+                    "type": "string",
+                    "enum": ["slack", "email", "teams", "webhook"]
+                  },
+                  "target": { "type": "string" }
+                }
+              }
+            },
+            "onSuccess": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "channel": { "type": "string" },
+                  "target": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "caching": {
+          "type": "object",
+          "description": "Caching strategy",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "caches": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "paths": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "key": { "type": "string" },
+                  "restoreKeys": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "secrets": {
+          "type": "array",
+          "description": "Secrets/environment variables required (names only, not values)",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "purpose": { "type": "string" },
+              "required": { "type": "boolean" }
+            }
+          }
+        },
+        "documentation": {
+          "type": "object",
+          "description": "Pipeline documentation",
+          "properties": {
+            "readme": { "type": "string" },
+            "troubleshooting": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "issue": { "type": "string" },
+                  "solution": { "type": "string" }
+                }
+              }
+            },
+            "maintenance": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

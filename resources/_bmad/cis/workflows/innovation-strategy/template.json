@@ -1,0 +1,67 @@
+{
+  "$schema": "../../../schemas/cis/innovation-strategy.schema.json",
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "innovation-strategy",
+    "workflowName": "innovation-strategy",
+    "projectName": "{{project_name}}",
+    "stepsCompleted": [],
+    "currentStep": "",
+    "timestamps": {
+      "created": "{{timestamp}}",
+      "lastModified": "{{timestamp}}"
+    },
+    "author": "{{user_name}}",
+    "status": "draft"
+  },
+  "content": {
+    "companyName": "{{company_name}}",
+    "strategicFocus": "{{strategic_focus}}",
+    "strategicContext": {
+      "currentSituation": "",
+      "strategicChallenge": ""
+    },
+    "marketAnalysis": {
+      "marketLandscape": "",
+      "competitiveDynamics": "",
+      "marketOpportunities": [],
+      "criticalInsights": []
+    },
+    "businessModelAnalysis": {
+      "currentBusinessModel": "",
+      "valueProposition": "",
+      "revenueCostStructure": "",
+      "modelWeaknesses": []
+    },
+    "disruptionOpportunities": {
+      "disruptionVectors": [],
+      "unmetJobs": [],
+      "technologyEnablers": [],
+      "strategicWhitespace": ""
+    },
+    "innovationOpportunities": {
+      "innovationInitiatives": [],
+      "businessModelInnovation": "",
+      "valueChainOpportunities": [],
+      "partnershipOpportunities": []
+    },
+    "strategicOptions": [],
+    "recommendedStrategy": {
+      "direction": "",
+      "keyHypotheses": [],
+      "criticalSuccessFactors": []
+    },
+    "executionRoadmap": {
+      "phases": []
+    },
+    "successMetrics": {
+      "leadingIndicators": [],
+      "laggingIndicators": [],
+      "decisionGates": []
+    },
+    "risks": {
+      "keyRisks": [],
+      "mitigationStrategies": []
+    }
+  }
+}

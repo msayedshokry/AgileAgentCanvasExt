@@ -1,0 +1,127 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/common/requirement.schema.json",
+  "title": "Requirement Schema",
+  "description": "Comprehensive requirement structure for functional, non-functional, and additional requirements with full detail capture",
+  "type": "object",
+  "required": ["id", "description"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the requirement (e.g., FR 1.1, NFR 2.3, AR 5)",
+      "examples": ["FR 1.1", "FR 1.2", "NFR 1.1", "NFR 2.1", "AR 1", "AR 2"]
+    },
+    "type": {
+      "type": "string",
+      "description": "Type of requirement",
+      "enum": ["functional", "non-functional", "additional", "business", "technical", "constraint"],
+      "examples": ["functional", "non-functional", "additional"]
+    },
+    "capabilityArea": {
+      "type": "string",
+      "description": "Capability area or category grouping (e.g., 'File Parsing & Data Ingestion', 'Performance')",
+      "examples": ["File Parsing & Data Ingestion", "Data Visualization - Kanban View", "Performance", "Accessibility"]
+    },
+    "category": {
+      "type": "string",
+      "description": "Sub-category or domain of the requirement",
+      "examples": ["authentication", "performance", "security", "usability", "scalability"]
+    },
+    "title": {
+      "type": "string",
+      "description": "Short title for the requirement (the bold part before the dash)",
+      "examples": ["Parse BMAD Markdown Files", "Initial Page Load Time", "Vite + React + TypeScript Starter"]
+    },
+    "description": {
+      "type": "string",
+      "description": "Complete detailed description of the requirement - capture the FULL text"
+    },
+    "rationale": {
+      "type": "string",
+      "description": "Business or technical rationale for this requirement"
+    },
+    "priority": {
+      "type": "string",
+      "description": "Priority level",
+      "enum": ["must-have", "should-have", "could-have", "won't-have", "P0", "P1", "P2", "P3"],
+      "default": "should-have"
+    },
+    "status": {
+      "type": "string",
+      "description": "Current status of the requirement",
+      "enum": ["draft", "proposed", "approved", "implemented", "verified", "deferred", "rejected"],
+      "default": "draft"
+    },
+    "source": {
+      "type": "string",
+      "description": "Source document or stakeholder for this requirement",
+      "examples": ["PRD.md", "Architecture.md", "Stakeholder Interview"]
+    },
+    "acceptanceCriteria": {
+      "type": "array",
+      "description": "Acceptance criteria for verifying this requirement",
+      "items": {
+        "$ref": "acceptance-criteria.schema.json"
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "description": "IDs of requirements this depends on",
+      "items": { "type": "string" },
+      "examples": [["FR 1.1", "NFR 2.1"]]
+    },
+    "relatedEpics": {
+      "type": "array",
+      "description": "IDs of epics that implement this requirement",
+      "items": { "type": "string" },
+      "examples": [["EPIC-1", "EPIC-3"]]
+    },
+    "relatedStories": {
+      "type": "array",
+      "description": "IDs of stories that implement this requirement",
+      "items": { "type": "string" },
+      "examples": [["STORY-1.1", "STORY-1.2"]]
+    },
+    "verificationMethod": {
+      "type": "string",
+      "description": "How this requirement will be verified",
+      "enum": ["test", "inspection", "demonstration", "analysis"],
+      "default": "test"
+    },
+    "metrics": {
+      "type": "object",
+      "description": "Measurable criteria for non-functional requirements",
+      "properties": {
+        "target": {
+          "type": "string",
+          "description": "Target metric value",
+          "examples": ["< 200ms", "> 99.9%", "< 2 seconds"]
+        },
+        "threshold": {
+          "type": "string",
+          "description": "Minimum acceptable value",
+          "examples": ["< 500ms", "> 99%", "< 5 seconds"]
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit of measurement",
+          "examples": ["ms", "%", "seconds", "requests/sec"]
+        }
+      }
+    },
+    "implementationNotes": {
+      "type": "string",
+      "description": "Technical implementation guidance or notes"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes or context"
+    },
+    "lastUpdated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this requirement was last updated"
+    }
+  },
+  "additionalProperties": false
+}

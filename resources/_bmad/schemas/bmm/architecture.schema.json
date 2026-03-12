@@ -1,0 +1,974 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/bmm/architecture.schema.json",
+  "title": "Architecture Decision Document Schema",
+  "description": "Comprehensive schema for architecture artifacts - captures COMPLETE technical architecture decisions, specifications, and rationale with full detail",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "additionalProperties": false,
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["overview", "decisions"],
+      "additionalProperties": false,
+      "properties": {
+        "overview": {
+          "type": "object",
+          "description": "Architecture overview - capture ALL introductory content",
+          "properties": {
+            "projectName": {
+              "type": "string",
+              "description": "Name of the project"
+            },
+            "architectureStyle": {
+              "type": "string",
+              "description": "Primary architecture style (e.g., 'Microservices', 'Monolithic', 'Event-Driven', 'Layered')"
+            },
+            "summary": {
+              "type": "string",
+              "description": "COMPLETE architecture summary - capture all overview text without truncation"
+            },
+            "vision": {
+              "type": "string",
+              "description": "Architecture vision statement"
+            },
+            "principles": {
+              "type": "array",
+              "description": "Guiding architecture principles",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "description": {
+                    "type": "string",
+                    "description": "COMPLETE principle description"
+                  },
+                  "rationale": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "context": {
+          "type": "object",
+          "description": "Architecture context - capture ALL background and constraints",
+          "properties": {
+            "businessContext": {
+              "type": "string",
+              "description": "COMPLETE business context description"
+            },
+            "technicalContext": {
+              "type": "string",
+              "description": "COMPLETE technical context description"
+            },
+            "assumptions": {
+              "type": "array",
+              "description": "ALL assumptions made - capture each one fully",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "assumption": { "type": "string" },
+                  "impact": { "type": "string" },
+                  "validatedBy": { "type": "string" }
+                }
+              }
+            },
+            "constraints": {
+              "type": "array",
+              "description": "ALL architectural constraints - capture full descriptions",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "constraint": {
+                    "type": "string",
+                    "description": "COMPLETE constraint description"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": ["technical", "business", "regulatory", "organizational", "resource", "timeline"]
+                  },
+                  "rationale": { "type": "string" },
+                  "impact": { "type": "string" }
+                }
+              }
+            },
+            "qualityAttributes": {
+              "type": "array",
+              "description": "ALL quality attributes/NFRs - capture full descriptions and targets",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "attribute": {
+                    "type": "string",
+                    "description": "Quality attribute name (e.g., 'Performance', 'Scalability', 'Security')"
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": ["low", "medium", "high", "critical"]
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "COMPLETE description of the quality requirement"
+                  },
+                  "target": {
+                    "type": "string",
+                    "description": "Target metric or criteria"
+                  },
+                  "measurementMethod": {
+                    "type": "string",
+                    "description": "How this will be measured"
+                  }
+                }
+              }
+            },
+            "stakeholders": {
+              "type": "array",
+              "description": "Architecture stakeholders",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "role": { "type": "string" },
+                  "concerns": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "techStack": {
+          "type": "object",
+          "description": "COMPLETE technology stack decisions with full rationale",
+          "properties": {
+            "frontend": {
+              "type": "object",
+              "description": "Frontend technology decisions",
+              "properties": {
+                "framework": {
+                  "type": "string",
+                  "description": "Primary frontend framework (e.g., 'React 18')"
+                },
+                "language": {
+                  "type": "string",
+                  "description": "Programming language (e.g., 'TypeScript 5.x')"
+                },
+                "stateManagement": {
+                  "type": "string",
+                  "description": "State management solution"
+                },
+                "styling": {
+                  "type": "string",
+                  "description": "Styling approach/library"
+                },
+                "testing": {
+                  "type": "string",
+                  "description": "Testing framework"
+                },
+                "buildTool": {
+                  "type": "string",
+                  "description": "Build tool (e.g., 'Vite', 'Webpack')"
+                },
+                "rationale": {
+                  "type": "string",
+                  "description": "COMPLETE rationale for frontend choices"
+                },
+                "additionalLibraries": {
+                  "type": "array",
+                  "description": "Other frontend libraries",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": { "type": "string" },
+                      "version": { "type": "string" },
+                      "purpose": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            },
+            "backend": {
+              "type": "object",
+              "description": "Backend technology decisions",
+              "properties": {
+                "framework": { "type": "string" },
+                "language": { "type": "string" },
+                "runtime": { "type": "string" },
+                "apiStyle": {
+                  "type": "string",
+                  "description": "API style (e.g., 'REST', 'GraphQL', 'gRPC')"
+                },
+                "rationale": {
+                  "type": "string",
+                  "description": "COMPLETE rationale for backend choices"
+                },
+                "additionalLibraries": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": { "type": "string" },
+                      "version": { "type": "string" },
+                      "purpose": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            },
+            "database": {
+              "type": "object",
+              "description": "Database technology decisions",
+              "properties": {
+                "primary": {
+                  "type": "string",
+                  "description": "Primary database"
+                },
+                "secondary": {
+                  "type": "string",
+                  "description": "Secondary database if any"
+                },
+                "caching": {
+                  "type": "string",
+                  "description": "Caching solution"
+                },
+                "orm": {
+                  "type": "string",
+                  "description": "ORM or data access layer"
+                },
+                "rationale": {
+                  "type": "string",
+                  "description": "COMPLETE rationale for database choices"
+                },
+                "schemaStrategy": {
+                  "type": "string",
+                  "description": "Schema design strategy"
+                }
+              }
+            },
+            "infrastructure": {
+              "type": "object",
+              "description": "Infrastructure technology decisions",
+              "properties": {
+                "hosting": { "type": "string" },
+                "containerization": { "type": "string" },
+                "orchestration": { "type": "string" },
+                "cicd": { "type": "string" },
+                "monitoring": { "type": "string" },
+                "logging": { "type": "string" },
+                "rationale": {
+                  "type": "string",
+                  "description": "COMPLETE rationale for infrastructure choices"
+                }
+              }
+            },
+            "devTools": {
+              "type": "object",
+              "description": "Development tools and environment",
+              "properties": {
+                "ide": { "type": "string" },
+                "linting": { "type": "string" },
+                "formatting": { "type": "string" },
+                "versionControl": { "type": "string" },
+                "packageManager": { "type": "string" }
+              }
+            }
+          }
+        },
+        "decisions": {
+          "type": "array",
+          "description": "Architecture Decision Records (ADRs) - capture COMPLETE decision documentation",
+          "items": {
+            "type": "object",
+            "required": ["id", "title", "status", "context", "decision"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "ADR identifier (e.g., 'ADR-001', 'ADR 1')"
+              },
+              "title": {
+                "type": "string",
+                "description": "Decision title"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["proposed", "accepted", "deprecated", "superseded", "draft", "rejected"]
+              },
+              "date": {
+                "type": "string",
+                "description": "Decision date"
+              },
+              "deciders": {
+                "type": "array",
+                "description": "Who made this decision",
+                "items": { "type": "string" }
+              },
+              "context": {
+                "type": "string",
+                "description": "COMPLETE context description - capture ALL background information"
+              },
+              "decision": {
+                "type": "string",
+                "description": "COMPLETE decision description - capture the full decision text"
+              },
+              "rationale": {
+                "type": "string",
+                "description": "COMPLETE rationale for the decision"
+              },
+              "consequences": {
+                "type": "object",
+                "description": "Decision consequences - capture ALL of them",
+                "properties": {
+                  "positive": {
+                    "type": "array",
+                    "description": "ALL positive consequences",
+                    "items": { "type": "string" }
+                  },
+                  "negative": {
+                    "type": "array",
+                    "description": "ALL negative consequences/trade-offs",
+                    "items": { "type": "string" }
+                  },
+                  "neutral": {
+                    "type": "array",
+                    "description": "ALL neutral consequences",
+                    "items": { "type": "string" }
+                  }
+                }
+              },
+              "alternatives": {
+                "type": "array",
+                "description": "ALL alternatives considered - capture full analysis",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "type": "string",
+                      "description": "Alternative option name"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "COMPLETE description of the alternative"
+                    },
+                    "pros": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "cons": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "prosAndCons": {
+                      "type": "string",
+                      "description": "Combined pros/cons text if not separated"
+                    },
+                    "rejectionReason": {
+                      "type": "string",
+                      "description": "Why this alternative was not chosen"
+                    }
+                  }
+                }
+              },
+              "relatedDecisions": {
+                "type": "array",
+                "description": "Related ADR IDs",
+                "items": { "type": "string" }
+              },
+              "supersedes": {
+                "type": "string",
+                "description": "ADR ID this supersedes"
+              },
+              "supersededBy": {
+                "type": "string",
+                "description": "ADR ID that supersedes this"
+              },
+              "implementationNotes": {
+                "type": "array",
+                "description": "Implementation guidance - capture ALL notes",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "patterns": {
+          "type": "array",
+          "description": "Architecture patterns used - capture COMPLETE descriptions",
+          "items": {
+            "type": "object",
+            "properties": {
+              "pattern": {
+                "type": "string",
+                "description": "Pattern name (e.g., 'Repository Pattern', 'CQRS')"
+              },
+              "category": {
+                "type": "string",
+                "description": "Pattern category (e.g., 'Structural', 'Behavioral', 'Creational')"
+              },
+              "usage": {
+                "type": "string",
+                "description": "COMPLETE description of how the pattern is used"
+              },
+              "implementation": {
+                "type": "string",
+                "description": "COMPLETE implementation details"
+              },
+              "rationale": {
+                "type": "string",
+                "description": "Why this pattern was chosen"
+              },
+              "examples": {
+                "type": "array",
+                "description": "Implementation examples",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "location": { "type": "string" },
+                    "description": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "systemComponents": {
+          "type": "array",
+          "description": "System component definitions - capture ALL component details",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "type": {
+                "type": "string",
+                "description": "Component type (e.g., 'Service', 'Module', 'Library', 'External')"
+              },
+              "description": {
+                "type": "string",
+                "description": "COMPLETE component description"
+              },
+              "responsibilities": {
+                "type": "array",
+                "description": "ALL component responsibilities",
+                "items": { "type": "string" }
+              },
+              "interfaces": {
+                "type": "array",
+                "description": "Component interfaces",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "type": { "type": "string" },
+                    "description": { "type": "string" }
+                  }
+                }
+              },
+              "dependencies": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "technology": { "type": "string" }
+            }
+          }
+        },
+        "projectStructure": {
+          "type": "object",
+          "description": "Project structure definition - capture COMPLETE structure",
+          "properties": {
+            "monorepo": {
+              "type": "boolean",
+              "description": "Whether this is a monorepo"
+            },
+            "description": {
+              "type": "string",
+              "description": "COMPLETE project structure description"
+            },
+            "structure": {
+              "type": "array",
+              "description": "ALL directory/file structure entries",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": { "type": "string" },
+                  "purpose": {
+                    "type": "string",
+                    "description": "COMPLETE description of directory purpose"
+                  },
+                  "contents": {
+                    "type": "string",
+                    "description": "Description of typical contents"
+                  },
+                  "conventions": {
+                    "type": "string",
+                    "description": "Naming/organization conventions for this path"
+                  }
+                }
+              }
+            },
+            "namingConventions": {
+              "type": "array",
+              "description": "ALL naming conventions",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "What this convention applies to (e.g., 'Files', 'Components', 'Functions')"
+                  },
+                  "convention": {
+                    "type": "string",
+                    "description": "COMPLETE convention description"
+                  },
+                  "example": { "type": "string" },
+                  "rationale": { "type": "string" }
+                }
+              }
+            },
+            "moduleOrganization": {
+              "type": "string",
+              "description": "How modules/packages are organized"
+            }
+          }
+        },
+        "dataFlow": {
+          "type": "object",
+          "description": "Data flow architecture - capture COMPLETE flow descriptions",
+          "properties": {
+            "description": {
+              "type": "string",
+              "description": "COMPLETE data flow overview"
+            },
+            "flows": {
+              "type": "array",
+              "description": "ALL data flows",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "name": { "type": "string" },
+                  "description": {
+                    "type": "string",
+                    "description": "COMPLETE flow description"
+                  },
+                  "source": { "type": "string" },
+                  "destination": { "type": "string" },
+                  "dataType": { "type": "string" },
+                  "protocol": { "type": "string" },
+                  "transformations": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "validation": { "type": "string" }
+                }
+              }
+            },
+            "diagrams": {
+              "type": "array",
+              "description": "Data flow diagrams",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "type": { "type": "string" },
+                  "description": { "type": "string" },
+                  "reference": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "security": {
+          "type": "object",
+          "description": "Security architecture - capture COMPLETE security specifications",
+          "properties": {
+            "overview": {
+              "type": "string",
+              "description": "COMPLETE security overview"
+            },
+            "authentication": {
+              "type": "object",
+              "description": "Authentication approach",
+              "properties": {
+                "method": { "type": "string" },
+                "description": {
+                  "type": "string",
+                  "description": "COMPLETE authentication description"
+                },
+                "provider": { "type": "string" },
+                "tokenStrategy": { "type": "string" },
+                "sessionManagement": { "type": "string" }
+              }
+            },
+            "authorization": {
+              "type": "object",
+              "description": "Authorization approach",
+              "properties": {
+                "method": { "type": "string" },
+                "description": {
+                  "type": "string",
+                  "description": "COMPLETE authorization description"
+                },
+                "roles": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "role": { "type": "string" },
+                      "permissions": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "dataProtection": {
+              "type": "object",
+              "description": "Data protection measures",
+              "properties": {
+                "atRest": { "type": "string" },
+                "inTransit": { "type": "string" },
+                "sensitiveData": { "type": "string" },
+                "pii": { "type": "string" }
+              }
+            },
+            "securityPatterns": {
+              "type": "array",
+              "description": "ALL security patterns implemented",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "pattern": { "type": "string" },
+                  "description": { "type": "string" },
+                  "implementation": { "type": "string" }
+                }
+              }
+            },
+            "threats": {
+              "type": "array",
+              "description": "Identified threats and mitigations",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "threat": { "type": "string" },
+                  "category": { "type": "string" },
+                  "mitigation": { "type": "string" },
+                  "status": { "type": "string" }
+                }
+              }
+            },
+            "compliance": {
+              "type": "array",
+              "description": "Compliance requirements",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "standard": { "type": "string" },
+                  "requirements": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "implementation": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "scalability": {
+          "type": "object",
+          "description": "Scalability considerations - capture COMPLETE scalability plan",
+          "properties": {
+            "strategy": {
+              "type": "string",
+              "description": "COMPLETE scalability strategy description"
+            },
+            "horizontalScaling": {
+              "type": "object",
+              "properties": {
+                "approach": { "type": "string" },
+                "triggers": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "limitations": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            },
+            "verticalScaling": {
+              "type": "object",
+              "properties": {
+                "approach": { "type": "string" },
+                "limits": { "type": "string" }
+              }
+            },
+            "bottlenecks": {
+              "type": "array",
+              "description": "ALL identified bottlenecks",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "area": { "type": "string" },
+                  "description": { "type": "string" },
+                  "severity": {
+                    "type": "string",
+                    "enum": ["low", "medium", "high", "critical"]
+                  }
+                }
+              }
+            },
+            "mitigations": {
+              "type": "array",
+              "description": "ALL mitigations for bottlenecks",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "bottleneck": { "type": "string" },
+                  "mitigation": { "type": "string" },
+                  "implementation": { "type": "string" }
+                }
+              }
+            },
+            "capacityPlanning": {
+              "type": "object",
+              "properties": {
+                "currentCapacity": { "type": "string" },
+                "projectedGrowth": { "type": "string" },
+                "scalingThresholds": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "reliability": {
+          "type": "object",
+          "description": "Reliability and resilience architecture",
+          "properties": {
+            "availabilityTarget": { "type": "string" },
+            "faultTolerance": {
+              "type": "object",
+              "properties": {
+                "strategy": { "type": "string" },
+                "failoverMechanism": { "type": "string" },
+                "recoveryTime": { "type": "string" }
+              }
+            },
+            "errorHandling": {
+              "type": "object",
+              "properties": {
+                "strategy": { "type": "string" },
+                "retryPolicy": { "type": "string" },
+                "circuitBreaker": { "type": "string" }
+              }
+            },
+            "backupStrategy": {
+              "type": "object",
+              "properties": {
+                "frequency": { "type": "string" },
+                "retention": { "type": "string" },
+                "recoveryProcess": { "type": "string" }
+              }
+            }
+          }
+        },
+        "observability": {
+          "type": "object",
+          "description": "Observability and monitoring architecture",
+          "properties": {
+            "logging": {
+              "type": "object",
+              "properties": {
+                "strategy": { "type": "string" },
+                "format": { "type": "string" },
+                "levels": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "aggregation": { "type": "string" }
+              }
+            },
+            "metrics": {
+              "type": "object",
+              "properties": {
+                "strategy": { "type": "string" },
+                "keyMetrics": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": { "type": "string" },
+                      "type": { "type": "string" },
+                      "threshold": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            },
+            "tracing": {
+              "type": "object",
+              "properties": {
+                "strategy": { "type": "string" },
+                "implementation": { "type": "string" }
+              }
+            },
+            "alerting": {
+              "type": "object",
+              "properties": {
+                "strategy": { "type": "string" },
+                "channels": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "escalation": { "type": "string" }
+              }
+            }
+          }
+        },
+        "deployment": {
+          "type": "object",
+          "description": "Deployment architecture",
+          "properties": {
+            "strategy": {
+              "type": "string",
+              "description": "COMPLETE deployment strategy description"
+            },
+            "environments": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "purpose": { "type": "string" },
+                  "configuration": { "type": "string" }
+                }
+              }
+            },
+            "pipeline": {
+              "type": "object",
+              "properties": {
+                "stages": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": { "type": "string" },
+                      "purpose": { "type": "string" },
+                      "tools": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      }
+                    }
+                  }
+                },
+                "triggers": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            },
+            "rollback": {
+              "type": "object",
+              "properties": {
+                "strategy": { "type": "string" },
+                "procedure": { "type": "string" }
+              }
+            }
+          }
+        },
+        "integrations": {
+          "type": "array",
+          "description": "External integrations - capture COMPLETE integration details",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "type": {
+                "type": "string",
+                "description": "Integration type (e.g., 'API', 'Database', 'Message Queue', 'File')"
+              },
+              "description": {
+                "type": "string",
+                "description": "COMPLETE integration description"
+              },
+              "protocol": { "type": "string" },
+              "authentication": { "type": "string" },
+              "dataFormat": { "type": "string" },
+              "errorHandling": { "type": "string" },
+              "sla": { "type": "string" }
+            }
+          }
+        },
+        "validation": {
+          "type": "object",
+          "description": "Architecture validation results",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": ["validated", "pending", "issues-found", "not-validated"]
+            },
+            "validationDate": { "type": "string" },
+            "validators": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "findings": {
+              "type": "array",
+              "description": "ALL validation findings",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "type": {
+                    "type": "string",
+                    "enum": ["issue", "concern", "recommendation", "observation"]
+                  },
+                  "severity": {
+                    "type": "string",
+                    "enum": ["low", "medium", "high", "critical"]
+                  },
+                  "finding": {
+                    "type": "string",
+                    "description": "COMPLETE finding description"
+                  },
+                  "recommendation": {
+                    "type": "string",
+                    "description": "COMPLETE recommendation"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["open", "addressed", "accepted", "deferred"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "implementationNotes": {
+          "type": "array",
+          "description": "ALL implementation notes and guidance - capture completely",
+          "items": { "type": "string" }
+        },
+        "references": {
+          "type": "array",
+          "description": "Reference documents and resources",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string" },
+              "type": { "type": "string" },
+              "location": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

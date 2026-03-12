@@ -1,0 +1,1012 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/cis/innovation-strategy.schema.json",
+  "title": "Innovation Strategy Schema",
+  "description": "Schema for innovation strategy artifacts. IMPORTANT: Capture ALL market analysis, strategic options, innovation opportunities, and execution plans completely. Do NOT summarize or truncate any competitive analysis, strategic recommendations, or roadmap details.",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["companyName", "strategicContext", "recommendedStrategy"],
+      "properties": {
+        "companyName": {
+          "type": "string",
+          "description": "Company or project name"
+        },
+        "strategicFocus": {
+          "type": "string",
+          "description": "COMPLETE description of the focus area for this strategy"
+        },
+        "sessionInfo": {
+          "type": "object",
+          "description": "Strategy session information",
+          "properties": {
+            "facilitator": { "type": "string" },
+            "participants": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "role": { "type": "string" },
+                  "expertise": { "type": "string" }
+                }
+              }
+            },
+            "date": { "type": "string", "format": "date" },
+            "duration": { "type": "string" },
+            "frameworksUsed": {
+              "type": "array",
+              "description": "Strategic frameworks used",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "strategicContext": {
+          "type": "object",
+          "description": "COMPLETE strategic context",
+          "properties": {
+            "currentSituation": {
+              "type": "string",
+              "description": "COMPLETE description of the current situation including market position, capabilities, and performance"
+            },
+            "strategicChallenge": {
+              "type": "string",
+              "description": "COMPLETE description of the strategic challenge being addressed"
+            },
+            "visionStatement": {
+              "type": "string",
+              "description": "Vision statement driving this strategy"
+            },
+            "strategicObjectives": {
+              "type": "array",
+              "description": "ALL strategic objectives",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "objective": {
+                    "type": "string",
+                    "description": "COMPLETE objective description"
+                  },
+                  "timeframe": { "type": "string" },
+                  "metrics": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "keyQuestions": {
+              "type": "array",
+              "description": "Key strategic questions to answer",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "marketAnalysis": {
+          "type": "object",
+          "description": "COMPLETE market analysis section",
+          "properties": {
+            "marketLandscape": {
+              "type": "object",
+              "description": "COMPLETE market landscape analysis",
+              "properties": {
+                "overview": {
+                  "type": "string",
+                  "description": "COMPLETE market overview"
+                },
+                "marketSize": {
+                  "type": "object",
+                  "properties": {
+                    "tam": { "type": "string", "description": "Total Addressable Market" },
+                    "sam": { "type": "string", "description": "Serviceable Addressable Market" },
+                    "som": { "type": "string", "description": "Serviceable Obtainable Market" }
+                  }
+                },
+                "growthRate": { "type": "string" },
+                "keyTrends": {
+                  "type": "array",
+                  "description": "ALL key market trends",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "trend": {
+                        "type": "string",
+                        "description": "COMPLETE trend description"
+                      },
+                      "impact": {
+                        "type": "string",
+                        "description": "Impact on strategy"
+                      },
+                      "timeframe": { "type": "string" }
+                    }
+                  }
+                },
+                "regulatoryEnvironment": {
+                  "type": "string",
+                  "description": "COMPLETE regulatory environment analysis"
+                }
+              }
+            },
+            "competitiveDynamics": {
+              "type": "object",
+              "description": "COMPLETE competitive dynamics analysis",
+              "properties": {
+                "overview": {
+                  "type": "string",
+                  "description": "COMPLETE competitive landscape overview"
+                },
+                "competitors": {
+                  "type": "array",
+                  "description": "ALL key competitors with full analysis",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": { "type": "string" },
+                      "type": {
+                        "type": "string",
+                        "enum": ["direct", "indirect", "potential"]
+                      },
+                      "marketShare": { "type": "string" },
+                      "strengths": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      },
+                      "weaknesses": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      },
+                      "strategy": {
+                        "type": "string",
+                        "description": "COMPLETE description of their strategy"
+                      },
+                      "differentiation": { "type": "string" }
+                    }
+                  }
+                },
+                "competitiveAdvantages": {
+                  "type": "array",
+                  "description": "Our competitive advantages",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "advantage": {
+                        "type": "string",
+                        "description": "COMPLETE advantage description"
+                      },
+                      "sustainability": {
+                        "type": "string",
+                        "enum": ["high", "medium", "low"]
+                      },
+                      "evidenc": { "type": "string" }
+                    }
+                  }
+                },
+                "threatLevel": {
+                  "type": "string",
+                  "enum": ["low", "moderate", "high", "critical"]
+                }
+              }
+            },
+            "marketOpportunities": {
+              "type": "array",
+              "description": "ALL identified market opportunities - COMPLETE descriptions",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "opportunity": {
+                    "type": "string",
+                    "description": "COMPLETE opportunity description"
+                  },
+                  "size": { "type": "string" },
+                  "timing": {
+                    "type": "string",
+                    "enum": ["immediate", "short-term", "medium-term", "long-term"]
+                  },
+                  "fitWithCapabilities": {
+                    "type": "string",
+                    "enum": ["high", "medium", "low"]
+                  },
+                  "requiredCapabilities": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "barriers": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "criticalInsights": {
+              "type": "array",
+              "description": "ALL critical market insights - COMPLETE insights",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "insight": {
+                    "type": "string",
+                    "description": "COMPLETE insight description"
+                  },
+                  "source": { "type": "string" },
+                  "strategicImplication": {
+                    "type": "string",
+                    "description": "COMPLETE strategic implication"
+                  }
+                }
+              }
+            },
+            "swotAnalysis": {
+              "type": "object",
+              "description": "COMPLETE SWOT analysis",
+              "properties": {
+                "strengths": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "strength": { "type": "string" },
+                      "leverage": { "type": "string" }
+                    }
+                  }
+                },
+                "weaknesses": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "weakness": { "type": "string" },
+                      "mitigation": { "type": "string" }
+                    }
+                  }
+                },
+                "opportunities": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "opportunity": { "type": "string" },
+                      "captureStrategy": { "type": "string" }
+                    }
+                  }
+                },
+                "threats": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "threat": { "type": "string" },
+                      "response": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "businessModelAnalysis": {
+          "type": "object",
+          "description": "COMPLETE business model analysis",
+          "properties": {
+            "currentBusinessModel": {
+              "type": "string",
+              "description": "COMPLETE description of current business model"
+            },
+            "businessModelCanvas": {
+              "type": "object",
+              "description": "Business Model Canvas analysis",
+              "properties": {
+                "valuePropositions": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "customerSegments": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "channels": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "customerRelationships": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "revenueStreams": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "keyResources": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "keyActivities": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "keyPartnerships": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "costStructure": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            },
+            "valueProposition": {
+              "type": "string",
+              "description": "COMPLETE current value proposition description"
+            },
+            "revenueCostStructure": {
+              "type": "string",
+              "description": "COMPLETE revenue and cost structure analysis"
+            },
+            "modelWeaknesses": {
+              "type": "array",
+              "description": "ALL identified weaknesses in current model",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "weakness": {
+                    "type": "string",
+                    "description": "COMPLETE weakness description"
+                  },
+                  "impact": { "type": "string" },
+                  "urgency": {
+                    "type": "string",
+                    "enum": ["critical", "high", "medium", "low"]
+                  }
+                }
+              }
+            },
+            "modelStrengths": {
+              "type": "array",
+              "description": "ALL strengths of current model",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "disruptionOpportunities": {
+          "type": "object",
+          "description": "COMPLETE disruption opportunities analysis",
+          "properties": {
+            "disruptionVectors": {
+              "type": "array",
+              "description": "ALL potential disruption vectors",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "vector": {
+                    "type": "string",
+                    "description": "COMPLETE disruption vector description"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": ["technology", "business-model", "market", "regulatory", "social"]
+                  },
+                  "potentialImpact": {
+                    "type": "string",
+                    "description": "COMPLETE potential impact description"
+                  },
+                  "timeframe": { "type": "string" },
+                  "likelihood": {
+                    "type": "string",
+                    "enum": ["high", "medium", "low"]
+                  }
+                }
+              }
+            },
+            "unmetJobs": {
+              "type": "array",
+              "description": "ALL unmet jobs-to-be-done in the market",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "job": {
+                    "type": "string",
+                    "description": "COMPLETE job-to-be-done description"
+                  },
+                  "currentSolutions": { "type": "string" },
+                  "gaps": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "opportunity": {
+                    "type": "string",
+                    "description": "COMPLETE opportunity description"
+                  }
+                }
+              }
+            },
+            "technologyEnablers": {
+              "type": "array",
+              "description": "ALL technology enablers for disruption",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "technology": {
+                    "type": "string",
+                    "description": "COMPLETE technology description"
+                  },
+                  "maturity": {
+                    "type": "string",
+                    "enum": ["emerging", "growing", "mature"]
+                  },
+                  "applicationOpportunity": {
+                    "type": "string",
+                    "description": "COMPLETE application opportunity"
+                  },
+                  "competitiveImplication": { "type": "string" }
+                }
+              }
+            },
+            "strategicWhitespace": {
+              "type": "string",
+              "description": "COMPLETE analysis of strategic whitespace - uncontested market areas"
+            },
+            "blueOceanOpportunities": {
+              "type": "array",
+              "description": "Blue ocean opportunities identified",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "opportunity": { "type": "string" },
+                  "eliminate": { "type": "array", "items": { "type": "string" } },
+                  "reduce": { "type": "array", "items": { "type": "string" } },
+                  "raise": { "type": "array", "items": { "type": "string" } },
+                  "create": { "type": "array", "items": { "type": "string" } }
+                }
+              }
+            }
+          }
+        },
+        "innovationOpportunities": {
+          "type": "object",
+          "description": "COMPLETE innovation opportunities",
+          "properties": {
+            "innovationInitiatives": {
+              "type": "array",
+              "description": "ALL innovation initiatives identified - COMPLETE details",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "name": {
+                    "type": "string",
+                    "description": "Initiative name"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "COMPLETE initiative description - do NOT truncate"
+                  },
+                  "innovationType": {
+                    "type": "string",
+                    "enum": ["incremental", "adjacent", "transformational"]
+                  },
+                  "impact": {
+                    "type": "string",
+                    "description": "COMPLETE expected impact"
+                  },
+                  "effort": {
+                    "type": "string",
+                    "enum": ["low", "medium", "high", "very-high"]
+                  },
+                  "timeToValue": { "type": "string" },
+                  "requiredCapabilities": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "risks": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "dependencies": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "businessModelInnovation": {
+              "type": "object",
+              "description": "Business model innovation opportunities",
+              "properties": {
+                "overview": {
+                  "type": "string",
+                  "description": "COMPLETE business model innovation overview"
+                },
+                "opportunities": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "opportunity": { "type": "string" },
+                      "description": { "type": "string" },
+                      "feasibility": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            },
+            "valueChainOpportunities": {
+              "type": "array",
+              "description": "ALL value chain innovation opportunities",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "opportunity": {
+                    "type": "string",
+                    "description": "COMPLETE opportunity description"
+                  },
+                  "valueChainStage": { "type": "string" },
+                  "potentialValue": { "type": "string" },
+                  "implementation": { "type": "string" }
+                }
+              }
+            },
+            "partnershipOpportunities": {
+              "type": "array",
+              "description": "ALL partnership opportunities for innovation",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "opportunity": {
+                    "type": "string",
+                    "description": "COMPLETE partnership opportunity"
+                  },
+                  "partnerType": { "type": "string" },
+                  "potentialPartners": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "valueExchange": { "type": "string" },
+                  "risks": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "innovationPortfolio": {
+              "type": "object",
+              "description": "Innovation portfolio balance",
+              "properties": {
+                "core": {
+                  "type": "object",
+                  "properties": {
+                    "allocation": { "type": "string" },
+                    "initiatives": { "type": "array", "items": { "type": "string" } }
+                  }
+                },
+                "adjacent": {
+                  "type": "object",
+                  "properties": {
+                    "allocation": { "type": "string" },
+                    "initiatives": { "type": "array", "items": { "type": "string" } }
+                  }
+                },
+                "transformational": {
+                  "type": "object",
+                  "properties": {
+                    "allocation": { "type": "string" },
+                    "initiatives": { "type": "array", "items": { "type": "string" } }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "strategicOptions": {
+          "type": "array",
+          "description": "ALL strategic options considered - COMPLETE analysis",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": {
+                "type": "string",
+                "description": "Strategic option name"
+              },
+              "description": {
+                "type": "string",
+                "description": "COMPLETE strategic option description - do NOT truncate"
+              },
+              "strategicRationale": {
+                "type": "string",
+                "description": "COMPLETE rationale for this option"
+              },
+              "keyAssumptions": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "pros": {
+                "type": "array",
+                "description": "ALL advantages",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "pro": { "type": "string" },
+                    "significance": {
+                      "type": "string",
+                      "enum": ["high", "medium", "low"]
+                    }
+                  }
+                }
+              },
+              "cons": {
+                "type": "array",
+                "description": "ALL disadvantages",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "con": { "type": "string" },
+                    "severity": {
+                      "type": "string",
+                      "enum": ["high", "medium", "low"]
+                    },
+                    "mitigation": { "type": "string" }
+                  }
+                }
+              },
+              "resourceRequirements": {
+                "type": "string",
+                "description": "COMPLETE resource requirements"
+              },
+              "timeframe": { "type": "string" },
+              "riskLevel": {
+                "type": "string",
+                "enum": ["low", "moderate", "high", "very-high"]
+              },
+              "expectedReturn": { "type": "string" }
+            }
+          }
+        },
+        "recommendedStrategy": {
+          "type": "object",
+          "description": "COMPLETE recommended strategy with full details",
+          "required": ["direction"],
+          "properties": {
+            "strategicOptionId": {
+              "type": "string",
+              "description": "Reference to chosen strategic option"
+            },
+            "direction": {
+              "type": "string",
+              "description": "COMPLETE strategic direction statement - do NOT summarize"
+            },
+            "strategicThesis": {
+              "type": "string",
+              "description": "COMPLETE strategic thesis explaining why this strategy will succeed"
+            },
+            "keyHypotheses": {
+              "type": "array",
+              "description": "ALL key hypotheses underlying this strategy",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "hypothesis": {
+                    "type": "string",
+                    "description": "COMPLETE hypothesis"
+                  },
+                  "validationApproach": { "type": "string" },
+                  "validationTimeline": { "type": "string" }
+                }
+              }
+            },
+            "criticalSuccessFactors": {
+              "type": "array",
+              "description": "ALL critical success factors",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "factor": {
+                    "type": "string",
+                    "description": "COMPLETE success factor description"
+                  },
+                  "currentState": { "type": "string" },
+                  "requiredState": { "type": "string" },
+                  "gap": { "type": "string" },
+                  "actions": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "strategicPriorities": {
+              "type": "array",
+              "description": "Strategic priorities in order of importance",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "priority": { "type": "integer" },
+                  "description": { "type": "string" },
+                  "rationale": { "type": "string" }
+                }
+              }
+            },
+            "competitiveMoat": {
+              "type": "string",
+              "description": "COMPLETE description of the competitive moat this strategy builds"
+            }
+          }
+        },
+        "executionRoadmap": {
+          "type": "object",
+          "description": "COMPLETE execution roadmap",
+          "properties": {
+            "overview": {
+              "type": "string",
+              "description": "COMPLETE roadmap overview"
+            },
+            "phases": {
+              "type": "array",
+              "description": "ALL execution phases with full details",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "phaseNumber": { "type": "integer" },
+                  "name": {
+                    "type": "string",
+                    "description": "Phase name"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "COMPLETE phase description"
+                  },
+                  "objective": {
+                    "type": "string",
+                    "description": "COMPLETE phase objective"
+                  },
+                  "duration": {
+                    "type": "string",
+                    "description": "Expected duration"
+                  },
+                  "startTrigger": {
+                    "type": "string",
+                    "description": "What triggers the start of this phase"
+                  },
+                  "deliverables": {
+                    "type": "array",
+                    "description": "ALL deliverables for this phase",
+                    "items": { "type": "string" }
+                  },
+                  "keyMilestones": {
+                    "type": "array",
+                    "description": "Key milestones",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "milestone": { "type": "string" },
+                        "targetDate": { "type": "string" },
+                        "criteria": { "type": "string" }
+                      }
+                    }
+                  },
+                  "resourceRequirements": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "dependencies": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "risks": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "risk": { "type": "string" },
+                        "mitigation": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "quickWins": {
+              "type": "array",
+              "description": "Quick wins to build momentum",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "quickWin": { "type": "string" },
+                  "timeframe": { "type": "string" },
+                  "expectedImpact": { "type": "string" }
+                }
+              }
+            },
+            "capabilityBuildPlan": {
+              "type": "array",
+              "description": "Capabilities to build",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "capability": { "type": "string" },
+                  "buildVsBuy": { "type": "string" },
+                  "timeline": { "type": "string" },
+                  "investment": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "successMetrics": {
+          "type": "object",
+          "description": "COMPLETE success metrics framework",
+          "properties": {
+            "northStarMetric": {
+              "type": "object",
+              "properties": {
+                "metric": { "type": "string" },
+                "currentValue": { "type": "string" },
+                "targetValue": { "type": "string" },
+                "timeframe": { "type": "string" }
+              }
+            },
+            "leadingIndicators": {
+              "type": "array",
+              "description": "ALL leading indicators",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "indicator": {
+                    "type": "string",
+                    "description": "COMPLETE indicator description"
+                  },
+                  "metric": { "type": "string" },
+                  "target": { "type": "string" },
+                  "frequency": { "type": "string" }
+                }
+              }
+            },
+            "laggingIndicators": {
+              "type": "array",
+              "description": "ALL lagging indicators",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "indicator": {
+                    "type": "string",
+                    "description": "COMPLETE indicator description"
+                  },
+                  "metric": { "type": "string" },
+                  "target": { "type": "string" },
+                  "frequency": { "type": "string" }
+                }
+              }
+            },
+            "decisionGates": {
+              "type": "array",
+              "description": "ALL decision gates/checkpoints",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "gate": {
+                    "type": "string",
+                    "description": "COMPLETE gate description"
+                  },
+                  "timing": { "type": "string" },
+                  "criteria": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "goNoGoDecision": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "risks": {
+          "type": "object",
+          "description": "COMPLETE risk assessment",
+          "properties": {
+            "keyRisks": {
+              "type": "array",
+              "description": "ALL key strategic risks",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "risk": {
+                    "type": "string",
+                    "description": "COMPLETE risk description"
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": ["market", "execution", "financial", "competitive", "regulatory", "technology", "organizational"]
+                  },
+                  "likelihood": {
+                    "type": "string",
+                    "enum": ["high", "medium", "low"]
+                  },
+                  "impact": {
+                    "type": "string",
+                    "enum": ["critical", "high", "medium", "low"]
+                  },
+                  "riskScore": { "type": "string" },
+                  "triggers": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "owner": { "type": "string" }
+                }
+              }
+            },
+            "mitigationStrategies": {
+              "type": "array",
+              "description": "ALL mitigation strategies",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "riskId": { "type": "string" },
+                  "strategy": {
+                    "type": "string",
+                    "description": "COMPLETE mitigation strategy"
+                  },
+                  "actions": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "owner": { "type": "string" },
+                  "status": {
+                    "type": "string",
+                    "enum": ["planned", "in-progress", "implemented"]
+                  }
+                }
+              }
+            },
+            "contingencyPlans": {
+              "type": "array",
+              "description": "Contingency plans for major risks",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "scenario": { "type": "string" },
+                  "trigger": { "type": "string" },
+                  "response": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "governanceAndReview": {
+          "type": "object",
+          "description": "Strategy governance and review process",
+          "properties": {
+            "reviewCadence": { "type": "string" },
+            "reviewForum": { "type": "string" },
+            "escalationPath": { "type": "string" },
+            "nextReviewDate": { "type": "string", "format": "date" }
+          }
+        },
+        "appendix": {
+          "type": "object",
+          "description": "Supporting materials",
+          "properties": {
+            "dataSourcesa": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "analysisDetails": {
+              "type": "string",
+              "description": "Detailed analysis supporting the strategy"
+            },
+            "competitorProfiles": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

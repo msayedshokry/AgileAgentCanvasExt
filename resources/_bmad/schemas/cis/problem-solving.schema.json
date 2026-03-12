@@ -1,0 +1,821 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/cis/problem-solving.schema.json",
+  "title": "Problem Solving Schema",
+  "description": "Schema for problem solving session artifacts. IMPORTANT: Capture ALL problem analysis, diagnosis, solutions, and implementation details completely. Do NOT summarize or truncate any root cause analysis, solution evaluation, or implementation plans.",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["problemTitle", "problemDefinition", "recommendedSolution"],
+      "properties": {
+        "problemTitle": {
+          "type": "string",
+          "description": "COMPLETE title of the problem being solved"
+        },
+        "problemCategory": {
+          "type": "string",
+          "description": "Category of the problem (technical, process, organizational, etc.)"
+        },
+        "sessionInfo": {
+          "type": "object",
+          "description": "Problem-solving session information",
+          "properties": {
+            "facilitator": { "type": "string" },
+            "participants": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "role": { "type": "string" },
+                  "expertise": { "type": "string" }
+                }
+              }
+            },
+            "date": { "type": "string", "format": "date" },
+            "duration": { "type": "string" },
+            "methodology": {
+              "type": "string",
+              "description": "Problem-solving methodology used"
+            }
+          }
+        },
+        "problemDefinition": {
+          "type": "object",
+          "description": "COMPLETE problem definition section",
+          "required": ["refinedStatement"],
+          "properties": {
+            "initialStatement": {
+              "type": "string",
+              "description": "COMPLETE initial problem statement as first presented"
+            },
+            "refinedStatement": {
+              "type": "string",
+              "description": "COMPLETE refined problem statement after analysis - this is the official problem definition"
+            },
+            "context": {
+              "type": "string",
+              "description": "COMPLETE problem context including background, history, and environmental factors"
+            },
+            "stakeholders": {
+              "type": "array",
+              "description": "ALL stakeholders affected by this problem",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "stakeholder": { "type": "string" },
+                  "impact": {
+                    "type": "string",
+                    "description": "COMPLETE description of how they are affected"
+                  },
+                  "interest": {
+                    "type": "string",
+                    "description": "Their interest in the solution"
+                  }
+                }
+              }
+            },
+            "impact": {
+              "type": "object",
+              "description": "COMPLETE impact analysis",
+              "properties": {
+                "businessImpact": {
+                  "type": "string",
+                  "description": "COMPLETE business impact description"
+                },
+                "financialImpact": {
+                  "type": "string",
+                  "description": "Financial impact if known"
+                },
+                "operationalImpact": {
+                  "type": "string",
+                  "description": "COMPLETE operational impact"
+                },
+                "customerImpact": {
+                  "type": "string",
+                  "description": "COMPLETE customer impact"
+                }
+              }
+            },
+            "urgency": {
+              "type": "string",
+              "enum": ["critical", "high", "medium", "low"],
+              "description": "Problem urgency level"
+            },
+            "successCriteria": {
+              "type": "array",
+              "description": "ALL criteria for successful solution - COMPLETE criteria",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "criterion": {
+                    "type": "string",
+                    "description": "COMPLETE success criterion"
+                  },
+                  "metric": {
+                    "type": "string",
+                    "description": "How this will be measured"
+                  },
+                  "target": {
+                    "type": "string",
+                    "description": "Target value"
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": ["must-have", "should-have", "nice-to-have"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "diagnosis": {
+          "type": "object",
+          "description": "COMPLETE diagnosis and root cause analysis",
+          "properties": {
+            "problemBoundaries": {
+              "type": "object",
+              "description": "COMPLETE problem boundary analysis",
+              "properties": {
+                "is": {
+                  "type": "array",
+                  "description": "ALL things that ARE part of the problem",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "item": { "type": "string" },
+                      "evidence": { "type": "string" }
+                    }
+                  }
+                },
+                "isNot": {
+                  "type": "array",
+                  "description": "ALL things that are NOT part of the problem",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "item": { "type": "string" },
+                      "rationale": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            },
+            "dataCollection": {
+              "type": "object",
+              "description": "Data collected for diagnosis",
+              "properties": {
+                "sources": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "keyData": {
+                  "type": "array",
+                  "description": "ALL key data points collected",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "dataPoint": { "type": "string" },
+                      "value": { "type": "string" },
+                      "significance": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            },
+            "rootCauseAnalysis": {
+              "type": "object",
+              "description": "COMPLETE root cause analysis",
+              "properties": {
+                "method": {
+                  "type": "string",
+                  "description": "Method used (5 Whys, Fishbone, etc.)"
+                },
+                "analysis": {
+                  "type": "string",
+                  "description": "COMPLETE root cause analysis - include the full analysis chain"
+                },
+                "rootCauses": {
+                  "type": "array",
+                  "description": "ALL identified root causes",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "cause": {
+                        "type": "string",
+                        "description": "COMPLETE root cause description"
+                      },
+                      "category": {
+                        "type": "string",
+                        "enum": ["people", "process", "technology", "environment", "materials", "measurement"]
+                      },
+                      "evidence": {
+                        "type": "string",
+                        "description": "Evidence supporting this root cause"
+                      },
+                      "confidence": {
+                        "type": "string",
+                        "enum": ["high", "medium", "low"]
+                      }
+                    }
+                  }
+                },
+                "fishboneDiagram": {
+                  "type": "string",
+                  "description": "Fishbone diagram in text/mermaid format if used"
+                }
+              }
+            },
+            "contributingFactors": {
+              "type": "array",
+              "description": "ALL contributing factors (not root causes but relevant factors)",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "factor": {
+                    "type": "string",
+                    "description": "COMPLETE factor description"
+                  },
+                  "influence": {
+                    "type": "string",
+                    "description": "How this factor influences the problem"
+                  },
+                  "addressable": {
+                    "type": "boolean",
+                    "description": "Whether this can be addressed"
+                  }
+                }
+              }
+            },
+            "systemDynamics": {
+              "type": "string",
+              "description": "COMPLETE system dynamics analysis - how different elements interact to create the problem"
+            },
+            "timelineAnalysis": {
+              "type": "array",
+              "description": "Timeline of problem development",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "date": { "type": "string" },
+                  "event": { "type": "string" },
+                  "significance": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "analysis": {
+          "type": "object",
+          "description": "COMPLETE problem analysis section",
+          "properties": {
+            "forceField": {
+              "type": "object",
+              "description": "COMPLETE force field analysis",
+              "properties": {
+                "drivingForces": {
+                  "type": "array",
+                  "description": "ALL forces driving toward solution",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "force": {
+                        "type": "string",
+                        "description": "COMPLETE force description"
+                      },
+                      "strength": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                      },
+                      "leverageStrategy": {
+                        "type": "string",
+                        "description": "How to leverage this force"
+                      }
+                    }
+                  }
+                },
+                "restrainingForces": {
+                  "type": "array",
+                  "description": "ALL forces restraining solution",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "force": {
+                        "type": "string",
+                        "description": "COMPLETE force description"
+                      },
+                      "strength": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                      },
+                      "mitigationStrategy": {
+                        "type": "string",
+                        "description": "How to mitigate this force"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "constraints": {
+              "type": "array",
+              "description": "ALL constraints that solutions must work within",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "constraint": {
+                    "type": "string",
+                    "description": "COMPLETE constraint description"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": ["time", "budget", "resource", "technical", "regulatory", "organizational", "political"]
+                  },
+                  "flexibility": {
+                    "type": "string",
+                    "enum": ["fixed", "somewhat-flexible", "negotiable"]
+                  },
+                  "implications": {
+                    "type": "string",
+                    "description": "Implications for solution design"
+                  }
+                }
+              }
+            },
+            "assumptions": {
+              "type": "array",
+              "description": "ALL assumptions made in the analysis",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "assumption": { "type": "string" },
+                  "risk": { "type": "string" },
+                  "validation": { "type": "string" }
+                }
+              }
+            },
+            "keyInsights": {
+              "type": "array",
+              "description": "ALL key insights from analysis - COMPLETE insights",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "insight": {
+                    "type": "string",
+                    "description": "COMPLETE insight description"
+                  },
+                  "source": {
+                    "type": "string",
+                    "description": "Where this insight came from"
+                  },
+                  "implication": {
+                    "type": "string",
+                    "description": "Implication for solution"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "solutionGeneration": {
+          "type": "object",
+          "description": "COMPLETE solution generation section",
+          "properties": {
+            "methodsUsed": {
+              "type": "array",
+              "description": "ALL solution generation methods used",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "method": { "type": "string" },
+                  "description": { "type": "string" },
+                  "solutionsGenerated": { "type": "integer" }
+                }
+              }
+            },
+            "generatedSolutions": {
+              "type": "array",
+              "description": "ALL solutions generated - COMPLETE descriptions",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Unique solution identifier"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Solution title"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "COMPLETE solution description - do NOT truncate"
+                  },
+                  "rootCausesAddressed": {
+                    "type": "array",
+                    "description": "Which root causes this addresses",
+                    "items": { "type": "string" }
+                  },
+                  "approach": {
+                    "type": "string",
+                    "description": "COMPLETE approach description"
+                  },
+                  "contributor": {
+                    "type": "string",
+                    "description": "Who proposed this solution"
+                  }
+                }
+              }
+            },
+            "creativeAlternatives": {
+              "type": "array",
+              "description": "Creative/unconventional alternatives considered",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "alternative": {
+                    "type": "string",
+                    "description": "COMPLETE alternative description"
+                  },
+                  "rationale": {
+                    "type": "string",
+                    "description": "Why this was considered"
+                  },
+                  "feasibility": {
+                    "type": "string",
+                    "description": "Feasibility assessment"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "solutionEvaluation": {
+          "type": "object",
+          "description": "COMPLETE solution evaluation",
+          "properties": {
+            "evaluationCriteria": {
+              "type": "array",
+              "description": "ALL criteria used for evaluation",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "criterion": {
+                    "type": "string",
+                    "description": "COMPLETE criterion description"
+                  },
+                  "weight": {
+                    "type": "number",
+                    "description": "Weight in evaluation (0-1)"
+                  },
+                  "rationale": {
+                    "type": "string",
+                    "description": "Why this criterion matters"
+                  }
+                }
+              }
+            },
+            "solutionAnalysis": {
+              "type": "array",
+              "description": "COMPLETE analysis of each solution",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "solutionId": {
+                    "type": "string",
+                    "description": "Solution being evaluated"
+                  },
+                  "criteriaScores": {
+                    "type": "array",
+                    "description": "Scores for each criterion",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "criterion": { "type": "string" },
+                        "score": { "type": "number" },
+                        "notes": { "type": "string" }
+                      }
+                    }
+                  },
+                  "pros": {
+                    "type": "array",
+                    "description": "ALL advantages",
+                    "items": { "type": "string" }
+                  },
+                  "cons": {
+                    "type": "array",
+                    "description": "ALL disadvantages",
+                    "items": { "type": "string" }
+                  },
+                  "risks": {
+                    "type": "array",
+                    "description": "ALL risks",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "risk": { "type": "string" },
+                        "likelihood": { "type": "string" },
+                        "impact": { "type": "string" },
+                        "mitigation": { "type": "string" }
+                      }
+                    }
+                  },
+                  "totalScore": {
+                    "type": "number",
+                    "description": "Weighted total score"
+                  },
+                  "recommendation": {
+                    "type": "string",
+                    "enum": ["recommended", "acceptable", "not-recommended"]
+                  }
+                }
+              }
+            },
+            "comparisonMatrix": {
+              "type": "string",
+              "description": "Visual comparison matrix in markdown table format"
+            }
+          }
+        },
+        "recommendedSolution": {
+          "type": "object",
+          "description": "COMPLETE recommended solution with full details",
+          "required": ["title", "description", "rationale"],
+          "properties": {
+            "solutionId": {
+              "type": "string",
+              "description": "Reference to the solution from generated solutions"
+            },
+            "title": {
+              "type": "string",
+              "description": "Solution title"
+            },
+            "description": {
+              "type": "string",
+              "description": "COMPLETE solution description - do NOT summarize"
+            },
+            "rationale": {
+              "type": "string",
+              "description": "COMPLETE rationale for recommending this solution"
+            },
+            "rootCausesAddressed": {
+              "type": "array",
+              "description": "ALL root causes this addresses",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "rootCause": { "type": "string" },
+                  "howAddressed": { "type": "string" }
+                }
+              }
+            },
+            "expectedOutcomes": {
+              "type": "array",
+              "description": "ALL expected outcomes",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "outcome": { "type": "string" },
+                  "metric": { "type": "string" },
+                  "target": { "type": "string" },
+                  "timeframe": { "type": "string" }
+                }
+              }
+            },
+            "tradeoffs": {
+              "type": "array",
+              "description": "ALL tradeoffs accepted with this solution",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "implementationPlan": {
+          "type": "object",
+          "description": "COMPLETE implementation plan",
+          "properties": {
+            "approach": {
+              "type": "string",
+              "description": "COMPLETE implementation approach"
+            },
+            "phases": {
+              "type": "array",
+              "description": "ALL implementation phases",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "phase": { "type": "string" },
+                  "objective": { "type": "string" },
+                  "duration": { "type": "string" },
+                  "deliverables": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "dependencies": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "actionSteps": {
+              "type": "array",
+              "description": "ALL action steps with ownership",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "step": {
+                    "type": "string",
+                    "description": "COMPLETE step description"
+                  },
+                  "owner": {
+                    "type": "string",
+                    "description": "Person responsible"
+                  },
+                  "deadline": {
+                    "type": "string",
+                    "description": "Deadline"
+                  },
+                  "dependencies": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["not-started", "in-progress", "completed", "blocked"]
+                  }
+                }
+              }
+            },
+            "timeline": {
+              "type": "string",
+              "description": "COMPLETE timeline overview"
+            },
+            "resourcesNeeded": {
+              "type": "array",
+              "description": "ALL resources needed",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "resource": { "type": "string" },
+                  "type": {
+                    "type": "string",
+                    "enum": ["human", "financial", "technical", "material"]
+                  },
+                  "quantity": { "type": "string" },
+                  "availability": { "type": "string" }
+                }
+              }
+            },
+            "responsibleParties": {
+              "type": "array",
+              "description": "ALL responsible parties with their roles",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "party": { "type": "string" },
+                  "role": { "type": "string" },
+                  "responsibilities": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "communicationPlan": {
+              "type": "string",
+              "description": "COMPLETE communication plan for implementation"
+            },
+            "changeManagement": {
+              "type": "string",
+              "description": "COMPLETE change management approach"
+            }
+          }
+        },
+        "monitoring": {
+          "type": "object",
+          "description": "COMPLETE monitoring and validation plan",
+          "properties": {
+            "successMetrics": {
+              "type": "array",
+              "description": "ALL success metrics to track",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "metric": {
+                    "type": "string",
+                    "description": "COMPLETE metric description"
+                  },
+                  "baseline": { "type": "string" },
+                  "target": { "type": "string" },
+                  "frequency": { "type": "string" },
+                  "owner": { "type": "string" }
+                }
+              }
+            },
+            "validationPlan": {
+              "type": "string",
+              "description": "COMPLETE plan for validating the solution worked"
+            },
+            "checkpoints": {
+              "type": "array",
+              "description": "ALL review checkpoints",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "checkpoint": { "type": "string" },
+                  "date": { "type": "string" },
+                  "criteria": { "type": "string" }
+                }
+              }
+            },
+            "riskMitigation": {
+              "type": "array",
+              "description": "ALL risk mitigation measures",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "risk": { "type": "string" },
+                  "mitigation": { "type": "string" },
+                  "trigger": { "type": "string" },
+                  "owner": { "type": "string" }
+                }
+              }
+            },
+            "adjustmentTriggers": {
+              "type": "array",
+              "description": "ALL triggers for course correction",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "trigger": {
+                    "type": "string",
+                    "description": "COMPLETE trigger description"
+                  },
+                  "threshold": { "type": "string" },
+                  "action": {
+                    "type": "string",
+                    "description": "Action to take"
+                  }
+                }
+              }
+            },
+            "escalationPath": {
+              "type": "string",
+              "description": "COMPLETE escalation path if issues arise"
+            }
+          }
+        },
+        "lessonsLearned": {
+          "type": "object",
+          "description": "COMPLETE lessons learned section",
+          "properties": {
+            "keyLearnings": {
+              "type": "array",
+              "description": "ALL key learnings from this problem-solving exercise",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "learning": {
+                    "type": "string",
+                    "description": "COMPLETE learning description"
+                  },
+                  "context": { "type": "string" },
+                  "applicability": {
+                    "type": "string",
+                    "description": "Where else this learning applies"
+                  }
+                }
+              }
+            },
+            "whatWorked": {
+              "type": "array",
+              "description": "ALL things that worked well",
+              "items": { "type": "string" }
+            },
+            "whatToAvoid": {
+              "type": "array",
+              "description": "ALL things to avoid in future",
+              "items": { "type": "string" }
+            },
+            "processImprovements": {
+              "type": "array",
+              "description": "Process improvements identified",
+              "items": { "type": "string" }
+            },
+            "knowledgeSharing": {
+              "type": "string",
+              "description": "Plan for sharing lessons with broader organization"
+            }
+          }
+        }
+      }
+    }
+  }
+}

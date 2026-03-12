@@ -1,0 +1,650 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/bmm/tech-spec.schema.json",
+  "title": "Tech Spec Schema",
+  "description": "Comprehensive schema for tech spec artifacts - captures COMPLETE quick flow technical specifications with full implementation details",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["overview", "implementationPlan"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Tech spec title"
+        },
+        "slug": {
+          "type": "string",
+          "description": "URL-friendly identifier"
+        },
+        "version": {
+          "type": "string",
+          "description": "Spec version"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "review", "approved", "implementing", "completed", "archived"]
+        },
+        "overview": {
+          "type": "object",
+          "description": "Tech spec overview - capture COMPLETE details",
+          "properties": {
+            "summary": {
+              "type": "string",
+              "description": "COMPLETE summary of what this tech spec covers"
+            },
+            "problemStatement": {
+              "type": "string",
+              "description": "COMPLETE problem statement - capture all context"
+            },
+            "background": {
+              "type": "string",
+              "description": "COMPLETE background information"
+            },
+            "proposedSolution": {
+              "type": "string",
+              "description": "COMPLETE proposed solution description"
+            },
+            "goals": {
+              "type": "array",
+              "description": "ALL goals for this implementation",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "goal": {
+                    "type": "string",
+                    "description": "COMPLETE goal description"
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": ["must-have", "should-have", "could-have"]
+                  },
+                  "successCriteria": { "type": "string" }
+                }
+              }
+            },
+            "nonGoals": {
+              "type": "array",
+              "description": "Explicit non-goals",
+              "items": { "type": "string" }
+            },
+            "scope": {
+              "type": "object",
+              "properties": {
+                "inScope": {
+                  "type": "array",
+                  "description": "ALL items in scope",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "item": {
+                        "type": "string",
+                        "description": "COMPLETE scope item description"
+                      },
+                      "rationale": { "type": "string" }
+                    }
+                  }
+                },
+                "outOfScope": {
+                  "type": "array",
+                  "description": "ALL items out of scope",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "item": {
+                        "type": "string",
+                        "description": "COMPLETE out of scope item"
+                      },
+                      "reason": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            },
+            "relatedDocuments": {
+              "type": "array",
+              "description": "Related PRDs, stories, etc.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "document": { "type": "string" },
+                  "relationship": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "context": {
+          "type": "object",
+          "description": "Development context - capture COMPLETE details",
+          "properties": {
+            "overview": {
+              "type": "string",
+              "description": "COMPLETE context overview"
+            },
+            "existingArchitecture": {
+              "type": "string",
+              "description": "COMPLETE description of existing architecture"
+            },
+            "codebasePatterns": {
+              "type": "array",
+              "description": "ALL relevant codebase patterns to follow",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "pattern": {
+                    "type": "string",
+                    "description": "COMPLETE pattern description"
+                  },
+                  "example": { "type": "string" },
+                  "location": { "type": "string" }
+                }
+              }
+            },
+            "filesToReference": {
+              "type": "array",
+              "description": "ALL files to reference during implementation",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": { "type": "string" },
+                  "reason": {
+                    "type": "string",
+                    "description": "COMPLETE reason for referencing"
+                  },
+                  "keyElements": {
+                    "type": "array",
+                    "description": "Key elements to note in this file",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "technicalDecisions": {
+              "type": "array",
+              "description": "ALL technical decisions and rationale",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "decision": {
+                    "type": "string",
+                    "description": "COMPLETE decision description"
+                  },
+                  "rationale": {
+                    "type": "string",
+                    "description": "COMPLETE rationale"
+                  },
+                  "alternatives": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "alternative": { "type": "string" },
+                        "reason": { "type": "string" }
+                      }
+                    }
+                  },
+                  "consequences": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "constraints": {
+              "type": "array",
+              "description": "Technical constraints",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "constraint": { "type": "string" },
+                  "impact": { "type": "string" },
+                  "workaround": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "techStack": {
+          "type": "array",
+          "description": "ALL technologies to be used",
+          "items": {
+            "type": "object",
+            "properties": {
+              "technology": { "type": "string" },
+              "version": { "type": "string" },
+              "purpose": {
+                "type": "string",
+                "description": "COMPLETE purpose description"
+              },
+              "documentation": { "type": "string" }
+            }
+          }
+        },
+        "dataModel": {
+          "type": "object",
+          "description": "Data model changes",
+          "properties": {
+            "overview": {
+              "type": "string",
+              "description": "COMPLETE data model overview"
+            },
+            "entities": {
+              "type": "array",
+              "description": "ALL entities/types involved",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "description": {
+                    "type": "string",
+                    "description": "COMPLETE entity description"
+                  },
+                  "fields": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": { "type": "string" },
+                        "type": { "type": "string" },
+                        "description": { "type": "string" },
+                        "required": { "type": "boolean" },
+                        "constraints": { "type": "string" }
+                      }
+                    }
+                  },
+                  "relationships": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "entity": { "type": "string" },
+                        "type": { "type": "string" },
+                        "description": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "migrations": {
+              "type": "array",
+              "description": "Required data migrations",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "description": { "type": "string" },
+                  "script": { "type": "string" },
+                  "rollback": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "apiChanges": {
+          "type": "object",
+          "description": "API changes required",
+          "properties": {
+            "overview": { "type": "string" },
+            "newEndpoints": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "method": { "type": "string" },
+                  "path": { "type": "string" },
+                  "description": {
+                    "type": "string",
+                    "description": "COMPLETE endpoint description"
+                  },
+                  "request": {
+                    "type": "object",
+                    "properties": {
+                      "headers": { "type": "object" },
+                      "body": { "type": "object" },
+                      "params": { "type": "object" }
+                    }
+                  },
+                  "response": {
+                    "type": "object",
+                    "properties": {
+                      "success": { "type": "object" },
+                      "errors": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "code": { "type": "string" },
+                            "message": { "type": "string" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "modifiedEndpoints": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": { "type": "string" },
+                  "changes": {
+                    "type": "string",
+                    "description": "COMPLETE description of changes"
+                  },
+                  "backwardCompatibility": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "filesToModify": {
+          "type": "array",
+          "description": "ALL files that will be modified",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": { "type": "string" },
+              "changes": {
+                "type": "string",
+                "description": "COMPLETE description of changes"
+              },
+              "reason": { "type": "string" }
+            }
+          }
+        },
+        "filesToCreate": {
+          "type": "array",
+          "description": "ALL new files to be created",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": { "type": "string" },
+              "purpose": {
+                "type": "string",
+                "description": "COMPLETE purpose description"
+              },
+              "contents": {
+                "type": "string",
+                "description": "Description of contents"
+              }
+            }
+          }
+        },
+        "codePatterns": {
+          "type": "array",
+          "description": "ALL code patterns to follow",
+          "items": {
+            "type": "object",
+            "properties": {
+              "pattern": {
+                "type": "string",
+                "description": "COMPLETE pattern description"
+              },
+              "example": { "type": "string" },
+              "rationale": { "type": "string" }
+            }
+          }
+        },
+        "testPatterns": {
+          "type": "array",
+          "description": "ALL test patterns to follow",
+          "items": {
+            "type": "object",
+            "properties": {
+              "pattern": {
+                "type": "string",
+                "description": "COMPLETE test pattern description"
+              },
+              "example": { "type": "string" },
+              "coverage": { "type": "string" }
+            }
+          }
+        },
+        "implementationPlan": {
+          "type": "object",
+          "description": "COMPLETE implementation plan",
+          "properties": {
+            "overview": {
+              "type": "string",
+              "description": "COMPLETE implementation approach overview"
+            },
+            "phases": {
+              "type": "array",
+              "description": "Implementation phases",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "phase": { "type": "string" },
+                  "description": { "type": "string" },
+                  "tasks": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "deliverables": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "tasks": {
+              "type": "array",
+              "description": "ALL implementation tasks",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "description": {
+                    "type": "string",
+                    "description": "COMPLETE task description"
+                  },
+                  "details": {
+                    "type": "string",
+                    "description": "COMPLETE implementation details"
+                  },
+                  "priority": { "type": "integer" },
+                  "estimatedEffort": { "type": "string" },
+                  "dependencies": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "files": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "subtasks": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "task": { "type": "string" },
+                        "details": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "acceptanceCriteria": {
+              "type": "array",
+              "description": "ALL acceptance criteria - capture COMPLETE Given/When/Then",
+              "items": {
+                "$ref": "../common/acceptance-criteria.schema.json"
+              }
+            },
+            "milestones": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "milestone": { "type": "string" },
+                  "criteria": { "type": "string" },
+                  "tasks": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "testingStrategy": {
+          "type": "object",
+          "description": "Testing strategy - capture COMPLETE details",
+          "properties": {
+            "overview": {
+              "type": "string",
+              "description": "COMPLETE testing strategy overview"
+            },
+            "unitTests": {
+              "type": "object",
+              "properties": {
+                "approach": { "type": "string" },
+                "coverage": { "type": "string" },
+                "files": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            },
+            "integrationTests": {
+              "type": "object",
+              "properties": {
+                "approach": { "type": "string" },
+                "scenarios": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            },
+            "e2eTests": {
+              "type": "object",
+              "properties": {
+                "approach": { "type": "string" },
+                "flows": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            },
+            "manualTesting": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "risks": {
+          "type": "array",
+          "description": "ALL implementation risks",
+          "items": {
+            "type": "object",
+            "properties": {
+              "risk": {
+                "type": "string",
+                "description": "COMPLETE risk description"
+              },
+              "probability": {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              "impact": {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              "mitigation": {
+                "type": "string",
+                "description": "COMPLETE mitigation strategy"
+              }
+            }
+          }
+        },
+        "rollbackPlan": {
+          "type": "object",
+          "description": "Rollback plan",
+          "properties": {
+            "triggers": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "steps": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "dataRecovery": { "type": "string" }
+          }
+        },
+        "additionalContext": {
+          "type": "object",
+          "description": "Additional context and notes",
+          "properties": {
+            "dependencies": {
+              "type": "array",
+              "description": "ALL external dependencies",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "dependency": { "type": "string" },
+                  "type": { "type": "string" },
+                  "status": { "type": "string" }
+                }
+              }
+            },
+            "assumptions": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "openQuestions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "question": { "type": "string" },
+                  "owner": { "type": "string" },
+                  "status": { "type": "string" }
+                }
+              }
+            },
+            "notes": {
+              "type": "array",
+              "description": "ALL additional notes - capture completely",
+              "items": { "type": "string" }
+            },
+            "references": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string" },
+                  "url": { "type": "string" },
+                  "description": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "reviewers": {
+          "type": "array",
+          "description": "Required reviewers",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "role": { "type": "string" },
+              "status": {
+                "type": "string",
+                "enum": ["pending", "approved", "changes-requested"]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,309 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "code-review",
+    "timestamps": {
+      "created": "2026-02-18T16:00:00Z",
+      "lastModified": "2026-02-19T09:30:00Z"
+    },
+    "status": "completed",
+    "tags": [
+      "code-review",
+      "story-1.1",
+      "task-crud"
+    ],
+    "author": "BMAD Adversarial Code Review"
+  },
+  "content": {
+    "storyReference": {
+      "storyId": "1.1",
+      "storyKey": "1-1-task-crud-data-model",
+      "storyTitle": "Task CRUD & Data Model",
+      "storyFilePath": "src/features/tasks/",
+      "epicId": "EPIC-1"
+    },
+    "reviewSummary": {
+      "overallVerdict": "approved-with-fixes",
+      "totalFindings": 8,
+      "criticalCount": 1,
+      "majorCount": 2,
+      "minorCount": 3,
+      "suggestionsCount": 2,
+      "autoFixableCount": 3,
+      "reviewDuration": "2 hours 15 minutes"
+    },
+    "findings": [
+      {
+        "id": "F-1",
+        "severity": "critical",
+        "category": "security",
+        "description": "SQL injection vulnerability in task search endpoint. The search query parameter is interpolated directly into the SQL query string without parameterization. An attacker could inject arbitrary SQL through the search field.",
+        "location": {
+          "filePath": "src/features/tasks/task-repository.ts",
+          "lineNumber": 87,
+          "lineRange": {
+            "start": 85,
+            "end": 92
+          },
+          "functionName": "searchTasks"
+        },
+        "codeSnippet": "const results = await db.query(`SELECT * FROM tasks WHERE title LIKE '%${searchTerm}%'`);",
+        "recommendation": "Use parameterized queries with prepared statements. Replace string interpolation with query parameters.",
+        "suggestedFix": "const results = await db.query('SELECT * FROM tasks WHERE title LIKE $1', [`%${searchTerm}%`]);",
+        "autoFixable": true,
+        "autoFixApplied": false,
+        "references": [
+          {
+            "title": "OWASP SQL Injection Prevention",
+            "url": "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html"
+          }
+        ]
+      },
+      {
+        "id": "F-2",
+        "severity": "major",
+        "category": "error-handling",
+        "description": "Task creation endpoint catches all errors with a generic 500 response. Validation errors (invalid priority, missing title) should return 400 with specific error messages. Database constraint violations should return 409 for duplicates.",
+        "location": {
+          "filePath": "src/features/tasks/task-controller.ts",
+          "lineNumber": 42,
+          "lineRange": {
+            "start": 38,
+            "end": 55
+          },
+          "functionName": "createTask"
+        },
+        "codeSnippet": "catch (error) { res.status(500).json({ error: 'Internal server error' }); }",
+        "recommendation": "Implement error classification with specific HTTP status codes. Use a custom error hierarchy (ValidationError, ConflictError, etc.) and map them to appropriate responses.",
+        "suggestedFix": "catch (error) {\n  if (error instanceof ValidationError) return res.status(400).json({ errors: error.details });\n  if (error instanceof ConflictError) return res.status(409).json({ error: error.message });\n  logger.error('Unexpected error in createTask', error);\n  res.status(500).json({ error: 'Internal server error' });\n}",
+        "autoFixable": false,
+        "autoFixApplied": false,
+        "references": []
+      },
+      {
+        "id": "F-3",
+        "severity": "major",
+        "category": "performance",
+        "description": "The getTasksByProject endpoint loads all tasks for a project without pagination. For projects with thousands of tasks, this will cause memory issues and slow response times. The current implementation fetches all rows into memory before returning.",
+        "location": {
+          "filePath": "src/features/tasks/task-repository.ts",
+          "lineNumber": 34,
+          "functionName": "getTasksByProject"
+        },
+        "codeSnippet": "const tasks = await db.query('SELECT * FROM tasks WHERE project_id = $1', [projectId]);",
+        "recommendation": "Add cursor-based pagination with configurable page size (default 50, max 200). Return pagination metadata (total count, next cursor) in the response.",
+        "suggestedFix": "const tasks = await db.query('SELECT * FROM tasks WHERE project_id = $1 AND id > $2 ORDER BY id ASC LIMIT $3', [projectId, cursor, pageSize]);",
+        "autoFixable": false,
+        "autoFixApplied": false,
+        "references": []
+      },
+      {
+        "id": "F-4",
+        "severity": "minor",
+        "category": "type-safety",
+        "description": "Task priority field accepts any string value at runtime despite having a TypeScript enum. The API layer does not validate that the incoming priority value matches the allowed enum values (low, medium, high, critical).",
+        "location": {
+          "filePath": "src/features/tasks/task-schema.ts",
+          "lineNumber": 15,
+          "functionName": "taskCreateSchema"
+        },
+        "codeSnippet": "priority: z.string().optional(),",
+        "recommendation": "Use z.enum() to restrict priority values at the validation layer.",
+        "suggestedFix": "priority: z.enum(['low', 'medium', 'high', 'critical']).default('medium'),",
+        "autoFixable": true,
+        "autoFixApplied": true,
+        "references": []
+      },
+      {
+        "id": "F-5",
+        "severity": "minor",
+        "category": "naming-conventions",
+        "description": "Inconsistent naming between 'dueDate' (camelCase in TypeScript) and 'due_date' (snake_case in database). While the ORM handles mapping, the inconsistency appears in raw query results in the search endpoint, causing potential frontend issues.",
+        "location": {
+          "filePath": "src/features/tasks/task-repository.ts",
+          "lineNumber": 87,
+          "functionName": "searchTasks"
+        },
+        "codeSnippet": "SELECT * FROM tasks WHERE title LIKE $1",
+        "recommendation": "Use column aliases in raw queries to ensure consistent camelCase output: SELECT id, title, due_date AS \"dueDate\" FROM tasks.",
+        "suggestedFix": "",
+        "autoFixable": false,
+        "autoFixApplied": false,
+        "references": []
+      },
+      {
+        "id": "F-6",
+        "severity": "minor",
+        "category": "test-coverage",
+        "description": "No tests for task deletion cascade behavior. When a task is deleted, subtasks should also be deleted (or re-parented). The repository has ON DELETE CASCADE but no test verifies this behavior.",
+        "location": {
+          "filePath": "src/features/tasks/__tests__/task-repository.test.ts",
+          "lineNumber": 120,
+          "functionName": "describe('deleteTask')"
+        },
+        "codeSnippet": "",
+        "recommendation": "Add test cases: (1) deleting a parent task also deletes subtasks, (2) deleting a task removes it from other tasks' blockedBy lists, (3) deleting a non-existent task returns 404.",
+        "suggestedFix": "",
+        "autoFixable": false,
+        "autoFixApplied": false,
+        "references": []
+      },
+      {
+        "id": "F-7",
+        "severity": "suggestion",
+        "category": "best-practices",
+        "description": "Task creation and update operations do not emit domain events. Adding event emission (TaskCreated, TaskUpdated, TaskDeleted) would enable future features like activity feeds, webhooks, and the AI prioritization engine to react to task changes without tight coupling.",
+        "location": {
+          "filePath": "src/features/tasks/task-service.ts",
+          "lineNumber": 25,
+          "functionName": "createTask"
+        },
+        "codeSnippet": "",
+        "recommendation": "Add an EventEmitter or use the existing message bus to publish domain events after successful task mutations. This aligns with the event-driven architecture defined in the architecture document.",
+        "suggestedFix": "",
+        "autoFixable": false,
+        "autoFixApplied": false,
+        "references": []
+      },
+      {
+        "id": "F-8",
+        "severity": "suggestion",
+        "category": "documentation",
+        "description": "The task data model lacks JSDoc comments on the TypeScript interface. Given that this is a foundational model used across all epics, comprehensive documentation would help all team members understand field semantics, constraints, and relationships.",
+        "location": {
+          "filePath": "src/features/tasks/task-types.ts",
+          "lineNumber": 1,
+          "lineRange": {
+            "start": 1,
+            "end": 35
+          }
+        },
+        "codeSnippet": "export interface Task {\n  id: string;\n  title: string;\n  ...\n}",
+        "recommendation": "Add JSDoc comments to each field explaining its purpose, constraints, and any business rules. Example: /** Task priority — determines AI scheduling weight. Must be one of: low, medium, high, critical. Defaults to 'medium'. */",
+        "suggestedFix": "",
+        "autoFixable": false,
+        "autoFixApplied": false,
+        "references": []
+      }
+    ],
+    "acceptanceCriteriaVerification": [
+      {
+        "acId": "AC-1",
+        "acDescription": "User can create a task with title, description, priority, due date, and tags",
+        "status": "verified",
+        "notes": "All fields correctly persisted and returned in response. Validation present for required fields.",
+        "evidenceLocations": [
+          "src/features/tasks/task-controller.ts:38",
+          "src/features/tasks/__tests__/task-controller.test.ts:15"
+        ]
+      },
+      {
+        "acId": "AC-2",
+        "acDescription": "User can read, update, and delete tasks with optimistic concurrency",
+        "status": "verified",
+        "notes": "CRUD operations work correctly. Optimistic concurrency implemented via version field and 409 response on conflict.",
+        "evidenceLocations": [
+          "src/features/tasks/task-repository.ts:60",
+          "src/features/tasks/__tests__/task-repository.test.ts:80"
+        ]
+      },
+      {
+        "acId": "AC-3",
+        "acDescription": "Task data model supports subtasks, dependencies, and custom fields",
+        "status": "partial",
+        "notes": "Subtasks and dependencies implemented. Custom fields schema defined but no API endpoint to manage custom field definitions yet — only hard-coded fields are available.",
+        "evidenceLocations": [
+          "src/features/tasks/task-types.ts:28"
+        ]
+      },
+      {
+        "acId": "AC-4",
+        "acDescription": "All task mutations are audited with timestamps and actor",
+        "status": "verified",
+        "notes": "Audit trail implemented via database triggers. createdAt, updatedAt, and updatedBy fields correctly populated.",
+        "evidenceLocations": [
+          "migrations/003-task-audit-triggers.sql"
+        ]
+      }
+    ],
+    "testCoverageAnalysis": {
+      "coveragePercentage": 78.5,
+      "uncoveredAreas": [
+        "Task deletion cascade behavior (subtasks, dependencies)",
+        "Concurrent update conflict resolution edge cases",
+        "Custom fields validation with different field types",
+        "Search endpoint with special characters and SQL injection attempts"
+      ],
+      "missingTestTypes": [
+        "e2e",
+        "performance"
+      ],
+      "testQualityNotes": "Unit tests are well-structured with good use of factories for test data. Integration tests cover happy paths but lack edge case coverage. No e2e tests yet — planned for sprint 3. Performance tests needed for the search endpoint and bulk operations."
+    },
+    "securityAnalysis": {
+      "vulnerabilitiesFound": 1,
+      "securityChecksPerformed": [
+        "SQL injection analysis on all database queries",
+        "Input validation review on all API endpoints",
+        "Authentication middleware verification",
+        "Authorization check for task ownership",
+        "Rate limiting configuration review"
+      ],
+      "recommendations": [
+        "Fix the SQL injection vulnerability in searchTasks (F-1) immediately",
+        "Add rate limiting to the search endpoint to prevent abuse",
+        "Implement field-level access control for sensitive custom fields"
+      ]
+    },
+    "architectureCompliance": {
+      "compliant": true,
+      "violations": [],
+      "notes": "Implementation follows the defined layered architecture (controller → service → repository). Database access is properly encapsulated in the repository layer. TypeScript strict mode is enabled. One suggestion (F-7) to add domain events would improve alignment with the event-driven architecture pattern."
+    },
+    "nextSteps": [
+      {
+        "action": "Fix SQL injection vulnerability in searchTasks (F-1)",
+        "priority": "required",
+        "relatedFindingIds": [
+          "F-1"
+        ]
+      },
+      {
+        "action": "Implement proper error classification and HTTP status mapping (F-2)",
+        "priority": "required",
+        "relatedFindingIds": [
+          "F-2"
+        ]
+      },
+      {
+        "action": "Add pagination to getTasksByProject endpoint (F-3)",
+        "priority": "required",
+        "relatedFindingIds": [
+          "F-3"
+        ]
+      },
+      {
+        "action": "Add deletion cascade tests and search edge case tests (F-6)",
+        "priority": "recommended",
+        "relatedFindingIds": [
+          "F-6"
+        ]
+      },
+      {
+        "action": "Add domain event emission for task mutations (F-7)",
+        "priority": "recommended",
+        "relatedFindingIds": [
+          "F-7"
+        ]
+      },
+      {
+        "action": "Add JSDoc documentation to task data model (F-8)",
+        "priority": "optional",
+        "relatedFindingIds": [
+          "F-8"
+        ]
+      }
+    ],
+    "reviewerNotes": "Overall solid implementation of the foundational task data model. The SQL injection issue (F-1) is the only critical finding and must be fixed before merging. The lack of pagination (F-3) should be addressed in this sprint to avoid technical debt. The team should prioritize domain event emission (F-7) as it will be needed by EPIC-2 (AI Prioritization Engine) to react to task changes."
+  }
+}

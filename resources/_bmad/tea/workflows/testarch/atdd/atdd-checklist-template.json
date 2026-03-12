@@ -1,0 +1,62 @@
+{
+  "$schema": "../../../../schemas/tea/atdd-checklist.schema.json",
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "atdd-checklist",
+    "workflowName": "testarch-atdd",
+    "projectName": "{{project_name}}",
+    "stepsCompleted": [],
+    "currentStep": "",
+    "timestamps": {
+      "created": "{{timestamp}}",
+      "lastModified": "{{timestamp}}"
+    },
+    "author": "{{user_name}}",
+    "status": "draft"
+  },
+  "content": {
+    "storyInfo": {
+      "epicId": "{{epic_id}}",
+      "storyId": "{{story_id}}",
+      "storyTitle": "{{story_title}}",
+      "primaryTestLevel": ""
+    },
+    "storySummary": {
+      "role": "",
+      "action": "",
+      "benefit": ""
+    },
+    "acceptanceCriteria": [],
+    "failingTestsCreated": {
+      "e2e": [],
+      "api": [],
+      "component": []
+    },
+    "dataFactoriesCreated": [],
+    "fixturesCreated": [],
+    "mockRequirements": [],
+    "requiredDataTestIds": [],
+    "implementationChecklist": [],
+    "runningTests": {
+      "all": "",
+      "e2e": "",
+      "api": "",
+      "component": ""
+    },
+    "redGreenRefactorWorkflow": {
+      "currentPhase": "red",
+      "iterations": []
+    },
+    "knowledgeBaseReferences": [],
+    "testExecutionEvidence": {
+      "lastRun": "",
+      "results": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0
+      },
+      "screenshots": [],
+      "logs": []
+    }
+  }
+}

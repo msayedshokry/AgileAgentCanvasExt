@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- Timeline line -->
+  <rect x="4" y="3" width="1" height="18" rx="0.5" fill="currentColor" opacity="0.3"/>
+
+  <!-- Timeline dots -->
+  <circle cx="4.5" cy="5" r="1.5" fill="currentColor"/>
+  <circle cx="4.5" cy="10" r="1.5" fill="currentColor"/>
+  <circle cx="4.5" cy="15" r="1.5" fill="currentColor"/>
+  <circle cx="4.5" cy="20" r="1.5" fill="currentColor"/>
+
+  <!-- Row 1: 2 cards -->
+  <rect x="7" y="3.5" width="6" height="3" rx="1" fill="currentColor" opacity="0.9"/>
+  <rect x="14.5" y="3.5" width="7" height="3" rx="1" fill="currentColor" opacity="0.5"/>
+
+  <!-- Row 2: 2 cards -->
+  <rect x="7" y="8.5" width="8" height="3" rx="1" fill="currentColor" opacity="0.9"/>
+  <rect x="16.5" y="8.5" width="5" height="3" rx="1" fill="currentColor" opacity="0.5"/>
+
+  <!-- Row 3: 2 cards -->
+  <rect x="7" y="13.5" width="5" height="3" rx="1" fill="currentColor" opacity="0.9"/>
+  <rect x="13.5" y="13.5" width="7" height="3" rx="1" fill="currentColor" opacity="0.5"/>
+
+  <!-- Row 4: 2 cards -->
+  <rect x="7" y="18.5" width="7" height="3" rx="1" fill="currentColor" opacity="0.9"/>
+  <rect x="15.5" y="18.5" width="6" height="3" rx="1" fill="currentColor" opacity="0.5"/>
+
+  <!-- Dependency arrows (simplified) -->
+  <path d="M 17,6.5 C 17,7.5 11,7 11,8.5" stroke="currentColor" stroke-width="0.8" opacity="0.4" fill="none"/>
+  <path d="M 15,11.5 C 15,12.5 17,12 17,13.5" stroke="currentColor" stroke-width="0.8" opacity="0.4" fill="none"/>
+  <path d="M 10,16.5 C 10,17.5 14,17 14,18.5" stroke="currentColor" stroke-width="0.8" opacity="0.4" fill="none"/>
+</svg>

@@ -1,0 +1,38 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "test-strategy",
+    "workflowName": "test-architect",
+    "projectName": "TaskFlow Pro",
+    "timestamps": {
+      "created": "2025-06-18T09:00:00Z",
+      "lastModified": "2025-06-22T14:00:00Z"
+    },
+    "status": "approved"
+  },
+  "content": {
+    "title": "TaskFlow Pro — Project Test Strategy",
+    "scope": "End-to-end test coverage for all four epics: Core Platform, AI Engine, Focus Mode, and Integrations. Covers unit, integration, component, E2E, and performance testing.",
+    "approach": "Pyramid strategy: high unit test coverage (85%+), targeted integration tests for module boundaries and external APIs, E2E tests for critical user journeys, performance tests for scale targets.",
+    "testLevels": ["Unit", "Integration", "Component", "E2E", "Performance", "Security"],
+    "tools": ["Vitest", "React Testing Library", "Playwright", "k6", "Testcontainers", "OWASP ZAP"],
+    "environments": [
+      { "name": "Local", "purpose": "Developer testing with Docker Compose" },
+      { "name": "CI", "purpose": "Automated pipeline testing on every PR" },
+      { "name": "Staging", "purpose": "Pre-production validation, load testing" },
+      { "name": "Production", "purpose": "Smoke tests post-deploy, synthetic monitoring" }
+    ],
+    "coverageTargets": {
+      "unit": "85% line coverage",
+      "integration": "All module boundaries and external API contracts",
+      "e2e": "Top 10 user journeys",
+      "performance": "10K concurrent users at p95 < 200ms"
+    },
+    "riskBasedPriority": [
+      "AI scoring accuracy — high risk, high impact on user trust",
+      "Real-time sync — medium risk, high impact on collaboration UX",
+      "Focus mode notification batching — medium risk, core value proposition",
+      "GitHub webhook processing — low risk but user-facing data integrity"
+    ]
+  }
+}

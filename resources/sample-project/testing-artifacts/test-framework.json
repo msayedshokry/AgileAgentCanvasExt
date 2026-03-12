@@ -1,0 +1,372 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "test-framework",
+    "timestamps": {
+      "created": "2025-08-15T10:00:00Z",
+      "lastModified": "2025-09-01T14:00:00Z"
+    },
+    "status": "completed",
+    "tags": [
+      "test-framework",
+      "playwright",
+      "vitest",
+      "setup"
+    ],
+    "author": "TEA Agent"
+  },
+  "content": {
+    "framework": {
+      "name": "vitest",
+      "version": "1.6.0",
+      "selectionRationale": "Vitest chosen for unit and integration tests due to native ESM support, Vite-compatible configuration, fast watch mode, and built-in TypeScript support. Playwright used for E2E testing for cross-browser support and reliable auto-waiting.",
+      "alternatives": [
+        {
+          "name": "jest",
+          "reason": "Considered but rejected due to slower TypeScript compilation and ESM configuration complexity"
+        },
+        {
+          "name": "cypress",
+          "reason": "Considered for E2E but Playwright chosen for better cross-browser support and faster execution"
+        }
+      ]
+    },
+    "configuration": {
+      "configFile": "vitest.config.ts",
+      "typescript": true,
+      "baseUrl": "http://localhost:3000",
+      "testMatch": [
+        "**/*.spec.ts",
+        "**/*.test.ts"
+      ],
+      "reporters": [
+        "default",
+        "html",
+        "junit"
+      ],
+      "parallelization": {
+        "enabled": true,
+        "workers": 4,
+        "strategy": "threads"
+      },
+      "retries": {
+        "count": 2,
+        "onFailure": true
+      }
+    },
+    "directoryStructure": {
+      "rootDir": "tests/",
+      "directories": [
+        {
+          "path": "tests/unit/",
+          "purpose": "Unit tests for individual modules and functions",
+          "contents": [
+            "task-service.spec.ts",
+            "filter-engine.spec.ts",
+            "ai-prioritizer.spec.ts"
+          ]
+        },
+        {
+          "path": "tests/integration/",
+          "purpose": "Integration tests for API endpoints and service interactions",
+          "contents": [
+            "task-crud.spec.ts",
+            "websocket-sync.spec.ts",
+            "ai-suggestions.spec.ts"
+          ]
+        },
+        {
+          "path": "tests/component/",
+          "purpose": "Component tests for React components with mocked dependencies",
+          "contents": [
+            "TaskCard.spec.tsx",
+            "FilterBar.spec.tsx",
+            "TaskBoard.spec.tsx"
+          ]
+        },
+        {
+          "path": "tests/e2e/",
+          "purpose": "End-to-end tests using Playwright",
+          "contents": [
+            "task-management.spec.ts",
+            "real-time-sync.spec.ts",
+            "ai-features.spec.ts"
+          ]
+        },
+        {
+          "path": "tests/fixtures/",
+          "purpose": "Shared test fixtures and mock data",
+          "contents": [
+            "tasks.ts",
+            "users.ts",
+            "projects.ts"
+          ]
+        },
+        {
+          "path": "tests/factories/",
+          "purpose": "Test data factories for generating realistic test data",
+          "contents": [
+            "task-factory.ts",
+            "user-factory.ts",
+            "project-factory.ts"
+          ]
+        },
+        {
+          "path": "tests/helpers/",
+          "purpose": "Test utilities and shared helpers",
+          "contents": [
+            "api-client.ts",
+            "db-utils.ts",
+            "websocket-helpers.ts"
+          ]
+        }
+      ]
+    },
+    "fixtures": [
+      {
+        "name": "authenticatedUser",
+        "filePath": "tests/fixtures/auth.ts",
+        "purpose": "Provides an authenticated user session with valid JWT token for API tests",
+        "scope": "test",
+        "dependencies": [
+          "UserFactory"
+        ]
+      },
+      {
+        "name": "seededDatabase",
+        "filePath": "tests/fixtures/database.ts",
+        "purpose": "Seeds the test database with a baseline dataset of tasks, projects, and users",
+        "scope": "file",
+        "dependencies": [
+          "TaskFactory",
+          "UserFactory",
+          "ProjectFactory"
+        ]
+      },
+      {
+        "name": "webSocketClient",
+        "filePath": "tests/fixtures/websocket.ts",
+        "purpose": "Creates a connected WebSocket client for real-time sync testing",
+        "scope": "test",
+        "dependencies": [
+          "authenticatedUser"
+        ]
+      }
+    ],
+    "helpers": [
+      {
+        "name": "API Test Client",
+        "filePath": "tests/helpers/api-client.ts",
+        "purpose": "Typed API client wrapper for making authenticated requests in tests",
+        "functions": [
+          {
+            "name": "createTask",
+            "description": "Create a task via API with default or custom fields",
+            "signature": "(overrides?: Partial<Task>) => Promise<Task>"
+          },
+          {
+            "name": "getTask",
+            "description": "Fetch a task by ID",
+            "signature": "(taskId: string) => Promise<Task>"
+          },
+          {
+            "name": "updateTask",
+            "description": "Update a task via PATCH",
+            "signature": "(taskId: string, updates: Partial<Task>) => Promise<Task>"
+          }
+        ]
+      },
+      {
+        "name": "Database Utilities",
+        "filePath": "tests/helpers/db-utils.ts",
+        "purpose": "Direct database access for test setup/teardown and state verification",
+        "functions": [
+          {
+            "name": "resetDatabase",
+            "description": "Truncate all tables and reset sequences",
+            "signature": "() => Promise<void>"
+          },
+          {
+            "name": "seedTasks",
+            "description": "Insert task records directly into the database",
+            "signature": "(tasks: Task[]) => Promise<void>"
+          }
+        ]
+      }
+    ],
+    "pageObjects": [
+      {
+        "name": "TaskBoardPage",
+        "filePath": "tests/e2e/pages/task-board.page.ts",
+        "page": "Main task board view",
+        "elements": [
+          "taskList",
+          "createTaskButton",
+          "filterBar",
+          "searchInput",
+          "taskCards"
+        ],
+        "actions": [
+          "createTask",
+          "filterByPriority",
+          "searchTasks",
+          "dragTask",
+          "openTaskDetail"
+        ]
+      },
+      {
+        "name": "TaskDetailPage",
+        "filePath": "tests/e2e/pages/task-detail.page.ts",
+        "page": "Task detail/edit view",
+        "elements": [
+          "titleInput",
+          "descriptionEditor",
+          "prioritySelect",
+          "dueDatePicker",
+          "tagInput",
+          "saveButton"
+        ],
+        "actions": [
+          "editTitle",
+          "changePriority",
+          "setDueDate",
+          "addTag",
+          "saveChanges"
+        ]
+      }
+    ],
+    "mocking": {
+      "strategy": "Vitest built-in mocking with vi.mock() for unit tests. MSW (Mock Service Worker) for integration tests to intercept HTTP requests. Custom WebSocket mock server for sync tests.",
+      "libraries": [
+        "vitest (vi.mock, vi.fn)",
+        "msw@2.0",
+        "@testing-library/react"
+      ],
+      "mockFiles": [
+        {
+          "path": "tests/mocks/handlers.ts",
+          "purpose": "MSW request handlers for API mocking"
+        },
+        {
+          "path": "tests/mocks/websocket-server.ts",
+          "purpose": "Mock WebSocket server for real-time sync testing"
+        },
+        {
+          "path": "tests/mocks/ai-service.ts",
+          "purpose": "Mock AI prioritization service responses"
+        }
+      ]
+    },
+    "dependencies": {
+      "production": [],
+      "development": [
+        {
+          "name": "vitest",
+          "version": "^1.6.0",
+          "purpose": "Test runner for unit and integration tests"
+        },
+        {
+          "name": "@playwright/test",
+          "version": "^1.44.0",
+          "purpose": "E2E test framework"
+        },
+        {
+          "name": "@testing-library/react",
+          "version": "^15.0.0",
+          "purpose": "Component test utilities"
+        },
+        {
+          "name": "msw",
+          "version": "^2.3.0",
+          "purpose": "API mocking for integration tests"
+        },
+        {
+          "name": "@vitest/coverage-v8",
+          "version": "^1.6.0",
+          "purpose": "Code coverage reporting"
+        },
+        {
+          "name": "@vitest/ui",
+          "version": "^1.6.0",
+          "purpose": "Visual test result explorer"
+        }
+      ]
+    },
+    "scripts": [
+      {
+        "name": "test",
+        "command": "vitest run",
+        "purpose": "Run all unit and integration tests"
+      },
+      {
+        "name": "test:watch",
+        "command": "vitest",
+        "purpose": "Run tests in watch mode"
+      },
+      {
+        "name": "test:coverage",
+        "command": "vitest run --coverage",
+        "purpose": "Run tests with coverage report"
+      },
+      {
+        "name": "test:e2e",
+        "command": "playwright test",
+        "purpose": "Run E2E tests"
+      },
+      {
+        "name": "test:e2e:ui",
+        "command": "playwright test --ui",
+        "purpose": "Run E2E tests with Playwright UI"
+      },
+      {
+        "name": "test:all",
+        "command": "vitest run && playwright test",
+        "purpose": "Run all test suites"
+      }
+    ],
+    "setupInstructions": {
+      "prerequisites": [
+        "Node.js 20+",
+        "PostgreSQL 15+ (for integration tests)",
+        "Chrome/Firefox/WebKit (auto-installed by Playwright)"
+      ],
+      "installationSteps": [
+        "npm install",
+        "npx playwright install",
+        "cp .env.test.example .env.test",
+        "npm run db:migrate:test"
+      ],
+      "runCommands": [
+        {
+          "command": "npm test",
+          "description": "Run unit and integration tests"
+        },
+        {
+          "command": "npm run test:e2e",
+          "description": "Run E2E tests (requires running app)"
+        },
+        {
+          "command": "npm run test:coverage",
+          "description": "Generate coverage report"
+        }
+      ]
+    },
+    "bestPractices": [
+      {
+        "practice": "Test file co-location",
+        "implementation": "Unit tests placed next to source files, integration/E2E tests in dedicated directories",
+        "reference": "Testing Trophy pattern"
+      },
+      {
+        "practice": "Factory pattern for test data",
+        "implementation": "All test data generated via factory functions with trait support",
+        "reference": "tests/factories/README.md"
+      },
+      {
+        "practice": "No hard waits in E2E tests",
+        "implementation": "Use Playwright auto-waiting and explicit waitFor assertions instead of sleep/setTimeout",
+        "reference": "Playwright best practices docs"
+      }
+    ]
+  }
+}

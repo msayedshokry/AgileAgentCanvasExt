@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/common/user-story.schema.json",
+  "title": "User Story Schema",
+  "description": "Comprehensive user story format capturing As-a/I-want/So-that with full detail",
+  "type": "object",
+  "required": ["asA", "iWant", "soThat"],
+  "properties": {
+    "asA": {
+      "type": "string",
+      "description": "The user role or persona - the complete 'As a...' clause",
+      "examples": ["a developer", "a user", "a tech lead", "a user with a screen reader"]
+    },
+    "iWant": {
+      "type": "string",
+      "description": "The desired capability or action - the complete 'I want...' clause",
+      "examples": [
+        "to set up a Vite + React + TypeScript project with proper configuration and folder structure",
+        "to see a multi-column Kanban board organized by story status",
+        "comprehensive keyboard shortcuts for navigation"
+      ]
+    },
+    "soThat": {
+      "type": "string",
+      "description": "The value or benefit gained - the complete 'So that...' clause",
+      "examples": [
+        "I have a solid foundation for building the BMAD UI application",
+        "I can quickly understand the distribution of work across workflow stages",
+        "I can work efficiently without using the mouse"
+      ]
+    },
+    "role": {
+      "type": "string",
+      "description": "Alternative field name for asA (for backward compatibility)",
+      "examples": ["developer", "end user", "administrator"]
+    },
+    "action": {
+      "type": "string",
+      "description": "Alternative field name for iWant (for backward compatibility)",
+      "examples": ["to be able to log in with my email"]
+    },
+    "benefit": {
+      "type": "string",
+      "description": "Alternative field name for soThat (for backward compatibility)",
+      "examples": ["I can access my personalized content"]
+    },
+    "formatted": {
+      "type": "string",
+      "description": "Pre-formatted complete user story as a single string",
+      "examples": [
+        "As a developer, I want to set up a Vite + React + TypeScript project with proper configuration and folder structure, So that I have a solid foundation for building the BMAD UI application."
+      ]
+    },
+    "context": {
+      "type": "string",
+      "description": "Additional context or background for the user story"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes about this user story"
+    }
+  },
+  "additionalProperties": false
+}

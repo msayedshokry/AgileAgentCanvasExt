@@ -1,0 +1,612 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/bmm/research.schema.json",
+  "title": "Research Report Schema",
+  "description": "Comprehensive schema for research artifacts - captures COMPLETE domain, market, and technical research with full findings and analysis",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["researchType", "topic", "findings"],
+      "properties": {
+        "researchType": {
+          "type": "string",
+          "description": "Type of research conducted",
+          "enum": ["domain", "market", "technical", "user", "competitive", "feasibility"]
+        },
+        "topic": {
+          "type": "string",
+          "description": "Main topic of research"
+        },
+        "scope": {
+          "type": "object",
+          "description": "Research scope definition",
+          "properties": {
+            "description": {
+              "type": "string",
+              "description": "COMPLETE scope description"
+            },
+            "inScope": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "outOfScope": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "timeframe": { "type": "string" }
+          }
+        },
+        "goals": {
+          "type": "array",
+          "description": "ALL research goals and objectives - capture completely",
+          "items": {
+            "type": "object",
+            "properties": {
+              "goal": {
+                "type": "string",
+                "description": "COMPLETE goal description"
+              },
+              "rationale": { "type": "string" },
+              "successCriteria": { "type": "string" }
+            }
+          }
+        },
+        "questions": {
+          "type": "array",
+          "description": "Research questions to be answered",
+          "items": {
+            "type": "object",
+            "properties": {
+              "question": {
+                "type": "string",
+                "description": "COMPLETE research question"
+              },
+              "priority": {
+                "type": "string",
+                "enum": ["primary", "secondary", "exploratory"]
+              },
+              "answered": { "type": "boolean" },
+              "answer": {
+                "type": "string",
+                "description": "COMPLETE answer if available"
+              }
+            }
+          }
+        },
+        "methodology": {
+          "type": "object",
+          "description": "Research methodology used - capture COMPLETE details",
+          "properties": {
+            "approach": {
+              "type": "string",
+              "description": "COMPLETE research approach description"
+            },
+            "methods": {
+              "type": "array",
+              "description": "Research methods used",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "method": { "type": "string" },
+                  "description": { "type": "string" },
+                  "rationale": { "type": "string" }
+                }
+              }
+            },
+            "sources": {
+              "type": "array",
+              "description": "ALL sources consulted - capture full details",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "source": { "type": "string" },
+                  "type": {
+                    "type": "string",
+                    "enum": ["primary", "secondary", "web", "interview", "survey", "documentation", "expert"]
+                  },
+                  "credibility": {
+                    "type": "string",
+                    "enum": ["high", "medium", "low"]
+                  },
+                  "notes": { "type": "string" }
+                }
+              }
+            },
+            "webResearchEnabled": {
+              "type": "boolean",
+              "description": "Whether web research was used"
+            },
+            "toolsUsed": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "limitations": {
+              "type": "array",
+              "description": "Research limitations",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "findings": {
+          "type": "array",
+          "description": "ALL key research findings - capture COMPLETE details for each",
+          "items": {
+            "type": "object",
+            "required": ["finding"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Finding identifier"
+              },
+              "category": {
+                "type": "string",
+                "description": "Category of finding"
+              },
+              "finding": {
+                "type": "string",
+                "description": "COMPLETE finding description - do NOT summarize"
+              },
+              "details": {
+                "type": "string",
+                "description": "Additional details and context"
+              },
+              "evidence": {
+                "type": "array",
+                "description": "ALL supporting evidence",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "description": { "type": "string" },
+                    "source": { "type": "string" }
+                  }
+                }
+              },
+              "confidence": {
+                "type": "string",
+                "enum": ["low", "medium", "high", "very-high"],
+                "description": "Confidence level in this finding"
+              },
+              "implications": {
+                "type": "array",
+                "description": "ALL implications of this finding",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "implication": {
+                      "type": "string",
+                      "description": "COMPLETE implication description"
+                    },
+                    "area": { "type": "string" },
+                    "severity": {
+                      "type": "string",
+                      "enum": ["low", "medium", "high"]
+                    }
+                  }
+                }
+              },
+              "actionItems": {
+                "type": "array",
+                "description": "Recommended actions based on this finding",
+                "items": { "type": "string" }
+              },
+              "relatedFindings": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "competitiveAnalysis": {
+          "type": "array",
+          "description": "Competitive landscape analysis - capture COMPLETE details",
+          "items": {
+            "type": "object",
+            "properties": {
+              "competitor": {
+                "type": "string",
+                "description": "Competitor name"
+              },
+              "description": {
+                "type": "string",
+                "description": "COMPLETE competitor description"
+              },
+              "website": { "type": "string" },
+              "marketPosition": { "type": "string" },
+              "targetMarket": { "type": "string" },
+              "strengths": {
+                "type": "array",
+                "description": "ALL identified strengths",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "strength": {
+                      "type": "string",
+                      "description": "COMPLETE strength description"
+                    },
+                    "impact": { "type": "string" }
+                  }
+                }
+              },
+              "weaknesses": {
+                "type": "array",
+                "description": "ALL identified weaknesses",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "weakness": {
+                      "type": "string",
+                      "description": "COMPLETE weakness description"
+                    },
+                    "opportunity": { "type": "string" }
+                  }
+                }
+              },
+              "features": {
+                "type": "array",
+                "description": "Key features",
+                "items": { "type": "string" }
+              },
+              "pricing": {
+                "type": "object",
+                "properties": {
+                  "model": { "type": "string" },
+                  "tiers": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": { "type": "string" },
+                        "price": { "type": "string" },
+                        "features": {
+                          "type": "array",
+                          "items": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "differentiators": {
+                "type": "array",
+                "description": "How we can differentiate",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "differentiator": { "type": "string" },
+                    "description": { "type": "string" }
+                  }
+                }
+              },
+              "lessons": {
+                "type": "array",
+                "description": "Lessons learned from this competitor",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "marketAnalysis": {
+          "type": "object",
+          "description": "Market analysis - capture COMPLETE details",
+          "properties": {
+            "overview": {
+              "type": "string",
+              "description": "COMPLETE market overview"
+            },
+            "size": {
+              "type": "object",
+              "properties": {
+                "tam": { "type": "string" },
+                "sam": { "type": "string" },
+                "som": { "type": "string" },
+                "growth": { "type": "string" }
+              }
+            },
+            "segments": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "segment": { "type": "string" },
+                  "size": { "type": "string" },
+                  "characteristics": { "type": "string" },
+                  "attractiveness": { "type": "string" }
+                }
+              }
+            },
+            "drivers": {
+              "type": "array",
+              "description": "Market drivers",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "driver": { "type": "string" },
+                  "description": { "type": "string" },
+                  "impact": { "type": "string" }
+                }
+              }
+            },
+            "barriers": {
+              "type": "array",
+              "description": "Market barriers",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "barrier": { "type": "string" },
+                  "description": { "type": "string" },
+                  "mitigation": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "trends": {
+          "type": "array",
+          "description": "ALL identified trends - capture COMPLETE details",
+          "items": {
+            "type": "object",
+            "properties": {
+              "trend": {
+                "type": "string",
+                "description": "COMPLETE trend description"
+              },
+              "category": { "type": "string" },
+              "relevance": {
+                "type": "string",
+                "description": "COMPLETE relevance description"
+              },
+              "timeframe": {
+                "type": "string",
+                "enum": ["emerging", "growing", "mature", "declining"]
+              },
+              "impact": {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              "evidence": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "implications": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "technicalFindings": {
+          "type": "array",
+          "description": "Technical research findings - capture COMPLETE details",
+          "items": {
+            "type": "object",
+            "properties": {
+              "topic": { "type": "string" },
+              "finding": {
+                "type": "string",
+                "description": "COMPLETE technical finding"
+              },
+              "details": { "type": "string" },
+              "feasibility": {
+                "type": "string",
+                "enum": ["proven", "feasible", "experimental", "infeasible"]
+              },
+              "risks": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "recommendations": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "userResearch": {
+          "type": "object",
+          "description": "User research findings - capture COMPLETE details",
+          "properties": {
+            "overview": { "type": "string" },
+            "personas": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "description": {
+                    "type": "string",
+                    "description": "COMPLETE persona description"
+                  },
+                  "goals": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "painPoints": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "behaviors": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "needs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "need": { "type": "string" },
+                  "priority": { "type": "string" },
+                  "evidence": { "type": "string" }
+                }
+              }
+            },
+            "insights": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "insight": {
+                    "type": "string",
+                    "description": "COMPLETE insight"
+                  },
+                  "evidence": { "type": "string" },
+                  "implication": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "recommendations": {
+          "type": "array",
+          "description": "ALL research recommendations - capture COMPLETE details",
+          "items": {
+            "type": "object",
+            "required": ["recommendation"],
+            "properties": {
+              "id": { "type": "string" },
+              "recommendation": {
+                "type": "string",
+                "description": "COMPLETE recommendation - do NOT summarize"
+              },
+              "category": { "type": "string" },
+              "priority": {
+                "type": "string",
+                "enum": ["critical", "high", "medium", "low"]
+              },
+              "rationale": {
+                "type": "string",
+                "description": "COMPLETE rationale"
+              },
+              "supportingFindings": {
+                "type": "array",
+                "description": "Finding IDs that support this",
+                "items": { "type": "string" }
+              },
+              "effort": {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              "impact": {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              "risks": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "nextSteps": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "risks": {
+          "type": "array",
+          "description": "Identified risks from research",
+          "items": {
+            "type": "object",
+            "properties": {
+              "risk": {
+                "type": "string",
+                "description": "COMPLETE risk description"
+              },
+              "category": { "type": "string" },
+              "probability": {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              "impact": {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              "mitigation": { "type": "string" }
+            }
+          }
+        },
+        "synthesis": {
+          "type": "object",
+          "description": "Overall synthesis of research findings",
+          "properties": {
+            "summary": {
+              "type": "string",
+              "description": "COMPLETE synthesis summary - capture all key insights"
+            },
+            "keyInsights": {
+              "type": "array",
+              "description": "Most important insights",
+              "items": { "type": "string" }
+            },
+            "strategicImplications": {
+              "type": "array",
+              "description": "Strategic implications",
+              "items": { "type": "string" }
+            },
+            "openQuestions": {
+              "type": "array",
+              "description": "Questions remaining unanswered",
+              "items": { "type": "string" }
+            },
+            "futureResearch": {
+              "type": "array",
+              "description": "Recommended future research",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "references": {
+          "type": "array",
+          "description": "ALL references and sources - capture complete details",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string" },
+              "type": {
+                "type": "string",
+                "enum": ["article", "paper", "website", "book", "interview", "survey", "documentation", "report"]
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "author": { "type": "string" },
+              "publication": { "type": "string" },
+              "date": { "type": "string" },
+              "accessDate": {
+                "type": "string",
+                "format": "date"
+              },
+              "notes": {
+                "type": "string",
+                "description": "COMPLETE notes about this reference"
+              },
+              "relevance": { "type": "string" }
+            }
+          }
+        },
+        "appendices": {
+          "type": "array",
+          "description": "Additional supporting materials",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string" },
+              "type": { "type": "string" },
+              "content": { "type": "string" },
+              "reference": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

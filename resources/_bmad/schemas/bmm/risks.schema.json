@@ -1,0 +1,172 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/bmm/risks.schema.json",
+  "title": "Risks and Mitigations Schema",
+  "description": "Schema for risk assessment with impact analysis and mitigation strategies",
+  "type": "object",
+  "properties": {
+    "risks": {
+      "type": "array",
+      "description": "List of identified risks with their mitigations",
+      "items": {
+        "type": "object",
+        "required": ["risk", "mitigation"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Risk identifier (e.g., 'RISK-01')"
+          },
+          "risk": {
+            "type": "string",
+            "description": "Description of the risk"
+          },
+          "category": {
+            "type": "string",
+            "enum": ["technical", "operational", "security", "compliance", "resource", "schedule", "integration", "performance", "data"],
+            "description": "Risk category"
+          },
+          "probability": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "very-high"],
+            "description": "Likelihood of the risk occurring"
+          },
+          "impact": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"],
+            "description": "Impact if the risk occurs"
+          },
+          "riskScore": {
+            "type": "string",
+            "description": "Combined risk score (probability x impact)",
+            "enum": ["low", "medium", "high", "critical"]
+          },
+          "impactDescription": {
+            "type": "string",
+            "description": "Detailed description of the impact"
+          },
+          "mitigation": {
+            "type": "string",
+            "description": "Primary mitigation strategy"
+          },
+          "mitigationStrategies": {
+            "type": "array",
+            "description": "Multiple mitigation approaches",
+            "items": {
+              "type": "object",
+              "properties": {
+                "strategy": { "type": "string" },
+                "owner": { "type": "string" },
+                "status": {
+                  "type": "string",
+                  "enum": ["planned", "in-progress", "implemented", "verified"]
+                }
+              }
+            }
+          },
+          "contingencyPlan": {
+            "type": "string",
+            "description": "What to do if the risk materializes despite mitigation"
+          },
+          "triggers": {
+            "type": "array",
+            "description": "Warning signs that the risk may be materializing",
+            "items": { "type": "string" }
+          },
+          "owner": {
+            "type": "string",
+            "description": "Person/team responsible for monitoring this risk"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["identified", "analyzing", "mitigating", "monitoring", "closed", "occurred"],
+            "description": "Current status of the risk"
+          },
+          "residualRisk": {
+            "type": "string",
+            "enum": ["none", "low", "medium", "high"],
+            "description": "Remaining risk after mitigation"
+          },
+          "relatedRequirements": {
+            "type": "array",
+            "description": "Requirements affected by this risk",
+            "items": { "type": "string" }
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "description": "Assumptions that if proven false become risks",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "assumption": { "type": "string" },
+          "ifFalse": { "type": "string", "description": "What risk emerges if assumption is false" },
+          "validationMethod": { "type": "string" },
+          "validated": { "type": "boolean", "default": false }
+        }
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "description": "External dependencies that pose risk",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "dependency": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": ["upstream", "downstream", "external-system", "team", "vendor", "infrastructure"]
+          },
+          "risk": { "type": "string" },
+          "mitigation": { "type": "string" }
+        }
+      }
+    },
+    "riskMatrix": {
+      "type": "object",
+      "description": "Risk matrix summary",
+      "properties": {
+        "critical": {
+          "type": "array",
+          "description": "Critical risk IDs",
+          "items": { "type": "string" }
+        },
+        "high": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "medium": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "low": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "description": "Risk summary statistics",
+      "properties": {
+        "totalRisks": { "type": "integer" },
+        "criticalCount": { "type": "integer" },
+        "highCount": { "type": "integer" },
+        "mediumCount": { "type": "integer" },
+        "lowCount": { "type": "integer" },
+        "mitigatedCount": { "type": "integer" },
+        "openCount": { "type": "integer" },
+        "overallRiskLevel": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"]
+        }
+      }
+    }
+  }
+}

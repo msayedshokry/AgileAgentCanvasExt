@@ -1,0 +1,45 @@
+{
+  "$schema": "../../../schemas/bmm/project-context.schema.json",
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "project-context",
+    "workflowName": "generate-project-context",
+    "projectName": "{{project_name}}",
+    "stepsCompleted": [],
+    "currentStep": "",
+    "timestamps": {
+      "created": "{{timestamp}}",
+      "lastModified": "{{timestamp}}"
+    },
+    "author": "{{user_name}}",
+    "status": "draft"
+  },
+  "content": {
+    "projectInfo": {
+      "name": "{{project_name}}",
+      "description": "",
+      "type": "",
+      "version": ""
+    },
+    "techStack": {
+      "languages": [],
+      "frameworks": [],
+      "tools": []
+    },
+    "implementationRules": [],
+    "patterns": {
+      "codePatterns": [],
+      "namingConventions": [],
+      "fileOrganization": []
+    },
+    "forbiddenPatterns": [],
+    "keyFiles": [],
+    "additionalNotes": [
+      "BMAD Interaction Rule: All BMAD workflows marked interactive MUST be run as interactive sessions — halt for user input at every step boundary.",
+      "BMAD Interaction Rule: Do NOT produce a complete artifact or implementation plan in a single response. Follow BMAD skill instructions for sequential step-by-step execution.",
+      "BMAD Interaction Rule: When a workflow step says STOP and WAIT or uses <ask> tags, halt and wait for the user's response before continuing.",
+      "BMAD Interaction Rule: Present checkpoint menus as defined in the workflow and halt for user selection.",
+      "BMAD Interaction Rule: Only skip interactive checkpoints when the user explicitly chooses YOLO mode."
+    ]
+  }
+}

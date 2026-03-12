@@ -1,0 +1,114 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/common/metadata.schema.json",
+  "title": "BMAD Artifact Metadata Schema",
+  "description": "Standard metadata structure for all BMAD workflow artifacts",
+  "type": "object",
+  "required": ["schemaVersion", "artifactType", "timestamps"],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "description": "Version of the schema used for this artifact",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "examples": ["1.0.0"]
+    },
+    "artifactType": {
+      "type": "string",
+      "description": "Type identifier for this artifact",
+      "examples": ["story", "prd", "architecture", "epics", "test-design"]
+    },
+    "workflowName": {
+      "type": "string",
+      "description": "Name of the workflow that generated this artifact",
+      "examples": ["create-story", "create-prd", "create-architecture"]
+    },
+    "workflowVersion": {
+      "type": "string",
+      "description": "Version of the workflow used",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "projectName": {
+      "type": "string",
+      "description": "Name of the project this artifact belongs to"
+    },
+    "stepsCompleted": {
+      "type": "array",
+      "description": "List of workflow steps that have been completed",
+      "items": {
+        "type": "string"
+      },
+      "examples": [["step-01-init", "step-02-context", "step-03-design"]]
+    },
+    "currentStep": {
+      "type": "string",
+      "description": "The current step in progress (if workflow is incomplete)"
+    },
+    "inputDocuments": {
+      "type": "array",
+      "description": "List of input documents used to generate this artifact",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Relative path to the input document"
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of the input document"
+          },
+          "version": {
+            "type": "string",
+            "description": "Version or hash of the input document"
+          }
+        },
+        "required": ["path"]
+      }
+    },
+    "timestamps": {
+      "type": "object",
+      "description": "Timestamp information for the artifact",
+      "required": ["created"],
+      "properties": {
+        "created": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp when artifact was created"
+        },
+        "lastModified": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp of last modification"
+        },
+        "completed": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp when workflow completed"
+        }
+      }
+    },
+    "author": {
+      "type": "string",
+      "description": "User who created or last modified the artifact"
+    },
+    "status": {
+      "type": "string",
+      "description": "Current status of the artifact",
+      "enum": ["draft", "in-progress", "review", "approved", "completed", "archived"],
+      "default": "draft"
+    },
+    "tags": {
+      "type": "array",
+      "description": "Optional tags for categorization",
+      "items": {
+        "type": "string"
+      }
+    },
+    "customFields": {
+      "type": "object",
+      "description": "Extension point for workflow-specific metadata",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

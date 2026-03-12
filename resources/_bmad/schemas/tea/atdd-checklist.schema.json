@@ -1,0 +1,691 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/tea/atdd-checklist.schema.json",
+  "title": "ATDD Checklist Schema",
+  "description": "Schema for ATDD (Acceptance Test Driven Development) checklist artifacts. IMPORTANT: Capture ALL acceptance criteria, test details, and implementation checklist items completely. Do NOT summarize or truncate any Given/When/Then scenarios or test code.",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["storyInfo", "acceptanceCriteria"],
+      "properties": {
+        "storyInfo": {
+          "type": "object",
+          "description": "COMPLETE story information for ATDD implementation",
+          "required": ["storyId", "storyTitle"],
+          "properties": {
+            "epicId": {
+              "type": "string",
+              "description": "Parent epic identifier"
+            },
+            "storyId": {
+              "type": "string",
+              "description": "Unique story identifier"
+            },
+            "storyTitle": {
+              "type": "string",
+              "description": "COMPLETE story title"
+            },
+            "storyDescription": {
+              "type": "string",
+              "description": "COMPLETE story description with full context"
+            },
+            "primaryTestLevel": {
+              "type": "string",
+              "enum": ["e2e", "integration", "component", "unit"],
+              "description": "Primary test level for this story"
+            },
+            "businessValue": {
+              "type": "string",
+              "description": "COMPLETE description of business value delivered"
+            },
+            "technicalContext": {
+              "type": "string",
+              "description": "COMPLETE technical context and considerations"
+            }
+          }
+        },
+        "storySummary": {
+          "$ref": "../common/user-story.schema.json",
+          "description": "COMPLETE user story in As A / I Want / So That format"
+        },
+        "acceptanceCriteria": {
+          "type": "array",
+          "description": "COMPLETE acceptance criteria with full Given/When/Then scenarios. Do NOT summarize - include ALL scenarios with full text.",
+          "items": {
+            "$ref": "../common/acceptance-criteria.schema.json"
+          }
+        },
+        "failingTestsCreated": {
+          "type": "object",
+          "description": "RED phase - COMPLETE inventory of all failing tests created before implementation",
+          "properties": {
+            "e2e": {
+              "type": "array",
+              "description": "ALL E2E failing tests with full details",
+              "items": { "$ref": "#/definitions/testItem" }
+            },
+            "api": {
+              "type": "array",
+              "description": "ALL API failing tests with full details",
+              "items": { "$ref": "#/definitions/testItem" }
+            },
+            "integration": {
+              "type": "array",
+              "description": "ALL integration failing tests with full details",
+              "items": { "$ref": "#/definitions/testItem" }
+            },
+            "component": {
+              "type": "array",
+              "description": "ALL component failing tests with full details",
+              "items": { "$ref": "#/definitions/testItem" }
+            },
+            "unit": {
+              "type": "array",
+              "description": "ALL unit failing tests with full details",
+              "items": { "$ref": "#/definitions/testItem" }
+            }
+          }
+        },
+        "testScenarios": {
+          "type": "array",
+          "description": "COMPLETE test scenarios derived from acceptance criteria",
+          "items": {
+            "type": "object",
+            "properties": {
+              "scenarioId": {
+                "type": "string",
+                "description": "Unique scenario identifier"
+              },
+              "acReference": {
+                "type": "string",
+                "description": "Reference to acceptance criterion"
+              },
+              "name": {
+                "type": "string",
+                "description": "COMPLETE scenario name"
+              },
+              "given": {
+                "type": "array",
+                "description": "ALL Given preconditions - COMPLETE text",
+                "items": { "type": "string" }
+              },
+              "when": {
+                "type": "array",
+                "description": "ALL When actions - COMPLETE text",
+                "items": { "type": "string" }
+              },
+              "then": {
+                "type": "array",
+                "description": "ALL Then expected outcomes - COMPLETE text",
+                "items": { "type": "string" }
+              },
+              "examples": {
+                "type": "array",
+                "description": "Scenario outline examples if applicable",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "testLevel": {
+                "type": "string",
+                "enum": ["e2e", "integration", "component", "unit"]
+              },
+              "automationStatus": {
+                "type": "string",
+                "enum": ["pending", "in-progress", "completed", "blocked"]
+              }
+            }
+          }
+        },
+        "dataFactoriesCreated": {
+          "type": "array",
+          "description": "ALL data factories created for test data generation",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Factory name"
+              },
+              "purpose": {
+                "type": "string",
+                "description": "COMPLETE description of what data this factory generates"
+              },
+              "filePath": {
+                "type": "string",
+                "description": "File path to the factory"
+              },
+              "entityType": {
+                "type": "string",
+                "description": "Type of entity/data this factory creates"
+              },
+              "traits": {
+                "type": "array",
+                "description": "Available traits/variants",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "description": { "type": "string" }
+                  }
+                }
+              },
+              "code": {
+                "type": "string",
+                "description": "COMPLETE factory code - do NOT truncate"
+              }
+            }
+          }
+        },
+        "fixturesCreated": {
+          "type": "array",
+          "description": "ALL test fixtures created",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Fixture name"
+              },
+              "purpose": {
+                "type": "string",
+                "description": "COMPLETE description of what this fixture provides"
+              },
+              "filePath": {
+                "type": "string",
+                "description": "File path to the fixture"
+              },
+              "scope": {
+                "type": "string",
+                "enum": ["test", "module", "session", "function"],
+                "description": "Fixture scope"
+              },
+              "setupSteps": {
+                "type": "array",
+                "description": "COMPLETE setup steps",
+                "items": { "type": "string" }
+              },
+              "teardownSteps": {
+                "type": "array",
+                "description": "COMPLETE teardown steps",
+                "items": { "type": "string" }
+              },
+              "code": {
+                "type": "string",
+                "description": "COMPLETE fixture code - do NOT truncate"
+              }
+            }
+          }
+        },
+        "mockRequirements": {
+          "type": "array",
+          "description": "ALL mock/stub requirements for testing",
+          "items": {
+            "type": "object",
+            "properties": {
+              "service": {
+                "type": "string",
+                "description": "Service or component to mock"
+              },
+              "mockType": {
+                "type": "string",
+                "enum": ["mock", "stub", "fake", "spy", "fixture"],
+                "description": "Type of test double"
+              },
+              "description": {
+                "type": "string",
+                "description": "COMPLETE description of mock behavior required"
+              },
+              "filePath": {
+                "type": "string",
+                "description": "File path to the mock implementation"
+              },
+              "scenarios": {
+                "type": "array",
+                "description": "ALL scenarios this mock supports",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "input": { "type": "string" },
+                    "output": { "type": "string" }
+                  }
+                }
+              },
+              "code": {
+                "type": "string",
+                "description": "COMPLETE mock implementation code - do NOT truncate"
+              }
+            }
+          }
+        },
+        "requiredDataTestIds": {
+          "type": "array",
+          "description": "ALL required data-testid attributes for E2E testing",
+          "items": {
+            "type": "object",
+            "properties": {
+              "testId": {
+                "type": "string",
+                "description": "The data-testid value"
+              },
+              "element": {
+                "type": "string",
+                "description": "HTML element type"
+              },
+              "component": {
+                "type": "string",
+                "description": "Component where this testId should be added"
+              },
+              "filePath": {
+                "type": "string",
+                "description": "File path where testId should be added"
+              },
+              "purpose": {
+                "type": "string",
+                "description": "COMPLETE description of what this testId is used for in tests"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["pending", "added", "verified"],
+                "description": "Current status"
+              }
+            }
+          }
+        },
+        "pageObjects": {
+          "type": "array",
+          "description": "ALL page objects created for E2E tests",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Page object name"
+              },
+              "page": {
+                "type": "string",
+                "description": "Page/component this represents"
+              },
+              "filePath": { "type": "string" },
+              "selectors": {
+                "type": "array",
+                "description": "ALL selectors defined",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "selector": { "type": "string" },
+                    "type": { "type": "string" }
+                  }
+                }
+              },
+              "actions": {
+                "type": "array",
+                "description": "ALL actions/methods defined",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "description": { "type": "string" },
+                    "parameters": { "type": "array", "items": { "type": "string" } }
+                  }
+                }
+              },
+              "code": {
+                "type": "string",
+                "description": "COMPLETE page object code - do NOT truncate"
+              }
+            }
+          }
+        },
+        "implementationChecklist": {
+          "type": "array",
+          "description": "COMPLETE implementation checklist - ALL items that must be completed",
+          "items": {
+            "type": "object",
+            "required": ["item", "completed"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Checklist item identifier"
+              },
+              "item": {
+                "type": "string",
+                "description": "COMPLETE description of the checklist item"
+              },
+              "category": {
+                "type": "string",
+                "enum": ["test-setup", "implementation", "verification", "documentation", "cleanup"],
+                "description": "Category of checklist item"
+              },
+              "completed": {
+                "type": "boolean",
+                "description": "Whether this item is completed"
+              },
+              "completedDate": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When this item was completed"
+              },
+              "notes": {
+                "type": "string",
+                "description": "Additional notes about completion"
+              }
+            }
+          }
+        },
+        "runningTests": {
+          "type": "object",
+          "description": "COMPLETE commands for running tests at different levels",
+          "properties": {
+            "all": {
+              "type": "string",
+              "description": "Command to run all tests for this story"
+            },
+            "e2e": {
+              "type": "string",
+              "description": "Command to run E2E tests"
+            },
+            "api": {
+              "type": "string",
+              "description": "Command to run API tests"
+            },
+            "integration": {
+              "type": "string",
+              "description": "Command to run integration tests"
+            },
+            "component": {
+              "type": "string",
+              "description": "Command to run component tests"
+            },
+            "unit": {
+              "type": "string",
+              "description": "Command to run unit tests"
+            },
+            "watch": {
+              "type": "string",
+              "description": "Command to run tests in watch mode"
+            },
+            "coverage": {
+              "type": "string",
+              "description": "Command to run tests with coverage"
+            }
+          }
+        },
+        "redGreenRefactorWorkflow": {
+          "type": "object",
+          "description": "COMPLETE Red-Green-Refactor workflow tracking",
+          "properties": {
+            "currentPhase": {
+              "type": "string",
+              "enum": ["red", "green", "refactor", "complete"],
+              "description": "Current phase in the TDD cycle"
+            },
+            "currentIteration": {
+              "type": "integer",
+              "description": "Current iteration number"
+            },
+            "iterations": {
+              "type": "array",
+              "description": "ALL iterations with full details",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "iteration": {
+                    "type": "integer",
+                    "description": "Iteration number"
+                  },
+                  "targetAC": {
+                    "type": "string",
+                    "description": "Acceptance criterion being implemented"
+                  },
+                  "red": {
+                    "type": "object",
+                    "description": "RED phase details",
+                    "properties": {
+                      "description": {
+                        "type": "string",
+                        "description": "COMPLETE description of failing test written"
+                      },
+                      "testFile": { "type": "string" },
+                      "testName": { "type": "string" },
+                      "failureMessage": {
+                        "type": "string",
+                        "description": "COMPLETE failure message"
+                      },
+                      "completedAt": { "type": "string", "format": "date-time" }
+                    }
+                  },
+                  "green": {
+                    "type": "object",
+                    "description": "GREEN phase details",
+                    "properties": {
+                      "description": {
+                        "type": "string",
+                        "description": "COMPLETE description of implementation to make test pass"
+                      },
+                      "filesChanged": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      },
+                      "completedAt": { "type": "string", "format": "date-time" }
+                    }
+                  },
+                  "refactor": {
+                    "type": "object",
+                    "description": "REFACTOR phase details",
+                    "properties": {
+                      "description": {
+                        "type": "string",
+                        "description": "COMPLETE description of refactoring performed"
+                      },
+                      "improvements": {
+                        "type": "array",
+                        "description": "ALL improvements made",
+                        "items": { "type": "string" }
+                      },
+                      "completedAt": { "type": "string", "format": "date-time" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "knowledgeBaseReferences": {
+          "type": "array",
+          "description": "ALL knowledge base references applied",
+          "items": {
+            "type": "object",
+            "properties": {
+              "reference": {
+                "type": "string",
+                "description": "Knowledge base document/pattern reference"
+              },
+              "title": {
+                "type": "string",
+                "description": "Title of the reference"
+              },
+              "applied": {
+                "type": "boolean",
+                "description": "Whether this reference has been applied"
+              },
+              "notes": {
+                "type": "string",
+                "description": "COMPLETE notes on how this reference was applied"
+              },
+              "appliedIn": {
+                "type": "array",
+                "description": "Files/tests where this reference was applied",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "testExecutionEvidence": {
+          "type": "object",
+          "description": "COMPLETE test execution evidence",
+          "properties": {
+            "lastRun": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Timestamp of last test run"
+            },
+            "results": {
+              "type": "object",
+              "properties": {
+                "passed": { "type": "integer" },
+                "failed": { "type": "integer" },
+                "skipped": { "type": "integer" },
+                "pending": { "type": "integer" },
+                "totalDuration": { "type": "string" }
+              }
+            },
+            "coverage": {
+              "type": "object",
+              "properties": {
+                "statements": { "type": "number" },
+                "branches": { "type": "number" },
+                "functions": { "type": "number" },
+                "lines": { "type": "number" }
+              }
+            },
+            "failedTests": {
+              "type": "array",
+              "description": "ALL failed tests with full details",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "testName": { "type": "string" },
+                  "filePath": { "type": "string" },
+                  "errorMessage": {
+                    "type": "string",
+                    "description": "COMPLETE error message"
+                  },
+                  "stackTrace": {
+                    "type": "string",
+                    "description": "COMPLETE stack trace"
+                  }
+                }
+              }
+            },
+            "screenshots": {
+              "type": "array",
+              "description": "Screenshot paths from E2E test failures",
+              "items": { "type": "string" }
+            },
+            "videos": {
+              "type": "array",
+              "description": "Video paths from E2E test runs",
+              "items": { "type": "string" }
+            },
+            "logs": {
+              "type": "array",
+              "description": "Log file paths",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "completionStatus": {
+          "type": "object",
+          "description": "Overall ATDD completion status",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": ["not-started", "red-phase", "green-phase", "refactor-phase", "complete", "blocked"],
+              "description": "Current status"
+            },
+            "percentComplete": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Percentage complete"
+            },
+            "blockers": {
+              "type": "array",
+              "description": "Current blockers",
+              "items": { "type": "string" }
+            },
+            "nextSteps": {
+              "type": "array",
+              "description": "Next steps to complete",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "testItem": {
+      "type": "object",
+      "description": "COMPLETE test item with all details",
+      "properties": {
+        "testId": {
+          "type": "string",
+          "description": "Unique test identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "COMPLETE test name"
+        },
+        "description": {
+          "type": "string",
+          "description": "COMPLETE test description - do NOT summarize"
+        },
+        "acReference": {
+          "type": "string",
+          "description": "Reference to acceptance criterion this test verifies"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["created", "passing", "failing", "skipped", "pending"],
+          "description": "Current test status"
+        },
+        "filePath": {
+          "type": "string",
+          "description": "File path to the test"
+        },
+        "lineNumber": {
+          "type": "integer",
+          "description": "Line number in the file"
+        },
+        "given": {
+          "type": "array",
+          "description": "COMPLETE Given preconditions",
+          "items": { "type": "string" }
+        },
+        "when": {
+          "type": "array",
+          "description": "COMPLETE When actions",
+          "items": { "type": "string" }
+        },
+        "then": {
+          "type": "array",
+          "description": "COMPLETE Then assertions",
+          "items": { "type": "string" }
+        },
+        "code": {
+          "type": "string",
+          "description": "COMPLETE test code - do NOT truncate"
+        },
+        "lastResult": {
+          "type": "object",
+          "properties": {
+            "status": { "type": "string", "enum": ["passed", "failed", "skipped"] },
+            "duration": { "type": "string" },
+            "errorMessage": { "type": "string" },
+            "runAt": { "type": "string", "format": "date-time" }
+          }
+        }
+      }
+    }
+  }
+}

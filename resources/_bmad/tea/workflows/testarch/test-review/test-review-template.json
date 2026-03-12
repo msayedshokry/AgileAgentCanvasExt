@@ -1,0 +1,84 @@
+{
+  "$schema": "../../../../schemas/tea/test-review.schema.json",
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "test-review",
+    "workflowName": "testarch-test-review",
+    "projectName": "{{project_name}}",
+    "stepsCompleted": [],
+    "currentStep": "",
+    "timestamps": {
+      "created": "{{timestamp}}",
+      "lastModified": "{{timestamp}}"
+    },
+    "author": "{{user_name}}",
+    "status": "draft"
+  },
+  "content": {
+    "reviewInfo": {
+      "qualityScore": 0,
+      "reviewDate": "{{date}}",
+      "scope": "{{review_scope}}",
+      "reviewer": "{{user_name}}"
+    },
+    "executiveSummary": {
+      "assessment": "",
+      "recommendation": "approve",
+      "strengths": [],
+      "weaknesses": []
+    },
+    "qualityAssessment": {
+      "criteria": [],
+      "bddFormat": {
+        "score": 0,
+        "notes": ""
+      },
+      "testIds": {
+        "score": 0,
+        "notes": ""
+      },
+      "priorityMarkers": {
+        "score": 0,
+        "notes": ""
+      },
+      "hardWaits": {
+        "score": 0,
+        "notes": ""
+      },
+      "determinism": {
+        "score": 0,
+        "notes": ""
+      },
+      "isolation": {
+        "score": 0,
+        "notes": ""
+      },
+      "fixturePatterns": {
+        "score": 0,
+        "notes": ""
+      }
+    },
+    "qualityScoreBreakdown": {
+      "determinism": 0,
+      "isolation": 0,
+      "maintainability": 0,
+      "coverage": 0,
+      "performance": 0
+    },
+    "criticalIssues": [],
+    "recommendations": [],
+    "bestPracticesFound": [],
+    "testFileAnalysis": [],
+    "contextAndIntegration": {
+      "integrationWithCI": "",
+      "testDataManagement": "",
+      "environmentHandling": ""
+    },
+    "knowledgeBaseReferences": [],
+    "nextSteps": [],
+    "decision": {
+      "verdict": "approve",
+      "comments": ""
+    }
+  }
+}

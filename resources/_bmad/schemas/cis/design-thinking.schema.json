@@ -1,0 +1,743 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/cis/design-thinking.schema.json",
+  "title": "Design Thinking Schema",
+  "description": "Schema for design thinking session artifacts. IMPORTANT: Capture ALL user insights, observations, ideas, and feedback completely. Do NOT summarize or truncate any empathy data, ideation results, or user feedback.",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["designChallenge", "define", "ideate"],
+      "properties": {
+        "projectName": {
+          "type": "string",
+          "description": "COMPLETE project or initiative name"
+        },
+        "sessionInfo": {
+          "type": "object",
+          "description": "Session information",
+          "properties": {
+            "facilitator": {
+              "type": "string",
+              "description": "Session facilitator"
+            },
+            "participants": {
+              "type": "array",
+              "description": "ALL session participants",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "role": { "type": "string" },
+                  "expertise": { "type": "string" }
+                }
+              }
+            },
+            "date": {
+              "type": "string",
+              "format": "date",
+              "description": "Session date"
+            },
+            "duration": {
+              "type": "string",
+              "description": "Session duration"
+            },
+            "location": {
+              "type": "string",
+              "description": "Session location (in-person or virtual)"
+            }
+          }
+        },
+        "designChallenge": {
+          "type": "string",
+          "description": "COMPLETE design challenge statement. This should clearly articulate the problem space and desired outcome."
+        },
+        "empathize": {
+          "type": "object",
+          "description": "COMPLETE Empathize phase - understanding users deeply",
+          "properties": {
+            "researchMethods": {
+              "type": "array",
+              "description": "ALL research methods used (interviews, observations, surveys, etc.)",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "method": { "type": "string" },
+                  "description": { "type": "string" },
+                  "participantCount": { "type": "integer" },
+                  "duration": { "type": "string" }
+                }
+              }
+            },
+            "userProfiles": {
+              "type": "array",
+              "description": "ALL user profiles/personas studied",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "role": { "type": "string" },
+                  "demographics": { "type": "string" },
+                  "goals": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "painPoints": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "context": {
+                    "type": "string",
+                    "description": "COMPLETE context of this user"
+                  }
+                }
+              }
+            },
+            "userInsights": {
+              "type": "array",
+              "description": "ALL key user insights gathered - COMPLETE insights, do NOT summarize",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "insight": {
+                    "type": "string",
+                    "description": "COMPLETE insight description"
+                  },
+                  "source": {
+                    "type": "string",
+                    "description": "Source of this insight"
+                  },
+                  "evidence": {
+                    "type": "string",
+                    "description": "Supporting evidence or quote"
+                  },
+                  "significance": {
+                    "type": "string",
+                    "description": "Why this insight matters"
+                  }
+                }
+              }
+            },
+            "keyObservations": {
+              "type": "array",
+              "description": "ALL key observations from research - COMPLETE observations",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "observation": {
+                    "type": "string",
+                    "description": "COMPLETE observation"
+                  },
+                  "context": {
+                    "type": "string",
+                    "description": "Context where observed"
+                  },
+                  "frequency": {
+                    "type": "string",
+                    "description": "How often this was observed"
+                  },
+                  "implications": {
+                    "type": "string",
+                    "description": "Design implications"
+                  }
+                }
+              }
+            },
+            "empathyMap": {
+              "type": "object",
+              "description": "COMPLETE empathy map - capture ALL items in each quadrant",
+              "properties": {
+                "targetUser": {
+                  "type": "string",
+                  "description": "Who this empathy map represents"
+                },
+                "says": {
+                  "type": "array",
+                  "description": "ALL things the user says - direct quotes preferred",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "quote": { "type": "string" },
+                      "context": { "type": "string" }
+                    }
+                  }
+                },
+                "thinks": {
+                  "type": "array",
+                  "description": "ALL things the user thinks - inferred thoughts",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "thought": { "type": "string" },
+                      "evidence": { "type": "string" }
+                    }
+                  }
+                },
+                "does": {
+                  "type": "array",
+                  "description": "ALL actions and behaviors observed",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "action": { "type": "string" },
+                      "frequency": { "type": "string" },
+                      "context": { "type": "string" }
+                    }
+                  }
+                },
+                "feels": {
+                  "type": "array",
+                  "description": "ALL emotions and feelings identified",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "emotion": { "type": "string" },
+                      "trigger": { "type": "string" },
+                      "intensity": {
+                        "type": "string",
+                        "enum": ["low", "medium", "high"]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "journeyMap": {
+              "type": "object",
+              "description": "User journey map if created",
+              "properties": {
+                "stages": {
+                  "type": "array",
+                  "description": "ALL journey stages",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "stage": { "type": "string" },
+                      "actions": { "type": "array", "items": { "type": "string" } },
+                      "thoughts": { "type": "array", "items": { "type": "string" } },
+                      "emotions": { "type": "string" },
+                      "painPoints": { "type": "array", "items": { "type": "string" } },
+                      "opportunities": { "type": "array", "items": { "type": "string" } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "define": {
+          "type": "object",
+          "description": "COMPLETE Define phase - framing the problem clearly",
+          "properties": {
+            "synthesisProcess": {
+              "type": "string",
+              "description": "COMPLETE description of how insights were synthesized"
+            },
+            "povStatement": {
+              "type": "string",
+              "description": "COMPLETE Point of View statement in format: [User] needs [need] because [insight]"
+            },
+            "povVariations": {
+              "type": "array",
+              "description": "Alternative POV statements considered",
+              "items": { "type": "string" }
+            },
+            "howMightWeQuestions": {
+              "type": "array",
+              "description": "ALL 'How Might We' questions generated - COMPLETE questions",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "question": {
+                    "type": "string",
+                    "description": "COMPLETE HMW question"
+                  },
+                  "rationale": {
+                    "type": "string",
+                    "description": "Why this question is important"
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": ["primary", "secondary", "exploratory"]
+                  }
+                }
+              }
+            },
+            "problemInsights": {
+              "type": "array",
+              "description": "ALL key problem insights from synthesis - COMPLETE insights",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "insight": {
+                    "type": "string",
+                    "description": "COMPLETE problem insight"
+                  },
+                  "supportingEvidence": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "designImplications": {
+                    "type": "string",
+                    "description": "What this means for design"
+                  }
+                }
+              }
+            },
+            "designPrinciples": {
+              "type": "array",
+              "description": "Design principles derived from research",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "principle": { "type": "string" },
+                  "rationale": { "type": "string" }
+                }
+              }
+            },
+            "constraints": {
+              "type": "array",
+              "description": "ALL constraints identified",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "constraint": { "type": "string" },
+                  "type": {
+                    "type": "string",
+                    "enum": ["technical", "business", "user", "regulatory", "resource"]
+                  },
+                  "flexibility": {
+                    "type": "string",
+                    "enum": ["fixed", "negotiable"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "ideate": {
+          "type": "object",
+          "description": "COMPLETE Ideate phase - generating creative solutions",
+          "properties": {
+            "selectedMethods": {
+              "type": "array",
+              "description": "ALL ideation methods used with details",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "method": {
+                    "type": "string",
+                    "description": "Method name (brainstorming, SCAMPER, etc.)"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "How the method was applied"
+                  },
+                  "duration": { "type": "string" },
+                  "ideasGenerated": { "type": "integer" }
+                }
+              }
+            },
+            "generatedIdeas": {
+              "type": "array",
+              "description": "ALL ideas generated - COMPLETE descriptions, do NOT summarize",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Unique idea identifier"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Idea title"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "COMPLETE idea description - do NOT truncate"
+                  },
+                  "hmwQuestion": {
+                    "type": "string",
+                    "description": "HMW question this addresses"
+                  },
+                  "category": {
+                    "type": "string",
+                    "description": "Idea category"
+                  },
+                  "contributor": {
+                    "type": "string",
+                    "description": "Who contributed this idea"
+                  },
+                  "votes": {
+                    "type": "number",
+                    "description": "Votes received during dot voting"
+                  },
+                  "feasibility": {
+                    "type": "string",
+                    "enum": ["high", "medium", "low"]
+                  },
+                  "impact": {
+                    "type": "string",
+                    "enum": ["high", "medium", "low"]
+                  }
+                }
+              }
+            },
+            "ideaClustering": {
+              "type": "array",
+              "description": "How ideas were clustered/grouped",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "clusterName": { "type": "string" },
+                  "theme": { "type": "string" },
+                  "ideaIds": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "topConcepts": {
+              "type": "array",
+              "description": "ALL top concepts selected for development - COMPLETE details",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "conceptId": {
+                    "type": "string",
+                    "description": "Unique concept identifier"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Concept name"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "COMPLETE concept description - do NOT summarize"
+                  },
+                  "sourceIdeas": {
+                    "type": "array",
+                    "description": "Ideas that contributed to this concept",
+                    "items": { "type": "string" }
+                  },
+                  "rationale": {
+                    "type": "string",
+                    "description": "COMPLETE rationale for selecting this concept"
+                  },
+                  "userBenefit": {
+                    "type": "string",
+                    "description": "COMPLETE description of user benefit"
+                  },
+                  "technicalConsiderations": {
+                    "type": "string",
+                    "description": "Technical considerations"
+                  },
+                  "risks": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "selectionCriteria": {
+              "type": "array",
+              "description": "Criteria used for selecting top concepts",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "prototype": {
+          "type": "object",
+          "description": "COMPLETE Prototype phase - making ideas tangible",
+          "properties": {
+            "prototypeApproach": {
+              "type": "string",
+              "description": "COMPLETE description of prototyping approach and rationale"
+            },
+            "prototypeType": {
+              "type": "string",
+              "enum": ["paper", "digital-lo-fi", "digital-hi-fi", "physical", "service-blueprint", "storyboard", "wizard-of-oz"],
+              "description": "Type of prototype created"
+            },
+            "prototypes": {
+              "type": "array",
+              "description": "ALL prototypes created",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "conceptId": {
+                    "type": "string",
+                    "description": "Concept this prototype tests"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "COMPLETE prototype description"
+                  },
+                  "fidelity": {
+                    "type": "string",
+                    "enum": ["low", "medium", "high"]
+                  },
+                  "materials": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "timeToCreate": { "type": "string" },
+                  "artifacts": {
+                    "type": "array",
+                    "description": "Prototype artifacts (images, links, etc.)",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "featuresToTest": {
+              "type": "array",
+              "description": "ALL key features/hypotheses to test with the prototype",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "feature": {
+                    "type": "string",
+                    "description": "COMPLETE feature description"
+                  },
+                  "hypothesis": {
+                    "type": "string",
+                    "description": "Hypothesis to validate"
+                  },
+                  "successMetric": {
+                    "type": "string",
+                    "description": "How success will be measured"
+                  }
+                }
+              }
+            },
+            "limitations": {
+              "type": "array",
+              "description": "Known prototype limitations",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "test": {
+          "type": "object",
+          "description": "COMPLETE Test phase - validating with users",
+          "properties": {
+            "testingPlan": {
+              "type": "string",
+              "description": "COMPLETE testing plan including methodology, participant criteria, and success metrics"
+            },
+            "testSessions": {
+              "type": "array",
+              "description": "ALL test sessions conducted",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "sessionId": { "type": "string" },
+                  "date": { "type": "string" },
+                  "duration": { "type": "string" },
+                  "participantProfile": { "type": "string" },
+                  "prototype": { "type": "string" },
+                  "tasks": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "userFeedback": {
+              "type": "array",
+              "description": "ALL user feedback collected - COMPLETE feedback, do NOT summarize",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "user": {
+                    "type": "string",
+                    "description": "User identifier or profile"
+                  },
+                  "feedback": {
+                    "type": "string",
+                    "description": "COMPLETE feedback - include direct quotes where possible"
+                  },
+                  "feature": {
+                    "type": "string",
+                    "description": "Feature this feedback relates to"
+                  },
+                  "sentiment": {
+                    "type": "string",
+                    "enum": ["positive", "neutral", "negative"]
+                  },
+                  "actionability": {
+                    "type": "string",
+                    "enum": ["actionable", "informational", "out-of-scope"]
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": ["high", "medium", "low"]
+                  }
+                }
+              }
+            },
+            "usabilityIssues": {
+              "type": "array",
+              "description": "ALL usability issues discovered",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "issue": {
+                    "type": "string",
+                    "description": "COMPLETE issue description"
+                  },
+                  "severity": {
+                    "type": "string",
+                    "enum": ["critical", "major", "minor", "cosmetic"]
+                  },
+                  "frequency": {
+                    "type": "string",
+                    "description": "How often this occurred"
+                  },
+                  "recommendation": {
+                    "type": "string",
+                    "description": "COMPLETE recommendation to address"
+                  }
+                }
+              }
+            },
+            "keyLearnings": {
+              "type": "array",
+              "description": "ALL key learnings from testing - COMPLETE learnings",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "learning": {
+                    "type": "string",
+                    "description": "COMPLETE learning description"
+                  },
+                  "evidence": {
+                    "type": "string",
+                    "description": "Evidence supporting this learning"
+                  },
+                  "implication": {
+                    "type": "string",
+                    "description": "Design implication"
+                  },
+                  "action": {
+                    "type": "string",
+                    "description": "Recommended action"
+                  }
+                }
+              }
+            },
+            "hypothesisValidation": {
+              "type": "array",
+              "description": "Validation status of each hypothesis tested",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "hypothesis": { "type": "string" },
+                  "status": {
+                    "type": "string",
+                    "enum": ["validated", "invalidated", "partially-validated", "inconclusive"]
+                  },
+                  "evidence": { "type": "string" },
+                  "nextSteps": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "nextSteps": {
+          "type": "object",
+          "description": "COMPLETE next steps and action plan",
+          "properties": {
+            "iterationPlan": {
+              "type": "string",
+              "description": "COMPLETE plan for next iteration"
+            },
+            "refinementsNeeded": {
+              "type": "array",
+              "description": "ALL refinements needed based on testing",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "area": { "type": "string" },
+                  "refinement": {
+                    "type": "string",
+                    "description": "COMPLETE description of refinement needed"
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": ["critical", "high", "medium", "low"]
+                  },
+                  "effort": {
+                    "type": "string",
+                    "enum": ["small", "medium", "large"]
+                  }
+                }
+              }
+            },
+            "actionItems": {
+              "type": "array",
+              "description": "ALL action items with ownership and timeline",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "description": "COMPLETE action description"
+                  },
+                  "owner": {
+                    "type": "string",
+                    "description": "Person responsible"
+                  },
+                  "dueDate": {
+                    "type": "string",
+                    "description": "Due date"
+                  },
+                  "dependencies": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["not-started", "in-progress", "completed", "blocked"]
+                  }
+                }
+              }
+            },
+            "successMetrics": {
+              "type": "array",
+              "description": "ALL success metrics for the solution",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "metric": {
+                    "type": "string",
+                    "description": "COMPLETE metric description"
+                  },
+                  "target": {
+                    "type": "string",
+                    "description": "Target value"
+                  },
+                  "measurementMethod": {
+                    "type": "string",
+                    "description": "How this will be measured"
+                  }
+                }
+              }
+            },
+            "handoffNotes": {
+              "type": "string",
+              "description": "COMPLETE notes for handoff to implementation team"
+            }
+          }
+        }
+      }
+    }
+  }
+}

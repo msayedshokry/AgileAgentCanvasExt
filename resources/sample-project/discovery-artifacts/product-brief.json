@@ -1,0 +1,324 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "product-brief",
+    "workflowName": "product-visionary",
+    "projectName": "TaskFlow Pro",
+    "timestamps": {
+      "created": "2025-06-02T10:00:00Z",
+      "lastModified": "2025-06-08T16:00:00Z"
+    },
+    "status": "approved",
+    "tags": ["product-brief", "v1.0"],
+    "author": "Sarah Chen, CPO",
+    "stepsCompleted": ["market-analysis", "user-research", "brief-draft", "stakeholder-review", "brief-approved"],
+    "inputDocuments": [
+      { "path": "vision.json", "type": "vision" },
+      { "path": "market-research-2025.pdf", "type": "research" }
+    ]
+  },
+  "content": {
+    "productName": "TaskFlow Pro",
+    "tagline": "Flow-state task management for teams that ship",
+    "vision": {
+      "statement": "Empower distributed teams to achieve flow state through intelligent task orchestration",
+      "problemStatement": "Knowledge workers lose 2.5 hours daily to context switching between disconnected tools",
+      "proposedSolution": "AI-powered task management that learns team patterns and auto-prioritizes work"
+    },
+    "targetUsers": [
+      {
+        "persona": "Software Engineers",
+        "description": "Individual contributors who need deep focus time",
+        "painPoints": [
+          { "painPoint": "Too many notifications", "severity": "high", "frequency": "daily" },
+          { "painPoint": "Unclear task priorities", "severity": "critical", "frequency": "daily" },
+          { "painPoint": "Context switching between tools", "severity": "high", "frequency": "hourly" }
+        ],
+        "goals": [
+          { "goal": "Uninterrupted focus blocks", "priority": "must-have" },
+          { "goal": "Clear next actions", "priority": "must-have" },
+          { "goal": "Single source of truth", "priority": "should-have" }
+        ]
+      },
+      {
+        "persona": "Product Managers",
+        "description": "Cross-functional leaders coordinating delivery",
+        "painPoints": [
+          { "painPoint": "Status meetings waste time", "severity": "high", "frequency": "daily" },
+          { "painPoint": "Can't see blockers in real-time", "severity": "critical", "frequency": "daily" },
+          { "painPoint": "Manual progress tracking", "severity": "medium", "frequency": "daily" }
+        ],
+        "goals": [
+          { "goal": "Real-time dashboards", "priority": "must-have" },
+          { "goal": "Automated status updates", "priority": "should-have" },
+          { "goal": "Predictive delivery dates", "priority": "could-have" }
+        ]
+      },
+      {
+        "persona": "Engineering Managers",
+        "description": "Team leads balancing capacity and delivery",
+        "painPoints": [
+          { "painPoint": "Capacity planning is guesswork", "severity": "high", "frequency": "weekly" },
+          { "painPoint": "Burnout detection is too late", "severity": "critical", "frequency": "monthly" },
+          { "painPoint": "Sprint planning takes hours", "severity": "medium", "frequency": "biweekly" }
+        ],
+        "goals": [
+          { "goal": "Data-driven capacity planning", "priority": "must-have" },
+          { "goal": "Early burnout signals", "priority": "should-have" },
+          { "goal": "AI-assisted sprint planning", "priority": "could-have" }
+        ]
+      }
+    ],
+    "marketContext": {
+      "overview": "Dominated by Jira, Asana, and Linear. Gap exists for AI-native, developer-first task management.",
+      "targetMarket": "Teams migrating from heavy PM tools to lightweight, opinionated alternatives. $15B TAM by 2026.",
+      "competitors": [
+        {
+          "name": "Linear",
+          "description": "Developer-focused project management tool",
+          "strengths": ["Fast UI", "Developer-friendly"],
+          "weaknesses": ["Limited AI capabilities", "No focus modes"]
+        },
+        {
+          "name": "Jira",
+          "description": "Enterprise project management platform",
+          "strengths": ["Enterprise features", "Extensive integrations"],
+          "weaknesses": ["Slow performance", "Complex configuration", "Reporting-focused"]
+        },
+        {
+          "name": "Asana",
+          "description": "Work management platform for teams",
+          "strengths": ["Visual workflows", "Portfolio management"],
+          "weaknesses": ["Not developer-centric", "Expensive for small teams"]
+        }
+      ]
+    },
+    "keyFeatures": [
+      {
+        "id": "KF-1",
+        "name": "AI-Powered Task Prioritization",
+        "description": "AI-powered task prioritization based on deadlines, dependencies, and team patterns",
+        "priority": "must-have",
+        "complexity": "high"
+      },
+      {
+        "id": "KF-2",
+        "name": "Focus Mode",
+        "description": "Focus Mode with smart notification batching and do-not-disturb scheduling",
+        "priority": "must-have",
+        "complexity": "medium"
+      },
+      {
+        "id": "KF-3",
+        "name": "Dependency Graph Visualization",
+        "description": "Real-time dependency graph visualization showing blockers and critical path",
+        "priority": "should-have",
+        "complexity": "high"
+      },
+      {
+        "id": "KF-4",
+        "name": "Automated Sprint Planning",
+        "description": "Automated sprint planning with capacity-aware task assignment",
+        "priority": "should-have",
+        "complexity": "high"
+      },
+      {
+        "id": "KF-5",
+        "name": "Natural Language Task Input",
+        "description": "Natural language task creation and updates via CLI and chat integrations",
+        "priority": "could-have",
+        "complexity": "medium"
+      },
+      {
+        "id": "KF-6",
+        "name": "Predictive Delivery Forecasting",
+        "description": "Predictive delivery forecasting using historical velocity data",
+        "priority": "could-have",
+        "complexity": "high"
+      }
+    ],
+    "successMetrics": [
+      {
+        "metric": "DAU/MAU ratio",
+        "target": "70%",
+        "description": "High daily engagement indicates product-market fit",
+        "category": "business"
+      },
+      {
+        "metric": "Context switches per hour",
+        "target": "Reduce by 40%",
+        "description": "Primary value proposition",
+        "category": "user"
+      },
+      {
+        "metric": "Sprint velocity improvement",
+        "target": "+25%",
+        "description": "Teams ship more with less friction",
+        "category": "operational"
+      },
+      {
+        "metric": "Time to first value",
+        "target": "< 10 minutes",
+        "description": "New users see value immediately",
+        "category": "user"
+      }
+    ],
+    "scope": {
+      "inScope": [
+        { "item": "Web application (React SPA)", "priority": "must-have" },
+        { "item": "REST and GraphQL API", "priority": "must-have" },
+        { "item": "AI prioritization engine", "priority": "must-have" },
+        { "item": "Focus mode with notification management", "priority": "must-have" },
+        { "item": "Real-time collaboration features", "priority": "should-have" },
+        { "item": "GitHub and Slack integrations", "priority": "should-have" },
+        { "item": "CLI tool for developers", "priority": "could-have" }
+      ],
+      "outOfScope": [
+        { "item": "Mobile native apps", "reason": "Planned for v2" },
+        { "item": "On-premise deployment", "reason": "Planned for v2" },
+        { "item": "Custom workflow builder", "reason": "Planned for v2" },
+        { "item": "Video conferencing integration", "reason": "Not aligned with core value proposition" }
+      ]
+    },
+    "constraints": [
+      {
+        "constraint": "Must launch MVP within 4 months",
+        "type": "timeline",
+        "impact": "Limits feature scope for initial release",
+        "mitigation": "Strict feature prioritization and phased rollout"
+      },
+      {
+        "constraint": "Initial team of 8 engineers + 2 designers",
+        "type": "resource",
+        "impact": "Limits parallelization of development streams",
+        "mitigation": "Focus on core features first, hire additional engineers post-launch"
+      },
+      {
+        "constraint": "Cloud-only deployment (AWS)",
+        "type": "technical",
+        "impact": "Excludes on-premise enterprise customers initially",
+        "mitigation": "Plan for on-premise support in v2"
+      },
+      {
+        "constraint": "SOC 2 compliance required before enterprise sales",
+        "type": "regulatory",
+        "impact": "Adds compliance overhead to development process",
+        "mitigation": "Start compliance process in parallel with development"
+      },
+      {
+        "constraint": "Must support 10,000 concurrent users at launch",
+        "type": "technical",
+        "impact": "Requires scalable architecture from day one",
+        "mitigation": "Load test early and design for horizontal scaling"
+      }
+    ],
+    "assumptions": [
+      {
+        "assumption": "Teams are willing to migrate from existing tools if onboarding is less than 1 day",
+        "category": "user",
+        "risk": "Migration friction may be higher than expected",
+        "validationMethod": "Beta program with 100 teams measuring onboarding completion rates"
+      },
+      {
+        "assumption": "AI-powered prioritization provides meaningful signal within 2 weeks of team usage",
+        "category": "technical",
+        "risk": "Model may need more data to produce useful recommendations",
+        "validationMethod": "A/B testing AI recommendations vs manual prioritization"
+      },
+      {
+        "assumption": "Developers prefer keyboard-first interfaces over mouse-driven UIs",
+        "category": "user",
+        "risk": "Keyboard-first may alienate non-developer users",
+        "validationMethod": "User research and usability testing with mixed audience"
+      },
+      {
+        "assumption": "Real-time collaboration is table stakes for team productivity tools",
+        "category": "market",
+        "risk": "May add unnecessary complexity for smaller teams",
+        "validationMethod": "Feature usage analytics during beta"
+      }
+    ],
+    "risks": [
+      {
+        "risk": "AI prioritization may produce poor recommendations with insufficient data",
+        "category": "technical",
+        "probability": "medium",
+        "impact": "high",
+        "mitigation": "Fallback to rule-based prioritization; require 2-week learning period before AI suggestions"
+      },
+      {
+        "risk": "User adoption may be slow due to switching costs",
+        "category": "market",
+        "probability": "medium",
+        "impact": "medium",
+        "mitigation": "One-click import from Jira/Linear/Asana; free tier for small teams"
+      },
+      {
+        "risk": "Real-time features may not scale to 10K concurrent users",
+        "category": "technical",
+        "probability": "low",
+        "impact": "high",
+        "mitigation": "Load test early; use WebSocket with Redis pub/sub; implement graceful degradation"
+      }
+    ],
+    "dependencies": [
+      {
+        "dependency": "OpenAI API for task summarization and NLP",
+        "type": "external",
+        "status": "available",
+        "risk": "API rate limits and cost"
+      },
+      {
+        "dependency": "GitHub OAuth for developer authentication",
+        "type": "external",
+        "status": "available",
+        "risk": "API changes"
+      },
+      {
+        "dependency": "AWS infrastructure setup",
+        "type": "internal",
+        "status": "in-progress",
+        "risk": "DevOps capacity"
+      }
+    ],
+    "timeline": {
+      "overview": "4-month development cycle from July to October 2025 with phased delivery",
+      "milestones": [
+        { "milestone": "Architecture & Tech Spec Complete", "targetDate": "2025-07-15" },
+        { "milestone": "Core Task CRUD + API", "targetDate": "2025-08-15" },
+        { "milestone": "AI Prioritization MVP", "targetDate": "2025-09-15" },
+        { "milestone": "Beta Launch (100 teams)", "targetDate": "2025-10-01" },
+        { "milestone": "GA Launch", "targetDate": "2025-10-31" }
+      ]
+    },
+    "stakeholders": [
+      {
+        "name": "Sarah Chen",
+        "role": "Chief Product Officer",
+        "responsibilities": ["Product vision and strategy"],
+        "involvement": "sponsor"
+      },
+      {
+        "name": "Marcus Johnson",
+        "role": "VP Engineering",
+        "responsibilities": ["Technical direction and team capacity"],
+        "involvement": "decision-maker"
+      },
+      {
+        "name": "Priya Patel",
+        "role": "Head of Design",
+        "responsibilities": ["UX strategy and design system"],
+        "involvement": "contributor"
+      },
+      {
+        "name": "James Wilson",
+        "role": "CTO",
+        "responsibilities": ["Architecture review and security sign-off"],
+        "involvement": "decision-maker"
+      }
+    ],
+    "additionalContext": {
+      "background": "This product emerged from an internal tool used by our engineering team. The internal version increased sprint velocity by 30% and reduced status meeting time by 50%. We're productizing it for the broader market."
+    }
+  }
+}

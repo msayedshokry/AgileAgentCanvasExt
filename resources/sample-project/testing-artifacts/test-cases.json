@@ -1,0 +1,128 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "test-cases",
+    "workflowName": "test-architect",
+    "projectName": "TaskFlow Pro",
+    "timestamps": {
+      "created": "2025-07-01T09:00:00Z",
+      "lastModified": "2025-07-15T14:00:00Z"
+    },
+    "status": "draft"
+  },
+  "content": {
+    "testCases": [
+      {
+        "id": "TC-001",
+        "title": "Create task with all fields populated",
+        "description": "Verify that a task can be created via API with all supported fields and returns correct response",
+        "type": "functional",
+        "status": "passed",
+        "priority": "P0",
+        "storyId": "S-1.1",
+        "epicId": "EPIC-1",
+        "steps": ["POST /api/tasks with full payload", "Verify 201 response", "GET the created task", "Verify all fields match"],
+        "expectedResult": "Task created with unique ID, all fields persisted correctly",
+        "relatedRequirements": ["FR-1"],
+        "tags": ["api", "crud"]
+      },
+      {
+        "id": "TC-002",
+        "title": "Real-time board reflects task status change",
+        "description": "When one user changes a task status, all other viewers see the update within 500ms",
+        "type": "integration",
+        "status": "passed",
+        "priority": "P0",
+        "storyId": "S-1.2",
+        "epicId": "EPIC-1",
+        "steps": ["Open board in two browsers", "Change task status in browser A", "Measure time until browser B updates"],
+        "expectedResult": "Board B updates within 500ms without page refresh",
+        "relatedRequirements": ["FR-1"],
+        "tags": ["real-time", "websocket"]
+      },
+      {
+        "id": "TC-003",
+        "title": "Dependency graph shows blocking chain",
+        "description": "Clicking a blocked task highlights the entire blocking chain in the dependency graph",
+        "type": "functional",
+        "status": "draft",
+        "priority": "P1",
+        "storyId": "S-1.3",
+        "epicId": "EPIC-1",
+        "steps": ["Navigate to dependency graph", "Click on a blocked task node", "Verify blocking chain highlight"],
+        "expectedResult": "All tasks in the blocking chain are highlighted in red",
+        "relatedRequirements": ["FR-4"],
+        "tags": ["visualization", "dependencies"]
+      },
+      {
+        "id": "TC-004",
+        "title": "AI priority score computation",
+        "description": "Verify AI scoring engine produces valid priority scores for tasks with sufficient training data",
+        "type": "functional",
+        "status": "draft",
+        "priority": "P0",
+        "storyId": "S-2.1",
+        "epicId": "EPIC-2",
+        "steps": ["Seed workspace with 100 completed tasks", "Create a new task", "Check priority score within 2 seconds"],
+        "expectedResult": "Task receives a priority score between 0-100 within 2 seconds",
+        "relatedRequirements": ["FR-2"],
+        "tags": ["ai", "scoring"]
+      },
+      {
+        "id": "TC-005",
+        "title": "AI fallback to rule-based scoring",
+        "description": "When workspace has fewer than 50 tasks, system falls back to rule-based scoring",
+        "type": "functional",
+        "status": "draft",
+        "priority": "P0",
+        "storyId": "S-2.1",
+        "epicId": "EPIC-2",
+        "steps": ["Create workspace with 10 tasks", "Create a new task with deadline tomorrow", "Check priority score"],
+        "expectedResult": "Task receives high priority score based on deadline proximity (rule-based)",
+        "relatedRequirements": ["FR-2"],
+        "tags": ["ai", "fallback"]
+      },
+      {
+        "id": "TC-006",
+        "title": "Focus mode activates and batches notifications",
+        "description": "Activating focus mode suppresses non-urgent notifications and shows only the current task",
+        "type": "functional",
+        "status": "draft",
+        "priority": "P0",
+        "storyId": "S-3.1",
+        "epicId": "EPIC-3",
+        "steps": ["Click 'Start Focus' on a task", "Trigger a P1 notification", "Verify notification is queued", "End focus mode", "Verify batched notification delivered"],
+        "expectedResult": "P1 notification queued during focus, delivered after focus ends",
+        "relatedRequirements": ["FR-3"],
+        "tags": ["focus-mode", "notifications"]
+      },
+      {
+        "id": "TC-007",
+        "title": "API performance under load",
+        "description": "Verify API handles 5000 requests/second with p95 latency under 200ms",
+        "type": "performance",
+        "status": "draft",
+        "priority": "P1",
+        "epicId": "EPIC-1",
+        "steps": ["Run k6 load test with 5000 VUs", "Measure p95 latency", "Check error rate"],
+        "expectedResult": "p95 < 200ms, error rate < 0.1%",
+        "relatedRequirements": ["NFR-1"],
+        "tags": ["performance", "load-test"]
+      },
+      {
+        "id": "TC-008",
+        "title": "GitHub PR auto-links to task",
+        "description": "Creating a PR with task ID in description auto-links the PR to the task",
+        "type": "integration",
+        "status": "draft",
+        "priority": "P1",
+        "storyId": "S-4.1",
+        "epicId": "EPIC-4",
+        "steps": ["Create task TF-100", "Create GitHub PR with 'Fixes TF-100'", "Simulate webhook", "Check task for PR link"],
+        "expectedResult": "Task TF-100 shows linked PR, status unchanged until merge",
+        "relatedRequirements": ["FR-6"],
+        "tags": ["integrations", "github"]
+      }
+    ]
+  }
+}

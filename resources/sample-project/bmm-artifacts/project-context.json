@@ -1,0 +1,160 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "project-context",
+    "timestamps": {
+      "created": "2026-01-08T10:00:00Z",
+      "lastModified": "2026-02-10T11:00:00Z"
+    },
+    "status": "approved",
+    "tags": [
+      "project-context",
+      "conventions",
+      "ai-guidelines",
+      "development-standards"
+    ],
+    "author": "Project Lead"
+  },
+  "content": {
+    "projectInfo": {
+      "name": "TaskFlow Pro",
+      "description": "AI-powered task management SaaS platform",
+      "type": "web-application",
+      "status": "in-progress"
+    },
+    "projectName": "TaskFlow Pro",
+    "description": "Development context and conventions for the TaskFlow Pro AI-powered task management platform. This document captures all project-specific conventions, AI coding guidelines, and technical decisions that guide day-to-day development.",
+    "conventions": {
+      "codeStyle": {
+        "language": "TypeScript (strict mode)",
+        "formatter": "Prettier with project .prettierrc",
+        "linter": "ESLint with @taskflow/eslint-config",
+        "namingConventions": {
+          "components": "PascalCase (e.g., TaskCard, PriorityBadge)",
+          "hooks": "camelCase with 'use' prefix (e.g., useTaskPriority, useFocusMode)",
+          "utilities": "camelCase (e.g., calculatePriorityScore, formatDeadline)",
+          "constants": "SCREAMING_SNAKE_CASE (e.g., MAX_FOCUS_TASKS, API_BASE_URL)",
+          "types": "PascalCase with descriptive suffixes (e.g., TaskCreateInput, PriorityScoreResult)",
+          "files": "kebab-case for utilities, PascalCase for components (e.g., priority-utils.ts, TaskCard.tsx)"
+        }
+      },
+      "gitConventions": {
+        "branchNaming": "type/EPIC-X-SY-short-description (e.g., feat/EPIC-1-S2-task-crud, fix/EPIC-2-S1-model-accuracy)",
+        "commitFormat": "Conventional Commits: type(scope): description",
+        "prProcess": "All PRs require 1 approval, passing CI, and linked story reference"
+      },
+      "testingConventions": {
+        "unitTests": "Vitest with >80% coverage target per story",
+        "integrationTests": "Playwright for API integration tests",
+        "e2eTests": "Playwright for critical user flows",
+        "testNaming": "describe('ComponentName') > it('should behavior when condition')"
+      }
+    },
+    "techStack": {
+      "frontend": {
+        "framework": "React 19 with TypeScript",
+        "stateManagement": "Zustand for client state, TanStack Query for server state",
+        "styling": "Tailwind CSS with custom TFDS design tokens",
+        "buildTool": "Vite 6",
+        "testing": "Vitest + React Testing Library + Playwright"
+      },
+      "backend": {
+        "runtime": "Node.js 22 LTS",
+        "framework": "Fastify 5 with TypeScript",
+        "database": "PostgreSQL 16 with Drizzle ORM",
+        "cache": "Redis 7 for session management and priority score caching",
+        "queue": "BullMQ for async task processing and integration sync jobs"
+      },
+      "ai": {
+        "framework": "Python 3.12 with FastAPI for ML service",
+        "model": "Fine-tuned transformer model (DistilBERT base) for priority scoring",
+        "serving": "ONNX Runtime for inference, model served via gRPC",
+        "training": "PyTorch with Weights & Biases for experiment tracking"
+      },
+      "infrastructure": [
+        {
+          "name": "AWS ECS Fargate",
+          "purpose": "Container orchestration",
+          "configuration": "Auto-scaling, us-east-1 primary region"
+        },
+        {
+          "name": "CloudFront",
+          "purpose": "CDN for static assets",
+          "configuration": "Edge locations worldwide"
+        },
+        {
+          "name": "GitHub Actions",
+          "purpose": "CI/CD pipeline",
+          "configuration": "Automated testing and deployment"
+        }
+      ]
+    },
+    "aiGuidelines": {
+      "codeGeneration": [
+        "Always use TypeScript strict mode - no 'any' types except in explicitly typed escape hatches",
+        "Prefer composition over inheritance for React components",
+        "Use Zod schemas for all API input/output validation - never trust client input",
+        "All async operations must have proper error handling with typed error responses",
+        "Database queries must use parameterized queries via Drizzle ORM - never raw SQL concatenation",
+        "AI priority scores must include an 'explanation' field for transparency"
+      ],
+      "securityGuidelines": [
+        "Never log sensitive data (passwords, tokens, PII) - use structured logging with field redaction",
+        "All API endpoints require authentication via JWT middleware",
+        "Rate limiting on all public endpoints: 100 req/min for authenticated, 20 req/min for unauthenticated",
+        "Input sanitization for all user-provided text fields to prevent XSS",
+        "CORS restricted to known frontend origins only"
+      ],
+      "performanceGuidelines": [
+        "API responses must be < 200ms p95 for CRUD operations",
+        "AI priority scoring must complete within 500ms for up to 100 tasks",
+        "React components must not re-render unnecessarily - use React.memo for list items",
+        "Database queries must use appropriate indexes - no full table scans in production"
+      ]
+    },
+    "keyDecisions": [
+      {
+        "decision": "ADR-001: Use Zustand over Redux for client state management",
+        "date": "2026-01-15",
+        "rationale": "Simpler API, smaller bundle size, better TypeScript inference. Redux's middleware ecosystem not needed for our use case.",
+        "status": "accepted"
+      },
+      {
+        "decision": "ADR-002: Separate ML service from main API via gRPC",
+        "date": "2026-01-18",
+        "rationale": "Allows independent scaling, different deployment cadence, and language flexibility (Python for ML, TypeScript for API). gRPC chosen over REST for lower latency and streaming support.",
+        "status": "accepted"
+      },
+      {
+        "decision": "ADR-003: Use PostgreSQL over MongoDB for primary database",
+        "date": "2026-01-12",
+        "rationale": "Strong relational model fits task-project-user relationships. JSONB columns available for flexible schema needs. Better tooling and team expertise.",
+        "status": "accepted"
+      }
+    ],
+    "environmentSetup": {
+      "prerequisites": [
+        "Node.js 22 LTS",
+        "Python 3.12 (for ML service)",
+        "Docker Desktop",
+        "PostgreSQL 16 (via Docker)",
+        "Redis 7 (via Docker)"
+      ],
+      "quickStart": "docker compose up -d && npm install && npm run dev",
+      "envVariables": [
+        "DATABASE_URL - PostgreSQL connection string",
+        "REDIS_URL - Redis connection string",
+        "JWT_SECRET - JWT signing key",
+        "ML_SERVICE_URL - gRPC endpoint for ML service",
+        "OPENAI_API_KEY - Optional, for AI explanation generation"
+      ]
+    },
+    "additionalNotes": [
+      "BMAD Interaction Rule: All BMAD workflows marked interactive MUST be run as interactive sessions — halt for user input at every step boundary.",
+      "BMAD Interaction Rule: Do NOT produce a complete artifact or implementation plan in a single response. Follow BMAD skill instructions for sequential step-by-step execution.",
+      "BMAD Interaction Rule: When a workflow step says STOP and WAIT or uses <ask> tags, halt and wait for the user's response before continuing.",
+      "BMAD Interaction Rule: Present checkpoint menus ([a] Advanced Elicitation [c] Continue [p] Party-Mode [y] YOLO) exactly as defined and halt for user selection.",
+      "BMAD Interaction Rule: Only skip interactive checkpoints when the user explicitly chooses YOLO mode."
+    ]
+  }
+}

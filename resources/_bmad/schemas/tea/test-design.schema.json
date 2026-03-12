@@ -1,0 +1,610 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/tea/test-design.schema.json",
+  "title": "Test Design Document Schema",
+  "description": "Comprehensive schema for test design artifacts - captures COMPLETE test planning with full risk assessment, coverage mapping, and execution strategy",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "additionalProperties": false,
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["summary", "coveragePlan"],
+      "additionalProperties": false,
+      "properties": {
+        "epicInfo": {
+          "type": "object",
+          "description": "Epic information for this test design",
+          "properties": {
+            "epicId": { "type": "string" },
+            "epicTitle": { "type": "string" },
+            "epicGoal": {
+              "type": "string",
+              "description": "COMPLETE epic goal description"
+            },
+            "prdReference": { "type": "string" },
+            "architectureReference": { "type": "string" },
+            "storyCount": { "type": "integer" }
+          }
+        },
+        "summary": {
+          "type": "object",
+          "description": "Executive summary - capture COMPLETE overview",
+          "properties": {
+            "scope": {
+              "type": "string",
+              "description": "COMPLETE scope description"
+            },
+            "objectives": {
+              "type": "array",
+              "description": "ALL test objectives",
+              "items": { "type": "string" }
+            },
+            "riskSummary": {
+              "type": "string",
+              "description": "COMPLETE risk summary"
+            },
+            "coverageSummary": {
+              "type": "string",
+              "description": "COMPLETE coverage summary"
+            },
+            "testLevels": {
+              "type": "array",
+              "description": "ALL test levels included",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "level": {
+                    "type": "string",
+                    "enum": ["unit", "integration", "component", "api", "e2e", "performance", "security"]
+                  },
+                  "purpose": { "type": "string" },
+                  "coverage": { "type": "string" }
+                }
+              }
+            },
+            "approach": {
+              "type": "string",
+              "description": "COMPLETE testing approach description"
+            },
+            "keyDecisions": {
+              "type": "array",
+              "description": "Key decisions made in this test design",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "notInScope": {
+          "type": "array",
+          "description": "ALL items not in test scope - capture completely",
+          "items": {
+            "type": "object",
+            "properties": {
+              "item": {
+                "type": "string",
+                "description": "COMPLETE description of excluded item"
+              },
+              "reason": {
+                "type": "string",
+                "description": "COMPLETE reason for exclusion"
+              },
+              "riskAccepted": { "type": "boolean" }
+            }
+          }
+        },
+        "riskAssessment": {
+          "type": "object",
+          "description": "COMPLETE risk assessment",
+          "properties": {
+            "overview": {
+              "type": "string",
+              "description": "COMPLETE risk assessment overview"
+            },
+            "riskMatrix": {
+              "type": "object",
+              "properties": {
+                "probabilityScale": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "impactScale": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            },
+            "highPriority": {
+              "type": "array",
+              "description": "ALL high priority risks - capture COMPLETE details",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "riskId": { "type": "string" },
+                  "category": {
+                    "type": "string",
+                    "enum": ["functional", "performance", "security", "integration", "data", "ux", "compatibility", "technical"]
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "COMPLETE risk description"
+                  },
+                  "probability": {
+                    "type": "string",
+                    "enum": ["low", "medium", "high"]
+                  },
+                  "impact": {
+                    "type": "string",
+                    "enum": ["low", "medium", "high"]
+                  },
+                  "score": { "type": "integer" },
+                  "testStrategy": {
+                    "type": "string",
+                    "description": "COMPLETE strategy to test this risk"
+                  },
+                  "mitigation": {
+                    "type": "string",
+                    "description": "COMPLETE mitigation approach"
+                  },
+                  "owner": { "type": "string" },
+                  "timeline": { "type": "string" },
+                  "relatedRequirements": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "mediumPriority": {
+              "type": "array",
+              "items": { "$ref": "#/properties/content/properties/riskAssessment/properties/highPriority/items" }
+            },
+            "lowPriority": {
+              "type": "array",
+              "items": { "$ref": "#/properties/content/properties/riskAssessment/properties/highPriority/items" }
+            }
+          }
+        },
+        "entryExitCriteria": {
+          "type": "object",
+          "description": "Entry and exit criteria - capture ALL criteria",
+          "properties": {
+            "entry": {
+              "type": "array",
+              "description": "ALL entry criteria",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "criterion": {
+                    "type": "string",
+                    "description": "COMPLETE criterion description"
+                  },
+                  "verification": { "type": "string" },
+                  "mandatory": { "type": "boolean" }
+                }
+              }
+            },
+            "exit": {
+              "type": "array",
+              "description": "ALL exit criteria",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "criterion": {
+                    "type": "string",
+                    "description": "COMPLETE criterion description"
+                  },
+                  "threshold": { "type": "string" },
+                  "measurement": { "type": "string" },
+                  "mandatory": { "type": "boolean" }
+                }
+              }
+            },
+            "suspensionCriteria": {
+              "type": "array",
+              "description": "Criteria for suspending testing",
+              "items": { "type": "string" }
+            },
+            "resumptionCriteria": {
+              "type": "array",
+              "description": "Criteria for resuming testing",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "projectTeam": {
+          "type": "array",
+          "description": "ALL project team members - capture COMPLETE details",
+          "items": {
+            "type": "object",
+            "properties": {
+              "role": { "type": "string" },
+              "name": { "type": "string" },
+              "responsibilities": {
+                "type": "string",
+                "description": "COMPLETE responsibilities description"
+              },
+              "availability": { "type": "string" },
+              "skills": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "coveragePlan": {
+          "type": "object",
+          "description": "COMPLETE test coverage plan by priority",
+          "properties": {
+            "overview": {
+              "type": "string",
+              "description": "COMPLETE coverage plan overview"
+            },
+            "coverageGoals": {
+              "type": "object",
+              "properties": {
+                "codeStatement": { "type": "string" },
+                "codeBranch": { "type": "string" },
+                "requirementCoverage": { "type": "string" },
+                "riskCoverage": { "type": "string" }
+              }
+            },
+            "p0": {
+              "type": "array",
+              "description": "ALL P0 (critical) coverage items",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "requirement": {
+                    "type": "string",
+                    "description": "COMPLETE requirement description"
+                  },
+                  "requirementId": { "type": "string" },
+                  "testLevel": {
+                    "type": "string",
+                    "enum": ["unit", "integration", "component", "api", "e2e", "manual"]
+                  },
+                  "testType": {
+                    "type": "string",
+                    "enum": ["functional", "regression", "smoke", "sanity", "exploratory"]
+                  },
+                  "riskLink": { "type": "string" },
+                  "testApproach": {
+                    "type": "string",
+                    "description": "COMPLETE test approach"
+                  },
+                  "testCount": { "type": "integer" },
+                  "automatable": { "type": "boolean" },
+                  "owner": { "type": "string" },
+                  "estimatedEffort": { "type": "string" }
+                }
+              }
+            },
+            "p1": {
+              "type": "array",
+              "items": { "$ref": "#/properties/content/properties/coveragePlan/properties/p0/items" }
+            },
+            "p2": {
+              "type": "array",
+              "items": { "$ref": "#/properties/content/properties/coveragePlan/properties/p0/items" }
+            },
+            "p3": {
+              "type": "array",
+              "items": { "$ref": "#/properties/content/properties/coveragePlan/properties/p0/items" }
+            }
+          }
+        },
+        "testCases": {
+          "type": "array",
+          "description": "ALL test cases - capture COMPLETE details",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string" },
+              "description": {
+                "type": "string",
+                "description": "COMPLETE test case description"
+              },
+              "priority": {
+                "type": "string",
+                "enum": ["P0", "P1", "P2", "P3"]
+              },
+              "type": { "type": "string" },
+              "level": { "type": "string" },
+              "preconditions": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "steps": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "step": { "type": "integer" },
+                    "action": { "type": "string" },
+                    "expectedResult": { "type": "string" }
+                  }
+                }
+              },
+              "acceptanceCriteria": {
+                "$ref": "../common/acceptance-criteria.schema.json"
+              },
+              "testData": { "type": "string" },
+              "relatedRequirements": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "relatedRisks": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "executionOrder": {
+          "type": "object",
+          "description": "Test execution order and strategy",
+          "properties": {
+            "overview": {
+              "type": "string",
+              "description": "COMPLETE execution strategy overview"
+            },
+            "smoke": {
+              "type": "array",
+              "description": "Smoke test execution order",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "testId": { "type": "string" },
+                  "description": { "type": "string" },
+                  "order": { "type": "integer" }
+                }
+              }
+            },
+            "p0": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "p1": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "p2p3": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "parallelization": {
+              "type": "object",
+              "properties": {
+                "strategy": { "type": "string" },
+                "maxParallel": { "type": "integer" },
+                "constraints": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "testEnvironment": {
+          "type": "object",
+          "description": "Test environment requirements",
+          "properties": {
+            "environments": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "purpose": { "type": "string" },
+                  "configuration": { "type": "string" },
+                  "dataRequirements": { "type": "string" }
+                }
+              }
+            },
+            "testData": {
+              "type": "object",
+              "properties": {
+                "strategy": { "type": "string" },
+                "sources": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "refreshStrategy": { "type": "string" }
+              }
+            },
+            "tools": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "tool": { "type": "string" },
+                  "purpose": { "type": "string" },
+                  "version": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "resourceEstimates": {
+          "type": "object",
+          "description": "COMPLETE resource estimates",
+          "properties": {
+            "totalEffort": { "type": "string" },
+            "breakdown": {
+              "type": "array",
+              "description": "ALL effort breakdown items",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "activity": {
+                    "type": "string",
+                    "description": "COMPLETE activity description"
+                  },
+                  "effort": { "type": "string" },
+                  "resources": { "type": "integer" },
+                  "duration": { "type": "string" }
+                }
+              }
+            },
+            "timeline": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "phase": { "type": "string" },
+                  "startDate": { "type": "string" },
+                  "endDate": { "type": "string" },
+                  "deliverables": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "qualityGateCriteria": {
+          "type": "array",
+          "description": "ALL quality gate criteria - capture completely",
+          "items": {
+            "type": "object",
+            "properties": {
+              "criterion": {
+                "type": "string",
+                "description": "COMPLETE criterion description"
+              },
+              "threshold": { "type": "string" },
+              "measurement": { "type": "string" },
+              "mandatory": { "type": "boolean" },
+              "waiverProcess": { "type": "string" }
+            }
+          }
+        },
+        "mitigationPlans": {
+          "type": "array",
+          "description": "ALL risk mitigation plans - capture completely",
+          "items": {
+            "type": "object",
+            "properties": {
+              "riskId": { "type": "string" },
+              "risk": {
+                "type": "string",
+                "description": "COMPLETE risk description"
+              },
+              "plan": {
+                "type": "string",
+                "description": "COMPLETE mitigation plan"
+              },
+              "contingency": {
+                "type": "string",
+                "description": "COMPLETE contingency plan"
+              },
+              "owner": { "type": "string" },
+              "triggers": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "assumptionsAndDependencies": {
+          "type": "object",
+          "description": "ALL assumptions and dependencies",
+          "properties": {
+            "assumptions": {
+              "type": "array",
+              "description": "ALL assumptions - capture completely",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "assumption": {
+                    "type": "string",
+                    "description": "COMPLETE assumption"
+                  },
+                  "risk": { "type": "string" },
+                  "validation": { "type": "string" }
+                }
+              }
+            },
+            "dependencies": {
+              "type": "array",
+              "description": "ALL dependencies - capture completely",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "dependency": {
+                    "type": "string",
+                    "description": "COMPLETE dependency description"
+                  },
+                  "type": { "type": "string" },
+                  "status": { "type": "string" },
+                  "owner": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "defectManagement": {
+          "type": "object",
+          "description": "Defect management approach",
+          "properties": {
+            "process": { "type": "string" },
+            "severityDefinitions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "severity": { "type": "string" },
+                  "definition": { "type": "string" },
+                  "sla": { "type": "string" }
+                }
+              }
+            },
+            "escalationPath": { "type": "string" }
+          }
+        },
+        "approval": {
+          "type": "object",
+          "description": "Approval section",
+          "properties": {
+            "approvers": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "role": { "type": "string" },
+                  "status": {
+                    "type": "string",
+                    "enum": ["pending", "approved", "rejected"]
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "comments": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "appendices": {
+          "type": "array",
+          "description": "Supporting materials",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string" },
+              "content": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

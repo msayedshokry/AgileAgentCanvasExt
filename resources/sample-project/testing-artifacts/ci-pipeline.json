@@ -1,0 +1,457 @@
+{
+  "metadata": {
+    "schemaVersion": "2.0.0",
+    "artifactType": "ci-pipeline",
+    "timestamps": {
+      "created": "2025-08-20T10:00:00Z",
+      "lastModified": "2025-10-01T09:00:00Z"
+    },
+    "status": "approved",
+    "tags": [
+      "ci-cd",
+      "github-actions",
+      "pipeline",
+      "quality-gates"
+    ],
+    "author": "TEA Agent"
+  },
+  "content": {
+    "platform": {
+      "name": "github-actions",
+      "configFile": ".github/workflows/ci.yml",
+      "selectionRationale": "GitHub Actions chosen for native GitHub integration, generous free tier, matrix builds, and reusable workflow support."
+    },
+    "pipeline": {
+      "name": "TaskFlow Pro CI/CD",
+      "triggers": [
+        {
+          "event": "push",
+          "branches": [
+            "main",
+            "develop"
+          ],
+          "paths": [
+            "src/**",
+            "tests/**",
+            "package.json"
+          ]
+        },
+        {
+          "event": "pull_request",
+          "branches": [
+            "main",
+            "develop"
+          ]
+        },
+        {
+          "event": "schedule",
+          "schedule": "0 6 * * 1-5"
+        },
+        {
+          "event": "workflow_dispatch"
+        }
+      ],
+      "concurrency": {
+        "group": "ci-${{ github.ref }}",
+        "cancelInProgress": true
+      }
+    },
+    "jobs": [
+      {
+        "id": "lint-and-typecheck",
+        "name": "Lint & Type Check",
+        "description": "Run ESLint and TypeScript compiler checks",
+        "runsOn": "ubuntu-latest",
+        "steps": [
+          {
+            "name": "Checkout",
+            "uses": "actions/checkout@v4"
+          },
+          {
+            "name": "Setup Node.js",
+            "uses": "actions/setup-node@v4",
+            "with": {
+              "node-version": "20",
+              "cache": "npm"
+            }
+          },
+          {
+            "name": "Install dependencies",
+            "run": "npm ci"
+          },
+          {
+            "name": "Lint",
+            "run": "npm run lint"
+          },
+          {
+            "name": "Type check",
+            "run": "npx tsc --noEmit"
+          }
+        ],
+        "timeout": 10
+      },
+      {
+        "id": "unit-tests",
+        "name": "Unit & Integration Tests",
+        "description": "Run Vitest test suite with coverage",
+        "runsOn": "ubuntu-latest",
+        "dependsOn": [
+          "lint-and-typecheck"
+        ],
+        "environment": {
+          "NODE_ENV": "test",
+          "DATABASE_URL": "postgresql://test:test@localhost:5432/taskflow_test"
+        },
+        "steps": [
+          {
+            "name": "Checkout",
+            "uses": "actions/checkout@v4"
+          },
+          {
+            "name": "Setup Node.js",
+            "uses": "actions/setup-node@v4",
+            "with": {
+              "node-version": "20",
+              "cache": "npm"
+            }
+          },
+          {
+            "name": "Install dependencies",
+            "run": "npm ci"
+          },
+          {
+            "name": "Run migrations",
+            "run": "npm run db:migrate:test"
+          },
+          {
+            "name": "Run tests with coverage",
+            "run": "npm run test:coverage -- --reporter=junit --outputFile=test-results.xml"
+          },
+          {
+            "name": "Upload coverage",
+            "uses": "codecov/codecov-action@v4",
+            "with": {
+              "token": "${{ secrets.CODECOV_TOKEN }}"
+            }
+          }
+        ],
+        "timeout": 15,
+        "services": [
+          {
+            "name": "postgres",
+            "image": "postgres:15",
+            "ports": [
+              "5432:5432"
+            ]
+          },
+          {
+            "name": "redis",
+            "image": "redis:7",
+            "ports": [
+              "6379:6379"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "e2e-tests",
+        "name": "E2E Tests",
+        "description": "Run Playwright E2E tests across browsers",
+        "runsOn": "ubuntu-latest",
+        "dependsOn": [
+          "unit-tests"
+        ],
+        "steps": [
+          {
+            "name": "Checkout",
+            "uses": "actions/checkout@v4"
+          },
+          {
+            "name": "Setup Node.js",
+            "uses": "actions/setup-node@v4",
+            "with": {
+              "node-version": "20",
+              "cache": "npm"
+            }
+          },
+          {
+            "name": "Install dependencies",
+            "run": "npm ci"
+          },
+          {
+            "name": "Install Playwright browsers",
+            "run": "npx playwright install --with-deps"
+          },
+          {
+            "name": "Build application",
+            "run": "npm run build"
+          },
+          {
+            "name": "Run E2E tests",
+            "run": "npx playwright test --reporter=html"
+          },
+          {
+            "name": "Upload test report",
+            "uses": "actions/upload-artifact@v4",
+            "with": {
+              "name": "playwright-report",
+              "path": "playwright-report/"
+            },
+            "continueOnError": true
+          }
+        ],
+        "timeout": 30
+      },
+      {
+        "id": "security-scan",
+        "name": "Security Scan",
+        "description": "Run SAST and SCA security scans",
+        "runsOn": "ubuntu-latest",
+        "dependsOn": [
+          "lint-and-typecheck"
+        ],
+        "steps": [
+          {
+            "name": "Checkout",
+            "uses": "actions/checkout@v4"
+          },
+          {
+            "name": "Run Semgrep SAST",
+            "uses": "returntocorp/semgrep-action@v1",
+            "with": {
+              "config": "p/typescript"
+            }
+          },
+          {
+            "name": "Run Snyk SCA",
+            "uses": "snyk/actions/node@master",
+            "env": {
+              "SNYK_TOKEN": "${{ secrets.SNYK_TOKEN }}"
+            }
+          }
+        ],
+        "timeout": 15
+      },
+      {
+        "id": "deploy-staging",
+        "name": "Deploy to Staging",
+        "description": "Deploy to staging environment for validation",
+        "runsOn": "ubuntu-latest",
+        "dependsOn": [
+          "e2e-tests",
+          "security-scan"
+        ],
+        "condition": "github.ref == 'refs/heads/develop'",
+        "steps": [
+          {
+            "name": "Checkout",
+            "uses": "actions/checkout@v4"
+          },
+          {
+            "name": "Build Docker image",
+            "run": "docker build -t taskflow-pro:${{ github.sha }} ."
+          },
+          {
+            "name": "Push to ECR",
+            "run": "docker push ${{ secrets.ECR_REGISTRY }}/taskflow-pro:${{ github.sha }}"
+          },
+          {
+            "name": "Deploy to ECS",
+            "run": "aws ecs update-service --cluster staging --service taskflow-pro --force-new-deployment"
+          }
+        ],
+        "timeout": 20
+      }
+    ],
+    "testExecution": {
+      "testSuites": [
+        {
+          "name": "Unit Tests",
+          "command": "vitest run tests/unit/",
+          "type": "unit",
+          "timeout": 300,
+          "parallelism": 4
+        },
+        {
+          "name": "Integration Tests",
+          "command": "vitest run tests/integration/",
+          "type": "integration",
+          "timeout": 600,
+          "parallelism": 2
+        },
+        {
+          "name": "E2E Tests",
+          "command": "playwright test",
+          "type": "e2e",
+          "timeout": 1200,
+          "parallelism": 3
+        }
+      ],
+      "burnIn": {
+        "enabled": true,
+        "iterations": 5,
+        "targetTests": [
+          "tests/integration/websocket-sync.spec.ts",
+          "tests/e2e/real-time-sync.spec.ts"
+        ],
+        "failureThreshold": 0
+      },
+      "sharding": {
+        "enabled": true,
+        "shards": 3,
+        "strategy": "round-robin"
+      }
+    },
+    "qualityGates": [
+      {
+        "name": "Statement Coverage",
+        "type": "coverage",
+        "threshold": "85%",
+        "blocking": true,
+        "tool": "v8/coverage"
+      },
+      {
+        "name": "Branch Coverage",
+        "type": "coverage",
+        "threshold": "80%",
+        "blocking": true,
+        "tool": "v8/coverage"
+      },
+      {
+        "name": "ESLint",
+        "type": "lint",
+        "threshold": "0 errors",
+        "blocking": true,
+        "tool": "eslint"
+      },
+      {
+        "name": "Security Scan",
+        "type": "security",
+        "threshold": "0 critical, 0 high",
+        "blocking": true,
+        "tool": "semgrep + snyk"
+      },
+      {
+        "name": "Bundle Size",
+        "type": "custom",
+        "threshold": "< 500KB gzipped",
+        "blocking": false,
+        "tool": "bundlesize"
+      }
+    ],
+    "artifacts": [
+      {
+        "name": "test-results",
+        "path": "test-results/",
+        "type": "test-results",
+        "retention": "30 days",
+        "uploadCondition": "always"
+      },
+      {
+        "name": "coverage-report",
+        "path": "coverage/",
+        "type": "coverage",
+        "retention": "30 days",
+        "uploadCondition": "success"
+      },
+      {
+        "name": "playwright-report",
+        "path": "playwright-report/",
+        "type": "reports",
+        "retention": "14 days",
+        "uploadCondition": "always"
+      },
+      {
+        "name": "playwright-traces",
+        "path": "test-results/traces/",
+        "type": "traces",
+        "retention": "7 days",
+        "uploadCondition": "failure"
+      }
+    ],
+    "notifications": {
+      "onFailure": [
+        {
+          "channel": "slack",
+          "target": "#taskflow-ci"
+        },
+        {
+          "channel": "email",
+          "target": "dev-team@taskflow.pro"
+        }
+      ],
+      "onSuccess": [
+        {
+          "channel": "slack",
+          "target": "#taskflow-ci"
+        }
+      ]
+    },
+    "caching": {
+      "enabled": true,
+      "caches": [
+        {
+          "name": "npm-cache",
+          "paths": [
+            "~/.npm"
+          ],
+          "key": "npm-${{ hashFiles('package-lock.json') }}",
+          "restoreKeys": [
+            "npm-"
+          ]
+        },
+        {
+          "name": "playwright-cache",
+          "paths": [
+            "~/.cache/ms-playwright"
+          ],
+          "key": "playwright-${{ hashFiles('package-lock.json') }}",
+          "restoreKeys": [
+            "playwright-"
+          ]
+        }
+      ]
+    },
+    "secrets": [
+      {
+        "name": "CODECOV_TOKEN",
+        "purpose": "Upload coverage reports to Codecov",
+        "required": true
+      },
+      {
+        "name": "SNYK_TOKEN",
+        "purpose": "Authenticate with Snyk for SCA scanning",
+        "required": true
+      },
+      {
+        "name": "ECR_REGISTRY",
+        "purpose": "AWS ECR registry URL for Docker image storage",
+        "required": true
+      },
+      {
+        "name": "AWS_ACCESS_KEY_ID",
+        "purpose": "AWS credentials for ECS deployment",
+        "required": true
+      },
+      {
+        "name": "AWS_SECRET_ACCESS_KEY",
+        "purpose": "AWS credentials for ECS deployment",
+        "required": true
+      }
+    ],
+    "documentation": {
+      "readme": "The CI pipeline runs on every push to main/develop and on all PRs. It consists of 5 stages: lint/typecheck, unit/integration tests, E2E tests, security scans, and staging deployment. Quality gates enforce 85% statement coverage and zero critical security findings.",
+      "troubleshooting": [
+        {
+          "issue": "E2E tests flaky due to browser download",
+          "solution": "Playwright browsers are cached. If cache is stale, delete the playwright-cache entry in GitHub Actions cache settings."
+        },
+        {
+          "issue": "Database migration fails in CI",
+          "solution": "Ensure PostgreSQL service container is healthy before running migrations. The ci.yml includes a health check wait."
+        }
+      ],
+      "maintenance": "Pipeline configuration reviewed monthly. Dependency updates checked weekly via Dependabot. Playwright browser versions updated with each Playwright minor release."
+    }
+  }
+}

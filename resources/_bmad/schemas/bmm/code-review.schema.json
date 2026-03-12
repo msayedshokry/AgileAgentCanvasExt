@@ -1,0 +1,274 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/bmm/code-review.schema.json",
+  "title": "Code Review Schema",
+  "description": "Schema for adversarial code review findings that identify issues in story implementations",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["storyReference", "reviewSummary", "findings"],
+      "properties": {
+        "storyReference": {
+          "type": "object",
+          "description": "Reference to the story being reviewed",
+          "required": ["storyId", "storyKey"],
+          "properties": {
+            "storyId": {
+              "type": "string",
+              "description": "Story ID (e.g., '1.1')"
+            },
+            "storyKey": {
+              "type": "string",
+              "description": "Story key (e.g., '1-1-user-authentication')"
+            },
+            "storyTitle": {
+              "type": "string"
+            },
+            "storyFilePath": {
+              "type": "string"
+            },
+            "epicId": {
+              "type": "string"
+            }
+          }
+        },
+        "reviewSummary": {
+          "type": "object",
+          "description": "High-level review summary",
+          "properties": {
+            "overallVerdict": {
+              "type": "string",
+              "enum": ["approved", "approved-with-fixes", "changes-required", "rejected"],
+              "description": "Final review verdict"
+            },
+            "totalFindings": {
+              "type": "integer",
+              "description": "Total number of issues found"
+            },
+            "criticalCount": {
+              "type": "integer",
+              "description": "Number of critical issues"
+            },
+            "majorCount": {
+              "type": "integer",
+              "description": "Number of major issues"
+            },
+            "minorCount": {
+              "type": "integer",
+              "description": "Number of minor issues"
+            },
+            "suggestionsCount": {
+              "type": "integer",
+              "description": "Number of suggestions/improvements"
+            },
+            "autoFixableCount": {
+              "type": "integer",
+              "description": "Number of issues that can be auto-fixed"
+            },
+            "reviewDuration": {
+              "type": "string",
+              "description": "Time taken for review"
+            }
+          }
+        },
+        "findings": {
+          "type": "array",
+          "description": "All review findings",
+          "items": {
+            "type": "object",
+            "required": ["id", "severity", "category", "description"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Finding identifier (e.g., 'F-1')"
+              },
+              "severity": {
+                "type": "string",
+                "enum": ["critical", "major", "minor", "suggestion"],
+                "description": "Severity level"
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "code-quality",
+                  "test-coverage",
+                  "architecture-compliance",
+                  "security",
+                  "performance",
+                  "accessibility",
+                  "documentation",
+                  "naming-conventions",
+                  "error-handling",
+                  "type-safety",
+                  "best-practices"
+                ],
+                "description": "Category of the finding"
+              },
+              "description": {
+                "type": "string",
+                "description": "Detailed description of the issue"
+              },
+              "location": {
+                "type": "object",
+                "description": "Where the issue was found",
+                "properties": {
+                  "filePath": { "type": "string" },
+                  "lineNumber": { "type": "integer" },
+                  "lineRange": {
+                    "type": "object",
+                    "properties": {
+                      "start": { "type": "integer" },
+                      "end": { "type": "integer" }
+                    }
+                  },
+                  "functionName": { "type": "string" },
+                  "componentName": { "type": "string" }
+                }
+              },
+              "codeSnippet": {
+                "type": "string",
+                "description": "Relevant code snippet showing the issue"
+              },
+              "recommendation": {
+                "type": "string",
+                "description": "How to fix the issue"
+              },
+              "suggestedFix": {
+                "type": "string",
+                "description": "Specific code fix suggestion"
+              },
+              "autoFixable": {
+                "type": "boolean",
+                "description": "Whether this can be auto-fixed",
+                "default": false
+              },
+              "autoFixApplied": {
+                "type": "boolean",
+                "description": "Whether auto-fix was applied",
+                "default": false
+              },
+              "references": {
+                "type": "array",
+                "description": "Links to relevant documentation or standards",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "title": { "type": "string" },
+                    "url": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "acceptanceCriteriaVerification": {
+          "type": "array",
+          "description": "Verification of each acceptance criterion",
+          "items": {
+            "type": "object",
+            "properties": {
+              "acId": {
+                "type": "string",
+                "description": "AC identifier"
+              },
+              "acDescription": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["verified", "partial", "not-verified", "not-applicable"]
+              },
+              "notes": {
+                "type": "string"
+              },
+              "evidenceLocations": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "testCoverageAnalysis": {
+          "type": "object",
+          "description": "Test coverage findings",
+          "properties": {
+            "coveragePercentage": { "type": "number" },
+            "uncoveredAreas": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "missingTestTypes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["unit", "integration", "e2e", "accessibility", "performance"]
+              }
+            },
+            "testQualityNotes": { "type": "string" }
+          }
+        },
+        "securityAnalysis": {
+          "type": "object",
+          "description": "Security-specific findings",
+          "properties": {
+            "vulnerabilitiesFound": { "type": "integer" },
+            "securityChecksPerformed": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "recommendations": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "architectureCompliance": {
+          "type": "object",
+          "description": "Architecture compliance findings",
+          "properties": {
+            "compliant": { "type": "boolean" },
+            "violations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "rule": { "type": "string" },
+                  "violation": { "type": "string" },
+                  "location": { "type": "string" }
+                }
+              }
+            },
+            "notes": { "type": "string" }
+          }
+        },
+        "nextSteps": {
+          "type": "array",
+          "description": "Required actions before story can be marked done",
+          "items": {
+            "type": "object",
+            "properties": {
+              "action": { "type": "string" },
+              "priority": {
+                "type": "string",
+                "enum": ["required", "recommended", "optional"]
+              },
+              "relatedFindingIds": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "reviewerNotes": {
+          "type": "string",
+          "description": "Additional notes from reviewer"
+        }
+      }
+    }
+  }
+}

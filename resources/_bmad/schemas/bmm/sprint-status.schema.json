@@ -1,0 +1,172 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/bmm/sprint-status.schema.json",
+  "title": "Sprint Status Schema",
+  "description": "Schema for sprint status tracking file that monitors epic and story progress through the development lifecycle",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["project", "trackingSystem", "developmentStatus"],
+      "properties": {
+        "generated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when this status file was generated"
+        },
+        "project": {
+          "type": "string",
+          "description": "Project name"
+        },
+        "projectKey": {
+          "type": "string",
+          "description": "Project key for tracker integrations (NOKEY for file-system)",
+          "default": "NOKEY"
+        },
+        "trackingSystem": {
+          "type": "string",
+          "description": "Tracking system being used",
+          "enum": ["file-system", "jira", "linear", "trello"],
+          "default": "file-system"
+        },
+        "storyLocation": {
+          "type": "string",
+          "description": "Location of story files (relative path or URL)"
+        },
+        "summary": {
+          "type": "object",
+          "description": "Sprint summary statistics",
+          "properties": {
+            "totalEpics": { "type": "integer" },
+            "completedEpics": { "type": "integer" },
+            "inProgressEpics": { "type": "integer" },
+            "totalStories": { "type": "integer" },
+            "completedStories": { "type": "integer" },
+            "inProgressStories": { "type": "integer" },
+            "backlogStories": { "type": "integer" }
+          }
+        },
+        "epics": {
+          "type": "array",
+          "description": "All epics with their status and stories",
+          "items": {
+            "type": "object",
+            "required": ["epicId", "title", "status"],
+            "properties": {
+              "epicId": {
+                "type": "string",
+                "description": "Epic identifier (e.g., 'epic-1', '1')"
+              },
+              "title": {
+                "type": "string",
+                "description": "Epic title"
+              },
+              "status": {
+                "type": "string",
+                "description": "Epic status",
+                "enum": ["backlog", "in-progress", "done"]
+              },
+              "stories": {
+                "type": "array",
+                "description": "Stories within this epic",
+                "items": {
+                  "type": "object",
+                  "required": ["storyKey", "title", "status"],
+                  "properties": {
+                    "storyKey": {
+                      "type": "string",
+                      "description": "Story key (e.g., '1-1-user-authentication')"
+                    },
+                    "storyId": {
+                      "type": "string",
+                      "description": "Story ID (e.g., '1.1')"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Story title"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "Story status",
+                      "enum": ["backlog", "ready-for-dev", "in-progress", "review", "done"]
+                    },
+                    "filePath": {
+                      "type": "string",
+                      "description": "Path to story file (if created)"
+                    },
+                    "assignee": {
+                      "type": "string",
+                      "description": "Assigned developer/agent"
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "completedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              },
+              "retrospective": {
+                "type": "object",
+                "description": "Epic retrospective status",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["optional", "pending", "done"]
+                  },
+                  "filePath": {
+                    "type": "string",
+                    "description": "Path to retrospective file"
+                  },
+                  "completedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "developmentStatus": {
+          "type": "object",
+          "description": "Flat key-value status map for quick lookup (matches YAML format)",
+          "additionalProperties": {
+            "type": "string",
+            "enum": ["backlog", "ready-for-dev", "in-progress", "review", "done", "optional"]
+          }
+        },
+        "statusDefinitions": {
+          "type": "object",
+          "description": "Documentation of status meanings",
+          "properties": {
+            "epicStatuses": {
+              "type": "object",
+              "properties": {
+                "backlog": { "type": "string", "default": "Epic not yet started" },
+                "in-progress": { "type": "string", "default": "Epic actively being worked on" },
+                "done": { "type": "string", "default": "All stories in epic completed" }
+              }
+            },
+            "storyStatuses": {
+              "type": "object",
+              "properties": {
+                "backlog": { "type": "string", "default": "Story only exists in epic file" },
+                "ready-for-dev": { "type": "string", "default": "Story file created, ready for development" },
+                "in-progress": { "type": "string", "default": "Developer actively working on implementation" },
+                "review": { "type": "string", "default": "Implementation complete, ready for review" },
+                "done": { "type": "string", "default": "Story completed" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

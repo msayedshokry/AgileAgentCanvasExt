@@ -1,0 +1,47 @@
+{
+  "$schema": "../../../../../schemas/bmm/prd.schema.json",
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "prd",
+    "workflowName": "create-prd",
+    "projectName": "{{project_name}}",
+    "stepsCompleted": [],
+    "currentStep": "",
+    "timestamps": {
+      "created": "{{timestamp}}",
+      "lastModified": "{{timestamp}}"
+    },
+    "author": "{{user_name}}",
+    "status": "draft"
+  },
+  "content": {
+    "title": "{{product_name}} PRD",
+    "documentVersion": "1.0",
+    "productOverview": {
+      "productName": "{{product_name}}",
+      "version": "1.0",
+      "purpose": "",
+      "targetAudience": "",
+      "productVision": ""
+    },
+    "goals": {
+      "businessGoals": [],
+      "userGoals": [],
+      "nonGoals": []
+    },
+    "userPersonas": [],
+    "requirements": {
+      "functional": [],
+      "nonFunctional": []
+    },
+    "features": [],
+    "userFlows": [],
+    "constraints": [],
+    "assumptions": [],
+    "dependencies": [],
+    "milestones": [],
+    "successMetrics": [],
+    "openQuestions": [],
+    "appendices": []
+  }
+}

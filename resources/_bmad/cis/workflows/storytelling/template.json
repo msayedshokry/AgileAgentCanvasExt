@@ -1,0 +1,54 @@
+{
+  "$schema": "../../../schemas/cis/storytelling.schema.json",
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "storytelling",
+    "workflowName": "storytelling",
+    "projectName": "{{project_name}}",
+    "stepsCompleted": [],
+    "currentStep": "",
+    "timestamps": {
+      "created": "{{timestamp}}",
+      "lastModified": "{{timestamp}}"
+    },
+    "author": "{{user_name}}",
+    "status": "draft"
+  },
+  "content": {
+    "storyType": "{{story_type}}",
+    "frameworkName": "{{framework_name}}",
+    "purpose": "{{story_purpose}}",
+    "targetAudience": "{{target_audience}}",
+    "structure": {
+      "openingHook": "",
+      "coreNarrative": "",
+      "storyBeats": [],
+      "emotionalArc": "",
+      "resolution": ""
+    },
+    "completeStory": "",
+    "elements": {
+      "characterVoice": "",
+      "conflictTension": "",
+      "transformation": "",
+      "emotionalTouchpoints": [],
+      "keyMessages": []
+    },
+    "variations": {
+      "short": "",
+      "medium": "",
+      "extended": ""
+    },
+    "usageGuidelines": {
+      "bestChannels": [],
+      "audienceConsiderations": "",
+      "toneNotes": "",
+      "adaptationSuggestions": []
+    },
+    "nextSteps": {
+      "refinementOpportunities": [],
+      "additionalVersionsNeeded": [],
+      "feedbackPlan": ""
+    }
+  }
+}

@@ -1,0 +1,556 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/tea/traceability-matrix.schema.json",
+  "title": "Traceability Matrix Schema",
+  "description": "Comprehensive schema for traceability matrix artifacts - captures COMPLETE requirements to tests mapping with full gap analysis and gate decision",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["storyInfo", "traceability", "gateDecision"],
+      "properties": {
+        "storyInfo": {
+          "type": "object",
+          "description": "Story/Epic being traced",
+          "properties": {
+            "storyId": { "type": "string" },
+            "storyTitle": { "type": "string" },
+            "epicId": { "type": "string" },
+            "epicTitle": { "type": "string" },
+            "evaluator": { "type": "string" },
+            "evaluationDate": {
+              "type": "string",
+              "format": "date"
+            },
+            "version": { "type": "string" }
+          }
+        },
+        "traceability": {
+          "type": "object",
+          "description": "Phase 1: COMPLETE Requirements Traceability",
+          "properties": {
+            "overview": {
+              "type": "string",
+              "description": "COMPLETE traceability overview"
+            },
+            "coverageSummary": {
+              "type": "object",
+              "description": "Coverage summary by priority",
+              "properties": {
+                "p0": {
+                  "type": "object",
+                  "properties": {
+                    "total": { "type": "integer" },
+                    "covered": { "type": "integer" },
+                    "percentage": { "type": "number" },
+                    "status": { "type": "string" }
+                  }
+                },
+                "p1": {
+                  "type": "object",
+                  "properties": {
+                    "total": { "type": "integer" },
+                    "covered": { "type": "integer" },
+                    "percentage": { "type": "number" },
+                    "status": { "type": "string" }
+                  }
+                },
+                "p2": {
+                  "type": "object",
+                  "properties": {
+                    "total": { "type": "integer" },
+                    "covered": { "type": "integer" },
+                    "percentage": { "type": "number" },
+                    "status": { "type": "string" }
+                  }
+                },
+                "p3": {
+                  "type": "object",
+                  "properties": {
+                    "total": { "type": "integer" },
+                    "covered": { "type": "integer" },
+                    "percentage": { "type": "number" },
+                    "status": { "type": "string" }
+                  }
+                },
+                "overall": {
+                  "type": "object",
+                  "properties": {
+                    "total": { "type": "integer" },
+                    "covered": { "type": "integer" },
+                    "percentage": { "type": "number" }
+                  }
+                }
+              }
+            },
+            "detailedMapping": {
+              "type": "array",
+              "description": "ALL requirement to test mappings - capture COMPLETE details",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "criterionId": { "type": "string" },
+                  "criterion": {
+                    "type": "string",
+                    "description": "COMPLETE acceptance criterion text"
+                  },
+                  "requirementId": { "type": "string" },
+                  "priority": {
+                    "type": "string",
+                    "enum": ["P0", "P1", "P2", "P3"]
+                  },
+                  "tests": {
+                    "type": "array",
+                    "description": "ALL tests covering this criterion",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "testId": { "type": "string" },
+                        "testName": { "type": "string" },
+                        "testLevel": {
+                          "type": "string",
+                          "enum": ["unit", "integration", "component", "api", "e2e"]
+                        },
+                        "given": {
+                          "type": "string",
+                          "description": "COMPLETE Given clause"
+                        },
+                        "when": {
+                          "type": "string",
+                          "description": "COMPLETE When clause"
+                        },
+                        "then": {
+                          "type": "string",
+                          "description": "COMPLETE Then clause"
+                        },
+                        "and": {
+                          "type": "array",
+                          "items": { "type": "string" }
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["passing", "failing", "skipped", "not-run"]
+                        },
+                        "automationStatus": {
+                          "type": "string",
+                          "enum": ["automated", "manual", "planned"]
+                        },
+                        "filePath": { "type": "string" }
+                      }
+                    }
+                  },
+                  "coverage": {
+                    "type": "string",
+                    "enum": ["full", "partial", "none"]
+                  },
+                  "coverageNotes": {
+                    "type": "string",
+                    "description": "COMPLETE notes about coverage"
+                  }
+                }
+              }
+            },
+            "gapAnalysis": {
+              "type": "object",
+              "description": "COMPLETE gap analysis",
+              "properties": {
+                "summary": {
+                  "type": "string",
+                  "description": "COMPLETE gap analysis summary"
+                },
+                "critical": {
+                  "type": "array",
+                  "description": "ALL critical gaps",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "gapId": { "type": "string" },
+                      "gap": {
+                        "type": "string",
+                        "description": "COMPLETE gap description"
+                      },
+                      "requirementId": { "type": "string" },
+                      "impact": {
+                        "type": "string",
+                        "description": "COMPLETE impact description"
+                      },
+                      "recommendation": {
+                        "type": "string",
+                        "description": "COMPLETE recommendation"
+                      },
+                      "owner": { "type": "string" },
+                      "deadline": { "type": "string" }
+                    }
+                  }
+                },
+                "high": {
+                  "type": "array",
+                  "items": { "$ref": "#/properties/content/properties/traceability/properties/gapAnalysis/properties/critical/items" }
+                },
+                "medium": {
+                  "type": "array",
+                  "items": { "$ref": "#/properties/content/properties/traceability/properties/gapAnalysis/properties/critical/items" }
+                },
+                "low": {
+                  "type": "array",
+                  "items": { "$ref": "#/properties/content/properties/traceability/properties/gapAnalysis/properties/critical/items" }
+                }
+              }
+            },
+            "qualityAssessment": {
+              "type": "object",
+              "description": "Test quality assessment",
+              "properties": {
+                "overall": {
+                  "type": "string",
+                  "enum": ["excellent", "good", "acceptable", "needs-improvement", "poor"]
+                },
+                "summary": {
+                  "type": "string",
+                  "description": "COMPLETE quality assessment summary"
+                },
+                "findings": {
+                  "type": "array",
+                  "description": "ALL quality findings",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "finding": {
+                        "type": "string",
+                        "description": "COMPLETE finding"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": ["positive", "concern", "issue"]
+                      },
+                      "recommendation": { "type": "string" }
+                    }
+                  }
+                },
+                "scores": {
+                  "type": "object",
+                  "properties": {
+                    "completeness": { "type": "number" },
+                    "accuracy": { "type": "number" },
+                    "consistency": { "type": "number" },
+                    "maintainability": { "type": "number" }
+                  }
+                }
+              }
+            },
+            "duplicateCoverage": {
+              "type": "array",
+              "description": "Duplicate test coverage analysis",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "criterion": { "type": "string" },
+                  "duplicateTests": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "recommendation": {
+                    "type": "string",
+                    "description": "COMPLETE recommendation"
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": ["keep-all", "consolidate", "remove-duplicates"]
+                  }
+                }
+              }
+            },
+            "coverageByTestLevel": {
+              "type": "object",
+              "description": "Coverage breakdown by test level",
+              "properties": {
+                "unit": {
+                  "type": "object",
+                  "properties": {
+                    "count": { "type": "integer" },
+                    "percentage": { "type": "number" }
+                  }
+                },
+                "integration": {
+                  "type": "object",
+                  "properties": {
+                    "count": { "type": "integer" },
+                    "percentage": { "type": "number" }
+                  }
+                },
+                "component": {
+                  "type": "object",
+                  "properties": {
+                    "count": { "type": "integer" },
+                    "percentage": { "type": "number" }
+                  }
+                },
+                "api": {
+                  "type": "object",
+                  "properties": {
+                    "count": { "type": "integer" },
+                    "percentage": { "type": "number" }
+                  }
+                },
+                "e2e": {
+                  "type": "object",
+                  "properties": {
+                    "count": { "type": "integer" },
+                    "percentage": { "type": "number" }
+                  }
+                }
+              }
+            },
+            "recommendations": {
+              "type": "array",
+              "description": "ALL traceability recommendations",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "recommendation": {
+                    "type": "string",
+                    "description": "COMPLETE recommendation"
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": ["critical", "high", "medium", "low"]
+                  },
+                  "effort": {
+                    "type": "string",
+                    "enum": ["low", "medium", "high"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "gateDecision": {
+          "type": "object",
+          "description": "Phase 2: COMPLETE Quality Gate Decision",
+          "properties": {
+            "gateType": {
+              "type": "string",
+              "enum": ["story", "epic", "release", "hotfix"]
+            },
+            "decisionMode": {
+              "type": "string",
+              "enum": ["deterministic", "manual", "hybrid"]
+            },
+            "evidenceSummary": {
+              "type": "object",
+              "description": "COMPLETE evidence summary",
+              "properties": {
+                "testExecution": {
+                  "type": "object",
+                  "properties": {
+                    "total": { "type": "integer" },
+                    "passed": { "type": "integer" },
+                    "failed": { "type": "integer" },
+                    "skipped": { "type": "integer" },
+                    "passRate": { "type": "number" }
+                  }
+                },
+                "coverage": {
+                  "type": "object",
+                  "properties": {
+                    "statement": { "type": "number" },
+                    "branch": { "type": "number" },
+                    "requirement": { "type": "number" }
+                  }
+                },
+                "nfrStatus": {
+                  "type": "string",
+                  "description": "COMPLETE NFR status summary"
+                },
+                "flakinessScore": { "type": "number" },
+                "regressionStatus": { "type": "string" },
+                "performanceStatus": { "type": "string" }
+              }
+            },
+            "decisionCriteria": {
+              "type": "object",
+              "description": "Decision criteria evaluation",
+              "properties": {
+                "p0": {
+                  "type": "object",
+                  "properties": {
+                    "required": { "type": "number" },
+                    "actual": { "type": "number" },
+                    "pass": { "type": "boolean" },
+                    "notes": { "type": "string" }
+                  }
+                },
+                "p1": {
+                  "type": "object",
+                  "properties": {
+                    "required": { "type": "number" },
+                    "actual": { "type": "number" },
+                    "pass": { "type": "boolean" },
+                    "notes": { "type": "string" }
+                  }
+                },
+                "p2": {
+                  "type": "object",
+                  "properties": {
+                    "required": { "type": "number" },
+                    "actual": { "type": "number" },
+                    "pass": { "type": "boolean" },
+                    "notes": { "type": "string" }
+                  }
+                },
+                "p3": {
+                  "type": "object",
+                  "properties": {
+                    "required": { "type": "number" },
+                    "actual": { "type": "number" },
+                    "pass": { "type": "boolean" },
+                    "notes": { "type": "string" }
+                  }
+                },
+                "additionalCriteria": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "criterion": { "type": "string" },
+                      "required": { "type": "string" },
+                      "actual": { "type": "string" },
+                      "pass": { "type": "boolean" }
+                    }
+                  }
+                }
+              }
+            },
+            "decision": {
+              "type": "string",
+              "enum": ["PASS", "CONCERNS", "FAIL", "WAIVED"]
+            },
+            "rationale": {
+              "type": "string",
+              "description": "COMPLETE rationale for decision"
+            },
+            "residualRisks": {
+              "type": "array",
+              "description": "ALL residual risks - capture completely",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "risk": {
+                    "type": "string",
+                    "description": "COMPLETE risk description"
+                  },
+                  "severity": { "type": "string" },
+                  "acceptedBy": { "type": "string" },
+                  "mitigation": { "type": "string" }
+                }
+              }
+            },
+            "waiverDetails": {
+              "type": "object",
+              "description": "Waiver details if applicable",
+              "properties": {
+                "approver": { "type": "string" },
+                "reason": {
+                  "type": "string",
+                  "description": "COMPLETE waiver reason"
+                },
+                "conditions": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "expirationDate": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "followUpActions": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            },
+            "criticalIssues": {
+              "type": "array",
+              "description": "ALL critical issues - capture completely",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "issue": {
+                    "type": "string",
+                    "description": "COMPLETE issue description"
+                  },
+                  "severity": { "type": "string" },
+                  "resolution": { "type": "string" },
+                  "status": { "type": "string" }
+                }
+              }
+            },
+            "recommendations": {
+              "type": "array",
+              "description": "ALL recommendations",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "recommendation": {
+                    "type": "string",
+                    "description": "COMPLETE recommendation"
+                  },
+                  "priority": { "type": "string" },
+                  "owner": { "type": "string" }
+                }
+              }
+            },
+            "nextSteps": {
+              "type": "array",
+              "description": "ALL next steps",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "step": {
+                    "type": "string",
+                    "description": "COMPLETE step description"
+                  },
+                  "owner": { "type": "string" },
+                  "deadline": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "cicdYamlSnippet": {
+          "type": "string",
+          "description": "Integrated YAML snippet for CI/CD"
+        },
+        "relatedArtifacts": {
+          "type": "array",
+          "description": "Related artifacts",
+          "items": {
+            "type": "object",
+            "properties": {
+              "artifact": { "type": "string" },
+              "path": { "type": "string" },
+              "version": { "type": "string" }
+            }
+          }
+        },
+        "signOff": {
+          "type": "object",
+          "description": "Sign-off section",
+          "properties": {
+            "signedBy": { "type": "string" },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "role": { "type": "string" },
+            "signature": { "type": "string" },
+            "comments": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

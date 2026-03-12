@@ -1,0 +1,44 @@
+# Risk Assessment Workflow
+name: create-risks
+description: "Create comprehensive risk assessment with impact analysis and mitigation strategies"
+author: "BMad"
+
+# Critical variables from config
+config_source: "{bmad-path}/bmm/config.yaml"
+output_folder: "{config_source}:output_folder"
+planning_artifacts: "{config_source}:planning_artifacts"
+user_name: "{config_source}:user_name"
+communication_language: "{config_source}:communication_language"
+document_output_language: "{config_source}:document_output_language"
+date: system-generated
+
+# Workflow components
+installed_path: "{bmad-path}/bmm/workflows/supporting/create-risks"
+instructions: "{installed_path}/instructions.md"
+template: "{installed_path}/template.md"
+
+# Output configuration
+default_output_file: "{planning_artifacts}/risks.md"
+
+# Output format configuration (dual = JSON + Markdown)
+output_format: dual
+schema: "{bmad-path}/schemas/bmm/risks.schema.json"
+output_note: "Produces risks.md and risks.json with risk assessment and mitigation strategies"
+
+# Required tools
+required_tools:
+  - read_file     # Read PRD, architecture, existing artifacts
+  - write_file    # Create risk documents
+  - list_files    # Find existing documentation
+  - search_repo   # Find technical risks
+
+tags:
+  - planning
+  - risk-management
+  - documentation
+  - governance
+
+execution_hints:
+  interactive: true   # Collaborate on risk identification
+  autonomous: false
+  iterative: true     # Update as new risks emerge

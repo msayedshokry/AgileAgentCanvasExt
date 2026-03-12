@@ -1,0 +1,266 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/tea/test-framework.schema.json",
+  "title": "Test Framework Setup Schema",
+  "description": "Schema for test framework initialization - captures framework architecture, configuration, and setup details",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["framework", "configuration"],
+      "properties": {
+        "framework": {
+          "type": "object",
+          "description": "Framework selection and rationale",
+          "properties": {
+            "name": {
+              "type": "string",
+              "enum": ["playwright", "cypress", "jest", "vitest", "mocha", "other"],
+              "description": "Selected test framework"
+            },
+            "version": { "type": "string" },
+            "selectionRationale": {
+              "type": "string",
+              "description": "Why this framework was chosen"
+            },
+            "alternatives": {
+              "type": "array",
+              "description": "Alternative frameworks considered",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "reason": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "configuration": {
+          "type": "object",
+          "description": "Framework configuration details",
+          "properties": {
+            "configFile": {
+              "type": "string",
+              "description": "Path to main config file"
+            },
+            "typescript": {
+              "type": "boolean",
+              "description": "Whether TypeScript is configured"
+            },
+            "baseUrl": { "type": "string" },
+            "testMatch": {
+              "type": "array",
+              "description": "Test file patterns",
+              "items": { "type": "string" }
+            },
+            "reporters": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "parallelization": {
+              "type": "object",
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "workers": { "type": "integer" },
+                "strategy": { "type": "string" }
+              }
+            },
+            "retries": {
+              "type": "object",
+              "properties": {
+                "count": { "type": "integer" },
+                "onFailure": { "type": "boolean" }
+              }
+            }
+          }
+        },
+        "directoryStructure": {
+          "type": "object",
+          "description": "Test directory organization",
+          "properties": {
+            "rootDir": { "type": "string" },
+            "directories": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": { "type": "string" },
+                  "purpose": { "type": "string" },
+                  "contents": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "fixtures": {
+          "type": "array",
+          "description": "Test fixtures created",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "filePath": { "type": "string" },
+              "purpose": { "type": "string" },
+              "scope": {
+                "type": "string",
+                "enum": ["test", "file", "worker", "global"]
+              },
+              "dependencies": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "helpers": {
+          "type": "array",
+          "description": "Helper utilities created",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "filePath": { "type": "string" },
+              "purpose": { "type": "string" },
+              "functions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "description": { "type": "string" },
+                    "signature": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "pageObjects": {
+          "type": "array",
+          "description": "Page objects created (for UI testing)",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "filePath": { "type": "string" },
+              "page": { "type": "string" },
+              "elements": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "actions": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "mocking": {
+          "type": "object",
+          "description": "Mocking configuration",
+          "properties": {
+            "strategy": { "type": "string" },
+            "libraries": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "mockFiles": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": { "type": "string" },
+                  "purpose": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "dependencies": {
+          "type": "object",
+          "description": "Dependencies installed",
+          "properties": {
+            "production": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "version": { "type": "string" },
+                  "purpose": { "type": "string" }
+                }
+              }
+            },
+            "development": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "version": { "type": "string" },
+                  "purpose": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "scripts": {
+          "type": "array",
+          "description": "npm scripts added",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "command": { "type": "string" },
+              "purpose": { "type": "string" }
+            }
+          }
+        },
+        "setupInstructions": {
+          "type": "object",
+          "description": "Setup and usage instructions",
+          "properties": {
+            "prerequisites": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "installationSteps": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "runCommands": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "command": { "type": "string" },
+                  "description": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "bestPractices": {
+          "type": "array",
+          "description": "Best practices configured/documented",
+          "items": {
+            "type": "object",
+            "properties": {
+              "practice": { "type": "string" },
+              "implementation": { "type": "string" },
+              "reference": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

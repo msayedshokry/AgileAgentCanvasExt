@@ -1,0 +1,551 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/bmm/project-context.schema.json",
+  "title": "Project Context Schema",
+  "description": "Comprehensive schema for project context artifacts - captures COMPLETE AI agent context, implementation rules, and coding patterns",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["projectInfo"],
+      "properties": {
+        "projectInfo": {
+          "type": "object",
+          "description": "Basic project information",
+          "properties": {
+            "name": { "type": "string" },
+            "description": {
+              "type": "string",
+              "description": "COMPLETE project description"
+            },
+            "type": {
+              "type": "string",
+              "description": "Project type (e.g., 'web-app', 'api', 'library')"
+            },
+            "version": { "type": "string" },
+            "repository": { "type": "string" },
+            "documentation": { "type": "string" }
+          }
+        },
+        "overview": {
+          "type": "object",
+          "description": "Project overview for AI context",
+          "properties": {
+            "summary": {
+              "type": "string",
+              "description": "COMPLETE project summary for AI understanding"
+            },
+            "architecture": {
+              "type": "string",
+              "description": "COMPLETE architecture overview"
+            },
+            "keyFeatures": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "currentState": {
+              "type": "string",
+              "description": "Current project state and maturity"
+            }
+          }
+        },
+        "techStack": {
+          "type": "object",
+          "description": "COMPLETE technology stack with versions",
+          "properties": {
+            "overview": {
+              "type": "string",
+              "description": "COMPLETE tech stack overview"
+            },
+            "languages": {
+              "type": "array",
+              "description": "ALL programming languages",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "version": { "type": "string" },
+                  "usage": {
+                    "type": "string",
+                    "description": "COMPLETE usage description"
+                  },
+                  "configuration": { "type": "string" }
+                }
+              }
+            },
+            "frameworks": {
+              "type": "array",
+              "description": "ALL frameworks",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "version": { "type": "string" },
+                  "purpose": {
+                    "type": "string",
+                    "description": "COMPLETE purpose description"
+                  },
+                  "documentation": { "type": "string" },
+                  "keyFeatures": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "libraries": {
+              "type": "array",
+              "description": "ALL significant libraries",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "version": { "type": "string" },
+                  "purpose": { "type": "string" },
+                  "usage": { "type": "string" }
+                }
+              }
+            },
+            "tools": {
+              "type": "array",
+              "description": "ALL development tools",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "version": { "type": "string" },
+                  "purpose": {
+                    "type": "string",
+                    "description": "COMPLETE purpose description"
+                  },
+                  "configuration": { "type": "string" }
+                }
+              }
+            },
+            "infrastructure": {
+              "type": "array",
+              "description": "Infrastructure tools",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "purpose": { "type": "string" },
+                  "configuration": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "implementationRules": {
+          "type": "array",
+          "description": "ALL critical implementation rules for AI agents - capture COMPLETE details",
+          "items": {
+            "type": "object",
+            "required": ["rule"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Rule identifier"
+              },
+              "rule": {
+                "type": "string",
+                "description": "COMPLETE rule description - do NOT summarize"
+              },
+              "rationale": {
+                "type": "string",
+                "description": "COMPLETE rationale for this rule"
+              },
+              "category": {
+                "type": "string",
+                "enum": ["code-style", "architecture", "testing", "security", "performance", "documentation", "naming", "error-handling", "state-management", "api"]
+              },
+              "severity": {
+                "type": "string",
+                "enum": ["must", "should", "may"],
+                "description": "How strictly this rule must be followed"
+              },
+              "examples": {
+                "type": "object",
+                "properties": {
+                  "good": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "bad": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              },
+              "exceptions": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "enforcedBy": {
+                "type": "string",
+                "description": "How this rule is enforced (e.g., 'eslint', 'review', 'ci')"
+              }
+            }
+          }
+        },
+        "patterns": {
+          "type": "object",
+          "description": "COMPLETE patterns in the codebase",
+          "properties": {
+            "overview": {
+              "type": "string",
+              "description": "COMPLETE patterns overview"
+            },
+            "codePatterns": {
+              "type": "array",
+              "description": "ALL code patterns to follow",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "description": {
+                    "type": "string",
+                    "description": "COMPLETE pattern description"
+                  },
+                  "usage": {
+                    "type": "string",
+                    "description": "When to use this pattern"
+                  },
+                  "example": {
+                    "type": "string",
+                    "description": "Code example"
+                  },
+                  "location": {
+                    "type": "string",
+                    "description": "Where to find examples in codebase"
+                  },
+                  "rationale": { "type": "string" }
+                }
+              }
+            },
+            "namingConventions": {
+              "type": "array",
+              "description": "ALL naming conventions",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "What this convention applies to"
+                  },
+                  "convention": {
+                    "type": "string",
+                    "description": "COMPLETE convention description"
+                  },
+                  "pattern": {
+                    "type": "string",
+                    "description": "Pattern regex or description"
+                  },
+                  "example": { "type": "string" },
+                  "rationale": { "type": "string" }
+                }
+              }
+            },
+            "fileOrganization": {
+              "type": "array",
+              "description": "ALL file organization patterns",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": { "type": "string" },
+                  "purpose": {
+                    "type": "string",
+                    "description": "COMPLETE purpose description"
+                  },
+                  "conventions": {
+                    "type": "string",
+                    "description": "COMPLETE conventions for this path"
+                  },
+                  "examples": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "componentPatterns": {
+              "type": "array",
+              "description": "Component structure patterns",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": { "type": "string" },
+                  "structure": { "type": "string" },
+                  "example": { "type": "string" }
+                }
+              }
+            },
+            "testPatterns": {
+              "type": "array",
+              "description": "Testing patterns",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": { "type": "string" },
+                  "pattern": { "type": "string" },
+                  "example": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "forbiddenPatterns": {
+          "type": "array",
+          "description": "ALL patterns to avoid - capture COMPLETE details",
+          "items": {
+            "type": "object",
+            "properties": {
+              "pattern": {
+                "type": "string",
+                "description": "COMPLETE description of forbidden pattern"
+              },
+              "reason": {
+                "type": "string",
+                "description": "COMPLETE reason why this is forbidden"
+              },
+              "alternative": {
+                "type": "string",
+                "description": "COMPLETE alternative approach"
+              },
+              "detection": {
+                "type": "string",
+                "description": "How to detect this pattern"
+              },
+              "severity": {
+                "type": "string",
+                "enum": ["error", "warning"]
+              }
+            }
+          }
+        },
+        "keyFiles": {
+          "type": "array",
+          "description": "ALL key files to reference - capture COMPLETE details",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": { "type": "string" },
+              "purpose": {
+                "type": "string",
+                "description": "COMPLETE purpose description"
+              },
+              "importance": {
+                "type": "string",
+                "enum": ["critical", "important", "reference"]
+              },
+              "notes": {
+                "type": "string",
+                "description": "COMPLETE notes about this file"
+              },
+              "keyElements": {
+                "type": "array",
+                "description": "Key elements in this file",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "entryPoints": {
+          "type": "array",
+          "description": "Application entry points",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": { "type": "string" },
+              "type": { "type": "string" },
+              "description": {
+                "type": "string",
+                "description": "COMPLETE description"
+              }
+            }
+          }
+        },
+        "developmentWorkflow": {
+          "type": "object",
+          "description": "Development workflow information",
+          "properties": {
+            "setup": {
+              "type": "array",
+              "description": "Setup steps",
+              "items": { "type": "string" }
+            },
+            "commands": {
+              "type": "array",
+              "description": "Common commands",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "command": { "type": "string" },
+                  "description": { "type": "string" },
+                  "usage": { "type": "string" }
+                }
+              }
+            },
+            "testing": {
+              "type": "object",
+              "properties": {
+                "framework": { "type": "string" },
+                "command": { "type": "string" },
+                "coverage": { "type": "string" }
+              }
+            },
+            "linting": {
+              "type": "object",
+              "properties": {
+                "tools": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "command": { "type": "string" },
+                "configuration": { "type": "string" }
+              }
+            }
+          }
+        },
+        "errorHandling": {
+          "type": "object",
+          "description": "Error handling patterns",
+          "properties": {
+            "strategy": {
+              "type": "string",
+              "description": "COMPLETE error handling strategy"
+            },
+            "patterns": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": { "type": "string" },
+                  "handling": { "type": "string" },
+                  "example": { "type": "string" }
+                }
+              }
+            },
+            "logging": {
+              "type": "object",
+              "properties": {
+                "approach": { "type": "string" },
+                "levels": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "stateManagement": {
+          "type": "object",
+          "description": "State management approach",
+          "properties": {
+            "overview": {
+              "type": "string",
+              "description": "COMPLETE state management overview"
+            },
+            "globalState": {
+              "type": "object",
+              "properties": {
+                "approach": { "type": "string" },
+                "location": { "type": "string" },
+                "patterns": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            },
+            "localState": {
+              "type": "object",
+              "properties": {
+                "approach": { "type": "string" },
+                "patterns": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "apiInteraction": {
+          "type": "object",
+          "description": "API interaction patterns",
+          "properties": {
+            "approach": {
+              "type": "string",
+              "description": "COMPLETE API interaction approach"
+            },
+            "client": { "type": "string" },
+            "patterns": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "pattern": { "type": "string" },
+                  "usage": { "type": "string" }
+                }
+              }
+            },
+            "errorHandling": { "type": "string" }
+          }
+        },
+        "securityConsiderations": {
+          "type": "array",
+          "description": "Security considerations for AI",
+          "items": {
+            "type": "object",
+            "properties": {
+              "consideration": {
+                "type": "string",
+                "description": "COMPLETE security consideration"
+              },
+              "implementation": { "type": "string" },
+              "validation": { "type": "string" }
+            }
+          }
+        },
+        "performanceConsiderations": {
+          "type": "array",
+          "description": "Performance considerations for AI",
+          "items": {
+            "type": "object",
+            "properties": {
+              "consideration": {
+                "type": "string",
+                "description": "COMPLETE performance consideration"
+              },
+              "implementation": { "type": "string" },
+              "measurement": { "type": "string" }
+            }
+          }
+        },
+        "knownIssues": {
+          "type": "array",
+          "description": "Known issues and workarounds",
+          "items": {
+            "type": "object",
+            "properties": {
+              "issue": {
+                "type": "string",
+                "description": "COMPLETE issue description"
+              },
+              "workaround": { "type": "string" },
+              "status": { "type": "string" }
+            }
+          }
+        },
+        "additionalNotes": {
+          "type": "array",
+          "description": "ALL additional notes for AI context",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

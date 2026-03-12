@@ -1,0 +1,288 @@
+{
+  "$schema": "../../../../../schemas/bmm/epics.schema.json",
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "epics",
+    "workflowName": "create-epics-and-stories",
+    "projectName": "{{project_name}}",
+    "stepsCompleted": [],
+    "currentStep": "",
+    "timestamps": {
+      "created": "{{timestamp}}",
+      "lastModified": "{{timestamp}}"
+    },
+    "author": "{{user_name}}",
+    "status": "draft",
+    "customFields": {
+      "enhancementLevel": "standard"
+    }
+  },
+  "content": {
+    "title": "{{product_name}} Epics",
+    "overview": {
+      "projectName": "{{project_name}}",
+      "description": "",
+      "totalEpics": 0,
+      "totalStories": 0
+    },
+    "requirementsInventory": {
+      "functional": [],
+      "nonFunctional": [],
+      "additional": [],
+      "summary": {
+        "totalFunctional": 0,
+        "totalNonFunctional": 0,
+        "totalAdditional": 0,
+        "totalRequirements": 0
+      }
+    },
+    "coverageMap": {
+      "functionalToEpic": [],
+      "nonFunctionalToEpic": [],
+      "additionalToEpic": [],
+      "coverageSummary": {
+        "frCovered": 0,
+        "frTotal": 0,
+        "nfrCovered": 0,
+        "nfrTotal": 0,
+        "arCovered": 0,
+        "arTotal": 0,
+        "overallCoverage": "0%"
+      }
+    },
+    "epics": [
+      {
+        "_comment": "Epic template - repeat for each epic",
+        "id": "EPIC-N",
+        "title": "{{epic_title}}",
+        "goal": "{{epic_goal}}",
+        "valueDelivered": "{{value_delivered}}",
+        "description": "",
+        "functionalRequirements": [],
+        "nonFunctionalRequirements": [],
+        "additionalRequirements": [],
+        "implementationNotes": [],
+        "priority": "must-have",
+        "status": "draft",
+        "dependencies": [],
+        "storyCount": 0,
+        
+        "_verbose_comment": "--- OPTIONAL VERBOSE SECTIONS (from Epic Enhancement) ---",
+        
+        "useCases": [
+          {
+            "_template": true,
+            "id": "UC-01",
+            "title": "{{use_case_title}}",
+            "summary": "{{use_case_summary}}",
+            "primaryActor": "{{actor}}",
+            "scenario": {
+              "context": "{{context}}",
+              "before": "{{without_feature}}",
+              "after": "{{with_feature}}",
+              "impact": "{{benefit}}"
+            }
+          }
+        ],
+        
+        "fitCriteria": {
+          "functional": [
+            {
+              "_template": true,
+              "id": "FC-01",
+              "criterion": "{{functional_criterion}}",
+              "verified": false
+            }
+          ],
+          "nonFunctional": [
+            {
+              "_template": true,
+              "id": "NFC-01",
+              "category": "performance",
+              "criterion": "{{nonfunctional_criterion}}",
+              "metric": {
+                "target": "{{target_value}}",
+                "unit": "{{unit}}"
+              },
+              "verified": false
+            }
+          ],
+          "security": [
+            {
+              "_template": true,
+              "id": "SC-01",
+              "criterion": "{{security_criterion}}",
+              "verified": false
+            }
+          ]
+        },
+        
+        "successMetrics": {
+          "codeQuality": [
+            {
+              "_template": true,
+              "id": "CQ-01",
+              "metric": "{{code_quality_metric}}",
+              "target": "{{target}}"
+            }
+          ],
+          "operational": [
+            {
+              "_template": true,
+              "id": "OP-01",
+              "metric": "{{operational_metric}}",
+              "target": "{{target}}"
+            }
+          ],
+          "customerImpact": [
+            {
+              "_template": true,
+              "id": "CI-01",
+              "metric": "{{customer_metric}}",
+              "target": "{{target}}"
+            }
+          ],
+          "deployment": [
+            {
+              "_template": true,
+              "id": "DP-01",
+              "metric": "{{deployment_metric}}",
+              "target": "{{target}}"
+            }
+          ]
+        },
+        
+        "risks": {
+          "risks": [
+            {
+              "_template": true,
+              "id": "RISK-01",
+              "risk": "{{risk_description}}",
+              "category": "technical",
+              "impact": "medium",
+              "mitigation": "{{mitigation_strategy}}"
+            }
+          ],
+          "dependencies": [
+            {
+              "_template": true,
+              "id": "DEP-01",
+              "dependency": "{{dependency}}",
+              "type": "upstream",
+              "risk": "{{risk_if_not_met}}",
+              "mitigation": "{{mitigation}}"
+            }
+          ]
+        },
+        
+        "definitionOfDone": {
+          "items": [
+            {
+              "_template": true,
+              "id": "DOD-01",
+              "item": "{{dod_item}}",
+              "category": "code-quality",
+              "required": true,
+              "completed": false
+            }
+          ]
+        },
+        
+        "technicalSummary": {
+          "architecturePattern": "{{pattern_name}}",
+          "components": [
+            {
+              "_template": true,
+              "name": "{{component_name}}",
+              "responsibility": "{{responsibility}}",
+              "changes": "{{changes}}"
+            }
+          ],
+          "filesChanged": [
+            {
+              "_template": true,
+              "path": "{{file_path}}",
+              "action": "new",
+              "description": "{{description}}"
+            }
+          ],
+          "configuration": {
+            "file": "{{config_file}}",
+            "settings": [
+              {
+                "_template": true,
+                "key": "{{setting_key}}",
+                "value": "{{setting_value}}",
+                "description": "{{description}}"
+              }
+            ]
+          }
+        },
+        
+        "effortEstimate": {
+          "totalSprints": 0,
+          "totalDays": 0,
+          "breakdown": [
+            {
+              "_template": true,
+              "phase": "{{phase_name}}",
+              "duration": "{{duration}}",
+              "description": "{{description}}"
+            }
+          ]
+        },
+        
+        "epicDependencies": {
+          "upstream": [],
+          "downstream": [],
+          "relatedEpics": []
+        },
+        
+        "acceptanceSummary": "{{acceptance_summary}}",
+        
+        "_verbose_end": "--- END OPTIONAL VERBOSE SECTIONS ---",
+        
+        "stories": [
+          {
+            "_comment": "Story template - repeat for each story",
+            "id": "STORY-N.M",
+            "title": "{{story_title}}",
+            "userStory": {
+              "asA": "{{user_type}}",
+              "iWant": "{{capability}}",
+              "soThat": "{{benefit}}",
+              "formatted": "As a {{user_type}}, I want {{capability}}, so that {{benefit}}."
+            },
+            "acceptanceCriteria": [
+              {
+                "id": "AC-1",
+                "given": "{{precondition}}",
+                "when": "{{action}}",
+                "then": "{{expected_outcome}}",
+                "and": []
+              }
+            ],
+            "technicalNotes": "",
+            "implementationDetails": [],
+            "priority": "P1",
+            "status": "draft",
+            "storyPoints": 0,
+            "dependencies": [],
+            "requirementRefs": []
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "totalEpics": 0,
+      "totalStories": 0,
+      "totalAcceptanceCriteria": 0,
+      "frCovered": 0,
+      "nfrCovered": 0,
+      "arCovered": 0,
+      "coveragePercentage": "0%",
+      "status": "draft",
+      "lastUpdated": "{{timestamp}}"
+    }
+  }
+}

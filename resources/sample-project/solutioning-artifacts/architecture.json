@@ -1,0 +1,348 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "architecture",
+    "workflowName": "architect",
+    "projectName": "TaskFlow Pro",
+    "timestamps": {
+      "created": "2025-06-10T09:00:00Z",
+      "lastModified": "2025-06-18T15:00:00Z"
+    },
+    "status": "approved",
+    "tags": ["architecture", "v1.0", "microservices"],
+    "author": "James Wilson, CTO",
+    "stepsCompleted": ["context-analysis", "tech-stack-selection", "component-design", "adr-drafting", "security-review", "architecture-approved"],
+    "inputDocuments": [
+      { "path": "prd.json" },
+      { "path": "product-brief.json" }
+    ]
+  },
+  "content": {
+    "overview": {
+      "projectName": "TaskFlow Pro",
+      "summary": "Cloud-native SaaS platform built on a modular monolith architecture with clear domain boundaries, designed for progressive decomposition into microservices as the team and traffic grow.",
+      "architectureStyle": "Modular Monolith with Event-Driven Communication"
+    },
+    "context": {
+      "businessContext": "MVP must ship in 4 months with a team of 8 engineers. Architecture must support rapid iteration while maintaining the ability to scale to 10K+ concurrent users.",
+      "technicalContext": "Greenfield project with no legacy constraints. Team has deep experience with TypeScript, React, and PostgreSQL.",
+      "constraints": [
+        { "constraint": "4-month timeline to MVP", "type": "timeline", "impact": "Limits feature scope and architecture complexity" },
+        { "constraint": "8-person engineering team", "type": "resource", "impact": "Constrains parallelism of development streams" },
+        { "constraint": "AWS-only cloud deployment", "type": "technical", "impact": "All infrastructure must use AWS services" },
+        { "constraint": "SOC 2 compliance path required", "type": "regulatory", "impact": "Security controls must be built in from the start" }
+      ],
+      "qualityAttributes": [
+        { "attribute": "Performance", "priority": "critical", "description": "p95 API latency under 200ms, page loads under 1.5 seconds", "target": "< 200ms p95" },
+        { "attribute": "Scalability", "priority": "high", "description": "Support 10K concurrent users at launch, 50K within 6 months", "target": "10K concurrent" },
+        { "attribute": "Security", "priority": "critical", "description": "SOC 2 Type II compliance, E2E encryption, RBAC with SSO", "target": "SOC 2 certified" },
+        { "attribute": "Reliability", "priority": "high", "description": "99.9% uptime SLA with automated failover", "target": "99.9% uptime" }
+      ]
+    },
+    "techStack": {
+      "frontend": {
+        "framework": "React 18",
+        "language": "TypeScript 5.4",
+        "stateManagement": "Zustand",
+        "styling": "Tailwind CSS",
+        "testing": "Vitest + Playwright",
+        "rationale": "React has the largest ecosystem and hiring pool. Zustand provides simpler state management than Redux. Tailwind enables rapid UI iteration.",
+        "additionalLibraries": [
+          { "name": "TanStack Query", "purpose": "Server state management and caching" }
+        ]
+      },
+      "backend": {
+        "framework": "Fastify",
+        "language": "TypeScript 5.4",
+        "runtime": "Node.js 20 LTS",
+        "apiStyle": "REST + GraphQL (Mercurius)",
+        "rationale": "Fastify outperforms Express and has excellent TypeScript support. Prisma provides type-safe database access. Mercurius adds GraphQL for complex queries.",
+        "additionalLibraries": [
+          { "name": "Prisma ORM", "purpose": "Type-safe database access and migrations" },
+          { "name": "Mercurius", "purpose": "GraphQL server for complex queries" }
+        ]
+      },
+      "database": {
+        "primary": "PostgreSQL 16",
+        "secondary": "Redis 7 (cache + pub/sub)",
+        "caching": "Redis 7 with ElastiCache",
+        "orm": "Prisma",
+        "rationale": "PostgreSQL for ACID transactions and rich query capabilities. Redis for sub-millisecond caching and WebSocket pub/sub fan-out.",
+        "schemaStrategy": "Prisma migrations for schema versioning, module-scoped schemas"
+      },
+      "infrastructure": {
+        "hosting": "AWS ECS Fargate",
+        "containerization": "Docker",
+        "orchestration": "ECS with CloudFront CDN and ALB",
+        "cicd": "GitHub Actions",
+        "monitoring": "Datadog APM",
+        "logging": "CloudWatch + Datadog",
+        "rationale": "Fargate eliminates container host management. Aurora provides managed PostgreSQL with multi-AZ failover. Terraform enables infrastructure-as-code."
+      },
+      "devTools": {
+        "versionControl": "Git (GitHub)",
+        "linting": "ESLint + Prettier",
+        "packageManager": "pnpm"
+      }
+    },
+    "decisions": [
+      {
+        "id": "ADR-1",
+        "title": "Modular Monolith over Microservices",
+        "context": "Team of 8 needs to ship MVP in 4 months. Microservices add operational overhead disproportionate to team size.",
+        "decision": "Start with a modular monolith using clear domain boundaries (modules: task, user, ai, notification). Each module owns its database schema and communicates via in-process events.",
+        "rationale": "Reduces deployment complexity, enables rapid iteration, and provides a clear decomposition path when the team grows to 20+.",
+        "consequences": {
+          "positive": ["Faster initial development", "Lower operational overhead"],
+          "negative": ["Must enforce module boundaries via linting", "Eventual decomposition requires event schema stability"]
+        },
+        "status": "accepted",
+        "date": "2025-06-12"
+      },
+      {
+        "id": "ADR-2",
+        "title": "PostgreSQL + Redis Dual-Store",
+        "context": "Need ACID transactions for task state, plus sub-100ms reads for real-time features and pub/sub for WebSocket fan-out.",
+        "decision": "PostgreSQL for persistent state with Prisma ORM. Redis for caching, session management, and WebSocket pub/sub.",
+        "rationale": "Battle-tested stack with strong TypeScript tooling. Redis pub/sub enables horizontal WebSocket scaling without additional message broker.",
+        "consequences": {
+          "positive": ["Proven technology stack", "Strong TypeScript tooling"],
+          "negative": ["Two data stores to manage", "Cache invalidation complexity", "Redis persistence is secondary — data loss acceptable for cache layer"]
+        },
+        "status": "accepted",
+        "date": "2025-06-13"
+      },
+      {
+        "id": "ADR-3",
+        "title": "AI Engine as Isolated Module",
+        "context": "AI prioritization is experimental and may change rapidly. Must not destabilize core task management.",
+        "decision": "Encapsulate AI logic in a separate module with a stable interface (PrioritizationService). Module can call OpenAI API or local models interchangeably.",
+        "rationale": "Isolates experimentation, allows A/B testing of algorithms, and enables fallback to rule-based prioritization.",
+        "consequences": {
+          "positive": ["Clean separation of concerns", "Enables A/B testing of algorithms"],
+          "negative": ["Additional abstraction layer", "Must define stable priority scoring interface"]
+        },
+        "status": "accepted",
+        "date": "2025-06-14"
+      },
+      {
+        "id": "ADR-4",
+        "title": "WebSocket for Real-time with Polling Fallback",
+        "context": "Need real-time task updates and presence indicators. Some corporate networks block WebSocket connections.",
+        "decision": "WebSocket primary transport with automatic fallback to long-polling. Redis pub/sub for cross-instance message distribution.",
+        "rationale": "Provides best UX for most users while maintaining compatibility with restrictive networks.",
+        "consequences": {
+          "positive": ["Best UX for most users", "Compatibility with restrictive networks"],
+          "negative": ["Dual transport implementation", "Redis pub/sub dependency for scaling", "Must handle reconnection gracefully"]
+        },
+        "status": "accepted",
+        "date": "2025-06-15"
+      }
+    ],
+    "systemComponents": [
+      {
+        "id": "COMP-1",
+        "name": "Web Client (SPA)",
+        "description": "React single-page application providing the main user interface including task boards, focus mode, and dependency graph visualization",
+        "type": "frontend",
+        "responsibilities": ["Task management UI", "Focus mode", "Dependency graph", "Real-time updates via WebSocket"],
+        "technology": "React 18 + TypeScript + Tailwind CSS"
+      },
+      {
+        "id": "COMP-2",
+        "name": "API Gateway",
+        "description": "Fastify-based REST and GraphQL API serving the web client and CLI tool",
+        "type": "backend",
+        "responsibilities": ["Authentication", "Request routing", "Rate limiting", "API versioning"],
+        "technology": "Fastify + Mercurius (GraphQL)"
+      },
+      {
+        "id": "COMP-3",
+        "name": "Task Module",
+        "description": "Core domain module handling task CRUD, sprint management, and dependency tracking",
+        "type": "backend",
+        "responsibilities": ["Task lifecycle", "Sprint management", "Dependency graph", "Search and filtering"],
+        "technology": "TypeScript + Prisma"
+      },
+      {
+        "id": "COMP-4",
+        "name": "AI Prioritization Engine",
+        "description": "Isolated module that scores and ranks tasks using ML models and rule-based fallbacks",
+        "type": "backend",
+        "responsibilities": ["Priority scoring", "Sprint suggestions", "Velocity forecasting", "Anomaly detection"],
+        "technology": "TypeScript + OpenAI API + custom scoring"
+      },
+      {
+        "id": "COMP-5",
+        "name": "Notification Service",
+        "description": "Manages notification batching, focus mode filtering, and multi-channel delivery (in-app, email, Slack)",
+        "type": "backend",
+        "responsibilities": ["Notification routing", "Batch scheduling", "Focus mode enforcement", "Channel delivery"],
+        "technology": "TypeScript + Redis + SES"
+      }
+    ],
+    "patterns": [
+      { "pattern": "Modular Monolith", "category": "Structural", "usage": "Domain-driven module boundaries (task, user, ai, notification) with in-process event bus for cross-module communication" },
+      { "pattern": "Event-Driven Architecture", "category": "Behavioral", "usage": "In-process event bus for decoupled module communication, enabling future decomposition into microservices" },
+      { "pattern": "CQRS", "category": "Structural", "usage": "Read-heavy task listing uses optimized query paths separate from write-path mutations" },
+      { "pattern": "Repository Pattern", "category": "Structural", "usage": "Data access abstraction via Prisma repositories, enabling testability and future data store changes" },
+      { "pattern": "Strategy Pattern", "category": "Behavioral", "usage": "AI algorithm selection between ML-based (OpenAI) and rule-based prioritization with feature flag control" }
+    ],
+    "projectStructure": {
+      "monorepo": false,
+      "description": "Modular monolith organized by domain modules, each containing routes, services, repositories, and events",
+      "moduleOrganization": "src/modules/{task,user,ai,notification}/ — each module has routes/, services/, repositories/, events/",
+      "structure": [
+        { "path": "src/modules/task/", "purpose": "Core task management domain module" },
+        { "path": "src/modules/user/", "purpose": "User authentication and profile management" },
+        { "path": "src/modules/ai/", "purpose": "AI prioritization and scoring engine" },
+        { "path": "src/modules/notification/", "purpose": "Notification batching and delivery" },
+        { "path": "src/shared/", "purpose": "Shared utilities, types, and infrastructure code" }
+      ]
+    },
+    "dataFlow": {
+      "description": "Client -> API Gateway -> Module Router -> Service -> Repository -> PostgreSQL. Events published to in-process bus for cross-module communication. WebSocket updates pushed via Redis pub/sub.",
+      "diagrams": [
+        { "name": "Data Flow Diagram", "type": "data-flow", "reference": "data-flow-diagram.png" }
+      ]
+    },
+    "security": {
+      "overview": "Defense-in-depth security architecture with JWT authentication, RBAC authorization, encryption at rest and in transit, and SOC 2 compliance path.",
+      "authentication": {
+        "method": "JWT with refresh rotation",
+        "description": "JWT tokens with refresh rotation. GitHub OAuth and email/password. SSO via SAML 2.0 for enterprise.",
+        "tokenStrategy": "Short-lived access tokens (15min) + long-lived refresh tokens with rotation"
+      },
+      "authorization": {
+        "method": "RBAC",
+        "description": "Role-based access control with workspace-level roles (Owner, Admin, Member, Viewer). Resource-level permissions for sensitive tasks.",
+        "roles": [
+          { "role": "Owner", "permissions": ["all"] },
+          { "role": "Admin", "permissions": ["manage-members", "manage-settings", "manage-tasks", "view-analytics"] },
+          { "role": "Member", "permissions": ["manage-own-tasks", "view-board", "use-focus-mode"] },
+          { "role": "Viewer", "permissions": ["view-board", "view-analytics"] }
+        ]
+      },
+      "dataProtection": {
+        "atRest": "AES-256 encryption via AWS RDS and S3 server-side encryption",
+        "inTransit": "TLS 1.3 for all connections",
+        "pii": "PII masking in logs, GDPR data export and deletion support"
+      },
+      "compliance": [
+        { "standard": "SOC 2 Type II", "implementation": "In progress — audit controls being implemented" },
+        { "standard": "GDPR", "implementation": "Data export and deletion endpoints, consent management" },
+        { "standard": "CCPA", "implementation": "Privacy disclosures and opt-out mechanisms" }
+      ]
+    },
+    "scalability": {
+      "strategy": "Horizontal scaling via ECS Fargate auto-scaling. Database read replicas for query-heavy workloads. Redis cluster for cache and pub/sub.",
+      "horizontalScaling": {
+        "approach": "ECS Fargate auto-scaling based on CPU and request count metrics",
+        "triggers": ["CPU utilization > 70%", "Request queue depth > 100"]
+      },
+      "capacityPlanning": {
+        "currentCapacity": "10,000 concurrent users at launch",
+        "projectedGrowth": "50,000 concurrent users within 6 months",
+        "scalingThresholds": ["5,000 RPS at p95 < 200ms", "100M tasks within first year"]
+      }
+    },
+    "reliability": {
+      "availabilityTarget": "99.9% uptime SLA",
+      "faultTolerance": {
+        "strategy": "Multi-AZ deployment with automated health checks",
+        "failoverMechanism": "Automated failover for database (Aurora), stateless services behind load balancer",
+        "recoveryTime": "< 5 minutes for database failover, < 30 seconds for service failover"
+      },
+      "errorHandling": {
+        "strategy": "Circuit breakers for external dependencies (OpenAI, GitHub, Slack)",
+        "retryPolicy": "Exponential backoff with jitter for transient failures",
+        "circuitBreaker": "Half-open after 30 seconds, trip after 5 consecutive failures"
+      },
+      "backupStrategy": {
+        "frequency": "Continuous Aurora backups with point-in-time recovery",
+        "retention": "35-day backup retention",
+        "recoveryProcess": "Automated point-in-time recovery, daily S3 snapshots for file storage"
+      }
+    },
+    "observability": {
+      "logging": {
+        "strategy": "Structured JSON logging to CloudWatch, aggregated in Datadog",
+        "format": "JSON",
+        "levels": ["error", "warn", "info", "debug"],
+        "aggregation": "Datadog log management"
+      },
+      "metrics": {
+        "strategy": "Datadog APM for request tracing, custom metrics for task throughput and AI scoring latency",
+        "keyMetrics": [
+          { "name": "API p95 latency", "type": "latency", "threshold": "< 200ms" },
+          { "name": "Task throughput", "type": "throughput", "threshold": "> 5000 RPS" },
+          { "name": "AI scoring latency", "type": "latency", "threshold": "< 2 seconds" }
+        ]
+      },
+      "alerting": {
+        "strategy": "PagerDuty integration for P1/P2 incidents. Slack alerts for degraded performance. Runbook links in every alert.",
+        "channels": ["PagerDuty", "Slack"],
+        "escalation": "P1: immediate page -> P2: 15-min Slack -> P3: daily digest"
+      }
+    },
+    "deployment": {
+      "strategy": "Blue-green deployment via ECS with automated rollback on health check failure",
+      "environments": [
+        { "name": "development", "purpose": "Local and feature branch testing" },
+        { "name": "staging", "purpose": "Pre-production validation and load testing" },
+        { "name": "production", "purpose": "Live production environment with blue-green deployment" }
+      ],
+      "pipeline": {
+        "stages": [
+          { "name": "Build", "purpose": "Docker build and push to ECR", "tools": ["GitHub Actions", "Docker"] },
+          { "name": "Test", "purpose": "Unit, integration, and E2E tests", "tools": ["Vitest", "Playwright", "Testcontainers"] },
+          { "name": "Deploy", "purpose": "ECS deployment with smoke tests", "tools": ["Terraform", "ECS", "ALB"] },
+          { "name": "Verify", "purpose": "Smoke tests and traffic shift", "tools": ["k6", "Datadog"] }
+        ],
+        "triggers": ["Push to main branch", "Manual promotion for production"]
+      },
+      "rollback": {
+        "strategy": "Automated rollback on health check failure",
+        "procedure": "ECS reverts to previous task definition, ALB shifts traffic back to green deployment"
+      }
+    },
+    "integrations": [
+      {
+        "name": "GitHub",
+        "type": "bidirectional",
+        "description": "Link tasks to PRs, auto-update task status on merge, OAuth authentication",
+        "protocol": "REST API + Webhooks"
+      },
+      {
+        "name": "Slack",
+        "type": "bidirectional",
+        "description": "Task notifications, natural language task creation via slash commands, focus mode sync with DND",
+        "protocol": "Slack SDK + Events API"
+      },
+      {
+        "name": "OpenAI",
+        "type": "outbound",
+        "description": "Task summarization, natural language parsing, priority signal extraction",
+        "protocol": "REST API (GPT-4o)"
+      }
+    ],
+    "validation": {
+      "status": "validated",
+      "validationDate": "2025-06-18",
+      "findings": [
+        { "id": "VAL-1", "type": "recommendation", "severity": "medium", "finding": "Consider adding connection pooling for PostgreSQL to handle burst traffic", "status": "addressed" },
+        { "id": "VAL-2", "type": "observation", "severity": "low", "finding": "Redis single-instance is sufficient for launch but will need cluster mode at 50K users", "status": "accepted" }
+      ]
+    },
+    "implementationNotes": [
+      "Start with Fastify single-process deployment, add clustering at 5K concurrent users",
+      "Use Prisma migrations for schema versioning — never modify production DB manually",
+      "AI module should have feature flag for gradual rollout",
+      "WebSocket reconnection must be transparent to the user — queue missed events and replay"
+    ],
+    "references": [
+      { "title": "Modular Monolith with DDD", "location": "https://www.kamilgrzybek.com/blog/posts/modular-monolith-primer" },
+      { "title": "Fastify Best Practices", "location": "https://fastify.dev/docs/latest/Guides/Getting-Started/" }
+    ]
+  }
+}

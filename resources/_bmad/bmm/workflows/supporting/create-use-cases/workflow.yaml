@@ -1,0 +1,44 @@
+# Use Case Creation Workflow
+name: create-use-cases
+description: "Create detailed use cases that describe system behavior with before/after scenarios"
+author: "BMad"
+
+# Critical variables from config
+config_source: "{bmad-path}/bmm/config.yaml"
+output_folder: "{config_source}:output_folder"
+planning_artifacts: "{config_source}:planning_artifacts"
+user_name: "{config_source}:user_name"
+communication_language: "{config_source}:communication_language"
+document_output_language: "{config_source}:document_output_language"
+date: system-generated
+
+# Workflow components
+installed_path: "{bmad-path}/bmm/workflows/supporting/create-use-cases"
+instructions: "{installed_path}/instructions.md"
+template: "{installed_path}/template.md"
+
+# Output configuration
+default_output_file: "{planning_artifacts}/use-cases.md"
+
+# Output format configuration (dual = JSON + Markdown)
+output_format: dual
+schema: "{bmad-path}/schemas/bmm/use-case.schema.json"
+output_note: "Produces use-cases.md and use-cases.json describing system behavior scenarios"
+
+# Required tools
+required_tools:
+  - read_file     # Read PRD, architecture, existing artifacts
+  - write_file    # Create use case documents
+  - list_files    # Find existing documentation
+  - search_repo   # Find related requirements
+
+tags:
+  - planning
+  - requirements
+  - documentation
+  - use-cases
+
+execution_hints:
+  interactive: true   # Collaborate with user on scenario definition
+  autonomous: false
+  iterative: true     # Build use cases incrementally

@@ -1,0 +1,99 @@
+{
+  "risks": [
+    {
+      "id": "RISK-001",
+      "risk": "AI Model Accuracy Below User Expectations",
+      "category": "technical",
+      "probability": "medium",
+      "impact": "high",
+      "mitigation": "Implement progressive trust-building: start with suggestions, allow easy manual override, collect feedback to improve model. Provide transparent explanations for every priority score. Set launch bar at 75% user agreement rate rather than absolute accuracy.",
+      "riskScore": "high",
+      "status": "mitigating",
+      "owner": "Dr. Aisha Patel",
+      "contingency": "If accuracy stays below 60% agreement rate at beta, pivot to rule-based prioritization with AI as an optional enhancement layer.",
+      "triggers": [
+        "Beta user feedback shows <65% agreement with AI priorities",
+        "Model evaluation metrics decline across 3 consecutive training runs"
+      ],
+      "identifiedDate": "2026-01-15",
+      "lastReviewDate": "2026-02-10",
+      "description": "The AI prioritization model may not achieve sufficient accuracy in real-world usage, leading to user frustration and low adoption of the core differentiating feature."
+    },
+    {
+      "id": "RISK-002",
+      "risk": "Third-Party Integration API Breaking Changes",
+      "category": "integration",
+      "probability": "medium",
+      "impact": "medium",
+      "mitigation": "Pin API versions, implement adapter pattern for each integration, add health monitoring with automated alerts on sync failures, maintain a 2-version backward compatibility window.",
+      "riskScore": "medium",
+      "status": "mitigating",
+      "owner": "Marcus Rodriguez",
+      "contingency": "Gracefully degrade: disable affected integration with user notification, queue sync data for retry when API is stable.",
+      "triggers": [
+        "Integration sync failure rate exceeds 5% for any provider",
+        "Provider announces deprecation of currently used API version"
+      ],
+      "identifiedDate": "2026-01-20",
+      "lastReviewDate": "2026-02-15",
+      "description": "External services (Slack, Google Calendar, Jira, GitHub) may introduce breaking API changes that disrupt the integration platform, affecting users who depend on data sync."
+    },
+    {
+      "id": "RISK-003",
+      "risk": "Competitive Response from Established Players",
+      "category": "operational",
+      "probability": "high",
+      "impact": "medium",
+      "mitigation": "Speed to market with deep AI experience (not surface features). Build switching costs through personalized models that improve with usage. Focus on Focus Mode as a secondary differentiator that competitors are unlikely to prioritize.",
+      "riskScore": "high",
+      "status": "monitoring",
+      "owner": "Sarah Chen",
+      "contingency": "If a major competitor launches comparable AI features before our GA, pivot marketing to emphasize Focus Mode and privacy-first AI approach as differentiators.",
+      "triggers": [
+        "Major competitor announces AI prioritization feature",
+        "Market research shows declining interest in standalone AI task tools"
+      ],
+      "identifiedDate": "2026-01-10",
+      "lastReviewDate": "2026-02-20",
+      "description": "Major task management platforms (Asana, Monday.com, ClickUp) may rapidly add AI prioritization features, reducing TaskFlow Pro's competitive differentiation window."
+    },
+    {
+      "id": "RISK-004",
+      "risk": "Data Privacy Compliance Risk",
+      "category": "compliance",
+      "probability": "medium",
+      "impact": "high",
+      "mitigation": "Implement data processing agreements, provide data residency options (US/EU), design architecture to support future on-premises ML inference. Complete GDPR Data Protection Impact Assessment before beta launch.",
+      "riskScore": "high",
+      "status": "mitigating",
+      "owner": "Marcus Rodriguez",
+      "contingency": "Offer a 'privacy mode' that runs priority scoring using only metadata (due dates, labels, project) without analyzing task content text.",
+      "triggers": [
+        "Legal review identifies compliance gap",
+        "Enterprise prospect requests data residency guarantee we cannot provide"
+      ],
+      "identifiedDate": "2026-01-18",
+      "lastReviewDate": "2026-02-12",
+      "description": "Processing task content through AI models raises GDPR and CCPA concerns. Users in regulated industries may be prohibited from using cloud-based AI analysis of their work data."
+    },
+    {
+      "id": "RISK-005",
+      "risk": "Team Capacity Constraints Due to ML Specialization",
+      "category": "resource",
+      "probability": "low",
+      "impact": "critical",
+      "mitigation": "Cross-train one backend engineer on ML inference serving. Document all model training procedures and evaluation metrics. Use well-established ML libraries to reduce custom code surface area.",
+      "riskScore": "high",
+      "status": "mitigating",
+      "owner": "Project Lead",
+      "contingency": "If ML engineer is unavailable for >2 weeks, contract a freelance ML engineer from pre-vetted pool. Existing model can serve inference without retraining.",
+      "triggers": [
+        "ML engineer unavailable for more than 1 sprint",
+        "Model retraining required but no qualified person available"
+      ],
+      "identifiedDate": "2026-01-22",
+      "lastReviewDate": "2026-02-18",
+      "description": "Only one ML engineer (Dr. Patel) has the expertise to develop and maintain the AI prioritization model. If she is unavailable, EPIC-2 and related features will be severely delayed."
+    }
+  ]
+}

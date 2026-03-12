@@ -1,0 +1,45 @@
+{
+  "$schema": "../../../../schemas/bmm/research.schema.json",
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "research",
+    "workflowName": "research",
+    "projectName": "{{project_name}}",
+    "stepsCompleted": [],
+    "currentStep": "",
+    "timestamps": {
+      "created": "{{timestamp}}",
+      "lastModified": "{{timestamp}}"
+    },
+    "author": "{{user_name}}",
+    "status": "draft"
+  },
+  "content": {
+    "researchType": "{{research_type}}",
+    "topic": "{{research_topic}}",
+    "title": "{{research_title}}",
+    "objective": "",
+    "methodology": "",
+    "marketAnalysis": {
+      "marketSize": "",
+      "growthTrends": [],
+      "targetSegments": []
+    },
+    "competitorAnalysis": {
+      "competitors": [],
+      "differentiators": []
+    },
+    "userResearch": {
+      "interviews": [],
+      "surveys": [],
+      "keyInsights": []
+    },
+    "technicalResearch": {
+      "technologies": [],
+      "feasibilityNotes": ""
+    },
+    "findings": [],
+    "recommendations": [],
+    "sources": []
+  }
+}

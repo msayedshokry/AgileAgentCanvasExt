@@ -1,0 +1,216 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "change-proposal",
+    "timestamps": {
+      "created": "2026-02-20T14:00:00Z",
+      "lastModified": "2026-02-22T10:30:00Z"
+    },
+    "status": "approved",
+    "tags": [
+      "sprint-change",
+      "focus-mode",
+      "collaboration"
+    ],
+    "author": "BMAD Correct-Course Workflow"
+  },
+  "content": {
+    "changeRequest": {
+      "id": "CR-2026-02-20-001",
+      "title": "Add Real-Time Collaboration to Focus Mode",
+      "description": "During sprint 3 development, user research revealed that 68% of target users work in team environments where shared focus sessions are critical. The current Focus Mode design (EPIC-3) only supports individual sessions. This change proposes adding real-time collaboration capabilities to Focus Mode, allowing teams to synchronize focus sessions, share ambient soundscapes, and see team members' focus status.",
+      "requestedBy": "Product Manager — Sarah Chen",
+      "requestDate": "2026-02-20T14:00:00Z",
+      "changeType": "scope-expansion",
+      "urgency": "high",
+      "source": "User research findings from beta testing cohort 2, validated by customer advisory board feedback"
+    },
+    "impactAnalysis": {
+      "overallImpact": "moderate",
+      "affectedEpics": [
+        {
+          "epicId": "EPIC-3",
+          "epicTitle": "Focus Mode & Productivity Tools",
+          "impactType": "modified",
+          "impactDescription": "Core Focus Mode stories need to account for multiplayer session state. S-3.1 (Focus Mode Engine) requires WebSocket support for real-time sync. S-3.2 (Ambient Soundscapes) needs shared playback state. A new story may be needed for the collaboration UI."
+        },
+        {
+          "epicId": "EPIC-4",
+          "epicTitle": "Integration Platform",
+          "impactType": "delayed",
+          "impactDescription": "Integration Platform work will be pushed back by approximately 1 week as the team focuses on the collaboration features in EPIC-3. Calendar integration (S-4.1) timeline shifts from sprint 5 to sprint 6."
+        }
+      ],
+      "affectedStories": [
+        {
+          "storyId": "S-3.1",
+          "storyTitle": "Focus Mode Engine",
+          "currentStatus": "draft",
+          "impactType": "modified",
+          "impactDescription": "Must add WebSocket-based session synchronization for team focus sessions. Acceptance criteria need updating to include multi-user session state management, presence indicators, and graceful disconnection handling."
+        },
+        {
+          "storyId": "S-3.2",
+          "storyTitle": "Ambient Soundscapes",
+          "currentStatus": "draft",
+          "impactType": "modified",
+          "impactDescription": "Shared soundscape playback requires a session leader model where one user controls the soundscape and others sync. Need to add acceptance criteria for synchronized audio state."
+        },
+        {
+          "storyId": "S-4.1",
+          "storyTitle": "Calendar Integration",
+          "currentStatus": "draft",
+          "impactType": "reprioritized",
+          "impactDescription": "Delayed by 1 sprint to accommodate collaboration feature work. No functional changes, only timeline impact."
+        }
+      ],
+      "architectureImpact": {
+        "hasImpact": true,
+        "description": "Real-time collaboration requires WebSocket infrastructure that was not in the original architecture. Need to add a WebSocket gateway service, presence management, and session state synchronization protocol. The existing event-driven architecture can accommodate this with a new WebSocket adapter layer.",
+        "affectedComponents": [
+          "Focus Mode Engine (new WebSocket client)",
+          "API Gateway (new WebSocket route)",
+          "Session State Service (new microservice)",
+          "Frontend State Management (new real-time sync layer)"
+        ],
+        "requiresArchitectureUpdate": true
+      },
+      "timelineImpact": {
+        "estimatedDelay": "1 week for EPIC-4 start; EPIC-3 extended by 3 days",
+        "milestoneEffects": [
+          {
+            "milestone": "Focus Mode MVP",
+            "originalDate": "2026-03-15",
+            "newDate": "2026-03-18"
+          },
+          {
+            "milestone": "Integration Platform Start",
+            "originalDate": "2026-03-20",
+            "newDate": "2026-03-27"
+          }
+        ]
+      },
+      "resourceImpact": {
+        "additionalEffort": "Approximately 5 story points additional across EPIC-3",
+        "resourcesNeeded": [
+          "Backend engineer with WebSocket experience (already on team)",
+          "Additional QA time for multi-user testing scenarios"
+        ]
+      },
+      "riskAssessment": [
+        {
+          "risk": "WebSocket infrastructure adds latency to focus session state sync",
+          "likelihood": "medium",
+          "impact": "medium",
+          "mitigation": "Use optimistic UI updates with eventual consistency; implement local-first state with conflict resolution"
+        },
+        {
+          "risk": "Multi-user testing complexity delays EPIC-3 completion beyond estimate",
+          "likelihood": "medium",
+          "impact": "high",
+          "mitigation": "Timebox collaboration features to 5 days; if not complete, ship individual focus mode first and add collaboration in a follow-up sprint"
+        }
+      ]
+    },
+    "proposal": {
+      "recommendation": "approve-with-modifications",
+      "rationale": "The user research data strongly supports this change — 68% of users want team focus sessions, and this aligns with our competitive differentiation strategy. However, we should limit the initial scope to basic session sync and presence, deferring shared soundscape control to a later sprint to minimize timeline impact.",
+      "options": [
+        {
+          "optionId": "OPT-A",
+          "description": "Full collaboration suite: session sync, shared soundscapes, team presence, and collaborative task lists within focus sessions",
+          "pros": [
+            "Comprehensive team experience",
+            "Strong competitive differentiator",
+            "Addresses all user research findings"
+          ],
+          "cons": [
+            "2+ week delay to EPIC-4",
+            "Significant architecture changes",
+            "Higher testing complexity"
+          ],
+          "effort": "13 story points",
+          "recommended": false
+        },
+        {
+          "optionId": "OPT-B",
+          "description": "Scoped collaboration: session sync and team presence only. Shared soundscape control deferred to sprint 6.",
+          "pros": [
+            "Addresses core user need (team awareness)",
+            "Manageable 1-week delay",
+            "Simpler WebSocket implementation",
+            "Can iterate based on real usage data"
+          ],
+          "cons": [
+            "Doesn't fully address shared soundscape request",
+            "Users may expect more collaboration features"
+          ],
+          "effort": "5 story points",
+          "recommended": true
+        },
+        {
+          "optionId": "OPT-C",
+          "description": "Defer entirely: ship individual Focus Mode as planned, add collaboration in sprint 7",
+          "pros": [
+            "No timeline impact",
+            "No architecture changes needed now"
+          ],
+          "cons": [
+            "Misses market window — competitor launching team focus feature in March",
+            "Ignores strong user research signal",
+            "Harder to retrofit collaboration later"
+          ],
+          "effort": "0 story points now, 8+ later",
+          "recommended": false
+        }
+      ],
+      "implementationPlan": {
+        "storiesToAdd": [
+          {
+            "title": "Team Focus Session Sync",
+            "description": "As a team member, I want to join a shared focus session so that my team and I can focus together and see each other's focus status in real time.",
+            "epicId": "EPIC-3",
+            "priority": "high",
+            "estimatedEffort": "3 story points"
+          }
+        ],
+        "storiesToModify": [
+          {
+            "storyId": "S-3.1",
+            "modifications": "Add acceptance criteria for WebSocket connection management, session join/leave events, and presence state broadcasting"
+          }
+        ],
+        "storiesToRemove": [],
+        "documentsToUpdate": [
+          {
+            "document": "architecture.json",
+            "updates": "Add WebSocket gateway service, session state sync protocol, and presence management component to architecture diagram"
+          },
+          {
+            "document": "test-strategy.json",
+            "updates": "Add multi-user testing scenarios for concurrent focus sessions"
+          }
+        ]
+      },
+      "rollbackPlan": "If WebSocket infrastructure proves too complex within the 5-day timebox, revert to individual-only Focus Mode and ship collaboration as a separate epic in the next quarter. The WebSocket gateway can be feature-flagged for easy rollback."
+    },
+    "approval": {
+      "status": "approved",
+      "approvedBy": "Product Manager — Sarah Chen, Tech Lead — Marcus Rivera",
+      "approvalDate": "2026-02-22T10:30:00Z",
+      "approvalNotes": "Approved Option B (scoped collaboration). Team agreed to the 5-day timebox constraint. Shared soundscape sync deferred to sprint 6 backlog.",
+      "conditions": [
+        "Must stay within 5 story points additional effort",
+        "Architecture document updated before implementation begins",
+        "Multi-user test plan reviewed by QA lead before development starts"
+      ]
+    },
+    "implementation": {
+      "status": "in-progress",
+      "startedAt": "2026-02-23T09:00:00Z",
+      "completedAt": "",
+      "implementedBy": "Backend: Marcus Rivera, Frontend: Aisha Patel",
+      "notes": "WebSocket gateway scaffolding complete. Presence service unit tests passing. Frontend integration scheduled for Feb 25."
+    }
+  }
+}

@@ -1,0 +1,780 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/tea/test-review.schema.json",
+  "title": "Test Review Schema",
+  "description": "Schema for test review artifacts - test quality assessment. IMPORTANT: Capture ALL review findings, quality assessments, and recommendations completely. Do NOT summarize or truncate any analysis.",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["reviewInfo", "qualityAssessment"],
+      "properties": {
+        "reviewInfo": {
+          "type": "object",
+          "description": "COMPLETE review information and context",
+          "required": ["qualityScore", "reviewDate", "scope"],
+          "properties": {
+            "qualityScore": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Overall quality score (0-100)"
+            },
+            "reviewDate": {
+              "type": "string",
+              "format": "date",
+              "description": "Date of the review"
+            },
+            "scope": {
+              "type": "string",
+              "description": "COMPLETE description of what was reviewed - include all files, features, and test types covered"
+            },
+            "reviewer": {
+              "type": "string",
+              "description": "Reviewer name or team"
+            },
+            "reviewType": {
+              "type": "string",
+              "enum": ["initial", "follow-up", "regression", "pre-release", "post-incident"],
+              "description": "Type of review"
+            },
+            "previousScore": {
+              "type": "number",
+              "description": "Previous quality score for comparison"
+            },
+            "targetScore": {
+              "type": "number",
+              "description": "Target quality score to achieve"
+            }
+          }
+        },
+        "executiveSummary": {
+          "type": "object",
+          "description": "COMPLETE executive summary of the test review",
+          "properties": {
+            "assessment": {
+              "type": "string",
+              "description": "COMPLETE overall assessment of test quality. Include all key findings and their significance."
+            },
+            "recommendation": {
+              "type": "string",
+              "enum": ["approve", "approve-with-comments", "request-changes", "block"],
+              "description": "Overall recommendation"
+            },
+            "strengths": {
+              "type": "array",
+              "description": "ALL identified strengths with full details",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "strength": {
+                    "type": "string",
+                    "description": "COMPLETE description of the strength"
+                  },
+                  "examples": {
+                    "type": "array",
+                    "description": "Specific examples demonstrating this strength",
+                    "items": { "type": "string" }
+                  },
+                  "impact": {
+                    "type": "string",
+                    "description": "Impact on test quality"
+                  }
+                }
+              }
+            },
+            "weaknesses": {
+              "type": "array",
+              "description": "ALL identified weaknesses with full details",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "weakness": {
+                    "type": "string",
+                    "description": "COMPLETE description of the weakness"
+                  },
+                  "examples": {
+                    "type": "array",
+                    "description": "Specific examples demonstrating this weakness",
+                    "items": { "type": "string" }
+                  },
+                  "impact": {
+                    "type": "string",
+                    "description": "Impact on test quality"
+                  },
+                  "remediation": {
+                    "type": "string",
+                    "description": "COMPLETE remediation approach"
+                  }
+                }
+              }
+            },
+            "riskLevel": {
+              "type": "string",
+              "enum": ["low", "medium", "high", "critical"],
+              "description": "Overall risk level based on test quality"
+            }
+          }
+        },
+        "qualityAssessment": {
+          "type": "object",
+          "description": "COMPLETE quality assessment across all criteria",
+          "properties": {
+            "criteria": {
+              "type": "array",
+              "description": "ALL quality criteria with detailed assessment",
+              "items": {
+                "type": "object",
+                "required": ["criterion", "score", "findings"],
+                "properties": {
+                  "criterion": {
+                    "type": "string",
+                    "description": "Quality criterion being assessed"
+                  },
+                  "score": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 10,
+                    "description": "Score for this criterion (0-10)"
+                  },
+                  "weight": {
+                    "type": "number",
+                    "description": "Weight of this criterion in overall score"
+                  },
+                  "findings": {
+                    "type": "string",
+                    "description": "COMPLETE findings for this criterion - do NOT summarize"
+                  },
+                  "evidence": {
+                    "type": "array",
+                    "description": "ALL evidence supporting the assessment",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": { "type": "string", "enum": ["positive", "negative", "neutral"] },
+                        "description": { "type": "string" },
+                        "location": { "type": "string" }
+                      }
+                    }
+                  },
+                  "recommendations": {
+                    "type": "array",
+                    "description": "Recommendations for improvement",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "bddFormat": {
+              "type": "object",
+              "description": "BDD format compliance assessment",
+              "properties": {
+                "score": { "type": "number", "minimum": 0, "maximum": 10 },
+                "notes": {
+                  "type": "string",
+                  "description": "COMPLETE assessment of BDD format compliance"
+                },
+                "examples": {
+                  "type": "array",
+                  "description": "Examples of good and bad BDD usage",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": { "type": "string", "enum": ["good", "bad"] },
+                      "location": { "type": "string" },
+                      "code": { "type": "string" },
+                      "comment": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            },
+            "testIds": {
+              "type": "object",
+              "description": "Test ID usage assessment",
+              "properties": {
+                "score": { "type": "number", "minimum": 0, "maximum": 10 },
+                "notes": {
+                  "type": "string",
+                  "description": "COMPLETE assessment of data-testid usage"
+                },
+                "coverage": {
+                  "type": "string",
+                  "description": "Test ID coverage analysis"
+                },
+                "issues": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            },
+            "priorityMarkers": {
+              "type": "object",
+              "description": "Priority marker assessment",
+              "properties": {
+                "score": { "type": "number", "minimum": 0, "maximum": 10 },
+                "notes": {
+                  "type": "string",
+                  "description": "COMPLETE assessment of priority marker usage"
+                },
+                "distribution": {
+                  "type": "object",
+                  "properties": {
+                    "p0": { "type": "integer" },
+                    "p1": { "type": "integer" },
+                    "p2": { "type": "integer" },
+                    "p3": { "type": "integer" },
+                    "untagged": { "type": "integer" }
+                  }
+                }
+              }
+            },
+            "hardWaits": {
+              "type": "object",
+              "description": "Hard wait/sleep assessment",
+              "properties": {
+                "score": { "type": "number", "minimum": 0, "maximum": 10 },
+                "notes": {
+                  "type": "string",
+                  "description": "COMPLETE assessment of hard waits in tests"
+                },
+                "instances": {
+                  "type": "array",
+                  "description": "ALL instances of hard waits found",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "location": { "type": "string" },
+                      "duration": { "type": "string" },
+                      "recommendation": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            },
+            "determinism": {
+              "type": "object",
+              "description": "Test determinism assessment",
+              "properties": {
+                "score": { "type": "number", "minimum": 0, "maximum": 10 },
+                "notes": {
+                  "type": "string",
+                  "description": "COMPLETE assessment of test determinism"
+                },
+                "flakyTests": {
+                  "type": "array",
+                  "description": "ALL identified or suspected flaky tests",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "test": { "type": "string" },
+                      "location": { "type": "string" },
+                      "reason": { "type": "string" },
+                      "recommendation": { "type": "string" }
+                    }
+                  }
+                },
+                "nondeterministicPatterns": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            },
+            "isolation": {
+              "type": "object",
+              "description": "Test isolation assessment",
+              "properties": {
+                "score": { "type": "number", "minimum": 0, "maximum": 10 },
+                "notes": {
+                  "type": "string",
+                  "description": "COMPLETE assessment of test isolation"
+                },
+                "sharedStateIssues": {
+                  "type": "array",
+                  "description": "ALL shared state issues identified",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "issue": { "type": "string" },
+                      "location": { "type": "string" },
+                      "impact": { "type": "string" },
+                      "fix": { "type": "string" }
+                    }
+                  }
+                },
+                "orderDependencies": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            },
+            "fixturePatterns": {
+              "type": "object",
+              "description": "Fixture pattern assessment",
+              "properties": {
+                "score": { "type": "number", "minimum": 0, "maximum": 10 },
+                "notes": {
+                  "type": "string",
+                  "description": "COMPLETE assessment of fixture usage patterns"
+                },
+                "goodPatterns": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "antiPatterns": {
+                  "type": "array",
+                  "description": "ALL fixture anti-patterns found",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "pattern": { "type": "string" },
+                      "location": { "type": "string" },
+                      "recommendation": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            },
+            "assertions": {
+              "type": "object",
+              "description": "Assertion quality assessment",
+              "properties": {
+                "score": { "type": "number", "minimum": 0, "maximum": 10 },
+                "notes": {
+                  "type": "string",
+                  "description": "COMPLETE assessment of assertion quality"
+                },
+                "issues": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "issue": { "type": "string" },
+                      "location": { "type": "string" },
+                      "recommendation": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            },
+            "errorHandling": {
+              "type": "object",
+              "description": "Error handling assessment",
+              "properties": {
+                "score": { "type": "number", "minimum": 0, "maximum": 10 },
+                "notes": {
+                  "type": "string",
+                  "description": "COMPLETE assessment of error handling in tests"
+                },
+                "issues": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "qualityScoreBreakdown": {
+          "type": "object",
+          "description": "COMPLETE quality score breakdown by category",
+          "properties": {
+            "determinism": {
+              "type": "object",
+              "properties": {
+                "score": { "type": "number" },
+                "weight": { "type": "number" },
+                "contribution": { "type": "number" }
+              }
+            },
+            "isolation": {
+              "type": "object",
+              "properties": {
+                "score": { "type": "number" },
+                "weight": { "type": "number" },
+                "contribution": { "type": "number" }
+              }
+            },
+            "maintainability": {
+              "type": "object",
+              "properties": {
+                "score": { "type": "number" },
+                "weight": { "type": "number" },
+                "contribution": { "type": "number" }
+              }
+            },
+            "coverage": {
+              "type": "object",
+              "properties": {
+                "score": { "type": "number" },
+                "weight": { "type": "number" },
+                "contribution": { "type": "number" }
+              }
+            },
+            "performance": {
+              "type": "object",
+              "properties": {
+                "score": { "type": "number" },
+                "weight": { "type": "number" },
+                "contribution": { "type": "number" }
+              }
+            },
+            "readability": {
+              "type": "object",
+              "properties": {
+                "score": { "type": "number" },
+                "weight": { "type": "number" },
+                "contribution": { "type": "number" }
+              }
+            }
+          }
+        },
+        "criticalIssues": {
+          "type": "array",
+          "description": "ALL critical issues that MUST be fixed - include full details",
+          "items": {
+            "type": "object",
+            "required": ["issue", "location", "recommendation"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Issue identifier"
+              },
+              "issue": {
+                "type": "string",
+                "description": "COMPLETE description of the critical issue"
+              },
+              "location": {
+                "type": "string",
+                "description": "COMPLETE file path and location information"
+              },
+              "code": {
+                "type": "string",
+                "description": "Problematic code snippet"
+              },
+              "impact": {
+                "type": "string",
+                "description": "COMPLETE description of the impact"
+              },
+              "recommendation": {
+                "type": "string",
+                "description": "COMPLETE recommendation for fixing"
+              },
+              "suggestedFix": {
+                "type": "string",
+                "description": "Suggested fix code"
+              },
+              "effort": {
+                "type": "string",
+                "enum": ["trivial", "small", "medium", "large"],
+                "description": "Estimated effort to fix"
+              },
+              "priority": {
+                "type": "string",
+                "enum": ["immediate", "before-release", "next-sprint"],
+                "description": "When this should be fixed"
+              }
+            }
+          }
+        },
+        "recommendations": {
+          "type": "array",
+          "description": "ALL recommendations for improvement (non-critical)",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Recommendation identifier"
+              },
+              "recommendation": {
+                "type": "string",
+                "description": "COMPLETE recommendation with all details"
+              },
+              "category": {
+                "type": "string",
+                "enum": ["maintainability", "performance", "reliability", "coverage", "readability", "best-practice"],
+                "description": "Category of recommendation"
+              },
+              "priority": {
+                "type": "string",
+                "enum": ["high", "medium", "low"],
+                "description": "Priority of this recommendation"
+              },
+              "effort": {
+                "type": "string",
+                "enum": ["trivial", "small", "medium", "large"],
+                "description": "Estimated effort"
+              },
+              "impact": {
+                "type": "string",
+                "description": "Expected impact on quality score"
+              },
+              "examples": {
+                "type": "array",
+                "description": "Examples of where this applies",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "bestPracticesFound": {
+          "type": "array",
+          "description": "ALL best practices found worth highlighting",
+          "items": {
+            "type": "object",
+            "properties": {
+              "practice": {
+                "type": "string",
+                "description": "COMPLETE description of the best practice"
+              },
+              "location": {
+                "type": "string",
+                "description": "Where this was found"
+              },
+              "recommendation": {
+                "type": "string",
+                "description": "Recommendation to replicate elsewhere"
+              }
+            }
+          }
+        },
+        "testFileAnalysis": {
+          "type": "array",
+          "description": "COMPLETE analysis of each test file reviewed",
+          "items": {
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string",
+                "description": "File path"
+              },
+              "testsCount": {
+                "type": "integer",
+                "description": "Number of tests in file"
+              },
+              "linesOfCode": {
+                "type": "integer",
+                "description": "Lines of test code"
+              },
+              "score": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Quality score for this file"
+              },
+              "issues": {
+                "type": "array",
+                "description": "ALL issues in this file",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "line": { "type": "integer" },
+                    "issue": { "type": "string" },
+                    "severity": { "type": "string", "enum": ["critical", "major", "minor"] }
+                  }
+                }
+              },
+              "strengths": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "recommendations": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "coverageAnalysis": {
+          "type": "object",
+          "description": "COMPLETE test coverage analysis",
+          "properties": {
+            "overallCoverage": {
+              "type": "object",
+              "properties": {
+                "statements": { "type": "number" },
+                "branches": { "type": "number" },
+                "functions": { "type": "number" },
+                "lines": { "type": "number" }
+              }
+            },
+            "coverageByArea": {
+              "type": "array",
+              "description": "Coverage breakdown by code area",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "area": { "type": "string" },
+                  "coverage": { "type": "number" },
+                  "gaps": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "uncoveredAreas": {
+              "type": "array",
+              "description": "ALL areas lacking coverage",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "area": { "type": "string" },
+                  "risk": { "type": "string" },
+                  "recommendation": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "contextAndIntegration": {
+          "type": "object",
+          "description": "COMPLETE assessment of test context and CI integration",
+          "properties": {
+            "integrationWithCI": {
+              "type": "string",
+              "description": "COMPLETE assessment of CI pipeline integration"
+            },
+            "ciPipelineHealth": {
+              "type": "object",
+              "properties": {
+                "averageDuration": { "type": "string" },
+                "failureRate": { "type": "string" },
+                "flakinessRate": { "type": "string" }
+              }
+            },
+            "testDataManagement": {
+              "type": "string",
+              "description": "COMPLETE assessment of test data management practices"
+            },
+            "environmentHandling": {
+              "type": "string",
+              "description": "COMPLETE assessment of environment handling"
+            },
+            "parallelization": {
+              "type": "string",
+              "description": "Assessment of test parallelization"
+            },
+            "reporting": {
+              "type": "string",
+              "description": "Assessment of test reporting"
+            }
+          }
+        },
+        "knowledgeBaseReferences": {
+          "type": "array",
+          "description": "ALL knowledge base references relevant to findings",
+          "items": {
+            "type": "object",
+            "properties": {
+              "reference": { "type": "string" },
+              "relevance": { "type": "string" },
+              "findingsRelated": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "nextSteps": {
+          "type": "array",
+          "description": "COMPLETE prioritized list of next steps",
+          "items": {
+            "type": "object",
+            "properties": {
+              "step": {
+                "type": "string",
+                "description": "COMPLETE description of the next step"
+              },
+              "owner": { "type": "string" },
+              "timeline": { "type": "string" },
+              "priority": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Priority order (1 = highest)"
+              },
+              "dependencies": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "decision": {
+          "type": "object",
+          "description": "Final review decision",
+          "required": ["verdict"],
+          "properties": {
+            "verdict": {
+              "type": "string",
+              "enum": ["approve", "approve-with-comments", "request-changes", "block"],
+              "description": "Final verdict"
+            },
+            "conditions": {
+              "type": "array",
+              "description": "Conditions for approval (if applicable)",
+              "items": { "type": "string" }
+            },
+            "blockers": {
+              "type": "array",
+              "description": "Blocking issues (if verdict is block)",
+              "items": { "type": "string" }
+            },
+            "comments": {
+              "type": "string",
+              "description": "COMPLETE reviewer comments supporting the decision"
+            },
+            "followUpRequired": {
+              "type": "boolean",
+              "description": "Whether follow-up review is required"
+            },
+            "followUpDate": {
+              "type": "string",
+              "format": "date",
+              "description": "Date for follow-up review"
+            }
+          }
+        },
+        "appendix": {
+          "type": "object",
+          "description": "Supporting materials",
+          "properties": {
+            "codeExamples": {
+              "type": "array",
+              "description": "Code examples referenced in review",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string" },
+                  "context": { "type": "string" },
+                  "before": { "type": "string" },
+                  "after": { "type": "string" }
+                }
+              }
+            },
+            "metrics": {
+              "type": "object",
+              "description": "Additional metrics collected",
+              "additionalProperties": true
+            },
+            "toolOutput": {
+              "type": "array",
+              "description": "Output from analysis tools",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "tool": { "type": "string" },
+                  "output": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

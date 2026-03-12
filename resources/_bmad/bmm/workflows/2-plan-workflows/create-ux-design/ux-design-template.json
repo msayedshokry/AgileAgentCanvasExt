@@ -1,0 +1,49 @@
+{
+  "$schema": "../../../../schemas/bmm/ux-design.schema.json",
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "ux-design",
+    "workflowName": "create-ux-design",
+    "projectName": "{{project_name}}",
+    "stepsCompleted": [],
+    "currentStep": "",
+    "timestamps": {
+      "created": "{{timestamp}}",
+      "lastModified": "{{timestamp}}"
+    },
+    "author": "{{user_name}}",
+    "status": "draft"
+  },
+  "content": {
+    "title": "{{product_name}} UX Design",
+    "overview": {
+      "designPhilosophy": "",
+      "targetExperience": ""
+    },
+    "userPersonas": [],
+    "userJourneys": [],
+    "informationArchitecture": {
+      "siteMap": [],
+      "navigationStructure": []
+    },
+    "wireframes": [],
+    "designSystem": {
+      "colorPalette": [],
+      "typography": [],
+      "spacing": [],
+      "components": []
+    },
+    "interactionPatterns": [],
+    "accessibilityConsiderations": [],
+    "responsiveStrategy": {
+      "breakpoints": [],
+      "adaptations": []
+    },
+    "prototypes": [],
+    "usabilityTestingPlan": {
+      "objectives": [],
+      "methodology": "",
+      "tasks": []
+    }
+  }
+}

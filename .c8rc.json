@@ -1,0 +1,22 @@
+{
+  "all": true,
+  "src": ["src/**/*.ts"],
+  "include": ["src/**/*.ts"],
+  "exclude": [
+    "node_modules/**",
+    "dist/**",
+    "out/**",
+    "webview-ui/**",
+    "features/**",
+    "reports/**",
+    "coverage/**",
+    "**/*.d.ts",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
+  "reporter": ["text", "html", "json-summary"],
+  "reports-dir": "coverage",
+  "temp-directory": "coverage/.tmp",
+  "clean": true,
+  "skip-full": false
+}

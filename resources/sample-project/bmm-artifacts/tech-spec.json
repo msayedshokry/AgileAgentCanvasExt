@@ -1,0 +1,263 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "tech-spec",
+    "timestamps": {
+      "created": "2026-01-22T09:00:00Z",
+      "lastModified": "2026-02-08T15:00:00Z"
+    },
+    "status": "approved",
+    "tags": [
+      "tech-spec",
+      "api-design",
+      "database-schema",
+      "system-architecture"
+    ],
+    "author": "Marcus Rodriguez"
+  },
+  "content": {
+    "overview": {
+      "summary": "Technical specification for the TaskFlow Pro platform covering API design, database schema, authentication, AI service interface, and deployment architecture",
+      "problemStatement": "Development teams need a clear, detailed technical blueprint to implement the TaskFlow Pro platform consistently across frontend, backend, ML, and infrastructure layers",
+      "proposedSolution": "A three-tier architecture with React SPA frontend, Fastify API backend, and Python ML microservice, deployed on AWS ECS Fargate with PostgreSQL and Redis",
+      "goals": [
+        {
+          "goal": "Define comprehensive API contracts for all TaskFlow Pro endpoints",
+          "priority": "must-have",
+          "successCriteria": "All endpoints documented with request/response schemas"
+        },
+        {
+          "goal": "Specify database schema supporting task management and AI prioritization",
+          "priority": "must-have",
+          "successCriteria": "Schema supports all CRUD operations and priority scoring workflows"
+        },
+        {
+          "goal": "Establish security architecture meeting enterprise standards",
+          "priority": "must-have",
+          "successCriteria": "JWT auth, encryption at rest and in transit, input validation"
+        }
+      ]
+    },
+    "implementationPlan": {
+      "overview": "Phased implementation starting with core API and database, followed by AI service integration, then frontend and deployment infrastructure",
+      "phases": [
+        {
+          "phase": "Phase 1 - Core API & Database",
+          "description": "Implement authentication, task CRUD, and project management APIs with PostgreSQL schema",
+          "tasks": [
+            "Set up Fastify server with TypeScript",
+            "Implement JWT authentication flow",
+            "Create database migrations for all tables",
+            "Build task and project CRUD endpoints"
+          ],
+          "deliverables": [
+            "Functional REST API with auth",
+            "PostgreSQL schema with all tables and indexes"
+          ]
+        },
+        {
+          "phase": "Phase 2 - AI Service & Integration",
+          "description": "Build Python ML microservice for priority scoring and connect integration sync workers",
+          "tasks": [
+            "Set up FastAPI + gRPC service",
+            "Implement priority scoring model inference",
+            "Build BullMQ worker for async jobs",
+            "Implement integration sync pipelines"
+          ],
+          "deliverables": [
+            "ML service with gRPC endpoint",
+            "Background worker processing integration syncs"
+          ]
+        },
+        {
+          "phase": "Phase 3 - Frontend & Deployment",
+          "description": "Build React SPA and deploy all services to AWS ECS Fargate",
+          "tasks": [
+            "Build React 19 SPA with Vite 6",
+            "Implement Focus Mode UI",
+            "Configure ECS Fargate services",
+            "Set up CloudFront distribution"
+          ],
+          "deliverables": [
+            "Production-ready frontend on CloudFront",
+            "All services deployed on ECS Fargate"
+          ]
+        }
+      ]
+    },
+    "specTitle": "TaskFlow Pro - Detailed Technical Specification",
+    "scope": "Covers API design, database schema, authentication, AI service interface, and deployment architecture for the TaskFlow Pro platform",
+    "systemArchitecture": {
+      "overview": "Three-tier architecture with React SPA frontend, Fastify API backend, and Python ML microservice. PostgreSQL for persistence, Redis for caching/sessions, BullMQ for async jobs. All services containerized and deployed on AWS ECS Fargate.",
+      "services": [
+        {
+          "name": "taskflow-web",
+          "type": "Frontend SPA",
+          "technology": "React 19 + Vite 6",
+          "deployment": "S3 + CloudFront",
+          "description": "Single-page application serving the main UI including dashboard, task management, Focus Mode, and integration settings"
+        },
+        {
+          "name": "taskflow-api",
+          "type": "REST API",
+          "technology": "Fastify 5 + TypeScript",
+          "deployment": "ECS Fargate (2 instances, auto-scaling)",
+          "description": "Core API handling authentication, task CRUD, project management, user settings, and orchestrating AI priority requests"
+        },
+        {
+          "name": "taskflow-ml",
+          "type": "ML Service",
+          "technology": "Python 3.12 + FastAPI + gRPC",
+          "deployment": "ECS Fargate with GPU instances for training, CPU for inference",
+          "description": "AI prioritization engine providing priority scoring via gRPC. Handles model inference, retraining, and explanation generation."
+        },
+        {
+          "name": "taskflow-worker",
+          "type": "Background Worker",
+          "technology": "Node.js + BullMQ",
+          "deployment": "ECS Fargate (1 instance, auto-scaling)",
+          "description": "Processes async jobs including integration syncs, email notifications, analytics aggregation, and scheduled priority recalculations"
+        }
+      ]
+    },
+    "apiDesign": {
+      "baseUrl": "/api/v1",
+      "authentication": "JWT Bearer tokens with 15-minute expiry, refresh tokens stored in HttpOnly cookies",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/auth/login",
+          "description": "Authenticate user with email/password or OAuth token",
+          "requestBody": "{ email: string, password: string } | { provider: string, token: string }",
+          "responseBody": "{ accessToken: string, user: UserProfile }",
+          "authentication": "none"
+        },
+        {
+          "method": "GET",
+          "path": "/tasks",
+          "description": "List tasks with filtering, sorting, and AI priority scores",
+          "requestBody": "Query params: projectId, status, priority, sort, limit, offset",
+          "responseBody": "{ tasks: Task[], total: number, hasMore: boolean }",
+          "authentication": "required"
+        },
+        {
+          "method": "POST",
+          "path": "/tasks",
+          "description": "Create a new task",
+          "requestBody": "{ title: string, description?: string, projectId: string, dueDate?: string, labels?: string[] }",
+          "responseBody": "{ task: Task }",
+          "authentication": "required"
+        },
+        {
+          "method": "POST",
+          "path": "/tasks/prioritize",
+          "description": "Request AI priority scoring for a set of tasks",
+          "requestBody": "{ taskIds: string[], context?: PriorityContext }",
+          "responseBody": "{ scores: PriorityScore[] }",
+          "authentication": "required"
+        },
+        {
+          "method": "POST",
+          "path": "/focus/start",
+          "description": "Start a Focus Mode session",
+          "requestBody": "{ taskCount: 3 | 5, duration?: number }",
+          "responseBody": "{ session: FocusSession, tasks: Task[] }",
+          "authentication": "required"
+        },
+        {
+          "method": "GET",
+          "path": "/integrations",
+          "description": "List user's configured integrations",
+          "requestBody": "none",
+          "responseBody": "{ integrations: Integration[] }",
+          "authentication": "required"
+        }
+      ],
+      "errorFormat": "{ error: { code: string, message: string, details?: any } }",
+      "rateLimiting": "100 req/min authenticated, 20 req/min unauthenticated. 429 Too Many Requests with Retry-After header."
+    },
+    "databaseSchema": {
+      "tables": [
+        {
+          "name": "users",
+          "description": "User accounts",
+          "columns": "id (UUID PK), email (UNIQUE), password_hash, display_name, avatar_url, created_at, updated_at, last_login_at, settings (JSONB)"
+        },
+        {
+          "name": "projects",
+          "description": "Task projects/workspaces",
+          "columns": "id (UUID PK), name, description, owner_id (FK users), color, icon, created_at, updated_at, archived_at"
+        },
+        {
+          "name": "tasks",
+          "description": "Core task records",
+          "columns": "id (UUID PK), title, description, project_id (FK projects), creator_id (FK users), assignee_id (FK users), status (enum), due_date, priority_score (float), priority_explanation (text), labels (text[]), parent_task_id (FK tasks), position (int), created_at, updated_at, completed_at"
+        },
+        {
+          "name": "focus_sessions",
+          "description": "Focus Mode session records",
+          "columns": "id (UUID PK), user_id (FK users), started_at, ended_at, task_count, tasks_completed, duration_seconds, session_type (enum)"
+        },
+        {
+          "name": "integrations",
+          "description": "Connected external integrations",
+          "columns": "id (UUID PK), user_id (FK users), provider (enum), access_token_encrypted, refresh_token_encrypted, config (JSONB), last_sync_at, sync_status (enum), created_at"
+        },
+        {
+          "name": "priority_feedback",
+          "description": "User feedback on AI priority suggestions",
+          "columns": "id (UUID PK), user_id (FK users), task_id (FK tasks), suggested_score (float), user_adjusted_score (float), feedback_type (enum), created_at"
+        }
+      ],
+      "indexes": [
+        "tasks_project_id_status_idx ON tasks(project_id, status)",
+        "tasks_assignee_due_date_idx ON tasks(assignee_id, due_date)",
+        "tasks_priority_score_idx ON tasks(priority_score DESC) WHERE status = 'active'",
+        "focus_sessions_user_started_idx ON focus_sessions(user_id, started_at DESC)",
+        "priority_feedback_user_task_idx ON priority_feedback(user_id, task_id)"
+      ]
+    },
+    "securityConsiderations": [
+      {
+        "area": "Authentication",
+        "approach": "JWT with short-lived access tokens (15 min) and long-lived refresh tokens (7 days). Refresh tokens stored in HttpOnly, Secure, SameSite=Strict cookies. Token rotation on every refresh.",
+        "threats": "Token theft, session hijacking",
+        "mitigations": "Short expiry, HttpOnly cookies, token rotation, IP-based anomaly detection"
+      },
+      {
+        "area": "Data Encryption",
+        "approach": "TLS 1.3 in transit. AES-256 at rest for database. Integration tokens encrypted with per-user keys derived from KMS.",
+        "threats": "Data interception, database breach",
+        "mitigations": "Encryption at rest and in transit, key rotation, AWS KMS for key management"
+      },
+      {
+        "area": "Input Validation",
+        "approach": "Zod schemas for all API inputs. Strict Content-Type enforcement. HTML sanitization for user text fields. SQL injection prevented by Drizzle ORM parameterized queries.",
+        "threats": "XSS, SQL injection, payload manipulation",
+        "mitigations": "Schema validation, parameterized queries, CSP headers, input sanitization"
+      }
+    ],
+    "performanceTargets": [
+      {
+        "metric": "API response time (CRUD)",
+        "target": "p50 < 50ms, p95 < 200ms, p99 < 500ms",
+        "measurement": "Datadog APM percentile tracking"
+      },
+      {
+        "metric": "AI priority scoring",
+        "target": "p95 < 500ms for up to 100 tasks",
+        "measurement": "gRPC service latency histogram"
+      },
+      {
+        "metric": "Page load time",
+        "target": "LCP < 1.5s, FID < 100ms, CLS < 0.1",
+        "measurement": "Core Web Vitals via CloudWatch RUM"
+      },
+      {
+        "metric": "Concurrent users",
+        "target": "Support 1,000 concurrent users at launch",
+        "measurement": "Load testing with k6"
+      }
+    ]
+  }
+}

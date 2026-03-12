@@ -1,0 +1,26 @@
+# Generate Changelog Workflow Configuration
+name: "generate-changelog"
+description: 'Generate changelog or release notes from git history and project changes. Use when the user says "generate changelog" or "create release notes" or "update changelog"'
+author: "BMad"
+
+# Output format configuration
+output_format: markdown
+schema_file: null
+
+# Critical variables load from config_source
+config_source: "{bmad-path}/bmm/config.yaml"
+output_folder: "{config_source}:output_folder"
+user_name: "{config_source}:user_name"
+communication_language: "{config_source}:communication_language"
+document_output_language: "{config_source}:document_output_language"
+date: system-generated
+
+# Module path and component files
+installed_path: "{bmad-path}/bmm/workflows/generate-changelog"
+instructions: "{installed_path}/instructions.md"
+template: "{installed_path}/changelog-template.md"
+
+# Output configuration — writes to project root
+default_output_file: "{project-root}/CHANGELOG.md"
+
+standalone: true

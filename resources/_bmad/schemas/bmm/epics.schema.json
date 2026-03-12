@@ -1,0 +1,682 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/bmm/epics.schema.json",
+  "title": "Epics and Stories Schema",
+  "description": "Comprehensive schema for epics artifacts - captures complete epic and story breakdown with full requirements inventory, coverage mapping, and detailed acceptance criteria",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "additionalProperties": false,
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["epics"],
+      "additionalProperties": false,
+      "properties": {
+        "overview": {
+          "type": "object",
+          "description": "Document overview and summary",
+          "properties": {
+            "projectName": {
+              "type": "string",
+              "description": "Name of the project"
+            },
+            "description": {
+              "type": "string",
+              "description": "Overview description of the epic breakdown document"
+            },
+            "totalEpics": {
+              "type": "integer",
+              "description": "Total number of epics"
+            },
+            "totalStories": {
+              "type": "integer",
+              "description": "Total number of stories across all epics"
+            },
+            "inputDocuments": {
+              "type": "array",
+              "description": "Source documents used (e.g., PRD.md, architecture.md)",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "requirementsInventory": {
+          "type": "object",
+          "description": "Complete requirements inventory with FULL text - do NOT summarize",
+          "properties": {
+            "functional": {
+              "type": "array",
+              "description": "ALL functional requirements with complete descriptions",
+              "items": {
+                "type": "object",
+                "required": ["id", "title", "description"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Requirement ID (e.g., 'FR 1.1', 'FR 2.3')"
+                  },
+                  "capabilityArea": {
+                    "type": "string",
+                    "description": "Capability area grouping (e.g., 'File Parsing & Data Ingestion')"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Short title (the bold part)"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "COMPLETE requirement description - capture ALL text after the dash"
+                  },
+                  "relatedEpics": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "relatedStories": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "nonFunctional": {
+              "type": "array",
+              "description": "ALL non-functional requirements with complete descriptions",
+              "items": {
+                "type": "object",
+                "required": ["id", "title", "description"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Requirement ID (e.g., 'NFR 1.1', 'NFR 2.1')"
+                  },
+                  "category": {
+                    "type": "string",
+                    "description": "NFR category (e.g., 'Performance', 'Accessibility', 'Reliability')"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Short title"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "COMPLETE requirement description with metrics and thresholds"
+                  },
+                  "metrics": {
+                    "type": "object",
+                    "properties": {
+                      "target": { "type": "string" },
+                      "threshold": { "type": "string" },
+                      "unit": { "type": "string" }
+                    }
+                  },
+                  "relatedEpics": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "additional": {
+              "type": "array",
+              "description": "ALL additional/architectural requirements with complete descriptions",
+              "items": {
+                "type": "object",
+                "required": ["id", "title", "description"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Requirement ID (e.g., 'AR 1', 'AR 2')"
+                  },
+                  "category": {
+                    "type": "string",
+                    "description": "Category (e.g., 'Architecture & Technology Stack', 'Project Structure')"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Short title"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "COMPLETE requirement description"
+                  },
+                  "relatedEpics": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "summary": {
+              "type": "object",
+              "description": "Summary counts",
+              "properties": {
+                "totalFunctional": { "type": "integer" },
+                "totalNonFunctional": { "type": "integer" },
+                "totalAdditional": { "type": "integer" },
+                "totalRequirements": { "type": "integer" }
+              }
+            }
+          }
+        },
+        "coverageMap": {
+          "type": "object",
+          "description": "Requirements to Epic/Story coverage mapping",
+          "properties": {
+            "functionalToEpic": {
+              "type": "array",
+              "description": "Mapping of each FR to its implementing epic(s)",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "requirementId": { "type": "string" },
+                  "requirementTitle": { "type": "string" },
+                  "epicId": { "type": "string" },
+                  "epicTitle": { "type": "string" },
+                  "storyIds": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "nonFunctionalToEpic": {
+              "type": "array",
+              "description": "Mapping of each NFR to its implementing epic(s)",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "requirementId": { "type": "string" },
+                  "requirementTitle": { "type": "string" },
+                  "epicId": { "type": "string" },
+                  "epicTitle": { "type": "string" }
+                }
+              }
+            },
+            "additionalToEpic": {
+              "type": "array",
+              "description": "Mapping of each AR to its implementing epic(s)",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "requirementId": { "type": "string" },
+                  "requirementTitle": { "type": "string" },
+                  "epicIds": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "epicTitles": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "coverageSummary": {
+              "type": "object",
+              "description": "Coverage summary statistics",
+              "properties": {
+                "frCovered": { "type": "integer" },
+                "frTotal": { "type": "integer" },
+                "nfrCovered": { "type": "integer" },
+                "nfrTotal": { "type": "integer" },
+                "arCovered": { "type": "integer" },
+                "arTotal": { "type": "integer" },
+                "overallCoverage": { "type": "string" }
+              }
+            }
+          }
+        },
+        "epics": {
+          "type": "array",
+          "description": "Complete list of epics with full detail",
+          "items": {
+            "type": "object",
+            "required": ["id", "title", "stories"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Epic identifier (e.g., 'EPIC-1', '1', 'Epic 1')"
+              },
+              "title": {
+                "type": "string",
+                "description": "Epic title"
+              },
+              "goal": {
+                "type": "string",
+                "description": "User outcome / epic goal - the 'User Outcome' or 'Epic Goal' text"
+              },
+              "valueDelivered": {
+                "type": "string",
+                "description": "Value delivered - the 'Value Delivered' text"
+              },
+              "description": {
+                "type": "string",
+                "description": "Additional description if present"
+              },
+              "functionalRequirements": {
+                "type": "array",
+                "description": "List of FR IDs covered by this epic",
+                "items": { "type": "string" }
+              },
+              "nonFunctionalRequirements": {
+                "type": "array",
+                "description": "List of NFR IDs covered by this epic",
+                "items": { "type": "string" }
+              },
+              "additionalRequirements": {
+                "type": "array",
+                "description": "List of AR IDs covered by this epic",
+                "items": { "type": "string" }
+              },
+              "implementationNotes": {
+                "type": "array",
+                "description": "Implementation notes as bullet points - capture ALL of them",
+                "items": { "type": "string" }
+              },
+              "priority": {
+                "type": "string",
+                "enum": ["must-have", "should-have", "could-have", "won't-have", "P0", "P1", "P2", "P3"]
+              },
+              "status": {
+                "type": "string",
+                "enum": ["draft", "ready", "in-progress", "blocked", "review", "done", "complete"]
+              },
+              "dependencies": {
+                "type": "array",
+                "description": "Dependencies on other epics",
+                "items": { "type": "string" }
+              },
+              "storyCount": {
+                "type": "integer",
+                "description": "Number of stories in this epic"
+              },
+              "useCases": {
+                "type": "array",
+                "description": "Use cases that describe real-world scenarios for this epic",
+                "items": {
+                  "$ref": "use-case.schema.json"
+                }
+              },
+              "fitCriteria": {
+                "description": "Testable fit criteria organized by category",
+                "$ref": "fit-criteria.schema.json"
+              },
+              "successMetrics": {
+                "description": "Measurable success metrics for this epic",
+                "$ref": "success-metrics.schema.json"
+              },
+              "risks": {
+                "description": "Risk assessment with mitigations for this epic",
+                "$ref": "risks.schema.json"
+              },
+              "definitionOfDone": {
+                "description": "Completion checklist and quality gates",
+                "$ref": "definition-of-done.schema.json"
+              },
+              "technicalSummary": {
+                "type": "object",
+                "description": "Technical implementation summary for the epic",
+                "properties": {
+                  "architecturePattern": {
+                    "type": "string",
+                    "description": "High-level architecture pattern (e.g., 'File + Signal')"
+                  },
+                  "components": {
+                    "type": "array",
+                    "description": "Components involved in this epic",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": { "type": "string" },
+                        "responsibility": { "type": "string" },
+                        "changes": { "type": "string" }
+                      }
+                    }
+                  },
+                  "filesChanged": {
+                    "type": "array",
+                    "description": "Files to be created or modified",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "path": { "type": "string" },
+                        "action": {
+                          "type": "string",
+                          "enum": ["new", "modified"]
+                        },
+                        "description": { "type": "string" }
+                      }
+                    }
+                  },
+                  "configuration": {
+                    "type": "object",
+                    "description": "Configuration changes or examples",
+                    "properties": {
+                      "file": { "type": "string" },
+                      "settings": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "key": { "type": "string" },
+                            "value": { "type": "string" },
+                            "description": { "type": "string" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "effortEstimate": {
+                "type": "object",
+                "description": "Effort estimation for the epic",
+                "properties": {
+                  "totalSprints": { "type": "integer" },
+                  "totalDays": { "type": "integer" },
+                  "breakdown": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "phase": { "type": "string" },
+                        "duration": { "type": "string" },
+                        "description": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              },
+              "epicDependencies": {
+                "type": "object",
+                "description": "Upstream and downstream epic dependencies",
+                "properties": {
+                  "upstream": {
+                    "type": "array",
+                    "description": "Epics this depends on (must be completed first)",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "epicId": { "type": "string" },
+                        "reason": { "type": "string" }
+                      }
+                    }
+                  },
+                  "downstream": {
+                    "type": "array",
+                    "description": "Epics that depend on this (enabled by completion)",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "epicId": { "type": "string" },
+                        "reason": { "type": "string" }
+                      }
+                    }
+                  },
+                  "relatedEpics": {
+                    "type": "array",
+                    "description": "Related but not dependent epics",
+                    "items": { "type": "string" }
+                  }
+                }
+              },
+              "acceptanceSummary": {
+                "type": "string",
+                "description": "Summary of when the epic is considered complete"
+              },
+              "stories": {
+                "type": "array",
+                "description": "Complete list of stories within this epic",
+                "items": {
+                  "type": "object",
+                  "required": ["id", "title", "userStory", "acceptanceCriteria"],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Story identifier (e.g., 'STORY-1.1', '1.1', 'Story 1.1')"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Story title"
+                    },
+                    "userStory": {
+                      "type": "object",
+                      "description": "Complete user story with separate As-a/I-want/So-that",
+                      "required": ["asA", "iWant", "soThat"],
+                      "properties": {
+                        "asA": {
+                          "type": "string",
+                          "description": "The role/persona - text after 'As a' or 'As an'"
+                        },
+                        "iWant": {
+                          "type": "string",
+                          "description": "The capability - text after 'I want'"
+                        },
+                        "soThat": {
+                          "type": "string",
+                          "description": "The benefit - text after 'So that'"
+                        },
+                        "formatted": {
+                          "type": "string",
+                          "description": "Complete formatted user story as single string"
+                        }
+                      }
+                    },
+                    "acceptanceCriteria": {
+                      "type": "array",
+                      "description": "ALL acceptance criteria with FULL Given/When/Then text or prose format",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Optional AC identifier"
+                          },
+                          "given": {
+                            "type": "string",
+                            "description": "COMPLETE text after 'Given' - do not truncate"
+                          },
+                          "when": {
+                            "type": "string",
+                            "description": "COMPLETE text after 'When' - do not truncate"
+                          },
+                          "then": {
+                            "type": "string",
+                            "description": "COMPLETE text after 'Then' - do not truncate"
+                          },
+                          "and": {
+                            "type": "array",
+                            "description": "ALL 'And' conditions - capture every single one",
+                            "items": { "type": "string" }
+                          },
+                          "but": {
+                            "type": "array",
+                            "description": "Any 'But' exceptions",
+                            "items": { "type": "string" }
+                          },
+                          "criterion": {
+                            "type": "string",
+                            "description": "COMPLETE criterion text for prose/bullet-list format"
+                          }
+                        },
+                        "oneOf": [
+                          {
+                            "required": ["given", "when", "then"],
+                            "description": "Structured Given/When/Then format"
+                          },
+                          {
+                            "required": ["criterion"],
+                            "description": "Prose/bullet-list format"
+                          }
+                        ]
+                      }
+                    },
+                    "technicalNotes": {
+                      "type": "string",
+                      "description": "Technical implementation notes"
+                    },
+                    "implementationDetails": {
+                      "type": "array",
+                      "description": "Implementation details as bullet points",
+                      "items": { "type": "string" }
+                    },
+                    "priority": {
+                      "type": "string",
+                      "enum": ["P0", "P1", "P2", "P3", "must-have", "should-have", "could-have"]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["draft", "ready", "ready-for-dev", "in-progress", "in-review", "blocked", "review", "done", "complete", "backlog"]
+                    },
+                    "storyPoints": {
+                      "type": "integer",
+                      "description": "Estimated story points"
+                    },
+                    "estimatedEffort": {
+                      "type": "string",
+                      "description": "Estimated effort (e.g., '2 days', 'S', 'M', 'L')"
+                    },
+                    "dependencies": {
+                      "description": "Story dependencies — supports simple string array or rich object",
+                      "oneOf": [
+                        {
+                          "type": "array",
+                          "items": { "type": "string" }
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "blockedBy": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "storyId": { "type": "string" },
+                                  "title": { "type": "string" },
+                                  "status": { "type": "string" },
+                                  "reason": { "type": "string" }
+                                }
+                              }
+                            },
+                            "blocks": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "storyId": { "type": "string" },
+                                  "title": { "type": "string" }
+                                }
+                              }
+                            },
+                            "relatedStories": {
+                              "type": "array",
+                              "items": { "type": "string" }
+                            },
+                            "externalDependencies": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "dependency": { "type": "string" },
+                                  "status": { "type": "string" },
+                                  "owner": { "type": "string" }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "blockers": {
+                      "type": "array",
+                      "description": "Current blockers",
+                      "items": { "type": "string" }
+                    },
+                    "assignee": {
+                      "type": "string",
+                      "description": "Assigned team member"
+                    },
+                    "requirementRefs": {
+                      "type": "array",
+                      "description": "Referenced requirement IDs (FR, NFR, AR)",
+                      "items": { "type": "string" }
+                    },
+                    "uxReferences": {
+                      "type": "array",
+                      "description": "UX design references",
+                      "items": { "type": "string" }
+                    },
+                    "testCases": {
+                      "type": "array",
+                      "description": "Associated test case IDs",
+                      "items": { "type": "string" }
+                    },
+                    "notes": {
+                      "type": "string",
+                      "description": "Additional notes"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "dependencies": {
+          "type": "object",
+          "description": "Cross-epic and cross-story dependencies",
+          "properties": {
+            "epicDependencies": {
+              "type": "array",
+              "description": "Dependencies between epics",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "from": { "type": "string" },
+                  "to": { "type": "string" },
+                  "type": { "type": "string" },
+                  "description": { "type": "string" }
+                }
+              }
+            },
+            "storyDependencies": {
+              "type": "array",
+              "description": "Dependencies between stories",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "from": { "type": "string" },
+                  "to": { "type": "string" },
+                  "type": { "type": "string" },
+                  "description": { "type": "string" }
+                }
+              }
+            },
+            "criticalPath": {
+              "type": "array",
+              "description": "Critical path epic/story IDs",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "summary": {
+          "type": "object",
+          "description": "Document summary and statistics",
+          "properties": {
+            "totalEpics": { "type": "integer" },
+            "totalStories": { "type": "integer" },
+            "totalAcceptanceCriteria": { "type": "integer" },
+            "frCovered": { "type": "integer" },
+            "nfrCovered": { "type": "integer" },
+            "arCovered": { "type": "integer" },
+            "coveragePercentage": { "type": "string" },
+            "status": { "type": "string" },
+            "lastUpdated": { "type": "string" },
+            "notes": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

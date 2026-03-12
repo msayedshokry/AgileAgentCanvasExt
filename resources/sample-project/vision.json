@@ -1,0 +1,36 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "vision",
+    "workflowName": "product-visionary",
+    "projectName": "TaskFlow Pro",
+    "timestamps": {
+      "created": "2025-06-01T09:00:00Z",
+      "lastModified": "2025-06-05T14:30:00Z"
+    },
+    "status": "approved",
+    "tags": ["saas", "productivity", "task-management"],
+    "author": "Sarah Chen, Chief Product Officer",
+    "stepsCompleted": ["market-research", "stakeholder-interviews", "vision-draft", "vision-review"]
+  },
+  "content": {
+    "productName": "TaskFlow Pro",
+    "vision": {
+      "statement": "Empower distributed teams to achieve flow state through intelligent task orchestration that adapts to how people actually work.",
+      "problemStatement": "Knowledge workers lose 2.5 hours daily to context switching between disconnected tools, unclear priorities, and manual status tracking. Existing project management tools optimize for managers' reporting needs, not for the makers who do the work.",
+      "proposedSolution": "An AI-powered task management platform that learns team patterns, auto-prioritizes work based on real-time signals, and provides contextual focus modes that minimize interruptions while keeping stakeholders informed."
+    },
+    "targetUsers": [
+      { "persona": "Software Engineers", "description": "Need deep focus time with minimal context switching between tasks and tools" },
+      { "persona": "Product Managers", "description": "Need real-time visibility into team velocity and blockers without interrupting flow" },
+      { "persona": "Engineering Managers", "description": "Need to balance team capacity, identify bottlenecks, and forecast delivery dates" },
+      { "persona": "Designers", "description": "Need to track design tasks alongside engineering work with handoff workflows" }
+    ],
+    "successMetrics": [
+      { "metric": "Daily Active Users", "description": "70% of registered users engage daily within 6 months of launch" },
+      { "metric": "Context Switch Reduction", "description": "Users report 40% fewer tool switches per day vs. baseline" },
+      { "metric": "Task Completion Rate", "description": "Teams complete 25% more tasks per sprint compared to previous tooling" },
+      { "metric": "Net Promoter Score", "description": "Achieve NPS of 50+ within first year" }
+    ]
+  }
+}

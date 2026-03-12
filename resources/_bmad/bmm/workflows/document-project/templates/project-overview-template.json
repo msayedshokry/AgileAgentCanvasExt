@@ -1,0 +1,49 @@
+{
+  "$schema": "../../../../schemas/bmm/project-overview.schema.json",
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "project-overview",
+    "workflowName": "document-project",
+    "projectName": "{{project_name}}",
+    "stepsCompleted": [],
+    "currentStep": "",
+    "timestamps": {
+      "created": "{{timestamp}}",
+      "lastModified": "{{timestamp}}"
+    },
+    "author": "{{user_name}}",
+    "status": "draft"
+  },
+  "content": {
+    "projectInfo": {
+      "name": "{{project_name}}",
+      "description": "",
+      "type": "",
+      "architecturePattern": ""
+    },
+    "executiveSummary": "",
+    "projectClassification": {
+      "repositoryType": "single",
+      "projectTypes": [],
+      "primaryLanguages": [],
+      "architecturePattern": ""
+    },
+    "multiPartStructure": [],
+    "techStackSummary": {
+      "frontend": [],
+      "backend": [],
+      "database": [],
+      "infrastructure": [],
+      "testing": []
+    },
+    "keyFeatures": [],
+    "architectureHighlights": [],
+    "development": {
+      "prerequisites": [],
+      "gettingStarted": [],
+      "keyCommands": []
+    },
+    "repositoryStructure": [],
+    "documentationMap": []
+  }
+}

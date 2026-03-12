@@ -1,0 +1,92 @@
+{
+  "$schema": "../../../../schemas/tea/nfr-assessment.schema.json",
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "nfr-assessment",
+    "workflowName": "testarch-nfr",
+    "projectName": "{{project_name}}",
+    "stepsCompleted": [],
+    "currentStep": "",
+    "timestamps": {
+      "created": "{{timestamp}}",
+      "lastModified": "{{timestamp}}"
+    },
+    "author": "{{user_name}}",
+    "status": "draft"
+  },
+  "content": {
+    "featureInfo": {
+      "featureName": "{{feature_name}}",
+      "storyId": "{{story_id}}",
+      "overallStatus": "incomplete"
+    },
+    "executiveSummary": "",
+    "assessments": {
+      "performance": {
+        "status": "not-assessed",
+        "responseTime": {
+          "target": "",
+          "actual": "",
+          "status": ""
+        },
+        "throughput": {
+          "target": "",
+          "actual": "",
+          "status": ""
+        },
+        "resourceUsage": {
+          "cpu": "",
+          "memory": "",
+          "status": ""
+        },
+        "scalability": ""
+      },
+      "security": {
+        "status": "not-assessed",
+        "authentication": "",
+        "authorization": "",
+        "dataProtection": "",
+        "vulnerabilities": [],
+        "compliance": ""
+      },
+      "reliability": {
+        "status": "not-assessed",
+        "availability": {
+          "target": "",
+          "actual": ""
+        },
+        "errorRate": {
+          "target": "",
+          "actual": ""
+        },
+        "mttr": "",
+        "faultTolerance": "",
+        "ciBurnIn": "",
+        "disasterRecovery": ""
+      },
+      "maintainability": {
+        "status": "not-assessed",
+        "testCoverage": "",
+        "codeQuality": "",
+        "technicalDebt": "",
+        "documentation": "",
+        "testQuality": ""
+      },
+      "custom": []
+    },
+    "quickWins": [],
+    "recommendedActions": [],
+    "monitoringHooks": [],
+    "failFastMechanisms": [],
+    "evidenceGaps": [],
+    "findingsSummary": {
+      "categories": []
+    },
+    "gateYamlSnippet": "",
+    "signOff": {
+      "signedBy": "",
+      "date": "",
+      "role": ""
+    }
+  }
+}

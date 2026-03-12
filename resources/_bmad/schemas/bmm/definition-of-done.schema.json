@@ -1,0 +1,137 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/bmm/definition-of-done.schema.json",
+  "title": "Definition of Done Schema",
+  "description": "Schema for defining completion checklists and quality gates for epics and stories",
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "description": "Definition of Done checklist items",
+      "items": {
+        "type": "object",
+        "required": ["item"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Item identifier (e.g., 'DOD-01')"
+          },
+          "item": {
+            "type": "string",
+            "description": "The DoD checklist item"
+          },
+          "category": {
+            "type": "string",
+            "enum": ["code-quality", "testing", "documentation", "review", "deployment", "security", "performance", "compliance"],
+            "description": "Category of this DoD item"
+          },
+          "required": {
+            "type": "boolean",
+            "description": "Whether this item is mandatory for completion",
+            "default": true
+          },
+          "completed": {
+            "type": "boolean",
+            "description": "Whether this item has been completed",
+            "default": false
+          },
+          "completedBy": {
+            "type": "string",
+            "description": "Who completed/verified this item"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When this item was completed"
+          },
+          "evidence": {
+            "type": "string",
+            "description": "Evidence or link showing completion (PR link, test report, etc.)"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "qualityGates": {
+      "type": "array",
+      "description": "Quality gates that must be passed",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "gate": {
+            "type": "string",
+            "description": "Description of the quality gate"
+          },
+          "criteria": {
+            "type": "array",
+            "description": "Specific criteria for this gate",
+            "items": { "type": "string" }
+          },
+          "passed": {
+            "type": "boolean",
+            "default": false
+          },
+          "passedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "approver": {
+            "type": "string",
+            "description": "Who approved this gate"
+          }
+        }
+      }
+    },
+    "acceptanceSummary": {
+      "type": "object",
+      "description": "Summary of acceptance criteria from stories",
+      "properties": {
+        "totalCriteria": { "type": "integer" },
+        "passedCriteria": { "type": "integer" },
+        "failedCriteria": { "type": "integer" },
+        "blockedCriteria": { "type": "integer" },
+        "passPercentage": { "type": "string" }
+      }
+    },
+    "templates": {
+      "type": "object",
+      "description": "DoD templates for different artifact types",
+      "properties": {
+        "epic": {
+          "type": "array",
+          "description": "Default DoD items for epics",
+          "items": { "type": "string" }
+        },
+        "story": {
+          "type": "array",
+          "description": "Default DoD items for stories",
+          "items": { "type": "string" }
+        },
+        "feature": {
+          "type": "array",
+          "description": "Default DoD items for features",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "description": "Completion summary",
+      "properties": {
+        "totalItems": { "type": "integer" },
+        "completedItems": { "type": "integer" },
+        "requiredItems": { "type": "integer" },
+        "requiredCompleted": { "type": "integer" },
+        "completionPercentage": { "type": "string" },
+        "allRequiredComplete": { "type": "boolean" },
+        "status": {
+          "type": "string",
+          "enum": ["not-started", "in-progress", "blocked", "ready-for-review", "done"]
+        }
+      }
+    }
+  }
+}

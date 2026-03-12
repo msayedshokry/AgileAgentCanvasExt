@@ -1,0 +1,473 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/bmm/story.schema.json",
+  "title": "User Story Schema",
+  "description": "Comprehensive schema for individual story artifacts - supports both structured BMAD stories and prose-style stories with full detail",
+  "type": "object",
+  "required": ["content"],
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["title"],
+      "properties": {
+        "epicId": {
+          "type": "string",
+          "description": "Parent epic identifier"
+        },
+        "epicTitle": {
+          "type": "string",
+          "description": "Parent epic title for context"
+        },
+        "storyId": {
+          "type": "string",
+          "description": "Story identifier (e.g., STORY-1.1, 1.1)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Story title"
+        },
+        "status": {
+          "type": "string",
+          "description": "Story status",
+          "enum": ["draft", "ready", "ready-for-dev", "in-progress", "in-review", "blocked", "done", "complete"],
+          "default": "draft"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["P0", "P1", "P2", "P3", "must-have", "should-have", "could-have"]
+        },
+        "storyPoints": {
+          "type": "integer",
+          "description": "Estimated story points"
+        },
+        "estimatedEffort": {
+          "type": "string",
+          "description": "Estimated effort (e.g., '2 days', 'S', 'M', 'L', 'XL')"
+        },
+        "storyFormat": {
+          "type": "string",
+          "description": "Indicates the format of this story",
+          "enum": ["structured", "prose"],
+          "default": "structured"
+        },
+        "background": {
+          "type": "string",
+          "description": "Background context or problem statement for prose-style stories - COMPLETE text from 'Background' or 'Problem' section"
+        },
+        "problemStatement": {
+          "type": "string",
+          "description": "Detailed problem description for prose-style stories - COMPLETE text"
+        },
+        "proposedSolution": {
+          "type": "string",
+          "description": "High-level solution description for prose-style stories - COMPLETE text from 'Solution' or 'High-Level Solution' section"
+        },
+        "solutionDetails": {
+          "type": "array",
+          "description": "Solution details as bullet points for prose-style stories - capture ALL of them",
+          "items": { "type": "string" }
+        },
+        "userStory": {
+          "type": "object",
+          "description": "Complete user story - supports both structured (As-a/I-want/So-that) and prose formats",
+          "properties": {
+            "asA": {
+              "type": "string",
+              "description": "The role/persona - COMPLETE text after 'As a' or 'As an'"
+            },
+            "iWant": {
+              "type": "string",
+              "description": "The capability - COMPLETE text after 'I want'"
+            },
+            "soThat": {
+              "type": "string",
+              "description": "The benefit - COMPLETE text after 'So that'"
+            },
+            "formatted": {
+              "type": "string",
+              "description": "Complete formatted user story as single string (use for prose-style stories)"
+            },
+            "context": {
+              "type": "string",
+              "description": "Additional context for the story"
+            }
+          },
+          "oneOf": [
+            {
+              "required": ["asA", "iWant", "soThat"],
+              "description": "Structured format with separate fields"
+            },
+            {
+              "required": ["formatted"],
+              "description": "Prose format as single string"
+            }
+          ]
+        },
+        "acceptanceCriteria": {
+          "type": "array",
+          "description": "ALL acceptance criteria - supports both structured (Given/When/Then) and prose/bullet formats",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "AC identifier (e.g., 'AC-1', '1')"
+              },
+              "title": {
+                "type": "string",
+                "description": "Short title for the criterion"
+              },
+              "given": {
+                "type": "string",
+                "description": "COMPLETE text after 'Given' - do not truncate (structured format)"
+              },
+              "when": {
+                "type": "string",
+                "description": "COMPLETE text after 'When' - do not truncate (structured format)"
+              },
+              "then": {
+                "type": "string",
+                "description": "COMPLETE text after 'Then' - do not truncate (structured format)"
+              },
+              "and": {
+                "type": "array",
+                "description": "ALL 'And' conditions - capture EVERY single one (structured format)",
+                "items": { "type": "string" }
+              },
+              "but": {
+                "type": "array",
+                "description": "Any 'But' exception conditions (structured format)",
+                "items": { "type": "string" }
+              },
+              "criterion": {
+                "type": "string",
+                "description": "COMPLETE criterion text for prose/bullet-list format - use when not in Given/When/Then structure"
+              },
+              "notes": {
+                "type": "string",
+                "description": "Additional notes for this AC"
+              },
+              "testIds": {
+                "type": "array",
+                "description": "Associated test case IDs",
+                "items": { "type": "string" }
+              }
+            },
+            "oneOf": [
+              {
+                "required": ["given", "when", "then"],
+                "description": "Structured Given/When/Then format"
+              },
+              {
+                "required": ["criterion"],
+                "description": "Prose/bullet-list format"
+              }
+            ]
+          }
+        },
+        "tasks": {
+          "type": "array",
+          "description": "Implementation tasks with full detail",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "description": {
+                "type": "string",
+                "description": "COMPLETE task description"
+              },
+              "acReference": {
+                "type": "string",
+                "description": "Reference to acceptance criterion (e.g., AC-1)"
+              },
+              "estimatedHours": { "type": "number" },
+              "completed": { "type": "boolean", "default": false },
+              "completedAt": { "type": "string" },
+              "notes": { "type": "string" },
+              "subtasks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "description": { "type": "string" },
+                    "completed": { "type": "boolean", "default": false },
+                    "completedAt": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "technicalNotes": {
+          "type": "string",
+          "description": "COMPLETE technical implementation notes"
+        },
+        "implementationDetails": {
+          "type": "array",
+          "description": "Implementation details as bullet points - capture ALL of them",
+          "items": { "type": "string" }
+        },
+        "devNotes": {
+          "type": "object",
+          "description": "Comprehensive development notes and guidance",
+          "properties": {
+            "overview": {
+              "type": "string",
+              "description": "Overview of implementation approach"
+            },
+            "architecturePatterns": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Relevant architecture patterns and constraints"
+            },
+            "componentsToCreate": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": { "type": "string" },
+                  "type": { "type": "string" },
+                  "description": { "type": "string" }
+                }
+              },
+              "description": "New components to create"
+            },
+            "componentsToModify": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": { "type": "string" },
+                  "changes": { "type": "string" }
+                }
+              },
+              "description": "Existing components to modify"
+            },
+            "dataModels": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Data models involved"
+            },
+            "apiEndpoints": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "method": { "type": "string" },
+                  "path": { "type": "string" },
+                  "description": { "type": "string" }
+                }
+              },
+              "description": "API endpoints to create or modify"
+            },
+            "testingStrategy": {
+              "type": "object",
+              "properties": {
+                "unitTests": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "integrationTests": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "e2eTests": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "testDataNeeded": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            },
+            "securityConsiderations": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "performanceConsiderations": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "accessibilityConsiderations": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "edgeCases": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "potentialChallenges": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "dependencies": {
+          "type": "object",
+          "description": "Story dependencies",
+          "properties": {
+            "blockedBy": {
+              "type": "array",
+              "description": "Stories that block this one",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "storyId": { "type": "string" },
+                  "title": { "type": "string" },
+                  "status": { "type": "string" },
+                  "reason": { "type": "string" }
+                }
+              }
+            },
+            "blocks": {
+              "type": "array",
+              "description": "Stories blocked by this one",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "storyId": { "type": "string" },
+                  "title": { "type": "string" }
+                }
+              }
+            },
+            "relatedStories": {
+              "type": "array",
+              "description": "Related but not blocking stories",
+              "items": { "type": "string" }
+            },
+            "externalDependencies": {
+              "type": "array",
+              "description": "External dependencies",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "dependency": { "type": "string" },
+                  "status": { "type": "string" },
+                  "owner": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "requirementRefs": {
+          "type": "array",
+          "description": "Referenced requirement IDs (FR, NFR, AR) this story implements",
+          "items": { "type": "string" }
+        },
+        "uxReferences": {
+          "type": "array",
+          "description": "UX design references",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string" },
+              "reference": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          }
+        },
+        "references": {
+          "type": "array",
+          "description": "References to source documents",
+          "items": {
+            "type": "object",
+            "properties": {
+              "source": { "type": "string" },
+              "section": { "type": "string" },
+              "relevance": { "type": "string" },
+              "quote": { "type": "string" }
+            }
+          }
+        },
+        "assignee": {
+          "type": "string",
+          "description": "Assigned team member"
+        },
+        "reviewer": {
+          "type": "string",
+          "description": "Code reviewer"
+        },
+        "labels": {
+          "type": "array",
+          "description": "Labels/tags for categorization",
+          "items": { "type": "string" }
+        },
+        "devAgentRecord": {
+          "type": "object",
+          "description": "Development agent execution record",
+          "properties": {
+            "agentModel": {
+              "type": "string",
+              "description": "AI model used for implementation"
+            },
+            "sessionId": { "type": "string" },
+            "startedAt": { "type": "string" },
+            "completedAt": { "type": "string" },
+            "debugLogRefs": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "completionNotes": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "filesModified": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": { "type": "string" },
+                  "action": { "type": "string", "enum": ["created", "modified", "deleted", "renamed"] },
+                  "description": { "type": "string" },
+                  "linesChanged": { "type": "integer" }
+                }
+              }
+            },
+            "testsRun": {
+              "type": "object",
+              "properties": {
+                "total": { "type": "integer" },
+                "passed": { "type": "integer" },
+                "failed": { "type": "integer" },
+                "skipped": { "type": "integer" }
+              }
+            },
+            "issuesEncountered": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "issue": { "type": "string" },
+                  "resolution": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "history": {
+          "type": "array",
+          "description": "Status change history",
+          "items": {
+            "type": "object",
+            "properties": {
+              "timestamp": { "type": "string" },
+              "fromStatus": { "type": "string" },
+              "toStatus": { "type": "string" },
+              "changedBy": { "type": "string" },
+              "notes": { "type": "string" }
+            }
+          }
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes"
+        }
+      }
+    }
+  }
+}

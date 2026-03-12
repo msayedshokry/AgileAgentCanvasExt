@@ -1,0 +1,52 @@
+{
+  "$schema": "../../../../schemas/bmm/architecture.schema.json",
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "architecture",
+    "workflowName": "create-architecture",
+    "projectName": "{{project_name}}",
+    "stepsCompleted": [],
+    "currentStep": "",
+    "timestamps": {
+      "created": "{{timestamp}}",
+      "lastModified": "{{timestamp}}"
+    },
+    "author": "{{user_name}}",
+    "status": "draft"
+  },
+  "content": {
+    "title": "{{product_name}} Architecture",
+    "overview": {
+      "systemContext": "",
+      "architectureStyle": "",
+      "keyPrinciples": []
+    },
+    "decisions": [],
+    "systemComponents": [],
+    "dataArchitecture": {
+      "dataModels": [],
+      "dataFlows": [],
+      "storageStrategy": ""
+    },
+    "integrations": [],
+    "securityArchitecture": {
+      "authenticationStrategy": "",
+      "authorizationModel": "",
+      "dataProtection": [],
+      "securityControls": []
+    },
+    "infrastructureArchitecture": {
+      "deploymentModel": "",
+      "environments": [],
+      "scalingStrategy": ""
+    },
+    "crossCuttingConcerns": {
+      "logging": "",
+      "monitoring": "",
+      "errorHandling": "",
+      "caching": ""
+    },
+    "technicalDebt": [],
+    "evolutionRoadmap": []
+  }
+}

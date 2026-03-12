@@ -1,0 +1,116 @@
+{
+  "$schema": "../../../../schemas/tea/traceability-matrix.schema.json",
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "traceability-matrix",
+    "workflowName": "testarch-trace",
+    "projectName": "{{project_name}}",
+    "stepsCompleted": [],
+    "currentStep": "",
+    "timestamps": {
+      "created": "{{timestamp}}",
+      "lastModified": "{{timestamp}}"
+    },
+    "author": "{{user_name}}",
+    "status": "draft"
+  },
+  "content": {
+    "storyInfo": {
+      "storyId": "{{story_id}}",
+      "evaluator": "{{user_name}}"
+    },
+    "traceability": {
+      "coverageSummary": {
+        "p0": {
+          "total": 0,
+          "covered": 0
+        },
+        "p1": {
+          "total": 0,
+          "covered": 0
+        },
+        "p2": {
+          "total": 0,
+          "covered": 0
+        },
+        "p3": {
+          "total": 0,
+          "covered": 0
+        }
+      },
+      "detailedMapping": [],
+      "gapAnalysis": {
+        "critical": [],
+        "high": [],
+        "medium": [],
+        "low": []
+      },
+      "qualityAssessment": {
+        "overall": "",
+        "findings": []
+      },
+      "duplicateCoverage": [],
+      "coverageByTestLevel": {
+        "unit": 0,
+        "integration": 0,
+        "e2e": 0,
+        "api": 0
+      },
+      "recommendations": []
+    },
+    "gateDecision": {
+      "gateType": "story",
+      "decisionMode": "deterministic",
+      "evidenceSummary": {
+        "testExecution": {
+          "passed": 0,
+          "failed": 0,
+          "skipped": 0
+        },
+        "coverage": 0,
+        "nfrStatus": "",
+        "flakinessScore": 0
+      },
+      "decisionCriteria": {
+        "p0": {
+          "required": 100,
+          "actual": 0,
+          "pass": false
+        },
+        "p1": {
+          "required": 90,
+          "actual": 0,
+          "pass": false
+        },
+        "p2": {
+          "required": 70,
+          "actual": 0,
+          "pass": false
+        },
+        "p3": {
+          "required": 50,
+          "actual": 0,
+          "pass": false
+        }
+      },
+      "decision": "FAIL",
+      "rationale": "",
+      "residualRisks": [],
+      "waiverDetails": {
+        "approver": "",
+        "reason": "",
+        "expirationDate": ""
+      },
+      "criticalIssues": [],
+      "recommendations": [],
+      "nextSteps": []
+    },
+    "cicdYamlSnippet": "",
+    "relatedArtifacts": [],
+    "signOff": {
+      "signedBy": "",
+      "date": "",
+      "role": ""
+    }
+  }
+}

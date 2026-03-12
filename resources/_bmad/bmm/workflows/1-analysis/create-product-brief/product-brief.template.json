@@ -1,0 +1,37 @@
+{
+  "$schema": "../../../../schemas/bmm/product-brief.schema.json",
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "product-brief",
+    "workflowName": "create-product-brief",
+    "projectName": "{{project_name}}",
+    "stepsCompleted": [],
+    "currentStep": "",
+    "timestamps": {
+      "created": "{{timestamp}}",
+      "lastModified": "{{timestamp}}"
+    },
+    "author": "{{user_name}}",
+    "status": "draft"
+  },
+  "content": {
+    "productName": "{{product_name}}",
+    "tagline": "",
+    "vision": {
+      "statement": "",
+      "problemStatement": "",
+      "proposedSolution": "",
+      "uniqueValueProposition": ""
+    },
+    "targetUsers": [],
+    "successMetrics": [],
+    "scope": {
+      "inScope": [],
+      "outOfScope": [],
+      "futureConsiderations": []
+    },
+    "constraints": [],
+    "risks": [],
+    "additionalContext": ""
+  }
+}

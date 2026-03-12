@@ -1,0 +1,1578 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "epics",
+    "workflowName": "pm-orchestrator",
+    "projectName": "TaskFlow Pro",
+    "timestamps": {
+      "created": "2025-06-15T09:00:00Z",
+      "lastModified": "2025-07-20T16:00:00Z"
+    },
+    "status": "approved",
+    "tags": ["epics", "v1.0", "mvp"],
+    "author": "Sarah Chen, CPO & Marcus Johnson, VP Engineering",
+    "stepsCompleted": ["requirement-mapping", "epic-breakdown", "story-writing", "estimation", "dependency-analysis", "review-approved"]
+  },
+  "content": {
+    "overview": {
+      "projectName": "TaskFlow Pro",
+      "description": "Epic breakdown for TaskFlow Pro — an AI-powered task management platform for engineering teams. Covers core platform, AI prioritization, focus mode, and integrations across 4 epics and 12 stories.",
+      "totalEpics": 4,
+      "totalStories": 12,
+      "inputDocuments": ["PRD.md", "architecture.md", "ux-wireframes.md"]
+    },
+    "requirementsInventory": {
+      "functional": [
+        {
+          "id": "FR-1",
+          "title": "Task CRUD Operations",
+          "description": "Users can create, read, update, and delete tasks with rich metadata including title, description, assignee, labels, priority, due date, and custom fields. All mutations publish domain events for real-time sync.",
+          "capabilityArea": "Core Platform",
+          "relatedEpics": ["EPIC-1"],
+          "relatedStories": ["S-1.1", "S-1.2"]
+        },
+        {
+          "id": "FR-2",
+          "title": "AI Task Prioritization",
+          "description": "System automatically prioritizes tasks based on deadlines, dependencies, and team patterns using a machine learning model trained on historical completion data. Falls back to rule-based scoring when insufficient training data exists.",
+          "capabilityArea": "AI Engine",
+          "relatedEpics": ["EPIC-2"],
+          "relatedStories": ["S-2.1", "S-2.2"]
+        },
+        {
+          "id": "FR-3",
+          "title": "Focus Mode",
+          "description": "Deep-work interface with notification batching and focus time tracking. Supports Pomodoro-style timers, P0 breakthrough alerts, and team-configurable notification rules.",
+          "capabilityArea": "Productivity",
+          "relatedEpics": ["EPIC-3"],
+          "relatedStories": ["S-3.1", "S-3.2", "S-3.3"]
+        },
+        {
+          "id": "FR-4",
+          "title": "Dependency Graph Visualization",
+          "description": "Interactive visual graph showing task dependencies and critical path. Users can click nodes to see details, highlight blocking chains, and identify bottlenecks in the project plan.",
+          "capabilityArea": "Visualization",
+          "relatedEpics": ["EPIC-1"],
+          "relatedStories": ["S-1.3"]
+        },
+        {
+          "id": "FR-5",
+          "title": "Sprint Planning Automation",
+          "description": "AI-assisted sprint planning with capacity-aware task assignment suggestions. The system accounts for team member PTO, meeting load, skill sets, and AI priority scores to propose an optimal sprint backlog.",
+          "capabilityArea": "AI Engine",
+          "relatedEpics": ["EPIC-2"],
+          "relatedStories": ["S-2.3"]
+        },
+        {
+          "id": "FR-6",
+          "title": "Integration Platform",
+          "description": "GitHub and Slack bidirectional integrations for seamless developer workflows. PRs auto-link to tasks, Slack slash commands manage tasks, and Focus Mode syncs with Slack DND status.",
+          "capabilityArea": "Integrations",
+          "relatedEpics": ["EPIC-4"],
+          "relatedStories": ["S-4.1", "S-4.2", "S-4.3"]
+        }
+      ],
+      "nonFunctional": [
+        {
+          "id": "NFR-1",
+          "title": "API Response Time",
+          "description": "p95 API latency under 200ms for all task CRUD operations under normal load conditions",
+          "category": "Performance",
+          "metrics": {
+            "target": "200ms",
+            "threshold": "500ms",
+            "unit": "milliseconds"
+          },
+          "relatedEpics": ["EPIC-1", "EPIC-3"]
+        },
+        {
+          "id": "NFR-2",
+          "title": "Concurrent Users",
+          "description": "Support 10,000 concurrent users at launch with WebSocket connections for real-time updates and graceful degradation under peak load",
+          "category": "Scalability",
+          "metrics": {
+            "target": "10000",
+            "threshold": "5000",
+            "unit": "concurrent users"
+          },
+          "relatedEpics": ["EPIC-1"]
+        },
+        {
+          "id": "NFR-3",
+          "title": "Security Compliance",
+          "description": "SOC 2 Type II compliant, E2E encryption for data in transit and at rest, RBAC with SSO support via SAML and OIDC",
+          "category": "Security",
+          "relatedEpics": ["EPIC-1"]
+        }
+      ],
+      "additional": [
+        {
+          "id": "ADD-1",
+          "title": "CLI Tool",
+          "description": "Command-line interface for task management, targeting power-user developers who prefer terminal workflows over web UI",
+          "category": "Developer Experience",
+          "relatedEpics": ["EPIC-4"]
+        }
+      ],
+      "summary": {
+        "totalFunctional": 6,
+        "totalNonFunctional": 3,
+        "totalAdditional": 1,
+        "totalRequirements": 10
+      }
+    },
+    "coverageMap": {
+      "functionalToEpic": [
+        {
+          "requirementId": "FR-1",
+          "requirementTitle": "Task CRUD Operations",
+          "epicId": "EPIC-1",
+          "epicTitle": "Core Task Platform",
+          "storyIds": ["S-1.1", "S-1.2"]
+        },
+        {
+          "requirementId": "FR-2",
+          "requirementTitle": "AI Task Prioritization",
+          "epicId": "EPIC-2",
+          "epicTitle": "AI Prioritization Engine",
+          "storyIds": ["S-2.1", "S-2.2"]
+        },
+        {
+          "requirementId": "FR-3",
+          "requirementTitle": "Focus Mode",
+          "epicId": "EPIC-3",
+          "epicTitle": "Focus Mode & Productivity",
+          "storyIds": ["S-3.1", "S-3.2", "S-3.3"]
+        },
+        {
+          "requirementId": "FR-4",
+          "requirementTitle": "Dependency Graph Visualization",
+          "epicId": "EPIC-1",
+          "epicTitle": "Core Task Platform",
+          "storyIds": ["S-1.3"]
+        },
+        {
+          "requirementId": "FR-5",
+          "requirementTitle": "Sprint Planning Automation",
+          "epicId": "EPIC-2",
+          "epicTitle": "AI Prioritization Engine",
+          "storyIds": ["S-2.3"]
+        },
+        {
+          "requirementId": "FR-6",
+          "requirementTitle": "Integration Platform",
+          "epicId": "EPIC-4",
+          "epicTitle": "Integration Platform",
+          "storyIds": ["S-4.1", "S-4.2", "S-4.3"]
+        }
+      ],
+      "nonFunctionalToEpic": [
+        {
+          "requirementId": "NFR-1",
+          "requirementTitle": "API Response Time",
+          "epicId": "EPIC-1",
+          "epicTitle": "Core Task Platform"
+        },
+        {
+          "requirementId": "NFR-2",
+          "requirementTitle": "Concurrent Users",
+          "epicId": "EPIC-1",
+          "epicTitle": "Core Task Platform"
+        },
+        {
+          "requirementId": "NFR-3",
+          "requirementTitle": "Security Compliance",
+          "epicId": "EPIC-1",
+          "epicTitle": "Core Task Platform"
+        }
+      ],
+      "additionalToEpic": [
+        {
+          "requirementId": "ADD-1",
+          "requirementTitle": "CLI Tool",
+          "epicIds": ["EPIC-4"],
+          "epicTitles": ["Integration Platform"]
+        }
+      ],
+      "coverageSummary": {
+        "frCovered": 6,
+        "frTotal": 6,
+        "nfrCovered": 3,
+        "nfrTotal": 3,
+        "arCovered": 1,
+        "arTotal": 1,
+        "overallCoverage": "100%"
+      }
+    },
+    "dependencies": {
+      "epicDependencies": [
+        { "from": "EPIC-2", "to": "EPIC-1", "type": "blocks", "description": "AI engine requires task data and dependency graph from Core Platform" },
+        { "from": "EPIC-3", "to": "EPIC-1", "type": "blocks", "description": "Focus Mode needs task filtering and notification infrastructure from Core Platform" },
+        { "from": "EPIC-3", "to": "EPIC-2", "type": "blocks", "description": "Focus Mode uses AI priority scores to filter and order the focus task queue" },
+        { "from": "EPIC-4", "to": "EPIC-1", "type": "blocks", "description": "Integrations need task CRUD API and webhook infrastructure from Core Platform" },
+        { "from": "EPIC-4", "to": "EPIC-3", "type": "blocks", "description": "Slack DND sync needs Focus Mode state" }
+      ],
+      "storyDependencies": [
+        { "from": "S-1.2", "to": "S-1.1", "type": "blocks", "description": "UI needs API endpoints to fetch and mutate tasks" },
+        { "from": "S-1.3", "to": "S-1.1", "type": "blocks", "description": "Graph needs task data and dependency relationships from API" },
+        { "from": "S-2.1", "to": "S-1.1", "type": "blocks", "description": "AI engine needs task data access to compute priority scores" },
+        { "from": "S-2.3", "to": "S-2.1", "type": "blocks", "description": "Sprint planning relies on priority scores" },
+        { "from": "S-3.1", "to": "S-1.1", "type": "blocks", "description": "Focus mode needs task data and filtering" },
+        { "from": "S-3.2", "to": "S-3.1", "type": "blocks", "description": "UI layer needs the core engine running" },
+        { "from": "S-3.2", "to": "S-1.2", "type": "blocks", "description": "Focus UI extends the task board component" },
+        { "from": "S-4.2", "to": "S-3.3", "type": "blocks", "description": "Slack sync needs notification rule engine to determine DND state" }
+      ],
+      "criticalPath": ["EPIC-1", "S-1.1", "EPIC-2", "S-2.1", "EPIC-3", "S-3.1", "EPIC-4", "S-4.2"]
+    },
+    "epics": [
+      {
+        "id": "EPIC-1",
+        "title": "Core Task Platform",
+        "goal": "Build the foundational task management system with CRUD operations, real-time collaboration, and dependency tracking — the backbone that all other epics build upon.",
+        "description": "The Core Task Platform is the foundational layer of TaskFlow Pro. It provides the task data model, REST API, real-time WebSocket sync, and interactive dependency graph visualization. All other epics depend on this platform being stable and performant.",
+        "valueDelivered": "Users can create, manage, and track tasks with real-time updates and visual dependency graphs. This is the minimum viable product that delivers immediate value.",
+        "functionalRequirements": ["FR-1", "FR-4"],
+        "nonFunctionalRequirements": ["NFR-1", "NFR-2"],
+        "implementationNotes": [
+          "Use Prisma ORM with PostgreSQL for the data layer — schema must support future partitioning by workspace_id",
+          "WebSocket connections managed via Redis pub/sub for horizontal scaling across multiple server instances",
+          "Dependency graph uses d3-dag for layout computation and React SVG rendering for interactivity",
+          "All task mutations must publish domain events to enable real-time sync and audit logging"
+        ],
+        "status": "in-progress",
+        "priority": "must-have",
+        "storyCount": 3,
+        "acceptanceSummary": "Epic is complete when all three stories (CRUD API, Real-time Board, Dependency Graph) pass acceptance criteria, performance benchmarks meet NFR targets, and code review by 2 engineers is done.",
+        "epicDependencies": {
+          "upstream": [],
+          "downstream": [
+            { "epicId": "EPIC-2", "reason": "AI prioritization requires task data and dependency graph from Core Platform" },
+            { "epicId": "EPIC-3", "reason": "Focus Mode needs task filtering and notification infrastructure from Core Platform" },
+            { "epicId": "EPIC-4", "reason": "Integrations need task CRUD API and webhook infrastructure from Core Platform" }
+          ],
+          "relatedEpics": []
+        },
+        "stories": [
+          {
+            "id": "S-1.1",
+            "title": "Task CRUD API & Data Model",
+            "userStory": {
+              "asA": "Software Engineer",
+              "iWant": "to create, read, update, and delete tasks via a fast API",
+              "soThat": "I can manage my work items programmatically and through the UI",
+              "formatted": "As a Software Engineer, I want to create, read, update, and delete tasks via a fast API, so that I can manage my work items programmatically and through the UI."
+            },
+            "acceptanceCriteria": [
+              { "id": "AC-1.1.1", "given": "I am authenticated", "when": "I send a POST to /api/tasks with valid fields", "then": "a new task is created and returned with a unique ID" },
+              { "id": "AC-1.1.2", "given": "a task exists", "when": "I send a PATCH with updated fields", "then": "the task is updated and a change event is published" },
+              { "id": "AC-1.1.3", "given": "a task exists", "when": "I send a DELETE", "then": "the task is soft-deleted and removed from active views" },
+              { "id": "AC-1.1.4", "given": "multiple tasks exist", "when": "I query with filters (assignee, label, status)", "then": "only matching tasks are returned, sorted by priority" }
+            ],
+            "status": "done",
+            "storyPoints": 8,
+            "priority": "must-have",
+            "estimatedEffort": "2 sprints",
+            "assignee": "Alex Rivera",
+            "requirementRefs": ["FR-1", "NFR-1"],
+            "testCases": ["TC-1.1.1", "TC-1.1.2", "TC-1.1.3", "TC-1.1.4"],
+            "implementationDetails": [
+              "Prisma schema with Task model supporting workspace_id partitioning",
+              "Fastify routes with Zod request/response validation",
+              "Domain event publisher using Node EventEmitter bridged to Redis pub/sub",
+              "Soft-delete via deletedAt timestamp column with query-level filtering"
+            ],
+            "dependencies": {
+              "blockedBy": [],
+              "blocks": [
+                { "storyId": "S-1.2", "title": "Real-time Task Board UI" },
+                { "storyId": "S-1.3", "title": "Dependency Graph Visualization" },
+                { "storyId": "S-2.1", "title": "AI Priority Scoring Engine" },
+                { "storyId": "S-3.1", "title": "Focus Mode Core" }
+              ],
+              "relatedStories": ["S-4.1"],
+              "externalDependencies": [
+                { "dependency": "PostgreSQL schema migration", "status": "completed", "owner": "Platform Team" }
+              ]
+            },
+            "technicalNotes": "Schema must support future partitioning by workspace_id for multi-tenant scaling.",
+            "notes": "This is the foundational story — all other work depends on the API being stable and well-documented."
+          },
+          {
+            "id": "S-1.2",
+            "title": "Real-time Task Board UI",
+            "userStory": {
+              "asA": "Product Manager",
+              "iWant": "to see tasks on a kanban board that updates in real-time",
+              "soThat": "I always have an accurate view of team progress without refreshing",
+              "formatted": "As a Product Manager, I want to see tasks on a kanban board that updates in real-time, so that I always have an accurate view of team progress without refreshing."
+            },
+            "acceptanceCriteria": [
+              { "id": "AC-1.2.1", "given": "I am on the task board", "when": "another team member moves a task", "then": "the card moves on my board within 500ms" },
+              { "id": "AC-1.2.2", "given": "I drag a task card", "when": "I drop it in a new column", "then": "the task status updates and all viewers see the change" },
+              { "id": "AC-1.2.3", "given": "multiple users are viewing the board", "when": "a new task is created via API or CLI", "then": "the card appears on all boards automatically" }
+            ],
+            "status": "in-progress",
+            "storyPoints": 13,
+            "priority": "must-have",
+            "estimatedEffort": "3 sprints",
+            "assignee": "Jordan Park",
+            "requirementRefs": ["FR-1", "NFR-2"],
+            "uxReferences": ["wireframe-kanban-board-v2.fig", "design-system-card-component.fig"],
+            "testCases": ["TC-1.2.1", "TC-1.2.2", "TC-1.2.3"],
+            "blockers": ["WebSocket reconnection logic needs testing under flaky network conditions"],
+            "implementationDetails": [
+              "React DnD Kit for drag-and-drop with optimistic updates",
+              "WebSocket client with exponential backoff reconnection",
+              "Virtual scrolling for boards with 500+ cards using react-window"
+            ],
+            "dependencies": {
+              "blockedBy": [
+                { "storyId": "S-1.1", "title": "Task CRUD API", "status": "done" }
+              ],
+              "blocks": [
+                { "storyId": "S-3.2", "title": "Focus Mode UI" }
+              ],
+              "relatedStories": ["S-2.2"]
+            },
+            "notes": "Performance is critical — must handle 500 cards without jank on mid-range hardware."
+          },
+          {
+            "id": "S-1.3",
+            "title": "Dependency Graph Visualization",
+            "userStory": {
+              "asA": "Engineering Manager",
+              "iWant": "to see an interactive visual graph of task dependencies",
+              "soThat": "I can identify critical path items and unblock my team",
+              "formatted": "As an Engineering Manager, I want to see an interactive visual graph of task dependencies, so that I can identify critical path items and unblock my team."
+            },
+            "acceptanceCriteria": [
+              { "id": "AC-1.3.1", "given": "tasks have dependency relationships", "when": "I open the dependency view", "then": "a directed graph shows tasks as nodes and dependencies as edges" },
+              { "id": "AC-1.3.2", "given": "a task is blocked", "when": "I click on it in the graph", "then": "the blocking chain is highlighted in red" },
+              { "id": "AC-1.3.3", "given": "the graph is displayed", "when": "I hover over a node", "then": "a tooltip shows task details, assignee, and estimated completion" }
+            ],
+            "status": "draft",
+            "storyPoints": 8,
+            "priority": "should-have",
+            "assignee": "Casey Lin",
+            "requirementRefs": ["FR-4"],
+            "uxReferences": ["wireframe-dependency-graph-v1.fig"],
+            "testCases": ["TC-1.3.1", "TC-1.3.2", "TC-1.3.3"],
+            "implementationDetails": [
+              "d3-dag library for directed acyclic graph layout computation",
+              "React SVG rendering for interactive nodes and edges",
+              "Critical path highlighting algorithm using topological sort"
+            ],
+            "dependencies": {
+              "blockedBy": [
+                { "storyId": "S-1.1", "title": "Task CRUD API", "status": "done" }
+              ],
+              "blocks": [],
+              "relatedStories": ["S-2.2"]
+            }
+          }
+        ],
+        "useCases": [
+          {
+            "id": "UC-01",
+            "title": "Daily Task Triage",
+            "summary": "Engineer reviews and prioritizes their task queue at the start of each day",
+            "primaryActor": "Software Engineer",
+            "secondaryActors": ["TaskFlow AI Engine"],
+            "preconditions": ["Engineer has an active TaskFlow account", "At least 5 tasks are assigned to the engineer"],
+            "trigger": "Engineer opens the TaskFlow Pro dashboard at the start of their workday",
+            "scenario": {
+              "context": "Engineer starts their workday and needs to know what to focus on",
+              "before": "Engineer checks Slack, email, Jira, and calendar to piece together priorities",
+              "after": "Engineer opens TaskFlow, sees AI-sorted task list, and starts working within 2 minutes",
+              "impact": "Saves 20 minutes daily per engineer on task triage"
+            },
+            "mainFlow": [
+              { "step": 1, "action": "Engineer opens TaskFlow Pro dashboard", "actor": "Software Engineer" },
+              { "step": 2, "action": "System displays AI-prioritized task list for the day", "actor": "System" },
+              { "step": 3, "action": "Engineer reviews top 3 tasks and adjusts if needed", "actor": "Software Engineer" },
+              { "step": 4, "action": "Engineer clicks 'Start Focus' to begin work on the top task", "actor": "Software Engineer" }
+            ],
+            "alternativeFlows": [
+              {
+                "id": "AF-01-1",
+                "name": "Manual Priority Override",
+                "branchPoint": "Step 3",
+                "steps": ["Engineer disagrees with AI ranking and manually reorders tasks", "System records the override as training data for the AI model"]
+              }
+            ],
+            "exceptionFlows": [
+              {
+                "id": "EF-01-1",
+                "name": "No Tasks Assigned",
+                "trigger": "Engineer has zero tasks in their queue",
+                "handling": "System shows a 'No tasks assigned' message with a link to the team backlog for self-assignment"
+              }
+            ],
+            "postconditions": ["Task status updated to in-progress", "Focus timer started", "Notifications batched"],
+            "businessRules": ["AI priority considers deadline proximity, dependency blocking count, and effort estimate"],
+            "relatedRequirements": ["FR-1", "FR-2"],
+            "relatedEpic": "EPIC-1",
+            "relatedStories": ["S-1.1", "S-1.2"],
+            "sourceDocument": "PRD.md#daily-workflow",
+            "notes": "This is the most common user journey — optimizing this flow is critical for adoption."
+          }
+        ],
+        "fitCriteria": {
+          "functional": [
+            { "id": "FC-01", "criterion": "All CRUD operations complete in < 200ms p95", "verified": true, "verificationMethod": "test", "relatedRequirement": "FR-1", "notes": "Benchmarked with 10K tasks in database" },
+            { "id": "FC-02", "criterion": "Real-time updates received within 500ms", "verified": false, "verificationMethod": "test", "relatedRequirement": "FR-1" }
+          ],
+          "nonFunctional": [
+            { "id": "NFC-01", "category": "performance", "criterion": "Task board renders 500 tasks without jank", "verified": false, "verificationMethod": "benchmark", "relatedRequirement": "NFR-1", "metric": { "measure": "Frame rate", "target": "60fps", "threshold": "30fps", "unit": "fps" } },
+            { "id": "NFC-02", "category": "scalability", "criterion": "WebSocket server handles 10,000 concurrent connections", "verified": false, "verificationMethod": "load-test", "relatedRequirement": "NFR-2", "metric": { "measure": "Concurrent connections", "target": "10000", "threshold": "5000", "unit": "connections" } }
+          ],
+          "security": [
+            { "id": "SC-01", "category": "authentication", "criterion": "All API endpoints require authentication", "verified": true, "verificationMethod": "security-audit", "relatedRequirement": "NFR-3", "complianceStandard": "SOC2" },
+            { "id": "SC-02", "category": "authorization", "criterion": "Users can only access tasks within their workspace", "verified": false, "verificationMethod": "penetration-test", "relatedRequirement": "NFR-3", "complianceStandard": "SOC2" }
+          ],
+          "summary": {
+            "totalFunctional": 2,
+            "totalNonFunctional": 2,
+            "totalSecurity": 2,
+            "totalCriteria": 6,
+            "verifiedCount": 2,
+            "verificationPercentage": "33%"
+          }
+        },
+        "successMetrics": {
+          "codeQuality": [
+            { "id": "CQ-01", "metric": "Test coverage", "target": "85%", "measurement": "Istanbul coverage report in CI", "baseline": "0%", "achieved": false },
+            { "id": "CQ-02", "metric": "Zero lint warnings", "target": "0 warnings", "measurement": "ESLint in CI pipeline", "baseline": "N/A", "achieved": true }
+          ],
+          "operational": [
+            { "id": "OP-01", "metric": "API p95 latency", "target": "< 200ms", "measurement": "Datadog APM dashboard", "baseline": "N/A", "achieved": false },
+            { "id": "OP-02", "metric": "WebSocket uptime", "target": "99.9%", "measurement": "Prometheus + Grafana monitoring", "baseline": "N/A", "achieved": false }
+          ],
+          "customerImpact": [
+            { "id": "CI-01", "metric": "Task creation time", "target": "< 5 seconds", "measurement": "User analytics (Mixpanel)", "baseline": "N/A", "achieved": false },
+            { "id": "CI-02", "metric": "Board load time", "target": "< 2 seconds", "measurement": "Lighthouse performance audit", "baseline": "N/A", "achieved": false }
+          ],
+          "deployment": [
+            { "id": "DP-01", "metric": "Zero-downtime deploys", "target": "100%", "achieved": false },
+            { "id": "DP-02", "metric": "Rollback time", "target": "< 5 minutes", "achieved": false }
+          ],
+          "business": [
+            { "id": "BM-01", "metric": "Developer adoption rate", "target": "80% of team within 2 weeks", "measurement": "Active user count in analytics", "achieved": false }
+          ],
+          "summary": {
+            "totalMetrics": 7,
+            "achievedCount": 1,
+            "achievementPercentage": "14%",
+            "overallStatus": "in-progress"
+          }
+        },
+        "risks": {
+          "risks": [
+            {
+              "id": "RISK-01",
+              "risk": "WebSocket scaling at 10K connections",
+              "category": "performance",
+              "probability": "medium",
+              "impact": "high",
+              "riskScore": "high",
+              "impactDescription": "If WebSocket cannot scale, real-time board updates will lag or fail, degrading the core user experience",
+              "mitigation": "Redis pub/sub for horizontal scaling",
+              "mitigationStrategies": [
+                { "strategy": "Implement Redis pub/sub adapter for WebSocket messages", "owner": "Platform Team", "status": "in-progress" },
+                { "strategy": "Add connection pooling and graceful degradation to polling", "owner": "Backend Team", "status": "planned" }
+              ],
+              "contingencyPlan": "Fall back to HTTP polling with 2-second intervals if WebSocket connections exceed capacity",
+              "triggers": ["WebSocket connection errors exceed 1% of total connections", "Message delivery latency exceeds 2 seconds"],
+              "owner": "Marcus Johnson",
+              "status": "mitigating",
+              "residualRisk": "low",
+              "relatedRequirements": ["NFR-2"],
+              "notes": "Load testing scheduled for Sprint 3"
+            },
+            {
+              "id": "RISK-02",
+              "risk": "Drag-and-drop conflicts with concurrent users",
+              "category": "technical",
+              "probability": "medium",
+              "impact": "medium",
+              "riskScore": "medium",
+              "impactDescription": "Two users moving the same card simultaneously could cause data inconsistency or confusing UI state",
+              "mitigation": "Optimistic locking with version vectors",
+              "mitigationStrategies": [
+                { "strategy": "Implement optimistic concurrency control with version vectors on task updates", "owner": "Backend Team", "status": "planned" }
+              ],
+              "contingencyPlan": "Show conflict resolution dialog when concurrent edits are detected",
+              "triggers": ["More than 3 concurrent edit conflicts reported per day"],
+              "owner": "Alex Rivera",
+              "status": "identified",
+              "residualRisk": "low"
+            }
+          ],
+          "assumptions": [
+            { "id": "ASM-01", "assumption": "PostgreSQL can handle our query patterns at 10K concurrent users", "ifFalse": "Need to add read replicas or switch to a distributed database", "validationMethod": "Load testing with realistic data volume", "validated": false },
+            { "id": "ASM-02", "assumption": "Teams have stable internet for WebSocket connections", "ifFalse": "Need offline mode with sync-on-reconnect", "validationMethod": "User research on target demographic network conditions", "validated": true }
+          ],
+          "dependencies": [
+            { "id": "DEP-01", "dependency": "Redis cluster for pub/sub", "type": "infrastructure", "risk": "Redis downtime breaks real-time sync", "mitigation": "Redis Sentinel for automatic failover" },
+            { "id": "DEP-02", "dependency": "Prisma ORM compatibility with PostgreSQL 16", "type": "upstream", "risk": "Breaking changes in Prisma updates", "mitigation": "Pin Prisma version, test upgrades in staging" }
+          ],
+          "riskMatrix": {
+            "critical": [],
+            "high": ["RISK-01"],
+            "medium": ["RISK-02"],
+            "low": []
+          },
+          "summary": {
+            "totalRisks": 2,
+            "criticalCount": 0,
+            "highCount": 1,
+            "mediumCount": 1,
+            "lowCount": 0,
+            "mitigatedCount": 0,
+            "openCount": 2,
+            "overallRiskLevel": "high"
+          }
+        },
+        "definitionOfDone": {
+          "items": [
+            { "id": "DOD-01", "item": "All acceptance criteria verified", "category": "testing", "required": true, "completed": true, "completedBy": "QA Team", "completedAt": "2025-07-10T14:00:00Z", "evidence": "Test report #TR-101" },
+            { "id": "DOD-02", "item": "Unit test coverage > 85%", "category": "code-quality", "required": true, "completed": false },
+            { "id": "DOD-03", "item": "Integration tests passing in CI", "category": "testing", "required": true, "completed": true, "completedBy": "CI Pipeline", "completedAt": "2025-07-12T08:30:00Z", "evidence": "CI run #4521" },
+            { "id": "DOD-04", "item": "Code reviewed by 2 engineers", "category": "review", "required": true, "completed": true, "completedBy": "Jordan Park, Casey Lin", "completedAt": "2025-07-15T11:00:00Z", "evidence": "PR #142, PR #156" },
+            { "id": "DOD-05", "item": "API documentation updated in OpenAPI spec", "category": "documentation", "required": true, "completed": false },
+            { "id": "DOD-06", "item": "Performance benchmarks meet NFR targets", "category": "performance", "required": true, "completed": false }
+          ],
+          "qualityGates": [
+            { "id": "QG-01", "gate": "Code Review Gate", "criteria": ["All PR comments resolved", "No critical SonarQube issues", "2 approvals from senior engineers"], "passed": true, "passedAt": "2025-07-15T11:00:00Z", "approver": "Marcus Johnson" },
+            { "id": "QG-02", "gate": "Performance Gate", "criteria": ["p95 latency < 200ms", "Board renders 500 cards at 60fps", "WebSocket handles 10K connections"], "passed": false }
+          ],
+          "acceptanceSummary": {
+            "totalCriteria": 10,
+            "passedCriteria": 6,
+            "failedCriteria": 0,
+            "blockedCriteria": 4,
+            "passPercentage": "60%"
+          },
+          "templates": {
+            "epic": ["All stories completed", "Integration tests passing", "Performance benchmarks met", "Documentation updated"],
+            "story": ["Acceptance criteria verified", "Unit tests > 85%", "Code reviewed", "No critical bugs"],
+            "feature": ["Feature flag enabled in staging", "Smoke tests passing", "Rollback plan documented"]
+          },
+          "summary": {
+            "totalItems": 6,
+            "completedItems": 3,
+            "requiredItems": 6,
+            "requiredCompleted": 3,
+            "completionPercentage": "50%",
+            "allRequiredComplete": false,
+            "status": "in-progress"
+          }
+        },
+        "technicalSummary": {
+          "architecturePattern": "Repository pattern with Fastify REST + WebSocket real-time sync",
+          "components": [
+            { "name": "Task Module", "responsibility": "CRUD operations, data model, domain events", "changes": "New PostgreSQL-backed module with Prisma ORM" },
+            { "name": "Real-time Sync", "responsibility": "WebSocket server for live task board updates", "changes": "Redis pub/sub for horizontal scaling" },
+            { "name": "Dependency Graph", "responsibility": "Interactive SVG visualization of task dependencies", "changes": "React component with d3-dag layout" }
+          ],
+          "filesChanged": [
+            { "path": "src/modules/task/routes/task.routes.ts", "action": "new", "description": "Fastify REST routes for task CRUD" },
+            { "path": "src/modules/task/repositories/task.repository.ts", "action": "new", "description": "Prisma-backed task repository" },
+            { "path": "src/modules/task/events/task.events.ts", "action": "new", "description": "Domain event publishing on task mutations" },
+            { "path": "src/components/TaskBoard/TaskBoard.tsx", "action": "new", "description": "React kanban board with DnD support" },
+            { "path": "src/components/DependencyGraph/DependencyGraph.tsx", "action": "new", "description": "Interactive SVG dependency graph" }
+          ],
+          "configuration": {
+            "file": "config/default.json",
+            "settings": [
+              { "key": "database.pool.max", "value": "20", "description": "Maximum PostgreSQL connection pool size" },
+              { "key": "websocket.redis.url", "value": "redis://localhost:6379", "description": "Redis URL for WebSocket pub/sub" },
+              { "key": "websocket.heartbeat.interval", "value": "30000", "description": "WebSocket heartbeat interval in ms" }
+            ]
+          }
+        },
+        "effortEstimate": {
+          "totalSprints": 4,
+          "totalDays": 40,
+          "breakdown": [
+            { "phase": "API & Data Model", "duration": "2 sprints", "description": "Task CRUD API, Prisma schema, domain events" },
+            { "phase": "Real-time Board UI", "duration": "3 sprints", "description": "Kanban board with DnD, WebSocket sync, virtual scrolling" },
+            { "phase": "Dependency Graph", "duration": "1.5 sprints", "description": "d3-dag layout, interactive SVG, critical path highlighting" }
+          ]
+        }
+      },
+      {
+        "id": "EPIC-2",
+        "title": "AI Prioritization Engine",
+        "goal": "Build an intelligent prioritization system that learns from team behavior and automatically ranks tasks by urgency, impact, and dependencies.",
+        "description": "The AI Prioritization Engine uses machine learning to automatically score and rank tasks. It learns from team patterns, accounts for deadlines and dependencies, and provides sprint planning suggestions. Includes a rule-based fallback for teams without sufficient training data.",
+        "valueDelivered": "Teams spend 60% less time on manual prioritization. AI suggestions improve sprint planning accuracy by 30%. Blocked tasks are surfaced proactively.",
+        "functionalRequirements": ["FR-2", "FR-5"],
+        "implementationNotes": [
+          "ML model trained on historical task completion data — needs minimum 50 completed tasks",
+          "Rule-based fallback uses deadline proximity, dependency blocking count, and manual priority",
+          "OpenAI API used for natural language priority inference — requires caching and rate limit handling",
+          "Priority scores recalculated on task mutation events from the Core Platform"
+        ],
+        "status": "in-progress",
+        "priority": "must-have",
+        "storyCount": 3,
+        "acceptanceSummary": "Epic is complete when AI scoring achieves > 80% accuracy vs. human-assigned priorities on golden dataset, fallback mode works without OpenAI, and sprint planning suggestions are accepted by EMs > 70% of the time.",
+        "epicDependencies": {
+          "upstream": [
+            { "epicId": "EPIC-1", "reason": "AI engine requires task data, dependency graph, and historical velocity from Core Platform" }
+          ],
+          "downstream": [
+            { "epicId": "EPIC-3", "reason": "Focus Mode uses AI priority scores to filter and order the focus task queue" }
+          ],
+          "relatedEpics": ["EPIC-4"]
+        },
+        "stories": [
+          {
+            "id": "S-2.1",
+            "title": "AI Priority Scoring Engine",
+            "userStory": {
+              "asA": "Product Manager",
+              "iWant": "tasks to be automatically scored and ranked by priority",
+              "soThat": "the team always works on the most impactful items first",
+              "formatted": "As a Product Manager, I want tasks to be automatically scored and ranked by priority, so that the team always works on the most impactful items first."
+            },
+            "acceptanceCriteria": [
+              { "id": "AC-2.1.1", "given": "a workspace has 50+ completed tasks", "when": "the AI model is trained", "then": "new tasks receive a priority score within 2 seconds of creation" },
+              { "id": "AC-2.1.2", "given": "a task's deadline or dependencies change", "when": "the system recalculates", "then": "the priority score updates within 5 seconds" },
+              { "id": "AC-2.1.3", "given": "insufficient training data (< 50 tasks)", "when": "the system computes priority", "then": "it falls back to rule-based scoring using deadline, dependency count, and manual priority" }
+            ],
+            "status": "in-progress",
+            "storyPoints": 13,
+            "priority": "must-have",
+            "assignee": "Dr. Priya Sharma",
+            "requirementRefs": ["FR-2"],
+            "testCases": ["TC-2.1.1", "TC-2.1.2", "TC-2.1.3", "TC-2.1.4-golden-dataset"],
+            "implementationDetails": [
+              "Feature extraction pipeline: deadline proximity, dependency count, label embeddings, historical completion rate",
+              "Lightweight gradient-boosted model (XGBoost) trained per-workspace",
+              "OpenAI API for natural language priority inference on task descriptions",
+              "Response caching layer with 5-minute TTL to handle API rate limits"
+            ],
+            "dependencies": {
+              "blockedBy": [
+                { "storyId": "S-1.1", "title": "Task CRUD API", "status": "done" }
+              ],
+              "blocks": [
+                { "storyId": "S-2.3", "title": "AI Sprint Planning" }
+              ],
+              "relatedStories": ["S-2.2", "S-3.1"]
+            },
+            "notes": "Golden dataset of 200 manually-prioritized tasks available from beta testers."
+          },
+          {
+            "id": "S-2.2",
+            "title": "Priority Dashboard & Insights",
+            "userStory": {
+              "asA": "Engineering Manager",
+              "iWant": "a dashboard showing AI-generated priority insights and team velocity trends",
+              "soThat": "I can make data-driven decisions about resource allocation",
+              "formatted": "As an Engineering Manager, I want a dashboard showing AI-generated priority insights and team velocity trends, so that I can make data-driven decisions about resource allocation."
+            },
+            "acceptanceCriteria": [
+              { "id": "AC-2.2.1", "given": "I am on the insights dashboard", "when": "I view the priority distribution chart", "then": "I see tasks grouped by AI-assigned priority with trend lines" },
+              { "id": "AC-2.2.2", "given": "the AI detects an anomaly", "when": "velocity drops below 2-week average", "then": "a warning banner appears with suggested actions" }
+            ],
+            "status": "draft",
+            "storyPoints": 8,
+            "priority": "should-have",
+            "assignee": "Jordan Park",
+            "requirementRefs": ["FR-2"],
+            "uxReferences": ["wireframe-priority-dashboard-v1.fig"],
+            "testCases": ["TC-2.2.1", "TC-2.2.2"],
+            "implementationDetails": [
+              "Recharts library for interactive priority distribution and velocity trend charts",
+              "Anomaly detection using rolling 2-week velocity average with configurable threshold"
+            ],
+            "dependencies": {
+              "blockedBy": [],
+              "blocks": [],
+              "relatedStories": ["S-2.1", "S-1.2", "S-1.3"]
+            }
+          },
+          {
+            "id": "S-2.3",
+            "title": "AI-Assisted Sprint Planning",
+            "userStory": {
+              "asA": "Engineering Manager",
+              "iWant": "AI to suggest an optimal sprint backlog based on team capacity and priorities",
+              "soThat": "sprint planning takes 30 minutes instead of 3 hours",
+              "formatted": "As an Engineering Manager, I want AI to suggest an optimal sprint backlog based on team capacity and priorities, so that sprint planning takes 30 minutes instead of 3 hours."
+            },
+            "acceptanceCriteria": [
+              { "id": "AC-2.3.1", "given": "I start sprint planning", "when": "I click 'AI Suggest'", "then": "the system proposes a sprint backlog respecting capacity, skills, and priority scores" },
+              { "id": "AC-2.3.2", "given": "the AI suggests a sprint", "when": "I adjust assignments", "then": "the forecast updates in real-time showing impact on delivery date" }
+            ],
+            "status": "draft",
+            "storyPoints": 13,
+            "priority": "should-have",
+            "requirementRefs": ["FR-5"],
+            "testCases": ["TC-2.3.1", "TC-2.3.2"],
+            "implementationDetails": [
+              "Capacity calculator accounting for PTO, meeting load, and historical velocity",
+              "Constraint satisfaction algorithm for assignment optimization",
+              "Real-time forecast recalculation using Monte Carlo simulation"
+            ],
+            "dependencies": {
+              "blockedBy": [
+                { "storyId": "S-2.1", "title": "AI Priority Scoring Engine" }
+              ],
+              "blocks": [],
+              "relatedStories": ["S-1.2"]
+            }
+          }
+        ],
+        "useCases": [
+          {
+            "id": "UC-02",
+            "title": "AI-Powered Sprint Planning",
+            "summary": "Engineering manager uses AI to plan a 2-week sprint in under 30 minutes",
+            "primaryActor": "Engineering Manager",
+            "secondaryActors": ["TaskFlow AI Engine", "Team Members"],
+            "preconditions": ["Team has completed at least 3 sprints with TaskFlow", "AI scoring model is trained (50+ completed tasks)"],
+            "trigger": "Engineering Manager opens the Sprint Planning view at the start of sprint planning meeting",
+            "scenario": {
+              "context": "Sprint planning meeting — team needs to commit to next sprint's work",
+              "before": "EM manually reviews backlog, estimates capacity, assigns tasks — takes 3+ hours",
+              "after": "AI suggests sprint backlog in 10 seconds, EM adjusts in 20 minutes",
+              "impact": "Sprint planning time reduced by 80%, better capacity utilization"
+            },
+            "mainFlow": [
+              { "step": 1, "action": "EM opens Sprint Planning view", "actor": "Engineering Manager" },
+              { "step": 2, "action": "System shows team capacity (accounting for PTO, meetings)", "actor": "System" },
+              { "step": 3, "action": "EM clicks 'AI Suggest Sprint'", "actor": "Engineering Manager" },
+              { "step": 4, "action": "AI proposes backlog with assignments, respecting dependencies and skills", "actor": "System" },
+              { "step": 5, "action": "EM reviews, adjusts 2-3 assignments, and commits sprint", "actor": "Engineering Manager" }
+            ],
+            "alternativeFlows": [
+              {
+                "id": "AF-02-1",
+                "name": "Insufficient Data for AI",
+                "branchPoint": "Step 3",
+                "steps": ["System detects insufficient training data (< 50 tasks)", "System falls back to rule-based suggestions sorted by deadline and manual priority", "EM receives a note explaining the fallback and how to enable full AI"]
+              }
+            ],
+            "exceptionFlows": [
+              {
+                "id": "EF-02-1",
+                "name": "OpenAI API Unavailable",
+                "trigger": "OpenAI API returns 503 or times out",
+                "handling": "System uses cached scores if available (< 1 hour old), otherwise falls back to rule-based scoring. EM is notified with a banner."
+              }
+            ],
+            "postconditions": ["Sprint backlog is committed with assigned stories", "Team members receive notifications of their sprint assignments"],
+            "businessRules": ["AI must respect team member capacity limits", "No story can be assigned to a team member on PTO"],
+            "relatedRequirements": ["FR-2", "FR-5"],
+            "relatedEpic": "EPIC-2",
+            "relatedStories": ["S-2.1", "S-2.3"],
+            "sourceDocument": "PRD.md#sprint-planning",
+            "notes": "Key differentiator vs. Jira — this is what we demo to investors."
+          }
+        ],
+        "fitCriteria": {
+          "functional": [
+            { "id": "FC-03", "criterion": "AI scoring completes within 2 seconds of task creation", "verified": false, "verificationMethod": "test", "relatedRequirement": "FR-2" },
+            { "id": "FC-04", "criterion": "Rule-based fallback activates when training data < 50 tasks", "verified": false, "verificationMethod": "test", "relatedRequirement": "FR-2" }
+          ],
+          "nonFunctional": [
+            { "id": "NFC-03", "category": "performance", "criterion": "Priority recalculation for 1000 tasks completes in < 30 seconds", "verified": false, "verificationMethod": "benchmark", "relatedRequirement": "NFR-1", "metric": { "measure": "Batch recalculation time", "target": "30s", "threshold": "60s", "unit": "seconds" } }
+          ],
+          "security": [
+            { "id": "SC-03", "category": "data-protection", "criterion": "Task data sent to OpenAI is anonymized (no PII)", "verified": false, "verificationMethod": "code-review", "complianceStandard": "GDPR" }
+          ],
+          "summary": {
+            "totalFunctional": 2,
+            "totalNonFunctional": 1,
+            "totalSecurity": 1,
+            "totalCriteria": 4,
+            "verifiedCount": 0,
+            "verificationPercentage": "0%"
+          }
+        },
+        "successMetrics": {
+          "codeQuality": [
+            { "id": "CQ-03", "metric": "AI model test coverage", "target": "90%", "measurement": "pytest coverage report", "baseline": "0%", "achieved": false }
+          ],
+          "operational": [
+            { "id": "OP-03", "metric": "Scoring API latency", "target": "< 2 seconds", "measurement": "Datadog APM", "baseline": "N/A", "achieved": false }
+          ],
+          "customerImpact": [
+            { "id": "CI-03", "metric": "Sprint planning time", "target": "< 30 minutes", "measurement": "User surveys post-sprint", "baseline": "3+ hours", "achieved": false }
+          ],
+          "deployment": [
+            { "id": "DP-03", "metric": "AI model deployment", "target": "Zero-downtime model updates", "achieved": false }
+          ],
+          "business": [
+            { "id": "BM-02", "metric": "AI suggestion acceptance rate", "target": "> 70%", "measurement": "Analytics tracking of accepted vs. modified suggestions", "achieved": false }
+          ],
+          "summary": {
+            "totalMetrics": 5,
+            "achievedCount": 0,
+            "achievementPercentage": "0%",
+            "overallStatus": "not-started"
+          }
+        },
+        "risks": {
+          "risks": [
+            {
+              "id": "RISK-03",
+              "risk": "AI scoring may be inaccurate for small teams (< 5 members)",
+              "category": "technical",
+              "probability": "medium",
+              "impact": "medium",
+              "riskScore": "medium",
+              "impactDescription": "Small teams may not generate enough training data for accurate ML scoring, leading to poor recommendations that erode trust",
+              "mitigation": "Minimum data threshold before enabling AI, transparent rule-based fallback",
+              "mitigationStrategies": [
+                { "strategy": "Set minimum 50-task threshold before enabling ML scoring", "owner": "Dr. Priya Sharma", "status": "implemented" },
+                { "strategy": "Show confidence score alongside AI priority to set user expectations", "owner": "Jordan Park", "status": "planned" }
+              ],
+              "contingencyPlan": "Allow teams to opt-out of AI scoring entirely and use manual priority only",
+              "triggers": ["User override rate exceeds 50% for AI-assigned priorities", "NPS survey feedback mentions inaccurate priorities"],
+              "owner": "Dr. Priya Sharma",
+              "status": "mitigating",
+              "residualRisk": "low",
+              "relatedRequirements": ["FR-2"],
+              "notes": "Beta testing with 3 small teams to validate accuracy threshold"
+            },
+            {
+              "id": "RISK-04",
+              "risk": "OpenAI API rate limits during peak usage",
+              "category": "integration",
+              "probability": "high",
+              "impact": "high",
+              "riskScore": "high",
+              "impactDescription": "Rate limiting during peak hours (9-11am) could delay priority scoring for all users simultaneously",
+              "mitigation": "Response caching, request batching, fallback to local scoring",
+              "mitigationStrategies": [
+                { "strategy": "Implement 5-minute response cache for OpenAI API calls", "owner": "Backend Team", "status": "in-progress" },
+                { "strategy": "Batch priority recalculation requests into single API calls", "owner": "Backend Team", "status": "planned" },
+                { "strategy": "Local XGBoost model as fallback when API is unavailable", "owner": "Dr. Priya Sharma", "status": "in-progress" }
+              ],
+              "contingencyPlan": "Switch entirely to local XGBoost model if OpenAI costs exceed $500/month",
+              "triggers": ["API error rate exceeds 5%", "Average scoring latency exceeds 5 seconds"],
+              "owner": "Marcus Johnson",
+              "status": "mitigating",
+              "residualRisk": "medium"
+            }
+          ],
+          "assumptions": [
+            { "id": "ASM-03", "assumption": "Teams have at least 50 completed tasks within 3 months of adoption", "ifFalse": "Rule-based fallback becomes the permanent mode for slow-adopting teams", "validationMethod": "Track task completion velocity in analytics", "validated": false }
+          ],
+          "dependencies": [
+            { "id": "DEP-03", "dependency": "OpenAI API (GPT-4)", "type": "vendor", "risk": "API pricing changes or deprecation", "mitigation": "Abstract LLM provider behind interface, evaluate alternatives quarterly" }
+          ],
+          "riskMatrix": {
+            "critical": [],
+            "high": ["RISK-04"],
+            "medium": ["RISK-03"],
+            "low": []
+          },
+          "summary": {
+            "totalRisks": 2,
+            "criticalCount": 0,
+            "highCount": 1,
+            "mediumCount": 1,
+            "lowCount": 0,
+            "mitigatedCount": 0,
+            "openCount": 2,
+            "overallRiskLevel": "high"
+          }
+        },
+        "definitionOfDone": {
+          "items": [
+            { "id": "DOD-07", "item": "AI scoring accuracy > 80% vs. human-assigned priorities (golden dataset)", "category": "testing", "required": true, "completed": false },
+            { "id": "DOD-08", "item": "Fallback mode works correctly when OpenAI is unavailable", "category": "testing", "required": true, "completed": false },
+            { "id": "DOD-09", "item": "Priority recalculation completes within 5 seconds", "category": "performance", "required": true, "completed": false },
+            { "id": "DOD-10", "item": "Dashboard loads in < 2 seconds with 1000+ tasks", "category": "performance", "required": false, "completed": false }
+          ],
+          "qualityGates": [
+            { "id": "QG-03", "gate": "AI Accuracy Gate", "criteria": ["Golden dataset accuracy > 80%", "Fallback mode parity with manual scoring", "No PII leaked to OpenAI API"], "passed": false }
+          ],
+          "acceptanceSummary": {
+            "totalCriteria": 7,
+            "passedCriteria": 0,
+            "failedCriteria": 0,
+            "blockedCriteria": 7,
+            "passPercentage": "0%"
+          },
+          "summary": {
+            "totalItems": 4,
+            "completedItems": 0,
+            "requiredItems": 3,
+            "requiredCompleted": 0,
+            "completionPercentage": "0%",
+            "allRequiredComplete": false,
+            "status": "not-started"
+          }
+        },
+        "effortEstimate": {
+          "totalSprints": 3,
+          "totalDays": 30,
+          "breakdown": [
+            { "phase": "Scoring Algorithm", "duration": "2 sprints", "description": "ML model training pipeline, feature extraction, rule-based fallback" },
+            { "phase": "Dashboard & Insights", "duration": "1.5 sprints", "description": "Priority distribution charts, velocity trends, anomaly detection" },
+            { "phase": "Sprint Planning AI", "duration": "2 sprints", "description": "Capacity calculator, constraint solver, real-time forecast" }
+          ]
+        }
+      },
+      {
+        "id": "EPIC-3",
+        "title": "Focus Mode & Productivity",
+        "goal": "Create a distraction-free work environment that helps engineers achieve flow state by intelligently managing notifications, task visibility, and focus time tracking.",
+        "description": "Focus Mode provides a deep-work environment with Pomodoro-style timers, intelligent notification batching (P0 breakthrough only), and productivity analytics. Integrates with the AI engine for smart task queue ordering and with Slack for DND status sync.",
+        "valueDelivered": "Engineers report 40% fewer context switches. Teams see 25% sprint velocity improvement. Focus time data helps managers protect deep work hours.",
+        "functionalRequirements": ["FR-3"],
+        "nonFunctionalRequirements": ["NFR-1"],
+        "implementationNotes": [
+          "Pomodoro timer with configurable work/break intervals (default 25/5 minutes)",
+          "Notification batching uses a priority queue — P0 breaks through, P1-P3 are batched",
+          "Focus analytics stored in TimescaleDB for efficient time-series queries",
+          "Team-wide notification rules configurable by Engineering Managers"
+        ],
+        "status": "draft",
+        "priority": "must-have",
+        "storyCount": 3,
+        "acceptanceSummary": "Epic is complete when focus mode activates/deactivates reliably, notification batching works with priority override, analytics show accurate time tracking, and the focus UI passes accessibility audit.",
+        "epicDependencies": {
+          "upstream": [
+            { "epicId": "EPIC-1", "reason": "Focus Mode needs task filtering API and notification infrastructure from Core Platform" },
+            { "epicId": "EPIC-2", "reason": "Focus Mode uses AI priority scores to determine which tasks to show in focus queue" }
+          ],
+          "downstream": [
+            { "epicId": "EPIC-4", "reason": "Slack integration syncs DND status with Focus Mode" }
+          ],
+          "relatedEpics": []
+        },
+        "stories": [
+          {
+            "id": "S-3.1",
+            "title": "Focus Mode Core Engine",
+            "userStory": {
+              "asA": "Software Engineer",
+              "iWant": "to activate a focus mode that filters my view to only the current task",
+              "soThat": "I can work without distraction for extended periods",
+              "formatted": "As a Software Engineer, I want to activate a focus mode that filters my view to only the current task, so that I can work without distraction for extended periods."
+            },
+            "acceptanceCriteria": [
+              { "id": "AC-3.1.1", "given": "I click 'Start Focus'", "when": "focus mode activates", "then": "the UI shows only my current task, related context, and a focus timer" },
+              { "id": "AC-3.1.2", "given": "I am in focus mode", "when": "a notification arrives", "then": "it is queued and batched for delivery when focus ends (unless P0 urgent)" },
+              { "id": "AC-3.1.3", "given": "focus mode is active for 25 minutes", "when": "the timer triggers a break", "then": "a gentle notification suggests a 5-minute break (Pomodoro-style)" }
+            ],
+            "status": "draft",
+            "storyPoints": 8,
+            "priority": "must-have",
+            "assignee": "Alex Rivera",
+            "requirementRefs": ["FR-3"],
+            "testCases": ["TC-3.1.1", "TC-3.1.2", "TC-3.1.3"],
+            "implementationDetails": [
+              "Focus state machine: idle -> focusing -> break -> focusing (loop) -> ended",
+              "Notification interceptor middleware that checks focus state before delivery",
+              "Focus session events published for analytics and Slack DND sync"
+            ],
+            "dependencies": {
+              "blockedBy": [
+                { "storyId": "S-1.1", "title": "Task CRUD API", "status": "done" }
+              ],
+              "blocks": [
+                { "storyId": "S-3.2", "title": "Focus Mode UI & Analytics" }
+              ],
+              "relatedStories": ["S-2.1"]
+            }
+          },
+          {
+            "id": "S-3.2",
+            "title": "Focus Mode UI & Analytics",
+            "userStory": {
+              "asA": "Software Engineer",
+              "iWant": "a beautiful, minimal focus interface with daily focus time stats",
+              "soThat": "I can see my productivity patterns and optimize my schedule",
+              "formatted": "As a Software Engineer, I want a beautiful, minimal focus interface with daily focus time stats, so that I can see my productivity patterns and optimize my schedule."
+            },
+            "acceptanceCriteria": [
+              { "id": "AC-3.2.1", "given": "I complete a focus session", "when": "I view my analytics", "then": "I see daily/weekly focus time charts with trend lines" },
+              { "id": "AC-3.2.2", "given": "I am in focus mode", "when": "I look at the UI", "then": "I see a clean, distraction-free interface with only the current task and timer" }
+            ],
+            "status": "draft",
+            "storyPoints": 8,
+            "priority": "must-have",
+            "assignee": "Casey Lin",
+            "requirementRefs": ["FR-3"],
+            "uxReferences": ["wireframe-focus-mode-v2.fig", "design-system-focus-timer.fig"],
+            "testCases": ["TC-3.2.1", "TC-3.2.2"],
+            "implementationDetails": [
+              "Minimal focus UI with large timer display, current task card, and nothing else",
+              "Recharts for daily/weekly focus time visualization with 7-day rolling average",
+              "TimescaleDB for efficient time-series storage of focus session data"
+            ],
+            "dependencies": {
+              "blockedBy": [
+                { "storyId": "S-3.1", "title": "Focus Mode Core Engine" },
+                { "storyId": "S-1.2", "title": "Real-time Task Board UI" }
+              ],
+              "blocks": [],
+              "relatedStories": ["S-2.2"]
+            }
+          },
+          {
+            "id": "S-3.3",
+            "title": "Smart Notification Rules",
+            "userStory": {
+              "asA": "Engineering Manager",
+              "iWant": "to configure team-wide notification rules that respect focus time",
+              "soThat": "my team isn't interrupted during deep work but stays informed on blockers",
+              "formatted": "As an Engineering Manager, I want to configure team-wide notification rules that respect focus time, so that my team isn't interrupted during deep work but stays informed on blockers."
+            },
+            "acceptanceCriteria": [
+              { "id": "AC-3.3.1", "given": "I set a notification rule 'only P0 during focus'", "when": "a P1 notification fires during focus mode", "then": "it is queued, not delivered" },
+              { "id": "AC-3.3.2", "given": "a P0 blocker is reported", "when": "the assignee is in focus mode", "then": "the notification breaks through focus mode with a distinct alert" }
+            ],
+            "status": "draft",
+            "storyPoints": 5,
+            "priority": "should-have",
+            "requirementRefs": ["FR-3"],
+            "testCases": ["TC-3.3.1", "TC-3.3.2"],
+            "implementationDetails": [
+              "Rule engine: priority threshold per team with override capability",
+              "Notification priority classifier: P0 (blocker), P1 (urgent), P2 (normal), P3 (low)",
+              "Admin UI for Engineering Managers to configure team notification policies"
+            ],
+            "dependencies": {
+              "blockedBy": [],
+              "blocks": [
+                { "storyId": "S-4.2", "title": "Slack DND Sync" }
+              ],
+              "relatedStories": ["S-3.1"]
+            }
+          }
+        ],
+        "useCases": [
+          {
+            "id": "UC-03",
+            "title": "Morning Deep Work Session",
+            "summary": "Engineer activates focus mode for a 2-hour deep work session",
+            "primaryActor": "Software Engineer",
+            "secondaryActors": ["TaskFlow Notification Engine", "Slack"],
+            "preconditions": ["Engineer has at least one task assigned", "Focus Mode feature is enabled for the workspace"],
+            "trigger": "Engineer selects a task and clicks the 'Start Focus' button",
+            "scenario": {
+              "context": "Engineer has a complex feature to implement requiring uninterrupted concentration",
+              "before": "Engineer puts on headphones, mutes Slack, and hopes no one taps their shoulder",
+              "after": "Engineer clicks 'Start Focus', notifications are batched, team sees DND status, 2 hours of uninterrupted work",
+              "impact": "2x more code output during focus sessions, measurable via commit analytics"
+            },
+            "mainFlow": [
+              { "step": 1, "action": "Engineer selects the task to focus on from the priority queue", "actor": "Software Engineer" },
+              { "step": 2, "action": "Engineer clicks 'Start Focus' button", "actor": "Software Engineer" },
+              { "step": 3, "action": "System activates focus mode, batches notifications, and syncs DND status", "actor": "System" },
+              { "step": 4, "action": "Engineer works uninterrupted for the configured focus period", "actor": "Software Engineer" },
+              { "step": 5, "action": "System suggests a break after 25 minutes (Pomodoro)", "actor": "System" }
+            ],
+            "alternativeFlows": [
+              {
+                "id": "AF-03-1",
+                "name": "P0 Breakthrough",
+                "branchPoint": "Step 4",
+                "steps": ["A P0 blocker is reported that affects the engineer's current work", "System breaks through focus mode with a distinct alert sound and visual", "Engineer acknowledges the alert and decides whether to exit focus mode"]
+              }
+            ],
+            "exceptionFlows": [
+              {
+                "id": "EF-03-1",
+                "name": "Slack DND Sync Failure",
+                "trigger": "Slack API returns an error when trying to set DND status",
+                "handling": "System logs the error, continues focus mode locally, and retries Slack sync in 30 seconds"
+              }
+            ],
+            "postconditions": ["Focus session data recorded for analytics", "Batched notifications delivered", "Slack DND status cleared"],
+            "businessRules": ["Only P0 notifications can break through focus mode by default", "Focus sessions are tracked for minimum 5 minutes to count in analytics"],
+            "relatedRequirements": ["FR-3"],
+            "relatedEpic": "EPIC-3",
+            "relatedStories": ["S-3.1", "S-3.2"],
+            "sourceDocument": "PRD.md#focus-mode",
+            "notes": "User research shows engineers lose 23 minutes of productive time per interruption."
+          }
+        ],
+        "fitCriteria": {
+          "functional": [
+            { "id": "FC-05", "criterion": "Focus mode activates within 500ms of clicking Start Focus", "verified": false, "verificationMethod": "test", "relatedRequirement": "FR-3" },
+            { "id": "FC-06", "criterion": "Notification batching correctly queues P1-P3 and passes P0", "verified": false, "verificationMethod": "test", "relatedRequirement": "FR-3" }
+          ],
+          "nonFunctional": [
+            { "id": "NFC-04", "category": "usability", "criterion": "Focus UI scores 95+ on Lighthouse accessibility audit", "verified": false, "verificationMethod": "inspection", "metric": { "measure": "Lighthouse accessibility score", "target": "95", "threshold": "90", "unit": "score" } }
+          ],
+          "security": [
+            { "id": "SC-04", "category": "data-protection", "criterion": "Focus session data is only visible to the user and their direct manager", "verified": false, "verificationMethod": "code-review", "relatedRequirement": "NFR-3" }
+          ],
+          "summary": {
+            "totalFunctional": 2,
+            "totalNonFunctional": 1,
+            "totalSecurity": 1,
+            "totalCriteria": 4,
+            "verifiedCount": 0,
+            "verificationPercentage": "0%"
+          }
+        },
+        "successMetrics": {
+          "codeQuality": [
+            { "id": "CQ-04", "metric": "Focus module test coverage", "target": "85%", "measurement": "Istanbul coverage report", "baseline": "0%", "achieved": false }
+          ],
+          "operational": [
+            { "id": "OP-04", "metric": "Focus mode activation latency", "target": "< 500ms", "measurement": "Client-side performance monitoring", "baseline": "N/A", "achieved": false }
+          ],
+          "customerImpact": [
+            { "id": "CI-04", "metric": "Context switches during focus", "target": "40% reduction", "measurement": "Focus session analytics (interruption count)", "baseline": "Average 8 interruptions per 2-hour block", "achieved": false }
+          ],
+          "deployment": [
+            { "id": "DP-04", "metric": "Focus mode feature flag rollout", "target": "100% rollout within 1 week of launch", "achieved": false }
+          ],
+          "business": [
+            { "id": "BM-03", "metric": "Sprint velocity improvement", "target": "25% increase", "measurement": "Sprint-over-sprint velocity comparison", "achieved": false }
+          ],
+          "summary": {
+            "totalMetrics": 5,
+            "achievedCount": 0,
+            "achievementPercentage": "0%",
+            "overallStatus": "not-started"
+          }
+        },
+        "risks": {
+          "risks": [
+            {
+              "id": "RISK-05",
+              "risk": "Engineers may ignore focus mode if P0 breakthrough is too aggressive",
+              "category": "operational",
+              "probability": "medium",
+              "impact": "medium",
+              "riskScore": "medium",
+              "impactDescription": "If P0 alerts are too frequent or false-positive, engineers will stop using focus mode entirely",
+              "mitigation": "Strict P0 classification criteria and user-configurable threshold",
+              "mitigationStrategies": [
+                { "strategy": "Allow users to configure their own breakthrough threshold (P0-only, P0+P1, or all)", "owner": "Product Team", "status": "planned" },
+                { "strategy": "Track P0 frequency and alert if it exceeds 2 per day average", "owner": "Backend Team", "status": "planned" }
+              ],
+              "contingencyPlan": "Add a 'DND Hard Mode' that blocks ALL notifications including P0",
+              "triggers": ["Focus mode adoption drops below 30% after initial launch spike", "User feedback mentions too many interruptions during focus"],
+              "owner": "Sarah Chen",
+              "status": "identified",
+              "residualRisk": "low"
+            }
+          ],
+          "assumptions": [
+            { "id": "ASM-04", "assumption": "Engineers will use focus mode at least 3 times per week", "ifFalse": "Need stronger onboarding and nudges to build the habit", "validationMethod": "Usage analytics 4 weeks post-launch", "validated": false }
+          ],
+          "riskMatrix": {
+            "critical": [],
+            "high": [],
+            "medium": ["RISK-05"],
+            "low": []
+          },
+          "summary": {
+            "totalRisks": 1,
+            "criticalCount": 0,
+            "highCount": 0,
+            "mediumCount": 1,
+            "lowCount": 0,
+            "mitigatedCount": 0,
+            "openCount": 1,
+            "overallRiskLevel": "medium"
+          }
+        },
+        "definitionOfDone": {
+          "items": [
+            { "id": "DOD-11", "item": "Focus mode can be activated/deactivated reliably", "category": "testing", "required": true, "completed": false },
+            { "id": "DOD-12", "item": "Notification batching works correctly with priority override", "category": "testing", "required": true, "completed": false },
+            { "id": "DOD-13", "item": "Focus analytics show accurate time tracking", "category": "testing", "required": true, "completed": false },
+            { "id": "DOD-14", "item": "Accessibility audit passed for focus UI", "category": "compliance", "required": true, "completed": false }
+          ],
+          "qualityGates": [
+            { "id": "QG-04", "gate": "Accessibility Gate", "criteria": ["Lighthouse accessibility score > 95", "Screen reader testing passed", "Keyboard navigation verified"], "passed": false }
+          ],
+          "acceptanceSummary": {
+            "totalCriteria": 7,
+            "passedCriteria": 0,
+            "failedCriteria": 0,
+            "blockedCriteria": 7,
+            "passPercentage": "0%"
+          },
+          "summary": {
+            "totalItems": 4,
+            "completedItems": 0,
+            "requiredItems": 4,
+            "requiredCompleted": 0,
+            "completionPercentage": "0%",
+            "allRequiredComplete": false,
+            "status": "not-started"
+          }
+        },
+        "effortEstimate": {
+          "totalSprints": 3,
+          "totalDays": 30,
+          "breakdown": [
+            { "phase": "Core Engine", "duration": "1.5 sprints", "description": "Focus state machine, notification interceptor, session events" },
+            { "phase": "UI & Analytics", "duration": "2 sprints", "description": "Minimal focus UI, timer, daily/weekly charts" },
+            { "phase": "Smart Notifications", "duration": "1 sprint", "description": "Rule engine, admin UI, priority classifier" }
+          ]
+        }
+      },
+      {
+        "id": "EPIC-4",
+        "title": "Integration Platform",
+        "goal": "Connect TaskFlow Pro with the tools teams already use — GitHub for code, Slack for communication — creating a seamless workflow without tab-switching.",
+        "description": "The Integration Platform connects TaskFlow Pro to GitHub and Slack, enabling bidirectional sync. PRs auto-link to tasks, Slack slash commands manage tasks, Focus Mode syncs with Slack DND, and a CLI tool lets developers manage tasks from the terminal.",
+        "valueDelivered": "Engineers manage tasks without leaving their IDE or chat. PRs auto-link to tasks. Slack commands create and update tasks. Focus mode syncs with Slack DND.",
+        "functionalRequirements": ["FR-6"],
+        "additionalRequirements": ["ADD-1"],
+        "implementationNotes": [
+          "GitHub integration uses GitHub Apps (not OAuth) for fine-grained repository permissions",
+          "Slack integration uses Bolt SDK with Socket Mode for development and HTTP for production",
+          "CLI tool published to npm as @taskflow/cli with auto-update via npm version checks",
+          "All integrations use the same internal task API — no direct database access"
+        ],
+        "status": "draft",
+        "priority": "should-have",
+        "storyCount": 3,
+        "acceptanceSummary": "Epic is complete when GitHub webhook processes PR events correctly, Slack slash commands work in all channel types, CLI is installable via npm with < 5 second startup, and integration tests cover happy path and error cases.",
+        "epicDependencies": {
+          "upstream": [
+            { "epicId": "EPIC-1", "reason": "Integrations need task CRUD API and webhook infrastructure" },
+            { "epicId": "EPIC-3", "reason": "Slack DND sync needs Focus Mode state" }
+          ],
+          "downstream": [],
+          "relatedEpics": ["EPIC-2"]
+        },
+        "stories": [
+          {
+            "id": "S-4.1",
+            "title": "GitHub Integration",
+            "userStory": {
+              "asA": "Software Engineer",
+              "iWant": "my GitHub PRs to automatically link to TaskFlow tasks",
+              "soThat": "task status updates when code is merged without manual bookkeeping",
+              "formatted": "As a Software Engineer, I want my GitHub PRs to automatically link to TaskFlow tasks, so that task status updates when code is merged without manual bookkeeping."
+            },
+            "acceptanceCriteria": [
+              { "id": "AC-4.1.1", "given": "I create a PR with 'Fixes TF-123' in the description", "when": "the PR is merged", "then": "task TF-123 automatically moves to 'Done'" },
+              { "id": "AC-4.1.2", "given": "I push a branch with task ID in the name", "when": "the push is received via webhook", "then": "the task shows a link to the branch and PR" }
+            ],
+            "status": "draft",
+            "storyPoints": 8,
+            "priority": "should-have",
+            "assignee": "Alex Rivera",
+            "requirementRefs": ["FR-6"],
+            "testCases": ["TC-4.1.1", "TC-4.1.2"],
+            "implementationDetails": [
+              "GitHub App with webhook subscriptions for pull_request and push events",
+              "Regex parser for task ID extraction from PR descriptions and branch names",
+              "Bidirectional status sync: PR merged -> task Done, task blocked -> PR label added"
+            ],
+            "dependencies": {
+              "blockedBy": [],
+              "blocks": [],
+              "relatedStories": ["S-1.1"],
+              "externalDependencies": [
+                { "dependency": "GitHub App registration and approval", "status": "completed", "owner": "DevOps Team" }
+              ]
+            },
+            "notes": "GitHub App already registered in the TaskFlow org — just needs webhook endpoint deployment."
+          },
+          {
+            "id": "S-4.2",
+            "title": "Slack Integration & DND Sync",
+            "userStory": {
+              "asA": "Software Engineer",
+              "iWant": "to create tasks and check status via Slack slash commands, with Focus Mode syncing to Slack DND",
+              "soThat": "I can manage tasks without leaving my team chat",
+              "formatted": "As a Software Engineer, I want to create tasks and check status via Slack slash commands, with Focus Mode syncing to Slack DND, so that I can manage tasks without leaving my team chat."
+            },
+            "acceptanceCriteria": [
+              { "id": "AC-4.2.1", "given": "I type '/tf create Fix login bug'", "when": "the command is processed", "then": "a new task is created and I see a confirmation with a link" },
+              { "id": "AC-4.2.2", "given": "I activate Focus Mode in TaskFlow", "when": "the sync runs", "then": "my Slack status shows 'Focusing' and DND is enabled" },
+              { "id": "AC-4.2.3", "given": "I end Focus Mode", "when": "the sync runs", "then": "Slack DND is cleared and queued messages are delivered" }
+            ],
+            "status": "draft",
+            "storyPoints": 10,
+            "priority": "should-have",
+            "assignee": "Jordan Park",
+            "requirementRefs": ["FR-6", "FR-3"],
+            "testCases": ["TC-4.2.1", "TC-4.2.2", "TC-4.2.3"],
+            "implementationDetails": [
+              "Slack Bolt SDK with slash command handlers for /tf create, /tf status, /tf focus",
+              "DND sync service that listens for focus session events and calls Slack API",
+              "Rate limiting: max 1 DND sync per minute to avoid Slack API throttling"
+            ],
+            "dependencies": {
+              "blockedBy": [
+                { "storyId": "S-3.3", "title": "Smart Notification Rules" }
+              ],
+              "blocks": [],
+              "relatedStories": ["S-3.1"],
+              "externalDependencies": [
+                { "dependency": "Slack App approval for workspace installation", "status": "in-progress", "owner": "Product Team" }
+              ]
+            }
+          },
+          {
+            "id": "S-4.3",
+            "title": "CLI Tool for Developers",
+            "userStory": {
+              "asA": "Software Engineer",
+              "iWant": "a CLI tool to manage tasks from my terminal",
+              "soThat": "I never have to leave my IDE to update task status",
+              "formatted": "As a Software Engineer, I want a CLI tool to manage tasks from my terminal, so that I never have to leave my IDE to update task status."
+            },
+            "acceptanceCriteria": [
+              { "id": "AC-4.3.1", "given": "I run 'tf list --mine'", "when": "the CLI queries the API", "then": "I see my tasks sorted by AI priority with status indicators" },
+              { "id": "AC-4.3.2", "given": "I run 'tf done TF-123'", "when": "the API processes the update", "then": "the task moves to Done and the board updates in real-time" },
+              { "id": "AC-4.3.3", "given": "I run 'tf focus'", "when": "focus mode activates via API", "then": "I see a terminal-based focus timer and my top task" }
+            ],
+            "status": "draft",
+            "storyPoints": 8,
+            "priority": "could-have",
+            "requirementRefs": ["ADD-1"],
+            "testCases": ["TC-4.3.1", "TC-4.3.2", "TC-4.3.3"],
+            "implementationDetails": [
+              "Commander.js for CLI argument parsing with subcommands",
+              "Ink (React for CLI) for the focus timer terminal UI",
+              "API token authentication stored in ~/.taskflowrc",
+              "npm package @taskflow/cli with postinstall setup wizard"
+            ],
+            "dependencies": {
+              "blockedBy": [],
+              "blocks": [],
+              "relatedStories": ["S-1.1", "S-3.1"]
+            },
+            "notes": "CLI is a nice-to-have for v1.0 — could be deferred to v1.1 if timeline is tight."
+          }
+        ],
+        "useCases": [
+          {
+            "id": "UC-04",
+            "title": "PR-to-Task Auto-linking",
+            "summary": "Developer's PR automatically links to and closes the associated task on merge",
+            "primaryActor": "Software Engineer",
+            "secondaryActors": ["GitHub", "TaskFlow Webhook Service"],
+            "preconditions": ["GitHub App is installed on the repository", "Developer has linked their GitHub account to TaskFlow"],
+            "trigger": "Developer creates a pull request with a task ID reference in the description",
+            "scenario": {
+              "context": "Developer finishes coding a feature and creates a PR",
+              "before": "Developer manually updates Jira ticket, copies PR link, changes status",
+              "after": "PR description mentions task ID, merge auto-closes the task, team sees update in real-time",
+              "impact": "Eliminates 5 minutes of manual bookkeeping per PR, ensures task board accuracy"
+            },
+            "mainFlow": [
+              { "step": 1, "action": "Developer creates a PR with 'Fixes TF-123' in the description", "actor": "Software Engineer" },
+              { "step": 2, "action": "GitHub webhook notifies TaskFlow of the PR", "actor": "GitHub" },
+              { "step": 3, "action": "System links the PR to task TF-123 and shows it on the task card", "actor": "System" },
+              { "step": 4, "action": "PR is reviewed and merged", "actor": "Software Engineer" },
+              { "step": 5, "action": "System automatically moves task TF-123 to Done", "actor": "System" }
+            ],
+            "alternativeFlows": [
+              {
+                "id": "AF-04-1",
+                "name": "Multiple Tasks Referenced",
+                "branchPoint": "Step 1",
+                "steps": ["PR description references multiple task IDs (e.g., 'Fixes TF-123, TF-124')", "System links PR to all referenced tasks", "On merge, all referenced tasks move to Done"]
+              }
+            ],
+            "exceptionFlows": [
+              {
+                "id": "EF-04-1",
+                "name": "Invalid Task ID",
+                "trigger": "PR references a task ID that doesn't exist in TaskFlow",
+                "handling": "System ignores the invalid reference and logs a warning. PR comment bot adds a note about the unrecognized ID."
+              }
+            ],
+            "postconditions": ["Task linked to PR with clickable reference", "Task moved to Done on merge", "Real-time board updated for all viewers"],
+            "businessRules": ["Only merged PRs trigger task completion (not closed/abandoned)", "Task ID pattern is case-insensitive (TF-123, tf-123, Tf-123 all match)"],
+            "relatedRequirements": ["FR-6"],
+            "relatedEpic": "EPIC-4",
+            "relatedStories": ["S-4.1"],
+            "sourceDocument": "PRD.md#github-integration",
+            "notes": "This is the #1 requested feature from our developer beta testers."
+          }
+        ],
+        "fitCriteria": {
+          "functional": [
+            { "id": "FC-07", "criterion": "GitHub webhook processes PR events within 5 seconds", "verified": false, "verificationMethod": "test", "relatedRequirement": "FR-6" },
+            { "id": "FC-08", "criterion": "Slack slash commands respond within 3 seconds", "verified": false, "verificationMethod": "test", "relatedRequirement": "FR-6" }
+          ],
+          "nonFunctional": [
+            { "id": "NFC-05", "category": "reliability", "criterion": "Integration webhook delivery succeeds > 99.5% of the time", "verified": false, "verificationMethod": "monitoring", "metric": { "measure": "Webhook success rate", "target": "99.5%", "threshold": "99%", "unit": "percentage" } }
+          ],
+          "security": [
+            { "id": "SC-05", "category": "authentication", "criterion": "GitHub webhook payloads are verified via HMAC signature", "verified": false, "verificationMethod": "code-review" },
+            { "id": "SC-06", "category": "authorization", "criterion": "Slack commands only accessible to authenticated TaskFlow users", "verified": false, "verificationMethod": "security-audit", "complianceStandard": "SOC2" }
+          ],
+          "summary": {
+            "totalFunctional": 2,
+            "totalNonFunctional": 1,
+            "totalSecurity": 2,
+            "totalCriteria": 5,
+            "verifiedCount": 0,
+            "verificationPercentage": "0%"
+          }
+        },
+        "successMetrics": {
+          "codeQuality": [
+            { "id": "CQ-05", "metric": "Integration test coverage", "target": "80%", "measurement": "Istanbul coverage report", "baseline": "0%", "achieved": false }
+          ],
+          "operational": [
+            { "id": "OP-05", "metric": "Webhook processing latency", "target": "< 5 seconds", "measurement": "Datadog APM", "baseline": "N/A", "achieved": false }
+          ],
+          "customerImpact": [
+            { "id": "CI-05", "metric": "Manual task updates eliminated", "target": "90% reduction", "measurement": "Before/after comparison of manual status changes", "baseline": "15 manual updates per developer per week", "achieved": false }
+          ],
+          "deployment": [
+            { "id": "DP-05", "metric": "CLI startup time", "target": "< 5 seconds", "achieved": false }
+          ],
+          "business": [
+            { "id": "BM-04", "metric": "Integration adoption", "target": "60% of teams connect GitHub within 1 month", "measurement": "Integration connection analytics", "achieved": false }
+          ],
+          "summary": {
+            "totalMetrics": 5,
+            "achievedCount": 0,
+            "achievementPercentage": "0%",
+            "overallStatus": "not-started"
+          }
+        },
+        "risks": {
+          "risks": [
+            {
+              "id": "RISK-06",
+              "risk": "GitHub API rate limits during large monorepo pushes",
+              "category": "integration",
+              "probability": "medium",
+              "impact": "medium",
+              "riskScore": "medium",
+              "impactDescription": "Large monorepos with many PRs per day could exhaust GitHub API rate limits, delaying task-PR linking",
+              "mitigation": "Webhook-based approach (no polling), request queuing with exponential backoff",
+              "mitigationStrategies": [
+                { "strategy": "Use webhook events instead of polling — eliminates most API calls", "owner": "Backend Team", "status": "implemented" },
+                { "strategy": "Queue webhook processing with rate-aware backoff", "owner": "Backend Team", "status": "planned" }
+              ],
+              "contingencyPlan": "Implement a manual 'Sync Now' button for users to trigger re-sync if automatic linking is delayed",
+              "triggers": ["GitHub API returns 429 status codes", "PR linking delay exceeds 30 seconds"],
+              "owner": "Alex Rivera",
+              "status": "mitigating",
+              "residualRisk": "low"
+            },
+            {
+              "id": "RISK-07",
+              "risk": "Slack App approval process may delay launch",
+              "category": "schedule",
+              "probability": "low",
+              "impact": "high",
+              "riskScore": "medium",
+              "impactDescription": "Slack's App Directory review process can take 2-4 weeks, potentially delaying the integration launch",
+              "mitigation": "Submit for review 4 weeks before planned launch date",
+              "contingencyPlan": "Launch with direct install link (bypassing App Directory) for initial customers",
+              "triggers": ["Slack review takes longer than 3 weeks", "Review feedback requires significant changes"],
+              "owner": "Product Team",
+              "status": "identified",
+              "residualRisk": "low"
+            }
+          ],
+          "assumptions": [
+            { "id": "ASM-05", "assumption": "Most teams use GitHub (not GitLab/Bitbucket) as their primary VCS", "ifFalse": "Need to build GitLab and Bitbucket integrations in v1.1", "validationMethod": "Customer survey during onboarding", "validated": true }
+          ],
+          "dependencies": [
+            { "id": "DEP-04", "dependency": "GitHub Apps API", "type": "external-system", "risk": "API breaking changes", "mitigation": "Pin to stable API version, monitor GitHub changelog" },
+            { "id": "DEP-05", "dependency": "Slack Bolt SDK", "type": "upstream", "risk": "SDK version compatibility", "mitigation": "Pin SDK version, test upgrades in staging" }
+          ],
+          "riskMatrix": {
+            "critical": [],
+            "high": [],
+            "medium": ["RISK-06", "RISK-07"],
+            "low": []
+          },
+          "summary": {
+            "totalRisks": 2,
+            "criticalCount": 0,
+            "highCount": 0,
+            "mediumCount": 2,
+            "lowCount": 0,
+            "mitigatedCount": 0,
+            "openCount": 2,
+            "overallRiskLevel": "medium"
+          }
+        },
+        "definitionOfDone": {
+          "items": [
+            { "id": "DOD-15", "item": "GitHub webhook processes PR events correctly", "category": "testing", "required": true, "completed": false },
+            { "id": "DOD-16", "item": "Slack slash commands work in all channel types", "category": "testing", "required": true, "completed": false },
+            { "id": "DOD-17", "item": "CLI tool installable via npm with < 5 second startup", "category": "deployment", "required": false, "completed": false },
+            { "id": "DOD-18", "item": "Integration tests cover happy path and error cases", "category": "testing", "required": true, "completed": false }
+          ],
+          "qualityGates": [
+            { "id": "QG-05", "gate": "Integration Test Gate", "criteria": ["All webhook event types tested", "Slack commands tested in DM, channel, and thread", "CLI tested on macOS, Linux, and Windows"], "passed": false }
+          ],
+          "acceptanceSummary": {
+            "totalCriteria": 7,
+            "passedCriteria": 0,
+            "failedCriteria": 0,
+            "blockedCriteria": 7,
+            "passPercentage": "0%"
+          },
+          "summary": {
+            "totalItems": 4,
+            "completedItems": 0,
+            "requiredItems": 3,
+            "requiredCompleted": 0,
+            "completionPercentage": "0%",
+            "allRequiredComplete": false,
+            "status": "not-started"
+          }
+        },
+        "technicalSummary": {
+          "architecturePattern": "Event-driven webhook processing with adapter pattern for each integration",
+          "components": [
+            { "name": "GitHub Adapter", "responsibility": "Webhook ingestion, PR-task linking, status sync", "changes": "New module with GitHub App authentication" },
+            { "name": "Slack Adapter", "responsibility": "Slash commands, DND sync, message formatting", "changes": "New module using Slack Bolt SDK" },
+            { "name": "CLI Tool", "responsibility": "Terminal-based task management", "changes": "Standalone npm package with Commander.js and Ink" }
+          ],
+          "filesChanged": [
+            { "path": "src/integrations/github/github.adapter.ts", "action": "new", "description": "GitHub App webhook handler and PR-task linker" },
+            { "path": "src/integrations/slack/slack.adapter.ts", "action": "new", "description": "Slack Bolt app with slash commands and DND sync" },
+            { "path": "packages/cli/src/index.ts", "action": "new", "description": "CLI entry point with Commander.js subcommands" }
+          ],
+          "configuration": {
+            "file": "config/integrations.json",
+            "settings": [
+              { "key": "github.appId", "value": "<from-env>", "description": "GitHub App ID" },
+              { "key": "github.webhookSecret", "value": "<from-env>", "description": "GitHub webhook HMAC secret" },
+              { "key": "slack.botToken", "value": "<from-env>", "description": "Slack Bot OAuth token" },
+              { "key": "slack.signingSecret", "value": "<from-env>", "description": "Slack request signing secret" }
+            ]
+          }
+        },
+        "effortEstimate": {
+          "totalSprints": 3,
+          "totalDays": 30,
+          "breakdown": [
+            { "phase": "GitHub Integration", "duration": "1.5 sprints", "description": "GitHub App setup, webhook handler, PR-task linking" },
+            { "phase": "Slack Integration", "duration": "2 sprints", "description": "Slash commands, DND sync, message formatting" },
+            { "phase": "CLI Tool", "duration": "1.5 sprints", "description": "Commander.js setup, Ink UI, npm package" }
+          ]
+        }
+      }
+    ],
+    "summary": {
+      "totalEpics": 4,
+      "totalStories": 12,
+      "totalAcceptanceCriteria": 31,
+      "frCovered": 6,
+      "nfrCovered": 3,
+      "arCovered": 1,
+      "coveragePercentage": "100%",
+      "status": "approved",
+      "lastUpdated": "2025-07-20T16:00:00Z",
+      "notes": "EPIC-1 (Core Platform) is the foundation. EPIC-2 (AI) and EPIC-3 (Focus Mode) depend on EPIC-1. EPIC-4 (Integrations) depends on EPIC-1 and EPIC-3. Critical path: EPIC-1 (S-1.1) -> EPIC-2 (S-2.1) -> EPIC-3 (S-3.1) -> EPIC-4 (S-4.2). Total estimated: 8 sprints, 20 tasks across 12 stories."
+    }
+  }
+}

@@ -1,0 +1,1075 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/tea/nfr-assessment.schema.json",
+  "title": "NFR Assessment Schema",
+  "description": "Schema for NFR (Non-Functional Requirements) assessment artifacts. IMPORTANT: Capture ALL NFR assessments, findings, and recommendations completely. Do NOT summarize or truncate any performance data, security findings, or reliability assessments.",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["featureInfo", "assessments"],
+      "properties": {
+        "featureInfo": {
+          "type": "object",
+          "description": "COMPLETE feature/system information being assessed",
+          "required": ["featureName"],
+          "properties": {
+            "featureName": {
+              "type": "string",
+              "description": "COMPLETE name of the feature or system under assessment"
+            },
+            "storyId": {
+              "type": "string",
+              "description": "Associated story identifier"
+            },
+            "epicId": {
+              "type": "string",
+              "description": "Associated epic identifier"
+            },
+            "version": {
+              "type": "string",
+              "description": "Version being assessed"
+            },
+            "environment": {
+              "type": "string",
+              "description": "Environment where assessment was performed"
+            },
+            "overallStatus": {
+              "type": "string",
+              "enum": ["pass", "pass-with-concerns", "fail", "incomplete"],
+              "description": "Overall NFR assessment status"
+            },
+            "assessmentDate": {
+              "type": "string",
+              "format": "date",
+              "description": "Date of assessment"
+            },
+            "assessor": {
+              "type": "string",
+              "description": "Person or team performing the assessment"
+            }
+          }
+        },
+        "executiveSummary": {
+          "type": "string",
+          "description": "COMPLETE executive summary of the NFR assessment. Include ALL key findings, risks, and recommendations. This should be comprehensive enough for stakeholders to understand the full non-functional quality status."
+        },
+        "nfrRequirements": {
+          "type": "array",
+          "description": "ALL NFR requirements being assessed with their targets",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "NFR requirement identifier"
+              },
+              "category": {
+                "type": "string",
+                "enum": ["performance", "security", "reliability", "scalability", "maintainability", "usability", "accessibility", "compliance"],
+                "description": "NFR category"
+              },
+              "requirement": {
+                "type": "string",
+                "description": "COMPLETE requirement description"
+              },
+              "target": {
+                "type": "string",
+                "description": "Target value or threshold"
+              },
+              "priority": {
+                "type": "string",
+                "enum": ["critical", "high", "medium", "low"],
+                "description": "Priority level"
+              },
+              "source": {
+                "type": "string",
+                "description": "Source of this requirement (PRD, SLA, compliance, etc.)"
+              }
+            }
+          }
+        },
+        "assessments": {
+          "type": "object",
+          "description": "COMPLETE NFR assessments for each category",
+          "properties": {
+            "performance": {
+              "type": "object",
+              "description": "COMPLETE performance assessment",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": ["pass", "warn", "fail", "not-assessed"],
+                  "description": "Overall performance status"
+                },
+                "summary": {
+                  "type": "string",
+                  "description": "COMPLETE performance assessment summary"
+                },
+                "responseTime": {
+                  "type": "object",
+                  "description": "Response time assessment",
+                  "properties": {
+                    "target": {
+                      "type": "string",
+                      "description": "Target response time"
+                    },
+                    "actual": {
+                      "type": "string",
+                      "description": "Actual measured response time"
+                    },
+                    "p50": { "type": "string", "description": "50th percentile" },
+                    "p95": { "type": "string", "description": "95th percentile" },
+                    "p99": { "type": "string", "description": "99th percentile" },
+                    "status": {
+                      "type": "string",
+                      "enum": ["pass", "warn", "fail"]
+                    },
+                    "notes": {
+                      "type": "string",
+                      "description": "COMPLETE notes on response time findings"
+                    }
+                  }
+                },
+                "throughput": {
+                  "type": "object",
+                  "description": "Throughput assessment",
+                  "properties": {
+                    "target": {
+                      "type": "string",
+                      "description": "Target throughput (requests/sec)"
+                    },
+                    "actual": {
+                      "type": "string",
+                      "description": "Actual measured throughput"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["pass", "warn", "fail"]
+                    },
+                    "notes": {
+                      "type": "string",
+                      "description": "COMPLETE notes on throughput findings"
+                    }
+                  }
+                },
+                "resourceUsage": {
+                  "type": "object",
+                  "description": "Resource usage assessment",
+                  "properties": {
+                    "cpu": {
+                      "type": "object",
+                      "properties": {
+                        "target": { "type": "string" },
+                        "average": { "type": "string" },
+                        "peak": { "type": "string" },
+                        "status": { "type": "string", "enum": ["pass", "warn", "fail"] }
+                      }
+                    },
+                    "memory": {
+                      "type": "object",
+                      "properties": {
+                        "target": { "type": "string" },
+                        "average": { "type": "string" },
+                        "peak": { "type": "string" },
+                        "status": { "type": "string", "enum": ["pass", "warn", "fail"] }
+                      }
+                    },
+                    "disk": {
+                      "type": "object",
+                      "properties": {
+                        "usage": { "type": "string" },
+                        "iops": { "type": "string" },
+                        "status": { "type": "string", "enum": ["pass", "warn", "fail"] }
+                      }
+                    },
+                    "network": {
+                      "type": "object",
+                      "properties": {
+                        "bandwidth": { "type": "string" },
+                        "latency": { "type": "string" },
+                        "status": { "type": "string", "enum": ["pass", "warn", "fail"] }
+                      }
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["pass", "warn", "fail"]
+                    },
+                    "notes": {
+                      "type": "string",
+                      "description": "COMPLETE notes on resource usage findings"
+                    }
+                  }
+                },
+                "scalability": {
+                  "type": "object",
+                  "description": "Scalability assessment",
+                  "properties": {
+                    "horizontalScaling": {
+                      "type": "string",
+                      "description": "COMPLETE assessment of horizontal scaling capability"
+                    },
+                    "verticalScaling": {
+                      "type": "string",
+                      "description": "COMPLETE assessment of vertical scaling capability"
+                    },
+                    "loadTestResults": {
+                      "type": "array",
+                      "description": "ALL load test results",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "scenario": { "type": "string" },
+                          "vus": { "type": "integer" },
+                          "duration": { "type": "string" },
+                          "results": { "type": "string" }
+                        }
+                      }
+                    },
+                    "bottlenecks": {
+                      "type": "array",
+                      "description": "ALL identified bottlenecks",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "bottleneck": { "type": "string" },
+                          "impact": { "type": "string" },
+                          "recommendation": { "type": "string" }
+                        }
+                      }
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["pass", "warn", "fail"]
+                    }
+                  }
+                },
+                "testEvidence": {
+                  "type": "array",
+                  "description": "ALL performance test evidence",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "testName": { "type": "string" },
+                      "tool": { "type": "string" },
+                      "date": { "type": "string", "format": "date-time" },
+                      "results": { "type": "string" },
+                      "artifacts": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "security": {
+              "type": "object",
+              "description": "COMPLETE security assessment",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": ["pass", "warn", "fail", "not-assessed"],
+                  "description": "Overall security status"
+                },
+                "summary": {
+                  "type": "string",
+                  "description": "COMPLETE security assessment summary"
+                },
+                "authentication": {
+                  "type": "object",
+                  "description": "Authentication assessment",
+                  "properties": {
+                    "mechanism": {
+                      "type": "string",
+                      "description": "Authentication mechanism used"
+                    },
+                    "assessment": {
+                      "type": "string",
+                      "description": "COMPLETE assessment of authentication implementation"
+                    },
+                    "findings": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["pass", "warn", "fail"]
+                    }
+                  }
+                },
+                "authorization": {
+                  "type": "object",
+                  "description": "Authorization assessment",
+                  "properties": {
+                    "mechanism": {
+                      "type": "string",
+                      "description": "Authorization mechanism used"
+                    },
+                    "assessment": {
+                      "type": "string",
+                      "description": "COMPLETE assessment of authorization implementation"
+                    },
+                    "findings": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["pass", "warn", "fail"]
+                    }
+                  }
+                },
+                "dataProtection": {
+                  "type": "object",
+                  "description": "Data protection assessment",
+                  "properties": {
+                    "encryptionAtRest": {
+                      "type": "string",
+                      "description": "COMPLETE assessment of encryption at rest"
+                    },
+                    "encryptionInTransit": {
+                      "type": "string",
+                      "description": "COMPLETE assessment of encryption in transit"
+                    },
+                    "piiHandling": {
+                      "type": "string",
+                      "description": "COMPLETE assessment of PII handling"
+                    },
+                    "findings": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["pass", "warn", "fail"]
+                    }
+                  }
+                },
+                "vulnerabilities": {
+                  "type": "array",
+                  "description": "ALL identified vulnerabilities",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "string" },
+                      "severity": {
+                        "type": "string",
+                        "enum": ["critical", "high", "medium", "low", "informational"]
+                      },
+                      "vulnerability": {
+                        "type": "string",
+                        "description": "COMPLETE vulnerability description"
+                      },
+                      "location": { "type": "string" },
+                      "cwe": { "type": "string", "description": "CWE identifier if applicable" },
+                      "cvss": { "type": "number", "description": "CVSS score if applicable" },
+                      "remediation": {
+                        "type": "string",
+                        "description": "COMPLETE remediation recommendation"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": ["open", "in-progress", "fixed", "accepted", "false-positive"]
+                      }
+                    }
+                  }
+                },
+                "securityScans": {
+                  "type": "array",
+                  "description": "ALL security scan results",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "scanType": {
+                        "type": "string",
+                        "enum": ["SAST", "DAST", "SCA", "penetration", "manual"]
+                      },
+                      "tool": { "type": "string" },
+                      "date": { "type": "string", "format": "date" },
+                      "summary": { "type": "string" },
+                      "findingsCount": {
+                        "type": "object",
+                        "properties": {
+                          "critical": { "type": "integer" },
+                          "high": { "type": "integer" },
+                          "medium": { "type": "integer" },
+                          "low": { "type": "integer" }
+                        }
+                      }
+                    }
+                  }
+                },
+                "compliance": {
+                  "type": "object",
+                  "description": "Compliance assessment",
+                  "properties": {
+                    "frameworks": {
+                      "type": "array",
+                      "description": "Compliance frameworks assessed",
+                      "items": { "type": "string" }
+                    },
+                    "assessment": {
+                      "type": "string",
+                      "description": "COMPLETE compliance assessment"
+                    },
+                    "gaps": {
+                      "type": "array",
+                      "description": "ALL compliance gaps",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "framework": { "type": "string" },
+                          "requirement": { "type": "string" },
+                          "gap": { "type": "string" },
+                          "remediation": { "type": "string" }
+                        }
+                      }
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["compliant", "partial", "non-compliant"]
+                    }
+                  }
+                }
+              }
+            },
+            "reliability": {
+              "type": "object",
+              "description": "COMPLETE reliability assessment",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": ["pass", "warn", "fail", "not-assessed"],
+                  "description": "Overall reliability status"
+                },
+                "summary": {
+                  "type": "string",
+                  "description": "COMPLETE reliability assessment summary"
+                },
+                "availability": {
+                  "type": "object",
+                  "description": "Availability assessment",
+                  "properties": {
+                    "target": {
+                      "type": "string",
+                      "description": "Target availability (e.g., 99.9%)"
+                    },
+                    "actual": {
+                      "type": "string",
+                      "description": "Actual measured availability"
+                    },
+                    "uptimeData": {
+                      "type": "string",
+                      "description": "COMPLETE uptime data and measurement period"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["pass", "warn", "fail"]
+                    }
+                  }
+                },
+                "errorRate": {
+                  "type": "object",
+                  "description": "Error rate assessment",
+                  "properties": {
+                    "target": {
+                      "type": "string",
+                      "description": "Target error rate"
+                    },
+                    "actual": {
+                      "type": "string",
+                      "description": "Actual measured error rate"
+                    },
+                    "errorTypes": {
+                      "type": "array",
+                      "description": "ALL error types observed",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": { "type": "string" },
+                          "count": { "type": "integer" },
+                          "percentage": { "type": "string" }
+                        }
+                      }
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["pass", "warn", "fail"]
+                    }
+                  }
+                },
+                "mttr": {
+                  "type": "object",
+                  "description": "Mean Time To Recovery assessment",
+                  "properties": {
+                    "target": { "type": "string" },
+                    "actual": { "type": "string" },
+                    "incidents": {
+                      "type": "array",
+                      "description": "Recovery time for recent incidents",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "incident": { "type": "string" },
+                          "recoveryTime": { "type": "string" }
+                        }
+                      }
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["pass", "warn", "fail"]
+                    }
+                  }
+                },
+                "faultTolerance": {
+                  "type": "object",
+                  "description": "Fault tolerance assessment",
+                  "properties": {
+                    "assessment": {
+                      "type": "string",
+                      "description": "COMPLETE fault tolerance assessment"
+                    },
+                    "mechanisms": {
+                      "type": "array",
+                      "description": "ALL fault tolerance mechanisms in place",
+                      "items": { "type": "string" }
+                    },
+                    "chaosTestResults": {
+                      "type": "array",
+                      "description": "Chaos engineering test results",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "test": { "type": "string" },
+                          "result": { "type": "string" },
+                          "findings": { "type": "string" }
+                        }
+                      }
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["pass", "warn", "fail"]
+                    }
+                  }
+                },
+                "ciBurnIn": {
+                  "type": "object",
+                  "description": "CI burn-in test assessment",
+                  "properties": {
+                    "runs": { "type": "integer" },
+                    "duration": { "type": "string" },
+                    "passRate": { "type": "string" },
+                    "flakyTests": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["pass", "warn", "fail"]
+                    }
+                  }
+                },
+                "disasterRecovery": {
+                  "type": "object",
+                  "description": "Disaster recovery assessment",
+                  "properties": {
+                    "rpo": {
+                      "type": "object",
+                      "properties": {
+                        "target": { "type": "string" },
+                        "actual": { "type": "string" }
+                      }
+                    },
+                    "rto": {
+                      "type": "object",
+                      "properties": {
+                        "target": { "type": "string" },
+                        "actual": { "type": "string" }
+                      }
+                    },
+                    "backupStrategy": {
+                      "type": "string",
+                      "description": "COMPLETE backup strategy assessment"
+                    },
+                    "recoveryTested": { "type": "boolean" },
+                    "lastDrTest": { "type": "string", "format": "date" },
+                    "status": {
+                      "type": "string",
+                      "enum": ["pass", "warn", "fail"]
+                    }
+                  }
+                }
+              }
+            },
+            "maintainability": {
+              "type": "object",
+              "description": "COMPLETE maintainability assessment",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": ["pass", "warn", "fail", "not-assessed"],
+                  "description": "Overall maintainability status"
+                },
+                "summary": {
+                  "type": "string",
+                  "description": "COMPLETE maintainability assessment summary"
+                },
+                "testCoverage": {
+                  "type": "object",
+                  "description": "Test coverage assessment",
+                  "properties": {
+                    "overall": { "type": "string" },
+                    "unit": { "type": "string" },
+                    "integration": { "type": "string" },
+                    "e2e": { "type": "string" },
+                    "target": { "type": "string" },
+                    "gaps": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["pass", "warn", "fail"]
+                    }
+                  }
+                },
+                "codeQuality": {
+                  "type": "object",
+                  "description": "Code quality assessment",
+                  "properties": {
+                    "assessment": {
+                      "type": "string",
+                      "description": "COMPLETE code quality assessment"
+                    },
+                    "metrics": {
+                      "type": "object",
+                      "properties": {
+                        "complexity": { "type": "string" },
+                        "duplication": { "type": "string" },
+                        "codeSmells": { "type": "integer" }
+                      }
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["pass", "warn", "fail"]
+                    }
+                  }
+                },
+                "technicalDebt": {
+                  "type": "object",
+                  "description": "Technical debt assessment",
+                  "properties": {
+                    "assessment": {
+                      "type": "string",
+                      "description": "COMPLETE technical debt assessment"
+                    },
+                    "estimatedEffort": { "type": "string" },
+                    "majorItems": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "item": { "type": "string" },
+                          "effort": { "type": "string" },
+                          "impact": { "type": "string" }
+                        }
+                      }
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["pass", "warn", "fail"]
+                    }
+                  }
+                },
+                "documentation": {
+                  "type": "object",
+                  "description": "Documentation assessment",
+                  "properties": {
+                    "assessment": {
+                      "type": "string",
+                      "description": "COMPLETE documentation assessment"
+                    },
+                    "gaps": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["pass", "warn", "fail"]
+                    }
+                  }
+                },
+                "testQuality": {
+                  "type": "object",
+                  "description": "Test quality assessment",
+                  "properties": {
+                    "assessment": {
+                      "type": "string",
+                      "description": "COMPLETE test quality assessment"
+                    },
+                    "testReviewScore": { "type": "number" },
+                    "issues": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["pass", "warn", "fail"]
+                    }
+                  }
+                }
+              }
+            },
+            "accessibility": {
+              "type": "object",
+              "description": "Accessibility assessment (if applicable)",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": ["pass", "warn", "fail", "not-assessed", "not-applicable"]
+                },
+                "standard": {
+                  "type": "string",
+                  "description": "Accessibility standard (e.g., WCAG 2.1 AA)"
+                },
+                "assessment": {
+                  "type": "string",
+                  "description": "COMPLETE accessibility assessment"
+                },
+                "findings": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "issue": { "type": "string" },
+                      "severity": { "type": "string" },
+                      "location": { "type": "string" },
+                      "remediation": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            },
+            "custom": {
+              "type": "array",
+              "description": "Additional custom NFR assessments",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Custom NFR name"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["pass", "warn", "fail", "not-assessed"]
+                  },
+                  "target": { "type": "string" },
+                  "actual": { "type": "string" },
+                  "details": {
+                    "type": "string",
+                    "description": "COMPLETE assessment details"
+                  },
+                  "findings": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "quickWins": {
+          "type": "array",
+          "description": "ALL quick wins - low effort, high impact improvements",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "improvement": {
+                "type": "string",
+                "description": "COMPLETE description of the quick win"
+              },
+              "category": { "type": "string" },
+              "effort": { "type": "string" },
+              "impact": { "type": "string" },
+              "implementation": {
+                "type": "string",
+                "description": "COMPLETE implementation guidance"
+              }
+            }
+          }
+        },
+        "recommendedActions": {
+          "type": "array",
+          "description": "ALL recommended actions with full details",
+          "items": {
+            "type": "object",
+            "required": ["action", "priority"],
+            "properties": {
+              "id": { "type": "string" },
+              "action": {
+                "type": "string",
+                "description": "COMPLETE description of the recommended action"
+              },
+              "category": {
+                "type": "string",
+                "enum": ["performance", "security", "reliability", "maintainability", "other"]
+              },
+              "priority": {
+                "type": "string",
+                "enum": ["critical", "high", "medium", "low"]
+              },
+              "effort": {
+                "type": "string",
+                "enum": ["trivial", "small", "medium", "large", "extra-large"]
+              },
+              "impact": {
+                "type": "string",
+                "description": "COMPLETE description of expected impact"
+              },
+              "dependencies": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "owner": { "type": "string" },
+              "timeline": { "type": "string" }
+            }
+          }
+        },
+        "monitoringHooks": {
+          "type": "array",
+          "description": "ALL monitoring recommendations with thresholds",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "metric": {
+                "type": "string",
+                "description": "Metric to monitor"
+              },
+              "description": {
+                "type": "string",
+                "description": "COMPLETE description of why this metric matters"
+              },
+              "threshold": {
+                "type": "string",
+                "description": "Threshold for alerting"
+              },
+              "warningThreshold": {
+                "type": "string",
+                "description": "Warning threshold"
+              },
+              "alertAction": {
+                "type": "string",
+                "description": "COMPLETE action to take when threshold is breached"
+              },
+              "dashboard": {
+                "type": "string",
+                "description": "Dashboard where this should be displayed"
+              },
+              "implementation": {
+                "type": "string",
+                "description": "How to implement this monitoring"
+              }
+            }
+          }
+        },
+        "failFastMechanisms": {
+          "type": "array",
+          "description": "ALL fail-fast mechanisms recommended or in place",
+          "items": {
+            "type": "object",
+            "properties": {
+              "mechanism": {
+                "type": "string",
+                "description": "COMPLETE description of the fail-fast mechanism"
+              },
+              "purpose": {
+                "type": "string",
+                "description": "Purpose and benefit"
+              },
+              "implementation": {
+                "type": "string",
+                "description": "Implementation details"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["implemented", "recommended", "planned"]
+              }
+            }
+          }
+        },
+        "evidenceGaps": {
+          "type": "array",
+          "description": "ALL evidence gaps - areas lacking sufficient data",
+          "items": {
+            "type": "object",
+            "required": ["gap", "impact", "recommendation"],
+            "properties": {
+              "id": { "type": "string" },
+              "gap": {
+                "type": "string",
+                "description": "COMPLETE description of the evidence gap"
+              },
+              "category": { "type": "string" },
+              "impact": {
+                "type": "string",
+                "description": "COMPLETE description of the impact of this gap"
+              },
+              "recommendation": {
+                "type": "string",
+                "description": "COMPLETE recommendation for closing this gap"
+              },
+              "effort": { "type": "string" },
+              "priority": {
+                "type": "string",
+                "enum": ["critical", "high", "medium", "low"]
+              }
+            }
+          }
+        },
+        "findingsSummary": {
+          "type": "object",
+          "description": "COMPLETE findings summary organized by category (ADR Quality Readiness Checklist)",
+          "properties": {
+            "categories": {
+              "type": "array",
+              "description": "ALL category summaries",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "category": {
+                    "type": "string",
+                    "description": "Category name"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["pass", "warn", "fail"],
+                    "description": "Overall status for this category"
+                  },
+                  "score": {
+                    "type": "number",
+                    "description": "Score for this category"
+                  },
+                  "findings": {
+                    "type": "array",
+                    "description": "ALL findings for this category",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "finding": { "type": "string" },
+                        "severity": { "type": "string" },
+                        "recommendation": { "type": "string" }
+                      }
+                    }
+                  },
+                  "keyMetrics": {
+                    "type": "object",
+                    "additionalProperties": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "overallScore": {
+              "type": "number",
+              "description": "Overall NFR score"
+            },
+            "gateDecision": {
+              "type": "string",
+              "enum": ["pass", "pass-with-conditions", "fail"],
+              "description": "Quality gate decision"
+            }
+          }
+        },
+        "gateYamlSnippet": {
+          "type": "string",
+          "description": "YAML snippet for quality gate configuration"
+        },
+        "testEvidence": {
+          "type": "object",
+          "description": "ALL test evidence supporting the assessment",
+          "properties": {
+            "performanceTests": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "tool": { "type": "string" },
+                  "date": { "type": "string" },
+                  "result": { "type": "string" },
+                  "artifacts": { "type": "array", "items": { "type": "string" } }
+                }
+              }
+            },
+            "securityTests": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "tool": { "type": "string" },
+                  "date": { "type": "string" },
+                  "result": { "type": "string" },
+                  "artifacts": { "type": "array", "items": { "type": "string" } }
+                }
+              }
+            },
+            "reliabilityTests": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "tool": { "type": "string" },
+                  "date": { "type": "string" },
+                  "result": { "type": "string" },
+                  "artifacts": { "type": "array", "items": { "type": "string" } }
+                }
+              }
+            }
+          }
+        },
+        "signOff": {
+          "type": "object",
+          "description": "Assessment sign-off",
+          "properties": {
+            "signedBy": {
+              "type": "string",
+              "description": "Person signing off"
+            },
+            "role": {
+              "type": "string",
+              "description": "Role of the signer"
+            },
+            "date": {
+              "type": "string",
+              "format": "date",
+              "description": "Sign-off date"
+            },
+            "decision": {
+              "type": "string",
+              "enum": ["approved", "approved-with-conditions", "rejected"],
+              "description": "Sign-off decision"
+            },
+            "conditions": {
+              "type": "array",
+              "description": "Conditions for approval",
+              "items": { "type": "string" }
+            },
+            "comments": {
+              "type": "string",
+              "description": "COMPLETE sign-off comments"
+            }
+          }
+        }
+      }
+    }
+  }
+}

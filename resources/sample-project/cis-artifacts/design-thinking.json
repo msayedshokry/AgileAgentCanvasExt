@@ -1,0 +1,838 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "design-thinking",
+    "timestamps": {
+      "created": "2026-01-25T09:00:00Z",
+      "lastModified": "2026-01-28T16:00:00Z"
+    },
+    "status": "completed",
+    "tags": [
+      "design-thinking",
+      "ai-ux",
+      "priority-suggestions",
+      "user-research"
+    ],
+    "author": "BMAD Design Thinking Workflow"
+  },
+  "content": {
+    "projectName": "TaskFlow Pro — AI Priority Suggestions UX",
+    "sessionInfo": {
+      "facilitator": "Sarah Chen — Product Manager",
+      "participants": [
+        {
+          "name": "Sarah Chen",
+          "role": "Product Manager",
+          "expertise": "User research, product strategy"
+        },
+        {
+          "name": "Aisha Patel",
+          "role": "ML Engineer",
+          "expertise": "AI/ML systems, recommendation UX"
+        },
+        {
+          "name": "Marcus Rivera",
+          "role": "Tech Lead",
+          "expertise": "System architecture, frontend development"
+        },
+        {
+          "name": "Priya Sharma",
+          "role": "QA Lead",
+          "expertise": "Usability testing, accessibility"
+        }
+      ],
+      "date": "2026-01-25",
+      "duration": "2 days",
+      "location": "Virtual (Miro + Zoom)"
+    },
+    "designChallenge": "How might we present AI-generated task priority suggestions to engineering team leads in a way that builds trust, encourages adoption, and seamlessly integrates into their existing workflow — without creating decision fatigue or undermining their sense of control?",
+    "empathize": {
+      "researchMethods": [
+        {
+          "method": "Semi-structured user interviews",
+          "description": "45-minute interviews with engineering team leads about their current prioritization workflow, attitudes toward AI assistance, and trust factors",
+          "participantCount": 12,
+          "duration": "2 weeks"
+        },
+        {
+          "method": "Contextual observation",
+          "description": "Observed 5 team leads during their morning triage sessions via screen-share, noting tools used, decision patterns, and pain points",
+          "participantCount": 5,
+          "duration": "1 week"
+        },
+        {
+          "method": "Survey",
+          "description": "Quantitative survey on AI trust factors, preferred interaction patterns, and current tool satisfaction sent to beta user base",
+          "participantCount": 142,
+          "duration": "5 days"
+        }
+      ],
+      "userProfiles": [
+        {
+          "name": "The Methodical Lead",
+          "role": "Engineering team lead, 5-8 years experience",
+          "demographics": "Manages 4-6 direct reports, sprint-based workflow, uses Jira or Linear",
+          "goals": [
+            "Optimize team velocity",
+            "Reduce blocking incidents",
+            "Spend more time on architecture and mentoring"
+          ],
+          "painPoints": [
+            "2+ hours daily on triage",
+            "Hidden dependencies cause unexpected blocks",
+            "Priority decisions feel like guesswork under time pressure"
+          ],
+          "context": "Works at a mid-size SaaS company (100-500 employees). Team is distributed across 2-3 time zones. Relies heavily on sprint planning and daily standups for alignment."
+        },
+        {
+          "name": "The Skeptical Adopter",
+          "role": "Senior engineer / tech lead, 8+ years experience",
+          "demographics": "Technically deep, values control, skeptical of AI hype",
+          "goals": [
+            "Maintain quality standards",
+            "Understand why decisions are made",
+            "Keep workflow efficient without adding tools"
+          ],
+          "painPoints": [
+            "Doesn't trust black-box AI",
+            "Past experience with AI tools that over-promised",
+            "Fears losing control of priority decisions"
+          ],
+          "context": "Has tried and abandoned 2-3 AI productivity tools. Will only adopt if they understand the reasoning and retain final decision authority."
+        }
+      ],
+      "userInsights": [
+        {
+          "insight": "Team leads want AI to handle the 'obvious' priority decisions (deadline-driven, dependency-driven) but retain control over 'judgment' decisions (strategic importance, team morale impact)",
+          "source": "User interviews (8/12 expressed this pattern)",
+          "evidence": "Quote: 'If the AI can handle the 80% of priority decisions that are just math — dependencies, deadlines, blocking chains — I can focus on the 20% that need human judgment.'",
+          "significance": "The AI should not try to replace all priority decisions. It should clearly distinguish between 'calculated' suggestions (high confidence, data-driven) and 'recommended' suggestions (lower confidence, pattern-based)."
+        },
+        {
+          "insight": "The single biggest trust factor is explainability — users need to see WHY the AI suggests a priority, not just WHAT it suggests",
+          "source": "Survey (87% rated 'explain reasoning' as important or very important)",
+          "evidence": "Survey data: 87% said explainability is critical. Interview quote: 'I need to see the math, not just the answer.'",
+          "significance": "Every AI suggestion must include a visible, concise explanation of the factors that led to the recommendation."
+        },
+        {
+          "insight": "Users strongly prefer 'suggest and approve' over 'auto-prioritize' — they want to be in the loop, not out of it",
+          "source": "Survey (72% preferred 'suggest and approve' model)",
+          "evidence": "72% chose 'AI suggests, I approve' vs 18% 'AI auto-prioritizes' vs 10% 'No AI involvement'",
+          "significance": "The interaction model must be suggestion-based with explicit user approval, not autonomous prioritization."
+        },
+        {
+          "insight": "Users experience 'suggestion fatigue' if presented with more than 5 suggestions at once — they want the top 3-5 most impactful changes, not a full re-rank",
+          "source": "Contextual observation (4/5 observed users ignored suggestion lists longer than 5 items)",
+          "evidence": "Observed behavior: users would engage with the first 3-4 suggestions, then dismiss the rest without reading",
+          "significance": "Limit visible suggestions to top 3-5. Provide a 'see more' option for users who want full detail."
+        }
+      ],
+      "keyObservations": [
+        {
+          "observation": "Team leads check priorities first thing in the morning and again after lunch — these are the two natural 'decision windows' for AI suggestions",
+          "context": "Morning triage (8:30-10:00) and post-lunch review (13:00-13:30) observed across all 5 participants",
+          "frequency": "Daily pattern observed in all 5 contextual observations",
+          "implications": "Time AI suggestion delivery to these natural decision windows rather than continuous push notifications"
+        },
+        {
+          "observation": "Users mentally categorize tasks into 'urgent-important', 'important-not-urgent', 'urgent-not-important', and 'neither' — Eisenhower matrix mapping is intuitive",
+          "context": "Observed in task sorting behavior during triage sessions",
+          "frequency": "3/5 participants explicitly used this framework, 2 used it implicitly",
+          "implications": "AI suggestions could map to Eisenhower quadrants for familiar mental model alignment"
+        }
+      ],
+      "empathyMap": {
+        "targetUser": "The Methodical Lead (primary persona)",
+        "says": [
+          {
+            "quote": "I spend more time deciding what to work on than actually working",
+            "context": "Interview opening — describes daily frustration"
+          },
+          {
+            "quote": "I need to see the math, not just the answer",
+            "context": "When asked about AI trust factors"
+          },
+          {
+            "quote": "If it saves me even 30 minutes a day, it's worth it",
+            "context": "When asked about willingness to adopt AI tools"
+          }
+        ],
+        "thinks": [
+          {
+            "thought": "Am I prioritizing the right things? What am I missing?",
+            "evidence": "8/12 interview participants expressed uncertainty about their priority decisions"
+          },
+          {
+            "thought": "AI tools always over-promise — I'll try it but I expect to be disappointed",
+            "evidence": "6/12 mentioned past disappointment with AI productivity tools"
+          }
+        ],
+        "does": [
+          {
+            "action": "Opens sprint board and scans all tasks every morning",
+            "frequency": "Daily",
+            "context": "First activity after checking email/Slack"
+          },
+          {
+            "action": "Mentally re-ranks tasks based on yesterday's progress and new information",
+            "frequency": "Daily",
+            "context": "During morning triage"
+          },
+          {
+            "action": "Asks team members for status updates to understand blocking relationships",
+            "frequency": "2-3 times per day",
+            "context": "Via Slack DMs or standup"
+          }
+        ],
+        "feels": [
+          {
+            "emotion": "Overwhelmed by the volume of decisions required",
+            "trigger": "Opening the sprint board to 30+ active tasks",
+            "intensity": "high"
+          },
+          {
+            "emotion": "Anxious about making wrong priority calls",
+            "trigger": "When a team member reports being blocked",
+            "intensity": "high"
+          },
+          {
+            "emotion": "Relief when priorities are clear",
+            "trigger": "After sprint planning when backlog is ordered",
+            "intensity": "medium"
+          },
+          {
+            "emotion": "Skeptical of AI claims",
+            "trigger": "Marketing that promises 'AI-powered' anything",
+            "intensity": "medium"
+          }
+        ]
+      },
+      "journeyMap": {
+        "stages": [
+          {
+            "stage": "Morning triage",
+            "actions": [
+              "Open sprint board",
+              "Scan all tasks",
+              "Check Slack for overnight updates",
+              "Identify blockers"
+            ],
+            "thoughts": [
+              "What changed overnight?",
+              "Who's blocked?",
+              "What's the most impactful thing to work on today?"
+            ],
+            "emotions": "Overwhelmed → Focused (if triage goes well) or Anxious (if surprises found)",
+            "painPoints": [
+              "Takes 30-120 minutes",
+              "Hidden dependencies not visible",
+              "Context from missed meetings is lost"
+            ],
+            "opportunities": [
+              "AI pre-digests overnight changes",
+              "Surface dependency risks proactively",
+              "Suggest top 3 priority changes"
+            ]
+          },
+          {
+            "stage": "Priority decision",
+            "actions": [
+              "Evaluate task urgency and importance",
+              "Check dependencies",
+              "Consult team members if unsure",
+              "Reorder backlog"
+            ],
+            "thoughts": [
+              "Is this the right call?",
+              "What am I not seeing?",
+              "How does this affect downstream work?"
+            ],
+            "emotions": "Uncertain → Committed (once decision made)",
+            "painPoints": [
+              "Decision made with incomplete information",
+              "No way to model downstream impact of priority changes",
+              "Second-guessing after deciding"
+            ],
+            "opportunities": [
+              "AI shows dependency chain impact",
+              "Confidence score helps calibrate trust",
+              "Explanation reduces second-guessing"
+            ]
+          },
+          {
+            "stage": "Communication",
+            "actions": [
+              "Update sprint board",
+              "Notify affected team members",
+              "Update standup notes"
+            ],
+            "thoughts": [
+              "Does the team understand the priority change?",
+              "Did I forget to notify anyone?"
+            ],
+            "emotions": "Relieved (decision made) but Worried (about communication gaps)",
+            "painPoints": [
+              "Manual notification process",
+              "Team members miss priority updates",
+              "No audit trail of why priorities changed"
+            ],
+            "opportunities": [
+              "Automatic notification when AI suggestion is approved",
+              "Priority change log with reasoning",
+              "Team sees same AI explanation"
+            ]
+          }
+        ]
+      }
+    },
+    "define": {
+      "synthesisProcess": "Affinity mapping of 47 unique insights from interviews, observations, and survey data. Clustered into 6 themes: Trust & Transparency, Control & Agency, Cognitive Load, Workflow Integration, Learning & Adaptation, and Communication. Cross-referenced themes with journey map pain points to identify highest-impact design opportunities.",
+      "povStatement": "Engineering team leads who manage 4-8 direct reports need a way to receive AI-generated priority suggestions that explain their reasoning and integrate into morning triage workflow because they currently spend 2+ hours on triage with incomplete information and high anxiety about making wrong calls.",
+      "povVariations": [
+        "Skeptical tech leads need AI suggestions that show their math because past AI tools have over-promised and under-delivered, eroding trust in AI-assisted decisions.",
+        "Distributed engineering teams need priority changes communicated with context because team members in different time zones miss the reasoning behind priority shifts."
+      ],
+      "howMightWeQuestions": [
+        {
+          "question": "How might we present AI priority suggestions so they build trust incrementally rather than demanding trust upfront?",
+          "rationale": "Trust is the #1 factor for adoption. Users won't use suggestions they don't trust, and trust builds gradually through demonstrated accuracy.",
+          "priority": "primary"
+        },
+        {
+          "question": "How might we limit AI suggestions to reduce decision fatigue while still providing comprehensive coverage?",
+          "rationale": "Users ignore suggestion lists longer than 5 items. Need to surface the most impactful changes without overwhelming.",
+          "priority": "primary"
+        },
+        {
+          "question": "How might we integrate AI suggestions into the natural morning triage workflow without adding friction?",
+          "rationale": "Users have an established triage routine. AI must fit into this routine, not require a new workflow.",
+          "priority": "primary"
+        },
+        {
+          "question": "How might we help users distinguish between high-confidence (data-driven) and lower-confidence (pattern-based) AI suggestions?",
+          "rationale": "Users want to handle 'obvious' decisions differently from 'judgment' decisions. Confidence levels help them allocate attention.",
+          "priority": "secondary"
+        },
+        {
+          "question": "How might we make the AI learning process visible and rewarding so users feel invested in improving the model?",
+          "rationale": "Users who see the AI getting smarter are more likely to continue using it through the cold-start period.",
+          "priority": "exploratory"
+        }
+      ],
+      "problemInsights": [
+        {
+          "insight": "The core design challenge is not 'how to display suggestions' but 'how to build trust incrementally' — the UI must convey competence, transparency, and respect for user agency",
+          "supportingEvidence": [
+            "87% rate explainability as critical",
+            "72% prefer suggest-and-approve model",
+            "6/12 have abandoned AI tools that demanded blind trust"
+          ],
+          "designImplications": "Every suggestion must include: (1) what the AI recommends, (2) why (top 3 factors), (3) confidence level, (4) one-click approve/dismiss with optional feedback"
+        },
+        {
+          "insight": "Suggestion timing matters as much as suggestion content — delivering suggestions during natural decision windows (morning, post-lunch) increases engagement by 3x vs continuous push",
+          "supportingEvidence": [
+            "Contextual observation: users engage with suggestions during triage, ignore them during coding",
+            "Survey: 68% prefer 'batch' suggestions over real-time notifications"
+          ],
+          "designImplications": "Deliver suggestions in a 'morning briefing' format rather than continuous notifications. Allow users to set their preferred suggestion windows."
+        }
+      ],
+      "designPrinciples": [
+        {
+          "principle": "Transparency by default — every suggestion shows its reasoning without requiring extra clicks",
+          "rationale": "Trust requires transparency. Hiding reasoning behind 'more info' links reduces trust."
+        },
+        {
+          "principle": "Suggest, don't decide — the AI recommends, the user approves",
+          "rationale": "User agency is non-negotiable. Auto-prioritization erodes trust and adoption."
+        },
+        {
+          "principle": "Less is more — surface top 3-5 suggestions, not a full re-rank",
+          "rationale": "Decision fatigue reduces engagement. Focus attention on highest-impact changes."
+        },
+        {
+          "principle": "Fit the workflow — integrate into existing triage patterns, don't create new ones",
+          "rationale": "Users won't change their routine for a new tool. The tool must meet them where they are."
+        }
+      ],
+      "constraints": [
+        {
+          "constraint": "Must work within existing React component library and design system",
+          "type": "technical",
+          "flexibility": "fixed"
+        },
+        {
+          "constraint": "AI model inference must complete within 200ms to feel instantaneous",
+          "type": "technical",
+          "flexibility": "fixed"
+        },
+        {
+          "constraint": "Must be accessible (WCAG 2.1 AA) — suggestions readable by screen readers",
+          "type": "regulatory",
+          "flexibility": "fixed"
+        },
+        {
+          "constraint": "Initial version must ship within EPIC-2 sprint timeline (2 sprints)",
+          "type": "resource",
+          "flexibility": "negotiable"
+        }
+      ]
+    },
+    "ideate": {
+      "selectedMethods": [
+        {
+          "method": "Crazy 8s sketching",
+          "description": "Each participant sketched 8 different suggestion UI concepts in 8 minutes, then presented to group",
+          "duration": "30 minutes",
+          "ideasGenerated": 32
+        },
+        {
+          "method": "How Might We brainstorming",
+          "description": "Structured brainstorming around each HMW question with 5-minute silent generation followed by group discussion",
+          "duration": "45 minutes",
+          "ideasGenerated": 24
+        },
+        {
+          "method": "Dot voting",
+          "description": "Each participant got 5 votes to allocate across all generated ideas",
+          "duration": "10 minutes",
+          "ideasGenerated": 0
+        }
+      ],
+      "generatedIdeas": [
+        {
+          "id": "IDEA-1",
+          "title": "Morning Briefing Panel",
+          "description": "A dedicated panel that appears during morning triage showing the top 3-5 AI suggestions with reasoning. Each suggestion shows: the recommended priority change, the top 3 factors driving the recommendation, a confidence score (high/medium/low), and approve/dismiss buttons. Suggestions are batched and delivered at the user's preferred triage time.",
+          "hmwQuestion": "How might we integrate AI suggestions into the natural morning triage workflow?",
+          "category": "Workflow integration",
+          "contributor": "Sarah Chen",
+          "votes": 4,
+          "feasibility": "high",
+          "impact": "high"
+        },
+        {
+          "id": "IDEA-2",
+          "title": "Inline Reasoning Tooltips",
+          "description": "Each AI suggestion in the backlog has a small AI icon. Hovering shows a tooltip with the reasoning: 'Suggested priority: High because (1) blocks 3 downstream tasks, (2) due date in 2 days, (3) dependency chain to EPIC-2 milestone.' No extra clicks needed — reasoning is always one hover away.",
+          "hmwQuestion": "How might we present AI suggestions so they build trust incrementally?",
+          "category": "Transparency",
+          "contributor": "Marcus Rivera",
+          "votes": 3,
+          "feasibility": "high",
+          "impact": "high"
+        },
+        {
+          "id": "IDEA-3",
+          "title": "Confidence Badges",
+          "description": "Visual confidence indicators on each suggestion: green badge for high confidence (data-driven, clear dependency/deadline factors), yellow for medium (pattern-based, similar to what user has done before), gray for low (exploratory, based on team-wide patterns). Users learn to trust green suggestions immediately and evaluate yellow/gray more carefully.",
+          "hmwQuestion": "How might we help users distinguish between high-confidence and lower-confidence suggestions?",
+          "category": "Trust calibration",
+          "contributor": "Aisha Patel",
+          "votes": 3,
+          "feasibility": "high",
+          "impact": "medium"
+        },
+        {
+          "id": "IDEA-4",
+          "title": "AI Learning Progress Bar",
+          "description": "A persistent progress indicator showing how well the AI knows the user's patterns: 'AI Confidence: 45% — Getting to know your priorities. Create more tasks or approve/dismiss suggestions to help me learn.' Progress increases with each interaction, creating a gamification loop that encourages engagement during the cold-start period.",
+          "hmwQuestion": "How might we make the AI learning process visible and rewarding?",
+          "category": "Engagement",
+          "contributor": "Sarah Chen",
+          "votes": 2,
+          "feasibility": "high",
+          "impact": "medium"
+        },
+        {
+          "id": "IDEA-5",
+          "title": "Batch Approve with One Click",
+          "description": "After reviewing the morning briefing, users can 'Approve All' high-confidence suggestions with a single click, then individually review medium/low confidence ones. Reduces interaction cost for routine decisions while preserving control for judgment calls.",
+          "hmwQuestion": "How might we limit AI suggestions to reduce decision fatigue?",
+          "category": "Efficiency",
+          "contributor": "Priya Sharma",
+          "votes": 2,
+          "feasibility": "high",
+          "impact": "medium"
+        },
+        {
+          "id": "IDEA-6",
+          "title": "Priority Change Impact Preview",
+          "description": "Before approving a suggestion, show a mini dependency graph highlighting which tasks and team members are affected by the priority change. Visual preview of downstream impact helps users make informed decisions.",
+          "hmwQuestion": "How might we present AI suggestions so they build trust incrementally?",
+          "category": "Transparency",
+          "contributor": "Marcus Rivera",
+          "votes": 4,
+          "feasibility": "medium",
+          "impact": "high"
+        }
+      ],
+      "ideaClustering": [
+        {
+          "clusterName": "Trust & Transparency",
+          "theme": "Making AI reasoning visible and understandable",
+          "ideaIds": [
+            "IDEA-2",
+            "IDEA-3",
+            "IDEA-6"
+          ]
+        },
+        {
+          "clusterName": "Workflow Integration",
+          "theme": "Fitting suggestions into existing triage patterns",
+          "ideaIds": [
+            "IDEA-1",
+            "IDEA-5"
+          ]
+        },
+        {
+          "clusterName": "Engagement & Learning",
+          "theme": "Encouraging interaction during cold-start period",
+          "ideaIds": [
+            "IDEA-4"
+          ]
+        }
+      ],
+      "topConcepts": [
+        {
+          "conceptId": "CONCEPT-A",
+          "name": "Transparent Morning Briefing",
+          "description": "Combines IDEA-1 (Morning Briefing Panel), IDEA-2 (Inline Reasoning), IDEA-3 (Confidence Badges), and IDEA-6 (Impact Preview) into a unified suggestion experience. The morning briefing panel shows top 3-5 suggestions, each with confidence badge, inline reasoning, and an expandable impact preview. Users can approve individually or batch-approve high-confidence suggestions.",
+          "sourceIdeas": [
+            "IDEA-1",
+            "IDEA-2",
+            "IDEA-3",
+            "IDEA-5",
+            "IDEA-6"
+          ],
+          "rationale": "Addresses all three primary HMW questions in a single, cohesive experience. Morning briefing fits the natural triage workflow. Inline reasoning and confidence badges build trust incrementally. Impact preview enables informed decisions.",
+          "userBenefit": "Team leads get a daily AI briefing that saves 1-2 hours of manual triage while maintaining full transparency and control. Trust builds naturally through visible reasoning and accurate predictions.",
+          "technicalConsiderations": "Requires pre-computing suggestions and dependency impact graphs before user's triage window. WebSocket for real-time updates if suggestions change during triage session.",
+          "risks": [
+            "Impact preview computation may exceed 200ms latency target for complex dependency graphs",
+            "Morning briefing timing requires user timezone configuration"
+          ]
+        }
+      ],
+      "selectionCriteria": [
+        "Addresses primary HMW questions (trust, cognitive load, workflow integration)",
+        "Technically feasible within EPIC-2 sprint timeline",
+        "Aligns with design principles (transparency, suggest-don't-decide, less-is-more)",
+        "Accessible (WCAG 2.1 AA compliant)"
+      ]
+    },
+    "prototype": {
+      "prototypeApproach": "Built a medium-fidelity interactive prototype in Figma showing the complete morning briefing flow: opening the app, seeing the AI briefing panel, reviewing suggestions with reasoning and confidence badges, expanding impact preview, approving/dismissing suggestions, and seeing the updated backlog.",
+      "prototypeType": "digital-lo-fi",
+      "prototypes": [
+        {
+          "name": "Morning Briefing Flow",
+          "conceptId": "CONCEPT-A",
+          "description": "Interactive Figma prototype with 8 screens covering the full suggestion review flow. Includes the morning briefing panel with 4 sample suggestions, confidence badges (2 high, 1 medium, 1 low), inline reasoning for each, expandable impact preview for one suggestion, batch approve flow, and updated backlog view after approval.",
+          "fidelity": "medium",
+          "materials": [
+            "Figma",
+            "Design system components",
+            "Sample task data from beta users"
+          ],
+          "timeToCreate": "1 day",
+          "artifacts": [
+            "figma://prototype/morning-briefing-v1"
+          ]
+        }
+      ],
+      "featuresToTest": [
+        {
+          "feature": "Inline reasoning visibility — showing top 3 factors for each suggestion without requiring extra clicks",
+          "hypothesis": "Users who see reasoning inline will trust and approve suggestions at >50% rate (vs ~15% without reasoning)",
+          "successMetric": "Suggestion approval rate and time-to-decision (target: <10 seconds per suggestion)"
+        },
+        {
+          "feature": "Confidence badges — visual differentiation between high, medium, and low confidence suggestions",
+          "hypothesis": "Users will approve high-confidence suggestions 2x more often than low-confidence ones, indicating they understand and trust the confidence calibration",
+          "successMetric": "Approval rate by confidence level (target: high >70%, medium >40%, low >20%)"
+        },
+        {
+          "feature": "Impact preview — expandable dependency graph showing downstream effects of a priority change",
+          "hypothesis": "Users who expand the impact preview will feel more confident in their decisions (self-reported confidence score >4/5)",
+          "successMetric": "Self-reported confidence score and interview feedback on decision quality"
+        }
+      ],
+      "limitations": [
+        "Prototype uses static sample data — cannot test with user's actual tasks",
+        "Impact preview is a static image — cannot test interactive dependency graph exploration",
+        "Does not simulate the cold-start experience (all suggestions show as high-accuracy)"
+      ]
+    },
+    "test": {
+      "testingPlan": "Moderated usability testing with 6 participants matching our primary persona (engineering team leads, 3+ direct reports). Each session: (1) brief context setting, (2) task-based walkthrough of prototype, (3) think-aloud protocol during suggestion review, (4) post-task interview on trust, clarity, and workflow fit. Sessions recorded with participant consent.",
+      "testSessions": [
+        {
+          "sessionId": "TS-1",
+          "date": "2026-01-27",
+          "duration": "45 min",
+          "participantProfile": "Team lead, 6 reports, uses Jira, skeptical of AI",
+          "prototype": "Morning Briefing Flow",
+          "tasks": [
+            "Review morning briefing",
+            "Approve/dismiss suggestions",
+            "Explain reasoning for one decision"
+          ]
+        },
+        {
+          "sessionId": "TS-2",
+          "date": "2026-01-27",
+          "duration": "40 min",
+          "participantProfile": "Tech lead, 4 reports, uses Linear, AI-curious",
+          "prototype": "Morning Briefing Flow",
+          "tasks": [
+            "Review morning briefing",
+            "Approve/dismiss suggestions",
+            "Explore impact preview"
+          ]
+        },
+        {
+          "sessionId": "TS-3",
+          "date": "2026-01-27",
+          "duration": "50 min",
+          "participantProfile": "Team lead, 8 reports, uses Asana, frustrated with triage time",
+          "prototype": "Morning Briefing Flow",
+          "tasks": [
+            "Review morning briefing",
+            "Batch approve",
+            "Evaluate low-confidence suggestion"
+          ]
+        },
+        {
+          "sessionId": "TS-4",
+          "date": "2026-01-28",
+          "duration": "45 min",
+          "participantProfile": "Senior engineer, 3 reports, uses GitHub Projects, minimal AI experience",
+          "prototype": "Morning Briefing Flow",
+          "tasks": [
+            "Review morning briefing",
+            "Approve/dismiss suggestions",
+            "Explain confidence levels"
+          ]
+        },
+        {
+          "sessionId": "TS-5",
+          "date": "2026-01-28",
+          "duration": "40 min",
+          "participantProfile": "Engineering manager, 7 reports, uses Monday.com, has used AI tools before",
+          "prototype": "Morning Briefing Flow",
+          "tasks": [
+            "Review morning briefing",
+            "Approve/dismiss suggestions",
+            "Review impact preview"
+          ]
+        },
+        {
+          "sessionId": "TS-6",
+          "date": "2026-01-28",
+          "duration": "50 min",
+          "participantProfile": "Team lead, 5 reports, uses Linear, power user interested in automation",
+          "prototype": "Morning Briefing Flow",
+          "tasks": [
+            "Full flow including batch approve and feedback"
+          ]
+        }
+      ],
+      "userFeedback": [
+        {
+          "user": "TS-1 (Skeptical Jira user)",
+          "feedback": "The reasoning is what sold me. I've used AI tools where it just says 'priority: high' and I'm like, why? Here I can see it's because of the dependency chain and the deadline. I'd actually use this.",
+          "feature": "Inline reasoning",
+          "sentiment": "positive",
+          "actionability": "informational",
+          "priority": "high"
+        },
+        {
+          "user": "TS-2 (AI-curious Linear user)",
+          "feedback": "The confidence badges are great — I immediately knew to just approve the green ones and spend more time on the yellow one. But I'd like to see the actual numbers, not just colors. Like '92% confident' instead of just 'high'.",
+          "feature": "Confidence badges",
+          "sentiment": "positive",
+          "actionability": "actionable",
+          "priority": "medium"
+        },
+        {
+          "user": "TS-3 (Frustrated Asana user)",
+          "feedback": "Batch approve is exactly what I need. If the AI handles the obvious stuff with one click, I can focus on the tricky decisions. But I want to see which ones I'm batch-approving — maybe a quick summary before I click.",
+          "feature": "Batch approve",
+          "sentiment": "positive",
+          "actionability": "actionable",
+          "priority": "medium"
+        },
+        {
+          "user": "TS-4 (Minimal AI experience)",
+          "feedback": "I didn't understand what 'medium confidence' meant at first. Is that the AI's confidence or mine? Once I read the tooltip it made sense, but it should be clearer upfront. Maybe 'AI Confidence: Medium — based on patterns from similar teams'.",
+          "feature": "Confidence badges",
+          "sentiment": "neutral",
+          "actionability": "actionable",
+          "priority": "high"
+        },
+        {
+          "user": "TS-5 (Has used AI tools before)",
+          "feedback": "The impact preview is the killer feature. I've never seen a tool show me what happens downstream if I change a priority. This would prevent so many blocking incidents. Can I see the full dependency graph, not just the immediate connections?",
+          "feature": "Impact preview",
+          "sentiment": "positive",
+          "actionability": "actionable",
+          "priority": "medium"
+        },
+        {
+          "user": "TS-6 (Power user)",
+          "feedback": "I want to give feedback when I dismiss a suggestion — like 'wrong because X' — so the AI learns faster. Right now dismiss just removes it. A quick feedback option would make me feel like I'm training the AI, not just ignoring it.",
+          "feature": "Feedback mechanism",
+          "sentiment": "positive",
+          "actionability": "actionable",
+          "priority": "high"
+        }
+      ],
+      "usabilityIssues": [
+        {
+          "issue": "Confidence badge labels ('High', 'Medium', 'Low') ambiguous — users unsure if it refers to AI confidence or task priority",
+          "severity": "major",
+          "frequency": "3/6 participants had initial confusion",
+          "recommendation": "Change labels to 'AI Confidence: High' with a subtitle explaining the basis (e.g., 'Based on dependency analysis and deadline data')"
+        },
+        {
+          "issue": "Batch approve button doesn't show a summary of what will be approved — users hesitant to click without preview",
+          "severity": "minor",
+          "frequency": "2/6 participants mentioned this",
+          "recommendation": "Add a confirmation tooltip or expandable summary showing the suggestions that will be batch-approved"
+        }
+      ],
+      "keyLearnings": [
+        {
+          "learning": "Inline reasoning is the highest-impact trust-building feature — every participant mentioned it as the key factor that would drive their adoption",
+          "evidence": "6/6 participants specifically called out reasoning visibility as the most important feature",
+          "implication": "Reasoning must be visible by default, not hidden behind a click. This is non-negotiable for the production design.",
+          "action": "Ensure EPIC-2 stories include inline reasoning as a required acceptance criterion, not optional"
+        },
+        {
+          "learning": "Users want to give feedback on dismissed suggestions to help the AI learn — this creates engagement and improves model quality simultaneously",
+          "evidence": "3/6 participants independently suggested a feedback mechanism for dismissed suggestions",
+          "implication": "Add an optional 'Why did you dismiss this?' quick-select (wrong priority, already handled, not relevant, other) to dismissed suggestions",
+          "action": "Add feedback mechanism to S-2.2 (Smart Suggestions UI) acceptance criteria"
+        },
+        {
+          "learning": "Confidence badges need explicit 'AI Confidence' labeling — the word 'confidence' alone is ambiguous in a task management context",
+          "evidence": "3/6 participants had initial confusion about what confidence referred to",
+          "implication": "Label badges as 'AI Confidence: High/Medium/Low' with a brief explanation of what drives the confidence level",
+          "action": "Update design spec for confidence badges before implementation"
+        }
+      ],
+      "hypothesisValidation": [
+        {
+          "hypothesis": "Users who see reasoning inline will trust and approve suggestions at >50% rate",
+          "status": "validated",
+          "evidence": "5/6 participants said they would approve the high-confidence suggestions shown in the prototype. Self-reported trust score averaged 4.2/5 with reasoning visible vs 2.1/5 when asked about tools without reasoning.",
+          "nextSteps": "Proceed with inline reasoning as the default display. Track actual approval rates in production."
+        },
+        {
+          "hypothesis": "Users will approve high-confidence suggestions 2x more often than low-confidence ones",
+          "status": "partially-validated",
+          "evidence": "Users clearly differentiated between confidence levels but some confusion about labeling reduces the effect. After clarification, behavior matched the hypothesis.",
+          "nextSteps": "Fix confidence badge labeling, then re-validate with updated prototype."
+        },
+        {
+          "hypothesis": "Impact preview increases decision confidence (self-reported >4/5)",
+          "status": "validated",
+          "evidence": "4/6 participants rated their decision confidence at 4 or 5 after viewing impact preview. 2 participants rated 3 because the static image didn't show enough detail.",
+          "nextSteps": "Build interactive impact preview for production. Prioritize immediate connections; full graph as a stretch goal."
+        }
+      ]
+    },
+    "nextSteps": {
+      "iterationPlan": "Iterate on the Morning Briefing prototype with three changes: (1) Fix confidence badge labeling, (2) Add batch approve confirmation summary, (3) Add dismiss feedback mechanism. Then run a second round of testing with 4 participants before finalizing the production design spec.",
+      "refinementsNeeded": [
+        {
+          "area": "Confidence badge labeling",
+          "refinement": "Change from 'High/Medium/Low' to 'AI Confidence: High — Based on dependency analysis and deadline data' with a brief explanation subtitle",
+          "priority": "critical",
+          "effort": "small"
+        },
+        {
+          "area": "Batch approve flow",
+          "refinement": "Add a confirmation tooltip showing the list of suggestions that will be batch-approved, with option to deselect individual items",
+          "priority": "high",
+          "effort": "small"
+        },
+        {
+          "area": "Dismiss feedback mechanism",
+          "refinement": "After dismissing a suggestion, show a quick-select: 'Help AI learn: Wrong priority / Already handled / Not relevant / Other'. Optional — dismiss still works without feedback.",
+          "priority": "high",
+          "effort": "medium"
+        },
+        {
+          "area": "Numeric confidence scores",
+          "refinement": "Add optional numeric confidence percentage alongside badge color for users who want more detail (toggle in settings)",
+          "priority": "medium",
+          "effort": "small"
+        }
+      ],
+      "actionItems": [
+        {
+          "action": "Update Figma prototype with confidence badge labeling fix and batch approve confirmation",
+          "owner": "Sarah Chen",
+          "dueDate": "2026-01-30",
+          "dependencies": [],
+          "status": "not-started"
+        },
+        {
+          "action": "Add dismiss feedback mechanism wireframes to prototype",
+          "owner": "Sarah Chen",
+          "dueDate": "2026-01-31",
+          "dependencies": [],
+          "status": "not-started"
+        },
+        {
+          "action": "Conduct second round usability testing (4 participants)",
+          "owner": "Priya Sharma",
+          "dueDate": "2026-02-03",
+          "dependencies": [
+            "Updated prototype"
+          ],
+          "status": "not-started"
+        },
+        {
+          "action": "Finalize production design spec and hand off to engineering",
+          "owner": "Sarah Chen",
+          "dueDate": "2026-02-05",
+          "dependencies": [
+            "Second round testing complete"
+          ],
+          "status": "not-started"
+        },
+        {
+          "action": "Update S-2.2 (Smart Suggestions UI) acceptance criteria to include inline reasoning, confidence labels, and dismiss feedback",
+          "owner": "Sarah Chen",
+          "dueDate": "2026-02-05",
+          "dependencies": [
+            "Design spec finalized"
+          ],
+          "status": "not-started"
+        }
+      ],
+      "successMetrics": [
+        {
+          "metric": "AI suggestion approval rate in first session",
+          "target": ">50% (up from 15% baseline)",
+          "measurementMethod": "Track approve/dismiss actions on AI suggestions for new users in first 30 minutes"
+        },
+        {
+          "metric": "Time to decision per suggestion",
+          "target": "<15 seconds average",
+          "measurementMethod": "Track time between suggestion display and approve/dismiss action"
+        },
+        {
+          "metric": "Dismiss feedback completion rate",
+          "target": ">30% of dismissals include feedback",
+          "measurementMethod": "Track feedback submissions vs total dismissals"
+        }
+      ],
+      "handoffNotes": "The production design spec should include: (1) Morning Briefing panel component with responsive layout, (2) Suggestion card component with inline reasoning, confidence badge, and action buttons, (3) Impact preview expandable section with dependency graph visualization, (4) Batch approve flow with confirmation, (5) Dismiss feedback quick-select. All components must be WCAG 2.1 AA compliant with keyboard navigation and screen reader support. Coordinate with EPIC-2 engineering on API contract for suggestion data structure."
+    }
+  }
+}

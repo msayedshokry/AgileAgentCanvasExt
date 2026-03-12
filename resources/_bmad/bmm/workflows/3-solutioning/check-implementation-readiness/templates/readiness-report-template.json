@@ -1,0 +1,59 @@
+{
+  "$schema": "../../../../../schemas/bmm/readiness-report.schema.json",
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "readiness-report",
+    "workflowName": "check-implementation-readiness",
+    "projectName": "{{project_name}}",
+    "stepsCompleted": [],
+    "currentStep": "",
+    "timestamps": {
+      "created": "{{timestamp}}",
+      "lastModified": "{{timestamp}}"
+    },
+    "author": "{{user_name}}",
+    "status": "draft"
+  },
+  "content": {
+    "title": "{{project_name}} Implementation Readiness Report",
+    "summary": {
+      "projectName": "{{project_name}}",
+      "assessmentDate": "{{date}}",
+      "overallStatus": "not-ready",
+      "recommendation": ""
+    },
+    "assessment": {
+      "prdAnalysis": {
+        "status": "incomplete",
+        "completeness": 0,
+        "findings": [],
+        "gaps": []
+      },
+      "epicCoverage": {
+        "status": "incomplete",
+        "totalRequirements": 0,
+        "coveredRequirements": 0,
+        "coveragePercent": 0,
+        "gaps": []
+      },
+      "uxAlignment": {
+        "status": "not-applicable",
+        "findings": []
+      },
+      "architectureReadiness": {
+        "status": "needs-work",
+        "findings": []
+      },
+      "epicQuality": {
+        "acceptanceCriteriaQuality": "",
+        "storyClarity": "",
+        "technicalFeasibility": "",
+        "findings": []
+      }
+    },
+    "blockers": [],
+    "risks": [],
+    "recommendations": [],
+    "nextSteps": []
+  }
+}

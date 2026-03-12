@@ -1,0 +1,43 @@
+# Definition of Done Workflow
+name: create-definition-of-done
+description: "Create Definition of Done checklists and quality gates for epics and stories"
+author: "BMad"
+
+# Critical variables from config
+config_source: "{bmad-path}/bmm/config.yaml"
+output_folder: "{config_source}:output_folder"
+planning_artifacts: "{config_source}:planning_artifacts"
+user_name: "{config_source}:user_name"
+communication_language: "{config_source}:communication_language"
+document_output_language: "{config_source}:document_output_language"
+date: system-generated
+
+# Workflow components
+installed_path: "{bmad-path}/bmm/workflows/supporting/create-definition-of-done"
+instructions: "{installed_path}/instructions.md"
+template: "{installed_path}/template.md"
+
+# Output configuration
+default_output_file: "{planning_artifacts}/definition-of-done.md"
+
+# Output format configuration (dual = JSON + Markdown)
+output_format: dual
+schema: "{bmad-path}/schemas/bmm/definition-of-done.schema.json"
+output_note: "Produces definition-of-done.md and definition-of-done.json with completion criteria"
+
+# Required tools
+required_tools:
+  - read_file     # Read PRD, architecture, team standards
+  - write_file    # Create DoD documents
+  - list_files    # Find existing standards
+
+tags:
+  - planning
+  - quality
+  - governance
+  - agile
+
+execution_hints:
+  interactive: true   # Collaborate on criteria definition
+  autonomous: false
+  iterative: true     # Refine as standards evolve

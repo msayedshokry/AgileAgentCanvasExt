@@ -1,0 +1,514 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "atdd-checklist",
+    "timestamps": {
+      "created": "2025-09-05T10:00:00Z",
+      "lastModified": "2025-09-18T16:00:00Z"
+    },
+    "status": "completed",
+    "tags": [
+      "atdd",
+      "story-1.1",
+      "task-crud",
+      "tdd",
+      "red-green-refactor"
+    ],
+    "author": "TEA Agent"
+  },
+  "content": {
+    "storyInfo": {
+      "epicId": "EPIC-1",
+      "storyId": "S-1.1",
+      "storyTitle": "Task CRUD Operations",
+      "storyDescription": "As a user, I want to create, read, update, and delete tasks so that I can manage my work items effectively. Tasks should support title, description, priority (critical/high/medium/low), due date, tags, and assignee fields.",
+      "primaryTestLevel": "integration",
+      "businessValue": "Core task management is the foundation of the entire TaskFlow Pro platform. Without reliable CRUD operations, no other features (AI prioritization, filtering, sync) can function.",
+      "technicalContext": "Tasks are stored in PostgreSQL with a REST API. Real-time updates are broadcast via WebSocket. Task validation occurs at both API and service layers."
+    },
+    "storySummary": {
+      "asA": "TaskFlow Pro user",
+      "iWant": "to create, read, update, and delete tasks with rich metadata (title, description, priority, due date, tags, assignee)",
+      "soThat": "I can effectively track and manage my work items in a structured way"
+    },
+    "acceptanceCriteria": [
+      {
+        "id": "AC-1.1.1",
+        "title": "User can create a task with all supported fields",
+        "given": "An authenticated user on the task creation form",
+        "when": "The user fills in title, description, priority, due date, and tags then submits",
+        "then": "A new task is created with a unique ID and appears in the task list",
+        "priority": "P0",
+        "automationStatus": "automated"
+      },
+      {
+        "id": "AC-1.1.2",
+        "title": "User can update any field of an existing task",
+        "given": "An existing task displayed in the task detail view",
+        "when": "The user modifies the title and changes the priority",
+        "then": "The task is updated immediately and the updatedAt timestamp changes",
+        "priority": "P0",
+        "automationStatus": "automated"
+      },
+      {
+        "id": "AC-1.1.3",
+        "title": "User can delete a task with confirmation",
+        "given": "An existing task in the task list",
+        "when": "The user clicks delete and confirms the action",
+        "then": "The task is permanently removed and no longer appears in any view",
+        "priority": "P0",
+        "automationStatus": "automated"
+      },
+      {
+        "id": "AC-1.1.4",
+        "title": "Task validation prevents invalid data",
+        "given": "A user attempting to create or update a task",
+        "when": "The user submits with an empty title or invalid due date",
+        "then": "A clear validation error is shown and the task is not saved",
+        "priority": "P1",
+        "automationStatus": "automated"
+      }
+    ],
+    "failingTestsCreated": {
+      "integration": [
+        {
+          "testId": "ATDD-INT-001",
+          "name": "POST /api/tasks creates task with all fields",
+          "description": "Integration test verifying task creation via API with all supported fields returns 201 and persisted task",
+          "acReference": "AC-1.1.1",
+          "status": "passing",
+          "filePath": "tests/integration/task-crud.spec.ts",
+          "lineNumber": 15,
+          "given": [
+            "An authenticated user with a valid JWT token",
+            "The tasks table is empty"
+          ],
+          "when": [
+            "POST /api/tasks is called with title, description, priority='high', dueDate='2025-10-15', tags=['feature','urgent']"
+          ],
+          "then": [
+            "Response status is 201",
+            "Response body contains the created task with a generated UUID",
+            "The task exists in the database with all fields matching the request"
+          ],
+          "lastResult": {
+            "status": "passed",
+            "duration": "45ms",
+            "runAt": "2025-09-18T15:00:00Z"
+          }
+        },
+        {
+          "testId": "ATDD-INT-002",
+          "name": "PATCH /api/tasks/:id updates task fields",
+          "description": "Integration test verifying partial task update via API correctly persists changes and updates timestamp",
+          "acReference": "AC-1.1.2",
+          "status": "passing",
+          "filePath": "tests/integration/task-crud.spec.ts",
+          "lineNumber": 52,
+          "given": [
+            "An existing task with id='task-001' and title='Original Title'"
+          ],
+          "when": [
+            "PATCH /api/tasks/task-001 is called with { title: 'Updated Title', priority: 'critical' }"
+          ],
+          "then": [
+            "Response status is 200",
+            "Response body shows updated title and priority",
+            "updatedAt timestamp is newer than createdAt"
+          ],
+          "lastResult": {
+            "status": "passed",
+            "duration": "38ms",
+            "runAt": "2025-09-18T15:00:00Z"
+          }
+        },
+        {
+          "testId": "ATDD-INT-003",
+          "name": "DELETE /api/tasks/:id removes task permanently",
+          "description": "Integration test verifying task deletion returns 204 and task is no longer retrievable",
+          "acReference": "AC-1.1.3",
+          "status": "passing",
+          "filePath": "tests/integration/task-crud.spec.ts",
+          "lineNumber": 89,
+          "given": [
+            "An existing task with id='task-002'"
+          ],
+          "when": [
+            "DELETE /api/tasks/task-002 is called"
+          ],
+          "then": [
+            "Response status is 204",
+            "GET /api/tasks/task-002 returns 404"
+          ],
+          "lastResult": {
+            "status": "passed",
+            "duration": "32ms",
+            "runAt": "2025-09-18T15:00:00Z"
+          }
+        }
+      ],
+      "unit": [
+        {
+          "testId": "ATDD-UNIT-001",
+          "name": "TaskValidator rejects empty title",
+          "description": "Unit test verifying task validation throws ValidationError for empty title",
+          "acReference": "AC-1.1.4",
+          "status": "passing",
+          "filePath": "tests/unit/task-validation.spec.ts",
+          "lineNumber": 10,
+          "given": [
+            "A task creation request with title=''"
+          ],
+          "when": [
+            "TaskValidator.validate() is called"
+          ],
+          "then": [
+            "A ValidationError is thrown with message 'Title is required'"
+          ],
+          "lastResult": {
+            "status": "passed",
+            "duration": "2ms",
+            "runAt": "2025-09-18T15:00:00Z"
+          }
+        }
+      ],
+      "e2e": [
+        {
+          "testId": "ATDD-E2E-001",
+          "name": "User creates task through UI",
+          "description": "E2E test verifying the complete task creation flow from clicking New Task to seeing the task in the list",
+          "acReference": "AC-1.1.1",
+          "status": "passing",
+          "filePath": "tests/e2e/task-management.spec.ts",
+          "lineNumber": 8,
+          "given": [
+            "The user is logged in and on the task board page"
+          ],
+          "when": [
+            "The user clicks 'New Task' button",
+            "Fills in title 'E2E Test Task'",
+            "Sets priority to 'high'",
+            "Clicks 'Create' button"
+          ],
+          "then": [
+            "The task appears in the task list",
+            "The task card shows title 'E2E Test Task' and priority badge 'high'"
+          ],
+          "lastResult": {
+            "status": "passed",
+            "duration": "3.2s",
+            "runAt": "2025-09-18T15:00:00Z"
+          }
+        }
+      ]
+    },
+    "testScenarios": [
+      {
+        "scenarioId": "SCEN-001",
+        "acReference": "AC-1.1.1",
+        "name": "Create task with all fields populated",
+        "given": [
+          "An authenticated user on the task board"
+        ],
+        "when": [
+          "The user opens the task creation form",
+          "Fills in all fields: title, description, priority, due date, tags, assignee"
+        ],
+        "then": [
+          "A new task is created with all fields persisted",
+          "The task appears in the correct priority column",
+          "A WebSocket event notifies other clients"
+        ],
+        "testLevel": "integration",
+        "automationStatus": "completed"
+      },
+      {
+        "scenarioId": "SCEN-002",
+        "acReference": "AC-1.1.4",
+        "name": "Validation error on empty title submission",
+        "given": [
+          "An authenticated user on the task creation form"
+        ],
+        "when": [
+          "The user leaves the title field empty and clicks Create"
+        ],
+        "then": [
+          "A validation error message 'Title is required' is displayed",
+          "The task is not created",
+          "The form remains open for correction"
+        ],
+        "examples": [
+          {
+            "field": "title",
+            "value": "",
+            "expectedError": "Title is required"
+          },
+          {
+            "field": "title",
+            "value": "   ",
+            "expectedError": "Title is required"
+          }
+        ],
+        "testLevel": "component",
+        "automationStatus": "completed"
+      }
+    ],
+    "requiredDataTestIds": [
+      {
+        "testId": "task-create-button",
+        "element": "button",
+        "component": "TaskBoard",
+        "filePath": "src/pages/TaskBoard.tsx",
+        "purpose": "Trigger task creation form - used in E2E tests to open the new task dialog",
+        "status": "verified"
+      },
+      {
+        "testId": "task-title-input",
+        "element": "input",
+        "component": "TaskForm",
+        "filePath": "src/components/TaskForm.tsx",
+        "purpose": "Title input field for task creation and editing",
+        "status": "verified"
+      },
+      {
+        "testId": "task-priority-select",
+        "element": "select",
+        "component": "TaskForm",
+        "filePath": "src/components/TaskForm.tsx",
+        "purpose": "Priority dropdown selector",
+        "status": "verified"
+      },
+      {
+        "testId": "task-submit-button",
+        "element": "button",
+        "component": "TaskForm",
+        "filePath": "src/components/TaskForm.tsx",
+        "purpose": "Submit button for task creation/update",
+        "status": "verified"
+      },
+      {
+        "testId": "task-delete-button",
+        "element": "button",
+        "component": "TaskDetail",
+        "filePath": "src/components/TaskDetail.tsx",
+        "purpose": "Delete task button with confirmation dialog",
+        "status": "verified"
+      },
+      {
+        "testId": "task-card",
+        "element": "div",
+        "component": "TaskCard",
+        "filePath": "src/components/TaskCard.tsx",
+        "purpose": "Individual task card in the task list for selecting and interacting with tasks",
+        "status": "verified"
+      }
+    ],
+    "implementationChecklist": [
+      {
+        "id": "CHK-001",
+        "item": "Write failing integration tests for all CRUD endpoints (POST, GET, PATCH, DELETE)",
+        "category": "test-setup",
+        "completed": true,
+        "completedDate": "2025-09-05T14:00:00Z",
+        "notes": "4 integration tests created, all initially failing"
+      },
+      {
+        "id": "CHK-002",
+        "item": "Write failing unit tests for TaskValidator edge cases",
+        "category": "test-setup",
+        "completed": true,
+        "completedDate": "2025-09-05T16:00:00Z",
+        "notes": "6 unit tests for validation rules"
+      },
+      {
+        "id": "CHK-003",
+        "item": "Implement Task model and database migration",
+        "category": "implementation",
+        "completed": true,
+        "completedDate": "2025-09-08T12:00:00Z",
+        "notes": "PostgreSQL migration with all columns"
+      },
+      {
+        "id": "CHK-004",
+        "item": "Implement TaskService with CRUD methods",
+        "category": "implementation",
+        "completed": true,
+        "completedDate": "2025-09-10T16:00:00Z",
+        "notes": "All CRUD methods with validation"
+      },
+      {
+        "id": "CHK-005",
+        "item": "Implement TaskController API endpoints",
+        "category": "implementation",
+        "completed": true,
+        "completedDate": "2025-09-12T12:00:00Z",
+        "notes": "REST endpoints with proper HTTP status codes"
+      },
+      {
+        "id": "CHK-006",
+        "item": "Verify all tests pass (GREEN phase)",
+        "category": "verification",
+        "completed": true,
+        "completedDate": "2025-09-12T14:00:00Z",
+        "notes": "All 10 tests passing"
+      },
+      {
+        "id": "CHK-007",
+        "item": "Refactor: extract validation into separate TaskValidator class",
+        "category": "cleanup",
+        "completed": true,
+        "completedDate": "2025-09-15T12:00:00Z",
+        "notes": "Improved separation of concerns"
+      },
+      {
+        "id": "CHK-008",
+        "item": "Write E2E tests for complete user journey",
+        "category": "verification",
+        "completed": true,
+        "completedDate": "2025-09-16T16:00:00Z",
+        "notes": "2 E2E tests covering create and delete flows"
+      },
+      {
+        "id": "CHK-009",
+        "item": "Add data-testid attributes to all interactive elements",
+        "category": "implementation",
+        "completed": true,
+        "completedDate": "2025-09-17T10:00:00Z",
+        "notes": "6 data-testid attributes added"
+      },
+      {
+        "id": "CHK-010",
+        "item": "Final test run and coverage verification",
+        "category": "verification",
+        "completed": true,
+        "completedDate": "2025-09-18T16:00:00Z",
+        "notes": "All 12 tests passing, 94% coverage for task module"
+      }
+    ],
+    "runningTests": {
+      "all": "npm test -- --filter='task'",
+      "e2e": "npx playwright test tests/e2e/task-management.spec.ts",
+      "integration": "npx vitest run tests/integration/task-crud.spec.ts",
+      "unit": "npx vitest run tests/unit/task-validation.spec.ts",
+      "watch": "npx vitest tests/unit/task-validation.spec.ts tests/integration/task-crud.spec.ts",
+      "coverage": "npx vitest run --coverage -- --filter='task'"
+    },
+    "redGreenRefactorWorkflow": {
+      "currentPhase": "complete",
+      "currentIteration": 3,
+      "iterations": [
+        {
+          "iteration": 1,
+          "targetAC": "AC-1.1.1 - Task creation",
+          "red": {
+            "description": "Wrote integration test for POST /api/tasks that expects 201 response with created task containing all fields. Test fails because API endpoint doesn't exist yet.",
+            "testFile": "tests/integration/task-crud.spec.ts",
+            "testName": "POST /api/tasks creates task with all fields",
+            "failureMessage": "Error: connect ECONNREFUSED - POST /api/tasks returned network error (no server)",
+            "completedAt": "2025-09-05T14:00:00Z"
+          },
+          "green": {
+            "description": "Implemented Task model, database migration, TaskService.create(), and POST /api/tasks endpoint. Test now passes with correct 201 response and all fields persisted.",
+            "filesChanged": [
+              "src/models/task.ts",
+              "src/services/task-service.ts",
+              "src/controllers/task-controller.ts",
+              "migrations/001_create_tasks.sql"
+            ],
+            "completedAt": "2025-09-10T16:00:00Z"
+          },
+          "refactor": {
+            "description": "Extracted input validation from TaskController into dedicated TaskValidator class. Added TypeScript interfaces for Task and CreateTaskDTO. Simplified controller to single-responsibility.",
+            "improvements": [
+              "Created TaskValidator class",
+              "Added CreateTaskDTO and UpdateTaskDTO interfaces",
+              "Simplified TaskController methods"
+            ],
+            "completedAt": "2025-09-15T12:00:00Z"
+          }
+        },
+        {
+          "iteration": 2,
+          "targetAC": "AC-1.1.2 + AC-1.1.3 - Task update and delete",
+          "red": {
+            "description": "Wrote integration tests for PATCH /api/tasks/:id and DELETE /api/tasks/:id. Both fail because endpoints don't exist yet.",
+            "testFile": "tests/integration/task-crud.spec.ts",
+            "testName": "PATCH and DELETE task endpoints",
+            "failureMessage": "Error: PATCH /api/tasks/task-001 returned 404 - endpoint not found",
+            "completedAt": "2025-09-10T17:00:00Z"
+          },
+          "green": {
+            "description": "Implemented TaskService.update() and TaskService.delete() methods, added PATCH and DELETE routes. All tests now pass.",
+            "filesChanged": [
+              "src/services/task-service.ts",
+              "src/controllers/task-controller.ts",
+              "src/routes/task-routes.ts"
+            ],
+            "completedAt": "2025-09-12T12:00:00Z"
+          },
+          "refactor": {
+            "description": "Added optimistic locking via version field to prevent concurrent update conflicts. Extracted route registration to separate file.",
+            "improvements": [
+              "Added version-based optimistic locking",
+              "Separated route registration from controller"
+            ],
+            "completedAt": "2025-09-15T16:00:00Z"
+          }
+        },
+        {
+          "iteration": 3,
+          "targetAC": "AC-1.1.4 - Validation",
+          "red": {
+            "description": "Wrote 6 unit tests for TaskValidator covering empty title, title too long, invalid date, invalid priority, XSS in description, and duplicate tags. All fail because TaskValidator doesn't handle these cases.",
+            "testFile": "tests/unit/task-validation.spec.ts",
+            "testName": "TaskValidator validation rules",
+            "failureMessage": "Expected ValidationError to be thrown but no error was thrown",
+            "completedAt": "2025-09-16T10:00:00Z"
+          },
+          "green": {
+            "description": "Added validation rules to TaskValidator for all 6 cases. All unit tests pass. Integration tests also updated to verify 422 responses for invalid input.",
+            "filesChanged": [
+              "src/validators/task-validator.ts",
+              "tests/integration/task-crud.spec.ts"
+            ],
+            "completedAt": "2025-09-17T16:00:00Z"
+          },
+          "refactor": {
+            "description": "Refactored validation to use a fluent builder pattern for composable validation rules. Added custom error messages with field-level error details in 422 response.",
+            "improvements": [
+              "Fluent validation builder",
+              "Field-level error details in API response",
+              "Reusable validation rules"
+            ],
+            "completedAt": "2025-09-18T12:00:00Z"
+          }
+        }
+      ]
+    },
+    "testExecutionEvidence": {
+      "lastRun": "2025-09-18T15:00:00Z",
+      "results": {
+        "passed": 12,
+        "failed": 0,
+        "skipped": 0,
+        "pending": 0,
+        "totalDuration": "4.8s"
+      },
+      "coverage": {
+        "statements": 94.2,
+        "branches": 88.5,
+        "functions": 96,
+        "lines": 93.8
+      }
+    },
+    "completionStatus": {
+      "status": "complete",
+      "percentComplete": 100,
+      "blockers": [],
+      "nextSteps": [
+        "Monitor test stability in CI over next 5 runs",
+        "Add performance benchmarks for CRUD operations"
+      ]
+    }
+  }
+}

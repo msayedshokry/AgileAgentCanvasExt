@@ -1,0 +1,874 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/tea/test-design-qa.schema.json",
+  "title": "Test Design QA Schema",
+  "description": "Schema for QA-focused test design artifacts. IMPORTANT: Capture ALL test design details completely. Do NOT summarize or truncate any test scenarios, coverage plans, or execution strategies.",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["featureInfo", "coveragePlan"],
+      "properties": {
+        "featureInfo": {
+          "type": "object",
+          "description": "Complete feature information being tested. Include ALL context.",
+          "required": ["featureName", "purpose"],
+          "properties": {
+            "featureName": {
+              "type": "string",
+              "description": "COMPLETE name of the feature under test"
+            },
+            "purpose": {
+              "type": "string",
+              "description": "COMPLETE description of the feature's purpose and what it delivers to users. Do NOT summarize."
+            },
+            "projectReference": {
+              "type": "string",
+              "description": "Reference to project documentation (PRD, epic, etc.)"
+            },
+            "version": {
+              "type": "string",
+              "description": "Version of the feature being tested"
+            },
+            "targetRelease": {
+              "type": "string",
+              "description": "Target release or sprint for this feature"
+            }
+          }
+        },
+        "executiveSummary": {
+          "type": "string",
+          "description": "COMPLETE executive summary of the test design. Include ALL key points about scope, approach, risks, and recommendations. This should be comprehensive enough for stakeholders to understand the full testing strategy."
+        },
+        "testingObjectives": {
+          "type": "array",
+          "description": "COMPLETE list of ALL testing objectives. Each objective should be fully described.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Objective identifier"
+              },
+              "objective": {
+                "type": "string",
+                "description": "COMPLETE description of the testing objective"
+              },
+              "priority": {
+                "type": "string",
+                "enum": ["critical", "high", "medium", "low"],
+                "description": "Priority level of this objective"
+              },
+              "successCriteria": {
+                "type": "string",
+                "description": "COMPLETE success criteria for this objective"
+              }
+            }
+          }
+        },
+        "notInScope": {
+          "type": "array",
+          "description": "COMPLETE list of ALL items explicitly excluded from testing scope. Each exclusion should include rationale.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "item": {
+                "type": "string",
+                "description": "COMPLETE description of what is excluded"
+              },
+              "rationale": {
+                "type": "string",
+                "description": "COMPLETE explanation of why this is excluded from scope"
+              }
+            }
+          }
+        },
+        "dependenciesAndBlockers": {
+          "type": "object",
+          "description": "COMPLETE inventory of ALL dependencies and blockers",
+          "properties": {
+            "dependencies": {
+              "type": "array",
+              "description": "ALL dependencies required for testing",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Dependency identifier"
+                  },
+                  "dependency": {
+                    "type": "string",
+                    "description": "COMPLETE description of the dependency"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": ["environment", "data", "service", "tool", "access", "code", "other"],
+                    "description": "Type of dependency"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["available", "pending", "blocked", "in-progress"],
+                    "description": "Current status of this dependency"
+                  },
+                  "owner": {
+                    "type": "string",
+                    "description": "Person or team responsible for this dependency"
+                  },
+                  "eta": {
+                    "type": "string",
+                    "description": "Expected availability date"
+                  }
+                }
+              }
+            },
+            "blockers": {
+              "type": "array",
+              "description": "ALL current blockers preventing testing progress",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Blocker identifier"
+                  },
+                  "blocker": {
+                    "type": "string",
+                    "description": "COMPLETE description of the blocker"
+                  },
+                  "impact": {
+                    "type": "string",
+                    "description": "COMPLETE description of the impact on testing"
+                  },
+                  "mitigation": {
+                    "type": "string",
+                    "description": "COMPLETE mitigation plan or workaround"
+                  },
+                  "owner": {
+                    "type": "string",
+                    "description": "Person or team working to resolve"
+                  },
+                  "eta": {
+                    "type": "string",
+                    "description": "Expected resolution date"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "riskAssessment": {
+          "type": "array",
+          "description": "COMPLETE risk assessment. Include ALL identified risks with full analysis. Do NOT summarize.",
+          "items": {
+            "type": "object",
+            "required": ["riskId", "risk", "probability", "impact", "mitigation"],
+            "properties": {
+              "riskId": {
+                "type": "string",
+                "description": "Unique risk identifier"
+              },
+              "risk": {
+                "type": "string",
+                "description": "COMPLETE description of the risk. Include all context and potential consequences."
+              },
+              "category": {
+                "type": "string",
+                "enum": ["technical", "resource", "schedule", "scope", "quality", "environment", "data", "integration"],
+                "description": "Risk category"
+              },
+              "probability": {
+                "type": "string",
+                "enum": ["high", "medium", "low"],
+                "description": "Probability of risk occurring"
+              },
+              "impact": {
+                "type": "string",
+                "enum": ["critical", "high", "medium", "low"],
+                "description": "Impact if risk occurs"
+              },
+              "riskScore": {
+                "type": "string",
+                "description": "Combined risk score (probability x impact)"
+              },
+              "mitigation": {
+                "type": "string",
+                "description": "COMPLETE mitigation strategy. Include all steps and contingencies."
+              },
+              "contingency": {
+                "type": "string",
+                "description": "COMPLETE contingency plan if mitigation fails"
+              },
+              "owner": {
+                "type": "string",
+                "description": "Risk owner responsible for monitoring and mitigation"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["identified", "mitigating", "accepted", "closed"],
+                "description": "Current status of risk management"
+              }
+            }
+          }
+        },
+        "entryExitCriteria": {
+          "type": "object",
+          "description": "COMPLETE entry and exit criteria for test execution",
+          "properties": {
+            "entry": {
+              "type": "array",
+              "description": "ALL conditions that must be met before testing can begin",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "criterion": {
+                    "type": "string",
+                    "description": "COMPLETE description of the entry criterion"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["met", "not-met", "partial", "waived"],
+                    "description": "Current status"
+                  },
+                  "evidence": {
+                    "type": "string",
+                    "description": "Evidence that criterion is met"
+                  }
+                }
+              }
+            },
+            "exit": {
+              "type": "array",
+              "description": "ALL conditions that must be met to complete testing",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "criterion": {
+                    "type": "string",
+                    "description": "COMPLETE description of the exit criterion"
+                  },
+                  "target": {
+                    "type": "string",
+                    "description": "Target value or threshold"
+                  },
+                  "actual": {
+                    "type": "string",
+                    "description": "Actual achieved value"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["met", "not-met", "partial", "waived"],
+                    "description": "Current status"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "projectTeam": {
+          "type": "array",
+          "description": "COMPLETE project team roster with roles and responsibilities",
+          "items": {
+            "type": "object",
+            "properties": {
+              "role": {
+                "type": "string",
+                "description": "Team member's role"
+              },
+              "name": {
+                "type": "string",
+                "description": "Team member's name"
+              },
+              "responsibilities": {
+                "type": "array",
+                "description": "COMPLETE list of responsibilities",
+                "items": { "type": "string" }
+              },
+              "availability": {
+                "type": "string",
+                "description": "Availability for this project"
+              }
+            }
+          }
+        },
+        "coveragePlan": {
+          "type": "object",
+          "description": "COMPLETE test coverage plan organized by priority. Include ALL test scenarios with full details.",
+          "properties": {
+            "p0": {
+              "type": "array",
+              "description": "P0 Critical - Must test. Include COMPLETE test scenario details.",
+              "items": { "$ref": "#/definitions/testScenario" }
+            },
+            "p1": {
+              "type": "array",
+              "description": "P1 High Priority - Should test. Include COMPLETE test scenario details.",
+              "items": { "$ref": "#/definitions/testScenario" }
+            },
+            "p2": {
+              "type": "array",
+              "description": "P2 Medium Priority - Nice to have. Include COMPLETE test scenario details.",
+              "items": { "$ref": "#/definitions/testScenario" }
+            },
+            "p3": {
+              "type": "array",
+              "description": "P3 Low Priority - If time permits. Include COMPLETE test scenario details.",
+              "items": { "$ref": "#/definitions/testScenario" }
+            }
+          }
+        },
+        "executionStrategy": {
+          "type": "object",
+          "description": "COMPLETE test execution strategy for all testing tools and approaches",
+          "properties": {
+            "playwright": {
+              "type": "object",
+              "description": "Playwright E2E testing strategy",
+              "properties": {
+                "scope": {
+                  "type": "string",
+                  "description": "COMPLETE description of Playwright testing scope"
+                },
+                "tests": {
+                  "type": "array",
+                  "description": "ALL Playwright tests with full details",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "testId": { "type": "string" },
+                      "name": { "type": "string" },
+                      "description": {
+                        "type": "string",
+                        "description": "COMPLETE test description"
+                      },
+                      "steps": {
+                        "type": "array",
+                        "description": "COMPLETE test steps",
+                        "items": { "type": "string" }
+                      },
+                      "priority": {
+                        "type": "string",
+                        "enum": ["p0", "p1", "p2", "p3"]
+                      },
+                      "estimatedDuration": { "type": "string" }
+                    }
+                  }
+                },
+                "browserMatrix": {
+                  "type": "array",
+                  "description": "Browsers to test against",
+                  "items": { "type": "string" }
+                },
+                "parallelization": {
+                  "type": "string",
+                  "description": "Parallelization strategy"
+                }
+              }
+            },
+            "k6Performance": {
+              "type": "object",
+              "description": "k6 performance testing strategy",
+              "properties": {
+                "scope": {
+                  "type": "string",
+                  "description": "COMPLETE description of performance testing scope"
+                },
+                "scenarios": {
+                  "type": "array",
+                  "description": "ALL performance test scenarios with full details",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "scenarioId": { "type": "string" },
+                      "name": { "type": "string" },
+                      "description": {
+                        "type": "string",
+                        "description": "COMPLETE scenario description"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": ["load", "stress", "spike", "soak", "baseline"]
+                      },
+                      "vus": { "type": "integer", "description": "Virtual users" },
+                      "duration": { "type": "string" },
+                      "thresholds": {
+                        "type": "object",
+                        "description": "Performance thresholds",
+                        "additionalProperties": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "apiTesting": {
+              "type": "object",
+              "description": "API testing strategy",
+              "properties": {
+                "scope": {
+                  "type": "string",
+                  "description": "COMPLETE description of API testing scope"
+                },
+                "endpoints": {
+                  "type": "array",
+                  "description": "ALL API endpoints to test",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "endpoint": { "type": "string" },
+                      "method": { "type": "string" },
+                      "testCases": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "chaosAndLongRunning": {
+              "type": "object",
+              "description": "Chaos engineering and long-running test strategy",
+              "properties": {
+                "scope": {
+                  "type": "string",
+                  "description": "COMPLETE description of chaos/long-running testing scope"
+                },
+                "tests": {
+                  "type": "array",
+                  "description": "ALL chaos and long-running tests",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "testId": { "type": "string" },
+                      "name": { "type": "string" },
+                      "description": {
+                        "type": "string",
+                        "description": "COMPLETE test description"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": ["chaos", "soak", "reliability", "failover"]
+                      },
+                      "duration": { "type": "string" },
+                      "expectedBehavior": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            },
+            "manualTesting": {
+              "type": "object",
+              "description": "Manual/exploratory testing strategy",
+              "properties": {
+                "scope": {
+                  "type": "string",
+                  "description": "COMPLETE description of manual testing scope"
+                },
+                "sessions": {
+                  "type": "array",
+                  "description": "Planned exploratory testing sessions",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "sessionId": { "type": "string" },
+                      "charter": { "type": "string" },
+                      "timeBox": { "type": "string" },
+                      "focus": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "testData": {
+          "type": "object",
+          "description": "COMPLETE test data requirements and management strategy",
+          "properties": {
+            "requirements": {
+              "type": "array",
+              "description": "ALL test data requirements",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "dataType": { "type": "string" },
+                  "description": { "type": "string" },
+                  "source": { "type": "string" },
+                  "volume": { "type": "string" },
+                  "sensitivityLevel": {
+                    "type": "string",
+                    "enum": ["public", "internal", "confidential", "restricted"]
+                  }
+                }
+              }
+            },
+            "dataGeneration": {
+              "type": "string",
+              "description": "COMPLETE strategy for generating test data"
+            },
+            "dataRefresh": {
+              "type": "string",
+              "description": "COMPLETE strategy for refreshing test data"
+            },
+            "cleanup": {
+              "type": "string",
+              "description": "COMPLETE strategy for test data cleanup"
+            }
+          }
+        },
+        "qaEffortEstimate": {
+          "type": "object",
+          "description": "COMPLETE QA effort estimation with detailed breakdown",
+          "properties": {
+            "total": {
+              "type": "string",
+              "description": "Total estimated QA effort"
+            },
+            "breakdown": {
+              "type": "array",
+              "description": "COMPLETE breakdown of effort by activity",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "activity": {
+                    "type": "string",
+                    "description": "COMPLETE description of the activity"
+                  },
+                  "effort": {
+                    "type": "string",
+                    "description": "Estimated effort for this activity"
+                  },
+                  "assignee": {
+                    "type": "string",
+                    "description": "Person assigned to this activity"
+                  },
+                  "dependencies": {
+                    "type": "array",
+                    "description": "Dependencies for this activity",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "assumptions": {
+              "type": "array",
+              "description": "ALL assumptions underlying the estimate",
+              "items": { "type": "string" }
+            },
+            "contingency": {
+              "type": "string",
+              "description": "Contingency buffer and rationale"
+            }
+          }
+        },
+        "sprintPlanningHandoff": {
+          "type": "object",
+          "description": "COMPLETE sprint planning handoff information",
+          "properties": {
+            "recommendations": {
+              "type": "array",
+              "description": "ALL recommendations for sprint planning",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "recommendation": {
+                    "type": "string",
+                    "description": "COMPLETE recommendation"
+                  },
+                  "rationale": {
+                    "type": "string",
+                    "description": "COMPLETE rationale for this recommendation"
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": ["critical", "high", "medium", "low"]
+                  }
+                }
+              }
+            },
+            "priorities": {
+              "type": "array",
+              "description": "Prioritized list of testing activities for the sprint",
+              "items": { "type": "string" }
+            },
+            "sprintGoals": {
+              "type": "array",
+              "description": "Testing goals for the sprint",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "toolingAndAccess": {
+          "type": "array",
+          "description": "COMPLETE list of ALL tools and access requirements",
+          "items": {
+            "type": "object",
+            "properties": {
+              "tool": {
+                "type": "string",
+                "description": "Tool name"
+              },
+              "purpose": {
+                "type": "string",
+                "description": "COMPLETE description of how the tool will be used"
+              },
+              "accessRequired": {
+                "type": "string",
+                "description": "COMPLETE description of access requirements"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["available", "pending", "blocked"],
+                "description": "Current access status"
+              },
+              "owner": {
+                "type": "string",
+                "description": "Owner for access provisioning"
+              }
+            }
+          }
+        },
+        "environmentRequirements": {
+          "type": "array",
+          "description": "COMPLETE list of ALL test environment requirements",
+          "items": {
+            "type": "object",
+            "properties": {
+              "environment": {
+                "type": "string",
+                "description": "Environment name (dev, staging, QA, etc.)"
+              },
+              "purpose": {
+                "type": "string",
+                "description": "COMPLETE description of how this environment will be used"
+              },
+              "configuration": {
+                "type": "string",
+                "description": "COMPLETE configuration requirements"
+              },
+              "availability": {
+                "type": "string",
+                "description": "When the environment is needed"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["ready", "pending", "blocked"]
+              }
+            }
+          }
+        },
+        "interworkingAndRegression": {
+          "type": "object",
+          "description": "COMPLETE interworking and regression testing strategy",
+          "properties": {
+            "interworkingTests": {
+              "type": "array",
+              "description": "ALL interworking/integration tests with full details",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "testId": { "type": "string" },
+                  "systems": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "COMPLETE description of the interworking test"
+                  },
+                  "priority": { "type": "string" }
+                }
+              }
+            },
+            "regressionScope": {
+              "type": "array",
+              "description": "COMPLETE regression testing scope",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "area": { "type": "string" },
+                  "description": {
+                    "type": "string",
+                    "description": "COMPLETE description of regression scope for this area"
+                  },
+                  "testSuites": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "estimatedDuration": { "type": "string" }
+                }
+              }
+            },
+            "regressionStrategy": {
+              "type": "string",
+              "description": "COMPLETE regression testing strategy"
+            }
+          }
+        },
+        "defectManagement": {
+          "type": "object",
+          "description": "COMPLETE defect management process",
+          "properties": {
+            "process": {
+              "type": "string",
+              "description": "COMPLETE description of defect management process"
+            },
+            "severityDefinitions": {
+              "type": "array",
+              "description": "Severity level definitions",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "severity": { "type": "string" },
+                  "definition": { "type": "string" },
+                  "sla": { "type": "string" }
+                }
+              }
+            },
+            "triageProcess": {
+              "type": "string",
+              "description": "COMPLETE defect triage process"
+            }
+          }
+        },
+        "appendix": {
+          "type": "object",
+          "description": "COMPLETE appendix with supporting materials",
+          "properties": {
+            "codeExamples": {
+              "type": "array",
+              "description": "ALL code examples with full code",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string" },
+                  "description": { "type": "string" },
+                  "language": { "type": "string" },
+                  "code": {
+                    "type": "string",
+                    "description": "COMPLETE code example - do NOT truncate"
+                  }
+                }
+              }
+            },
+            "knowledgeBaseReferences": {
+              "type": "array",
+              "description": "ALL knowledge base references",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "reference": { "type": "string" },
+                  "url": { "type": "string" },
+                  "relevance": { "type": "string" }
+                }
+              }
+            },
+            "diagrams": {
+              "type": "array",
+              "description": "Test architecture diagrams",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string" },
+                  "type": { "type": "string" },
+                  "content": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "approvals": {
+          "type": "array",
+          "description": "Required approvals for this test design",
+          "items": {
+            "type": "object",
+            "properties": {
+              "role": { "type": "string" },
+              "name": { "type": "string" },
+              "status": {
+                "type": "string",
+                "enum": ["pending", "approved", "rejected"]
+              },
+              "date": { "type": "string", "format": "date" },
+              "comments": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "testScenario": {
+      "type": "object",
+      "description": "COMPLETE test scenario with all details",
+      "properties": {
+        "scenarioId": {
+          "type": "string",
+          "description": "Unique scenario identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "COMPLETE scenario name"
+        },
+        "description": {
+          "type": "string",
+          "description": "COMPLETE detailed description of the test scenario. Do NOT summarize."
+        },
+        "requirementId": {
+          "type": "string",
+          "description": "Linked requirement ID"
+        },
+        "preconditions": {
+          "type": "array",
+          "description": "ALL preconditions for this scenario",
+          "items": { "type": "string" }
+        },
+        "steps": {
+          "type": "array",
+          "description": "COMPLETE test steps",
+          "items": {
+            "type": "object",
+            "properties": {
+              "stepNumber": { "type": "integer" },
+              "action": {
+                "type": "string",
+                "description": "COMPLETE action description"
+              },
+              "expectedResult": {
+                "type": "string",
+                "description": "COMPLETE expected result"
+              }
+            }
+          }
+        },
+        "expectedOutcome": {
+          "type": "string",
+          "description": "COMPLETE expected outcome"
+        },
+        "testData": {
+          "type": "string",
+          "description": "Test data requirements for this scenario"
+        },
+        "automationStatus": {
+          "type": "string",
+          "enum": ["automated", "to-automate", "manual", "not-automatable"],
+          "description": "Automation status"
+        },
+        "testType": {
+          "type": "string",
+          "enum": ["functional", "integration", "e2e", "performance", "security", "accessibility"],
+          "description": "Type of test"
+        },
+        "estimatedDuration": {
+          "type": "string",
+          "description": "Estimated execution duration"
+        }
+      }
+    }
+  }
+}

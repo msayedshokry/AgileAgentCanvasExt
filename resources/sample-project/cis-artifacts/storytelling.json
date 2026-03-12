@@ -1,0 +1,455 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "storytelling",
+    "timestamps": {
+      "created": "2026-01-20T10:00:00Z",
+      "lastModified": "2026-01-22T14:00:00Z"
+    },
+    "status": "completed",
+    "tags": [
+      "brand-story",
+      "origin",
+      "pitch",
+      "product-narrative"
+    ],
+    "author": "BMAD Storytelling Workflow"
+  },
+  "content": {
+    "storyType": "origin story",
+    "frameworkName": "Problem-Agitate-Solve",
+    "storyTitle": "The Overwhelmed Team Lead",
+    "purpose": "Communicate why TaskFlow Pro exists and the problem it solves by telling the relatable story of a team lead drowning in task management overhead. This story is the primary narrative for investor pitches, landing page hero sections, and conference talks.",
+    "targetAudience": {
+      "primary": "Engineering team leads and project managers at mid-size SaaS companies (50-500 employees) who manage 3-8 direct reports and juggle 50+ active tasks across multiple projects",
+      "secondary": "CTOs and VPs of Engineering evaluating task management tools for their organizations",
+      "audienceProfile": {
+        "demographics": "Age 28-45, technical background, 3-10 years management experience, working at growth-stage companies",
+        "psychographics": "Values efficiency and maker time, frustrated by context-switching, skeptical of AI hype but open to tools that demonstrably save time",
+        "painPoints": [
+          "Spending 2+ hours daily on task triage and prioritization instead of strategic work",
+          "Context-switching between 5+ tools to understand project status",
+          "Missing deadlines because dependencies between tasks are invisible",
+          "Team members blocked waiting for priority decisions"
+        ],
+        "aspirations": [
+          "Spend more time on strategy and less on task shuffling",
+          "Have a single source of truth for project priorities",
+          "Trust an AI to handle routine prioritization decisions",
+          "Help their team focus on deep work without interruption"
+        ],
+        "knowledgeLevel": "Familiar with task management tools (Jira, Linear, Asana) but skeptical of AI-powered tools that over-promise"
+      },
+      "stateChange": {
+        "currentState": "Overwhelmed by task management overhead, skeptical that another tool can help, resigned to spending hours on prioritization",
+        "desiredState": "Excited about reclaiming strategic time, confident that AI-powered prioritization is achievable and trustworthy, eager to try TaskFlow Pro"
+      }
+    },
+    "strategicContext": {
+      "brandVoice": "Empathetic but direct. We understand the pain because we've lived it. No jargon, no hype — just honest communication about what TaskFlow Pro does and doesn't do. Technical credibility without condescension.",
+      "keyMessages": [
+        "Task prioritization is a solvable problem — you don't have to do it manually",
+        "AI can learn your team's priorities by observing your decisions, not by requiring complex setup",
+        "Focus time is sacred — the best tool is one that protects it, not interrupts it",
+        "TaskFlow Pro was built by team leads for team leads"
+      ],
+      "callToAction": "Start your 14-day free trial — see AI prioritization working on your actual tasks within 48 hours",
+      "constraints": [
+        "Must be authentic — avoid AI hype or unrealistic promises",
+        "Must acknowledge that no tool is magic — TaskFlow Pro augments human judgment, it doesn't replace it",
+        "Must not disparage competitors by name"
+      ]
+    },
+    "frameworkApplication": {
+      "frameworkElements": [
+        {
+          "element": "Problem",
+          "content": "Maya is an engineering team lead at a growing SaaS company. Every morning, she opens her laptop to find 47 new notifications, 12 priority requests, and a sprint board that looks like a war zone. She spends the first 2 hours of her day just figuring out what her team should work on next. By the time she's done triaging, her best creative hours are gone.",
+          "purpose": "Establish the relatable problem that every team lead faces — the morning triage ritual",
+          "emotionalGoal": "Recognition — 'That's exactly what my mornings look like'"
+        },
+        {
+          "element": "Agitate",
+          "content": "It gets worse. Maya's team is blocked three times this week because she prioritized the wrong tasks. A critical dependency was buried in a Jira comment she missed. Her best engineer spent two days on a feature that got deprioritized in a meeting Maya couldn't attend. The team's velocity is dropping, and in the retrospective, the feedback is clear: 'We don't know what to work on.' Maya realizes she's become the bottleneck — the very thing she was supposed to prevent.",
+          "purpose": "Intensify the pain by showing the cascading consequences of manual prioritization",
+          "emotionalGoal": "Frustration and urgency — 'This is costing real time and real trust'"
+        },
+        {
+          "element": "Solve",
+          "content": "Maya discovers TaskFlow Pro on a Tuesday morning. By Wednesday afternoon, the AI has analyzed her team's task patterns, dependency chains, and deadline pressures. It suggests a priority reorder that would have prevented Monday's blocking incident. Maya reviews the suggestion — the AI explains its reasoning — and approves it with one click. By Friday, her morning triage takes 15 minutes instead of 2 hours. Her team has a clear, AI-ranked backlog that updates in real time. And Maya? She's finally spending her mornings on the architecture review she's been postponing for three weeks.",
+          "purpose": "Show the transformation — not magic, but a practical tool that augments Maya's judgment",
+          "emotionalGoal": "Relief and possibility — 'This is achievable and trustworthy'"
+        }
+      ],
+      "frameworkNotes": "The Problem-Agitate-Solve framework was chosen because our audience is skeptical of AI claims. By leading with a deeply relatable problem and showing realistic consequences before introducing the solution, we build credibility. The solution section deliberately shows Maya reviewing and approving the AI's suggestion — emphasizing augmentation, not automation."
+    },
+    "structure": {
+      "openingHook": {
+        "text": "Maya is an engineering team lead who spends more time deciding what to work on than actually working. Every morning, 47 notifications. Every morning, 2 hours of triage. Every morning, the nagging feeling that she's prioritizing wrong.",
+        "technique": "Relatable scenario with specific numbers",
+        "emotionalTrigger": "Recognition and shared frustration"
+      },
+      "setup": {
+        "text": "Maya leads a team of 6 engineers at a growing SaaS company. She's good at her job — her team ships quality code, her architecture decisions are sound, and her engineers trust her judgment. But there's one part of her role that's eating her alive: deciding what to work on next.",
+        "worldBuilding": "Mid-size SaaS company, engineering team, sprint-based development — familiar context for our audience",
+        "stakesEstablished": "Maya's credibility as a leader and her team's velocity are both at risk"
+      },
+      "coreNarrative": "Maya is an engineering team lead at a growing SaaS company. Every morning, she opens her laptop to find 47 new notifications, 12 priority requests, and a sprint board that looks like a war zone. She spends the first 2 hours of her day just figuring out what her team should work on next. By the time she's done triaging, her best creative hours are gone.\n\nIt gets worse. Maya's team is blocked three times this week because she prioritized the wrong tasks. A critical dependency was buried in a Jira comment she missed. Her best engineer spent two days on a feature that got deprioritized in a meeting Maya couldn't attend. The team's velocity is dropping, and in the retrospective, the feedback is clear: 'We don't know what to work on.' Maya realizes she's become the bottleneck — the very thing she was supposed to prevent.\n\nMaya discovers TaskFlow Pro on a Tuesday morning. By Wednesday afternoon, the AI has analyzed her team's task patterns, dependency chains, and deadline pressures. It suggests a priority reorder that would have prevented Monday's blocking incident. Maya reviews the suggestion — the AI explains its reasoning — and approves it with one click. By Friday, her morning triage takes 15 minutes instead of 2 hours. Her team has a clear, AI-ranked backlog that updates in real time. And Maya? She's finally spending her mornings on the architecture review she's been postponing for three weeks.",
+      "storyBeats": [
+        {
+          "beatNumber": 1,
+          "beat": "Maya's morning ritual — 47 notifications, 2 hours of triage, creative hours wasted",
+          "purpose": "Establish the daily pain point with specific, relatable numbers",
+          "emotion": "Recognition, shared frustration",
+          "transition": "But the daily grind is just the surface problem..."
+        },
+        {
+          "beatNumber": 2,
+          "beat": "The cascade — wrong priorities, blocked team, missed dependency, retrospective feedback",
+          "purpose": "Show the real cost: not just time wasted, but trust eroded and velocity lost",
+          "emotion": "Anxiety, urgency",
+          "transition": "Maya realizes she needs to change something fundamental..."
+        },
+        {
+          "beatNumber": 3,
+          "beat": "Discovery — Maya finds TaskFlow Pro, AI analyzes patterns in 24 hours",
+          "purpose": "Introduce the solution naturally, show fast time-to-value",
+          "emotion": "Curiosity, cautious hope",
+          "transition": "The AI makes its first suggestion..."
+        },
+        {
+          "beatNumber": 4,
+          "beat": "Validation — AI suggests reorder that would have prevented the blocking incident",
+          "purpose": "Build trust by showing the AI would have caught a real problem",
+          "emotion": "Surprise, growing confidence",
+          "transition": "Maya approves and watches the impact..."
+        },
+        {
+          "beatNumber": 5,
+          "beat": "Transformation — 15-minute triage, clear backlog, architecture review time reclaimed",
+          "purpose": "Show the concrete, measurable outcome without overpromising",
+          "emotion": "Relief, empowerment, possibility",
+          "transition": "End on Maya doing strategic work — the thing she was hired to do"
+        }
+      ],
+      "emotionalArc": {
+        "description": "The story follows a classic descent-then-rise arc: starting with frustration, deepening to anxiety and urgency, then pivoting to curiosity, validation, and finally relief and empowerment. The key is that the resolution feels earned — Maya evaluates the AI's suggestion rather than blindly trusting it.",
+        "arcPoints": [
+          {
+            "point": "Morning triage ritual",
+            "emotion": "Frustration",
+            "intensity": "medium"
+          },
+          {
+            "point": "Team blocked, retrospective feedback",
+            "emotion": "Anxiety and shame",
+            "intensity": "high"
+          },
+          {
+            "point": "Realizes she's the bottleneck",
+            "emotion": "Urgency",
+            "intensity": "peak"
+          },
+          {
+            "point": "Discovers TaskFlow Pro",
+            "emotion": "Cautious hope",
+            "intensity": "medium"
+          },
+          {
+            "point": "AI catches the blocking issue",
+            "emotion": "Surprise and trust",
+            "intensity": "high"
+          },
+          {
+            "point": "15-minute triage, architecture review",
+            "emotion": "Relief and empowerment",
+            "intensity": "high"
+          }
+        ],
+        "climax": "The emotional climax is when Maya sees the AI's priority reorder and realizes it would have prevented Monday's blocking incident. This is the moment where skepticism transforms into trust — not through promises, but through demonstrated competence on a problem she actually experienced."
+      },
+      "conflict": {
+        "mainConflict": "Maya is a capable leader whose manual approach to task prioritization is undermining her team's effectiveness and her own ability to do strategic work",
+        "obstacles": [
+          "Volume of tasks exceeds human capacity to optimally prioritize",
+          "Hidden dependencies are invisible in current tools",
+          "Context loss from meetings Maya can't attend",
+          "Team trust eroding due to priority instability"
+        ],
+        "stakes": "Maya's effectiveness as a leader, team velocity and morale, and ultimately her ability to do the strategic work she was hired for"
+      },
+      "resolution": {
+        "text": "By Friday, Maya's morning triage takes 15 minutes instead of 2 hours. Her team has a clear, AI-ranked backlog that updates in real time. And Maya? She's finally spending her mornings on the architecture review she's been postponing for three weeks.",
+        "transformation": "From overwhelmed bottleneck to empowered strategist — Maya reclaims her time and her team's trust by letting AI handle the prioritization grunt work while she retains decision authority",
+        "callToAction": "Start your 14-day free trial — see AI prioritization working on your actual tasks within 48 hours",
+        "lingeringEmotion": "Possibility — the feeling that reclaiming strategic time is not just a dream, it's a Tuesday-to-Friday transformation"
+      }
+    },
+    "completeStory": "Maya is an engineering team lead at a growing SaaS company. Every morning, she opens her laptop to find 47 new notifications, 12 priority requests, and a sprint board that looks like a war zone. She spends the first 2 hours of her day just figuring out what her team should work on next. By the time she's done triaging, her best creative hours are gone.\n\nIt gets worse. Maya's team is blocked three times this week because she prioritized the wrong tasks. A critical dependency was buried in a Jira comment she missed. Her best engineer spent two days on a feature that got deprioritized in a meeting Maya couldn't attend. The team's velocity is dropping, and in the retrospective, the feedback is clear: 'We don't know what to work on.' Maya realizes she's become the bottleneck — the very thing she was supposed to prevent.\n\nMaya discovers TaskFlow Pro on a Tuesday morning. By Wednesday afternoon, the AI has analyzed her team's task patterns, dependency chains, and deadline pressures. It suggests a priority reorder that would have prevented Monday's blocking incident. Maya reviews the suggestion — the AI explains its reasoning — and approves it with one click. By Friday, her morning triage takes 15 minutes instead of 2 hours. Her team has a clear, AI-ranked backlog that updates in real time. And Maya? She's finally spending her mornings on the architecture review she's been postponing for three weeks.\n\nTaskFlow Pro was built by team leads for team leads. We know the pain because we lived it. Start your 14-day free trial — see AI prioritization working on your actual tasks within 48 hours.",
+    "elements": {
+      "characters": [
+        {
+          "name": "Maya",
+          "role": "protagonist",
+          "description": "An engineering team lead at a growing SaaS company. Technically skilled, good judgment, trusted by her team. Her fatal flaw is trying to manually manage what should be automated — task prioritization at scale.",
+          "motivation": "To be an effective leader who empowers her team to do their best work, not a bottleneck who slows them down",
+          "arc": "From overwhelmed manual prioritizer to empowered strategic leader who uses AI to augment her judgment"
+        },
+        {
+          "name": "The Team",
+          "role": "ally",
+          "description": "Maya's team of 6 engineers. They're skilled and motivated but increasingly frustrated by unclear priorities and blocking dependencies.",
+          "motivation": "To know what to work on and ship quality code without being blocked",
+          "arc": "From frustrated and blocked to clear-headed and productive with a transparent, AI-ranked backlog"
+        },
+        {
+          "name": "TaskFlow Pro AI",
+          "role": "mentor",
+          "description": "The AI prioritization engine. Not a magic solution but a capable assistant that learns from patterns and explains its reasoning.",
+          "motivation": "To surface the right priorities by analyzing patterns humans can't see at scale",
+          "arc": "Introduced as an unknown, validated through a real-world test (catching the blocking incident), trusted as a daily tool"
+        }
+      ],
+      "characterVoice": "Third person limited, following Maya's perspective. Empathetic and direct, matching our brand voice. Uses specific numbers (47 notifications, 2 hours, 15 minutes) to ground the story in reality.",
+      "setting": {
+        "description": "A growing SaaS company, engineering team, sprint-based development environment. Morning routine, retrospectives, sprint boards — the familiar rhythms of modern software development.",
+        "significance": "This is our audience's world. Every detail is chosen to trigger recognition — they've lived this story."
+      },
+      "conflictTension": "The central tension is between Maya's competence (she's a good leader) and the impossibility of her task (optimally prioritizing 50+ tasks manually is beyond human cognitive capacity). The story doesn't blame Maya — it validates her struggle and shows that the problem is systemic, not personal.",
+      "transformation": "The transformation is not dramatic — it's Tuesday to Friday. This deliberate choice communicates that TaskFlow Pro delivers fast, incremental value rather than magical overnight change.",
+      "theme": "The best technology doesn't replace human judgment — it amplifies it. Maya doesn't stop making decisions; she stops making decisions that a machine can make better, so she can focus on decisions that require human insight.",
+      "emotionalTouchpoints": [
+        {
+          "moment": "47 notifications, 2 hours of triage",
+          "emotion": "Exhausted recognition",
+          "technique": "Specific numbers that ground the abstract pain in concrete reality",
+          "locationInStory": "Opening"
+        },
+        {
+          "moment": "Retrospective feedback: 'We don't know what to work on'",
+          "emotion": "Shame and urgency",
+          "technique": "Direct quote from team — hearing the impact from others is more powerful than self-reflection",
+          "locationInStory": "Agitation peak"
+        },
+        {
+          "moment": "AI suggestion would have prevented Monday's blocking incident",
+          "emotion": "Surprise turning to trust",
+          "technique": "Concrete validation on a problem the audience just witnessed — proof through hindsight",
+          "locationInStory": "Solution validation"
+        },
+        {
+          "moment": "Architecture review she's been postponing for three weeks",
+          "emotion": "Relief and possibility",
+          "technique": "Specific postponed strategic work — every leader has one of these",
+          "locationInStory": "Resolution"
+        }
+      ],
+      "keyMessages": [
+        {
+          "message": "Manual task prioritization at scale is beyond human cognitive capacity — it's not a personal failure",
+          "howConveyed": "Maya is established as competent before showing the problem is systemic",
+          "subtlety": "implicit"
+        },
+        {
+          "message": "AI prioritization works by learning from your patterns, not replacing your judgment",
+          "howConveyed": "Maya reviews and approves the AI suggestion rather than blindly accepting it",
+          "subtlety": "explicit"
+        },
+        {
+          "message": "The ROI is reclaimed time for strategic work, not just task management efficiency",
+          "howConveyed": "Story ends with Maya doing architecture review, not just faster triage",
+          "subtlety": "implicit"
+        }
+      ],
+      "memorableLines": [
+        {
+          "line": "By the time she's done triaging, her best creative hours are gone.",
+          "context": "Opening — establishing the daily cost",
+          "useCase": "Landing page headline, social media pull quote"
+        },
+        {
+          "line": "Maya realizes she's become the bottleneck — the very thing she was supposed to prevent.",
+          "context": "Agitation peak — the painful realization",
+          "useCase": "Email subject line, ad copy, conference talk moment"
+        },
+        {
+          "line": "TaskFlow Pro was built by team leads for team leads.",
+          "context": "Closing — brand credibility",
+          "useCase": "Tagline, about page, footer"
+        }
+      ]
+    },
+    "variations": {
+      "elevator": {
+        "text": "We built TaskFlow Pro because our co-founder was spending 2 hours every morning deciding what her team should work on. Now AI does the prioritization in seconds, she reviews it in minutes, and her team always knows what's next.",
+        "wordCount": 40,
+        "useCase": "Networking events, investor intros, casual conversations"
+      },
+      "short": {
+        "text": "Engineering team leads spend 2+ hours daily on task triage. TaskFlow Pro's AI learns your team's priorities and ranks your backlog in seconds. You review, approve, and get back to strategic work. Built by team leads, for team leads.",
+        "characterCount": 248,
+        "platform": "LinkedIn, Twitter/X"
+      },
+      "medium": {
+        "text": "Every morning, Maya opened her laptop to 47 notifications and a sprint board that looked like a war zone. Two hours of triage later, her creative hours were gone. Worse, her team was getting blocked because she was prioritizing wrong — dependencies buried in comments, context lost from missed meetings.\n\nThen she tried TaskFlow Pro. Within 24 hours, the AI had analyzed her team's task patterns and suggested a priority reorder that would have prevented this week's blocking incident. By Friday, her morning triage took 15 minutes. Her team had a clear backlog. And Maya finally started that architecture review she'd been postponing for three weeks.\n\nTaskFlow Pro — AI-powered task prioritization that augments your judgment, not replaces it. Start your 14-day free trial.",
+        "wordCount": 130,
+        "useCase": "Email campaigns, blog intro, newsletter feature"
+      },
+      "extended": {
+        "text": "Maya is an engineering team lead at a growing SaaS company. She's good at her job — her team ships quality code, her architecture decisions are sound, and her engineers trust her judgment. But there's one part of her role that's eating her alive: deciding what to work on next.\n\nEvery morning, Maya opens her laptop to find 47 new notifications, 12 priority requests, and a sprint board that looks like a war zone. She spends the first 2 hours of her day just figuring out what her team should work on next. By the time she's done triaging, her best creative hours are gone.\n\nThis week, it got worse. Maya's team was blocked three times because she prioritized the wrong tasks. A critical dependency was buried in a Jira comment she missed. Her best engineer spent two days on a feature that got deprioritized in a meeting Maya couldn't attend. The team's velocity dropped, and in the retrospective, the feedback was clear: 'We don't know what to work on.'\n\nMaya realized she'd become the bottleneck — the very thing she was supposed to prevent. Not because she's a bad leader. Because the task is impossible. No human can optimally prioritize 50+ tasks with invisible dependencies, shifting deadlines, and incomplete context. It's a machine problem being solved by a human brain.\n\nMaya discovered TaskFlow Pro on a Tuesday morning. She connected her project management tool and let the AI observe for 24 hours. By Wednesday afternoon, the AI had analyzed her team's task patterns, dependency chains, and deadline pressures. It suggested a priority reorder — and showed its reasoning: 'Task X blocks tasks Y and Z, which are due Friday. Moving X to the top of the backlog prevents a 3-day team block.'\n\nMaya checked the reasoning. The AI was right — this was exactly the dependency she'd missed on Monday. She approved the reorder with one click.\n\nBy Friday, her morning triage took 15 minutes instead of 2 hours. Her team had a clear, AI-ranked backlog that updated in real time as tasks were completed and new ones came in. Blocked dependencies were flagged before they became problems. And Maya? She was finally spending her mornings on the architecture review she'd been postponing for three weeks.\n\nTaskFlow Pro was built by team leads for team leads. We know the pain because we lived it. We built the tool we wished we'd had — one that augments your judgment instead of replacing it, explains its reasoning instead of hiding behind a black box, and gives you back the strategic time you were hired to spend.\n\nStart your 14-day free trial — see AI prioritization working on your actual tasks within 48 hours.",
+        "wordCount": 410,
+        "useCase": "Blog post, conference talk script, investor deck narrative"
+      },
+      "presentation": {
+        "text": "Slide 1: Meet Maya. Engineering team lead. Good at her job. Drowning in task triage.\nSlide 2: Every morning — 47 notifications, 2 hours of prioritization, creative hours gone.\nSlide 3: The real cost — team blocked 3 times this week. Trust eroding. Velocity dropping.\nSlide 4: The retrospective feedback that changed everything: 'We don't know what to work on.'\nSlide 5: Maya's realization — she's become the bottleneck. Not because she's bad. Because the task is impossible at scale.\nSlide 6: Enter TaskFlow Pro — AI observes for 24 hours, learns your team's patterns.\nSlide 7: First suggestion — catches the exact dependency Maya missed. Explains its reasoning.\nSlide 8: Friday — 15 minutes of triage. Clear backlog. Architecture review finally happening.\nSlide 9: Built by team leads, for team leads. 14-day free trial.",
+        "duration": "5 minutes",
+        "slideNotes": [
+          {
+            "slide": 1,
+            "content": "Maya introduction",
+            "speakerNotes": "Pause after 'Drowning in task triage.' Let the audience connect."
+          },
+          {
+            "slide": 4,
+            "content": "Retrospective feedback",
+            "speakerNotes": "This is the emotional peak. Read the quote slowly. Make eye contact."
+          },
+          {
+            "slide": 7,
+            "content": "AI catches the dependency",
+            "speakerNotes": "This is the trust-building moment. Emphasize that Maya reviews and approves — she stays in control."
+          },
+          {
+            "slide": 9,
+            "content": "CTA",
+            "speakerNotes": "End with confidence. 'Built by team leads, for team leads' — then pause before the CTA."
+          }
+        ]
+      },
+      "video": {
+        "script": "[OPEN on laptop screen, notifications flooding in. Counter ticking: 47 notifications.]\n\nNARRATOR: Maya is an engineering team lead. Every morning, this is what she sees.\n\n[WIDE shot of Maya at desk, overwhelmed. Clock shows 9 AM. TIME LAPSE to 11 AM.]\n\nNARRATOR: Two hours. Every day. Just deciding what her team should work on.\n\n[CUT to retrospective. Team member speaking: 'We don't know what to work on.']\n\n[CUT to Maya's face. Realization.]\n\nNARRATOR: She's become the bottleneck.\n\n[CUT to Maya discovering TaskFlow Pro. Clean UI. AI analyzing tasks.]\n\nNARRATOR: TaskFlow Pro learns your team's patterns in 24 hours.\n\n[SCREEN: AI suggestion with clear reasoning. Maya reviews, approves with one click.]\n\nNARRATOR: It caught the dependency she missed. And explained why.\n\n[CUT to Friday morning. Maya's triage: 15 minutes. She opens architecture docs, smiling.]\n\nNARRATOR: Built by team leads, for team leads. Start your free trial today.\n\n[LOGO. CTA: taskflowpro.com/try]",
+        "duration": "60 seconds",
+        "visualNotes": [
+          "Use split-screen to show 'before' (chaos) and 'after' (calm) simultaneously at the resolution",
+          "AI reasoning panel should be readable — pause on it for 3 seconds",
+          "End card should show the 14-day free trial prominently"
+        ]
+      }
+    },
+    "visualElements": {
+      "suggestedImagery": [
+        {
+          "description": "Split-screen: chaotic sprint board with overlapping tasks vs. clean AI-ranked backlog",
+          "purpose": "Visual before/after that communicates the transformation instantly",
+          "placement": "Landing page hero, presentation slide 8"
+        },
+        {
+          "description": "Close-up of AI reasoning panel explaining why a task should be prioritized",
+          "purpose": "Build trust by showing transparency — the AI isn't a black box",
+          "placement": "Product demo section, feature comparison"
+        }
+      ],
+      "dataVisualization": [
+        {
+          "type": "before/after bar chart",
+          "data": "Morning triage time: Before (120 min) vs After (15 min). Team blocks per week: Before (3) vs After (0).",
+          "narrative": "Concrete metrics that prove the story's claims are achievable"
+        }
+      ]
+    },
+    "usageGuidelines": {
+      "bestChannels": [
+        {
+          "channel": "Landing page",
+          "format": "Medium version with hero imagery",
+          "notes": "Use the medium version for above-the-fold content. Include the before/after visualization. CTA below the fold."
+        },
+        {
+          "channel": "Investor pitch",
+          "format": "Presentation version (5 slides)",
+          "notes": "Lead with slides 1-4 (problem), then transition to demo. Return to slides 7-9 after demo."
+        },
+        {
+          "channel": "Conference talk",
+          "format": "Extended version with live demo",
+          "notes": "Tell the full story, then do a live demo showing the AI in action on a sample project."
+        }
+      ],
+      "audienceConsiderations": "Technical audiences will want to see the AI reasoning panel and understand how the model works. Non-technical audiences (investors, executives) care more about the time savings and team impact metrics. Adjust emphasis accordingly.",
+      "toneNotes": "Maintain empathy throughout — never imply that manual prioritization is lazy or incompetent. The problem is systemic (cognitive capacity limits), not personal. The AI is a tool, not a replacement.",
+      "deliveryTips": [
+        "Pause after 'the very thing she was supposed to prevent' — let it land",
+        "When showing the AI reasoning, read it aloud slowly. Transparency builds trust.",
+        "End on the architecture review detail — it's specific and relatable",
+        "If presenting live, ask the audience: 'How many of you spent more than an hour on triage this morning?' before starting"
+      ],
+      "adaptationSuggestions": [
+        {
+          "scenario": "Enterprise sales presentation",
+          "suggestion": "Replace Maya with a VP of Engineering managing 5 teams. Scale the numbers (200+ tasks, 5 sprint boards). Add ROI calculation showing time saved across the organization."
+        },
+        {
+          "scenario": "Developer-focused marketing",
+          "suggestion": "Focus on the team's perspective rather than Maya's. Lead with 'blocked waiting for priority decisions' and the focus time protection angle."
+        }
+      ],
+      "doNotChange": [
+        "The 'augments, not replaces' positioning — this is core to our brand trust",
+        "Maya reviewing and approving the AI suggestion — never show blind trust",
+        "Specific numbers (47 notifications, 2 hours, 15 minutes) — these are validated by user research"
+      ],
+      "flexibleElements": [
+        "Maya's company size and industry can be adapted for different audiences",
+        "The postponed strategic work (architecture review) can be changed to match the audience's context",
+        "The timeline (Tuesday to Friday) can be shortened for more dramatic effect in short versions"
+      ]
+    },
+    "testing": {
+      "testingPlan": "A/B test the medium version against a feature-focused alternative on the landing page. Measure conversion rate (free trial signups) and time-on-page.",
+      "feedback": [
+        {
+          "source": "Beta user interview (n=5)",
+          "feedback": "4/5 users said 'that's exactly what my mornings look like' when hearing the opening. 1 user wanted more detail on how the AI works before the CTA.",
+          "actionTaken": "Added the AI reasoning panel visual to the landing page version to address the 'how does it work' question before the CTA."
+        }
+      ],
+      "metrics": [
+        {
+          "metric": "Landing page conversion rate",
+          "result": "Pending — A/B test launching Feb 25"
+        },
+        {
+          "metric": "Audience recognition rate (conference talk)",
+          "result": "4/5 beta users self-identified with the opening scenario"
+        }
+      ]
+    },
+    "nextSteps": {
+      "refinementOpportunities": [
+        {
+          "area": "Customer testimonial integration",
+          "opportunity": "Replace Maya with a real customer story once we have beta testimonials. The fictional story establishes the pattern; a real story adds credibility.",
+          "priority": "high"
+        },
+        {
+          "area": "Data validation",
+          "opportunity": "Update the specific numbers (47 notifications, 2 hours, 15 minutes) with actual platform telemetry from beta users to strengthen claims.",
+          "priority": "medium"
+        }
+      ],
+      "additionalVersionsNeeded": [
+        {
+          "version": "Customer success case study format",
+          "purpose": "Post-beta: convert Maya story into a real customer case study with verified metrics",
+          "deadline": "2026-04-01"
+        }
+      ],
+      "distributionPlan": "Phase 1 (Feb 25): Landing page and social media. Phase 2 (Mar 5): Email campaign to waitlist. Phase 3 (Mar 15): Conference talk at DevOps Days.",
+      "feedbackPlan": "Collect conversion metrics weekly. Run monthly user interviews asking 'what made you sign up?' to track narrative effectiveness.",
+      "relatedStories": [
+        "Team member perspective story — 'The Engineer Who Stopped Being Blocked'",
+        "CTO perspective story — 'The Executive Who Reclaimed 40 Hours Per Month Across 5 Teams'"
+      ]
+    }
+  }
+}

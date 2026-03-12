@@ -1,0 +1,137 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/bmm/use-case.schema.json",
+  "title": "Use Case Schema",
+  "description": "Schema for detailed use cases that describe real-world scenarios showing system behavior before and after implementation",
+  "type": "object",
+  "required": ["id", "title", "summary"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Use case identifier (e.g., 'UC-01', 'UC-02')",
+      "pattern": "^UC-[0-9]+$"
+    },
+    "title": {
+      "type": "string",
+      "description": "Descriptive title for the use case"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Brief summary of what this use case demonstrates"
+    },
+    "primaryActor": {
+      "type": "string",
+      "description": "The main user/system that initiates this use case"
+    },
+    "secondaryActors": {
+      "type": "array",
+      "description": "Other actors involved in this use case",
+      "items": { "type": "string" }
+    },
+    "preconditions": {
+      "type": "array",
+      "description": "Conditions that must be true before the use case begins",
+      "items": { "type": "string" }
+    },
+    "trigger": {
+      "type": "string",
+      "description": "Event or action that initiates this use case"
+    },
+    "scenario": {
+      "type": "object",
+      "description": "The before/after scenario description",
+      "properties": {
+        "context": {
+          "type": "string",
+          "description": "The situational context (e.g., 'Hospital has complex policy rules')"
+        },
+        "before": {
+          "type": "string",
+          "description": "What happens WITHOUT the feature/solution"
+        },
+        "after": {
+          "type": "string",
+          "description": "What happens WITH the feature/solution"
+        },
+        "impact": {
+          "type": "string",
+          "description": "The positive impact or benefit achieved"
+        }
+      }
+    },
+    "mainFlow": {
+      "type": "array",
+      "description": "Numbered sequence of steps in the main/happy path",
+      "items": {
+        "type": "object",
+        "properties": {
+          "step": { "type": "integer" },
+          "action": { "type": "string" },
+          "actor": { "type": "string" }
+        },
+        "required": ["step", "action"]
+      }
+    },
+    "alternativeFlows": {
+      "type": "array",
+      "description": "Alternative paths through the use case",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "branchPoint": { "type": "string", "description": "Where this flow branches from main flow" },
+          "steps": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "exceptionFlows": {
+      "type": "array",
+      "description": "Error/exception handling paths",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "trigger": { "type": "string" },
+          "handling": { "type": "string" }
+        }
+      }
+    },
+    "postconditions": {
+      "type": "array",
+      "description": "Conditions that must be true after successful completion",
+      "items": { "type": "string" }
+    },
+    "businessRules": {
+      "type": "array",
+      "description": "Business rules that apply to this use case",
+      "items": { "type": "string" }
+    },
+    "relatedRequirements": {
+      "type": "array",
+      "description": "Requirement IDs that this use case addresses",
+      "items": { "type": "string" }
+    },
+    "relatedEpic": {
+      "type": "string",
+      "description": "Epic ID this use case belongs to"
+    },
+    "relatedStories": {
+      "type": "array",
+      "description": "Story IDs that implement this use case",
+      "items": { "type": "string" }
+    },
+    "sourceDocument": {
+      "type": "string",
+      "description": "Reference to source document if extracted from existing documentation"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes or context"
+    }
+  }
+}

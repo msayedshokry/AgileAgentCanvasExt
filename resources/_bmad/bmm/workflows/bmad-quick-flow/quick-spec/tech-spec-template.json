@@ -1,0 +1,57 @@
+{
+  "$schema": "../../../../schemas/bmm/tech-spec.schema.json",
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "tech-spec",
+    "workflowName": "quick-spec",
+    "projectName": "{{project_name}}",
+    "stepsCompleted": [],
+    "currentStep": "",
+    "timestamps": {
+      "created": "{{timestamp}}",
+      "lastModified": "{{timestamp}}"
+    },
+    "author": "{{user_name}}",
+    "status": "draft"
+  },
+  "content": {
+    "title": "{{spec_title}}",
+    "overview": {
+      "problemStatement": "",
+      "proposedSolution": "",
+      "scope": {
+        "inScope": [],
+        "outOfScope": []
+      }
+    },
+    "goals": [],
+    "nonGoals": [],
+    "technicalApproach": {
+      "architecture": "",
+      "dataModels": [],
+      "apis": [],
+      "algorithms": []
+    },
+    "implementationPlan": {
+      "tasks": [],
+      "acceptanceCriteria": []
+    },
+    "testing": {
+      "strategy": "",
+      "testCases": []
+    },
+    "deployment": {
+      "strategy": "",
+      "rollbackPlan": ""
+    },
+    "monitoring": {
+      "metrics": [],
+      "alerts": []
+    },
+    "securityConsiderations": [],
+    "performanceConsiderations": [],
+    "risks": [],
+    "openQuestions": [],
+    "references": []
+  }
+}

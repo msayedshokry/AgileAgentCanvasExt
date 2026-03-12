@@ -1,0 +1,268 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "test-design",
+    "workflowName": "test-architect",
+    "projectName": "TaskFlow Pro",
+    "timestamps": {
+      "created": "2025-06-25T09:00:00Z",
+      "lastModified": "2025-07-01T11:00:00Z"
+    },
+    "status": "approved"
+  },
+  "content": {
+    "epicInfo": {
+      "epicId": "EPIC-1",
+      "epicTitle": "Core Task Platform",
+      "storyCount": 3
+    },
+    "summary": {
+      "scope": "Full test design for EPIC-1 — Core Task Platform covering Task CRUD, Real-time Board, and Dependency Graph",
+      "approach": "Bottom-up: unit tests for repository/service layer, integration tests for API endpoints with Testcontainers, component tests for React UI, E2E for drag-and-drop and real-time flows",
+      "objectives": [
+        "Validate all Task CRUD operations with full field coverage",
+        "Verify real-time board updates via WebSocket sync",
+        "Ensure dependency graph renders and highlights blocking chains correctly"
+      ],
+      "coverageSummary": "12 total test cases: 4 P0 (critical path), 5 P1 (important), 3 P2 (performance benchmarks)",
+      "testLevels": [
+        { "level": "unit", "purpose": "Repository and service layer validation", "coverage": "Task creation, filtering, soft-delete" },
+        { "level": "integration", "purpose": "API endpoint testing with real database", "coverage": "CRUD endpoints, WebSocket sync" },
+        { "level": "component", "purpose": "React UI component rendering", "coverage": "TaskBoard, DependencyGraph" },
+        { "level": "e2e", "purpose": "Full user journey testing", "coverage": "Drag-and-drop, dependency highlighting" },
+        { "level": "performance", "purpose": "Load and rendering benchmarks", "coverage": "API throughput, board rendering, graph layout" }
+      ],
+      "keyDecisions": [
+        "Use Testcontainers for integration tests to avoid shared staging state",
+        "Performance tests run as P2 to avoid blocking releases",
+        "Component tests use React Testing Library over Enzyme"
+      ]
+    },
+    "riskAssessment": {
+      "overview": "Key risks focus on real-time data consistency and rendering performance at scale",
+      "highPriority": [
+        {
+          "riskId": "RISK-001",
+          "category": "functional",
+          "description": "Concurrent task mutations via WebSocket may cause state divergence between clients",
+          "probability": "medium",
+          "impact": "high",
+          "testStrategy": "Integration test with two WebSocket clients performing simultaneous mutations",
+          "mitigation": "Implement optimistic locking with version fields on task updates"
+        },
+        {
+          "riskId": "RISK-002",
+          "category": "ux",
+          "description": "Drag-and-drop state consistency may break when multiple users interact with the board simultaneously",
+          "probability": "medium",
+          "impact": "high",
+          "testStrategy": "E2E test with Playwright simulating drag operations and verifying final board state",
+          "mitigation": "Server-side status validation on drop events with conflict resolution UI"
+        }
+      ],
+      "mediumPriority": [
+        {
+          "riskId": "RISK-003",
+          "category": "performance",
+          "description": "Graph layout performance degrades significantly with 500+ nodes due to force-directed algorithm complexity",
+          "probability": "medium",
+          "impact": "medium",
+          "testStrategy": "Performance test measuring layout and render time with 200 and 500 node datasets",
+          "mitigation": "Implement node clustering and viewport-based lazy rendering"
+        },
+        {
+          "riskId": "RISK-004",
+          "category": "performance",
+          "description": "Query performance with complex filters and large datasets may exceed response time targets",
+          "probability": "low",
+          "impact": "medium",
+          "testStrategy": "Load test with k6 using complex filter combinations against 100K task dataset",
+          "mitigation": "Add composite database indexes for common filter patterns"
+        }
+      ],
+      "lowPriority": [
+        {
+          "riskId": "RISK-005",
+          "category": "functional",
+          "description": "Basic CRUD operations are well-understood patterns with low risk of failure",
+          "probability": "low",
+          "impact": "low",
+          "testStrategy": "Standard unit and integration tests for all CRUD paths",
+          "mitigation": "Follow established repository pattern with comprehensive input validation"
+        },
+        {
+          "riskId": "RISK-006",
+          "category": "functional",
+          "description": "Task deletion with soft-delete is a standard operation unlikely to cause issues",
+          "probability": "low",
+          "impact": "low",
+          "testStrategy": "Unit tests verifying soft-delete flag and query exclusion",
+          "mitigation": "Database-level constraint preventing hard deletes in application code"
+        }
+      ]
+    },
+    "entryExitCriteria": {
+      "entry": [
+        { "criterion": "API endpoints deployed to staging", "verification": "Health check endpoint returns 200", "mandatory": true },
+        { "criterion": "Test data seeded in staging database", "verification": "Seed script completes without errors", "mandatory": true },
+        { "criterion": "WebSocket server running and accepting connections", "verification": "WebSocket handshake test passes", "mandatory": true }
+      ],
+      "exit": [
+        { "criterion": "All P0 tests passing", "threshold": "100%", "measurement": "CI pipeline P0 suite results", "mandatory": true },
+        { "criterion": "P1 tests passing at target rate", "threshold": "90%", "measurement": "CI pipeline P1 suite results", "mandatory": true },
+        { "criterion": "No critical bugs open", "threshold": "0 critical/blocker bugs", "measurement": "Bug tracker query", "mandatory": true },
+        { "criterion": "Performance benchmarks met", "threshold": "p95 < 200ms for API, FCP < 2s for board", "measurement": "k6 and Playwright performance reports", "mandatory": false }
+      ]
+    },
+    "coveragePlan": {
+      "overview": "Coverage plan organized by priority tiers: P0 covers critical CRUD and real-time paths, P1 covers filtering/rendering, P2 covers performance benchmarks",
+      "p0": [
+        {
+          "id": "1.1-UNIT-001",
+          "requirement": "Task creation with all required fields",
+          "testLevel": "unit",
+          "testType": "functional",
+          "testApproach": "Test TaskRepository.create() with valid and invalid inputs",
+          "requirementId": "FR-1"
+        },
+        {
+          "id": "1.1-INT-001",
+          "requirement": "Task CRUD API end-to-end",
+          "testLevel": "integration",
+          "testType": "functional",
+          "testApproach": "HTTP tests against Fastify server with Testcontainers PostgreSQL",
+          "requirementId": "FR-1"
+        },
+        {
+          "id": "1.2-E2E-001",
+          "requirement": "Real-time task board drag-and-drop",
+          "testLevel": "e2e",
+          "testType": "functional",
+          "testApproach": "Playwright test: drag task card between columns, verify status update and WebSocket broadcast",
+          "requirementId": "FR-1"
+        },
+        {
+          "id": "1.2-INT-002",
+          "requirement": "WebSocket real-time sync between two clients",
+          "testLevel": "integration",
+          "testType": "functional",
+          "testApproach": "Two WebSocket clients connect, one mutates task, other receives update within 500ms",
+          "requirementId": "FR-1"
+        }
+      ],
+      "p1": [
+        {
+          "id": "1.1-UNIT-002",
+          "requirement": "Task query filtering and pagination",
+          "testLevel": "unit",
+          "testType": "functional",
+          "testApproach": "Test TaskRepository.findMany() with various filter combinations",
+          "requirementId": "FR-1"
+        },
+        {
+          "id": "1.1-UNIT-003",
+          "requirement": "Task soft-delete and recovery",
+          "testLevel": "unit",
+          "testType": "functional",
+          "testApproach": "Verify soft-delete sets deleted_at, recovery clears it, queries exclude deleted",
+          "requirementId": "FR-1"
+        },
+        {
+          "id": "1.2-COMP-001",
+          "requirement": "Task board renders cards correctly",
+          "testLevel": "component",
+          "testType": "functional",
+          "testApproach": "React Testing Library: render TaskBoard with mock data, verify card presence and positions",
+          "requirementId": "FR-1"
+        },
+        {
+          "id": "1.3-COMP-001",
+          "requirement": "Dependency graph renders nodes and edges",
+          "testLevel": "component",
+          "testType": "functional",
+          "testApproach": "Render DependencyGraph with mock tasks, verify SVG nodes and edge connections",
+          "requirementId": "FR-4"
+        },
+        {
+          "id": "1.3-E2E-001",
+          "requirement": "Dependency graph highlights blocking chain on click",
+          "testLevel": "e2e",
+          "testType": "functional",
+          "testApproach": "Playwright: click blocked task node, verify red highlight on blocking chain",
+          "requirementId": "FR-4"
+        }
+      ],
+      "p2": [
+        {
+          "id": "1.1-PERF-001",
+          "requirement": "API handles 5000 req/s at p95 < 200ms",
+          "testLevel": "manual",
+          "testType": "regression",
+          "testApproach": "k6 load test against staging with ramping VUs from 100 to 5000",
+          "requirementId": "NFR-1"
+        },
+        {
+          "id": "1.2-PERF-001",
+          "requirement": "Task board renders 500 cards without jank",
+          "testLevel": "manual",
+          "testType": "regression",
+          "testApproach": "Playwright with performance tracing: load board with 500 tasks, measure FCP and TTI",
+          "requirementId": "NFR-1"
+        },
+        {
+          "id": "1.3-PERF-001",
+          "requirement": "Dependency graph renders 200 nodes in < 2 seconds",
+          "testLevel": "manual",
+          "testType": "regression",
+          "testApproach": "Measure graph layout + render time with 200 interconnected nodes",
+          "requirementId": "NFR-1"
+        }
+      ]
+    },
+    "executionOrder": {
+      "overview": "Tests execute bottom-up: unit first (parallel), then integration (parallel), component (parallel), E2E (sequential), and finally performance (sequential)",
+      "p0": ["1.1-UNIT-001", "1.1-INT-001", "1.2-E2E-001", "1.2-INT-002"],
+      "p1": ["1.1-UNIT-002", "1.1-UNIT-003", "1.2-COMP-001", "1.3-COMP-001", "1.3-E2E-001"],
+      "p2p3": ["1.1-PERF-001", "1.2-PERF-001", "1.3-PERF-001"],
+      "parallelization": {
+        "strategy": "Run unit and integration tests in parallel, E2E and performance tests sequentially",
+        "maxParallel": 4,
+        "constraints": [
+          "E2E tests require exclusive access to staging environment",
+          "Performance tests must run in isolation to avoid resource contention"
+        ]
+      }
+    },
+    "testEnvironment": {
+      "environments": [
+        {
+          "name": "CI",
+          "purpose": "Automated test execution on every pull request",
+          "configuration": "GitHub Actions with Testcontainers for PostgreSQL and Redis",
+          "dataRequirements": "Ephemeral test data created and destroyed per test run"
+        },
+        {
+          "name": "Staging",
+          "purpose": "E2E and performance testing with production-like conditions",
+          "configuration": "AWS ECS staging cluster with production-like data volume",
+          "dataRequirements": "Seeded dataset of 100K tasks for performance benchmarks"
+        }
+      ],
+      "tools": [
+        { "tool": "Vitest", "purpose": "Unit and integration test runner", "version": "1.x" },
+        { "tool": "Playwright", "purpose": "E2E and component test automation", "version": "1.x" },
+        { "tool": "k6", "purpose": "Load and performance testing", "version": "0.49+" },
+        { "tool": "Testcontainers", "purpose": "Ephemeral database containers for integration tests", "version": "latest" }
+      ]
+    },
+    "resourceEstimates": {
+      "totalEffort": "15 engineer-days",
+      "breakdown": [
+        { "activity": "Unit tests", "effort": "4 days", "resources": 1, "duration": "4 days" },
+        { "activity": "Integration tests", "effort": "4 days", "resources": 1, "duration": "4 days" },
+        { "activity": "E2E tests", "effort": "4 days", "resources": 1, "duration": "4 days" },
+        { "activity": "Performance tests", "effort": "3 days", "resources": 1, "duration": "3 days" }
+      ]
+    }
+  }
+}

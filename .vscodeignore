@@ -1,0 +1,66 @@
+# Source files (compiled output in dist/ is included)
+src/**
+webview-ui/src/**
+webview-ui/node_modules/**
+webview-ui/index.html
+webview-ui/tsconfig.json
+webview-ui/vite.config.ts
+webview-ui/vitest.config.ts
+webview-ui/package.json
+webview-ui/package-lock.json
+webview-ui/coverage/**
+
+# Build tooling (esbuild bundles everything into dist/extension.js)
+esbuild.mjs
+tsconfig.json
+tsconfig.*.json
+
+# Node modules (all deps are bundled by esbuild)
+node_modules/**
+
+# Old tsc multi-file output (esbuild produces a single dist/extension.js)
+dist/canvas/**
+dist/chat/**
+dist/commands/**
+dist/providers/**
+dist/state/**
+dist/types/**
+dist/views/**
+dist/workflow/**
+dist/**/*.d.ts
+dist/**/*.d.ts.map
+
+# Tests and test output
+features/**
+coverage/**
+reports/**
+cucumber.js
+**/*.test.ts
+**/*.spec.ts
+
+# Dev tooling
+.vscode/**
+.eslintrc*
+.eslintignore
+.prettier*
+
+# Misc
+.gitignore
+*.vsix
+**/*.map
+**/*.ts
+
+# Junk / non-extension files
+Antigravity Shortcuts.json
+bmad.7z
+_index_test.py
+nul
+opencode.json
+*test_errors*
+CDATA*
+*.py
+*.7z
+.c8rc.json
+package-lock.json
+bmad-studio-*.vsix
+fix-sample-metadata.js

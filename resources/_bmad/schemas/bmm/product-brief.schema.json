@@ -1,0 +1,599 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/bmm/product-brief.schema.json",
+  "title": "Product Brief Schema",
+  "description": "Comprehensive schema for product brief artifacts - captures COMPLETE initial product vision, scope definition, and strategic context",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "additionalProperties": false,
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["productName", "vision"],
+      "additionalProperties": false,
+      "properties": {
+        "productName": {
+          "type": "string",
+          "description": "Name of the product"
+        },
+        "tagline": {
+          "type": "string",
+          "description": "Short memorable description of the product"
+        },
+        "version": {
+          "type": "string",
+          "description": "Product brief version"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "review", "approved", "archived"]
+        },
+        "vision": {
+          "type": "object",
+          "description": "Product vision section - capture COMPLETE vision details",
+          "properties": {
+            "statement": {
+              "type": "string",
+              "description": "COMPLETE core vision statement - capture the full text"
+            },
+            "mission": {
+              "type": "string",
+              "description": "Product mission statement"
+            },
+            "problemStatement": {
+              "type": "string",
+              "description": "COMPLETE problem statement - capture all details about the problem being solved"
+            },
+            "problemDetails": {
+              "type": "array",
+              "description": "Detailed problem breakdown",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "problem": {
+                    "type": "string",
+                    "description": "COMPLETE problem description"
+                  },
+                  "impact": { "type": "string" },
+                  "affectedUsers": { "type": "string" },
+                  "currentSolutions": { "type": "string" }
+                }
+              }
+            },
+            "proposedSolution": {
+              "type": "string",
+              "description": "COMPLETE high-level solution description"
+            },
+            "solutionApproach": {
+              "type": "array",
+              "description": "Solution approach details",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "aspect": { "type": "string" },
+                  "description": {
+                    "type": "string",
+                    "description": "COMPLETE description of this solution aspect"
+                  },
+                  "rationale": { "type": "string" }
+                }
+              }
+            },
+            "uniqueValueProposition": {
+              "type": "string",
+              "description": "COMPLETE unique value proposition - what makes this product unique"
+            },
+            "differentiators": {
+              "type": "array",
+              "description": "Key differentiators",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "differentiator": {
+                    "type": "string",
+                    "description": "COMPLETE differentiator description"
+                  },
+                  "competitiveAdvantage": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "targetUsers": {
+          "type": "array",
+          "description": "ALL target user segments - capture COMPLETE persona details",
+          "items": {
+            "type": "object",
+            "properties": {
+              "persona": {
+                "type": "string",
+                "description": "User persona name"
+              },
+              "description": {
+                "type": "string",
+                "description": "COMPLETE description of this user type"
+              },
+              "demographics": {
+                "type": "object",
+                "properties": {
+                  "age": { "type": "string" },
+                  "role": { "type": "string" },
+                  "industry": { "type": "string" },
+                  "experience": { "type": "string" }
+                }
+              },
+              "goals": {
+                "type": "array",
+                "description": "ALL user goals",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "goal": {
+                      "type": "string",
+                      "description": "COMPLETE goal description"
+                    },
+                    "priority": { "type": "string" }
+                  }
+                }
+              },
+              "needs": {
+                "type": "array",
+                "description": "ALL key needs - capture completely",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "need": {
+                      "type": "string",
+                      "description": "COMPLETE need description"
+                    },
+                    "importance": {
+                      "type": "string",
+                      "enum": ["critical", "high", "medium", "low"]
+                    }
+                  }
+                }
+              },
+              "painPoints": {
+                "type": "array",
+                "description": "ALL current pain points - capture completely",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "painPoint": {
+                      "type": "string",
+                      "description": "COMPLETE pain point description"
+                    },
+                    "severity": {
+                      "type": "string",
+                      "enum": ["critical", "high", "medium", "low"]
+                    },
+                    "frequency": { "type": "string" }
+                  }
+                }
+              },
+              "behaviors": {
+                "type": "array",
+                "description": "User behaviors and habits",
+                "items": { "type": "string" }
+              },
+              "motivations": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "frustrations": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "technicalProficiency": {
+                "type": "string",
+                "enum": ["novice", "intermediate", "advanced", "expert"]
+              }
+            }
+          }
+        },
+        "marketContext": {
+          "type": "object",
+          "description": "Market context and positioning",
+          "properties": {
+            "overview": {
+              "type": "string",
+              "description": "COMPLETE market overview"
+            },
+            "targetMarket": {
+              "type": "string",
+              "description": "Target market description"
+            },
+            "marketSize": {
+              "type": "object",
+              "properties": {
+                "tam": { "type": "string" },
+                "sam": { "type": "string" },
+                "som": { "type": "string" }
+              }
+            },
+            "trends": {
+              "type": "array",
+              "description": "Relevant market trends",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "trend": { "type": "string" },
+                  "impact": { "type": "string" }
+                }
+              }
+            },
+            "competitiveLandscape": {
+              "type": "string",
+              "description": "COMPLETE competitive landscape overview"
+            },
+            "competitors": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "description": { "type": "string" },
+                  "strengths": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "weaknesses": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "successMetrics": {
+          "type": "array",
+          "description": "ALL key success metrics - capture COMPLETE details",
+          "items": {
+            "type": "object",
+            "properties": {
+              "metric": {
+                "type": "string",
+                "description": "Name of the metric"
+              },
+              "description": {
+                "type": "string",
+                "description": "COMPLETE metric description"
+              },
+              "target": {
+                "type": "string",
+                "description": "Target value"
+              },
+              "baseline": {
+                "type": "string",
+                "description": "Current baseline if known"
+              },
+              "timeframe": {
+                "type": "string",
+                "description": "Timeframe for achieving target"
+              },
+              "rationale": {
+                "type": "string",
+                "description": "COMPLETE rationale - why this metric matters"
+              },
+              "measurementMethod": {
+                "type": "string",
+                "description": "How this will be measured"
+              },
+              "category": {
+                "type": "string",
+                "enum": ["business", "user", "technical", "operational"]
+              }
+            }
+          }
+        },
+        "scope": {
+          "type": "object",
+          "description": "Product scope definition - capture ALL scope details",
+          "properties": {
+            "overview": {
+              "type": "string",
+              "description": "COMPLETE scope overview"
+            },
+            "inScope": {
+              "type": "array",
+              "description": "ALL features and capabilities in scope - capture completely",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "item": {
+                    "type": "string",
+                    "description": "COMPLETE scope item description"
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": ["must-have", "should-have", "could-have"]
+                  },
+                  "rationale": { "type": "string" }
+                }
+              }
+            },
+            "outOfScope": {
+              "type": "array",
+              "description": "ALL explicitly out of scope items - capture completely",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "item": {
+                    "type": "string",
+                    "description": "COMPLETE out of scope item description"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "Why this is out of scope"
+                  }
+                }
+              }
+            },
+            "futureConsiderations": {
+              "type": "array",
+              "description": "ALL items for future consideration",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "item": {
+                    "type": "string",
+                    "description": "COMPLETE future consideration description"
+                  },
+                  "timeframe": { "type": "string" },
+                  "dependencies": { "type": "string" }
+                }
+              }
+            },
+            "mvpDefinition": {
+              "type": "object",
+              "description": "MVP definition",
+              "properties": {
+                "description": {
+                  "type": "string",
+                  "description": "COMPLETE MVP description"
+                },
+                "features": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "successCriteria": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "keyFeatures": {
+          "type": "array",
+          "description": "Key product features - capture COMPLETE details",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "description": {
+                "type": "string",
+                "description": "COMPLETE feature description"
+              },
+              "userBenefit": {
+                "type": "string",
+                "description": "COMPLETE user benefit description"
+              },
+              "priority": {
+                "type": "string",
+                "enum": ["must-have", "should-have", "could-have", "won't-have"]
+              },
+              "complexity": {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              "dependencies": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "constraints": {
+          "type": "array",
+          "description": "ALL known constraints - capture COMPLETE details",
+          "items": {
+            "type": "object",
+            "properties": {
+              "constraint": {
+                "type": "string",
+                "description": "COMPLETE constraint description"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["technical", "business", "regulatory", "resource", "timeline", "budget", "organizational"]
+              },
+              "impact": {
+                "type": "string",
+                "description": "Impact on the product"
+              },
+              "mitigation": {
+                "type": "string",
+                "description": "How to work within this constraint"
+              }
+            }
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "description": "ALL assumptions made - capture completely",
+          "items": {
+            "type": "object",
+            "properties": {
+              "assumption": {
+                "type": "string",
+                "description": "COMPLETE assumption description"
+              },
+              "category": {
+                "type": "string",
+                "enum": ["market", "technical", "user", "business", "resource"]
+              },
+              "risk": {
+                "type": "string",
+                "description": "Risk if assumption is wrong"
+              },
+              "validationMethod": {
+                "type": "string",
+                "description": "How this will be validated"
+              }
+            }
+          }
+        },
+        "risks": {
+          "type": "array",
+          "description": "ALL identified risks - capture COMPLETE details",
+          "items": {
+            "type": "object",
+            "properties": {
+              "risk": {
+                "type": "string",
+                "description": "COMPLETE risk description"
+              },
+              "category": {
+                "type": "string",
+                "enum": ["technical", "market", "competitive", "resource", "timeline", "regulatory", "operational"]
+              },
+              "probability": {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              "impact": {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              "mitigation": {
+                "type": "string",
+                "description": "COMPLETE mitigation strategy"
+              },
+              "contingency": {
+                "type": "string",
+                "description": "Contingency plan if risk occurs"
+              },
+              "owner": { "type": "string" }
+            }
+          }
+        },
+        "dependencies": {
+          "type": "array",
+          "description": "External dependencies",
+          "items": {
+            "type": "object",
+            "properties": {
+              "dependency": {
+                "type": "string",
+                "description": "COMPLETE dependency description"
+              },
+              "type": { "type": "string" },
+              "status": { "type": "string" },
+              "risk": { "type": "string" }
+            }
+          }
+        },
+        "timeline": {
+          "type": "object",
+          "description": "High-level timeline",
+          "properties": {
+            "overview": {
+              "type": "string",
+              "description": "COMPLETE timeline overview"
+            },
+            "milestones": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "milestone": { "type": "string" },
+                  "targetDate": { "type": "string" },
+                  "description": { "type": "string" },
+                  "deliverables": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "phases": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "phase": { "type": "string" },
+                  "duration": { "type": "string" },
+                  "objectives": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "stakeholders": {
+          "type": "array",
+          "description": "Key stakeholders",
+          "items": {
+            "type": "object",
+            "properties": {
+              "role": { "type": "string" },
+              "name": { "type": "string" },
+              "responsibilities": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "involvement": {
+                "type": "string",
+                "enum": ["sponsor", "decision-maker", "contributor", "informed"]
+              }
+            }
+          }
+        },
+        "additionalContext": {
+          "type": "object",
+          "description": "Additional context and notes",
+          "properties": {
+            "background": {
+              "type": "string",
+              "description": "COMPLETE background context"
+            },
+            "notes": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "openQuestions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "question": { "type": "string" },
+                  "status": { "type": "string" },
+                  "owner": { "type": "string" }
+                }
+              }
+            },
+            "references": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string" },
+                  "location": { "type": "string" },
+                  "description": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,293 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/bmm/change-proposal.schema.json",
+  "title": "Change Proposal Schema",
+  "description": "Schema for sprint change proposals created by the correct-course workflow when significant changes are needed during sprint execution",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["changeRequest", "impactAnalysis", "proposal"],
+      "properties": {
+        "changeRequest": {
+          "type": "object",
+          "description": "The change being requested",
+          "required": ["title", "description", "requestedBy"],
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Change request ID (e.g., 'CR-2026-02-20-001')"
+            },
+            "title": {
+              "type": "string",
+              "description": "Short title for the change"
+            },
+            "description": {
+              "type": "string",
+              "description": "Detailed description of what changed or needs to change"
+            },
+            "requestedBy": {
+              "type": "string",
+              "description": "Who requested the change"
+            },
+            "requestDate": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "changeType": {
+              "type": "string",
+              "enum": [
+                "new-requirement",
+                "requirement-change",
+                "scope-reduction",
+                "scope-expansion",
+                "technical-discovery",
+                "external-dependency",
+                "priority-shift",
+                "resource-change",
+                "timeline-change"
+              ],
+              "description": "Type of change"
+            },
+            "urgency": {
+              "type": "string",
+              "enum": ["critical", "high", "medium", "low"],
+              "description": "How urgent is this change"
+            },
+            "source": {
+              "type": "string",
+              "description": "Where did this change originate (stakeholder, technical discovery, etc.)"
+            }
+          }
+        },
+        "impactAnalysis": {
+          "type": "object",
+          "description": "Analysis of how this change impacts the project",
+          "properties": {
+            "overallImpact": {
+              "type": "string",
+              "enum": ["minimal", "moderate", "significant", "major"],
+              "description": "Overall impact level"
+            },
+            "affectedEpics": {
+              "type": "array",
+              "description": "Epics impacted by this change",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "epicId": { "type": "string" },
+                  "epicTitle": { "type": "string" },
+                  "impactType": {
+                    "type": "string",
+                    "enum": ["modified", "added", "removed", "delayed", "accelerated"]
+                  },
+                  "impactDescription": { "type": "string" }
+                }
+              }
+            },
+            "affectedStories": {
+              "type": "array",
+              "description": "Stories impacted by this change",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "storyId": { "type": "string" },
+                  "storyTitle": { "type": "string" },
+                  "currentStatus": { "type": "string" },
+                  "impactType": {
+                    "type": "string",
+                    "enum": ["modified", "added", "removed", "blocked", "unblocked", "reprioritized"]
+                  },
+                  "impactDescription": { "type": "string" }
+                }
+              }
+            },
+            "architectureImpact": {
+              "type": "object",
+              "properties": {
+                "hasImpact": { "type": "boolean" },
+                "description": { "type": "string" },
+                "affectedComponents": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "requiresArchitectureUpdate": { "type": "boolean" }
+              }
+            },
+            "timelineImpact": {
+              "type": "object",
+              "properties": {
+                "estimatedDelay": { "type": "string" },
+                "milestoneEffects": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "milestone": { "type": "string" },
+                      "originalDate": { "type": "string" },
+                      "newDate": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            },
+            "resourceImpact": {
+              "type": "object",
+              "properties": {
+                "additionalEffort": { "type": "string" },
+                "resourcesNeeded": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            },
+            "riskAssessment": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "risk": { "type": "string" },
+                  "likelihood": {
+                    "type": "string",
+                    "enum": ["low", "medium", "high"]
+                  },
+                  "impact": {
+                    "type": "string",
+                    "enum": ["low", "medium", "high"]
+                  },
+                  "mitigation": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "proposal": {
+          "type": "object",
+          "description": "Proposed solution and implementation plan",
+          "required": ["recommendation"],
+          "properties": {
+            "recommendation": {
+              "type": "string",
+              "enum": ["approve", "approve-with-modifications", "defer", "reject"],
+              "description": "Recommended action"
+            },
+            "rationale": {
+              "type": "string",
+              "description": "Why this recommendation"
+            },
+            "options": {
+              "type": "array",
+              "description": "Available options considered",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "optionId": { "type": "string" },
+                  "description": { "type": "string" },
+                  "pros": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "cons": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "effort": { "type": "string" },
+                  "recommended": { "type": "boolean" }
+                }
+              }
+            },
+            "implementationPlan": {
+              "type": "object",
+              "properties": {
+                "storiesToAdd": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "title": { "type": "string" },
+                      "description": { "type": "string" },
+                      "epicId": { "type": "string" },
+                      "priority": { "type": "string" },
+                      "estimatedEffort": { "type": "string" }
+                    }
+                  }
+                },
+                "storiesToModify": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "storyId": { "type": "string" },
+                      "modifications": { "type": "string" }
+                    }
+                  }
+                },
+                "storiesToRemove": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "storyId": { "type": "string" },
+                      "reason": { "type": "string" }
+                    }
+                  }
+                },
+                "documentsToUpdate": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "document": { "type": "string" },
+                      "updates": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            },
+            "rollbackPlan": {
+              "type": "string",
+              "description": "How to rollback if the change doesn't work"
+            }
+          }
+        },
+        "approval": {
+          "type": "object",
+          "description": "Approval tracking",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": ["pending", "approved", "rejected", "deferred"],
+              "default": "pending"
+            },
+            "approvedBy": { "type": "string" },
+            "approvalDate": { "type": "string" },
+            "approvalNotes": { "type": "string" },
+            "conditions": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "implementation": {
+          "type": "object",
+          "description": "Implementation tracking",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": ["not-started", "in-progress", "completed", "cancelled"],
+              "default": "not-started"
+            },
+            "startedAt": { "type": "string" },
+            "completedAt": { "type": "string" },
+            "implementedBy": { "type": "string" },
+            "notes": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

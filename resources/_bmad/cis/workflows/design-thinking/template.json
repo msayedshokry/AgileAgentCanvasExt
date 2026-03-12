@@ -1,0 +1,56 @@
+{
+  "$schema": "../../../schemas/cis/design-thinking.schema.json",
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "design-thinking",
+    "workflowName": "design-thinking",
+    "projectName": "{{project_name}}",
+    "stepsCompleted": [],
+    "currentStep": "",
+    "timestamps": {
+      "created": "{{timestamp}}",
+      "lastModified": "{{timestamp}}"
+    },
+    "author": "{{user_name}}",
+    "status": "draft"
+  },
+  "content": {
+    "projectName": "{{project_name}}",
+    "designChallenge": "{{design_challenge}}",
+    "empathize": {
+      "userInsights": [],
+      "keyObservations": [],
+      "empathyMap": {
+        "says": [],
+        "thinks": [],
+        "does": [],
+        "feels": []
+      }
+    },
+    "define": {
+      "povStatement": "",
+      "howMightWeQuestions": [],
+      "problemInsights": []
+    },
+    "ideate": {
+      "selectedMethods": [],
+      "generatedIdeas": [],
+      "topConcepts": []
+    },
+    "prototype": {
+      "prototypeApproach": "",
+      "prototypeDescription": "",
+      "featuresToTest": []
+    },
+    "test": {
+      "testingPlan": "",
+      "userFeedback": [],
+      "keyLearnings": []
+    },
+    "nextSteps": {
+      "refinementsNeeded": [],
+      "actionItems": [],
+      "successMetrics": []
+    }
+  }
+}

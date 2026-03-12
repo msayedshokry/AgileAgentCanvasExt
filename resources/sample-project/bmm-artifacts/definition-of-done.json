@@ -1,0 +1,102 @@
+{
+  "items": [
+    {
+      "id": "DOD-001",
+      "item": "All code passes TypeScript strict mode compilation with zero errors",
+      "category": "code-quality",
+      "verification": "CI pipeline runs `tsc --noEmit` and blocks merge on failure",
+      "required": true
+    },
+    {
+      "id": "DOD-002",
+      "item": "All code passes ESLint with the project's @taskflow/eslint-config configuration with zero warnings",
+      "category": "code-quality",
+      "verification": "CI pipeline runs `eslint --max-warnings 0` and blocks merge on failure",
+      "required": true
+    },
+    {
+      "id": "DOD-003",
+      "item": "Unit test coverage for changed files meets or exceeds 80% line coverage",
+      "category": "testing",
+      "verification": "Vitest coverage report checked in CI, coverage gate enforced",
+      "required": true
+    },
+    {
+      "id": "DOD-004",
+      "item": "All acceptance criteria have at least one corresponding automated test (unit, integration, or E2E)",
+      "category": "testing",
+      "verification": "PR checklist includes AC-to-test mapping reviewed by QA",
+      "required": true
+    },
+    {
+      "id": "DOD-005",
+      "item": "All existing tests pass (zero regressions) in CI pipeline",
+      "category": "testing",
+      "verification": "GitHub Actions CI must show green on all test suites before merge",
+      "required": true
+    },
+    {
+      "id": "DOD-006",
+      "item": "API endpoints have OpenAPI/Swagger documentation with request/response examples",
+      "category": "documentation",
+      "verification": "Fastify auto-generates OpenAPI spec; reviewed during PR",
+      "required": true
+    },
+    {
+      "id": "DOD-007",
+      "item": "Complex business logic has inline code comments explaining the 'why' (not the 'what')",
+      "category": "documentation",
+      "verification": "Code reviewer checks for clarity during PR review",
+      "required": true
+    },
+    {
+      "id": "DOD-008",
+      "item": "No hardcoded secrets, API keys, or credentials in source code",
+      "category": "security",
+      "verification": "GitHub secret scanning enabled; `gitleaks` runs in CI pipeline",
+      "required": true
+    },
+    {
+      "id": "DOD-009",
+      "item": "All user inputs validated with Zod schemas before processing",
+      "category": "security",
+      "verification": "PR review checks that all route handlers use schema validation middleware",
+      "required": true
+    },
+    {
+      "id": "DOD-010",
+      "item": "New UI components meet WCAG 2.2 Level AA color contrast requirements (4.5:1 for normal text, 3:1 for large text)",
+      "category": "compliance",
+      "verification": "Axe accessibility audit runs in E2E tests; contrast checker in design review",
+      "required": true
+    },
+    {
+      "id": "DOD-011",
+      "item": "All interactive elements are keyboard accessible with visible focus indicators",
+      "category": "compliance",
+      "verification": "Manual keyboard navigation test during QA; Playwright focus tests for critical flows",
+      "required": true
+    },
+    {
+      "id": "DOD-012",
+      "item": "API endpoints respond within p95 < 200ms for CRUD operations (tested with realistic data volume)",
+      "category": "performance",
+      "verification": "k6 performance tests run weekly; regression alerts in Datadog",
+      "required": true
+    },
+    {
+      "id": "DOD-013",
+      "item": "Pull request has at least 1 approving review from a team member other than the author",
+      "category": "review",
+      "verification": "GitHub branch protection rule enforces required reviews",
+      "required": true
+    },
+    {
+      "id": "DOD-014",
+      "item": "Feature is deployable behind a feature flag if it affects existing functionality",
+      "category": "deployment",
+      "verification": "Feature flag configuration reviewed in PR for any user-facing changes",
+      "required": true
+    }
+  ]
+}

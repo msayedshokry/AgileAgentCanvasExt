@@ -1,0 +1,77 @@
+{
+  "$schema": "../../../schemas/cis/problem-solving.schema.json",
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "problem-solving",
+    "workflowName": "problem-solving",
+    "projectName": "{{project_name}}",
+    "stepsCompleted": [],
+    "currentStep": "",
+    "timestamps": {
+      "created": "{{timestamp}}",
+      "lastModified": "{{timestamp}}"
+    },
+    "author": "{{user_name}}",
+    "status": "draft"
+  },
+  "content": {
+    "problemTitle": "{{problem_title}}",
+    "problemCategory": "{{problem_category}}",
+    "problemDefinition": {
+      "initialStatement": "",
+      "refinedStatement": "",
+      "context": "",
+      "successCriteria": []
+    },
+    "diagnosis": {
+      "problemBoundaries": {
+        "is": [],
+        "isNot": []
+      },
+      "rootCauseAnalysis": "",
+      "contributingFactors": [],
+      "systemDynamics": ""
+    },
+    "analysis": {
+      "forceField": {
+        "drivingForces": [],
+        "restrainingForces": []
+      },
+      "constraints": [],
+      "keyInsights": []
+    },
+    "solutionGeneration": {
+      "methodsUsed": [],
+      "generatedSolutions": [],
+      "creativeAlternatives": []
+    },
+    "solutionEvaluation": {
+      "evaluationCriteria": [],
+      "solutionAnalysis": []
+    },
+    "recommendedSolution": {
+      "solutionId": "",
+      "title": "",
+      "description": "",
+      "rationale": ""
+    },
+    "implementationPlan": {
+      "approach": "",
+      "actionSteps": [],
+      "timeline": "",
+      "resourcesNeeded": [],
+      "responsibleParties": []
+    },
+    "monitoring": {
+      "successMetrics": [],
+      "validationPlan": "",
+      "riskMitigation": [],
+      "adjustmentTriggers": []
+    },
+    "lessonsLearned": {
+      "keyLearnings": [],
+      "whatWorked": [],
+      "whatToAvoid": []
+    }
+  }
+}

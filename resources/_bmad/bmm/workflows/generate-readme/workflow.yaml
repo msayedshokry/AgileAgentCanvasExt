@@ -1,0 +1,26 @@
+# Generate README Workflow Configuration
+name: "generate-readme"
+description: 'Generate or update a comprehensive README.md from project analysis. Use when the user says "generate readme" or "create readme" or "update readme"'
+author: "BMad"
+
+# Output format configuration
+output_format: markdown
+schema_file: null
+
+# Critical variables load from config_source
+config_source: "{bmad-path}/bmm/config.yaml"
+output_folder: "{config_source}:output_folder"
+user_name: "{config_source}:user_name"
+communication_language: "{config_source}:communication_language"
+document_output_language: "{config_source}:document_output_language"
+date: system-generated
+
+# Module path and component files
+installed_path: "{bmad-path}/bmm/workflows/generate-readme"
+instructions: "{installed_path}/instructions.md"
+template: "{installed_path}/readme-template.md"
+
+# Output configuration — writes to project root, not output_folder
+default_output_file: "{project-root}/README.md"
+
+standalone: true
