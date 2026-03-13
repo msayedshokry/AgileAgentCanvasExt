@@ -1,17 +1,17 @@
 {
-  "name": "agentcanvas",
+  "name": "agileagentcanvas",
   "displayName": "Agile Agent Canvas",
   "description": "Visual AI-assisted product development with BMAD methodology - Design epics, stories, and requirements collaboratively with interactive AI chat workflows",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "publisher": "msayedshokry",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/msayedshokry/AgentCanvas.git"
+    "url": "https://github.com/msayedshokry/AgileAgentCanvasExt.git"
   },
-  "homepage": "https://github.com/msayedshokry/AgentCanvas",
+  "homepage": "https://github.com/msayedshokry/AgileAgentCanvasExt",
   "bugs": {
-    "url": "https://github.com/msayedshokry/AgentCanvas/issues"
+    "url": "https://github.com/msayedshokry/AgileAgentCanvasExt/issues"
   },
   "qna": "marketplace",
   "engines": {
@@ -22,7 +22,7 @@
     "Visualization"
   ],
   "keywords": [
-    "agentcanvas",
+    "agileagentcanvas",
     "bmad",
     "product-management",
     "epics",
@@ -36,7 +36,7 @@
     "architecture",
     "sprint-planning"
   ],
-  "icon": "resources/icons/agentcanvas-icon.png",
+  "icon": "resources/icons/agileagentcanvas-icon.png",
   "galleryBanner": {
     "color": "#1a1d23",
     "theme": "dark"
@@ -48,7 +48,7 @@
   "contributes": {
     "languageModelTools": [
       {
-        "name": "agentcanvas_read_file",
+        "name": "agileagentcanvas_read_file",
         "displayName": "Agile Agent Canvas Read File",
         "modelDescription": "Reads a file from the BMAD framework folder or the project output folder. Use this to read agent definitions, workflow steps, schemas, checklists, and any other BMAD framework files.",
         "inputSchema": {
@@ -65,7 +65,7 @@
         }
       },
       {
-        "name": "agentcanvas_list_directory",
+        "name": "agileagentcanvas_list_directory",
         "displayName": "Agile Agent Canvas List Directory",
         "modelDescription": "Lists the contents of a directory inside the BMAD framework folder. Use this to discover available workflows, agents, schemas, and steps.",
         "inputSchema": {
@@ -82,7 +82,7 @@
         }
       },
       {
-        "name": "agentcanvas_update_artifact",
+        "name": "agileagentcanvas_update_artifact",
         "displayName": "Agile Agent Canvas Update Artifact",
         "modelDescription": "Saves changes to a BMAD artifact (vision, epic, story, requirement, etc.) in the project. Call this when you have completed refining an artifact and are ready to persist the changes.",
         "inputSchema": {
@@ -111,9 +111,9 @@
     ],
     "chatParticipants": [
       {
-        "id": "agentcanvas.analyst",
+        "id": "agileagentcanvas.analyst",
         "fullName": "Agile Agent Canvas Analyst",
-        "name": "agentcanvas",
+        "name": "agileagentcanvas",
         "description": "AI Business Analyst for product development - helps design epics, stories, and requirements",
         "isSticky": true,
         "commands": [
@@ -250,89 +250,89 @@
     ],
     "commands": [
       {
-        "command": "agentcanvas.openCanvas",
+        "command": "agileagentcanvas.openCanvas",
         "title": "Agile Agent Canvas: Open Visual Canvas",
         "icon": "$(layout)"
       },
       {
-        "command": "agentcanvas.newProject",
+        "command": "agileagentcanvas.newProject",
         "title": "Agile Agent Canvas: New Project",
         "icon": "$(add)"
       },
       {
-        "command": "agentcanvas.loadProject",
+        "command": "agileagentcanvas.loadProject",
         "title": "Agile Agent Canvas: Load Existing Project",
         "icon": "$(folder-opened)"
       },
       {
-        "command": "agentcanvas.exportArtifacts",
+        "command": "agileagentcanvas.exportArtifacts",
         "title": "Agile Agent Canvas: Export Artifacts",
         "icon": "$(export)"
       },
       {
-        "command": "agentcanvas.importArtifacts",
+        "command": "agileagentcanvas.importArtifacts",
         "title": "Agile Agent Canvas: Import Artifacts",
         "icon": "$(import)"
       },
       {
-        "command": "agentcanvas.syncToFiles",
-        "title": "Agile Agent Canvas: Sync to .agentcanvas-context",
+        "command": "agileagentcanvas.syncToFiles",
+        "title": "Agile Agent Canvas: Sync to .agileagentcanvas-context",
         "icon": "$(sync)"
       },
       {
-        "command": "agentcanvas.loadDemoData",
+        "command": "agileagentcanvas.loadDemoData",
         "title": "Agile Agent Canvas: Load Demo Data",
         "icon": "$(beaker)"
       },
       {
-        "command": "agentcanvas.goToStep",
+        "command": "agileagentcanvas.goToStep",
         "title": "Agile Agent Canvas: Go To Step",
         "icon": "$(arrow-right)"
       },
       {
-        "command": "agentcanvas.selectArtifact",
+        "command": "agileagentcanvas.selectArtifact",
         "title": "Agile Agent Canvas: Select Artifact",
         "icon": "$(inspect)"
       },
       {
-        "command": "agentcanvas.continueWorkflow",
+        "command": "agileagentcanvas.continueWorkflow",
         "title": "Agile Agent Canvas: Continue Workflow",
         "icon": "$(play)"
       },
       {
-        "command": "agentcanvas.workflowStatus",
+        "command": "agileagentcanvas.workflowStatus",
         "title": "Agile Agent Canvas: Workflow Status",
         "icon": "$(info)"
       },
       {
-        "command": "agentcanvas.cancelWorkflow",
+        "command": "agileagentcanvas.cancelWorkflow",
         "title": "Agile Agent Canvas: Cancel Workflow",
         "icon": "$(stop)"
       },
       {
-        "command": "agentcanvas.executeWorkflowStep",
+        "command": "agileagentcanvas.executeWorkflowStep",
         "title": "Agile Agent Canvas: Execute Workflow Step",
         "icon": "$(run)"
       },
       {
-        "command": "agentcanvas.installToIde",
+        "command": "agileagentcanvas.installToIde",
         "title": "Agile Agent Canvas: Install Framework to IDE",
         "icon": "$(cloud-download)"
       },
       {
-        "command": "agentcanvas.switchProject",
+        "command": "agileagentcanvas.switchProject",
         "title": "Agile Agent Canvas: Switch Project",
         "icon": "$(folder-opened)"
       },
       {
-        "command": "agentcanvas.askAgent",
+        "command": "agileagentcanvas.askAgent",
         "title": "Agile Agent Canvas: Ask Agent (Help)",
         "icon": "$(comment-discussion)"
       }
     ],
     "keybindings": [
       {
-        "command": "agentcanvas.askAgent",
+        "command": "agileagentcanvas.askAgent",
         "key": "ctrl+shift+a",
         "mac": "cmd+shift+a"
       }
@@ -340,21 +340,21 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "agentcanvas-explorer",
+          "id": "agileagentcanvas-explorer",
           "title": "Agile Agent Canvas",
-          "icon": "resources/icons/agentcanvas-activity-bar.svg"
+          "icon": "resources/icons/agileagentcanvas-activity-bar.svg"
         }
       ]
     },
     "views": {
-      "agentcanvas-explorer": [
+      "agileagentcanvas-explorer": [
         {
-          "id": "agentcanvas.artifactsTree",
+          "id": "agileagentcanvas.artifactsTree",
           "name": "Artifacts",
           "type": "tree"
         },
         {
-          "id": "agentcanvas.wizardSteps",
+          "id": "agileagentcanvas.wizardSteps",
           "name": "Workflow Progress",
           "type": "tree"
         }
@@ -363,37 +363,37 @@
     "menus": {
       "view/title": [
         {
-          "command": "agentcanvas.openCanvas",
-          "when": "view == agentcanvas.artifactsTree",
+          "command": "agileagentcanvas.openCanvas",
+          "when": "view == agileagentcanvas.artifactsTree",
           "group": "navigation"
         },
         {
-          "command": "agentcanvas.newProject",
-          "when": "view == agentcanvas.artifactsTree",
+          "command": "agileagentcanvas.newProject",
+          "when": "view == agileagentcanvas.artifactsTree",
           "group": "navigation"
         },
         {
-          "command": "agentcanvas.installToIde",
-          "when": "view == agentcanvas.artifactsTree",
+          "command": "agileagentcanvas.installToIde",
+          "when": "view == agileagentcanvas.artifactsTree",
           "group": "2_install"
         }
       ]
     },
     "viewsWelcome": [
       {
-        "view": "agentcanvas.artifactsTree",
-        "contents": "Open the visual canvas to get started.\n[$(preview) Open Visual Canvas](command:agentcanvas.openCanvas)\nOr create a new project.\n[$(add) New Project](command:agentcanvas.newProject)\n[$(folder-opened) Load Existing Project](command:agentcanvas.loadProject)"
+        "view": "agileagentcanvas.artifactsTree",
+        "contents": "Open the visual canvas to get started.\n[$(preview) Open Visual Canvas](command:agileagentcanvas.openCanvas)\nOr create a new project.\n[$(add) New Project](command:agileagentcanvas.newProject)\n[$(folder-opened) Load Existing Project](command:agileagentcanvas.loadProject)"
       }
     ],
     "configuration": {
       "title": "Agile Agent Canvas",
       "properties": {
-        "agentcanvas.outputFolder": {
+        "agileagentcanvas.outputFolder": {
           "type": "string",
-          "default": ".agentcanvas-context",
+          "default": ".agileagentcanvas-context",
           "description": "Folder for BMAD output artifacts"
         },
-        "agentcanvas.outputFormat": {
+        "agileagentcanvas.outputFormat": {
           "type": "string",
           "default": "dual",
           "enum": [
@@ -408,17 +408,17 @@
           ],
           "description": "Output format for BMAD artifacts. 'dual' saves both JSON and Markdown files side by side."
         },
-        "agentcanvas.autoSync": {
+        "agileagentcanvas.autoSync": {
           "type": "boolean",
           "default": true,
           "description": "Automatically sync visual changes to files"
         },
-        "agentcanvas.showAICursor": {
+        "agileagentcanvas.showAICursor": {
           "type": "boolean",
           "default": true,
           "description": "Show AI cursor position in canvas"
         },
-        "agentcanvas.defaultAgent": {
+        "agileagentcanvas.defaultAgent": {
           "type": "string",
           "default": "analyst",
           "enum": [
@@ -428,7 +428,7 @@
           ],
           "description": "Default BMAD agent for chat interactions"
         },
-        "agentcanvas.aiProvider": {
+        "agileagentcanvas.aiProvider": {
           "type": "string",
           "default": "auto",
           "enum": [
@@ -443,28 +443,39 @@
           "enumDescriptions": [
             "Automatically detect the best available provider (tries VS Code LM API first, then Antigravity, then direct API key)",
             "GitHub Copilot via VS Code Language Model API",
-            "OpenAI API (requires agentcanvas.apiKey and optionally agentcanvas.modelId)",
-            "Anthropic Claude API (requires agentcanvas.apiKey and optionally agentcanvas.modelId)",
-            "Google Gemini API (requires agentcanvas.apiKey and optionally agentcanvas.modelId)",
-            "Ollama local models (requires agentcanvas.baseUrl, e.g. http://localhost:11434)",
+            "OpenAI API (requires agileagentcanvas.apiKey and optionally agileagentcanvas.modelId)",
+            "Anthropic Claude API (requires agileagentcanvas.apiKey and optionally agileagentcanvas.modelId)",
+            "Google Gemini API (requires agileagentcanvas.apiKey and optionally agileagentcanvas.modelId)",
+            "Ollama local models (requires agileagentcanvas.baseUrl, e.g. http://localhost:11434)",
             "Google Antigravity IDE — injects prompts into the Antigravity chat panel via native command"
           ],
           "description": "AI provider for Agile Agent Canvas. Use 'auto' to detect automatically."
         },
-        "agentcanvas.apiKey": {
+        "agileagentcanvas.apiKey": {
           "type": "string",
           "default": "",
           "description": "API key for the selected AI provider (OpenAI, Anthropic, or Gemini). Leave empty when using Copilot, Ollama, or Antigravity."
         },
-        "agentcanvas.modelId": {
+        "agileagentcanvas.modelId": {
           "type": "string",
           "default": "",
           "description": "Model ID to use. Defaults: OpenAI=gpt-4o, Anthropic=claude-sonnet-4-5, Gemini=gemini-2.0-flash, Ollama=llama3. Leave empty to use the default for your provider."
         },
-        "agentcanvas.baseUrl": {
+        "agileagentcanvas.baseUrl": {
           "type": "string",
           "default": "",
           "description": "Base URL for the AI API. Only needed for Ollama (e.g. http://localhost:11434) or a custom OpenAI-compatible endpoint."
+        },
+        "agileagentcanvas.logLevel": {
+          "type": "string",
+          "default": "info",
+          "enum": [
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ],
+          "description": "Controls extension logging verbosity. Use info/warn/error for normal use; debug for troubleshooting."
         }
       }
     }
@@ -483,8 +494,9 @@
     "test:cucumber:ci": "cucumber-js --profile ci",
     "test:bdd": "cucumber-js --format progress-bar",
     "test:coverage": "c8 cucumber-js",
+    "test:coverage:gate": "npm run test:coverage && node check-coverage-thresholds.js",
     "test:coverage:report": "c8 report --reporter=html --reporter=text",
-    "test:coverage:ci": "c8 --reporter=lcov --reporter=text cucumber-js --profile ci"
+    "test:coverage:ci": "c8 --reporter=lcov --reporter=text cucumber-js --profile ci && node check-coverage-thresholds.js"
   },
   "devDependencies": {
     "@cucumber/cucumber": "^12.6.0",

@@ -2,10 +2,10 @@ import * as vscode from 'vscode';
 import { acOutput } from '../extension';
 
 /**
- * Default output folder name used by AgentCanvas.
+ * Default output folder name used by AgileAgentCanvas.
  * Also used as the primary auto-detection target when scanning workspace folders.
  */
-export const DEFAULT_OUTPUT_FOLDER = '.agentcanvas-context';
+export const DEFAULT_OUTPUT_FOLDER = '.agileagentcanvas-context';
 
 /**
  * Legacy output folder name (pre-0.2.3).
@@ -15,13 +15,13 @@ export const DEFAULT_OUTPUT_FOLDER = '.agentcanvas-context';
 const LEGACY_OUTPUT_FOLDER = '_bmad-output';
 
 /** Key used to persist the last active project URI in workspaceState. */
-const STATE_KEY = 'agentcanvas.activeProjectUri';
+const STATE_KEY = 'agileagentcanvas.activeProjectUri';
 
 /** Represents a detected BMAD project folder inside a workspace folder. */
 export interface DetectedProject {
     /** The workspace folder this project lives in. */
     workspaceFolder: vscode.WorkspaceFolder;
-    /** Full URI to the output folder (e.g. file:///repo-A/.agentcanvas-context). */
+    /** Full URI to the output folder (e.g. file:///repo-A/.agileagentcanvas-context). */
     outputUri: vscode.Uri;
     /** Display label for pickers. */
     label: string;
@@ -63,7 +63,7 @@ export class WorkspaceResolver {
     }
 
     /**
-     * URI of the active output folder (e.g. `file:///repo-A/.agentcanvas-context`).
+     * URI of the active output folder (e.g. `file:///repo-A/.agileagentcanvas-context`).
      * This replaces every `workspaceFolders[0].uri + outputFolder` pattern.
      * Returns null if no project is active.
      */
@@ -85,12 +85,12 @@ export class WorkspaceResolver {
     }
 
     /**
-     * The configured output folder name (from `agentcanvas.outputFolder` setting).
+     * The configured output folder name (from `agileagentcanvas.outputFolder` setting).
      * Used by artifact-store and other code that needs the folder *name*
      * rather than the full URI.
      */
     getOutputFolderName(): string {
-        return vscode.workspace.getConfiguration('agentcanvas').get('outputFolder', DEFAULT_OUTPUT_FOLDER) as string;
+        return vscode.workspace.getConfiguration('agileagentcanvas').get('outputFolder', DEFAULT_OUTPUT_FOLDER) as string;
     }
 
     // ── Initialization ──────────────────────────────────────────────────
@@ -100,7 +100,7 @@ export class WorkspaceResolver {
      *
      * Strategy:
      * 1. Check `workspaceState` for a persisted URI — if it still exists on disk, use it.
-     * 2. Otherwise, scan all workspace folders for `.agentcanvas-context` (and legacy `_bmad-output`).
+     * 2. Otherwise, scan all workspace folders for `.agileagentcanvas-context` (and legacy `_bmad-output`).
      * 3. If exactly one found → auto-select.
      * 4. If multiple found → show a picker.
      * 5. If none found → remain null (user can create/browse later).
@@ -255,7 +255,7 @@ export class WorkspaceResolver {
     /**
      * Show an informational message when the active (or any detected) project
      * uses the legacy `_bmad-output` folder name, so the user knows they can
-     * rename it to `.agentcanvas-context`.
+     * rename it to `.agileagentcanvas-context`.
      */
     private _notifyLegacyFolderIfNeeded(): void {
         const legacyProjects = this._detectedProjects.filter(
@@ -343,8 +343,8 @@ export class WorkspaceResolver {
             canSelectFiles: false,
             canSelectFolders: true,
             canSelectMany: false,
-            openLabel: 'Load AgentCanvas Project',
-            title: 'Select folder containing AgentCanvas artifacts (.agentcanvas-context or similar)'
+            openLabel: 'Load AgileAgentCanvas Project',
+            title: 'Select folder containing AgileAgentCanvas artifacts (.agileagentcanvas-context or similar)'
         });
 
         if (!selected || selected.length === 0) return false;

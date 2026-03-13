@@ -71,7 +71,7 @@ export async function executeWorkflowStep(
         }
     }
 
-    const fullCommand = `@agentcanvas /refine ${artifactId} ${chatCommand}`;
+    const fullCommand = `@agileagentcanvas /refine ${artifactId} ${chatCommand}`;
 
     try {
         await openChat(fullCommand);

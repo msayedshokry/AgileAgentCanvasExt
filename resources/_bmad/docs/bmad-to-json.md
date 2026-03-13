@@ -13,7 +13,7 @@ bmad-to-json path/to/your-artifact.md
 ### Convert All Artifacts in a Folder
 
 ```
-bmad-to-json .agentcanvas-context/planning-artifacts --all
+bmad-to-json .agileagentcanvas-context/planning-artifacts --all
 ```
 
 ### Interactive Mode
@@ -125,7 +125,7 @@ These schemas don't have dedicated workflows but can be used for manually-create
 ### Convert Planning Artifacts
 
 ```
-bmad-to-json .agentcanvas-context/planning-artifacts --all
+bmad-to-json .agileagentcanvas-context/planning-artifacts --all
 ```
 
 Converts:
@@ -136,19 +136,19 @@ Converts:
 ### Convert Stories Only
 
 ```
-bmad-to-json .agentcanvas-context/implementation-artifacts/stories --type=story
+bmad-to-json .agileagentcanvas-context/implementation-artifacts/stories --type=story
 ```
 
 ### Convert Use Cases
 
 ```
-bmad-to-json .agentcanvas-context/implementation-artifacts/use-cases --type=use-case
+bmad-to-json .agileagentcanvas-context/implementation-artifacts/use-cases --type=use-case
 ```
 
 Or convert a single use case:
 
 ```
-bmad-to-json .agentcanvas-context/implementation-artifacts/use-cases/UC-01-configure-qa-policies.md
+bmad-to-json .agileagentcanvas-context/implementation-artifacts/use-cases/UC-01-configure-qa-policies.md
 ```
 
 ### Convert Large Epics File (Chunked)
@@ -362,7 +362,7 @@ After conversion, the workflow validates:
 Converted JSON files are saved alongside their source files:
 
 ```
-.agentcanvas-context/
+.agileagentcanvas-context/
 ├── planning-artifacts/
 │   ├── PRD.md
 │   ├── PRD.json          <- New

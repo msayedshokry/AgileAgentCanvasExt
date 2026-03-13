@@ -1,5 +1,5 @@
 // =============================================================================
-// AgentCanvas Webview Types
+// AgileAgentCanvas Webview Types
 // Synchronized with artifact-store.ts interfaces
 // =============================================================================
 
@@ -1361,6 +1361,7 @@ export interface Artifact {
   dependencies: string[];
   metadata: ArtifactMetadata;
   childCount?: number;
+  childBreakdown?: { label: string; count: number; types: string[] }[];
   parentId?: string;
   rowY?: number;
   rowHeight?: number;

@@ -43,7 +43,7 @@ function getWorkflowExecutor(world: BmadWorld): any {
     const workflowModule = proxyquire('../../src/workflow/workflow-executor', {
       'vscode': world.vscode,
       '../extension': mockExtension,
-      '../chat/agentcanvas-tools': {
+      '../chat/agileagentcanvas-tools': {
         getToolDefinitions: () => []
       },
       '../chat/ai-provider': {

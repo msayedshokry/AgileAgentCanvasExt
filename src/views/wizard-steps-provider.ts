@@ -169,11 +169,11 @@ export class WizardStepsProvider implements vscode.TreeDataProvider<WorkflowTree
         items.push(new WorkflowTreeItem(
             'action-continue',
             'Continue Workflow',
-            'Use @agentcanvas /continue',
+            'Use @agileagentcanvas /continue',
             'action',
             new vscode.ThemeIcon('debug-continue', new vscode.ThemeColor('charts.green')),
             {
-                command: 'agentcanvas.continueWorkflow',
+                command: 'agileagentcanvas.continueWorkflow',
                 title: 'Continue',
                 arguments: [session.id]
             }
@@ -186,7 +186,7 @@ export class WizardStepsProvider implements vscode.TreeDataProvider<WorkflowTree
             'action',
             new vscode.ThemeIcon('debug-stop', new vscode.ThemeColor('charts.red')),
             {
-                command: 'agentcanvas.cancelWorkflow',
+                command: 'agileagentcanvas.cancelWorkflow',
                 title: 'Cancel',
                 arguments: [session.id]
             }
@@ -238,7 +238,7 @@ export class WizardStepsProvider implements vscode.TreeDataProvider<WorkflowTree
             let command: vscode.Command | undefined;
             if (!isBlocked && status !== 'completed' && step.chatCommand) {
                 command = {
-                    command: 'agentcanvas.executeWorkflowStep',
+                    command: 'agileagentcanvas.executeWorkflowStep',
                     title: step.label,
                     arguments: [selected.type, selected.id, step.id, step.chatCommand, step.dependsOn, completionStatus]
                 };
@@ -269,13 +269,13 @@ export class WizardStepsProvider implements vscode.TreeDataProvider<WorkflowTree
         items.push(new WorkflowTreeItem(
             'action-refine',
             'Refine with AI',
-            `@agentcanvas /refine ${selected.id}`,
+            `@agileagentcanvas /refine ${selected.id}`,
             'action',
             new vscode.ThemeIcon('sparkle', new vscode.ThemeColor('charts.purple')),
             {
-                command: 'agentcanvas.openChatPanel',
+                command: 'agileagentcanvas.openChatPanel',
                 title: 'Refine',
-                arguments: [`@agentcanvas /refine ${selected.id}`]
+                arguments: [`@agileagentcanvas /refine ${selected.id}`]
             }
         ));
 
@@ -336,7 +336,7 @@ export class WizardStepsProvider implements vscode.TreeDataProvider<WorkflowTree
                 status,
                 icon,
                 {
-                    command: 'agentcanvas.goToStep',
+                    command: 'agileagentcanvas.goToStep',
                     title: 'Go to Step',
                     arguments: [step.id]
                 }

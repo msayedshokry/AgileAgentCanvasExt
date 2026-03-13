@@ -25,10 +25,10 @@ import type { Artifact } from '../types';
 // ── Layout constants ────────────────────────────────────────────────────────
 const NODE_W = 170;       // compact card width (was 200)
 const NODE_H = 50;        // compact card height (was 60)
-const H_GAP  = 60;        // horizontal gap between depth levels (was 80)
-const V_GAP  = 16;        // vertical gap between sibling nodes
-const ROOT_X = 40;        // left margin for root (was 60)
-const ROOT_Y = 40;        // top margin (was 60)
+const H_GAP  = 70;        // horizontal gap between depth levels
+const V_GAP  = 28;        // vertical gap between sibling nodes
+const ROOT_X = 40;        // left margin for root
+const ROOT_Y = 40;        // top margin
 
 // ── Wrapping constants ──────────────────────────────────────────────────────
 const MAX_CHILDREN_PER_COL = 5;   // max children in one vertical column before wrapping

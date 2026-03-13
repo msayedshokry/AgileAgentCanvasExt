@@ -1,5 +1,5 @@
 /**
- * AgentCanvasViewProvider Step Definitions
+ * AgileAgentCanvasViewProvider Step Definitions
  */
 
 import { Given, When, Then } from '@cucumber/cucumber';
@@ -138,7 +138,7 @@ function buildProvider(world: BmadWorld) {
     }
   }
 
-  canvasProvider = new canvasModule.AgentCanvasViewProvider(extensionUriMock, canvasStore);
+  canvasProvider = new canvasModule.AgileAgentCanvasViewProvider(extensionUriMock, canvasStore);
 }
 
 function buildMockWebviewView(): any {
@@ -161,7 +161,7 @@ function buildMockWebviewView(): any {
       cspSource: 'test-csp'
     },
     visible: true,
-    viewType: 'agentcanvas.canvasView',
+    viewType: 'agileagentcanvas.canvasView',
     onDidChangeVisibility: (handler: any) => ({ dispose: () => {} }),
     onDidDispose: () => {},
     show: () => {}
@@ -197,7 +197,7 @@ Given('the build does not exist', function(this: BmadWorld) {
   buildModules(this);
   // Rebuild provider too since it depends on module
   if (canvasStore) {
-    canvasProvider = new canvasModule.AgentCanvasViewProvider(extensionUriMock, canvasStore);
+    canvasProvider = new canvasModule.AgileAgentCanvasViewProvider(extensionUriMock, canvasStore);
   }
 });
 
@@ -206,7 +206,7 @@ Given('the build exists', function(this: BmadWorld) {
   canvasModule = null;
   buildModules(this);
   if (canvasStore) {
-    canvasProvider = new canvasModule.AgentCanvasViewProvider(extensionUriMock, canvasStore);
+    canvasProvider = new canvasModule.AgileAgentCanvasViewProvider(extensionUriMock, canvasStore);
   }
 });
 
@@ -342,7 +342,7 @@ When('I call showAICursor with id {string} action {string} label {string}', func
 
 When('I call showAICursor without resolving view first', function(this: BmadWorld) {
   buildProvider(this);
-  const freshProvider = new canvasModule.AgentCanvasViewProvider(extensionUriMock, canvasStore);
+  const freshProvider = new canvasModule.AgileAgentCanvasViewProvider(extensionUriMock, canvasStore);
   try {
     freshProvider.showAICursor('EPIC-1', 'test');
     lastError = null;
@@ -362,7 +362,7 @@ When('I call hideAICursor', function(this: BmadWorld) {
 
 When('I call hideAICursor without resolving view first', function(this: BmadWorld) {
   buildProvider(this);
-  const freshProvider = new canvasModule.AgentCanvasViewProvider(extensionUriMock, canvasStore);
+  const freshProvider = new canvasModule.AgileAgentCanvasViewProvider(extensionUriMock, canvasStore);
   try {
     freshProvider.hideAICursor();
     lastError = null;
@@ -399,7 +399,7 @@ Then('the canvas view provider should be defined', function(this: BmadWorld) {
 });
 
 Then(/^the viewType should be "([^"]*)"$/, function(this: BmadWorld, viewType: string) {
-  assert.strictEqual(canvasModule.AgentCanvasViewProvider.viewType, viewType,
+  assert.strictEqual(canvasModule.AgileAgentCanvasViewProvider.viewType, viewType,
     `Expected viewType to be "${viewType}"`);
 });
 
@@ -483,6 +483,15 @@ Then('the updateArtifacts message should include a {string} artifact with depend
     `Expected "${type}" artifact to have dependency "${dep}". Got: ${JSON.stringify(artifact.dependencies)}`);
 });
 
+Then('the updateArtifacts message should include a {string} artifact with parentId {string}', function(this: BmadWorld, type: string, parentId: string) {
+  const updateMsg = postMessageCalls.find(m => m.type === 'updateArtifacts');
+  assert.ok(updateMsg, 'Expected updateArtifacts message');
+  const artifact = updateMsg.artifacts.find((a: any) => a.type === type);
+  assert.ok(artifact, `Expected "${type}" artifact`);
+  assert.strictEqual(artifact.parentId, parentId,
+    `Expected "${type}" artifact to have parentId "${parentId}". Got: ${JSON.stringify(artifact.parentId)}`);
+});
+
 Then('the updateArtifacts message should include a {string} artifact', function(this: BmadWorld, type: string) {
   const updateMsg = postMessageCalls.find(m => m.type === 'updateArtifacts');
   assert.ok(updateMsg, 'Expected updateArtifacts message');
@@ -523,9 +532,9 @@ Then('the test strategy artifact should be in the testing column', function(this
   assert.ok(updateMsg, 'Expected updateArtifacts message');
   const ts = updateMsg.artifacts.find((a: any) => a.type === 'test-strategy');
   assert.ok(ts, `Expected "test-strategy" artifact. Got types: ${JSON.stringify(updateMsg.artifacts.map((a: any) => a.type))}`);
-  // Testing column is at x=1330 as defined in canvas-view-provider.ts
-  assert.strictEqual(ts.position.x, 1330,
-    `Expected test-strategy x position to be 1330 (testing column), got ${ts.position.x}`);
+  // Testing column is at x=2510 as defined in artifact-transformer.ts
+  assert.strictEqual(ts.position.x, 2510,
+    `Expected test-strategy x position to be 2510 (testing column), got ${ts.position.x}`);
 });
 
 When('I send elicitWithMethod message for artifact id {string}', async function(this: BmadWorld, id: string) {

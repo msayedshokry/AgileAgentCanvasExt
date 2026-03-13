@@ -1,6 +1,6 @@
 /**
  * Chat Participant Step Definitions
- * Cucumber step definitions for testing AgentCanvasChatParticipant functionality
+ * Cucumber step definitions for testing AgileAgentCanvasChatParticipant functionality
  */
 
 import { Given, When, Then } from '@cucumber/cucumber';
@@ -41,8 +41,8 @@ const mockWorkflowExecutor = {
   executeWithTools: async () => {}
 };
 
-// Mock agentcanvas-tools module
-const mockAgentCanvasTools = {
+// Mock agileagentcanvas-tools module
+const mockAgileAgentCanvasTools = {
   sharedToolContext: { bmadPath: '', outputPath: '', store: null },
   registerTools: () => [{ dispose: () => {} }],
   getToolDefinitions: () => []
@@ -81,12 +81,12 @@ function getChatParticipant(world: BmadWorld): { store: any; participant: any } 
       '../workflow/workflow-executor': {
         getWorkflowExecutor: () => mockWorkflowExecutor
       },
-      './agentcanvas-tools': mockAgentCanvasTools,
+      './agileagentcanvas-tools': mockAgileAgentCanvasTools,
       './ai-provider': mockAiProvider
     });
 
     const store = new artifactStoreModule.ArtifactStore();
-    const participant = new chatParticipantModule.AgentCanvasChatParticipant(store);
+    const participant = new chatParticipantModule.AgileAgentCanvasChatParticipant(store);
 
     (world as any)._chatStore = store;
     (world as any)._chatParticipant = participant;

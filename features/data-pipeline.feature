@@ -1,5 +1,5 @@
 Feature: Data Pipeline Integrity
-  As an AgentCanvas user
+  As an AgileAgentCanvas user
   I want all artifact fields to survive the full data pipeline
   So that no data is silently lost when loading, displaying, or saving artifacts
 

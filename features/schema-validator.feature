@@ -1,5 +1,5 @@
 Feature: Schema Validator - Artifact Data Validation
-  As an AgentCanvas developer
+  As an AgileAgentCanvas developer
   I want to validate artifact data against BMAD JSON schemas
   So that LLM-generated changes are caught before corrupting the store
 

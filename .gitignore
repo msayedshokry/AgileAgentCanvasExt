@@ -41,5 +41,8 @@ Thumbs.db
 opencode.json
 _index_test.py
 
+# Generated files (created by IDE installer at runtime)
+.github/skills/*/SKILL.md
+
 # Misc generated
 *.tsbuildinfo

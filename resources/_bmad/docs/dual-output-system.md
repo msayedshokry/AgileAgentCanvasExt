@@ -294,7 +294,7 @@ If you have existing Markdown artifacts that were created before dual-output was
 bmad-to-json path/to/artifact.md
 
 # Convert all artifacts in a folder
-bmad-to-json .agentcanvas-context/planning-artifacts --all
+bmad-to-json .agileagentcanvas-context/planning-artifacts --all
 
 # Interactive mode
 bmad-to-json

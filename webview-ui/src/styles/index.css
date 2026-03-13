@@ -2750,9 +2750,8 @@ body.vscode-light .minimap-viewport {
   position: absolute;
   pointer-events: none;
   z-index: 0;
-  border-radius: 6px;
-  border-top: 1px solid;
-  border-bottom: 1px solid;
+  border-radius: 8px;
+  border: 1px solid;
   transition: top 0.3s ease, height 0.3s ease;
 }
 
@@ -4264,6 +4263,55 @@ body.vscode-light .minimap-viewport {
   padding: 1px 5px;
   border-radius: 8px;
   font-size: 10px;
+}
+
+/* Categorized child breakdown badges — show typed counts (e.g. "3 Risks", "4 Reqs") */
+.artifact-child-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid var(--vscode-editorWidget-border);
+}
+
+.artifact-child-breakdown:hover {
+  opacity: 1;
+}
+
+.child-breakdown-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 1px 6px;
+  white-space: nowrap;
+  border: 1px solid color-mix(in srgb, var(--vscode-badge-background) 50%, transparent);
+  background: color-mix(in srgb, var(--vscode-badge-background) 15%, transparent);
+  color: var(--vscode-foreground);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.child-breakdown-badge:hover {
+  background: color-mix(in srgb, var(--vscode-badge-background) 45%, transparent);
+  border-color: color-mix(in srgb, var(--vscode-badge-background) 80%, transparent);
+}
+
+.child-breakdown-badge.badge-expanded {
+  background: color-mix(in srgb, var(--vscode-badge-background) 35%, transparent);
+  border-color: color-mix(in srgb, var(--vscode-badge-background) 70%, transparent);
+}
+
+.child-breakdown-badge.badge-collapsed {
+  opacity: 0.65;
+}
+
+.child-breakdown-badge.badge-collapsed:hover {
+  opacity: 0.9;
 }
 
 /* Card states for expand/collapse */

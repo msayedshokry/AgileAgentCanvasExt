@@ -1,5 +1,5 @@
 Feature: Artifact Transformer - Store-to-Canvas Layout
-  As an AgentCanvas developer
+  As an AgileAgentCanvas developer
   I want to transform artifact store state into a positioned canvas layout
   So that the webview can render artifacts in an organized multi-column view
 
@@ -147,7 +147,7 @@ Feature: Artifact Transformer - Store-to-Canvas Layout
     When I build artifacts from the store
     Then artifact "architecture-1" should have type "architecture"
     And artifact "architecture-1" should have title "My Arch"
-    And artifact "architecture-1" position x should be 730
+    And artifact "architecture-1" position x should be 1450
 
   @transformer @solutioning
   Scenario: Architecture with PRD has prd-1 as parentId
@@ -163,7 +163,7 @@ Feature: Artifact Transformer - Store-to-Canvas Layout
     When I build artifacts from the store
     Then artifact "arch-decision-0" should have type "architecture-decision"
     And artifact "arch-decision-0" parentId should be "architecture-1"
-    And artifact "arch-decision-0" position x should be 730
+    And artifact "arch-decision-0" position x should be 1450
 
   @transformer @solutioning
   Scenario: System components become child cards
@@ -189,14 +189,14 @@ Feature: Artifact Transformer - Store-to-Canvas Layout
     When I build artifacts from the store
     Then artifact "epic-0" should have type "epic"
     And artifact "epic-0" should have title "Epic One"
-    And artifact "epic-0" position x should be 1070
+    And artifact "epic-0" position x should be 2510
 
   @transformer @implementation
   Scenario: Epic stories appear in column 5
     Given the store has an epic with title "Epic" and 2 stories
     When I build artifacts from the store
     Then the artifacts should contain type "story"
-    And all "story" artifacts position x should be at least 1390
+    And all "story" artifacts position x should be at least 2830
 
   @transformer @implementation
   Scenario: Story has epicId in its parentId
@@ -217,7 +217,7 @@ Feature: Artifact Transformer - Store-to-Canvas Layout
     Given the store has an epic with title "Epic" and 2 use cases
     When I build artifacts from the store
     Then the artifacts should contain type "use-case"
-    And all "use-case" artifacts position x should be at least 1390
+    And all "use-case" artifacts position x should be at least 2830
 
   @transformer @implementation
   Scenario: Tasks under stories produce task cards

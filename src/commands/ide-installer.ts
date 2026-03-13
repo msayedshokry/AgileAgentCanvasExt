@@ -689,7 +689,7 @@ export async function autoInstallIfNeeded(extensionPath: string): Promise<void> 
         const summary = formatCountSummary(counts);
 
         const action = await vscode.window.showInformationMessage(
-            `AgentCanvas: Installed ${summary} for ${ide.label} into \`${ide.skillsDir}/\``,
+            `AgileAgentCanvas: Installed ${summary} for ${ide.label} into \`${ide.skillsDir}/\``,
             'Show Files',
             'Dismiss'
         );
@@ -701,7 +701,7 @@ export async function autoInstallIfNeeded(extensionPath: string): Promise<void> 
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Manual command: agentcanvas.installToIde
+// Manual command: agileagentcanvas.installToIde
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -891,8 +891,8 @@ export async function installToIde(extensionPath: string): Promise<void> {
 
     const action = await vscode.window.showInformationMessage(
         totalWritten > 0
-            ? `AgentCanvas: Installed ${totalWritten} skills (${summary})${folderHint}`
-            : `AgentCanvas: No skills written (all already existed${overwrite ? '' : ' — choose Overwrite to update'})`,
+            ? `AgileAgentCanvas: Installed ${totalWritten} skills (${summary})${folderHint}`
+            : `AgileAgentCanvas: No skills written (all already existed${overwrite ? '' : ' — choose Overwrite to update'})`,
         'Show Files'
     );
     if (action === 'Show Files') {

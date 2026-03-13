@@ -1,5 +1,5 @@
-Feature: AgentCanvasChatParticipant - VS Code Chat Commands
-  As an AgentCanvas user
+Feature: AgileAgentCanvasChatParticipant - VS Code Chat Commands
+  As an AgileAgentCanvas user
   I want to use chat commands to manage my project artifacts
   So that I can interact with the AI assistant effectively
 

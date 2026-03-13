@@ -144,7 +144,7 @@ export async function handleAIAction(
 /**
  * Static workflow labels per artifact type.
  * The `label` values are used as the workflow selector in the chat command
- * (e.g. `@agentcanvas /refine TC-2 Test Design`) and MUST match the `name` field
+ * (e.g. `@agileagentcanvas /refine TC-2 Test Design`) and MUST match the `name` field
  * returned by `getAvailableWorkflows()` in workflow-executor.ts.
  * Keep in sync with getAvailableWorkflows() whenever workflows are added/reordered.
  */
@@ -381,7 +381,7 @@ async function showWorkflowPicker(artifact: any): Promise<string | null> {
 
 /**
  * Refine an artifact with AI assistance via Copilot Chat.
- * Shows a workflow picker first, then sends @agentcanvas /refine <id> <workflow-name> directly.
+ * Shows a workflow picker first, then sends @agileagentcanvas /refine <id> <workflow-name> directly.
  */
 export async function refineArtifactWithAI(artifact: any, store: ArtifactStore): Promise<void> {
     store.setRefineContext(artifact);
@@ -396,8 +396,8 @@ export async function refineArtifactWithAI(artifact: any, store: ArtifactStore):
     }
 
     const refineCommand = workflowName
-        ? `@agentcanvas /refine ${artifact.id} ${workflowName}`
-        : `@agentcanvas /refine ${artifact.id}`;
+        ? `@agileagentcanvas /refine ${artifact.id} ${workflowName}`
+        : `@agileagentcanvas /refine ${artifact.id}`;
 
     try {
         await openChat(refineCommand);
@@ -430,7 +430,7 @@ const DEV_WORKFLOWS: Record<string, { label: string; description: string }[]> = 
 
 /**
  * Start development for an artifact via Copilot Chat.
- * Shows a dev-workflow picker, then sends @agentcanvas /dev <id> <workflow-name>.
+ * Shows a dev-workflow picker, then sends @agileagentcanvas /dev <id> <workflow-name>.
  */
 export async function startDevelopment(artifact: any, store: ArtifactStore): Promise<void> {
     acOutput.appendLine(`[StartDev] ENTERED — artifact.id=${artifact?.id}, artifact.type=${artifact?.type}, source=${(artifact as any)?.source || 'n/a'}`);
@@ -453,7 +453,7 @@ export async function startDevelopment(artifact: any, store: ArtifactStore): Pro
         const workflowName = workflows[0].label;
         acOutput.appendLine(`[StartDev] auto-selecting workflow: "${workflowName}"`);
 
-        const devCommand = `@agentcanvas /dev ${artifact.id} ${workflowName}`;
+        const devCommand = `@agileagentcanvas /dev ${artifact.id} ${workflowName}`;
         acOutput.appendLine(`[StartDev] opening chat with command: "${devCommand}"`);
 
         const chatOk = await openChat(devCommand);
@@ -470,7 +470,7 @@ export async function startDevelopment(artifact: any, store: ArtifactStore): Pro
  * Open the /write-doc command in chat, pre-seeded with artifact context.
  *
  * Constructs a prompt that tells the Tech Writer agent what artifact
- * the user wants documented, then opens chat with `@agentcanvas /write-doc <prompt>`.
+ * the user wants documented, then opens chat with `@agileagentcanvas /write-doc <prompt>`.
  */
 export async function startDocumentation(artifact: any, _store: ArtifactStore): Promise<void> {
     acOutput.appendLine(`[StartDoc] ENTERED — artifact.id=${artifact?.id}, artifact.type=${artifact?.type}`);
@@ -481,7 +481,7 @@ export async function startDocumentation(artifact: any, _store: ArtifactStore): 
         const description = artifact.description ? ` — ${artifact.description}` : '';
 
         const docPrompt = `Document the ${typeLabel} "${title}"${description}`;
-        const docCommand = `@agentcanvas /write-doc ${docPrompt}`;
+        const docCommand = `@agileagentcanvas /write-doc ${docPrompt}`;
 
         acOutput.appendLine(`[StartDoc] opening chat with command: "${docCommand}"`);
         const chatOk = await openChat(docCommand);
@@ -510,18 +510,18 @@ export async function breakDownArtifact(artifact: any, store: ArtifactStore): Pr
 
     let breakDownCommand: string;
     if (artifact.type === 'epic') {
-        breakDownCommand = `@agentcanvas /stories ${artifact.id}`;
+        breakDownCommand = `@agileagentcanvas /stories ${artifact.id}`;
     } else if (artifact.type === 'requirement') {
-        breakDownCommand = `@agentcanvas /refine ${artifact.id} Check Implementation Readiness`;
+        breakDownCommand = `@agileagentcanvas /refine ${artifact.id} Check Implementation Readiness`;
     } else if (artifact.type === 'story') {
-        breakDownCommand = `@agentcanvas /refine ${artifact.id} Story Quality Review`;
+        breakDownCommand = `@agileagentcanvas /refine ${artifact.id} Story Quality Review`;
     } else {
         // vision, prd, architecture, use-case — first workflow is the primary one
         const workflows = REFINE_WORKFLOWS[artifact.type];
         const name = workflows?.[0]?.label || '';
         breakDownCommand = name
-            ? `@agentcanvas /refine ${artifact.id} ${name}`
-            : `@agentcanvas /refine ${artifact.id}`;
+            ? `@agileagentcanvas /refine ${artifact.id} ${name}`
+            : `@agileagentcanvas /refine ${artifact.id}`;
     }
 
     try {
@@ -553,8 +553,8 @@ export async function enhanceArtifactWithAI(artifact: any, store: ArtifactStore)
     const workflows = REFINE_WORKFLOWS[artifact.type];
     const name = workflows?.[0]?.label || '';
     const enhanceCommand = name
-        ? `@agentcanvas /refine ${artifact.id} ${name}`
-        : `@agentcanvas /refine ${artifact.id}`;
+        ? `@agileagentcanvas /refine ${artifact.id} ${name}`
+        : `@agileagentcanvas /refine ${artifact.id}`;
 
     try {
         await openChat(enhanceCommand);
@@ -676,12 +676,12 @@ export async function elicitArtifactWithMethod(artifact: any, store: ArtifactSto
     }
 
     // Build the /elicit command — embeds method details so the chat handler
-    // can construct a proper workflow execution with agentcanvas_update_artifact.
+    // can construct a proper workflow execution with agileagentcanvas_update_artifact.
     const artifactContext = artifact.description
         ? `\n\nContent:\n${artifact.description}`
         : '';
 
-    const prompt = `@agentcanvas /elicit ${artifact.id} ${method.method_name}
+    const prompt = `@agileagentcanvas /elicit ${artifact.id} ${method.method_name}
 Category: ${method.category}
 Description: ${method.description}
 Output pattern: ${method.output_pattern}
@@ -883,19 +883,19 @@ export async function syncToFiles(store: ArtifactStore): Promise<void> {
             await store.syncToFiles();
         }
     );
-    vscode.window.showInformationMessage('Artifacts synced to .agentcanvas-context');
+    vscode.window.showInformationMessage('Artifacts synced to .agileagentcanvas-context');
 }
 
 export async function goToStep(stepId: string, store: ArtifactStore): Promise<void> {
     store.setCurrentStep(stepId as any);
 
     const chatCommands: Record<string, string> = {
-        'vision': '@agentcanvas /vision',
-        'requirements': '@agentcanvas /requirements',
-        'epics': '@agentcanvas /epics',
-        'stories': '@agentcanvas /stories',
-        'enhancement': '@agentcanvas /enhance',
-        'review': '@agentcanvas /review'
+        'vision': '@agileagentcanvas /vision',
+        'requirements': '@agileagentcanvas /requirements',
+        'epics': '@agileagentcanvas /epics',
+        'stories': '@agileagentcanvas /stories',
+        'enhancement': '@agileagentcanvas /enhance',
+        'review': '@agileagentcanvas /review'
     };
 
     const command = chatCommands[stepId];
@@ -1144,10 +1144,10 @@ export async function launchBmmWorkflow(triggerPhrase: string, store?: ArtifactS
         store.setPendingWorkflowLaunch({ triggerPhrase, workflowFilePath });
     }
 
-    // Ensure the phrase is addressed to the @agentcanvas chat participant
-    const chatQuery = triggerPhrase.trimStart().startsWith('@agentcanvas')
+    // Ensure the phrase is addressed to the @agileagentcanvas chat participant
+    const chatQuery = triggerPhrase.trimStart().startsWith('@agileagentcanvas')
         ? triggerPhrase
-        : `@agentcanvas ${triggerPhrase}`;
+        : `@agileagentcanvas ${triggerPhrase}`;
 
     await openChat(chatQuery);
 }

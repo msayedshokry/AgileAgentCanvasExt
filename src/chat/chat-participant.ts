@@ -2,17 +2,17 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { ArtifactStore, Epic } from '../state/artifact-store';
 import { getWorkflowExecutor, WorkflowExecutor } from '../workflow/workflow-executor';
-import { sharedToolContext, getToolDefinitions } from './agentcanvas-tools';
+import { sharedToolContext, getToolDefinitions } from './agileagentcanvas-tools';
 import { BmadModel, selectModel, streamChatResponse, getNoModelMessage as providerNoModelMessage, ChatMessage } from './ai-provider';
 import { getPersonaForArtifactType, formatFullAgentForPrompt, loadAgentPersona, clearPersonaCache, AgentPersona, loadAllAgentPersonas, formatAgentRoster } from './agent-personas';
 
 /**
- * AgentCanvas Chat Participant - Integrates with VS Code Copilot Chat
+ * AgileAgentCanvas Chat Participant - Integrates with VS Code Copilot Chat
  * 
  * This provides the conversational AI interface that works alongside
- * the visual canvas. Users can @agentcanvas in chat to interact with the analyst.
+ * the visual canvas. Users can @agileagentcanvas in chat to interact with the analyst.
  */
-export class AgentCanvasChatParticipant {
+export class AgileAgentCanvasChatParticipant {
     private store: ArtifactStore;
     private extensionContext?: vscode.ExtensionContext;
 
@@ -22,7 +22,7 @@ export class AgentCanvasChatParticipant {
     }
 
     /**
-     * Main handler for chat messages sent to @agentcanvas
+     * Main handler for chat messages sent to @agileagentcanvas
      */
     async handleChat(
         request: vscode.ChatRequest,
@@ -50,76 +50,48 @@ export class AgentCanvasChatParticipant {
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
-        
-        switch (command) {
-            case 'vision':
-                return this.handleVisionCommand(prompt, context, stream, token);
-            case 'requirements':
-                return this.handleRequirementsCommand(prompt, context, stream, token);
-            case 'epics':
-                return this.handleEpicsCommand(prompt, context, stream, token);
-            case 'stories':
-                return this.handleStoriesCommand(prompt, context, stream, token);
-            case 'enhance':
-                return this.handleEnhanceCommand(prompt, context, stream, token);
-            case 'refine':
-                return this.handleRefineCommand(prompt, context, stream, token);
-            case 'dev':
-                return this.handleDevCommand(prompt, context, stream, token);
-            case 'apply':
-                return this.handleApplyCommand(prompt, context, stream, token);
-            case 'review':
-                return this.handleReviewCommand(prompt, context, stream, token);
-            case 'convert-to-json':
-                return this.handleConvertToJsonCommand(prompt, stream, token);
-            case 'workflows':
-                return this.handleWorkflowsCommand(prompt, stream, token);
-            case 'continue':
-                return this.handleContinueCommand(prompt, stream, token);
-            case 'status':
-                return this.handleStatusCommand(stream);
-            case 'sprint':
-                return this.handleSprintCommand(prompt, context, stream, token);
-            case 'ux':
-                return this.handleUxCommand(prompt, context, stream, token);
-            case 'readiness':
-                return this.handleReadinessCommand(prompt, context, stream, token);
-            case 'party':
-                return this.handlePartyCommand(prompt, context, stream, token);
-            case 'document':
-                return this.handleDocumentCommand(prompt, context, stream, token);
-            case 'review-code':
-                return this.handleReviewCodeCommand(prompt, context, stream, token);
-            case 'ci':
-                return this.handleCiCommand(prompt, context, stream, token);
-            case 'quick':
-                return this.handleQuickCommand(prompt, context, stream, token);
-            case 'design-thinking':
-                return this.handleDesignThinkingCommand(prompt, context, stream, token);
-            case 'innovate':
-                return this.handleInnovateCommand(prompt, context, stream, token);
-            case 'solve':
-                return this.handleSolveCommand(prompt, context, stream, token);
-            case 'story-craft':
-                return this.handleStoryCraftCommand(prompt, context, stream, token);
-            case 'elicit':
-                return this.handleElicitCommand(prompt, context, stream, token);
-            case 'context':
-                return this.handleContextCommand(prompt, context, stream, token);
-            case 'write-doc':
-                return this.handleWriteDocCommand(prompt, context, stream, token);
-            case 'mermaid':
-                return this.handleMermaidCommand(prompt, context, stream, token);
-            case 'readme':
-                return this.handleReadmeCommand(prompt, context, stream, token);
-            case 'changelog':
-                return this.handleChangelogCommand(prompt, context, stream, token);
-            case 'api-docs':
-                return this.handleApiDocsCommand(prompt, context, stream, token);
-            default:
-                stream.markdown(`Unknown command: ${command}. Available commands: vision, requirements, epics, stories, enhance, refine, dev, elicit, apply, review, sprint, ux, readiness, party, document, context, write-doc, mermaid, readme, changelog, api-docs, review-code, ci, quick, design-thinking, innovate, solve, story-craft, convert-to-json, workflows, continue, status`);
-                return { metadata: { command: 'error' } };
+        const handlers: Record<string, () => Promise<vscode.ChatResult>> = {
+            'vision': () => this.handleVisionCommand(prompt, context, stream, token),
+            'requirements': () => this.handleRequirementsCommand(prompt, context, stream, token),
+            'epics': () => this.handleEpicsCommand(prompt, context, stream, token),
+            'stories': () => this.handleStoriesCommand(prompt, context, stream, token),
+            'enhance': () => this.handleEnhanceCommand(prompt, context, stream, token),
+            'refine': () => this.handleRefineCommand(prompt, context, stream, token),
+            'dev': () => this.handleDevCommand(prompt, context, stream, token),
+            'apply': () => this.handleApplyCommand(prompt, context, stream, token),
+            'review': () => this.handleReviewCommand(prompt, context, stream, token),
+            'convert-to-json': () => this.handleConvertToJsonCommand(prompt, stream, token),
+            'workflows': () => this.handleWorkflowsCommand(prompt, stream, token),
+            'continue': () => this.handleContinueCommand(prompt, stream, token),
+            'status': () => this.handleStatusCommand(stream),
+            'sprint': () => this.handleSprintCommand(prompt, context, stream, token),
+            'ux': () => this.handleUxCommand(prompt, context, stream, token),
+            'readiness': () => this.handleReadinessCommand(prompt, context, stream, token),
+            'party': () => this.handlePartyCommand(prompt, context, stream, token),
+            'document': () => this.handleDocumentCommand(prompt, context, stream, token),
+            'review-code': () => this.handleReviewCodeCommand(prompt, context, stream, token),
+            'ci': () => this.handleCiCommand(prompt, context, stream, token),
+            'quick': () => this.handleQuickCommand(prompt, context, stream, token),
+            'design-thinking': () => this.handleDesignThinkingCommand(prompt, context, stream, token),
+            'innovate': () => this.handleInnovateCommand(prompt, context, stream, token),
+            'solve': () => this.handleSolveCommand(prompt, context, stream, token),
+            'story-craft': () => this.handleStoryCraftCommand(prompt, context, stream, token),
+            'elicit': () => this.handleElicitCommand(prompt, context, stream, token),
+            'context': () => this.handleContextCommand(prompt, context, stream, token),
+            'write-doc': () => this.handleWriteDocCommand(prompt, context, stream, token),
+            'mermaid': () => this.handleMermaidCommand(prompt, context, stream, token),
+            'readme': () => this.handleReadmeCommand(prompt, context, stream, token),
+            'changelog': () => this.handleChangelogCommand(prompt, context, stream, token),
+            'api-docs': () => this.handleApiDocsCommand(prompt, context, stream, token)
+        };
+
+        const handler = handlers[command];
+        if (!handler) {
+            stream.markdown(`Unknown command: ${command}. Available commands: vision, requirements, epics, stories, enhance, refine, dev, elicit, apply, review, sprint, ux, readiness, party, document, context, write-doc, mermaid, readme, changelog, api-docs, review-code, ci, quick, design-thinking, innovate, solve, story-craft, convert-to-json, workflows, continue, status`);
+            return { metadata: { command: 'error' } };
         }
+
+        return handler();
     }
 
     /**
@@ -177,7 +149,7 @@ export class AgentCanvasChatParticipant {
 
         // ── Detect active workflow session (checkpoint resumption) ───────
         // When the LLM stops at a checkpoint during executeWithTools(), the
-        // tool loop exits. The user's next @agentcanvas message comes here instead
+        // tool loop exits. The user's next @agileagentcanvas message comes here instead
         // of /continue. Inject workflow context so the LLM can resume.
         const activeSession = executor.getCurrentSession();
         const workflowResumeHint = activeSession && activeSession.status === 'active'
@@ -188,13 +160,13 @@ export class AgentCanvasChatParticipant {
               `- **Artifact:** ${activeSession.artifactType} (${activeSession.artifactId})\n` +
               `- **Workflow Path:** ${activeSession.workflowPath}\n\n` +
               `The user's message below is their response to the checkpoint options you presented. ` +
-              `Continue the workflow from where you left off. You have access to tools (agentcanvas_read_file, ` +
-              `agentcanvas_list_directory, agentcanvas_update_artifact) to read workflow files and save artifacts.\n` +
+              `Continue the workflow from where you left off. You have access to tools (agileagentcanvas_read_file, ` +
+              `agileagentcanvas_list_directory, agileagentcanvas_update_artifact) to read workflow files and save artifacts.\n` +
               `Remember: honor any remaining checkpoint/pause instructions in the workflow.`
             : '';
 
         // Include output format awareness so the LLM knows the user's preference
-        const outputFormat = vscode.workspace.getConfiguration('agentcanvas')
+        const outputFormat = vscode.workspace.getConfiguration('agileagentcanvas')
             .get<string>('outputFormat', 'dual');
         const outputFormatHint = (outputFormat === 'dual' || outputFormat === 'json')
             ? `\n\nNote: The user's output format is set to "${outputFormat}". When generating or refining artifacts, ` +
@@ -1210,9 +1182,9 @@ Stories: ${targetEpic.stories?.map((s: any) => s.title).join(', ') || 'None'}`;
             stream.markdown('## No Active Workflow\n\n');
             stream.markdown('There is no active workflow session to continue.\n\n');
             stream.markdown('**To start a workflow:**\n');
-            stream.markdown('1. Use `@agentcanvas /refine <artifact-id>` to select a workflow\n');
+            stream.markdown('1. Use `@agileagentcanvas /refine <artifact-id>` to select a workflow\n');
             stream.markdown('2. Select a workflow number from the menu\n\n');
-            stream.markdown('**Example:** `@agentcanvas /refine EPIC-1 1`\n');
+            stream.markdown('**Example:** `@agileagentcanvas /refine EPIC-1 1`\n');
             return { metadata: { command: 'continue', status: 'no-session' } };
         }
 
@@ -1233,8 +1205,8 @@ Stories: ${targetEpic.stories?.map((s: any) => s.title).join(', ') || 'None'}`;
             stream.markdown('Could not determine next step. The workflow may be complete or missing step navigation.\n\n');
             
             stream.markdown('**Options:**\n');
-            stream.markdown('- Use `@agentcanvas /status` to check workflow status\n');
-            stream.markdown('- Use `@agentcanvas /refine <artifact-id>` to start a new refinement\n');
+            stream.markdown('- Use `@agileagentcanvas /status` to check workflow status\n');
+            stream.markdown('- Use `@agileagentcanvas /refine <artifact-id>` to start a new refinement\n');
             
             return { metadata: { command: 'continue', status: 'no-next-step', sessionId: session.id } };
         }
@@ -1286,9 +1258,9 @@ Skip your activation menu — the user is mid-workflow and has already been inte
 - This is a collaborative conversation, not an autonomous batch process.
 
 ## Your Tools
-- **agentcanvas_read_file(path)** — read any file under \`${bmadPath}\` (use resolved absolute paths)
-- **agentcanvas_list_directory(path)** — list any directory under \`${bmadPath}\`
-- **agentcanvas_update_artifact(type, id, changes)** — persist changes to a BMAD artifact in the project
+- **agileagentcanvas_read_file(path)** — read any file under \`${bmadPath}\` (use resolved absolute paths)
+- **agileagentcanvas_list_directory(path)** — list any directory under \`${bmadPath}\`
+- **agileagentcanvas_update_artifact(type, id, changes)** — persist changes to a BMAD artifact in the project
 
 ## BMAD Framework Location
 The complete BMAD framework is at: \`${bmadPath}\`
@@ -1380,7 +1352,7 @@ The complete BMAD framework is at: \`${bmadPath}\`
                 try {
                     const refinements = JSON.parse(jsonMatch[1]);
                     stream.markdown('\n\n---\n');
-                    stream.markdown('**Refinements detected!** Use `@agentcanvas /apply` to save changes.\n');
+                    stream.markdown('**Refinements detected!** Use `@agileagentcanvas /apply` to save changes.\n');
                     
                     this.store.setRefineContext({ 
                         ...session.artifact, 
@@ -1402,10 +1374,10 @@ The complete BMAD framework is at: \`${bmadPath}\`
                 
                 if (inputDetection.waitingForInput) {
                     if (inputDetection.continueOption) {
-                        stream.markdown('Reply with your selection, or use `@agentcanvas /continue` to proceed.\n\n');
+                        stream.markdown('Reply with your selection, or use `@agileagentcanvas /continue` to proceed.\n\n');
                         stream.button({
                             title: 'Continue to Next Step',
-                            command: 'agentcanvas.continueWorkflow',
+                            command: 'agileagentcanvas.continueWorkflow',
                             arguments: [updatedSession.id]
                         });
                     } else {
@@ -1443,7 +1415,7 @@ The complete BMAD framework is at: \`${bmadPath}\`
 
         if (!session) {
             stream.markdown('**No active workflow session.**\n\n');
-            stream.markdown('Use `@agentcanvas /refine <artifact-id>` to start a new workflow.\n');
+            stream.markdown('Use `@agileagentcanvas /refine <artifact-id>` to start a new workflow.\n');
             return { metadata: { command: 'status', status: 'no-session' } };
         }
 
@@ -1480,12 +1452,12 @@ The complete BMAD framework is at: \`${bmadPath}\`
         stream.markdown('### Actions\n\n');
         stream.button({
             title: 'Continue Workflow',
-            command: 'agentcanvas.continueWorkflow',
+            command: 'agileagentcanvas.continueWorkflow',
             arguments: [session.id]
         });
         stream.button({
             title: 'Cancel Workflow',
-            command: 'agentcanvas.cancelWorkflow',
+            command: 'agileagentcanvas.cancelWorkflow',
             arguments: [session.id]
         });
 
@@ -1755,7 +1727,7 @@ Review and refine this product vision to make it compelling, specific, and measu
     "suggestions": ["additional improvement suggestions"]
 }
 
-After refinement, use \`@agentcanvas /apply\` to save changes to the JSON file.`;
+After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON file.`;
     }
 
     private buildRequirementRefinementPrompt(req: any): string {
@@ -1802,7 +1774,7 @@ Review and refine this requirement to make it specific, measurable, and testable
     "suggestions": ["additional improvement suggestions"]
 }
 
-After refinement, use \`@agentcanvas /apply\` to save changes to the JSON file.`;
+After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON file.`;
     }
 
     private buildEpicRefinementPrompt(epic: any): string {
@@ -1871,7 +1843,7 @@ ${storySummary}
     "suggestions": ["additional improvement suggestions"]
 }
 
-After refinement, use \`@agentcanvas /apply\` to save changes to the JSON file.`;
+After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON file.`;
     }
 
     private buildStoryRefinementPrompt(story: any): string {
@@ -1944,7 +1916,7 @@ ${acSummary}
     "suggestions": ["additional improvement suggestions"]
 }
 
-After refinement, use \`@agentcanvas /apply\` to save changes to the JSON file.`;
+After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON file.`;
     }
 
     private buildGenericRefinementPrompt(artifact: any): string {
@@ -1967,7 +1939,7 @@ ${JSON.stringify(artifact, null, 2)}
 
 Provide refinements in JSON format with improved content and a "suggestions" array.
 
-After refinement, use \`@agentcanvas /apply\` to save changes to the JSON file.`;
+After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON file.`;
     }
 
     /**
@@ -3195,7 +3167,7 @@ After refinement, use \`@agentcanvas /apply\` to save changes to the JSON file.`
 
         // --- Build the task prompt ---
         // The task gives the LLM full context about the elicitation method plus
-        // explicit instructions to confirm with the user and call agentcanvas_update_artifact.
+        // explicit instructions to confirm with the user and call agileagentcanvas_update_artifact.
         const task = `Apply the **${methodName}** elicitation method (${methodCategory} category) to this ${targetType}.
 
 Method description: ${methodDescription}
@@ -3208,8 +3180,8 @@ Expected output pattern: ${outputPattern}
 3. Follow the output pattern: ${outputPattern}
 4. Present your findings and proposed improvements to the user.
 5. **CRITICAL**: Ask the user to confirm whether they want to apply these changes before saving.
-6. If the user confirms, call \`agentcanvas_update_artifact\` to persist the changes to the JSON file.
-7. If the user declines, acknowledge and do NOT call agentcanvas_update_artifact.
+6. If the user confirms, call \`agileagentcanvas_update_artifact\` to persist the changes to the JSON file.
+7. If the user declines, acknowledge and do NOT call agileagentcanvas_update_artifact.
 
 Always end the interaction by either saving confirmed changes or acknowledging the user's decision not to save.`;
 
@@ -3269,7 +3241,7 @@ Always end the interaction by either saving confirmed changes or acknowledging t
         
         if (issues.length === 0) {
             stream.markdown('✅ All validations passed!\n\n');
-            stream.markdown('Your artifacts are ready for export. Use `AgentCanvas: Export Artifacts` command.\n');
+            stream.markdown('Your artifacts are ready for export. Use `AgileAgentCanvas: Export Artifacts` command.\n');
         } else {
             issues.forEach(issue => {
                 stream.markdown(`⚠️ ${issue}\n`);
@@ -3308,7 +3280,7 @@ Always end the interaction by either saving confirmed changes or acknowledging t
             return `${formatFullAgentForPrompt(persona)}
 
 ## VS Code Extension Context
-You are running inside the AgentCanvas VS Code extension.
+You are running inside the AgileAgentCanvas VS Code extension.
 - BMAD installation path: \`${displayPath}\`
 - All workflows are under: \`${displayPath}/bmm/workflows/\`, \`${displayPath}/core/workflows/\`, etc.
 - All agents are under: \`${displayPath}/core/agents/\`, \`${displayPath}/bmm/agents/\`, etc.
@@ -3317,8 +3289,8 @@ You are running inside the AgentCanvas VS Code extension.
 
 ## Tools Available
 You have file-reading tools available:
-- **agentcanvas_read_file(path)** — read any file under \`${displayPath}\` or in workspace folders
-- **agentcanvas_list_directory(path)** — list any directory under \`${displayPath}\` or in workspace folders
+- **agileagentcanvas_read_file(path)** — read any file under \`${displayPath}\` or in workspace folders
+- **agileagentcanvas_list_directory(path)** — list any directory under \`${displayPath}\` or in workspace folders
 
 Use these tools to load config.yaml, workflow files, data files, etc. as instructed in your activation steps.`;
         }
@@ -3456,7 +3428,7 @@ Engage the user in collaborative discussion — ask clarifying questions when us
         
         if (!folderPath) {
             stream.markdown('Please specify the folder path containing markdown files.\n\n');
-            stream.markdown('**Usage:** `/convert-to-json "path/to/.agentcanvas-context"`\n');
+            stream.markdown('**Usage:** `/convert-to-json "path/to/.agileagentcanvas-context"`\n');
             return { metadata: { command: 'convert-to-json', status: 'awaiting-input' } };
         }
 
@@ -3652,12 +3624,12 @@ Output ONLY the JSON, no explanation.`;
             await vscode.workspace.fs.writeFile(outputUri, Buffer.from(jsonContent, 'utf-8'));
             
             stream.markdown(`**Saved to:** ${outputUri.fsPath}\n\n`);
-            stream.markdown('You can now reload this folder in AgentCanvas to view the artifacts on the canvas.\n\n');
+            stream.markdown('You can now reload this folder in AgileAgentCanvas to view the artifacts on the canvas.\n\n');
             
             // Offer to reload
             stream.button({
                 title: 'Reload Project',
-                command: 'agentcanvas.loadProject'
+                command: 'agileagentcanvas.loadProject'
             });
 
             return { metadata: { command: 'convert-to-json', status: 'success', outputPath: outputUri.fsPath } };

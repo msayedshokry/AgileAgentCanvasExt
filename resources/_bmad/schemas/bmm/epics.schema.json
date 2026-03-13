@@ -309,7 +309,28 @@
               },
               "risks": {
                 "description": "Risk assessment with mitigations for this epic",
-                "$ref": "risks.schema.json"
+                "oneOf": [
+                  { "$ref": "risks.schema.json" },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["risk", "mitigation"],
+                      "properties": {
+                        "id": { "type": "string" },
+                        "risk": { "type": "string" },
+                        "category": { "type": "string" },
+                        "probability": { "type": "string" },
+                        "impact": { "type": "string" },
+                        "riskScore": { "type": "string" },
+                        "mitigation": { "type": "string" },
+                        "contingencyPlan": { "type": "string" },
+                        "status": { "type": "string" },
+                        "owner": { "type": "string" }
+                      }
+                    }
+                  }
+                ]
               },
               "definitionOfDone": {
                 "description": "Completion checklist and quality gates",

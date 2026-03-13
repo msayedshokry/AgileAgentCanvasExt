@@ -356,11 +356,16 @@ describe('App', () => {
       });
     });
 
-    it('should toggle expansion when expand button clicked', async () => {
+    it('should toggle expansion when badge clicked', async () => {
       render(<App />);
       
       const artifacts = [
-        createMockArtifact({ id: 'epic-1', title: 'Parent Epic', childCount: 2 }),
+        createMockArtifact({
+          id: 'epic-1',
+          title: 'Parent Epic',
+          childCount: 2,
+          childBreakdown: [{ label: 'Stories', count: 2, types: ['story'] }],
+        }),
         createMockArtifact({ id: 'story-1', title: 'Story 1', type: 'story', parentId: 'epic-1' }),
       ];
       
@@ -369,13 +374,13 @@ describe('App', () => {
       });
 
       await waitFor(() => {
-        const expandBtn = document.querySelector('.expand-btn');
-        expect(expandBtn).toBeInTheDocument();
+        const badge = document.querySelector('.child-breakdown-badge');
+        expect(badge).toBeInTheDocument();
       });
 
-      // Click expand button to collapse
-      const expandBtn = document.querySelector('.expand-btn');
-      fireEvent.click(expandBtn!);
+      // Click badge to collapse that category
+      const badge = document.querySelector('.child-breakdown-badge');
+      fireEvent.click(badge!);
 
       await waitFor(() => {
         // After collapse, only parent should be visible

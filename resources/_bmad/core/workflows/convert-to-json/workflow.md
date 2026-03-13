@@ -27,9 +27,9 @@ This is a **BMAD-specific** workflow to convert existing BMAD Markdown artifacts
 ### Examples
 
 ```
-bmad-to-json .agentcanvas-context/planning-artifacts --all
-bmad-to-json .agentcanvas-context/implementation-artifacts/stories --all
-bmad-to-json .agentcanvas-context/implementation-artifacts/use-cases/UC-01-configure-qa-policies.md
+bmad-to-json .agileagentcanvas-context/planning-artifacts --all
+bmad-to-json .agileagentcanvas-context/implementation-artifacts/stories --all
+bmad-to-json .agileagentcanvas-context/implementation-artifacts/use-cases/UC-01-configure-qa-policies.md
 ```
 
 ---
@@ -634,19 +634,19 @@ bmad-to-json
 **Single file:**
 ```
 bmad-to-json epics.md
-bmad-to-json .agentcanvas-context/implementation-artifacts/use-cases/UC-01-configure-qa-policies.md
+bmad-to-json .agileagentcanvas-context/implementation-artifacts/use-cases/UC-01-configure-qa-policies.md
 ```
 
 **Batch conversion (all BMAD artifacts in folder):**
 ```
-bmad-to-json .agentcanvas-context/planning-artifacts --all
-bmad-to-json .agentcanvas-context/implementation-artifacts --all
+bmad-to-json .agileagentcanvas-context/planning-artifacts --all
+bmad-to-json .agileagentcanvas-context/implementation-artifacts --all
 ```
 
 **Filtered by type:**
 ```
-bmad-to-json .agentcanvas-context/implementation-artifacts --type=story
-bmad-to-json .agentcanvas-context/implementation-artifacts --type=use-case
+bmad-to-json .agileagentcanvas-context/implementation-artifacts --type=story
+bmad-to-json .agileagentcanvas-context/implementation-artifacts --type=use-case
 ```
 
 **Chunked mode for large files:**

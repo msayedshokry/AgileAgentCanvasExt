@@ -4,7 +4,7 @@ import * as http from 'http';
 import { sendSimplePrompt } from '../antigravity/antigravity-orchestrator';
 
 /**
- * Unified AI provider abstraction for AgentCanvas.
+ * Unified AI provider abstraction for AgileAgentCanvas.
  *
  * Priority order (when provider = 'auto'):
  *   1. VS Code Language Model API (works with Copilot, Continue, and any registered vscode.lm provider)
@@ -42,7 +42,7 @@ export interface BmadModel {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function getConfig() {
-    return vscode.workspace.getConfiguration('agentcanvas');
+    return vscode.workspace.getConfiguration('agileagentcanvas');
 }
 
 /**
@@ -442,7 +442,7 @@ async function sendToAntigravity(
     if (success) {
         stream.markdown(
             '> **Firebase Studio mode:** The prompt has been sent to the Gemini Agent panel.\n' +
-            '> The conversation will continue there. Output files will be auto-detected by AgentCanvas.\n\n'
+            '> The conversation will continue there. Output files will be auto-detected by AgileAgentCanvas.\n\n'
         );
     } else {
         stream.markdown(
@@ -471,10 +471,10 @@ No AI provider was found. Configure one in settings (**Ctrl+,** → search "Agil
 
 | Setting | Value |
 |---|---|
-| \`agentcanvas.aiProvider\` | \`openai\`, \`anthropic\`, \`gemini\`, \`ollama\`, or \`antigravity\` |
-| \`agentcanvas.apiKey\` | Your API key (not needed for Ollama/Antigravity) |
-| \`agentcanvas.modelId\` | Optional — defaults to the provider's recommended model |
-| \`agentcanvas.baseUrl\` | Optional — only needed for Ollama or a custom endpoint |
+| \`agileagentcanvas.aiProvider\` | \`openai\`, \`anthropic\`, \`gemini\`, \`ollama\`, or \`antigravity\` |
+| \`agileagentcanvas.apiKey\` | Your API key (not needed for Ollama/Antigravity) |
+| \`agileagentcanvas.modelId\` | Optional — defaults to the provider's recommended model |
+| \`agileagentcanvas.baseUrl\` | Optional — only needed for Ollama or a custom endpoint |
 
 Or install **GitHub Copilot** to use it automatically via the VS Code LM API.`;
     }
@@ -485,14 +485,14 @@ Or install **GitHub Copilot** to use it automatically via the VS Code LM API.`;
     }
 
     if (provider === 'antigravity') {
-        return `**Antigravity not detected**\n\nMake sure you are running AgentCanvas inside the Google Antigravity IDE.`;
+        return `**Antigravity not detected**\n\nMake sure you are running AgileAgentCanvas inside the Google Antigravity IDE.`;
     }
 
     if (!apiKey) {
-        return `**API key missing**\n\nSet \`agentcanvas.apiKey\` in settings for the \`${provider}\` provider.`;
+        return `**API key missing**\n\nSet \`agileagentcanvas.apiKey\` in settings for the \`${provider}\` provider.`;
     }
 
-    return `**AI provider error**\n\nCould not connect to \`${provider}\`. Check your \`agentcanvas.apiKey\` and \`agentcanvas.modelId\` settings.`;
+    return `**AI provider error**\n\nCould not connect to \`${provider}\`. Check your \`agileagentcanvas.apiKey\` and \`agileagentcanvas.modelId\` settings.`;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

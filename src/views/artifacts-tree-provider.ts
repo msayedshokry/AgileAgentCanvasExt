@@ -64,10 +64,10 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
             ''
         );
         openCanvasItem.command = {
-            command: 'agentcanvas.openCanvas',
+            command: 'agileagentcanvas.openCanvas',
             title: 'Open Visual Canvas',
         };
-        openCanvasItem.tooltip = 'Open the AgentCanvas visual canvas';
+        openCanvasItem.tooltip = 'Open the AgileAgentCanvas visual canvas';
         items.push(openCanvasItem);
 
         // Project name header
@@ -168,7 +168,7 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
             );
             item.id = epic.id;
             item.command = {
-                command: 'agentcanvas.selectArtifact',
+                command: 'agileagentcanvas.selectArtifact',
                 title: 'Select Epic',
                 arguments: ['epic', epic.id]
             };
@@ -203,7 +203,7 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
             );
             item.id = story.id;
             item.command = {
-                command: 'agentcanvas.selectArtifact',
+                command: 'agileagentcanvas.selectArtifact',
                 title: 'Select Story',
                 arguments: ['story', story.id]
             };
@@ -221,7 +221,7 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
             );
             item.id = uc.id;
             item.command = {
-                command: 'agentcanvas.selectArtifact',
+                command: 'agileagentcanvas.selectArtifact',
                 title: 'Select Use Case',
                 arguments: ['use-case', uc.id]
             };
@@ -240,7 +240,7 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
             );
             tsItem.id = ts.id || `TS-${epicId}`;
             tsItem.command = {
-                command: 'agentcanvas.selectArtifact',
+                command: 'agileagentcanvas.selectArtifact',
                 title: 'Select Test Strategy',
                 arguments: ['test-strategy', tsItem.id]
             };
@@ -261,7 +261,7 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
             );
             item.id = tc.id;
             item.command = {
-                command: 'agentcanvas.selectArtifact',
+                command: 'agileagentcanvas.selectArtifact',
                 title: 'Select Test Case',
                 arguments: ['test-case', tc.id]
             };
@@ -286,7 +286,7 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
             );
             item.id = tc.id;
             item.command = {
-                command: 'agentcanvas.selectArtifact',
+                command: 'agileagentcanvas.selectArtifact',
                 title: 'Select Test Case',
                 arguments: ['test-case', tc.id]
             };
@@ -310,7 +310,7 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
             );
             item.id = ts.id;
             item.command = {
-                command: 'agentcanvas.selectArtifact',
+                command: 'agileagentcanvas.selectArtifact',
                 title: 'Select Test Strategy',
                 arguments: ['test-strategy', ts.id]
             };

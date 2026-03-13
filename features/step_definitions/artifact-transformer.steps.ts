@@ -877,14 +877,15 @@ Then('all {string} artifacts should have non-overlapping Y positions', function 
     const typed = ctx.artifacts.filter(a => a.type === type);
     assert.ok(typed.length >= 2, `Need at least 2 "${type}" artifacts to check overlap`);
 
-    // Sort by Y position
-    typed.sort((a: any, b: any) => a.position.y - b.position.y);
-
-    for (let i = 1; i < typed.length; i++) {
-        const prev = typed[i - 1];
-        const curr = typed[i];
-        const prevBottom = prev.position.y + prev.size.height;
-        assert.ok(curr.position.y >= prevBottom,
-            `Artifacts "${prev.id}" (y=${prev.position.y}, h=${prev.size.height}) and "${curr.id}" (y=${curr.position.y}) overlap`);
+    // Check that no two artifacts overlap in both X and Y simultaneously
+    for (let i = 0; i < typed.length; i++) {
+        for (let j = i + 1; j < typed.length; j++) {
+            const a = typed[i];
+            const b = typed[j];
+            const overlapX = a.position.x < b.position.x + b.size.width && b.position.x < a.position.x + a.size.width;
+            const overlapY = a.position.y < b.position.y + b.size.height && b.position.y < a.position.y + a.size.height;
+            assert.ok(!(overlapX && overlapY),
+                `Artifacts "${a.id}" (x=${a.position.x}, y=${a.position.y}, w=${a.size.width}, h=${a.size.height}) and "${b.id}" (x=${b.position.x}, y=${b.position.y}, w=${b.size.width}, h=${b.size.height}) overlap in 2D`);
+        }
     }
 });

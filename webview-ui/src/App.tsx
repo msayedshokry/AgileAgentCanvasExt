@@ -65,6 +65,8 @@ function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detailPanelOpen, setDetailPanelOpen] = useState<boolean>(false);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  // Per-category expansion: parentId → Set of expanded badge labels
+  const [expandedCategories, setExpandedCategories] = useState<Map<string, Set<string>>>(new Map());
   const [error] = useState<string | null>(null);
   const [externalChange, setExternalChange] = useState<{ filePath: string; count: number } | null>(null);
   const [reloadRequested, setReloadRequested] = useState<boolean>(false);
@@ -216,6 +218,16 @@ function App() {
       
       console.log('Expanding parents:', Array.from(parentIds));
       setExpandedIds(parentIds);
+
+      // Initialize expandedCategories: all badge labels for each parent start expanded
+      const catMap = new Map<string, Set<string>>();
+      artifacts.forEach(a => {
+        if (a.childBreakdown && a.childBreakdown.length > 0) {
+          catMap.set(a.id, new Set(a.childBreakdown.map(b => b.label)));
+        }
+      });
+      setExpandedCategories(catMap);
+
       setSelectedId(null); // Clear selection for new project
     }
   }, [artifacts, previousArtifactIds]);
@@ -583,18 +595,65 @@ function App() {
     });
   }, []);
 
+  // Per-category toggle: expand/collapse a single badge label within a parent
+  const handleToggleCategoryExpand = useCallback((parentId: string, label: string) => {
+    console.log('handleToggleCategoryExpand called for:', parentId, 'label:', label);
+    setExpandedCategories(prev => {
+      const next = new Map(prev);
+      const labels = new Set(next.get(parentId) || []);
+      if (labels.has(label)) {
+        labels.delete(label);
+      } else {
+        labels.add(label);
+      }
+      next.set(parentId, labels);
+
+      // Keep expandedIds in sync: parent is expanded if ANY category is active
+      setExpandedIds(prevIds => {
+        const nextIds = new Set(prevIds);
+        if (labels.size > 0) {
+          nextIds.add(parentId);
+        } else {
+          nextIds.delete(parentId);
+        }
+        return nextIds;
+      });
+
+      return next;
+    });
+  }, []);
+
   const handleExpandLane = useCallback((ids: string[]) => {
     setExpandedIds(prev => {
       const next = new Set(prev);
       ids.forEach(id => next.add(id));
       return next;
     });
-  }, []);
+    // Expand all categories for these parents
+    setExpandedCategories(prev => {
+      const next = new Map(prev);
+      ids.forEach(id => {
+        const a = artifacts.find(art => art.id === id);
+        if (a?.childBreakdown && a.childBreakdown.length > 0) {
+          next.set(id, new Set(a.childBreakdown.map(b => b.label)));
+        }
+      });
+      return next;
+    });
+  }, [artifacts]);
 
   const handleCollapseLane = useCallback((ids: string[]) => {
     setExpandedIds(prev => {
       const next = new Set(prev);
       ids.forEach(id => next.delete(id));
+      return next;
+    });
+    // Collapse all categories for these parents
+    setExpandedCategories(prev => {
+      const next = new Map(prev);
+      ids.forEach(id => {
+        next.set(id, new Set<string>());
+      });
       return next;
     });
   }, []);
@@ -775,6 +834,8 @@ function App() {
           onUpdate={handleArtifactUpdate}
           onToggleExpand={handleToggleExpand}
           expandedIds={expandedIds}
+          expandedCategories={expandedCategories}
+          onToggleCategoryExpand={handleToggleCategoryExpand}
           onRefineWithAI={handleRefineWithAI}
           onElicit={handleElicit}
           onExpandLane={handleExpandLane}

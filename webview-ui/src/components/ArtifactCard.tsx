@@ -7,6 +7,8 @@ interface ArtifactCardProps {
   artifact: Artifact;
   isSelected: boolean;
   isExpanded: boolean;
+  /** Set of expanded badge labels for this artifact (undefined if no categories) */
+  expandedCategories?: Set<string>;
   isFlashing?: boolean;
   isDimmed?: boolean;
   isSearchMatch?: boolean;
@@ -15,6 +17,8 @@ interface ArtifactCardProps {
   onOpenDetail: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Artifact>) => void;
   onToggleExpand: (id: string) => void;
+  /** Toggle a single badge category within this parent */
+  onToggleCategoryExpand: (parentId: string, label: string) => void;
   onRefineWithAI?: (artifact: Artifact) => void;
   onElicit?: (artifact: Artifact) => void;
 }
@@ -97,7 +101,7 @@ const STATUS_BADGES: Record<Artifact['status'], { label: string; className: stri
   'rejected': { label: 'Rejected', className: 'status-blocked' },
 };
 
-export function ArtifactCard({ artifact, isSelected, isExpanded, isFlashing, isDimmed, isSearchMatch, compact, onSelect, onOpenDetail, onUpdate, onToggleExpand, onRefineWithAI, onElicit }: ArtifactCardProps) {
+export function ArtifactCard({ artifact, isSelected, isExpanded, expandedCategories, isFlashing, isDimmed, isSearchMatch, compact, onSelect, onOpenDetail, onUpdate, onToggleExpand: _onToggleExpand, onToggleCategoryExpand, onRefineWithAI, onElicit }: ArtifactCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(artifact.title);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -145,12 +149,6 @@ export function ArtifactCard({ artifact, isSelected, isExpanded, isFlashing, isD
       setEditTitle(artifact.title);
     }
   }, [handleTitleSave, artifact.title]);
-
-  const handleExpandClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    onToggleExpand(artifact.id);
-  }, [artifact.id, onToggleExpand]);
 
   // Handle AI refine button click
   const handleRefineClick = useCallback((e: React.MouseEvent) => {
@@ -219,7 +217,6 @@ export function ArtifactCard({ artifact, isSelected, isExpanded, isFlashing, isD
           left: artifact.position.x,
           top: artifact.position.y,
           width: artifact.size.width,
-          minHeight: artifact.size.height,
         }}
       >
         <div className="phase-node-label">{artifact.title}</div>
@@ -237,7 +234,6 @@ export function ArtifactCard({ artifact, isSelected, isExpanded, isFlashing, isD
           left: artifact.position.x,
           top: artifact.position.y,
           width: artifact.size.width,
-          minHeight: artifact.size.height,
         }}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
@@ -262,7 +258,6 @@ export function ArtifactCard({ artifact, isSelected, isExpanded, isFlashing, isD
         left: artifact.position.x,
         top: artifact.position.y,
         width: artifact.size.width,
-        minHeight: artifact.size.height,
       }}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
@@ -318,18 +313,6 @@ export function ArtifactCard({ artifact, isSelected, isExpanded, isFlashing, isD
               <Icon name="rocket" size={14} />
             </button>
           )}
-          
-          {/* Expand/Collapse button for cards with children */}
-          {hasChildren && (
-            <button 
-              className="expand-btn" 
-              onClick={handleExpandClick}
-              title={isExpanded ? 'Collapse' : 'Expand'}
-            >
-              <span className="expand-icon"><Icon name={isExpanded ? 'chevron-down' : 'chevron-right'} size={12} /></span>
-              <span className="child-count">{artifact.childCount}</span>
-            </button>
-          )}
         </span>
       </div>
       
@@ -358,6 +341,30 @@ export function ArtifactCard({ artifact, isSelected, isExpanded, isFlashing, isD
       <div className="artifact-description">
         <p>{artifact.description}</p>
       </div>
+
+      {/* Categorized child breakdown badges — each badge independently toggles its category */}
+      {hasChildren && artifact.childBreakdown && artifact.childBreakdown.length > 0 && (
+        <div className="artifact-child-breakdown">
+          {artifact.childBreakdown.map(b => {
+            const isCatExpanded = expandedCategories ? expandedCategories.has(b.label) : isExpanded;
+            return (
+              <span
+                key={b.label}
+                className={`child-breakdown-badge ${isCatExpanded ? 'badge-expanded' : 'badge-collapsed'}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onToggleCategoryExpand(artifact.id, b.label);
+                }}
+                title={`${isCatExpanded ? 'Hide' : 'Show'} ${b.label}`}
+              >
+                {b.count} {b.label}
+                <Icon name={isCatExpanded ? 'chevron-down' : 'chevron-right'} size={8} />
+              </span>
+            );
+          })}
+        </div>
+      )}
 
       {/* Agile badges — priority, story points, roll-up counts */}
       {(artifact.type === 'story' || artifact.type === 'epic') && (() => {

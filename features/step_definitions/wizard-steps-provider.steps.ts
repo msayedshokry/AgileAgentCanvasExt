@@ -36,7 +36,7 @@ function loadWizardProvider(world: BmadWorld): { store: any; provider: any } {
   const workflowExecutorModule = proxyquire('../../src/workflow/workflow-executor', {
     'vscode': vsc,
     '../extension': { acOutput: mockAcOutput },
-    '../chat/agentcanvas-tools': { getToolDefinitions: () => [] },
+    '../chat/agileagentcanvas-tools': { getToolDefinitions: () => [] },
     '../chat/ai-provider': {
       streamChatResponse: async () => '',
       vsMessagesToChatMessages: (msgs: any[]) => msgs.map((m: any) => ({ role: 'user', content: '' }))

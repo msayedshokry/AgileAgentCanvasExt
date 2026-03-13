@@ -499,7 +499,7 @@ When('I extract story metadata as the webview would receive it', function(this: 
   const store = getStore(this);
   const canvasMod = getCanvasModule(this);
   const extensionUri = this.vscode.Uri.file('/test/extension');
-  const provider = new canvasMod.AgentCanvasViewProvider(extensionUri, store);
+  const provider = new canvasMod.AgileAgentCanvasViewProvider(extensionUri, store);
   // Access stateToArtifacts via the provider
   const state = store.getState();
   const artifacts = provider.stateToArtifacts(state);
@@ -532,7 +532,7 @@ When('I extract requirement metadata as the webview would receive it', function(
   const store = getStore(this);
   const canvasMod = getCanvasModule(this);
   const extensionUri = this.vscode.Uri.file('/test/extension');
-  const provider = new canvasMod.AgentCanvasViewProvider(extensionUri, store);
+  const provider = new canvasMod.AgileAgentCanvasViewProvider(extensionUri, store);
   const state = store.getState();
   const artifacts = provider.stateToArtifacts(state);
   const reqArtifact = artifacts.find((a: any) => a.type === 'requirement' && a.id === 'FR-TEST-1');
@@ -561,7 +561,7 @@ When('I extract epic metadata as the webview would receive it', function(this: B
 
   const canvasMod = getCanvasModule(this);
   const extensionUri = this.vscode.Uri.file('/test/extension');
-  const provider = new canvasMod.AgentCanvasViewProvider(extensionUri, store);
+  const provider = new canvasMod.AgileAgentCanvasViewProvider(extensionUri, store);
   const state = store.getState();
   const artifacts = provider.stateToArtifacts(state);
   const epicArtifact = artifacts.find((a: any) => a.type === 'epic' && a.id === 'EPIC-TEST-1');
@@ -573,7 +573,7 @@ When('I extract use case metadata as the webview would receive it', function(thi
   const store = getStore(this);
   const canvasMod = getCanvasModule(this);
   const extensionUri = this.vscode.Uri.file('/test/extension');
-  const provider = new canvasMod.AgentCanvasViewProvider(extensionUri, store);
+  const provider = new canvasMod.AgileAgentCanvasViewProvider(extensionUri, store);
   const state = store.getState();
   const artifacts = provider.stateToArtifacts(state);
   const ucArtifact = artifacts.find((a: any) => a.type === 'use-case' && a.id === 'UC-TEST-1');

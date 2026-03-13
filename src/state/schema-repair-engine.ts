@@ -106,9 +106,23 @@ export function repairDataWithSchema(
         // ── Object handling ──
         if (effectiveType === 'object') {
             if (value === null || value === undefined || typeof value !== 'object' || Array.isArray(value)) {
-                // Replace non-object with empty object, then scaffold
-                value = {};
-                log(path, 'replaced non-object with {}');
+                if (Array.isArray(value) && node.properties) {
+                    // Smart wrap: find an array-typed property to nestle the data into
+                    const arrayProp = Object.entries(node.properties).find(
+                        ([, s]) => resolveType(s as SchemaNode) === 'array'
+                    );
+                    if (arrayProp) {
+                        const wrapped: Record<string, any> = { [arrayProp[0]]: value };
+                        log(path, `wrapped array into object property "${arrayProp[0]}"`);
+                        value = wrapped;
+                    } else {
+                        value = {};
+                        log(path, 'replaced non-object with {}');
+                    }
+                } else {
+                    value = {};
+                    log(path, 'replaced non-object with {}');
+                }
             }
 
             // Scaffold missing required fields
@@ -176,6 +190,17 @@ export function repairDataWithSchema(
                     value = best;
                 }
             }
+            // date-time format repair
+            if (node.format === 'date-time' && typeof value === 'string' && value.length > 0) {
+                if (!isIso8601(value)) {
+                    const parsed = Date.parse(value);
+                    if (!isNaN(parsed)) {
+                        const fixed = new Date(parsed).toISOString();
+                        log(path, `coerced date "${value}" → "${fixed}"`);
+                        value = fixed;
+                    }
+                }
+            }
             return value;
         }
 
@@ -234,6 +259,12 @@ export function repairDataWithSchema(
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
+
+/** Quick check for ISO 8601 date-time (e.g. "2024-01-15T10:30:00.000Z"). */
+const ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
+function isIso8601(s: string): boolean {
+    return ISO_RE.test(s);
+}
 
 /**
  * Determine the effective JSON Schema type.  Handles `type` as string or

@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
-import { AgentCanvasChatParticipant } from './chat/chat-participant';
+import { AgileAgentCanvasChatParticipant } from './chat/chat-participant';
 import { ArtifactsTreeProvider } from './views/artifacts-tree-provider';
 import { WizardStepsProvider } from './views/wizard-steps-provider';
 import { ArtifactStore } from './state/artifact-store';
 import { WorkspaceResolver } from './state/workspace-resolver';
 import { getWorkflowExecutor } from './workflow/workflow-executor';
 import { sendArtifactsToPanel, buildArtifacts } from './canvas/artifact-transformer';
-import { registerTools, sharedToolContext } from './chat/agentcanvas-tools';
+import { registerTools, sharedToolContext } from './chat/agileagentcanvas-tools';
 import {
     handleAddArtifact,
     loadElicitationMethods,
@@ -27,6 +27,9 @@ import {
 import { executeWorkflowStep } from './commands/workflow-commands';
 import { installToIde, autoInstallIfNeeded } from './commands/ide-installer';
 import { openChat, setChatBridgeLogger } from './commands/chat-bridge';
+import { createLogger, setLoggerOutputSink } from './utils/logger';
+
+const logger = createLogger('extension');
 
 let artifactStore: ArtifactStore;
 let workspaceResolver: WorkspaceResolver;
@@ -36,7 +39,7 @@ let externalChangeReloadTimer: ReturnType<typeof setTimeout> | undefined;
 const openCanvasPanels: vscode.WebviewPanel[] = [];
 const detailTabs = new Map<string, vscode.WebviewPanel>();
 
-// Output channel for AgentCanvas logs (visible in Output panel)
+// Output channel for AgileAgentCanvas logs (visible in Output panel)
 export const acOutput = vscode.window.createOutputChannel('Agile Agent Canvas');
 
 /**
@@ -51,10 +54,11 @@ export function getWorkspaceResolver(): WorkspaceResolver {
 export function activate(context: vscode.ExtensionContext) {
     acOutput.appendLine('Agile Agent Canvas is now active!');
     acOutput.show(); // Show the output panel
+    setLoggerOutputSink((line) => acOutput.appendLine(line));
 
     // Wire chat-bridge logging into the shared output channel
     setChatBridgeLogger((msg) => acOutput.appendLine(msg));
-    console.log('Agile Agent Canvas is now active!');
+    logger.debug('Agile Agent Canvas is now active!');
     vscode.window.showInformationMessage('Agile Agent Canvas activated!');
 
     // Initialize the artifact store (shared state)
@@ -71,9 +75,9 @@ export function activate(context: vscode.ExtensionContext) {
     // vscode.chat is only available when a Copilot-compatible extension is installed.
     // Guard so the extension still activates (canvas, tree views, commands) without it.
     if (vscode.chat?.createChatParticipant) {
-        const chatParticipant = new AgentCanvasChatParticipant(artifactStore, context);
+        const chatParticipant = new AgileAgentCanvasChatParticipant(artifactStore, context);
         context.subscriptions.push(
-            vscode.chat.createChatParticipant('agentcanvas.analyst', chatParticipant.handleChat.bind(chatParticipant))
+            vscode.chat.createChatParticipant('agileagentcanvas.analyst', chatParticipant.handleChat.bind(chatParticipant))
         );
     } else {
         acOutput.appendLine('[Activate] vscode.chat API not available — chat participant not registered. Install GitHub Copilot for full functionality.');
@@ -84,62 +88,62 @@ export function activate(context: vscode.ExtensionContext) {
     const wizardStepsProvider = new WizardStepsProvider(artifactStore);
     
     context.subscriptions.push(
-        vscode.window.createTreeView('agentcanvas.artifactsTree', {
+        vscode.window.createTreeView('agileagentcanvas.artifactsTree', {
             treeDataProvider: artifactsTreeProvider,
             showCollapseAll: true
         }),
-        vscode.window.createTreeView('agentcanvas.wizardSteps', {
+        vscode.window.createTreeView('agileagentcanvas.wizardSteps', {
             treeDataProvider: wizardStepsProvider
         })
     );
 
     // Register commands
     context.subscriptions.push(
-        vscode.commands.registerCommand('agentcanvas.openCanvas', () => {
+        vscode.commands.registerCommand('agileagentcanvas.openCanvas', () => {
             return openCanvasPanel(context, artifactStore);
         }),
-        vscode.commands.registerCommand('agentcanvas.newProject', () => {
+        vscode.commands.registerCommand('agileagentcanvas.newProject', () => {
             return createNewProject(artifactStore);
         }),
-        vscode.commands.registerCommand('agentcanvas.loadProject', () => {
+        vscode.commands.registerCommand('agileagentcanvas.loadProject', () => {
             return loadExistingProject(artifactStore);
         }),
-        vscode.commands.registerCommand('agentcanvas.exportArtifacts', () => {
+        vscode.commands.registerCommand('agileagentcanvas.exportArtifacts', () => {
             return exportArtifacts(artifactStore);
         }),
-        vscode.commands.registerCommand('agentcanvas.importArtifacts', () => {
+        vscode.commands.registerCommand('agileagentcanvas.importArtifacts', () => {
             return importArtifacts(artifactStore);
         }),
-        vscode.commands.registerCommand('agentcanvas.syncToFiles', () => {
+        vscode.commands.registerCommand('agileagentcanvas.syncToFiles', () => {
             return syncToFiles(artifactStore);
         }),
-        vscode.commands.registerCommand('agentcanvas.goToStep', (stepId: string) => {
+        vscode.commands.registerCommand('agileagentcanvas.goToStep', (stepId: string) => {
             return goToStep(stepId, artifactStore);
         }),
-        vscode.commands.registerCommand('agentcanvas.selectArtifact', (type: string, id: string) => {
+        vscode.commands.registerCommand('agileagentcanvas.selectArtifact', (type: string, id: string) => {
             selectArtifact(type, id, artifactStore);
             // Reveal the artifact on all open canvas panels
             openCanvasPanels.forEach(panel => {
                 panel.webview.postMessage({ type: 'revealArtifact', id });
             });
         }),
-        vscode.commands.registerCommand('agentcanvas.loadDemoData', () => {
+        vscode.commands.registerCommand('agileagentcanvas.loadDemoData', () => {
             return loadDemoData(artifactStore);
         }),
         // Workflow session commands (triggered by chat buttons)
-        vscode.commands.registerCommand('agentcanvas.continueWorkflow', (sessionId?: string) => {
-            return openChat(`@agentcanvas /continue`);
+        vscode.commands.registerCommand('agileagentcanvas.continueWorkflow', (sessionId?: string) => {
+            return openChat(`@agileagentcanvas /continue`);
         }),
-        vscode.commands.registerCommand('agentcanvas.workflowStatus', (sessionId?: string) => {
-            return openChat(`@agentcanvas /status`);
+        vscode.commands.registerCommand('agileagentcanvas.workflowStatus', (sessionId?: string) => {
+            return openChat(`@agileagentcanvas /status`);
         }),
-        vscode.commands.registerCommand('agentcanvas.cancelWorkflow', (sessionId?: string) => {
+        vscode.commands.registerCommand('agileagentcanvas.cancelWorkflow', (sessionId?: string) => {
             const executor = getWorkflowExecutor();
             executor.cancelSession();
             vscode.window.showInformationMessage('Workflow session cancelled.');
         }),
         // Execute a specific workflow step with dependency checking
-        vscode.commands.registerCommand('agentcanvas.executeWorkflowStep', async (
+        vscode.commands.registerCommand('agileagentcanvas.executeWorkflowStep', async (
             artifactType: string,
             artifactId: string,
             stepId: string,
@@ -150,15 +154,15 @@ export function activate(context: vscode.ExtensionContext) {
             await executeWorkflowStep(artifactType, artifactId, stepId, chatCommand, dependsOn, completionStatus, artifactStore);
         }),
         // Install BMAD framework to IDE (Cursor, Claude Code, Windsurf, Copilot, Antigravity)
-        vscode.commands.registerCommand('agentcanvas.installToIde', () => {
+        vscode.commands.registerCommand('agileagentcanvas.installToIde', () => {
             return installToIde(context.extensionPath);
         }),
         // Open the IDE chat panel (IDE-agnostic, optionally with a pre-filled query)
-        vscode.commands.registerCommand('agentcanvas.openChatPanel', (query?: string) => {
+        vscode.commands.registerCommand('agileagentcanvas.openChatPanel', (query?: string) => {
             return openChat(query);
         }),
         // Ask Agent — open the Ask modal on the canvas (triggered by Ctrl+Shift+A)
-        vscode.commands.registerCommand('agentcanvas.askAgent', () => {
+        vscode.commands.registerCommand('agileagentcanvas.askAgent', () => {
             // Post to all open canvas panels; the webview will open the Ask modal
             openCanvasPanels.forEach(panel => {
                 panel.webview.postMessage({ type: 'openAskModal' });
@@ -264,7 +268,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Register the switch-project command
     context.subscriptions.push(
-        vscode.commands.registerCommand('agentcanvas.switchProject', async () => {
+        vscode.commands.registerCommand('agileagentcanvas.switchProject', async () => {
             const switched = await workspaceResolver.promptSwitchProject();
             if (switched) {
                 vscode.window.showInformationMessage(
@@ -280,7 +284,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 async function openCanvasPanel(context: vscode.ExtensionContext, store: ArtifactStore) {
     const panel = vscode.window.createWebviewPanel(
-        'agentcanvasCanvas',
+        'agileagentcanvasCanvas',
         'Agile Agent Canvas',
         vscode.ViewColumn.One,
         {
@@ -305,7 +309,7 @@ async function openCanvasPanel(context: vscode.ExtensionContext, store: Artifact
     // Set up message passing between webview and extension
     panel.webview.onDidReceiveMessage(
         async (message) => {
-            console.log('Extension received message from webview:', message.type);
+            logger.debug('Extension received message from webview:', message.type);
 
             // Shared handler covers updateArtifact, deleteArtifact, refineWithAI,
             // breakDown, enhanceWithAI, elicitWithMethod, startDevelopment, launchWorkflow.
@@ -317,7 +321,7 @@ async function openCanvasPanel(context: vscode.ExtensionContext, store: Artifact
             switch (message.type) {
                 case 'ready':
                     // React app is ready, send artifacts
-                    console.log('Webview ready, sending artifacts...');
+                    logger.debug('Webview ready, sending artifacts...');
                     sendArtifactsToPanel(panel, store);
                     // Send elicitation methods (bundled with extension)
                     {
@@ -333,7 +337,7 @@ async function openCanvasPanel(context: vscode.ExtensionContext, store: Artifact
                     }
                     // Send current output format setting to webview
                     {
-                        const outputFormat = vscode.workspace.getConfiguration('agentcanvas').get<string>('outputFormat', 'dual');
+                        const outputFormat = vscode.workspace.getConfiguration('agileagentcanvas').get<string>('outputFormat', 'dual');
                         panel.webview.postMessage({ type: 'outputFormat', format: outputFormat });
                     }
                     // Send any load-time schema validation issues to webview
@@ -408,7 +412,7 @@ function openDetailTab(artifactId: string, context: vscode.ExtensionContext, sto
     const title = artifact ? `Detail: ${artifact.title || artifactId}` : `Detail: ${artifactId}`;
 
     const panel = vscode.window.createWebviewPanel(
-        'agentcanvas.detailTab',
+        'agileagentcanvas.detailTab',
         title,
         vscode.ViewColumn.Beside,
         {
@@ -496,7 +500,7 @@ function getDetailTabHtml(webview: vscode.Webview, extensionUri: vscode.Uri, art
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} data:;">
         <link rel="stylesheet" href="${styleUri}">
-        <title>AgentCanvas Detail</title>
+        <title>AgileAgentCanvas Detail</title>
     </head>
     <body>
         <script>window.__AC_MODE__ = 'detail'; window.__AC_DETAIL_ID__ = '${safeId}';</script>
@@ -530,7 +534,7 @@ function getCanvasWebviewContent(webview: vscode.Webview, extensionUri: vscode.U
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource};">
         <link href="${styleUri}" rel="stylesheet">
-        <title>AgentCanvas</title>
+        <title>AgileAgentCanvas</title>
     </head>
     <body>
         <div id="root"></div>
@@ -574,7 +578,7 @@ function setupFileWatcher(
     if (!outputUri || !wsFolder) return;
 
     // Extract the folder name from the output URI (last segment)
-    const outputFolderName = outputUri.fsPath.replace(/\\/g, '/').split('/').pop() || '.agentcanvas-context';
+    const outputFolderName = outputUri.fsPath.replace(/\\/g, '/').split('/').pop() || '.agileagentcanvas-context';
     const pattern = new vscode.RelativePattern(
         wsFolder,
         `${outputFolderName}/**/*.{json,md}`

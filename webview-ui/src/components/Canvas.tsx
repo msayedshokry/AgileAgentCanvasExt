@@ -18,6 +18,10 @@ interface CanvasProps {
   onUpdate: (id: string, updates: Partial<Artifact>) => void;
   onToggleExpand: (id: string) => void;
   expandedIds: Set<string>;
+  /** Per-category expansion state: parentId → Set of expanded badge labels */
+  expandedCategories: Map<string, Set<string>>;
+  /** Toggle a single badge category within a parent */
+  onToggleCategoryExpand: (parentId: string, label: string) => void;
   onRefineWithAI?: (artifact: Artifact) => void;
   onElicit?: (artifact: Artifact) => void;
   onExpandLane: (ids: string[]) => void;
@@ -51,11 +55,12 @@ const LANE_TYPES: Record<string, Artifact['type'][]> = {
 
 // ---------- Lane layout constants ----------
 // Original (default) lane layout — matches artifact-transformer.ts output
+// Planning and Solutioning use 4-per-row grids (4 × 240px cards + 3 × 20px gaps = 1020px)
 const LANE_DEFS: { key: string; left: number; width: number; cardTypes: ArtifactType[] }[] = [
-  { key: 'discovery',      left: 30,   width: 320, cardTypes: ['product-brief', 'vision'] },
-  { key: 'planning',       left: 370,  width: 320, cardTypes: ['prd', 'requirement', 'nfr', 'additional-req', 'risk'] },
-  { key: 'solutioning',    left: 710,  width: 320, cardTypes: ['architecture', 'architecture-decision', 'system-component'] },
-  { key: 'implementation', left: 1050, width: 400, cardTypes: ['epic', 'story', 'task', 'use-case', 'test-strategy', 'test-case', 'test-coverage'] },
+  { key: 'discovery',      left: 30,   width: 320,  cardTypes: ['product-brief', 'vision'] },
+  { key: 'planning',       left: 370,  width: 1050, cardTypes: ['prd', 'requirement', 'nfr', 'additional-req', 'risk'] },
+  { key: 'solutioning',    left: 1440, width: 1050, cardTypes: ['architecture', 'architecture-decision', 'system-component'] },
+  { key: 'implementation', left: 2510, width: 400,  cardTypes: ['epic', 'story', 'task', 'use-case', 'test-strategy', 'test-case', 'test-coverage'] },
 ];
 const LANE_GAP = 20; // gap between lanes
 
@@ -133,7 +138,7 @@ const FILTER_TYPE_LABELS: Record<ArtifactType, string> = {
   'design-thinking': 'Design Think',
 };
 
-export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate, onToggleExpand, expandedIds, onRefineWithAI, onElicit, onExpandLane, onCollapseLane, centerOnId, onCentered, onOpenSearch, searchMatchIds, screenshotTrigger, screenshotFormat, onScreenshotReady, onScreenshotError }: CanvasProps) {
+export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate, onToggleExpand, expandedIds, expandedCategories, onToggleCategoryExpand, onRefineWithAI, onElicit, onExpandLane, onCollapseLane, centerOnId, onCentered, onOpenSearch, searchMatchIds, screenshotTrigger, screenshotFormat, onScreenshotReady, onScreenshotError }: CanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
@@ -427,28 +432,54 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
   }, [screenshotTrigger, screenshotFormat, onScreenshotReady, onScreenshotError]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Filter visible artifacts based on expanded state
-  // For multi-level hierarchy, check ALL ancestors are expanded
+  // For multi-level hierarchy, check ALL ancestors are expanded AND
+  // the child's type belongs to an expanded category on its parent.
   const visibleArtifactsRaw = useMemo(() => {
     // Build a map for quick lookup
     const artifactMap = new Map<string, Artifact>();
     artifacts.forEach(a => artifactMap.set(a.id, a));
+
+    // Build a mapping from (parentId, childType) → badge label for per-category filtering
+    // This allows us to check whether a child's type belongs to an expanded category
+    const parentTypeToBadgeLabel = new Map<string, string>(); // key = "parentId|childType"
+    artifacts.forEach(a => {
+      if (a.childBreakdown) {
+        a.childBreakdown.forEach(b => {
+          if (b.types) {
+            b.types.forEach(t => {
+              parentTypeToBadgeLabel.set(`${a.id}|${t}`, b.label);
+            });
+          }
+        });
+      }
+    });
     
-    // Check if all ancestors of an artifact are expanded
-    const areAllAncestorsExpanded = (artifact: Artifact): boolean => {
+    // Check if all ancestors of an artifact are expanded and its category is active
+    const isVisible = (artifact: Artifact): boolean => {
       if (!artifact.parentId) return true; // No parent = always visible
       
       // Parent must be expanded
       if (!expandedIds.has(artifact.parentId)) return false;
+
+      // Per-category check: is this child's type in an expanded category?
+      const parentCategories = expandedCategories.get(artifact.parentId);
+      if (parentCategories !== undefined) {
+        // Parent has per-category data — check if child type is in an expanded badge
+        const badgeLabel = parentTypeToBadgeLabel.get(`${artifact.parentId}|${artifact.type}`);
+        if (badgeLabel && !parentCategories.has(badgeLabel)) {
+          return false; // This child's category is collapsed
+        }
+      }
       
       // Check parent's ancestors recursively
       const parent = artifactMap.get(artifact.parentId);
       if (!parent) return true; // Parent not found, assume visible
       
-      return areAllAncestorsExpanded(parent);
+      return isVisible(parent);
     };
     
-    return artifacts.filter(areAllAncestorsExpanded);
-  }, [artifacts, expandedIds]);
+    return artifacts.filter(isVisible);
+  }, [artifacts, expandedIds, expandedCategories]);
 
   // ---------------------------------------------------------------------------
   // Dynamic epic-row compaction: when an epic is collapsed, its row band
@@ -563,6 +594,108 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
       return a;
     });
 
+    // -----------------------------------------------------------------------
+    // Grid reflow for Planning & Solutioning lanes:
+    // When per-category toggles hide mid-grid children, the remaining visible
+    // children keep their original absolute positions, leaving gaps.  We
+    // recompact them here using the same 4-column grid logic the server uses.
+    // -----------------------------------------------------------------------
+    const GRID_MAX_COLS  = 4;
+    const GRID_CARD_W    = 240;
+    const GRID_SPACING   = 20;
+    const PLANNING_X     = 390;
+    const SOLUTIONING_X  = 1450;
+
+    const PLANNING_CHILD_TYPES    = new Set(['risk', 'requirement', 'nfr', 'additional-req']);
+    const SOLUTIONING_CHILD_TYPES = new Set(['architecture-decision', 'system-component']);
+
+    // Build sets of known parent IDs for each lane so we filter children by
+    // semantic parentage rather than by position.  Planning children belong to
+    // PRD / Vision; solutioning children belong to Architecture.
+    const PLANNING_PARENT_TYPES    = new Set(['prd', 'vision']);
+    const SOLUTIONING_PARENT_TYPES = new Set(['architecture']);
+
+    const planningParentIds = new Set(
+      artifacts.filter(a => PLANNING_PARENT_TYPES.has(a.type)).map(a => a.id),
+    );
+    const solutioningParentIds = new Set(
+      artifacts.filter(a => SOLUTIONING_PARENT_TYPES.has(a.type)).map(a => a.id),
+    );
+
+    /** Miniature client-side GridPlacer mirroring server logic. */
+    const gridReflow = (
+      children: Artifact[],
+      startX: number,
+      startY: number,
+    ): Map<string, { x: number; y: number }> => {
+      const positions = new Map<string, { x: number; y: number }>();
+      let col = 0;
+      let rowTopY = startY;
+      let rowMaxH = 0;
+      for (const child of children) {
+        if (col >= GRID_MAX_COLS) {
+          rowTopY += rowMaxH + GRID_SPACING;
+          rowMaxH = 0;
+          col = 0;
+        }
+        const x = startX + col * (GRID_CARD_W + GRID_SPACING);
+        const y = rowTopY;
+        const h = child.size?.height ?? 100;
+        rowMaxH = Math.max(rowMaxH, h);
+        col++;
+        positions.set(child.id, { x, y });
+      }
+      return positions;
+    };
+
+    // --- Reflow Planning children ---
+    // Collect visible grid children, sorted by original position to preserve
+    // the server ordering (risks → reqs → NFRs → additional-reqs).
+    const planningChildren = adjusted
+      .filter(a => PLANNING_CHILD_TYPES.has(a.type) && a.parentId && planningParentIds.has(a.parentId))
+      .sort((a, b) => {
+        const dy = a.position.y - b.position.y;
+        return dy !== 0 ? dy : a.position.x - b.position.x;
+      });
+
+    // Compute a stable grid start Y from the parent card's bottom edge rather
+    // than from the first visible child (which shifts when top children are
+    // hidden by category toggles).
+    let planningReflowMap = new Map<string, { x: number; y: number }>();
+    if (planningChildren.length > 0) {
+      const planningParent = artifacts.find(a => a.type === 'prd') ?? artifacts.find(a => a.type === 'vision');
+      const gridStartY = planningParent
+        ? planningParent.position.y + (planningParent.size?.height ?? 100) + GRID_SPACING
+        : planningChildren[0].position.y;
+      planningReflowMap = gridReflow(planningChildren, PLANNING_X, gridStartY);
+    }
+
+    // --- Reflow Solutioning children ---
+    const solutioningChildren = adjusted
+      .filter(a => SOLUTIONING_CHILD_TYPES.has(a.type) && a.parentId && solutioningParentIds.has(a.parentId))
+      .sort((a, b) => {
+        const dy = a.position.y - b.position.y;
+        return dy !== 0 ? dy : a.position.x - b.position.x;
+      });
+
+    let solutioningReflowMap = new Map<string, { x: number; y: number }>();
+    if (solutioningChildren.length > 0) {
+      const solutioningParent = artifacts.find(a => a.type === 'architecture');
+      const gridStartY = solutioningParent
+        ? solutioningParent.position.y + (solutioningParent.size?.height ?? 100) + GRID_SPACING
+        : solutioningChildren[0].position.y;
+      solutioningReflowMap = gridReflow(solutioningChildren, SOLUTIONING_X, gridStartY);
+    }
+
+    // Apply reflowed positions
+    const reflowed = adjusted.map(a => {
+      const newPos = planningReflowMap.get(a.id) ?? solutioningReflowMap.get(a.id);
+      if (newPos) {
+        return { ...a, position: { ...a.position, ...newPos } };
+      }
+      return a;
+    });
+
     // Adjust test-strategy bands
     const testBands = artifacts
       .filter(a => a.type === 'test-strategy' && a.rowY !== undefined && (a.rowHeight ?? 0) > 0)
@@ -572,7 +705,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
         adjustedRowHeight: ts.rowHeight!,
       }));
 
-    return { visibleArtifacts: adjusted, adjustedRowBands: rowBands, adjustedTestBands: testBands };
+    return { visibleArtifacts: reflowed, adjustedRowBands: rowBands, adjustedTestBands: testBands };
   }, [artifacts, visibleArtifactsRaw, expandedIds]);
 
   // Compute expandable IDs per lane (artifacts with children in that lane's types)
@@ -589,11 +722,11 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
   // Implementation lane width: fit exactly the rightmost *visible* story/use-case/test card + padding.
   // Falls back to just covering the epic column when no children exist.
   const implLaneWidth = useMemo(() => {
-    const LANE_LEFT = 1050;
+    const LANE_LEFT = 2510;
     const PADDING = 30;
     let maxRight = LANE_LEFT + 310; // minimum: just the epic column (280 wide + 30 pad)
     visibleArtifacts.forEach(a => {
-      if (a.type === 'story' || a.type === 'use-case' || a.type === 'test-case' || a.type === 'test-strategy' || a.type === 'epic' || a.type === 'task' || a.type === 'test-coverage' || a.type === 'risk') {
+      if (a.type === 'story' || a.type === 'use-case' || a.type === 'test-case' || a.type === 'test-strategy' || a.type === 'epic' || a.type === 'task' || a.type === 'test-coverage') {
         const right = (a.position?.x ?? 0) + (a.size?.width ?? 250);
         if (right > maxRight) maxRight = right;
       }
@@ -682,9 +815,14 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
     const MIN_BOTTOM = LANE_TOP + 200;   // shortest lane is 200px tall
     const heights: Record<string, number> = {};
     for (const [lane, types] of Object.entries(LANE_CONTENT_TYPES)) {
+      const pos = laneLayout.positions[lane];
       let maxBottom = MIN_BOTTOM;
       visibleArtifacts.forEach(a => {
         if (types.includes(a.type)) {
+          // Only count cards whose x-position falls within this lane's bounds
+          // (e.g. epic-level risk cards are type 'risk' but positioned in impl lane)
+          const cardX = a.position?.x ?? 0;
+          if (pos && pos.visible && (cardX < pos.left - 20 || cardX > pos.left + pos.width + 20)) return;
           const bottom = (a.position?.y ?? 0) + (a.size?.height ?? 100);
           if (bottom > maxBottom) maxBottom = bottom;
         }
@@ -692,7 +830,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
       heights[lane] = maxBottom - LANE_TOP + BOTTOM_PADDING;
     }
     return heights;
-  }, [visibleArtifacts]);
+  }, [visibleArtifacts, laneLayout.positions]);
 
   // ---------------------------------------------------------------------------
   // Dependency highlighting: when a card is selected, highlight:
@@ -1362,6 +1500,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
             artifact={artifact}
             isSelected={artifact.id === selectedId}
             isExpanded={expandedIds.has(artifact.id)}
+            expandedCategories={expandedCategories.get(artifact.id)}
             isFlashing={artifact.id === flashId}
             isDimmed={!focusMode && connectedIds != null && !connectedIds.has(artifact.id)}
             isSearchMatch={effectiveSearchMatchIds.has(artifact.id)}
@@ -1370,6 +1509,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
             onOpenDetail={onOpenDetail}
             onUpdate={onUpdate}
             onToggleExpand={onToggleExpand}
+            onToggleCategoryExpand={onToggleCategoryExpand}
             onRefineWithAI={onRefineWithAI}
             onElicit={onElicit}
           />
@@ -1440,38 +1580,30 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
             const pct = total > 0 ? Math.round((done / total) * 100) : 0;
             const subGroups = epicMeta?.subGroups;
             const isEpicExpanded = expandedIds.has(epic.id);
-            // Band left edge aligns with implementation lane position.
+            // Band wraps around the cards with visible margin from lane edges.
+            // Cards are inset 20px from the lane left; band sits 10px outside cards.
+            const BAND_H_INSET = 10;
+            const BAND_V_INSET = 6;
             const implPos = laneLayout.positions.implementation;
-            const bandLeft = implPos.left;
+            const bandLeft = implPos.left + BAND_H_INSET;
+            const bandWidth = implLaneWidth - BAND_H_INSET * 2;
             return (
               <div
                 key={`row-band-${epic.id}`}
                 className={`epic-row-band ${i % 2 === 0 ? 'even' : 'odd'}`}
                 style={{
-                  top: adjustedRowY,
-                  height: adjustedRowHeight,
+                  top: adjustedRowY + BAND_V_INSET,
+                  height: Math.max(0, adjustedRowHeight - BAND_V_INSET * 2),
                   left: bandLeft,
-                  width: implLaneWidth,
+                  width: bandWidth,
                   right: 'unset',
                 }}
               >
-                {isEpicExpanded && subGroups?.stories && (
-                  <div
-                    className="epic-subgroup-label"
-                    style={{
-                      left: subGroups.stories.x - 1050,
-                      top: (subGroups.stories.y - (epic.rowY ?? 0)) - 20,
-                      width: subGroups.stories.width,
-                    }}
-                  >
-                    Stories
-                  </div>
-                )}
                 {isEpicExpanded && subGroups?.useCases && (
                   <div
                     className="epic-subgroup-label"
                     style={{
-                      left: subGroups.useCases.x - 1050,
+                      left: subGroups.useCases.x - bandLeft,
                       top: (subGroups.useCases.y - (epic.rowY ?? 0)) - 20,
                       width: subGroups.useCases.width,
                     }}
@@ -1479,11 +1611,23 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
                     Use Cases
                   </div>
                 )}
+                {isEpicExpanded && subGroups?.risks && (
+                  <div
+                    className="epic-subgroup-label"
+                    style={{
+                      left: subGroups.risks.x - bandLeft,
+                      top: (subGroups.risks.y - (epic.rowY ?? 0)) - 20,
+                      width: subGroups.risks.width,
+                    }}
+                  >
+                    Risks
+                  </div>
+                )}
                 {isEpicExpanded && subGroups?.testStrategy && (
                   <div
                     className="epic-subgroup-label"
                     style={{
-                      left: subGroups.testStrategy.x - 1050,
+                      left: subGroups.testStrategy.x - bandLeft,
                       top: (subGroups.testStrategy.y - (epic.rowY ?? 0)) - 20,
                       width: subGroups.testStrategy.width,
                     }}
@@ -1495,7 +1639,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
                   <div
                     className="epic-subgroup-label"
                     style={{
-                      left: subGroups.testCases.x - 1050,
+                      left: subGroups.testCases.x - bandLeft,
                       top: (subGroups.testCases.y - (epic.rowY ?? 0)) - 20,
                       width: subGroups.testCases.width,
                     }}
@@ -1503,16 +1647,16 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
                     Tests
                   </div>
                 )}
-                {isEpicExpanded && subGroups?.risks && (
+                {isEpicExpanded && subGroups?.stories && (
                   <div
                     className="epic-subgroup-label"
                     style={{
-                      left: subGroups.risks.x - 1050,
-                      top: (subGroups.risks.y - (epic.rowY ?? 0)) - 20,
-                      width: subGroups.risks.width,
+                      left: subGroups.stories.x - bandLeft,
+                      top: (subGroups.stories.y - (epic.rowY ?? 0)) - 20,
+                      width: subGroups.stories.width,
                     }}
                   >
-                    Risks
+                    Stories
                   </div>
                 )}
                 {total > 0 && (
@@ -1530,16 +1674,19 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
 
         {/* Testing row band — horizontal swimlane for orphan test-strategy / test-case cards */}
         {laneLayout.positions.implementation?.visible && adjustedTestBands.map(({ artifact: ts, adjustedRowY, adjustedRowHeight }) => {
-            const bandLeft = laneLayout.positions.implementation.left;
+            const BAND_H_INSET = 10;
+            const BAND_V_INSET = 6;
+            const bandLeft = laneLayout.positions.implementation.left + BAND_H_INSET;
+            const bandWidth = implLaneWidth - BAND_H_INSET * 2;
             return (
               <div
                 key={`testing-row-band-${ts.id}`}
                 className="testing-row-band"
                 style={{
-                  top: adjustedRowY,
-                  height: adjustedRowHeight,
+                  top: adjustedRowY + BAND_V_INSET,
+                  height: Math.max(0, adjustedRowHeight - BAND_V_INSET * 2),
                   left: bandLeft,
-                  width: implLaneWidth,
+                  width: bandWidth,
                   right: 'unset',
                 }}
               >

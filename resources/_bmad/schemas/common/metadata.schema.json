@@ -35,7 +35,10 @@
       "type": "array",
       "description": "List of workflow steps that have been completed",
       "items": {
-        "type": "string"
+        "oneOf": [
+          { "type": "string" },
+          { "type": "object" }
+        ]
       },
       "examples": [["step-01-init", "step-02-context", "step-03-design"]]
     },

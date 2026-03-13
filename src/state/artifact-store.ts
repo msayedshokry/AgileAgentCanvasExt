@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import PDFDocument from 'pdfkit';
 import { acOutput } from '../extension';
 import { openChat } from '../commands/chat-bridge';
+import { createLogger } from '../utils/logger';
+import { resolveArtifactTargetUri, writeJsonFile, writeMarkdownCompanion } from './artifact-file-io';
 import { schemaValidator } from './schema-validator';
 import { repairDataWithSchema } from './schema-repair-engine';
 import {
@@ -162,6 +164,9 @@ export {
     InnovationStrategy,
     DesignThinking
 };
+
+const storeLogger = createLogger('artifact-store');
+const logDebug = (...args: unknown[]) => storeLogger.debug(...args);
 
 /**
  * Escape a value for safe inclusion in a CSV cell (RFC 4180).
@@ -444,7 +449,7 @@ export class ArtifactStore {
     }
 
     /**
-     * Get the source folder where artifacts were loaded from (.agentcanvas-context folder)
+     * Get the source folder where artifacts were loaded from (.agileagentcanvas-context folder)
      */
     getSourceFolder(): vscode.Uri | null {
         return this.sourceFolder;
@@ -457,10 +462,10 @@ export class ArtifactStore {
     getProjectRoot(): string | null {
         if (!this.sourceFolder) return null;
         
-        // sourceFolder is typically the output folder (e.g. .agentcanvas-context)
+        // sourceFolder is typically the output folder (e.g. .agileagentcanvas-context)
         // Project root is the parent directory
         const sourcePath = this.sourceFolder.fsPath;
-        const outputFolder = vscode.workspace.getConfiguration('agentcanvas').get('outputFolder', '.agentcanvas-context') as string;
+        const outputFolder = vscode.workspace.getConfiguration('agileagentcanvas').get('outputFolder', '.agileagentcanvas-context') as string;
         // Escape special regex characters in the folder name
         const escaped = outputFolder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const parentPath = sourcePath.replace(new RegExp(`[/\\\\]${escaped}.*$`), '');
@@ -516,7 +521,7 @@ export class ArtifactStore {
         
         // Show info message with next steps
         vscode.window.showInformationMessage(
-            `Project "${projectName}" created! Use @agentcanvas in chat to define vision and requirements.`,
+            `Project "${projectName}" created! Use @agileagentcanvas in chat to define vision and requirements.`,
             'Open Chat'
         ).then(selection => {
             if (selection === 'Open Chat') {
@@ -607,7 +612,7 @@ export class ArtifactStore {
         artifactId: string,
         changes: Partial<any>
     ): Promise<void> {
-        console.log('updateArtifact called:', artifactType, artifactId, changes);
+        logDebug('updateArtifact called:', artifactType, artifactId, changes);
         
         switch (artifactType) {
             case 'vision':
@@ -648,7 +653,7 @@ export class ArtifactStore {
 
                     epics[epicIndex] = updatedEpic;
                     this.artifacts.set('epics', [...epics]);
-                    console.log('Updated epic:', updatedEpic.id, updatedEpic.title);
+                    logDebug('Updated epic:', updatedEpic.id, updatedEpic.title);
                     
                     // Bidirectional linking: update relatedEpics on requirements
                     this.syncRequirementLinks(
@@ -689,7 +694,7 @@ export class ArtifactStore {
 
                         epic.stories[storyIndex] = updatedStory;
                         storyFound = true;
-                        console.log('Updated story:', updatedStory.id, updatedStory.title);
+                        logDebug('Updated story:', updatedStory.id, updatedStory.title);
                         break;
                     }
                 }
@@ -717,7 +722,7 @@ export class ArtifactStore {
                     }
                     requirements.functional[reqIndex] = updatedReq;
                     this.artifacts.set('requirements', { ...requirements });
-                    console.log('Updated requirement:', updatedReq.id, updatedReq.title);
+                    logDebug('Updated requirement:', updatedReq.id, updatedReq.title);
                 }
                 break;
             }
@@ -750,7 +755,7 @@ export class ArtifactStore {
                     }
                     testCases[tcIndex] = updated;
                     this.artifacts.set('testCases', [...testCases]);
-                    console.log('Updated test case:', updated.id, updated.title);
+                    logDebug('Updated test case:', updated.id, updated.title);
                 }
                 break;
             }
@@ -839,7 +844,7 @@ export class ArtifactStore {
                         }
                         epic.useCases[ucIndex] = updatedUC;
                         ucFound = true;
-                        console.log('Updated use case:', updatedUC.id, updatedUC.title);
+                        logDebug('Updated use case:', updatedUC.id, updatedUC.title);
                         break;
                     }
                 }
@@ -877,7 +882,7 @@ export class ArtifactStore {
                     }
                 }
                 this.artifacts.set('testDesign', updatedTD);
-                console.log('Updated test design:', updatedTD.id);
+                logDebug('Updated test design:', updatedTD.id);
                 // coveragePlan→TC extraction and riskAssessment→epic.risks
                 // attachment are handled by reconcileDerivedState() which runs
                 // after the switch block — no inline extraction needed here.
@@ -898,7 +903,7 @@ export class ArtifactStore {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
                 this.artifacts.set('traceabilityMatrix', upd);
-                console.log('Updated traceability matrix:', upd.id);
+                logDebug('Updated traceability matrix:', upd.id);
                 break;
             }
 
@@ -912,7 +917,7 @@ export class ArtifactStore {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
                 this.artifacts.set('testReview', upd);
-                console.log('Updated test review:', upd.id);
+                logDebug('Updated test review:', upd.id);
                 break;
             }
 
@@ -927,7 +932,7 @@ export class ArtifactStore {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
                 this.artifacts.set('nfrAssessment', upd);
-                console.log('Updated NFR assessment:', upd.id);
+                logDebug('Updated NFR assessment:', upd.id);
                 break;
             }
 
@@ -941,7 +946,7 @@ export class ArtifactStore {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
                 this.artifacts.set('testFramework', upd);
-                console.log('Updated test framework:', upd.id);
+                logDebug('Updated test framework:', upd.id);
                 break;
             }
 
@@ -955,7 +960,7 @@ export class ArtifactStore {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
                 this.artifacts.set('ciPipeline', upd);
-                console.log('Updated CI pipeline:', upd.id);
+                logDebug('Updated CI pipeline:', upd.id);
                 break;
             }
 
@@ -969,7 +974,7 @@ export class ArtifactStore {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
                 this.artifacts.set('automationSummary', upd);
-                console.log('Updated automation summary:', upd.id);
+                logDebug('Updated automation summary:', upd.id);
                 break;
             }
 
@@ -983,7 +988,7 @@ export class ArtifactStore {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
                 this.artifacts.set('atddChecklist', upd);
-                console.log('Updated ATDD checklist:', upd.id);
+                logDebug('Updated ATDD checklist:', upd.id);
                 break;
             }
 
@@ -1001,7 +1006,7 @@ export class ArtifactStore {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
                 this.artifacts.set('research', upd);
-                console.log('Updated research:', upd.id);
+                logDebug('Updated research:', upd.id);
                 break;
             }
 
@@ -1015,7 +1020,7 @@ export class ArtifactStore {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
                 this.artifacts.set('uxDesign', upd);
-                console.log('Updated UX design:', upd.id);
+                logDebug('Updated UX design:', upd.id);
                 break;
             }
 
@@ -1030,7 +1035,7 @@ export class ArtifactStore {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
                 this.artifacts.set('readinessReport', upd);
-                console.log('Updated readiness report:', upd.id);
+                logDebug('Updated readiness report:', upd.id);
                 break;
             }
 
@@ -1045,7 +1050,7 @@ export class ArtifactStore {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
                 this.artifacts.set('sprintStatus', upd);
-                console.log('Updated sprint status:', upd.id);
+                logDebug('Updated sprint status:', upd.id);
                 break;
             }
 
@@ -1059,7 +1064,7 @@ export class ArtifactStore {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
                 this.artifacts.set('retrospective', upd);
-                console.log('Updated retrospective:', upd.id);
+                logDebug('Updated retrospective:', upd.id);
                 break;
             }
 
@@ -1073,7 +1078,7 @@ export class ArtifactStore {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
                 this.artifacts.set('changeProposal', upd);
-                console.log('Updated change proposal:', upd.id);
+                logDebug('Updated change proposal:', upd.id);
                 break;
             }
 
@@ -1087,7 +1092,7 @@ export class ArtifactStore {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
                 this.artifacts.set('codeReview', upd);
-                console.log('Updated code review:', upd.id);
+                logDebug('Updated code review:', upd.id);
                 break;
             }
 
@@ -1101,7 +1106,7 @@ export class ArtifactStore {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
                 this.artifacts.set('risks', upd);
-                console.log('Updated risks:', upd.id);
+                logDebug('Updated risks:', upd.id);
                 break;
             }
 
@@ -1115,7 +1120,7 @@ export class ArtifactStore {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
                 this.artifacts.set('definitionOfDone', upd);
-                console.log('Updated definition of done:', upd.id);
+                logDebug('Updated definition of done:', upd.id);
                 break;
             }
 
@@ -1129,7 +1134,7 @@ export class ArtifactStore {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
                 this.artifacts.set('projectOverview', upd);
-                console.log('Updated project overview:', upd.id);
+                logDebug('Updated project overview:', upd.id);
                 break;
             }
 
@@ -1143,7 +1148,7 @@ export class ArtifactStore {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
                 this.artifacts.set('projectContext', upd);
-                console.log('Updated project context:', upd.id);
+                logDebug('Updated project context:', upd.id);
                 break;
             }
 
@@ -1157,7 +1162,7 @@ export class ArtifactStore {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
                 this.artifacts.set('techSpec', upd);
-                console.log('Updated tech spec:', upd.id);
+                logDebug('Updated tech spec:', upd.id);
                 break;
             }
 
@@ -1175,7 +1180,7 @@ export class ArtifactStore {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
                 this.artifacts.set('storytelling', upd);
-                console.log('Updated storytelling:', upd.id);
+                logDebug('Updated storytelling:', upd.id);
                 break;
             }
 
@@ -1189,7 +1194,7 @@ export class ArtifactStore {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
                 this.artifacts.set('problemSolving', upd);
-                console.log('Updated problem solving:', upd.id);
+                logDebug('Updated problem solving:', upd.id);
                 break;
             }
 
@@ -1203,7 +1208,7 @@ export class ArtifactStore {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
                 this.artifacts.set('innovationStrategy', upd);
-                console.log('Updated innovation strategy:', upd.id);
+                logDebug('Updated innovation strategy:', upd.id);
                 break;
             }
 
@@ -1217,7 +1222,7 @@ export class ArtifactStore {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
                 this.artifacts.set('designThinking', upd);
-                console.log('Updated design thinking:', upd.id);
+                logDebug('Updated design thinking:', upd.id);
                 break;
             }
 
@@ -1231,7 +1236,7 @@ export class ArtifactStore {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
                 this.artifacts.set('sourceTree', upd);
-                console.log('Updated source tree:', upd.id);
+                logDebug('Updated source tree:', upd.id);
                 break;
             }
 
@@ -1245,7 +1250,7 @@ export class ArtifactStore {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
                 this.artifacts.set('testSummary', upd);
-                console.log('Updated test summary:', upd.id);
+                logDebug('Updated test summary:', upd.id);
                 break;
             }
                 
@@ -1257,7 +1262,7 @@ export class ArtifactStore {
         this.notifyChange();
 
         // Auto-sync if enabled
-        const autoSync = vscode.workspace.getConfiguration('agentcanvas').get('autoSync', true);
+        const autoSync = vscode.workspace.getConfiguration('agileagentcanvas').get('autoSync', true);
         if (autoSync) {
             await this.syncToFiles();
         }
@@ -1268,7 +1273,7 @@ export class ArtifactStore {
      * For epics, also removes associated stories and use cases.
      */
     async deleteArtifact(artifactType: string, artifactId: string): Promise<void> {
-        console.log('deleteArtifact called:', artifactType, artifactId);
+        logDebug('deleteArtifact called:', artifactType, artifactId);
 
         switch (artifactType) {
             case 'vision':
@@ -1481,12 +1486,12 @@ export class ArtifactStore {
                 break;
 
             default:
-                console.log('Unknown artifact type:', artifactType);
+                logDebug('Unknown artifact type:', artifactType);
         }
 
         this.notifyChange();
 
-        const autoSync = vscode.workspace.getConfiguration('agentcanvas').get('autoSync', true);
+        const autoSync = vscode.workspace.getConfiguration('agileagentcanvas').get('autoSync', true);
         if (autoSync) {
             await this.syncToFiles();
         }
@@ -2001,7 +2006,7 @@ export class ArtifactStore {
     }
 
     /**
-     * Load artifacts from .agentcanvas-context folder
+     * Load artifacts from .agileagentcanvas-context folder
      * Recursively searches ALL subfolders for JSON files
      * Handles various artifact types: epics, stories, use-cases, requirements
      */
@@ -2050,7 +2055,7 @@ export class ArtifactStore {
                     const bmadPath = vscode.Uri.joinPath(
                         vscode.Uri.file(
                             require('path').join(
-                                (vscode.extensions.getExtension('mohamed-sayed.agentcanvas')?.extensionUri ??
+                                (vscode.extensions.getExtension('msayedshokry.agileagentcanvas')?.extensionUri ??
                                  vscode.Uri.file(__dirname + '/../..')).fsPath,
                                 'resources', '_bmad'
                             )
@@ -2833,11 +2838,11 @@ export class ArtifactStore {
                         const fileList = loadValidationIssues.map(i => i.file).join(', ');
                         vscode.window.showWarningMessage(
                             `${loadValidationIssues.length} file(s) have schema issues: ${fileList}. ` +
-                            `Open the AgentCanvas canvas and click "Fix Schemas" to auto-repair.`,
+                            `Open the AgileAgentCanvas canvas and click "Fix Schemas" to auto-repair.`,
                             'Open Canvas'
                         ).then(choice => {
                             if (choice === 'Open Canvas') {
-                                vscode.commands.executeCommand('agentcanvas.openCanvas');
+                                vscode.commands.executeCommand('agileagentcanvas.openCanvas');
                             }
                         });
                     }
@@ -3510,7 +3515,7 @@ export class ArtifactStore {
             d.metadata = {
                 schemaVersion: '1.0.0',
                 artifactType: artifactType,
-                workflowName: 'bmad-studio',
+                workflowName: 'agileagentcanvas',
                 timestamps: { created: now, lastModified: now },
                 status: contentCopy.status || 'draft',
             };
@@ -4314,11 +4319,11 @@ export class ArtifactStore {
     }
 
     async syncToFiles(): Promise<void> {
-        console.log('syncToFiles called, sourceFolder:', this.sourceFolder?.fsPath);
+        logDebug('syncToFiles called, sourceFolder:', this.sourceFolder?.fsPath);
 
         // L4: Skip sync if nothing changed since last write
         if (!this._dirty) {
-            console.log('syncToFiles: skipping — no dirty changes');
+            logDebug('syncToFiles: skipping — no dirty changes');
             return;
         }
 
@@ -4584,7 +4589,7 @@ export class ArtifactStore {
             errors.forEach(err => acOutput.appendLine(`  - ${err}`));
         }
         
-        console.log('syncToFiles completed');
+        logDebug('syncToFiles completed');
         } finally {
             // All writes done (or failed).  Keep the suppression flag active
             // for a short grace period so the file watcher's debounce window
@@ -4603,11 +4608,11 @@ export class ArtifactStore {
         try {
             await vscode.workspace.fs.delete(fileUri);
             this.sourceFiles.delete(key);
-            console.log(`Deleted ${key} file from disk: ${fileUri.fsPath}`);
+            logDebug(`Deleted ${key} file from disk: ${fileUri.fsPath}`);
         } catch (e) {
             // File may already be gone
             this.sourceFiles.delete(key);
-            console.log(`Could not delete ${key} file (may already be removed):`, e);
+            logDebug(`Could not delete ${key} file (may already be removed):`, e);
         }
     }
     
@@ -4616,21 +4621,7 @@ export class ArtifactStore {
      * Returns 'dual' by default if not configured.
      */
     private getOutputFormat(): 'json' | 'markdown' | 'dual' {
-        return vscode.workspace.getConfiguration('agentcanvas').get<'json' | 'markdown' | 'dual'>('outputFormat', 'dual');
-    }
-
-    /**
-     * Write a markdown companion file alongside a JSON artifact file.
-     * The .md file is placed in the same directory as the JSON file.
-     */
-    private async writeMdCompanion(jsonUri: vscode.Uri, mdFilename: string, markdownContent: string): Promise<void> {
-        const parentUri = vscode.Uri.joinPath(jsonUri, '..');
-        const mdUri = vscode.Uri.joinPath(parentUri, mdFilename);
-        await vscode.workspace.fs.writeFile(
-            mdUri,
-            Buffer.from(markdownContent, 'utf-8')
-        );
-        console.log('Saved markdown companion:', mdUri.fsPath);
+        return vscode.workspace.getConfiguration('agileagentcanvas').get<'json' | 'markdown' | 'dual'>('outputFormat', 'dual');
     }
 
     /**
@@ -4641,17 +4632,17 @@ export class ArtifactStore {
         
         if (this.sourceFiles.has('vision')) {
             targetUri = this.sourceFiles.get('vision')!;
-            console.log('Writing vision to original source file:', targetUri.fsPath);
+            logDebug('Writing vision to original source file:', targetUri.fsPath);
         } else {
             targetUri = vscode.Uri.joinPath(baseUri, 'vision.json');
-            console.log('Writing vision to default location:', targetUri.fsPath);
+            logDebug('Writing vision to default location:', targetUri.fsPath);
         }
         
         const visionJson = {
             metadata: {
                 schemaVersion: '1.0.0',
                 artifactType: 'vision',
-                workflowName: 'bmad-studio',
+                workflowName: 'agileagentcanvas',
                 projectName: state.projectName,
                 timestamps: {
                     created: new Date().toISOString(),
@@ -4679,7 +4670,7 @@ export class ArtifactStore {
             targetUri,
             Buffer.from(JSON.stringify(visionJson, null, 2), 'utf-8')
         );
-        console.log('Saved vision to:', targetUri.fsPath);
+        logDebug('Saved vision to:', targetUri.fsPath);
         
         // Track the source file for future saves
         this.sourceFiles.set('vision', targetUri);
@@ -4693,7 +4684,7 @@ export class ArtifactStore {
         
         if (this.sourceFiles.has('epics')) {
             targetUri = this.sourceFiles.get('epics')!;
-            console.log('Writing epics to original source file:', targetUri.fsPath);
+            logDebug('Writing epics to original source file:', targetUri.fsPath);
         } else {
             const planningUri = vscode.Uri.joinPath(baseUri, 'planning-artifacts');
             
@@ -4704,7 +4695,7 @@ export class ArtifactStore {
             }
             
             targetUri = vscode.Uri.joinPath(planningUri, 'epics.json');
-            console.log('Writing epics to default location:', targetUri.fsPath);
+            logDebug('Writing epics to default location:', targetUri.fsPath);
         }
 
         // Build the JSON structure
@@ -4712,7 +4703,7 @@ export class ArtifactStore {
             metadata: {
                 schemaVersion: '1.0.0',
                 artifactType: 'epics',
-                workflowName: 'bmad-studio',
+                workflowName: 'agileagentcanvas',
                 projectName: state.projectName,
                 timestamps: {
                     created: new Date().toISOString(),
@@ -4750,12 +4741,13 @@ export class ArtifactStore {
             targetUri,
             Buffer.from(JSON.stringify(epicsJson, null, 2), 'utf-8')
         );
-        console.log('Saved epics to:', targetUri.fsPath);
+        logDebug('Saved epics to:', targetUri.fsPath);
 
         // Write markdown companion if output format includes markdown
         const outputFormat = this.getOutputFormat();
         if (outputFormat === 'markdown' || outputFormat === 'dual') {
-            await this.writeMdCompanion(targetUri, 'epics.md', this.generateEpicsMarkdown(state));
+            const mdUri = await writeMarkdownCompanion(targetUri, 'epics.md', this.generateEpicsMarkdown(state));
+            logDebug('Saved markdown companion:', mdUri.fsPath);
         }
         
         // Track the source file for future saves
@@ -4766,19 +4758,18 @@ export class ArtifactStore {
      * Save product brief to JSON file
      */
     private async saveProductBriefToFile(state: BmadArtifacts, baseUri: vscode.Uri): Promise<void> {
-        let targetUri: vscode.Uri;
-        if (this.sourceFiles.has('productBrief')) {
-            targetUri = this.sourceFiles.get('productBrief')!;
-        } else {
-            const discoveryUri = vscode.Uri.joinPath(baseUri, 'discovery-artifacts');
-            try { await vscode.workspace.fs.createDirectory(discoveryUri); } catch { /* exists */ }
-            targetUri = vscode.Uri.joinPath(discoveryUri, 'product-brief.json');
-        }
+        const targetUri = await resolveArtifactTargetUri({
+            sourceFiles: this.sourceFiles,
+            storeKey: 'productBrief',
+            baseUri,
+            folderName: 'discovery-artifacts',
+            fileName: 'product-brief.json'
+        });
         const json = {
             metadata: {
                 schemaVersion: '1.0.0',
                 artifactType: 'product-brief',
-                workflowName: 'bmad-studio',
+                workflowName: 'agileagentcanvas',
                 projectName: state.projectName,
                 timestamps: { created: new Date().toISOString(), lastModified: new Date().toISOString() },
                 status: state.productBrief?.status || 'draft'
@@ -4790,13 +4781,14 @@ export class ArtifactStore {
                 return contentFields;
             })()
         };
-        await vscode.workspace.fs.writeFile(targetUri, Buffer.from(JSON.stringify(json, null, 2), 'utf-8'));
-        console.log('Saved product-brief to:', targetUri.fsPath);
+        await writeJsonFile(targetUri, json);
+        logDebug('Saved product-brief to:', targetUri.fsPath);
 
         // Write markdown companion if output format includes markdown
         const outputFormat = this.getOutputFormat();
         if (outputFormat === 'markdown' || outputFormat === 'dual') {
-            await this.writeMdCompanion(targetUri, 'product-brief.md', this.generateProductBriefMarkdown(state));
+            const mdUri = await writeMarkdownCompanion(targetUri, 'product-brief.md', this.generateProductBriefMarkdown(state));
+            logDebug('Saved markdown companion:', mdUri.fsPath);
         }
 
         this.sourceFiles.set('productBrief', targetUri);
@@ -4806,19 +4798,18 @@ export class ArtifactStore {
      * Save PRD to JSON file
      */
     private async savePRDToFile(state: BmadArtifacts, baseUri: vscode.Uri): Promise<void> {
-        let targetUri: vscode.Uri;
-        if (this.sourceFiles.has('prd')) {
-            targetUri = this.sourceFiles.get('prd')!;
-        } else {
-            const planningUri = vscode.Uri.joinPath(baseUri, 'planning-artifacts');
-            try { await vscode.workspace.fs.createDirectory(planningUri); } catch { /* exists */ }
-            targetUri = vscode.Uri.joinPath(planningUri, 'prd.json');
-        }
+        const targetUri = await resolveArtifactTargetUri({
+            sourceFiles: this.sourceFiles,
+            storeKey: 'prd',
+            baseUri,
+            folderName: 'planning-artifacts',
+            fileName: 'prd.json'
+        });
         const json = {
             metadata: {
                 schemaVersion: '1.0.0',
                 artifactType: 'prd',
-                workflowName: 'bmad-studio',
+                workflowName: 'agileagentcanvas',
                 projectName: state.projectName,
                 timestamps: { created: new Date().toISOString(), lastModified: new Date().toISOString() },
                 status: state.prd?.status || 'draft'
@@ -4830,13 +4821,14 @@ export class ArtifactStore {
                 return contentFields;
             })()
         };
-        await vscode.workspace.fs.writeFile(targetUri, Buffer.from(JSON.stringify(json, null, 2), 'utf-8'));
-        console.log('Saved PRD to:', targetUri.fsPath);
+        await writeJsonFile(targetUri, json);
+        logDebug('Saved PRD to:', targetUri.fsPath);
 
         // Write markdown companion if output format includes markdown
         const outputFormat = this.getOutputFormat();
         if (outputFormat === 'markdown' || outputFormat === 'dual') {
-            await this.writeMdCompanion(targetUri, 'prd.md', this.generatePRDMarkdown(state));
+            const mdUri = await writeMarkdownCompanion(targetUri, 'prd.md', this.generatePRDMarkdown(state));
+            logDebug('Saved markdown companion:', mdUri.fsPath);
         }
 
         this.sourceFiles.set('prd', targetUri);
@@ -4846,19 +4838,18 @@ export class ArtifactStore {
      * Save architecture to JSON file
      */
     private async saveArchitectureToFile(state: BmadArtifacts, baseUri: vscode.Uri): Promise<void> {
-        let targetUri: vscode.Uri;
-        if (this.sourceFiles.has('architecture')) {
-            targetUri = this.sourceFiles.get('architecture')!;
-        } else {
-            const solutioningUri = vscode.Uri.joinPath(baseUri, 'solutioning-artifacts');
-            try { await vscode.workspace.fs.createDirectory(solutioningUri); } catch { /* exists */ }
-            targetUri = vscode.Uri.joinPath(solutioningUri, 'architecture.json');
-        }
+        const targetUri = await resolveArtifactTargetUri({
+            sourceFiles: this.sourceFiles,
+            storeKey: 'architecture',
+            baseUri,
+            folderName: 'solutioning-artifacts',
+            fileName: 'architecture.json'
+        });
         const json = {
             metadata: {
                 schemaVersion: '1.0.0',
                 artifactType: 'architecture',
-                workflowName: 'bmad-studio',
+                workflowName: 'agileagentcanvas',
                 projectName: state.projectName,
                 timestamps: { created: new Date().toISOString(), lastModified: new Date().toISOString() },
                 status: state.architecture?.status || 'draft'
@@ -4870,13 +4861,14 @@ export class ArtifactStore {
                 return contentFields;
             })()
         };
-        await vscode.workspace.fs.writeFile(targetUri, Buffer.from(JSON.stringify(json, null, 2), 'utf-8'));
-        console.log('Saved architecture to:', targetUri.fsPath);
+        await writeJsonFile(targetUri, json);
+        logDebug('Saved architecture to:', targetUri.fsPath);
 
         // Write markdown companion if output format includes markdown
         const outputFormat = this.getOutputFormat();
         if (outputFormat === 'markdown' || outputFormat === 'dual') {
-            await this.writeMdCompanion(targetUri, 'architecture.md', this.generateArchitectureMarkdown(state));
+            const mdUri = await writeMarkdownCompanion(targetUri, 'architecture.md', this.generateArchitectureMarkdown(state));
+            logDebug('Saved markdown companion:', mdUri.fsPath);
         }
 
         this.sourceFiles.set('architecture', targetUri);
@@ -4904,7 +4896,7 @@ export class ArtifactStore {
             metadata: {
                 schemaVersion: '1.0.0',
                 artifactType: 'test-cases',
-                workflowName: 'bmad-studio',
+                workflowName: 'agileagentcanvas',
                 projectName: state.projectName,
                 timestamps: {
                     created: new Date().toISOString(),
@@ -4920,16 +4912,14 @@ export class ArtifactStore {
             }
         };
 
-        await vscode.workspace.fs.writeFile(
-            targetUri,
-            Buffer.from(JSON.stringify(testCasesJson, null, 2), 'utf-8')
-        );
-        console.log('Saved test cases to:', targetUri.fsPath);
+        await writeJsonFile(targetUri, testCasesJson);
+        logDebug('Saved test cases to:', targetUri.fsPath);
 
         // Write markdown companion if output format includes markdown
         const outputFormat = this.getOutputFormat();
         if (outputFormat === 'markdown' || outputFormat === 'dual') {
-            await this.writeMdCompanion(targetUri, 'test-cases.md', this.generateTestCasesMarkdown(state));
+            const mdUri = await writeMarkdownCompanion(targetUri, 'test-cases.md', this.generateTestCasesMarkdown(state));
+            logDebug('Saved markdown companion:', mdUri.fsPath);
         }
 
         this.sourceFiles.set('testCases', targetUri);
@@ -4957,7 +4947,7 @@ export class ArtifactStore {
             metadata: {
                 schemaVersion: '1.0.0',
                 artifactType: 'test-strategy',
-                workflowName: 'bmad-studio',
+                workflowName: 'agileagentcanvas',
                 projectName: state.projectName,
                 timestamps: {
                     created: new Date().toISOString(),
@@ -4974,16 +4964,14 @@ export class ArtifactStore {
             })()
         };
 
-        await vscode.workspace.fs.writeFile(
-            targetUri,
-            Buffer.from(JSON.stringify(testStrategyJson, null, 2), 'utf-8')
-        );
-        console.log('Saved test strategy to:', targetUri.fsPath);
+        await writeJsonFile(targetUri, testStrategyJson);
+        logDebug('Saved test strategy to:', targetUri.fsPath);
 
         // Write markdown companion if output format includes markdown
         const outputFormat = this.getOutputFormat();
         if (outputFormat === 'markdown' || outputFormat === 'dual') {
-            await this.writeMdCompanion(targetUri, 'test-strategy.md', this.generateTestStrategyMarkdown(state));
+            const mdUri = await writeMarkdownCompanion(targetUri, 'test-strategy.md', this.generateTestStrategyMarkdown(state));
+            logDebug('Saved markdown companion:', mdUri.fsPath);
         }
 
         this.sourceFiles.set('testStrategy', targetUri);
@@ -5012,7 +5000,7 @@ export class ArtifactStore {
             metadata: {
                 schemaVersion: '1.0.0',
                 artifactType: 'test-design',
-                workflowName: 'bmad-studio',
+                workflowName: 'agileagentcanvas',
                 projectName: state.projectName,
                 timestamps: {
                     created: new Date().toISOString(),
@@ -5041,16 +5029,14 @@ export class ArtifactStore {
             }
         };
 
-        await vscode.workspace.fs.writeFile(
-            targetUri,
-            Buffer.from(JSON.stringify(testDesignJson, null, 2), 'utf-8')
-        );
-        console.log('Saved test design to:', targetUri.fsPath);
+        await writeJsonFile(targetUri, testDesignJson);
+        logDebug('Saved test design to:', targetUri.fsPath);
 
         // Write markdown companion if output format includes markdown
         const outputFormat = this.getOutputFormat();
         if (outputFormat === 'markdown' || outputFormat === 'dual') {
-            await this.writeMdCompanion(targetUri, 'test-design.md', this.generateTestDesignMarkdown(state));
+            const mdUri = await writeMarkdownCompanion(targetUri, 'test-design.md', this.generateTestDesignMarkdown(state));
+            logDebug('Saved markdown companion:', mdUri.fsPath);
         }
 
         this.sourceFiles.set('testDesign', targetUri);
@@ -5108,7 +5094,7 @@ export class ArtifactStore {
             metadata: {
                 schemaVersion: '1.0.0',
                 artifactType: fileSlug,
-                workflowName: 'bmad-studio',
+                workflowName: 'agileagentcanvas',
                 projectName: state.projectName,
                 timestamps: {
                     created: new Date().toISOString(),
@@ -5123,13 +5109,14 @@ export class ArtifactStore {
             targetUri,
             Buffer.from(JSON.stringify(jsonEnvelope, null, 2), 'utf-8')
         );
-        console.log(`Saved ${fileSlug} to:`, targetUri.fsPath);
+        logDebug(`Saved ${fileSlug} to:`, targetUri.fsPath);
 
         // Write markdown companion if output format includes markdown
         const outputFormat = this.getOutputFormat();
         if (outputFormat === 'markdown' || outputFormat === 'dual') {
             const md = this.generateGenericArtifactMarkdown(fileSlug, artifact, state);
-            await this.writeMdCompanion(targetUri, `${fileSlug}.md`, md);
+            const mdUri = await writeMarkdownCompanion(targetUri, `${fileSlug}.md`, md);
+            logDebug('Saved markdown companion:', mdUri.fsPath);
         }
 
         this.sourceFiles.set(storeKey, targetUri);
@@ -6666,7 +6653,7 @@ export class ArtifactStore {
                 .text(state.projectName, { align: 'left' });
             doc.moveDown(0.3);
             doc.fontSize(12).font('Helvetica').fillColor(COLORS.muted)
-                .text(`AgentCanvas Project Export  •  ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, { align: 'left' });
+                .text(`AgileAgentCanvas Project Export  •  ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, { align: 'left' });
             doc.moveDown(0.2);
             drawRule();
             doc.moveDown(0.3);

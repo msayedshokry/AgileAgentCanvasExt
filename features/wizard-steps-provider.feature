@@ -67,7 +67,7 @@ Feature: WizardStepsProvider
 
   Scenario: Includes goToStep command for Vision step
     When I get wizard step children with no selection
-    Then the wizard step "Vision" should have command "agentcanvas.goToStep"
+    Then the wizard step "Vision" should have command "agileagentcanvas.goToStep"
     And the wizard step "Vision" command arguments should contain "vision"
 
   Scenario: Returns empty array for child elements
@@ -103,7 +103,7 @@ Feature: WizardStepsProvider
     Given an epic "Test Epic" is selected in wizard steps
     When I get wizard step children with no selection
     Then a wizard step "Refine with AI" should exist
-    And the wizard step "Refine with AI" should have command "agentcanvas.openChatPanel"
+    And the wizard step "Refine with AI" should have command "agileagentcanvas.openChatPanel"
 
   Scenario: Shows blocked steps when epic dependencies not met
     Given an incomplete epic is selected in wizard steps
@@ -203,12 +203,12 @@ Feature: WizardStepsProvider
   Scenario: Shows continue workflow action in session view
     Given an active workflow session exists for "Epic Creation" on "EPIC-1"
     When I get wizard step children with no selection
-    Then the wizard step "Continue Workflow" should have command "agentcanvas.continueWorkflow"
+    Then the wizard step "Continue Workflow" should have command "agileagentcanvas.continueWorkflow"
 
   Scenario: Shows cancel workflow action in session view
     Given an active workflow session exists for "Epic Creation" on "EPIC-1"
     When I get wizard step children with no selection
-    Then the wizard step "Cancel Workflow" should have command "agentcanvas.cancelWorkflow"
+    Then the wizard step "Cancel Workflow" should have command "agileagentcanvas.cancelWorkflow"
 
   # Inactive session - should not show session view
   Scenario: Shows default view for completed session
@@ -277,7 +277,7 @@ Feature: WizardStepsProvider
   Scenario: Shows command for non-blocked steps
     Given an epic "Test Epic" is selected in wizard steps
     When I get wizard step children with no selection
-    Then the wizard step "Enhance Epic" should have command "agentcanvas.executeWorkflowStep"
+    Then the wizard step "Enhance Epic" should have command "agileagentcanvas.executeWorkflowStep"
 
   Scenario: No command for blocked steps
     Given an incomplete epic is selected in wizard steps

@@ -1,5 +1,8 @@
 import * as vscode from 'vscode';
 import { ArtifactStore } from '../state/artifact-store';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('artifact-transformer');
 
 /**
  * Transform store state to the artifact array format expected by the canvas webview.
@@ -15,13 +18,13 @@ export function buildArtifacts(store: ArtifactStore): any[] {
         'product-brief': 280,
         vision: 280,
         prd: 280,
-        risk: 260,
-        requirement: 260,
-        nfr: 260,
-        'additional-req': 260,
+        risk: 240,
+        requirement: 240,
+        nfr: 240,
+        'additional-req': 240,
         architecture: 280,
-        'architecture-decision': 260,
-        'system-component': 260,
+        'architecture-decision': 240,
+        'system-component': 240,
         epic: 260,
         story: 250,
         task: 240,
@@ -34,23 +37,23 @@ export function buildArtifacts(store: ArtifactStore): any[] {
     // Base heights: covers header-top row + status row + title + card padding
     // (header-top ~28px, status ~20px, title ~22px, padding 24px = ~94px minimum)
     const BASE_HEIGHTS: Record<string, number> = {
-        'product-brief': 120,
-        vision: 110,
-        prd: 120,
-        risk: 115,
-        requirement: 130,
-        nfr: 120,
-        'additional-req': 110,
-        architecture: 120,
-        'architecture-decision': 120,
-        'system-component': 120,
-        epic: 110,
-        story: 100,
-        task: 90,
-        'use-case': 105,
-        'test-strategy': 110,
-        'test-case': 100,
-        'test-coverage': 140
+        'product-brief': 90,
+        vision: 82,
+        prd: 90,
+        risk: 82,
+        requirement: 90,
+        nfr: 85,
+        'additional-req': 82,
+        architecture: 90,
+        'architecture-decision': 85,
+        'system-component': 85,
+        epic: 82,
+        story: 78,
+        task: 72,
+        'use-case': 78,
+        'test-strategy': 82,
+        'test-case': 78,
+        'test-coverage': 100
     };
 
     // Approximate characters per line based on card width and font size
@@ -80,26 +83,42 @@ export function buildArtifacts(store: ArtifactStore): any[] {
     // Spacing between cards
     const CARD_SPACING = 20;
 
+    // Number of columns for Planning and Solutioning grid layout
+    const GRID_MAX_COLS = 4;
+    // Grid child card width (used for Planning/Solutioning child cards)
+    const GRID_CARD_WIDTH = 240;
+
     // Column X positions — all implementation children share the same start X,
     // laid out in a horizontal wrapping grid (stories, use-cases, then tests below).
+    // Planning and Solutioning lanes use a 4-per-row grid; their child cards are
+    // offset from the lane start by column index.
+    const PLANNING_START_X = 390;
+    const PLANNING_LANE_WIDTH = GRID_MAX_COLS * GRID_CARD_WIDTH + (GRID_MAX_COLS - 1) * CARD_SPACING; // 1020
+    const SOLUTIONING_START_X = PLANNING_START_X + PLANNING_LANE_WIDTH + 40; // 1450
+    const SOLUTIONING_LANE_WIDTH = PLANNING_LANE_WIDTH; // same grid width
+    const IMPLEMENTATION_START_X = SOLUTIONING_START_X + SOLUTIONING_LANE_WIDTH + 40; // 2510
+    // Horizontal inset: cards inside the implementation lane are offset inward
+    // so they sit within epic row band borders with visible left/right margins.
+    const IMPL_CARD_INSET = 20;
+
     const COLUMNS: Record<string, number> = {
         'product-brief': 50,
         vision: 50,
-        prd: 390,
-        risk: 390,
-        requirement: 390,
-        nfr: 390,
-        'additional-req': 390,
-        architecture: 730,
-        'architecture-decision': 730,
-        'system-component': 730,
-        epic: 1070,
-        story: 1390,
-        task: 1390,
-        'use-case': 1390,
-        'test-strategy': 1390,
-        'test-case': 1390,
-        'test-coverage': 1390
+        prd: PLANNING_START_X,
+        risk: PLANNING_START_X,
+        requirement: PLANNING_START_X,
+        nfr: PLANNING_START_X,
+        'additional-req': PLANNING_START_X,
+        architecture: SOLUTIONING_START_X,
+        'architecture-decision': SOLUTIONING_START_X,
+        'system-component': SOLUTIONING_START_X,
+        epic: IMPLEMENTATION_START_X + IMPL_CARD_INSET,
+        story: IMPLEMENTATION_START_X + IMPL_CARD_INSET + 320,
+        task: IMPLEMENTATION_START_X + IMPL_CARD_INSET + 320,
+        'use-case': IMPLEMENTATION_START_X + IMPL_CARD_INSET + 320,
+        'test-strategy': IMPLEMENTATION_START_X + IMPL_CARD_INSET + 320,
+        'test-case': IMPLEMENTATION_START_X + IMPL_CARD_INSET + 320,
+        'test-coverage': IMPLEMENTATION_START_X + IMPL_CARD_INSET + 320
     };
 
     /**
@@ -119,25 +138,62 @@ export function buildArtifacts(store: ArtifactStore): any[] {
         return baseHeight + extraHeight;
     }
 
+    /**
+     * Helper to place cards in a wrapping grid (4 per row).
+     * Tracks column index and row-max-height so the next row starts below
+     * the tallest card in the current row.
+     */
+    class GridPlacer {
+        private col = 0;
+        private rowTopY: number;
+        private rowMaxH = 0;
+        constructor(private startX: number, private startY: number, private maxCols: number, private cardWidth: number, private spacing: number) {
+            this.rowTopY = startY;
+        }
+        /** Get position for the next card and advance the grid cursor. */
+        place(height: number): { x: number; y: number } {
+            if (this.col >= this.maxCols) {
+                // wrap to next row
+                this.rowTopY += this.rowMaxH + this.spacing;
+                this.rowMaxH = 0;
+                this.col = 0;
+            }
+            const x = this.startX + this.col * (this.cardWidth + this.spacing);
+            const y = this.rowTopY;
+            this.rowMaxH = Math.max(this.rowMaxH, height);
+            this.col++;
+            return { x, y };
+        }
+        /** Return the Y coordinate just below all placed cards (for the next section). */
+        get bottomY(): number {
+            if (this.col === 0 && this.rowMaxH === 0) return this.rowTopY;
+            return this.rowTopY + this.rowMaxH + this.spacing;
+        }
+    }
+
     // Track Y offsets for each column
+    // Top margin: Implementation lane cards sit inside epic row bands with
+    // ROW_PADDING (20px), so they already have good visual spacing below the
+    // lane header.  Other lanes need an explicit top margin to match.
+    const LANE_CARD_TOP = 100;  // Discovery, Planning, Solutioning top margin
     const yOffsets: Record<string, number> = {
-        'product-brief': 70,
-        vision: 70,
-        prd: 70,
-        risk: 70,
-        requirement: 70,
-        nfr: 70,
-        'additional-req': 70,
-        architecture: 70,
-        'architecture-decision': 70,
-        'system-component': 70,
-        epic: 70,
-        story: 70,
-        task: 70,
-        'use-case': 70,
-        'test-strategy': 70,
-        'test-case': 70,
-        'test-coverage': 70
+        'product-brief': LANE_CARD_TOP,
+        vision: LANE_CARD_TOP,
+        prd: LANE_CARD_TOP,
+        risk: LANE_CARD_TOP,
+        requirement: LANE_CARD_TOP,
+        nfr: LANE_CARD_TOP,
+        'additional-req': LANE_CARD_TOP,
+        architecture: LANE_CARD_TOP,
+        'architecture-decision': LANE_CARD_TOP,
+        'system-component': LANE_CARD_TOP,
+        epic: LANE_CARD_TOP,
+        story: LANE_CARD_TOP,
+        task: LANE_CARD_TOP,
+        'use-case': LANE_CARD_TOP,
+        'test-strategy': LANE_CARD_TOP,
+        'test-case': LANE_CARD_TOP,
+        'test-coverage': LANE_CARD_TOP
     };
 
     // =========================================================================
@@ -188,9 +244,17 @@ export function buildArtifacts(store: ArtifactStore): any[] {
         const description = state.vision.problemStatement || '';
         const height = calculateCardHeight('vision', title, description, 20);
 
-        const requirementCount = (state.requirements?.functional?.length || 0) +
-            (state.requirements?.nonFunctional?.length || 0) +
-            (state.requirements?.additional?.length || 0);
+        // Vision only owns requirements when there is no PRD (PRD takes ownership otherwise)
+        const visionOwnsReqs = !state.prd;
+        const funcReqCount = visionOwnsReqs ? (state.requirements?.functional?.length || 0) : 0;
+        const nfrCount = visionOwnsReqs ? (state.requirements?.nonFunctional?.length || 0) : 0;
+        const addReqCount = visionOwnsReqs ? (state.requirements?.additional?.length || 0) : 0;
+        const requirementCount = funcReqCount + nfrCount + addReqCount;
+
+        const visionChildBreakdown: { label: string; count: number; types: string[] }[] = [];
+        if (funcReqCount > 0) visionChildBreakdown.push({ label: 'Reqs', count: funcReqCount, types: ['requirement'] });
+        if (nfrCount > 0) visionChildBreakdown.push({ label: 'NFRs', count: nfrCount, types: ['nfr'] });
+        if (addReqCount > 0) visionChildBreakdown.push({ label: 'Add. Reqs', count: addReqCount, types: ['additional-req'] });
 
         artifacts.push({
             id: 'vision-1',
@@ -203,13 +267,14 @@ export function buildArtifacts(store: ArtifactStore): any[] {
             dependencies: [],
             parentId: state.productBrief ? (state.productBrief.id || 'product-brief-1') : undefined,
             childCount: requirementCount,
+            childBreakdown: visionChildBreakdown,
             metadata: state.vision
         });
         yOffsets.vision += height + CARD_SPACING;
     }
 
     // =========================================================================
-    // COLUMN 2: PLANNING PHASE (PRD + Requirements)
+    // COLUMN 2: PLANNING PHASE (PRD + Requirements) — 4-per-row grid
     // =========================================================================
 
     if (state.prd) {
@@ -218,10 +283,22 @@ export function buildArtifacts(store: ArtifactStore): any[] {
         const description = prd.productOverview?.purpose || prd.productOverview?.problemStatement || '';
         const height = calculateCardHeight('prd', title, description, 40);
 
-        const linkedReqCount = (prd.functionalRequirementIds?.length || 0) +
-                               (prd.nonFunctionalRequirementIds?.length || 0);
-        const prdChildCount = linkedReqCount +
-            (prd.risks?.length || 0);
+        // Count children by category for the breakdown badges
+        const prdRiskCount = prd.risks?.length || 0;
+        const bmmRiskCount = state.risks?.risks?.length || 0;
+        // BMM risks that overlap PRD risks will be deduped later, but for the
+        // badge we approximate — exact dedup happens at render time.
+        const funcReqCount = state.requirements?.functional?.length || 0;
+        const nfrCount = state.requirements?.nonFunctional?.length || 0;
+        const addReqCount = state.requirements?.additional?.length || 0;
+        const totalRisks = prdRiskCount + bmmRiskCount; // may overcount slightly
+        const prdChildCount = totalRisks + funcReqCount + nfrCount + addReqCount;
+
+        const prdChildBreakdown: { label: string; count: number; types: string[] }[] = [];
+        if (totalRisks > 0) prdChildBreakdown.push({ label: 'Risks', count: totalRisks, types: ['risk'] });
+        if (funcReqCount > 0) prdChildBreakdown.push({ label: 'Reqs', count: funcReqCount, types: ['requirement'] });
+        if (nfrCount > 0) prdChildBreakdown.push({ label: 'NFRs', count: nfrCount, types: ['nfr'] });
+        if (addReqCount > 0) prdChildBreakdown.push({ label: 'Add. Reqs', count: addReqCount, types: ['additional-req'] });
 
         artifacts.push({
             id: prd.id || 'prd-1',
@@ -234,6 +311,7 @@ export function buildArtifacts(store: ArtifactStore): any[] {
             dependencies: [],
             parentId: state.vision ? 'vision-1' : undefined,
             childCount: prdChildCount,
+            childBreakdown: prdChildBreakdown,
             metadata: {
                 productOverview: prd.productOverview,
                 projectType: prd.projectType,
@@ -253,63 +331,20 @@ export function buildArtifacts(store: ArtifactStore): any[] {
             }
         });
         yOffsets.prd += height + CARD_SPACING;
-
-        // --- PRD: Risks as child cards ---
-        const prdId = prd.id || 'prd-1';
-        if (prd.risks?.length) {
-            prd.risks.forEach((risk: any, idx: number) => {
-                const riskId = risk.id || `risk-${idx}`;
-                const riskTitle = risk.title || risk.risk || `Risk ${idx + 1}`;
-                // Card description should be the risk statement, not mitigation
-                const riskDesc = risk.description || risk.risk || '';
-                const riskHeight = calculateCardHeight('risk', riskTitle, riskDesc);
-
-                artifacts.push({
-                    id: riskId,
-                    type: 'risk',
-                    title: riskTitle,
-                    description: riskDesc,
-                    status: risk.status || 'approved',
-                    position: { x: COLUMNS.risk, y: yOffsets.prd },
-                    size: { width: CARD_WIDTHS.risk, height: riskHeight },
-                    dependencies: [],
-                    parentId: prdId,
-                    metadata: {
-                        description: risk.description || risk.risk,
-                        category: risk.category,
-                        // Support both 'probability' (PRD) and 'likelihood' (BMM risks) field names
-                        probability: risk.probability || risk.likelihood,
-                        impact: risk.impact,
-                        riskScore: risk.riskScore,
-                        mitigation: risk.mitigation,
-                        contingency: risk.contingency || risk.contingencyPlan,
-                        owner: risk.owner,
-                        triggers: risk.triggers,
-                        riskStatus: risk.status
-                    }
-                });
-                yOffsets.prd += riskHeight + CARD_SPACING;
-            });
-        }
-
-        yOffsets.requirement = yOffsets.prd;
     }
 
-    // --- BMM Standalone Risks as risk cards ---
-    // The standalone `risks` artifact (loaded from a risks.json file) contains
-    // an array at `state.risks.risks`. These are project-level risks managed
-    // outside the PRD. Surface them in the risk column, parented to the PRD
-    // card if available, otherwise free-standing.
-    // Skip any risks whose IDs were already emitted by the PRD section above.
-    if (state.risks?.risks?.length) {
-        const existingIds = new Set(artifacts.filter(a => a.type === 'risk').map(a => a.id));
-        const bmmParentId = state.prd?.id || 'prd-1';
-        state.risks.risks.forEach((risk: any, idx: number) => {
-            const riskId = risk.id || `bmm-risk-${idx}`;
-            if (existingIds.has(riskId)) return; // already from PRD
-            const riskTitle = risk.risk || risk.title || `Risk ${idx + 1}`;
-            const riskDesc = risk.description || risk.impactDescription || '';
+    // Grid placer for all Planning child cards (risks, requirements, NFRs, additional reqs)
+    const planningGrid = new GridPlacer(PLANNING_START_X, yOffsets.prd, GRID_MAX_COLS, GRID_CARD_WIDTH, CARD_SPACING);
+
+    // --- PRD: Risks as child cards ---
+    if (state.prd?.risks?.length) {
+        const prdId = state.prd.id || 'prd-1';
+        state.prd.risks.forEach((risk: any, idx: number) => {
+            const riskId = risk.id || `risk-${idx}`;
+            const riskTitle = risk.title || risk.risk || `Risk ${idx + 1}`;
+            const riskDesc = risk.description || risk.risk || '';
             const riskHeight = calculateCardHeight('risk', riskTitle, riskDesc);
+            const pos = planningGrid.place(riskHeight);
 
             artifacts.push({
                 id: riskId,
@@ -317,8 +352,46 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                 title: riskTitle,
                 description: riskDesc,
                 status: risk.status || 'approved',
-                position: { x: COLUMNS.risk, y: yOffsets.prd },
-                size: { width: CARD_WIDTHS.risk, height: riskHeight },
+                position: pos,
+                size: { width: GRID_CARD_WIDTH, height: riskHeight },
+                dependencies: [],
+                parentId: prdId,
+                metadata: {
+                    description: risk.description || risk.risk,
+                    category: risk.category,
+                    probability: risk.probability || risk.likelihood,
+                    impact: risk.impact,
+                    riskScore: risk.riskScore,
+                    mitigation: risk.mitigation,
+                    contingency: risk.contingency || risk.contingencyPlan,
+                    owner: risk.owner,
+                    triggers: risk.triggers,
+                    riskStatus: risk.status
+                }
+            });
+        });
+    }
+
+    // --- BMM Standalone Risks as risk cards ---
+    if (state.risks?.risks?.length) {
+        const existingIds = new Set(artifacts.filter(a => a.type === 'risk').map(a => a.id));
+        const bmmParentId = state.prd?.id || 'prd-1';
+        state.risks.risks.forEach((risk: any, idx: number) => {
+            const riskId = risk.id || `bmm-risk-${idx}`;
+            if (existingIds.has(riskId)) return;
+            const riskTitle = risk.risk || risk.title || `Risk ${idx + 1}`;
+            const riskDesc = risk.description || risk.impactDescription || '';
+            const riskHeight = calculateCardHeight('risk', riskTitle, riskDesc);
+            const pos = planningGrid.place(riskHeight);
+
+            artifacts.push({
+                id: riskId,
+                type: 'risk',
+                title: riskTitle,
+                description: riskDesc,
+                status: risk.status || 'approved',
+                position: pos,
+                size: { width: GRID_CARD_WIDTH, height: riskHeight },
                 dependencies: [],
                 parentId: bmmParentId,
                 metadata: {
@@ -336,10 +409,11 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                     source: 'bmm-risks'
                 }
             });
-            yOffsets.prd += riskHeight + CARD_SPACING;
         });
-        yOffsets.requirement = yOffsets.prd;
     }
+
+    // Parent for planning grid children: PRD when it exists, otherwise Vision
+    const planningParentId = state.prd ? (state.prd.id || 'prd-1') : (state.vision ? 'vision-1' : undefined);
 
     if (state.requirements?.functional) {
         state.requirements.functional.forEach((req: any, index: number) => {
@@ -347,6 +421,7 @@ export function buildArtifacts(store: ArtifactStore): any[] {
             const title = req.title || `Requirement ${index + 1}`;
             const description = req.description || '';
             const height = calculateCardHeight('requirement', title, description);
+            const pos = planningGrid.place(height);
 
             const relatedEpicsCount = state.epics?.filter((epic: any) =>
                 epic.functionalRequirements?.includes(reqId)
@@ -358,10 +433,10 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                 title,
                 description,
                 status: 'approved',
-                position: { x: COLUMNS.requirement, y: yOffsets.requirement },
-                size: { width: CARD_WIDTHS.requirement, height },
+                position: pos,
+                size: { width: GRID_CARD_WIDTH, height },
                 dependencies: [],
-                parentId: 'vision-1',
+                parentId: planningParentId,
                 childCount: relatedEpicsCount,
                 metadata: {
                     capabilityArea: req.capabilityArea,
@@ -371,7 +446,6 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                     requirementStatus: req.status
                 }
             });
-            yOffsets.requirement += height + CARD_SPACING;
         });
     }
 
@@ -382,6 +456,7 @@ export function buildArtifacts(store: ArtifactStore): any[] {
             const title = req.title || `NFR ${index + 1}`;
             const description = req.description || '';
             const height = calculateCardHeight('nfr', title, description);
+            const pos = planningGrid.place(height);
 
             artifacts.push({
                 id: nfrId,
@@ -389,16 +464,15 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                 title,
                 description,
                 status: 'approved',
-                position: { x: COLUMNS.nfr, y: yOffsets.requirement },
-                size: { width: CARD_WIDTHS.nfr, height },
+                position: pos,
+                size: { width: GRID_CARD_WIDTH, height },
                 dependencies: [],
-                parentId: 'vision-1',
+                parentId: planningParentId,
                 metadata: {
                     category: req.category,
                     metrics: req.metrics
                 }
             });
-            yOffsets.requirement += height + CARD_SPACING;
         });
     }
 
@@ -409,6 +483,7 @@ export function buildArtifacts(store: ArtifactStore): any[] {
             const title = req.title || `Additional Req ${index + 1}`;
             const description = req.description || '';
             const height = calculateCardHeight('additional-req', title, description);
+            const pos = planningGrid.place(height);
 
             artifacts.push({
                 id: addReqId,
@@ -416,20 +491,23 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                 title,
                 description,
                 status: 'approved',
-                position: { x: COLUMNS['additional-req'], y: yOffsets.requirement },
-                size: { width: CARD_WIDTHS['additional-req'], height },
+                position: pos,
+                size: { width: GRID_CARD_WIDTH, height },
                 dependencies: [],
-                parentId: 'vision-1',
+                parentId: planningParentId,
                 metadata: {
                     category: req.category
                 }
             });
-            yOffsets.requirement += height + CARD_SPACING;
         });
     }
 
+    // Update yOffsets so Solutioning starts below Planning grid
+    yOffsets.prd = planningGrid.bottomY;
+    yOffsets.requirement = planningGrid.bottomY;
+
     // =========================================================================
-    // COLUMN 3: SOLUTIONING PHASE (Architecture)
+    // COLUMN 3: SOLUTIONING PHASE (Architecture) — 4-per-row grid
     // =========================================================================
 
     if (state.architecture) {
@@ -438,7 +516,13 @@ export function buildArtifacts(store: ArtifactStore): any[] {
         const description = arch.overview?.summary || arch.overview?.architectureStyle || '';
         const height = calculateCardHeight('architecture', title, description, 50);
 
-        const childCount = (arch.decisions?.length || 0) + (arch.systemComponents?.length || 0);
+        const decisionCount = arch.decisions?.length || 0;
+        const componentCount = arch.systemComponents?.length || 0;
+        const childCount = decisionCount + componentCount;
+
+        const archChildBreakdown: { label: string; count: number; types: string[] }[] = [];
+        if (decisionCount > 0) archChildBreakdown.push({ label: 'Decisions', count: decisionCount, types: ['architecture-decision'] });
+        if (componentCount > 0) archChildBreakdown.push({ label: 'Components', count: componentCount, types: ['system-component'] });
 
         artifacts.push({
             id: arch.id || 'architecture-1',
@@ -451,6 +535,7 @@ export function buildArtifacts(store: ArtifactStore): any[] {
             dependencies: [],
             parentId: state.prd ? (state.prd.id || 'prd-1') : undefined,
             childCount,
+            childBreakdown: archChildBreakdown,
             metadata: {
                 overview: arch.overview,
                 context: arch.context,
@@ -473,6 +558,9 @@ export function buildArtifacts(store: ArtifactStore): any[] {
         });
         yOffsets.architecture += height + CARD_SPACING;
 
+        // Grid placer for all Solutioning child cards (decisions + components)
+        const solutioningGrid = new GridPlacer(SOLUTIONING_START_X, yOffsets.architecture, GRID_MAX_COLS, GRID_CARD_WIDTH, CARD_SPACING);
+
         // --- Architecture Decisions as child cards ---
         const archId = arch.id || 'architecture-1';
         if (arch.decisions?.length) {
@@ -481,6 +569,7 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                 const decTitle = decision.title || `Decision ${index + 1}`;
                 const decDesc = decision.context || decision.decision || '';
                 const decHeight = calculateCardHeight('architecture-decision', decTitle, decDesc);
+                const pos = solutioningGrid.place(decHeight);
 
                 artifacts.push({
                     id: decId,
@@ -488,8 +577,8 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                     title: decTitle,
                     description: decDesc,
                     status: decision.status || 'proposed',
-                    position: { x: COLUMNS['architecture-decision'], y: yOffsets.architecture },
-                    size: { width: CARD_WIDTHS['architecture-decision'], height: decHeight },
+                    position: pos,
+                    size: { width: GRID_CARD_WIDTH, height: decHeight },
                     dependencies: [],
                     parentId: archId,
                     metadata: {
@@ -503,7 +592,6 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                         deciders: decision.deciders
                     }
                 });
-                yOffsets.architecture += decHeight + CARD_SPACING;
             });
         }
 
@@ -514,6 +602,7 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                 const compTitle = comp.name || `Component ${index + 1}`;
                 const compDesc = comp.description || '';
                 const compHeight = calculateCardHeight('system-component', compTitle, compDesc);
+                const pos = solutioningGrid.place(compHeight);
 
                 artifacts.push({
                     id: compId,
@@ -521,8 +610,8 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                     title: compTitle,
                     description: compDesc,
                     status: 'approved',
-                    position: { x: COLUMNS['system-component'], y: yOffsets.architecture },
-                    size: { width: CARD_WIDTHS['system-component'], height: compHeight },
+                    position: pos,
+                    size: { width: GRID_CARD_WIDTH, height: compHeight },
                     dependencies: [],
                     parentId: archId,
                     metadata: {
@@ -533,9 +622,10 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                         technology: comp.technology
                     }
                 });
-                yOffsets.architecture += compHeight + CARD_SPACING;
             });
         }
+
+        yOffsets.architecture = solutioningGrid.bottomY;
     }
 
     // =========================================================================
@@ -665,13 +755,9 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                 ? [calculateCardHeight('test-coverage', `Test Coverage (${epicOnlyTCs.length})`, `pass/fail/draft summary`, TC_COVERAGE_BAR_EXTRA)]
                 : [];
 
-            // --- Pre-compute epic risk card heights ---
-            const epicRisks: any[] = epic.risks || [];
-            const epicRiskHeights: number[] = epicRisks.map((r: any) => {
-                const rTitle = r.title || r.risk || r.description || `Risk ${r.id || ''}`;
-                const rDesc = r.description || r.risk || '';
-                return calculateCardHeight('risk', rTitle, rDesc);
-            });
+            // Epic-level risks are kept in the epic's metadata for the detail
+            // panel but NOT rendered as separate cards.  Risks are shown only in
+            // the Planning lane under PRD / BMM.
 
             // --- Pre-compute epic test-strategy height (per-epic) ---
             const epicTestStrategy = epic.testStrategy;
@@ -746,21 +832,18 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                 });
             }
 
-            // --- Grid heights for stories-column (using stack heights), use-cases, epic-only TCs, and risks ---
+            // --- Grid heights for stories-column (using stack heights), use-cases, and epic-only TCs ---
             const storyCount = storyHeights.length;
             const ucCount = ucHeights.length;
             const epicOnlyTCCount = epicOnlyTCHeights.length;
-            const epicRiskCount = epicRiskHeights.length;
             // Stories: single row (pass storyCount as maxPerRow so they never wrap)
             const { totalHeight: storiesGridHeight } = calcGridHeight(storyCount, storyStackHeights, Math.max(storyCount, 1));
             // Use-cases: single row
             const { totalHeight: ucGridHeight } = calcGridHeight(ucCount, ucHeights, Math.max(ucCount, 1));
             // Epic-only TCs: single row
             const { totalHeight: epicOnlyTCGridHeight } = calcGridHeight(epicOnlyTCCount, epicOnlyTCHeights, Math.max(epicOnlyTCCount, 1));
-            // Epic risks: single row
-            const { totalHeight: epicRiskGridHeight } = calcGridHeight(epicRiskCount, epicRiskHeights, Math.max(epicRiskCount, 1));
 
-            // --- Sub-group X positions (vertical layout: stories row, then use-cases row, then epic-only TCs row) ---
+            // --- Sub-group X positions (vertical layout: use-cases row, then test-strategy, then epic-only TCs, then stories) ---
             // All sub-groups start at the same X. Each gets its own vertical row.
             // When stories have Tasks or TC-coverage cards beneath them, they are indented by TC_UNDER_STORY_INDENT
             // and may extend beyond the story card width. Account for this in the column width.
@@ -771,12 +854,10 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                 : CARD_WIDTHS.story;
             const storiesSubColWidth = calcGridWidth(storyCount, effectiveStoryCardWidth, Math.max(storyCount, 1));
             const ucSubColWidth = calcGridWidth(ucCount, CARD_WIDTHS['use-case'], Math.max(ucCount, 1));
-            const epicRiskSubColWidth = calcGridWidth(epicRiskCount, CARD_WIDTHS.risk, Math.max(epicRiskCount, 1));
 
             const storiesSubColX = CHILDREN_START_X;
             const ucSubColX = CHILDREN_START_X;           // same X — own row below stories
             const epicOnlyTCSubColX = CHILDREN_START_X;   // same X — own row below use-cases
-            const epicRiskSubColX = CHILDREN_START_X;     // same X — own row below epic-only TCs
 
             // Label height added above each non-empty sub-group
             const labelOffset = SUBGROUP_LABEL_HEIGHT;
@@ -786,25 +867,22 @@ export function buildArtifacts(store: ArtifactStore): any[] {
             const ucRowHeight = ucCount > 0 ? labelOffset + ucGridHeight : 0;
             const epicOnlyTCRowHeight = epicOnlyTCCount > 0 ? labelOffset + epicOnlyTCGridHeight : 0;
             const tsRowHeight = epicTestStrategy ? labelOffset + tsHeight : 0;
-            const epicRiskRowHeight = epicRiskCount > 0 ? labelOffset + epicRiskGridHeight : 0;
 
             // Row height = sum of all sub-group rows (vertically stacked).
-            // Order: stories -> use-cases -> test-strategy -> epic-only TCs -> risks
-            const prevHeightBeforeUC = storiesRowHeight;
-            const prevHeightBeforeTS = prevHeightBeforeUC + (prevHeightBeforeUC > 0 && ucRowHeight > 0 ? SUBGROUP_GAP : 0) + ucRowHeight;
+            // Order: use-cases -> test-strategy -> epic-only TCs -> stories (last)
+            const prevHeightBeforeTS = ucRowHeight;
             const prevHeightBeforeTC = prevHeightBeforeTS + (prevHeightBeforeTS > 0 && tsRowHeight > 0 ? SUBGROUP_GAP : 0) + tsRowHeight;
-            const prevHeightBeforeRisks = prevHeightBeforeTC + (prevHeightBeforeTC > 0 && epicOnlyTCRowHeight > 0 ? SUBGROUP_GAP : 0) + epicOnlyTCRowHeight;
-            const totalSubgroupHeight = prevHeightBeforeRisks + (prevHeightBeforeRisks > 0 && epicRiskRowHeight > 0 ? SUBGROUP_GAP : 0) + epicRiskRowHeight;
+            const prevHeightBeforeStories = prevHeightBeforeTC + (prevHeightBeforeTC > 0 && epicOnlyTCRowHeight > 0 ? SUBGROUP_GAP : 0) + epicOnlyTCRowHeight;
+            const totalSubgroupHeight = prevHeightBeforeStories + (prevHeightBeforeStories > 0 && storiesRowHeight > 0 ? SUBGROUP_GAP : 0) + storiesRowHeight;
             const rowContentHeight = Math.max(epicHeight, totalSubgroupHeight);
             const rowHeight = rowContentHeight + ROW_PADDING * 2;
             const rowTop = currentRowY + ROW_PADDING;
 
             // Per-row Y positions within the epic row band
-            const storiesRowY = rowTop;
-            const ucRowY = rowTop + prevHeightBeforeUC + (prevHeightBeforeUC > 0 && ucRowHeight > 0 ? SUBGROUP_GAP : 0);
+            const ucRowY = rowTop;
             const tsRowY = rowTop + prevHeightBeforeTS + (prevHeightBeforeTS > 0 && tsRowHeight > 0 ? SUBGROUP_GAP : 0);
             const epicOnlyTCRowY = rowTop + prevHeightBeforeTC + (prevHeightBeforeTC > 0 && epicOnlyTCRowHeight > 0 ? SUBGROUP_GAP : 0);
-            const epicRiskRowY = rowTop + prevHeightBeforeRisks + (prevHeightBeforeRisks > 0 && epicRiskRowHeight > 0 ? SUBGROUP_GAP : 0);
+            const storiesRowY = rowTop + prevHeightBeforeStories + (prevHeightBeforeStories > 0 && storiesRowHeight > 0 ? SUBGROUP_GAP : 0);
 
             const parentReqId = epic.functionalRequirements?.[0] || null;
 
@@ -849,6 +927,15 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                 }
             }
 
+            const totalTaskCount = storyTasksPerStory.reduce((sum, arr) => sum + arr.length, 0);
+
+            const epicChildBreakdown: { label: string; count: number; types: string[] }[] = [];
+            if (ucCount > 0) epicChildBreakdown.push({ label: 'UCs', count: ucCount, types: ['use-case'] });
+            if (epicTestStrategy) epicChildBreakdown.push({ label: 'Test Strategy', count: 1, types: ['test-strategy'] });
+            if (epicOnlyTCCount > 0) epicChildBreakdown.push({ label: 'Tests', count: epicOnlyTCs.length, types: ['test-coverage', 'test-case'] });
+            if (storyCount > 0) epicChildBreakdown.push({ label: 'Stories', count: storyCount, types: ['story'] });
+            if (totalTaskCount > 0) epicChildBreakdown.push({ label: 'Tasks', count: totalTaskCount, types: ['task'] });
+
             artifacts.push({
                 id: epicId,
                 type: 'epic',
@@ -859,8 +946,8 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                 size: { width: CARD_WIDTHS.epic, height: epicHeight },
                 dependencies: epicDeps,
                 parentId: parentReqId,
-                childCount: storyCount + ucCount + epicOnlyTCCount + epicRiskCount + (epicTestStrategy ? 1 : 0) +
-                    (storyTasksPerStory.reduce((sum, arr) => sum + arr.length, 0)),
+                childCount: storyCount + ucCount + epicOnlyTCCount + (epicTestStrategy ? 1 : 0) + totalTaskCount,
+                childBreakdown: epicChildBreakdown,
                 rowY: currentRowY,
                 rowHeight,
                 metadata: {
@@ -892,8 +979,7 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                         ...(storyCount > 0 ? { stories: { x: storiesSubColX, y: storiesRowY + labelOffset, width: storiesSubColWidth } } : {}),
                         ...(ucCount > 0 ? { useCases: { x: ucSubColX, y: ucRowY + labelOffset, width: ucSubColWidth } } : {}),
                         ...(epicTestStrategy ? { testStrategy: { x: CHILDREN_START_X, y: tsRowY + labelOffset, width: CARD_WIDTHS['test-strategy'] } } : {}),
-                        ...(epicOnlyTCCount > 0 ? { testCases: { x: epicOnlyTCSubColX, y: epicOnlyTCRowY + labelOffset, width: CARD_WIDTHS['test-coverage'] } } : {}),
-                        ...(epicRiskCount > 0 ? { risks: { x: epicRiskSubColX, y: epicRiskRowY + labelOffset, width: epicRiskSubColWidth } } : {})
+                        ...(epicOnlyTCCount > 0 ? { testCases: { x: epicOnlyTCSubColX, y: epicOnlyTCRowY + labelOffset, width: CARD_WIDTHS['test-coverage'] } } : {})
                     }
                 }
             });
@@ -1167,44 +1253,6 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                 });
             }
 
-            // --- Place epic-level risk cards in their own row below epic-only TCs ---
-            if (epicRisks.length > 0) {
-                const riskStartY = epicRiskRowY + labelOffset;
-                epicRisks.forEach((risk: any, riskIdx: number) => {
-                    const col = riskIdx;
-                    const riskHeight = epicRiskHeights[riskIdx];
-                    const riskX = epicRiskSubColX + col * (CARD_WIDTHS.risk + CARD_SPACING);
-                    const riskTitle = risk.title || risk.risk || risk.description || `Risk ${risk.id || riskIdx + 1}`;
-                    const riskDesc = risk.description || risk.risk || '';
-
-                    artifacts.push({
-                        id: risk.id || `RISK-${epicId}-${riskIdx}`,
-                        type: 'risk',
-                        title: riskTitle,
-                        description: riskDesc,
-                        status: risk.status || 'identified',
-                        position: { x: riskX, y: riskStartY },
-                        size: { width: CARD_WIDTHS.risk, height: riskHeight },
-                        dependencies: [],
-                        parentId: epicId,
-                        metadata: {
-                            category: risk.category,
-                            probability: risk.probability,
-                            impact: risk.impact,
-                            riskScore: risk.riskScore || risk.score,
-                            mitigation: risk.mitigation,
-                            contingencyPlan: risk.contingencyPlan,
-                            owner: risk.owner,
-                            testStrategy: risk.testStrategy,
-                            relatedRequirements: risk.relatedRequirements,
-                            triggers: risk.triggers,
-                            residualRisk: risk.residualRisk,
-                            epicId: epicId
-                        }
-                    });
-                });
-            }
-
             // Advance to the next epic row
             currentRowY += rowHeight + CARD_SPACING;
         });
@@ -1347,7 +1395,7 @@ export function sendArtifactsToPanel(panel: vscode.WebviewPanel, store: Artifact
             type: 'updateArtifacts',
             artifacts
         });
-        console.log(`Sent ${artifacts.length} artifacts to canvas (${state.epics?.length || 0} epics)`);
+        logger.debug(`Sent ${artifacts.length} artifacts to canvas (${state.epics?.length || 0} epics)`);
     } catch {
         // Panel was disposed — ignore
     }

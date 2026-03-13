@@ -18,5 +18,10 @@
   "reports-dir": "coverage",
   "temp-directory": "coverage/.tmp",
   "clean": true,
-  "skip-full": false
+  "skip-full": false,
+  "check-coverage": true,
+  "branches": 55,
+  "functions": 60,
+  "lines": 50,
+  "statements": 50
 }

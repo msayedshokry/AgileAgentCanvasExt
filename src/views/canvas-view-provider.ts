@@ -6,13 +6,14 @@ import { acOutput } from '../extension';
 import { loadElicitationMethods, loadBmmWorkflows } from '../commands/artifact-commands';
 import { loadSampleProject } from '../commands/project-commands';
 import { handleCommonWebviewMessage } from './webview-message-handler';
+import { buildArtifacts } from '../canvas/artifact-transformer';
 
 /**
- * Webview provider for the AgentCanvas - Full panel view
+ * Webview provider for the AgileAgentCanvas - Full panel view
  * This loads the React app for the visual canvas
  */
-export class AgentCanvasViewProvider implements vscode.WebviewViewProvider {
-    public static readonly viewType = 'agentcanvas.canvasView';
+export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider {
+    public static readonly viewType = 'agileagentcanvas.canvasView';
     
     private _view?: vscode.WebviewView;
     private store: ArtifactStore;
@@ -94,7 +95,7 @@ export class AgentCanvasViewProvider implements vscode.WebviewViewProvider {
                     }
                     // Send current output format setting to webview
                     {
-                        const outputFormat = vscode.workspace.getConfiguration('agentcanvas').get<string>('outputFormat', 'dual');
+                        const outputFormat = vscode.workspace.getConfiguration('agileagentcanvas').get<string>('outputFormat', 'dual');
                         this._view?.webview.postMessage({ type: 'outputFormat', format: outputFormat });
                     }
                     // Send any load-time schema validation issues to webview
@@ -130,7 +131,7 @@ export class AgentCanvasViewProvider implements vscode.WebviewViewProvider {
                     await this.reloadFromDisk();
                     break;
                 case 'switchProject':
-                    vscode.commands.executeCommand('agentcanvas.switchProject');
+                    vscode.commands.executeCommand('agileagentcanvas.switchProject');
                     break;
                 case 'loadSampleProject':
                     await loadSampleProject(this.store, this.extensionUri);
@@ -275,8 +276,9 @@ export class AgentCanvasViewProvider implements vscode.WebviewViewProvider {
         const storySummary = state.epics?.reduce((sum: number, e: any) => sum + (e.stories?.length || 0), 0) || 0;
         acOutput.appendLine(`[CanvasProvider] Store state - epics: ${state.epics?.length || 0}, stories: ${storySummary}`);
         
-        // Transform state to artifact format for webview
-        const artifacts = this.stateToArtifacts(state);
+        // Transform state to artifact format for webview — delegate to the single
+        // authoritative layout engine in artifact-transformer.ts.
+        const artifacts = buildArtifacts(this.store);
         acOutput.appendLine(`[CanvasProvider] Transformed to ${artifacts.length} artifacts`);
         
         if (!this._view) {
@@ -293,506 +295,13 @@ export class AgentCanvasViewProvider implements vscode.WebviewViewProvider {
         });
     }
 
-    private stateToArtifacts(state: any): any[] {
-        const artifacts: any[] = [];
-
-        // Card width definitions
-        const CARD_WIDTHS = {
-            'vision': 280,
-            'requirement': 260,
-            'epic': 260,
-            'story': 250,
-            'use-case': 250,
-            'product-brief': 280,
-            'prd': 260,
-            'architecture': 260,
-            'test-case': 250,
-            'test-strategy': 260
-        };
-
-        // Base heights (header + padding)
-        const BASE_HEIGHTS = {
-            'vision': 80,
-            'requirement': 110,
-            'epic': 80,
-            'story': 70,
-            'use-case': 70,
-            'product-brief': 80,
-            'prd': 70,
-            'architecture': 70,
-            'test-case': 70,
-            'test-strategy': 80
-        };
-
-        // Approximate characters per line based on card width and font size
-        const CHARS_PER_LINE = {
-            'vision': 35,
-            'requirement': 32,
-            'epic': 32,
-            'story': 30,
-            'use-case': 30,
-            'product-brief': 35,
-            'prd': 32,
-            'architecture': 32,
-            'test-case': 30,
-            'test-strategy': 32
-        };
-
-        // Line height in pixels
-        const LINE_HEIGHT = 18;
-
-        // Spacing between cards
-        const CARD_SPACING = 20;
-
-        // Column X positions
-        const COLUMNS = {
-            'product-brief': 50,   // Discovery (leftmost)
-            'vision': 370,          // Discovery
-            'prd': 690,             // Planning
-            'requirement': 690,    // Planning (shared column with prd)
-            'architecture': 690,   // Planning
-            'epic': 1010,           // Solutioning
-            'story': 1330,          // Implementation
-            'use-case': 1330,       // Implementation (alongside stories)
-            'test-strategy': 1330, // Testing (below stories/use-cases, same lane)
-            'test-case': 1330      // Testing (horizontal grid same as stories)
-        };
-
-        type CardType = keyof typeof BASE_HEIGHTS;
-
-        // Height of the "Depends on: N" row (border-top + padding + text)
-        const DEP_ROW_HEIGHT = 28;
-
-        /**
-         * Calculate card height based on content.
-         * @param hasDependencies - set true when the card will render the "Depends on:" row
-         */
-        function calculateCardHeight(type: CardType, title: string, description: string, extras: number = 0, hasDependencies: boolean = false): number {
-            const baseHeight = BASE_HEIGHTS[type];
-            const charsPerLine = CHARS_PER_LINE[type];
-
-            const titleLines = Math.ceil(title.length / (charsPerLine * 0.8)) || 1;
-            const descLines = description ? Math.ceil(description.length / charsPerLine) : 0;
-            // Cap to 3 lines — matches CSS -webkit-line-clamp: 3 in .artifact-description p
-            const cappedDescLines = Math.min(descLines, 3);
-            const depHeight = hasDependencies ? DEP_ROW_HEIGHT : 0;
-            const contentHeight = (titleLines * 20) + (cappedDescLines * LINE_HEIGHT) + extras + depHeight;
-
-            return Math.max(baseHeight, contentHeight);
-        }
-
-        // Track Y offsets per column key
-        const yOffsets: Record<string, number> = {
-            'product-brief': 50,
-            'vision': 50,
-            'prd': 50,
-            'requirement': 50,
-            'architecture': 50,
-            'epic': 50,
-            'story': 50,
-            'use-case': 50,
-            'test-case': 50,
-            'test-strategy': 50
-        };
-
-        // ── Product Brief ────────────────────────────────────────────────────
-        if (state.productBrief) {
-            const pb = state.productBrief;
-            const title = pb.productName || pb.title || 'Product Brief';
-            const description = pb.problemStatement || pb.summary || '';
-            const height = calculateCardHeight('product-brief', title, description);
-            artifacts.push({
-                id: pb.id || 'product-brief-1',
-                type: 'product-brief',
-                title,
-                description,
-                status: pb.status || 'draft',
-                position: { x: COLUMNS['product-brief'], y: yOffsets['product-brief'] },
-                size: { width: CARD_WIDTHS['product-brief'], height },
-                dependencies: [],
-                metadata: pb
-            });
-            yOffsets['product-brief'] += height + CARD_SPACING;
-        }
-
-        // ── Vision ───────────────────────────────────────────────────────────
-        if (state.vision) {
-            const title = state.vision.productName || 'Product Vision';
-            const description = state.vision.problemStatement || '';
-            const height = calculateCardHeight('vision', title, description, 20);
-            const requirementCount = state.requirements?.functional?.length || 0;
-            artifacts.push({
-                id: 'vision-1',
-                type: 'vision',
-                title,
-                description,
-                status: state.vision.status || 'draft',
-                position: { x: COLUMNS['vision'], y: yOffsets['vision'] },
-                size: { width: CARD_WIDTHS['vision'], height },
-                dependencies: state.productBrief ? ['product-brief-1'] : [],
-                childCount: requirementCount,
-                metadata: state.vision
-            });
-            yOffsets['vision'] += height + CARD_SPACING;
-        }
-
-        // ── PRD ──────────────────────────────────────────────────────────────
-        if (state.prd) {
-            const prd = state.prd;
-            const title = prd.title || prd.productName || 'Product Requirements';
-            const description = prd.overview || prd.summary || '';
-            const height = calculateCardHeight('prd', title, description);
-            artifacts.push({
-                id: prd.id || 'prd-1',
-                type: 'prd',
-                title,
-                description,
-                status: prd.status || 'draft',
-                position: { x: COLUMNS['prd'], y: yOffsets['prd'] },
-                size: { width: CARD_WIDTHS['prd'], height },
-                dependencies: ['vision-1'],
-                parentId: 'vision-1',
-                metadata: prd
-            });
-            yOffsets['prd'] += height + CARD_SPACING;
-            // Shift requirements below the PRD card in the same column
-            yOffsets['requirement'] = yOffsets['prd'];
-            yOffsets['architecture'] = yOffsets['prd'];
-        }
-
-        // ── Architecture ─────────────────────────────────────────────────────
-        if (state.architecture) {
-            const arch = state.architecture;
-            const title = arch.title || 'Architecture';
-            const description = arch.overview || arch.summary || '';
-            const height = calculateCardHeight('architecture', title, description);
-            artifacts.push({
-                id: arch.id || 'architecture-1',
-                type: 'architecture',
-                title,
-                description,
-                status: arch.status || 'draft',
-                position: { x: COLUMNS['architecture'], y: yOffsets['architecture'] },
-                size: { width: CARD_WIDTHS['architecture'], height },
-                dependencies: ['vision-1'],
-                parentId: 'vision-1',
-                metadata: arch
-            });
-            yOffsets['architecture'] += height + CARD_SPACING;
-            yOffsets['requirement'] = Math.max(yOffsets['requirement'], yOffsets['architecture']);
-        }
-
-        // ── Requirements ─────────────────────────────────────────────────────
-        if (state.requirements?.functional) {
-            state.requirements.functional.forEach((req: any, index: number) => {
-                const reqId = req.id || `req-${index}`;
-                const title = req.title || `Requirement ${index + 1}`;
-                const description = req.description || '';
-                const height = calculateCardHeight('requirement', title, description, 0, true); // always has 'vision-1' dependency
-                const relatedEpicsCount = state.epics?.filter((epic: any) =>
-                    epic.functionalRequirements?.includes(reqId)
-                ).length || 0;
-                artifacts.push({
-                    id: reqId,
-                    type: 'requirement',
-                    title,
-                    description,
-                    status: 'approved',
-                    position: { x: COLUMNS['requirement'], y: yOffsets['requirement'] },
-                    size: { width: CARD_WIDTHS['requirement'], height },
-                    dependencies: ['vision-1'],
-                    parentId: 'vision-1',
-                    childCount: relatedEpicsCount,
-                    metadata: {
-                        capabilityArea: req.capabilityArea,
-                        relatedEpics: req.relatedEpics,
-                        relatedStories: req.relatedStories,
-                        priority: req.priority,
-                        status: req.status,
-                        type: req.type,
-                        rationale: req.rationale,
-                        source: req.source,
-                        metrics: req.metrics,
-                        verificationMethod: req.verificationMethod,
-                        verificationNotes: req.verificationNotes,
-                        acceptanceCriteria: req.acceptanceCriteria,
-                        dependencies: req.dependencies,
-                        implementationNotes: req.implementationNotes,
-                        notes: req.notes
-                    }
-                });
-                yOffsets['requirement'] += height + CARD_SPACING;
-            });
-        }
-
-        // Pre-compute test-case count per story for childCount
-        const tcCountByStory = new Map<string, number>();
-        if (state.testCases?.length) {
-            state.testCases.forEach((tc: any) => {
-                if (tc.storyId) {
-                    tcCountByStory.set(tc.storyId, (tcCountByStory.get(tc.storyId) || 0) + 1);
-                }
-            });
-        }
-
-        // ── Epics + Stories + Use Cases ──────────────────────────────────────
-        if (state.epics) {
-            state.epics.forEach((epic: any, index: number) => {
-                const epicId = epic.id || `epic-${index}`;
-                const epicTitle = epic.title;
-                const epicDescription = epic.goal || epic.description || '';
-                const hasVerbose = epic.useCases || epic.fitCriteria || epic.successMetrics || epic.risks || epic.definitionOfDone;
-                const extraHeight = hasVerbose ? 30 : 0;
-                const epicHeight = calculateCardHeight('epic', epicTitle, epicDescription, extraHeight, (epic.functionalRequirements?.length || 0) > 0);
-                const parentReqId = epic.functionalRequirements?.[0] || null;
-
-                artifacts.push({
-                    id: epicId,
-                    type: 'epic',
-                    title: epicTitle,
-                    description: epicDescription,
-                    status: epic.status || 'draft',
-                    position: { x: COLUMNS['epic'], y: yOffsets['epic'] },
-                    size: { width: CARD_WIDTHS['epic'], height: epicHeight },
-                    dependencies: epic.functionalRequirements || [],
-                    parentId: parentReqId,
-                    childCount: epic.stories?.length || 0,
-                    metadata: {
-                        functionalRequirements: epic.functionalRequirements,
-                        nonFunctionalRequirements: epic.nonFunctionalRequirements,
-                        additionalRequirements: epic.additionalRequirements,
-                        valueDelivered: epic.valueDelivered,
-                        priority: epic.priority,
-                        storyCount: epic.storyCount,
-                        dependencies: epic.dependencies,
-                        epicDependencies: epic.epicDependencies,
-                        effortEstimate: epic.effortEstimate,
-                        implementationNotes: epic.implementationNotes,
-                        acceptanceSummary: epic.acceptanceSummary,
-                        useCases: epic.useCases,
-                        fitCriteria: epic.fitCriteria,
-                        successMetrics: epic.successMetrics,
-                        risks: epic.risks,
-                        definitionOfDone: epic.definitionOfDone,
-                        technicalSummary: epic.technicalSummary
-                    }
-                });
-                yOffsets['epic'] += epicHeight + CARD_SPACING;
-
-                // Stories for this epic
-                if (epic.stories) {
-                    epic.stories.forEach((story: any, storyIndex: number) => {
-                        const storyTitle = story.title;
-                        const storyDescription = story.userStory
-                            ? `As a ${story.userStory.asA}, I want ${story.userStory.iWant}, so that ${story.userStory.soThat}`
-                            : '';
-                        const acCount = story.acceptanceCriteria?.length || 0;
-                        const storyExtraHeight = acCount > 0 ? 25 : 0;
-                        const storyHeight = calculateCardHeight('story', storyTitle, storyDescription, storyExtraHeight, true); // always depends on epicId
-
-                        artifacts.push({
-                            id: story.id || `story-${index}-${storyIndex}`,
-                            type: 'story',
-                            title: storyTitle,
-                            description: storyDescription,
-                            status: story.status || 'draft',
-                            position: { x: COLUMNS['story'], y: yOffsets['story'] },
-                            size: { width: CARD_WIDTHS['story'], height: storyHeight },
-                            dependencies: [epicId],
-                            parentId: epicId,
-                            childCount: tcCountByStory.get(story.id || `story-${index}-${storyIndex}`) || 0,
-                            metadata: {
-                                userStory: story.userStory,
-                                acceptanceCriteria: story.acceptanceCriteria,
-                                technicalNotes: story.technicalNotes,
-                                storyPoints: story.storyPoints,
-                                priority: story.priority,
-                                estimatedEffort: story.estimatedEffort,
-                                storyFormat: story.storyFormat,
-                                background: story.background,
-                                problemStatement: story.problemStatement,
-                                proposedSolution: story.proposedSolution,
-                                solutionDetails: story.solutionDetails,
-                                implementationDetails: story.implementationDetails,
-                                definitionOfDone: story.definitionOfDone,
-                                requirementRefs: story.requirementRefs,
-                                uxReferences: story.uxReferences,
-                                references: story.references,
-                                notes: story.notes,
-                                dependencies: story.dependencies,
-                                tasks: story.tasks,
-                                devNotes: story.devNotes,
-                                devAgentRecord: story.devAgentRecord,
-                                history: story.history,
-                                labels: story.labels,
-                                assignee: story.assignee,
-                                reviewer: story.reviewer
-                            }
-                        });
-                        yOffsets['story'] += storyHeight + CARD_SPACING;
-                    });
-                }
-
-                // Use cases for this epic — placed in their own row below stories
-                if (epic.useCases) {
-                    // Ensure use-cases start below all stories (since they share the same X column)
-                    yOffsets['use-case'] = Math.max(yOffsets['use-case'], yOffsets['story']);
-                    epic.useCases.forEach((uc: any, ucIndex: number) => {
-                        const ucTitle = uc.title || `Use Case ${ucIndex + 1}`;
-                        const ucDescription = uc.summary || '';
-                        const ucHeight = calculateCardHeight('use-case', ucTitle, ucDescription, 0, true); // always has epicId dependency
-
-                        artifacts.push({
-                            id: uc.id || `uc-${index}-${ucIndex}`,
-                            type: 'use-case',
-                            title: ucTitle,
-                            description: ucDescription,
-                            status: uc.status || 'draft',
-                            position: { x: COLUMNS['use-case'], y: yOffsets['use-case'] },
-                            size: { width: CARD_WIDTHS['use-case'], height: ucHeight },
-                            dependencies: [epicId],
-                            parentId: epicId,
-                            metadata: {
-                                scenario: uc.scenario,
-                                actors: uc.actors,
-                                primaryActor: uc.primaryActor,
-                                secondaryActors: uc.secondaryActors,
-                                trigger: uc.trigger,
-                                preconditions: uc.preconditions,
-                                postconditions: uc.postconditions,
-                                mainFlow: uc.mainFlow,
-                                alternativeFlows: uc.alternativeFlows,
-                                exceptionFlows: uc.exceptionFlows,
-                                businessRules: uc.businessRules,
-                                relatedRequirements: uc.relatedRequirements,
-                                relatedEpic: uc.relatedEpic,
-                                relatedStories: uc.relatedStories,
-                                sourceDocument: uc.sourceDocument,
-                                notes: uc.notes,
-                                status: uc.status
-                            }
-                        });
-                        yOffsets['use-case'] += ucHeight + CARD_SPACING;
-                    });
-                }
-
-                // Per-epic test strategy — placed in its own row below use-cases
-                if (epic.testStrategy) {
-                    const ts = epic.testStrategy;
-                    // Ensure test-strategy starts below stories and use-cases
-                    yOffsets['test-strategy'] = Math.max(yOffsets['test-strategy'], yOffsets['story'], yOffsets['use-case']);
-                    const tsTitle = ts.title || 'Test Strategy';
-                    const tsDescription = ts.scope || ts.approach || '';
-                    const tHeight = calculateCardHeight('test-strategy', tsTitle, tsDescription, 0, true);
-
-                    artifacts.push({
-                        id: ts.id || `TS-${epicId}`,
-                        type: 'test-strategy',
-                        title: tsTitle,
-                        description: tsDescription,
-                        status: ts.status || 'draft',
-                        position: { x: COLUMNS['test-strategy'], y: yOffsets['test-strategy'] },
-                        size: { width: CARD_WIDTHS['test-strategy'], height: tHeight },
-                        dependencies: [epicId],
-                        parentId: epicId,
-                        metadata: { ...ts, epicId }
-                    });
-                    yOffsets['test-strategy'] += tHeight + CARD_SPACING;
-                }
-            });
-        }
-
-        // ── Test Strategy + Test Cases ───────────────────────────────────────
-        // Placed inside the Implementation swim-lane, below stories/use-cases.
-        // Test-strategy sits in the first column (x=1330), test-cases fill a
-        // horizontal grid to the right — same layout as stories/use-cases.
-        if (state.testStrategy || state.testCases?.length) {
-            // Seed the testing section Y below all story/use-case cards
-            const testingStartY = Math.max(
-                yOffsets['story'],
-                yOffsets['use-case'],
-                yOffsets['test-strategy'],
-                yOffsets['test-case']
-            ) + CARD_SPACING;
-
-            const MAX_TC_PER_ROW = 4;
-            const TC_COL_WIDTH = CARD_WIDTHS['test-case'] + CARD_SPACING; // 270
-
-            if (state.testStrategy) {
-                const ts = state.testStrategy;
-                const title = ts.title || 'Test Strategy';
-                const description = ts.scope || ts.approach || '';
-                const height = calculateCardHeight('test-strategy', title, description);
-                artifacts.push({
-                    id: ts.id || 'TS-1',
-                    type: 'test-strategy',
-                    title,
-                    description,
-                    status: ts.status || 'draft',
-                    position: { x: COLUMNS['test-strategy'], y: testingStartY },
-                    size: { width: CARD_WIDTHS['test-strategy'], height },
-                    dependencies: state.vision ? ['vision-1'] : [],
-                    metadata: ts
-                });
-                yOffsets['test-strategy'] = testingStartY + height + CARD_SPACING;
-            }
-
-            if (state.testCases?.length) {
-                // Test cases start below the test-strategy card (or at testingStartY if no strategy)
-                const tcRowStartY = state.testStrategy
-                    ? yOffsets['test-strategy']
-                    : testingStartY;
-
-                let gridRowY = tcRowStartY;
-                let currentRowMaxH = 0;
-
-                state.testCases.forEach((tc: any, index: number) => {
-                    const col = index % MAX_TC_PER_ROW;
-                    const tcId = tc.id || `TC-${index + 1}`;
-                    const tcTitle = tc.title || `Test Case ${index + 1}`;
-                    const tcDescription = tc.description || tc.expectedResult || '';
-                    const hasDep = !!(tc.storyId || state.testStrategy);
-                    const tcHeight = calculateCardHeight('test-case', tcTitle, tcDescription, 0, hasDep);
-                    const depIds: string[] = [];
-                    if (tc.storyId) depIds.push(tc.storyId);
-                    else if (state.testStrategy) depIds.push(state.testStrategy.id || 'TS-1');
-
-                    // Wrap to next row
-                    if (col === 0 && index > 0) {
-                        gridRowY += currentRowMaxH + CARD_SPACING;
-                        currentRowMaxH = 0;
-                    }
-                    currentRowMaxH = Math.max(currentRowMaxH, tcHeight);
-
-                    const tcX = COLUMNS['test-case'] + col * TC_COL_WIDTH;
-
-                    artifacts.push({
-                        id: tcId,
-                        type: 'test-case',
-                        title: tcTitle,
-                        description: tcDescription,
-                        status: tc.status || 'draft',
-                        position: { x: tcX, y: gridRowY },
-                        size: { width: CARD_WIDTHS['test-case'], height: tcHeight },
-                        dependencies: depIds,
-                        parentId: tc.storyId || (state.testStrategy?.id || 'TS-1') || undefined,
-                        metadata: {
-                            type: tc.type,
-                            storyId: tc.storyId,
-                            epicId: tc.epicId,
-                            relatedRequirements: tc.relatedRequirements,
-                            steps: tc.steps,
-                            expectedResult: tc.expectedResult,
-                            preconditions: tc.preconditions,
-                            tags: tc.tags,
-                            priority: tc.priority
-                        }
-                    });
-                });
-            }
-        }
-
-        return artifacts;
+    /**
+     * @deprecated Use buildArtifacts(store) from artifact-transformer.ts instead.
+     * Kept as a thin wrapper so existing call-sites (openDetailTab,
+     * sendArtifactsToDetailTabs) continue to compile unchanged.
+     */
+    private stateToArtifacts(_state: any): any[] {
+        return buildArtifacts(this.store);
     }
 
     public showAICursor(targetId: string, action: string, label?: string): void {
@@ -837,7 +346,7 @@ export class AgentCanvasViewProvider implements vscode.WebviewViewProvider {
         const title = artifact ? `Detail: ${artifact.title || artifactId}` : `Detail: ${artifactId}`;
 
         const panel = vscode.window.createWebviewPanel(
-            'agentcanvas.detailTab',
+            'agileagentcanvas.detailTab',
             title,
             vscode.ViewColumn.Beside,
             {
@@ -932,7 +441,7 @@ export class AgentCanvasViewProvider implements vscode.WebviewViewProvider {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} data:;">
             <link rel="stylesheet" href="${styleUri}">
-<title>AgentCanvas Detail</title>
+<title>AgileAgentCanvas Detail</title>
         </head>
         <body>
             <script>window.__AC_MODE__ = 'detail'; window.__AC_DETAIL_ID__ = '${safeId}';</script>
@@ -977,7 +486,7 @@ export class AgentCanvasViewProvider implements vscode.WebviewViewProvider {
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource}; img-src ${webview.cspSource} data: blob:; frame-src 'self' blob:;">
                 <link rel="stylesheet" href="${styleUri}">
-                <title>AgentCanvas</title>
+                <title>AgileAgentCanvas</title>
             </head>
             <body>
                 <div id="root"></div>

@@ -14,8 +14,8 @@ import type { Artifact } from '../types';
 // ── Layout constants (mirrored for assertions) ──────────────────────────────
 const NODE_W = 170;
 const NODE_H = 50;
-const H_GAP = 60;
-const V_GAP = 16;
+const H_GAP = 70;
+const V_GAP = 28;
 const ROOT_X = 40;
 const ROOT_Y = 40;
 const MAX_CHILDREN_PER_COL = 5;

@@ -25,7 +25,7 @@ const NO_OP_LOGGER: SchemaValidatorLogger = { appendLine: () => {} };
 // ─── Artifact-type → schema-file mapping ────────────────────────────────────
 //
 // Keys are the artifact `type` strings that the LLM passes to
-// `agentcanvas_update_artifact`.  Values are the relative paths from the
+// `agileagentcanvas_update_artifact`.  Values are the relative paths from the
 // `<bmadPath>/schemas/` directory.  Aliases (e.g. 'vision' → product-brief)
 // allow the LLM to use common shorthand names.
 
@@ -97,7 +97,7 @@ const ARTIFACT_TYPE_TO_SCHEMA: Record<string, string> = {
  *
  * **Design rationale**
  *
- * The LLM sends partial `changes` objects via `agentcanvas_update_artifact`.  The
+ * The LLM sends partial `changes` objects via `agileagentcanvas_update_artifact`.  The
  * store's internal data shape often differs from the schema (e.g. schemas
  * wrap fields inside `content`, the store is flat).  Full structural
  * validation of the `changes` object would always fail.
@@ -111,7 +111,7 @@ const ARTIFACT_TYPE_TO_SCHEMA: Record<string, string> = {
  *     present in `changes` against the schema's property definitions.  It
  *     flattens the schema's `content` wrapper (if any), strips `required`,
  *     and checks field types / enums.  This is the primary mode used in the
- *     `agentcanvas_update_artifact` tool handler.
+ *     `agileagentcanvas_update_artifact` tool handler.
  *
  * Both run in **warn mode** — they return results but never throw.
  *
@@ -537,7 +537,7 @@ export class SchemaValidator {
                         this.resolveRefsInline(obj, path.dirname(refPath));
                     } catch {
                         // Leave unresolved $ref as-is — the LLM can still
-                        // read the referenced file via agentcanvas_read_file
+                        // read the referenced file via agileagentcanvas_read_file
                     }
                 }
             } else {

@@ -1,5 +1,5 @@
 Feature: Extension - VS Code Extension Activation
-  As an AgentCanvas user
+  As an AgileAgentCanvas user
   I want the extension to activate correctly
   So that all commands and providers are available
 
@@ -13,105 +13,105 @@ Feature: Extension - VS Code Extension Activation
 
   Scenario: Registers chat participant
     When I activate the extension
-    Then chat createChatParticipant should have been called with "agentcanvas.analyst"
+    Then chat createChatParticipant should have been called with "agileagentcanvas.analyst"
 
   Scenario: Creates tree views for artifacts and wizard steps
     When I activate the extension
-    Then window createTreeView should have been called with "agentcanvas.artifactsTree"
-    And window createTreeView should have been called with "agentcanvas.wizardSteps"
+    Then window createTreeView should have been called with "agileagentcanvas.artifactsTree"
+    And window createTreeView should have been called with "agileagentcanvas.wizardSteps"
 
   Scenario: Adds subscriptions to context
     When I activate the extension
     Then context subscriptions should not be empty
 
   # Command Registration Tests
-  Scenario: Registers agentcanvas.openCanvas command
+  Scenario: Registers agileagentcanvas.openCanvas command
     When I activate the extension
-    Then command "agentcanvas.openCanvas" should be registered
+    Then command "agileagentcanvas.openCanvas" should be registered
 
-  Scenario: Registers agentcanvas.newProject command
+  Scenario: Registers agileagentcanvas.newProject command
     When I activate the extension
-    Then command "agentcanvas.newProject" should be registered
+    Then command "agileagentcanvas.newProject" should be registered
 
-  Scenario: Registers agentcanvas.loadProject command
+  Scenario: Registers agileagentcanvas.loadProject command
     When I activate the extension
-    Then command "agentcanvas.loadProject" should be registered
+    Then command "agileagentcanvas.loadProject" should be registered
 
-  Scenario: Registers agentcanvas.exportArtifacts command
+  Scenario: Registers agileagentcanvas.exportArtifacts command
     When I activate the extension
-    Then command "agentcanvas.exportArtifacts" should be registered
+    Then command "agileagentcanvas.exportArtifacts" should be registered
 
-  Scenario: Registers agentcanvas.syncToFiles command
+  Scenario: Registers agileagentcanvas.syncToFiles command
     When I activate the extension
-    Then command "agentcanvas.syncToFiles" should be registered
+    Then command "agileagentcanvas.syncToFiles" should be registered
 
-  Scenario: Registers agentcanvas.goToStep command
+  Scenario: Registers agileagentcanvas.goToStep command
     When I activate the extension
-    Then command "agentcanvas.goToStep" should be registered
+    Then command "agileagentcanvas.goToStep" should be registered
 
-  Scenario: Registers agentcanvas.selectArtifact command
+  Scenario: Registers agileagentcanvas.selectArtifact command
     When I activate the extension
-    Then command "agentcanvas.selectArtifact" should be registered
+    Then command "agileagentcanvas.selectArtifact" should be registered
 
-  Scenario: Registers agentcanvas.loadDemoData command
+  Scenario: Registers agileagentcanvas.loadDemoData command
     When I activate the extension
-    Then command "agentcanvas.loadDemoData" should be registered
+    Then command "agileagentcanvas.loadDemoData" should be registered
 
   Scenario: Registers workflow session commands
     When I activate the extension
-    Then command "agentcanvas.continueWorkflow" should be registered
-    And command "agentcanvas.workflowStatus" should be registered
-    And command "agentcanvas.cancelWorkflow" should be registered
+    Then command "agileagentcanvas.continueWorkflow" should be registered
+    And command "agileagentcanvas.workflowStatus" should be registered
+    And command "agileagentcanvas.cancelWorkflow" should be registered
 
-  Scenario: Registers agentcanvas.executeWorkflowStep command
+  Scenario: Registers agileagentcanvas.executeWorkflowStep command
     When I activate the extension
-    Then command "agentcanvas.executeWorkflowStep" should be registered
+    Then command "agileagentcanvas.executeWorkflowStep" should be registered
 
   # Command Execution Tests
-  Scenario: agentcanvas.continueWorkflow opens chat with continue command
+  Scenario: agileagentcanvas.continueWorkflow opens chat with continue command
     When I activate the extension
-    And I execute the command "agentcanvas.continueWorkflow"
-    Then executeCommand should have been called with "workbench.action.chat.open" and query "@agentcanvas /continue"
+    And I execute the command "agileagentcanvas.continueWorkflow"
+    Then executeCommand should have been called with "workbench.action.chat.open" and query "@agileagentcanvas /continue"
 
-  Scenario: agentcanvas.workflowStatus opens chat with status command
+  Scenario: agileagentcanvas.workflowStatus opens chat with status command
     When I activate the extension
-    And I execute the command "agentcanvas.workflowStatus"
-    Then executeCommand should have been called with "workbench.action.chat.open" and query "@agentcanvas /status"
+    And I execute the command "agileagentcanvas.workflowStatus"
+    Then executeCommand should have been called with "workbench.action.chat.open" and query "@agileagentcanvas /status"
 
-  Scenario: agentcanvas.cancelWorkflow cancels session and shows message
+  Scenario: agileagentcanvas.cancelWorkflow cancels session and shows message
     When I activate the extension
-    And I execute the command "agentcanvas.cancelWorkflow"
+    And I execute the command "agileagentcanvas.cancelWorkflow"
     Then window showInformationMessage should have been called with "Workflow session cancelled."
 
-  Scenario: agentcanvas.newProject prompts for project name
+  Scenario: agileagentcanvas.newProject prompts for project name
     When I activate the extension
     And the user enters "My New Project" in input box
-    And I execute the command "agentcanvas.newProject"
+    And I execute the command "agileagentcanvas.newProject"
     Then window showInputBox should have been called with prompt containing "project name"
 
-  Scenario: agentcanvas.newProject does not create project if user cancels
+  Scenario: agileagentcanvas.newProject does not create project if user cancels
     When I activate the extension
     And the user cancels the input box
-    And I execute the command "agentcanvas.newProject"
+    And I execute the command "agileagentcanvas.newProject"
     Then window showInformationMessage should not contain "created"
 
-  Scenario: agentcanvas.loadProject shows quick pick to choose load location
+  Scenario: agileagentcanvas.loadProject shows quick pick to choose load location
     When I activate the extension
     And the user cancels the quick pick
-    And I execute the command "agentcanvas.loadProject"
+    And I execute the command "agileagentcanvas.loadProject"
     Then window showQuickPick should have been called
 
-  Scenario: agentcanvas.loadProject shows folder picker when Browse is selected
+  Scenario: agileagentcanvas.loadProject shows folder picker when Browse is selected
     When I activate the extension
     And the user selects "Browse" in quick pick
     And the user cancels the open dialog
-    And I execute the command "agentcanvas.loadProject"
+    And I execute the command "agileagentcanvas.loadProject"
     Then window showOpenDialog should have been called with folder selection
 
-  Scenario: agentcanvas.openCanvas creates webview panel
+  Scenario: agileagentcanvas.openCanvas creates webview panel
     When I activate the extension
-    And I execute the command "agentcanvas.openCanvas"
-    Then window createWebviewPanel should have been called with "agentcanvasCanvas"
+    And I execute the command "agileagentcanvas.openCanvas"
+    Then window createWebviewPanel should have been called with "agileagentcanvasCanvas"
 
   # File Watcher Tests
   Scenario: Creates file system watcher
@@ -124,79 +124,79 @@ Feature: Extension - VS Code Extension Activation
     Then acOutput should be defined
 
   # Export Artifacts Tests
-  Scenario: agentcanvas.exportArtifacts shows format quick pick
+  Scenario: agileagentcanvas.exportArtifacts shows format quick pick
     When I activate the extension
     And the user cancels the quick pick
-    And I execute the command "agentcanvas.exportArtifacts"
+    And I execute the command "agileagentcanvas.exportArtifacts"
     Then window showQuickPick should have been called with "Markdown" format options
 
-  Scenario: agentcanvas.exportArtifacts exports with selected format
+  Scenario: agileagentcanvas.exportArtifacts exports with selected format
     When I activate the extension
     And the user selects "JSON" in quick pick
     And the user selects a save location
-    And I execute the command "agentcanvas.exportArtifacts"
+    And I execute the command "agileagentcanvas.exportArtifacts"
     Then window showInformationMessage should contain "Artifacts exported as JSON"
 
-  Scenario: agentcanvas.exportArtifacts does nothing if user cancels
+  Scenario: agileagentcanvas.exportArtifacts does nothing if user cancels
     When I activate the extension
     And the user cancels the quick pick
-    And I execute the command "agentcanvas.exportArtifacts"
+    And I execute the command "agileagentcanvas.exportArtifacts"
     Then window showInformationMessage should not contain "exported"
 
-  Scenario: agentcanvas.exportArtifacts does nothing if user cancels save dialog
+  Scenario: agileagentcanvas.exportArtifacts does nothing if user cancels save dialog
     When I activate the extension
     And the user selects "JSON" in quick pick
     And the user cancels the save dialog
-    And I execute the command "agentcanvas.exportArtifacts"
+    And I execute the command "agileagentcanvas.exportArtifacts"
     Then window showInformationMessage should not contain "exported"
 
   # Sync Tests
-  Scenario: agentcanvas.syncToFiles syncs and shows confirmation
+  Scenario: agileagentcanvas.syncToFiles syncs and shows confirmation
     When I activate the extension
-    And I execute the command "agentcanvas.syncToFiles"
-    Then window showInformationMessage should have been called with "Artifacts synced to .agentcanvas-context"
+    And I execute the command "agileagentcanvas.syncToFiles"
+    Then window showInformationMessage should have been called with "Artifacts synced to .agileagentcanvas-context"
 
   # goToStep Tests
-  Scenario: agentcanvas.goToStep opens chat for vision step
+  Scenario: agileagentcanvas.goToStep opens chat for vision step
     When I activate the extension
-    And I execute the command "agentcanvas.goToStep" with arg "vision"
+    And I execute the command "agileagentcanvas.goToStep" with arg "vision"
     Then executeCommand should have been called with "workbench.action.chat.open"
 
-  Scenario: agentcanvas.goToStep opens chat for requirements step
+  Scenario: agileagentcanvas.goToStep opens chat for requirements step
     When I activate the extension
-    And I execute the command "agentcanvas.goToStep" with arg "requirements"
+    And I execute the command "agileagentcanvas.goToStep" with arg "requirements"
     Then executeCommand should have been called with "workbench.action.chat.open"
 
   # selectArtifact Tests
-  Scenario: agentcanvas.selectArtifact is callable for epic
+  Scenario: agileagentcanvas.selectArtifact is callable for epic
     When I activate the extension
-    And I execute the command "agentcanvas.selectArtifact" with args "epic" and "EPIC-1"
-    Then command "agentcanvas.selectArtifact" should be registered
+    And I execute the command "agileagentcanvas.selectArtifact" with args "epic" and "EPIC-1"
+    Then command "agileagentcanvas.selectArtifact" should be registered
 
   # loadDemoData Tests
-  Scenario: agentcanvas.loadDemoData shows success message with Open Canvas option
+  Scenario: agileagentcanvas.loadDemoData shows success message with Open Canvas option
     When I activate the extension
-    And I execute the command "agentcanvas.loadDemoData"
+    And I execute the command "agileagentcanvas.loadDemoData"
     Then window showInformationMessage should contain "Demo data loaded"
 
   # executeWorkflowStep Tests
-  Scenario: agentcanvas.executeWorkflowStep opens chat with refine command
+  Scenario: agileagentcanvas.executeWorkflowStep opens chat with refine command
     When I activate the extension
     And I execute the workflow step command for "epic" "EPIC-1" action "validate"
-    Then executeCommand should have been called with "workbench.action.chat.open" and query containing "@agentcanvas /refine EPIC-1"
+    Then executeCommand should have been called with "workbench.action.chat.open" and query containing "@agileagentcanvas /refine EPIC-1"
 
-  Scenario: agentcanvas.executeWorkflowStep shows warning when dependencies not met
+  Scenario: agileagentcanvas.executeWorkflowStep shows warning when dependencies not met
     When I activate the extension
     And I execute the workflow step command with unmet dependencies for "EPIC-1"
     Then window showWarningMessage should have been called with "requires completing"
 
-  Scenario: agentcanvas.executeWorkflowStep shows info when user clicks Run First Step
+  Scenario: agileagentcanvas.executeWorkflowStep shows info when user clicks Run First Step
     When I activate the extension
     And the user clicks "Run First Step" on warning
     And I execute the workflow step command with unmet dependencies for "EPIC-1"
     Then window showInformationMessage should contain "Please complete"
 
-  Scenario: agentcanvas.executeWorkflowStep continues when user clicks Continue Anyway
+  Scenario: agileagentcanvas.executeWorkflowStep continues when user clicks Continue Anyway
     When I activate the extension
     And the user clicks "Continue Anyway" on warning
     And I execute the workflow step command with unmet dependencies for "EPIC-1"

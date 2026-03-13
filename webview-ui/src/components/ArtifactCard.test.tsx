@@ -31,6 +31,7 @@ describe('ArtifactCard', () => {
     onOpenDetail: vi.fn(),
     onUpdate: vi.fn(),
     onToggleExpand: vi.fn(),
+    onToggleCategoryExpand: vi.fn(),
     onRefineWithAI: vi.fn(),
   };
 
@@ -208,10 +209,13 @@ describe('ArtifactCard', () => {
 
   describe('Expand/Collapse', () => {
     it('should show expand button when artifact has children', () => {
-      const artifact = createMockArtifact({ childCount: 2 });
+      const artifact = createMockArtifact({
+        childCount: 2,
+        childBreakdown: [{ label: 'Stories', count: 2, types: ['story'] }],
+      });
       render(<ArtifactCard {...defaultProps} artifact={artifact} />);
       
-      expect(document.querySelector('.expand-btn')).toBeInTheDocument();
+      expect(document.querySelector('.artifact-child-breakdown')).toBeInTheDocument();
     });
 
     it('should not show expand button when artifact has no children', () => {
@@ -221,38 +225,57 @@ describe('ArtifactCard', () => {
       expect(document.querySelector('.expand-btn')).not.toBeInTheDocument();
     });
 
-    it('should show child count on expand button', () => {
-      const artifact = createMockArtifact({ childCount: 5 });
+    it('should show breakdown badges when childBreakdown is provided', () => {
+      const artifact = createMockArtifact({
+        childCount: 5,
+        childBreakdown: [
+          { label: 'Risks', count: 2, types: ['risk'] },
+          { label: 'Requirements', count: 3, types: ['requirement'] },
+        ],
+      });
       render(<ArtifactCard {...defaultProps} artifact={artifact} />);
       
-      expect(screen.getByText('5')).toBeInTheDocument();
+      expect(screen.getByText('2 Risks')).toBeInTheDocument();
+      expect(screen.getByText('3 Requirements')).toBeInTheDocument();
     });
 
     it('should show collapse icon when expanded', () => {
-      const artifact = createMockArtifact({ childCount: 2 });
-      render(<ArtifactCard {...defaultProps} artifact={artifact} isExpanded={true} />);
+      const artifact = createMockArtifact({
+        childCount: 2,
+        childBreakdown: [{ label: 'Stories', count: 2, types: ['story'] }],
+      });
+      const expandedCats = new Set(['Stories']);
+      render(<ArtifactCard {...defaultProps} artifact={artifact} isExpanded={true} expandedCategories={expandedCats} />);
       
-      const expandIcon = document.querySelector('.expand-icon svg.icon');
-      expect(expandIcon).toBeInTheDocument();
+      // Each badge now has its own inline chevron icon
+      const badgeIcon = document.querySelector('.child-breakdown-badge svg.icon');
+      expect(badgeIcon).toBeInTheDocument();
     });
 
     it('should show expand icon when collapsed', () => {
-      const artifact = createMockArtifact({ childCount: 2 });
+      const artifact = createMockArtifact({
+        childCount: 2,
+        childBreakdown: [{ label: 'Stories', count: 2, types: ['story'] }],
+      });
       render(<ArtifactCard {...defaultProps} artifact={artifact} isExpanded={false} />);
       
-      const expandIcon = document.querySelector('.expand-icon svg.icon');
-      expect(expandIcon).toBeInTheDocument();
+      // Each badge now has its own inline chevron icon
+      const badgeIcon = document.querySelector('.child-breakdown-badge svg.icon');
+      expect(badgeIcon).toBeInTheDocument();
     });
 
-    it('should call onToggleExpand when expand button clicked', () => {
-      const onToggleExpand = vi.fn();
-      const artifact = createMockArtifact({ childCount: 2 });
-      render(<ArtifactCard {...defaultProps} artifact={artifact} onToggleExpand={onToggleExpand} />);
+    it('should call onToggleCategoryExpand when badge clicked', () => {
+      const onToggleCategoryExpand = vi.fn();
+      const artifact = createMockArtifact({
+        childCount: 2,
+        childBreakdown: [{ label: 'Stories', count: 2, types: ['story'] }],
+      });
+      render(<ArtifactCard {...defaultProps} artifact={artifact} onToggleCategoryExpand={onToggleCategoryExpand} />);
       
-      const expandBtn = document.querySelector('.expand-btn');
-      fireEvent.click(expandBtn!);
+      const badge = document.querySelector('.child-breakdown-badge');
+      fireEvent.click(badge!);
       
-      expect(onToggleExpand).toHaveBeenCalledWith('test-1');
+      expect(onToggleCategoryExpand).toHaveBeenCalledWith('test-1', 'Stories');
     });
 
     it('should add has-children class when artifact has children', () => {

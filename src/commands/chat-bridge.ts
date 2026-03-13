@@ -1,5 +1,8 @@
 import * as vscode from 'vscode';
 import { sendSimplePrompt } from '../antigravity/antigravity-orchestrator';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('chat-bridge');
 
 /**
  * Describes how to invoke a particular IDE's chat command.
@@ -56,7 +59,7 @@ const CHAT_COMMANDS: ChatCommand[] = [
 // ─── Logger ──────────────────────────────────────────────────────────────────
 
 /** Set by extension.ts after acOutput is created. Falls back to console. */
-let _log: (msg: string) => void = (msg) => console.log('[chat-bridge]', msg);
+let _log: (msg: string) => void = (msg) => logger.debug(msg);
 
 export function setChatBridgeLogger(fn: (msg: string) => void): void {
     _log = fn;

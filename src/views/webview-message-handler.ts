@@ -20,7 +20,7 @@ import { openChat } from '../commands/chat-bridge';
 /**
  * Shared message handler for webview→extension messages.
  *
- * The AgentCanvas extension has multiple webview hosts (sidebar canvas, panel canvas,
+ * The AgileAgentCanvas extension has multiple webview hosts (sidebar canvas, panel canvas,
  * sidebar detail tabs, panel detail tabs) each with their own
  * `onDidReceiveMessage` handler.  Historically, each handler duplicated the
  * same switch/case block, which led to drift — e.g. a new message type added
@@ -166,7 +166,7 @@ export async function handleCommonWebviewMessage(
         case 'setOutputFormat': {
             const newFormat = message.format;
             if (newFormat === 'json' || newFormat === 'markdown' || newFormat === 'dual') {
-                await vscode.workspace.getConfiguration('agentcanvas').update(
+                await vscode.workspace.getConfiguration('agileagentcanvas').update(
                     'outputFormat',
                     newFormat,
                     vscode.ConfigurationTarget.Workspace
@@ -374,7 +374,7 @@ export async function handleCommonWebviewMessage(
             const isPdf = (format ?? 'png') === 'pdf';
             const ext = isPdf ? 'pdf' : 'png';
             const filterLabel = isPdf ? 'PDF' : 'PNG Image';
-            const defaultName = `agentcanvas-${timestamp}.${ext}`;
+            const defaultName = `agileagentcanvas-${timestamp}.${ext}`;
 
             const defaultFolder = vscode.workspace.workspaceFolders?.[0]?.uri;
             const defaultUri = defaultFolder
@@ -455,7 +455,7 @@ export async function handleCommonWebviewMessage(
                     `Follow the help task routing and display rules to answer ` +
                     `this user question:\n\n${userText}`;
                 acOutput.appendLine(`${logPrefix} askAgent: sending bmad-help query to chat: "${userText}"`);
-                await openChat(`@agentcanvas ${helpQuery}`);
+                await openChat(`@agileagentcanvas ${helpQuery}`);
             }
             return true;
         }

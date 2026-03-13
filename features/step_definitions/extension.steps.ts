@@ -224,21 +224,21 @@ function loadExtensionModule(world: BmadWorld): any {
           initialize = async () => {};
           switchProject = async () => {};
           promptSwitchProject = async () => {};
-          getActiveOutputUri = () => vsc.Uri.file('/test/workspace/.agentcanvas-context');
+          getActiveOutputUri = () => vsc.Uri.file('/test/workspace/.agileagentcanvas-context');
           getActiveWorkspaceFolder = () => ({ uri: vsc.Uri.file('/test/workspace'), name: 'test', index: 0 });
           getDetectedProjects = () => [];
           onDidChangeActiveProject = (_listener: any) => ({ dispose: () => {} });
           dispose = () => {};
           constructor(_ctx: any) {}
         },
-        DEFAULT_OUTPUT_FOLDER: '.agentcanvas-context'
+        DEFAULT_OUTPUT_FOLDER: '.agileagentcanvas-context'
       },
-      './chat/agentcanvas-tools': {
+      './chat/agileagentcanvas-tools': {
         registerTools: () => [],
         sharedToolContext: { bmadPath: '', outputPath: '', store: null }
       },
       './chat/chat-participant': {
-        AgentCanvasChatParticipant: class { handleChat = () => {}; constructor(_s: any) {} }
+        AgileAgentCanvasChatParticipant: class { handleChat = () => {}; constructor(_s: any) {} }
       },
       './views/artifacts-tree-provider': {
         ArtifactsTreeProvider: class { refresh = () => {}; constructor(_s: any) {} }
@@ -321,14 +321,14 @@ When('I execute the command {string} with args {string} and {string}', async fun
 });
 
 When('I execute the workflow step command for {string} {string} action {string}', async function(this: BmadWorld, type: string, id: string, action: string) {
-  const handler = registeredCommands.get('agentcanvas.executeWorkflowStep');
-  assert.ok(handler, 'agentcanvas.executeWorkflowStep not registered');
+  const handler = registeredCommands.get('agileagentcanvas.executeWorkflowStep');
+  assert.ok(handler, 'agileagentcanvas.executeWorkflowStep not registered');
   await handler(type, id, action, action);
 });
 
 When('I execute the workflow step command with unmet dependencies for {string}', async function(this: BmadWorld, id: string) {
-  const handler = registeredCommands.get('agentcanvas.executeWorkflowStep');
-  assert.ok(handler, 'agentcanvas.executeWorkflowStep not registered');
+  const handler = registeredCommands.get('agileagentcanvas.executeWorkflowStep');
+  assert.ok(handler, 'agileagentcanvas.executeWorkflowStep not registered');
   await handler('epic', id, 'create-stories', 'create stories', ['validate'], { validate: 'pending' });
 });
 

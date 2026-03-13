@@ -1,5 +1,5 @@
 Feature: ArtifactsTreeProvider - VS Code Tree View
-  As an AgentCanvas user
+  As an AgileAgentCanvas user
   I want to see my project artifacts in a tree view
   So that I can navigate and manage them easily
 
@@ -75,7 +75,7 @@ Feature: ArtifactsTreeProvider - VS Code Tree View
   Scenario: Sets command on epic item
     Given the store has an epic with id "EPIC-1" and title "Test"
     When I expand the "category-epics" category
-    Then item 1 command should be "agentcanvas.selectArtifact"
+    Then item 1 command should be "agileagentcanvas.selectArtifact"
     And item 1 command arguments should be "epic" and "EPIC-1"
 
   @epics

@@ -38,6 +38,8 @@ describe('Canvas', () => {
     onUpdate: vi.fn(),
     onToggleExpand: vi.fn(),
     expandedIds: new Set<string>(),
+    expandedCategories: new Map<string, Set<string>>(),
+    onToggleCategoryExpand: vi.fn(),
     onRefineWithAI: vi.fn(),
     onExpandLane: vi.fn(),
     onCollapseLane: vi.fn(),

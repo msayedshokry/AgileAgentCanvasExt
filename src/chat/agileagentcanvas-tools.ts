@@ -5,12 +5,12 @@ import { ArtifactStore } from '../state/artifact-store';
 import { schemaValidator } from '../state/schema-validator';
 
 /**
- * AgentCanvas Language Model Tools
+ * AgileAgentCanvas Language Model Tools
  *
  * Registers three tools that the LLM can call during workflow execution:
- *   agentcanvas_read_file       — read any file under bmadPath, outputPath, or workspace folders
- *   agentcanvas_list_directory  — list contents of any directory under bmadPath, outputPath, or workspace folders
- *   agentcanvas_update_artifact — write changes to an artifact in the store
+ *   agileagentcanvas_read_file       — read any file under bmadPath, outputPath, or workspace folders
+ *   agileagentcanvas_list_directory  — list contents of any directory under bmadPath, outputPath, or workspace folders
+ *   agileagentcanvas_update_artifact — write changes to an artifact in the store
  *
  * These tools replace the old "pre-load one file → giant prompt string" pattern
  * and allow the LLM to navigate the _bmad framework folder and project source
@@ -26,7 +26,7 @@ import { schemaValidator } from '../state/schema-validator';
  *
  * ## Registration lifecycle
  * Tools are registered ONCE at extension activation via `registerTools()`.
- * The mutable `AgentCanvasToolContext` object is shared — callers update its fields
+ * The mutable `AgileAgentCanvasToolContext` object is shared — callers update its fields
  * in place (e.g. `ctx.bmadPath = newPath`) rather than re-registering, which
  * would cause duplicate-registration errors in VS Code.
  */
@@ -53,7 +53,7 @@ function isPathAllowed(target: string, allowedRoots: string[]): boolean {
  * workspace folders so the agent can inspect source code across multi-root
  * workspaces when creating or refining artifacts.
  */
-function getAllowedRoots(ctx: AgentCanvasToolContext): string[] {
+function getAllowedRoots(ctx: AgileAgentCanvasToolContext): string[] {
     const roots = [ctx.bmadPath, ctx.outputPath].filter(Boolean);
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (workspaceFolders) {
@@ -66,12 +66,12 @@ function getAllowedRoots(ctx: AgentCanvasToolContext): string[] {
 
 // ─── Tool context ────────────────────────────────────────────────────────────
 
-export interface AgentCanvasToolContext {
+export interface AgileAgentCanvasToolContext {
     /** Resolved path to the _bmad framework folder (always the bundled extension copy) */
     bmadPath: string;
     /** Resolved path to the project output folder */
     outputPath: string;
-    /** The artifact store instance for agentcanvas_update_artifact */
+    /** The artifact store instance for agileagentcanvas_update_artifact */
     store: ArtifactStore;
 }
 
@@ -80,7 +80,7 @@ export interface AgentCanvasToolContext {
  * mutates its fields whenever the active project changes; the tool handlers
  * always read the current values at invocation time.
  */
-export const sharedToolContext: AgentCanvasToolContext = {
+export const sharedToolContext: AgileAgentCanvasToolContext = {
     bmadPath: '',
     outputPath: '',
     store: null as any
@@ -90,7 +90,7 @@ export const sharedToolContext: AgentCanvasToolContext = {
 
 /**
  * Convert a parsed JSON object into a readable Markdown string.
- * Used by agentcanvas_write_file when generating .md companions from JSON.
+ * Used by agileagentcanvas_write_file when generating .md companions from JSON.
  */
 function jsonToMarkdown(title: string, obj: any, depth: number = 1): string {
     const lines: string[] = [];
@@ -143,14 +143,14 @@ function jsonToMarkdown(title: string, obj: any, depth: number = 1): string {
 // ─── Tool registration ───────────────────────────────────────────────────────
 
 /**
- * Register all three AgentCanvas tools with VS Code's language model tool registry.
+ * Register all three AgileAgentCanvas tools with VS Code's language model tool registry.
  * Call this ONCE at extension activation; returns Disposables to push onto
  * context.subscriptions.
  *
  * The handlers read from `sharedToolContext` at call time, so callers can
  * update that object's fields without re-registering.
  */
-export function registerTools(ctx: AgentCanvasToolContext): vscode.Disposable[] {
+export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposable[] {
     const disposables: vscode.Disposable[] = [];
 
     // vscode.lm is only available when a Copilot-compatible extension is installed.
@@ -159,16 +159,16 @@ export function registerTools(ctx: AgentCanvasToolContext): vscode.Disposable[] 
         return disposables;
     }
 
-    // ── agentcanvas_read_file ──────────────────────────────────────────────────────
+    // ── agileagentcanvas_read_file ──────────────────────────────────────────────────────
     disposables.push(
-        vscode.lm.registerTool<{ path: string }>('agentcanvas_read_file', {
+        vscode.lm.registerTool<{ path: string }>('agileagentcanvas_read_file', {
             async invoke(request, _token) {
                 const filePath = request.input.path;
                 const allowedRoots = getAllowedRoots(ctx);
 
                 if (!isPathAllowed(filePath, allowedRoots)) {
                     const msg = `Access denied: "${filePath}" is outside the allowed BMAD paths.`;
-                    acOutput.appendLine(`[agentcanvas_read_file] ${msg}`);
+                    acOutput.appendLine(`[agileagentcanvas_read_file] ${msg}`);
                     return new vscode.LanguageModelToolResult([
                         new vscode.LanguageModelTextPart(msg)
                     ]);
@@ -178,13 +178,13 @@ export function registerTools(ctx: AgentCanvasToolContext): vscode.Disposable[] 
                     const uri = vscode.Uri.file(filePath);
                     const bytes = await vscode.workspace.fs.readFile(uri);
                     const content = Buffer.from(bytes).toString('utf-8');
-                    acOutput.appendLine(`[agentcanvas_read_file] Read ${content.length} chars from ${filePath}`);
+                    acOutput.appendLine(`[agileagentcanvas_read_file] Read ${content.length} chars from ${filePath}`);
                     return new vscode.LanguageModelToolResult([
                         new vscode.LanguageModelTextPart(content)
                     ]);
                 } catch (err: any) {
                     const msg = `Error reading "${filePath}": ${err?.message ?? err}`;
-                    acOutput.appendLine(`[agentcanvas_read_file] ${msg}`);
+                    acOutput.appendLine(`[agileagentcanvas_read_file] ${msg}`);
                     return new vscode.LanguageModelToolResult([
                         new vscode.LanguageModelTextPart(msg)
                     ]);
@@ -193,16 +193,16 @@ export function registerTools(ctx: AgentCanvasToolContext): vscode.Disposable[] 
         })
     );
 
-    // ── agentcanvas_list_directory ─────────────────────────────────────────────────
+    // ── agileagentcanvas_list_directory ─────────────────────────────────────────────────
     disposables.push(
-        vscode.lm.registerTool<{ path: string }>('agentcanvas_list_directory', {
+        vscode.lm.registerTool<{ path: string }>('agileagentcanvas_list_directory', {
             async invoke(request, _token) {
                 const dirPath = request.input.path;
                 const allowedRoots = getAllowedRoots(ctx);
 
                 if (!isPathAllowed(dirPath, allowedRoots)) {
                     const msg = `Access denied: "${dirPath}" is outside the allowed BMAD paths.`;
-                    acOutput.appendLine(`[agentcanvas_list_directory] ${msg}`);
+                    acOutput.appendLine(`[agileagentcanvas_list_directory] ${msg}`);
                     return new vscode.LanguageModelToolResult([
                         new vscode.LanguageModelTextPart(msg)
                     ]);
@@ -217,13 +217,13 @@ export function registerTools(ctx: AgentCanvasToolContext): vscode.Disposable[] 
                         return `${name}  [${kind}]`;
                     });
                     const result = lines.join('\n') || '(empty directory)';
-                    acOutput.appendLine(`[agentcanvas_list_directory] Listed ${entries.length} entries in ${dirPath}`);
+                    acOutput.appendLine(`[agileagentcanvas_list_directory] Listed ${entries.length} entries in ${dirPath}`);
                     return new vscode.LanguageModelToolResult([
                         new vscode.LanguageModelTextPart(result)
                     ]);
                 } catch (err: any) {
                     const msg = `Error listing "${dirPath}": ${err?.message ?? err}`;
-                    acOutput.appendLine(`[agentcanvas_list_directory] ${msg}`);
+                    acOutput.appendLine(`[agileagentcanvas_list_directory] ${msg}`);
                     return new vscode.LanguageModelToolResult([
                         new vscode.LanguageModelTextPart(msg)
                     ]);
@@ -232,17 +232,17 @@ export function registerTools(ctx: AgentCanvasToolContext): vscode.Disposable[] 
         })
     );
 
-    // ── agentcanvas_update_artifact ────────────────────────────────────────────────
+    // ── agileagentcanvas_update_artifact ────────────────────────────────────────────────
     disposables.push(
         vscode.lm.registerTool<{ type: string; id: string; changes: Record<string, any> }>(
-            'agentcanvas_update_artifact',
+            'agileagentcanvas_update_artifact',
             {
                 async invoke(request, _token) {
                     const { type, id, changes } = request.input;
 
                     if (!type || !id || !changes || typeof changes !== 'object') {
-                        const msg = 'agentcanvas_update_artifact requires type, id, and a changes object.';
-                        acOutput.appendLine(`[agentcanvas_update_artifact] ${msg}`);
+                        const msg = 'agileagentcanvas_update_artifact requires type, id, and a changes object.';
+                        acOutput.appendLine(`[agileagentcanvas_update_artifact] ${msg}`);
                         return new vscode.LanguageModelToolResult([
                             new vscode.LanguageModelTextPart(msg)
                         ]);
@@ -256,7 +256,7 @@ export function registerTools(ctx: AgentCanvasToolContext): vscode.Disposable[] 
                             schemaValidator.init(ctx.bmadPath, acOutput);
                         } catch (err: any) {
                             acOutput.appendLine(
-                                `[agentcanvas_update_artifact] Schema validator init failed: ${err?.message ?? err}`
+                                `[agileagentcanvas_update_artifact] Schema validator init failed: ${err?.message ?? err}`
                             );
                         }
                     }
@@ -267,10 +267,10 @@ export function registerTools(ctx: AgentCanvasToolContext): vscode.Disposable[] 
                             `REJECTED: The changes for ${type}/${id} do not conform to the artifact schema.\n\n` +
                             `Schema validation errors:\n` +
                             validation.errors.map(e => `  - ${e}`).join('\n') +
-                            `\n\nPlease fix the changes to match the schema exactly and call agentcanvas_update_artifact again. ` +
+                            `\n\nPlease fix the changes to match the schema exactly and call agileagentcanvas_update_artifact again. ` +
                             `Use only the field names, types, and enum values defined in the schema.`;
                         acOutput.appendLine(
-                            `[agentcanvas_update_artifact] REJECTED ${type}/${id}: ` +
+                            `[agileagentcanvas_update_artifact] REJECTED ${type}/${id}: ` +
                             validation.errors.join('; ')
                         );
                         return new vscode.LanguageModelToolResult([
@@ -281,13 +281,13 @@ export function registerTools(ctx: AgentCanvasToolContext): vscode.Disposable[] 
                     try {
                         await ctx.store.updateArtifact(type, id, changes);
                         const msg = `Artifact ${type}/${id} updated successfully.`;
-                        acOutput.appendLine(`[agentcanvas_update_artifact] ${msg}`);
+                        acOutput.appendLine(`[agileagentcanvas_update_artifact] ${msg}`);
                         return new vscode.LanguageModelToolResult([
                             new vscode.LanguageModelTextPart(msg)
                         ]);
                     } catch (err: any) {
                         const msg = `Error updating artifact ${type}/${id}: ${err?.message ?? err}`;
-                        acOutput.appendLine(`[agentcanvas_update_artifact] ${msg}`);
+                        acOutput.appendLine(`[agileagentcanvas_update_artifact] ${msg}`);
                         return new vscode.LanguageModelToolResult([
                             new vscode.LanguageModelTextPart(msg)
                         ]);
@@ -297,10 +297,10 @@ export function registerTools(ctx: AgentCanvasToolContext): vscode.Disposable[] 
         )
     );
 
-    // ── agentcanvas_write_file ───────────────────────────────────────────────────
+    // ── agileagentcanvas_write_file ───────────────────────────────────────────────────
     disposables.push(
         vscode.lm.registerTool<{ path: string; content: string; format?: string }>(
-            'agentcanvas_write_file',
+            'agileagentcanvas_write_file',
             {
                 async invoke(request, _token) {
                     const filePath = request.input.path;
@@ -309,16 +309,16 @@ export function registerTools(ctx: AgentCanvasToolContext): vscode.Disposable[] 
                     const allowedRoots = getAllowedRoots(ctx);
 
                     if (!isPathAllowed(filePath, allowedRoots)) {
-                        const msg = `Access denied: "${filePath}" is outside the allowed AgentCanvas paths.`;
-                        acOutput.appendLine(`[agentcanvas_write_file] ${msg}`);
+                        const msg = `Access denied: "${filePath}" is outside the allowed AgileAgentCanvas paths.`;
+                        acOutput.appendLine(`[agileagentcanvas_write_file] ${msg}`);
                         return new vscode.LanguageModelToolResult([
                             new vscode.LanguageModelTextPart(msg)
                         ]);
                     }
 
                     if (!content || typeof content !== 'string') {
-                        const msg = 'agentcanvas_write_file requires a non-empty content string.';
-                        acOutput.appendLine(`[agentcanvas_write_file] ${msg}`);
+                        const msg = 'agileagentcanvas_write_file requires a non-empty content string.';
+                        acOutput.appendLine(`[agileagentcanvas_write_file] ${msg}`);
                         return new vscode.LanguageModelToolResult([
                             new vscode.LanguageModelTextPart(msg)
                         ]);
@@ -326,7 +326,7 @@ export function registerTools(ctx: AgentCanvasToolContext): vscode.Disposable[] 
 
                     // Determine the effective output format from the user's settings
                     const configFormat = vscode.workspace
-                        .getConfiguration('agentcanvas')
+                        .getConfiguration('agileagentcanvas')
                         .get<'json' | 'markdown' | 'dual'>('outputFormat', 'dual');
                     const effectiveFormat = requestedFormat || configFormat;
 
@@ -400,13 +400,13 @@ export function registerTools(ctx: AgentCanvasToolContext): vscode.Disposable[] 
                         }
 
                         const msg = `File(s) written successfully: ${written.join(', ')}`;
-                        acOutput.appendLine(`[agentcanvas_write_file] ${msg}`);
+                        acOutput.appendLine(`[agileagentcanvas_write_file] ${msg}`);
                         return new vscode.LanguageModelToolResult([
                             new vscode.LanguageModelTextPart(msg)
                         ]);
                     } catch (err: any) {
                         const msg = `Error writing "${filePath}": ${err?.message ?? err}`;
-                        acOutput.appendLine(`[agentcanvas_write_file] ${msg}`);
+                        acOutput.appendLine(`[agileagentcanvas_write_file] ${msg}`);
                         return new vscode.LanguageModelToolResult([
                             new vscode.LanguageModelTextPart(msg)
                         ]);
@@ -416,7 +416,7 @@ export function registerTools(ctx: AgentCanvasToolContext): vscode.Disposable[] 
         )
     );
 
-    acOutput.appendLine('[AgentCanvasTools] Registered 4 language model tools');
+    acOutput.appendLine('[AgileAgentCanvasTools] Registered 4 language model tools');
     return disposables;
 }
 
@@ -429,7 +429,7 @@ export function registerTools(ctx: AgentCanvasToolContext): vscode.Disposable[] 
 export function getToolDefinitions(): vscode.LanguageModelChatTool[] {
     return [
         {
-            name: 'agentcanvas_read_file',
+            name: 'agileagentcanvas_read_file',
             description:
                 'Reads a file from the BMAD framework folder, the project output folder, ' +
                 'or any workspace folder. Use this to read agent definitions, workflow steps, ' +
@@ -447,7 +447,7 @@ export function getToolDefinitions(): vscode.LanguageModelChatTool[] {
             }
         },
         {
-            name: 'agentcanvas_list_directory',
+            name: 'agileagentcanvas_list_directory',
             description:
                 'Lists the contents of a directory inside the BMAD framework folder, ' +
                 'the project output folder, or any workspace folder. Use this to discover ' +
@@ -465,7 +465,7 @@ export function getToolDefinitions(): vscode.LanguageModelChatTool[] {
             }
         },
         {
-            name: 'agentcanvas_update_artifact',
+            name: 'agileagentcanvas_update_artifact',
             description:
                 'Saves changes to a BMAD artifact (vision, epic, story, requirement, etc.) ' +
                 'in the project. Call this when you have completed refining an artifact and ' +
@@ -500,7 +500,7 @@ export function getToolDefinitions(): vscode.LanguageModelChatTool[] {
             }
         },
         {
-            name: 'agentcanvas_write_file',
+            name: 'agileagentcanvas_write_file',
             description:
                 'Writes a file to the project output folder or any workspace folder. ' +
                 'Use this tool (instead of VS Code\'s built-in file editing) when writing ' +
@@ -510,7 +510,7 @@ export function getToolDefinitions(): vscode.LanguageModelChatTool[] {
                 'and vice versa. When the format is "json", only JSON files are written. ' +
                 'When the format is "markdown", only Markdown files are written. ' +
                 'ALWAYS prefer this tool over direct file editing for any file in the ' +
-                '.agentcanvas-context directory tree.',
+                '.agileagentcanvas-context directory tree.',
             inputSchema: {
                 type: 'object' as const,
                 properties: {
@@ -525,7 +525,7 @@ export function getToolDefinitions(): vscode.LanguageModelChatTool[] {
                     format: {
                         type: 'string',
                         description: 'Optional override for output format: "json", "markdown", or "dual". ' +
-                            'If omitted, uses the user\'s agentcanvas.outputFormat setting (default: "dual").'
+                            'If omitted, uses the user\'s agileagentcanvas.outputFormat setting (default: "dual").'
                     }
                 },
                 required: ['path', 'content']

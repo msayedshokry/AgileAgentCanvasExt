@@ -1,5 +1,5 @@
 Feature: Artifact Store - Project Management
-  As an AgentCanvas user
+  As an AgileAgentCanvas user
   I want to manage projects and artifacts
   So that I can organize my product development work
 

@@ -21,7 +21,7 @@ Cards are color-coded by artifact type and connected with dependency arrows. Cli
 
 ### AI Chat Participant
 
-Type `@agentcanvas` in VS Code chat to access 30+ slash commands powered by AI:
+Type `@agileagentcanvas` in VS Code chat to access 30+ slash commands powered by AI:
 
 | Command | Description |
 |---------|-------------|
@@ -58,9 +58,9 @@ Type `@agentcanvas` in VS Code chat to access 30+ slash commands powered by AI:
 
 Agile Agent Canvas registers tools that AI models can call autonomously during chat conversations:
 
-- **agentcanvas_read_file** — Read BMAD framework files, schemas, workflows, and agent definitions
-- **agentcanvas_list_directory** — Discover available workflows, agents, schemas, and steps
-- **agentcanvas_update_artifact** — Persist artifact changes directly from AI refinement
+- **agileagentcanvas_read_file** — Read BMAD framework files, schemas, workflows, and agent definitions
+- **agileagentcanvas_list_directory** — Discover available workflows, agents, schemas, and steps
+- **agileagentcanvas_update_artifact** — Persist artifact changes directly from AI refinement
 
 ### Workflow System
 
@@ -86,33 +86,33 @@ Agile Agent Canvas registers tools that AI models can call autonomously during c
 2. **Open the sidebar** by clicking the Agile Agent Canvas icon in the activity bar
 3. **Create a new project** using the `Agile Agent Canvas: New Project` command, or load demo data with `Agile Agent Canvas: Load Demo Data`
 4. **Open the canvas** via the sidebar header icon or run `Agile Agent Canvas: Open Visual Canvas` from the command palette
-5. **Start chatting** with `@agentcanvas /vision` to define your product vision, then work through requirements, epics, and stories
+5. **Start chatting** with `@agileagentcanvas /vision` to define your product vision, then work through requirements, epics, and stories
 
 ### Recommended Workflow
 
 ```
-@agentcanvas /vision       -> Define what you're building and why
-@agentcanvas /requirements -> Extract functional and non-functional requirements
-@agentcanvas /epics        -> Structure work into value-driven epics
-@agentcanvas /stories      -> Break epics into implementable stories
-@agentcanvas /readiness    -> Validate everything is ready for development
-@agentcanvas /dev          -> Start building with full context
+@agileagentcanvas /vision       -> Define what you're building and why
+@agileagentcanvas /requirements -> Extract functional and non-functional requirements
+@agileagentcanvas /epics        -> Structure work into value-driven epics
+@agileagentcanvas /stories      -> Break epics into implementable stories
+@agileagentcanvas /readiness    -> Validate everything is ready for development
+@agileagentcanvas /dev          -> Start building with full context
 ```
 
 ---
 
 ## AI Provider Configuration
 
-Agile Agent Canvas supports multiple AI providers. Set `agentcanvas.aiProvider` in settings:
+Agile Agent Canvas supports multiple AI providers. Set `agileagentcanvas.aiProvider` in settings:
 
 | Provider | Setup |
 |----------|-------|
 | **auto** (default) | Automatically detects the best available provider |
 | **copilot** | Uses GitHub Copilot via VS Code Language Model API |
-| **openai** | Requires `agentcanvas.apiKey`; default model: `gpt-4o` |
-| **anthropic** | Requires `agentcanvas.apiKey`; default model: `claude-sonnet-4-5` |
-| **gemini** | Requires `agentcanvas.apiKey`; default model: `gemini-2.0-flash` |
-| **ollama** | Requires `agentcanvas.baseUrl` (e.g. `http://localhost:11434`); default model: `llama3` |
+| **openai** | Requires `agileagentcanvas.apiKey`; default model: `gpt-4o` |
+| **anthropic** | Requires `agileagentcanvas.apiKey`; default model: `claude-sonnet-4-5` |
+| **gemini** | Requires `agileagentcanvas.apiKey`; default model: `gemini-2.0-flash` |
+| **ollama** | Requires `agileagentcanvas.baseUrl` (e.g. `http://localhost:11434`); default model: `llama3` |
 | **antigravity** | Injects prompts into the Antigravity chat panel via native command |
 
 ---
@@ -121,15 +121,15 @@ Agile Agent Canvas supports multiple AI providers. Set `agentcanvas.aiProvider` 
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `agentcanvas.outputFolder` | `.agentcanvas-context` | Folder for BMAD output artifacts |
-| `agentcanvas.outputFormat` | `dual` | Output format: `json`, `markdown`, or `dual` (both) |
-| `agentcanvas.autoSync` | `true` | Automatically sync visual changes to files |
-| `agentcanvas.showAICursor` | `true` | Show AI cursor position in canvas |
-| `agentcanvas.defaultAgent` | `analyst` | Default BMAD agent (`analyst`, `pm`, `architect`) |
-| `agentcanvas.aiProvider` | `auto` | AI provider selection (see table above) |
-| `agentcanvas.apiKey` | — | API key for OpenAI, Anthropic, or Gemini |
-| `agentcanvas.modelId` | — | Override the default model for your provider |
-| `agentcanvas.baseUrl` | — | Base URL for Ollama or custom OpenAI-compatible endpoints |
+| `agileagentcanvas.outputFolder` | `.agileagentcanvas-context` | Folder for BMAD output artifacts |
+| `agileagentcanvas.outputFormat` | `dual` | Output format: `json`, `markdown`, or `dual` (both) |
+| `agileagentcanvas.autoSync` | `true` | Automatically sync visual changes to files |
+| `agileagentcanvas.showAICursor` | `true` | Show AI cursor position in canvas |
+| `agileagentcanvas.defaultAgent` | `analyst` | Default BMAD agent (`analyst`, `pm`, `architect`) |
+| `agileagentcanvas.aiProvider` | `auto` | AI provider selection (see table above) |
+| `agileagentcanvas.apiKey` | — | API key for OpenAI, Anthropic, or Gemini |
+| `agileagentcanvas.modelId` | — | Override the default model for your provider |
+| `agileagentcanvas.baseUrl` | — | Base URL for Ollama or custom OpenAI-compatible endpoints |
 
 ---
 
@@ -142,7 +142,7 @@ Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and type "Agile Agent 
 - **Agile Agent Canvas: Load Existing Project** — Load artifacts from an existing output folder
 - **Agile Agent Canvas: Export Artifacts** — Export to Markdown, JSON, or JIRA CSV
 - **Agile Agent Canvas: Import Artifacts** — Import artifacts from a JSON file
-- **Agile Agent Canvas: Sync to .agentcanvas-context** — Manually sync canvas state to files
+- **Agile Agent Canvas: Sync to .agileagentcanvas-context** — Manually sync canvas state to files
 - **Agile Agent Canvas: Load Demo Data** — Populate canvas with sample artifacts
 - **Agile Agent Canvas: Switch Project** — Switch between multiple projects in your workspace
 - **Agile Agent Canvas: Install Framework to IDE** — Install the BMAD framework files

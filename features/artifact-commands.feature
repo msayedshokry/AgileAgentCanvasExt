@@ -82,9 +82,9 @@ Feature: artifact-commands BMM workflow utilities
     Then the result should contain 2 workflows
 
   # launchBmmWorkflow
-  Scenario: Calls openChat with the trigger phrase prefixed by @agentcanvas
+  Scenario: Calls openChat with the trigger phrase prefixed by @agileagentcanvas
     When I call launchBmmWorkflow with trigger "lets create a product brief"
-    Then openChat should have been called with "@agentcanvas lets create a product brief"
+    Then openChat should have been called with "@agileagentcanvas lets create a product brief"
 
   Scenario: launchBmmWorkflow does not throw
     When I call launchBmmWorkflow with trigger "run code review"

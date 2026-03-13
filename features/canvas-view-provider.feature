@@ -1,5 +1,5 @@
-Feature: AgentCanvasViewProvider
-  Tests for the AgentCanvas webview view provider
+Feature: AgileAgentCanvasViewProvider
+  Tests for the AgileAgentCanvas webview view provider
 
   Background:
     Given a fresh canvas view provider
@@ -9,7 +9,7 @@ Feature: AgentCanvasViewProvider
     Then the canvas view provider should be defined
 
   Scenario: Has correct view type
-    Then the viewType should be "agentcanvas.canvasView"
+    Then the viewType should be "agileagentcanvas.canvasView"
 
   Scenario: Listens for artifact changes on construction
     Then the provider should have registered an artifact change listener
@@ -100,7 +100,7 @@ Feature: AgentCanvasViewProvider
     And a requirement exists in canvas store
     When I resolve the webview view
     And I send message type "ready"
-    Then the updateArtifacts message should include a "requirement" artifact with dependency "vision-1"
+    Then the updateArtifacts message should include a "requirement" artifact with parentId "vision-1"
 
   Scenario: Transforms epics to artifacts
     Given the build does not exist
@@ -187,12 +187,12 @@ Feature: AgentCanvasViewProvider
     And I send message type "ready"
     Then the updateArtifacts message should include a "test-strategy" artifact
 
-  Scenario: Transforms test case to artifact
+  Scenario: Transforms test case to test-coverage artifact
     Given the build does not exist
     And a test case exists in canvas store
     When I resolve the webview view
     And I send message type "ready"
-    Then the updateArtifacts message should include a "test-case" artifact
+    Then the updateArtifacts message should include a "test-coverage" artifact
 
   Scenario: Test strategy and test case artifacts have testing column X position
     Given the build does not exist

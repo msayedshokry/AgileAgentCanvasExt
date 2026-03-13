@@ -20,7 +20,7 @@ export async function loadExistingProject(store: ArtifactStore): Promise<void> {
 
     const loadFrom = await vscode.window.showQuickPick(
         [
-            { label: 'Current Workspace', description: 'Load from .agentcanvas-context in current workspace', value: 'workspace' },
+            { label: 'Current Workspace', description: 'Load from .agileagentcanvas-context in current workspace', value: 'workspace' },
             { label: 'Browse for Folder...', description: 'Select any folder containing BMAD artifacts', value: 'browse' }
         ],
         { placeHolder: 'Where to load BMAD artifacts from?' }
@@ -48,7 +48,7 @@ export async function loadExistingProject(store: ArtifactStore): Promise<void> {
             canSelectFolders: true,
             canSelectMany: false,
             openLabel: 'Load BMAD Artifacts',
-            title: 'Select folder containing BMAD artifacts (.agentcanvas-context or similar)'
+            title: 'Select folder containing BMAD artifacts (.agileagentcanvas-context or similar)'
         });
 
         if (!selected || selected.length === 0) {
@@ -93,7 +93,7 @@ export async function loadExistingProject(store: ArtifactStore): Promise<void> {
                 );
 
                 if (selection === 'Generate JSON') {
-                    const convertCommand = `@agentcanvas /convert-to-json "${bmadFolder.fsPath}"`;
+                    const convertCommand = `@agileagentcanvas /convert-to-json "${bmadFolder.fsPath}"`;
                     await openChat(convertCommand);
                     vscode.window.setStatusBarMessage('Press Enter to start JSON generation...', 5000);
                 }
@@ -304,7 +304,7 @@ export function loadDemoData(store: ArtifactStore): Thenable<void> {
                         soThat: 'I can get help structuring requirements'
                     },
                     acceptanceCriteria: [
-                        { given: 'I open the chat', when: 'I type @agentcanvas', then: 'the AI analyst responds' }
+                        { given: 'I open the chat', when: 'I type @agileagentcanvas', then: 'the AI analyst responds' }
                     ],
                     status: 'draft',
                     storyPoints: 8
@@ -333,7 +333,7 @@ export function loadDemoData(store: ArtifactStore): Thenable<void> {
         'Open Canvas'
     ).then(selection => {
         if (selection === 'Open Canvas') {
-            return vscode.commands.executeCommand('agentcanvas.openCanvas');
+            return vscode.commands.executeCommand('agileagentcanvas.openCanvas');
         }
     });
 }
@@ -343,7 +343,7 @@ export function loadDemoData(store: ArtifactStore): Thenable<void> {
  * canvas artifact types, cross-dependencies, and BMAD workflows.
  *
  * Approach: Pre-built JSON files ship in resources/sample-project/ inside
- * the VSIX.  This function copies them to .agentcanvas-context and calls
+ * the VSIX.  This function copies them to .agileagentcanvas-context and calls
  * store.loadFromFolder() — no in-memory data construction needed.
  */
 export async function loadSampleProject(store: ArtifactStore, extensionUri?: vscode.Uri): Promise<void> {
@@ -351,7 +351,7 @@ export async function loadSampleProject(store: ArtifactStore, extensionUri?: vsc
 
     // 1. Resolve the extension URI
     const extUri = extensionUri
-        ?? vscode.extensions.getExtension('mohamed-sayed.agentcanvas')?.extensionUri;
+        ?? vscode.extensions.getExtension('msayedshokry.agileagentcanvas')?.extensionUri;
     if (!extUri) {
         acOutput.appendLine('[loadSampleProject] ERROR: Cannot locate extension URI');
         vscode.window.showErrorMessage('Agile Agent Canvas: Cannot locate extension resources.');
@@ -359,7 +359,7 @@ export async function loadSampleProject(store: ArtifactStore, extensionUri?: vsc
     }
     acOutput.appendLine(`[loadSampleProject] Extension URI: ${extUri.fsPath}`);
 
-    // 2. Resolve the workspace .agentcanvas-context output folder
+    // 2. Resolve the workspace .agileagentcanvas-context output folder
     const resolver = getWorkspaceResolver();
     const outputUri = resolver?.getActiveOutputUri();
     if (!outputUri) {
@@ -379,7 +379,7 @@ export async function loadSampleProject(store: ArtifactStore, extensionUri?: vsc
     const sampleRoot = vscode.Uri.joinPath(extUri, 'resources', 'sample-project');
     acOutput.appendLine(`[loadSampleProject] Sample root: ${sampleRoot.fsPath}`);
 
-    // 3. Recursively copy every JSON file from resources/sample-project → .agentcanvas-context
+    // 3. Recursively copy every JSON file from resources/sample-project → .agileagentcanvas-context
     let filesCopied = 0;
     async function copyDir(src: vscode.Uri, dest: vscode.Uri): Promise<void> {
         const entries = await vscode.workspace.fs.readDirectory(src);
@@ -398,7 +398,7 @@ export async function loadSampleProject(store: ArtifactStore, extensionUri?: vsc
     }
 
     try {
-        acOutput.appendLine('[loadSampleProject] Copying sample files to .agentcanvas-context...');
+        acOutput.appendLine('[loadSampleProject] Copying sample files to .agileagentcanvas-context...');
 
         await vscode.window.withProgress(
             { location: vscode.ProgressLocation.Notification, title: 'Loading sample project…', cancellable: false },
@@ -422,7 +422,7 @@ export async function loadSampleProject(store: ArtifactStore, extensionUri?: vsc
             'Open Canvas'
         );
         if (selection === 'Open Canvas') {
-            await vscode.commands.executeCommand('agentcanvas.openCanvas');
+            await vscode.commands.executeCommand('agileagentcanvas.openCanvas');
         }
     } catch (error) {
         acOutput.appendLine(`[loadSampleProject] Error: ${error}`);

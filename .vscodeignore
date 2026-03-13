@@ -40,6 +40,7 @@ cucumber.js
 
 # Dev tooling
 .vscode/**
+.github/skills/**
 .eslintrc*
 .eslintignore
 .prettier*
@@ -62,5 +63,5 @@ CDATA*
 *.7z
 .c8rc.json
 package-lock.json
-bmad-studio-*.vsix
+agileagentcanvas-*.vsix
 fix-sample-metadata.js

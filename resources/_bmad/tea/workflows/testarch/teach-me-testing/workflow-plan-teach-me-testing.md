@@ -501,7 +501,7 @@ teach-me-testing/
 └── checklist.md                          ✓ Created
 ```
 
-**Location:** /Users/murat.ozcan/opensource/bmad-playground/\.agentcanvas-context/bmb-creations/workflows/teach-me-testing/
+**Location:** /Users/murat.ozcan/opensource/bmad-playground/\.agileagentcanvas-context/bmb-creations/workflows/teach-me-testing/
 
 **Configuration:**
 
@@ -924,7 +924,7 @@ teach-me-testing/
 **DEPLOYMENT:** Move workflow from staging to TEA module
 
 **Source (Staging):**
-`/Users/murat.ozcan/opensource/bmad-playground/.agentcanvas-context/bmb-creations/workflows/teach-me-testing/`
+`/Users/murat.ozcan/opensource/bmad-playground/.agileagentcanvas-context/bmb-creations/workflows/teach-me-testing/`
 
 **Target (Production):**
 `/Users/murat.ozcan/opensource/bmad-method-test-architecture-enterprise/src/workflows/testarch/teach-me-testing/`
@@ -932,7 +932,7 @@ teach-me-testing/
 **Command:**
 
 ```bash
-cp -r /Users/murat.ozcan/opensource/bmad-playground/.agentcanvas-context/bmb-creations/workflows/teach-me-testing \
+cp -r /Users/murat.ozcan/opensource/bmad-playground/.agileagentcanvas-context/bmb-creations/workflows/teach-me-testing \
       /Users/murat.ozcan/opensource/bmad-method-test-architecture-enterprise/src/workflows/testarch/
 ```
 

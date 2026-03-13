@@ -2,11 +2,12 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as yaml from 'yaml';
 import { acOutput } from '../extension';
-import { getToolDefinitions } from '../chat/agentcanvas-tools';
+import { getToolDefinitions } from '../chat/agileagentcanvas-tools';
 import { schemaValidator } from '../state/schema-validator';
 import { BmadModel, streamChatResponse, ChatMessage } from '../chat/ai-provider';
 import { getPersonaForArtifactType, formatFullAgentForPrompt } from '../chat/agent-personas';
 import { orchestrateAntigravityWorkflow, ExecutionHints } from '../antigravity/antigravity-orchestrator';
+import { parseFrontmatter } from './frontmatter';
 
 /**
  * BMAD Workflow Executor
@@ -758,23 +759,7 @@ export const WORKFLOW_REGISTRY: WorkflowDefinition[] = [
     }
 ];
 
-/**
- * Parse YAML frontmatter from a markdown file
- */
-export function parseFrontmatter(content: string): { frontmatter: any; body: string } {
-    const match = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
-    if (match) {
-        try {
-            return {
-                frontmatter: yaml.parse(match[1]),
-                body: match[2].trim()
-            };
-        } catch (e) {
-            acOutput.appendLine(`[WorkflowExecutor] Error parsing frontmatter: ${e}`);
-        }
-    }
-    return { frontmatter: {}, body: content };
-}
+export { parseFrontmatter } from './frontmatter';
 
 /**
  * Main Workflow Executor class
@@ -1230,10 +1215,10 @@ ${stepContent}
             vars.set('communication_language', config.communication_language || 'English');
             vars.set('document_output_language', config.document_output_language || 'English');
             // Ensure output paths are always absolute. Config values may be bare relative names
-            // (e.g. ".agentcanvas-context") or contain {project-root} prefixes. Either way, resolve to absolute.
-            const rawOutput = config.output_folder || '{project-root}/.agentcanvas-context';
-            const rawPlanning = config.planning_artifacts || '{project-root}/.agentcanvas-context/planning-artifacts';
-            const rawImpl = config.implementation_artifacts || '{project-root}/.agentcanvas-context/implementation-artifacts';
+            // (e.g. ".agileagentcanvas-context") or contain {project-root} prefixes. Either way, resolve to absolute.
+            const rawOutput = config.output_folder || '{project-root}/.agileagentcanvas-context';
+            const rawPlanning = config.planning_artifacts || '{project-root}/.agileagentcanvas-context/planning-artifacts';
+            const rawImpl = config.implementation_artifacts || '{project-root}/.agileagentcanvas-context/implementation-artifacts';
             
             const resolveToAbsolute = (val: string): string => {
                 const resolved = this.resolveVariable(val);
@@ -2157,7 +2142,7 @@ ${schemaSection}
 1. Follow the workflow instructions step by step
 2. Ask clarifying questions when needed
 3. Provide your output in JSON format when generating refinements, conforming to the schema above if provided
-4. After completing refinements, the user can use \`@agentcanvas /apply\` to save changes
+4. After completing refinements, the user can use \`@agileagentcanvas /apply\` to save changes
 
 ## CRITICAL — BMAD Grounding Rule
 - BMAD installation path: \`${this.context.bmadPath || 'unknown'}\`
@@ -2211,7 +2196,7 @@ Begin executing the workflow now.`;
      *   - The specific workflow file path to start from (no master-agent detour)
      *   - The current artifact as context
      *   - The user's task instruction
-     *   - Three tools: agentcanvas_read_file, agentcanvas_list_directory, agentcanvas_update_artifact
+     *   - Three tools: agileagentcanvas_read_file, agileagentcanvas_list_directory, agileagentcanvas_update_artifact
      *
      * The loop continues until the LLM stops calling tools (i.e. it is done).
      * Text chunks are streamed to the chat response as they arrive.
@@ -2221,7 +2206,7 @@ Begin executing the workflow now.`;
      * @param artifact      The artifact object to work on (or null for creation tasks)
      * @param stream        The chat response stream to write to
      * @param token         Cancellation token
-     * @param store         The ArtifactStore — passed to agentcanvas_update_artifact via tool context
+     * @param store         The ArtifactStore — passed to agileagentcanvas_update_artifact via tool context
      * @param workflowPath  Optional absolute path to the specific workflow file to start from.
      *                      When omitted the LLM must discover the correct workflow itself.
      */
@@ -2245,15 +2230,15 @@ Begin executing the workflow now.`;
         const bmadPath = this.context.bmadPath;
         const projectRoot = this.context.projectRoot;
 
-        // Resolve the output folder: use config value if available, else workspace/.agentcanvas-context
-        // Config may contain an absolute path with {project-root}, or a bare relative name like ".agentcanvas-context".
+        // Resolve the output folder: use config value if available, else workspace/.agileagentcanvas-context
+        // Config may contain an absolute path with {project-root}, or a bare relative name like ".agileagentcanvas-context".
         // In either case we must produce an absolute path for the LLM.
         const configOutputFolder: string = this.context.config?.output_folder ?? '';
         const outputFolder = configOutputFolder
             ? (configOutputFolder.includes('{project-root}')
                 ? configOutputFolder.replace('{project-root}', projectRoot)
                 : path.join(projectRoot, configOutputFolder))
-            : path.join(projectRoot, '.agentcanvas-context');
+            : path.join(projectRoot, '.agileagentcanvas-context');
 
         // ── Variable substitution table ──────────────────────────────────────
         // Any {project-root} references in workflow files must be resolved to the
@@ -2270,7 +2255,7 @@ Begin executing the workflow now.`;
         // The VS Code setting `bmad.outputFormat` takes precedence over the
         // workflow file's frontmatter `output_format` — the user's explicit
         // toolbar selection is the canonical source of truth.
-        const userOutputFormat = vscode.workspace.getConfiguration('agentcanvas')
+        const userOutputFormat = vscode.workspace.getConfiguration('agileagentcanvas')
             .get<'json' | 'markdown' | 'dual'>('outputFormat', 'dual');
         let workflowOutputFormat: string = userOutputFormat;
         if (workflowPath) {
@@ -2289,7 +2274,7 @@ Start by reading this specific workflow file:
 
 Then follow its step references exactly as written (substituting variables using the table above).`
             : `## Workflow Discovery
-Use \`agentcanvas_list_directory\` on \`${bmadPath}\` to explore the framework structure and locate
+Use \`agileagentcanvas_list_directory\` on \`${bmadPath}\` to explore the framework structure and locate
 the correct workflow file for this task, then follow its steps.`;
 
         // ── Load the appropriate agent persona from disk ────────────────────
@@ -2323,7 +2308,7 @@ the correct workflow file for this task, then follow its steps.`;
         const schemaSection = schemaContent
             ? `## Artifact Schema — STRICT
 The artifact type \`${artifactType}\` MUST conform to the following JSON schema.
-Your \`changes\` object in \`agentcanvas_update_artifact\` calls must use ONLY the field names,
+Your \`changes\` object in \`agileagentcanvas_update_artifact\` calls must use ONLY the field names,
 types, and structures defined here.  Any fields not in this schema will be REJECTED.
 
 \`\`\`json
@@ -2337,9 +2322,9 @@ ${schemaContent}
 - Arrays must contain objects with the exact properties defined in the schema
 - Metadata fields can be included at the top level of \`changes\` as well`
             : `## Schema Compliance
-Before calling \`agentcanvas_update_artifact\`, read the artifact's schema file from:
+Before calling \`agileagentcanvas_update_artifact\`, read the artifact's schema file from:
   \`${bmadPath}/schemas/\`
-Use \`agentcanvas_list_directory\` and \`agentcanvas_read_file\` to find and read the correct schema.
+Use \`agileagentcanvas_list_directory\` and \`agileagentcanvas_read_file\` to find and read the correct schema.
 Your changes MUST conform exactly to the schema — non-conforming fields will be REJECTED.`;
 
         // ── System prompt ────────────────────────────────────────────────────
@@ -2354,7 +2339,7 @@ Your changes MUST conform exactly to the schema — non-conforming fields will b
         const systemPrompt = `${agentIntro}${personaSection}
 
 ## VS Code Workflow Execution Context
-You are executing a specific workflow task inside the AgentCanvas VS Code extension.
+You are executing a specific workflow task inside the AgileAgentCanvas VS Code extension.
 Skip your activation menu — the user has already selected a specific workflow via a slash command.
 Go directly to the workflow entry point below.
 
@@ -2382,10 +2367,10 @@ calling any tool:
 ${varTable}
 
 ## Your Tools
-- **agentcanvas_read_file(path)** — read any file under \`${bmadPath}\` (use resolved absolute paths)
-- **agentcanvas_list_directory(path)** — list any directory under \`${bmadPath}\`
-- **agentcanvas_update_artifact(type, id, changes)** — persist changes to a BMAD artifact in the project
-- **agentcanvas_write_file(path, content)** — write a file to the output folder or workspace. This respects the output format setting: when "dual", writing .md also generates .json and vice versa. **ALWAYS use this tool instead of VS Code's built-in file editing** for any file under \`${outputFolder}\` or the implementation-artifacts directory.
+- **agileagentcanvas_read_file(path)** — read any file under \`${bmadPath}\` (use resolved absolute paths)
+- **agileagentcanvas_list_directory(path)** — list any directory under \`${bmadPath}\`
+- **agileagentcanvas_update_artifact(type, id, changes)** — persist changes to a BMAD artifact in the project
+- **agileagentcanvas_write_file(path, content)** — write a file to the output folder or workspace. This respects the output format setting: when "dual", writing .md also generates .json and vice versa. **ALWAYS use this tool instead of VS Code's built-in file editing** for any file under \`${outputFolder}\` or the implementation-artifacts directory.
 
 ${schemaSection}
 
@@ -2394,13 +2379,13 @@ The user has selected \`output_format: ${workflowOutputFormat}\`.
 ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
     ? `### Saving the Artifact
 
-When you have produced the artifact content (or a complete section of it), call \`agentcanvas_update_artifact\` to persist it as structured JSON.
+When you have produced the artifact content (or a complete section of it), call \`agileagentcanvas_update_artifact\` to persist it as structured JSON.
 Writing Markdown text in the chat is NOT sufficient — the extension needs the structured JSON
 to persist the artifact to disk in both JSON and Markdown formats.
 
 **To save, call:**
 \`\`\`
-agentcanvas_update_artifact({
+agileagentcanvas_update_artifact({
   type: "<artifact-type>",
   id: "<artifact-id>",
   changes: { /* content fields from the schema above */ }
@@ -2418,8 +2403,8 @@ Do NOT skip checkpoints just to save.`
 
 ### Writing Implementation Files
 When a workflow instructs you to write files to the implementation-artifacts directory (or any directory
-under \`${outputFolder}\`), use the \`agentcanvas_write_file\` tool — **never use VS Code's built-in
-file editing** for these files. The \`agentcanvas_write_file\` tool automatically respects the user's
+under \`${outputFolder}\`), use the \`agileagentcanvas_write_file\` tool — **never use VS Code's built-in
+file editing** for these files. The \`agileagentcanvas_write_file\` tool automatically respects the user's
 output format setting and will generate both .json and .md files when the format is "dual".
 ` : ''}
 ${workflowSection}
@@ -2434,11 +2419,11 @@ ${task}
 - Always use absolute paths when calling tools — substitute all \`{project-root}\` variables first
 - Never invent schema fields, workflow steps, or agent personas — read them from the files
 - Follow the workflow steps in order; read each step file before acting on it
-- When you have finished producing the artifact and are ready to save, call \`agentcanvas_update_artifact\`
-- When writing files to any directory under the output folder, use \`agentcanvas_write_file\` — NEVER use VS Code's built-in file editing for .agentcanvas-context files
+- When you have finished producing the artifact and are ready to save, call \`agileagentcanvas_update_artifact\`
+- When writing files to any directory under the output folder, use \`agileagentcanvas_write_file\` — NEVER use VS Code's built-in file editing for .agileagentcanvas-context files
 - Your \`changes\` object MUST strictly follow the artifact schema — non-conforming updates will be rejected
 ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
-    ? `- When all content is finalized and the user has confirmed (or you are in YOLO mode), call \`agentcanvas_update_artifact\` with structured JSON content.
+    ? `- When all content is finalized and the user has confirmed (or you are in YOLO mode), call \`agileagentcanvas_update_artifact\` with structured JSON content.
 - Do NOT skip workflow checkpoints or pause instructions just to save. Save only when content is ready.`
     : ''}
 - Always respond in English`;
@@ -2450,7 +2435,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
         const tools = getToolDefinitions();
         const MAX_ROUNDS = 20; // guard against runaway loops
         let rounds = 0;
-        let artifactSaved = false; // Track whether agentcanvas_update_artifact was called
+        let artifactSaved = false; // Track whether agileagentcanvas_update_artifact was called
         let validationRetryCount = 0; // Track post-save schema validation retries
         let lastRoundText = ''; // Track last round's text for checkpoint detection
 
@@ -2519,12 +2504,12 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                 }
 
                 // ── Post-save schema validation + retry feedback ────────
-                // When agentcanvas_update_artifact succeeds, run strict validation
+                // When agileagentcanvas_update_artifact succeeds, run strict validation
                 // on the full artifact envelope (metadata + content) to
                 // catch structural issues the lenient pre-save check misses.
                 // Validation warnings are appended to the tool result so the
                 // LLM naturally sees them and can self-correct.
-                if (tc.name === 'agentcanvas_update_artifact') {
+                if (tc.name === 'agileagentcanvas_update_artifact') {
                     // Check if the tool call actually saved (vs. was rejected by pre-save validation)
                     const resultText = result.content
                         .filter((p): p is vscode.LanguageModelTextPart => p instanceof vscode.LanguageModelTextPart)
@@ -2627,7 +2612,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                                     metadata: {
                                         schemaVersion: '1.0.0',
                                         artifactType: artType,
-                                        workflowName: 'agentcanvas',
+                                        workflowName: 'agileagentcanvas',
                                         timestamps: {
                                             created: new Date().toISOString(),
                                             lastModified: new Date().toISOString()
@@ -2662,7 +2647,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                                             `\n\nWARNING: The artifact was saved, but strict schema validation found issues ` +
                                             `(attempt ${validationRetryCount}/${MAX_VALIDATION_RETRIES}):\n` +
                                             actionableErrors.map(e => `  - ${e}`).join('\n') +
-                                            `\n\nPlease call agentcanvas_update_artifact again with corrected content to fix these issues. ` +
+                                            `\n\nPlease call agileagentcanvas_update_artifact again with corrected content to fix these issues. ` +
                                             `Ensure ALL required fields are present and match the schema exactly.`;
 
                                         acOutput.appendLine(
@@ -2724,7 +2709,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
 
         // ── Fallback enforcement: nudge the LLM if it didn't save the artifact ──
         // If the output format requires JSON and the LLM finished without calling
-        // agentcanvas_update_artifact, inject a follow-up message and do one more round.
+        // agileagentcanvas_update_artifact, inject a follow-up message and do one more round.
         // BUT: if the LLM stopped at a checkpoint (presenting options / waiting for input),
         // do NOT nudge — the pause is intentional interactive behavior.
         const checkpointIndicators = /\[a\]|\[c\]|\[p\]|\[y\]|YOLO|waiting for.*(input|response|choice|selection)|select.*(option|number|choice)|choose.*(one|option|above)|what would you like/i;
@@ -2736,13 +2721,13 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
             && !token.isCancellationRequested
             && !looksLikeCheckpoint
         ) {
-            acOutput.appendLine('[executeWithTools] LLM finished without calling agentcanvas_update_artifact — sending nudge');
+            acOutput.appendLine('[executeWithTools] LLM finished without calling agileagentcanvas_update_artifact — sending nudge');
             stream.markdown('\n\n---\n*Artifact not saved yet — requesting JSON save...*\n\n');
 
             messages.push(vscode.LanguageModelChatMessage.User(
-                `IMPORTANT: You finished your response without calling \`agentcanvas_update_artifact\`. ` +
+                `IMPORTANT: You finished your response without calling \`agileagentcanvas_update_artifact\`. ` +
                 `The output_format is "${workflowOutputFormat}" which REQUIRES saving the artifact as structured JSON. ` +
-                `Please call \`agentcanvas_update_artifact\` now with the complete artifact content from your response above. ` +
+                `Please call \`agileagentcanvas_update_artifact\` now with the complete artifact content from your response above. ` +
                 `Extract the structured data and pass it as the \`changes\` object. This is mandatory.`
             ));
 
@@ -2799,7 +2784,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                             ]);
                         }
 
-                        if (tc.name === 'agentcanvas_update_artifact') {
+                        if (tc.name === 'agileagentcanvas_update_artifact') {
                             const nudgeText = result.content
                                 .filter((p): p is vscode.LanguageModelTextPart => p instanceof vscode.LanguageModelTextPart)
                                 .map(p => p.value)
@@ -2808,7 +2793,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                                 artifactSaved = true;
                                 acOutput.appendLine('[executeWithTools] Artifact saved via nudge');
                             } else {
-                                acOutput.appendLine(`[executeWithTools] Nudge agentcanvas_update_artifact did not save: ${nudgeText.substring(0, 100)}`);
+                                acOutput.appendLine(`[executeWithTools] Nudge agileagentcanvas_update_artifact did not save: ${nudgeText.substring(0, 100)}`);
                             }
                         }
 
@@ -2824,7 +2809,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
 
             if (!artifactSaved) {
                 stream.markdown('\n\n> **Note:** The artifact could not be saved automatically. ' +
-                    'Please ask the assistant to save the artifact by saying "save as JSON" or "call agentcanvas_update_artifact".\n');
+                    'Please ask the assistant to save the artifact by saying "save as JSON" or "call agileagentcanvas_update_artifact".\n');
             }
         }
 
@@ -2856,7 +2841,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
         // Try to read the workflow file content to inline it
         let workflowContent = '';
         // VS Code setting takes precedence over workflow frontmatter
-        const directUserFormat = vscode.workspace.getConfiguration('agentcanvas')
+        const directUserFormat = vscode.workspace.getConfiguration('agileagentcanvas')
             .get<'json' | 'markdown' | 'dual'>('outputFormat', 'dual');
         let directOutputFormat: string = directUserFormat;
         let wfConfig: any = null;
@@ -2884,7 +2869,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                 ? (configOutputFolder.includes('{project-root}')
                     ? configOutputFolder.replace('{project-root}', projectRoot)
                     : path.join(projectRoot, configOutputFolder))
-                : path.join(projectRoot, '.agentcanvas-context');
+                : path.join(projectRoot, '.agileagentcanvas-context');
 
             // Extract execution_hints from the loaded workflow config (if available)
             let executionHints: ExecutionHints | undefined;
@@ -2986,7 +2971,7 @@ the workflow explicitly says to produce the output. Do NOT skip checkpoints just
 Always respond in English.
 
 ## VS Code Workflow Execution Context
-You are executing a specific workflow task inside the AgentCanvas VS Code extension.
+You are executing a specific workflow task inside the AgileAgentCanvas VS Code extension.
 Skip your activation menu — the user has already selected a specific workflow via a slash command.
 Go directly to the workflow instructions below.
 
