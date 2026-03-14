@@ -1604,7 +1604,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
                     className="epic-subgroup-label"
                     style={{
                       left: subGroups.useCases.x - bandLeft,
-                      top: (subGroups.useCases.y - (epic.rowY ?? 0)) - 20,
+                      top: (subGroups.useCases.y - (epic.rowY ?? 0)) - 28,
                       width: subGroups.useCases.width,
                     }}
                   >
@@ -1616,7 +1616,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
                     className="epic-subgroup-label"
                     style={{
                       left: subGroups.risks.x - bandLeft,
-                      top: (subGroups.risks.y - (epic.rowY ?? 0)) - 20,
+                      top: (subGroups.risks.y - (epic.rowY ?? 0)) - 28,
                       width: subGroups.risks.width,
                     }}
                   >
@@ -1628,7 +1628,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
                     className="epic-subgroup-label"
                     style={{
                       left: subGroups.testStrategy.x - bandLeft,
-                      top: (subGroups.testStrategy.y - (epic.rowY ?? 0)) - 20,
+                      top: (subGroups.testStrategy.y - (epic.rowY ?? 0)) - 28,
                       width: subGroups.testStrategy.width,
                     }}
                   >
@@ -1640,7 +1640,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
                     className="epic-subgroup-label"
                     style={{
                       left: subGroups.testCases.x - bandLeft,
-                      top: (subGroups.testCases.y - (epic.rowY ?? 0)) - 20,
+                      top: (subGroups.testCases.y - (epic.rowY ?? 0)) - 28,
                       width: subGroups.testCases.width,
                     }}
                   >
@@ -1652,7 +1652,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
                     className="epic-subgroup-label"
                     style={{
                       left: subGroups.stories.x - bandLeft,
-                      top: (subGroups.stories.y - (epic.rowY ?? 0)) - 20,
+                      top: (subGroups.stories.y - (epic.rowY ?? 0)) - 28,
                       width: subGroups.stories.width,
                     }}
                   >

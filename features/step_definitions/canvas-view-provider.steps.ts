@@ -50,7 +50,12 @@ function buildModules(world: BmadWorld) {
   artifactStoreModule = proxyquire('../../src/state/artifact-store', {
     'vscode': vsc,
     '../extension': { acOutput: mockAcOutput },
-    '../commands/chat-bridge': { openChat: async () => true, setChatBridgeLogger: () => {} }
+    '../commands/chat-bridge': { openChat: async () => true, setChatBridgeLogger: () => {} },
+    './artifact-file-io': {
+      resolveArtifactTargetUri: async (opts: any) => vsc.Uri.file(`/test/${opts.fileName}`),
+      writeJsonFile: async () => {},
+      writeMarkdownCompanion: async (jsonUri: any, mdFilename: string) => vsc.Uri.file(`/test/${mdFilename}`)
+    }
   });
 
   // Mock artifact-commands used by both canvas-view-provider and webview-message-handler
@@ -532,9 +537,9 @@ Then('the test strategy artifact should be in the testing column', function(this
   assert.ok(updateMsg, 'Expected updateArtifacts message');
   const ts = updateMsg.artifacts.find((a: any) => a.type === 'test-strategy');
   assert.ok(ts, `Expected "test-strategy" artifact. Got types: ${JSON.stringify(updateMsg.artifacts.map((a: any) => a.type))}`);
-  // Testing column is at x=2510 as defined in artifact-transformer.ts
-  assert.strictEqual(ts.position.x, 2510,
-    `Expected test-strategy x position to be 2510 (testing column), got ${ts.position.x}`);
+  // Testing column is at x=2530 as defined in artifact-transformer.ts (IMPLEMENTATION_START_X + IMPL_CARD_INSET)
+  assert.strictEqual(ts.position.x, 2530,
+    `Expected test-strategy x position to be 2530 (testing column), got ${ts.position.x}`);
 });
 
 When('I send elicitWithMethod message for artifact id {string}', async function(this: BmadWorld, id: string) {

@@ -59,7 +59,23 @@
                 "properties": {
                   "level": {
                     "type": "string",
-                    "enum": ["unit", "integration", "component", "api", "e2e", "performance", "security"]
+                    "enum": ["unit", "integration", "component", "api", "e2e", "performance", "security"],
+                    "x-aliases": {
+                      "acceptance": "e2e",
+                      "end-to-end": "e2e",
+                      "endtoend": "e2e",
+                      "system": "e2e",
+                      "functional": "e2e",
+                      "perf": "performance",
+                      "load": "performance",
+                      "stress": "performance",
+                      "sec": "security",
+                      "pen": "security",
+                      "penetration": "security",
+                      "contract": "api",
+                      "ui": "e2e",
+                      "uat": "e2e"
+                    }
                   },
                   "purpose": { "type": "string" },
                   "coverage": { "type": "string" }
@@ -265,11 +281,37 @@
                   "requirementId": { "type": "string" },
                   "testLevel": {
                     "type": "string",
-                    "enum": ["unit", "integration", "component", "api", "e2e", "manual"]
+                    "enum": ["unit", "integration", "component", "api", "e2e", "manual"],
+                    "x-aliases": {
+                      "acceptance": "e2e",
+                      "end-to-end": "e2e",
+                      "endtoend": "e2e",
+                      "system": "e2e",
+                      "functional": "e2e",
+                      "perf": "e2e",
+                      "load": "e2e",
+                      "stress": "e2e",
+                      "sec": "e2e",
+                      "contract": "api",
+                      "ui": "e2e",
+                      "uat": "e2e"
+                    }
                   },
                   "testType": {
                     "type": "string",
-                    "enum": ["functional", "regression", "smoke", "sanity", "exploratory"]
+                    "enum": ["functional", "regression", "smoke", "sanity", "exploratory"],
+                    "x-aliases": {
+                      "integration": "functional",
+                      "unit": "functional",
+                      "e2e": "functional",
+                      "acceptance": "functional",
+                      "performance": "functional",
+                      "security": "functional",
+                      "negative": "functional",
+                      "positive": "functional",
+                      "boundary": "functional",
+                      "edge-case": "exploratory"
+                    }
                   },
                   "riskLink": { "type": "string" },
                   "testApproach": {

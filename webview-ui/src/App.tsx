@@ -791,6 +791,10 @@ function App() {
     vscode.postMessage({ type: 'validateSchemas' });
   }, []);
 
+  const handleSendSchemaFixToChat = useCallback((issues: { file: string; type: string; errors: string[] }[]) => {
+    vscode.postMessage({ type: 'sendSchemaFixToChat', issues });
+  }, []);
+
   if (error) {
     return (
       <div className="app error-state">
@@ -970,6 +974,16 @@ function App() {
             </div>
             <div className="toast-actions">
               <button className="btn btn-secondary" onClick={() => setValidationErrors(null)}>Dismiss</button>
+              <button className="btn btn-primary" onClick={() => {
+                if (validationErrors) {
+                  handleSendSchemaFixToChat([{
+                    file: validationErrors.artifactId,
+                    type: validationErrors.artifactType,
+                    errors: validationErrors.errors
+                  }]);
+                  setValidationErrors(null);
+                }
+              }}>Send to Chat</button>
             </div>
           </div>
         </div>
@@ -995,6 +1009,7 @@ function App() {
             <div className="toast-actions">
               <button className="btn btn-secondary" onClick={() => setSchemaIssues([])}>Dismiss</button>
               <button className="btn btn-primary" onClick={handleFixSchemas}>Fix Schemas</button>
+              <button className="btn btn-primary" onClick={() => { handleSendSchemaFixToChat(schemaIssues); setSchemaIssues([]); }}>Send to Chat</button>
             </div>
           </div>
         </div>
@@ -1017,6 +1032,9 @@ function App() {
             </div>
             <div className="toast-actions">
               <button className="btn btn-secondary" onClick={() => setSchemaFixMessage(null)}>Dismiss</button>
+              {schemaIssues.length > 0 && (
+                <button className="btn btn-primary" onClick={() => { handleSendSchemaFixToChat(schemaIssues); setSchemaFixMessage(null); setSchemaIssues([]); }}>Send to Chat</button>
+              )}
             </div>
           </div>
         </div>

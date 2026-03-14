@@ -185,9 +185,25 @@ export function repairDataWithSchema(
             // Enum repair
             if (Array.isArray(node.enum) && value !== null && value !== undefined) {
                 if (!node.enum.includes(value)) {
-                    const best = fuzzyMatchEnum(String(value), node.enum);
-                    log(path, `coerced enum "${value}" → "${best}"`);
-                    value = best;
+                    // Check x-aliases first (domain-specific mappings from schema)
+                    const aliases = node['x-aliases'];
+                    if (aliases && typeof aliases === 'object') {
+                        const norm = (s: string) => s.toLowerCase().replace(/[-_\s]/g, '');
+                        const nValue = norm(String(value));
+                        for (const [alias, target] of Object.entries(aliases)) {
+                            if (norm(alias) === nValue && typeof target === 'string') {
+                                log(path, `coerced enum "${value}" → "${target}" via x-alias`);
+                                value = target;
+                                break;
+                            }
+                        }
+                    }
+                    // Fall back to Levenshtein if still invalid
+                    if (!node.enum.includes(value)) {
+                        const best = fuzzyMatchEnum(String(value), node.enum);
+                        log(path, `coerced enum "${value}" → "${best}"`);
+                        value = best;
+                    }
                 }
             }
             // date-time format repair

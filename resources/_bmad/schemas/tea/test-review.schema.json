@@ -40,7 +40,19 @@
             "reviewType": {
               "type": "string",
               "enum": ["initial", "follow-up", "regression", "pre-release", "post-incident"],
-              "description": "Type of review"
+              "description": "Type of review",
+              "x-aliases": {
+                "first": "initial",
+                "new": "initial",
+                "followup": "follow-up",
+                "follow_up": "follow-up",
+                "prerelease": "pre-release",
+                "pre_release": "pre-release",
+                "release": "pre-release",
+                "postincident": "post-incident",
+                "post_incident": "post-incident",
+                "incident": "post-incident"
+              }
             },
             "previousScore": {
               "type": "number",
@@ -63,7 +75,22 @@
             "recommendation": {
               "type": "string",
               "enum": ["approve", "approve-with-comments", "request-changes", "block"],
-              "description": "Overall recommendation"
+              "description": "Overall recommendation",
+              "x-aliases": {
+                "approved": "approve",
+                "pass": "approve",
+                "lgtm": "approve",
+                "approve-with-comment": "approve-with-comments",
+                "approved-with-comments": "approve-with-comments",
+                "conditional": "approve-with-comments",
+                "request-change": "request-changes",
+                "changes-requested": "request-changes",
+                "needs-work": "request-changes",
+                "reject": "block",
+                "rejected": "block",
+                "blocked": "block",
+                "fail": "block"
+              }
             },
             "strengths": {
               "type": "array",
@@ -116,7 +143,14 @@
             "riskLevel": {
               "type": "string",
               "enum": ["low", "medium", "high", "critical"],
-              "description": "Overall risk level based on test quality"
+              "description": "Overall risk level based on test quality",
+              "x-aliases": {
+                "none": "low",
+                "minimal": "low",
+                "moderate": "medium",
+                "severe": "critical",
+                "blocker": "critical"
+              }
             }
           }
         },
@@ -470,12 +504,37 @@
               "effort": {
                 "type": "string",
                 "enum": ["trivial", "small", "medium", "large"],
-                "description": "Estimated effort to fix"
+                "description": "Estimated effort to fix",
+                "x-aliases": {
+                  "tiny": "trivial",
+                  "minimal": "trivial",
+                  "low": "small",
+                  "minor": "small",
+                  "moderate": "medium",
+                  "significant": "large",
+                  "high": "large",
+                  "major": "large",
+                  "xl": "large"
+                }
               },
               "priority": {
                 "type": "string",
                 "enum": ["immediate", "before-release", "next-sprint"],
-                "description": "When this should be fixed"
+                "description": "When this should be fixed",
+                "x-aliases": {
+                  "critical": "immediate",
+                  "blocker": "immediate",
+                  "p0": "immediate",
+                  "urgent": "immediate",
+                  "high": "before-release",
+                  "p1": "before-release",
+                  "important": "before-release",
+                  "medium": "next-sprint",
+                  "low": "next-sprint",
+                  "p2": "next-sprint",
+                  "p3": "next-sprint",
+                  "minor": "next-sprint"
+                }
               }
             }
           }
@@ -497,17 +556,55 @@
               "category": {
                 "type": "string",
                 "enum": ["maintainability", "performance", "reliability", "coverage", "readability", "best-practice"],
-                "description": "Category of recommendation"
+                "description": "Category of recommendation",
+                "x-aliases": {
+                  "maintenance": "maintainability",
+                  "speed": "performance",
+                  "stability": "reliability",
+                  "robustness": "reliability",
+                  "test-coverage": "coverage",
+                  "testing": "coverage",
+                  "clarity": "readability",
+                  "code-quality": "readability",
+                  "bestpractice": "best-practice",
+                  "best_practice": "best-practice",
+                  "practice": "best-practice",
+                  "quality": "maintainability"
+                }
               },
               "priority": {
                 "type": "string",
                 "enum": ["high", "medium", "low"],
-                "description": "Priority of this recommendation"
+                "description": "Priority of this recommendation",
+                "x-aliases": {
+                  "critical": "high",
+                  "immediate": "high",
+                  "urgent": "high",
+                  "p0": "high",
+                  "p1": "high",
+                  "important": "medium",
+                  "normal": "medium",
+                  "p2": "medium",
+                  "minor": "low",
+                  "p3": "low",
+                  "trivial": "low"
+                }
               },
               "effort": {
                 "type": "string",
                 "enum": ["trivial", "small", "medium", "large"],
-                "description": "Estimated effort"
+                "description": "Estimated effort",
+                "x-aliases": {
+                  "tiny": "trivial",
+                  "minimal": "trivial",
+                  "low": "small",
+                  "minor": "small",
+                  "moderate": "medium",
+                  "significant": "large",
+                  "high": "large",
+                  "major": "large",
+                  "xl": "large"
+                }
               },
               "impact": {
                 "type": "string",
@@ -712,7 +809,22 @@
             "verdict": {
               "type": "string",
               "enum": ["approve", "approve-with-comments", "request-changes", "block"],
-              "description": "Final verdict"
+              "description": "Final verdict",
+              "x-aliases": {
+                "approved": "approve",
+                "pass": "approve",
+                "lgtm": "approve",
+                "approve-with-comment": "approve-with-comments",
+                "approved-with-comments": "approve-with-comments",
+                "conditional": "approve-with-comments",
+                "request-change": "request-changes",
+                "changes-requested": "request-changes",
+                "needs-work": "request-changes",
+                "reject": "block",
+                "rejected": "block",
+                "blocked": "block",
+                "fail": "block"
+              }
             },
             "conditions": {
               "type": "array",

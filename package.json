@@ -2,7 +2,7 @@
   "name": "agileagentcanvas",
   "displayName": "Agile Agent Canvas",
   "description": "Visual AI-assisted product development with BMAD methodology - Design epics, stories, and requirements collaboratively with interactive AI chat workflows",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "publisher": "msayedshokry",
   "license": "MIT",
   "repository": {

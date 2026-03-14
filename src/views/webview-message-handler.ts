@@ -460,6 +460,36 @@ export async function handleCommonWebviewMessage(
             return true;
         }
 
+        case 'sendSchemaFixToChat': {
+            // User clicked "Send to Chat" on schema issues that auto-fix couldn't resolve.
+            // Compose a rich prompt with the file names, schema types, and errors so the
+            // AI chat agent can read the files and schemas and fix them.
+            const issues = (message.issues as { file: string; type: string; errors: string[] }[]) || [];
+            if (issues.length === 0) return true;
+
+            const issueBlocks = issues.map((issue, i) => {
+                const errorList = issue.errors.map(e => `  - ${e}`).join('\n');
+                return `### File ${i + 1}: ${issue.file}\n` +
+                       `- **Schema type**: ${issue.type}\n` +
+                       `- **Schema path**: resources/_bmad/schemas/ (find the matching schema for type "${issue.type}")\n` +
+                       `- **Validation errors**:\n${errorList}`;
+            }).join('\n\n');
+
+            const prompt = `[schema-fix] The following artifact files have schema validation errors ` +
+                `that auto-repair could not fix. Please:\n` +
+                `1. Read each affected file listed below\n` +
+                `2. Read the corresponding JSON schema from resources/_bmad/schemas/\n` +
+                `3. Fix the validation errors while preserving all existing data\n` +
+                `4. Save the corrected files\n\n` +
+                `## ${issues.length} File(s) With Schema Issues\n\n${issueBlocks}`;
+
+            acOutput.appendLine(
+                `${logPrefix} sendSchemaFixToChat: sending ${issues.length} issue(s) to chat`
+            );
+            await openChat(`@agileagentcanvas ${prompt}`);
+            return true;
+        }
+
         default:
             return false;
     }

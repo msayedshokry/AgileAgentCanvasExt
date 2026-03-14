@@ -356,7 +356,7 @@ export class WizardStepsProvider implements vscode.TreeDataProvider<WorkflowTree
         switch (selected.type) {
             case 'epic':
                 status['validate'] = artifact.title && artifact.goal ? 'completed' : 'pending';
-                status['enhance'] = artifact.useCases?.length || artifact.risks?.length || artifact.definitionOfDone?.length ? 'completed' : 'pending';
+                status['enhance'] = artifact.useCases?.length || artifact.risks?.length || (Array.isArray(artifact.definitionOfDone) ? artifact.definitionOfDone.length : artifact.definitionOfDone?.items?.length) ? 'completed' : 'pending';
                 status['create-stories'] = artifact.stories?.length > 0 ? 'completed' : 'pending';
                 status['review'] = artifact.status === 'ready' || artifact.status === 'done' ? 'completed' : 'pending';
                 break;

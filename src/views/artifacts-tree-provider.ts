@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ArtifactStore, Epic, Story, UseCase, TestCase, TestStrategy } from '../state/artifact-store';
+import { ArtifactStore, Epic, Story, UseCase, TestCase, TestStrategy, Architecture } from '../state/artifact-store';
 
 /**
  * Tree view provider for BMAD artifacts
@@ -36,6 +36,10 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
             return Promise.resolve(this.getEpicChildren(element.id!));
         }
 
+        if (element.contextValue === 'epic-risks') {
+            return Promise.resolve(this.getEpicRiskItems(element.id!.replace('risks-', '')));
+        }
+
         if (element.contextValue === 'story') {
             return Promise.resolve(this.getStoryChildren(element.id!));
         }
@@ -46,6 +50,39 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
 
         if (element.contextValue === 'category-tests') {
             return Promise.resolve(this.getTestStrategyItems());
+        }
+
+        // Architecture sub-items
+        if (element.contextValue === 'category-architecture') {
+            return Promise.resolve(this.getArchitectureItems());
+        }
+        if (element.contextValue === 'arch-decisions') {
+            return Promise.resolve(this.getArchDecisionItems());
+        }
+        if (element.contextValue === 'arch-components') {
+            return Promise.resolve(this.getArchComponentItems());
+        }
+        if (element.contextValue === 'arch-patterns') {
+            return Promise.resolve(this.getArchPatternItems());
+        }
+        if (element.contextValue === 'arch-integrations') {
+            return Promise.resolve(this.getArchIntegrationItems());
+        }
+
+        // Risks sub-items
+        if (element.contextValue === 'category-risks') {
+            return Promise.resolve(this.getRiskItems());
+        }
+
+        // Requirement category sub-items (individual requirements)
+        if (element.contextValue === 'req-functional') {
+            return Promise.resolve(this.getIndividualRequirements('functional'));
+        }
+        if (element.contextValue === 'req-nonfunctional') {
+            return Promise.resolve(this.getIndividualRequirements('nonFunctional'));
+        }
+        if (element.contextValue === 'req-additional') {
+            return Promise.resolve(this.getIndividualRequirements('additional'));
         }
 
         return Promise.resolve([]);
@@ -102,7 +139,8 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
 
         // Requirements
         const reqCount = (state.requirements?.functional?.length || 0) + 
-                        (state.requirements?.nonFunctional?.length || 0);
+                        (state.requirements?.nonFunctional?.length || 0) +
+                        (state.requirements?.additional?.length || 0);
         items.push(new ArtifactTreeItem(
             'Requirements',
             reqCount > 0 ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
@@ -110,6 +148,20 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
             '$(list-unordered)',
             reqCount > 0 ? `${reqCount} requirements` : 'No requirements'
         ));
+
+        // Architecture
+        const arch = state.architecture as Architecture | undefined;
+        if (arch) {
+            const archSubCount = (arch.decisions?.length || 0) + (arch.systemComponents?.length || 0) +
+                                 (arch.patterns?.length || 0) + (arch.integrations?.length || 0);
+            items.push(new ArtifactTreeItem(
+                'Architecture',
+                archSubCount > 0 ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
+                'category-architecture',
+                '$(server-environment)',
+                arch.overview?.projectName || (archSubCount > 0 ? `${archSubCount} items` : 'Defined')
+            ));
+        }
 
         // Epics (test cases are nested inside, no separate Tests category for cases)
         const epicCount = state.epics?.length || 0;
@@ -120,6 +172,18 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
             '$(layers)',
             epicCount > 0 ? `${epicCount} epics` : 'No epics'
         ));
+
+        // Risks — PRD + BMM standalone only (epic risks shown under their respective epics)
+        const standaloneRisks = this.getStandaloneRisks();
+        if (standaloneRisks.length > 0) {
+            items.push(new ArtifactTreeItem(
+                'Risks',
+                vscode.TreeItemCollapsibleState.Collapsed,
+                'category-risks',
+                '$(warning)',
+                `${standaloneRisks.length} ${standaloneRisks.length === 1 ? 'risk' : 'risks'}`
+            ));
+        }
 
         // Test Strategy only (test cases are nested under epics/stories)
         const hasTestStrategy = !!state.testStrategy;
@@ -135,6 +199,334 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
 
         return items;
     }
+
+    // ── Architecture sub-items ──
+
+    private getArchitectureItems(): ArtifactTreeItem[] {
+        const state = this.store.getState();
+        const arch = state.architecture as Architecture | undefined;
+        if (!arch) { return []; }
+
+        const items: ArtifactTreeItem[] = [];
+
+        // Overview (click to open detail)
+        if (arch.overview) {
+            const overviewItem = new ArtifactTreeItem(
+                'Overview',
+                vscode.TreeItemCollapsibleState.None,
+                'arch-overview',
+                '$(info)',
+                arch.overview.architectureStyle || arch.overview.summary?.substring(0, 40) || ''
+            );
+            overviewItem.command = {
+                command: 'agileagentcanvas.selectArtifact',
+                title: 'Select Architecture',
+                arguments: ['architecture', arch.id || 'architecture-1']
+            };
+            items.push(overviewItem);
+        }
+
+        // ADRs / Decisions
+        if (arch.decisions?.length > 0) {
+            items.push(new ArtifactTreeItem(
+                `Decisions (${arch.decisions.length})`,
+                vscode.TreeItemCollapsibleState.Collapsed,
+                'arch-decisions',
+                '$(law)',
+                `${arch.decisions.length} ADR${arch.decisions.length === 1 ? '' : 's'}`
+            ));
+        }
+
+        // System Components
+        if (arch.systemComponents?.length) {
+            items.push(new ArtifactTreeItem(
+                `Components (${arch.systemComponents.length})`,
+                vscode.TreeItemCollapsibleState.Collapsed,
+                'arch-components',
+                '$(extensions)',
+                ''
+            ));
+        }
+
+        // Patterns
+        if (arch.patterns?.length) {
+            items.push(new ArtifactTreeItem(
+                `Patterns (${arch.patterns.length})`,
+                vscode.TreeItemCollapsibleState.Collapsed,
+                'arch-patterns',
+                '$(symbol-structure)',
+                ''
+            ));
+        }
+
+        // Integrations
+        if (arch.integrations?.length) {
+            items.push(new ArtifactTreeItem(
+                `Integrations (${arch.integrations.length})`,
+                vscode.TreeItemCollapsibleState.Collapsed,
+                'arch-integrations',
+                '$(plug)',
+                ''
+            ));
+        }
+
+        // Tech Stack (flat)
+        if (arch.techStack) {
+            const techItem = new ArtifactTreeItem(
+                'Tech Stack',
+                vscode.TreeItemCollapsibleState.None,
+                'arch-techstack',
+                '$(tools)',
+                ''
+            );
+            techItem.command = {
+                command: 'agileagentcanvas.selectArtifact',
+                title: 'Select Architecture',
+                arguments: ['architecture', arch.id || 'architecture-1']
+            };
+            items.push(techItem);
+        }
+
+        // Security
+        if (arch.security) {
+            const secItem = new ArtifactTreeItem(
+                'Security',
+                vscode.TreeItemCollapsibleState.None,
+                'arch-security',
+                '$(shield)',
+                ''
+            );
+            secItem.command = {
+                command: 'agileagentcanvas.selectArtifact',
+                title: 'Select Architecture',
+                arguments: ['architecture', arch.id || 'architecture-1']
+            };
+            items.push(secItem);
+        }
+
+        return items;
+    }
+
+    private getArchDecisionItems(): ArtifactTreeItem[] {
+        const state = this.store.getState();
+        const arch = state.architecture as Architecture | undefined;
+        if (!arch?.decisions) { return []; }
+
+        return arch.decisions.map((adr, i) => {
+            const item = new ArtifactTreeItem(
+                `${adr.id || `ADR-${i + 1}`}: ${adr.title}`,
+                vscode.TreeItemCollapsibleState.None,
+                'arch-decision',
+                this.getAdrStatusIcon(adr.status),
+                adr.status || ''
+            );
+            item.id = adr.id || `adr-${i}`;
+            item.tooltip = adr.decision || adr.title;
+            item.command = {
+                command: 'agileagentcanvas.selectArtifact',
+                title: 'Select Decision',
+                arguments: ['architecture-decision', adr.id || `arch-decision-${i}`]
+            };
+            return item;
+        });
+    }
+
+    private getArchComponentItems(): ArtifactTreeItem[] {
+        const state = this.store.getState();
+        const arch = state.architecture as Architecture | undefined;
+        if (!arch?.systemComponents) { return []; }
+
+        return arch.systemComponents.map((comp, i) => {
+            const item = new ArtifactTreeItem(
+                comp.name,
+                vscode.TreeItemCollapsibleState.None,
+                'arch-component',
+                '$(symbol-class)',
+                comp.type || ''
+            );
+            item.id = comp.id || `comp-${i}`;
+            item.tooltip = comp.description || comp.name;
+            item.command = {
+                command: 'agileagentcanvas.selectArtifact',
+                title: 'Select Architecture',
+                arguments: ['architecture', arch.id || 'architecture-1']
+            };
+            return item;
+        });
+    }
+
+    private getArchPatternItems(): ArtifactTreeItem[] {
+        const state = this.store.getState();
+        const arch = state.architecture as Architecture | undefined;
+        if (!arch?.patterns) { return []; }
+
+        return arch.patterns.map((pattern, i) => {
+            const item = new ArtifactTreeItem(
+                pattern.pattern,
+                vscode.TreeItemCollapsibleState.None,
+                'arch-pattern',
+                '$(symbol-structure)',
+                pattern.category || ''
+            );
+            item.id = `pattern-${i}`;
+            item.tooltip = pattern.usage || pattern.rationale || pattern.pattern;
+            item.command = {
+                command: 'agileagentcanvas.selectArtifact',
+                title: 'Select Architecture',
+                arguments: ['architecture', arch.id || 'architecture-1']
+            };
+            return item;
+        });
+    }
+
+    private getArchIntegrationItems(): ArtifactTreeItem[] {
+        const state = this.store.getState();
+        const arch = state.architecture as Architecture | undefined;
+        if (!arch?.integrations) { return []; }
+
+        return arch.integrations.map((intg, i) => {
+            const item = new ArtifactTreeItem(
+                intg.name,
+                vscode.TreeItemCollapsibleState.None,
+                'arch-integration',
+                '$(plug)',
+                intg.type || intg.protocol || ''
+            );
+            item.id = `integration-${i}`;
+            item.tooltip = intg.description || intg.name;
+            item.command = {
+                command: 'agileagentcanvas.selectArtifact',
+                title: 'Select Architecture',
+                arguments: ['architecture', arch.id || 'architecture-1']
+            };
+            return item;
+        });
+    }
+
+    // ── Risks sub-items ──
+
+    /**
+     * Get standalone risks (from dedicated risks artifact AND PRD-level risks)
+     */
+    private getStandaloneRisks(): any[] {
+        const state = this.store.getState();
+        const risks: any[] = [];
+
+        // Dedicated risks artifact (state.risks)
+        const standaloneRisks = state.risks as any;
+        if (Array.isArray(standaloneRisks)) {
+            risks.push(...standaloneRisks);
+        } else if (standaloneRisks?.risks && Array.isArray(standaloneRisks.risks)) {
+            risks.push(...standaloneRisks.risks);
+        }
+
+        // PRD-level risks (state.prd.risks) — these appear as standalone cards on the canvas
+        const prd = state.prd as any;
+        if (prd?.risks && Array.isArray(prd.risks)) {
+            const existingIds = new Set(risks.map(r => r.id).filter(Boolean));
+            for (const r of prd.risks) {
+                // Deduplicate by id (same risks may exist in both sources)
+                if (!r.id || !existingIds.has(r.id)) {
+                    risks.push(r);
+                    if (r.id) { existingIds.add(r.id); }
+                }
+            }
+        }
+
+        return risks;
+    }
+
+    /**
+     * Collect ALL risks from standalone state.risks AND from epic-level risks
+     */
+    private collectAllRisks(): any[] {
+        const risks: any[] = [...this.getStandaloneRisks()];
+        for (const epic of this.store.getEpics() || []) {
+            const epicRiskItems = this.getEpicRisks(epic.id);
+            for (const r of epicRiskItems) {
+                risks.push({ ...r, _epicTitle: epic.title, _epicId: epic.id });
+            }
+        }
+        return risks;
+    }
+
+    /**
+     * Extract risks for a specific epic (epic.risks = { risks: [...] } or epic.risks = [...])
+     */
+    private getEpicRisks(epicId: string): any[] {
+        const epics = this.store.getEpics();
+        const epic = epics.find(e => e.id === epicId);
+        if (!epic) { return []; }
+        const epicRisks = epic.risks as any;
+        if (Array.isArray(epicRisks)) { return epicRisks; }
+        if (epicRisks?.risks && Array.isArray(epicRisks.risks)) { return epicRisks.risks; }
+        return [];
+    }
+
+    /**
+     * Root Risks node children — PRD + BMM standalone only
+     */
+    private getRiskItems(): ArtifactTreeItem[] {
+        return this.buildRiskTreeItems(this.getStandaloneRisks());
+    }
+
+    /**
+     * Epic-level risk children
+     */
+    private getEpicRiskItems(epicId: string): ArtifactTreeItem[] {
+        return this.buildRiskTreeItems(this.getEpicRisks(epicId));
+    }
+
+    private buildRiskTreeItems(riskArray: any[]): ArtifactTreeItem[] {
+        return riskArray.map((risk, i) => {
+            const severityIcon = this.getRiskIcon(risk.riskScore || risk.impact);
+            const label = risk._epicTitle
+                ? `${risk.id || `RISK-${i + 1}`}: ${risk.risk || risk.title || risk.description || 'Untitled'} [${risk._epicTitle}]`
+                : `${risk.id || `RISK-${i + 1}`}: ${risk.risk || risk.title || risk.description || 'Untitled'}`;
+            const item = new ArtifactTreeItem(
+                label,
+                vscode.TreeItemCollapsibleState.None,
+                'risk-item',
+                severityIcon,
+                [risk.category, risk.probability ? `P:${risk.probability}` : '', risk.impact ? `I:${risk.impact}` : ''].filter(Boolean).join(' · ')
+            );
+            item.id = `${risk.id || `risk-${i}`}${risk._epicId ? `-${risk._epicId}` : ''}`;
+            item.tooltip = risk.mitigation ? `Mitigation: ${risk.mitigation}` : (risk.description || risk.risk || '');
+            item.command = {
+                command: 'agileagentcanvas.selectArtifact',
+                title: 'Select Risk',
+                arguments: ['risks', risk.id || `risk-${i}`]
+            };
+            return item;
+        });
+    }
+
+    // ── Individual requirement items ──
+
+    private getIndividualRequirements(category: 'functional' | 'nonFunctional' | 'additional'): ArtifactTreeItem[] {
+        const reqs = this.store.getRequirements();
+        const reqList: any[] = (reqs as any)[category] || [];
+
+        return reqList.map((req, i) => {
+            const item = new ArtifactTreeItem(
+                `${req.id || `REQ-${i + 1}`}: ${req.title || req.description?.substring(0, 50) || 'Untitled'}`,
+                vscode.TreeItemCollapsibleState.None,
+                'requirement',
+                req.priority ? this.getPriorityIcon(req.priority) : '$(checklist)',
+                req.priority || req.status || ''
+            );
+            item.id = req.id || `req-${category}-${i}`;
+            item.tooltip = req.description || req.title || '';
+            item.command = {
+                command: 'agileagentcanvas.selectArtifact',
+                title: 'Select Requirement',
+                arguments: ['requirement', req.id || item.id]
+            };
+            return item;
+        });
+    }
+
+    // ── Existing methods ──
 
     private getEpicItems(): ArtifactTreeItem[] {
         const state = this.store.getState();
@@ -268,6 +660,20 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
             items.push(item);
         });
 
+        // Epic-level risks
+        const epicRisks = this.getEpicRisks(epicId);
+        if (epicRisks.length > 0) {
+            const riskCategoryItem = new ArtifactTreeItem(
+                `Risks (${epicRisks.length})`,
+                vscode.TreeItemCollapsibleState.Collapsed,
+                'epic-risks',
+                '$(warning)',
+                `${epicRisks.length} ${epicRisks.length === 1 ? 'risk' : 'risks'}`
+            );
+            riskCategoryItem.id = `risks-${epicId}`;
+            items.push(riskCategoryItem);
+        }
+
         return items;
     }
 
@@ -324,31 +730,31 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
         const reqs = this.store.getRequirements();
         const items: ArtifactTreeItem[] = [];
 
-        // Functional requirements
+        // Functional requirements — expandable to individual items
         if (reqs.functional?.length > 0) {
             items.push(new ArtifactTreeItem(
                 `Functional (${reqs.functional.length})`,
-                vscode.TreeItemCollapsibleState.None,
+                vscode.TreeItemCollapsibleState.Collapsed,
                 'req-functional',
                 '$(symbol-function)'
             ));
         }
 
-        // Non-functional requirements
+        // Non-functional requirements — expandable
         if (reqs.nonFunctional?.length > 0) {
             items.push(new ArtifactTreeItem(
                 `Non-Functional (${reqs.nonFunctional.length})`,
-                vscode.TreeItemCollapsibleState.None,
+                vscode.TreeItemCollapsibleState.Collapsed,
                 'req-nonfunctional',
                 '$(symbol-ruler)'
             ));
         }
 
-        // Additional requirements
+        // Additional requirements — expandable
         if (reqs.additional?.length > 0) {
             items.push(new ArtifactTreeItem(
                 `Additional (${reqs.additional.length})`,
-                vscode.TreeItemCollapsibleState.None,
+                vscode.TreeItemCollapsibleState.Collapsed,
                 'req-additional',
                 '$(symbol-misc)'
             ));
@@ -356,6 +762,8 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
 
         return items;
     }
+
+    // ── Icon helpers ──
 
     private getStatusIcon(status: string | undefined): string {
         switch (status) {
@@ -374,6 +782,35 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
             case 'blocked': return '$(warning)';
             case 'ready': return '$(pass)';
             default: return '$(beaker)';
+        }
+    }
+
+    private getAdrStatusIcon(status: string | undefined): string {
+        switch (status) {
+            case 'accepted': case 'approved': return '$(pass-filled)';
+            case 'proposed': return '$(circle-outline)';
+            case 'deprecated': case 'superseded': return '$(close)';
+            default: return '$(law)';
+        }
+    }
+
+    private getRiskIcon(severity: string | undefined): string {
+        switch (severity?.toLowerCase()) {
+            case 'critical': return '$(error)';
+            case 'high': return '$(warning)';
+            case 'medium': return '$(info)';
+            case 'low': return '$(circle-outline)';
+            default: return '$(warning)';
+        }
+    }
+
+    private getPriorityIcon(priority: string | undefined): string {
+        switch (priority?.toLowerCase()) {
+            case 'must-have': case 'critical': case 'p0': return '$(error)';
+            case 'should-have': case 'high': case 'p1': return '$(warning)';
+            case 'could-have': case 'medium': case 'p2': return '$(info)';
+            case 'wont-have': case 'low': case 'p3': return '$(circle-outline)';
+            default: return '$(checklist)';
         }
     }
 }

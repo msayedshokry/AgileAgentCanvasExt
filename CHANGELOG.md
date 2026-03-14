@@ -1,5 +1,45 @@
 # Changelog
 
+## 0.3.0
+
+### Bug Fixes
+
+- **Epic Definition of Done display** — The DoD section in the Epic detail panel was not rendering because `artifact-store.ts` was flattening the rich DoD object (`{items, qualityGates, acceptanceSummary}`) into a plain string array; now passes the full object through to the renderer
+
+### Side Panel Improvements
+
+- **Architecture tree** — Architecture documents now appear in the artifacts side panel with expandable sub-items: Overview, Decisions (ADRs), System Components, Patterns, Integrations, Tech Stack, and Security
+- **Risks tree** — Standalone risks now show in the side panel as an expandable section with individual risk items displaying severity icons and category/probability/impact metadata
+- **Requirements drill-down** — Functional, Non-Functional, and Additional requirement categories are now expandable to show individual requirement items with priority icons and IDs
+
+### Data Persistence
+
+- **Test strategy on epics** — `testStrategy` is now preserved when saving epics to JSON; previously the field was stripped during serialization via destructuring
+- **Architecture decisions on requirements** — `architectureDecisions` field is now included in requirement serialization, ensuring architecture-linked requirements round-trip correctly
+
+### Schema Repair
+
+- **Send to Chat on fix failure** — Schema issues that auto-repair cannot resolve now show a "Send to Chat" button alongside "Dismiss". Clicking it opens the AI chat with the affected file(s), schema type(s), and validation error details so the agent can read and fix them directly
+
+### Schema Updates
+
+- **Epic test strategy in schema** — Added `testStrategy` property (with `id`, `title`, `scope`, `approach`, `testTypes`, `tooling`, `coverageTargets`, `riskAreas`, `epicId`, `status`) to `epics.schema.json`, making epic-level test strategies schema-valid
+
+### Schema Repair Simplification
+
+- **Removed aggressive property stripping** — The `fixAndSyncToFiles` repair engine no longer strips unknown root, metadata, content, or coverage-plan properties from artifacts. This prevents data loss when schemas evolve ahead of the hardcoded allow-lists
+- **Removed test-design enum coercion** — Removed forced coercion of `testLevel`, `testType`, review priorities, effort values, verdict, and risk-level enums. Data is now preserved as-is, letting schema validation surface mismatches instead of silently rewriting
+- **Removed test-review enum coercion** — Removed the entire test-review repair block (priority/effort/category/reviewType/verdict/riskLevel coercion), simplifying the repair pipeline
+
+### Test Fixes
+
+- **Transitive vscode mock** — Added `artifact-file-io` mock to 7 `proxyquire` calls across step definition files, fixing 323 BDD tests that failed with `Cannot find module 'vscode'` due to the transitive import chain `artifact-store → artifact-file-io → vscode`
+- **Epic column position assertions** — Updated 2 stale assertions from `x=2510` to `x=2530` to match the `IMPL_CARD_INSET` offset added in 0.2.1
+
+### Housekeeping
+
+- **`.agent/` added to `.gitignore`** — BMAD skill files generated at runtime by the IDE installer are now excluded from source control
+
 ## 0.2.1
 
 ### Canvas Layout Refinements

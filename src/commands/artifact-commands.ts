@@ -926,14 +926,44 @@ export function selectArtifact(type: string, id: string, store: ArtifactStore): 
             }
         }
     } else if (type === 'requirement') {
-        const req = state.requirements?.functional.find(r => r.id === id);
+        const allReqs = [
+            ...(state.requirements?.functional || []),
+            ...(state.requirements?.nonFunctional || []),
+            ...(state.requirements?.additional || [])
+        ];
+        const req = allReqs.find(r => r.id === id);
         if (req) {
-            vscode.window.showInformationMessage(`Selected Requirement: ${req.title}`);
+            vscode.window.showInformationMessage(`Selected Requirement: ${req.title || req.id}`);
         }
     } else if (type === 'vision') {
         if (state.vision) {
             vscode.window.showInformationMessage(`Selected Vision: ${state.vision.productName || 'Product Vision'}`);
         }
+    } else if (type === 'architecture') {
+        const arch = state.architecture as any;
+        if (arch) {
+            vscode.window.showInformationMessage(`Selected Architecture: ${arch.overview?.projectName || 'Architecture'}`);
+        }
+    } else if (type === 'architecture-decision') {
+        const arch = state.architecture as any;
+        const decision = arch?.decisions?.find((d: any) => d.id === id);
+        if (decision) {
+            vscode.window.showInformationMessage(`Selected Decision: ${decision.title}`);
+        }
+    } else if (type === 'risks') {
+        vscode.window.showInformationMessage(`Selected Risk: ${id}`);
+    } else if (type === 'use-case') {
+        for (const epic of state.epics || []) {
+            const uc = epic.useCases?.find(u => u.id === id);
+            if (uc) {
+                vscode.window.showInformationMessage(`Selected Use Case: ${uc.title || uc.id}`);
+                break;
+            }
+        }
+    } else if (type === 'test-strategy') {
+        vscode.window.showInformationMessage(`Selected Test Strategy: ${id}`);
+    } else if (type === 'test-case') {
+        vscode.window.showInformationMessage(`Selected Test Case: ${id}`);
     }
 }
 

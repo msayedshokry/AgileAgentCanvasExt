@@ -42,6 +42,7 @@ opencode.json
 _index_test.py
 
 # Generated files (created by IDE installer at runtime)
+.agent/
 .github/skills/*/SKILL.md
 
 # Misc generated

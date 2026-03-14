@@ -76,6 +76,12 @@
       "items": { "type": "string" },
       "examples": [["EPIC-1", "EPIC-3"]]
     },
+    "architectureDecisions": {
+      "type": "array",
+      "description": "IDs of architecture decision records (ADRs) that address this requirement",
+      "items": { "type": "string" },
+      "examples": [["ADR-001", "ADR-003"]]
+    },
     "relatedStories": {
       "type": "array",
       "description": "IDs of stories that implement this requirement",

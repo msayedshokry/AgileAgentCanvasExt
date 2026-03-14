@@ -34,7 +34,12 @@ function getStoreModule(world: BmadWorld): any {
     dpStoreModule = proxyquire('../../src/state/artifact-store', {
       'vscode': world.vscode,
       '../extension': mockExtension,
-      '../commands/chat-bridge': { openChat: async () => true, setChatBridgeLogger: () => {} }
+      '../commands/chat-bridge': { openChat: async () => true, setChatBridgeLogger: () => {} },
+      './artifact-file-io': {
+        resolveArtifactTargetUri: async (opts: any) => world.vscode.Uri.file(`/test/${opts.fileName}`),
+        writeJsonFile: async () => {},
+        writeMarkdownCompanion: async (jsonUri: any, mdFilename: string) => world.vscode.Uri.file(`/test/${mdFilename}`)
+      }
     });
   }
   return dpStoreModule;

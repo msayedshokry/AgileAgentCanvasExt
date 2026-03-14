@@ -76,6 +76,7 @@ export interface FunctionalRequirement {
     description: string;
     capabilityArea?: string;
     relatedEpics?: string[];
+    architectureDecisions?: string[];
     relatedStories?: string[];
     priority?: PriorityLevel;
     status?: RequirementStatus;
@@ -160,7 +161,7 @@ export interface Epic {
     fitCriteria?: FitCriteria;
     successMetrics?: SuccessMetrics;
     risks?: Risk[];
-    definitionOfDone?: string[];
+    definitionOfDone?: DefinitionOfDone | string[];
     technicalSummary?: TechnicalSummary;
 }
 

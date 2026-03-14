@@ -447,6 +447,43 @@
                 "type": "string",
                 "description": "Summary of when the epic is considered complete"
               },
+              "testStrategy": {
+                "type": "object",
+                "description": "Per-epic test strategy",
+                "properties": {
+                  "id": { "type": "string" },
+                  "title": { "type": "string" },
+                  "scope": { "type": "string" },
+                  "approach": { "type": "string" },
+                  "testTypes": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "tooling": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "coverageTargets": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "area": { "type": "string" },
+                        "target": { "type": "string" }
+                      }
+                    }
+                  },
+                  "riskAreas": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "epicId": { "type": "string" },
+                  "status": {
+                    "type": "string",
+                    "enum": ["draft", "approved"]
+                  }
+                }
+              },
               "stories": {
                 "type": "array",
                 "description": "Complete list of stories within this epic",

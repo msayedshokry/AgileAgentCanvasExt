@@ -25,18 +25,48 @@ interface ToolbarProps {
   schemaFixing?: boolean;
 }
 
-const ADD_ITEMS: { type: Artifact['type']; label: string; icon: IconName; needsEpic?: boolean; needsStoryOrEpic?: boolean }[] = [
-  { type: 'product-brief', label: 'Brief',          icon: 'prd' },
-  { type: 'vision',        label: 'Vision',          icon: 'vision' },
-  { type: 'prd',           label: 'PRD',              icon: 'prd' },
-  { type: 'requirement',   label: 'Requirement',      icon: 'requirement' },
-  { type: 'architecture',  label: 'Architecture',     icon: 'architecture' },
-  { type: 'epic',          label: 'Epic',             icon: 'epic' },
-  { type: 'story',         label: 'Story',            icon: 'story', needsEpic: true },
-  { type: 'use-case',      label: 'Use Case',         icon: 'use-case', needsEpic: true },
-  { type: 'test-strategy', label: 'Test Strategy',    icon: 'test-strategy', needsEpic: true },
-  { type: 'test-case',     label: 'Test Case',        icon: 'test-case', needsStoryOrEpic: true },
+/** All artifact types that can be created via the Add menu. */
+const ALL_ADD_ITEMS: { type: Artifact['type']; label: string; icon: IconName }[] = [
+  { type: 'product-brief',          label: 'Brief',             icon: 'product-brief' },
+  { type: 'vision',                 label: 'Vision',            icon: 'vision' },
+  { type: 'prd',                    label: 'PRD',               icon: 'prd' },
+  { type: 'requirement',            label: 'Requirement',       icon: 'requirement' },
+  { type: 'nfr',                    label: 'NFR',               icon: 'nfr' },
+  { type: 'additional-req',         label: 'Additional Req',    icon: 'additional-req' },
+  { type: 'architecture',           label: 'Architecture',      icon: 'architecture' },
+  { type: 'architecture-decision',  label: 'ADR',               icon: 'architecture-decision' },
+  { type: 'system-component',       label: 'Component',         icon: 'system-component' },
+  { type: 'epic',                   label: 'Epic',              icon: 'epic' },
+  { type: 'story',                  label: 'Story',             icon: 'story' },
+  { type: 'use-case',               label: 'Use Case',          icon: 'use-case' },
+  { type: 'test-strategy',          label: 'Test Strategy',     icon: 'test-strategy' },
+  { type: 'test-case',              label: 'Test Case',         icon: 'test-case' },
+  { type: 'task',                   label: 'Task',              icon: 'task' },
 ];
+
+/**
+ * Schema-derived parent→allowed-child-type mapping.
+ * Source: BMAD schemas:
+ *   architecture.schema.json  → decisions[] (ADR), systemComponents[]
+ *   prd.schema.json           → requirements.functional[], .nonFunctional[], .technical[]
+ *   epics.schema.json         → stories[], useCases[], testStrategy
+ *   story.schema.json         → testCases[], tasks[]
+ *   requirement.schema.json   → relatedEpics[], architectureDecisions[]
+ *
+ * Types not listed → fallback to ROOT_TYPES.
+ */
+const ALLOWED_CHILDREN: Partial<Record<Artifact['type'], Artifact['type'][]>> = {
+  'architecture': ['architecture-decision', 'system-component'],
+  'prd':          ['requirement', 'nfr', 'additional-req'],
+  'epic':         ['story', 'use-case', 'test-strategy', 'test-case'],
+  'story':        ['test-case', 'task'],
+  'requirement':  ['architecture-decision', 'epic'],
+};
+
+/** Root-level types shown when nothing is selected or a type with no children is selected. */
+const ROOT_TYPES: Set<Artifact['type']> = new Set([
+  'epic', 'requirement', 'prd', 'architecture', 'vision', 'product-brief',
+]);
 
 export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhance, onElicit, themeOverride, onToggleTheme, detectedProjectCount, onSwitchProject, onExport, onImport, onHelp, onAsk, outputFormat, onOutputFormatChange, schemaIssueCount, onFixSchemas, onValidateSchemas, schemaValidating, schemaFixing }: ToolbarProps) {
   const [open, setOpen] = useState(false);
@@ -228,33 +258,30 @@ export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhanc
       )}
 
       {/* Add artifact popover */}
-      {open && (
-        <div className="toolbar-popover" role="menu">
-          {ADD_ITEMS.map(item => {
-            const disabled =
-              (item.needsEpic && selectedArtifact?.type !== 'epic') ||
-              (item.needsStoryOrEpic && selectedArtifact?.type !== 'story' && selectedArtifact?.type !== 'epic');
-            const disabledReason = item.needsEpic
-              ? 'Select an Epic first'
-              : item.needsStoryOrEpic
-              ? 'Select a Story or Epic first'
-              : undefined;
-            return (
+      {open && (() => {
+        // When nothing is selected or selected type has no children → show ROOT_TYPES.
+        // When an artifact is selected with defined children → show only its children.
+        const children = selectedArtifact ? ALLOWED_CHILDREN[selectedArtifact.type] : undefined;
+        const visibleItems = children
+          ? ALL_ADD_ITEMS.filter(item => children.includes(item.type))
+          : ALL_ADD_ITEMS.filter(item => ROOT_TYPES.has(item.type));
+        return (
+          <div className="toolbar-popover" role="menu">
+            {visibleItems.map(item => (
               <button
                 key={item.type}
-                className={`toolbar-popover-item ${item.type}${disabled ? ' disabled' : ''}`}
-                onClick={() => !disabled && handleAdd(item.type)}
-                title={disabled ? disabledReason : `Add ${item.label}`}
-                aria-disabled={disabled}
+                className={`toolbar-popover-item ${item.type}`}
+                onClick={() => handleAdd(item.type)}
+                title={`Add ${item.label}`}
                 role="menuitem"
               >
                 <span className="toolbar-popover-icon"><Icon name={item.icon} size={16} /></span>
                 <span className="toolbar-popover-label">{item.label}</span>
               </button>
-            );
-          })}
-        </div>
-      )}
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 }

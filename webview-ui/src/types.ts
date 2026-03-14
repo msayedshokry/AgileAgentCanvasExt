@@ -465,6 +465,7 @@ export interface RequirementMetadata {
   rationale?: string;
   source?: string;
   relatedEpics?: string[];
+  architectureDecisions?: string[];
   relatedStories?: string[];
   priority?: PriorityLevel;
   status?: RequirementStatus;

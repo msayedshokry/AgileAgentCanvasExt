@@ -3203,12 +3203,8 @@ export class ArtifactStore {
                 : Array.isArray(epicData.risks?.risks)
                     ? epicData.risks.risks
                     : epicData.risks,
-            // Schema $ref wraps DoD as {items: [{item}]} — unwrap to string[]
-            definitionOfDone: Array.isArray(epicData.definitionOfDone)
-                ? epicData.definitionOfDone
-                : Array.isArray(epicData.definitionOfDone?.items)
-                    ? epicData.definitionOfDone.items.map((i: any) => typeof i === 'string' ? i : i.item || '')
-                    : epicData.definitionOfDone,
+            // Pass the full DoD object through (items, qualityGates, acceptanceSummary)
+            definitionOfDone: epicData.definitionOfDone,
             technicalSummary: epicData.technicalSummary,
             testStrategy: epicData.testStrategy
         };
@@ -3328,7 +3324,8 @@ export class ArtifactStore {
             acceptanceCriteria: fr.acceptanceCriteria,
             dependencies: fr.dependencies,
             implementationNotes: fr.implementationNotes,
-            notes: fr.notes
+            notes: fr.notes,
+            architectureDecisions: fr.architectureDecisions
         };
     }
 
@@ -3545,22 +3542,6 @@ export class ArtifactStore {
                 d.metadata.artifactType = artifactType;
                 changed = true;
             }
-
-            // Strip unknown metadata properties (additionalProperties: false)
-            const allowedMetadataKeys = new Set([
-                'schemaVersion', 'artifactType', 'workflowName', 'workflowVersion',
-                'projectName', 'stepsCompleted', 'currentStep', 'inputDocuments',
-                'timestamps', 'author', 'status', 'tags', 'customFields',
-            ]);
-            for (const key of Object.keys(d.metadata)) {
-                if (!allowedMetadataKeys.has(key)) {
-                    delete d.metadata[key];
-                    changed = true;
-                    acOutput.appendLine(
-                        `[ArtifactStore] fixAndSyncToFiles: stripped metadata.${key} from ${fileName}`
-                    );
-                }
-            }
         }
 
         // ── 3) Product-brief / vision specific repairs ──
@@ -3618,34 +3599,6 @@ export class ArtifactStore {
                 }
             }
 
-            // Strip extra root properties (additionalProperties: false at root)
-            const allowedRootKeys = new Set(['metadata', 'content']);
-            for (const key of Object.keys(d)) {
-                if (!allowedRootKeys.has(key)) {
-                    delete d[key];
-                    changed = true;
-                    acOutput.appendLine(
-                        `[ArtifactStore] fixAndSyncToFiles: stripped root.${key} from ${fileName}`
-                    );
-                }
-            }
-
-            // Strip extra content properties (additionalProperties: false on content)
-            const allowedContentKeys = new Set([
-                'productName', 'tagline', 'version', 'status', 'vision',
-                'targetUsers', 'marketContext', 'successMetrics', 'scope',
-                'keyFeatures', 'constraints', 'assumptions', 'risks',
-                'dependencies', 'timeline', 'stakeholders', 'additionalContext',
-            ]);
-            for (const key of Object.keys(d.content)) {
-                if (!allowedContentKeys.has(key)) {
-                    delete d.content[key];
-                    changed = true;
-                    acOutput.appendLine(
-                        `[ArtifactStore] fixAndSyncToFiles: stripped content.${key} from ${fileName}`
-                    );
-                }
-            }
         }
 
         // ── 3b) PRD specific repairs (M1) ──
@@ -3665,34 +3618,6 @@ export class ArtifactStore {
                     `[ArtifactStore] fixAndSyncToFiles: added empty content.requirements to ${fileName}`
                 );
             }
-
-            // Strip extra root properties (additionalProperties: false at root)
-            const allowedRootKeys = new Set(['metadata', 'content']);
-            for (const key of Object.keys(d)) {
-                if (!allowedRootKeys.has(key)) {
-                    delete d[key];
-                    changed = true;
-                    acOutput.appendLine(
-                        `[ArtifactStore] fixAndSyncToFiles: stripped root.${key} from ${fileName}`
-                    );
-                }
-            }
-
-            // Strip extra content properties (additionalProperties: false on content)
-            const allowedContentKeys = new Set([
-                'productOverview', 'projectType', 'userPersonas', 'successCriteria',
-                'userJourneys', 'domainModel', 'requirements', 'scope',
-                'constraints', 'risks', 'timeline', 'appendices', 'approvals',
-            ]);
-            for (const key of Object.keys(d.content)) {
-                if (!allowedContentKeys.has(key)) {
-                    delete d.content[key];
-                    changed = true;
-                    acOutput.appendLine(
-                        `[ArtifactStore] fixAndSyncToFiles: stripped content.${key} from PRD ${fileName}`
-                    );
-                }
-            }
         }
 
         // ── 3c) Architecture specific repairs (M2) ──
@@ -3711,35 +3636,6 @@ export class ArtifactStore {
                 acOutput.appendLine(
                     `[ArtifactStore] fixAndSyncToFiles: added empty content.decisions to ${fileName}`
                 );
-            }
-
-            // Strip extra root properties
-            const allowedRootKeys = new Set(['metadata', 'content']);
-            for (const key of Object.keys(d)) {
-                if (!allowedRootKeys.has(key)) {
-                    delete d[key];
-                    changed = true;
-                    acOutput.appendLine(
-                        `[ArtifactStore] fixAndSyncToFiles: stripped root.${key} from ${fileName}`
-                    );
-                }
-            }
-
-            // Strip extra content properties (additionalProperties: false on content)
-            const allowedContentKeys = new Set([
-                'overview', 'context', 'techStack', 'decisions', 'patterns',
-                'systemComponents', 'projectStructure', 'dataFlow', 'security',
-                'scalability', 'reliability', 'observability', 'deployment',
-                'integrations', 'validation', 'implementationNotes', 'references',
-            ]);
-            for (const key of Object.keys(d.content)) {
-                if (!allowedContentKeys.has(key)) {
-                    delete d.content[key];
-                    changed = true;
-                    acOutput.appendLine(
-                        `[ArtifactStore] fixAndSyncToFiles: stripped content.${key} from architecture ${fileName}`
-                    );
-                }
             }
         }
 
@@ -3764,388 +3660,8 @@ export class ArtifactStore {
                     `[ArtifactStore] fixAndSyncToFiles: added empty content.coveragePlan to ${fileName}`
                 );
             }
-
-            // Strip extra root properties
-            const allowedRootKeys = new Set(['metadata', 'content']);
-            for (const key of Object.keys(d)) {
-                if (!allowedRootKeys.has(key)) {
-                    delete d[key];
-                    changed = true;
-                    acOutput.appendLine(
-                        `[ArtifactStore] fixAndSyncToFiles: stripped root.${key} from ${fileName}`
-                    );
-                }
-            }
-
-            // Strip extra content properties (additionalProperties: false on content)
-            const allowedContentKeys = new Set([
-                'epicInfo', 'summary', 'notInScope', 'riskAssessment',
-                'entryExitCriteria', 'projectTeam', 'coveragePlan', 'testCases',
-                'executionOrder', 'testEnvironment', 'resourceEstimates',
-                'qualityGateCriteria', 'mitigationPlans', 'assumptionsAndDependencies',
-                'defectManagement', 'approval', 'appendices',
-            ]);
-            for (const key of Object.keys(d.content)) {
-                if (!allowedContentKeys.has(key)) {
-                    delete d.content[key];
-                    changed = true;
-                    acOutput.appendLine(
-                        `[ArtifactStore] fixAndSyncToFiles: stripped content.${key} from test artifact ${fileName}`
-                    );
-                }
-            }
-
-            // ── 3e) Coerce invalid enum values in test-design fields ──
-            // summary.testLevels[].level must be one of:
-            const VALID_SUMMARY_LEVELS = new Set([
-                'unit', 'integration', 'component', 'api', 'e2e', 'performance', 'security'
-            ]);
-            // coveragePlan.p0-p3[].testLevel must be one of:
-            const VALID_COVERAGE_LEVELS = new Set([
-                'unit', 'integration', 'component', 'api', 'e2e', 'manual'
-            ]);
-            // coveragePlan.p0-p3[].testType must be one of:
-            const VALID_TEST_TYPES = new Set([
-                'functional', 'regression', 'smoke', 'sanity', 'exploratory'
-            ]);
-
-            // Best-effort mapping from common invalid values to valid ones
-            const LEVEL_ALIASES: Record<string, string> = {
-                'acceptance': 'e2e',
-                'end-to-end': 'e2e',
-                'endtoend': 'e2e',
-                'system': 'e2e',
-                'functional': 'e2e',
-                'perf': 'performance',
-                'load': 'performance',
-                'stress': 'performance',
-                'sec': 'security',
-                'pen': 'security',
-                'penetration': 'security',
-                'contract': 'api',
-                'ui': 'e2e',
-                'uat': 'e2e',
-            };
-
-            function coerceEnum(
-                value: string | undefined,
-                allowedSet: Set<string>,
-                aliases: Record<string, string>,
-                fallback: string
-            ): string | undefined {
-                if (!value || typeof value !== 'string') return value;
-                const lower = value.toLowerCase().trim();
-                if (allowedSet.has(lower)) return lower;
-                if (aliases[lower]) return aliases[lower];
-                return fallback;
-            }
-
-            // Repair summary.testLevels[].level
-            if (Array.isArray(d.content.summary?.testLevels)) {
-                for (const item of d.content.summary.testLevels) {
-                    if (item && typeof item === 'object' && item.level) {
-                        const coerced = coerceEnum(item.level, VALID_SUMMARY_LEVELS, LEVEL_ALIASES, 'e2e');
-                        if (coerced !== item.level) {
-                            acOutput.appendLine(
-                                `[ArtifactStore] fixAndSyncToFiles: coerced summary.testLevels[].level ` +
-                                `"${item.level}" → "${coerced}" in ${fileName}`
-                            );
-                            item.level = coerced;
-                            changed = true;
-                        }
-                    }
-                }
-            }
-
-            // Repair coveragePlan.p0-p3[].testLevel and testType
-            if (d.content.coveragePlan && typeof d.content.coveragePlan === 'object') {
-                for (const pKey of ['p0', 'p1', 'p2', 'p3']) {
-                    const items = d.content.coveragePlan[pKey];
-                    if (!Array.isArray(items)) continue;
-                    for (const item of items) {
-                        if (!item || typeof item !== 'object') continue;
-                        if (item.testLevel) {
-                            const coerced = coerceEnum(item.testLevel, VALID_COVERAGE_LEVELS, LEVEL_ALIASES, 'e2e');
-                            if (coerced !== item.testLevel) {
-                                acOutput.appendLine(
-                                    `[ArtifactStore] fixAndSyncToFiles: coerced coveragePlan.${pKey}[].testLevel ` +
-                                    `"${item.testLevel}" → "${coerced}" in ${fileName}`
-                                );
-                                item.testLevel = coerced;
-                                changed = true;
-                            }
-                        }
-                        if (item.testType) {
-                            const coerced = coerceEnum(item.testType, VALID_TEST_TYPES, {
-                                'integration': 'functional',
-                                'unit': 'functional',
-                                'e2e': 'functional',
-                                'acceptance': 'functional',
-                                'performance': 'functional',
-                                'security': 'functional',
-                                'negative': 'functional',
-                                'positive': 'functional',
-                                'boundary': 'functional',
-                                'edge-case': 'exploratory',
-                            }, 'functional');
-                            if (coerced !== item.testType) {
-                                acOutput.appendLine(
-                                    `[ArtifactStore] fixAndSyncToFiles: coerced coveragePlan.${pKey}[].testType ` +
-                                    `"${item.testType}" → "${coerced}" in ${fileName}`
-                                );
-                                item.testType = coerced;
-                                changed = true;
-                            }
-                        }
-                    }
-                }
-            }
         }
 
-        // ── 3e) Test-review specific enum coercion ──
-        if (artifactType === 'test-review' && d.content) {
-            // Helper to coerce a string value to a valid enum member
-            function coerceReviewEnum(
-                value: string | undefined,
-                allowedSet: Set<string>,
-                aliases: Record<string, string>,
-                fallback: string
-            ): string | undefined {
-                if (!value || typeof value !== 'string') return value;
-                const lower = value.toLowerCase().trim();
-                if (allowedSet.has(lower)) return lower;
-                if (aliases[lower]) return aliases[lower];
-                return fallback;
-            }
-
-            // criticalIssues[].priority: ["immediate", "before-release", "next-sprint"]
-            const VALID_ISSUE_PRIORITY = new Set(['immediate', 'before-release', 'next-sprint']);
-            const ISSUE_PRIORITY_ALIASES: Record<string, string> = {
-                'critical': 'immediate',
-                'blocker': 'immediate',
-                'p0': 'immediate',
-                'urgent': 'immediate',
-                'high': 'before-release',
-                'p1': 'before-release',
-                'important': 'before-release',
-                'medium': 'next-sprint',
-                'low': 'next-sprint',
-                'p2': 'next-sprint',
-                'p3': 'next-sprint',
-                'minor': 'next-sprint',
-            };
-
-            // criticalIssues[].effort and recommendations[].effort: ["trivial", "small", "medium", "large"]
-            const VALID_EFFORT = new Set(['trivial', 'small', 'medium', 'large']);
-            const EFFORT_ALIASES: Record<string, string> = {
-                'tiny': 'trivial',
-                'minimal': 'trivial',
-                'low': 'small',
-                'minor': 'small',
-                'moderate': 'medium',
-                'significant': 'large',
-                'high': 'large',
-                'major': 'large',
-                'xl': 'large',
-            };
-
-            // recommendations[].priority: ["high", "medium", "low"]
-            const VALID_REC_PRIORITY = new Set(['high', 'medium', 'low']);
-            const REC_PRIORITY_ALIASES: Record<string, string> = {
-                'critical': 'high',
-                'immediate': 'high',
-                'urgent': 'high',
-                'p0': 'high',
-                'p1': 'high',
-                'important': 'medium',
-                'normal': 'medium',
-                'p2': 'medium',
-                'minor': 'low',
-                'p3': 'low',
-                'trivial': 'low',
-            };
-
-            // recommendations[].category
-            const VALID_CATEGORY = new Set(['maintainability', 'performance', 'reliability', 'coverage', 'readability', 'best-practice']);
-            const CATEGORY_ALIASES: Record<string, string> = {
-                'maintenance': 'maintainability',
-                'speed': 'performance',
-                'stability': 'reliability',
-                'robustness': 'reliability',
-                'test-coverage': 'coverage',
-                'testing': 'coverage',
-                'clarity': 'readability',
-                'code-quality': 'readability',
-                'bestpractice': 'best-practice',
-                'best_practice': 'best-practice',
-                'practice': 'best-practice',
-                'quality': 'maintainability',
-            };
-
-            // reviewInfo.reviewType: ["initial", "follow-up", "regression", "pre-release", "post-incident"]
-            const VALID_REVIEW_TYPE = new Set(['initial', 'follow-up', 'regression', 'pre-release', 'post-incident']);
-            const REVIEW_TYPE_ALIASES: Record<string, string> = {
-                'first': 'initial',
-                'new': 'initial',
-                'followup': 'follow-up',
-                'follow_up': 'follow-up',
-                'prerelease': 'pre-release',
-                'pre_release': 'pre-release',
-                'release': 'pre-release',
-                'postincident': 'post-incident',
-                'post_incident': 'post-incident',
-                'incident': 'post-incident',
-            };
-
-            // executiveSummary.recommendation & decision.verdict: ["approve", "approve-with-comments", "request-changes", "block"]
-            const VALID_VERDICT = new Set(['approve', 'approve-with-comments', 'request-changes', 'block']);
-            const VERDICT_ALIASES: Record<string, string> = {
-                'approved': 'approve',
-                'pass': 'approve',
-                'lgtm': 'approve',
-                'approve-with-comment': 'approve-with-comments',
-                'approved-with-comments': 'approve-with-comments',
-                'conditional': 'approve-with-comments',
-                'request-change': 'request-changes',
-                'changes-requested': 'request-changes',
-                'needs-work': 'request-changes',
-                'reject': 'block',
-                'rejected': 'block',
-                'blocked': 'block',
-                'fail': 'block',
-            };
-
-            // executiveSummary.riskLevel: ["low", "medium", "high", "critical"]
-            const VALID_RISK_LEVEL = new Set(['low', 'medium', 'high', 'critical']);
-            const RISK_LEVEL_ALIASES: Record<string, string> = {
-                'none': 'low',
-                'minimal': 'low',
-                'moderate': 'medium',
-                'severe': 'critical',
-                'blocker': 'critical',
-            };
-
-            // Repair criticalIssues[].priority and effort
-            if (Array.isArray(d.content.criticalIssues)) {
-                for (const item of d.content.criticalIssues) {
-                    if (!item || typeof item !== 'object') continue;
-                    if (item.priority) {
-                        const coerced = coerceReviewEnum(item.priority, VALID_ISSUE_PRIORITY, ISSUE_PRIORITY_ALIASES, 'before-release');
-                        if (coerced !== item.priority) {
-                            acOutput.appendLine(
-                                `[ArtifactStore] fixAndSyncToFiles: coerced criticalIssues[].priority ` +
-                                `"${item.priority}" → "${coerced}" in ${fileName}`
-                            );
-                            item.priority = coerced;
-                            changed = true;
-                        }
-                    }
-                    if (item.effort) {
-                        const coerced = coerceReviewEnum(item.effort, VALID_EFFORT, EFFORT_ALIASES, 'medium');
-                        if (coerced !== item.effort) {
-                            acOutput.appendLine(
-                                `[ArtifactStore] fixAndSyncToFiles: coerced criticalIssues[].effort ` +
-                                `"${item.effort}" → "${coerced}" in ${fileName}`
-                            );
-                            item.effort = coerced;
-                            changed = true;
-                        }
-                    }
-                }
-            }
-
-            // Repair recommendations[].priority, effort, and category
-            if (Array.isArray(d.content.recommendations)) {
-                for (const item of d.content.recommendations) {
-                    if (!item || typeof item !== 'object') continue;
-                    if (item.priority) {
-                        const coerced = coerceReviewEnum(item.priority, VALID_REC_PRIORITY, REC_PRIORITY_ALIASES, 'medium');
-                        if (coerced !== item.priority) {
-                            acOutput.appendLine(
-                                `[ArtifactStore] fixAndSyncToFiles: coerced recommendations[].priority ` +
-                                `"${item.priority}" → "${coerced}" in ${fileName}`
-                            );
-                            item.priority = coerced;
-                            changed = true;
-                        }
-                    }
-                    if (item.effort) {
-                        const coerced = coerceReviewEnum(item.effort, VALID_EFFORT, EFFORT_ALIASES, 'medium');
-                        if (coerced !== item.effort) {
-                            acOutput.appendLine(
-                                `[ArtifactStore] fixAndSyncToFiles: coerced recommendations[].effort ` +
-                                `"${item.effort}" → "${coerced}" in ${fileName}`
-                            );
-                            item.effort = coerced;
-                            changed = true;
-                        }
-                    }
-                    if (item.category) {
-                        const coerced = coerceReviewEnum(item.category, VALID_CATEGORY, CATEGORY_ALIASES, 'best-practice');
-                        if (coerced !== item.category) {
-                            acOutput.appendLine(
-                                `[ArtifactStore] fixAndSyncToFiles: coerced recommendations[].category ` +
-                                `"${item.category}" → "${coerced}" in ${fileName}`
-                            );
-                            item.category = coerced;
-                            changed = true;
-                        }
-                    }
-                }
-            }
-
-            // Repair reviewInfo.reviewType
-            if (d.content.reviewInfo?.reviewType) {
-                const coerced = coerceReviewEnum(d.content.reviewInfo.reviewType, VALID_REVIEW_TYPE, REVIEW_TYPE_ALIASES, 'initial');
-                if (coerced !== d.content.reviewInfo.reviewType) {
-                    acOutput.appendLine(
-                        `[ArtifactStore] fixAndSyncToFiles: coerced reviewInfo.reviewType ` +
-                        `"${d.content.reviewInfo.reviewType}" → "${coerced}" in ${fileName}`
-                    );
-                    d.content.reviewInfo.reviewType = coerced;
-                    changed = true;
-                }
-            }
-
-            // Repair executiveSummary.recommendation
-            if (d.content.executiveSummary?.recommendation) {
-                const coerced = coerceReviewEnum(d.content.executiveSummary.recommendation, VALID_VERDICT, VERDICT_ALIASES, 'approve-with-comments');
-                if (coerced !== d.content.executiveSummary.recommendation) {
-                    acOutput.appendLine(
-                        `[ArtifactStore] fixAndSyncToFiles: coerced executiveSummary.recommendation ` +
-                        `"${d.content.executiveSummary.recommendation}" → "${coerced}" in ${fileName}`
-                    );
-                    d.content.executiveSummary.recommendation = coerced;
-                    changed = true;
-                }
-            }
-
-            // Repair executiveSummary.riskLevel
-            if (d.content.executiveSummary?.riskLevel) {
-                const coerced = coerceReviewEnum(d.content.executiveSummary.riskLevel, VALID_RISK_LEVEL, RISK_LEVEL_ALIASES, 'medium');
-                if (coerced !== d.content.executiveSummary.riskLevel) {
-                    acOutput.appendLine(
-                        `[ArtifactStore] fixAndSyncToFiles: coerced executiveSummary.riskLevel ` +
-                        `"${d.content.executiveSummary.riskLevel}" → "${coerced}" in ${fileName}`
-                    );
-                    d.content.executiveSummary.riskLevel = coerced;
-                    changed = true;
-                }
-            }
-
-            // Repair decision.verdict
-            if (d.content.decision?.verdict) {
-                const coerced = coerceReviewEnum(d.content.decision.verdict, VALID_VERDICT, VERDICT_ALIASES, 'approve-with-comments');
-                if (coerced !== d.content.decision.verdict) {
-                    acOutput.appendLine(
-                        `[ArtifactStore] fixAndSyncToFiles: coerced decision.verdict ` +
-                        `"${d.content.decision.verdict}" → "${coerced}" in ${fileName}`
-                    );
-                    d.content.decision.verdict = coerced;
-                    changed = true;
-                }
-            }
-        }
 
         // ── 4) Use-case specific repairs ──
         if (flatTypes.has(artifactType)) {
@@ -4197,14 +3713,6 @@ export class ArtifactStore {
 
         // ── 5) Epics specific repairs ──
         if ((artifactType === 'epics' || artifactType === 'epic') && d.metadata && d.content) {
-            // Strip extra root properties
-            const allowedRootKeys = new Set(['metadata', 'content']);
-            for (const key of Object.keys(d)) {
-                if (!allowedRootKeys.has(key)) {
-                    delete d[key];
-                    changed = true;
-                }
-            }
 
             // Ensure content.epics exists (required)
             if (!d.content.epics && Array.isArray(d.content)) {
@@ -4220,21 +3728,6 @@ export class ArtifactStore {
                 );
             }
 
-            // Strip extra content properties (additionalProperties: false)
-            // Allowed: overview, requirementsInventory, coverageMap, epics, dependencies, summary
-            const allowedContentKeys = new Set([
-                'overview', 'requirementsInventory', 'coverageMap',
-                'epics', 'dependencies', 'summary',
-            ]);
-            for (const key of Object.keys(d.content)) {
-                if (!allowedContentKeys.has(key)) {
-                    delete d.content[key];
-                    changed = true;
-                    acOutput.appendLine(
-                        `[ArtifactStore] fixAndSyncToFiles: stripped content.${key} from ${fileName}`
-                    );
-                }
-            }
 
             // Fix use-case IDs inside epics
             if (Array.isArray(d.content.epics)) {
@@ -4267,17 +3760,7 @@ export class ArtifactStore {
             }
         }
 
-        // ── 6) Story specific repairs ──
         if (artifactType === 'story' && d.metadata && d.content) {
-            // Strip extra root properties
-            const allowedRootKeys = new Set(['metadata', 'content']);
-            for (const key of Object.keys(d)) {
-                if (!allowedRootKeys.has(key)) {
-                    delete d[key];
-                    changed = true;
-                }
-            }
-
             // Ensure content.title (required by schema)
             if (!d.content.title) {
                 d.content.title = d.content.userStory
@@ -4291,29 +3774,6 @@ export class ArtifactStore {
             }
         }
 
-        // ── 7) Generic fallback repair for remaining wrapped types (L1) ──
-        // For TEA/BMM/CIS module types that don't have specific repair blocks above,
-        // ensure the basic { metadata, content } structure is clean.
-        const typesWithSpecificRepairs = new Set([
-            'product-brief', 'vision', 'prd', 'architecture',
-            'test-design', 'test-design-qa', 'test-design-architecture',
-            'test-strategy', 'test-cases', 'test-case',
-            'epics', 'epic', 'story',
-        ]);
-        if (wrappedTypes.has(artifactType) && !typesWithSpecificRepairs.has(artifactType)
-            && d.metadata && d.content) {
-            // Strip extra root properties (all wrapped types only allow metadata + content)
-            const allowedRootKeys = new Set(['metadata', 'content']);
-            for (const key of Object.keys(d)) {
-                if (!allowedRootKeys.has(key)) {
-                    delete d[key];
-                    changed = true;
-                    acOutput.appendLine(
-                        `[ArtifactStore] fixAndSyncToFiles: stripped root.${key} from ${artifactType} ${fileName}`
-                    );
-                }
-            }
-        }
 
         return changed ? d : data;
     }
@@ -4718,9 +4178,9 @@ export class ArtifactStore {
                     totalStories: state.epics?.reduce((sum, e) => sum + (e.stories?.length || 0), 0) || 0
                 },
                 requirementsInventory: state.requirements,
-                // Strip runtime-only fields from each epic before writing
+                // Sanitise each epic before writing
                 epics: (state.epics || []).map((epic: any) => {
-                    const { testStrategy, ...epicFields } = epic;
+                    const epicFields = { ...epic };
                     // Also sanitise embedded stories — strip runtime fields
                     // and ensure dependencies shape matches the inline schema
                     // (inline epics.schema uses string[] for dependencies,

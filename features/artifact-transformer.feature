@@ -189,7 +189,7 @@ Feature: Artifact Transformer - Store-to-Canvas Layout
     When I build artifacts from the store
     Then artifact "epic-0" should have type "epic"
     And artifact "epic-0" should have title "Epic One"
-    And artifact "epic-0" position x should be 2510
+    And artifact "epic-0" position x should be 2530
 
   @transformer @implementation
   Scenario: Epic stories appear in column 5

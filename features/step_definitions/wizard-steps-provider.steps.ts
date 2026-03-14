@@ -29,7 +29,12 @@ function loadWizardProvider(world: BmadWorld): { store: any; provider: any } {
   const artifactStoreModule = proxyquire('../../src/state/artifact-store', {
     'vscode': vsc,
     '../extension': { acOutput: mockAcOutput },
-    '../commands/chat-bridge': { openChat: async () => true, setChatBridgeLogger: () => {} }
+    '../commands/chat-bridge': { openChat: async () => true, setChatBridgeLogger: () => {} },
+    './artifact-file-io': {
+      resolveArtifactTargetUri: async (opts: any) => vsc.Uri.file(`/test/${opts.fileName}`),
+      writeJsonFile: async () => {},
+      writeMarkdownCompanion: async (jsonUri: any, mdFilename: string) => vsc.Uri.file(`/test/${mdFilename}`)
+    }
   });
 
   // Load workflow-executor with mocked deps
