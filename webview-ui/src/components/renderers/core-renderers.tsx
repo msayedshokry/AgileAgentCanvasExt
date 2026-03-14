@@ -2919,7 +2919,17 @@ export function renderTestStrategyDetails(props: RendererProps) {
   const tooling: string[] = editedData.tooling || editedData.tools || meta?.tooling || (meta as any)?.tools || [];
   // Normalize: sample uses object {unit: "85%", ...}, renderer expects [{area, target}]
   const rawCoverage = editedData.coverageTargets || meta?.coverageTargets;
-  const coverageTargets: any[] = Array.isArray(rawCoverage) ? rawCoverage
+  const coverageTargets: any[] = Array.isArray(rawCoverage)
+    ? rawCoverage.map((item: any) => {
+        if (typeof item === 'string') {
+          // String format: "FC-1.01: Facility CRUD persist/retrieve" → {area: full string, target: ''}
+          return { area: item, target: '' };
+        }
+        if (item && typeof item === 'object' && (item.area || item.target)) {
+          return item; // Already {area, target}
+        }
+        return null;
+      }).filter(Boolean)
     : (rawCoverage && typeof rawCoverage === 'object')
       ? Object.entries(rawCoverage).map(([area, target]) => ({ area, target: typeof target === 'string' ? target : JSON.stringify(target) }))
       : [];
@@ -3045,7 +3055,7 @@ export function renderTestStrategyDetails(props: RendererProps) {
           ) : (
             <ul className="coverage-targets-list">
               {coverageTargets.map((ct: { area?: string; target?: string }, i: number) => (
-                <li key={i}><strong>{ct.area}</strong>: {ct.target}</li>
+                <li key={i}><strong>{ct.area}</strong>{ct.target ? <>: {ct.target}</> : null}</li>
               ))}
             </ul>
           )}
