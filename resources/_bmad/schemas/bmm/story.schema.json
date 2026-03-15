@@ -332,9 +332,12 @@
             "dataModels": {
               "type": "array",
               "items": {
-                "type": "string"
+                "oneOf": [
+                  { "type": "string" },
+                  { "type": "object" }
+                ]
               },
-              "description": "Data models involved"
+              "description": "Data models involved (strings or structured objects)"
             },
             "apiEndpoints": {
               "type": "array",

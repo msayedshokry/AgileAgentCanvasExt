@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.3.3
+
+### Schema Relaxation
+
+- **`metadata.schema.json` allows additional properties** — Extension-generated fields like `_llmHint` were causing false validation warnings; `additionalProperties` changed from `false` to `true`
+- **`story.schema.json` `dataModels` accepts objects** — `devNotes.dataModels` now accepts both strings and structured objects (`{name, description, fields}`) since LLMs generate rich data model descriptions
+- **`epics.schema.json` accepts manifest refs** — Epic items in the `epics` array now accept lightweight ref entries (`{id, title, status, file}`) alongside full inline epics via `oneOf`
+- **Standalone epic schema mapping removed** — `'epic' → 'epics.schema.json'` mapping removed from `schema-validator.ts` since standalone `epic-*.json` files have `content.{id,title,...}` structure incompatible with the collection schema
+
+### Bug Fixes
+
+- **`epics-index.json` misidentified as `'epics'` artifact** — Moved filename exclusion before content-structure checks in `detectArtifactType` so `data.epics` no longer triggers false detection
+- **Epic merge data loss** — `mergeEpicDuplicate()` now preserves `useCases`, `testStrategy`, `fitCriteria`, `successMetrics`, `risks`, `definitionOfDone`, and `technicalSummary` (previously only `stories` were merged)
+
 ## 0.3.2
 
 ### Documentation
