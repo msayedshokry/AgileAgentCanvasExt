@@ -25,17 +25,7 @@
       "totalEpics": 0,
       "totalStories": 0
     },
-    "requirementsInventory": {
-      "functional": [],
-      "nonFunctional": [],
-      "additional": [],
-      "summary": {
-        "totalFunctional": 0,
-        "totalNonFunctional": 0,
-        "totalAdditional": 0,
-        "totalRequirements": 0
-      }
-    },
+    "_note_requirementsInventory": "Requirements live in PRD (authoritative source). Use requirementRefs in stories to reference PRD requirements.",
     "coverageMap": {
       "functionalToEpic": [],
       "nonFunctionalToEpic": [],
@@ -244,8 +234,9 @@
         
         "stories": [
           {
-            "_comment": "Story template - repeat for each story",
-            "id": "STORY-N.M",
+            "_comment": "Story template - repeat for each story. id and epicId are REQUIRED.",
+            "id": "S-N.M",
+            "epicId": "EPIC-N",
             "title": "{{story_title}}",
             "userStory": {
               "asA": "{{user_type}}",

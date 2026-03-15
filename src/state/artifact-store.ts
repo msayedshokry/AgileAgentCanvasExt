@@ -221,6 +221,9 @@ export class ArtifactStore {
     // syncToFiles() checks this and skips if nothing changed (L4).
     private _dirty = false;
 
+    // Migration nudge: shown at most once per session to avoid nagging.
+    private _migrationPromptShown = false;
+
     // Simple async lock: prevents concurrent fixSchemas / syncToFiles calls from
     // interleaving writes and reads.  Callers should check `isFixInProgress()`
     // before starting a fix, or await the promise stored here.
@@ -274,7 +277,7 @@ export class ArtifactStore {
     // =====================================================================
     reconcileDerivedState(): void {
         const epics: Epic[] = this.artifacts.get('epics') || [];
-        const testDesign: any = this.artifacts.get('testDesign');
+        const testDesigns: any[] = this.artifacts.get('testDesigns') || [];
 
         // ── 1. Extract coveragePlan items from test-design into testCases ──
         // We partition existing TCs into "from-file" (test-cases.json) and
@@ -283,36 +286,40 @@ export class ArtifactStore {
         // the coveragePlan item IDs.
         const allTCs: TestCase[] = this.artifacts.get('testCases') || [];
         const coveragePlanItemIds = new Set<string>();
+        const priorities = ['p0', 'p1', 'p2', 'p3'] as const;
 
-        if (testDesign?.coveragePlan) {
-            const tdEpicId = testDesign.epicInfo?.epicId || '';
-            const tdEpicStoryIds = new Set<string>();
-            const matchingEpic = epics.find((e: Epic) => e.id === tdEpicId);
-            if (matchingEpic) {
-                (matchingEpic.stories || []).forEach((s: Story) => tdEpicStoryIds.add(s.id));
-            }
-
-            // Scope-based story fallback
-            let scopeStoryId: string | undefined;
-            const scopeMatch = (testDesign.summary?.scope || '').match(/\bS-[\d]+\.[\d]+\b/i);
-            if (scopeMatch) scopeStoryId = scopeMatch[0];
-
-            const priorities = ['p0', 'p1', 'p2', 'p3'] as const;
-
-            // Collect all coveragePlan item IDs
-            for (const pKey of priorities) {
-                for (const item of (testDesign.coveragePlan[pKey] || [])) {
-                    if (item.id) coveragePlanItemIds.add(item.id);
+        for (const testDesign of testDesigns) {
+            if (testDesign?.coveragePlan) {
+                for (const pKey of priorities) {
+                    for (const item of (testDesign.coveragePlan[pKey] || [])) {
+                        if (item.id) coveragePlanItemIds.add(item.id);
+                    }
                 }
             }
+        }
 
-            // Keep only TCs that did NOT originate from coveragePlan
-            const fileTCs = allTCs.filter((tc: TestCase) => !coveragePlanItemIds.has(tc.id));
-            const extractedTCs: TestCase[] = [];
+        // Keep only TCs that did NOT originate from coveragePlan
+        const fileTCs = allTCs.filter((tc: TestCase) => !coveragePlanItemIds.has(tc.id));
+        const extractedTCs: TestCase[] = [];
 
-            for (const pKey of priorities) {
-                const items: any[] = testDesign.coveragePlan[pKey] || [];
-                for (const item of items) {
+        for (const testDesign of testDesigns) {
+            if (testDesign?.coveragePlan) {
+                const tdEpicId = testDesign.epicInfo?.epicId || '';
+                const normEpicId = tdEpicId.replace(/^EPIC-/i, '').replace(/^Epic\s*/i, '').trim();
+                const tdEpicStoryIds = new Set<string>();
+                const matchingEpic = epics.find((e: Epic) => e.id === tdEpicId || e.id === normEpicId);
+                if (matchingEpic) {
+                    (matchingEpic.stories || []).forEach((s: Story) => tdEpicStoryIds.add(s.id));
+                }
+
+                // Scope-based story fallback
+                let scopeStoryId: string | undefined;
+                const scopeMatch = (testDesign.summary?.scope || '').match(/\bS-[\d]+\.[\d]+\b/i);
+                if (scopeMatch) scopeStoryId = scopeMatch[0];
+
+                for (const pKey of priorities) {
+                    const items: any[] = testDesign.coveragePlan[pKey] || [];
+                    for (const item of items) {
                     if (!item.id) continue;
                     // Skip if a file-originated TC already has this ID
                     if (fileTCs.find((tc: TestCase) => tc.id === item.id)) continue;
@@ -325,6 +332,8 @@ export class ArtifactStore {
                         const candidate = `S-${prefixMatch[1]}`;
                         if (tdEpicStoryIds.has(candidate)) {
                             storyId = candidate;
+                        } else if (tdEpicStoryIds.has(prefixMatch[1])) {
+                            storyId = prefixMatch[1];
                         }
                     }
                     if (!storyId && scopeStoryId && tdEpicStoryIds.has(scopeStoryId)) {
@@ -350,21 +359,24 @@ export class ArtifactStore {
                         relatedRequirements: item.requirementId ? [item.requirementId] : [],
                         tags: item.riskLink ? [item.riskLink] : []
                     });
+                    }
                 }
             }
-
-            this.artifacts.set('testCases', [...fileTCs, ...extractedTCs]);
         }
 
+        this.artifacts.set('testCases', [...fileTCs, ...extractedTCs]);
+
         // ── 2. Attach test-design riskAssessment risks to matching epic ──
-        if (testDesign?.riskAssessment && testDesign.epicInfo?.epicId) {
-            const tdEpicId = testDesign.epicInfo.epicId;
-            const ra = testDesign.riskAssessment;
-            const tdRisks: any[] = [
-                ...(ra.highPriority || []),
-                ...(ra.mediumPriority || []),
-                ...(ra.lowPriority || [])
-            ];
+        for (const testDesign of testDesigns) {
+            if (testDesign?.riskAssessment && testDesign.epicInfo?.epicId) {
+                const tdEpicIdRaw = testDesign.epicInfo.epicId;
+                const tdEpicId = tdEpicIdRaw.replace(/^EPIC-/i, '').replace(/^Epic\s*/i, '').trim();
+                const ra = testDesign.riskAssessment;
+                const tdRisks: any[] = [
+                    ...(ra.highPriority || []),
+                    ...(ra.mediumPriority || []),
+                    ...(ra.lowPriority || [])
+                ];
             if (tdRisks.length > 0) {
                 const normalized = tdRisks.map((r: any) => ({
                     id: r.riskId || r.id,
@@ -382,12 +394,13 @@ export class ArtifactStore {
                     status: 'identified'
                 }));
                 const targetEpic = epics.find((e: Epic) => e.id === tdEpicId);
-                if (targetEpic) {
-                    // Remove previously-attached TD risks, then re-add
-                    // (idempotent: we identify TD risks by their normalized IDs)
-                    const tdRiskIds = new Set(normalized.map((r: any) => r.id));
-                    const nonTdRisks = (targetEpic.risks || []).filter((r: any) => !tdRiskIds.has(r.id));
-                    targetEpic.risks = [...nonTdRisks, ...normalized];
+                    if (targetEpic) {
+                        // Remove previously-attached TD risks, then re-add
+                        // (idempotent: we identify TD risks by their normalized IDs)
+                        const tdRiskIds = new Set(normalized.map((r: any) => r.id));
+                        const nonTdRisks = (targetEpic.risks || []).filter((r: any) => !tdRiskIds.has(r.id));
+                        targetEpic.risks = [...nonTdRisks, ...normalized];
+                    }
                 }
             }
         }
@@ -546,28 +559,28 @@ export class ArtifactStore {
             productBrief: this.artifacts.get('productBrief'),
             testCases: this.artifacts.get('testCases'),
             testStrategy: this.artifacts.get('testStrategy'),
-            testDesign: this.artifacts.get('testDesign'),
+            testDesigns: this.artifacts.get('testDesigns'),
             // TEA module artifacts
             traceabilityMatrix: this.artifacts.get('traceabilityMatrix'),
-            testReview: this.artifacts.get('testReview'),
+            testReviews: this.artifacts.get('testReviews'),
             nfrAssessment: this.artifacts.get('nfrAssessment'),
             testFramework: this.artifacts.get('testFramework'),
             ciPipeline: this.artifacts.get('ciPipeline'),
             automationSummary: this.artifacts.get('automationSummary'),
             atddChecklist: this.artifacts.get('atddChecklist'),
             // BMM module artifacts
-            research: this.artifacts.get('research'),
-            uxDesign: this.artifacts.get('uxDesign'),
-            readinessReport: this.artifacts.get('readinessReport'),
-            sprintStatus: this.artifacts.get('sprintStatus'),
-            retrospective: this.artifacts.get('retrospective'),
-            changeProposal: this.artifacts.get('changeProposal'),
-            codeReview: this.artifacts.get('codeReview'),
+            researches: this.artifacts.get('researches'),
+            uxDesigns: this.artifacts.get('uxDesigns'),
+            readinessReports: this.artifacts.get('readinessReports'),
+            sprintStatuses: this.artifacts.get('sprintStatuses'),
+            retrospectives: this.artifacts.get('retrospectives'),
+            changeProposals: this.artifacts.get('changeProposals'),
+            codeReviews: this.artifacts.get('codeReviews'),
             risks: this.artifacts.get('risks'),
             definitionOfDone: this.artifacts.get('definitionOfDone'),
             projectOverview: this.artifacts.get('projectOverview'),
             projectContext: this.artifacts.get('projectContext'),
-            techSpec: this.artifacts.get('techSpec'),
+            techSpecs: this.artifacts.get('techSpecs'),
             sourceTree: this.artifacts.get('sourceTree'),
             testSummary: this.artifacts.get('testSummary'),
             // CIS module artifacts
@@ -671,7 +684,7 @@ export class ArtifactStore {
                 }
                 break;
 
-            case 'story':
+            case 'story': {
                 // Find story across all epics by story ID
                 const allEpics = this.artifacts.get('epics') || [];
                 let storyFound = false;
@@ -701,8 +714,113 @@ export class ArtifactStore {
                 
                 if (storyFound) {
                     this.artifacts.set('epics', [...allEpics]);
+                } else {
+                    // ── Create new standalone story ──────────────────────────
+                    // Story not found in any epic → create it as a new standalone
+                    // story file and add it to the matching epic's stories[].
+                    const acOutput = this.getOutputChannel();
+
+                    // Build the new story from changes
+                    const newStory: Story = {
+                        id: artifactId,
+                        title: changes.title || `Story ${artifactId}`,
+                        status: changes.status || 'draft',
+                        storyPoints: changes.storyPoints,
+                        userStory: changes.userStory,
+                        acceptanceCriteria: changes.acceptanceCriteria || [],
+                        technicalNotes: changes.technicalNotes,
+                        tasks: changes.tasks || [],
+                        dependencies: changes.dependencies,
+                        requirementRefs: changes.requirementRefs,
+                        ...changes
+                    };
+
+                    // Determine parent epicId — from changes, or derive from ID pattern
+                    // e.g. S-1.3 → EPIC-1, S1.3 → EPIC-1, 1.3 → EPIC-1
+                    let epicId = changes.epicId;
+                    if (!epicId) {
+                        const idMatch = artifactId.match(/^S?-?(\d+)[.\-]/i);
+                        if (idMatch) {
+                            epicId = `EPIC-${parseInt(idMatch[1], 10)}`;
+                        }
+                    }
+
+                    // Route to the matching epic
+                    let parentEpic: Epic | undefined;
+                    if (epicId) {
+                        // Normalize epicId for matching (EPIC-1, 1, EPIC 1 → EPIC-1)
+                        const normalizedTarget = epicId.replace(/^EPIC[\s-]*/i, '');
+                        parentEpic = allEpics.find((e: Epic) => {
+                            const normalizedEpicId = (e.id || '').replace(/^EPIC[\s-]*/i, '');
+                            return normalizedEpicId === normalizedTarget;
+                        });
+                    }
+
+                    if (parentEpic) {
+                        if (!parentEpic.stories) { parentEpic.stories = []; }
+                        parentEpic.stories.push(newStory);
+                        this.artifacts.set('epics', [...allEpics]);
+                        acOutput.appendLine(`[ArtifactStore] Created new story ${artifactId} in epic ${parentEpic.id}`);
+                    } else {
+                        // No matching epic — still add to in-memory epics if any exist
+                        if (allEpics.length > 0) {
+                            acOutput.appendLine(`[ArtifactStore] WARNING: No epic found for epicId "${epicId}" — story ${artifactId} created but not linked to any epic`);
+                        }
+                    }
+
+                    // Write standalone story file to output folder
+                    if (this.sourceFolder) {
+                        try {
+                            const storyFileContent = {
+                                metadata: {
+                                    schemaVersion: '1.0.0',
+                                    artifactType: 'story',
+                                    timestamps: {
+                                        created: new Date().toISOString(),
+                                        lastModified: new Date().toISOString()
+                                    },
+                                    status: newStory.status || 'draft'
+                                },
+                                content: {
+                                    id: artifactId,
+                                    epicId: epicId || '',
+                                    title: newStory.title,
+                                    status: newStory.status || 'draft',
+                                    userStory: newStory.userStory,
+                                    acceptanceCriteria: newStory.acceptanceCriteria,
+                                    storyPoints: newStory.storyPoints,
+                                    technicalNotes: newStory.technicalNotes,
+                                    tasks: newStory.tasks,
+                                    dependencies: newStory.dependencies,
+                                    requirementRefs: newStory.requirementRefs
+                                }
+                            };
+
+                            // Generate safe filename: epicNum-safe-title.json
+                            const epicNum = (epicId || '').replace(/\D/g, '') || '0';
+                            const safeTitle = (newStory.title || artifactId)
+                                .toLowerCase()
+                                .replace(/[^a-z0-9]+/g, '-')
+                                .replace(/^-|-$/g, '')
+                                .substring(0, 60);
+                            const fileName = `${epicNum}-${safeTitle}.json`;
+
+                            const implDir = vscode.Uri.joinPath(this.sourceFolder, 'implementation-artifacts');
+                            try { await vscode.workspace.fs.createDirectory(implDir); } catch { /* exists */ }
+
+                            const fileUri = vscode.Uri.joinPath(implDir, fileName);
+                            await vscode.workspace.fs.writeFile(
+                                fileUri,
+                                Buffer.from(JSON.stringify(storyFileContent, null, 2), 'utf-8')
+                            );
+                            acOutput.appendLine(`[ArtifactStore] Wrote standalone story file: ${fileName}`);
+                        } catch (err: any) {
+                            acOutput.appendLine(`[ArtifactStore] Failed to write standalone story file: ${err?.message ?? err}`);
+                        }
+                    }
                 }
                 break;
+            }
 
             case 'requirement': {
                 // Find and update a single functional requirement.
@@ -855,7 +973,9 @@ export class ArtifactStore {
             }
 
             case 'test-design': {
-                const currentTD: any = this.artifacts.get('testDesign') || {};
+                const testDesigns: any[] = this.artifacts.get('testDesigns') || [];
+                const tdIndex = testDesigns.findIndex(td => td.id === artifactId);
+                const currentTD: any = tdIndex >= 0 ? testDesigns[tdIndex] : {};
                 const updatedTD = { ...currentTD };
                 // Assign an id if not already present
                 if (!updatedTD.id) {
@@ -881,7 +1001,12 @@ export class ArtifactStore {
                         updatedTD[field] = changes[field];
                     }
                 }
-                this.artifacts.set('testDesign', updatedTD);
+                if (tdIndex >= 0) {
+                    testDesigns[tdIndex] = updatedTD;
+                } else {
+                    testDesigns.push(updatedTD);
+                }
+                this.artifacts.set('testDesigns', testDesigns);
                 logDebug('Updated test design:', updatedTD.id);
                 // coveragePlan→TC extraction and riskAssessment→epic.risks
                 // attachment are handled by reconcileDerivedState() which runs
@@ -908,7 +1033,9 @@ export class ArtifactStore {
             }
 
             case 'test-review': {
-                const cur: any = this.artifacts.get('testReview') || {};
+                const arr: any[] = this.artifacts.get('testReviews') || [];
+                const idx = arr.findIndex((a: any) => a.id === artifactId || a.metadata?.id === artifactId);
+                const cur = idx >= 0 ? arr[idx] : {};
                 const upd = { ...cur };
                 if (!upd.id) upd.id = artifactId || 'test-review-1';
                 if (changes.status) upd.status = changes.status;
@@ -916,7 +1043,8 @@ export class ArtifactStore {
                 for (const f of ['reviewInfo', 'executiveSummary', 'qualityAssessment', 'qualityScoreBreakdown', 'criticalIssues', 'recommendations', 'bestPracticesFound', 'testFileAnalysis', 'coverageAnalysis', 'contextAndIntegration', 'knowledgeBaseReferences', 'nextSteps', 'decision', 'appendix']) {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
-                this.artifacts.set('testReview', upd);
+                if (idx >= 0) arr[idx] = upd; else arr.push(upd);
+                this.artifacts.set('testReviews', arr);
                 logDebug('Updated test review:', upd.id);
                 break;
             }
@@ -997,7 +1125,9 @@ export class ArtifactStore {
             // =================================================================
 
             case 'research': {
-                const cur: any = this.artifacts.get('research') || {};
+                const arr: any[] = this.artifacts.get('researches') || [];
+                const idx = arr.findIndex((a: any) => a.id === artifactId || a.metadata?.id === artifactId);
+                const cur = idx >= 0 ? arr[idx] : {};
                 const upd = { ...cur };
                 if (!upd.id) upd.id = artifactId || 'research-1';
                 if (changes.status) upd.status = changes.status;
@@ -1005,13 +1135,16 @@ export class ArtifactStore {
                 for (const f of ['researchType', 'topic', 'scope', 'goals', 'questions', 'methodology', 'findings', 'competitiveAnalysis', 'marketAnalysis', 'trends', 'technicalFindings', 'userResearch', 'recommendations', 'risks', 'synthesis', 'references', 'appendices']) {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
-                this.artifacts.set('research', upd);
+                if (idx >= 0) arr[idx] = upd; else arr.push(upd);
+                this.artifacts.set('researches', arr);
                 logDebug('Updated research:', upd.id);
                 break;
             }
 
             case 'ux-design': {
-                const cur: any = this.artifacts.get('uxDesign') || {};
+                const arr: any[] = this.artifacts.get('uxDesigns') || [];
+                const idx = arr.findIndex((a: any) => a.id === artifactId || a.metadata?.id === artifactId);
+                const cur = idx >= 0 ? arr[idx] : {};
                 const upd = { ...cur };
                 if (!upd.id) upd.id = artifactId || 'ux-design-1';
                 if (changes.status) upd.status = changes.status;
@@ -1019,7 +1152,8 @@ export class ArtifactStore {
                 for (const f of ['overview', 'coreExperience', 'designInspiration', 'designSystem', 'userJourneys', 'wireframes', 'componentStrategy', 'pageLayouts', 'uxPatterns', 'responsive', 'accessibility', 'interactions', 'errorStates', 'emptyStates', 'loadingStates', 'implementationNotes', 'references']) {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
-                this.artifacts.set('uxDesign', upd);
+                if (idx >= 0) arr[idx] = upd; else arr.push(upd);
+                this.artifacts.set('uxDesigns', arr);
                 logDebug('Updated UX design:', upd.id);
                 break;
             }
@@ -1055,7 +1189,9 @@ export class ArtifactStore {
             }
 
             case 'retrospective': {
-                const cur: any = this.artifacts.get('retrospective') || {};
+                const arr: any[] = this.artifacts.get('retrospectives') || [];
+                const idx = arr.findIndex((a: any) => a.id === artifactId || a.metadata?.id === artifactId);
+                const cur = idx >= 0 ? arr[idx] : {};
                 const upd = { ...cur };
                 if (!upd.id) upd.id = artifactId || 'retrospective-1';
                 if (changes.status) upd.status = changes.status;
@@ -1063,13 +1199,16 @@ export class ArtifactStore {
                 for (const f of ['epicReference', 'summary', 'whatWentWell', 'whatDidNotGoWell', 'lessonsLearned', 'storyAnalysis', 'technicalDebt', 'impactOnFutureWork', 'teamFeedback', 'actionItems', 'metricsSnapshot']) {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
-                this.artifacts.set('retrospective', upd);
+                if (idx >= 0) arr[idx] = upd; else arr.push(upd);
+                this.artifacts.set('retrospectives', arr);
                 logDebug('Updated retrospective:', upd.id);
                 break;
             }
 
             case 'change-proposal': {
-                const cur: any = this.artifacts.get('changeProposal') || {};
+                const arr: any[] = this.artifacts.get('changeProposals') || [];
+                const idx = arr.findIndex((a: any) => a.id === artifactId || a.metadata?.id === artifactId);
+                const cur = idx >= 0 ? arr[idx] : {};
                 const upd = { ...cur };
                 if (!upd.id) upd.id = artifactId || 'change-proposal-1';
                 if (changes.status) upd.status = changes.status;
@@ -1077,13 +1216,16 @@ export class ArtifactStore {
                 for (const f of ['changeRequest', 'impactAnalysis', 'proposal', 'approval', 'implementation']) {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
-                this.artifacts.set('changeProposal', upd);
+                if (idx >= 0) arr[idx] = upd; else arr.push(upd);
+                this.artifacts.set('changeProposals', arr);
                 logDebug('Updated change proposal:', upd.id);
                 break;
             }
 
             case 'code-review': {
-                const cur: any = this.artifacts.get('codeReview') || {};
+                const arr: any[] = this.artifacts.get('codeReviews') || [];
+                const idx = arr.findIndex((a: any) => a.id === artifactId || a.metadata?.id === artifactId);
+                const cur = idx >= 0 ? arr[idx] : {};
                 const upd = { ...cur };
                 if (!upd.id) upd.id = artifactId || 'code-review-1';
                 if (changes.status) upd.status = changes.status;
@@ -1091,7 +1233,8 @@ export class ArtifactStore {
                 for (const f of ['storyReference', 'reviewSummary', 'findings', 'acceptanceCriteriaVerification', 'testCoverageAnalysis', 'securityAnalysis', 'architectureCompliance', 'nextSteps', 'reviewerNotes']) {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
-                this.artifacts.set('codeReview', upd);
+                if (idx >= 0) arr[idx] = upd; else arr.push(upd);
+                this.artifacts.set('codeReviews', arr);
                 logDebug('Updated code review:', upd.id);
                 break;
             }
@@ -1153,7 +1296,9 @@ export class ArtifactStore {
             }
 
             case 'tech-spec': {
-                const cur: any = this.artifacts.get('techSpec') || {};
+                const arr: any[] = this.artifacts.get('techSpecs') || [];
+                const idx = arr.findIndex((a: any) => a.id === artifactId || a.metadata?.id === artifactId);
+                const cur = idx >= 0 ? arr[idx] : {};
                 const upd = { ...cur };
                 if (!upd.id) upd.id = artifactId || 'tech-spec-1';
                 if (changes.status) upd.status = changes.status;
@@ -1161,7 +1306,8 @@ export class ArtifactStore {
                 for (const f of ['title', 'slug', 'version', 'overview', 'context', 'techStack', 'dataModel', 'apiChanges', 'filesToModify', 'filesToCreate', 'codePatterns', 'testPatterns', 'implementationPlan', 'testingStrategy', 'risks', 'rollbackPlan', 'additionalContext', 'reviewers']) {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
-                this.artifacts.set('techSpec', upd);
+                if (idx >= 0) arr[idx] = upd; else arr.push(upd);
+                this.artifacts.set('techSpecs', arr);
                 logDebug('Updated tech spec:', upd.id);
                 break;
             }
@@ -1400,17 +1546,25 @@ export class ArtifactStore {
                 break;
             }
 
-            case 'test-design':
-                this.artifacts.set('testDesign', undefined);
+            case 'test-design': {
+                const testDesigns = this.artifacts.get('testDesigns') || [];
+                const tdIndex = testDesigns.findIndex((td: any) => td.id === artifactId);
+                if (tdIndex >= 0) {
+                    testDesigns.splice(tdIndex, 1);
+                    this.artifacts.set('testDesigns', testDesigns);
+                }
                 break;
+            }
 
             // TEA module artifacts
             case 'traceability-matrix':
                 this.artifacts.set('traceabilityMatrix', undefined);
                 break;
-            case 'test-review':
-                this.artifacts.set('testReview', undefined);
+            case 'test-review': {
+                const arr = this.artifacts.get('testReviews') || [];
+                this.artifacts.set('testReviews', arr.filter((a: any) => a.id !== artifactId && a.metadata?.id !== artifactId));
                 break;
+            }
             case 'nfr-assessment':
                 this.artifacts.set('nfrAssessment', undefined);
                 break;
@@ -1428,36 +1582,52 @@ export class ArtifactStore {
                 break;
 
             // BMM module artifacts
-            case 'research':
-                this.artifacts.set('research', undefined);
+            case 'research': {
+                const arr = this.artifacts.get('researches') || [];
+                this.artifacts.set('researches', arr.filter((a: any) => a.id !== artifactId && a.metadata?.id !== artifactId));
                 break;
-            case 'ux-design':
-                this.artifacts.set('uxDesign', undefined);
+            }
+            case 'ux-design': {
+                const arr = this.artifacts.get('uxDesigns') || [];
+                this.artifacts.set('uxDesigns', arr.filter((a: any) => a.id !== artifactId && a.metadata?.id !== artifactId));
                 break;
-            case 'readiness-report':
-                this.artifacts.set('readinessReport', undefined);
+            }
+            case 'readiness-report': {
+                const arr = this.artifacts.get('readinessReports') || [];
+                this.artifacts.set('readinessReports', arr.filter((a: any) => a.id !== artifactId && a.metadata?.id !== artifactId));
                 break;
-            case 'sprint-status':
-                this.artifacts.set('sprintStatus', undefined);
+            }
+            case 'sprint-status': {
+                const arr = this.artifacts.get('sprintStatuses') || [];
+                this.artifacts.set('sprintStatuses', arr.filter((a: any) => a.id !== artifactId && a.metadata?.id !== artifactId));
                 break;
-            case 'retrospective':
-                this.artifacts.set('retrospective', undefined);
+            }
+            case 'retrospective': {
+                const arr = this.artifacts.get('retrospectives') || [];
+                this.artifacts.set('retrospectives', arr.filter((a: any) => a.id !== artifactId && a.metadata?.id !== artifactId));
                 break;
-            case 'change-proposal':
-                this.artifacts.set('changeProposal', undefined);
+            }
+            case 'change-proposal': {
+                const arr = this.artifacts.get('changeProposals') || [];
+                this.artifacts.set('changeProposals', arr.filter((a: any) => a.id !== artifactId && a.metadata?.id !== artifactId));
                 break;
-            case 'code-review':
-                this.artifacts.set('codeReview', undefined);
+            }
+            case 'code-review': {
+                const arr = this.artifacts.get('codeReviews') || [];
+                this.artifacts.set('codeReviews', arr.filter((a: any) => a.id !== artifactId && a.metadata?.id !== artifactId));
                 break;
+            }
             case 'project-overview':
                 this.artifacts.set('projectOverview', undefined);
                 break;
             case 'project-context':
                 this.artifacts.set('projectContext', undefined);
                 break;
-            case 'tech-spec':
-                this.artifacts.set('techSpec', undefined);
+            case 'tech-spec': {
+                const arr = this.artifacts.get('techSpecs') || [];
+                this.artifacts.set('techSpecs', arr.filter((a: any) => a.id !== artifactId && a.metadata?.id !== artifactId));
                 break;
+            }
             case 'source-tree':
                 this.artifacts.set('sourceTree', undefined);
                 break;
@@ -2044,6 +2214,9 @@ export class ArtifactStore {
                 nonFunctional: [],
                 additional: []
             };
+            // Track which requirement categories were loaded from standalone
+            // files so PRD extraction can defer (standalone > PRD priority).
+            const standaloneReqsLoaded = { functional: false, nonFunctional: false, additional: false };
 
             // Recursively find ALL JSON files in the folder and subfolders
             const allJsonFiles = await this.findAllJsonFiles(folderUri);
@@ -2098,30 +2271,58 @@ export class ArtifactStore {
                     }
 
                     switch (artifactType) {
-                        case 'epics':
-                        case 'epic':
-                            // File contains epics (possibly with embedded stories)
+                        case 'epics': {
+                            // Epics manifest or monolithic epics file
                             this.sourceFiles.set('epics', fileUri);
                             const epicsArray = data.content?.epics || data.epics || [data.content || data];
-                            
-                            for (const epicData of epicsArray) {
-                                const epic = this.mapSchemaEpicToInternal(epicData);
-                                if (epic) {
-                                    acOutput.appendLine(`[ArtifactStore] Loaded epic: ${epic.id} - ${epic.title} (${epic.stories.length} stories)`);
-                                    const existingIndex = allEpics.findIndex(e => e.id === epic.id);
-                                    if (existingIndex >= 0) {
-                                        // Merge stories from duplicate epic, deduplicating by ID and title
-                                        const existingStoryIds = new Set(allEpics[existingIndex].stories.map((s: Story) => s.id));
-                                        const existingStoryTitles = new Set(allEpics[existingIndex].stories.map((s: Story) => s.title.toLowerCase().trim()));
-                                        const newStories = epic.stories.filter((s: Story) =>
-                                            !existingStoryIds.has(s.id) && !existingStoryTitles.has(s.title.toLowerCase().trim())
-                                        );
-                                        allEpics[existingIndex].stories = [
-                                            ...allEpics[existingIndex].stories,
-                                            ...newStories
-                                        ];
-                                    } else {
-                                        allEpics.push(epic);
+
+                            // Determine if this is a manifest with refs or a monolithic file with inline epics
+                            const isManifest = epicsArray.length > 0 && epicsArray.every(
+                                (e: any) => typeof e === 'string' || (e.file && typeof e.file === 'string' && !e.stories)
+                            );
+
+                            if (isManifest) {
+                                // ── New format: manifest with refs ──────────────────
+                                // Resolve the directory containing the manifest
+                                const manifestParts = fileUri.path.split('/');
+                                manifestParts.pop();
+                                const manifestDirUri = fileUri.with({ path: manifestParts.join('/') });
+
+                                for (const ref of epicsArray) {
+                                    const refPath = typeof ref === 'string' ? ref : ref.file;
+                                    if (!refPath) continue;
+                                    const epicFileUri = vscode.Uri.joinPath(manifestDirUri, refPath);
+                                    try {
+                                        const epicContent = await vscode.workspace.fs.readFile(epicFileUri);
+                                        const epicJson = JSON.parse(Buffer.from(epicContent).toString('utf-8'));
+                                        const epicData = epicJson.content || epicJson;
+                                        const epic = this.mapSchemaEpicToInternal(epicData);
+                                        if (epic) {
+                                            acOutput.appendLine(`[ArtifactStore] Loaded epic from ref: ${epic.id} - ${epic.title} (${epic.stories.length} stories)`);
+                                            const existingIndex = allEpics.findIndex(e => e.id === epic.id);
+                                            if (existingIndex >= 0) {
+                                                this.mergeEpicDuplicate(allEpics[existingIndex], epic);
+                                            } else {
+                                                allEpics.push(epic);
+                                            }
+                                            this.sourceFiles.set(`epic:${epic.id}`, epicFileUri);
+                                        }
+                                    } catch (refErr: any) {
+                                        acOutput.appendLine(`[ArtifactStore] Failed to load epic ref '${refPath}': ${refErr?.message ?? refErr}`);
+                                    }
+                                }
+                            } else {
+                                // ── Old format: monolithic file with inline epic objects ──
+                                for (const epicData of epicsArray) {
+                                    const epic = this.mapSchemaEpicToInternal(epicData);
+                                    if (epic) {
+                                        acOutput.appendLine(`[ArtifactStore] Loaded epic: ${epic.id} - ${epic.title} (${epic.stories.length} stories)`);
+                                        const existingIndex = allEpics.findIndex(e => e.id === epic.id);
+                                        if (existingIndex >= 0) {
+                                            this.mergeEpicDuplicate(allEpics[existingIndex], epic);
+                                        } else {
+                                            allEpics.push(epic);
+                                        }
                                     }
                                 }
                             }
@@ -2132,7 +2333,10 @@ export class ArtifactStore {
                                              data.content?.overview?.projectName || '';
                             }
                             
-                            // Extract requirements inventory
+                            // Extract requirements inventory from epics.json
+                            // NOTE: This is a FALLBACK source. PRD is the authoritative source
+                            // for requirements. epics.json requirementsInventory is read for
+                            // backward compat but NOT written back on save.
                             const reqInventory = data.content?.requirementsInventory;
                             if (reqInventory) {
                                 if (reqInventory.functional?.length) {
@@ -2152,6 +2356,24 @@ export class ArtifactStore {
                                 }
                             }
                             break;
+                        }
+
+                        case 'epic': {
+                            // Standalone single-epic file (e.g. epics/epic-1.json)
+                            const epicData = data.content || data;
+                            const epic = this.mapSchemaEpicToInternal(epicData);
+                            if (epic) {
+                                acOutput.appendLine(`[ArtifactStore] Loaded standalone epic: ${epic.id} - ${epic.title} (${epic.stories.length} stories)`);
+                                const existingIndex = allEpics.findIndex(e => e.id === epic.id);
+                                if (existingIndex >= 0) {
+                                    this.mergeEpicDuplicate(allEpics[existingIndex], epic);
+                                } else {
+                                    allEpics.push(epic);
+                                }
+                                this.sourceFiles.set(`epic:${epic.id}`, fileUri);
+                            }
+                            break;
+                        }
                             
                         case 'story':
                             // Standalone story file
@@ -2227,23 +2449,28 @@ export class ArtifactStore {
                         }
                             
                         case 'requirements':
-                            // Standalone requirements file
+                            // Standalone requirements file — authoritative source
+                            this.sourceFiles.set('requirements', fileUri);
                             const reqs = data.content || data;
                             if (reqs.functional) {
                                 requirements.functional.push(
                                     ...reqs.functional.map((fr: any) => this.mapSchemaRequirement(fr))
                                 );
+                                standaloneReqsLoaded.functional = true;
                             }
                             if (reqs.nonFunctional) {
                                 requirements.nonFunctional.push(
                                     ...reqs.nonFunctional.map((nfr: any) => this.mapSchemaNonFunctionalRequirement(nfr))
                                 );
+                                standaloneReqsLoaded.nonFunctional = true;
                             }
                             if (reqs.additional) {
                                 requirements.additional.push(
                                     ...reqs.additional.map((ar: any) => this.mapSchemaAdditionalRequirement(ar))
                                 );
+                                standaloneReqsLoaded.additional = true;
                             }
+                            acOutput.appendLine(`[ArtifactStore] Loaded standalone requirements: ${reqs.functional?.length || 0} FR, ${reqs.nonFunctional?.length || 0} NFR, ${reqs.additional?.length || 0} additional`);
                             break;
                         
                         case 'functional-requirements': {
@@ -2376,6 +2603,34 @@ export class ArtifactStore {
                             this.artifacts.set('prd', prdData);
                             if (!projectName) projectName = prdData.productOverview?.productName || data.metadata?.projectName || '';
                             acOutput.appendLine(`[ArtifactStore] Loaded PRD: ${prdData.productOverview?.productName || '(unnamed)'}`);
+
+                            // ── Extract PRD requirements into the requirements map ──
+                            // PRD is the seed source for NFR and additional requirements.
+                            // Standalone requirements.json (if exists) takes priority per
+                            // category — skip PRD extraction for categories already loaded.
+                            // Functional requirements are ALWAYS skipped here because
+                            // functional-requirements.json (domain-based) already covers them.
+                            const prdReqs = prdData.requirements;
+                            if (prdReqs) {
+                                if (!standaloneReqsLoaded.nonFunctional
+                                    && Array.isArray(prdReqs.nonFunctional) && prdReqs.nonFunctional.length > 0) {
+                                    requirements.nonFunctional.push(
+                                        ...prdReqs.nonFunctional.map((nfr: any) => this.mapSchemaNonFunctionalRequirement(nfr))
+                                    );
+                                    acOutput.appendLine(`[ArtifactStore] Extracted ${prdReqs.nonFunctional.length} non-functional requirements from PRD`);
+                                } else if (standaloneReqsLoaded.nonFunctional) {
+                                    acOutput.appendLine(`[ArtifactStore] Skipped PRD NFR extraction (standalone requirements.json takes priority)`);
+                                }
+                                if (!standaloneReqsLoaded.additional
+                                    && Array.isArray(prdReqs.additional) && prdReqs.additional.length > 0) {
+                                    requirements.additional.push(
+                                        ...prdReqs.additional.map((ar: any) => this.mapSchemaAdditionalRequirement(ar))
+                                    );
+                                    acOutput.appendLine(`[ArtifactStore] Extracted ${prdReqs.additional.length} additional requirements from PRD`);
+                                } else if (standaloneReqsLoaded.additional) {
+                                    acOutput.appendLine(`[ArtifactStore] Skipped PRD additional extraction (standalone requirements.json takes priority)`);
+                                }
+                            }
                             break;
                         }
 
@@ -2397,7 +2652,11 @@ export class ArtifactStore {
                             // Merge, avoiding duplicates by id
                             const merged = [...existingTCs];
                             tcArray.forEach((tc: any) => {
-                                if (tc && tc.id && !merged.find((e: any) => e.id === tc.id)) {
+                                if (!tc) return;
+                                if (!tc.id) {
+                                    tc.id = `TC-${merged.length + 1}`;
+                                }
+                                if (!merged.find((e: any) => e.id === tc.id)) {
                                     merged.push(tc);
                                 }
                             });
@@ -2409,14 +2668,13 @@ export class ArtifactStore {
                         case 'test-design':
                         case 'test-design-qa':
                         case 'test-design-architecture': {
-                            // Store test-design in memory.  CoveragePlan→TC extraction
-                            // and riskAssessment→epic.risks attachment are handled by
-                            // reconcileDerivedState() which runs after all files are
-                            // loaded and allEpics is stored — no inline extraction here.
-                            this.sourceFiles.set('testDesign', fileUri);
                             const tdContent = data.content || data;
-                            this.artifacts.set('testDesign', tdContent);
-                            acOutput.appendLine(`[ArtifactStore] Loaded test-design from ${fileName}`);
+                            const tdId = tdContent.id || `test-design-${fileName}`;
+                            this.sourceFiles.set(`testDesign:${tdId}`, fileUri);
+                            const existingTDs = this.artifacts.get('testDesigns') || [];
+                            existingTDs.push(tdContent);
+                            this.artifacts.set('testDesigns', existingTDs);
+                            acOutput.appendLine(`[ArtifactStore] Loaded test-design ${tdId} from ${fileName}`);
                             break;
                         }
 
@@ -2438,10 +2696,13 @@ export class ArtifactStore {
                         }
 
                         case 'test-review': {
-                            this.sourceFiles.set('testReview', fileUri);
                             const trData = data.content || data;
-                            this.artifacts.set('testReview', trData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded test review`);
+                            const trId = data.metadata?.id || trData.id || `test-review-${fileName}`;
+                            this.sourceFiles.set(`testReview:${trId}`, fileUri);
+                            const existing = this.artifacts.get('testReviews') || [];
+                            existing.push(trData);
+                            this.artifacts.set('testReviews', existing);
+                            acOutput.appendLine(`[ArtifactStore] Loaded test review ${trId} from ${fileName}`);
                             break;
                         }
 
@@ -2487,58 +2748,79 @@ export class ArtifactStore {
 
                         // ─── BMM module artifacts ───────────────────────────────────
                         case 'research': {
-                            this.sourceFiles.set('research', fileUri);
                             const resData = data.content || data;
-                            this.artifacts.set('research', resData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded research`);
+                            const resId = data.metadata?.id || resData.id || `research-${fileName}`;
+                            this.sourceFiles.set(`research:${resId}`, fileUri);
+                            const existing = this.artifacts.get('researches') || [];
+                            existing.push(resData);
+                            this.artifacts.set('researches', existing);
+                            acOutput.appendLine(`[ArtifactStore] Loaded research ${resId} from ${fileName}`);
                             break;
                         }
 
                         case 'ux-design': {
-                            this.sourceFiles.set('uxDesign', fileUri);
                             const uxData = data.content || data;
-                            this.artifacts.set('uxDesign', uxData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded UX design`);
+                            const uxId = data.metadata?.id || uxData.id || `ux-design-${fileName}`;
+                            this.sourceFiles.set(`uxDesign:${uxId}`, fileUri);
+                            const existing = this.artifacts.get('uxDesigns') || [];
+                            existing.push(uxData);
+                            this.artifacts.set('uxDesigns', existing);
+                            acOutput.appendLine(`[ArtifactStore] Loaded UX design ${uxId} from ${fileName}`);
                             break;
                         }
 
                         case 'readiness-report': {
-                            this.sourceFiles.set('readinessReport', fileUri);
                             const rrData = data.content || data;
-                            this.artifacts.set('readinessReport', rrData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded readiness report`);
+                            const rrId = data.metadata?.id || rrData.id || `readiness-report-${fileName}`;
+                            this.sourceFiles.set(`readinessReport:${rrId}`, fileUri);
+                            const existing = this.artifacts.get('readinessReports') || [];
+                            existing.push(rrData);
+                            this.artifacts.set('readinessReports', existing);
+                            acOutput.appendLine(`[ArtifactStore] Loaded readiness report ${rrId} from ${fileName}`);
                             break;
                         }
 
                         case 'sprint-status': {
-                            this.sourceFiles.set('sprintStatus', fileUri);
                             const ssData = data.content || data;
-                            this.artifacts.set('sprintStatus', ssData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded sprint status`);
+                            const ssId = data.metadata?.id || ssData.id || `sprint-status-${fileName}`;
+                            this.sourceFiles.set(`sprintStatus:${ssId}`, fileUri);
+                            const existing = this.artifacts.get('sprintStatuses') || [];
+                            existing.push(ssData);
+                            this.artifacts.set('sprintStatuses', existing);
+                            acOutput.appendLine(`[ArtifactStore] Loaded sprint status ${ssId} from ${fileName}`);
                             break;
                         }
 
                         case 'retrospective': {
-                            this.sourceFiles.set('retrospective', fileUri);
                             const retroData = data.content || data;
-                            this.artifacts.set('retrospective', retroData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded retrospective`);
+                            const retroId = data.metadata?.id || retroData.id || `retrospective-${fileName}`;
+                            this.sourceFiles.set(`retrospective:${retroId}`, fileUri);
+                            const existing = this.artifacts.get('retrospectives') || [];
+                            existing.push(retroData);
+                            this.artifacts.set('retrospectives', existing);
+                            acOutput.appendLine(`[ArtifactStore] Loaded retrospective ${retroId} from ${fileName}`);
                             break;
                         }
 
                         case 'change-proposal': {
-                            this.sourceFiles.set('changeProposal', fileUri);
                             const cpData = data.content || data;
-                            this.artifacts.set('changeProposal', cpData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded change proposal`);
+                            const cpId = data.metadata?.id || cpData.id || `change-proposal-${fileName}`;
+                            this.sourceFiles.set(`changeProposal:${cpId}`, fileUri);
+                            const existing = this.artifacts.get('changeProposals') || [];
+                            existing.push(cpData);
+                            this.artifacts.set('changeProposals', existing);
+                            acOutput.appendLine(`[ArtifactStore] Loaded change proposal ${cpId} from ${fileName}`);
                             break;
                         }
 
                         case 'code-review': {
-                            this.sourceFiles.set('codeReview', fileUri);
                             const crData = data.content || data;
-                            this.artifacts.set('codeReview', crData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded code review`);
+                            const crId = data.metadata?.id || crData.id || `code-review-${fileName}`;
+                            this.sourceFiles.set(`codeReview:${crId}`, fileUri);
+                            const existing = this.artifacts.get('codeReviews') || [];
+                            existing.push(crData);
+                            this.artifacts.set('codeReviews', existing);
+                            acOutput.appendLine(`[ArtifactStore] Loaded code review ${crId} from ${fileName}`);
                             break;
                         }
 
@@ -2559,10 +2841,13 @@ export class ArtifactStore {
                         }
 
                         case 'tech-spec': {
-                            this.sourceFiles.set('techSpec', fileUri);
                             const tspcData = data.content || data;
-                            this.artifacts.set('techSpec', tspcData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded tech spec`);
+                            const tspcId = data.metadata?.id || tspcData.id || `tech-spec-${fileName}`;
+                            this.sourceFiles.set(`techSpec:${tspcId}`, fileUri);
+                            const existing = this.artifacts.get('techSpecs') || [];
+                            existing.push(tspcData);
+                            this.artifacts.set('techSpecs', existing);
+                            acOutput.appendLine(`[ArtifactStore] Loaded tech spec ${tspcId} from ${fileName}`);
                             break;
                         }
 
@@ -2641,16 +2926,7 @@ export class ArtifactStore {
                                     if (epic) {
                                         const existingIndex = allEpics.findIndex(e => e.id === epic.id);
                                         if (existingIndex >= 0) {
-                                            // Merge stories, deduplicating by ID and title
-                                            const existingStoryIds = new Set(allEpics[existingIndex].stories.map((s: Story) => s.id));
-                                            const existingStoryTitles = new Set(allEpics[existingIndex].stories.map((s: Story) => s.title.toLowerCase().trim()));
-                                            const newStories = epic.stories.filter((s: Story) =>
-                                                !existingStoryIds.has(s.id) && !existingStoryTitles.has(s.title.toLowerCase().trim())
-                                            );
-                                            allEpics[existingIndex].stories = [
-                                                ...allEpics[existingIndex].stories,
-                                                ...newStories
-                                            ];
+                                            this.mergeEpicDuplicate(allEpics[existingIndex], epic);
                                         } else {
                                             allEpics.push(epic);
                                         }
@@ -2668,40 +2944,107 @@ export class ArtifactStore {
                 }
             }
 
-            // If we have standalone stories but no epics, create a default epic for them
+            // Route standalone stories to their correct epic by epicId
             if (standaloneStories.length > 0) {
-                if (allEpics.length === 0) {
-                    // Create a default epic to hold standalone stories
-                    allEpics.push({
-                        id: 'EPIC-DEFAULT',
-                        title: 'Imported Stories',
-                        goal: 'Stories imported from standalone files',
-                        functionalRequirements: [],
-                        status: 'draft',
-                        stories: standaloneStories
-                    });
-                    acOutput.appendLine(`[ArtifactStore] Created default epic for ${standaloneStories.length} standalone stories`);
-                } else {
-                    // Add standalone stories to the first epic, deduplicating by ID and title
-                    // across ALL epics (the same story may appear in any epic)
-                    const allExistingIds = new Set<string>();
-                    const allExistingTitles = new Set<string>();
-                    for (const epic of allEpics) {
-                        for (const s of epic.stories) {
-                            allExistingIds.add(s.id);
-                            allExistingTitles.add(s.title.toLowerCase().trim());
-                        }
-                    }
-                    const newStories = standaloneStories.filter((s: Story) =>
-                        !allExistingIds.has(s.id) && !allExistingTitles.has(s.title.toLowerCase().trim())
-                    );
-                    if (newStories.length > 0) {
-                        allEpics[0].stories = [...allEpics[0].stories, ...newStories];
-                        acOutput.appendLine(`[ArtifactStore] Added ${newStories.length} standalone stories to first epic (${standaloneStories.length - newStories.length} duplicates skipped)`);
-                    } else {
-                        acOutput.appendLine(`[ArtifactStore] All ${standaloneStories.length} standalone stories already present in first epic, skipping`);
+                // Build a set of all existing story IDs across all epics for dedup
+                const allExistingIds = new Set<string>();
+                const allExistingTitles = new Set<string>();
+                for (const epic of allEpics) {
+                    for (const s of epic.stories) {
+                        allExistingIds.add(s.id);
+                        allExistingTitles.add(s.title.toLowerCase().trim());
                     }
                 }
+
+                const orphanStories: Story[] = [];
+                let routedCount = 0;
+                let mergedCount = 0;
+                let skippedCount = 0;
+
+                for (const story of standaloneStories) {
+                    // Skip if already present (by ID or title)
+                    if (allExistingIds.has(story.id) || allExistingTitles.has(story.title.toLowerCase().trim())) {
+                        // Merge enrichment fields into existing inline story
+                        const sourceEpicId = (story as any)._sourceEpicId;
+                        let existingStory: Story | undefined;
+                        for (const epic of allEpics) {
+                            existingStory = epic.stories.find((s: Story) =>
+                                s.id === story.id || s.title.toLowerCase().trim() === story.title.toLowerCase().trim()
+                            );
+                            if (existingStory) break;
+                        }
+                        if (existingStory) {
+                            // Standalone wins for richer fields (tasks, devNotes, devAgentRecord)
+                            if (story.tasks && (!existingStory.tasks || existingStory.tasks.length === 0)) {
+                                (existingStory as any).tasks = story.tasks;
+                            }
+                            if (story.devNotes && !(existingStory as any).devNotes) {
+                                (existingStory as any).devNotes = story.devNotes;
+                            }
+                            if (story.devAgentRecord && !(existingStory as any).devAgentRecord) {
+                                (existingStory as any).devAgentRecord = story.devAgentRecord;
+                            }
+                            if (story.technicalNotes && !existingStory.technicalNotes) {
+                                existingStory.technicalNotes = story.technicalNotes;
+                            }
+                            // Preserve standalone status if it's more advanced
+                            const statusOrder = ['draft', 'ready', 'ready-for-dev', 'in-progress', 'in-review', 'review', 'done', 'complete'];
+                            const existingIdx = statusOrder.indexOf(existingStory.status || 'draft');
+                            const standaloneIdx = statusOrder.indexOf(story.status || 'draft');
+                            if (standaloneIdx > existingIdx) {
+                                existingStory.status = story.status;
+                            }
+                            mergedCount++;
+                        } else {
+                            skippedCount++;
+                        }
+                        continue;
+                    }
+
+                    // Route to correct epic using _sourceEpicId
+                    const sourceEpicId = (story as any)._sourceEpicId;
+                    if (sourceEpicId) {
+                        const normalizedSourceId = normalizeEpicId(sourceEpicId);
+                        const parentEpic = allEpics.find((e: any) =>
+                            normalizeEpicId(e.id) === normalizedSourceId
+                        );
+                        if (parentEpic) {
+                            parentEpic.stories.push(story);
+                            allExistingIds.add(story.id);
+                            allExistingTitles.add(story.title.toLowerCase().trim());
+                            routedCount++;
+                            continue;
+                        }
+                    }
+
+                    // No epicId or no matching epic — collect as orphans
+                    orphanStories.push(story);
+                }
+
+                // Handle orphan stories (no epicId or unmatched epicId)
+                if (orphanStories.length > 0) {
+                    if (allEpics.length === 0) {
+                        // No epics at all — create a container so stories are visible
+                        allEpics.push({
+                            id: 'EPIC-DEFAULT',
+                            title: 'Imported Stories',
+                            goal: 'Stories imported from standalone files',
+                            functionalRequirements: [],
+                            status: 'draft',
+                            stories: orphanStories
+                        });
+                        acOutput.appendLine(`[ArtifactStore] Created default epic for ${orphanStories.length} orphan stories`);
+                    } else {
+                        // DO NOT dump into first epic — log a warning instead.
+                        // Users should add epicId to standalone story files.
+                        acOutput.appendLine(`[ArtifactStore] WARNING: ${orphanStories.length} standalone stories have no matching epicId and were NOT added to any epic. Add epicId to these story files or run "Migrate to Reference Architecture".`);
+                        for (const orphan of orphanStories) {
+                            acOutput.appendLine(`[ArtifactStore]   Orphan: ${orphan.id} — "${orphan.title}"`);
+                        }
+                    }
+                }
+
+                acOutput.appendLine(`[ArtifactStore] Standalone stories: ${routedCount} routed by epicId, ${mergedCount} merged, ${skippedCount} skipped, ${orphanStories.length} orphaned`);
             }
 
             // Link any pending use-cases now that epics are loaded
@@ -2782,6 +3125,13 @@ export class ArtifactStore {
                 this.artifacts.set('projectName', projectName);
                 this.artifacts.set('epics', allEpics);
 
+                // ─── Migration auto-detection ────────────────────────────
+                // Check if epics.json still has inline story objects (pre-migration).
+                // Show a one-time nudge per session.
+                if (!this._migrationPromptShown) {
+                    this.checkForInlineStories(folderUri);
+                }
+
                 // Deduplicate requirements by ID (epics.json requirementsInventory
                 // and standalone requirements files can contain overlapping entries)
                 const seenFr = new Set<string>();
@@ -2804,6 +3154,42 @@ export class ArtifactStore {
                 });
 
                 this.artifacts.set('requirements', requirements);
+
+                // ── Auto-migrate: write standalone requirements.json if absent ──
+                // If no standalone requirements file exists on disk but we have
+                // requirements in memory (from PRD, requirementsInventory, or
+                // functional-requirements.json), write a standalone file so data
+                // survives after syncToFiles strips requirementsInventory.
+                if (!this.sourceFiles.has('requirements')
+                    && (requirements.functional.length || requirements.nonFunctional.length || requirements.additional.length)) {
+                    try {
+                        let reqDir = folderUri;
+                        for (const subdir of ['solutioning-artifacts', 'planning-artifacts']) {
+                            const candidate = vscode.Uri.joinPath(folderUri, subdir);
+                            try { await vscode.workspace.fs.stat(candidate); reqDir = candidate; break; }
+                            catch { /* dir doesn't exist, try next */ }
+                        }
+                        const reqFileUri = vscode.Uri.joinPath(reqDir, 'requirements.json');
+                        const reqContent = {
+                            metadata: {
+                                schema: 'requirements',
+                                generatedAt: new Date().toISOString(),
+                                description: 'Auto-migrated requirements from PRD/requirementsInventory'
+                            },
+                            content: {
+                                functional: requirements.functional,
+                                nonFunctional: requirements.nonFunctional,
+                                additional: requirements.additional
+                            }
+                        };
+                        const reqBytes = Buffer.from(JSON.stringify(reqContent, null, 2), 'utf-8');
+                        await vscode.workspace.fs.writeFile(reqFileUri, reqBytes);
+                        this.sourceFiles.set('requirements', reqFileUri);
+                        acOutput.appendLine(`[ArtifactStore] Auto-migrated requirements to standalone requirements.json (${requirements.functional.length} FR, ${requirements.nonFunctional.length} NFR, ${requirements.additional.length} additional)`);
+                    } catch (e) {
+                        acOutput.appendLine(`[ArtifactStore] WARNING: Failed to auto-migrate requirements: ${e}`);
+                    }
+                }
                 this.artifacts.set('currentStep', 'review');
                 
                 const totalStories = allEpics.reduce((sum, e) => sum + (e.stories?.length || 0), 0);
@@ -3038,6 +3424,13 @@ export class ArtifactStore {
             if (dt.includes('prd')) return 'prd';
         }
         
+        // stories-index.json and epics-index.json are generated manifests, not artifacts — skip.
+        // IMPORTANT: this check MUST come BEFORE the content-structure checks below,
+        // because epics-index.json has a root-level `epics` array that would match
+        // the `data.epics` check and be misidentified as an 'epics' artifact.
+        const lowerNameEarly = fileName.toLowerCase();
+        if (lowerNameEarly === 'stories-index.json' || lowerNameEarly === 'epics-index.json') return 'unknown';
+
         // Check content structure
         if (data.content?.epics || data.epics) return 'epics';
         if (data.content?.userStory || data.userStory) return 'story';
@@ -3054,6 +3447,9 @@ export class ArtifactStore {
         
         // Check filename patterns (use word-boundary-aware matching to avoid false positives)
         const lowerName = fileName.toLowerCase();
+        // stories-index.json and epics-index.json exclusion moved above content checks
+        // Standalone epic files in epics/ subdirectory (e.g. epic-1.json, epic-15.json)
+        if (/^epic-[a-z0-9_-]+\.json$/.test(lowerName)) return 'epic';
         if (/\bepics?\b/.test(lowerName)) return 'epics';
         if (/\bstory\b|\bstories\b/.test(lowerName)) return 'story';
         if (lowerName.startsWith('uc-') || /\buse-case\b|\busecase\b/.test(lowerName)) return 'use-case';
@@ -3134,6 +3530,11 @@ export class ArtifactStore {
             const seenIds = new Set<string>();
             const seenTitles = new Set<string>();
             for (const storyData of epicData.stories) {
+                // String refs (e.g. "1.1") are resolved via standalone story files
+                // during reconciliation — skip them here to avoid creating placeholders
+                if (typeof storyData === 'string') {
+                    continue;
+                }
                 const story = this.mapSchemaStoryToInternal(storyData);
                 if (story) {
                     const normTitle = story.title.toLowerCase().trim();
@@ -3206,8 +3607,52 @@ export class ArtifactStore {
             // Pass the full DoD object through (items, qualityGates, acceptanceSummary)
             definitionOfDone: epicData.definitionOfDone,
             technicalSummary: epicData.technicalSummary,
+            // NOTE: Inline testStrategy is a FALLBACK. Standalone test-strategy.json
+            // is the authoritative source. This is kept for backward compat with
+            // projects that don't have a standalone test-strategy file.
             testStrategy: epicData.testStrategy
         };
+    }
+
+    /**
+     * Merge a newly-loaded epic into an existing one in allEpics.
+     * Stories are deduplicated by ID and normalised title.
+     * Verbose fields (useCases, testStrategy, fitCriteria, etc.) are
+     * adopted from the incoming epic when the existing one lacks them,
+     * or when the incoming version is richer (more array items).
+     * This ensures manually-added use cases, test strategies, etc. are
+     * never silently dropped during duplicate detection.
+     */
+    private mergeEpicDuplicate(existing: Epic, incoming: Epic): void {
+        // ── Stories: deduplicate by ID + normalised title ──
+        const existingStoryIds = new Set(existing.stories.map((s: Story) => s.id));
+        const existingStoryTitles = new Set(existing.stories.map((s: Story) => s.title.toLowerCase().trim()));
+        const newStories = incoming.stories.filter((s: Story) =>
+            !existingStoryIds.has(s.id) && !existingStoryTitles.has(s.title.toLowerCase().trim())
+        );
+        existing.stories = [...existing.stories, ...newStories];
+
+        // ── Verbose fields: prefer the richer source ──
+        const verboseKeys: (keyof Epic)[] = [
+            'useCases', 'testStrategy', 'fitCriteria',
+            'successMetrics', 'risks', 'definitionOfDone',
+            'technicalSummary'
+        ];
+        for (const key of verboseKeys) {
+            const existingVal = existing[key];
+            const incomingVal = incoming[key];
+            if (incomingVal !== undefined && incomingVal !== null) {
+                const existingEmpty = existingVal === undefined || existingVal === null
+                    || (Array.isArray(existingVal) && existingVal.length === 0);
+                if (existingEmpty) {
+                    (existing as any)[key] = incomingVal;
+                } else if (Array.isArray(existingVal) && Array.isArray(incomingVal)
+                           && incomingVal.length > (existingVal as any[]).length) {
+                    // Incoming has MORE items — prefer it (covers manually added UCs)
+                    (existing as any)[key] = incomingVal;
+                }
+            }
+        }
     }
 
     /**
@@ -3250,8 +3695,8 @@ export class ArtifactStore {
             };
         }
 
-        return {
-            id: storyData.id || `STORY-${Date.now()}`,
+        const mapped: any = {
+            id: storyData.id || storyData.storyId || `STORY-${Date.now()}`,
             title: storyData.title || 'Untitled Story',
             userStory: {
                 asA: userStory.asA || 'user',
@@ -3279,7 +3724,9 @@ export class ArtifactStore {
             uxReferences: storyData.uxReferences,
             references: storyData.references,
             notes: storyData.notes,
-            dependencies: storyData.dependencies,
+            dependencies: Array.isArray(storyData.dependencies)
+                ? { blockedBy: storyData.dependencies.map((d: any) => typeof d === 'string' ? d : d) }
+                : storyData.dependencies,
             tasks: storyData.tasks,
             devNotes: storyData.devNotes,
             devAgentRecord: storyData.devAgentRecord,
@@ -3288,6 +3735,11 @@ export class ArtifactStore {
             assignee: storyData.assignee,
             reviewer: storyData.reviewer
         };
+        // Capture epicId as transient routing hint (not persisted in epics.json)
+        if (storyData.epicId) {
+            mapped._sourceEpicId = String(storyData.epicId);
+        }
+        return mapped;
     }
 
     /**
@@ -3756,11 +4208,169 @@ export class ArtifactStore {
                             }
                         }
                     }
+
+                    // Fix inline stories: ensure required fields or convert to string refs
+                    if (Array.isArray(epic.stories)) {
+                        for (let si = 0; si < epic.stories.length; si++) {
+                            const story = epic.stories[si];
+                            if (typeof story !== 'object' || story === null) continue;
+
+                            // Ensure required fields for inline story schema compliance
+                            if (!story.id) {
+                                // No id at all — convert to string ref if possible
+                                if (story.storyId) {
+                                    epic.stories[si] = story.storyId;
+                                    changed = true;
+                                    acOutput.appendLine(
+                                        `[ArtifactStore] fixAndSyncToFiles: converted inline story with storyId "${story.storyId}" to string ref in ${fileName}`
+                                    );
+                                    continue;
+                                }
+                                // Generate an id from epic + index
+                                story.id = `S-${epic.id?.replace(/\D/g, '') || '0'}.${si + 1}`;
+                                changed = true;
+                            }
+                            if (!story.title) {
+                                story.title = story.userStory?.formatted || story.id || 'Untitled Story';
+                                changed = true;
+                            }
+                            if (!story.userStory) {
+                                story.userStory = {
+                                    formatted: story.title || `Story ${story.id}`
+                                };
+                                changed = true;
+                                acOutput.appendLine(
+                                    `[ArtifactStore] fixAndSyncToFiles: added missing userStory to inline story ${story.id} in ${fileName}`
+                                );
+                            }
+                            if (!story.acceptanceCriteria) {
+                                story.acceptanceCriteria = [
+                                    { criterion: `${story.title || story.id} works as expected` }
+                                ];
+                                changed = true;
+                                acOutput.appendLine(
+                                    `[ArtifactStore] fixAndSyncToFiles: added placeholder acceptanceCriteria to inline story ${story.id} in ${fileName}`
+                                );
+                            }
+
+                            // Fix uxReferences: schema expects string[], data may have objects
+                            if (Array.isArray(story.uxReferences)) {
+                                let uxChanged = false;
+                                story.uxReferences = story.uxReferences.map((ref: any) => {
+                                    if (typeof ref === 'object' && ref !== null) {
+                                        uxChanged = true;
+                                        // Flatten object to descriptive string
+                                        return [ref.type, ref.reference, ref.description]
+                                            .filter(Boolean).join(': ');
+                                    }
+                                    return ref;
+                                });
+                                if (uxChanged) {
+                                    changed = true;
+                                    acOutput.appendLine(
+                                        `[ArtifactStore] fixAndSyncToFiles: flattened uxReferences objects to strings in ${fileName} story ${story.id || '?'}`
+                                    );
+                                }
+                            }
+                        }
+                    }
+
+                    // Fix fitCriteria.security invalid enum values
+                    if (epic.fitCriteria?.security && Array.isArray(epic.fitCriteria.security)) {
+                        const validCategories = new Set([
+                            'authentication', 'authorization', 'encryption',
+                            'audit', 'compliance', 'data-protection', 'network-security'
+                        ]);
+                        const validVerificationMethods = new Set([
+                            'security-audit', 'penetration-test', 'code-review',
+                            'compliance-review', 'inspection'
+                        ]);
+                        const categoryMap: Record<string, string> = {
+                            'hipaa': 'compliance',
+                            'gdpr': 'compliance',
+                            'soc2': 'compliance',
+                            'regulatory': 'compliance',
+                            'regulatory-compliance': 'compliance',
+                            'access-control': 'authorization',
+                            'identity': 'authentication',
+                            'privacy': 'data-protection',
+                            'data-privacy': 'data-protection',
+                            'data-security': 'data-protection',
+                            'data-integrity': 'data-protection',
+                            'infrastructure': 'network-security',
+                            'network': 'network-security',
+                            'api-security': 'network-security',
+                            'firewall': 'network-security',
+                            'logging': 'audit',
+                            'monitoring': 'audit',
+                            'audit-logging': 'audit',
+                            'crypto': 'encryption',
+                            'cryptography': 'encryption',
+                            'tls': 'encryption',
+                            'ssl': 'encryption',
+                        };
+                        const verificationMap: Record<string, string> = {
+                            'audit': 'security-audit',
+                            'pentest': 'penetration-test',
+                            'pen-test': 'penetration-test',
+                            'review': 'code-review',
+                            'manual-review': 'code-review',
+                            'compliance-audit': 'compliance-review',
+                            'automated-scan': 'security-audit',
+                            'scan': 'security-audit',
+                            'test': 'penetration-test',
+                            'testing': 'penetration-test',
+                            'manual-inspection': 'inspection',
+                            'visual-inspection': 'inspection',
+                        };
+                        for (const sc of epic.fitCriteria.security) {
+                            if (sc.category && !validCategories.has(sc.category)) {
+                                const mapped = categoryMap[sc.category.toLowerCase()];
+                                const prev = sc.category;
+                                sc.category = mapped || 'compliance';
+                                changed = true;
+                                acOutput.appendLine(
+                                    `[ArtifactStore] fixAndSyncToFiles: remapped fitCriteria.security category "${prev}" → "${sc.category}" in ${fileName} epic ${epic.id || '?'}`
+                                );
+                            }
+                            if (sc.verificationMethod && !validVerificationMethods.has(sc.verificationMethod)) {
+                                const mapped = verificationMap[sc.verificationMethod.toLowerCase()];
+                                const prev = sc.verificationMethod;
+                                sc.verificationMethod = mapped || 'inspection';
+                                changed = true;
+                                acOutput.appendLine(
+                                    `[ArtifactStore] fixAndSyncToFiles: remapped fitCriteria.security verificationMethod "${prev}" → "${sc.verificationMethod}" in ${fileName} epic ${epic.id || '?'}`
+                                );
+                            }
+                        }
+                    }
                 }
             }
         }
 
         if (artifactType === 'story' && d.metadata && d.content) {
+            // Migrate legacy storyId → id
+            if ((!d.content.id || d.content.id === '') && d.content.storyId) {
+                d.content.id = d.content.storyId;
+                delete d.content.storyId;
+                changed = true;
+                acOutput.appendLine(
+                    `[ArtifactStore] fixAndSyncToFiles: migrated storyId → id ("${d.content.id}") in ${fileName}`
+                );
+            }
+
+            // Derive epicId from filename prefix if missing (e.g. "1-2-foo.json" → "1")
+            if (!d.content.epicId && fileName) {
+                const epicMatch = fileName.match(/^(\d+)-/);
+                if (epicMatch) {
+                    d.content.epicId = epicMatch[1];
+                    changed = true;
+                    acOutput.appendLine(
+                        `[ArtifactStore] fixAndSyncToFiles: derived epicId "${d.content.epicId}" from filename ${fileName}`
+                    );
+                }
+            }
+
             // Ensure content.title (required by schema)
             if (!d.content.title) {
                 d.content.title = d.content.userStory
@@ -3882,14 +4492,31 @@ export class ArtifactStore {
             }
         } catch (e) { errors.push(`testStrategy: ${e}`); }
 
-        // Save test design if it exists
+        // Save test designs if they exist
         try {
-            if (state.testDesign) {
-                await this.saveTestDesignToFile(state, baseUri);
+            if (state.testDesigns && state.testDesigns.length > 0) {
+                // Determine active test design IDs
+                const activeIds = new Set(state.testDesigns.map((td: any) => td.id));
+                // Delete old ones
+                for (const [key, _] of this.sourceFiles.entries()) {
+                    if (key.startsWith('testDesign:')) {
+                        const id = key.substring(11);
+                        if (!activeIds.has(id)) {
+                            await this.deleteSourceFile(key);
+                        }
+                    }
+                }
+                for (const td of state.testDesigns) {
+                    await this.saveTestDesignToFile(td, state, baseUri);
+                }
             } else {
-                await this.deleteSourceFile('testDesign');
+                for (const [key, _] of this.sourceFiles.entries()) {
+                    if (key.startsWith('testDesign:')) {
+                        await this.deleteSourceFile(key);
+                    }
+                }
             }
-        } catch (e) { errors.push(`testDesign: ${e}`); }
+        } catch (e) { errors.push(`testDesigns: ${e}`); }
 
         // ─── TEA module artifacts ───────────────────────────────────────
         try {
@@ -3898,11 +4525,32 @@ export class ArtifactStore {
             } else { await this.deleteSourceFile('traceabilityMatrix'); }
         } catch (e) { errors.push(`traceabilityMatrix: ${e}`); }
 
-        try {
-            if (state.testReview) {
-                await this.saveGenericArtifactToFile('testReview', 'test-review', state.testReview, state, baseUri);
-            } else { await this.deleteSourceFile('testReview'); }
-        } catch (e) { errors.push(`testReview: ${e}`); }
+        const syncArrayArtifacts = async (stateArray: any[] | undefined, baseKey: string, fileSlugBase: string) => {
+            if (stateArray && stateArray.length > 0) {
+                const activeIds = new Set(stateArray.map(a => String(a.id || a.metadata?.id || 'default')));
+                for (const [key, _] of this.sourceFiles.entries()) {
+                    if (key.startsWith(`${baseKey}:`)) {
+                        const id = String(key.substring(baseKey.length + 1));
+                        if (!activeIds.has(id)) {
+                            await this.deleteSourceFile(key);
+                        }
+                    }
+                }
+                for (const item of stateArray) {
+                    const id = String(item.id || item.metadata?.id || 'default');
+                    const safeId = id.replace(/[^a-zA-Z0-9_-]/g, '-');
+                    await this.saveGenericArtifactToFile(`${baseKey}:${id}`, `${fileSlugBase}-${safeId}`, item, state, baseUri);
+                }
+            } else {
+                for (const [key, _] of this.sourceFiles.entries()) {
+                    if (key.startsWith(`${baseKey}:`)) {
+                        await this.deleteSourceFile(key);
+                    }
+                }
+            }
+        };
+
+        try { await syncArrayArtifacts(state.testReviews, 'testReview', 'test-review'); } catch (e) { errors.push(`testReviews: ${e}`); }
 
         try {
             if (state.nfrAssessment) {
@@ -3935,47 +4583,19 @@ export class ArtifactStore {
         } catch (e) { errors.push(`atddChecklist: ${e}`); }
 
         // ─── BMM module artifacts ───────────────────────────────────────
-        try {
-            if (state.research) {
-                await this.saveGenericArtifactToFile('research', 'research', state.research, state, baseUri);
-            } else { await this.deleteSourceFile('research'); }
-        } catch (e) { errors.push(`research: ${e}`); }
+        try { await syncArrayArtifacts(state.researches, 'research', 'research'); } catch (e) { errors.push(`researches: ${e}`); }
 
-        try {
-            if (state.uxDesign) {
-                await this.saveGenericArtifactToFile('uxDesign', 'ux-design', state.uxDesign, state, baseUri);
-            } else { await this.deleteSourceFile('uxDesign'); }
-        } catch (e) { errors.push(`uxDesign: ${e}`); }
+        try { await syncArrayArtifacts(state.uxDesigns, 'uxDesign', 'ux-design'); } catch (e) { errors.push(`uxDesigns: ${e}`); }
 
-        try {
-            if (state.readinessReport) {
-                await this.saveGenericArtifactToFile('readinessReport', 'readiness-report', state.readinessReport, state, baseUri);
-            } else { await this.deleteSourceFile('readinessReport'); }
-        } catch (e) { errors.push(`readinessReport: ${e}`); }
+        try { await syncArrayArtifacts(state.readinessReports, 'readinessReport', 'readiness-report'); } catch (e) { errors.push(`readinessReports: ${e}`); }
 
-        try {
-            if (state.sprintStatus) {
-                await this.saveGenericArtifactToFile('sprintStatus', 'sprint-status', state.sprintStatus, state, baseUri);
-            } else { await this.deleteSourceFile('sprintStatus'); }
-        } catch (e) { errors.push(`sprintStatus: ${e}`); }
+        try { await syncArrayArtifacts(state.sprintStatuses, 'sprintStatus', 'sprint-status'); } catch (e) { errors.push(`sprintStatuses: ${e}`); }
 
-        try {
-            if (state.retrospective) {
-                await this.saveGenericArtifactToFile('retrospective', 'retrospective', state.retrospective, state, baseUri);
-            } else { await this.deleteSourceFile('retrospective'); }
-        } catch (e) { errors.push(`retrospective: ${e}`); }
+        try { await syncArrayArtifacts(state.retrospectives, 'retrospective', 'retrospective'); } catch (e) { errors.push(`retrospectives: ${e}`); }
 
-        try {
-            if (state.changeProposal) {
-                await this.saveGenericArtifactToFile('changeProposal', 'change-proposal', state.changeProposal, state, baseUri);
-            } else { await this.deleteSourceFile('changeProposal'); }
-        } catch (e) { errors.push(`changeProposal: ${e}`); }
+        try { await syncArrayArtifacts(state.changeProposals, 'changeProposal', 'change-proposal'); } catch (e) { errors.push(`changeProposals: ${e}`); }
 
-        try {
-            if (state.codeReview) {
-                await this.saveGenericArtifactToFile('codeReview', 'code-review', state.codeReview, state, baseUri);
-            } else { await this.deleteSourceFile('codeReview'); }
-        } catch (e) { errors.push(`codeReview: ${e}`); }
+        try { await syncArrayArtifacts(state.codeReviews, 'codeReview', 'code-review'); } catch (e) { errors.push(`codeReviews: ${e}`); }
 
         try {
             if (state.risks) {
@@ -4001,11 +4621,7 @@ export class ArtifactStore {
             } else { await this.deleteSourceFile('projectContext'); }
         } catch (e) { errors.push(`projectContext: ${e}`); }
 
-        try {
-            if (state.techSpec) {
-                await this.saveGenericArtifactToFile('techSpec', 'tech-spec', state.techSpec, state, baseUri);
-            } else { await this.deleteSourceFile('techSpec'); }
-        } catch (e) { errors.push(`techSpec: ${e}`); }
+        try { await syncArrayArtifacts(state.techSpecs, 'techSpec', 'tech-spec'); } catch (e) { errors.push(`techSpecs: ${e}`); }
 
         try {
             if (state.sourceTree) {
@@ -4049,6 +4665,128 @@ export class ArtifactStore {
             errors.forEach(err => acOutput.appendLine(`  - ${err}`));
         }
         
+        // ─── Persist requirements to standalone file ──────────────────────
+        // syncToFiles does NOT write requirementsInventory back to epics.json
+        // (PRD is the authoritative source for NFR/additional). To prevent
+        // data loss after save+reload, persist the in-memory requirements
+        // to a standalone requirements.json in the solutioning-artifacts dir.
+        // On reload, the `case 'requirements'` handler picks this file up.
+        try {
+            const reqs = state.requirements;
+            if (reqs && (reqs.functional?.length || reqs.nonFunctional?.length || reqs.additional?.length)) {
+                // Determine the target directory — prefer solutioning-artifacts if it exists
+                let reqDir = baseUri;
+                for (const subdir of ['solutioning-artifacts', 'planning-artifacts']) {
+                    const candidate = vscode.Uri.joinPath(baseUri, subdir);
+                    try {
+                        await vscode.workspace.fs.stat(candidate);
+                        reqDir = candidate;
+                        break;
+                    } catch { /* dir doesn't exist, try next */ }
+                }
+                const reqFileUri = vscode.Uri.joinPath(reqDir, 'requirements.json');
+                const reqContent = {
+                    metadata: {
+                        schema: 'requirements',
+                        generatedAt: new Date().toISOString(),
+                        description: 'Standalone requirements file auto-generated by syncToFiles'
+                    },
+                    content: {
+                        functional: reqs.functional || [],
+                        nonFunctional: reqs.nonFunctional || [],
+                        additional: reqs.additional || []
+                    }
+                };
+                const reqBytes = Buffer.from(JSON.stringify(reqContent, null, 2), 'utf-8');
+                await vscode.workspace.fs.writeFile(reqFileUri, reqBytes);
+                acOutput.appendLine(`[ArtifactStore] syncToFiles: wrote requirements.json (${reqs.functional?.length || 0} FR, ${reqs.nonFunctional?.length || 0} NFR, ${reqs.additional?.length || 0} additional)`);
+            }
+        } catch (e) { errors.push(`requirements: ${e}`); }
+
+        // ─── Generate stories-index.json manifest ─────────────────────────
+        try {
+            const epics = state.epics || [];
+            const storiesIndex: { id: string; title: string; epicId: string; status: string }[] = [];
+            for (const epic of epics) {
+                for (const story of (epic as any).stories || []) {
+                    storiesIndex.push({
+                        id: story.id || '',
+                        title: story.title || '',
+                        epicId: (epic as any).id || '',
+                        status: story.status || 'draft'
+                    });
+                }
+            }
+            const indexUri = vscode.Uri.joinPath(baseUri, 'stories-index.json');
+            const indexContent = Buffer.from(JSON.stringify({
+                metadata: { schema: 'stories-index', generatedAt: new Date().toISOString() },
+                stories: storiesIndex
+            }, null, 2), 'utf-8');
+            await vscode.workspace.fs.writeFile(indexUri, indexContent);
+        } catch (e) { errors.push(`stories-index: ${e}`); }
+
+        // ─── Generate epics-index.json manifest ───────────────────────────
+        try {
+            const epics = state.epics || [];
+            const epicsIndex = epics.map((epic: any) => ({
+                id: epic.id || '',
+                title: epic.title || '',
+                status: epic.status || 'draft',
+                storyCount: epic.stories?.length || 0
+            }));
+            const epicsIndexUri = vscode.Uri.joinPath(baseUri, 'epics-index.json');
+            const epicsIndexContent = Buffer.from(JSON.stringify({
+                metadata: { schema: 'epics-index', generatedAt: new Date().toISOString() },
+                epics: epicsIndex
+            }, null, 2), 'utf-8');
+            await vscode.workspace.fs.writeFile(epicsIndexUri, epicsIndexContent);
+        } catch (e) { errors.push(`epics-index: ${e}`); }
+
+        // ─── Generate README.md — LLM orientation guide ──────────────────
+        try {
+            const readmeLines = [
+                `# ${state.projectName || 'Project'} — Agile Agent Canvas Artifacts`,
+                '',
+                '> **This file is auto-generated.** It helps LLMs and developers navigate the artifact structure.',
+                '',
+                '## File Structure',
+                '',
+                '```',
+                'planning-artifacts/',
+                '  epics.json                  ← Manifest (metadata + refs to individual epic files)',
+                '  epics/                      ← One file per epic',
+                '    epic-{id}.json            ← Full epic content (goal, stories, metadata)',
+                '  stories/                    ← One file per story (when extracted)',
+                '    story-{id}.json           ← Full story content (AC, tasks, test cases)',
+                'epics-index.json              ← Summary index: id, title, status, storyCount',
+                'stories-index.json            ← Summary index: id, title, epicId, status',
+                '```',
+                '',
+                '## Quick Reference for LLMs',
+                '',
+                '| To find...               | Read this file                          |',
+                '|--------------------------|------------------------------------------|',
+                '| List of all epics        | `epics-index.json` or `epics.json`       |',
+                '| Full epic details        | `planning-artifacts/epics/epic-{id}.json`|',
+                '| List of all stories      | `stories-index.json`                     |',
+                '| Full story details       | `planning-artifacts/stories/story-{id}.json` |',
+                '| Requirements             | `planning-artifacts/requirements.json`   |',
+                '',
+                '## Key Conventions',
+                '',
+                '- **Epic IDs** use numeric format: `1`, `2`, `15`',
+                '- **Story IDs** use dot notation: `1.1`, `15.3`',
+                '- **epics.json** is a manifest with `file` refs, NOT full epic content',
+                '- To update an epic, edit its standalone file, not the manifest',
+                '',
+            ];
+            const readmeUri = vscode.Uri.joinPath(baseUri, 'README.md');
+            await vscode.workspace.fs.writeFile(
+                readmeUri,
+                Buffer.from(readmeLines.join('\n'), 'utf-8')
+            );
+        } catch (e) { errors.push(`readme: ${e}`); }
+
         logDebug('syncToFiles completed');
         } finally {
             // All writes done (or failed).  Keep the suppression flag active
@@ -4139,27 +4877,378 @@ export class ArtifactStore {
     /**
      * Save epics to JSON file
      */
+    // ═══════════════════════════════════════════════════════════════════════
+    // Migration detection + execution
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Check if the project's epics.json still contains inline story objects.
+     * If so, show a one-time nudge suggesting migration.
+     * Runs fire-and-forget — does not block the load path.
+     */
+    private async checkForInlineStories(folderUri: vscode.Uri): Promise<void> {
+        try {
+            const epicsUri = this.sourceFiles.get('epics');
+            if (!epicsUri) { return; }
+
+            const raw = Buffer.from(await vscode.workspace.fs.readFile(epicsUri)).toString('utf-8');
+            const parsed = JSON.parse(raw);
+            const epics = parsed?.content?.epics || parsed?.epics || [];
+
+            let inlineCount = 0;
+            for (const epic of epics) {
+                for (const story of (epic.stories || [])) {
+                    // Inline stories are objects; migrated stories are string refs
+                    if (typeof story === 'object' && story !== null) {
+                        inlineCount += 1;
+                    }
+                }
+            }
+
+            if (inlineCount === 0) { return; }
+
+            this._migrationPromptShown = true;
+
+            const action = await vscode.window.showInformationMessage(
+                `This project has ${inlineCount} inline ${inlineCount === 1 ? 'story' : 'stories'} in epics.json. ` +
+                `Run "Migrate to Reference Architecture" to extract them to standalone files for single-source-of-truth management.`,
+                'Migrate Now',
+                'Dismiss'
+            );
+
+            if (action === 'Migrate Now') {
+                await vscode.commands.executeCommand('agileagentcanvas.migrateToRefArch');
+            }
+        } catch {
+            // Silent — detection is best-effort, should never break load
+        }
+    }
+
+    /**
+     * Migrate from inline stories in epics.json to standalone story files.
+     * 
+     * Steps:
+     * 1. Backup epics.json → epics.json.pre-migration.bak
+     * 2. For each inline story: write to implementation-artifacts/{epicId}-{storyId}.json
+     * 3. Replace inline story objects with string refs in epics.json
+     * 4. Remove requirementsInventory from epics.json (PRD is authoritative)
+     * 5. Reload from disk to verify
+     * 
+     * Returns a summary of what was migrated.
+     */
+    async migrateToReferenceArchitecture(): Promise<{ success: boolean; summary: string }> {
+        if (!this.sourceFolder) {
+            return { success: false, summary: 'No project loaded. Open a project first.' };
+        }
+
+        const acOutput = this.getOutputChannel();
+        acOutput.appendLine('[Migration] Starting migrate-to-reference-architecture...');
+
+        try {
+            // ── 1. Find epics.json ─────────────────────────────────────────
+            const epicsFile = this.sourceFiles.get('epics');
+            if (!epicsFile) {
+                return { success: false, summary: 'No epics.json found in this project.' };
+            }
+
+            // Read current epics.json
+            const raw = await vscode.workspace.fs.readFile(epicsFile);
+            const epicsJson = JSON.parse(Buffer.from(raw).toString('utf-8'));
+
+            // ── 2. Backup ──────────────────────────────────────────────────
+            const backupUri = vscode.Uri.file(epicsFile.fsPath + '.pre-migration.bak');
+            await vscode.workspace.fs.writeFile(backupUri, raw);
+            acOutput.appendLine(`[Migration] Backup created: ${backupUri.fsPath}`);
+
+            // ── 3. Extract inline stories to files ─────────────────────────
+            const implDir = vscode.Uri.joinPath(this.sourceFolder, 'implementation-artifacts');
+            try { await vscode.workspace.fs.createDirectory(implDir); } catch { /* exists */ }
+
+            const epics = epicsJson.content?.epics || epicsJson.epics || [];
+            let extractedCount = 0;
+            let skippedCount = 0;
+            const migrationLog: string[] = [];
+
+            for (const epic of epics) {
+                if (!Array.isArray(epic.stories)) continue;
+
+                const storyRefs: string[] = [];
+
+                for (const story of epic.stories) {
+                    // If already a string ref, keep it
+                    if (typeof story === 'string') {
+                        storyRefs.push(story);
+                        continue;
+                    }
+
+                    // Inline story object → extract
+                    const storyId = story.id || story.storyId || `S${epic.id?.replace(/\D/g, '') || '0'}.${extractedCount + 1}`;
+                    const epicId = epic.id || 'EPIC-1';
+
+                    // Build the standalone story file content
+                    const storyFileContent = {
+                        metadata: {
+                            schemaVersion: '1.0.0',
+                            artifactType: 'story',
+                            timestamps: {
+                                created: new Date().toISOString(),
+                                lastModified: new Date().toISOString()
+                            },
+                            status: 'draft'
+                        },
+                        content: {
+                            id: storyId,
+                            epicId: epicId,
+                            epicTitle: epic.title || '',
+                            title: story.title || 'Untitled Story',
+                            status: story.status || 'draft',
+                            ...story
+                        }
+                    };
+                    // Ensure id and epicId are at top level of content
+                    storyFileContent.content.id = storyId;
+                    storyFileContent.content.epicId = epicId;
+
+                    // Generate a safe filename using epicId-storyNum-slug pattern
+                    // to match the established convention (e.g. "1-1-database-migration-infrastructure.json")
+                    const normalizedStoryId = String(storyId).replace(/^S/i, '');
+                    const storyNumSuffix = normalizedStoryId.includes('.')
+                        ? normalizedStoryId.split('.').pop() || ''
+                        : '';
+                    const safeTitle = (story.title || storyId)
+                        .toLowerCase()
+                        .replace(/[^a-z0-9]+/g, '-')
+                        .replace(/^-|-$/g, '')
+                        .substring(0, 60);
+                    const safeEpicId = epicId.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                    const fileName = storyNumSuffix
+                        ? `${safeEpicId}-${storyNumSuffix}-${safeTitle}.json`
+                        : `${safeEpicId}-${safeTitle}.json`;
+                    const fileUri = vscode.Uri.joinPath(implDir, fileName);
+
+                    // Check if a file already exists for this story — by exact match OR
+                    // by any file in implDir that starts with "{epicId}-{storyNum}-" or
+                    // "{epicId}-{slug}" to avoid creating duplicates under a different
+                    // naming convention.
+                    let alreadyExists = false;
+                    try {
+                        await vscode.workspace.fs.stat(fileUri);
+                        alreadyExists = true;
+                    } catch { /* file doesn't exist at the generated path */ }
+
+                    if (!alreadyExists) {
+                        // Scan for any existing file starting with the storyId prefix
+                        // e.g. "1-1-" for story 1.1, or matching the slug
+                        const prefixes = storyNumSuffix
+                            ? [`${safeEpicId}-${storyNumSuffix}-`, `${safeEpicId}-${safeTitle}`]
+                            : [`${safeEpicId}-${safeTitle}`];
+                        try {
+                            const existingFiles = await vscode.workspace.fs.readDirectory(implDir);
+                            for (const [existingName] of existingFiles) {
+                                const lowerExisting = existingName.toLowerCase();
+                                if (lowerExisting.endsWith('.json') && prefixes.some(p => lowerExisting.startsWith(p))) {
+                                    alreadyExists = true;
+                                    acOutput.appendLine(`[Migration] Story file already exists: ${existingName} (matches ${normalizedStoryId}) — skipping`);
+                                    break;
+                                }
+                            }
+                        } catch { /* directory read failed — proceed with write */ }
+                    }
+
+                    if (alreadyExists) {
+                        acOutput.appendLine(`[Migration] Story file already exists: ${fileName} — skipping (standalone wins)`);
+                        skippedCount++;
+                    } else {
+                        // File doesn't exist — write it
+                        const content = Buffer.from(JSON.stringify(storyFileContent, null, 2), 'utf-8');
+                        await vscode.workspace.fs.writeFile(fileUri, content);
+                        extractedCount++;
+                        migrationLog.push(`  Extracted: ${storyId} → ${fileName}`);
+                    }
+
+                    storyRefs.push(storyId);
+                }
+
+                // Replace inline stories with refs
+                epic.stories = storyRefs;
+            }
+
+            // ── 4. Remove requirementsInventory from epics.json ────────────
+            let reqsRemoved = false;
+            if (epicsJson.content?.requirementsInventory) {
+                delete epicsJson.content.requirementsInventory;
+                reqsRemoved = true;
+                migrationLog.push('  Removed requirementsInventory from epics.json (PRD is authoritative)');
+            }
+
+            // ── 5. Write updated epics.json ────────────────────────────────
+            const updatedContent = Buffer.from(JSON.stringify(epicsJson, null, 2), 'utf-8');
+            await vscode.workspace.fs.writeFile(epicsFile, updatedContent);
+            acOutput.appendLine(`[Migration] Updated epics.json with story refs`);
+
+            // ── 6. Reload from disk to verify ──────────────────────────────
+            await this.loadFromFolder(this.sourceFolder);
+
+            // Truncate migration log to prevent uncloseable modals
+            const maxLogLines = 10;
+            const truncatedLog = migrationLog.length > maxLogLines
+                ? [...migrationLog.slice(0, maxLogLines), `  ... and ${migrationLog.length - maxLogLines} more files`]
+                : migrationLog;
+
+            const summary = [
+                `Migration complete:`,
+                `  ${extractedCount} stories extracted to files`,
+                `  ${skippedCount} stories skipped (files already exist)`,
+                reqsRemoved ? '  requirementsInventory removed from epics.json' : '',
+                `  Backup: ${backupUri.fsPath}`,
+                '',
+                ...truncatedLog
+            ].filter(Boolean).join('\n');
+
+            acOutput.appendLine(`[Migration] ${summary}`);
+            return { success: true, summary };
+
+        } catch (err: any) {
+            const msg = `Migration failed: ${err?.message ?? err}`;
+            acOutput.appendLine(`[Migration] ${msg}`);
+            return { success: false, summary: msg };
+        }
+    }
+
+    /**
+     * Restore epics.json from the pre-migration backup.
+     */
+    async restorePreMigrationBackup(): Promise<{ success: boolean; summary: string }> {
+        if (!this.sourceFolder) {
+            return { success: false, summary: 'No project loaded.' };
+        }
+
+        const acOutput = this.getOutputChannel();
+        const epicsFile = this.sourceFiles.get('epics');
+        if (!epicsFile) {
+            return { success: false, summary: 'No epics.json found.' };
+        }
+
+        const backupUri = vscode.Uri.file(epicsFile.fsPath + '.pre-migration.bak');
+        try {
+            const backupContent = await vscode.workspace.fs.readFile(backupUri);
+            await vscode.workspace.fs.writeFile(epicsFile, backupContent);
+            acOutput.appendLine(`[Migration] Restored epics.json from backup: ${backupUri.fsPath}`);
+
+            // Reload from disk
+            await this.loadFromFolder(this.sourceFolder);
+
+            return {
+                success: true,
+                summary: `Restored epics.json from pre-migration backup.\nNote: Extracted story files in implementation-artifacts/ were NOT deleted.\nYou can delete them manually if needed.`
+            };
+        } catch (err: any) {
+            return {
+                success: false,
+                summary: `Restore failed: ${err?.message ?? err}\nBackup file may not exist at: ${backupUri.fsPath}`
+            };
+        }
+    }
+
+    /**
+     * Get the output channel for logging.
+     */
+    private getOutputChannel(): vscode.OutputChannel {
+        // Use the shared output channel from the extension, which allows for testing mocks
+        if (typeof acOutput !== 'undefined' && acOutput) {
+            return acOutput;
+        }
+        return (globalThis as any).__acOutputChannel || vscode.window.createOutputChannel('Agile Agent Canvas');
+    }
+
     private async saveEpicsToFile(state: BmadArtifacts, baseUri: vscode.Uri): Promise<void> {
-        let targetUri: vscode.Uri;
+        // Resolve the directory that contains (or will contain) epics.json
+        let manifestDir: vscode.Uri;
         
         if (this.sourceFiles.has('epics')) {
-            targetUri = this.sourceFiles.get('epics')!;
-            logDebug('Writing epics to original source file:', targetUri.fsPath);
+            const existingUri = this.sourceFiles.get('epics')!;
+            // Parent directory of the existing epics file
+            const parts = existingUri.path.split('/');
+            parts.pop();
+            manifestDir = existingUri.with({ path: parts.join('/') });
+            logDebug('Writing epics to original source directory:', manifestDir.fsPath);
         } else {
-            const planningUri = vscode.Uri.joinPath(baseUri, 'planning-artifacts');
-            
+            manifestDir = vscode.Uri.joinPath(baseUri, 'planning-artifacts');
             try {
-                await vscode.workspace.fs.createDirectory(planningUri);
+                await vscode.workspace.fs.createDirectory(manifestDir);
             } catch {
                 // Folder might already exist
             }
-            
-            targetUri = vscode.Uri.joinPath(planningUri, 'epics.json');
-            logDebug('Writing epics to default location:', targetUri.fsPath);
+            logDebug('Writing epics to default location:', manifestDir.fsPath);
         }
 
-        // Build the JSON structure
-        const epicsJson = {
+        const manifestUri = vscode.Uri.joinPath(manifestDir, 'epics.json');
+        const epicsDir = vscode.Uri.joinPath(manifestDir, 'epics');
+        try {
+            await vscode.workspace.fs.createDirectory(epicsDir);
+        } catch {
+            // Folder might already exist
+        }
+
+        const allEpics = state.epics || [];
+        const epicRefs: { id: string; title: string; status: string; file: string }[] = [];
+
+        // ── Write each epic to its own file ────────────────────────────
+        for (const epic of allEpics) {
+            const epicFields = { ...epic };
+            // Sanitise stories before writing
+            if (Array.isArray(epicFields.stories)) {
+                epicFields.stories = epicFields.stories.map((story: any) => {
+                    const storyOut = { ...story };
+                    // Normalize dependencies back to string[] for inline schema compat
+                    if (storyOut.dependencies?.blockedBy && Array.isArray(storyOut.dependencies.blockedBy)) {
+                        storyOut.dependencies = storyOut.dependencies.blockedBy;
+                    }
+                    // Remove transient routing fields
+                    delete storyOut._sourceEpicId;
+                    return storyOut;
+                });
+            }
+
+            // Derive a filesystem-safe ID slug
+            const idSlug = String(epic.id).replace(/[^a-zA-Z0-9_-]/g, '-').toLowerCase();
+            const epicFileName = `epic-${idSlug}.json`;
+            const epicFileUri = vscode.Uri.joinPath(epicsDir, epicFileName);
+
+            const epicFileJson = {
+                metadata: {
+                    schemaVersion: '1.0.0',
+                    artifactType: 'epic',
+                    workflowName: 'agileagentcanvas',
+                    projectName: state.projectName,
+                    timestamps: {
+                        created: new Date().toISOString(),
+                        lastModified: new Date().toISOString()
+                    },
+                    status: epic.status || 'draft'
+                },
+                content: epicFields
+            };
+
+            await vscode.workspace.fs.writeFile(
+                epicFileUri,
+                Buffer.from(JSON.stringify(epicFileJson, null, 2), 'utf-8')
+            );
+            logDebug(`Saved standalone epic file: ${epicFileName}`);
+
+            // Track each epic file for reload awareness
+            this.sourceFiles.set(`epic:${epic.id}`, epicFileUri);
+
+            epicRefs.push({
+                id: epic.id,
+                title: epic.title || 'Untitled Epic',
+                status: epic.status || 'draft',
+                file: `epics/${epicFileName}`
+            });
+        }
+
+        // ── Write the manifest ─────────────────────────────────────────
+        const manifestJson = {
             metadata: {
                 schemaVersion: '1.0.0',
                 artifactType: 'epics',
@@ -4169,49 +5258,42 @@ export class ArtifactStore {
                     created: new Date().toISOString(),
                     lastModified: new Date().toISOString()
                 },
-                status: 'draft'
+                status: 'draft',
+                _llmHint: [
+                    'This is a manifest file. Each epic\'s full content is in a separate file.',
+                    'Epic files: epics/epic-{id}.json (relative to this file)',
+                    'Stories may be standalone files: stories/story-{id}.json (relative to parent dir)',
+                    'Summary indexes: epics-index.json, stories-index.json (in parent dir)',
+                    'To read a specific epic, load its file from the epics array below.'
+                ].join(' ')
             },
             content: {
                 overview: {
                     projectName: state.projectName,
-                    totalEpics: state.epics?.length || 0,
-                    totalStories: state.epics?.reduce((sum, e) => sum + (e.stories?.length || 0), 0) || 0
+                    totalEpics: allEpics.length,
+                    totalStories: allEpics.reduce((sum, e) => sum + (e.stories?.length || 0), 0)
                 },
-                requirementsInventory: state.requirements,
-                // Sanitise each epic before writing
-                epics: (state.epics || []).map((epic: any) => {
-                    const epicFields = { ...epic };
-                    // Also sanitise embedded stories — strip runtime fields
-                    // and ensure dependencies shape matches the inline schema
-                    // (inline epics.schema uses string[] for dependencies,
-                    //  not the rich object form from story.schema.json)
-                    if (Array.isArray(epicFields.stories)) {
-                        epicFields.stories = epicFields.stories.map((story: any) => {
-                            const { id: _sid, status: _sst, ...storyFields } = story;
-                            return storyFields;
-                        });
-                    }
-                    return epicFields;
-                })
+                // NOTE: requirementsInventory is intentionally NOT written back
+                // to epics.json. PRD is the single source of truth for requirements.
+                epics: epicRefs
             }
         };
 
-        // Write the JSON file
         await vscode.workspace.fs.writeFile(
-            targetUri,
-            Buffer.from(JSON.stringify(epicsJson, null, 2), 'utf-8')
+            manifestUri,
+            Buffer.from(JSON.stringify(manifestJson, null, 2), 'utf-8')
         );
-        logDebug('Saved epics to:', targetUri.fsPath);
+        logDebug('Saved epics manifest:', manifestUri.fsPath);
 
         // Write markdown companion if output format includes markdown
         const outputFormat = this.getOutputFormat();
         if (outputFormat === 'markdown' || outputFormat === 'dual') {
-            const mdUri = await writeMarkdownCompanion(targetUri, 'epics.md', this.generateEpicsMarkdown(state));
+            const mdUri = await writeMarkdownCompanion(manifestUri, 'epics.md', this.generateEpicsMarkdown(state));
             logDebug('Saved markdown companion:', mdUri.fsPath);
         }
         
-        // Track the source file for future saves
-        this.sourceFiles.set('epics', targetUri);
+        // Track the manifest file for future saves
+        this.sourceFiles.set('epics', manifestUri);
     }
 
     /**
@@ -4366,8 +5448,7 @@ export class ArtifactStore {
             },
             content: {
                 testCases: (state.testCases || []).map((tc: any) => {
-                    const { id, status, ...rest } = tc;
-                    return rest;
+                    return { ...tc };
                 })
             }
         };
@@ -4440,11 +5521,12 @@ export class ArtifactStore {
     /**
      * Save test design to JSON file
      */
-    private async saveTestDesignToFile(state: BmadArtifacts, baseUri: vscode.Uri): Promise<void> {
+    private async saveTestDesignToFile(td: any, state: BmadArtifacts, baseUri: vscode.Uri): Promise<void> {
         let targetUri: vscode.Uri;
+        const sourceKey = `testDesign:${td.id}`;
 
-        if (this.sourceFiles.has('testDesign')) {
-            targetUri = this.sourceFiles.get('testDesign')!;
+        if (this.sourceFiles.has(sourceKey)) {
+            targetUri = this.sourceFiles.get(sourceKey)!;
         } else {
             const testingUri = vscode.Uri.joinPath(baseUri, 'testing-artifacts');
             try {
@@ -4452,10 +5534,16 @@ export class ArtifactStore {
             } catch {
                 // Folder might already exist
             }
-            targetUri = vscode.Uri.joinPath(testingUri, 'test-design.json');
+            // Generate a safe filename
+            const safeId = td.id.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            let filename = 'test-design.json';
+            if (td.epicInfo?.epicId) {
+                filename = `test-design-${safeId}.json`;
+            } else if (safeId) {
+                filename = `test-design-${safeId}.json`;
+            }
+            targetUri = vscode.Uri.joinPath(testingUri, filename);
         }
-
-        const td = state.testDesign!;
         const testDesignJson = {
             metadata: {
                 schemaVersion: '1.0.0',
@@ -4495,11 +5583,16 @@ export class ArtifactStore {
         // Write markdown companion if output format includes markdown
         const outputFormat = this.getOutputFormat();
         if (outputFormat === 'markdown' || outputFormat === 'dual') {
-            const mdUri = await writeMarkdownCompanion(targetUri, 'test-design.md', this.generateTestDesignMarkdown(state));
+            let mdFilename = 'test-design.md';
+            if (targetUri.fsPath.endsWith('.json')) {
+                const match = targetUri.fsPath.match(/([^\/\\]+)\.json$/);
+                if (match) mdFilename = match[1] + '.md';
+            }
+            const mdUri = await writeMarkdownCompanion(targetUri, mdFilename, this.generateTestDesignMarkdown(td, state));
             logDebug('Saved markdown companion:', mdUri.fsPath);
         }
 
-        this.sourceFiles.set('testDesign', targetUri);
+        this.sourceFiles.set(sourceKey, targetUri);
     }
 
     /**
@@ -4530,11 +5623,12 @@ export class ArtifactStore {
         } else {
             // Determine the output folder based on the artifact module
             let folder: string;
+            const baseType = storeKey.split(':')[0];
             const teaTypes = ['traceabilityMatrix', 'testReview', 'nfrAssessment', 'testFramework', 'ciPipeline', 'automationSummary', 'atddChecklist'];
             const cisTypes = ['storytelling', 'problemSolving', 'innovationStrategy', 'designThinking'];
-            if (teaTypes.includes(storeKey)) {
+            if (teaTypes.includes(baseType)) {
                 folder = 'testing-artifacts';
-            } else if (cisTypes.includes(storeKey)) {
+            } else if (cisTypes.includes(baseType)) {
                 folder = 'cis-artifacts';
             } else {
                 folder = 'bmm-artifacts';
@@ -5642,8 +6736,7 @@ export class ArtifactStore {
     /**
      * Generate markdown version of test design
      */
-    private generateTestDesignMarkdown(state: BmadArtifacts): string {
-        const td = state.testDesign;
+    private generateTestDesignMarkdown(td: any, state: BmadArtifacts): string {
         if (!td) return '';
 
         let md = `# ${state.projectName} - Test Design\n\n`;
@@ -5672,20 +6765,20 @@ export class ArtifactStore {
             if (s.coverageSummary) md += `**Coverage Summary:** ${s.coverageSummary}\n\n`;
             if (s.objectives?.length) {
                 md += `### Objectives\n\n`;
-                s.objectives.forEach(o => md += `- ${o}\n`);
+                s.objectives.forEach((o: any) => md += `- ${o}\n`);
                 md += '\n';
             }
             if (s.testLevels?.length) {
                 md += `### Test Levels\n\n`;
                 md += `| Level | Purpose | Coverage |\n|---|---|---|\n`;
-                s.testLevels.forEach(tl => {
+                s.testLevels.forEach((tl: any) => {
                     md += `| ${tl.level || ''} | ${tl.purpose || ''} | ${tl.coverage || ''} |\n`;
                 });
                 md += '\n';
             }
             if (s.keyDecisions?.length) {
                 md += `### Key Decisions\n\n`;
-                s.keyDecisions.forEach(d => md += `- ${d}\n`);
+                s.keyDecisions.forEach((d: any) => md += `- ${d}\n`);
                 md += '\n';
             }
         }
@@ -5693,7 +6786,7 @@ export class ArtifactStore {
         // Not in scope
         if (td.notInScope?.length) {
             md += `## Not In Scope\n\n`;
-            td.notInScope.forEach(nis => {
+            td.notInScope.forEach((nis: any) => {
                 md += `- **${nis.item || 'N/A'}** — ${nis.reason || 'No reason given'}`;
                 if (nis.riskAccepted) md += ` (risk accepted)`;
                 md += '\n';
@@ -5709,7 +6802,7 @@ export class ArtifactStore {
             const renderRisks = (label: string, risks?: any[]) => {
                 if (!risks?.length) return;
                 md += `### ${label}\n\n`;
-                risks.forEach(r => {
+                risks.forEach((r: any) => {
                     md += `- **${r.riskId || 'N/A'}** [${r.category || ''}]: ${r.description || ''}\n`;
                     md += `  - Probability: ${r.probability || '?'} | Impact: ${r.impact || '?'} | Score: ${r.score ?? '?'}\n`;
                     if (r.testStrategy) md += `  - Test Strategy: ${r.testStrategy}\n`;
@@ -5728,7 +6821,7 @@ export class ArtifactStore {
             md += `## Entry & Exit Criteria\n\n`;
             if (eec.entry?.length) {
                 md += `### Entry Criteria\n\n`;
-                eec.entry.forEach(e => {
+                eec.entry.forEach((e: any) => {
                     md += `- ${e.criterion || ''}`;
                     if (e.mandatory) md += ` **(mandatory)**`;
                     if (e.verification) md += ` — Verification: ${e.verification}`;
@@ -5738,7 +6831,7 @@ export class ArtifactStore {
             }
             if (eec.exit?.length) {
                 md += `### Exit Criteria\n\n`;
-                eec.exit.forEach(e => {
+                eec.exit.forEach((e: any) => {
                     md += `- ${e.criterion || ''}`;
                     if (e.mandatory) md += ` **(mandatory)**`;
                     if (e.threshold) md += ` — Threshold: ${e.threshold}`;
@@ -5766,7 +6859,7 @@ export class ArtifactStore {
                 if (!items?.length) return;
                 md += `### ${label}\n\n`;
                 md += `| ID | Requirement | Level | Type | Approach | Automatable |\n|---|---|---|---|---|---|\n`;
-                items.forEach(i => {
+                items.forEach((i: any) => {
                     md += `| ${i.id || ''} | ${i.requirement || ''} | ${i.testLevel || ''} | ${i.testType || ''} | ${i.testApproach || ''} | ${i.automatable ?? ''} |\n`;
                 });
                 md += '\n';
@@ -5781,7 +6874,7 @@ export class ArtifactStore {
         if (td.testCases?.length) {
             md += `## Test Cases\n\n`;
             md += `| ID | Title | Priority | Type | Level |\n|---|---|---|---|---|\n`;
-            td.testCases.forEach(tc => {
+            td.testCases.forEach((tc: any) => {
                 md += `| ${tc.id || ''} | ${tc.title || ''} | ${tc.priority || ''} | ${tc.type || ''} | ${tc.level || ''} |\n`;
             });
             md += '\n';
@@ -5794,7 +6887,7 @@ export class ArtifactStore {
             if (eo.overview) md += `${eo.overview}\n\n`;
             if (eo.smoke?.length) {
                 md += `### Smoke Tests\n\n`;
-                eo.smoke.forEach(s => md += `${s.order ?? '?'}. ${s.testId || ''}: ${s.description || ''}\n`);
+                eo.smoke.forEach((s: any) => md += `${s.order ?? '?'}. ${s.testId || ''}: ${s.description || ''}\n`);
                 md += '\n';
             }
         }
@@ -5806,7 +6899,7 @@ export class ArtifactStore {
             if (re.totalEffort) md += `**Total Effort:** ${re.totalEffort}\n\n`;
             if (re.breakdown?.length) {
                 md += `| Activity | Effort | Resources | Duration |\n|---|---|---|---|\n`;
-                re.breakdown.forEach(b => {
+                re.breakdown.forEach((b: any) => {
                     md += `| ${b.activity || ''} | ${b.effort || ''} | ${b.resources ?? ''} | ${b.duration || ''} |\n`;
                 });
                 md += '\n';
@@ -5816,7 +6909,7 @@ export class ArtifactStore {
         // Quality gate criteria
         if (td.qualityGateCriteria?.length) {
             md += `## Quality Gate Criteria\n\n`;
-            td.qualityGateCriteria.forEach(qg => {
+            td.qualityGateCriteria.forEach((qg: any) => {
                 md += `- **${qg.criterion || ''}** — Threshold: ${qg.threshold || 'N/A'}`;
                 if (qg.mandatory) md += ` **(mandatory)**`;
                 md += '\n';
@@ -5852,31 +6945,34 @@ export class ArtifactStore {
         const tsMd = this.generateTestStrategyMarkdown(state);
         if (tsMd) sections.push(tsMd);
 
-        const tdMd = this.generateTestDesignMarkdown(state);
-        if (tdMd) sections.push(tdMd);
-
+        if (state.testDesigns && state.testDesigns.length > 0) {
+            for (const td of state.testDesigns) {
+                const tdMd = this.generateTestDesignMarkdown(td, state);
+                if (tdMd) sections.push(tdMd);
+            }
+        }
         // TEA module artifacts
-        const genericArtifacts: { slug: string; data: Record<string, unknown> | undefined }[] = [
+        const genericArtifacts: { slug: string; data: Record<string, unknown> | any[] | undefined }[] = [
             { slug: 'traceability-matrix', data: state.traceabilityMatrix },
-            { slug: 'test-review', data: state.testReview },
+            { slug: 'test-review', data: state.testReviews },
             { slug: 'nfr-assessment', data: state.nfrAssessment },
             { slug: 'test-framework', data: state.testFramework },
             { slug: 'ci-pipeline', data: state.ciPipeline },
             { slug: 'automation-summary', data: state.automationSummary },
             { slug: 'atdd-checklist', data: state.atddChecklist },
             // BMM module artifacts
-            { slug: 'research', data: state.research },
-            { slug: 'ux-design', data: state.uxDesign },
-            { slug: 'readiness-report', data: state.readinessReport },
-            { slug: 'sprint-status', data: state.sprintStatus },
-            { slug: 'retrospective', data: state.retrospective },
-            { slug: 'change-proposal', data: state.changeProposal },
-            { slug: 'code-review', data: state.codeReview },
+            { slug: 'research', data: state.researches },
+            { slug: 'ux-design', data: state.uxDesigns },
+            { slug: 'readiness-report', data: state.readinessReports },
+            { slug: 'sprint-status', data: state.sprintStatuses },
+            { slug: 'retrospective', data: state.retrospectives },
+            { slug: 'change-proposal', data: state.changeProposals },
+            { slug: 'code-review', data: state.codeReviews },
             { slug: 'risks', data: state.risks },
             { slug: 'definition-of-done', data: state.definitionOfDone },
             { slug: 'project-overview', data: state.projectOverview },
             { slug: 'project-context', data: state.projectContext },
-            { slug: 'tech-spec', data: state.techSpec },
+            { slug: 'tech-spec', data: state.techSpecs },
             // CIS module artifacts
             { slug: 'storytelling', data: state.storytelling },
             { slug: 'problem-solving', data: state.problemSolving },
@@ -5886,8 +6982,15 @@ export class ArtifactStore {
 
         for (const { slug, data } of genericArtifacts) {
             if (data) {
-                const md = this.generateGenericArtifactMarkdown(slug, data, state);
-                if (md) sections.push(md);
+                if (Array.isArray(data)) {
+                    for (const item of data) {
+                        const md = this.generateGenericArtifactMarkdown(slug, item as Record<string, unknown>, state);
+                        if (md) sections.push(md);
+                    }
+                } else {
+                    const md = this.generateGenericArtifactMarkdown(slug, data as Record<string, unknown>, state);
+                    if (md) sections.push(md);
+                }
             }
         }
 

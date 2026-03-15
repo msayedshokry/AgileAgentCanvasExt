@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/bmm/requirements.schema.json",
+  "title": "Requirements Collection Schema",
+  "description": "Standalone requirements file containing functional, non-functional, and additional requirements. This is the authoritative source for requirements in the canvas — auto-generated from PRD/requirementsInventory on first load.",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json",
+      "properties": {
+        "schema": {
+          "type": "string",
+          "const": "requirements"
+        }
+      }
+    },
+    "content": {
+      "type": "object",
+      "description": "Requirements grouped by category",
+      "properties": {
+        "functional": {
+          "type": "array",
+          "description": "Functional requirements — what the system must do",
+          "items": {
+            "$ref": "../common/requirement.schema.json"
+          },
+          "default": []
+        },
+        "nonFunctional": {
+          "type": "array",
+          "description": "Non-functional requirements — quality attributes (performance, security, scalability, etc.)",
+          "items": {
+            "$ref": "../common/requirement.schema.json"
+          },
+          "default": []
+        },
+        "additional": {
+          "type": "array",
+          "description": "Additional requirements — architectural constraints, technical decisions, compliance, etc.",
+          "items": {
+            "$ref": "../common/requirement.schema.json"
+          },
+          "default": []
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

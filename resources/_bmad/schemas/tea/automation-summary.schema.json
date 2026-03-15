@@ -4,14 +4,20 @@
   "title": "Test Automation Summary Schema",
   "description": "Schema for test automation expansion summary - captures coverage analysis, generated tests, and automation strategy",
   "type": "object",
-  "required": ["metadata", "content"],
+  "required": [
+    "metadata",
+    "content"
+  ],
   "properties": {
     "metadata": {
       "$ref": "../common/metadata.schema.json"
     },
     "content": {
       "type": "object",
-      "required": ["summary", "coverageAnalysis"],
+      "required": [
+        "summary",
+        "coverageAnalysis"
+      ],
       "properties": {
         "summary": {
           "type": "object",
@@ -23,21 +29,25 @@
             },
             "mode": {
               "type": "string",
-              "enum": ["standalone", "bmad-integrated"],
-              "description": "Whether working with BMad artifacts or standalone"
+              "description": "Whether working with BMad artifacts or standalone. Recommended values: standalone, bmad-integrated — or any domain-appropriate value"
             },
             "coverageTarget": {
               "type": "string",
-              "enum": ["critical-paths", "comprehensive", "selective"],
-              "description": "Coverage target mode"
+              "description": "Coverage target mode. Recommended values: critical-paths, comprehensive, selective — or any domain-appropriate value"
             },
             "framework": {
               "type": "string",
               "description": "Test framework used"
             },
-            "totalTestsCreated": { "type": "integer" },
-            "totalFilesCreated": { "type": "integer" },
-            "estimatedCoverageIncrease": { "type": "string" }
+            "totalTestsCreated": {
+              "type": "integer"
+            },
+            "totalFilesCreated": {
+              "type": "integer"
+            },
+            "estimatedCoverageIncrease": {
+              "type": "string"
+            }
           }
         },
         "coverageAnalysis": {
@@ -48,22 +58,42 @@
               "type": "object",
               "description": "Coverage before automation",
               "properties": {
-                "statement": { "type": "string" },
-                "branch": { "type": "string" },
-                "function": { "type": "string" },
-                "line": { "type": "string" },
-                "e2e": { "type": "string" }
+                "statement": {
+                  "type": "string"
+                },
+                "branch": {
+                  "type": "string"
+                },
+                "function": {
+                  "type": "string"
+                },
+                "line": {
+                  "type": "string"
+                },
+                "e2e": {
+                  "type": "string"
+                }
               }
             },
             "target": {
               "type": "object",
               "description": "Target coverage after automation",
               "properties": {
-                "statement": { "type": "string" },
-                "branch": { "type": "string" },
-                "function": { "type": "string" },
-                "line": { "type": "string" },
-                "e2e": { "type": "string" }
+                "statement": {
+                  "type": "string"
+                },
+                "branch": {
+                  "type": "string"
+                },
+                "function": {
+                  "type": "string"
+                },
+                "line": {
+                  "type": "string"
+                },
+                "e2e": {
+                  "type": "string"
+                }
               }
             },
             "gaps": {
@@ -72,17 +102,28 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "area": { "type": "string" },
-                  "currentCoverage": { "type": "string" },
+                  "area": {
+                    "type": "string"
+                  },
+                  "currentCoverage": {
+                    "type": "string"
+                  },
                   "gapType": {
                     "type": "string",
-                    "enum": ["uncovered", "under-tested", "missing-edge-cases", "no-error-handling"]
+                    "description": "Recommended values: uncovered, under-tested, missing-edge-cases, no-error-handling — or any domain-appropriate value"
                   },
                   "priority": {
                     "type": "string",
-                    "enum": ["critical", "high", "medium", "low"]
+                    "enum": [
+                      "critical",
+                      "high",
+                      "medium",
+                      "low"
+                    ]
                   },
-                  "addressed": { "type": "boolean" }
+                  "addressed": {
+                    "type": "boolean"
+                  }
                 }
               }
             },
@@ -92,15 +133,25 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "path": { "type": "string" },
-                  "description": { "type": "string" },
+                  "path": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
                   "testsCovering": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "status": {
                     "type": "string",
-                    "enum": ["covered", "partially-covered", "not-covered"]
+                    "enum": [
+                      "covered",
+                      "partially-covered",
+                      "not-covered"
+                    ]
                   }
                 }
               }
@@ -113,31 +164,48 @@
           "items": {
             "type": "object",
             "properties": {
-              "filePath": { "type": "string" },
+              "filePath": {
+                "type": "string"
+              },
               "testType": {
                 "type": "string",
-                "enum": ["unit", "integration", "component", "api", "e2e"]
+                "description": "Recommended values: unit, integration, component, api, e2e — or any domain-appropriate value"
               },
-              "targetFeature": { "type": "string" },
+              "targetFeature": {
+                "type": "string"
+              },
               "targetFiles": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
-              "testCount": { "type": "integer" },
+              "testCount": {
+                "type": "integer"
+              },
               "tests": {
                 "type": "array",
                 "items": {
                   "type": "object",
                   "properties": {
-                    "name": { "type": "string" },
-                    "description": { "type": "string" },
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
                     "category": {
                       "type": "string",
-                      "enum": ["happy-path", "edge-case", "error-handling", "boundary", "security", "performance"]
+                      "description": "Recommended values: happy-path, edge-case, error-handling, boundary, security, performance — or any domain-appropriate value"
                     },
                     "priority": {
                       "type": "string",
-                      "enum": ["P0", "P1", "P2", "P3"]
+                      "enum": [
+                        "P0",
+                        "P1",
+                        "P2",
+                        "P3"
+                      ]
                     }
                   }
                 }
@@ -151,10 +219,18 @@
           "items": {
             "type": "object",
             "properties": {
-              "name": { "type": "string" },
-              "filePath": { "type": "string" },
-              "purpose": { "type": "string" },
-              "dataType": { "type": "string" }
+              "name": {
+                "type": "string"
+              },
+              "filePath": {
+                "type": "string"
+              },
+              "purpose": {
+                "type": "string"
+              },
+              "dataType": {
+                "type": "string"
+              }
             }
           }
         },
@@ -164,12 +240,20 @@
           "items": {
             "type": "object",
             "properties": {
-              "name": { "type": "string" },
-              "filePath": { "type": "string" },
-              "entityType": { "type": "string" },
+              "name": {
+                "type": "string"
+              },
+              "filePath": {
+                "type": "string"
+              },
+              "entityType": {
+                "type": "string"
+              },
               "variants": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -180,39 +264,59 @@
           "properties": {
             "storiesReferenced": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "acceptanceCriteriaMapped": {
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "storyId": { "type": "string" },
-                  "criteriaId": { "type": "string" },
+                  "storyId": {
+                    "type": "string"
+                  },
+                  "criteriaId": {
+                    "type": "string"
+                  },
                   "testFiles": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
             },
-            "traceabilityUpdated": { "type": "boolean" }
+            "traceabilityUpdated": {
+              "type": "boolean"
+            }
           }
         },
         "automationStrategy": {
           "type": "object",
           "description": "Strategy used for test automation",
           "properties": {
-            "approach": { "type": "string" },
-            "prioritization": { "type": "string" },
+            "approach": {
+              "type": "string"
+            },
+            "prioritization": {
+              "type": "string"
+            },
             "testLevels": {
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "level": { "type": "string" },
-                  "percentage": { "type": "string" },
-                  "rationale": { "type": "string" }
+                  "level": {
+                    "type": "string"
+                  },
+                  "percentage": {
+                    "type": "string"
+                  },
+                  "rationale": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -221,8 +325,12 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "pattern": { "type": "string" },
-                  "usage": { "type": "string" }
+                  "pattern": {
+                    "type": "string"
+                  },
+                  "usage": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -234,14 +342,26 @@
           "items": {
             "type": "object",
             "properties": {
-              "area": { "type": "string" },
-              "recommendation": { "type": "string" },
+              "area": {
+                "type": "string"
+              },
+              "recommendation": {
+                "type": "string"
+              },
               "priority": {
                 "type": "string",
-                "enum": ["high", "medium", "low"]
+                "enum": [
+                  "high",
+                  "medium",
+                  "low"
+                ]
               },
-              "effort": { "type": "string" },
-              "impact": { "type": "string" }
+              "effort": {
+                "type": "string"
+              },
+              "impact": {
+                "type": "string"
+              }
             }
           }
         },
@@ -249,19 +369,35 @@
           "type": "object",
           "description": "Results from running generated tests",
           "properties": {
-            "totalTests": { "type": "integer" },
-            "passed": { "type": "integer" },
-            "failed": { "type": "integer" },
-            "skipped": { "type": "integer" },
-            "duration": { "type": "string" },
+            "totalTests": {
+              "type": "integer"
+            },
+            "passed": {
+              "type": "integer"
+            },
+            "failed": {
+              "type": "integer"
+            },
+            "skipped": {
+              "type": "integer"
+            },
+            "duration": {
+              "type": "string"
+            },
             "failureDetails": {
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "test": { "type": "string" },
-                  "error": { "type": "string" },
-                  "resolution": { "type": "string" }
+                  "test": {
+                    "type": "string"
+                  },
+                  "error": {
+                    "type": "string"
+                  },
+                  "resolution": {
+                    "type": "string"
+                  }
                 }
               }
             }

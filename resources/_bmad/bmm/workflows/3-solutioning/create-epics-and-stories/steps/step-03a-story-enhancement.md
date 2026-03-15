@@ -258,7 +258,7 @@ List stories from {outputFile} grouped by epic.
 1. **Blocked By:**
    - "Does this story depend on other stories being completed first?"
    - "What functionality must exist before this can be implemented?"
-   - For each blocker: storyId, title, current status, reason
+   - For each blocker: id, title, current status, reason
    
    ```
    ### Blocked By
@@ -441,7 +441,7 @@ After each section, get user confirmation before proceeding to next.
 
 After enhancement is complete:
 
-1. **Update {outputFile}** with all enhanced content for the story
+1. **Save changes via `agileagentcanvas_update_artifact`** with enhanced content for the story
 2. **Display Summary:** Show what was added
 3. **Ask:** "Would you like to enhance another story, or return to the story creation menu?"
 
@@ -452,7 +452,7 @@ If return: Read fully and follow: {returnToStep}
 
 ## OUTPUT FORMAT
 
-Enhanced story sections should be appended to the story in {outputFile} using this structure:
+Enhanced story sections should be saved via `agileagentcanvas_update_artifact(type='story', id='S-{N}.{M}', changes={...})` using this structure:
 
 ```markdown
 ### Story N.M: [Title]

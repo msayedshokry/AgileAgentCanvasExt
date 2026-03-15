@@ -4,19 +4,30 @@
   "title": "Change Proposal Schema",
   "description": "Schema for sprint change proposals created by the correct-course workflow when significant changes are needed during sprint execution",
   "type": "object",
-  "required": ["metadata", "content"],
+  "required": [
+    "metadata",
+    "content"
+  ],
   "properties": {
     "metadata": {
       "$ref": "../common/metadata.schema.json"
     },
     "content": {
       "type": "object",
-      "required": ["changeRequest", "impactAnalysis", "proposal"],
+      "required": [
+        "changeRequest",
+        "impactAnalysis",
+        "proposal"
+      ],
       "properties": {
         "changeRequest": {
           "type": "object",
           "description": "The change being requested",
-          "required": ["title", "description", "requestedBy"],
+          "required": [
+            "title",
+            "description",
+            "requestedBy"
+          ],
           "properties": {
             "id": {
               "type": "string",
@@ -40,22 +51,16 @@
             },
             "changeType": {
               "type": "string",
-              "enum": [
-                "new-requirement",
-                "requirement-change",
-                "scope-reduction",
-                "scope-expansion",
-                "technical-discovery",
-                "external-dependency",
-                "priority-shift",
-                "resource-change",
-                "timeline-change"
-              ],
-              "description": "Type of change"
+              "description": "Type of change. Recommended values: new-requirement, requirement-change, scope-reduction, scope-expansion, technical-discovery, external-dependency, priority-shift, resource-change, timeline-change — or any domain-appropriate value"
             },
             "urgency": {
               "type": "string",
-              "enum": ["critical", "high", "medium", "low"],
+              "enum": [
+                "critical",
+                "high",
+                "medium",
+                "low"
+              ],
               "description": "How urgent is this change"
             },
             "source": {
@@ -70,7 +75,12 @@
           "properties": {
             "overallImpact": {
               "type": "string",
-              "enum": ["minimal", "moderate", "significant", "major"],
+              "enum": [
+                "minimal",
+                "moderate",
+                "significant",
+                "major"
+              ],
               "description": "Overall impact level"
             },
             "affectedEpics": {
@@ -79,13 +89,20 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "epicId": { "type": "string" },
-                  "epicTitle": { "type": "string" },
+                  "epicId": {
+                    "type": "string",
+                    "description": "Affected epic ID using numeric format (e.g. '15', '1')"
+                  },
+                  "epicTitle": {
+                    "type": "string"
+                  },
                   "impactType": {
                     "type": "string",
-                    "enum": ["modified", "added", "removed", "delayed", "accelerated"]
+                    "description": "Recommended values: modified, added, removed, delayed, accelerated — or any domain-appropriate value"
                   },
-                  "impactDescription": { "type": "string" }
+                  "impactDescription": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -95,41 +112,66 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "storyId": { "type": "string" },
-                  "storyTitle": { "type": "string" },
-                  "currentStatus": { "type": "string" },
+                  "storyId": {
+                    "type": "string",
+                    "description": "Affected story ID using numeric format (e.g. '15.1', '1.3')"
+                  },
+                  "storyTitle": {
+                    "type": "string"
+                  },
+                  "currentStatus": {
+                    "type": "string"
+                  },
                   "impactType": {
                     "type": "string",
-                    "enum": ["modified", "added", "removed", "blocked", "unblocked", "reprioritized"]
+                    "description": "Recommended values: modified, added, removed, blocked, unblocked, reprioritized — or any domain-appropriate value"
                   },
-                  "impactDescription": { "type": "string" }
+                  "impactDescription": {
+                    "type": "string"
+                  }
                 }
               }
             },
             "architectureImpact": {
               "type": "object",
               "properties": {
-                "hasImpact": { "type": "boolean" },
-                "description": { "type": "string" },
+                "hasImpact": {
+                  "type": "boolean"
+                },
+                "description": {
+                  "type": "string"
+                },
                 "affectedComponents": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 },
-                "requiresArchitectureUpdate": { "type": "boolean" }
+                "requiresArchitectureUpdate": {
+                  "type": "boolean"
+                }
               }
             },
             "timelineImpact": {
               "type": "object",
               "properties": {
-                "estimatedDelay": { "type": "string" },
+                "estimatedDelay": {
+                  "type": "string"
+                },
                 "milestoneEffects": {
                   "type": "array",
                   "items": {
                     "type": "object",
                     "properties": {
-                      "milestone": { "type": "string" },
-                      "originalDate": { "type": "string" },
-                      "newDate": { "type": "string" }
+                      "milestone": {
+                        "type": "string"
+                      },
+                      "originalDate": {
+                        "type": "string"
+                      },
+                      "newDate": {
+                        "type": "string"
+                      }
                     }
                   }
                 }
@@ -138,10 +180,14 @@
             "resourceImpact": {
               "type": "object",
               "properties": {
-                "additionalEffort": { "type": "string" },
+                "additionalEffort": {
+                  "type": "string"
+                },
                 "resourcesNeeded": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -150,16 +196,28 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "risk": { "type": "string" },
+                  "risk": {
+                    "type": "string"
+                  },
                   "likelihood": {
                     "type": "string",
-                    "enum": ["low", "medium", "high"]
+                    "enum": [
+                      "low",
+                      "medium",
+                      "high"
+                    ]
                   },
                   "impact": {
                     "type": "string",
-                    "enum": ["low", "medium", "high"]
+                    "enum": [
+                      "low",
+                      "medium",
+                      "high"
+                    ]
                   },
-                  "mitigation": { "type": "string" }
+                  "mitigation": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -168,11 +226,18 @@
         "proposal": {
           "type": "object",
           "description": "Proposed solution and implementation plan",
-          "required": ["recommendation"],
+          "required": [
+            "recommendation"
+          ],
           "properties": {
             "recommendation": {
               "type": "string",
-              "enum": ["approve", "approve-with-modifications", "defer", "reject"],
+              "enum": [
+                "approve",
+                "approve-with-modifications",
+                "defer",
+                "reject"
+              ],
               "description": "Recommended action"
             },
             "rationale": {
@@ -185,18 +250,30 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "optionId": { "type": "string" },
-                  "description": { "type": "string" },
+                  "optionId": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
                   "pros": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "cons": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
-                  "effort": { "type": "string" },
-                  "recommended": { "type": "boolean" }
+                  "effort": {
+                    "type": "string"
+                  },
+                  "recommended": {
+                    "type": "boolean"
+                  }
                 }
               }
             },
@@ -208,11 +285,22 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "title": { "type": "string" },
-                      "description": { "type": "string" },
-                      "epicId": { "type": "string" },
-                      "priority": { "type": "string" },
-                      "estimatedEffort": { "type": "string" }
+                      "title": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "epicId": {
+                        "type": "string",
+                        "description": "Target epic ID using numeric format (e.g. '15', '1')"
+                      },
+                      "priority": {
+                        "type": "string"
+                      },
+                      "estimatedEffort": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
@@ -221,8 +309,13 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "storyId": { "type": "string" },
-                      "modifications": { "type": "string" }
+                      "storyId": {
+                        "type": "string",
+                        "description": "Story ID using numeric format (e.g. '15.1', '1.3')"
+                      },
+                      "modifications": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
@@ -231,8 +324,13 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "storyId": { "type": "string" },
-                      "reason": { "type": "string" }
+                      "storyId": {
+                        "type": "string",
+                        "description": "Story ID using numeric format (e.g. '15.1', '1.3')"
+                      },
+                      "reason": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
@@ -241,8 +339,12 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "document": { "type": "string" },
-                      "updates": { "type": "string" }
+                      "document": {
+                        "type": "string"
+                      },
+                      "updates": {
+                        "type": "string"
+                      }
                     }
                   }
                 }
@@ -260,15 +362,28 @@
           "properties": {
             "status": {
               "type": "string",
-              "enum": ["pending", "approved", "rejected", "deferred"],
+              "enum": [
+                "pending",
+                "approved",
+                "rejected",
+                "deferred"
+              ],
               "default": "pending"
             },
-            "approvedBy": { "type": "string" },
-            "approvalDate": { "type": "string" },
-            "approvalNotes": { "type": "string" },
+            "approvedBy": {
+              "type": "string"
+            },
+            "approvalDate": {
+              "type": "string"
+            },
+            "approvalNotes": {
+              "type": "string"
+            },
             "conditions": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
@@ -278,13 +393,26 @@
           "properties": {
             "status": {
               "type": "string",
-              "enum": ["not-started", "in-progress", "completed", "cancelled"],
+              "enum": [
+                "not-started",
+                "in-progress",
+                "completed",
+                "cancelled"
+              ],
               "default": "not-started"
             },
-            "startedAt": { "type": "string" },
-            "completedAt": { "type": "string" },
-            "implementedBy": { "type": "string" },
-            "notes": { "type": "string" }
+            "startedAt": {
+              "type": "string"
+            },
+            "completedAt": {
+              "type": "string"
+            },
+            "implementedBy": {
+              "type": "string"
+            },
+            "notes": {
+              "type": "string"
+            }
           }
         }
       }

@@ -765,16 +765,10 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                 ? calculateCardHeight('test-strategy', epicTestStrategy.title || 'Test Strategy', epicTestStrategy.scope || epicTestStrategy.approach || '')
                 : 0;
 
-            // --- Per-story TC stacks: story card height + Tasks + optional Test Coverage card ---
-            // Story-linked TCs are consolidated into a single "test-coverage" card per story.
-            // This card is always visible (no chip/mini/semantic-zoom logic).
-            const TC_UNDER_STORY_INDENT = 8;   // horizontal left-indent for TCs/Tasks under their story
-            const TC_UNDER_STORY_GAP   = 6;    // vertical gap between story bottom and first child
-            const storyHeights: number[] = [];        // individual story card heights (for story placement)
-            const storyStackHeights: number[] = [];   // total height of each story+Task+TC-coverage block
+            // --- Per-story heights (children are now inline badges, not stacked cards) ---
+            const storyHeights: number[] = [];        // individual story card heights
             const storyTCsPerStory: any[][] = [];     // tc[] per story (parallel to epic.stories)
             const storyTasksPerStory: any[][] = [];   // task[] per story (parallel to epic.stories)
-            const storyTCHeights: number[] = [];      // computed TC card height per story
             if (epic.stories) {
                 epic.stories.forEach((story: any) => {
                     const storyDescription = story.userStory
@@ -788,47 +782,23 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                     // - Acceptance criteria chip row (25px when present)
                     // - Agile badges row (~22px when priority or storyPoints present)
                     // - Dependency badges row (~33px when blockedBy or blocks present)
+                    // - Inline task/test summary row (~22px when tasks or TCs exist)
                     let storyExtras = 20; // parent epic label — always rendered for stories under an epic
                     if (acCount > 0) storyExtras += 25;
                     if (story.priority || story.storyPoints !== undefined) storyExtras += 22;
                     const blockedBy = story.dependencies?.blockedBy?.length ?? 0;
                     const blocks = story.dependencies?.blocks?.length ?? 0;
                     if (blockedBy > 0 || blocks > 0) storyExtras += 33;
+                    // childBreakdown badges row ("N Tasks ›", "N Tests ›") — ~25px
+                    // Inline summary chips row ("✓ 0/N ▸", "🧪 0/N ▸") — ~22px
+                    const storyTasks = story.tasks || [];
+                    if (storyTasks.length > 0 || storyTCs.length > 0) storyExtras += 25 + 22;
 
                     const sh = calculateCardHeight('story', story.title, storyDescription, storyExtras);
                     storyHeights.push(sh);
 
                     storyTCsPerStory.push(storyTCs);
-
-                    const storyTasks = story.tasks || [];
                     storyTasksPerStory.push(storyTasks);
-
-                    // Tasks contribute to stack height
-                    let taskStackH = 0;
-                    if (storyTasks.length > 0) {
-                        taskStackH = TC_UNDER_STORY_GAP;
-                        storyTasks.forEach((task: any) => {
-                            const taskDesc = task.description || '';
-                            taskStackH += calculateCardHeight('task', taskDesc.substring(0, 40) || 'Task', taskDesc) + CARD_SPACING;
-                        });
-                    }
-
-                    // Test coverage card contributes to stack height when TCs exist
-                    let tcCoverageStackH = 0;
-                    if (storyTCs.length > 0) {
-                        const passCount = storyTCs.filter((tc: any) => tc.status === 'complete' || tc.status === 'completed' || tc.status === 'done' || tc.status === 'passed').length;
-                        const failCount = storyTCs.filter((tc: any) => tc.status === 'blocked' || tc.status === 'rejected' || tc.status === 'failed').length;
-                        const draftCount = storyTCs.filter((tc: any) => !tc.status || tc.status === 'draft' || tc.status === 'ready').length;
-                        const tcTitle = `Test Coverage (${storyTCs.length})`;
-                        const tcDesc = `${passCount} pass, ${failCount} fail, ${draftCount} draft`;
-                        const tcH = calculateCardHeight('test-coverage', tcTitle, tcDesc, TC_COVERAGE_BAR_EXTRA);
-                        storyTCHeights.push(tcH);
-                        tcCoverageStackH = TC_UNDER_STORY_GAP + tcH;
-                    } else {
-                        storyTCHeights.push(0);
-                    }
-
-                    storyStackHeights.push(sh + taskStackH + tcCoverageStackH);
                 });
             }
 
@@ -836,8 +806,8 @@ export function buildArtifacts(store: ArtifactStore): any[] {
             const storyCount = storyHeights.length;
             const ucCount = ucHeights.length;
             const epicOnlyTCCount = epicOnlyTCHeights.length;
-            // Stories: single row (pass storyCount as maxPerRow so they never wrap)
-            const { totalHeight: storiesGridHeight } = calcGridHeight(storyCount, storyStackHeights, Math.max(storyCount, 1));
+            // Stories: single row — use storyHeights directly (no stacked children)
+            const { totalHeight: storiesGridHeight } = calcGridHeight(storyCount, storyHeights, Math.max(storyCount, 1));
             // Use-cases: single row
             const { totalHeight: ucGridHeight } = calcGridHeight(ucCount, ucHeights, Math.max(ucCount, 1));
             // Epic-only TCs: single row
@@ -845,13 +815,8 @@ export function buildArtifacts(store: ArtifactStore): any[] {
 
             // --- Sub-group X positions (vertical layout: use-cases row, then test-strategy, then epic-only TCs, then stories) ---
             // All sub-groups start at the same X. Each gets its own vertical row.
-            // When stories have Tasks or TC-coverage cards beneath them, they are indented by TC_UNDER_STORY_INDENT
-            // and may extend beyond the story card width. Account for this in the column width.
-            const hasStoryChildren = storyTasksPerStory.some((tasks: any[]) => tasks.length > 0) ||
-                storyTCsPerStory.some((tcs: any[]) => tcs.length > 0);
-            const effectiveStoryCardWidth = hasStoryChildren
-                ? Math.max(CARD_WIDTHS.story, TC_UNDER_STORY_INDENT + Math.max(CARD_WIDTHS.task, CARD_WIDTHS['test-coverage']) + 10)
-                : CARD_WIDTHS.story;
+            // Story children (tasks, TCs) are now shown as inline badges — no extra width needed.
+            const effectiveStoryCardWidth = CARD_WIDTHS.story;
             const storiesSubColWidth = calcGridWidth(storyCount, effectiveStoryCardWidth, Math.max(storyCount, 1));
             const ucSubColWidth = calcGridWidth(ucCount, CARD_WIDTHS['use-case'], Math.max(ucCount, 1));
 
@@ -994,8 +959,8 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                     const storyHeight = storyHeights[storyIndex];
                     const storyX = storiesSubColX + col * (effectiveStoryCardWidth + CARD_SPACING);
 
-                    // Track the full stack height (story + TCs below it) for row height
-                    currentRowMaxH = Math.max(currentRowMaxH, storyStackHeights[storyIndex]);
+                    // Track story card height for row height
+                    currentRowMaxH = Math.max(currentRowMaxH, storyHeights[storyIndex]);
 
                     const storyDescription = story.userStory
                         ? `As a ${story.userStory.asA}, I want ${story.userStory.iWant}, so that ${story.userStory.soThat}`
@@ -1026,6 +991,13 @@ export function buildArtifacts(store: ArtifactStore): any[] {
 
                     const storyId = story.id || `story-${index}-${storyIndex}`;
 
+                    // Build story childBreakdown for inline badges
+                    const storyTaskList = storyTasksPerStory[storyIndex] || [];
+                    const storyTCList = storyTCsPerStory[storyIndex] || [];
+                    const storyChildBreakdown: { label: string; count: number; types: string[] }[] = [];
+                    if (storyTaskList.length > 0) storyChildBreakdown.push({ label: 'Tasks', count: storyTaskList.length, types: ['task'] });
+                    if (storyTCList.length > 0) storyChildBreakdown.push({ label: 'Tests', count: storyTCList.length, types: ['test-coverage'] });
+
                     artifacts.push({
                         id: storyId,
                         type: 'story',
@@ -1036,8 +1008,8 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                         size: { width: CARD_WIDTHS.story, height: storyHeight },
                         dependencies: storyDeps,
                         parentId: epicId,
-                        // childCount: tasks + optional test-coverage card
-                        childCount: (storyTasksPerStory[storyIndex]?.length || 0) + (storyTCsPerStory[storyIndex]?.length > 0 ? 1 : 0),
+                        childCount: storyTaskList.length + storyTCList.length,
+                        childBreakdown: storyChildBreakdown.length > 0 ? storyChildBreakdown : undefined,
                         metadata: {
                             userStory: story.userStory,
                             acceptanceCriteria: story.acceptanceCriteria,
@@ -1052,88 +1024,27 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                             estimatedEffort: story.estimatedEffort,
                             priority: story.priority,
                             assignee: story.assignee,
-                            implementationDetails: story.implementationDetails
+                            implementationDetails: story.implementationDetails,
+                            // Include linked test cases in metadata for detail panel viewing
+                            testCases: storyTCList.length > 0 ? storyTCList.map((tc: any, tcIdx: number) => ({
+                                id: tc.id || `TC-${storyId}-${tcIdx}`,
+                                title: tc.title || `Test Case ${tcIdx + 1}`,
+                                status: tc.status || 'draft',
+                                type: tc.type,
+                                description: tc.description,
+                                steps: tc.steps,
+                                expectedResult: tc.expectedResult,
+                                preconditions: tc.preconditions,
+                                priority: tc.priority,
+                                tags: tc.tags,
+                                relatedRequirements: tc.relatedRequirements
+                            })) : undefined
                         }
                     });
 
-                    // --- Place Tasks linked to this story below the story card ---
-                    // (Tasks are always visible — they are not chip-mode.)
-                    const storyTaskList = storyTasksPerStory[storyIndex];
-                    let taskBottomY = gridRowY + storyHeight; // where tasks end (start if no tasks)
-                    if (storyTaskList.length > 0) {
-                        let taskY = gridRowY + storyHeight + TC_UNDER_STORY_GAP;
-                        const taskX = storyX + TC_UNDER_STORY_INDENT;
-                        storyTaskList.forEach((task: any, taskIdx: number) => {
-                            const taskId = task.id || `task-${storyId}-${taskIdx}`;
-                            const taskTitle = (task.description || '').substring(0, 50) || `Task ${taskIdx + 1}`;
-                            const taskDesc = task.description || '';
-                            const taskH = calculateCardHeight('task', taskTitle, taskDesc);
-                            artifacts.push({
-                                id: taskId,
-                                type: 'task',
-                                title: taskTitle,
-                                description: taskDesc,
-                                status: task.completed ? 'complete' : 'draft',
-                                position: { x: taskX, y: taskY },
-                                size: { width: CARD_WIDTHS.task, height: taskH },
-                                dependencies: [],
-                                parentId: storyId,
-                                metadata: {
-                                    acReference: task.acReference,
-                                    estimatedHours: task.estimatedHours,
-                                    completed: task.completed,
-                                    subtasks: task.subtasks,
-                                    storyId: storyId,
-                                    epicId: epicId
-                                }
-                            });
-                            taskY += taskH + CARD_SPACING;
-                        });
-                        taskBottomY = taskY; // track where tasks end
-                    }
-
-                    // --- Story-linked TCs: emit as a single consolidated test-coverage card ---
-                    const linkedTCs = storyTCsPerStory[storyIndex];
-                    if (linkedTCs.length > 0) {
-                        const tcCardY = taskBottomY + TC_UNDER_STORY_GAP;
-                        const tcCardX = storyX + TC_UNDER_STORY_INDENT;
-                        const passCount = linkedTCs.filter((tc: any) => tc.status === 'complete' || tc.status === 'completed' || tc.status === 'done' || tc.status === 'passed').length;
-                        const failCount = linkedTCs.filter((tc: any) => tc.status === 'blocked' || tc.status === 'rejected' || tc.status === 'failed').length;
-                        const draftCount = linkedTCs.filter((tc: any) => !tc.status || tc.status === 'draft' || tc.status === 'ready').length;
-                        artifacts.push({
-                            id: `TC-COV-${storyId}`,
-                            type: 'test-coverage',
-                            title: `Test Coverage (${linkedTCs.length})`,
-                            description: `${passCount} pass, ${failCount} fail, ${draftCount} draft`,
-                            status: failCount > 0 ? 'blocked' : passCount === linkedTCs.length ? 'complete' : 'draft',
-                            position: { x: tcCardX, y: tcCardY },
-                            size: { width: CARD_WIDTHS['test-coverage'], height: storyTCHeights[storyIndex] },
-                            dependencies: [],
-                            parentId: storyId,
-                            metadata: {
-                                storyId: storyId,
-                                epicId: epicId,
-                                testCases: linkedTCs.map((tc: any, tcIdx: number) => ({
-                                    id: tc.id || `TC-${storyId}-${tcIdx}`,
-                                    title: tc.title || `Test Case ${tcIdx + 1}`,
-                                    status: tc.status || 'draft',
-                                    type: tc.type,
-                                    description: tc.description,
-                                    steps: tc.steps,
-                                    expectedResult: tc.expectedResult,
-                                    preconditions: tc.preconditions,
-                                    priority: tc.priority,
-                                    tags: tc.tags,
-                                    relatedRequirements: tc.relatedRequirements
-                                })),
-                                totalCount: linkedTCs.length,
-                                passCount,
-                                failCount,
-                                draftCount
-                            }
-                        });
-                    }
-
+                    // Task and TC cards are no longer emitted as separate positioned artifacts.
+                    // They are shown as inline childBreakdown badges on the story card,
+                    // with full details available in the DetailPanel via story metadata.
                 });
             }
 
@@ -1391,9 +1302,24 @@ export function sendArtifactsToPanel(panel: vscode.WebviewPanel, store: Artifact
     try {
         const state = store.getState();
         const artifacts = buildArtifacts(store);
+
+        // Derive active folder name for the toolbar display
+        let activeFolderName = '';
+        try {
+            const { getWorkspaceResolver } = require('../extension');
+            const resolver = getWorkspaceResolver();
+            const outputUri = resolver?.getActiveOutputUri();
+            if (outputUri) {
+                activeFolderName = outputUri.fsPath.replace(/\\/g, '/').split('/').pop() || '';
+            }
+        } catch {
+            // Resolver unavailable (e.g. test environment)
+        }
+
         panel.webview.postMessage({
             type: 'updateArtifacts',
-            artifacts
+            artifacts,
+            activeFolderName
         });
         logger.debug(`Sent ${artifacts.length} artifacts to canvas (${state.epics?.length || 0} epics)`);
     } catch {

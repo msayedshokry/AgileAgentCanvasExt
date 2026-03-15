@@ -814,6 +814,14 @@ Then('artifact {string} metadata draftCount should be {int}', function (this: Bm
     assert.strictEqual(artifact.metadata.draftCount, count);
 });
 
+Then('the first {string} artifact childBreakdown should contain {string} items', function (this: BmadWorld, type: string, itemType: string) {
+    const ctx = getCtx(this);
+    const artifact = findFirstOfType(ctx, type);
+    const breakdown = artifact.childBreakdown || [];
+    assert.ok(breakdown.some((b: any) => b.types && b.types.includes(itemType)), 
+        `Expected ${type} artifact to contain child breakdown item of type ${itemType}, got: ${JSON.stringify(breakdown)}`);
+});
+
 // --- Type-based assertions ---
 
 Then('the artifacts should contain type {string}', function (this: BmadWorld, type: string) {

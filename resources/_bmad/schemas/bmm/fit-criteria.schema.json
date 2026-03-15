@@ -10,7 +10,9 @@
       "description": "Functional fit criteria - specific behaviors the system must exhibit",
       "items": {
         "type": "object",
-        "required": ["criterion"],
+        "required": [
+          "criterion"
+        ],
         "properties": {
           "id": {
             "type": "string",
@@ -27,8 +29,7 @@
           },
           "verificationMethod": {
             "type": "string",
-            "enum": ["test", "inspection", "demonstration", "analysis"],
-            "description": "How this criterion will be verified"
+            "description": "How this criterion will be verified. Recommended values: test, inspection, demonstration, analysis — or any domain-appropriate value"
           },
           "relatedRequirement": {
             "type": "string",
@@ -45,7 +46,9 @@
       "description": "Non-functional fit criteria - performance, scalability, reliability targets",
       "items": {
         "type": "object",
-        "required": ["criterion"],
+        "required": [
+          "criterion"
+        ],
         "properties": {
           "id": {
             "type": "string",
@@ -53,8 +56,7 @@
           },
           "category": {
             "type": "string",
-            "enum": ["performance", "scalability", "reliability", "availability", "maintainability", "usability", "compatibility"],
-            "description": "NFR category"
+            "description": "NFR category. Recommended values: performance, scalability, reliability, availability, maintainability, usability, compatibility, observability, portability — or any domain-appropriate category"
           },
           "criterion": {
             "type": "string",
@@ -64,10 +66,18 @@
             "type": "object",
             "description": "Quantifiable metric for this criterion",
             "properties": {
-              "measure": { "type": "string" },
-              "target": { "type": "string" },
-              "threshold": { "type": "string" },
-              "unit": { "type": "string" }
+              "measure": {
+                "type": "string"
+              },
+              "target": {
+                "type": "string"
+              },
+              "threshold": {
+                "type": "string"
+              },
+              "unit": {
+                "type": "string"
+              }
             }
           },
           "verified": {
@@ -76,7 +86,7 @@
           },
           "verificationMethod": {
             "type": "string",
-            "enum": ["benchmark", "load-test", "stress-test", "monitoring", "inspection"]
+            "description": "How this criterion will be verified. Recommended values: benchmark, load-test, stress-test, monitoring, inspection, test, analysis — or any appropriate method"
           },
           "relatedRequirement": {
             "type": "string"
@@ -92,7 +102,9 @@
       "description": "Security and compliance fit criteria",
       "items": {
         "type": "object",
-        "required": ["criterion"],
+        "required": [
+          "criterion"
+        ],
         "properties": {
           "id": {
             "type": "string",
@@ -100,8 +112,7 @@
           },
           "category": {
             "type": "string",
-            "enum": ["authentication", "authorization", "encryption", "audit", "compliance", "data-protection", "network-security"],
-            "description": "Security category"
+            "description": "Security category. Recommended values: authentication, authorization, encryption, audit, compliance, data-protection, network-security, secrets-management, certificate-management, vulnerability-scanning, container-security, access-control, identity-management, supply-chain-security — or any domain-appropriate category"
           },
           "criterion": {
             "type": "string",
@@ -117,7 +128,7 @@
           },
           "verificationMethod": {
             "type": "string",
-            "enum": ["security-audit", "penetration-test", "code-review", "compliance-review", "inspection"]
+            "description": "How this security criterion will be verified. Recommended values: security-audit, penetration-test, code-review, compliance-review, inspection, test, automated-scan — or any appropriate method"
           },
           "relatedRequirement": {
             "type": "string"
@@ -132,12 +143,24 @@
       "type": "object",
       "description": "Summary counts and verification status",
       "properties": {
-        "totalFunctional": { "type": "integer" },
-        "totalNonFunctional": { "type": "integer" },
-        "totalSecurity": { "type": "integer" },
-        "totalCriteria": { "type": "integer" },
-        "verifiedCount": { "type": "integer" },
-        "verificationPercentage": { "type": "string" }
+        "totalFunctional": {
+          "type": "integer"
+        },
+        "totalNonFunctional": {
+          "type": "integer"
+        },
+        "totalSecurity": {
+          "type": "integer"
+        },
+        "totalCriteria": {
+          "type": "integer"
+        },
+        "verifiedCount": {
+          "type": "integer"
+        },
+        "verificationPercentage": {
+          "type": "string"
+        }
       }
     }
   }

@@ -97,7 +97,7 @@
     "status": {
       "type": "string",
       "description": "Current status of the artifact",
-      "enum": ["draft", "in-progress", "review", "approved", "completed", "archived"],
+      "enum": ["draft", "in-progress", "review", "in-review", "approved", "completed", "archived", "ready", "ready-for-dev", "blocked", "done", "complete"],
       "default": "draft"
     },
     "tags": {
@@ -113,5 +113,5 @@
       "additionalProperties": true
     }
   },
-  "additionalProperties": false
+  "additionalProperties": true
 }

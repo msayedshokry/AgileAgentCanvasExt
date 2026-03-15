@@ -185,33 +185,43 @@ export class WorkspaceResolver {
         this._detectedProjects = await this._scanWorkspaceFolders();
 
         if (this._detectedProjects.length === 0) {
-            // Offer browse option even when no projects detected
-            const browseResult = await this._showBrowsePicker();
-            return browseResult;
+            // Offer browse + create options even when no projects detected
+            return this._showEmptyProjectPicker();
         }
 
-        // Build picker items: detected projects + Browse option
-        const items: (vscode.QuickPickItem & { _project?: DetectedProject; _browse?: boolean })[] =
+        // Build picker items: detected projects + Browse + Create options
+        const items: (vscode.QuickPickItem & { _project?: DetectedProject; _browse?: boolean; _create?: boolean })[] =
             this._detectedProjects.map(p => ({
                 label: p.label,
                 description: p.outputUri.fsPath,
                 _project: p
             }));
 
-        items.push({
-            label: '$(folder) Browse for Folder...',
-            description: 'Select any folder containing BMAD artifacts',
-            _browse: true
-        });
+        items.push(
+            {
+                label: '$(folder) Browse for Folder...',
+                description: 'Select any folder containing artifacts',
+                _browse: true
+            },
+            {
+                label: '$(new-folder) Create New Folder...',
+                description: 'Start a project in a new custom-named folder',
+                _create: true
+            }
+        );
 
         const picked = await vscode.window.showQuickPick(items, {
-            placeHolder: 'Switch BMAD project'
+            placeHolder: 'Switch project folder or create a new one'
         });
 
         if (!picked) return false;
 
         if (picked._browse) {
             return this._showBrowsePicker();
+        }
+
+        if (picked._create) {
+            return this._showCreateFolderPicker();
         }
 
         if (picked._project) {
@@ -364,6 +374,76 @@ export class WorkspaceResolver {
         };
 
         await this.switchProject(project);
+        return true;
+    }
+
+    /**
+     * Shown when no projects are auto-detected.  Offers Browse + Create.
+     */
+    private async _showEmptyProjectPicker(): Promise<boolean> {
+        const picked = await vscode.window.showQuickPick(
+            [
+                {
+                    label: '$(folder) Browse for Folder...',
+                    description: 'Select any folder containing artifacts',
+                    value: 'browse' as const
+                },
+                {
+                    label: '$(new-folder) Create New Folder...',
+                    description: 'Start a project in a new custom-named folder',
+                    value: 'create' as const
+                }
+            ],
+            { placeHolder: 'No projects detected — browse for an existing folder or create a new one' }
+        );
+
+        if (!picked) return false;
+        if (picked.value === 'browse') return this._showBrowsePicker();
+        return this._showCreateFolderPicker();
+    }
+
+    /**
+     * Prompt user for a folder name, create it inside the first workspace
+     * folder, and switch to it as the active project.
+     */
+    private async _showCreateFolderPicker(): Promise<boolean> {
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders || workspaceFolders.length === 0) {
+            vscode.window.showWarningMessage('No workspace folder open — open a folder first.');
+            return false;
+        }
+
+        const folderName = await vscode.window.showInputBox({
+            prompt: 'Enter a name for the new project folder',
+            value: DEFAULT_OUTPUT_FOLDER,
+            placeHolder: '.my-project-context',
+            validateInput: (v) => {
+                if (!v || v.trim().length === 0) return 'Folder name cannot be empty';
+                if (/[<>:"|?*]/.test(v)) return 'Folder name contains invalid characters';
+                return undefined;
+            }
+        });
+
+        if (!folderName) return false;
+
+        const wsFolder = workspaceFolders[0];
+        const newUri = vscode.Uri.joinPath(wsFolder.uri, folderName.trim());
+
+        try {
+            await vscode.workspace.fs.createDirectory(newUri);
+        } catch {
+            // Directory may already exist — that's fine
+        }
+
+        const project: DetectedProject = {
+            workspaceFolder: wsFolder,
+            outputUri: newUri,
+            label: `${wsFolder.name} (${folderName.trim()})`
+        };
+
+        await this.switchProject(project);
+        acOutput.appendLine(`[WorkspaceResolver] Created and switched to new folder: ${newUri.fsPath}`);
+        vscode.window.showInformationMessage(`Project folder "${folderName.trim()}" created and activated.`);
         return true;
     }
 

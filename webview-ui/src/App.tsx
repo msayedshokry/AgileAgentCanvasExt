@@ -92,7 +92,10 @@ function App() {
   const [searchMatchIds, setSearchMatchIds] = useState<Set<string>>(new Set());
   
   // Detected project count (for switch button visibility)
-  const [detectedProjectCount, setDetectedProjectCount] = useState<number>(0);
+  const [, setDetectedProjectCount] = useState<number>(0);
+
+  // Active folder name (sent by extension alongside artifacts)
+  const [activeFolderName, setActiveFolderName] = useState<string>('');
   
   // Output format setting (synced with VS Code workspace config)
   const [outputFormat, setOutputFormat] = useState<'json' | 'markdown' | 'dual'>('dual');
@@ -254,6 +257,9 @@ function App() {
             });
             console.log('Artifacts by type:', byType);
             setArtifacts(message.artifacts);
+          }
+          if (message.activeFolderName !== undefined) {
+            setActiveFolderName(message.activeFolderName);
           }
           // Use functional updater to read current reloadRequested (avoids stale closure)
           setReloadRequested(prev => {
@@ -814,8 +820,8 @@ function App() {
         onElicit={handleElicit}
         themeOverride={themeOverride}
         onToggleTheme={handleToggleTheme}
-        detectedProjectCount={detectedProjectCount}
         onSwitchProject={handleSwitchProject}
+        activeFolderName={activeFolderName}
         onExport={handleExport}
         onImport={handleImport}
         onHelp={handleOpenHelp}
@@ -924,14 +930,27 @@ function App() {
             Use <strong>Agile Agent Canvas: Load Existing Project</strong> to load a project,
             or click <strong>Add</strong> in the toolbar to create your first artifact.
           </p>
-          <button
-            className="empty-state-sample-btn"
-            onClick={() => vscode.postMessage({ type: 'loadSampleProject' })}
-            title="Create a sample project with all artifact types and dependencies"
-          >
-            <Icon name="workflow" size={16} />
-            Create Sample Project
-          </button>
+          <p className="empty-state-body" style={{ fontSize: '12px', opacity: 0.8, marginTop: '4px' }}>
+            Use the <strong>folder button</strong> in the toolbar to browse for a different folder or create a new one.
+          </p>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button
+              className="empty-state-sample-btn"
+              onClick={handleSwitchProject}
+              title="Browse for an existing folder or create a new project folder"
+            >
+              <Icon name="folder" size={16} />
+              Browse / New Folder
+            </button>
+            <button
+              className="empty-state-sample-btn"
+              onClick={() => vscode.postMessage({ type: 'loadSampleProject' })}
+              title="Create a sample project with all artifact types and dependencies"
+            >
+              <Icon name="workflow" size={16} />
+              Create Sample Project
+            </button>
+          </div>
         </div>
       )}
       {externalChange && (

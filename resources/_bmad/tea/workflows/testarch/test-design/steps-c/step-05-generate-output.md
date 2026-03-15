@@ -65,6 +65,8 @@ Ensure the outputs include:
 - Quality gate criteria
 - Any mode-specific sections required by the template
 
+**CoveragePlan quality check**: Every `requirement` value must be a **human-readable description** displayed as the test title on canvas story cards. Format: `"AC-X.X.X: What the test verifies"`. Bare AC keys like `"AC-1.2.1"` are **not acceptable**.
+
 ---
 
 ## 3. Validation

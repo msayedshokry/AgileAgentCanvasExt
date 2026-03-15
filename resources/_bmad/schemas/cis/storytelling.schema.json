@@ -4,14 +4,21 @@
   "title": "Storytelling Schema",
   "description": "Schema for storytelling artifacts - crafted narratives using storytelling frameworks. IMPORTANT: Capture ALL story elements, narrative content, and variations completely. Do NOT summarize or truncate any story text, emotional beats, or adaptation guidelines.",
   "type": "object",
-  "required": ["metadata", "content"],
+  "required": [
+    "metadata",
+    "content"
+  ],
   "properties": {
     "metadata": {
       "$ref": "../common/metadata.schema.json"
     },
     "content": {
       "type": "object",
-      "required": ["storyType", "frameworkName", "completeStory"],
+      "required": [
+        "storyType",
+        "frameworkName",
+        "completeStory"
+      ],
       "properties": {
         "storyType": {
           "type": "string",
@@ -44,15 +51,23 @@
             "audienceProfile": {
               "type": "object",
               "properties": {
-                "demographics": { "type": "string" },
-                "psychographics": { "type": "string" },
+                "demographics": {
+                  "type": "string"
+                },
+                "psychographics": {
+                  "type": "string"
+                },
                 "painPoints": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 },
                 "aspirations": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 },
                 "knowledgeLevel": {
                   "type": "string",
@@ -87,7 +102,9 @@
             "keyMessages": {
               "type": "array",
               "description": "ALL key messages to convey",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "callToAction": {
               "type": "string",
@@ -96,7 +113,9 @@
             "constraints": {
               "type": "array",
               "description": "Constraints to work within",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
@@ -222,11 +241,20 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "point": { "type": "string" },
-                      "emotion": { "type": "string" },
+                      "point": {
+                        "type": "string"
+                      },
+                      "emotion": {
+                        "type": "string"
+                      },
                       "intensity": {
                         "type": "string",
-                        "enum": ["low", "medium", "high", "peak"]
+                        "enum": [
+                          "low",
+                          "medium",
+                          "high",
+                          "peak"
+                        ]
                       }
                     }
                   }
@@ -247,7 +275,9 @@
                 },
                 "obstacles": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 },
                 "stakes": {
                   "type": "string",
@@ -293,16 +323,20 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
+                  "name": {
+                    "type": "string"
+                  },
                   "role": {
                     "type": "string",
-                    "enum": ["protagonist", "antagonist", "mentor", "ally", "audience-surrogate", "other"]
+                    "description": "Recommended values: protagonist, antagonist, mentor, ally, audience-surrogate, other — or any domain-appropriate value"
                   },
                   "description": {
                     "type": "string",
                     "description": "COMPLETE character description"
                   },
-                  "motivation": { "type": "string" },
+                  "motivation": {
+                    "type": "string"
+                  },
                   "arc": {
                     "type": "string",
                     "description": "Character's arc in the story"
@@ -381,7 +415,11 @@
                   },
                   "subtlety": {
                     "type": "string",
-                    "enum": ["explicit", "implicit", "symbolic"]
+                    "enum": [
+                      "explicit",
+                      "implicit",
+                      "symbolic"
+                    ]
                   }
                 }
               }
@@ -392,9 +430,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "line": { "type": "string" },
-                  "context": { "type": "string" },
-                  "useCase": { "type": "string" }
+                  "line": {
+                    "type": "string"
+                  },
+                  "context": {
+                    "type": "string"
+                  },
+                  "useCase": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -412,8 +456,12 @@
                   "type": "string",
                   "description": "COMPLETE elevator pitch version"
                 },
-                "wordCount": { "type": "integer" },
-                "useCase": { "type": "string" }
+                "wordCount": {
+                  "type": "integer"
+                },
+                "useCase": {
+                  "type": "string"
+                }
               }
             },
             "short": {
@@ -424,8 +472,12 @@
                   "type": "string",
                   "description": "COMPLETE short version"
                 },
-                "characterCount": { "type": "integer" },
-                "platform": { "type": "string" }
+                "characterCount": {
+                  "type": "integer"
+                },
+                "platform": {
+                  "type": "string"
+                }
               }
             },
             "medium": {
@@ -436,8 +488,12 @@
                   "type": "string",
                   "description": "COMPLETE medium version"
                 },
-                "wordCount": { "type": "integer" },
-                "useCase": { "type": "string" }
+                "wordCount": {
+                  "type": "integer"
+                },
+                "useCase": {
+                  "type": "string"
+                }
               }
             },
             "extended": {
@@ -448,8 +504,12 @@
                   "type": "string",
                   "description": "COMPLETE extended version - do NOT truncate"
                 },
-                "wordCount": { "type": "integer" },
-                "useCase": { "type": "string" }
+                "wordCount": {
+                  "type": "integer"
+                },
+                "useCase": {
+                  "type": "string"
+                }
               }
             },
             "presentation": {
@@ -460,15 +520,23 @@
                   "type": "string",
                   "description": "COMPLETE presentation version with speaker notes"
                 },
-                "duration": { "type": "string" },
+                "duration": {
+                  "type": "string"
+                },
                 "slideNotes": {
                   "type": "array",
                   "items": {
                     "type": "object",
                     "properties": {
-                      "slide": { "type": "integer" },
-                      "content": { "type": "string" },
-                      "speakerNotes": { "type": "string" }
+                      "slide": {
+                        "type": "integer"
+                      },
+                      "content": {
+                        "type": "string"
+                      },
+                      "speakerNotes": {
+                        "type": "string"
+                      }
                     }
                   }
                 }
@@ -482,10 +550,14 @@
                   "type": "string",
                   "description": "COMPLETE video script"
                 },
-                "duration": { "type": "string" },
+                "duration": {
+                  "type": "string"
+                },
                 "visualNotes": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -501,9 +573,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "description": { "type": "string" },
-                  "purpose": { "type": "string" },
-                  "placement": { "type": "string" }
+                  "description": {
+                    "type": "string"
+                  },
+                  "purpose": {
+                    "type": "string"
+                  },
+                  "placement": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -513,9 +591,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "type": { "type": "string" },
-                  "data": { "type": "string" },
-                  "narrative": { "type": "string" }
+                  "type": {
+                    "type": "string"
+                  },
+                  "data": {
+                    "type": "string"
+                  },
+                  "narrative": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -557,7 +641,9 @@
             "deliveryTips": {
               "type": "array",
               "description": "Tips for effective delivery",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "adaptationSuggestions": {
               "type": "array",
@@ -579,12 +665,16 @@
             "doNotChange": {
               "type": "array",
               "description": "Elements that should NOT be changed",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "flexibleElements": {
               "type": "array",
               "description": "Elements that can be adjusted",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
@@ -602,12 +692,16 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "source": { "type": "string" },
+                  "source": {
+                    "type": "string"
+                  },
                   "feedback": {
                     "type": "string",
                     "description": "COMPLETE feedback"
                   },
-                  "actionTaken": { "type": "string" }
+                  "actionTaken": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -617,8 +711,12 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "metric": { "type": "string" },
-                  "result": { "type": "string" }
+                  "metric": {
+                    "type": "string"
+                  },
+                  "result": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -634,14 +732,20 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "area": { "type": "string" },
+                  "area": {
+                    "type": "string"
+                  },
                   "opportunity": {
                     "type": "string",
                     "description": "COMPLETE description of the opportunity"
                   },
                   "priority": {
                     "type": "string",
-                    "enum": ["high", "medium", "low"]
+                    "enum": [
+                      "high",
+                      "medium",
+                      "low"
+                    ]
                   }
                 }
               }
@@ -652,9 +756,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "version": { "type": "string" },
-                  "purpose": { "type": "string" },
-                  "deadline": { "type": "string" }
+                  "version": {
+                    "type": "string"
+                  },
+                  "purpose": {
+                    "type": "string"
+                  },
+                  "deadline": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -669,7 +779,9 @@
             "relatedStories": {
               "type": "array",
               "description": "Related stories to develop",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         }

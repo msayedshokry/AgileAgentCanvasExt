@@ -4,7 +4,10 @@
   "title": "Product Requirements Document Schema",
   "description": "Comprehensive schema for PRD artifacts - captures complete product requirements specification with full detail",
   "type": "object",
-  "required": ["metadata", "content"],
+  "required": [
+    "metadata",
+    "content"
+  ],
   "additionalProperties": false,
   "properties": {
     "metadata": {
@@ -12,7 +15,10 @@
     },
     "content": {
       "type": "object",
-      "required": ["productOverview", "requirements"],
+      "required": [
+        "productOverview",
+        "requirements"
+      ],
       "additionalProperties": false,
       "properties": {
         "productOverview": {
@@ -54,7 +60,9 @@
             "keyBenefits": {
               "type": "array",
               "description": "List of key benefits",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
@@ -64,11 +72,16 @@
           "properties": {
             "type": {
               "type": "string",
-              "enum": ["web-app", "mobile-app", "api-service", "desktop-app", "library", "platform", "cli-tool", "hybrid", "other"]
+              "description": "Recommended values: web-app, mobile-app, api-service, desktop-app, library, platform, cli-tool, hybrid, other — or any domain-appropriate value"
             },
             "complexity": {
               "type": "string",
-              "enum": ["low", "medium", "high", "very-high"]
+              "enum": [
+                "low",
+                "medium",
+                "high",
+                "very-high"
+              ]
             },
             "domainComplexity": {
               "type": "string",
@@ -85,7 +98,9 @@
             "characteristics": {
               "type": "array",
               "description": "Key project characteristics",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
@@ -95,9 +110,15 @@
           "items": {
             "type": "object",
             "properties": {
-              "id": { "type": "string" },
-              "name": { "type": "string" },
-              "role": { "type": "string" },
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "role": {
+                "type": "string"
+              },
               "description": {
                 "type": "string",
                 "description": "COMPLETE persona description"
@@ -105,21 +126,32 @@
               "goals": {
                 "type": "array",
                 "description": "User goals",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "painPoints": {
                 "type": "array",
                 "description": "User pain points",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "behaviors": {
                 "type": "array",
                 "description": "User behaviors",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "technicalProficiency": {
                 "type": "string",
-                "enum": ["novice", "intermediate", "advanced", "expert"]
+                "enum": [
+                  "novice",
+                  "intermediate",
+                  "advanced",
+                  "expert"
+                ]
               },
               "frequency": {
                 "type": "string",
@@ -128,7 +160,9 @@
               "primaryTasks": {
                 "type": "array",
                 "description": "Primary tasks they perform",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -139,14 +173,16 @@
           "items": {
             "type": "object",
             "properties": {
-              "id": { "type": "string" },
+              "id": {
+                "type": "string"
+              },
               "criterion": {
                 "type": "string",
                 "description": "COMPLETE success criterion description"
               },
               "category": {
                 "type": "string",
-                "enum": ["business", "technical", "user-experience", "operational"]
+                "description": "Recommended values: business, technical, user-experience, operational — or any domain-appropriate value"
               },
               "metric": {
                 "type": "string",
@@ -177,23 +213,33 @@
           "items": {
             "type": "object",
             "properties": {
-              "id": { "type": "string" },
-              "name": { "type": "string" },
-              "persona": { "type": "string" },
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "persona": {
+                "type": "string"
+              },
               "goal": {
                 "type": "string",
                 "description": "COMPLETE goal description"
               },
               "preconditions": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "steps": {
                 "type": "array",
                 "items": {
                   "type": "object",
                   "properties": {
-                    "step": { "type": "integer" },
+                    "step": {
+                      "type": "integer"
+                    },
                     "action": {
                       "type": "string",
                       "description": "COMPLETE action description"
@@ -208,7 +254,9 @@
                     },
                     "alternativeFlows": {
                       "type": "array",
-                      "items": { "type": "string" }
+                      "items": {
+                        "type": "string"
+                      }
                     },
                     "errorHandling": {
                       "type": "string",
@@ -223,9 +271,13 @@
               },
               "postconditions": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
-              "notes": { "type": "string" }
+              "notes": {
+                "type": "string"
+              }
             }
           }
         },
@@ -242,7 +294,9 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
+                  "name": {
+                    "type": "string"
+                  },
                   "description": {
                     "type": "string",
                     "description": "COMPLETE concept description"
@@ -252,10 +306,18 @@
                     "items": {
                       "type": "object",
                       "properties": {
-                        "name": { "type": "string" },
-                        "type": { "type": "string" },
-                        "description": { "type": "string" },
-                        "required": { "type": "boolean" }
+                        "name": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "required": {
+                          "type": "boolean"
+                        }
                       }
                     }
                   },
@@ -264,16 +326,26 @@
                     "items": {
                       "type": "object",
                       "properties": {
-                        "target": { "type": "string" },
-                        "type": { "type": "string" },
-                        "cardinality": { "type": "string" },
-                        "description": { "type": "string" }
+                        "target": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "cardinality": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        }
                       }
                     }
                   },
                   "businessRules": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -283,18 +355,24 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "term": { "type": "string" },
+                  "term": {
+                    "type": "string"
+                  },
                   "definition": {
                     "type": "string",
                     "description": "COMPLETE definition"
                   },
                   "synonyms": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "relatedTerms": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -310,7 +388,11 @@
               "description": "ALL functional requirements with complete text",
               "items": {
                 "type": "object",
-                "required": ["id", "title", "description"],
+                "required": [
+                  "id",
+                  "title",
+                  "description"
+                ],
                 "properties": {
                   "id": {
                     "type": "string",
@@ -330,18 +412,31 @@
                   },
                   "priority": {
                     "type": "string",
-                    "enum": ["must-have", "should-have", "could-have", "won't-have"]
+                    "enum": [
+                      "must-have",
+                      "should-have",
+                      "could-have",
+                      "won't-have"
+                    ]
                   },
-                  "rationale": { "type": "string" },
+                  "rationale": {
+                    "type": "string"
+                  },
                   "acceptanceCriteria": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "dependencies": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
-                  "source": { "type": "string" }
+                  "source": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -350,7 +445,11 @@
               "description": "ALL non-functional requirements with complete text and metrics",
               "items": {
                 "type": "object",
-                "required": ["id", "title", "description"],
+                "required": [
+                  "id",
+                  "title",
+                  "description"
+                ],
                 "properties": {
                   "id": {
                     "type": "string",
@@ -371,17 +470,32 @@
                   "metrics": {
                     "type": "object",
                     "properties": {
-                      "target": { "type": "string" },
-                      "threshold": { "type": "string" },
-                      "unit": { "type": "string" }
+                      "target": {
+                        "type": "string"
+                      },
+                      "threshold": {
+                        "type": "string"
+                      },
+                      "unit": {
+                        "type": "string"
+                      }
                     }
                   },
                   "priority": {
                     "type": "string",
-                    "enum": ["must-have", "should-have", "could-have", "won't-have"]
+                    "enum": [
+                      "must-have",
+                      "should-have",
+                      "could-have",
+                      "won't-have"
+                    ]
                   },
-                  "measurementMethod": { "type": "string" },
-                  "testStrategy": { "type": "string" }
+                  "measurementMethod": {
+                    "type": "string"
+                  },
+                  "testStrategy": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -390,17 +504,73 @@
               "description": "Technical constraints and architecture requirements",
               "items": {
                 "type": "object",
-                "required": ["id", "title", "description"],
+                "required": [
+                  "id",
+                  "title",
+                  "description"
+                ],
                 "properties": {
-                  "id": { "type": "string" },
-                  "category": { "type": "string" },
-                  "title": { "type": "string" },
+                  "id": {
+                    "type": "string"
+                  },
+                  "category": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
                   "description": {
                     "type": "string",
                     "description": "COMPLETE technical requirement description"
                   },
-                  "rationale": { "type": "string" },
-                  "impact": { "type": "string" }
+                  "rationale": {
+                    "type": "string"
+                  },
+                  "impact": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "additional": {
+              "type": "array",
+              "description": "Additional requirements — architectural constraints, compliance rules, operational requirements, etc.",
+              "items": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "title",
+                  "description"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Requirement ID (e.g., 'AR-01', 'AR-02')"
+                  },
+                  "category": {
+                    "type": "string",
+                    "description": "Category (architectural, compliance, operational, etc.)"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Short title"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "COMPLETE requirement description"
+                  },
+                  "rationale": {
+                    "type": "string"
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": [
+                      "must-have",
+                      "should-have",
+                      "could-have",
+                      "won't-have"
+                    ]
+                  }
                 }
               }
             }
@@ -416,9 +586,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "item": { "type": "string" },
-                  "description": { "type": "string" },
-                  "priority": { "type": "string" }
+                  "item": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "priority": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -428,9 +604,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "item": { "type": "string" },
-                  "rationale": { "type": "string" },
-                  "futureConsideration": { "type": "boolean" }
+                  "item": {
+                    "type": "string"
+                  },
+                  "rationale": {
+                    "type": "string"
+                  },
+                  "futureConsideration": {
+                    "type": "boolean"
+                  }
                 }
               }
             },
@@ -440,10 +622,18 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "assumption": { "type": "string" },
-                  "impact": { "type": "string" },
-                  "validated": { "type": "boolean" },
-                  "validationMethod": { "type": "string" }
+                  "assumption": {
+                    "type": "string"
+                  },
+                  "impact": {
+                    "type": "string"
+                  },
+                  "validated": {
+                    "type": "boolean"
+                  },
+                  "validationMethod": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -453,11 +643,21 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "dependency": { "type": "string" },
-                  "type": { "type": "string" },
-                  "owner": { "type": "string" },
-                  "status": { "type": "string" },
-                  "risk": { "type": "string" }
+                  "dependency": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "owner": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "risk": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -469,10 +669,12 @@
           "items": {
             "type": "object",
             "properties": {
-              "id": { "type": "string" },
+              "id": {
+                "type": "string"
+              },
               "type": {
                 "type": "string",
-                "enum": ["technical", "business", "regulatory", "resource", "time", "budget"]
+                "description": "Recommended values: technical, business, regulatory, resource, time, budget — or any domain-appropriate value"
               },
               "description": {
                 "type": "string",
@@ -488,7 +690,11 @@
               },
               "flexibility": {
                 "type": "string",
-                "enum": ["fixed", "negotiable", "flexible"]
+                "enum": [
+                  "fixed",
+                  "negotiable",
+                  "flexible"
+                ]
               }
             }
           }
@@ -499,24 +705,38 @@
           "items": {
             "type": "object",
             "properties": {
-              "id": { "type": "string" },
+              "id": {
+                "type": "string"
+              },
               "risk": {
                 "type": "string",
                 "description": "COMPLETE risk description"
               },
               "category": {
                 "type": "string",
-                "enum": ["technical", "business", "schedule", "resource", "external"]
+                "description": "Recommended values: technical, business, schedule, resource, external — or any domain-appropriate value"
               },
               "probability": {
                 "type": "string",
-                "enum": ["low", "medium", "high", "very-high"]
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "very-high"
+                ]
               },
               "impact": {
                 "type": "string",
-                "enum": ["low", "medium", "high", "critical"]
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "critical"
+                ]
               },
-              "riskScore": { "type": "string" },
+              "riskScore": {
+                "type": "string"
+              },
               "mitigation": {
                 "type": "string",
                 "description": "COMPLETE mitigation strategy"
@@ -525,14 +745,24 @@
                 "type": "string",
                 "description": "Contingency plan"
               },
-              "owner": { "type": "string" },
+              "owner": {
+                "type": "string"
+              },
               "status": {
                 "type": "string",
-                "enum": ["identified", "analyzing", "mitigating", "accepted", "closed"]
+                "enum": [
+                  "identified",
+                  "analyzing",
+                  "mitigating",
+                  "accepted",
+                  "closed"
+                ]
               },
               "triggers": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -541,33 +771,51 @@
           "type": "object",
           "description": "Project timeline and phases",
           "properties": {
-            "overview": { "type": "string" },
+            "overview": {
+              "type": "string"
+            },
             "phases": {
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
-                  "description": { "type": "string" },
-                  "startDate": { "type": "string" },
-                  "endDate": { "type": "string" },
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "startDate": {
+                    "type": "string"
+                  },
+                  "endDate": {
+                    "type": "string"
+                  },
                   "milestones": {
                     "type": "array",
                     "items": {
                       "type": "object",
                       "properties": {
-                        "name": { "type": "string" },
-                        "date": { "type": "string" },
+                        "name": {
+                          "type": "string"
+                        },
+                        "date": {
+                          "type": "string"
+                        },
                         "deliverables": {
                           "type": "array",
-                          "items": { "type": "string" }
+                          "items": {
+                            "type": "string"
+                          }
                         }
                       }
                     }
                   },
                   "deliverables": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -580,15 +828,21 @@
           "items": {
             "type": "object",
             "properties": {
-              "id": { "type": "string" },
-              "title": { "type": "string" },
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
               "content": {
                 "type": "string",
                 "description": "COMPLETE appendix content"
               },
               "references": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -599,14 +853,27 @@
           "items": {
             "type": "object",
             "properties": {
-              "role": { "type": "string" },
-              "name": { "type": "string" },
-              "date": { "type": "string" },
+              "role": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string"
+              },
               "status": {
                 "type": "string",
-                "enum": ["pending", "approved", "rejected", "approved-with-comments"]
+                "enum": [
+                  "pending",
+                  "approved",
+                  "rejected",
+                  "approved-with-comments"
+                ]
               },
-              "comments": { "type": "string" }
+              "comments": {
+                "type": "string"
+              }
             }
           }
         }

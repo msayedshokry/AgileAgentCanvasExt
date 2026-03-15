@@ -119,6 +119,24 @@ export function repairDataWithSchema(
                         value = {};
                         log(path, 'replaced non-object with {}');
                     }
+                } else if (typeof value === 'string' && value.length > 0 && node.properties) {
+                    // Smart coerce: convert a string into an object by placing the
+                    // string value into the first string-typed property.
+                    const stringProps = Object.entries(node.properties)
+                        .filter(([, s]) => resolveType(s as SchemaNode) === 'string');
+                    if (stringProps.length > 0) {
+                        const obj: Record<string, any> = {};
+                        obj[stringProps[0][0]] = value;
+                        // Fill remaining string properties with empty strings
+                        for (let sp = 1; sp < stringProps.length; sp++) {
+                            obj[stringProps[sp][0]] = '';
+                        }
+                        log(path, `coerced string "${value.substring(0, 40)}${value.length > 40 ? '…' : ''}" into object property "${stringProps[0][0]}"`);
+                        value = obj;
+                    } else {
+                        value = {};
+                        log(path, 'replaced non-object with {}');
+                    }
                 } else {
                     value = {};
                     log(path, 'replaced non-object with {}');

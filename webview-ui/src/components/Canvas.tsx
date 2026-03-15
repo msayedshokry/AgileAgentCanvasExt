@@ -162,6 +162,15 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('lanes');
   // Screenshot capture in progress
   const [capturing, setCapturing] = useState(false);
+  // Track which story cards have their inline task/test rows expanded
+  const [expandedStoryIds, setExpandedStoryIds] = useState<Set<string>>(new Set());
+  const handleToggleStoryExpand = useCallback((id: string) => {
+    setExpandedStoryIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
 
   // Track viewport size for the minimap
   useEffect(() => {
@@ -535,8 +544,25 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
 
       let effectiveRowHeight: number;
       if (isExpanded || (epic.childCount ?? 0) === 0) {
-        // Expanded or no children — keep original height
-        effectiveRowHeight = originalRowHeight;
+        // Expanded or no children — keep original height, plus extra for any expanded stories
+        let maxStoryExtraHeight = 0;
+        const descendants = epicDescendants.get(epic.id);
+        if (descendants) {
+          for (const descId of descendants) {
+            if (expandedStoryIds.has(descId)) {
+              const storyArt = artifacts.find(a => a.id === descId && a.type === 'story');
+              if (storyArt) {
+                const sm = storyArt.metadata as StoryMetadata;
+                const taskCount = sm?.tasks?.length ?? 0;
+                const testCount = sm?.testCases?.length ?? 0;
+                // Each row ~22px, plus header/dividers ~30px
+                const currentStoryExtra = (taskCount + testCount) * 22 + (taskCount > 0 && testCount > 0 ? 30 : 15);
+                maxStoryExtraHeight = Math.max(maxStoryExtraHeight, currentStoryExtra);
+              }
+            }
+          }
+        }
+        effectiveRowHeight = originalRowHeight + maxStoryExtraHeight;
       } else {
         // Collapsed — shrink to just the epic card height + padding
         const epicCardH = epic.size?.height ?? 100;
@@ -706,7 +732,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
       }));
 
     return { visibleArtifacts: reflowed, adjustedRowBands: rowBands, adjustedTestBands: testBands };
-  }, [artifacts, visibleArtifactsRaw, expandedIds]);
+  }, [artifacts, visibleArtifactsRaw, expandedIds, expandedStoryIds]);
 
   // Compute expandable IDs per lane (artifacts with children in that lane's types)
   const laneExpandableIds = useMemo(() => {
@@ -726,7 +752,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
     const PADDING = 30;
     let maxRight = LANE_LEFT + 310; // minimum: just the epic column (280 wide + 30 pad)
     visibleArtifacts.forEach(a => {
-      if (a.type === 'story' || a.type === 'use-case' || a.type === 'test-case' || a.type === 'test-strategy' || a.type === 'epic' || a.type === 'task' || a.type === 'test-coverage') {
+      if (a.type === 'story' || a.type === 'use-case' || a.type === 'test-case' || a.type === 'test-strategy' || a.type === 'epic') {
         const right = (a.position?.x ?? 0) + (a.size?.width ?? 250);
         if (right > maxRight) maxRight = right;
       }
@@ -809,7 +835,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
       discovery:      ['product-brief', 'vision'],
       planning:       ['prd', 'requirement', 'nfr', 'additional-req', 'risk'],
       solutioning:    ['architecture', 'architecture-decision', 'system-component'],
-      implementation: ['epic', 'story', 'use-case', 'test-strategy', 'test-case', 'test-coverage', 'task'],
+      implementation: ['epic', 'story', 'use-case', 'test-strategy', 'test-case'],
     };
     const BOTTOM_PADDING = 60;
     const MIN_BOTTOM = LANE_TOP + 200;   // shortest lane is 200px tall
@@ -1510,6 +1536,8 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
             onUpdate={onUpdate}
             onToggleExpand={onToggleExpand}
             onToggleCategoryExpand={onToggleCategoryExpand}
+            isStoryExpanded={expandedStoryIds.has(artifact.id)}
+            onToggleStoryExpand={handleToggleStoryExpand}
             onRefineWithAI={onRefineWithAI}
             onElicit={onElicit}
           />

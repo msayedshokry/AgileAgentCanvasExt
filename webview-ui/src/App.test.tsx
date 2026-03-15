@@ -746,7 +746,7 @@ describe('App - Additional Message Types', () => {
       });
     });
 
-    it('should not show switch project button when count < 2', async () => {
+    it('should still show switch/browse button even when count < 2', async () => {
       render(<App />);
 
       act(() => {
@@ -754,8 +754,9 @@ describe('App - Additional Message Types', () => {
       });
 
       await waitFor(() => {
+        // The button is always visible (doubles as folder browser)
         const switchBtn = document.querySelector('.toolbar-switch-btn');
-        expect(switchBtn).not.toBeInTheDocument();
+        expect(switchBtn).toBeInTheDocument();
       });
     });
   });

@@ -4,14 +4,20 @@
   "title": "Test Summary Schema",
   "description": "Schema for QA test generation summary - captures test coverage analysis and generated tests",
   "type": "object",
-  "required": ["metadata", "content"],
+  "required": [
+    "metadata",
+    "content"
+  ],
   "properties": {
     "metadata": {
       "$ref": "../common/metadata.schema.json"
     },
     "content": {
       "type": "object",
-      "required": ["summary", "generatedTests"],
+      "required": [
+        "summary",
+        "generatedTests"
+      ],
       "properties": {
         "summary": {
           "type": "object",
@@ -24,7 +30,9 @@
             "targetFeatures": {
               "type": "array",
               "description": "Features targeted for test generation",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "testingApproach": {
               "type": "string",
@@ -51,19 +59,35 @@
             "priorCoverage": {
               "type": "object",
               "properties": {
-                "statement": { "type": "string" },
-                "branch": { "type": "string" },
-                "function": { "type": "string" },
-                "line": { "type": "string" }
+                "statement": {
+                  "type": "string"
+                },
+                "branch": {
+                  "type": "string"
+                },
+                "function": {
+                  "type": "string"
+                },
+                "line": {
+                  "type": "string"
+                }
               }
             },
             "targetCoverage": {
               "type": "object",
               "properties": {
-                "statement": { "type": "string" },
-                "branch": { "type": "string" },
-                "function": { "type": "string" },
-                "line": { "type": "string" }
+                "statement": {
+                  "type": "string"
+                },
+                "branch": {
+                  "type": "string"
+                },
+                "function": {
+                  "type": "string"
+                },
+                "line": {
+                  "type": "string"
+                }
               }
             },
             "gapsIdentified": {
@@ -72,11 +96,20 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "area": { "type": "string" },
-                  "description": { "type": "string" },
+                  "area": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
                   "priority": {
                     "type": "string",
-                    "enum": ["critical", "high", "medium", "low"]
+                    "enum": [
+                      "critical",
+                      "high",
+                      "medium",
+                      "low"
+                    ]
                   }
                 }
               }
@@ -99,8 +132,7 @@
               },
               "testType": {
                 "type": "string",
-                "enum": ["unit", "integration", "component", "api", "e2e"],
-                "description": "Type of tests in file"
+                "description": "Type of tests in file. Recommended values: unit, integration, component, api, e2e — or any domain-appropriate value"
               },
               "testCount": {
                 "type": "integer",
@@ -112,11 +144,15 @@
                 "items": {
                   "type": "object",
                   "properties": {
-                    "name": { "type": "string" },
-                    "description": { "type": "string" },
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
                     "category": {
                       "type": "string",
-                      "enum": ["happy-path", "edge-case", "error-handling", "boundary", "security"]
+                      "description": "Recommended values: happy-path, edge-case, error-handling, boundary, security — or any domain-appropriate value"
                     }
                   }
                 }
@@ -124,7 +160,9 @@
               "patternsUsed": {
                 "type": "array",
                 "description": "Test patterns applied",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -135,12 +173,20 @@
           "items": {
             "type": "object",
             "properties": {
-              "pattern": { "type": "string" },
-              "description": { "type": "string" },
-              "usageCount": { "type": "integer" },
+              "pattern": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "usageCount": {
+                "type": "integer"
+              },
               "examples": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -151,13 +197,23 @@
           "items": {
             "type": "object",
             "properties": {
-              "area": { "type": "string" },
-              "recommendation": { "type": "string" },
+              "area": {
+                "type": "string"
+              },
+              "recommendation": {
+                "type": "string"
+              },
               "priority": {
                 "type": "string",
-                "enum": ["high", "medium", "low"]
+                "enum": [
+                  "high",
+                  "medium",
+                  "low"
+                ]
               },
-              "effort": { "type": "string" }
+              "effort": {
+                "type": "string"
+              }
             }
           }
         },
@@ -165,14 +221,20 @@
           "type": "object",
           "description": "Notes on test execution",
           "properties": {
-            "runCommand": { "type": "string" },
+            "runCommand": {
+              "type": "string"
+            },
             "prerequisites": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "knownIssues": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         }

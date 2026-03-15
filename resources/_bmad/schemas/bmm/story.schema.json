@@ -4,18 +4,28 @@
   "title": "User Story Schema",
   "description": "Comprehensive schema for individual story artifacts - supports both structured BMAD stories and prose-style stories with full detail",
   "type": "object",
-  "required": ["content"],
+  "required": [
+    "content"
+  ],
   "properties": {
     "metadata": {
       "$ref": "../common/metadata.schema.json"
     },
     "content": {
       "type": "object",
-      "required": ["title"],
+      "required": [
+        "id",
+        "title",
+        "epicId"
+      ],
       "properties": {
+        "id": {
+          "type": "string",
+          "description": "Canonical story identifier (e.g., 'S1.1', '1.1', 'STORY-1.1')"
+        },
         "epicId": {
           "type": "string",
-          "description": "Parent epic identifier"
+          "description": "Parent epic identifier (required, single source of truth for epic membership)"
         },
         "epicTitle": {
           "type": "string",
@@ -23,7 +33,7 @@
         },
         "storyId": {
           "type": "string",
-          "description": "Story identifier (e.g., STORY-1.1, 1.1)"
+          "description": "DEPRECATED — use id instead. Story identifier kept for backward compatibility"
         },
         "title": {
           "type": "string",
@@ -32,12 +42,29 @@
         "status": {
           "type": "string",
           "description": "Story status",
-          "enum": ["draft", "ready", "ready-for-dev", "in-progress", "in-review", "blocked", "done", "complete"],
+          "enum": [
+            "draft",
+            "ready",
+            "ready-for-dev",
+            "in-progress",
+            "in-review",
+            "blocked",
+            "done",
+            "complete"
+          ],
           "default": "draft"
         },
         "priority": {
           "type": "string",
-          "enum": ["P0", "P1", "P2", "P3", "must-have", "should-have", "could-have"]
+          "enum": [
+            "P0",
+            "P1",
+            "P2",
+            "P3",
+            "must-have",
+            "should-have",
+            "could-have"
+          ]
         },
         "storyPoints": {
           "type": "integer",
@@ -49,8 +76,7 @@
         },
         "storyFormat": {
           "type": "string",
-          "description": "Indicates the format of this story",
-          "enum": ["structured", "prose"],
+          "description": "Indicates the format of this story. Recommended values: structured, prose — or any domain-appropriate value",
           "default": "structured"
         },
         "background": {
@@ -68,7 +94,9 @@
         "solutionDetails": {
           "type": "array",
           "description": "Solution details as bullet points for prose-style stories - capture ALL of them",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "userStory": {
           "type": "object",
@@ -97,11 +125,17 @@
           },
           "oneOf": [
             {
-              "required": ["asA", "iWant", "soThat"],
+              "required": [
+                "asA",
+                "iWant",
+                "soThat"
+              ],
               "description": "Structured format with separate fields"
             },
             {
-              "required": ["formatted"],
+              "required": [
+                "formatted"
+              ],
               "description": "Prose format as single string"
             }
           ]
@@ -135,12 +169,16 @@
               "and": {
                 "type": "array",
                 "description": "ALL 'And' conditions - capture EVERY single one (structured format)",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "but": {
                 "type": "array",
                 "description": "Any 'But' exception conditions (structured format)",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "criterion": {
                 "type": "string",
@@ -153,16 +191,24 @@
               "testIds": {
                 "type": "array",
                 "description": "Associated test case IDs",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               }
             },
             "oneOf": [
               {
-                "required": ["given", "when", "then"],
+                "required": [
+                  "given",
+                  "when",
+                  "then"
+                ],
                 "description": "Structured Given/When/Then format"
               },
               {
-                "required": ["criterion"],
+                "required": [
+                  "criterion"
+                ],
                 "description": "Prose/bullet-list format"
               }
             ]
@@ -174,7 +220,10 @@
           "items": {
             "type": "object",
             "properties": {
-              "id": { "type": "string" },
+              "id": {
+                "type": "string",
+                "description": "Task ID using format T-{storyId}.{N} (e.g. 'T-15.1.1', 'T-1.3.2')"
+              },
               "description": {
                 "type": "string",
                 "description": "COMPLETE task description"
@@ -183,19 +232,38 @@
                 "type": "string",
                 "description": "Reference to acceptance criterion (e.g., AC-1)"
               },
-              "estimatedHours": { "type": "number" },
-              "completed": { "type": "boolean", "default": false },
-              "completedAt": { "type": "string" },
-              "notes": { "type": "string" },
+              "estimatedHours": {
+                "type": "number"
+              },
+              "completed": {
+                "type": "boolean",
+                "default": false
+              },
+              "completedAt": {
+                "type": "string"
+              },
+              "notes": {
+                "type": "string"
+              },
               "subtasks": {
                 "type": "array",
                 "items": {
                   "type": "object",
                   "properties": {
-                    "id": { "type": "string" },
-                    "description": { "type": "string" },
-                    "completed": { "type": "boolean", "default": false },
-                    "completedAt": { "type": "string" }
+                    "id": {
+                      "type": "string",
+                      "description": "Subtask ID using format T-{storyId}.{N}.{M} (e.g. 'T-15.1.1.1')"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "completed": {
+                      "type": "boolean",
+                      "default": false
+                    },
+                    "completedAt": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -209,7 +277,9 @@
         "implementationDetails": {
           "type": "array",
           "description": "Implementation details as bullet points - capture ALL of them",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "devNotes": {
           "type": "object",
@@ -221,7 +291,9 @@
             },
             "architecturePatterns": {
               "type": "array",
-              "items": { "type": "string" },
+              "items": {
+                "type": "string"
+              },
               "description": "Relevant architecture patterns and constraints"
             },
             "componentsToCreate": {
@@ -229,9 +301,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "path": { "type": "string" },
-                  "type": { "type": "string" },
-                  "description": { "type": "string" }
+                  "path": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  }
                 }
               },
               "description": "New components to create"
@@ -241,15 +319,21 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "path": { "type": "string" },
-                  "changes": { "type": "string" }
+                  "path": {
+                    "type": "string"
+                  },
+                  "changes": {
+                    "type": "string"
+                  }
                 }
               },
               "description": "Existing components to modify"
             },
             "dataModels": {
               "type": "array",
-              "items": { "type": "string" },
+              "items": {
+                "type": "string"
+              },
               "description": "Data models involved"
             },
             "apiEndpoints": {
@@ -257,9 +341,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "method": { "type": "string" },
-                  "path": { "type": "string" },
-                  "description": { "type": "string" }
+                  "method": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  }
                 }
               },
               "description": "API endpoints to create or modify"
@@ -269,95 +359,148 @@
               "properties": {
                 "unitTests": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 },
                 "integrationTests": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 },
                 "e2eTests": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 },
                 "testDataNeeded": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 }
               }
             },
             "securityConsiderations": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "performanceConsiderations": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "accessibilityConsiderations": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "edgeCases": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "potentialChallenges": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
         "dependencies": {
-          "type": "object",
-          "description": "Story dependencies",
-          "properties": {
-            "blockedBy": {
+          "description": "Story dependencies — supports simple string array or rich object",
+          "oneOf": [
+            {
               "type": "array",
-              "description": "Stories that block this one",
               "items": {
-                "type": "object",
-                "properties": {
-                  "storyId": { "type": "string" },
-                  "title": { "type": "string" },
-                  "status": { "type": "string" },
-                  "reason": { "type": "string" }
-                }
+                "type": "string"
               }
             },
-            "blocks": {
-              "type": "array",
-              "description": "Stories blocked by this one",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "storyId": { "type": "string" },
-                  "title": { "type": "string" }
-                }
-              }
-            },
-            "relatedStories": {
-              "type": "array",
-              "description": "Related but not blocking stories",
-              "items": { "type": "string" }
-            },
-            "externalDependencies": {
-              "type": "array",
-              "description": "External dependencies",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "dependency": { "type": "string" },
-                  "status": { "type": "string" },
-                  "owner": { "type": "string" }
+            {
+              "type": "object",
+              "description": "Story dependencies",
+              "properties": {
+                "blockedBy": {
+                  "type": "array",
+                  "description": "Stories that block this one",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "storyId": {
+                        "type": "string",
+                        "description": "Blocking story ID using numeric format (e.g. '1.1', '15.1')"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "reason": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "blocks": {
+                  "type": "array",
+                  "description": "Stories blocked by this one",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "storyId": {
+                        "type": "string",
+                        "description": "Blocked story ID using numeric format (e.g. '1.1', '15.1')"
+                      },
+                      "title": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "relatedStories": {
+                  "type": "array",
+                  "description": "Related but not blocking stories",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "externalDependencies": {
+                  "type": "array",
+                  "description": "External dependencies",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "dependency": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "owner": {
+                        "type": "string"
+                      }
+                    }
+                  }
                 }
               }
             }
-          }
+          ]
         },
         "requirementRefs": {
           "type": "array",
           "description": "Referenced requirement IDs (FR, NFR, AR) this story implements",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "uxReferences": {
           "type": "array",
@@ -365,9 +508,15 @@
           "items": {
             "type": "object",
             "properties": {
-              "type": { "type": "string" },
-              "reference": { "type": "string" },
-              "description": { "type": "string" }
+              "type": {
+                "type": "string"
+              },
+              "reference": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
             }
           }
         },
@@ -377,10 +526,18 @@
           "items": {
             "type": "object",
             "properties": {
-              "source": { "type": "string" },
-              "section": { "type": "string" },
-              "relevance": { "type": "string" },
-              "quote": { "type": "string" }
+              "source": {
+                "type": "string"
+              },
+              "section": {
+                "type": "string"
+              },
+              "relevance": {
+                "type": "string"
+              },
+              "quote": {
+                "type": "string"
+              }
             }
           }
         },
@@ -395,7 +552,9 @@
         "labels": {
           "type": "array",
           "description": "Labels/tags for categorization",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "devAgentRecord": {
           "type": "object",
@@ -405,36 +564,68 @@
               "type": "string",
               "description": "AI model used for implementation"
             },
-            "sessionId": { "type": "string" },
-            "startedAt": { "type": "string" },
-            "completedAt": { "type": "string" },
+            "sessionId": {
+              "type": "string"
+            },
+            "startedAt": {
+              "type": "string"
+            },
+            "completedAt": {
+              "type": "string"
+            },
             "debugLogRefs": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "completionNotes": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "filesModified": {
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "path": { "type": "string" },
-                  "action": { "type": "string", "enum": ["created", "modified", "deleted", "renamed"] },
-                  "description": { "type": "string" },
-                  "linesChanged": { "type": "integer" }
+                  "path": {
+                    "type": "string"
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "created",
+                      "modified",
+                      "deleted",
+                      "renamed"
+                    ]
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "linesChanged": {
+                    "type": "integer"
+                  }
                 }
               }
             },
             "testsRun": {
               "type": "object",
               "properties": {
-                "total": { "type": "integer" },
-                "passed": { "type": "integer" },
-                "failed": { "type": "integer" },
-                "skipped": { "type": "integer" }
+                "total": {
+                  "type": "integer"
+                },
+                "passed": {
+                  "type": "integer"
+                },
+                "failed": {
+                  "type": "integer"
+                },
+                "skipped": {
+                  "type": "integer"
+                }
               }
             },
             "issuesEncountered": {
@@ -442,8 +633,12 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "issue": { "type": "string" },
-                  "resolution": { "type": "string" }
+                  "issue": {
+                    "type": "string"
+                  },
+                  "resolution": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -455,11 +650,21 @@
           "items": {
             "type": "object",
             "properties": {
-              "timestamp": { "type": "string" },
-              "fromStatus": { "type": "string" },
-              "toStatus": { "type": "string" },
-              "changedBy": { "type": "string" },
-              "notes": { "type": "string" }
+              "timestamp": {
+                "type": "string"
+              },
+              "fromStatus": {
+                "type": "string"
+              },
+              "toStatus": {
+                "type": "string"
+              },
+              "changedBy": {
+                "type": "string"
+              },
+              "notes": {
+                "type": "string"
+              }
             }
           }
         },

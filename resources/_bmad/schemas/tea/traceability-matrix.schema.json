@@ -4,29 +4,50 @@
   "title": "Traceability Matrix Schema",
   "description": "Comprehensive schema for traceability matrix artifacts - captures COMPLETE requirements to tests mapping with full gap analysis and gate decision",
   "type": "object",
-  "required": ["metadata", "content"],
+  "required": [
+    "metadata",
+    "content"
+  ],
   "properties": {
     "metadata": {
       "$ref": "../common/metadata.schema.json"
     },
     "content": {
       "type": "object",
-      "required": ["storyInfo", "traceability", "gateDecision"],
+      "required": [
+        "storyInfo",
+        "traceability",
+        "gateDecision"
+      ],
       "properties": {
         "storyInfo": {
           "type": "object",
           "description": "Story/Epic being traced",
           "properties": {
-            "storyId": { "type": "string" },
-            "storyTitle": { "type": "string" },
-            "epicId": { "type": "string" },
-            "epicTitle": { "type": "string" },
-            "evaluator": { "type": "string" },
+            "storyId": {
+              "type": "string",
+              "description": "Story identifier using numeric format (e.g. '15.1', '1.3')"
+            },
+            "storyTitle": {
+              "type": "string"
+            },
+            "epicId": {
+              "type": "string",
+              "description": "Epic identifier using numeric format (e.g. '15', '1')"
+            },
+            "epicTitle": {
+              "type": "string"
+            },
+            "evaluator": {
+              "type": "string"
+            },
             "evaluationDate": {
               "type": "string",
               "format": "date"
             },
-            "version": { "type": "string" }
+            "version": {
+              "type": "string"
+            }
           }
         },
         "traceability": {
@@ -44,45 +65,83 @@
                 "p0": {
                   "type": "object",
                   "properties": {
-                    "total": { "type": "integer" },
-                    "covered": { "type": "integer" },
-                    "percentage": { "type": "number" },
-                    "status": { "type": "string" }
+                    "total": {
+                      "type": "integer"
+                    },
+                    "covered": {
+                      "type": "integer"
+                    },
+                    "percentage": {
+                      "type": "number"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
                   }
                 },
                 "p1": {
                   "type": "object",
                   "properties": {
-                    "total": { "type": "integer" },
-                    "covered": { "type": "integer" },
-                    "percentage": { "type": "number" },
-                    "status": { "type": "string" }
+                    "total": {
+                      "type": "integer"
+                    },
+                    "covered": {
+                      "type": "integer"
+                    },
+                    "percentage": {
+                      "type": "number"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
                   }
                 },
                 "p2": {
                   "type": "object",
                   "properties": {
-                    "total": { "type": "integer" },
-                    "covered": { "type": "integer" },
-                    "percentage": { "type": "number" },
-                    "status": { "type": "string" }
+                    "total": {
+                      "type": "integer"
+                    },
+                    "covered": {
+                      "type": "integer"
+                    },
+                    "percentage": {
+                      "type": "number"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
                   }
                 },
                 "p3": {
                   "type": "object",
                   "properties": {
-                    "total": { "type": "integer" },
-                    "covered": { "type": "integer" },
-                    "percentage": { "type": "number" },
-                    "status": { "type": "string" }
+                    "total": {
+                      "type": "integer"
+                    },
+                    "covered": {
+                      "type": "integer"
+                    },
+                    "percentage": {
+                      "type": "number"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
                   }
                 },
                 "overall": {
                   "type": "object",
                   "properties": {
-                    "total": { "type": "integer" },
-                    "covered": { "type": "integer" },
-                    "percentage": { "type": "number" }
+                    "total": {
+                      "type": "integer"
+                    },
+                    "covered": {
+                      "type": "integer"
+                    },
+                    "percentage": {
+                      "type": "number"
+                    }
                   }
                 }
               }
@@ -93,15 +152,24 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "criterionId": { "type": "string" },
+                  "criterionId": {
+                    "type": "string"
+                  },
                   "criterion": {
                     "type": "string",
                     "description": "COMPLETE acceptance criterion text"
                   },
-                  "requirementId": { "type": "string" },
+                  "requirementId": {
+                    "type": "string"
+                  },
                   "priority": {
                     "type": "string",
-                    "enum": ["P0", "P1", "P2", "P3"]
+                    "enum": [
+                      "P0",
+                      "P1",
+                      "P2",
+                      "P3"
+                    ]
                   },
                   "tests": {
                     "type": "array",
@@ -109,11 +177,15 @@
                     "items": {
                       "type": "object",
                       "properties": {
-                        "testId": { "type": "string" },
-                        "testName": { "type": "string" },
+                        "testId": {
+                          "type": "string"
+                        },
+                        "testName": {
+                          "type": "string"
+                        },
                         "testLevel": {
                           "type": "string",
-                          "enum": ["unit", "integration", "component", "api", "e2e"]
+                          "description": "Recommended values: unit, integration, component, api, e2e — or any domain-appropriate value"
                         },
                         "given": {
                           "type": "string",
@@ -129,23 +201,40 @@
                         },
                         "and": {
                           "type": "array",
-                          "items": { "type": "string" }
+                          "items": {
+                            "type": "string"
+                          }
                         },
                         "status": {
                           "type": "string",
-                          "enum": ["passing", "failing", "skipped", "not-run"]
+                          "enum": [
+                            "passing",
+                            "failing",
+                            "skipped",
+                            "not-run"
+                          ]
                         },
                         "automationStatus": {
                           "type": "string",
-                          "enum": ["automated", "manual", "planned"]
+                          "enum": [
+                            "automated",
+                            "manual",
+                            "planned"
+                          ]
                         },
-                        "filePath": { "type": "string" }
+                        "filePath": {
+                          "type": "string"
+                        }
                       }
                     }
                   },
                   "coverage": {
                     "type": "string",
-                    "enum": ["full", "partial", "none"]
+                    "enum": [
+                      "full",
+                      "partial",
+                      "none"
+                    ]
                   },
                   "coverageNotes": {
                     "type": "string",
@@ -168,12 +257,16 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "gapId": { "type": "string" },
+                      "gapId": {
+                        "type": "string"
+                      },
                       "gap": {
                         "type": "string",
                         "description": "COMPLETE gap description"
                       },
-                      "requirementId": { "type": "string" },
+                      "requirementId": {
+                        "type": "string"
+                      },
                       "impact": {
                         "type": "string",
                         "description": "COMPLETE impact description"
@@ -182,22 +275,32 @@
                         "type": "string",
                         "description": "COMPLETE recommendation"
                       },
-                      "owner": { "type": "string" },
-                      "deadline": { "type": "string" }
+                      "owner": {
+                        "type": "string"
+                      },
+                      "deadline": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
                 "high": {
                   "type": "array",
-                  "items": { "$ref": "#/properties/content/properties/traceability/properties/gapAnalysis/properties/critical/items" }
+                  "items": {
+                    "$ref": "#/properties/content/properties/traceability/properties/gapAnalysis/properties/critical/items"
+                  }
                 },
                 "medium": {
                   "type": "array",
-                  "items": { "$ref": "#/properties/content/properties/traceability/properties/gapAnalysis/properties/critical/items" }
+                  "items": {
+                    "$ref": "#/properties/content/properties/traceability/properties/gapAnalysis/properties/critical/items"
+                  }
                 },
                 "low": {
                   "type": "array",
-                  "items": { "$ref": "#/properties/content/properties/traceability/properties/gapAnalysis/properties/critical/items" }
+                  "items": {
+                    "$ref": "#/properties/content/properties/traceability/properties/gapAnalysis/properties/critical/items"
+                  }
                 }
               }
             },
@@ -207,7 +310,13 @@
               "properties": {
                 "overall": {
                   "type": "string",
-                  "enum": ["excellent", "good", "acceptable", "needs-improvement", "poor"]
+                  "enum": [
+                    "excellent",
+                    "good",
+                    "acceptable",
+                    "needs-improvement",
+                    "poor"
+                  ]
                 },
                 "summary": {
                   "type": "string",
@@ -225,19 +334,29 @@
                       },
                       "type": {
                         "type": "string",
-                        "enum": ["positive", "concern", "issue"]
+                        "description": "Recommended values: positive, concern, issue — or any domain-appropriate value"
                       },
-                      "recommendation": { "type": "string" }
+                      "recommendation": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
                 "scores": {
                   "type": "object",
                   "properties": {
-                    "completeness": { "type": "number" },
-                    "accuracy": { "type": "number" },
-                    "consistency": { "type": "number" },
-                    "maintainability": { "type": "number" }
+                    "completeness": {
+                      "type": "number"
+                    },
+                    "accuracy": {
+                      "type": "number"
+                    },
+                    "consistency": {
+                      "type": "number"
+                    },
+                    "maintainability": {
+                      "type": "number"
+                    }
                   }
                 }
               }
@@ -248,10 +367,14 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "criterion": { "type": "string" },
+                  "criterion": {
+                    "type": "string"
+                  },
                   "duplicateTests": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "recommendation": {
                     "type": "string",
@@ -259,7 +382,11 @@
                   },
                   "action": {
                     "type": "string",
-                    "enum": ["keep-all", "consolidate", "remove-duplicates"]
+                    "enum": [
+                      "keep-all",
+                      "consolidate",
+                      "remove-duplicates"
+                    ]
                   }
                 }
               }
@@ -271,36 +398,56 @@
                 "unit": {
                   "type": "object",
                   "properties": {
-                    "count": { "type": "integer" },
-                    "percentage": { "type": "number" }
+                    "count": {
+                      "type": "integer"
+                    },
+                    "percentage": {
+                      "type": "number"
+                    }
                   }
                 },
                 "integration": {
                   "type": "object",
                   "properties": {
-                    "count": { "type": "integer" },
-                    "percentage": { "type": "number" }
+                    "count": {
+                      "type": "integer"
+                    },
+                    "percentage": {
+                      "type": "number"
+                    }
                   }
                 },
                 "component": {
                   "type": "object",
                   "properties": {
-                    "count": { "type": "integer" },
-                    "percentage": { "type": "number" }
+                    "count": {
+                      "type": "integer"
+                    },
+                    "percentage": {
+                      "type": "number"
+                    }
                   }
                 },
                 "api": {
                   "type": "object",
                   "properties": {
-                    "count": { "type": "integer" },
-                    "percentage": { "type": "number" }
+                    "count": {
+                      "type": "integer"
+                    },
+                    "percentage": {
+                      "type": "number"
+                    }
                   }
                 },
                 "e2e": {
                   "type": "object",
                   "properties": {
-                    "count": { "type": "integer" },
-                    "percentage": { "type": "number" }
+                    "count": {
+                      "type": "integer"
+                    },
+                    "percentage": {
+                      "type": "number"
+                    }
                   }
                 }
               }
@@ -317,11 +464,20 @@
                   },
                   "priority": {
                     "type": "string",
-                    "enum": ["critical", "high", "medium", "low"]
+                    "enum": [
+                      "critical",
+                      "high",
+                      "medium",
+                      "low"
+                    ]
                   },
                   "effort": {
                     "type": "string",
-                    "enum": ["low", "medium", "high"]
+                    "enum": [
+                      "low",
+                      "medium",
+                      "high"
+                    ]
                   }
                 }
               }
@@ -334,11 +490,15 @@
           "properties": {
             "gateType": {
               "type": "string",
-              "enum": ["story", "epic", "release", "hotfix"]
+              "description": "Recommended values: story, epic, release, hotfix — or any domain-appropriate value"
             },
             "decisionMode": {
               "type": "string",
-              "enum": ["deterministic", "manual", "hybrid"]
+              "enum": [
+                "deterministic",
+                "manual",
+                "hybrid"
+              ]
             },
             "evidenceSummary": {
               "type": "object",
@@ -347,28 +507,50 @@
                 "testExecution": {
                   "type": "object",
                   "properties": {
-                    "total": { "type": "integer" },
-                    "passed": { "type": "integer" },
-                    "failed": { "type": "integer" },
-                    "skipped": { "type": "integer" },
-                    "passRate": { "type": "number" }
+                    "total": {
+                      "type": "integer"
+                    },
+                    "passed": {
+                      "type": "integer"
+                    },
+                    "failed": {
+                      "type": "integer"
+                    },
+                    "skipped": {
+                      "type": "integer"
+                    },
+                    "passRate": {
+                      "type": "number"
+                    }
                   }
                 },
                 "coverage": {
                   "type": "object",
                   "properties": {
-                    "statement": { "type": "number" },
-                    "branch": { "type": "number" },
-                    "requirement": { "type": "number" }
+                    "statement": {
+                      "type": "number"
+                    },
+                    "branch": {
+                      "type": "number"
+                    },
+                    "requirement": {
+                      "type": "number"
+                    }
                   }
                 },
                 "nfrStatus": {
                   "type": "string",
                   "description": "COMPLETE NFR status summary"
                 },
-                "flakinessScore": { "type": "number" },
-                "regressionStatus": { "type": "string" },
-                "performanceStatus": { "type": "string" }
+                "flakinessScore": {
+                  "type": "number"
+                },
+                "regressionStatus": {
+                  "type": "string"
+                },
+                "performanceStatus": {
+                  "type": "string"
+                }
               }
             },
             "decisionCriteria": {
@@ -378,37 +560,69 @@
                 "p0": {
                   "type": "object",
                   "properties": {
-                    "required": { "type": "number" },
-                    "actual": { "type": "number" },
-                    "pass": { "type": "boolean" },
-                    "notes": { "type": "string" }
+                    "required": {
+                      "type": "number"
+                    },
+                    "actual": {
+                      "type": "number"
+                    },
+                    "pass": {
+                      "type": "boolean"
+                    },
+                    "notes": {
+                      "type": "string"
+                    }
                   }
                 },
                 "p1": {
                   "type": "object",
                   "properties": {
-                    "required": { "type": "number" },
-                    "actual": { "type": "number" },
-                    "pass": { "type": "boolean" },
-                    "notes": { "type": "string" }
+                    "required": {
+                      "type": "number"
+                    },
+                    "actual": {
+                      "type": "number"
+                    },
+                    "pass": {
+                      "type": "boolean"
+                    },
+                    "notes": {
+                      "type": "string"
+                    }
                   }
                 },
                 "p2": {
                   "type": "object",
                   "properties": {
-                    "required": { "type": "number" },
-                    "actual": { "type": "number" },
-                    "pass": { "type": "boolean" },
-                    "notes": { "type": "string" }
+                    "required": {
+                      "type": "number"
+                    },
+                    "actual": {
+                      "type": "number"
+                    },
+                    "pass": {
+                      "type": "boolean"
+                    },
+                    "notes": {
+                      "type": "string"
+                    }
                   }
                 },
                 "p3": {
                   "type": "object",
                   "properties": {
-                    "required": { "type": "number" },
-                    "actual": { "type": "number" },
-                    "pass": { "type": "boolean" },
-                    "notes": { "type": "string" }
+                    "required": {
+                      "type": "number"
+                    },
+                    "actual": {
+                      "type": "number"
+                    },
+                    "pass": {
+                      "type": "boolean"
+                    },
+                    "notes": {
+                      "type": "string"
+                    }
                   }
                 },
                 "additionalCriteria": {
@@ -416,10 +630,18 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "criterion": { "type": "string" },
-                      "required": { "type": "string" },
-                      "actual": { "type": "string" },
-                      "pass": { "type": "boolean" }
+                      "criterion": {
+                        "type": "string"
+                      },
+                      "required": {
+                        "type": "string"
+                      },
+                      "actual": {
+                        "type": "string"
+                      },
+                      "pass": {
+                        "type": "boolean"
+                      }
                     }
                   }
                 }
@@ -427,7 +649,12 @@
             },
             "decision": {
               "type": "string",
-              "enum": ["PASS", "CONCERNS", "FAIL", "WAIVED"]
+              "enum": [
+                "PASS",
+                "CONCERNS",
+                "FAIL",
+                "WAIVED"
+              ]
             },
             "rationale": {
               "type": "string",
@@ -443,9 +670,15 @@
                     "type": "string",
                     "description": "COMPLETE risk description"
                   },
-                  "severity": { "type": "string" },
-                  "acceptedBy": { "type": "string" },
-                  "mitigation": { "type": "string" }
+                  "severity": {
+                    "type": "string"
+                  },
+                  "acceptedBy": {
+                    "type": "string"
+                  },
+                  "mitigation": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -453,14 +686,18 @@
               "type": "object",
               "description": "Waiver details if applicable",
               "properties": {
-                "approver": { "type": "string" },
+                "approver": {
+                  "type": "string"
+                },
                 "reason": {
                   "type": "string",
                   "description": "COMPLETE waiver reason"
                 },
                 "conditions": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 },
                 "expirationDate": {
                   "type": "string",
@@ -468,7 +705,9 @@
                 },
                 "followUpActions": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -482,9 +721,15 @@
                     "type": "string",
                     "description": "COMPLETE issue description"
                   },
-                  "severity": { "type": "string" },
-                  "resolution": { "type": "string" },
-                  "status": { "type": "string" }
+                  "severity": {
+                    "type": "string"
+                  },
+                  "resolution": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -498,8 +743,12 @@
                     "type": "string",
                     "description": "COMPLETE recommendation"
                   },
-                  "priority": { "type": "string" },
-                  "owner": { "type": "string" }
+                  "priority": {
+                    "type": "string"
+                  },
+                  "owner": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -513,8 +762,12 @@
                     "type": "string",
                     "description": "COMPLETE step description"
                   },
-                  "owner": { "type": "string" },
-                  "deadline": { "type": "string" }
+                  "owner": {
+                    "type": "string"
+                  },
+                  "deadline": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -530,9 +783,15 @@
           "items": {
             "type": "object",
             "properties": {
-              "artifact": { "type": "string" },
-              "path": { "type": "string" },
-              "version": { "type": "string" }
+              "artifact": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              }
             }
           }
         },
@@ -540,14 +799,22 @@
           "type": "object",
           "description": "Sign-off section",
           "properties": {
-            "signedBy": { "type": "string" },
+            "signedBy": {
+              "type": "string"
+            },
             "date": {
               "type": "string",
               "format": "date"
             },
-            "role": { "type": "string" },
-            "signature": { "type": "string" },
-            "comments": { "type": "string" }
+            "role": {
+              "type": "string"
+            },
+            "signature": {
+              "type": "string"
+            },
+            "comments": {
+              "type": "string"
+            }
           }
         }
       }

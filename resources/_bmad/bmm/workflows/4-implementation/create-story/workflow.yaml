@@ -6,6 +6,11 @@ output_format: dual  # JSON (primary) + Markdown (human-readable)
 schema_file: "{bmad-path}/schemas/bmm/story.schema.json"
 template_json: "{installed_path}/template.json"
 
+# Reference Architecture Note:
+# Stories use `id` (not `storyId`) and MUST include `epicId` for parent epic routing.
+# Stories are standalone files in implementation-artifacts/ — not embedded in epics.json.
+# Requirements live in PRD. Stories reference them via `requirementRefs`.
+
 # Critical variables from config
 config_source: "{bmad-path}/bmm/config.yaml"
 user_name: "{config_source}:user_name"

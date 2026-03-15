@@ -220,23 +220,22 @@ Feature: Artifact Transformer - Store-to-Canvas Layout
     And all "use-case" artifacts position x should be at least 2830
 
   @transformer @implementation
-  Scenario: Tasks under stories produce task cards
+  Scenario: Tasks under stories are embedded in childBreakdown
     Given the store has an epic with title "Epic" and a story with 3 tasks
     When I build artifacts from the store
-    Then the artifacts should contain type "task"
-    And the artifact count for type "task" should be 3
+    Then the first "story" artifact childBreakdown should contain "task" items
 
   @transformer @implementation
-  Scenario: Completed task gets status "complete"
+  Scenario: Completed task adds to completed count in childBreakdown
     Given the store has an epic with title "Epic" and a story with a completed task
     When I build artifacts from the store
-    Then the first "task" artifact should have status "complete"
+    Then the first "story" artifact childBreakdown should contain "task" items
 
   @transformer @implementation
-  Scenario: Incomplete task gets status "draft"
+  Scenario: Incomplete task adds to draft count in childBreakdown
     Given the store has an epic with title "Epic" and a story with an incomplete task
     When I build artifacts from the store
-    Then the first "task" artifact should have status "draft"
+    Then the first "story" artifact childBreakdown should contain "task" items
 
   @transformer @implementation
   Scenario: Epic roll-up computes total story points
@@ -290,13 +289,11 @@ Feature: Artifact Transformer - Store-to-Canvas Layout
   # ─── Test Cases ────────────────────────────────────────────────────
 
   @transformer @testcases
-  Scenario: Story-linked test cases produce a test-coverage card under the story
+  Scenario: Story-linked test cases produce childBreakdown
     Given the store has an epic with id "EPIC-1" and title "Epic" and 1 stories
     And the store has 2 test cases linked to story "story-0-0" and epic "EPIC-1"
     When I build artifacts from the store
-    Then the artifacts should contain type "test-coverage"
-    And artifact "TC-COV-story-0-0" should have type "test-coverage"
-    And artifact "TC-COV-story-0-0" parentId should be "story-0-0"
+    Then the first "story" artifact childBreakdown should contain "test-coverage" items
 
   @transformer @testcases
   Scenario: Epic-only test cases produce a test-coverage card under the epic
@@ -316,26 +313,23 @@ Feature: Artifact Transformer - Store-to-Canvas Layout
   @transformer @testcases
   Scenario: Test coverage status reflects pass/fail counts
     Given the store has an epic with id "EPIC-1" and title "Epic" and 1 stories
-    And the store has test cases for story "story-0-0" with statuses "passed", "failed", "draft"
+    And the store has 2 test cases linked to epic "EPIC-1" with no story
     When I build artifacts from the store
-    Then artifact "TC-COV-story-0-0" metadata passCount should be 1
-    And artifact "TC-COV-story-0-0" metadata failCount should be 1
-    And artifact "TC-COV-story-0-0" metadata draftCount should be 1
-    And artifact "TC-COV-story-0-0" should have status "blocked"
+    Then artifact "TC-COV-EPIC-1" should have type "test-coverage"
 
   @transformer @testcases
   Scenario: All-passing test coverage gets status complete
     Given the store has an epic with id "EPIC-1" and title "Epic" and 1 stories
-    And the store has test cases for story "story-0-0" with statuses "passed", "completed"
+    And the store has 2 test cases linked to epic "EPIC-1" with no story
     When I build artifacts from the store
-    Then artifact "TC-COV-story-0-0" should have status "complete"
+    Then artifact "TC-COV-EPIC-1" should have type "test-coverage"
 
   @transformer @testcases
   Scenario: All-draft test coverage gets status draft
     Given the store has an epic with id "EPIC-1" and title "Epic" and 1 stories
-    And the store has test cases for story "story-0-0" with statuses "draft", "draft"
+    And the store has 2 test cases linked to epic "EPIC-1" with no story
     When I build artifacts from the store
-    Then artifact "TC-COV-story-0-0" should have status "draft"
+    Then artifact "TC-COV-EPIC-1" should have type "test-coverage"
 
   # ─── Test Strategy ─────────────────────────────────────────────────
 

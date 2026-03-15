@@ -21,6 +21,8 @@ interface IdeTarget {
     detail: string;
     /** Directory for skill directories, relative to workspace root */
     skillsDir: string;
+    /** Directory for workflow stubs (slash-commands), relative to workspace root. Omit if IDE doesn't support workflows. */
+    workflowsDir?: string;
     /** Legacy directories to clean up on install */
     legacyDirs: string[];
     /** Whether this IDE is a preferred/recommended option */
@@ -74,7 +76,8 @@ const IDE_TARGETS: Record<IdeId, IdeTarget> = {
         description: '.agent/skills/',
         detail: 'Installs BMAD skills for Google Antigravity',
         skillsDir: '.agent/skills',
-        legacyDirs: ['.agent/workflows', '.antigravity'],
+        workflowsDir: '.agent/workflows',
+        legacyDirs: ['.antigravity'],
         preferred: false,
     },
     auggie: {
@@ -200,7 +203,7 @@ const IDE_TARGETS: Record<IdeId, IdeTarget> = {
         description: '.rovodev/skills/',
         detail: 'Installs BMAD skills for Rovo Dev',
         skillsDir: '.rovodev/skills',
-        legacyDirs: ['.rovodev/workflows'],
+        legacyDirs: [],
         preferred: false,
     },
     trae: {
@@ -218,7 +221,7 @@ const IDE_TARGETS: Record<IdeId, IdeTarget> = {
         description: '.windsurf/skills/',
         detail: 'Installs BMAD skills for Windsurf (Agent Skills format)',
         skillsDir: '.windsurf/skills',
-        legacyDirs: ['.windsurf/workflows', '.windsurf/rules'],
+        legacyDirs: ['.windsurf/rules'],
         preferred: false,
     },
 
@@ -632,6 +635,544 @@ function writeSkillDirs(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Workflow stubs — slash-commands for IDEs that support .agent/workflows/
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface WorkflowStub {
+    /** Filename (without .md) — becomes the slash-command name */
+    name: string;
+    /** YAML frontmatter description */
+    description: string;
+    /** Markdown body instructions */
+    body: string;
+}
+
+/**
+ * AgileAgentCanvas workflow stubs.
+ * Each one tells the AI agent to delegate to the @agileagentcanvas chat participant.
+ */
+const AC_WORKFLOWS: WorkflowStub[] = [
+    {
+        name: 'refine',
+        description: 'Refine a specific artifact with AI suggestions',
+        body: `# Refine Artifact
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel (Ctrl+Shift+I or Cmd+Shift+I)
+2. Type: \`@agileagentcanvas /refine <artifact-id>\` (e.g. \`/refine 1.1\`, \`/refine EPIC-1\`)
+3. Optionally add context: \`@agileagentcanvas /refine 1.1 Story Enhancement\`
+4. The extension will load the artifact, its schema, and present refinement workflows
+5. After refinement, use \`@agileagentcanvas /apply\` to save changes
+`,
+    },
+    {
+        name: 'enhance',
+        description: 'Add verbose details: use cases, fit criteria, risks to artifacts',
+        body: `# Enhance Artifact
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /enhance <artifact-id>\`
+3. The extension adds use cases, acceptance criteria, fit criteria, risks, and technical notes
+`,
+    },
+    {
+        name: 'review',
+        description: 'Review and validate artifact completeness',
+        body: `# Review Artifacts
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /review\` to review all artifacts
+3. Or: \`@agileagentcanvas /review <artifact-id>\` for a specific artifact
+`,
+    },
+    {
+        name: 'dev',
+        description: 'Start development workflow for a story, epic, or test case',
+        body: `# Development Workflow
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /dev <story-id>\` (e.g. \`/dev S-1.1\`)
+3. The extension loads the story with full context and starts the dev workflow
+`,
+    },
+    {
+        name: 'vision',
+        description: 'Define product vision and problem statement',
+        body: `# Product Vision
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /vision\`
+3. Follow the guided workflow to define your product vision
+`,
+    },
+    {
+        name: 'requirements',
+        description: 'Extract and organize requirements from PRD',
+        body: `# Requirements Extraction
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /requirements\`
+3. The extension extracts and organizes functional, non-functional, and additional requirements
+`,
+    },
+    {
+        name: 'epics',
+        description: 'Design epic structure organized by user value',
+        body: `# Epic Design
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /epics\`
+3. The extension helps design your epic structure organized by user value
+
+## File Structure Reference
+
+Epic artifacts are stored under \`.agileagentcanvas-context/planning-artifacts/\`:
+
+- **\`epics.json\`** — Lightweight manifest with refs to individual epic files
+- **\`epics/epic-{id}.json\`** — Full content for each epic (stories, metadata, goals)
+- **\`epics-index.json\`** — Summary index of all epics (id, title, status, storyCount)
+- **\`stories/story-{id}.json\`** — Standalone story files (when extracted from epics)
+- **\`stories-index.json\`** — Summary index of all stories
+
+To read a specific epic, check \`epics.json\` for the \`file\` path, then load that file.
+`,
+    },
+    {
+        name: 'stories',
+        description: 'Break down epics into implementable stories',
+        body: `# Story Breakdown
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /stories\` or \`@agileagentcanvas /stories <epic-id>\`
+3. The extension breaks epics into implementable user stories
+
+## File Structure Reference
+
+Story artifacts are stored under \`.agileagentcanvas-context/planning-artifacts/\`:
+
+- **\`stories/story-{id}.json\`** — Standalone story files with full detail
+- **\`stories-index.json\`** — Summary index of all stories (id, title, epicId, status)
+- **\`epics/epic-{id}.json\`** — Parent epic files (may contain inline stories)
+- **\`epics-index.json\`** — Summary index of all epics
+
+Use \`stories-index.json\` to find a story, then load its standalone file.
+`,
+    },
+    {
+        name: 'sprint',
+        description: 'Sprint planning from epics or check sprint status',
+        body: `# Sprint Planning
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /sprint\`
+3. The extension assists with sprint planning and status tracking
+`,
+    },
+    {
+        name: 'quick',
+        description: 'Quick spec + dev flow for small changes (spec or dev mode)',
+        body: `# Quick Spec/Dev
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /quick spec <description>\` for a quick tech spec
+3. Or: \`@agileagentcanvas /quick dev <description>\` for quick implementation
+`,
+    },
+    {
+        name: 'convert-to-json',
+        description: 'Convert markdown artifacts to structured JSON format',
+        body: `# Convert to JSON
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /convert-to-json\`
+3. The extension converts markdown artifacts to schema-compliant JSON
+`,
+    },
+    {
+        name: 'readiness',
+        description: 'Check implementation readiness of PRD, architecture, epics and stories',
+        body: `# Readiness Check
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /readiness\`
+3. The extension validates PRD, architecture, epics, and stories for implementation readiness
+`,
+    },
+    {
+        name: 'ux',
+        description: 'Create UX design specifications through collaborative exploration',
+        body: `# UX Design
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /ux\`
+3. The extension guides collaborative UX design specification creation
+`,
+    },
+    {
+        name: 'design-thinking',
+        description: 'Guide human-centered design using empathy-driven methodologies',
+        body: `# Design Thinking
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /design-thinking\`
+`,
+    },
+    {
+        name: 'innovate',
+        description: 'Identify disruption opportunities and architect business model innovation',
+        body: `# Innovation Strategy
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /innovate\`
+`,
+    },
+    {
+        name: 'solve',
+        description: 'Apply systematic problem-solving methodologies to complex challenges',
+        body: `# Problem Solving
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /solve\`
+`,
+    },
+    {
+        name: 'story-craft',
+        description: 'Craft compelling narratives using storytelling frameworks',
+        body: `# Story Craft
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /story-craft\`
+`,
+    },
+    {
+        name: 'elicit',
+        description: 'Apply an advanced elicitation method to an artifact and save results',
+        body: `# Advanced Elicitation
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /elicit <artifact-id>\`
+3. The extension applies advanced elicitation methods (SCAMPER, Six Hats, etc.)
+`,
+    },
+    {
+        name: 'context',
+        description: 'Generate an LLM-optimized project-context.md with implementation rules',
+        body: `# Project Context Generation
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /context\`
+3. The extension generates a comprehensive project-context.md for AI consumption
+`,
+    },
+    {
+        name: 'document',
+        description: 'Document a brownfield project for AI context (full scan or deep dive)',
+        body: `# Project Documentation
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /document\`
+3. The extension scans and documents your existing project for AI context
+`,
+    },
+    {
+        name: 'review-code',
+        description: 'Adversarial code review finding specific issues',
+        body: `# Code Review
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /review-code\`
+3. The extension performs an adversarial code review to find specific issues
+`,
+    },
+    {
+        name: 'ci',
+        description: 'Scaffold CI/CD quality pipeline with test execution and quality gates',
+        body: `# CI/CD Pipeline
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /ci\`
+3. The extension scaffolds a CI/CD quality pipeline
+`,
+    },
+    {
+        name: 'party',
+        description: 'Multi-agent collaboration mode — all BMAD agents discuss your topic',
+        body: `# Party Mode
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /party <topic>\`
+3. All BMAD agents collaborate on your topic
+`,
+    },
+    {
+        name: 'write-doc',
+        description: 'Write a document with the Tech Writer agent',
+        body: `# Write Document
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /write-doc <description>\`
+`,
+    },
+    {
+        name: 'mermaid',
+        description: 'Generate a Mermaid diagram with the Tech Writer agent',
+        body: `# Mermaid Diagram
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /mermaid <description>\`
+`,
+    },
+    {
+        name: 'readme',
+        description: 'Generate or update a README.md from project analysis',
+        body: `# README Generation
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /readme\`
+`,
+    },
+    {
+        name: 'changelog',
+        description: 'Generate changelog or release notes from git history',
+        body: `# Changelog Generation
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /changelog\`
+`,
+    },
+    {
+        name: 'api-docs',
+        description: 'Generate API documentation from source code',
+        body: `# API Documentation
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /api-docs\`
+`,
+    },
+    {
+        name: 'apply',
+        description: 'Apply pending AI refinements to the artifact JSON file',
+        body: `# Apply Changes
+
+This command is handled by the **Agile Agent Canvas** extension.
+
+## How to use
+
+1. Open the VS Code Chat panel
+2. Type: \`@agileagentcanvas /apply\`
+3. The extension applies pending refinements from the last /refine session
+`,
+    },
+];
+
+/**
+ * Write workflow stubs into the IDE's workflows directory.
+ * Each stub becomes: <workflowsDir>/<name>.md
+ */
+function writeWorkflowStubs(
+    workflowsDir: string,
+    overwrite: boolean
+): { written: number; skipped: number } {
+    if (!fs.existsSync(workflowsDir)) {
+        fs.mkdirSync(workflowsDir, { recursive: true });
+    }
+
+    let written = 0;
+    let skipped = 0;
+
+    for (const wf of AC_WORKFLOWS) {
+        const filePath = path.join(workflowsDir, `${wf.name}.md`);
+
+        if (!overwrite && fs.existsSync(filePath)) {
+            acOutput.appendLine(`[IDE-Install] Skipped workflow (exists): ${wf.name}.md`);
+            skipped++;
+            continue;
+        }
+
+        try {
+            const content = `---\ndescription: ${wf.description}\n---\n\n${wf.body}`;
+            fs.writeFileSync(filePath, content, 'utf-8');
+            written++;
+            acOutput.appendLine(`[IDE-Install] Wrote workflow: ${wf.name}.md`);
+        } catch (err) {
+            acOutput.appendLine(`[IDE-Install] Error writing workflow ${wf.name}: ${err}`);
+        }
+    }
+
+    return { written, skipped };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Schema reference — tell LLMs where BMAD schemas live
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Write a single reference file that tells LLMs where to find BMAD schemas.
+ * Instead of copying 41+ schema files into every workspace, we just point
+ * the LLM to the extension's bundled schemas directory.
+ */
+function writeSchemaReference(
+    extensionPath: string,
+    workspaceRoot: string
+): void {
+    const schemasDir = path.join(extensionPath, 'resources', '_bmad', 'schemas');
+    if (!fs.existsSync(schemasDir)) return;
+
+    const agentDir = path.join(workspaceRoot, '.agent');
+    if (!fs.existsSync(agentDir)) {
+        fs.mkdirSync(agentDir, { recursive: true });
+    }
+
+    const refPath = path.join(agentDir, 'schemas-location.md');
+    const content = `---
+description: Location of BMAD JSON schemas for artifact validation
+---
+
+# BMAD Schema Files
+
+The BMAD JSON schemas used by the Agile Agent Canvas extension are located at:
+
+\`\`\`
+${schemasDir}
+\`\`\`
+
+## Directory structure
+
+- \`bmm/\` — Business Management Module schemas (story, epics, prd, architecture, etc.)
+- \`tea/\` — Test Engineering & Automation schemas (test-design, test-strategy, etc.)
+- \`cis/\` — Creative & Innovation Suite schemas
+- \`common/\` — Shared schemas (risks, requirements, etc.)
+
+## Usage
+
+When you need to validate or understand the structure of a BMAD artifact (e.g. a story, epic, PRD),
+read the corresponding schema file from the path above. For example:
+
+- Story schema: \`${schemasDir}${path.sep}bmm${path.sep}story.schema.json\`
+- Epics schema: \`${schemasDir}${path.sep}bmm${path.sep}epics.schema.json\`
+- PRD schema: \`${schemasDir}${path.sep}bmm${path.sep}prd.schema.json\`
+`;
+
+    try {
+        fs.writeFileSync(refPath, content, 'utf-8');
+        acOutput.appendLine(`[IDE-Install] Wrote schema reference: .agent/schemas-location.md`);
+    } catch (err) {
+        acOutput.appendLine(`[IDE-Install] Error writing schema reference: ${err}`);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Auto-install on activation (silent, no prompts)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -682,14 +1223,29 @@ export async function autoInstallIfNeeded(extensionPath: string): Promise<void> 
     const artifacts = loadArtifacts(bmadResourcePath);
     const { written } = writeSkillDirs(ide, artifacts, workspaceRoot, true, bmadResourcePath);
 
-    if (written > 0) {
-        acOutput.appendLine(`[IDE-Install] Auto-install complete: ${written} skills`);
+    // Also provision workflow stubs (slash-commands) if IDE supports them
+    let workflowsWritten = 0;
+    if (ide.workflowsDir) {
+        const wfDir = path.join(workspaceRoot, ide.workflowsDir);
+        const wfResult = writeWorkflowStubs(wfDir, true);
+        workflowsWritten = wfResult.written;
+        if (workflowsWritten > 0) {
+            acOutput.appendLine(`[IDE-Install] Auto-installed ${workflowsWritten} workflow stubs`);
+        }
+    }
+
+    // Write schema reference file so LLMs know where to find BMAD schemas
+    writeSchemaReference(extensionPath, workspaceRoot);
+
+    if (written > 0 || workflowsWritten > 0) {
+        acOutput.appendLine(`[IDE-Install] Auto-install complete: ${written} skills, ${workflowsWritten} workflows`);
 
         const counts = countByType(artifacts);
         const summary = formatCountSummary(counts);
+        const wfNote = workflowsWritten > 0 ? ` + ${workflowsWritten} workflows` : '';
 
         const action = await vscode.window.showInformationMessage(
-            `AgileAgentCanvas: Installed ${summary} for ${ide.label} into \`${ide.skillsDir}/\``,
+            `AgileAgentCanvas: Installed ${summary}${wfNote} for ${ide.label} into \`${ide.skillsDir}/\``,
             'Show Files',
             'Dismiss'
         );
@@ -878,6 +1434,17 @@ export async function installToIde(extensionPath: string): Promise<void> {
                 const { written, skipped } = writeSkillDirs(ide, selectedArtifacts, root, overwrite, bmadResourcePath);
                 totalWritten += written;
                 totalSkipped += skipped;
+
+                // Also provision workflow stubs if IDE supports them
+                if (ide.workflowsDir) {
+                    const wfDir = path.join(root, ide.workflowsDir);
+                    const wfResult = writeWorkflowStubs(wfDir, overwrite);
+                    totalWritten += wfResult.written;
+                    totalSkipped += wfResult.skipped;
+                }
+
+                // Deploy schema reference
+                writeSchemaReference(extensionPath, root);
             }
         }
     );

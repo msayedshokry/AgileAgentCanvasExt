@@ -280,6 +280,19 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
         // authoritative layout engine in artifact-transformer.ts.
         const artifacts = buildArtifacts(this.store);
         acOutput.appendLine(`[CanvasProvider] Transformed to ${artifacts.length} artifacts`);
+
+        // Derive active folder name for the toolbar display
+        let activeFolderName = '';
+        try {
+            const { getWorkspaceResolver } = require('../extension');
+            const resolver = getWorkspaceResolver();
+            const outputUri = resolver?.getActiveOutputUri();
+            if (outputUri) {
+                activeFolderName = outputUri.fsPath.replace(/\\/g, '/').split('/').pop() || '';
+            }
+        } catch {
+            // Resolver unavailable (e.g. test environment)
+        }
         
         if (!this._view) {
             acOutput.appendLine('[CanvasProvider] No view yet, queuing artifacts');
@@ -291,7 +304,8 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
         this._lastArtifacts = artifacts;
         this._view.webview.postMessage({
             type: 'updateArtifacts',
-            artifacts
+            artifacts,
+            activeFolderName
         });
     }
 

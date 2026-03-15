@@ -4,14 +4,21 @@
   "title": "Innovation Strategy Schema",
   "description": "Schema for innovation strategy artifacts. IMPORTANT: Capture ALL market analysis, strategic options, innovation opportunities, and execution plans completely. Do NOT summarize or truncate any competitive analysis, strategic recommendations, or roadmap details.",
   "type": "object",
-  "required": ["metadata", "content"],
+  "required": [
+    "metadata",
+    "content"
+  ],
   "properties": {
     "metadata": {
       "$ref": "../common/metadata.schema.json"
     },
     "content": {
       "type": "object",
-      "required": ["companyName", "strategicContext", "recommendedStrategy"],
+      "required": [
+        "companyName",
+        "strategicContext",
+        "recommendedStrategy"
+      ],
       "properties": {
         "companyName": {
           "type": "string",
@@ -25,24 +32,39 @@
           "type": "object",
           "description": "Strategy session information",
           "properties": {
-            "facilitator": { "type": "string" },
+            "facilitator": {
+              "type": "string"
+            },
             "participants": {
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
-                  "role": { "type": "string" },
-                  "expertise": { "type": "string" }
+                  "name": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "type": "string"
+                  },
+                  "expertise": {
+                    "type": "string"
+                  }
                 }
               }
             },
-            "date": { "type": "string", "format": "date" },
-            "duration": { "type": "string" },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "duration": {
+              "type": "string"
+            },
             "frameworksUsed": {
               "type": "array",
               "description": "Strategic frameworks used",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
@@ -72,10 +94,14 @@
                     "type": "string",
                     "description": "COMPLETE objective description"
                   },
-                  "timeframe": { "type": "string" },
+                  "timeframe": {
+                    "type": "string"
+                  },
                   "metrics": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -83,7 +109,9 @@
             "keyQuestions": {
               "type": "array",
               "description": "Key strategic questions to answer",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
@@ -102,12 +130,23 @@
                 "marketSize": {
                   "type": "object",
                   "properties": {
-                    "tam": { "type": "string", "description": "Total Addressable Market" },
-                    "sam": { "type": "string", "description": "Serviceable Addressable Market" },
-                    "som": { "type": "string", "description": "Serviceable Obtainable Market" }
+                    "tam": {
+                      "type": "string",
+                      "description": "Total Addressable Market"
+                    },
+                    "sam": {
+                      "type": "string",
+                      "description": "Serviceable Addressable Market"
+                    },
+                    "som": {
+                      "type": "string",
+                      "description": "Serviceable Obtainable Market"
+                    }
                   }
                 },
-                "growthRate": { "type": "string" },
+                "growthRate": {
+                  "type": "string"
+                },
                 "keyTrends": {
                   "type": "array",
                   "description": "ALL key market trends",
@@ -122,7 +161,9 @@
                         "type": "string",
                         "description": "Impact on strategy"
                       },
-                      "timeframe": { "type": "string" }
+                      "timeframe": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
@@ -146,25 +187,35 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "name": { "type": "string" },
+                      "name": {
+                        "type": "string"
+                      },
                       "type": {
                         "type": "string",
-                        "enum": ["direct", "indirect", "potential"]
+                        "description": "Recommended values: direct, indirect, potential — or any domain-appropriate value"
                       },
-                      "marketShare": { "type": "string" },
+                      "marketShare": {
+                        "type": "string"
+                      },
                       "strengths": {
                         "type": "array",
-                        "items": { "type": "string" }
+                        "items": {
+                          "type": "string"
+                        }
                       },
                       "weaknesses": {
                         "type": "array",
-                        "items": { "type": "string" }
+                        "items": {
+                          "type": "string"
+                        }
                       },
                       "strategy": {
                         "type": "string",
                         "description": "COMPLETE description of their strategy"
                       },
-                      "differentiation": { "type": "string" }
+                      "differentiation": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
@@ -180,15 +231,26 @@
                       },
                       "sustainability": {
                         "type": "string",
-                        "enum": ["high", "medium", "low"]
+                        "enum": [
+                          "high",
+                          "medium",
+                          "low"
+                        ]
                       },
-                      "evidenc": { "type": "string" }
+                      "evidenc": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
                 "threatLevel": {
                   "type": "string",
-                  "enum": ["low", "moderate", "high", "critical"]
+                  "enum": [
+                    "low",
+                    "moderate",
+                    "high",
+                    "critical"
+                  ]
                 }
               }
             },
@@ -202,22 +264,37 @@
                     "type": "string",
                     "description": "COMPLETE opportunity description"
                   },
-                  "size": { "type": "string" },
+                  "size": {
+                    "type": "string"
+                  },
                   "timing": {
                     "type": "string",
-                    "enum": ["immediate", "short-term", "medium-term", "long-term"]
+                    "enum": [
+                      "immediate",
+                      "short-term",
+                      "medium-term",
+                      "long-term"
+                    ]
                   },
                   "fitWithCapabilities": {
                     "type": "string",
-                    "enum": ["high", "medium", "low"]
+                    "enum": [
+                      "high",
+                      "medium",
+                      "low"
+                    ]
                   },
                   "requiredCapabilities": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "barriers": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -232,7 +309,9 @@
                     "type": "string",
                     "description": "COMPLETE insight description"
                   },
-                  "source": { "type": "string" },
+                  "source": {
+                    "type": "string"
+                  },
                   "strategicImplication": {
                     "type": "string",
                     "description": "COMPLETE strategic implication"
@@ -249,8 +328,12 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "strength": { "type": "string" },
-                      "leverage": { "type": "string" }
+                      "strength": {
+                        "type": "string"
+                      },
+                      "leverage": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
@@ -259,8 +342,12 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "weakness": { "type": "string" },
-                      "mitigation": { "type": "string" }
+                      "weakness": {
+                        "type": "string"
+                      },
+                      "mitigation": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
@@ -269,8 +356,12 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "opportunity": { "type": "string" },
-                      "captureStrategy": { "type": "string" }
+                      "opportunity": {
+                        "type": "string"
+                      },
+                      "captureStrategy": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
@@ -279,8 +370,12 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "threat": { "type": "string" },
-                      "response": { "type": "string" }
+                      "threat": {
+                        "type": "string"
+                      },
+                      "response": {
+                        "type": "string"
+                      }
                     }
                   }
                 }
@@ -302,39 +397,57 @@
               "properties": {
                 "valuePropositions": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 },
                 "customerSegments": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 },
                 "channels": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 },
                 "customerRelationships": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 },
                 "revenueStreams": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 },
                 "keyResources": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 },
                 "keyActivities": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 },
                 "keyPartnerships": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 },
                 "costStructure": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -356,10 +469,17 @@
                     "type": "string",
                     "description": "COMPLETE weakness description"
                   },
-                  "impact": { "type": "string" },
+                  "impact": {
+                    "type": "string"
+                  },
                   "urgency": {
                     "type": "string",
-                    "enum": ["critical", "high", "medium", "low"]
+                    "enum": [
+                      "critical",
+                      "high",
+                      "medium",
+                      "low"
+                    ]
                   }
                 }
               }
@@ -367,7 +487,9 @@
             "modelStrengths": {
               "type": "array",
               "description": "ALL strengths of current model",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
@@ -387,16 +509,22 @@
                   },
                   "type": {
                     "type": "string",
-                    "enum": ["technology", "business-model", "market", "regulatory", "social"]
+                    "description": "Recommended values: technology, business-model, market, regulatory, social — or any domain-appropriate value"
                   },
                   "potentialImpact": {
                     "type": "string",
                     "description": "COMPLETE potential impact description"
                   },
-                  "timeframe": { "type": "string" },
+                  "timeframe": {
+                    "type": "string"
+                  },
                   "likelihood": {
                     "type": "string",
-                    "enum": ["high", "medium", "low"]
+                    "enum": [
+                      "high",
+                      "medium",
+                      "low"
+                    ]
                   }
                 }
               }
@@ -411,10 +539,14 @@
                     "type": "string",
                     "description": "COMPLETE job-to-be-done description"
                   },
-                  "currentSolutions": { "type": "string" },
+                  "currentSolutions": {
+                    "type": "string"
+                  },
                   "gaps": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "opportunity": {
                     "type": "string",
@@ -435,13 +567,19 @@
                   },
                   "maturity": {
                     "type": "string",
-                    "enum": ["emerging", "growing", "mature"]
+                    "enum": [
+                      "emerging",
+                      "growing",
+                      "mature"
+                    ]
                   },
                   "applicationOpportunity": {
                     "type": "string",
                     "description": "COMPLETE application opportunity"
                   },
-                  "competitiveImplication": { "type": "string" }
+                  "competitiveImplication": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -455,11 +593,33 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "opportunity": { "type": "string" },
-                  "eliminate": { "type": "array", "items": { "type": "string" } },
-                  "reduce": { "type": "array", "items": { "type": "string" } },
-                  "raise": { "type": "array", "items": { "type": "string" } },
-                  "create": { "type": "array", "items": { "type": "string" } }
+                  "opportunity": {
+                    "type": "string"
+                  },
+                  "eliminate": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "reduce": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "raise": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "create": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
                 }
               }
             }
@@ -475,7 +635,9 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "id": { "type": "string" },
+                  "id": {
+                    "type": "string"
+                  },
                   "name": {
                     "type": "string",
                     "description": "Initiative name"
@@ -486,7 +648,7 @@
                   },
                   "innovationType": {
                     "type": "string",
-                    "enum": ["incremental", "adjacent", "transformational"]
+                    "description": "Recommended values: incremental, adjacent, transformational — or any domain-appropriate value"
                   },
                   "impact": {
                     "type": "string",
@@ -494,20 +656,33 @@
                   },
                   "effort": {
                     "type": "string",
-                    "enum": ["low", "medium", "high", "very-high"]
+                    "enum": [
+                      "low",
+                      "medium",
+                      "high",
+                      "very-high"
+                    ]
                   },
-                  "timeToValue": { "type": "string" },
+                  "timeToValue": {
+                    "type": "string"
+                  },
                   "requiredCapabilities": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "risks": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "dependencies": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -525,9 +700,15 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "opportunity": { "type": "string" },
-                      "description": { "type": "string" },
-                      "feasibility": { "type": "string" }
+                      "opportunity": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "feasibility": {
+                        "type": "string"
+                      }
                     }
                   }
                 }
@@ -543,9 +724,15 @@
                     "type": "string",
                     "description": "COMPLETE opportunity description"
                   },
-                  "valueChainStage": { "type": "string" },
-                  "potentialValue": { "type": "string" },
-                  "implementation": { "type": "string" }
+                  "valueChainStage": {
+                    "type": "string"
+                  },
+                  "potentialValue": {
+                    "type": "string"
+                  },
+                  "implementation": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -559,15 +746,23 @@
                     "type": "string",
                     "description": "COMPLETE partnership opportunity"
                   },
-                  "partnerType": { "type": "string" },
+                  "partnerType": {
+                    "type": "string"
+                  },
                   "potentialPartners": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
-                  "valueExchange": { "type": "string" },
+                  "valueExchange": {
+                    "type": "string"
+                  },
                   "risks": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -579,22 +774,43 @@
                 "core": {
                   "type": "object",
                   "properties": {
-                    "allocation": { "type": "string" },
-                    "initiatives": { "type": "array", "items": { "type": "string" } }
+                    "allocation": {
+                      "type": "string"
+                    },
+                    "initiatives": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
                   }
                 },
                 "adjacent": {
                   "type": "object",
                   "properties": {
-                    "allocation": { "type": "string" },
-                    "initiatives": { "type": "array", "items": { "type": "string" } }
+                    "allocation": {
+                      "type": "string"
+                    },
+                    "initiatives": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
                   }
                 },
                 "transformational": {
                   "type": "object",
                   "properties": {
-                    "allocation": { "type": "string" },
-                    "initiatives": { "type": "array", "items": { "type": "string" } }
+                    "allocation": {
+                      "type": "string"
+                    },
+                    "initiatives": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
                   }
                 }
               }
@@ -607,7 +823,9 @@
           "items": {
             "type": "object",
             "properties": {
-              "id": { "type": "string" },
+              "id": {
+                "type": "string"
+              },
               "name": {
                 "type": "string",
                 "description": "Strategic option name"
@@ -622,7 +840,9 @@
               },
               "keyAssumptions": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "pros": {
                 "type": "array",
@@ -630,10 +850,16 @@
                 "items": {
                   "type": "object",
                   "properties": {
-                    "pro": { "type": "string" },
+                    "pro": {
+                      "type": "string"
+                    },
                     "significance": {
                       "type": "string",
-                      "enum": ["high", "medium", "low"]
+                      "enum": [
+                        "high",
+                        "medium",
+                        "low"
+                      ]
                     }
                   }
                 }
@@ -644,12 +870,20 @@
                 "items": {
                   "type": "object",
                   "properties": {
-                    "con": { "type": "string" },
+                    "con": {
+                      "type": "string"
+                    },
                     "severity": {
                       "type": "string",
-                      "enum": ["high", "medium", "low"]
+                      "enum": [
+                        "high",
+                        "medium",
+                        "low"
+                      ]
                     },
-                    "mitigation": { "type": "string" }
+                    "mitigation": {
+                      "type": "string"
+                    }
                   }
                 }
               },
@@ -657,19 +891,30 @@
                 "type": "string",
                 "description": "COMPLETE resource requirements"
               },
-              "timeframe": { "type": "string" },
+              "timeframe": {
+                "type": "string"
+              },
               "riskLevel": {
                 "type": "string",
-                "enum": ["low", "moderate", "high", "very-high"]
+                "enum": [
+                  "low",
+                  "moderate",
+                  "high",
+                  "very-high"
+                ]
               },
-              "expectedReturn": { "type": "string" }
+              "expectedReturn": {
+                "type": "string"
+              }
             }
           }
         },
         "recommendedStrategy": {
           "type": "object",
           "description": "COMPLETE recommended strategy with full details",
-          "required": ["direction"],
+          "required": [
+            "direction"
+          ],
           "properties": {
             "strategicOptionId": {
               "type": "string",
@@ -693,8 +938,12 @@
                     "type": "string",
                     "description": "COMPLETE hypothesis"
                   },
-                  "validationApproach": { "type": "string" },
-                  "validationTimeline": { "type": "string" }
+                  "validationApproach": {
+                    "type": "string"
+                  },
+                  "validationTimeline": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -708,12 +957,20 @@
                     "type": "string",
                     "description": "COMPLETE success factor description"
                   },
-                  "currentState": { "type": "string" },
-                  "requiredState": { "type": "string" },
-                  "gap": { "type": "string" },
+                  "currentState": {
+                    "type": "string"
+                  },
+                  "requiredState": {
+                    "type": "string"
+                  },
+                  "gap": {
+                    "type": "string"
+                  },
                   "actions": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -724,9 +981,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "priority": { "type": "integer" },
-                  "description": { "type": "string" },
-                  "rationale": { "type": "string" }
+                  "priority": {
+                    "type": "integer"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "rationale": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -750,7 +1013,9 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "phaseNumber": { "type": "integer" },
+                  "phaseNumber": {
+                    "type": "integer"
+                  },
                   "name": {
                     "type": "string",
                     "description": "Phase name"
@@ -774,7 +1039,9 @@
                   "deliverables": {
                     "type": "array",
                     "description": "ALL deliverables for this phase",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "keyMilestones": {
                     "type": "array",
@@ -782,27 +1049,41 @@
                     "items": {
                       "type": "object",
                       "properties": {
-                        "milestone": { "type": "string" },
-                        "targetDate": { "type": "string" },
-                        "criteria": { "type": "string" }
+                        "milestone": {
+                          "type": "string"
+                        },
+                        "targetDate": {
+                          "type": "string"
+                        },
+                        "criteria": {
+                          "type": "string"
+                        }
                       }
                     }
                   },
                   "resourceRequirements": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "dependencies": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "risks": {
                     "type": "array",
                     "items": {
                       "type": "object",
                       "properties": {
-                        "risk": { "type": "string" },
-                        "mitigation": { "type": "string" }
+                        "risk": {
+                          "type": "string"
+                        },
+                        "mitigation": {
+                          "type": "string"
+                        }
                       }
                     }
                   }
@@ -815,9 +1096,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "quickWin": { "type": "string" },
-                  "timeframe": { "type": "string" },
-                  "expectedImpact": { "type": "string" }
+                  "quickWin": {
+                    "type": "string"
+                  },
+                  "timeframe": {
+                    "type": "string"
+                  },
+                  "expectedImpact": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -827,10 +1114,18 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "capability": { "type": "string" },
-                  "buildVsBuy": { "type": "string" },
-                  "timeline": { "type": "string" },
-                  "investment": { "type": "string" }
+                  "capability": {
+                    "type": "string"
+                  },
+                  "buildVsBuy": {
+                    "type": "string"
+                  },
+                  "timeline": {
+                    "type": "string"
+                  },
+                  "investment": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -843,10 +1138,18 @@
             "northStarMetric": {
               "type": "object",
               "properties": {
-                "metric": { "type": "string" },
-                "currentValue": { "type": "string" },
-                "targetValue": { "type": "string" },
-                "timeframe": { "type": "string" }
+                "metric": {
+                  "type": "string"
+                },
+                "currentValue": {
+                  "type": "string"
+                },
+                "targetValue": {
+                  "type": "string"
+                },
+                "timeframe": {
+                  "type": "string"
+                }
               }
             },
             "leadingIndicators": {
@@ -859,9 +1162,15 @@
                     "type": "string",
                     "description": "COMPLETE indicator description"
                   },
-                  "metric": { "type": "string" },
-                  "target": { "type": "string" },
-                  "frequency": { "type": "string" }
+                  "metric": {
+                    "type": "string"
+                  },
+                  "target": {
+                    "type": "string"
+                  },
+                  "frequency": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -875,9 +1184,15 @@
                     "type": "string",
                     "description": "COMPLETE indicator description"
                   },
-                  "metric": { "type": "string" },
-                  "target": { "type": "string" },
-                  "frequency": { "type": "string" }
+                  "metric": {
+                    "type": "string"
+                  },
+                  "target": {
+                    "type": "string"
+                  },
+                  "frequency": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -891,12 +1206,18 @@
                     "type": "string",
                     "description": "COMPLETE gate description"
                   },
-                  "timing": { "type": "string" },
+                  "timing": {
+                    "type": "string"
+                  },
                   "criteria": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
-                  "goNoGoDecision": { "type": "string" }
+                  "goNoGoDecision": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -912,29 +1233,46 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "id": { "type": "string" },
+                  "id": {
+                    "type": "string"
+                  },
                   "risk": {
                     "type": "string",
                     "description": "COMPLETE risk description"
                   },
                   "category": {
                     "type": "string",
-                    "enum": ["market", "execution", "financial", "competitive", "regulatory", "technology", "organizational"]
+                    "description": "Recommended values: market, execution, financial, competitive, regulatory, technology, organizational — or any domain-appropriate value"
                   },
                   "likelihood": {
                     "type": "string",
-                    "enum": ["high", "medium", "low"]
+                    "enum": [
+                      "high",
+                      "medium",
+                      "low"
+                    ]
                   },
                   "impact": {
                     "type": "string",
-                    "enum": ["critical", "high", "medium", "low"]
+                    "enum": [
+                      "critical",
+                      "high",
+                      "medium",
+                      "low"
+                    ]
                   },
-                  "riskScore": { "type": "string" },
+                  "riskScore": {
+                    "type": "string"
+                  },
                   "triggers": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
-                  "owner": { "type": "string" }
+                  "owner": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -944,19 +1282,29 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "riskId": { "type": "string" },
+                  "riskId": {
+                    "type": "string"
+                  },
                   "strategy": {
                     "type": "string",
                     "description": "COMPLETE mitigation strategy"
                   },
                   "actions": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
-                  "owner": { "type": "string" },
+                  "owner": {
+                    "type": "string"
+                  },
                   "status": {
                     "type": "string",
-                    "enum": ["planned", "in-progress", "implemented"]
+                    "enum": [
+                      "planned",
+                      "in-progress",
+                      "implemented"
+                    ]
                   }
                 }
               }
@@ -967,9 +1315,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "scenario": { "type": "string" },
-                  "trigger": { "type": "string" },
-                  "response": { "type": "string" }
+                  "scenario": {
+                    "type": "string"
+                  },
+                  "trigger": {
+                    "type": "string"
+                  },
+                  "response": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -979,10 +1333,19 @@
           "type": "object",
           "description": "Strategy governance and review process",
           "properties": {
-            "reviewCadence": { "type": "string" },
-            "reviewForum": { "type": "string" },
-            "escalationPath": { "type": "string" },
-            "nextReviewDate": { "type": "string", "format": "date" }
+            "reviewCadence": {
+              "type": "string"
+            },
+            "reviewForum": {
+              "type": "string"
+            },
+            "escalationPath": {
+              "type": "string"
+            },
+            "nextReviewDate": {
+              "type": "string",
+              "format": "date"
+            }
           }
         },
         "appendix": {
@@ -991,7 +1354,9 @@
           "properties": {
             "dataSourcesa": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "analysisDetails": {
               "type": "string",

@@ -4,28 +4,43 @@
   "title": "Implementation Readiness Report Schema",
   "description": "Comprehensive schema for readiness report artifacts - captures COMPLETE implementation readiness assessment with full analysis and recommendations",
   "type": "object",
-  "required": ["metadata", "content"],
+  "required": [
+    "metadata",
+    "content"
+  ],
   "properties": {
     "metadata": {
       "$ref": "../common/metadata.schema.json"
     },
     "content": {
       "type": "object",
-      "required": ["summary", "assessment"],
+      "required": [
+        "summary",
+        "assessment"
+      ],
       "properties": {
         "summary": {
           "type": "object",
           "description": "Executive summary - capture COMPLETE assessment overview",
           "properties": {
-            "projectName": { "type": "string" },
+            "projectName": {
+              "type": "string"
+            },
             "assessmentDate": {
               "type": "string",
               "format": "date"
             },
-            "assessedBy": { "type": "string" },
+            "assessedBy": {
+              "type": "string"
+            },
             "overallStatus": {
               "type": "string",
-              "enum": ["ready", "ready-with-concerns", "not-ready", "blocked"]
+              "enum": [
+                "ready",
+                "ready-with-concerns",
+                "not-ready",
+                "blocked"
+              ]
             },
             "overallScore": {
               "type": "integer",
@@ -39,12 +54,16 @@
             "keyFindings": {
               "type": "array",
               "description": "ALL key findings - capture completely",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "criticalActions": {
               "type": "array",
               "description": "Critical actions required before proceeding",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
@@ -58,7 +77,12 @@
               "properties": {
                 "status": {
                   "type": "string",
-                  "enum": ["complete", "incomplete", "missing", "needs-revision"]
+                  "enum": [
+                    "complete",
+                    "incomplete",
+                    "missing",
+                    "needs-revision"
+                  ]
                 },
                 "completeness": {
                   "type": "integer",
@@ -81,13 +105,20 @@
                       },
                       "type": {
                         "type": "string",
-                        "enum": ["positive", "concern", "gap", "issue"]
+                        "description": "Recommended values: positive, concern, gap, issue — or any domain-appropriate value"
                       },
                       "severity": {
                         "type": "string",
-                        "enum": ["low", "medium", "high", "critical"]
+                        "enum": [
+                          "low",
+                          "medium",
+                          "high",
+                          "critical"
+                        ]
                       },
-                      "recommendation": { "type": "string" }
+                      "recommendation": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
@@ -101,14 +132,20 @@
                         "type": "string",
                         "description": "COMPLETE gap description"
                       },
-                      "impact": { "type": "string" },
-                      "remediation": { "type": "string" }
+                      "impact": {
+                        "type": "string"
+                      },
+                      "remediation": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
                 "strengths": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -118,40 +155,69 @@
               "properties": {
                 "status": {
                   "type": "string",
-                  "enum": ["complete", "incomplete", "missing", "needs-work"]
+                  "enum": [
+                    "complete",
+                    "incomplete",
+                    "missing",
+                    "needs-work"
+                  ]
                 },
                 "summary": {
                   "type": "string",
                   "description": "COMPLETE coverage summary"
                 },
-                "totalRequirements": { "type": "integer" },
-                "coveredRequirements": { "type": "integer" },
-                "coveragePercent": { "type": "number" },
+                "totalRequirements": {
+                  "type": "integer"
+                },
+                "coveredRequirements": {
+                  "type": "integer"
+                },
+                "coveragePercent": {
+                  "type": "number"
+                },
                 "byType": {
                   "type": "object",
                   "properties": {
                     "functional": {
                       "type": "object",
                       "properties": {
-                        "total": { "type": "integer" },
-                        "covered": { "type": "integer" },
-                        "percentage": { "type": "number" }
+                        "total": {
+                          "type": "integer"
+                        },
+                        "covered": {
+                          "type": "integer"
+                        },
+                        "percentage": {
+                          "type": "number"
+                        }
                       }
                     },
                     "nonFunctional": {
                       "type": "object",
                       "properties": {
-                        "total": { "type": "integer" },
-                        "covered": { "type": "integer" },
-                        "percentage": { "type": "number" }
+                        "total": {
+                          "type": "integer"
+                        },
+                        "covered": {
+                          "type": "integer"
+                        },
+                        "percentage": {
+                          "type": "number"
+                        }
                       }
                     },
                     "additional": {
                       "type": "object",
                       "properties": {
-                        "total": { "type": "integer" },
-                        "covered": { "type": "integer" },
-                        "percentage": { "type": "number" }
+                        "total": {
+                          "type": "integer"
+                        },
+                        "covered": {
+                          "type": "integer"
+                        },
+                        "percentage": {
+                          "type": "number"
+                        }
                       }
                     }
                   }
@@ -162,17 +228,29 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "requirementId": { "type": "string" },
-                      "requirementTitle": { "type": "string" },
+                      "requirementId": {
+                        "type": "string",
+                        "description": "Requirement identifier (e.g. 'FR 1.1', 'NFR-2')"
+                      },
+                      "requirementTitle": {
+                        "type": "string"
+                      },
                       "description": {
                         "type": "string",
                         "description": "COMPLETE gap description"
                       },
                       "severity": {
                         "type": "string",
-                        "enum": ["low", "medium", "high", "critical"]
+                        "enum": [
+                          "low",
+                          "medium",
+                          "high",
+                          "critical"
+                        ]
                       },
-                      "recommendation": { "type": "string" }
+                      "recommendation": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
@@ -182,8 +260,13 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "storyId": { "type": "string" },
-                      "note": { "type": "string" }
+                      "storyId": {
+                        "type": "string",
+                        "description": "Story identifier using numeric format (e.g. '15.1', '1.3')"
+                      },
+                      "note": {
+                        "type": "string"
+                      }
                     }
                   }
                 }
@@ -195,7 +278,12 @@
               "properties": {
                 "status": {
                   "type": "string",
-                  "enum": ["aligned", "partial", "misaligned", "not-applicable"]
+                  "enum": [
+                    "aligned",
+                    "partial",
+                    "misaligned",
+                    "not-applicable"
+                  ]
                 },
                 "summary": {
                   "type": "string",
@@ -213,15 +301,23 @@
                       },
                       "type": {
                         "type": "string",
-                        "enum": ["aligned", "gap", "conflict"]
+                        "description": "Recommended values: aligned, gap, conflict — or any domain-appropriate value"
                       },
-                      "severity": { "type": "string" },
-                      "recommendation": { "type": "string" }
+                      "severity": {
+                        "type": "string"
+                      },
+                      "recommendation": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
-                "designSystemCoverage": { "type": "string" },
-                "accessibilityReadiness": { "type": "string" }
+                "designSystemCoverage": {
+                  "type": "string"
+                },
+                "accessibilityReadiness": {
+                  "type": "string"
+                }
               }
             },
             "architectureReadiness": {
@@ -230,7 +326,12 @@
               "properties": {
                 "status": {
                   "type": "string",
-                  "enum": ["ready", "needs-work", "missing", "incomplete"]
+                  "enum": [
+                    "ready",
+                    "needs-work",
+                    "missing",
+                    "incomplete"
+                  ]
                 },
                 "summary": {
                   "type": "string",
@@ -246,14 +347,24 @@
                         "type": "string",
                         "description": "COMPLETE finding"
                       },
-                      "type": { "type": "string" },
-                      "recommendation": { "type": "string" }
+                      "type": {
+                        "type": "string"
+                      },
+                      "recommendation": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
-                "techStackValidation": { "type": "string" },
-                "scalabilityAssessment": { "type": "string" },
-                "securityAssessment": { "type": "string" }
+                "techStackValidation": {
+                  "type": "string"
+                },
+                "scalabilityAssessment": {
+                  "type": "string"
+                },
+                "securityAssessment": {
+                  "type": "string"
+                }
               }
             },
             "epicQuality": {
@@ -262,7 +373,13 @@
               "properties": {
                 "overallQuality": {
                   "type": "string",
-                  "enum": ["high", "good", "acceptable", "needs-improvement", "poor"]
+                  "enum": [
+                    "high",
+                    "good",
+                    "acceptable",
+                    "needs-improvement",
+                    "poor"
+                  ]
                 },
                 "summary": {
                   "type": "string",
@@ -271,57 +388,77 @@
                 "acceptanceCriteriaQuality": {
                   "type": "object",
                   "properties": {
-                    "rating": { "type": "string" },
+                    "rating": {
+                      "type": "string"
+                    },
                     "details": {
                       "type": "string",
                       "description": "COMPLETE AC quality details"
                     },
                     "issues": {
                       "type": "array",
-                      "items": { "type": "string" }
+                      "items": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
                 "storyClarity": {
                   "type": "object",
                   "properties": {
-                    "rating": { "type": "string" },
+                    "rating": {
+                      "type": "string"
+                    },
                     "details": {
                       "type": "string",
                       "description": "COMPLETE story clarity details"
                     },
                     "issues": {
                       "type": "array",
-                      "items": { "type": "string" }
+                      "items": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
                 "technicalFeasibility": {
                   "type": "object",
                   "properties": {
-                    "rating": { "type": "string" },
+                    "rating": {
+                      "type": "string"
+                    },
                     "details": {
                       "type": "string",
                       "description": "COMPLETE feasibility details"
                     },
                     "concerns": {
                       "type": "array",
-                      "items": { "type": "string" }
+                      "items": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
                 "estimationQuality": {
                   "type": "object",
                   "properties": {
-                    "rating": { "type": "string" },
-                    "details": { "type": "string" }
+                    "rating": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "string"
+                    }
                   }
                 },
                 "dependencyMapping": {
                   "type": "object",
                   "properties": {
-                    "rating": { "type": "string" },
-                    "details": { "type": "string" }
+                    "rating": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "string"
+                    }
                   }
                 },
                 "findings": {
@@ -334,8 +471,12 @@
                         "type": "string",
                         "description": "COMPLETE finding"
                       },
-                      "category": { "type": "string" },
-                      "recommendation": { "type": "string" }
+                      "category": {
+                        "type": "string"
+                      },
+                      "recommendation": {
+                        "type": "string"
+                      }
                     }
                   }
                 }
@@ -347,19 +488,35 @@
               "properties": {
                 "status": {
                   "type": "string",
-                  "enum": ["ready", "partial", "not-ready"]
+                  "enum": [
+                    "ready",
+                    "partial",
+                    "not-ready"
+                  ]
                 },
-                "summary": { "type": "string" },
-                "testPlanStatus": { "type": "string" },
-                "testCaseCoverage": { "type": "string" },
-                "automationReadiness": { "type": "string" },
+                "summary": {
+                  "type": "string"
+                },
+                "testPlanStatus": {
+                  "type": "string"
+                },
+                "testCaseCoverage": {
+                  "type": "string"
+                },
+                "automationReadiness": {
+                  "type": "string"
+                },
                 "findings": {
                   "type": "array",
                   "items": {
                     "type": "object",
                     "properties": {
-                      "finding": { "type": "string" },
-                      "recommendation": { "type": "string" }
+                      "finding": {
+                        "type": "string"
+                      },
+                      "recommendation": {
+                        "type": "string"
+                      }
                     }
                   }
                 }
@@ -373,14 +530,17 @@
           "items": {
             "type": "object",
             "properties": {
-              "id": { "type": "string" },
+              "id": {
+                "type": "string",
+                "description": "Blocker identifier (e.g. 'B-1', 'B-2')"
+              },
               "blocker": {
                 "type": "string",
                 "description": "COMPLETE blocker description"
               },
               "category": {
                 "type": "string",
-                "enum": ["technical", "resource", "dependency", "documentation", "organizational"]
+                "description": "Recommended values: technical, resource, dependency, documentation, organizational — or any domain-appropriate value"
               },
               "impact": {
                 "type": "string",
@@ -388,17 +548,28 @@
               },
               "severity": {
                 "type": "string",
-                "enum": ["critical", "high"]
+                "enum": [
+                  "critical",
+                  "high"
+                ]
               },
               "resolution": {
                 "type": "string",
                 "description": "COMPLETE resolution approach"
               },
-              "owner": { "type": "string" },
-              "estimatedEffort": { "type": "string" },
+              "owner": {
+                "type": "string"
+              },
+              "estimatedEffort": {
+                "type": "string"
+              },
               "status": {
                 "type": "string",
-                "enum": ["open", "in-progress", "resolved"]
+                "enum": [
+                  "open",
+                  "in-progress",
+                  "resolved"
+                ]
               }
             }
           }
@@ -409,33 +580,53 @@
           "items": {
             "type": "object",
             "properties": {
-              "id": { "type": "string" },
+              "id": {
+                "type": "string",
+                "description": "Risk identifier (e.g. 'R-1', 'RISK-1')"
+              },
               "risk": {
                 "type": "string",
                 "description": "COMPLETE risk description"
               },
               "category": {
                 "type": "string",
-                "enum": ["technical", "schedule", "resource", "scope", "quality", "external"]
+                "description": "Recommended values: technical, schedule, resource, scope, quality, external — or any domain-appropriate value"
               },
               "probability": {
                 "type": "string",
-                "enum": ["low", "medium", "high"]
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
               },
               "impact": {
                 "type": "string",
-                "enum": ["low", "medium", "high", "critical"]
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "critical"
+                ]
               },
-              "riskScore": { "type": "integer" },
+              "riskScore": {
+                "type": "integer"
+              },
               "mitigation": {
                 "type": "string",
                 "description": "COMPLETE mitigation strategy"
               },
-              "contingency": { "type": "string" },
-              "owner": { "type": "string" },
+              "contingency": {
+                "type": "string"
+              },
+              "owner": {
+                "type": "string"
+              },
               "triggers": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -446,26 +637,43 @@
           "items": {
             "type": "object",
             "properties": {
-              "id": { "type": "string" },
+              "id": {
+                "type": "string",
+                "description": "Recommendation identifier (e.g. 'REC-1')"
+              },
               "recommendation": {
                 "type": "string",
                 "description": "COMPLETE recommendation"
               },
-              "category": { "type": "string" },
+              "category": {
+                "type": "string"
+              },
               "priority": {
                 "type": "string",
-                "enum": ["must-do", "should-do", "nice-to-have"]
+                "enum": [
+                  "must-do",
+                  "should-do",
+                  "nice-to-have"
+                ]
               },
               "effort": {
                 "type": "string",
-                "enum": ["low", "medium", "high"]
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
               },
               "impact": {
                 "type": "string",
                 "description": "COMPLETE impact description"
               },
-              "owner": { "type": "string" },
-              "deadline": { "type": "string" }
+              "owner": {
+                "type": "string"
+              },
+              "deadline": {
+                "type": "string"
+              }
             }
           }
         },
@@ -473,15 +681,23 @@
           "type": "object",
           "description": "Dependency analysis",
           "properties": {
-            "summary": { "type": "string" },
+            "summary": {
+              "type": "string"
+            },
             "externalDependencies": {
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "dependency": { "type": "string" },
-                  "status": { "type": "string" },
-                  "risk": { "type": "string" }
+                  "dependency": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "risk": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -490,14 +706,20 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "dependency": { "type": "string" },
-                  "status": { "type": "string" }
+                  "dependency": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  }
                 }
               }
             },
             "criticalPath": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
@@ -505,21 +727,35 @@
           "type": "object",
           "description": "Resource readiness assessment",
           "properties": {
-            "summary": { "type": "string" },
-            "teamReadiness": { "type": "string" },
+            "summary": {
+              "type": "string"
+            },
+            "teamReadiness": {
+              "type": "string"
+            },
             "skillGaps": {
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "skill": { "type": "string" },
-                  "gap": { "type": "string" },
-                  "mitigation": { "type": "string" }
+                  "skill": {
+                    "type": "string"
+                  },
+                  "gap": {
+                    "type": "string"
+                  },
+                  "mitigation": {
+                    "type": "string"
+                  }
                 }
               }
             },
-            "toolsReadiness": { "type": "string" },
-            "environmentReadiness": { "type": "string" }
+            "toolsReadiness": {
+              "type": "string"
+            },
+            "environmentReadiness": {
+              "type": "string"
+            }
           }
         },
         "nextSteps": {
@@ -528,16 +764,24 @@
           "items": {
             "type": "object",
             "properties": {
-              "step": { "type": "integer" },
+              "step": {
+                "type": "integer"
+              },
               "action": {
                 "type": "string",
                 "description": "COMPLETE action description"
               },
-              "owner": { "type": "string" },
-              "deadline": { "type": "string" },
+              "owner": {
+                "type": "string"
+              },
+              "deadline": {
+                "type": "string"
+              },
               "dependencies": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -548,9 +792,15 @@
           "items": {
             "type": "object",
             "properties": {
-              "title": { "type": "string" },
-              "type": { "type": "string" },
-              "content": { "type": "string" }
+              "title": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "content": {
+                "type": "string"
+              }
             }
           }
         }

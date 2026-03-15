@@ -4,21 +4,30 @@
   "title": "UX Design Specification Schema",
   "description": "Comprehensive schema for UX design artifacts - captures COMPLETE user experience design specifications, design system, and user journeys",
   "type": "object",
-  "required": ["metadata", "content"],
+  "required": [
+    "metadata",
+    "content"
+  ],
   "properties": {
     "metadata": {
       "$ref": "../common/metadata.schema.json"
     },
     "content": {
       "type": "object",
-      "required": ["designSystem"],
+      "required": [
+        "designSystem"
+      ],
       "properties": {
         "overview": {
           "type": "object",
           "description": "Design overview - capture COMPLETE design context",
           "properties": {
-            "productName": { "type": "string" },
-            "version": { "type": "string" },
+            "productName": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            },
             "designPhilosophy": {
               "type": "string",
               "description": "COMPLETE design philosophy description"
@@ -33,14 +42,18 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "principle": { "type": "string" },
+                  "principle": {
+                    "type": "string"
+                  },
                   "description": {
                     "type": "string",
                     "description": "COMPLETE principle description"
                   },
                   "examples": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -51,9 +64,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "goal": { "type": "string" },
-                  "metrics": { "type": "string" },
-                  "rationale": { "type": "string" }
+                  "goal": {
+                    "type": "string"
+                  },
+                  "metrics": {
+                    "type": "string"
+                  },
+                  "rationale": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -77,8 +96,12 @@
                     "type": "string",
                     "description": "COMPLETE interaction description"
                   },
-                  "purpose": { "type": "string" },
-                  "frequency": { "type": "string" }
+                  "purpose": {
+                    "type": "string"
+                  },
+                  "frequency": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -88,11 +111,17 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "emotion": { "type": "string" },
-                  "description": { "type": "string" },
+                  "emotion": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
                   "triggers": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -113,7 +142,9 @@
                 "type": "string",
                 "description": "Inspiration source (e.g., app name, website)"
               },
-              "url": { "type": "string" },
+              "url": {
+                "type": "string"
+              },
               "aspect": {
                 "type": "string",
                 "description": "COMPLETE description of what aspect is inspiring"
@@ -124,7 +155,9 @@
               },
               "screenshots": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -141,15 +174,21 @@
               "type": "object",
               "description": "Complete color palette",
               "properties": {
-                "description": { "type": "string" },
+                "description": {
+                  "type": "string"
+                },
                 "primary": {
                   "type": "array",
                   "description": "ALL primary colors",
                   "items": {
                     "type": "object",
                     "properties": {
-                      "name": { "type": "string" },
-                      "value": { "type": "string" },
+                      "name": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "string"
+                      },
                       "usage": {
                         "type": "string",
                         "description": "COMPLETE usage description"
@@ -159,8 +198,12 @@
                         "items": {
                           "type": "object",
                           "properties": {
-                            "name": { "type": "string" },
-                            "value": { "type": "string" }
+                            "name": {
+                              "type": "string"
+                            },
+                            "value": {
+                              "type": "string"
+                            }
                           }
                         }
                       }
@@ -172,9 +215,15 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "name": { "type": "string" },
-                      "value": { "type": "string" },
-                      "usage": { "type": "string" }
+                      "name": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "string"
+                      },
+                      "usage": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
@@ -183,9 +232,15 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "name": { "type": "string" },
-                      "value": { "type": "string" },
-                      "usage": { "type": "string" }
+                      "name": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "string"
+                      },
+                      "usage": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
@@ -195,29 +250,45 @@
                     "success": {
                       "type": "object",
                       "properties": {
-                        "value": { "type": "string" },
-                        "usage": { "type": "string" }
+                        "value": {
+                          "type": "string"
+                        },
+                        "usage": {
+                          "type": "string"
+                        }
                       }
                     },
                     "warning": {
                       "type": "object",
                       "properties": {
-                        "value": { "type": "string" },
-                        "usage": { "type": "string" }
+                        "value": {
+                          "type": "string"
+                        },
+                        "usage": {
+                          "type": "string"
+                        }
                       }
                     },
                     "error": {
                       "type": "object",
                       "properties": {
-                        "value": { "type": "string" },
-                        "usage": { "type": "string" }
+                        "value": {
+                          "type": "string"
+                        },
+                        "usage": {
+                          "type": "string"
+                        }
                       }
                     },
                     "info": {
                       "type": "object",
                       "properties": {
-                        "value": { "type": "string" },
-                        "usage": { "type": "string" }
+                        "value": {
+                          "type": "string"
+                        },
+                        "usage": {
+                          "type": "string"
+                        }
                       }
                     }
                   }
@@ -226,14 +297,20 @@
                   "type": "object",
                   "description": "Dark mode color mappings",
                   "properties": {
-                    "supported": { "type": "boolean" },
+                    "supported": {
+                      "type": "boolean"
+                    },
                     "mappings": {
                       "type": "array",
                       "items": {
                         "type": "object",
                         "properties": {
-                          "lightValue": { "type": "string" },
-                          "darkValue": { "type": "string" }
+                          "lightValue": {
+                            "type": "string"
+                          },
+                          "darkValue": {
+                            "type": "string"
+                          }
                         }
                       }
                     }
@@ -245,26 +322,36 @@
               "type": "object",
               "description": "Complete typography system",
               "properties": {
-                "description": { "type": "string" },
+                "description": {
+                  "type": "string"
+                },
                 "fontFamilies": {
                   "type": "array",
                   "description": "ALL font families",
                   "items": {
                     "type": "object",
                     "properties": {
-                      "name": { "type": "string" },
+                      "name": {
+                        "type": "string"
+                      },
                       "usage": {
                         "type": "string",
                         "description": "COMPLETE usage description"
                       },
                       "fallbacks": {
                         "type": "array",
-                        "items": { "type": "string" }
+                        "items": {
+                          "type": "string"
+                        }
                       },
-                      "source": { "type": "string" },
+                      "source": {
+                        "type": "string"
+                      },
                       "weights": {
                         "type": "array",
-                        "items": { "type": "string" }
+                        "items": {
+                          "type": "string"
+                        }
                       }
                     }
                   }
@@ -275,11 +362,21 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "name": { "type": "string" },
-                      "size": { "type": "string" },
-                      "lineHeight": { "type": "string" },
-                      "weight": { "type": "string" },
-                      "letterSpacing": { "type": "string" },
+                      "name": {
+                        "type": "string"
+                      },
+                      "size": {
+                        "type": "string"
+                      },
+                      "lineHeight": {
+                        "type": "string"
+                      },
+                      "weight": {
+                        "type": "string"
+                      },
+                      "letterSpacing": {
+                        "type": "string"
+                      },
                       "usage": {
                         "type": "string",
                         "description": "COMPLETE usage description"
@@ -292,9 +389,15 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "name": { "type": "string" },
-                      "properties": { "type": "object" },
-                      "usage": { "type": "string" }
+                      "name": {
+                        "type": "string"
+                      },
+                      "properties": {
+                        "type": "object"
+                      },
+                      "usage": {
+                        "type": "string"
+                      }
                     }
                   }
                 }
@@ -304,16 +407,26 @@
               "type": "object",
               "description": "Spacing system",
               "properties": {
-                "description": { "type": "string" },
-                "baseUnit": { "type": "string" },
+                "description": {
+                  "type": "string"
+                },
+                "baseUnit": {
+                  "type": "string"
+                },
                 "scale": {
                   "type": "array",
                   "items": {
                     "type": "object",
                     "properties": {
-                      "name": { "type": "string" },
-                      "value": { "type": "string" },
-                      "usage": { "type": "string" }
+                      "name": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "string"
+                      },
+                      "usage": {
+                        "type": "string"
+                      }
                     }
                   }
                 }
@@ -328,9 +441,15 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "name": { "type": "string" },
-                      "value": { "type": "string" },
-                      "usage": { "type": "string" }
+                      "name": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "string"
+                      },
+                      "usage": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
@@ -339,9 +458,15 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "name": { "type": "string" },
-                      "value": { "type": "string" },
-                      "usage": { "type": "string" }
+                      "name": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "string"
+                      },
+                      "usage": {
+                        "type": "string"
+                      }
                     }
                   }
                 }
@@ -353,9 +478,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
-                  "value": { "type": "string" },
-                  "usage": { "type": "string" }
+                  "name": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  },
+                  "usage": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -363,26 +494,40 @@
               "type": "object",
               "description": "Icon system",
               "properties": {
-                "library": { "type": "string" },
+                "library": {
+                  "type": "string"
+                },
                 "sizes": {
                   "type": "array",
                   "items": {
                     "type": "object",
                     "properties": {
-                      "name": { "type": "string" },
-                      "value": { "type": "string" },
-                      "usage": { "type": "string" }
+                      "name": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "string"
+                      },
+                      "usage": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
-                "style": { "type": "string" },
+                "style": {
+                  "type": "string"
+                },
                 "customIcons": {
                   "type": "array",
                   "items": {
                     "type": "object",
                     "properties": {
-                      "name": { "type": "string" },
-                      "usage": { "type": "string" }
+                      "name": {
+                        "type": "string"
+                      },
+                      "usage": {
+                        "type": "string"
+                      }
                     }
                   }
                 }
@@ -394,16 +539,24 @@
               "properties": {
                 "principles": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 },
                 "durations": {
                   "type": "array",
                   "items": {
                     "type": "object",
                     "properties": {
-                      "name": { "type": "string" },
-                      "value": { "type": "string" },
-                      "usage": { "type": "string" }
+                      "name": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "string"
+                      },
+                      "usage": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
@@ -412,9 +565,15 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "name": { "type": "string" },
-                      "value": { "type": "string" },
-                      "usage": { "type": "string" }
+                      "name": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "string"
+                      },
+                      "usage": {
+                        "type": "string"
+                      }
                     }
                   }
                 }
@@ -428,25 +587,35 @@
           "items": {
             "type": "object",
             "properties": {
-              "id": { "type": "string" },
-              "name": { "type": "string" },
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
               "description": {
                 "type": "string",
                 "description": "COMPLETE journey description"
               },
-              "persona": { "type": "string" },
+              "persona": {
+                "type": "string"
+              },
               "goal": {
                 "type": "string",
                 "description": "COMPLETE user goal for this journey"
               },
-              "trigger": { "type": "string" },
+              "trigger": {
+                "type": "string"
+              },
               "stages": {
                 "type": "array",
                 "description": "ALL journey stages - capture completely",
                 "items": {
                   "type": "object",
                   "properties": {
-                    "stage": { "type": "string" },
+                    "stage": {
+                      "type": "string"
+                    },
                     "description": {
                       "type": "string",
                       "description": "COMPLETE stage description"
@@ -457,8 +626,12 @@
                       "items": {
                         "type": "object",
                         "properties": {
-                          "action": { "type": "string" },
-                          "details": { "type": "string" }
+                          "action": {
+                            "type": "string"
+                          },
+                          "details": {
+                            "type": "string"
+                          }
                         }
                       }
                     },
@@ -481,33 +654,47 @@
                       "items": {
                         "type": "object",
                         "properties": {
-                          "touchpoint": { "type": "string" },
-                          "type": { "type": "string" }
+                          "touchpoint": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string"
+                          }
                         }
                       }
                     },
                     "painPoints": {
                       "type": "array",
-                      "items": { "type": "string" }
+                      "items": {
+                        "type": "string"
+                      }
                     },
                     "opportunities": {
                       "type": "array",
-                      "items": { "type": "string" }
+                      "items": {
+                        "type": "string"
+                      }
                     }
                   }
                 }
               },
               "successCriteria": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "metrics": {
                 "type": "array",
                 "items": {
                   "type": "object",
                   "properties": {
-                    "metric": { "type": "string" },
-                    "target": { "type": "string" }
+                    "metric": {
+                      "type": "string"
+                    },
+                    "target": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -520,35 +707,49 @@
           "items": {
             "type": "object",
             "properties": {
-              "id": { "type": "string" },
-              "name": { "type": "string" },
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
               "description": {
                 "type": "string",
                 "description": "COMPLETE wireframe description"
               },
               "type": {
                 "type": "string",
-                "enum": ["low-fidelity", "mid-fidelity", "high-fidelity"]
+                "description": "Recommended values: low-fidelity, mid-fidelity, high-fidelity — or any domain-appropriate value"
               },
               "screens": {
                 "type": "array",
                 "items": {
                   "type": "object",
                   "properties": {
-                    "name": { "type": "string" },
-                    "description": { "type": "string" },
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
                     "elements": {
                       "type": "array",
-                      "items": { "type": "string" }
+                      "items": {
+                        "type": "string"
+                      }
                     },
                     "interactions": {
                       "type": "array",
-                      "items": { "type": "string" }
+                      "items": {
+                        "type": "string"
+                      }
                     }
                   }
                 }
               },
-              "reference": { "type": "string" }
+              "reference": {
+                "type": "string"
+              }
             }
           }
         },
@@ -574,7 +775,9 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
+                  "name": {
+                    "type": "string"
+                  },
                   "purpose": {
                     "type": "string",
                     "description": "COMPLETE purpose description"
@@ -588,10 +791,18 @@
                     "items": {
                       "type": "object",
                       "properties": {
-                        "name": { "type": "string" },
-                        "type": { "type": "string" },
-                        "description": { "type": "string" },
-                        "required": { "type": "boolean" }
+                        "name": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "required": {
+                          "type": "boolean"
+                        }
                       }
                     }
                   },
@@ -601,8 +812,12 @@
                     "items": {
                       "type": "object",
                       "properties": {
-                        "state": { "type": "string" },
-                        "description": { "type": "string" }
+                        "state": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        }
                       }
                     }
                   },
@@ -612,20 +827,30 @@
                     "items": {
                       "type": "object",
                       "properties": {
-                        "variant": { "type": "string" },
-                        "description": { "type": "string" }
+                        "variant": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        }
                       }
                     }
                   },
                   "accessibility": {
                     "type": "object",
                     "properties": {
-                      "role": { "type": "string" },
+                      "role": {
+                        "type": "string"
+                      },
                       "ariaAttributes": {
                         "type": "array",
-                        "items": { "type": "string" }
+                        "items": {
+                          "type": "string"
+                        }
                       },
-                      "keyboardInteraction": { "type": "string" }
+                      "keyboardInteraction": {
+                        "type": "string"
+                      }
                     }
                   }
                 }
@@ -639,26 +864,42 @@
           "items": {
             "type": "object",
             "properties": {
-              "name": { "type": "string" },
+              "name": {
+                "type": "string"
+              },
               "description": {
                 "type": "string",
                 "description": "COMPLETE layout description"
               },
-              "type": { "type": "string" },
+              "type": {
+                "type": "string"
+              },
               "structure": {
                 "type": "object",
                 "properties": {
-                  "header": { "type": "string" },
-                  "sidebar": { "type": "string" },
-                  "main": { "type": "string" },
-                  "footer": { "type": "string" }
+                  "header": {
+                    "type": "string"
+                  },
+                  "sidebar": {
+                    "type": "string"
+                  },
+                  "main": {
+                    "type": "string"
+                  },
+                  "footer": {
+                    "type": "string"
+                  }
                 }
               },
               "components": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
-              "responsiveBehavior": { "type": "string" }
+              "responsiveBehavior": {
+                "type": "string"
+              }
             }
           }
         },
@@ -668,10 +909,12 @@
           "items": {
             "type": "object",
             "properties": {
-              "pattern": { "type": "string" },
+              "pattern": {
+                "type": "string"
+              },
               "category": {
                 "type": "string",
-                "enum": ["navigation", "input", "feedback", "data-display", "layout", "interaction"]
+                "description": "Recommended values: navigation, input, feedback, data-display, layout, interaction — or any domain-appropriate value"
               },
               "usage": {
                 "type": "string",
@@ -683,9 +926,13 @@
               },
               "examples": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
-              "rationale": { "type": "string" }
+              "rationale": {
+                "type": "string"
+              }
             }
           }
         },
@@ -703,13 +950,23 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
-                  "minWidth": { "type": "string" },
-                  "maxWidth": { "type": "string" },
-                  "description": { "type": "string" },
+                  "name": {
+                    "type": "string"
+                  },
+                  "minWidth": {
+                    "type": "string"
+                  },
+                  "maxWidth": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
                   "layoutChanges": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -720,8 +977,12 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "element": { "type": "string" },
-                  "behavior": { "type": "string" }
+                  "element": {
+                    "type": "string"
+                  },
+                  "behavior": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -751,25 +1012,37 @@
                   },
                   "category": {
                     "type": "string",
-                    "enum": ["perceivable", "operable", "understandable", "robust"]
+                    "description": "Recommended values: perceivable, operable, understandable, robust — or any domain-appropriate value"
                   },
-                  "implementation": { "type": "string" },
-                  "testing": { "type": "string" }
+                  "implementation": {
+                    "type": "string"
+                  },
+                  "testing": {
+                    "type": "string"
+                  }
                 }
               }
             },
             "keyboardNavigation": {
               "type": "object",
               "properties": {
-                "strategy": { "type": "string" },
-                "focusManagement": { "type": "string" },
+                "strategy": {
+                  "type": "string"
+                },
+                "focusManagement": {
+                  "type": "string"
+                },
                 "shortcuts": {
                   "type": "array",
                   "items": {
                     "type": "object",
                     "properties": {
-                      "keys": { "type": "string" },
-                      "action": { "type": "string" }
+                      "keys": {
+                        "type": "string"
+                      },
+                      "action": {
+                        "type": "string"
+                      }
                     }
                   }
                 }
@@ -778,18 +1051,26 @@
             "screenReaderSupport": {
               "type": "object",
               "properties": {
-                "approach": { "type": "string" },
+                "approach": {
+                  "type": "string"
+                },
                 "announcements": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 }
               }
             },
             "colorContrast": {
               "type": "object",
               "properties": {
-                "minimumRatio": { "type": "string" },
-                "largeTextRatio": { "type": "string" }
+                "minimumRatio": {
+                  "type": "string"
+                },
+                "largeTextRatio": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -800,17 +1081,27 @@
           "items": {
             "type": "object",
             "properties": {
-              "name": { "type": "string" },
-              "trigger": { "type": "string" },
+              "name": {
+                "type": "string"
+              },
+              "trigger": {
+                "type": "string"
+              },
               "response": {
                 "type": "string",
                 "description": "COMPLETE response description"
               },
-              "feedback": { "type": "string" },
-              "animation": { "type": "string" },
+              "feedback": {
+                "type": "string"
+              },
+              "animation": {
+                "type": "string"
+              },
               "states": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -821,10 +1112,18 @@
           "items": {
             "type": "object",
             "properties": {
-              "errorType": { "type": "string" },
-              "message": { "type": "string" },
-              "display": { "type": "string" },
-              "recovery": { "type": "string" }
+              "errorType": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "display": {
+                "type": "string"
+              },
+              "recovery": {
+                "type": "string"
+              }
             }
           }
         },
@@ -834,10 +1133,18 @@
           "items": {
             "type": "object",
             "properties": {
-              "context": { "type": "string" },
-              "message": { "type": "string" },
-              "illustration": { "type": "string" },
-              "action": { "type": "string" }
+              "context": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "illustration": {
+                "type": "string"
+              },
+              "action": {
+                "type": "string"
+              }
             }
           }
         },
@@ -847,19 +1154,25 @@
           "items": {
             "type": "object",
             "properties": {
-              "context": { "type": "string" },
+              "context": {
+                "type": "string"
+              },
               "type": {
                 "type": "string",
-                "enum": ["spinner", "skeleton", "progress", "placeholder"]
+                "description": "Recommended values: spinner, skeleton, progress, placeholder — or any domain-appropriate value"
               },
-              "description": { "type": "string" }
+              "description": {
+                "type": "string"
+              }
             }
           }
         },
         "implementationNotes": {
           "type": "array",
           "description": "ALL implementation notes - capture completely",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "references": {
           "type": "array",
@@ -867,10 +1180,18 @@
           "items": {
             "type": "object",
             "properties": {
-              "title": { "type": "string" },
-              "type": { "type": "string" },
-              "url": { "type": "string" },
-              "description": { "type": "string" }
+              "title": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
             }
           }
         }

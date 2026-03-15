@@ -4,7 +4,10 @@
   "title": "Architecture Decision Document Schema",
   "description": "Comprehensive schema for architecture artifacts - captures COMPLETE technical architecture decisions, specifications, and rationale with full detail",
   "type": "object",
-  "required": ["metadata", "content"],
+  "required": [
+    "metadata",
+    "content"
+  ],
   "additionalProperties": false,
   "properties": {
     "metadata": {
@@ -12,7 +15,10 @@
     },
     "content": {
       "type": "object",
-      "required": ["overview", "decisions"],
+      "required": [
+        "overview",
+        "decisions"
+      ],
       "additionalProperties": false,
       "properties": {
         "overview": {
@@ -41,12 +47,16 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
+                  "name": {
+                    "type": "string"
+                  },
                   "description": {
                     "type": "string",
                     "description": "COMPLETE principle description"
                   },
-                  "rationale": { "type": "string" }
+                  "rationale": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -70,9 +80,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "assumption": { "type": "string" },
-                  "impact": { "type": "string" },
-                  "validatedBy": { "type": "string" }
+                  "assumption": {
+                    "type": "string"
+                  },
+                  "impact": {
+                    "type": "string"
+                  },
+                  "validatedBy": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -88,10 +104,14 @@
                   },
                   "type": {
                     "type": "string",
-                    "enum": ["technical", "business", "regulatory", "organizational", "resource", "timeline"]
+                    "description": "Recommended values: technical, business, regulatory, organizational, resource, timeline — or any domain-appropriate value"
                   },
-                  "rationale": { "type": "string" },
-                  "impact": { "type": "string" }
+                  "rationale": {
+                    "type": "string"
+                  },
+                  "impact": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -107,7 +127,12 @@
                   },
                   "priority": {
                     "type": "string",
-                    "enum": ["low", "medium", "high", "critical"]
+                    "enum": [
+                      "low",
+                      "medium",
+                      "high",
+                      "critical"
+                    ]
                   },
                   "description": {
                     "type": "string",
@@ -130,10 +155,14 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "role": { "type": "string" },
+                  "role": {
+                    "type": "string"
+                  },
                   "concerns": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -182,9 +211,15 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "name": { "type": "string" },
-                      "version": { "type": "string" },
-                      "purpose": { "type": "string" }
+                      "name": {
+                        "type": "string"
+                      },
+                      "version": {
+                        "type": "string"
+                      },
+                      "purpose": {
+                        "type": "string"
+                      }
                     }
                   }
                 }
@@ -194,9 +229,15 @@
               "type": "object",
               "description": "Backend technology decisions",
               "properties": {
-                "framework": { "type": "string" },
-                "language": { "type": "string" },
-                "runtime": { "type": "string" },
+                "framework": {
+                  "type": "string"
+                },
+                "language": {
+                  "type": "string"
+                },
+                "runtime": {
+                  "type": "string"
+                },
                 "apiStyle": {
                   "type": "string",
                   "description": "API style (e.g., 'REST', 'GraphQL', 'gRPC')"
@@ -210,9 +251,15 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "name": { "type": "string" },
-                      "version": { "type": "string" },
-                      "purpose": { "type": "string" }
+                      "name": {
+                        "type": "string"
+                      },
+                      "version": {
+                        "type": "string"
+                      },
+                      "purpose": {
+                        "type": "string"
+                      }
                     }
                   }
                 }
@@ -252,12 +299,24 @@
               "type": "object",
               "description": "Infrastructure technology decisions",
               "properties": {
-                "hosting": { "type": "string" },
-                "containerization": { "type": "string" },
-                "orchestration": { "type": "string" },
-                "cicd": { "type": "string" },
-                "monitoring": { "type": "string" },
-                "logging": { "type": "string" },
+                "hosting": {
+                  "type": "string"
+                },
+                "containerization": {
+                  "type": "string"
+                },
+                "orchestration": {
+                  "type": "string"
+                },
+                "cicd": {
+                  "type": "string"
+                },
+                "monitoring": {
+                  "type": "string"
+                },
+                "logging": {
+                  "type": "string"
+                },
                 "rationale": {
                   "type": "string",
                   "description": "COMPLETE rationale for infrastructure choices"
@@ -268,11 +327,21 @@
               "type": "object",
               "description": "Development tools and environment",
               "properties": {
-                "ide": { "type": "string" },
-                "linting": { "type": "string" },
-                "formatting": { "type": "string" },
-                "versionControl": { "type": "string" },
-                "packageManager": { "type": "string" }
+                "ide": {
+                  "type": "string"
+                },
+                "linting": {
+                  "type": "string"
+                },
+                "formatting": {
+                  "type": "string"
+                },
+                "versionControl": {
+                  "type": "string"
+                },
+                "packageManager": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -282,7 +351,13 @@
           "description": "Architecture Decision Records (ADRs) - capture COMPLETE decision documentation",
           "items": {
             "type": "object",
-            "required": ["id", "title", "status", "context", "decision"],
+            "required": [
+              "id",
+              "title",
+              "status",
+              "context",
+              "decision"
+            ],
             "properties": {
               "id": {
                 "type": "string",
@@ -294,7 +369,14 @@
               },
               "status": {
                 "type": "string",
-                "enum": ["proposed", "accepted", "deprecated", "superseded", "draft", "rejected"]
+                "enum": [
+                  "proposed",
+                  "accepted",
+                  "deprecated",
+                  "superseded",
+                  "draft",
+                  "rejected"
+                ]
               },
               "date": {
                 "type": "string",
@@ -303,7 +385,9 @@
               "deciders": {
                 "type": "array",
                 "description": "Who made this decision",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "context": {
                 "type": "string",
@@ -324,17 +408,23 @@
                   "positive": {
                     "type": "array",
                     "description": "ALL positive consequences",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "negative": {
                     "type": "array",
                     "description": "ALL negative consequences/trade-offs",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "neutral": {
                     "type": "array",
                     "description": "ALL neutral consequences",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               },
@@ -354,11 +444,15 @@
                     },
                     "pros": {
                       "type": "array",
-                      "items": { "type": "string" }
+                      "items": {
+                        "type": "string"
+                      }
                     },
                     "cons": {
                       "type": "array",
-                      "items": { "type": "string" }
+                      "items": {
+                        "type": "string"
+                      }
                     },
                     "prosAndCons": {
                       "type": "string",
@@ -374,7 +468,9 @@
               "relatedDecisions": {
                 "type": "array",
                 "description": "Related ADR IDs",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "supersedes": {
                 "type": "string",
@@ -387,7 +483,9 @@
               "implementationNotes": {
                 "type": "array",
                 "description": "Implementation guidance - capture ALL notes",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -424,9 +522,15 @@
                 "items": {
                   "type": "object",
                   "properties": {
-                    "name": { "type": "string" },
-                    "location": { "type": "string" },
-                    "description": { "type": "string" }
+                    "name": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -439,8 +543,12 @@
           "items": {
             "type": "object",
             "properties": {
-              "id": { "type": "string" },
-              "name": { "type": "string" },
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
               "type": {
                 "type": "string",
                 "description": "Component type (e.g., 'Service', 'Module', 'Library', 'External')"
@@ -452,7 +560,9 @@
               "responsibilities": {
                 "type": "array",
                 "description": "ALL component responsibilities",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "interfaces": {
                 "type": "array",
@@ -460,17 +570,27 @@
                 "items": {
                   "type": "object",
                   "properties": {
-                    "name": { "type": "string" },
-                    "type": { "type": "string" },
-                    "description": { "type": "string" }
+                    "name": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
                   }
                 }
               },
               "dependencies": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
-              "technology": { "type": "string" }
+              "technology": {
+                "type": "string"
+              }
             }
           }
         },
@@ -492,7 +612,9 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "path": { "type": "string" },
+                  "path": {
+                    "type": "string"
+                  },
                   "purpose": {
                     "type": "string",
                     "description": "COMPLETE description of directory purpose"
@@ -522,8 +644,12 @@
                     "type": "string",
                     "description": "COMPLETE convention description"
                   },
-                  "example": { "type": "string" },
-                  "rationale": { "type": "string" }
+                  "example": {
+                    "type": "string"
+                  },
+                  "rationale": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -547,21 +673,37 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "id": { "type": "string" },
-                  "name": { "type": "string" },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
                   "description": {
                     "type": "string",
                     "description": "COMPLETE flow description"
                   },
-                  "source": { "type": "string" },
-                  "destination": { "type": "string" },
-                  "dataType": { "type": "string" },
-                  "protocol": { "type": "string" },
+                  "source": {
+                    "type": "string"
+                  },
+                  "destination": {
+                    "type": "string"
+                  },
+                  "dataType": {
+                    "type": "string"
+                  },
+                  "protocol": {
+                    "type": "string"
+                  },
                   "transformations": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
-                  "validation": { "type": "string" }
+                  "validation": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -571,10 +713,18 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
-                  "type": { "type": "string" },
-                  "description": { "type": "string" },
-                  "reference": { "type": "string" }
+                  "name": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "reference": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -592,21 +742,31 @@
               "type": "object",
               "description": "Authentication approach",
               "properties": {
-                "method": { "type": "string" },
+                "method": {
+                  "type": "string"
+                },
                 "description": {
                   "type": "string",
                   "description": "COMPLETE authentication description"
                 },
-                "provider": { "type": "string" },
-                "tokenStrategy": { "type": "string" },
-                "sessionManagement": { "type": "string" }
+                "provider": {
+                  "type": "string"
+                },
+                "tokenStrategy": {
+                  "type": "string"
+                },
+                "sessionManagement": {
+                  "type": "string"
+                }
               }
             },
             "authorization": {
               "type": "object",
               "description": "Authorization approach",
               "properties": {
-                "method": { "type": "string" },
+                "method": {
+                  "type": "string"
+                },
                 "description": {
                   "type": "string",
                   "description": "COMPLETE authorization description"
@@ -616,10 +776,14 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "role": { "type": "string" },
+                      "role": {
+                        "type": "string"
+                      },
                       "permissions": {
                         "type": "array",
-                        "items": { "type": "string" }
+                        "items": {
+                          "type": "string"
+                        }
                       }
                     }
                   }
@@ -630,10 +794,18 @@
               "type": "object",
               "description": "Data protection measures",
               "properties": {
-                "atRest": { "type": "string" },
-                "inTransit": { "type": "string" },
-                "sensitiveData": { "type": "string" },
-                "pii": { "type": "string" }
+                "atRest": {
+                  "type": "string"
+                },
+                "inTransit": {
+                  "type": "string"
+                },
+                "sensitiveData": {
+                  "type": "string"
+                },
+                "pii": {
+                  "type": "string"
+                }
               }
             },
             "securityPatterns": {
@@ -642,9 +814,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "pattern": { "type": "string" },
-                  "description": { "type": "string" },
-                  "implementation": { "type": "string" }
+                  "pattern": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "implementation": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -654,10 +832,18 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "threat": { "type": "string" },
-                  "category": { "type": "string" },
-                  "mitigation": { "type": "string" },
-                  "status": { "type": "string" }
+                  "threat": {
+                    "type": "string"
+                  },
+                  "category": {
+                    "type": "string"
+                  },
+                  "mitigation": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -667,12 +853,18 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "standard": { "type": "string" },
+                  "standard": {
+                    "type": "string"
+                  },
                   "requirements": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
-                  "implementation": { "type": "string" }
+                  "implementation": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -689,22 +881,32 @@
             "horizontalScaling": {
               "type": "object",
               "properties": {
-                "approach": { "type": "string" },
+                "approach": {
+                  "type": "string"
+                },
                 "triggers": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 },
                 "limitations": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 }
               }
             },
             "verticalScaling": {
               "type": "object",
               "properties": {
-                "approach": { "type": "string" },
-                "limits": { "type": "string" }
+                "approach": {
+                  "type": "string"
+                },
+                "limits": {
+                  "type": "string"
+                }
               }
             },
             "bottlenecks": {
@@ -713,11 +915,20 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "area": { "type": "string" },
-                  "description": { "type": "string" },
+                  "area": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
                   "severity": {
                     "type": "string",
-                    "enum": ["low", "medium", "high", "critical"]
+                    "enum": [
+                      "low",
+                      "medium",
+                      "high",
+                      "critical"
+                    ]
                   }
                 }
               }
@@ -728,20 +939,32 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "bottleneck": { "type": "string" },
-                  "mitigation": { "type": "string" },
-                  "implementation": { "type": "string" }
+                  "bottleneck": {
+                    "type": "string"
+                  },
+                  "mitigation": {
+                    "type": "string"
+                  },
+                  "implementation": {
+                    "type": "string"
+                  }
                 }
               }
             },
             "capacityPlanning": {
               "type": "object",
               "properties": {
-                "currentCapacity": { "type": "string" },
-                "projectedGrowth": { "type": "string" },
+                "currentCapacity": {
+                  "type": "string"
+                },
+                "projectedGrowth": {
+                  "type": "string"
+                },
                 "scalingThresholds": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -751,29 +974,49 @@
           "type": "object",
           "description": "Reliability and resilience architecture",
           "properties": {
-            "availabilityTarget": { "type": "string" },
+            "availabilityTarget": {
+              "type": "string"
+            },
             "faultTolerance": {
               "type": "object",
               "properties": {
-                "strategy": { "type": "string" },
-                "failoverMechanism": { "type": "string" },
-                "recoveryTime": { "type": "string" }
+                "strategy": {
+                  "type": "string"
+                },
+                "failoverMechanism": {
+                  "type": "string"
+                },
+                "recoveryTime": {
+                  "type": "string"
+                }
               }
             },
             "errorHandling": {
               "type": "object",
               "properties": {
-                "strategy": { "type": "string" },
-                "retryPolicy": { "type": "string" },
-                "circuitBreaker": { "type": "string" }
+                "strategy": {
+                  "type": "string"
+                },
+                "retryPolicy": {
+                  "type": "string"
+                },
+                "circuitBreaker": {
+                  "type": "string"
+                }
               }
             },
             "backupStrategy": {
               "type": "object",
               "properties": {
-                "frequency": { "type": "string" },
-                "retention": { "type": "string" },
-                "recoveryProcess": { "type": "string" }
+                "frequency": {
+                  "type": "string"
+                },
+                "retention": {
+                  "type": "string"
+                },
+                "recoveryProcess": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -785,27 +1028,43 @@
             "logging": {
               "type": "object",
               "properties": {
-                "strategy": { "type": "string" },
-                "format": { "type": "string" },
+                "strategy": {
+                  "type": "string"
+                },
+                "format": {
+                  "type": "string"
+                },
                 "levels": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 },
-                "aggregation": { "type": "string" }
+                "aggregation": {
+                  "type": "string"
+                }
               }
             },
             "metrics": {
               "type": "object",
               "properties": {
-                "strategy": { "type": "string" },
+                "strategy": {
+                  "type": "string"
+                },
                 "keyMetrics": {
                   "type": "array",
                   "items": {
                     "type": "object",
                     "properties": {
-                      "name": { "type": "string" },
-                      "type": { "type": "string" },
-                      "threshold": { "type": "string" }
+                      "name": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string"
+                      },
+                      "threshold": {
+                        "type": "string"
+                      }
                     }
                   }
                 }
@@ -814,19 +1073,29 @@
             "tracing": {
               "type": "object",
               "properties": {
-                "strategy": { "type": "string" },
-                "implementation": { "type": "string" }
+                "strategy": {
+                  "type": "string"
+                },
+                "implementation": {
+                  "type": "string"
+                }
               }
             },
             "alerting": {
               "type": "object",
               "properties": {
-                "strategy": { "type": "string" },
+                "strategy": {
+                  "type": "string"
+                },
                 "channels": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 },
-                "escalation": { "type": "string" }
+                "escalation": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -844,9 +1113,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
-                  "purpose": { "type": "string" },
-                  "configuration": { "type": "string" }
+                  "name": {
+                    "type": "string"
+                  },
+                  "purpose": {
+                    "type": "string"
+                  },
+                  "configuration": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -858,26 +1133,38 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "name": { "type": "string" },
-                      "purpose": { "type": "string" },
+                      "name": {
+                        "type": "string"
+                      },
+                      "purpose": {
+                        "type": "string"
+                      },
                       "tools": {
                         "type": "array",
-                        "items": { "type": "string" }
+                        "items": {
+                          "type": "string"
+                        }
                       }
                     }
                   }
                 },
                 "triggers": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 }
               }
             },
             "rollback": {
               "type": "object",
               "properties": {
-                "strategy": { "type": "string" },
-                "procedure": { "type": "string" }
+                "strategy": {
+                  "type": "string"
+                },
+                "procedure": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -888,7 +1175,9 @@
           "items": {
             "type": "object",
             "properties": {
-              "name": { "type": "string" },
+              "name": {
+                "type": "string"
+              },
               "type": {
                 "type": "string",
                 "description": "Integration type (e.g., 'API', 'Database', 'Message Queue', 'File')"
@@ -897,11 +1186,21 @@
                 "type": "string",
                 "description": "COMPLETE integration description"
               },
-              "protocol": { "type": "string" },
-              "authentication": { "type": "string" },
-              "dataFormat": { "type": "string" },
-              "errorHandling": { "type": "string" },
-              "sla": { "type": "string" }
+              "protocol": {
+                "type": "string"
+              },
+              "authentication": {
+                "type": "string"
+              },
+              "dataFormat": {
+                "type": "string"
+              },
+              "errorHandling": {
+                "type": "string"
+              },
+              "sla": {
+                "type": "string"
+              }
             }
           }
         },
@@ -911,12 +1210,21 @@
           "properties": {
             "status": {
               "type": "string",
-              "enum": ["validated", "pending", "issues-found", "not-validated"]
+              "enum": [
+                "validated",
+                "pending",
+                "issues-found",
+                "not-validated"
+              ]
             },
-            "validationDate": { "type": "string" },
+            "validationDate": {
+              "type": "string"
+            },
             "validators": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "findings": {
               "type": "array",
@@ -924,14 +1232,21 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "id": { "type": "string" },
+                  "id": {
+                    "type": "string"
+                  },
                   "type": {
                     "type": "string",
-                    "enum": ["issue", "concern", "recommendation", "observation"]
+                    "description": "Recommended values: issue, concern, recommendation, observation — or any domain-appropriate value"
                   },
                   "severity": {
                     "type": "string",
-                    "enum": ["low", "medium", "high", "critical"]
+                    "enum": [
+                      "low",
+                      "medium",
+                      "high",
+                      "critical"
+                    ]
                   },
                   "finding": {
                     "type": "string",
@@ -943,7 +1258,12 @@
                   },
                   "status": {
                     "type": "string",
-                    "enum": ["open", "addressed", "accepted", "deferred"]
+                    "enum": [
+                      "open",
+                      "addressed",
+                      "accepted",
+                      "deferred"
+                    ]
                   }
                 }
               }
@@ -953,7 +1273,9 @@
         "implementationNotes": {
           "type": "array",
           "description": "ALL implementation notes and guidance - capture completely",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "references": {
           "type": "array",
@@ -961,10 +1283,18 @@
           "items": {
             "type": "object",
             "properties": {
-              "title": { "type": "string" },
-              "type": { "type": "string" },
-              "location": { "type": "string" },
-              "description": { "type": "string" }
+              "title": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "location": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
             }
           }
         }

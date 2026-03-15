@@ -4,19 +4,28 @@
   "title": "Test Design Architecture Schema",
   "description": "Schema for architecture-focused test design artifacts - testability assessment. IMPORTANT: Capture ALL architectural concerns, testability assessments, and risk details completely. Do NOT summarize or truncate any analysis.",
   "type": "object",
-  "required": ["metadata", "content"],
+  "required": [
+    "metadata",
+    "content"
+  ],
   "properties": {
     "metadata": {
       "$ref": "../common/metadata.schema.json"
     },
     "content": {
       "type": "object",
-      "required": ["featureInfo", "testabilityAssessment"],
+      "required": [
+        "featureInfo",
+        "testabilityAssessment"
+      ],
       "properties": {
         "featureInfo": {
           "type": "object",
           "description": "COMPLETE feature information for architecture review",
-          "required": ["featureName", "purpose"],
+          "required": [
+            "featureName",
+            "purpose"
+          ],
           "properties": {
             "featureName": {
               "type": "string",
@@ -41,7 +50,9 @@
             "affectedComponents": {
               "type": "array",
               "description": "ALL components affected by this feature",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
@@ -85,23 +96,29 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
+                  "name": {
+                    "type": "string"
+                  },
                   "type": {
                     "type": "string",
-                    "enum": ["service", "database", "queue", "cache", "api", "ui", "external", "other"]
+                    "description": "Recommended values: service, database, queue, cache, api, ui, external, other — or any domain-appropriate value"
                   },
                   "description": {
                     "type": "string",
                     "description": "COMPLETE component description"
                   },
-                  "technology": { "type": "string" },
+                  "technology": {
+                    "type": "string"
+                  },
                   "testabilityNotes": {
                     "type": "string",
                     "description": "COMPLETE testability considerations for this component"
                   },
                   "dependencies": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -112,14 +129,22 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
-                  "source": { "type": "string" },
-                  "destination": { "type": "string" },
+                  "name": {
+                    "type": "string"
+                  },
+                  "source": {
+                    "type": "string"
+                  },
+                  "destination": {
+                    "type": "string"
+                  },
                   "description": {
                     "type": "string",
                     "description": "COMPLETE data flow description"
                   },
-                  "testabilityConsiderations": { "type": "string" }
+                  "testabilityConsiderations": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -129,16 +154,22 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
+                  "name": {
+                    "type": "string"
+                  },
                   "type": {
                     "type": "string",
-                    "enum": ["api", "event", "database", "file", "message-queue", "other"]
+                    "description": "Recommended values: api, event, database, file, message-queue, other — or any domain-appropriate value"
                   },
                   "systems": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
-                  "description": { "type": "string" },
+                  "description": {
+                    "type": "string"
+                  },
                   "testStrategy": {
                     "type": "string",
                     "description": "COMPLETE strategy for testing this integration point"
@@ -170,7 +201,9 @@
                     "type": "string",
                     "description": "COMPLETE resolution path"
                   },
-                  "owner": { "type": "string" }
+                  "owner": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -188,7 +221,9 @@
                     "type": "string",
                     "description": "COMPLETE rationale for high priority"
                   },
-                  "recommendation": { "type": "string" }
+                  "recommendation": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -198,8 +233,12 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "item": { "type": "string" },
-                  "context": { "type": "string" }
+                  "item": {
+                    "type": "string"
+                  },
+                  "context": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -210,16 +249,21 @@
           "description": "COMPLETE architectural risk assessment. Include ALL identified risks with full analysis.",
           "items": {
             "type": "object",
-            "required": ["riskId", "risk", "probability", "impact", "mitigation"],
+            "required": [
+              "riskId",
+              "risk",
+              "probability",
+              "impact",
+              "mitigation"
+            ],
             "properties": {
               "riskId": {
                 "type": "string",
-                "description": "Unique risk identifier"
+                "description": "Unique risk identifier (e.g. 'RISK-1', 'R-1')"
               },
               "category": {
                 "type": "string",
-                "enum": ["scalability", "reliability", "security", "performance", "integration", "testability", "maintainability", "operability"],
-                "description": "Architectural risk category"
+                "description": "Architectural risk category. Recommended values: scalability, reliability, security, performance, integration, testability, maintainability, operability — or any domain-appropriate value"
               },
               "risk": {
                 "type": "string",
@@ -227,12 +271,21 @@
               },
               "probability": {
                 "type": "string",
-                "enum": ["high", "medium", "low"],
+                "enum": [
+                  "high",
+                  "medium",
+                  "low"
+                ],
                 "description": "Probability of risk materializing"
               },
               "impact": {
                 "type": "string",
-                "enum": ["critical", "high", "medium", "low"],
+                "enum": [
+                  "critical",
+                  "high",
+                  "medium",
+                  "low"
+                ],
                 "description": "Impact on system if risk materializes"
               },
               "architecturalConcern": {
@@ -242,7 +295,9 @@
               "affectedComponents": {
                 "type": "array",
                 "description": "ALL components affected by this risk",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "mitigation": {
                 "type": "string",
@@ -252,10 +307,18 @@
                 "type": "string",
                 "description": "COMPLETE description of how this risk affects testing strategy"
               },
-              "owner": { "type": "string" },
+              "owner": {
+                "type": "string"
+              },
               "status": {
                 "type": "string",
-                "enum": ["identified", "analyzing", "mitigating", "accepted", "resolved"]
+                "enum": [
+                  "identified",
+                  "analyzing",
+                  "mitigating",
+                  "accepted",
+                  "resolved"
+                ]
               }
             }
           }
@@ -265,7 +328,12 @@
           "description": "COMPLETE list of ALL testability concerns and architectural gaps",
           "items": {
             "type": "object",
-            "required": ["concern", "component", "impact", "recommendation"],
+            "required": [
+              "concern",
+              "component",
+              "impact",
+              "recommendation"
+            ],
             "properties": {
               "concernId": {
                 "type": "string",
@@ -285,7 +353,12 @@
               },
               "severity": {
                 "type": "string",
-                "enum": ["blocker", "critical", "major", "minor"],
+                "enum": [
+                  "blocker",
+                  "critical",
+                  "major",
+                  "minor"
+                ],
                 "description": "Severity of the testability concern"
               },
               "recommendation": {
@@ -294,12 +367,21 @@
               },
               "effort": {
                 "type": "string",
-                "enum": ["high", "medium", "low"],
+                "enum": [
+                  "high",
+                  "medium",
+                  "low"
+                ],
                 "description": "Estimated effort to address"
               },
               "status": {
                 "type": "string",
-                "enum": ["open", "in-progress", "resolved", "accepted"],
+                "enum": [
+                  "open",
+                  "in-progress",
+                  "resolved",
+                  "accepted"
+                ],
                 "description": "Current status of this concern"
               }
             }
@@ -308,11 +390,18 @@
         "testabilityAssessment": {
           "type": "object",
           "description": "COMPLETE testability assessment across all categories",
-          "required": ["overall", "categories"],
+          "required": [
+            "overall",
+            "categories"
+          ],
           "properties": {
             "overall": {
               "type": "string",
-              "enum": ["good", "moderate", "poor"],
+              "enum": [
+                "good",
+                "moderate",
+                "poor"
+              ],
               "description": "Overall testability rating"
             },
             "overallNotes": {
@@ -324,7 +413,11 @@
               "description": "COMPLETE assessment for each testability category",
               "items": {
                 "type": "object",
-                "required": ["category", "rating", "notes"],
+                "required": [
+                  "category",
+                  "rating",
+                  "notes"
+                ],
                 "properties": {
                   "category": {
                     "type": "string",
@@ -332,7 +425,11 @@
                   },
                   "rating": {
                     "type": "string",
-                    "enum": ["good", "moderate", "poor"],
+                    "enum": [
+                      "good",
+                      "moderate",
+                      "poor"
+                    ],
                     "description": "Rating for this category"
                   },
                   "notes": {
@@ -342,7 +439,9 @@
                   "recommendations": {
                     "type": "array",
                     "description": "Recommendations for improvement",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -412,7 +511,10 @@
           "description": "COMPLETE risk mitigation plans with full details",
           "items": {
             "type": "object",
-            "required": ["risk", "plan"],
+            "required": [
+              "risk",
+              "plan"
+            ],
             "properties": {
               "planId": {
                 "type": "string",
@@ -432,16 +534,24 @@
                 "items": {
                   "type": "object",
                   "properties": {
-                    "change": { "type": "string" },
-                    "component": { "type": "string" },
-                    "effort": { "type": "string" }
+                    "change": {
+                      "type": "string"
+                    },
+                    "component": {
+                      "type": "string"
+                    },
+                    "effort": {
+                      "type": "string"
+                    }
                   }
                 }
               },
               "testingRequirements": {
                 "type": "array",
                 "description": "Testing requirements for validation",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "owner": {
                 "type": "string",
@@ -453,13 +563,20 @@
               },
               "status": {
                 "type": "string",
-                "enum": ["planned", "in-progress", "completed", "blocked"],
+                "enum": [
+                  "planned",
+                  "in-progress",
+                  "completed",
+                  "blocked"
+                ],
                 "description": "Current status"
               },
               "successCriteria": {
                 "type": "array",
                 "description": "Criteria for successful mitigation",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -470,7 +587,9 @@
           "items": {
             "type": "object",
             "properties": {
-              "id": { "type": "string" },
+              "id": {
+                "type": "string"
+              },
               "recommendation": {
                 "type": "string",
                 "description": "COMPLETE recommendation with technical details"
@@ -481,15 +600,26 @@
               },
               "affectedComponents": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "effort": {
                 "type": "string",
-                "enum": ["high", "medium", "low"]
+                "enum": [
+                  "high",
+                  "medium",
+                  "low"
+                ]
               },
               "priority": {
                 "type": "string",
-                "enum": ["critical", "high", "medium", "low"]
+                "enum": [
+                  "critical",
+                  "high",
+                  "medium",
+                  "low"
+                ]
               },
               "implementationGuidance": {
                 "type": "string",
@@ -535,11 +665,15 @@
                   },
                   "type": {
                     "type": "string",
-                    "enum": ["technical", "team", "timeline", "resource", "external"]
+                    "description": "Recommended values: technical, team, timeline, resource, external — or any domain-appropriate value"
                   },
                   "status": {
                     "type": "string",
-                    "enum": ["confirmed", "pending", "at-risk"]
+                    "enum": [
+                      "confirmed",
+                      "pending",
+                      "at-risk"
+                    ]
                   },
                   "mitigation": {
                     "type": "string",
@@ -560,11 +694,20 @@
                 "type": "string",
                 "description": "COMPLETE description of the next step"
               },
-              "owner": { "type": "string" },
-              "timeline": { "type": "string" },
+              "owner": {
+                "type": "string"
+              },
+              "timeline": {
+                "type": "string"
+              },
               "priority": {
                 "type": "string",
-                "enum": ["immediate", "short-term", "medium-term", "long-term"]
+                "enum": [
+                  "immediate",
+                  "short-term",
+                  "medium-term",
+                  "long-term"
+                ]
               }
             }
           }
@@ -573,16 +716,28 @@
           "type": "object",
           "description": "Architecture review sign-off",
           "properties": {
-            "reviewedBy": { "type": "string" },
-            "reviewDate": { "type": "string", "format": "date" },
+            "reviewedBy": {
+              "type": "string"
+            },
+            "reviewDate": {
+              "type": "string",
+              "format": "date"
+            },
             "verdict": {
               "type": "string",
-              "enum": ["approved", "approved-with-conditions", "needs-revision", "rejected"]
+              "enum": [
+                "approved",
+                "approved-with-conditions",
+                "needs-revision",
+                "rejected"
+              ]
             },
             "conditions": {
               "type": "array",
               "description": "Conditions for approval",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "comments": {
               "type": "string",

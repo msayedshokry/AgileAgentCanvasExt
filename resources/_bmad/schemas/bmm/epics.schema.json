@@ -4,7 +4,10 @@
   "title": "Epics and Stories Schema",
   "description": "Comprehensive schema for epics artifacts - captures complete epic and story breakdown with full requirements inventory, coverage mapping, and detailed acceptance criteria",
   "type": "object",
-  "required": ["metadata", "content"],
+  "required": [
+    "metadata",
+    "content"
+  ],
   "additionalProperties": false,
   "properties": {
     "metadata": {
@@ -12,7 +15,9 @@
     },
     "content": {
       "type": "object",
-      "required": ["epics"],
+      "required": [
+        "epics"
+      ],
       "additionalProperties": false,
       "properties": {
         "overview": {
@@ -38,7 +43,9 @@
             "inputDocuments": {
               "type": "array",
               "description": "Source documents used (e.g., PRD.md, architecture.md)",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
@@ -51,7 +58,11 @@
               "description": "ALL functional requirements with complete descriptions",
               "items": {
                 "type": "object",
-                "required": ["id", "title", "description"],
+                "required": [
+                  "id",
+                  "title",
+                  "description"
+                ],
                 "properties": {
                   "id": {
                     "type": "string",
@@ -71,11 +82,15 @@
                   },
                   "relatedEpics": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "relatedStories": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -85,7 +100,11 @@
               "description": "ALL non-functional requirements with complete descriptions",
               "items": {
                 "type": "object",
-                "required": ["id", "title", "description"],
+                "required": [
+                  "id",
+                  "title",
+                  "description"
+                ],
                 "properties": {
                   "id": {
                     "type": "string",
@@ -106,14 +125,22 @@
                   "metrics": {
                     "type": "object",
                     "properties": {
-                      "target": { "type": "string" },
-                      "threshold": { "type": "string" },
-                      "unit": { "type": "string" }
+                      "target": {
+                        "type": "string"
+                      },
+                      "threshold": {
+                        "type": "string"
+                      },
+                      "unit": {
+                        "type": "string"
+                      }
                     }
                   },
                   "relatedEpics": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -123,7 +150,11 @@
               "description": "ALL additional/architectural requirements with complete descriptions",
               "items": {
                 "type": "object",
-                "required": ["id", "title", "description"],
+                "required": [
+                  "id",
+                  "title",
+                  "description"
+                ],
                 "properties": {
                   "id": {
                     "type": "string",
@@ -143,7 +174,9 @@
                   },
                   "relatedEpics": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -152,10 +185,18 @@
               "type": "object",
               "description": "Summary counts",
               "properties": {
-                "totalFunctional": { "type": "integer" },
-                "totalNonFunctional": { "type": "integer" },
-                "totalAdditional": { "type": "integer" },
-                "totalRequirements": { "type": "integer" }
+                "totalFunctional": {
+                  "type": "integer"
+                },
+                "totalNonFunctional": {
+                  "type": "integer"
+                },
+                "totalAdditional": {
+                  "type": "integer"
+                },
+                "totalRequirements": {
+                  "type": "integer"
+                }
               }
             }
           }
@@ -170,13 +211,24 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "requirementId": { "type": "string" },
-                  "requirementTitle": { "type": "string" },
-                  "epicId": { "type": "string" },
-                  "epicTitle": { "type": "string" },
+                  "requirementId": {
+                    "type": "string"
+                  },
+                  "requirementTitle": {
+                    "type": "string"
+                  },
+                  "epicId": {
+                    "type": "string",
+                    "description": "Epic ID using numeric format (e.g. '1', '15')"
+                  },
+                  "epicTitle": {
+                    "type": "string"
+                  },
                   "storyIds": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -187,10 +239,19 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "requirementId": { "type": "string" },
-                  "requirementTitle": { "type": "string" },
-                  "epicId": { "type": "string" },
-                  "epicTitle": { "type": "string" }
+                  "requirementId": {
+                    "type": "string"
+                  },
+                  "requirementTitle": {
+                    "type": "string"
+                  },
+                  "epicId": {
+                    "type": "string",
+                    "description": "Epic ID using numeric format (e.g. '1', '15')"
+                  },
+                  "epicTitle": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -200,15 +261,23 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "requirementId": { "type": "string" },
-                  "requirementTitle": { "type": "string" },
+                  "requirementId": {
+                    "type": "string"
+                  },
+                  "requirementTitle": {
+                    "type": "string"
+                  },
                   "epicIds": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "epicTitles": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -217,13 +286,27 @@
               "type": "object",
               "description": "Coverage summary statistics",
               "properties": {
-                "frCovered": { "type": "integer" },
-                "frTotal": { "type": "integer" },
-                "nfrCovered": { "type": "integer" },
-                "nfrTotal": { "type": "integer" },
-                "arCovered": { "type": "integer" },
-                "arTotal": { "type": "integer" },
-                "overallCoverage": { "type": "string" }
+                "frCovered": {
+                  "type": "integer"
+                },
+                "frTotal": {
+                  "type": "integer"
+                },
+                "nfrCovered": {
+                  "type": "integer"
+                },
+                "nfrTotal": {
+                  "type": "integer"
+                },
+                "arCovered": {
+                  "type": "integer"
+                },
+                "arTotal": {
+                  "type": "integer"
+                },
+                "overallCoverage": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -232,12 +315,42 @@
           "type": "array",
           "description": "Complete list of epics with full detail",
           "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "description": "Lightweight manifest reference to a standalone epic file (reference architecture)",
+                "required": ["id", "title"],
+                "additionalProperties": true,
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Epic identifier — numeric format (e.g. '1', '15')"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Epic title"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "Epic status"
+                  },
+                  "file": {
+                    "type": "string",
+                    "description": "Relative path to standalone epic file (e.g. 'epics/epic-1.json')"
+                  }
+                }
+              },
+              {
             "type": "object",
-            "required": ["id", "title", "stories"],
+            "required": [
+              "id",
+              "title",
+              "stories"
+            ],
             "properties": {
               "id": {
                 "type": "string",
-                "description": "Epic identifier (e.g., 'EPIC-1', '1', 'Epic 1')"
+                "description": "Epic identifier — canonical format is numeric (e.g. '1', '15'). Variants like 'EPIC-1' or 'Epic 1' are accepted but numeric is preferred for consistency with story epicId references."
               },
               "title": {
                 "type": "string",
@@ -258,35 +371,62 @@
               "functionalRequirements": {
                 "type": "array",
                 "description": "List of FR IDs covered by this epic",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "nonFunctionalRequirements": {
                 "type": "array",
                 "description": "List of NFR IDs covered by this epic",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "additionalRequirements": {
                 "type": "array",
                 "description": "List of AR IDs covered by this epic",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "implementationNotes": {
                 "type": "array",
                 "description": "Implementation notes as bullet points - capture ALL of them",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "priority": {
                 "type": "string",
-                "enum": ["must-have", "should-have", "could-have", "won't-have", "P0", "P1", "P2", "P3"]
+                "enum": [
+                  "must-have",
+                  "should-have",
+                  "could-have",
+                  "won't-have",
+                  "P0",
+                  "P1",
+                  "P2",
+                  "P3"
+                ]
               },
               "status": {
                 "type": "string",
-                "enum": ["draft", "ready", "in-progress", "blocked", "review", "done", "complete"]
+                "enum": [
+                  "draft",
+                  "ready",
+                  "in-progress",
+                  "blocked",
+                  "review",
+                  "done",
+                  "complete"
+                ]
               },
               "dependencies": {
                 "type": "array",
                 "description": "Dependencies on other epics",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "storyCount": {
                 "type": "integer",
@@ -310,23 +450,48 @@
               "risks": {
                 "description": "Risk assessment with mitigations for this epic",
                 "oneOf": [
-                  { "$ref": "risks.schema.json" },
+                  {
+                    "$ref": "risks.schema.json"
+                  },
                   {
                     "type": "array",
                     "items": {
                       "type": "object",
-                      "required": ["risk", "mitigation"],
+                      "required": [
+                        "risk",
+                        "mitigation"
+                      ],
                       "properties": {
-                        "id": { "type": "string" },
-                        "risk": { "type": "string" },
-                        "category": { "type": "string" },
-                        "probability": { "type": "string" },
-                        "impact": { "type": "string" },
-                        "riskScore": { "type": "string" },
-                        "mitigation": { "type": "string" },
-                        "contingencyPlan": { "type": "string" },
-                        "status": { "type": "string" },
-                        "owner": { "type": "string" }
+                        "id": {
+                          "type": "string"
+                        },
+                        "risk": {
+                          "type": "string"
+                        },
+                        "category": {
+                          "type": "string"
+                        },
+                        "probability": {
+                          "type": "string"
+                        },
+                        "impact": {
+                          "type": "string"
+                        },
+                        "riskScore": {
+                          "type": "string"
+                        },
+                        "mitigation": {
+                          "type": "string"
+                        },
+                        "contingencyPlan": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "owner": {
+                          "type": "string"
+                        }
                       }
                     }
                   }
@@ -350,9 +515,15 @@
                     "items": {
                       "type": "object",
                       "properties": {
-                        "name": { "type": "string" },
-                        "responsibility": { "type": "string" },
-                        "changes": { "type": "string" }
+                        "name": {
+                          "type": "string"
+                        },
+                        "responsibility": {
+                          "type": "string"
+                        },
+                        "changes": {
+                          "type": "string"
+                        }
                       }
                     }
                   },
@@ -362,12 +533,19 @@
                     "items": {
                       "type": "object",
                       "properties": {
-                        "path": { "type": "string" },
+                        "path": {
+                          "type": "string"
+                        },
                         "action": {
                           "type": "string",
-                          "enum": ["new", "modified"]
+                          "enum": [
+                            "new",
+                            "modified"
+                          ]
                         },
-                        "description": { "type": "string" }
+                        "description": {
+                          "type": "string"
+                        }
                       }
                     }
                   },
@@ -375,15 +553,23 @@
                     "type": "object",
                     "description": "Configuration changes or examples",
                     "properties": {
-                      "file": { "type": "string" },
+                      "file": {
+                        "type": "string"
+                      },
                       "settings": {
                         "type": "array",
                         "items": {
                           "type": "object",
                           "properties": {
-                            "key": { "type": "string" },
-                            "value": { "type": "string" },
-                            "description": { "type": "string" }
+                            "key": {
+                              "type": "string"
+                            },
+                            "value": {
+                              "type": "string"
+                            },
+                            "description": {
+                              "type": "string"
+                            }
                           }
                         }
                       }
@@ -395,16 +581,26 @@
                 "type": "object",
                 "description": "Effort estimation for the epic",
                 "properties": {
-                  "totalSprints": { "type": "integer" },
-                  "totalDays": { "type": "integer" },
+                  "totalSprints": {
+                    "type": "integer"
+                  },
+                  "totalDays": {
+                    "type": "integer"
+                  },
                   "breakdown": {
                     "type": "array",
                     "items": {
                       "type": "object",
                       "properties": {
-                        "phase": { "type": "string" },
-                        "duration": { "type": "string" },
-                        "description": { "type": "string" }
+                        "phase": {
+                          "type": "string"
+                        },
+                        "duration": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        }
                       }
                     }
                   }
@@ -420,8 +616,13 @@
                     "items": {
                       "type": "object",
                       "properties": {
-                        "epicId": { "type": "string" },
-                        "reason": { "type": "string" }
+                        "epicId": {
+                          "type": "string",
+                          "description": "Upstream epic ID using numeric format (e.g. '1', '15')"
+                        },
+                        "reason": {
+                          "type": "string"
+                        }
                       }
                     }
                   },
@@ -431,15 +632,22 @@
                     "items": {
                       "type": "object",
                       "properties": {
-                        "epicId": { "type": "string" },
-                        "reason": { "type": "string" }
+                        "epicId": {
+                          "type": "string",
+                          "description": "Downstream epic ID using numeric format (e.g. '1', '15')"
+                        },
+                        "reason": {
+                          "type": "string"
+                        }
                       }
                     }
                   },
                   "relatedEpics": {
                     "type": "array",
                     "description": "Related but not dependent epics",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               },
@@ -451,36 +659,60 @@
                 "type": "object",
                 "description": "Per-epic test strategy",
                 "properties": {
-                  "id": { "type": "string" },
-                  "title": { "type": "string" },
-                  "scope": { "type": "string" },
-                  "approach": { "type": "string" },
+                  "id": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "scope": {
+                    "type": "string"
+                  },
+                  "approach": {
+                    "type": "string"
+                  },
                   "testTypes": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "tooling": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "coverageTargets": {
                     "type": "array",
                     "items": {
                       "type": "object",
                       "properties": {
-                        "area": { "type": "string" },
-                        "target": { "type": "string" }
+                        "area": {
+                          "type": "string"
+                        },
+                        "target": {
+                          "type": "string"
+                        }
                       }
                     }
                   },
                   "riskAreas": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
-                  "epicId": { "type": "string" },
+                  "epicId": {
+                    "type": "string",
+                    "description": "Epic ID this test strategy covers, using numeric format (e.g. '1', '15')"
+                  },
                   "status": {
                     "type": "string",
-                    "enum": ["draft", "approved"]
+                    "enum": [
+                      "draft",
+                      "approved"
+                    ]
                   }
                 }
               },
@@ -488,197 +720,277 @@
                 "type": "array",
                 "description": "Complete list of stories within this epic",
                 "items": {
-                  "type": "object",
-                  "required": ["id", "title", "userStory", "acceptanceCriteria"],
-                  "properties": {
-                    "id": {
+                  "oneOf": [
+                    {
                       "type": "string",
-                      "description": "Story identifier (e.g., 'STORY-1.1', '1.1', 'Story 1.1')"
+                      "description": "Story ID reference to a standalone story file (reference architecture)"
                     },
-                    "title": {
-                      "type": "string",
-                      "description": "Story title"
-                    },
-                    "userStory": {
+                    {
                       "type": "object",
-                      "description": "Complete user story with separate As-a/I-want/So-that",
-                      "required": ["asA", "iWant", "soThat"],
+                      "required": [
+                        "id",
+                        "title",
+                        "userStory",
+                        "acceptanceCriteria"
+                      ],
                       "properties": {
-                        "asA": {
+                        "id": {
                           "type": "string",
-                          "description": "The role/persona - text after 'As a' or 'As an'"
+                          "description": "Story identifier (e.g., 'STORY-1.1', '1.1', 'Story 1.1')"
                         },
-                        "iWant": {
+                        "title": {
                           "type": "string",
-                          "description": "The capability - text after 'I want'"
+                          "description": "Story title"
                         },
-                        "soThat": {
-                          "type": "string",
-                          "description": "The benefit - text after 'So that'"
-                        },
-                        "formatted": {
-                          "type": "string",
-                          "description": "Complete formatted user story as single string"
-                        }
-                      }
-                    },
-                    "acceptanceCriteria": {
-                      "type": "array",
-                      "description": "ALL acceptance criteria with FULL Given/When/Then text or prose format",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "description": "Optional AC identifier"
-                          },
-                          "given": {
-                            "type": "string",
-                            "description": "COMPLETE text after 'Given' - do not truncate"
-                          },
-                          "when": {
-                            "type": "string",
-                            "description": "COMPLETE text after 'When' - do not truncate"
-                          },
-                          "then": {
-                            "type": "string",
-                            "description": "COMPLETE text after 'Then' - do not truncate"
-                          },
-                          "and": {
-                            "type": "array",
-                            "description": "ALL 'And' conditions - capture every single one",
-                            "items": { "type": "string" }
-                          },
-                          "but": {
-                            "type": "array",
-                            "description": "Any 'But' exceptions",
-                            "items": { "type": "string" }
-                          },
-                          "criterion": {
-                            "type": "string",
-                            "description": "COMPLETE criterion text for prose/bullet-list format"
-                          }
-                        },
-                        "oneOf": [
-                          {
-                            "required": ["given", "when", "then"],
-                            "description": "Structured Given/When/Then format"
-                          },
-                          {
-                            "required": ["criterion"],
-                            "description": "Prose/bullet-list format"
-                          }
-                        ]
-                      }
-                    },
-                    "technicalNotes": {
-                      "type": "string",
-                      "description": "Technical implementation notes"
-                    },
-                    "implementationDetails": {
-                      "type": "array",
-                      "description": "Implementation details as bullet points",
-                      "items": { "type": "string" }
-                    },
-                    "priority": {
-                      "type": "string",
-                      "enum": ["P0", "P1", "P2", "P3", "must-have", "should-have", "could-have"]
-                    },
-                    "status": {
-                      "type": "string",
-                      "enum": ["draft", "ready", "ready-for-dev", "in-progress", "in-review", "blocked", "review", "done", "complete", "backlog"]
-                    },
-                    "storyPoints": {
-                      "type": "integer",
-                      "description": "Estimated story points"
-                    },
-                    "estimatedEffort": {
-                      "type": "string",
-                      "description": "Estimated effort (e.g., '2 days', 'S', 'M', 'L')"
-                    },
-                    "dependencies": {
-                      "description": "Story dependencies — supports simple string array or rich object",
-                      "oneOf": [
-                        {
-                          "type": "array",
-                          "items": { "type": "string" }
-                        },
-                        {
+                        "userStory": {
                           "type": "object",
+                          "description": "Complete user story with separate As-a/I-want/So-that",
+                          "required": [
+                            "asA",
+                            "iWant",
+                            "soThat"
+                          ],
                           "properties": {
-                            "blockedBy": {
-                              "type": "array",
-                              "items": {
-                                "type": "object",
-                                "properties": {
-                                  "storyId": { "type": "string" },
-                                  "title": { "type": "string" },
-                                  "status": { "type": "string" },
-                                  "reason": { "type": "string" }
+                            "asA": {
+                              "type": "string",
+                              "description": "The role/persona - text after 'As a' or 'As an'"
+                            },
+                            "iWant": {
+                              "type": "string",
+                              "description": "The capability - text after 'I want'"
+                            },
+                            "soThat": {
+                              "type": "string",
+                              "description": "The benefit - text after 'So that'"
+                            },
+                            "formatted": {
+                              "type": "string",
+                              "description": "Complete formatted user story as single string"
+                            }
+                          }
+                        },
+                        "acceptanceCriteria": {
+                          "type": "array",
+                          "description": "ALL acceptance criteria with FULL Given/When/Then text or prose format",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "description": "Optional AC identifier"
+                              },
+                              "given": {
+                                "type": "string",
+                                "description": "COMPLETE text after 'Given' - do not truncate"
+                              },
+                              "when": {
+                                "type": "string",
+                                "description": "COMPLETE text after 'When' - do not truncate"
+                              },
+                              "then": {
+                                "type": "string",
+                                "description": "COMPLETE text after 'Then' - do not truncate"
+                              },
+                              "and": {
+                                "type": "array",
+                                "description": "ALL 'And' conditions - capture every single one",
+                                "items": {
+                                  "type": "string"
                                 }
+                              },
+                              "but": {
+                                "type": "array",
+                                "description": "Any 'But' exceptions",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "criterion": {
+                                "type": "string",
+                                "description": "COMPLETE criterion text for prose/bullet-list format"
                               }
                             },
-                            "blocks": {
+                            "oneOf": [
+                              {
+                                "required": [
+                                  "given",
+                                  "when",
+                                  "then"
+                                ],
+                                "description": "Structured Given/When/Then format"
+                              },
+                              {
+                                "required": [
+                                  "criterion"
+                                ],
+                                "description": "Prose/bullet-list format"
+                              }
+                            ]
+                          }
+                        },
+                        "technicalNotes": {
+                          "type": "string",
+                          "description": "Technical implementation notes"
+                        },
+                        "implementationDetails": {
+                          "type": "array",
+                          "description": "Implementation details as bullet points",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "priority": {
+                          "type": "string",
+                          "enum": [
+                            "P0",
+                            "P1",
+                            "P2",
+                            "P3",
+                            "must-have",
+                            "should-have",
+                            "could-have"
+                          ]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "draft",
+                            "ready",
+                            "ready-for-dev",
+                            "in-progress",
+                            "in-review",
+                            "blocked",
+                            "review",
+                            "done",
+                            "complete",
+                            "backlog"
+                          ]
+                        },
+                        "storyPoints": {
+                          "type": "integer",
+                          "description": "Estimated story points"
+                        },
+                        "estimatedEffort": {
+                          "type": "string",
+                          "description": "Estimated effort (e.g., '2 days', 'S', 'M', 'L')"
+                        },
+                        "dependencies": {
+                          "description": "Story dependencies — supports simple string array or rich object",
+                          "oneOf": [
+                            {
                               "type": "array",
                               "items": {
-                                "type": "object",
-                                "properties": {
-                                  "storyId": { "type": "string" },
-                                  "title": { "type": "string" }
-                                }
+                                "type": "string"
                               }
                             },
-                            "relatedStories": {
-                              "type": "array",
-                              "items": { "type": "string" }
-                            },
-                            "externalDependencies": {
-                              "type": "array",
-                              "items": {
-                                "type": "object",
-                                "properties": {
-                                  "dependency": { "type": "string" },
-                                  "status": { "type": "string" },
-                                  "owner": { "type": "string" }
+                            {
+                              "type": "object",
+                              "properties": {
+                                "blockedBy": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "storyId": {
+                                        "type": "string"
+                                      },
+                                      "title": {
+                                        "type": "string"
+                                      },
+                                      "status": {
+                                        "type": "string"
+                                      },
+                                      "reason": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
+                                "blocks": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "storyId": {
+                                        "type": "string"
+                                      },
+                                      "title": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
+                                "relatedStories": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "externalDependencies": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "dependency": {
+                                        "type": "string"
+                                      },
+                                      "status": {
+                                        "type": "string"
+                                      },
+                                      "owner": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
                                 }
                               }
                             }
+                          ]
+                        },
+                        "blockers": {
+                          "type": "array",
+                          "description": "Current blockers",
+                          "items": {
+                            "type": "string"
                           }
+                        },
+                        "assignee": {
+                          "type": "string",
+                          "description": "Assigned team member"
+                        },
+                        "requirementRefs": {
+                          "type": "array",
+                          "description": "Referenced requirement IDs (FR, NFR, AR)",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "uxReferences": {
+                          "type": "array",
+                          "description": "UX design references",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "testCases": {
+                          "type": "array",
+                          "description": "Associated test case IDs",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "notes": {
+                          "type": "string",
+                          "description": "Additional notes"
                         }
-                      ]
-                    },
-                    "blockers": {
-                      "type": "array",
-                      "description": "Current blockers",
-                      "items": { "type": "string" }
-                    },
-                    "assignee": {
-                      "type": "string",
-                      "description": "Assigned team member"
-                    },
-                    "requirementRefs": {
-                      "type": "array",
-                      "description": "Referenced requirement IDs (FR, NFR, AR)",
-                      "items": { "type": "string" }
-                    },
-                    "uxReferences": {
-                      "type": "array",
-                      "description": "UX design references",
-                      "items": { "type": "string" }
-                    },
-                    "testCases": {
-                      "type": "array",
-                      "description": "Associated test case IDs",
-                      "items": { "type": "string" }
-                    },
-                    "notes": {
-                      "type": "string",
-                      "description": "Additional notes"
+                      }
                     }
-                  }
+                  ]
                 }
               }
+              }
             }
+            ]
           }
         },
         "dependencies": {
@@ -691,10 +1003,18 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "from": { "type": "string" },
-                  "to": { "type": "string" },
-                  "type": { "type": "string" },
-                  "description": { "type": "string" }
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -704,17 +1024,27 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "from": { "type": "string" },
-                  "to": { "type": "string" },
-                  "type": { "type": "string" },
-                  "description": { "type": "string" }
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  }
                 }
               }
             },
             "criticalPath": {
               "type": "array",
               "description": "Critical path epic/story IDs",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
@@ -722,16 +1052,36 @@
           "type": "object",
           "description": "Document summary and statistics",
           "properties": {
-            "totalEpics": { "type": "integer" },
-            "totalStories": { "type": "integer" },
-            "totalAcceptanceCriteria": { "type": "integer" },
-            "frCovered": { "type": "integer" },
-            "nfrCovered": { "type": "integer" },
-            "arCovered": { "type": "integer" },
-            "coveragePercentage": { "type": "string" },
-            "status": { "type": "string" },
-            "lastUpdated": { "type": "string" },
-            "notes": { "type": "string" }
+            "totalEpics": {
+              "type": "integer"
+            },
+            "totalStories": {
+              "type": "integer"
+            },
+            "totalAcceptanceCriteria": {
+              "type": "integer"
+            },
+            "frCovered": {
+              "type": "integer"
+            },
+            "nfrCovered": {
+              "type": "integer"
+            },
+            "arCovered": {
+              "type": "integer"
+            },
+            "coveragePercentage": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "lastUpdated": {
+              "type": "string"
+            },
+            "notes": {
+              "type": "string"
+            }
           }
         }
       }

@@ -10,8 +10,8 @@ interface ToolbarProps {
   onElicit?: (artifact: Artifact) => void;
   themeOverride?: 'light' | 'dark' | null;
   onToggleTheme?: () => void;
-  detectedProjectCount?: number;
   onSwitchProject?: () => void;
+  activeFolderName?: string;
   onExport?: () => void;
   onImport?: () => void;
   onHelp?: () => void;
@@ -68,7 +68,7 @@ const ROOT_TYPES: Set<Artifact['type']> = new Set([
   'epic', 'requirement', 'prd', 'architecture', 'vision', 'product-brief',
 ]);
 
-export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhance, onElicit, themeOverride, onToggleTheme, detectedProjectCount, onSwitchProject, onExport, onImport, onHelp, onAsk, outputFormat, onOutputFormatChange, schemaIssueCount, onFixSchemas, onValidateSchemas, schemaValidating, schemaFixing }: ToolbarProps) {
+export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhance, onElicit, themeOverride, onToggleTheme, onSwitchProject, activeFolderName, onExport, onImport, onHelp, onAsk, outputFormat, onOutputFormatChange, schemaIssueCount, onFixSchemas, onValidateSchemas, schemaValidating, schemaFixing }: ToolbarProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -146,14 +146,17 @@ export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhanc
         </button>
       )}
 
-      {/* Switch project button — only shown when multiple BMAD projects exist */}
-      {onSwitchProject && (detectedProjectCount ?? 0) >= 2 && (
+      {/* Switch / browse project folder button — always visible */}
+      {onSwitchProject && (
         <button
           className="toolbar-switch-btn"
           onClick={onSwitchProject}
-          title="Switch BMAD project"
+          title={activeFolderName ? `Active folder: ${activeFolderName} — click to switch` : 'Switch or browse project folder'}
         >
           <Icon name="folder" size={16} />
+          {activeFolderName && (
+            <span className="toolbar-folder-label">{activeFolderName}</span>
+          )}
         </button>
       )}
 

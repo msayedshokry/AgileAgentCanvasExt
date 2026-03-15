@@ -35,28 +35,28 @@ export interface BmadArtifacts {
     productBrief?: ProductBrief;
     testCases?: TestCase[];
     testStrategy?: TestStrategy;
-    testDesign?: TestDesign;
+    testDesigns?: TestDesign[];
     // TEA module artifacts
     traceabilityMatrix?: TraceabilityMatrix;
-    testReview?: TestReview;
+    testReviews?: TestReview[];
     nfrAssessment?: NfrAssessment;
     testFramework?: TestFramework;
     ciPipeline?: CiPipeline;
     automationSummary?: AutomationSummary;
     atddChecklist?: AtddChecklist;
     // BMM module artifacts
-    research?: Research;
-    uxDesign?: UxDesign;
-    readinessReport?: ReadinessReport;
-    sprintStatus?: SprintStatus;
-    retrospective?: Retrospective;
-    changeProposal?: ChangeProposal;
-    codeReview?: CodeReview;
+    researches?: Research[];
+    uxDesigns?: UxDesign[];
+    readinessReports?: ReadinessReport[];
+    sprintStatuses?: SprintStatus[];
+    retrospectives?: Retrospective[];
+    changeProposals?: ChangeProposal[];
+    codeReviews?: CodeReview[];
     risks?: Risks;
     definitionOfDone?: DefinitionOfDone;
     projectOverview?: ProjectOverview;
     projectContext?: ProjectContext;
-    techSpec?: TechSpec;
+    techSpecs?: TechSpec[];
     sourceTree?: SourceTree;
     testSummary?: TestSummary;
     // CIS module artifacts

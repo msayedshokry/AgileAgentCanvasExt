@@ -4,14 +4,20 @@
   "title": "Test Framework Setup Schema",
   "description": "Schema for test framework initialization - captures framework architecture, configuration, and setup details",
   "type": "object",
-  "required": ["metadata", "content"],
+  "required": [
+    "metadata",
+    "content"
+  ],
   "properties": {
     "metadata": {
       "$ref": "../common/metadata.schema.json"
     },
     "content": {
       "type": "object",
-      "required": ["framework", "configuration"],
+      "required": [
+        "framework",
+        "configuration"
+      ],
       "properties": {
         "framework": {
           "type": "object",
@@ -19,10 +25,11 @@
           "properties": {
             "name": {
               "type": "string",
-              "enum": ["playwright", "cypress", "jest", "vitest", "mocha", "other"],
-              "description": "Selected test framework"
+              "description": "Selected test framework. Recommended values: playwright, cypress, jest, vitest, mocha, other — or any domain-appropriate value"
             },
-            "version": { "type": "string" },
+            "version": {
+              "type": "string"
+            },
             "selectionRationale": {
               "type": "string",
               "description": "Why this framework was chosen"
@@ -33,8 +40,12 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
-                  "reason": { "type": "string" }
+                  "name": {
+                    "type": "string"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -52,29 +63,45 @@
               "type": "boolean",
               "description": "Whether TypeScript is configured"
             },
-            "baseUrl": { "type": "string" },
+            "baseUrl": {
+              "type": "string"
+            },
             "testMatch": {
               "type": "array",
               "description": "Test file patterns",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "reporters": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "parallelization": {
               "type": "object",
               "properties": {
-                "enabled": { "type": "boolean" },
-                "workers": { "type": "integer" },
-                "strategy": { "type": "string" }
+                "enabled": {
+                  "type": "boolean"
+                },
+                "workers": {
+                  "type": "integer"
+                },
+                "strategy": {
+                  "type": "string"
+                }
               }
             },
             "retries": {
               "type": "object",
               "properties": {
-                "count": { "type": "integer" },
-                "onFailure": { "type": "boolean" }
+                "count": {
+                  "type": "integer"
+                },
+                "onFailure": {
+                  "type": "boolean"
+                }
               }
             }
           }
@@ -83,17 +110,25 @@
           "type": "object",
           "description": "Test directory organization",
           "properties": {
-            "rootDir": { "type": "string" },
+            "rootDir": {
+              "type": "string"
+            },
             "directories": {
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "path": { "type": "string" },
-                  "purpose": { "type": "string" },
+                  "path": {
+                    "type": "string"
+                  },
+                  "purpose": {
+                    "type": "string"
+                  },
                   "contents": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -106,16 +141,24 @@
           "items": {
             "type": "object",
             "properties": {
-              "name": { "type": "string" },
-              "filePath": { "type": "string" },
-              "purpose": { "type": "string" },
+              "name": {
+                "type": "string"
+              },
+              "filePath": {
+                "type": "string"
+              },
+              "purpose": {
+                "type": "string"
+              },
               "scope": {
                 "type": "string",
-                "enum": ["test", "file", "worker", "global"]
+                "description": "Recommended values: test, file, worker, global — or any domain-appropriate value"
               },
               "dependencies": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -126,17 +169,29 @@
           "items": {
             "type": "object",
             "properties": {
-              "name": { "type": "string" },
-              "filePath": { "type": "string" },
-              "purpose": { "type": "string" },
+              "name": {
+                "type": "string"
+              },
+              "filePath": {
+                "type": "string"
+              },
+              "purpose": {
+                "type": "string"
+              },
               "functions": {
                 "type": "array",
                 "items": {
                   "type": "object",
                   "properties": {
-                    "name": { "type": "string" },
-                    "description": { "type": "string" },
-                    "signature": { "type": "string" }
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "signature": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -149,16 +204,26 @@
           "items": {
             "type": "object",
             "properties": {
-              "name": { "type": "string" },
-              "filePath": { "type": "string" },
-              "page": { "type": "string" },
+              "name": {
+                "type": "string"
+              },
+              "filePath": {
+                "type": "string"
+              },
+              "page": {
+                "type": "string"
+              },
               "elements": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "actions": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -167,18 +232,26 @@
           "type": "object",
           "description": "Mocking configuration",
           "properties": {
-            "strategy": { "type": "string" },
+            "strategy": {
+              "type": "string"
+            },
             "libraries": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "mockFiles": {
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "path": { "type": "string" },
-                  "purpose": { "type": "string" }
+                  "path": {
+                    "type": "string"
+                  },
+                  "purpose": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -193,9 +266,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
-                  "version": { "type": "string" },
-                  "purpose": { "type": "string" }
+                  "name": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "string"
+                  },
+                  "purpose": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -204,9 +283,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
-                  "version": { "type": "string" },
-                  "purpose": { "type": "string" }
+                  "name": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "string"
+                  },
+                  "purpose": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -218,9 +303,15 @@
           "items": {
             "type": "object",
             "properties": {
-              "name": { "type": "string" },
-              "command": { "type": "string" },
-              "purpose": { "type": "string" }
+              "name": {
+                "type": "string"
+              },
+              "command": {
+                "type": "string"
+              },
+              "purpose": {
+                "type": "string"
+              }
             }
           }
         },
@@ -230,19 +321,27 @@
           "properties": {
             "prerequisites": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "installationSteps": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "runCommands": {
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "command": { "type": "string" },
-                  "description": { "type": "string" }
+                  "command": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -254,9 +353,15 @@
           "items": {
             "type": "object",
             "properties": {
-              "practice": { "type": "string" },
-              "implementation": { "type": "string" },
-              "reference": { "type": "string" }
+              "practice": {
+                "type": "string"
+              },
+              "implementation": {
+                "type": "string"
+              },
+              "reference": {
+                "type": "string"
+              }
             }
           }
         }

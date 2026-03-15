@@ -4,27 +4,36 @@
   "title": "ATDD Checklist Schema",
   "description": "Schema for ATDD (Acceptance Test Driven Development) checklist artifacts. IMPORTANT: Capture ALL acceptance criteria, test details, and implementation checklist items completely. Do NOT summarize or truncate any Given/When/Then scenarios or test code.",
   "type": "object",
-  "required": ["metadata", "content"],
+  "required": [
+    "metadata",
+    "content"
+  ],
   "properties": {
     "metadata": {
       "$ref": "../common/metadata.schema.json"
     },
     "content": {
       "type": "object",
-      "required": ["storyInfo", "acceptanceCriteria"],
+      "required": [
+        "storyInfo",
+        "acceptanceCriteria"
+      ],
       "properties": {
         "storyInfo": {
           "type": "object",
           "description": "COMPLETE story information for ATDD implementation",
-          "required": ["storyId", "storyTitle"],
+          "required": [
+            "storyId",
+            "storyTitle"
+          ],
           "properties": {
             "epicId": {
               "type": "string",
-              "description": "Parent epic identifier"
+              "description": "Parent epic identifier using numeric format (e.g. '15', '1')"
             },
             "storyId": {
               "type": "string",
-              "description": "Unique story identifier"
+              "description": "Story identifier using numeric format (e.g. '15.1', '1.3')"
             },
             "storyTitle": {
               "type": "string",
@@ -36,7 +45,12 @@
             },
             "primaryTestLevel": {
               "type": "string",
-              "enum": ["e2e", "integration", "component", "unit"],
+              "enum": [
+                "e2e",
+                "integration",
+                "component",
+                "unit"
+              ],
               "description": "Primary test level for this story"
             },
             "businessValue": {
@@ -67,27 +81,37 @@
             "e2e": {
               "type": "array",
               "description": "ALL E2E failing tests with full details",
-              "items": { "$ref": "#/definitions/testItem" }
+              "items": {
+                "$ref": "#/definitions/testItem"
+              }
             },
             "api": {
               "type": "array",
               "description": "ALL API failing tests with full details",
-              "items": { "$ref": "#/definitions/testItem" }
+              "items": {
+                "$ref": "#/definitions/testItem"
+              }
             },
             "integration": {
               "type": "array",
               "description": "ALL integration failing tests with full details",
-              "items": { "$ref": "#/definitions/testItem" }
+              "items": {
+                "$ref": "#/definitions/testItem"
+              }
             },
             "component": {
               "type": "array",
               "description": "ALL component failing tests with full details",
-              "items": { "$ref": "#/definitions/testItem" }
+              "items": {
+                "$ref": "#/definitions/testItem"
+              }
             },
             "unit": {
               "type": "array",
               "description": "ALL unit failing tests with full details",
-              "items": { "$ref": "#/definitions/testItem" }
+              "items": {
+                "$ref": "#/definitions/testItem"
+              }
             }
           }
         },
@@ -112,17 +136,23 @@
               "given": {
                 "type": "array",
                 "description": "ALL Given preconditions - COMPLETE text",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "when": {
                 "type": "array",
                 "description": "ALL When actions - COMPLETE text",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "then": {
                 "type": "array",
                 "description": "ALL Then expected outcomes - COMPLETE text",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "examples": {
                 "type": "array",
@@ -134,11 +164,16 @@
               },
               "testLevel": {
                 "type": "string",
-                "enum": ["e2e", "integration", "component", "unit"]
+                "description": "Recommended values: e2e, integration, component, unit — or any domain-appropriate value"
               },
               "automationStatus": {
                 "type": "string",
-                "enum": ["pending", "in-progress", "completed", "blocked"]
+                "enum": [
+                  "pending",
+                  "in-progress",
+                  "completed",
+                  "blocked"
+                ]
               }
             }
           }
@@ -171,8 +206,12 @@
                 "items": {
                   "type": "object",
                   "properties": {
-                    "name": { "type": "string" },
-                    "description": { "type": "string" }
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
                   }
                 }
               },
@@ -203,18 +242,21 @@
               },
               "scope": {
                 "type": "string",
-                "enum": ["test", "module", "session", "function"],
-                "description": "Fixture scope"
+                "description": "Fixture scope. Recommended values: test, module, session, function — or any domain-appropriate value"
               },
               "setupSteps": {
                 "type": "array",
                 "description": "COMPLETE setup steps",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "teardownSteps": {
                 "type": "array",
                 "description": "COMPLETE teardown steps",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "code": {
                 "type": "string",
@@ -235,8 +277,7 @@
               },
               "mockType": {
                 "type": "string",
-                "enum": ["mock", "stub", "fake", "spy", "fixture"],
-                "description": "Type of test double"
+                "description": "Type of test double. Recommended values: mock, stub, fake, spy, fixture — or any domain-appropriate value"
               },
               "description": {
                 "type": "string",
@@ -252,9 +293,15 @@
                 "items": {
                   "type": "object",
                   "properties": {
-                    "name": { "type": "string" },
-                    "input": { "type": "string" },
-                    "output": { "type": "string" }
+                    "name": {
+                      "type": "string"
+                    },
+                    "input": {
+                      "type": "string"
+                    },
+                    "output": {
+                      "type": "string"
+                    }
                   }
                 }
               },
@@ -293,7 +340,11 @@
               },
               "status": {
                 "type": "string",
-                "enum": ["pending", "added", "verified"],
+                "enum": [
+                  "pending",
+                  "added",
+                  "verified"
+                ],
                 "description": "Current status"
               }
             }
@@ -313,16 +364,24 @@
                 "type": "string",
                 "description": "Page/component this represents"
               },
-              "filePath": { "type": "string" },
+              "filePath": {
+                "type": "string"
+              },
               "selectors": {
                 "type": "array",
                 "description": "ALL selectors defined",
                 "items": {
                   "type": "object",
                   "properties": {
-                    "name": { "type": "string" },
-                    "selector": { "type": "string" },
-                    "type": { "type": "string" }
+                    "name": {
+                      "type": "string"
+                    },
+                    "selector": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
                   }
                 }
               },
@@ -332,9 +391,18 @@
                 "items": {
                   "type": "object",
                   "properties": {
-                    "name": { "type": "string" },
-                    "description": { "type": "string" },
-                    "parameters": { "type": "array", "items": { "type": "string" } }
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "parameters": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
                   }
                 }
               },
@@ -350,7 +418,10 @@
           "description": "COMPLETE implementation checklist - ALL items that must be completed",
           "items": {
             "type": "object",
-            "required": ["item", "completed"],
+            "required": [
+              "item",
+              "completed"
+            ],
             "properties": {
               "id": {
                 "type": "string",
@@ -362,8 +433,7 @@
               },
               "category": {
                 "type": "string",
-                "enum": ["test-setup", "implementation", "verification", "documentation", "cleanup"],
-                "description": "Category of checklist item"
+                "description": "Category of checklist item. Recommended values: test-setup, implementation, verification, documentation, cleanup — or any domain-appropriate value"
               },
               "completed": {
                 "type": "boolean",
@@ -425,7 +495,12 @@
           "properties": {
             "currentPhase": {
               "type": "string",
-              "enum": ["red", "green", "refactor", "complete"],
+              "enum": [
+                "red",
+                "green",
+                "refactor",
+                "complete"
+              ],
               "description": "Current phase in the TDD cycle"
             },
             "currentIteration": {
@@ -454,13 +529,20 @@
                         "type": "string",
                         "description": "COMPLETE description of failing test written"
                       },
-                      "testFile": { "type": "string" },
-                      "testName": { "type": "string" },
+                      "testFile": {
+                        "type": "string"
+                      },
+                      "testName": {
+                        "type": "string"
+                      },
                       "failureMessage": {
                         "type": "string",
                         "description": "COMPLETE failure message"
                       },
-                      "completedAt": { "type": "string", "format": "date-time" }
+                      "completedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
                     }
                   },
                   "green": {
@@ -473,9 +555,14 @@
                       },
                       "filesChanged": {
                         "type": "array",
-                        "items": { "type": "string" }
+                        "items": {
+                          "type": "string"
+                        }
                       },
-                      "completedAt": { "type": "string", "format": "date-time" }
+                      "completedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
                     }
                   },
                   "refactor": {
@@ -489,9 +576,14 @@
                       "improvements": {
                         "type": "array",
                         "description": "ALL improvements made",
-                        "items": { "type": "string" }
+                        "items": {
+                          "type": "string"
+                        }
                       },
-                      "completedAt": { "type": "string", "format": "date-time" }
+                      "completedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
                     }
                   }
                 }
@@ -524,7 +616,9 @@
               "appliedIn": {
                 "type": "array",
                 "description": "Files/tests where this reference was applied",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -541,20 +635,38 @@
             "results": {
               "type": "object",
               "properties": {
-                "passed": { "type": "integer" },
-                "failed": { "type": "integer" },
-                "skipped": { "type": "integer" },
-                "pending": { "type": "integer" },
-                "totalDuration": { "type": "string" }
+                "passed": {
+                  "type": "integer"
+                },
+                "failed": {
+                  "type": "integer"
+                },
+                "skipped": {
+                  "type": "integer"
+                },
+                "pending": {
+                  "type": "integer"
+                },
+                "totalDuration": {
+                  "type": "string"
+                }
               }
             },
             "coverage": {
               "type": "object",
               "properties": {
-                "statements": { "type": "number" },
-                "branches": { "type": "number" },
-                "functions": { "type": "number" },
-                "lines": { "type": "number" }
+                "statements": {
+                  "type": "number"
+                },
+                "branches": {
+                  "type": "number"
+                },
+                "functions": {
+                  "type": "number"
+                },
+                "lines": {
+                  "type": "number"
+                }
               }
             },
             "failedTests": {
@@ -563,8 +675,12 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "testName": { "type": "string" },
-                  "filePath": { "type": "string" },
+                  "testName": {
+                    "type": "string"
+                  },
+                  "filePath": {
+                    "type": "string"
+                  },
                   "errorMessage": {
                     "type": "string",
                     "description": "COMPLETE error message"
@@ -579,17 +695,23 @@
             "screenshots": {
               "type": "array",
               "description": "Screenshot paths from E2E test failures",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "videos": {
               "type": "array",
               "description": "Video paths from E2E test runs",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "logs": {
               "type": "array",
               "description": "Log file paths",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
@@ -599,7 +721,14 @@
           "properties": {
             "status": {
               "type": "string",
-              "enum": ["not-started", "red-phase", "green-phase", "refactor-phase", "complete", "blocked"],
+              "enum": [
+                "not-started",
+                "red-phase",
+                "green-phase",
+                "refactor-phase",
+                "complete",
+                "blocked"
+              ],
               "description": "Current status"
             },
             "percentComplete": {
@@ -611,12 +740,16 @@
             "blockers": {
               "type": "array",
               "description": "Current blockers",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "nextSteps": {
               "type": "array",
               "description": "Next steps to complete",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         }
@@ -646,7 +779,13 @@
         },
         "status": {
           "type": "string",
-          "enum": ["created", "passing", "failing", "skipped", "pending"],
+          "enum": [
+            "created",
+            "passing",
+            "failing",
+            "skipped",
+            "pending"
+          ],
           "description": "Current test status"
         },
         "filePath": {
@@ -660,17 +799,23 @@
         "given": {
           "type": "array",
           "description": "COMPLETE Given preconditions",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "when": {
           "type": "array",
           "description": "COMPLETE When actions",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "then": {
           "type": "array",
           "description": "COMPLETE Then assertions",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "code": {
           "type": "string",
@@ -679,10 +824,24 @@
         "lastResult": {
           "type": "object",
           "properties": {
-            "status": { "type": "string", "enum": ["passed", "failed", "skipped"] },
-            "duration": { "type": "string" },
-            "errorMessage": { "type": "string" },
-            "runAt": { "type": "string", "format": "date-time" }
+            "status": {
+              "type": "string",
+              "enum": [
+                "passed",
+                "failed",
+                "skipped"
+              ]
+            },
+            "duration": {
+              "type": "string"
+            },
+            "errorMessage": {
+              "type": "string"
+            },
+            "runAt": {
+              "type": "string",
+              "format": "date-time"
+            }
           }
         }
       }

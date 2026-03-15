@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import type { Artifact, StoryMetadata, EpicMetadata, TestCoverageMetadata } from '../types';
+import type { Artifact, ArtifactStatus, StoryMetadata, EpicMetadata, TestCoverageMetadata } from '../types';
 import { Icon, ARTIFACT_TYPE_ICON } from './Icon';
 import { vscode } from '../vscodeApi';
 
@@ -13,12 +13,16 @@ interface ArtifactCardProps {
   isDimmed?: boolean;
   isSearchMatch?: boolean;
   compact?: boolean;
+  /** Whether the story card's inline task/test rows are expanded */
+  isStoryExpanded?: boolean;
   onSelect: (id: string) => void;
   onOpenDetail: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Artifact>) => void;
   onToggleExpand: (id: string) => void;
   /** Toggle a single badge category within this parent */
   onToggleCategoryExpand: (parentId: string, label: string) => void;
+  /** Toggle story inline task/test expansion */
+  onToggleStoryExpand?: (id: string) => void;
   onRefineWithAI?: (artifact: Artifact) => void;
   onElicit?: (artifact: Artifact) => void;
 }
@@ -101,9 +105,10 @@ const STATUS_BADGES: Record<Artifact['status'], { label: string; className: stri
   'rejected': { label: 'Rejected', className: 'status-blocked' },
 };
 
-export function ArtifactCard({ artifact, isSelected, isExpanded, expandedCategories, isFlashing, isDimmed, isSearchMatch, compact, onSelect, onOpenDetail, onUpdate, onToggleExpand: _onToggleExpand, onToggleCategoryExpand, onRefineWithAI, onElicit }: ArtifactCardProps) {
+export function ArtifactCard({ artifact, isSelected, isExpanded, expandedCategories, isFlashing, isDimmed, isSearchMatch, compact, isStoryExpanded, onSelect, onOpenDetail, onUpdate, onToggleExpand: _onToggleExpand, onToggleCategoryExpand, onToggleStoryExpand, onRefineWithAI, onElicit }: ArtifactCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(artifact.title);
+  const storyExpanded = isStoryExpanded ?? false;
   const cardRef = useRef<HTMLDivElement>(null);
 
   // Determine if this card has children that can be expanded/collapsed
@@ -253,7 +258,7 @@ export function ArtifactCard({ artifact, isSelected, isExpanded, expandedCategor
   return (
     <div
       ref={cardRef}
-      className={`artifact-card ${artifact.type} status-tint-${artifact.status} ${isSelected ? 'selected' : ''} ${hasChildren ? 'has-children' : ''} ${isExpanded ? 'expanded' : 'collapsed'} ${isFlashing ? 'flashing' : ''} ${isDimmed ? 'dimmed' : ''} ${isSearchMatch ? 'search-match' : ''}`}
+      className={`artifact-card ${artifact.type} status-tint-${artifact.status} ${isSelected ? 'selected' : ''} ${hasChildren ? 'has-children' : ''} ${isExpanded ? 'expanded' : 'collapsed'} ${isFlashing ? 'flashing' : ''} ${isDimmed ? 'dimmed' : ''} ${isSearchMatch ? 'search-match' : ''}${storyExpanded && artifact.type === 'story' ? ' story-expanded' : ''}`}
       style={{
         left: artifact.position.x,
         top: artifact.position.y,
@@ -346,7 +351,9 @@ export function ArtifactCard({ artifact, isSelected, isExpanded, expandedCategor
       {hasChildren && artifact.childBreakdown && artifact.childBreakdown.length > 0 && (
         <div className="artifact-child-breakdown">
           {artifact.childBreakdown.map(b => {
-            const isCatExpanded = expandedCategories ? expandedCategories.has(b.label) : isExpanded;
+            // Story cards: toggle local inline expansion instead of parent-child visibility
+            const isStory = artifact.type === 'story';
+            const isCatExpanded = isStory ? storyExpanded : (expandedCategories ? expandedCategories.has(b.label) : isExpanded);
             return (
               <span
                 key={b.label}
@@ -354,7 +361,11 @@ export function ArtifactCard({ artifact, isSelected, isExpanded, expandedCategor
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
-                  onToggleCategoryExpand(artifact.id, b.label);
+                  if (isStory) {
+                    onToggleStoryExpand?.(artifact.id);
+                  } else {
+                    onToggleCategoryExpand(artifact.id, b.label);
+                  }
                 }}
                 title={`${isCatExpanded ? 'Hide' : 'Show'} ${b.label}`}
               >
@@ -417,6 +428,78 @@ export function ArtifactCard({ artifact, isSelected, isExpanded, expandedCategor
               </span>
             )}
           </div>
+        );
+      })()}
+
+      {/* Inline story task/test summary — compact progress row + expandable mini-rows */}
+      {artifact.type === 'story' && (() => {
+        const sm = artifact.metadata as StoryMetadata;
+        const tasks = sm?.tasks || [];
+        const testCases = sm?.testCases || [];
+        if (tasks.length === 0 && testCases.length === 0) return null;
+        const doneTasks = tasks.filter(t => t.completed).length;
+        const passTests = testCases.filter(tc => tc.status === 'complete' || tc.status === 'completed' || tc.status === 'done').length;
+        const failTests = testCases.filter(tc => tc.status === 'blocked' || tc.status === 'rejected').length;
+        const getStatusIcon = (status: ArtifactStatus | undefined) => {
+          if (status === 'complete' || status === 'completed' || status === 'done') return '✅';
+          if (status === 'blocked' || status === 'rejected') return '❌';
+          if (status === 'in-progress' || status === 'implementing') return '🔄';
+          return '⬜';
+        };
+        return (
+          <>
+            <div
+              className="story-inline-summary"
+              onClick={(e) => { e.stopPropagation(); onToggleStoryExpand?.(artifact.id); }}
+              title={storyExpanded ? 'Click to collapse' : 'Click to expand tasks & tests'}
+            >
+              {tasks.length > 0 && (
+                <span className={`story-summary-chip tasks${doneTasks === tasks.length ? ' all-done' : ''}`}>
+                  <span className="chip-icon">✓</span>
+                  <span className="chip-label">{doneTasks}/{tasks.length}</span>
+                  <span className="chip-bar">
+                    <span className="chip-fill" style={{ width: `${(doneTasks / tasks.length) * 100}%` }} />
+                  </span>
+                </span>
+              )}
+              {testCases.length > 0 && (
+                <span className={`story-summary-chip tests${failTests > 0 ? ' has-fails' : passTests === testCases.length ? ' all-pass' : ''}`}>
+                  <span className="chip-icon">🧪</span>
+                  <span className="chip-label">{passTests}/{testCases.length}</span>
+                </span>
+              )}
+              <Icon name={storyExpanded ? 'chevron-down' : 'chevron-right'} size={10} />
+            </div>
+            {storyExpanded && (
+              <div className="story-expanded-rows">
+                {tasks.length > 0 && (
+                  <div className="story-section">
+                    {tasks.map((t, i) => (
+                      <div key={i} className={`story-task-row${t.completed ? ' task-done' : ''}`}>
+                        <span className="task-check">{t.completed ? '✅' : '☐'}</span>
+                        <span className="task-title">{t.description || `Task ${i + 1}`}</span>
+                        {t.estimatedHours != null && <span className="task-effort">{t.estimatedHours}h</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {tasks.length > 0 && testCases.length > 0 && (
+                  <div className="story-section-divider" />
+                )}
+                {testCases.length > 0 && (
+                  <div className="story-section">
+                    <div className="story-section-header">🧪 Tests ({testCases.length})</div>
+                    {testCases.map((tc, i) => (
+                      <div key={i} className={`story-test-row ${tc.status || 'draft'}`}>
+                        <span className="test-icon">{getStatusIcon(tc.status)}</span>
+                        <span className="test-title">{tc.title || `Test ${i + 1}`}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         );
       })()}
 

@@ -4,14 +4,21 @@
   "title": "Problem Solving Schema",
   "description": "Schema for problem solving session artifacts. IMPORTANT: Capture ALL problem analysis, diagnosis, solutions, and implementation details completely. Do NOT summarize or truncate any root cause analysis, solution evaluation, or implementation plans.",
   "type": "object",
-  "required": ["metadata", "content"],
+  "required": [
+    "metadata",
+    "content"
+  ],
   "properties": {
     "metadata": {
       "$ref": "../common/metadata.schema.json"
     },
     "content": {
       "type": "object",
-      "required": ["problemTitle", "problemDefinition", "recommendedSolution"],
+      "required": [
+        "problemTitle",
+        "problemDefinition",
+        "recommendedSolution"
+      ],
       "properties": {
         "problemTitle": {
           "type": "string",
@@ -25,20 +32,33 @@
           "type": "object",
           "description": "Problem-solving session information",
           "properties": {
-            "facilitator": { "type": "string" },
+            "facilitator": {
+              "type": "string"
+            },
             "participants": {
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
-                  "role": { "type": "string" },
-                  "expertise": { "type": "string" }
+                  "name": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "type": "string"
+                  },
+                  "expertise": {
+                    "type": "string"
+                  }
                 }
               }
             },
-            "date": { "type": "string", "format": "date" },
-            "duration": { "type": "string" },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "duration": {
+              "type": "string"
+            },
             "methodology": {
               "type": "string",
               "description": "Problem-solving methodology used"
@@ -48,7 +68,9 @@
         "problemDefinition": {
           "type": "object",
           "description": "COMPLETE problem definition section",
-          "required": ["refinedStatement"],
+          "required": [
+            "refinedStatement"
+          ],
           "properties": {
             "initialStatement": {
               "type": "string",
@@ -68,7 +90,9 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "stakeholder": { "type": "string" },
+                  "stakeholder": {
+                    "type": "string"
+                  },
                   "impact": {
                     "type": "string",
                     "description": "COMPLETE description of how they are affected"
@@ -104,7 +128,12 @@
             },
             "urgency": {
               "type": "string",
-              "enum": ["critical", "high", "medium", "low"],
+              "enum": [
+                "critical",
+                "high",
+                "medium",
+                "low"
+              ],
               "description": "Problem urgency level"
             },
             "successCriteria": {
@@ -127,7 +156,11 @@
                   },
                   "priority": {
                     "type": "string",
-                    "enum": ["must-have", "should-have", "nice-to-have"]
+                    "enum": [
+                      "must-have",
+                      "should-have",
+                      "nice-to-have"
+                    ]
                   }
                 }
               }
@@ -148,8 +181,12 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "item": { "type": "string" },
-                      "evidence": { "type": "string" }
+                      "item": {
+                        "type": "string"
+                      },
+                      "evidence": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
@@ -159,8 +196,12 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "item": { "type": "string" },
-                      "rationale": { "type": "string" }
+                      "item": {
+                        "type": "string"
+                      },
+                      "rationale": {
+                        "type": "string"
+                      }
                     }
                   }
                 }
@@ -172,7 +213,9 @@
               "properties": {
                 "sources": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 },
                 "keyData": {
                   "type": "array",
@@ -180,9 +223,15 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "dataPoint": { "type": "string" },
-                      "value": { "type": "string" },
-                      "significance": { "type": "string" }
+                      "dataPoint": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "string"
+                      },
+                      "significance": {
+                        "type": "string"
+                      }
                     }
                   }
                 }
@@ -212,7 +261,7 @@
                       },
                       "category": {
                         "type": "string",
-                        "enum": ["people", "process", "technology", "environment", "materials", "measurement"]
+                        "description": "Recommended values: people, process, technology, environment, materials, measurement — or any domain-appropriate value"
                       },
                       "evidence": {
                         "type": "string",
@@ -220,7 +269,11 @@
                       },
                       "confidence": {
                         "type": "string",
-                        "enum": ["high", "medium", "low"]
+                        "enum": [
+                          "high",
+                          "medium",
+                          "low"
+                        ]
                       }
                     }
                   }
@@ -262,9 +315,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "date": { "type": "string" },
-                  "event": { "type": "string" },
-                  "significance": { "type": "string" }
+                  "date": {
+                    "type": "string"
+                  },
+                  "event": {
+                    "type": "string"
+                  },
+                  "significance": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -336,11 +395,15 @@
                   },
                   "type": {
                     "type": "string",
-                    "enum": ["time", "budget", "resource", "technical", "regulatory", "organizational", "political"]
+                    "description": "Recommended values: time, budget, resource, technical, regulatory, organizational, political — or any domain-appropriate value"
                   },
                   "flexibility": {
                     "type": "string",
-                    "enum": ["fixed", "somewhat-flexible", "negotiable"]
+                    "enum": [
+                      "fixed",
+                      "somewhat-flexible",
+                      "negotiable"
+                    ]
                   },
                   "implications": {
                     "type": "string",
@@ -355,9 +418,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "assumption": { "type": "string" },
-                  "risk": { "type": "string" },
-                  "validation": { "type": "string" }
+                  "assumption": {
+                    "type": "string"
+                  },
+                  "risk": {
+                    "type": "string"
+                  },
+                  "validation": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -394,9 +463,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "method": { "type": "string" },
-                  "description": { "type": "string" },
-                  "solutionsGenerated": { "type": "integer" }
+                  "method": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "solutionsGenerated": {
+                    "type": "integer"
+                  }
                 }
               }
             },
@@ -421,7 +496,9 @@
                   "rootCausesAddressed": {
                     "type": "array",
                     "description": "Which root causes this addresses",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "approach": {
                     "type": "string",
@@ -498,21 +575,31 @@
                     "items": {
                       "type": "object",
                       "properties": {
-                        "criterion": { "type": "string" },
-                        "score": { "type": "number" },
-                        "notes": { "type": "string" }
+                        "criterion": {
+                          "type": "string"
+                        },
+                        "score": {
+                          "type": "number"
+                        },
+                        "notes": {
+                          "type": "string"
+                        }
                       }
                     }
                   },
                   "pros": {
                     "type": "array",
                     "description": "ALL advantages",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "cons": {
                     "type": "array",
                     "description": "ALL disadvantages",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "risks": {
                     "type": "array",
@@ -520,10 +607,18 @@
                     "items": {
                       "type": "object",
                       "properties": {
-                        "risk": { "type": "string" },
-                        "likelihood": { "type": "string" },
-                        "impact": { "type": "string" },
-                        "mitigation": { "type": "string" }
+                        "risk": {
+                          "type": "string"
+                        },
+                        "likelihood": {
+                          "type": "string"
+                        },
+                        "impact": {
+                          "type": "string"
+                        },
+                        "mitigation": {
+                          "type": "string"
+                        }
                       }
                     }
                   },
@@ -533,7 +628,11 @@
                   },
                   "recommendation": {
                     "type": "string",
-                    "enum": ["recommended", "acceptable", "not-recommended"]
+                    "enum": [
+                      "recommended",
+                      "acceptable",
+                      "not-recommended"
+                    ]
                   }
                 }
               }
@@ -547,7 +646,11 @@
         "recommendedSolution": {
           "type": "object",
           "description": "COMPLETE recommended solution with full details",
-          "required": ["title", "description", "rationale"],
+          "required": [
+            "title",
+            "description",
+            "rationale"
+          ],
           "properties": {
             "solutionId": {
               "type": "string",
@@ -571,8 +674,12 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "rootCause": { "type": "string" },
-                  "howAddressed": { "type": "string" }
+                  "rootCause": {
+                    "type": "string"
+                  },
+                  "howAddressed": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -582,17 +689,27 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "outcome": { "type": "string" },
-                  "metric": { "type": "string" },
-                  "target": { "type": "string" },
-                  "timeframe": { "type": "string" }
+                  "outcome": {
+                    "type": "string"
+                  },
+                  "metric": {
+                    "type": "string"
+                  },
+                  "target": {
+                    "type": "string"
+                  },
+                  "timeframe": {
+                    "type": "string"
+                  }
                 }
               }
             },
             "tradeoffs": {
               "type": "array",
               "description": "ALL tradeoffs accepted with this solution",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
@@ -610,16 +727,26 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "phase": { "type": "string" },
-                  "objective": { "type": "string" },
-                  "duration": { "type": "string" },
+                  "phase": {
+                    "type": "string"
+                  },
+                  "objective": {
+                    "type": "string"
+                  },
+                  "duration": {
+                    "type": "string"
+                  },
                   "deliverables": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "dependencies": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -644,11 +771,18 @@
                   },
                   "dependencies": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "status": {
                     "type": "string",
-                    "enum": ["not-started", "in-progress", "completed", "blocked"]
+                    "enum": [
+                      "not-started",
+                      "in-progress",
+                      "completed",
+                      "blocked"
+                    ]
                   }
                 }
               }
@@ -663,13 +797,19 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "resource": { "type": "string" },
+                  "resource": {
+                    "type": "string"
+                  },
                   "type": {
                     "type": "string",
-                    "enum": ["human", "financial", "technical", "material"]
+                    "description": "Recommended values: human, financial, technical, material — or any domain-appropriate value"
                   },
-                  "quantity": { "type": "string" },
-                  "availability": { "type": "string" }
+                  "quantity": {
+                    "type": "string"
+                  },
+                  "availability": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -679,11 +819,17 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "party": { "type": "string" },
-                  "role": { "type": "string" },
+                  "party": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "type": "string"
+                  },
                   "responsibilities": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -712,10 +858,18 @@
                     "type": "string",
                     "description": "COMPLETE metric description"
                   },
-                  "baseline": { "type": "string" },
-                  "target": { "type": "string" },
-                  "frequency": { "type": "string" },
-                  "owner": { "type": "string" }
+                  "baseline": {
+                    "type": "string"
+                  },
+                  "target": {
+                    "type": "string"
+                  },
+                  "frequency": {
+                    "type": "string"
+                  },
+                  "owner": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -729,9 +883,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "checkpoint": { "type": "string" },
-                  "date": { "type": "string" },
-                  "criteria": { "type": "string" }
+                  "checkpoint": {
+                    "type": "string"
+                  },
+                  "date": {
+                    "type": "string"
+                  },
+                  "criteria": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -741,10 +901,18 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "risk": { "type": "string" },
-                  "mitigation": { "type": "string" },
-                  "trigger": { "type": "string" },
-                  "owner": { "type": "string" }
+                  "risk": {
+                    "type": "string"
+                  },
+                  "mitigation": {
+                    "type": "string"
+                  },
+                  "trigger": {
+                    "type": "string"
+                  },
+                  "owner": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -758,7 +926,9 @@
                     "type": "string",
                     "description": "COMPLETE trigger description"
                   },
-                  "threshold": { "type": "string" },
+                  "threshold": {
+                    "type": "string"
+                  },
                   "action": {
                     "type": "string",
                     "description": "Action to take"
@@ -786,7 +956,9 @@
                     "type": "string",
                     "description": "COMPLETE learning description"
                   },
-                  "context": { "type": "string" },
+                  "context": {
+                    "type": "string"
+                  },
                   "applicability": {
                     "type": "string",
                     "description": "Where else this learning applies"
@@ -797,17 +969,23 @@
             "whatWorked": {
               "type": "array",
               "description": "ALL things that worked well",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "whatToAvoid": {
               "type": "array",
               "description": "ALL things to avoid in future",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "processImprovements": {
               "type": "array",
               "description": "Process improvements identified",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "knowledgeSharing": {
               "type": "string",

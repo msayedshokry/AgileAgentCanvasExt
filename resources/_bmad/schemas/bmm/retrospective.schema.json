@@ -4,23 +4,32 @@
   "title": "Retrospective Schema",
   "description": "Schema for epic completion retrospective that reviews success, extracts lessons learned, and identifies impacts on future work",
   "type": "object",
-  "required": ["metadata", "content"],
+  "required": [
+    "metadata",
+    "content"
+  ],
   "properties": {
     "metadata": {
       "$ref": "../common/metadata.schema.json"
     },
     "content": {
       "type": "object",
-      "required": ["epicReference", "summary"],
+      "required": [
+        "epicReference",
+        "summary"
+      ],
       "properties": {
         "epicReference": {
           "type": "object",
           "description": "Reference to the completed epic",
-          "required": ["epicId", "title"],
+          "required": [
+            "epicId",
+            "title"
+          ],
           "properties": {
             "epicId": {
               "type": "string",
-              "description": "Epic identifier"
+              "description": "Epic identifier using numeric format (e.g. '15', '1')"
             },
             "title": {
               "type": "string",
@@ -52,26 +61,43 @@
           "properties": {
             "overallSuccess": {
               "type": "string",
-              "enum": ["exceeded-expectations", "met-expectations", "partially-met", "did-not-meet"],
+              "enum": [
+                "exceeded-expectations",
+                "met-expectations",
+                "partially-met",
+                "did-not-meet"
+              ],
               "description": "Overall assessment of epic success"
             },
             "keyAchievements": {
               "type": "array",
               "description": "Main accomplishments",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "mainChallenges": {
               "type": "array",
               "description": "Primary challenges encountered",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "velocityAnalysis": {
               "type": "object",
               "properties": {
-                "estimatedEffort": { "type": "string" },
-                "actualEffort": { "type": "string" },
-                "variance": { "type": "string" },
-                "varianceReason": { "type": "string" }
+                "estimatedEffort": {
+                  "type": "string"
+                },
+                "actualEffort": {
+                  "type": "string"
+                },
+                "variance": {
+                  "type": "string"
+                },
+                "varianceReason": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -82,8 +108,12 @@
           "items": {
             "type": "object",
             "properties": {
-              "item": { "type": "string" },
-              "impact": { "type": "string" },
+              "item": {
+                "type": "string"
+              },
+              "impact": {
+                "type": "string"
+              },
               "recommendation": {
                 "type": "string",
                 "description": "How to continue/amplify this"
@@ -97,9 +127,15 @@
           "items": {
             "type": "object",
             "properties": {
-              "item": { "type": "string" },
-              "impact": { "type": "string" },
-              "rootCause": { "type": "string" },
+              "item": {
+                "type": "string"
+              },
+              "impact": {
+                "type": "string"
+              },
+              "rootCause": {
+                "type": "string"
+              },
               "recommendation": {
                 "type": "string",
                 "description": "How to avoid/improve this"
@@ -112,19 +148,29 @@
           "description": "Key lessons from this epic",
           "items": {
             "type": "object",
-            "required": ["lesson"],
+            "required": [
+              "lesson"
+            ],
             "properties": {
-              "id": { "type": "string" },
-              "lesson": { "type": "string" },
+              "id": {
+                "type": "string"
+              },
+              "lesson": {
+                "type": "string"
+              },
               "category": {
                 "type": "string",
-                "enum": ["technical", "process", "communication", "estimation", "architecture", "testing", "tooling"]
+                "description": "Recommended values: technical, process, communication, estimation, architecture, testing, tooling — or any domain-appropriate value"
               },
-              "actionable": { "type": "boolean" },
+              "actionable": {
+                "type": "boolean"
+              },
               "appliesTo": {
                 "type": "array",
                 "description": "Future epics/stories this applies to",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -135,17 +181,33 @@
           "items": {
             "type": "object",
             "properties": {
-              "storyId": { "type": "string" },
-              "storyTitle": { "type": "string" },
+              "storyId": {
+                "type": "string",
+                "description": "Story identifier using numeric format (e.g. '15.1', '1.3')"
+              },
+              "storyTitle": {
+                "type": "string"
+              },
               "outcome": {
                 "type": "string",
-                "enum": ["smooth", "challenging", "blocked", "reworked"]
+                "enum": [
+                  "smooth",
+                  "challenging",
+                  "blocked",
+                  "reworked"
+                ]
               },
-              "notes": { "type": "string" },
-              "timeSpent": { "type": "string" },
+              "notes": {
+                "type": "string"
+              },
+              "timeSpent": {
+                "type": "string"
+              },
               "blockers": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -159,13 +221,23 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "description": { "type": "string" },
-                  "reason": { "type": "string" },
+                  "description": {
+                    "type": "string"
+                  },
+                  "reason": {
+                    "type": "string"
+                  },
                   "severity": {
                     "type": "string",
-                    "enum": ["low", "medium", "high"]
+                    "enum": [
+                      "low",
+                      "medium",
+                      "high"
+                    ]
                   },
-                  "remediationPlan": { "type": "string" }
+                  "remediationPlan": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -174,8 +246,12 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "description": { "type": "string" },
-                  "resolution": { "type": "string" }
+                  "description": {
+                    "type": "string"
+                  },
+                  "resolution": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -191,9 +267,16 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "epicId": { "type": "string" },
-                  "impact": { "type": "string" },
-                  "recommendation": { "type": "string" }
+                  "epicId": {
+                    "type": "string",
+                    "description": "Impacted epic ID using numeric format (e.g. '15', '1')"
+                  },
+                  "impact": {
+                    "type": "string"
+                  },
+                  "recommendation": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -203,9 +286,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "decision": { "type": "string" },
-                  "rationale": { "type": "string" },
-                  "documentationUpdate": { "type": "string" }
+                  "decision": {
+                    "type": "string"
+                  },
+                  "rationale": {
+                    "type": "string"
+                  },
+                  "documentationUpdate": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -215,9 +304,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "discovery": { "type": "string" },
-                  "implication": { "type": "string" },
-                  "action": { "type": "string" }
+                  "discovery": {
+                    "type": "string"
+                  },
+                  "implication": {
+                    "type": "string"
+                  },
+                  "action": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -227,13 +322,19 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "targetItem": { "type": "string" },
+                  "targetItem": {
+                    "type": "string"
+                  },
                   "changeType": {
                     "type": "string",
-                    "enum": ["add", "modify", "remove", "reprioritize", "split", "merge"]
+                    "description": "Recommended values: add, modify, remove, reprioritize, split, merge — or any domain-appropriate value"
                   },
-                  "description": { "type": "string" },
-                  "rationale": { "type": "string" }
+                  "description": {
+                    "type": "string"
+                  },
+                  "rationale": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -245,15 +346,21 @@
           "properties": {
             "processImprovements": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "toolingImprovements": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "communicationImprovements": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
@@ -262,19 +369,37 @@
           "description": "Concrete action items from retrospective",
           "items": {
             "type": "object",
-            "required": ["action"],
+            "required": [
+              "action"
+            ],
             "properties": {
-              "id": { "type": "string" },
-              "action": { "type": "string" },
-              "owner": { "type": "string" },
-              "dueDate": { "type": "string" },
+              "id": {
+                "type": "string"
+              },
+              "action": {
+                "type": "string"
+              },
+              "owner": {
+                "type": "string"
+              },
+              "dueDate": {
+                "type": "string"
+              },
               "priority": {
                 "type": "string",
-                "enum": ["high", "medium", "low"]
+                "enum": [
+                  "high",
+                  "medium",
+                  "low"
+                ]
               },
               "status": {
                 "type": "string",
-                "enum": ["pending", "in-progress", "done"],
+                "enum": [
+                  "pending",
+                  "in-progress",
+                  "done"
+                ],
                 "default": "pending"
               }
             }
@@ -287,18 +412,32 @@
             "codeMetrics": {
               "type": "object",
               "properties": {
-                "linesAdded": { "type": "integer" },
-                "linesRemoved": { "type": "integer" },
-                "filesChanged": { "type": "integer" },
-                "testCoverage": { "type": "number" }
+                "linesAdded": {
+                  "type": "integer"
+                },
+                "linesRemoved": {
+                  "type": "integer"
+                },
+                "filesChanged": {
+                  "type": "integer"
+                },
+                "testCoverage": {
+                  "type": "number"
+                }
               }
             },
             "qualityMetrics": {
               "type": "object",
               "properties": {
-                "bugsFound": { "type": "integer" },
-                "bugsFixed": { "type": "integer" },
-                "reviewIterations": { "type": "number" }
+                "bugsFound": {
+                  "type": "integer"
+                },
+                "bugsFixed": {
+                  "type": "integer"
+                },
+                "reviewIterations": {
+                  "type": "number"
+                }
               }
             }
           }

@@ -38,7 +38,20 @@
     },
     "projectTeam": [],
     "coveragePlan": {
-      "p0": [],
+      "p0": [
+        {
+          "id": "{{story_num}}-EXAMPLE-001",
+          "requirement": "AC-{{story_num}}.1: Describe what the test verifies in plain language",
+          "requirementId": "AC-{{story_num}}.1",
+          "testLevel": "integration",
+          "testType": "functional",
+          "riskLink": "",
+          "testApproach": "Describe the concrete test approach and assertions",
+          "testCount": 1,
+          "automatable": true,
+          "owner": "Dev"
+        }
+      ],
       "p1": [],
       "p2": [],
       "p3": []

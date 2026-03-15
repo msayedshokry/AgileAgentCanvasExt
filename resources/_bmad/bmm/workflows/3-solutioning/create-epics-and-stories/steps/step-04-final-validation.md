@@ -142,7 +142,7 @@ If all validations pass:
 
 - Update any remaining placeholders in the document
 - Ensure proper formatting
-- Save the final epics.md
+- Save the final epics data (epics remain in epics.json, stories are standalone files)
 
 ### 7. Generate Dual Output (JSON)
 
@@ -265,7 +265,8 @@ If all validations pass:
         "implementationNotes": "COMPLETE notes",
         "stories": [
           {
-            "storyId": "1.1",
+            "id": "S-1.1",
+            "epicId": "EPIC-1",
             "title": "...",
             "userStory": {
               "asA": "...",
@@ -303,7 +304,7 @@ If all validations pass:
 **Present Final Menu:**
 **All validations complete!** [C] Complete Workflow
 
-When C is selected, the workflow is complete and the epics.md is ready for development.
+When C is selected, the workflow is complete and stories are ready for development.
 
 Epics and Stories complete. Read fully and follow: `{bmad-path}/core/tasks/help.md`
 

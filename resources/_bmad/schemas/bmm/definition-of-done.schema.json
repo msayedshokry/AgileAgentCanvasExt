@@ -10,7 +10,9 @@
       "description": "Definition of Done checklist items",
       "items": {
         "type": "object",
-        "required": ["item"],
+        "required": [
+          "item"
+        ],
         "properties": {
           "id": {
             "type": "string",
@@ -22,8 +24,7 @@
           },
           "category": {
             "type": "string",
-            "enum": ["code-quality", "testing", "documentation", "review", "deployment", "security", "performance", "compliance"],
-            "description": "Category of this DoD item"
+            "description": "Category of this DoD item. Recommended values: code-quality, testing, documentation, review, deployment, security, performance, compliance — or any domain-appropriate value"
           },
           "required": {
             "type": "boolean",
@@ -60,7 +61,9 @@
       "items": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
+          "id": {
+            "type": "string"
+          },
           "gate": {
             "type": "string",
             "description": "Description of the quality gate"
@@ -68,7 +71,9 @@
           "criteria": {
             "type": "array",
             "description": "Specific criteria for this gate",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           },
           "passed": {
             "type": "boolean",
@@ -89,11 +94,21 @@
       "type": "object",
       "description": "Summary of acceptance criteria from stories",
       "properties": {
-        "totalCriteria": { "type": "integer" },
-        "passedCriteria": { "type": "integer" },
-        "failedCriteria": { "type": "integer" },
-        "blockedCriteria": { "type": "integer" },
-        "passPercentage": { "type": "string" }
+        "totalCriteria": {
+          "type": "integer"
+        },
+        "passedCriteria": {
+          "type": "integer"
+        },
+        "failedCriteria": {
+          "type": "integer"
+        },
+        "blockedCriteria": {
+          "type": "integer"
+        },
+        "passPercentage": {
+          "type": "string"
+        }
       }
     },
     "templates": {
@@ -103,17 +118,23 @@
         "epic": {
           "type": "array",
           "description": "Default DoD items for epics",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "story": {
           "type": "array",
           "description": "Default DoD items for stories",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "feature": {
           "type": "array",
           "description": "Default DoD items for features",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -121,15 +142,33 @@
       "type": "object",
       "description": "Completion summary",
       "properties": {
-        "totalItems": { "type": "integer" },
-        "completedItems": { "type": "integer" },
-        "requiredItems": { "type": "integer" },
-        "requiredCompleted": { "type": "integer" },
-        "completionPercentage": { "type": "string" },
-        "allRequiredComplete": { "type": "boolean" },
+        "totalItems": {
+          "type": "integer"
+        },
+        "completedItems": {
+          "type": "integer"
+        },
+        "requiredItems": {
+          "type": "integer"
+        },
+        "requiredCompleted": {
+          "type": "integer"
+        },
+        "completionPercentage": {
+          "type": "string"
+        },
+        "allRequiredComplete": {
+          "type": "boolean"
+        },
         "status": {
           "type": "string",
-          "enum": ["not-started", "in-progress", "blocked", "ready-for-review", "done"]
+          "enum": [
+            "not-started",
+            "in-progress",
+            "blocked",
+            "ready-for-review",
+            "done"
+          ]
         }
       }
     }

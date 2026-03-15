@@ -322,8 +322,21 @@ export interface StoryMetadata {
   epicId?: string;
   /** Title of the parent epic — injected by artifact-transformer for display on the card */
   epicTitle?: string;
+  /** Linked test cases — injected by artifact-transformer for inline summary */
+  testCases?: {
+    id: string;
+    title: string;
+    status: ArtifactStatus;
+    type?: TestCaseType;
+    description?: string;
+    steps?: TestStep[];
+    expectedResult?: string;
+    preconditions?: string[];
+    priority?: PriorityLevel;
+    tags?: string[];
+    relatedRequirements?: string[];
+  }[];
 }
-
 // =============================================================================
 // Epic Types
 // =============================================================================

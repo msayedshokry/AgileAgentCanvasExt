@@ -243,7 +243,7 @@ Then('the result metadata command should be {string}', function(this: BmadWorld,
 });
 
 Then('the result metadata status should be {string}', function(this: BmadWorld, expected: string) {
-  assert.strictEqual(chatResult?.metadata?.status, expected, `Expected status "${expected}", got "${chatResult?.metadata?.status}"`);
+  assert.strictEqual(chatResult?.metadata?.status, expected, `Expected status "${expected}", got "${chatResult?.metadata?.status}". Markdown output:\n${markdownCalls.join('\n')}`);
 });
 
 Then('the chat store should have at least {int} epic', function(this: BmadWorld, min: number) {

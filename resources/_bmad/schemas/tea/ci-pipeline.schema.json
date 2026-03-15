@@ -4,14 +4,20 @@
   "title": "CI Pipeline Schema",
   "description": "Schema for CI/CD pipeline configuration - captures pipeline structure, jobs, and quality gates",
   "type": "object",
-  "required": ["metadata", "content"],
+  "required": [
+    "metadata",
+    "content"
+  ],
   "properties": {
     "metadata": {
       "$ref": "../common/metadata.schema.json"
     },
     "content": {
       "type": "object",
-      "required": ["platform", "pipeline"],
+      "required": [
+        "platform",
+        "pipeline"
+      ],
       "properties": {
         "platform": {
           "type": "object",
@@ -19,21 +25,24 @@
           "properties": {
             "name": {
               "type": "string",
-              "enum": ["github-actions", "gitlab-ci", "circle-ci", "jenkins", "azure-devops", "other"],
-              "description": "CI platform used"
+              "description": "CI platform used. Recommended values: github-actions, gitlab-ci, circle-ci, jenkins, azure-devops, other — or any domain-appropriate value"
             },
             "configFile": {
               "type": "string",
               "description": "Path to CI config file"
             },
-            "selectionRationale": { "type": "string" }
+            "selectionRationale": {
+              "type": "string"
+            }
           }
         },
         "pipeline": {
           "type": "object",
           "description": "Pipeline structure",
           "properties": {
-            "name": { "type": "string" },
+            "name": {
+              "type": "string"
+            },
             "triggers": {
               "type": "array",
               "description": "Events that trigger the pipeline",
@@ -42,25 +51,35 @@
                 "properties": {
                   "event": {
                     "type": "string",
-                    "enum": ["push", "pull_request", "schedule", "manual", "tag", "workflow_dispatch"]
+                    "description": "Recommended values: push, pull_request, schedule, manual, tag, workflow_dispatch — or any domain-appropriate value"
                   },
                   "branches": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "paths": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
-                  "schedule": { "type": "string" }
+                  "schedule": {
+                    "type": "string"
+                  }
                 }
               }
             },
             "concurrency": {
               "type": "object",
               "properties": {
-                "group": { "type": "string" },
-                "cancelInProgress": { "type": "boolean" }
+                "group": {
+                  "type": "string"
+                },
+                "cancelInProgress": {
+                  "type": "boolean"
+                }
               }
             }
           }
@@ -71,50 +90,84 @@
           "items": {
             "type": "object",
             "properties": {
-              "id": { "type": "string" },
-              "name": { "type": "string" },
-              "description": { "type": "string" },
-              "runsOn": { "type": "string" },
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "runsOn": {
+                "type": "string"
+              },
               "dependsOn": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
-              "condition": { "type": "string" },
+              "condition": {
+                "type": "string"
+              },
               "environment": {
                 "type": "object",
-                "additionalProperties": { "type": "string" }
+                "additionalProperties": {
+                  "type": "string"
+                }
               },
               "steps": {
                 "type": "array",
                 "items": {
                   "type": "object",
                   "properties": {
-                    "name": { "type": "string" },
-                    "uses": { "type": "string" },
-                    "run": { "type": "string" },
+                    "name": {
+                      "type": "string"
+                    },
+                    "uses": {
+                      "type": "string"
+                    },
+                    "run": {
+                      "type": "string"
+                    },
                     "with": {
                       "type": "object",
-                      "additionalProperties": { "type": "string" }
+                      "additionalProperties": {
+                        "type": "string"
+                      }
                     },
                     "env": {
                       "type": "object",
-                      "additionalProperties": { "type": "string" }
+                      "additionalProperties": {
+                        "type": "string"
+                      }
                     },
-                    "continueOnError": { "type": "boolean" }
+                    "continueOnError": {
+                      "type": "boolean"
+                    }
                   }
                 }
               },
-              "timeout": { "type": "integer" },
+              "timeout": {
+                "type": "integer"
+              },
               "services": {
                 "type": "array",
                 "items": {
                   "type": "object",
                   "properties": {
-                    "name": { "type": "string" },
-                    "image": { "type": "string" },
+                    "name": {
+                      "type": "string"
+                    },
+                    "image": {
+                      "type": "string"
+                    },
                     "ports": {
                       "type": "array",
-                      "items": { "type": "string" }
+                      "items": {
+                        "type": "string"
+                      }
                     }
                   }
                 }
@@ -131,14 +184,22 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
-                  "command": { "type": "string" },
+                  "name": {
+                    "type": "string"
+                  },
+                  "command": {
+                    "type": "string"
+                  },
                   "type": {
                     "type": "string",
-                    "enum": ["unit", "integration", "e2e", "performance", "security"]
+                    "description": "Recommended values: unit, integration, e2e, performance, security — or any domain-appropriate value"
                   },
-                  "timeout": { "type": "integer" },
-                  "parallelism": { "type": "integer" }
+                  "timeout": {
+                    "type": "integer"
+                  },
+                  "parallelism": {
+                    "type": "integer"
+                  }
                 }
               }
             },
@@ -146,21 +207,35 @@
               "type": "object",
               "description": "Burn-in loop configuration",
               "properties": {
-                "enabled": { "type": "boolean" },
-                "iterations": { "type": "integer" },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "iterations": {
+                  "type": "integer"
+                },
                 "targetTests": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 },
-                "failureThreshold": { "type": "number" }
+                "failureThreshold": {
+                  "type": "number"
+                }
               }
             },
             "sharding": {
               "type": "object",
               "properties": {
-                "enabled": { "type": "boolean" },
-                "shards": { "type": "integer" },
-                "strategy": { "type": "string" }
+                "enabled": {
+                  "type": "boolean"
+                },
+                "shards": {
+                  "type": "integer"
+                },
+                "strategy": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -171,14 +246,22 @@
           "items": {
             "type": "object",
             "properties": {
-              "name": { "type": "string" },
+              "name": {
+                "type": "string"
+              },
               "type": {
                 "type": "string",
-                "enum": ["coverage", "lint", "security", "performance", "custom"]
+                "description": "Recommended values: coverage, lint, security, performance, custom — or any domain-appropriate value"
               },
-              "threshold": { "type": "string" },
-              "blocking": { "type": "boolean" },
-              "tool": { "type": "string" }
+              "threshold": {
+                "type": "string"
+              },
+              "blocking": {
+                "type": "boolean"
+              },
+              "tool": {
+                "type": "string"
+              }
             }
           }
         },
@@ -188,14 +271,22 @@
           "items": {
             "type": "object",
             "properties": {
-              "name": { "type": "string" },
-              "path": { "type": "string" },
+              "name": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
               "type": {
                 "type": "string",
-                "enum": ["test-results", "coverage", "logs", "screenshots", "traces", "reports"]
+                "description": "Recommended values: test-results, coverage, logs, screenshots, traces, reports — or any domain-appropriate value"
               },
-              "retention": { "type": "string" },
-              "uploadCondition": { "type": "string" }
+              "retention": {
+                "type": "string"
+              },
+              "uploadCondition": {
+                "type": "string"
+              }
             }
           }
         },
@@ -210,9 +301,11 @@
                 "properties": {
                   "channel": {
                     "type": "string",
-                    "enum": ["slack", "email", "teams", "webhook"]
+                    "description": "Recommended values: slack, email, teams, webhook — or any domain-appropriate value"
                   },
-                  "target": { "type": "string" }
+                  "target": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -221,8 +314,12 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "channel": { "type": "string" },
-                  "target": { "type": "string" }
+                  "channel": {
+                    "type": "string"
+                  },
+                  "target": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -232,21 +329,31 @@
           "type": "object",
           "description": "Caching strategy",
           "properties": {
-            "enabled": { "type": "boolean" },
+            "enabled": {
+              "type": "boolean"
+            },
             "caches": {
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
+                  "name": {
+                    "type": "string"
+                  },
                   "paths": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
-                  "key": { "type": "string" },
+                  "key": {
+                    "type": "string"
+                  },
                   "restoreKeys": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -259,9 +366,15 @@
           "items": {
             "type": "object",
             "properties": {
-              "name": { "type": "string" },
-              "purpose": { "type": "string" },
-              "required": { "type": "boolean" }
+              "name": {
+                "type": "string"
+              },
+              "purpose": {
+                "type": "string"
+              },
+              "required": {
+                "type": "boolean"
+              }
             }
           }
         },
@@ -269,18 +382,26 @@
           "type": "object",
           "description": "Pipeline documentation",
           "properties": {
-            "readme": { "type": "string" },
+            "readme": {
+              "type": "string"
+            },
             "troubleshooting": {
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "issue": { "type": "string" },
-                  "solution": { "type": "string" }
+                  "issue": {
+                    "type": "string"
+                  },
+                  "solution": {
+                    "type": "string"
+                  }
                 }
               }
             },
-            "maintenance": { "type": "string" }
+            "maintenance": {
+              "type": "string"
+            }
           }
         }
       }

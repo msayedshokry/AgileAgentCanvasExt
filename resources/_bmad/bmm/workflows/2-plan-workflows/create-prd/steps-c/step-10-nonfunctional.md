@@ -182,6 +182,8 @@ Display: "**Select:** [A] Advanced Elicitation [P] Party Mode [C] Continue to Po
 
 When user selects 'C', append the content directly to the document using the structure from step 5.
 
+> **Note — Canvas Integration:** Requirements defined here in the PRD are automatically extracted to a standalone `requirements.json` file in `solutioning-artifacts/` on first canvas load. The standalone file becomes the authoritative source for subsequent edits. The PRD retains full requirement text for narrative readability.
+
 ## SUCCESS METRICS:
 
 ✅ Only relevant NFR categories documented (no requirement bloat)

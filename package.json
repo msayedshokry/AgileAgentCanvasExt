@@ -2,7 +2,7 @@
   "name": "agileagentcanvas",
   "displayName": "Agile Agent Canvas",
   "description": "Visual AI-assisted product development with BMAD methodology - Design epics, stories, and requirements collaboratively with interactive AI chat workflows",
-  "version": "0.3.0",
+  "version": "0.3.2",
   "publisher": "msayedshokry",
   "license": "MIT",
   "repository": {
@@ -328,6 +328,16 @@
         "command": "agileagentcanvas.askAgent",
         "title": "Agile Agent Canvas: Ask Agent (Help)",
         "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "agileagentcanvas.migrateToRefArch",
+        "title": "Agile Agent Canvas: Migrate to Reference Architecture",
+        "icon": "$(arrow-swap)"
+      },
+      {
+        "command": "agileagentcanvas.restorePreMigration",
+        "title": "Agile Agent Canvas: Restore Pre-Migration Backup",
+        "icon": "$(history)"
       }
     ],
     "keybindings": [
@@ -382,7 +392,7 @@
     "viewsWelcome": [
       {
         "view": "agileagentcanvas.artifactsTree",
-        "contents": "Open the visual canvas to get started.\n[$(preview) Open Visual Canvas](command:agileagentcanvas.openCanvas)\nOr create a new project.\n[$(add) New Project](command:agileagentcanvas.newProject)\n[$(folder-opened) Load Existing Project](command:agileagentcanvas.loadProject)"
+        "contents": "Open the visual canvas to get started.\n[$(preview) Open Visual Canvas](command:agileagentcanvas.openCanvas)\nOr create a new project.\n[$(add) New Project](command:agileagentcanvas.newProject)\n[$(folder-opened) Load Existing Project](command:agileagentcanvas.loadProject)\n[$(folder) Switch / Browse Project Folder](command:agileagentcanvas.switchProject)"
       }
     ],
     "configuration": {
@@ -391,7 +401,7 @@
         "agileagentcanvas.outputFolder": {
           "type": "string",
           "default": ".agileagentcanvas-context",
-          "description": "Folder for BMAD output artifacts"
+          "description": "Name of the subfolder (inside your workspace) where Agile Agent Canvas stores artifacts. Change this to use a custom folder name instead of the default. You can also use the folder button in the canvas toolbar to browse for any folder or create a new one."
         },
         "agileagentcanvas.outputFormat": {
           "type": "string",

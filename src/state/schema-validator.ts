@@ -40,7 +40,10 @@ const ARTIFACT_TYPE_TO_SCHEMA: Record<string, string> = {
     'prd':                   'bmm/prd.schema.json',
     'ux-design':             'bmm/ux-design.schema.json',
     'architecture':          'bmm/architecture.schema.json',
-    'epic':                  'bmm/epics.schema.json',
+    // NOTE: 'epic' intentionally has NO schema mapping.  Standalone epic
+    // files (`epic-*.json`) contain a single epic inside `content` — the
+    // `epics.schema.json` expects a `content.epics[]` collection and is
+    // structurally incompatible.
     'epics':                 'bmm/epics.schema.json',             // alias
     'story':                 'bmm/story.schema.json',
     'tech-spec':             'bmm/tech-spec.schema.json',

@@ -35,7 +35,6 @@ let artifactStore: ArtifactStore;
 let workspaceResolver: WorkspaceResolver;
 let fileWatcher: vscode.FileSystemWatcher | undefined;
 let folderDeleteCheckTimer: ReturnType<typeof setTimeout> | undefined;
-let externalChangeReloadTimer: ReturnType<typeof setTimeout> | undefined;
 const openCanvasPanels: vscode.WebviewPanel[] = [];
 const detailTabs = new Map<string, vscode.WebviewPanel>();
 
@@ -178,6 +177,35 @@ export function activate(context: vscode.ExtensionContext) {
                     }, 500);
                 });
             }
+        }),
+        // Migration commands — extract inline stories to files
+        vscode.commands.registerCommand('agileagentcanvas.migrateToRefArch', async () => {
+            const confirm = await vscode.window.showWarningMessage(
+                'This will extract inline stories from epics.json to standalone files and replace them with refs. A backup will be created. Continue?',
+                { modal: true },
+                'Migrate'
+            );
+            if (confirm !== 'Migrate') return;
+            const result = await artifactStore.migrateToReferenceArchitecture();
+            if (result.success) {
+                vscode.window.showInformationMessage(result.summary, { modal: true });
+            } else {
+                vscode.window.showErrorMessage(result.summary);
+            }
+        }),
+        vscode.commands.registerCommand('agileagentcanvas.restorePreMigration', async () => {
+            const confirm = await vscode.window.showWarningMessage(
+                'This will restore epics.json from the pre-migration backup. Continue?',
+                { modal: true },
+                'Restore'
+            );
+            if (confirm !== 'Restore') return;
+            const result = await artifactStore.restorePreMigrationBackup();
+            if (result.success) {
+                vscode.window.showInformationMessage(result.summary);
+            } else {
+                vscode.window.showErrorMessage(result.summary);
+            }
         })
     );
 
@@ -215,8 +243,6 @@ export function activate(context: vscode.ExtensionContext) {
             openCanvasPanels.forEach(panel => {
                 panel.webview.postMessage({ type: 'externalArtifactsChanged', filePath });
             });
-            // Auto-reload store from disk (debounced — waits for all changes to settle)
-            scheduleStoreReload(artifactStore);
         });
 
         // Send detected project count to all open canvas panels (for switch button visibility)
@@ -249,7 +275,6 @@ export function activate(context: vscode.ExtensionContext) {
             openCanvasPanels.forEach(panel => {
                 panel.webview.postMessage({ type: 'externalArtifactsChanged', filePath });
             });
-            scheduleStoreReload(artifactStore);
         });
 
         // Update canvas with new project count
@@ -373,6 +398,16 @@ async function openCanvasPanel(context: vscode.ExtensionContext, store: Artifact
                 case 'openDetailTab':
                     if (message.artifactId) {
                         openDetailTab(message.artifactId, context, store);
+                    }
+                    break;
+                case 'switchProject':
+                    {
+                        const switched = await workspaceResolver.promptSwitchProject();
+                        if (switched) {
+                            vscode.window.showInformationMessage(
+                                `Switched to: ${workspaceResolver.getActiveProject()?.label ?? 'unknown'}`
+                            );
+                        }
                     }
                     break;
             }
@@ -543,31 +578,6 @@ function getCanvasWebviewContent(webview: vscode.Webview, extensionUri: vscode.U
     </html>`;
 }
 
-/**
- * Debounced auto-reload: when external file changes are detected (not from
- * the store's own syncToFiles), reload the store from disk after a short
- * delay.  This handles the case where the LLM writes files via VS Code's
- * built-in file editing, bypassing the store.  The debounce collapses
- * multiple rapid file changes into a single reload.
- */
-function scheduleStoreReload(store: ArtifactStore): void {
-    if (externalChangeReloadTimer) {
-        clearTimeout(externalChangeReloadTimer);
-    }
-    externalChangeReloadTimer = setTimeout(async () => {
-        externalChangeReloadTimer = undefined;
-        const outputUri = workspaceResolver?.getActiveOutputUri();
-        if (!outputUri) return;
-        try {
-            acOutput.appendLine('[FileWatcher] Auto-reloading store from disk after external change');
-            await store.loadFromFolder(outputUri);
-            acOutput.appendLine('[FileWatcher] Auto-reload complete');
-        } catch (err: any) {
-            acOutput.appendLine(`[FileWatcher] Auto-reload failed: ${err?.message ?? err}`);
-        }
-    }, 500);
-}
-
 function setupFileWatcher(
     store: ArtifactStore,
     context: vscode.ExtensionContext,
@@ -668,10 +678,6 @@ export function deactivate() {
     if (folderDeleteCheckTimer) {
         clearTimeout(folderDeleteCheckTimer);
         folderDeleteCheckTimer = undefined;
-    }
-    if (externalChangeReloadTimer) {
-        clearTimeout(externalChangeReloadTimer);
-        externalChangeReloadTimer = undefined;
     }
     if (fileWatcher) {
         fileWatcher.dispose();

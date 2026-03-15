@@ -205,7 +205,8 @@ So that I have a solid foundation for building the application.
 ### Target JSON:
 ```json
 {
-  "storyId": "1.1",
+  "id": "S-1.1",
+  "epicId": "EPIC-1",
   "title": "Initialize Project",
   "userStory": {
     "asA": "developer",

@@ -4,14 +4,21 @@
   "title": "Design Thinking Schema",
   "description": "Schema for design thinking session artifacts. IMPORTANT: Capture ALL user insights, observations, ideas, and feedback completely. Do NOT summarize or truncate any empathy data, ideation results, or user feedback.",
   "type": "object",
-  "required": ["metadata", "content"],
+  "required": [
+    "metadata",
+    "content"
+  ],
   "properties": {
     "metadata": {
       "$ref": "../common/metadata.schema.json"
     },
     "content": {
       "type": "object",
-      "required": ["designChallenge", "define", "ideate"],
+      "required": [
+        "designChallenge",
+        "define",
+        "ideate"
+      ],
       "properties": {
         "projectName": {
           "type": "string",
@@ -31,9 +38,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
-                  "role": { "type": "string" },
-                  "expertise": { "type": "string" }
+                  "name": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "type": "string"
+                  },
+                  "expertise": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -66,10 +79,18 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "method": { "type": "string" },
-                  "description": { "type": "string" },
-                  "participantCount": { "type": "integer" },
-                  "duration": { "type": "string" }
+                  "method": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "participantCount": {
+                    "type": "integer"
+                  },
+                  "duration": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -79,16 +100,26 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
-                  "role": { "type": "string" },
-                  "demographics": { "type": "string" },
+                  "name": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "type": "string"
+                  },
+                  "demographics": {
+                    "type": "string"
+                  },
                   "goals": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "painPoints": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "context": {
                     "type": "string",
@@ -161,8 +192,12 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "quote": { "type": "string" },
-                      "context": { "type": "string" }
+                      "quote": {
+                        "type": "string"
+                      },
+                      "context": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
@@ -172,8 +207,12 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "thought": { "type": "string" },
-                      "evidence": { "type": "string" }
+                      "thought": {
+                        "type": "string"
+                      },
+                      "evidence": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
@@ -183,9 +222,15 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "action": { "type": "string" },
-                      "frequency": { "type": "string" },
-                      "context": { "type": "string" }
+                      "action": {
+                        "type": "string"
+                      },
+                      "frequency": {
+                        "type": "string"
+                      },
+                      "context": {
+                        "type": "string"
+                      }
                     }
                   }
                 },
@@ -195,11 +240,19 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "emotion": { "type": "string" },
-                      "trigger": { "type": "string" },
+                      "emotion": {
+                        "type": "string"
+                      },
+                      "trigger": {
+                        "type": "string"
+                      },
                       "intensity": {
                         "type": "string",
-                        "enum": ["low", "medium", "high"]
+                        "enum": [
+                          "low",
+                          "medium",
+                          "high"
+                        ]
                       }
                     }
                   }
@@ -216,12 +269,36 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "stage": { "type": "string" },
-                      "actions": { "type": "array", "items": { "type": "string" } },
-                      "thoughts": { "type": "array", "items": { "type": "string" } },
-                      "emotions": { "type": "string" },
-                      "painPoints": { "type": "array", "items": { "type": "string" } },
-                      "opportunities": { "type": "array", "items": { "type": "string" } }
+                      "stage": {
+                        "type": "string"
+                      },
+                      "actions": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "thoughts": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "emotions": {
+                        "type": "string"
+                      },
+                      "painPoints": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "opportunities": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
                     }
                   }
                 }
@@ -244,7 +321,9 @@
             "povVariations": {
               "type": "array",
               "description": "Alternative POV statements considered",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "howMightWeQuestions": {
               "type": "array",
@@ -262,7 +341,11 @@
                   },
                   "priority": {
                     "type": "string",
-                    "enum": ["primary", "secondary", "exploratory"]
+                    "enum": [
+                      "primary",
+                      "secondary",
+                      "exploratory"
+                    ]
                   }
                 }
               }
@@ -279,7 +362,9 @@
                   },
                   "supportingEvidence": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "designImplications": {
                     "type": "string",
@@ -294,8 +379,12 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "principle": { "type": "string" },
-                  "rationale": { "type": "string" }
+                  "principle": {
+                    "type": "string"
+                  },
+                  "rationale": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -305,14 +394,19 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "constraint": { "type": "string" },
+                  "constraint": {
+                    "type": "string"
+                  },
                   "type": {
                     "type": "string",
-                    "enum": ["technical", "business", "user", "regulatory", "resource"]
+                    "description": "Recommended values: technical, business, user, regulatory, resource — or any domain-appropriate value"
                   },
                   "flexibility": {
                     "type": "string",
-                    "enum": ["fixed", "negotiable"]
+                    "enum": [
+                      "fixed",
+                      "negotiable"
+                    ]
                   }
                 }
               }
@@ -337,8 +431,12 @@
                     "type": "string",
                     "description": "How the method was applied"
                   },
-                  "duration": { "type": "string" },
-                  "ideasGenerated": { "type": "integer" }
+                  "duration": {
+                    "type": "string"
+                  },
+                  "ideasGenerated": {
+                    "type": "integer"
+                  }
                 }
               }
             },
@@ -378,11 +476,19 @@
                   },
                   "feasibility": {
                     "type": "string",
-                    "enum": ["high", "medium", "low"]
+                    "enum": [
+                      "high",
+                      "medium",
+                      "low"
+                    ]
                   },
                   "impact": {
                     "type": "string",
-                    "enum": ["high", "medium", "low"]
+                    "enum": [
+                      "high",
+                      "medium",
+                      "low"
+                    ]
                   }
                 }
               }
@@ -393,11 +499,17 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "clusterName": { "type": "string" },
-                  "theme": { "type": "string" },
+                  "clusterName": {
+                    "type": "string"
+                  },
+                  "theme": {
+                    "type": "string"
+                  },
                   "ideaIds": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -423,7 +535,9 @@
                   "sourceIdeas": {
                     "type": "array",
                     "description": "Ideas that contributed to this concept",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "rationale": {
                     "type": "string",
@@ -439,7 +553,9 @@
                   },
                   "risks": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -447,7 +563,9 @@
             "selectionCriteria": {
               "type": "array",
               "description": "Criteria used for selecting top concepts",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
@@ -461,8 +579,7 @@
             },
             "prototypeType": {
               "type": "string",
-              "enum": ["paper", "digital-lo-fi", "digital-hi-fi", "physical", "service-blueprint", "storyboard", "wizard-of-oz"],
-              "description": "Type of prototype created"
+              "description": "Type of prototype created. Recommended values: paper, digital-lo-fi, digital-hi-fi, physical, service-blueprint, storyboard, wizard-of-oz — or any domain-appropriate value"
             },
             "prototypes": {
               "type": "array",
@@ -470,7 +587,9 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
+                  "name": {
+                    "type": "string"
+                  },
                   "conceptId": {
                     "type": "string",
                     "description": "Concept this prototype tests"
@@ -481,17 +600,27 @@
                   },
                   "fidelity": {
                     "type": "string",
-                    "enum": ["low", "medium", "high"]
+                    "enum": [
+                      "low",
+                      "medium",
+                      "high"
+                    ]
                   },
                   "materials": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
-                  "timeToCreate": { "type": "string" },
+                  "timeToCreate": {
+                    "type": "string"
+                  },
                   "artifacts": {
                     "type": "array",
                     "description": "Prototype artifacts (images, links, etc.)",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -520,7 +649,9 @@
             "limitations": {
               "type": "array",
               "description": "Known prototype limitations",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
@@ -538,14 +669,26 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "sessionId": { "type": "string" },
-                  "date": { "type": "string" },
-                  "duration": { "type": "string" },
-                  "participantProfile": { "type": "string" },
-                  "prototype": { "type": "string" },
+                  "sessionId": {
+                    "type": "string"
+                  },
+                  "date": {
+                    "type": "string"
+                  },
+                  "duration": {
+                    "type": "string"
+                  },
+                  "participantProfile": {
+                    "type": "string"
+                  },
+                  "prototype": {
+                    "type": "string"
+                  },
                   "tasks": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -570,15 +713,27 @@
                   },
                   "sentiment": {
                     "type": "string",
-                    "enum": ["positive", "neutral", "negative"]
+                    "enum": [
+                      "positive",
+                      "neutral",
+                      "negative"
+                    ]
                   },
                   "actionability": {
                     "type": "string",
-                    "enum": ["actionable", "informational", "out-of-scope"]
+                    "enum": [
+                      "actionable",
+                      "informational",
+                      "out-of-scope"
+                    ]
                   },
                   "priority": {
                     "type": "string",
-                    "enum": ["high", "medium", "low"]
+                    "enum": [
+                      "high",
+                      "medium",
+                      "low"
+                    ]
                   }
                 }
               }
@@ -595,7 +750,12 @@
                   },
                   "severity": {
                     "type": "string",
-                    "enum": ["critical", "major", "minor", "cosmetic"]
+                    "enum": [
+                      "critical",
+                      "major",
+                      "minor",
+                      "cosmetic"
+                    ]
                   },
                   "frequency": {
                     "type": "string",
@@ -639,13 +799,24 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "hypothesis": { "type": "string" },
+                  "hypothesis": {
+                    "type": "string"
+                  },
                   "status": {
                     "type": "string",
-                    "enum": ["validated", "invalidated", "partially-validated", "inconclusive"]
+                    "enum": [
+                      "validated",
+                      "invalidated",
+                      "partially-validated",
+                      "inconclusive"
+                    ]
                   },
-                  "evidence": { "type": "string" },
-                  "nextSteps": { "type": "string" }
+                  "evidence": {
+                    "type": "string"
+                  },
+                  "nextSteps": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -665,18 +836,29 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "area": { "type": "string" },
+                  "area": {
+                    "type": "string"
+                  },
                   "refinement": {
                     "type": "string",
                     "description": "COMPLETE description of refinement needed"
                   },
                   "priority": {
                     "type": "string",
-                    "enum": ["critical", "high", "medium", "low"]
+                    "enum": [
+                      "critical",
+                      "high",
+                      "medium",
+                      "low"
+                    ]
                   },
                   "effort": {
                     "type": "string",
-                    "enum": ["small", "medium", "large"]
+                    "enum": [
+                      "small",
+                      "medium",
+                      "large"
+                    ]
                   }
                 }
               }
@@ -701,11 +883,18 @@
                   },
                   "dependencies": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "status": {
                     "type": "string",
-                    "enum": ["not-started", "in-progress", "completed", "blocked"]
+                    "enum": [
+                      "not-started",
+                      "in-progress",
+                      "completed",
+                      "blocked"
+                    ]
                   }
                 }
               }

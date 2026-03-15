@@ -10,7 +10,10 @@
       "description": "List of identified risks with their mitigations",
       "items": {
         "type": "object",
-        "required": ["risk", "mitigation"],
+        "required": [
+          "risk",
+          "mitigation"
+        ],
         "properties": {
           "id": {
             "type": "string",
@@ -22,23 +25,37 @@
           },
           "category": {
             "type": "string",
-            "enum": ["technical", "operational", "security", "compliance", "resource", "schedule", "integration", "performance", "data"],
-            "description": "Risk category"
+            "description": "Risk category. Recommended values: technical, operational, security, compliance, resource, schedule, integration, performance, data — or any domain-appropriate value"
           },
           "probability": {
             "type": "string",
-            "enum": ["low", "medium", "high", "very-high"],
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "very-high"
+            ],
             "description": "Likelihood of the risk occurring"
           },
           "impact": {
             "type": "string",
-            "enum": ["low", "medium", "high", "critical"],
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ],
             "description": "Impact if the risk occurs"
           },
           "riskScore": {
             "type": "string",
             "description": "Combined risk score (probability x impact)",
-            "enum": ["low", "medium", "high", "critical"]
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
           },
           "impactDescription": {
             "type": "string",
@@ -54,11 +71,20 @@
             "items": {
               "type": "object",
               "properties": {
-                "strategy": { "type": "string" },
-                "owner": { "type": "string" },
+                "strategy": {
+                  "type": "string"
+                },
+                "owner": {
+                  "type": "string"
+                },
                 "status": {
                   "type": "string",
-                  "enum": ["planned", "in-progress", "implemented", "verified"]
+                  "enum": [
+                    "planned",
+                    "in-progress",
+                    "implemented",
+                    "verified"
+                  ]
                 }
               }
             }
@@ -70,7 +96,9 @@
           "triggers": {
             "type": "array",
             "description": "Warning signs that the risk may be materializing",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           },
           "owner": {
             "type": "string",
@@ -78,18 +106,32 @@
           },
           "status": {
             "type": "string",
-            "enum": ["identified", "analyzing", "mitigating", "monitoring", "closed", "occurred"],
+            "enum": [
+              "identified",
+              "analyzing",
+              "mitigating",
+              "monitoring",
+              "closed",
+              "occurred"
+            ],
             "description": "Current status of the risk"
           },
           "residualRisk": {
             "type": "string",
-            "enum": ["none", "low", "medium", "high"],
+            "enum": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ],
             "description": "Remaining risk after mitigation"
           },
           "relatedRequirements": {
             "type": "array",
             "description": "Requirements affected by this risk",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           },
           "notes": {
             "type": "string"
@@ -103,11 +145,23 @@
       "items": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
-          "assumption": { "type": "string" },
-          "ifFalse": { "type": "string", "description": "What risk emerges if assumption is false" },
-          "validationMethod": { "type": "string" },
-          "validated": { "type": "boolean", "default": false }
+          "id": {
+            "type": "string"
+          },
+          "assumption": {
+            "type": "string"
+          },
+          "ifFalse": {
+            "type": "string",
+            "description": "What risk emerges if assumption is false"
+          },
+          "validationMethod": {
+            "type": "string"
+          },
+          "validated": {
+            "type": "boolean",
+            "default": false
+          }
         }
       }
     },
@@ -117,14 +171,22 @@
       "items": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
-          "dependency": { "type": "string" },
+          "id": {
+            "type": "string"
+          },
+          "dependency": {
+            "type": "string"
+          },
           "type": {
             "type": "string",
-            "enum": ["upstream", "downstream", "external-system", "team", "vendor", "infrastructure"]
+            "description": "Recommended values: upstream, downstream, external-system, team, vendor, infrastructure — or any domain-appropriate value"
           },
-          "risk": { "type": "string" },
-          "mitigation": { "type": "string" }
+          "risk": {
+            "type": "string"
+          },
+          "mitigation": {
+            "type": "string"
+          }
         }
       }
     },
@@ -135,19 +197,27 @@
         "critical": {
           "type": "array",
           "description": "Critical risk IDs",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "high": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "medium": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "low": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -155,16 +225,35 @@
       "type": "object",
       "description": "Risk summary statistics",
       "properties": {
-        "totalRisks": { "type": "integer" },
-        "criticalCount": { "type": "integer" },
-        "highCount": { "type": "integer" },
-        "mediumCount": { "type": "integer" },
-        "lowCount": { "type": "integer" },
-        "mitigatedCount": { "type": "integer" },
-        "openCount": { "type": "integer" },
+        "totalRisks": {
+          "type": "integer"
+        },
+        "criticalCount": {
+          "type": "integer"
+        },
+        "highCount": {
+          "type": "integer"
+        },
+        "mediumCount": {
+          "type": "integer"
+        },
+        "lowCount": {
+          "type": "integer"
+        },
+        "mitigatedCount": {
+          "type": "integer"
+        },
+        "openCount": {
+          "type": "integer"
+        },
         "overallRiskLevel": {
           "type": "string",
-          "enum": ["low", "medium", "high", "critical"]
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
         }
       }
     }

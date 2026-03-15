@@ -54,9 +54,10 @@ To generate all epics with their stories based on the approved epics_list, follo
 ## EXECUTION PROTOCOLS:
 
 - 🎯 Generate stories collaboratively with user input
-- 💾 Append epics and stories to {outputFile} following template
+- 💾 Save each story as a standalone artifact using `agileagentcanvas_update_artifact(type='story', id='S-{N}.{M}', changes={...})`
 - 📖 Process epics one at a time in sequence
 - 🚫 FORBIDDEN to skip any epic or rush through stories
+- 🚫 FORBIDDEN to embed stories inline inside epics.json — stories are standalone files
 
 ## STORY GENERATION PROCESS:
 
@@ -111,6 +112,14 @@ So that {value_benefit}.
 **Then** {expected_outcome}
 **And** {additional_criteria}
 ```
+
+**🔑 STORY IDENTITY RULES (Reference Architecture):**
+Every story MUST include:
+- `id`: Unique story identifier (e.g., `S-1.1`, `S-2.3`) — this is the canonical key
+- `epicId`: Parent epic reference (e.g., `EPIC-1`) — required for routing
+- `requirementRefs`: Array of PRD requirement IDs this story fulfills (requirements live in PRD, not in epics)
+
+Stories are saved as standalone files in `implementation-artifacts/`. The `epicId` field is how stories are linked back to their parent epic.
 
 **✅ GOOD STORY EXAMPLES:**
 
@@ -179,13 +188,27 @@ After writing each story:
 - "Is the scope appropriate for a single dev session?"
 - "Are the acceptance criteria complete and testable?"
 
-#### E. Append to Document
+#### E. Save as Standalone Story
 
-When story is approved:
+When story is approved, save it using the artifact tool:
 
-- Append it to {outputFile} following template structure
-- Use correct numbering (Epic N, Story M)
-- Maintain proper markdown formatting
+```
+agileagentcanvas_update_artifact(
+  type: 'story',
+  id: 'S-{N}.{M}',
+  changes: {
+    epicId: 'EPIC-{N}',
+    title: '{story_title}',
+    userStory: { asA: '...', iWant: '...', soThat: '...' },
+    acceptanceCriteria: [{ id: 'AC-1', given: '...', when: '...', then: '...' }],
+    storyPoints: 3,
+    technicalNotes: '...',
+    requirementRefs: ['FR-1.1', 'FR-1.2']
+  }
+)
+```
+
+Each call creates a standalone story file in `implementation-artifacts/`.
 
 ### 4. Epic Completion
 
@@ -209,19 +232,15 @@ After all epics and stories are generated:
 - Confirm all FRs are covered
 - Check formatting consistency
 
-## TEMPLATE STRUCTURE COMPLIANCE:
+## REFERENCE ARCHITECTURE COMPLIANCE:
 
-The final {outputFile} must follow this structure exactly:
+Stories are saved as **standalone files** — NOT embedded in epics.json:
 
-1. **Overview** section with project name
-2. **Requirements Inventory** with all three subsections populated
-3. **FR Coverage Map** showing requirement to epic mapping
-4. **Epic List** with approved epic structure
-5. **Epic sections** for each epic (N = 1, 2, 3...)
-   - Epic title and goal
-   - All stories for that epic (M = 1, 2, 3...)
-     - Story title and user story
-     - Acceptance Criteria using Given/When/Then format
+1. **Each story** is saved via `agileagentcanvas_update_artifact(type='story', ...)` as a separate file
+2. **Stories link to epics** via the `epicId` field (e.g., `EPIC-1`)
+3. **Requirements live in PRD** — stories reference them via `requirementRefs`, not duplicated in epics
+4. **Story IDs** use `id` (NOT `storyId`) in format `S-{epicNum}.{storyNum}` (e.g., `S-1.1`, `S-2.3`)
+5. **FR Coverage** is tracked via `requirementRefs` on each story, not via a coverage map in epics
 
 ### 7. Present FINAL MENU OPTIONS
 
@@ -233,7 +252,7 @@ Display: "**Select an Option:** [A] Advanced Elicitation [P] Party Mode [C] Cont
 
 - IF A: Read fully and follow: {advancedElicitationTask}
 - IF P: Read fully and follow: {partyModeWorkflow}
-- IF C: Save content to {outputFile}, update frontmatter, then read fully and follow: {nextStepFile}
+- IF C: Ensure all stories are saved via `agileagentcanvas_update_artifact`, then read fully and follow: {nextStepFile}
 - IF Any other comments or queries: help user respond then [Redisplay Menu Options](#7-present-final-menu-options)
 
 #### EXECUTION RULES:

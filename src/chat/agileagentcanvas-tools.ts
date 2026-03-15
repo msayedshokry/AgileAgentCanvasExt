@@ -475,7 +475,11 @@ export function getToolDefinitions(): vscode.LanguageModelChatTool[] {
                 'Use only field names, types, enum values, and structures defined in the schema. ' +
                 'The changes object should contain fields from the schema\'s "content" section ' +
                 '(flattened — do NOT wrap in a "content" key). Metadata fields can also be ' +
-                'included at the top level.',
+                'included at the top level. ' +
+                'STORIES: When type="story", if the story does not already exist, a NEW standalone ' +
+                'story file is created in implementation-artifacts/. Stories MUST include "epicId" ' +
+                'to link to their parent epic (e.g. "EPIC-1"). Use "id" (NOT "storyId") as the ' +
+                'story identifier (e.g. "S-1.1", "S-2.3"). Each story call creates one file.',
             inputSchema: {
                 type: 'object' as const,
                 properties: {
@@ -485,7 +489,7 @@ export function getToolDefinitions(): vscode.LanguageModelChatTool[] {
                     },
                     id: {
                         type: 'string',
-                        description: 'Artifact ID, e.g. EPIC-1, STORY-1-1, vision-1, FR-1'
+                        description: 'Artifact ID, e.g. EPIC-1, S-1.1, vision-1, FR-1'
                     },
                     changes: {
                         type: 'object',
@@ -493,7 +497,9 @@ export function getToolDefinitions(): vscode.LanguageModelChatTool[] {
                             'The fields to update on the artifact, as a JSON object. Must strictly ' +
                             'conform to the artifact\'s JSON schema — use exact field names (camelCase), ' +
                             'respect enum values, and match array/object structures. Non-conforming ' +
-                            'updates will be rejected with specific validation errors.'
+                            'updates will be rejected with specific validation errors. ' +
+                            'For stories: include epicId, title, userStory, acceptanceCriteria, ' +
+                            'storyPoints, technicalNotes, and requirementRefs.'
                     }
                 },
                 required: ['type', 'id', 'changes']

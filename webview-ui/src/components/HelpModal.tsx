@@ -17,11 +17,12 @@ const HELP_SECTIONS: HelpSection[] = [
     icon: <Icon name="rocket" size={16} />,
     items: [
       'Use Agile Agent Canvas: New Project to start a fresh project',
-      'Use Agile Agent Canvas: Load Existing Project to open a .agileagentcanvas-context folder',
+      'Use Agile Agent Canvas: Load Existing Project to open a .agileagentcanvas-context folder or browse to any custom folder',
       'Use Agile Agent Canvas: Load Demo Data to explore a sample project with all artifact types',
       'Click Add in the toolbar to create your first artifact',
       'Double-click any card on the canvas to open its detail panel',
-      'Switch between multiple Agile Agent Canvas projects using the folder button in the toolbar',
+      'Click the folder button in the toolbar to switch folders, browse to a different folder, or create a new project folder',
+      'Change the default folder name in Settings → agileagentcanvas.outputFolder',
     ],
   },
   {

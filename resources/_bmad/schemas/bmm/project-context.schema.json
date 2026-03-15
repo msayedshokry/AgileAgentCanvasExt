@@ -4,20 +4,27 @@
   "title": "Project Context Schema",
   "description": "Comprehensive schema for project context artifacts - captures COMPLETE AI agent context, implementation rules, and coding patterns",
   "type": "object",
-  "required": ["metadata", "content"],
+  "required": [
+    "metadata",
+    "content"
+  ],
   "properties": {
     "metadata": {
       "$ref": "../common/metadata.schema.json"
     },
     "content": {
       "type": "object",
-      "required": ["projectInfo"],
+      "required": [
+        "projectInfo"
+      ],
       "properties": {
         "projectInfo": {
           "type": "object",
           "description": "Basic project information",
           "properties": {
-            "name": { "type": "string" },
+            "name": {
+              "type": "string"
+            },
             "description": {
               "type": "string",
               "description": "COMPLETE project description"
@@ -26,9 +33,15 @@
               "type": "string",
               "description": "Project type (e.g., 'web-app', 'api', 'library')"
             },
-            "version": { "type": "string" },
-            "repository": { "type": "string" },
-            "documentation": { "type": "string" }
+            "version": {
+              "type": "string"
+            },
+            "repository": {
+              "type": "string"
+            },
+            "documentation": {
+              "type": "string"
+            }
           }
         },
         "overview": {
@@ -45,7 +58,9 @@
             },
             "keyFeatures": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "currentState": {
               "type": "string",
@@ -67,13 +82,19 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
-                  "version": { "type": "string" },
+                  "name": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "string"
+                  },
                   "usage": {
                     "type": "string",
                     "description": "COMPLETE usage description"
                   },
-                  "configuration": { "type": "string" }
+                  "configuration": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -83,16 +104,24 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
-                  "version": { "type": "string" },
+                  "name": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "string"
+                  },
                   "purpose": {
                     "type": "string",
                     "description": "COMPLETE purpose description"
                   },
-                  "documentation": { "type": "string" },
+                  "documentation": {
+                    "type": "string"
+                  },
                   "keyFeatures": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -103,10 +132,18 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
-                  "version": { "type": "string" },
-                  "purpose": { "type": "string" },
-                  "usage": { "type": "string" }
+                  "name": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "string"
+                  },
+                  "purpose": {
+                    "type": "string"
+                  },
+                  "usage": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -116,13 +153,19 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
-                  "version": { "type": "string" },
+                  "name": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "string"
+                  },
                   "purpose": {
                     "type": "string",
                     "description": "COMPLETE purpose description"
                   },
-                  "configuration": { "type": "string" }
+                  "configuration": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -132,9 +175,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
-                  "purpose": { "type": "string" },
-                  "configuration": { "type": "string" }
+                  "name": {
+                    "type": "string"
+                  },
+                  "purpose": {
+                    "type": "string"
+                  },
+                  "configuration": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -145,7 +194,9 @@
           "description": "ALL critical implementation rules for AI agents - capture COMPLETE details",
           "items": {
             "type": "object",
-            "required": ["rule"],
+            "required": [
+              "rule"
+            ],
             "properties": {
               "id": {
                 "type": "string",
@@ -161,11 +212,15 @@
               },
               "category": {
                 "type": "string",
-                "enum": ["code-style", "architecture", "testing", "security", "performance", "documentation", "naming", "error-handling", "state-management", "api"]
+                "description": "Recommended values: code-style, architecture, testing, security, performance, documentation, naming, error-handling, state-management, api — or any domain-appropriate value"
               },
               "severity": {
                 "type": "string",
-                "enum": ["must", "should", "may"],
+                "enum": [
+                  "must",
+                  "should",
+                  "may"
+                ],
                 "description": "How strictly this rule must be followed"
               },
               "examples": {
@@ -173,17 +228,23 @@
                 "properties": {
                   "good": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "bad": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               },
               "exceptions": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "enforcedBy": {
                 "type": "string",
@@ -206,7 +267,9 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
+                  "name": {
+                    "type": "string"
+                  },
                   "description": {
                     "type": "string",
                     "description": "COMPLETE pattern description"
@@ -223,7 +286,9 @@
                     "type": "string",
                     "description": "Where to find examples in codebase"
                   },
-                  "rationale": { "type": "string" }
+                  "rationale": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -245,8 +310,12 @@
                     "type": "string",
                     "description": "Pattern regex or description"
                   },
-                  "example": { "type": "string" },
-                  "rationale": { "type": "string" }
+                  "example": {
+                    "type": "string"
+                  },
+                  "rationale": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -256,7 +325,9 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "path": { "type": "string" },
+                  "path": {
+                    "type": "string"
+                  },
                   "purpose": {
                     "type": "string",
                     "description": "COMPLETE purpose description"
@@ -267,7 +338,9 @@
                   },
                   "examples": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -278,9 +351,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "type": { "type": "string" },
-                  "structure": { "type": "string" },
-                  "example": { "type": "string" }
+                  "type": {
+                    "type": "string"
+                  },
+                  "structure": {
+                    "type": "string"
+                  },
+                  "example": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -290,9 +369,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "type": { "type": "string" },
-                  "pattern": { "type": "string" },
-                  "example": { "type": "string" }
+                  "type": {
+                    "type": "string"
+                  },
+                  "pattern": {
+                    "type": "string"
+                  },
+                  "example": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -322,7 +407,10 @@
               },
               "severity": {
                 "type": "string",
-                "enum": ["error", "warning"]
+                "enum": [
+                  "error",
+                  "warning"
+                ]
               }
             }
           }
@@ -333,14 +421,20 @@
           "items": {
             "type": "object",
             "properties": {
-              "path": { "type": "string" },
+              "path": {
+                "type": "string"
+              },
               "purpose": {
                 "type": "string",
                 "description": "COMPLETE purpose description"
               },
               "importance": {
                 "type": "string",
-                "enum": ["critical", "important", "reference"]
+                "enum": [
+                  "critical",
+                  "important",
+                  "reference"
+                ]
               },
               "notes": {
                 "type": "string",
@@ -349,7 +443,9 @@
               "keyElements": {
                 "type": "array",
                 "description": "Key elements in this file",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -360,8 +456,12 @@
           "items": {
             "type": "object",
             "properties": {
-              "path": { "type": "string" },
-              "type": { "type": "string" },
+              "path": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
               "description": {
                 "type": "string",
                 "description": "COMPLETE description"
@@ -376,7 +476,9 @@
             "setup": {
               "type": "array",
               "description": "Setup steps",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "commands": {
               "type": "array",
@@ -384,18 +486,30 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "command": { "type": "string" },
-                  "description": { "type": "string" },
-                  "usage": { "type": "string" }
+                  "command": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "usage": {
+                    "type": "string"
+                  }
                 }
               }
             },
             "testing": {
               "type": "object",
               "properties": {
-                "framework": { "type": "string" },
-                "command": { "type": "string" },
-                "coverage": { "type": "string" }
+                "framework": {
+                  "type": "string"
+                },
+                "command": {
+                  "type": "string"
+                },
+                "coverage": {
+                  "type": "string"
+                }
               }
             },
             "linting": {
@@ -403,10 +517,16 @@
               "properties": {
                 "tools": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 },
-                "command": { "type": "string" },
-                "configuration": { "type": "string" }
+                "command": {
+                  "type": "string"
+                },
+                "configuration": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -424,19 +544,29 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "type": { "type": "string" },
-                  "handling": { "type": "string" },
-                  "example": { "type": "string" }
+                  "type": {
+                    "type": "string"
+                  },
+                  "handling": {
+                    "type": "string"
+                  },
+                  "example": {
+                    "type": "string"
+                  }
                 }
               }
             },
             "logging": {
               "type": "object",
               "properties": {
-                "approach": { "type": "string" },
+                "approach": {
+                  "type": "string"
+                },
                 "levels": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -453,21 +583,31 @@
             "globalState": {
               "type": "object",
               "properties": {
-                "approach": { "type": "string" },
-                "location": { "type": "string" },
+                "approach": {
+                  "type": "string"
+                },
+                "location": {
+                  "type": "string"
+                },
                 "patterns": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 }
               }
             },
             "localState": {
               "type": "object",
               "properties": {
-                "approach": { "type": "string" },
+                "approach": {
+                  "type": "string"
+                },
                 "patterns": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -481,18 +621,26 @@
               "type": "string",
               "description": "COMPLETE API interaction approach"
             },
-            "client": { "type": "string" },
+            "client": {
+              "type": "string"
+            },
             "patterns": {
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "pattern": { "type": "string" },
-                  "usage": { "type": "string" }
+                  "pattern": {
+                    "type": "string"
+                  },
+                  "usage": {
+                    "type": "string"
+                  }
                 }
               }
             },
-            "errorHandling": { "type": "string" }
+            "errorHandling": {
+              "type": "string"
+            }
           }
         },
         "securityConsiderations": {
@@ -505,8 +653,12 @@
                 "type": "string",
                 "description": "COMPLETE security consideration"
               },
-              "implementation": { "type": "string" },
-              "validation": { "type": "string" }
+              "implementation": {
+                "type": "string"
+              },
+              "validation": {
+                "type": "string"
+              }
             }
           }
         },
@@ -520,8 +672,12 @@
                 "type": "string",
                 "description": "COMPLETE performance consideration"
               },
-              "implementation": { "type": "string" },
-              "measurement": { "type": "string" }
+              "implementation": {
+                "type": "string"
+              },
+              "measurement": {
+                "type": "string"
+              }
             }
           }
         },
@@ -535,15 +691,21 @@
                 "type": "string",
                 "description": "COMPLETE issue description"
               },
-              "workaround": { "type": "string" },
-              "status": { "type": "string" }
+              "workaround": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              }
             }
           }
         },
         "additionalNotes": {
           "type": "array",
           "description": "ALL additional notes for AI context",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         }
       }
     }

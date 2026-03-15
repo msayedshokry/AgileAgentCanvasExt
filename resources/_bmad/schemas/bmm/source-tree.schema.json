@@ -4,29 +4,46 @@
   "title": "Source Tree Analysis Schema",
   "description": "Comprehensive schema for source tree artifacts - captures COMPLETE directory structure documentation and analysis",
   "type": "object",
-  "required": ["metadata", "content"],
+  "required": [
+    "metadata",
+    "content"
+  ],
   "properties": {
     "metadata": {
       "$ref": "../common/metadata.schema.json"
     },
     "content": {
       "type": "object",
-      "required": ["overview"],
+      "required": [
+        "overview"
+      ],
       "properties": {
         "overview": {
           "type": "object",
           "description": "Source tree overview",
           "properties": {
-            "projectName": { "type": "string" },
+            "projectName": {
+              "type": "string"
+            },
             "analysisDate": {
               "type": "string",
               "format": "date"
             },
-            "rootPath": { "type": "string" },
-            "totalFiles": { "type": "integer" },
-            "totalDirectories": { "type": "integer" },
-            "totalSize": { "type": "string" },
-            "primaryLanguage": { "type": "string" },
+            "rootPath": {
+              "type": "string"
+            },
+            "totalFiles": {
+              "type": "integer"
+            },
+            "totalDirectories": {
+              "type": "integer"
+            },
+            "totalSize": {
+              "type": "string"
+            },
+            "primaryLanguage": {
+              "type": "string"
+            },
             "summary": {
               "type": "string",
               "description": "COMPLETE source tree summary"
@@ -42,10 +59,18 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "language": { "type": "string" },
-                  "files": { "type": "integer" },
-                  "lines": { "type": "integer" },
-                  "percentage": { "type": "number" }
+                  "language": {
+                    "type": "string"
+                  },
+                  "files": {
+                    "type": "integer"
+                  },
+                  "lines": {
+                    "type": "integer"
+                  },
+                  "percentage": {
+                    "type": "number"
+                  }
                 }
               }
             },
@@ -54,9 +79,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "extension": { "type": "string" },
-                  "count": { "type": "integer" },
-                  "percentage": { "type": "number" }
+                  "extension": {
+                    "type": "string"
+                  },
+                  "count": {
+                    "type": "integer"
+                  },
+                  "percentage": {
+                    "type": "number"
+                  }
                 }
               }
             },
@@ -65,9 +96,15 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "path": { "type": "string" },
-                  "size": { "type": "string" },
-                  "lines": { "type": "integer" }
+                  "path": {
+                    "type": "string"
+                  },
+                  "size": {
+                    "type": "string"
+                  },
+                  "lines": {
+                    "type": "integer"
+                  }
                 }
               }
             },
@@ -76,8 +113,12 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "path": { "type": "string" },
-                  "depth": { "type": "integer" }
+                  "path": {
+                    "type": "string"
+                  },
+                  "depth": {
+                    "type": "integer"
+                  }
                 }
               }
             }
@@ -89,15 +130,25 @@
           "items": {
             "type": "object",
             "properties": {
-              "partId": { "type": "string" },
-              "name": { "type": "string" },
-              "path": { "type": "string" },
+              "partId": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
               "description": {
                 "type": "string",
                 "description": "COMPLETE part description"
               },
-              "files": { "type": "integer" },
-              "directories": { "type": "integer" }
+              "files": {
+                "type": "integer"
+              },
+              "directories": {
+                "type": "integer"
+              }
             }
           }
         },
@@ -107,27 +158,39 @@
           "items": {
             "type": "object",
             "properties": {
-              "path": { "type": "string" },
+              "path": {
+                "type": "string"
+              },
               "type": {
                 "type": "string",
-                "enum": ["directory", "file"]
+                "description": "Recommended values: directory, file — or any domain-appropriate value"
               },
-              "name": { "type": "string" },
+              "name": {
+                "type": "string"
+              },
               "purpose": {
                 "type": "string",
                 "description": "COMPLETE purpose description"
               },
-              "depth": { "type": "integer" },
-              "fileCount": { "type": "integer" },
+              "depth": {
+                "type": "integer"
+              },
+              "fileCount": {
+                "type": "integer"
+              },
               "children": {
                 "type": "array",
                 "description": "Child paths",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "keyFiles": {
                 "type": "array",
                 "description": "Key files in this directory",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "conventions": {
                 "type": "string",
@@ -142,7 +205,9 @@
           "items": {
             "type": "object",
             "properties": {
-              "path": { "type": "string" },
+              "path": {
+                "type": "string"
+              },
               "purpose": {
                 "type": "string",
                 "description": "COMPLETE purpose description"
@@ -153,7 +218,9 @@
               },
               "fileTypes": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "entryPoints": {
                 "type": "array",
@@ -161,8 +228,12 @@
                 "items": {
                   "type": "object",
                   "properties": {
-                    "file": { "type": "string" },
-                    "purpose": { "type": "string" }
+                    "file": {
+                      "type": "string"
+                    },
+                    "purpose": {
+                      "type": "string"
+                    }
                   }
                 }
               },
@@ -172,8 +243,12 @@
                 "items": {
                   "type": "object",
                   "properties": {
-                    "file": { "type": "string" },
-                    "purpose": { "type": "string" }
+                    "file": {
+                      "type": "string"
+                    },
+                    "purpose": {
+                      "type": "string"
+                    }
                   }
                 }
               },
@@ -183,11 +258,15 @@
               },
               "dependencies": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "dependents": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -198,7 +277,9 @@
           "items": {
             "type": "object",
             "properties": {
-              "path": { "type": "string" },
+              "path": {
+                "type": "string"
+              },
               "type": {
                 "type": "string",
                 "description": "Entry point type (e.g., 'main', 'test', 'script')"
@@ -210,9 +291,13 @@
               "exports": {
                 "type": "array",
                 "description": "What this entry point exports",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
-              "usage": { "type": "string" }
+              "usage": {
+                "type": "string"
+              }
             }
           }
         },
@@ -233,7 +318,9 @@
               "locations": {
                 "type": "array",
                 "description": "Where this pattern is used",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
               "examples": {
                 "type": "array",
@@ -241,12 +328,18 @@
                 "items": {
                   "type": "object",
                   "properties": {
-                    "path": { "type": "string" },
-                    "explanation": { "type": "string" }
+                    "path": {
+                      "type": "string"
+                    },
+                    "explanation": {
+                      "type": "string"
+                    }
                   }
                 }
               },
-              "rationale": { "type": "string" }
+              "rationale": {
+                "type": "string"
+              }
             }
           }
         },
@@ -264,10 +357,14 @@
                 "type": "string",
                 "description": "COMPLETE convention description"
               },
-              "pattern": { "type": "string" },
+              "pattern": {
+                "type": "string"
+              },
               "examples": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -278,17 +375,25 @@
           "items": {
             "type": "object",
             "properties": {
-              "extension": { "type": "string" },
+              "extension": {
+                "type": "string"
+              },
               "purpose": {
                 "type": "string",
                 "description": "COMPLETE purpose description"
               },
-              "count": { "type": "integer" },
+              "count": {
+                "type": "integer"
+              },
               "locations": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
-              "conventions": { "type": "string" }
+              "conventions": {
+                "type": "string"
+              }
             }
           }
         },
@@ -302,17 +407,25 @@
                 "type": "string",
                 "description": "Asset type (e.g., 'images', 'fonts', 'styles')"
               },
-              "path": { "type": "string" },
+              "path": {
+                "type": "string"
+              },
               "description": {
                 "type": "string",
                 "description": "COMPLETE description"
               },
               "formats": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
-              "count": { "type": "integer" },
-              "usage": { "type": "string" }
+              "count": {
+                "type": "integer"
+              },
+              "usage": {
+                "type": "string"
+              }
             }
           }
         },
@@ -322,7 +435,9 @@
           "items": {
             "type": "object",
             "properties": {
-              "path": { "type": "string" },
+              "path": {
+                "type": "string"
+              },
               "purpose": {
                 "type": "string",
                 "description": "COMPLETE purpose description"
@@ -337,8 +452,12 @@
                 "items": {
                   "type": "object",
                   "properties": {
-                    "setting": { "type": "string" },
-                    "description": { "type": "string" }
+                    "setting": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
                   }
                 }
               },
@@ -353,18 +472,26 @@
           "type": "object",
           "description": "Build artifact locations",
           "properties": {
-            "outputDirectory": { "type": "string" },
+            "outputDirectory": {
+              "type": "string"
+            },
             "intermediateDirectories": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "cacheDirectories": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "gitIgnored": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
@@ -374,13 +501,19 @@
           "items": {
             "type": "object",
             "properties": {
-              "path": { "type": "string" },
+              "path": {
+                "type": "string"
+              },
               "type": {
                 "type": "string",
                 "description": "Test type (unit, integration, e2e)"
               },
-              "pattern": { "type": "string" },
-              "count": { "type": "integer" }
+              "pattern": {
+                "type": "string"
+              },
+              "count": {
+                "type": "integer"
+              }
             }
           }
         },
@@ -390,9 +523,15 @@
           "items": {
             "type": "object",
             "properties": {
-              "path": { "type": "string" },
-              "type": { "type": "string" },
-              "description": { "type": "string" }
+              "path": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
             }
           }
         },
@@ -402,16 +541,24 @@
           "properties": {
             "rootModules": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             },
             "dependencies": {
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "from": { "type": "string" },
-                  "to": { "type": "string" },
-                  "type": { "type": "string" }
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -419,7 +566,9 @@
               "type": "array",
               "items": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -434,10 +583,16 @@
                 "type": "string",
                 "description": "COMPLETE note"
               },
-              "category": { "type": "string" },
+              "category": {
+                "type": "string"
+              },
               "importance": {
                 "type": "string",
-                "enum": ["critical", "important", "informational"]
+                "enum": [
+                  "critical",
+                  "important",
+                  "informational"
+                ]
               }
             }
           }
@@ -452,8 +607,12 @@
                 "type": "string",
                 "description": "COMPLETE recommendation"
               },
-              "rationale": { "type": "string" },
-              "impact": { "type": "string" }
+              "rationale": {
+                "type": "string"
+              },
+              "impact": {
+                "type": "string"
+              }
             }
           }
         }

@@ -15,7 +15,7 @@
     "status": "draft"
   },
   "content": {
-    "storyId": "{{story_id}}",
+    "id": "{{story_id}}",
     "epicId": "{{epic_id}}",
     "title": "{{story_title}}",
     "userStory": {

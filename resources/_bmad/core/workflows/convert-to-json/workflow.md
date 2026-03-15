@@ -249,7 +249,8 @@ Extract ALL content:
         "implementationNotes": "[COMPLETE implementation notes - all bullet points as text or array]",
         "stories": [
           {
-            "storyId": "1.1",
+            "id": "S-1.1",
+            "epicId": "EPIC-1",
             "title": "[exact story title]",
             "userStory": {
               "asA": "[role - just the role, no 'As a']",
