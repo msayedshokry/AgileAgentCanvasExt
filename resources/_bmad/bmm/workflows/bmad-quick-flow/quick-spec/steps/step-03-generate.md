@@ -100,14 +100,14 @@ a) **Update `{wipFile}` with all generated content:**
 - Ensure all template sections are filled in
 - No placeholder text remaining
 - All frontmatter values current
-- Update status to 'review' (NOT 'ready-for-dev' - that happens after user review in Step 4)
+- Update status to 'in-review' (NOT 'ready-for-dev' - that happens after user review in Step 4)
 
 b) **Update frontmatter:**
 
 ```yaml
 ---
 # ... existing values ...
-status: 'review'
+status: 'in-review'
 stepsCompleted: [1, 2, 3]
 ---
 ```

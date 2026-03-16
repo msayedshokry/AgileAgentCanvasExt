@@ -2,6 +2,10 @@
 
 ## 0.3.3
 
+### UI Improvements
+
+- **Visible Artifact IDs on Canvas** — Artifact IDs are now permanently visible directly within the header line of all standard and compact artifact cards on the Canvas, giving users an immediate visual anchor for specific items without needing to open the detail panel.
+
 ### Schema Relaxation
 
 - **`metadata.schema.json` allows additional properties** — Extension-generated fields like `_llmHint` were causing false validation warnings; `additionalProperties` changed from `false` to `true`
@@ -13,6 +17,10 @@
 
 - **`epics-index.json` misidentified as `'epics'` artifact** — Moved filename exclusion before content-structure checks in `detectArtifactType` so `data.epics` no longer triggers false detection
 - **Epic merge data loss** — `mergeEpicDuplicate()` now preserves `useCases`, `testStrategy`, `fitCriteria`, `successMetrics`, `risks`, `definitionOfDone`, and `technicalSummary` (previously only `stories` were merged)
+- **Canvas task completion status** — Added `reconcileSprintStatusToEpics()` so `development_status` keys configured in `sprint-status.yaml` update Epics and Stories on the canvas retroactively. A `done` status strictly checks off all internal Story Tasks.
+- **Test execution tracking** — Extended the artifact store parser to read `test_execution_status` from `sprint-status.yaml`. `ready`, `passed`, `failed`, and `blocked` states instantly reflect mapped test cases within Test Coverage cards on the Canvas.
+- **Epic story progress bar** — Replaced plain text agile-badges for epic summaries with a rich progress bar chip that visually fills as child stories are moved to `done`.
+- **Inline test case progress bar** — Replicated the visual green-fill chip component from tasks to the inline tests summary in `ArtifactCard.tsx`.
 
 ## 0.3.2
 

@@ -404,6 +404,67 @@ export class ArtifactStore {
                 }
             }
         }
+        
+        // ── 3. Apply sprint-status mapping to Epics, Stories, and TestCases ──
+        const sprintStatusesArr = this.artifacts.get('sprintStatuses') || [];
+        for (const sprintStatus of sprintStatusesArr) {
+            // Phase 1: development_status map
+            if (sprintStatus.development_status) {
+                for (const [key, rawStatus] of Object.entries(sprintStatus.development_status)) {
+                    let status: any = 'draft';
+                    if (rawStatus === 'ready-for-dev') status = 'ready';
+                    else if (rawStatus === 'in-progress') status = 'in-progress';
+                    else if (rawStatus === 'review') status = 'review';
+                    else if (rawStatus === 'done') status = 'done';
+
+                    const isEpic = key.toLowerCase().startsWith('epic');
+                    if (isEpic) {
+                        const epicId = key.replace(/^epic-/i, '');
+                        const ep = epics.find((e: Epic) => e.id === epicId || e.id === `EPIC-${epicId}`);
+                        if (ep && status !== 'draft') {
+                            ep.status = status;
+                        }
+                    } else {
+                        const parts = key.split('-');
+                        if (parts.length >= 2) {
+                            const storyId = `S-${parts[0]}.${parts[1]}`;
+                            for (const ep of epics) {
+                                const st = (ep.stories || []).find((s: Story) => s.id === storyId);
+                                if (st && status !== 'draft') {
+                                    st.status = status;
+                                    if (status === 'done') {
+                                        for (const t of (st.tasks || [])) {
+                                            t.completed = true;
+                                            for (const sub of (t.subtasks || [])) {
+                                                sub.completed = true;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Phase 4: test_execution_status map
+            if (sprintStatus.test_execution_status) {
+                const testCases: any[] = this.artifacts.get('testCases') || [];
+                for (const [testId, rawStatus] of Object.entries(sprintStatus.test_execution_status)) {
+                    let status: any = 'draft';
+                    if (rawStatus === 'ready') status = 'ready';
+                    else if (rawStatus === 'passed') status = 'passed';
+                    else if (rawStatus === 'failed') status = 'failed';
+                    else if (rawStatus === 'blocked') status = 'blocked';
+
+                    const tc = testCases.find((t: any) => t.id === testId);
+                    if (tc) {
+                        tc.status = status;
+                    }
+                }
+                this.artifacts.set('testCases', testCases);
+            }
+        }
     }
 
     /**

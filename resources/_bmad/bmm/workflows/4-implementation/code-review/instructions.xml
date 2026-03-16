@@ -169,7 +169,7 @@
   </step>
 
   <step n="5" goal="Update story status and sync sprint tracking">
-    <!-- Determine new status based on review outcome -->
+    <!-- Determine new status based on in-review outcome -->
     <check if="all HIGH and MEDIUM issues fixed AND all ACs implemented">
       <action>Set {{new_status}} = "done"</action>
       <action>Update story Status field to "done"</action>

@@ -235,7 +235,7 @@ For Plan-then-Build workflows with JSON:
 Step 1 (init)     → Creates plan.json with metadata.status = "draft"
 Step 2 (gather)   → Appends to content.requirements array
 Step 3 (design)   → Appends to content.design object
-Step 4 (review)   → Updates metadata.status = "review"
+Step 4 (review)   → Updates metadata.status = "in-review"
 Step 5 (build)    → READS plan.json, CREATES final artifacts
 ```
 

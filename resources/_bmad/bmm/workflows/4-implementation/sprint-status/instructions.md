@@ -81,7 +81,7 @@ Enter corrections (e.g., "1=in-progress, 2=backlog") or "skip" to continue witho
 
 <action>Detect risks:</action>
 
-- IF any story has status "review": suggest `/bmad:bmm:workflows:code-review`
+- IF any story has status "in-review": suggest `/bmad:bmm:workflows:code-review`
 - IF any story has status "in-progress" AND no stories have status "ready-for-dev": recommend staying focused on active story
 - IF all epics have status "backlog" AND no stories have status "ready-for-dev": prompt `/bmad:bmm:workflows:create-story`
 - IF `generated` timestamp is more than 7 days old: warn "sprint-status.yaml may be stale"
@@ -93,7 +93,7 @@ Enter corrections (e.g., "1=in-progress, 2=backlog") or "skip" to continue witho
   <action>Pick the next recommended workflow using priority:</action>
   <note>When selecting "first" story: sort by epic number, then story number (e.g., 1-1 before 1-2 before 2-1)</note>
   1. If any story status == in-progress → recommend `dev-story` for the first in-progress story
-  2. Else if any story status == review → recommend `code-review` for the first review story
+  2. Else if any story status == in-review → recommend `code-review` for the first review story
   3. Else if any story status == ready-for-dev → recommend `dev-story`
   4. Else if any story status == backlog → recommend `create-story`
   5. Else if any retrospective status == optional → recommend `retrospective`

@@ -245,6 +245,7 @@ export function ArtifactCard({ artifact, isSelected, isExpanded, expandedCategor
       >
         <div className="artifact-header">
           <span className="artifact-icon"><Icon name={ARTIFACT_TYPE_ICON[artifact.type] || 'story'} size={12} /></span>
+          <span className="artifact-id" title={artifact.id}>{artifact.id}</span>
           <span className="artifact-type">{TYPE_LABELS[artifact.type] ?? artifact.type}</span>
           <span className={`artifact-status ${statusInfo.className}`}>{statusInfo.label}</span>
         </div>
@@ -269,6 +270,7 @@ export function ArtifactCard({ artifact, isSelected, isExpanded, expandedCategor
     >
       <div className="artifact-header">
         <span className="artifact-icon"><Icon name={ARTIFACT_TYPE_ICON[artifact.type] || 'story'} size={14} /></span>
+        <span className="artifact-id" title={artifact.id}>{artifact.id}</span>
         <span className="artifact-type">{TYPE_LABELS[artifact.type] ?? artifact.type}</span>
         <span className={`artifact-status ${statusInfo.className}`}>{statusInfo.label}</span>
         <span className="artifact-header-actions">
@@ -398,8 +400,12 @@ export function ArtifactCard({ artifact, isSelected, isExpanded, expandedCategor
               <span className="agile-badge story-points">{storyPts} pts</span>
             )}
             {epicMeta && epicMeta.totalStoryCount !== undefined && epicMeta.totalStoryCount > 0 && (
-              <span className="agile-badge story-progress">
-                {epicMeta.doneStoryCount ?? 0}/{epicMeta.totalStoryCount} done
+              <span className={`story-summary-chip tasks${epicMeta.doneStoryCount === epicMeta.totalStoryCount ? ' all-done' : ''}`} title={`${epicMeta.doneStoryCount ?? 0} out of ${epicMeta.totalStoryCount} stories completed`}>
+                <span className="chip-icon">📚</span>
+                <span className="chip-label">{epicMeta.doneStoryCount ?? 0}/{epicMeta.totalStoryCount}</span>
+                <span className="chip-bar">
+                  <span className="chip-fill" style={{ width: `${((epicMeta.doneStoryCount ?? 0) / epicMeta.totalStoryCount) * 100}%` }} />
+                </span>
               </span>
             )}
             {epicMeta?.totalStoryPoints !== undefined && epicMeta.totalStoryPoints > 0 && (
@@ -466,6 +472,9 @@ export function ArtifactCard({ artifact, isSelected, isExpanded, expandedCategor
                 <span className={`story-summary-chip tests${failTests > 0 ? ' has-fails' : passTests === testCases.length ? ' all-pass' : ''}`}>
                   <span className="chip-icon">🧪</span>
                   <span className="chip-label">{passTests}/{testCases.length}</span>
+                  <span className="chip-bar">
+                    <span className="chip-fill" style={{ width: `${(passTests / testCases.length) * 100}%` }} />
+                  </span>
                 </span>
               )}
               <Icon name={storyExpanded ? 'chevron-down' : 'chevron-right'} size={10} />

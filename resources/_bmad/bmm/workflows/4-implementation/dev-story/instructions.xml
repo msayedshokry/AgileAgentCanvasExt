@@ -298,6 +298,13 @@
       <action>ONLY THEN mark the task (and subtasks) checkbox with [x]</action>
       <action>Update File List section with ALL new, modified, or deleted files (paths relative to repo root)</action>
       <action>Add completion notes to Dev Agent Record summarizing what was ACTUALLY implemented and tested</action>
+
+      <!-- CRITICAL: Sync task completion to the parent epic JSON file for canvas visibility -->
+      <action>Locate the parent epic JSON file in {implementation_artifacts}/../planning-artifacts/epics/ (e.g., epic-1.json for story 1-X)</action>
+      <action>In the epic JSON, find the story entry matching this story's ID</action>
+      <action>Set the matching task's "completed" field to true, and do the same for any completed subtasks</action>
+      <action>If ALL tasks in the story are now complete, also update the story's "status" field to "in-review"</action>
+      <action>Save the modified epic JSON file, preserving all other content exactly as-is</action>
     </check>
 
     <check if="ANY validation fails">
@@ -325,7 +332,7 @@
     <action>Run the full regression suite (do not skip)</action>
     <action>Confirm File List includes every changed file</action>
     <action>Execute enhanced definition-of-done validation</action>
-    <action>Update the story Status to: "review"</action>
+    <action>Update the story Status to: "in-review"</action>
 
     <!-- Enhanced Definition of Done Validation -->
     <action>Validate definition-of-done checklist with essential requirements:
@@ -347,19 +354,19 @@
       <action>Load the FULL file: {sprint_status}</action>
       <action>Find development_status key matching {{story_key}}</action>
       <action>Verify current status is "in-progress" (expected previous state)</action>
-      <action>Update development_status[{{story_key}}] = "review"</action>
+      <action>Update development_status[{{story_key}}] = "in-review"</action>
       <action>Save file, preserving ALL comments and structure including STATUS DEFINITIONS</action>
-      <output>✅ Story status updated to "review" in sprint-status.yaml</output>
+      <output>✅ Story status updated to "in-review" in sprint-status.yaml</output>
     </check>
 
     <check if="{sprint_status} file does NOT exist OR {{current_sprint_status}} == 'no-sprint-tracking'">
-      <output>ℹ️ Story status updated to "review" in story file (no sprint tracking configured)</output>
+      <output>ℹ️ Story status updated to "in-review" in story file (no sprint tracking configured)</output>
     </check>
 
     <check if="story key not found in sprint status">
       <output>⚠️ Story file updated, but sprint-status update failed: {{story_key}} not found
 
-        Story status is set to "review" in file, but sprint-status.yaml may be out of sync.
+        Story status is set to "in-review" in file, but sprint-status.yaml may be out of sync.
       </output>
     </check>
 
@@ -376,7 +383,7 @@
 
     <action>Communicate to {user_name} that story implementation is complete and ready for review</action>
     <action>Summarize key accomplishments: story ID, story key, title, key changes made, tests added, files modified</action>
-    <action>Provide the story file path and current status (now "review")</action>
+    <action>Provide the story file path and current status (now "in-review")</action>
 
     <action>Based on {user_skill_level}, ask if user needs any explanations about:
       - What was implemented and how it works

@@ -1,19 +1,21 @@
 # DB Migration: JSON → SQLite (Relational)
 
-> **Status:** Planning complete — ready for implementation.
-> **Last updated:** 2026-03-14
+> **Status:** Plan v3 approved — ready for implementation.
+> **Last updated:** 2026-03-16
 
 ## Overview
 
-Migration of the Agile Agent Canvas extension from JSON file persistence to a **local-first SQLite database** with fully typed columns for all 40 BMAD schemas, plus redesigned LLM tool interface for structured field-level read/write/query operations.
+Migration of the Agile Agent Canvas extension from JSON file persistence to a **local-first SQLite database** with fully typed columns for all 40 BMAD schemas, auto-generated LLM skill files, and a redesigned 5-lane canvas. No legacy JSON support.
 
 ## Documents
 
 | Document | Purpose |
 |---|---|
-| [implementation-plan.md](./implementation-plan.md) | **Start here.** Full plan with all audit fixes applied (v2) |
-| [architecture-audit.md](./architecture-audit.md) | Senior architect audit — 15 findings, all addressed in plan v2 |
+| [revised-plan.md](./revised-plan.md) | **Start here.** Approved plan v3 (DB + LLM skills + canvas) |
 | [schema-to-db-mapping.md](./schema-to-db-mapping.md) | Field-level mapping of all 40 schemas → SQL tables |
+| [schema-analysis-impact.md](./schema-analysis-impact.md) | Cross-reference: schema analysis findings vs DB plan |
+| [implementation-plan.md](./implementation-plan.md) | ~~v2 plan~~ (superseded by revised-plan.md) |
+| [architecture-audit.md](./architecture-audit.md) | Senior architect audit — 15 findings, all addressed |
 
 ## Architecture (Target)
 

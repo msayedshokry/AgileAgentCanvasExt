@@ -7254,3 +7254,18 @@ body.vscode-light .minimap-viewport {
 .toolbar-format-label {
   letter-spacing: 0.3px;
 }
+
+/* ==========================================================================
+   Artifact ID Badge
+   ========================================================================== */
+
+.artifact-id {
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 10px;
+  opacity: 0.6;
+  margin-right: 6px;
+  background: var(--vscode-badge-background, rgba(128, 128, 128, 0.15));
+  color: var(--vscode-badge-foreground, var(--vscode-foreground));
+  padding: 1px 4px;
+  border-radius: 3px;
+}
