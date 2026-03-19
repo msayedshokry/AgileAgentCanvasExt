@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as yaml from 'yaml';
 import { acOutput } from '../extension';
+import { BMAD_RESOURCE_DIR } from '../state/constants';
 import { getToolDefinitions } from '../chat/agileagentcanvas-tools';
 import { schemaValidator } from '../state/schema-validator';
 import { BmadModel, streamChatResponse, ChatMessage } from '../chat/ai-provider';
@@ -1125,7 +1126,7 @@ ${stepContent}
     /**
      * Initialize the executor with workspace context.
      *
-     * The bundled `resources/_bmad` inside the extension is the **single source
+     * The bundled `resources/_aac` inside the extension is the **single source
      * of truth** for schemas, agents, workflows, and configs.  The `extensionPath`
      * parameter is required for the executor to locate these bundled resources.
      * Workspace-level `_bmad` / `_bmad_new` folders are never probed.
@@ -1161,9 +1162,9 @@ ${stepContent}
             }
         }
 
-        // ── Primary path: always use the bundled _bmad from the extension ──
+        // ── Primary path: always use the bundled resources from the extension ──
         if (extensionPath) {
-            const bundled = path.join(extensionPath, 'resources', '_bmad');
+            const bundled = path.join(extensionPath, 'resources', BMAD_RESOURCE_DIR);
             const bundledUri = vscode.Uri.file(bundled);
             acOutput.appendLine(`[WorkflowExecutor] Probing bundled: ${bundled}`);
             try {

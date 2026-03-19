@@ -1407,7 +1407,7 @@ export interface CanvasState {
 // =============================================================================
 
 /**
- * A BMM workflow discovered from the extension's bundled resources/_bmad workflows
+ * A BMM workflow discovered from the extension's bundled resources/_aac workflows
  */
 export interface BmmWorkflow {
   /** Unique workflow id derived from folder path, e.g. "1-analysis/create-product-brief" */

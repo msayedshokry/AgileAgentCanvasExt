@@ -153,14 +153,14 @@ Given('a fresh artifact commands context', function (this: BmadWorld) {
 
 Given('no workflows directory exists', function (this: BmadWorld) {
   // VFS is empty by default (reset in Background) — no workflows dir registered
-  // Ensure _bmad/bmm/workflows is NOT in the VFS (bundled resources path)
-  const wfRoot = `${WORKSPACE_ROOT}/_bmad/bmm/workflows`;
+  // Ensure _aac/bmm/workflows is NOT in the VFS (bundled resources path)
+  const wfRoot = `${WORKSPACE_ROOT}/_aac/bmm/workflows`;
   vfsDirs.delete(wfRoot);
 });
 
 Given('a workflow.yaml file at {string} with name {string} and description {string}',
   function (this: BmadWorld, location: string, name: string, description: string) {
-    const wfRoot = `${WORKSPACE_ROOT}/_bmad/bmm/workflows`;
+    const wfRoot = `${WORKSPACE_ROOT}/_aac/bmm/workflows`;
     // location may be "document-project" (top-level) or "4-implementation/code-review" (subdirectory)
     const parts = location.split('/');
 
@@ -181,7 +181,7 @@ Given('a workflow.yaml file at {string} with name {string} and description {stri
 
 Given('a workflow.md file at {string} with name {string} and description {string}',
   function (this: BmadWorld, location: string, name: string, description: string) {
-    const wfRoot = `${WORKSPACE_ROOT}/_bmad/bmm/workflows`;
+    const wfRoot = `${WORKSPACE_ROOT}/_aac/bmm/workflows`;
     const filePath = `${wfRoot}/${location}/workflow.md`;
     const content = `---\nname: ${name}\ndescription: ${description}\n---\n`;
     vfsDirs.add(wfRoot);

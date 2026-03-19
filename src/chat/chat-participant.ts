@@ -285,7 +285,7 @@ export class AgileAgentCanvasChatParticipant {
             return { metadata: { command: 'error' } };
         }
 
-        // Initialize executor with bundled _bmad fallback
+        // Initialize executor with bundled resources fallback
         const executor = getWorkflowExecutor();
         const projectRoot = this.store.getProjectRoot() || undefined;
         const extensionPath = this.extensionContext?.extensionPath;
@@ -439,7 +439,7 @@ export class AgileAgentCanvasChatParticipant {
 
         stream.markdown('## Product Vision\n\n');
 
-        // Initialize executor with bundled _bmad fallback
+        // Initialize executor with bundled resources fallback
         const executor = getWorkflowExecutor();
         const projectRoot = this.store.getProjectRoot() || undefined;
         const extensionPath = this.extensionContext?.extensionPath;
@@ -506,7 +506,7 @@ export class AgileAgentCanvasChatParticipant {
         }
 
         if (model) {
-            // Initialize executor with bundled _bmad fallback
+            // Initialize executor with bundled resources fallback
             const executor = getWorkflowExecutor();
             const projectRoot = this.store.getProjectRoot() || undefined;
             const extensionPath = this.extensionContext?.extensionPath;
@@ -566,7 +566,7 @@ export class AgileAgentCanvasChatParticipant {
         }
 
         if (model) {
-            // Initialize executor with bundled _bmad fallback
+            // Initialize executor with bundled resources fallback
             const executor = getWorkflowExecutor();
             const projectRoot = this.store.getProjectRoot() || undefined;
             const extensionPath = this.extensionContext?.extensionPath;
@@ -659,7 +659,7 @@ export class AgileAgentCanvasChatParticipant {
         stream.markdown(`Generating stories for: **${targetEpic.title}**\n\n`);
 
         if (model) {
-            // Initialize executor with bundled _bmad fallback
+            // Initialize executor with bundled resources fallback
             const executor = getWorkflowExecutor();
             const projectRoot = this.store.getProjectRoot() || undefined;
             const extensionPath = this.extensionContext?.extensionPath;
@@ -776,7 +776,7 @@ Requirements covered: ${targetEpic.functionalRequirements?.join(', ') || 'None'}
         stream.markdown(`Enhancing: **${targetEpic.title}**\n\n`);
 
         if (model) {
-            // Initialize executor with bundled _bmad fallback
+            // Initialize executor with bundled resources fallback
             const executor = getWorkflowExecutor();
             const projectRoot = this.store.getProjectRoot() || undefined;
             const extensionPath = this.extensionContext?.extensionPath;
@@ -911,7 +911,7 @@ Stories: ${targetEpic.stories?.map((s: any) => s.title).join(', ') || 'None'}`;
             return { metadata: { command: 'refine', status: 'no-model' } };
         }
 
-        // Initialize executor — pass extensionPath so it can fall back to bundled _bmad
+        // Initialize executor — pass extensionPath so it can fall back to bundled resources
         const executor = getWorkflowExecutor();
         const projectRoot = this.store.getProjectRoot() || undefined;
         const extensionPath = this.extensionContext?.extensionPath;
@@ -3621,9 +3621,41 @@ Output ONLY the JSON, no explanation.`;
             const outputUri = vscode.Uri.joinPath(planningArtifactsUri, outputFileName);
             
             const jsonContent = JSON.stringify(parsedJson, null, 2);
-            await vscode.workspace.fs.writeFile(outputUri, Buffer.from(jsonContent, 'utf-8'));
+            const convertFormat = vscode.workspace
+                .getConfiguration('agileagentcanvas')
+                .get<'json' | 'markdown' | 'dual'>('outputFormat', 'dual');
+            const written: string[] = [];
+
+            if (convertFormat === 'json' || convertFormat === 'dual') {
+                await vscode.workspace.fs.writeFile(outputUri, Buffer.from(jsonContent, 'utf-8'));
+                written.push(outputUri.fsPath);
+            }
+            if (convertFormat === 'markdown' || convertFormat === 'dual') {
+                // Write a Markdown companion summarising the converted epics
+                const mdLines: string[] = [`# Epics — Converted from Markdown\n`];
+                const epics = parsedJson.content?.epics || [];
+                mdLines.push(`**Total Epics:** ${epicCount}  `);
+                mdLines.push(`**Total Stories:** ${storyCount}  `);
+                mdLines.push(`**Functional Requirements:** ${frCount}\n`);
+                for (const epic of epics) {
+                    mdLines.push(`## Epic ${epic.id || ''}: ${epic.title || 'Untitled'}\n`);
+                    if (epic.goal) mdLines.push(`${epic.goal}\n`);
+                    const stories = epic.stories || [];
+                    if (stories.length) {
+                        mdLines.push(`### Stories (${stories.length})\n`);
+                        for (const s of stories) {
+                            if (typeof s === 'string') { mdLines.push(`- ${s}`); }
+                            else { mdLines.push(`- **${s.id || ''}**: ${s.title || 'Untitled'} (${s.status || 'draft'})`); }
+                        }
+                        mdLines.push('');
+                    }
+                }
+                const mdUri = vscode.Uri.joinPath(planningArtifactsUri, 'epics.md');
+                await vscode.workspace.fs.writeFile(mdUri, Buffer.from(mdLines.join('\n'), 'utf-8'));
+                written.push(mdUri.fsPath);
+            }
             
-            stream.markdown(`**Saved to:** ${outputUri.fsPath}\n\n`);
+            stream.markdown(`**Saved to:** ${written.join(', ')}\n\n`);
             stream.markdown('You can now reload this folder in AgileAgentCanvas to view the artifacts on the canvas.\n\n');
             
             // Offer to reload

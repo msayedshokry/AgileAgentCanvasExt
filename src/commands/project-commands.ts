@@ -359,14 +359,20 @@ export async function loadSampleProject(store: ArtifactStore, extensionUri?: vsc
     }
     acOutput.appendLine(`[loadSampleProject] Extension URI: ${extUri.fsPath}`);
 
-    // 2. Resolve the workspace .agileagentcanvas-context output folder
+    // 2. Resolve the workspace output folder.
+    //    Always target the configured/default folder name — never write sample
+    //    data into a legacy `_bmad-output` folder that the resolver may have
+    //    auto-detected from the official BMAD-METHOD installer.
     const resolver = getWorkspaceResolver();
-    const outputUri = resolver?.getActiveOutputUri();
-    if (!outputUri) {
-        acOutput.appendLine('[loadSampleProject] ERROR: No active output URI');
+    const wsFolder = resolver?.getActiveWorkspaceFolder()
+        ?? vscode.workspace.workspaceFolders?.[0];
+    if (!wsFolder) {
+        acOutput.appendLine('[loadSampleProject] ERROR: No workspace folder');
         vscode.window.showWarningMessage('No active workspace — open a folder first.');
         return;
     }
+    const outputFolderName = resolver?.getOutputFolderName() ?? '.agileagentcanvas-context';
+    const outputUri = vscode.Uri.joinPath(wsFolder.uri, outputFolderName);
     acOutput.appendLine(`[loadSampleProject] Output URI: ${outputUri.fsPath}`);
 
     // Ensure the output folder exists
@@ -409,6 +415,16 @@ export async function loadSampleProject(store: ArtifactStore, extensionUri?: vsc
                 // 4. Clear current state and reload from the freshly-copied files
                 store.clearProject();
                 await store.loadFromFolder(outputUri!);
+
+                // 5. Point the resolver at the new folder if it was targeting
+                //    a different one (e.g. the legacy _bmad-output folder).
+                if (resolver && resolver.getActiveOutputUri()?.toString() !== outputUri!.toString()) {
+                    await resolver.switchProject({
+                        workspaceFolder: wsFolder!,
+                        outputUri: outputUri!,
+                        label: `${wsFolder!.name} (${outputFolderName})`
+                    });
+                }
             }
         );
 

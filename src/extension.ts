@@ -70,7 +70,7 @@ export function activate(context: vscode.ExtensionContext) {
     const toolDisposables = registerTools(sharedToolContext);
     context.subscriptions.push(...toolDisposables);
 
-    // Register the Copilot Chat participant — pass extensionContext for bundled _bmad path + tool registration
+    // Register the Copilot Chat participant — pass extensionContext for bundled resources path + tool registration
     // vscode.chat is only available when a Copilot-compatible extension is installed.
     // Guard so the extension still activates (canvas, tree views, commands) without it.
     if (vscode.chat?.createChatParticipant) {

@@ -37,7 +37,7 @@ const mockWorkflowExecutor = {
   detectUserPrompt: () => ({ waitingForInput: false }),
   getCurrentSession: () => mockCurrentSession,
   buildContinuePrompt: async () => mockBuildContinuePromptResult,
-  getBmadPath: () => '/test/extension/resources/_bmad',
+  getBmadPath: () => '/test/extension/resources/_aac',
   executeWithTools: async () => {}
 };
 

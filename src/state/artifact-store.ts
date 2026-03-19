@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import PDFDocument from 'pdfkit';
 import { acOutput } from '../extension';
+import { BMAD_RESOURCE_DIR } from './constants';
 import { openChat } from '../commands/chat-bridge';
 import { createLogger } from '../utils/logger';
 import { resolveArtifactTargetUri, writeJsonFile, writeMarkdownCompanion } from './artifact-file-io';
@@ -531,7 +532,7 @@ export class ArtifactStore {
 
     /**
      * Get the project root (parent of output folder).
-     * BMAD resources are bundled inside the extension (resources/_bmad), not in the workspace.
+     * BMAD resources are bundled inside the extension (resources/_aac), not in the workspace.
      */
     getProjectRoot(): string | null {
         if (!this.sourceFolder) return null;
@@ -870,10 +871,35 @@ export class ArtifactStore {
                             try { await vscode.workspace.fs.createDirectory(implDir); } catch { /* exists */ }
 
                             const fileUri = vscode.Uri.joinPath(implDir, fileName);
-                            await vscode.workspace.fs.writeFile(
-                                fileUri,
-                                Buffer.from(JSON.stringify(storyFileContent, null, 2), 'utf-8')
-                            );
+                            const storyOutputFormat = this.getOutputFormat();
+
+                            // Write JSON if output format includes JSON
+                            if (storyOutputFormat === 'json' || storyOutputFormat === 'dual') {
+                                await vscode.workspace.fs.writeFile(
+                                    fileUri,
+                                    Buffer.from(JSON.stringify(storyFileContent, null, 2), 'utf-8')
+                                );
+                            }
+
+                            // Write markdown companion if output format includes markdown
+                            if (storyOutputFormat === 'markdown' || storyOutputFormat === 'dual') {
+                                const storyMdName = fileName.replace(/\.json$/, '.md');
+                                const story = storyFileContent.content;
+                                let storyMd = `# Story ${story.id}: ${story.title}\n\n`;
+                                storyMd += `**Epic:** ${story.epicId}\n`;
+                                storyMd += `**Status:** ${story.status || 'draft'}\n\n`;
+                                if (story.userStory) storyMd += `## User Story\n\n${story.userStory}\n\n`;
+                                if (story.acceptanceCriteria?.length) {
+                                    storyMd += `## Acceptance Criteria\n\n`;
+                                    for (const ac of story.acceptanceCriteria) {
+                                        storyMd += `- ${typeof ac === 'string' ? ac : ac.criterion || JSON.stringify(ac)}\n`;
+                                    }
+                                    storyMd += '\n';
+                                }
+                                if (story.technicalNotes) storyMd += `## Technical Notes\n\n${story.technicalNotes}\n\n`;
+                                await writeMarkdownCompanion(fileUri, storyMdName, storyMd);
+                            }
+
                             acOutput.appendLine(`[ArtifactStore] Wrote standalone story file: ${fileName}`);
                         } catch (err: any) {
                             acOutput.appendLine(`[ArtifactStore] Failed to write standalone story file: ${err?.message ?? err}`);
@@ -2244,6 +2270,12 @@ export class ArtifactStore {
     async loadFromFolder(folderUri: vscode.Uri): Promise<void> {
         acOutput.appendLine(`[ArtifactStore] loadFromFolder called with: ${folderUri.fsPath}`);
         
+        // Clear ALL in-memory state before re-reading from disk.
+        // Without this, collection arrays (testDesigns, testReviews, etc.)
+        // accumulate duplicates on every reload, and artifacts from deleted
+        // files persist indefinitely.
+        this.artifacts.clear();
+
         // Track source folder for syncing back
         this.sourceFolder = folderUri;
         this.sourceFiles.clear();
@@ -2291,7 +2323,7 @@ export class ArtifactStore {
                             require('path').join(
                                 (vscode.extensions.getExtension('msayedshokry.agileagentcanvas')?.extensionUri ??
                                  vscode.Uri.file(__dirname + '/../..')).fsPath,
-                                'resources', '_bmad'
+                                'resources', BMAD_RESOURCE_DIR
                             )
                         )
                     ).fsPath;
@@ -3243,8 +3275,36 @@ export class ArtifactStore {
                                 additional: requirements.additional
                             }
                         };
-                        const reqBytes = Buffer.from(JSON.stringify(reqContent, null, 2), 'utf-8');
-                        await vscode.workspace.fs.writeFile(reqFileUri, reqBytes);
+                        const reqOutputFormat = this.getOutputFormat();
+                        if (reqOutputFormat === 'json' || reqOutputFormat === 'dual') {
+                            const reqBytes = Buffer.from(JSON.stringify(reqContent, null, 2), 'utf-8');
+                            await vscode.workspace.fs.writeFile(reqFileUri, reqBytes);
+                        }
+                        if (reqOutputFormat === 'markdown' || reqOutputFormat === 'dual') {
+                            let reqMd = `# Requirements\n\n`;
+                            if (requirements.functional.length) {
+                                reqMd += `## Functional Requirements (${requirements.functional.length})\n\n`;
+                                for (const r of requirements.functional) {
+                                    reqMd += `- **${r.id}**: ${r.title || r.description || ''}\n`;
+                                }
+                                reqMd += '\n';
+                            }
+                            if (requirements.nonFunctional.length) {
+                                reqMd += `## Non-Functional Requirements (${requirements.nonFunctional.length})\n\n`;
+                                for (const r of requirements.nonFunctional) {
+                                    reqMd += `- **${r.id}**: ${r.title || r.description || ''}\n`;
+                                }
+                                reqMd += '\n';
+                            }
+                            if (requirements.additional.length) {
+                                reqMd += `## Additional Requirements (${requirements.additional.length})\n\n`;
+                                for (const r of requirements.additional) {
+                                    reqMd += `- **${r.id}**: ${r.title || r.description || ''}\n`;
+                                }
+                                reqMd += '\n';
+                            }
+                            await writeMarkdownCompanion(reqFileUri, 'requirements.md', reqMd);
+                        }
                         this.sourceFiles.set('requirements', reqFileUri);
                         acOutput.appendLine(`[ArtifactStore] Auto-migrated requirements to standalone requirements.json (${requirements.functional.length} FR, ${requirements.nonFunctional.length} NFR, ${requirements.additional.length} additional)`);
                     } catch (e) {
@@ -3934,10 +3994,15 @@ export class ArtifactStore {
 
                     const fixed = this.repairArtifactData(data, artifactType, fileName);
                     if (fixed !== data) {
-                        await vscode.workspace.fs.writeFile(
-                            fileUri,
-                            Buffer.from(JSON.stringify(fixed, null, 2), 'utf-8')
-                        );
+                        const repairFormat = this.getOutputFormat();
+                        if (repairFormat === 'json' || repairFormat === 'dual') {
+                            await vscode.workspace.fs.writeFile(
+                                fileUri,
+                                Buffer.from(JSON.stringify(fixed, null, 2), 'utf-8')
+                            );
+                        }
+                        // Note: markdown companions are regenerated when syncToFiles
+                        // runs after the reload that follows this repair pass.
                         repaired++;
                         acOutput.appendLine(`[ArtifactStore] fixAndSyncToFiles: repaired ${fileName}`);
                     }
@@ -4758,13 +4823,41 @@ export class ArtifactStore {
                         additional: reqs.additional || []
                     }
                 };
-                const reqBytes = Buffer.from(JSON.stringify(reqContent, null, 2), 'utf-8');
-                await vscode.workspace.fs.writeFile(reqFileUri, reqBytes);
+                const reqSyncFormat = this.getOutputFormat();
+                if (reqSyncFormat === 'json' || reqSyncFormat === 'dual') {
+                    const reqBytes = Buffer.from(JSON.stringify(reqContent, null, 2), 'utf-8');
+                    await vscode.workspace.fs.writeFile(reqFileUri, reqBytes);
+                }
+                if (reqSyncFormat === 'markdown' || reqSyncFormat === 'dual') {
+                    let reqMd = `# Requirements\n\n`;
+                    const fr = reqs.functional || [];
+                    const nfr = reqs.nonFunctional || [];
+                    const add = reqs.additional || [];
+                    if (fr.length) {
+                        reqMd += `## Functional Requirements (${fr.length})\n\n`;
+                        for (const r of fr) { reqMd += `- **${r.id}**: ${r.title || r.description || ''}\n`; }
+                        reqMd += '\n';
+                    }
+                    if (nfr.length) {
+                        reqMd += `## Non-Functional Requirements (${nfr.length})\n\n`;
+                        for (const r of nfr) { reqMd += `- **${r.id}**: ${r.title || r.description || ''}\n`; }
+                        reqMd += '\n';
+                    }
+                    if (add.length) {
+                        reqMd += `## Additional Requirements (${add.length})\n\n`;
+                        for (const r of add) { reqMd += `- **${r.id}**: ${r.title || r.description || ''}\n`; }
+                        reqMd += '\n';
+                    }
+                    await writeMarkdownCompanion(reqFileUri, 'requirements.md', reqMd);
+                }
                 acOutput.appendLine(`[ArtifactStore] syncToFiles: wrote requirements.json (${reqs.functional?.length || 0} FR, ${reqs.nonFunctional?.length || 0} NFR, ${reqs.additional?.length || 0} additional)`);
             }
         } catch (e) { errors.push(`requirements: ${e}`); }
 
         // ─── Generate stories-index.json manifest ─────────────────────────
+        // Index files are JSON navigation aids — only generate if format includes JSON
+        const indexFormat = this.getOutputFormat();
+        if (indexFormat === 'json' || indexFormat === 'dual') {
         try {
             const epics = state.epics || [];
             const storiesIndex: { id: string; title: string; epicId: string; status: string }[] = [];
@@ -4802,6 +4895,7 @@ export class ArtifactStore {
             }, null, 2), 'utf-8');
             await vscode.workspace.fs.writeFile(epicsIndexUri, epicsIndexContent);
         } catch (e) { errors.push(`epics-index: ${e}`); }
+        } // end indexFormat check
 
         // ─── Generate README.md — LLM orientation guide ──────────────────
         try {
@@ -4925,11 +5019,20 @@ export class ArtifactStore {
             }
         };
         
-        await vscode.workspace.fs.writeFile(
-            targetUri,
-            Buffer.from(JSON.stringify(visionJson, null, 2), 'utf-8')
-        );
-        logDebug('Saved vision to:', targetUri.fsPath);
+        const outputFormat = this.getOutputFormat();
+
+        if (outputFormat === 'json' || outputFormat === 'dual') {
+            await vscode.workspace.fs.writeFile(
+                targetUri,
+                Buffer.from(JSON.stringify(visionJson, null, 2), 'utf-8')
+            );
+            logDebug('Saved vision to:', targetUri.fsPath);
+        }
+
+        if (outputFormat === 'markdown' || outputFormat === 'dual') {
+            const mdUri = await writeMarkdownCompanion(targetUri, 'vision.md', this.generateVisionMarkdown(state));
+            logDebug('Saved vision markdown companion:', mdUri.fsPath);
+        }
         
         // Track the source file for future saves
         this.sourceFiles.set('vision', targetUri);
@@ -5121,8 +5224,20 @@ export class ArtifactStore {
                         skippedCount++;
                     } else {
                         // File doesn't exist — write it
-                        const content = Buffer.from(JSON.stringify(storyFileContent, null, 2), 'utf-8');
-                        await vscode.workspace.fs.writeFile(fileUri, content);
+                        const migFormat = this.getOutputFormat();
+                        if (migFormat === 'json' || migFormat === 'dual') {
+                            const content = Buffer.from(JSON.stringify(storyFileContent, null, 2), 'utf-8');
+                            await vscode.workspace.fs.writeFile(fileUri, content);
+                        }
+                        if (migFormat === 'markdown' || migFormat === 'dual') {
+                            const sc = storyFileContent.content;
+                            let sMd = `# Story ${sc.id}: ${sc.title}\n\n`;
+                            sMd += `**Epic:** ${sc.epicId} — ${sc.epicTitle}\n`;
+                            sMd += `**Status:** ${sc.status || 'draft'}\n\n`;
+                            if (sc.userStory) sMd += `${sc.userStory}\n\n`;
+                            const mdName = fileName.replace(/\.json$/, '.md');
+                            await writeMarkdownCompanion(fileUri, mdName, sMd);
+                        }
                         extractedCount++;
                         migrationLog.push(`  Extracted: ${storyId} → ${fileName}`);
                     }
@@ -5143,8 +5258,11 @@ export class ArtifactStore {
             }
 
             // ── 5. Write updated epics.json ────────────────────────────────
-            const updatedContent = Buffer.from(JSON.stringify(epicsJson, null, 2), 'utf-8');
-            await vscode.workspace.fs.writeFile(epicsFile, updatedContent);
+            const migEpicsFormat = this.getOutputFormat();
+            if (migEpicsFormat === 'json' || migEpicsFormat === 'dual') {
+                const updatedContent = Buffer.from(JSON.stringify(epicsJson, null, 2), 'utf-8');
+                await vscode.workspace.fs.writeFile(epicsFile, updatedContent);
+            }
             acOutput.appendLine(`[Migration] Updated epics.json with story refs`);
 
             // ── 6. Reload from disk to verify ──────────────────────────────
@@ -5253,6 +5371,7 @@ export class ArtifactStore {
 
         const allEpics = state.epics || [];
         const epicRefs: { id: string; title: string; status: string; file: string }[] = [];
+        const outputFormat = this.getOutputFormat();
 
         // ── Write each epic to its own file ────────────────────────────
         for (const epic of allEpics) {
@@ -5291,11 +5410,22 @@ export class ArtifactStore {
                 content: epicFields
             };
 
-            await vscode.workspace.fs.writeFile(
-                epicFileUri,
-                Buffer.from(JSON.stringify(epicFileJson, null, 2), 'utf-8')
-            );
-            logDebug(`Saved standalone epic file: ${epicFileName}`);
+            // Write JSON if output format includes JSON
+            if (outputFormat === 'json' || outputFormat === 'dual') {
+                await vscode.workspace.fs.writeFile(
+                    epicFileUri,
+                    Buffer.from(JSON.stringify(epicFileJson, null, 2), 'utf-8')
+                );
+                logDebug(`Saved standalone epic file: ${epicFileName}`);
+            }
+
+            // Write per-epic markdown companion if output format includes markdown
+            if (outputFormat === 'markdown' || outputFormat === 'dual') {
+                const epicMdFilename = `epic-${idSlug}.md`;
+                const epicMd = this.generateSingleEpicMarkdown(epic, state);
+                await writeMarkdownCompanion(epicFileUri, epicMdFilename, epicMd);
+                logDebug(`Saved epic markdown companion: ${epicMdFilename}`);
+            }
 
             // Track each epic file for reload awareness
             this.sourceFiles.set(`epic:${epic.id}`, epicFileUri);
@@ -5340,14 +5470,16 @@ export class ArtifactStore {
             }
         };
 
-        await vscode.workspace.fs.writeFile(
-            manifestUri,
-            Buffer.from(JSON.stringify(manifestJson, null, 2), 'utf-8')
-        );
-        logDebug('Saved epics manifest:', manifestUri.fsPath);
+        // Write manifest JSON if output format includes JSON
+        if (outputFormat === 'json' || outputFormat === 'dual') {
+            await vscode.workspace.fs.writeFile(
+                manifestUri,
+                Buffer.from(JSON.stringify(manifestJson, null, 2), 'utf-8')
+            );
+            logDebug('Saved epics manifest:', manifestUri.fsPath);
+        }
 
         // Write markdown companion if output format includes markdown
-        const outputFormat = this.getOutputFormat();
         if (outputFormat === 'markdown' || outputFormat === 'dual') {
             const mdUri = await writeMarkdownCompanion(manifestUri, 'epics.md', this.generateEpicsMarkdown(state));
             logDebug('Saved markdown companion:', mdUri.fsPath);
@@ -5384,11 +5516,14 @@ export class ArtifactStore {
                 return contentFields;
             })()
         };
-        await writeJsonFile(targetUri, json);
-        logDebug('Saved product-brief to:', targetUri.fsPath);
+        // Write JSON if output format includes JSON
+        const outputFormat = this.getOutputFormat();
+        if (outputFormat === 'json' || outputFormat === 'dual') {
+            await writeJsonFile(targetUri, json);
+            logDebug('Saved product-brief to:', targetUri.fsPath);
+        }
 
         // Write markdown companion if output format includes markdown
-        const outputFormat = this.getOutputFormat();
         if (outputFormat === 'markdown' || outputFormat === 'dual') {
             const mdUri = await writeMarkdownCompanion(targetUri, 'product-brief.md', this.generateProductBriefMarkdown(state));
             logDebug('Saved markdown companion:', mdUri.fsPath);
@@ -5424,11 +5559,14 @@ export class ArtifactStore {
                 return contentFields;
             })()
         };
-        await writeJsonFile(targetUri, json);
-        logDebug('Saved PRD to:', targetUri.fsPath);
+        // Write JSON if output format includes JSON
+        const outputFormat = this.getOutputFormat();
+        if (outputFormat === 'json' || outputFormat === 'dual') {
+            await writeJsonFile(targetUri, json);
+            logDebug('Saved PRD to:', targetUri.fsPath);
+        }
 
         // Write markdown companion if output format includes markdown
-        const outputFormat = this.getOutputFormat();
         if (outputFormat === 'markdown' || outputFormat === 'dual') {
             const mdUri = await writeMarkdownCompanion(targetUri, 'prd.md', this.generatePRDMarkdown(state));
             logDebug('Saved markdown companion:', mdUri.fsPath);
@@ -5464,11 +5602,14 @@ export class ArtifactStore {
                 return contentFields;
             })()
         };
-        await writeJsonFile(targetUri, json);
-        logDebug('Saved architecture to:', targetUri.fsPath);
+        // Write JSON if output format includes JSON
+        const outputFormat = this.getOutputFormat();
+        if (outputFormat === 'json' || outputFormat === 'dual') {
+            await writeJsonFile(targetUri, json);
+            logDebug('Saved architecture to:', targetUri.fsPath);
+        }
 
         // Write markdown companion if output format includes markdown
-        const outputFormat = this.getOutputFormat();
         if (outputFormat === 'markdown' || outputFormat === 'dual') {
             const mdUri = await writeMarkdownCompanion(targetUri, 'architecture.md', this.generateArchitectureMarkdown(state));
             logDebug('Saved markdown companion:', mdUri.fsPath);
@@ -5514,11 +5655,14 @@ export class ArtifactStore {
             }
         };
 
-        await writeJsonFile(targetUri, testCasesJson);
-        logDebug('Saved test cases to:', targetUri.fsPath);
+        // Write JSON if output format includes JSON
+        const outputFormat = this.getOutputFormat();
+        if (outputFormat === 'json' || outputFormat === 'dual') {
+            await writeJsonFile(targetUri, testCasesJson);
+            logDebug('Saved test cases to:', targetUri.fsPath);
+        }
 
         // Write markdown companion if output format includes markdown
-        const outputFormat = this.getOutputFormat();
         if (outputFormat === 'markdown' || outputFormat === 'dual') {
             const mdUri = await writeMarkdownCompanion(targetUri, 'test-cases.md', this.generateTestCasesMarkdown(state));
             logDebug('Saved markdown companion:', mdUri.fsPath);
@@ -5566,11 +5710,14 @@ export class ArtifactStore {
             })()
         };
 
-        await writeJsonFile(targetUri, testStrategyJson);
-        logDebug('Saved test strategy to:', targetUri.fsPath);
+        // Write JSON if output format includes JSON
+        const outputFormat = this.getOutputFormat();
+        if (outputFormat === 'json' || outputFormat === 'dual') {
+            await writeJsonFile(targetUri, testStrategyJson);
+            logDebug('Saved test strategy to:', targetUri.fsPath);
+        }
 
         // Write markdown companion if output format includes markdown
-        const outputFormat = this.getOutputFormat();
         if (outputFormat === 'markdown' || outputFormat === 'dual') {
             const mdUri = await writeMarkdownCompanion(targetUri, 'test-strategy.md', this.generateTestStrategyMarkdown(state));
             logDebug('Saved markdown companion:', mdUri.fsPath);
@@ -5638,11 +5785,14 @@ export class ArtifactStore {
             }
         };
 
-        await writeJsonFile(targetUri, testDesignJson);
-        logDebug('Saved test design to:', targetUri.fsPath);
+        // Write JSON if output format includes JSON
+        const outputFormat = this.getOutputFormat();
+        if (outputFormat === 'json' || outputFormat === 'dual') {
+            await writeJsonFile(targetUri, testDesignJson);
+            logDebug('Saved test design to:', targetUri.fsPath);
+        }
 
         // Write markdown companion if output format includes markdown
-        const outputFormat = this.getOutputFormat();
         if (outputFormat === 'markdown' || outputFormat === 'dual') {
             let mdFilename = 'test-design.md';
             if (targetUri.fsPath.endsWith('.json')) {
@@ -5668,7 +5818,7 @@ export class ArtifactStore {
      * @param fileSlug  kebab-case name used for the file on disk (e.g. 'traceability-matrix')
      * @param artifact  the artifact data object
      * @param state     full BmadArtifacts state (for projectName)
-     * @param baseUri   workspace _bmad base URI
+     * @param baseUri   workspace base URI
      */
     private async saveGenericArtifactToFile(
         storeKey: string,
@@ -5720,14 +5870,17 @@ export class ArtifactStore {
             content: contentFields
         };
 
-        await vscode.workspace.fs.writeFile(
-            targetUri,
-            Buffer.from(JSON.stringify(jsonEnvelope, null, 2), 'utf-8')
-        );
-        logDebug(`Saved ${fileSlug} to:`, targetUri.fsPath);
+        // Write JSON if output format includes JSON
+        const outputFormat = this.getOutputFormat();
+        if (outputFormat === 'json' || outputFormat === 'dual') {
+            await vscode.workspace.fs.writeFile(
+                targetUri,
+                Buffer.from(JSON.stringify(jsonEnvelope, null, 2), 'utf-8')
+            );
+            logDebug(`Saved ${fileSlug} to:`, targetUri.fsPath);
+        }
 
         // Write markdown companion if output format includes markdown
-        const outputFormat = this.getOutputFormat();
         if (outputFormat === 'markdown' || outputFormat === 'dual') {
             const md = this.generateGenericArtifactMarkdown(fileSlug, artifact, state);
             const mdUri = await writeMarkdownCompanion(targetUri, `${fileSlug}.md`, md);
@@ -5815,6 +5968,111 @@ export class ArtifactStore {
                 md += `${value}\n\n`;
             } else {
                 md += `${renderValue(value, 0)}\n\n`;
+            }
+        }
+
+        return md;
+    }
+
+    /**
+     * Generate markdown version of vision artifact
+     */
+    private generateVisionMarkdown(state: BmadArtifacts): string {
+        if (!state.vision) return '';
+        const v = state.vision;
+        let md = `# ${v.productName || state.projectName} - Vision\n\n`;
+
+        // Vision statement
+        const statement = v.vision?.statement || v.valueProposition || '';
+        if (statement) {
+            md += `## Vision Statement\n\n${statement}\n\n`;
+        }
+
+        // Problem statement
+        const problem = v.vision?.problemStatement || v.problemStatement || '';
+        if (problem) {
+            md += `## Problem Statement\n\n${problem}\n\n`;
+        }
+
+        // Proposed solution
+        const solution = v.vision?.proposedSolution || v.valueProposition || '';
+        if (solution) {
+            md += `## Proposed Solution\n\n${solution}\n\n`;
+        }
+
+        // Target users
+        const users = v.targetUsers || [];
+        if (users.length > 0) {
+            md += `## Target Users\n\n`;
+            for (const u of users) {
+                if (typeof u === 'string') {
+                    md += `- ${u}\n`;
+                } else {
+                    md += `- **${u.persona || 'User'}**`;
+                    if (u.description) md += `: ${u.description}`;
+                    md += '\n';
+                }
+            }
+            md += '\n';
+        }
+
+        // Success metrics
+        const metrics = v.successMetrics || v.successCriteria || [];
+        if (metrics.length > 0) {
+            md += `## Success Metrics\n\n`;
+            for (const m of metrics) {
+                if (typeof m === 'string') {
+                    md += `- ${m}\n`;
+                } else {
+                    md += `- **${m.metric || 'Metric'}**`;
+                    if (m.description) md += `: ${m.description}`;
+                    md += '\n';
+                }
+            }
+            md += '\n';
+        }
+
+        return md;
+    }
+
+    /**
+     * Generate markdown for a single epic (used for per-epic .md companions)
+     */
+    private generateSingleEpicMarkdown(epic: any, state: BmadArtifacts): string {
+        let md = `# Epic ${epic.id}: ${epic.title || 'Untitled Epic'}\n\n`;
+        md += `**Status:** ${epic.status || 'draft'}\n\n`;
+
+        if (epic.goal) {
+            md += `## Goal\n\n${epic.goal}\n\n`;
+        }
+        if (epic.description) {
+            md += `## Description\n\n${epic.description}\n\n`;
+        }
+
+        const stories = epic.stories || [];
+        if (stories.length > 0) {
+            md += `## Stories (${stories.length})\n\n`;
+            for (const story of stories) {
+                if (typeof story === 'string') {
+                    md += `- ${story}\n`;
+                } else {
+                    md += `### ${story.id || ''}: ${story.title || 'Untitled Story'}\n\n`;
+                    md += `**Status:** ${story.status || 'draft'}`;
+                    if (story.storyPoints) md += ` | **Points:** ${story.storyPoints}`;
+                    md += '\n\n';
+                    if (story.userStory) md += `${story.userStory}\n\n`;
+                    if (story.acceptanceCriteria?.length) {
+                        md += `**Acceptance Criteria:**\n`;
+                        for (const ac of story.acceptanceCriteria) {
+                            if (typeof ac === 'string') {
+                                md += `- ${ac}\n`;
+                            } else {
+                                md += `- ${ac.description || ac.criterion || JSON.stringify(ac)}\n`;
+                            }
+                        }
+                        md += '\n';
+                    }
+                }
             }
         }
 
@@ -6987,6 +7245,9 @@ export class ArtifactStore {
      */
     generateAllArtifactsMarkdown(state: BmadArtifacts): string {
         const sections: string[] = [];
+
+        const visionMd = this.generateVisionMarkdown(state);
+        if (visionMd) sections.push(visionMd);
 
         const pbMd = this.generateProductBriefMarkdown(state);
         if (pbMd) sections.push(pbMd);

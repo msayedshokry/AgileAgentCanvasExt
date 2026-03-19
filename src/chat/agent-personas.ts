@@ -124,7 +124,7 @@ export function clearPersonaCache(): void {
 /**
  * Load an agent persona from disk.
  *
- * @param bmadPath  Absolute path to the BMAD root directory (e.g. `…/_bmad`)
+ * @param bmadPath  Absolute path to the BMAD root directory (e.g. `…/_aac`)
  * @param agentRelativePath  Relative path to the agent file inside the BMAD root
  *                           (e.g. `bmm/agents/analyst.md`)
  * @returns The parsed persona, or `undefined` if the file cannot be read/parsed.

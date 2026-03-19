@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
 import { acOutput } from '../extension';
+import { BMAD_RESOURCE_DIR, DEFAULT_OUTPUT_FOLDER } from './constants';
 
-/**
- * Default output folder name used by AgileAgentCanvas.
- * Also used as the primary auto-detection target when scanning workspace folders.
- */
-export const DEFAULT_OUTPUT_FOLDER = '.agileagentcanvas-context';
+// Re-export pure constants so existing `import { BMAD_RESOURCE_DIR } from './workspace-resolver'`
+// call-sites keep working.  New code should prefer importing from './constants' directly
+// to avoid pulling in the vscode dependency (important for tests).
+export { BMAD_RESOURCE_DIR, DEFAULT_OUTPUT_FOLDER };
 
 /**
  * Legacy output folder name (pre-0.2.3).
@@ -160,8 +160,9 @@ export class WorkspaceResolver {
             acOutput.appendLine(`[WorkspaceResolver] No projects detected — defaulting to ${this._activeProject.outputUri.fsPath}`);
         }
 
-        // Notify user if a legacy folder was detected
-        this._notifyLegacyFolderIfNeeded();
+        // Notify user if a legacy folder was detected (modal — await so the
+        // user's choice takes effect before the rest of activation proceeds)
+        await this._notifyLegacyFolderIfNeeded();
     }
 
     // ── Project switching ───────────────────────────────────────────────
@@ -263,24 +264,109 @@ export class WorkspaceResolver {
     // ── Internal helpers ────────────────────────────────────────────────
 
     /**
-     * Show an informational message when the active (or any detected) project
-     * uses the legacy `_bmad-output` folder name, so the user knows they can
-     * rename it to `.agileagentcanvas-context`.
+     * Show a **modal** dialog when the active (or any detected) project uses
+     * the legacy `_bmad-output` folder name.
+     *
+     * The modal gives the user three choices:
+     *   1. **Use Default** — create `.agileagentcanvas-context` and switch to it.
+     *   2. **Custom Name…** — enter a custom folder name, create it, and switch.
+     *   3. **Keep _bmad-output** — dismiss the dialog and continue using the
+     *      legacy folder (this is the implicit cancel / Escape action).
+     *
+     * After switching, the existing `switchProject()` path fires
+     * `onDidChangeActiveProject` so extension.ts reloads the store and file
+     * watcher automatically.
+     *
+     * Note: the user's existing data in `_bmad-output` is left untouched —
+     * the new folder starts empty and the user can move files at their leisure.
      */
-    private _notifyLegacyFolderIfNeeded(): void {
+    private async _notifyLegacyFolderIfNeeded(): Promise<void> {
         const legacyProjects = this._detectedProjects.filter(
             p => this._folderBasename(p.outputUri) === LEGACY_OUTPUT_FOLDER
         );
         if (legacyProjects.length === 0) return;
 
         const folders = legacyProjects.map(p => p.workspaceFolder.name).join(', ');
-        vscode.window.showInformationMessage(
-            `Legacy folder "${LEGACY_OUTPUT_FOLDER}" detected in: ${folders}. ` +
-            `Consider renaming to "${DEFAULT_OUTPUT_FOLDER}" for consistency.`,
-            'Dismiss'
-        );
         acOutput.appendLine(
             `[WorkspaceResolver] Legacy folder detected in workspace(s): ${folders}`
+        );
+
+        // ── Modal dialog ────────────────────────────────────────────────
+        const USE_DEFAULT = `Use Default (${DEFAULT_OUTPUT_FOLDER})`;
+        const CUSTOM_NAME = 'Custom Name…';
+        const KEEP_LEGACY = `Keep ${LEGACY_OUTPUT_FOLDER}`;
+
+        const choice = await vscode.window.showWarningMessage(
+            `A legacy project folder "${LEGACY_OUTPUT_FOLDER}" was detected in: ${folders}.\n\n` +
+            `The extension now defaults to "${DEFAULT_OUTPUT_FOLDER}". ` +
+            `You can switch to the new default, choose a custom folder name, ` +
+            `or keep using the legacy folder.\n\n` +
+            `Your existing files in "${LEGACY_OUTPUT_FOLDER}" will not be moved or deleted.`,
+            { modal: true },
+            USE_DEFAULT,
+            CUSTOM_NAME,
+            KEEP_LEGACY
+        );
+
+        // Treat both explicit "Keep" and Escape/dismiss as "keep legacy"
+        if (!choice || choice === KEEP_LEGACY) {
+            acOutput.appendLine('[WorkspaceResolver] User chose to keep legacy folder');
+            return;
+        }
+
+        // Determine the target workspace folder (use the first legacy project's ws folder)
+        const targetWsFolder = legacyProjects[0].workspaceFolder;
+
+        let newFolderName: string;
+
+        if (choice === USE_DEFAULT) {
+            newFolderName = DEFAULT_OUTPUT_FOLDER;
+        } else {
+            // CUSTOM_NAME — show input box
+            const input = await vscode.window.showInputBox({
+                prompt: 'Enter a name for the new project folder',
+                value: DEFAULT_OUTPUT_FOLDER,
+                placeHolder: '.my-project-context',
+                validateInput: (v) => {
+                    if (!v || v.trim().length === 0) return 'Folder name cannot be empty';
+                    if (/[<>:"|?*]/.test(v)) return 'Folder name contains invalid characters';
+                    if (v.trim() === LEGACY_OUTPUT_FOLDER) return `That is the legacy folder name — choose a different name`;
+                    return undefined;
+                }
+            });
+
+            if (!input) {
+                acOutput.appendLine('[WorkspaceResolver] User cancelled custom folder name input');
+                return;
+            }
+            newFolderName = input.trim();
+        }
+
+        // Create the new folder (no-op if it already exists)
+        const newUri = vscode.Uri.joinPath(targetWsFolder.uri, newFolderName);
+        try {
+            await vscode.workspace.fs.createDirectory(newUri);
+        } catch {
+            // Directory may already exist — that's fine
+        }
+
+        // Build a DetectedProject and switch to it
+        const project: DetectedProject = {
+            workspaceFolder: targetWsFolder,
+            outputUri: newUri,
+            label: `${targetWsFolder.name} (${newFolderName})`
+        };
+
+        await this.switchProject(project);
+
+        // Re-scan so the project list is up to date
+        this._detectedProjects = await this._scanWorkspaceFolders();
+
+        acOutput.appendLine(
+            `[WorkspaceResolver] Switched from legacy folder to "${newFolderName}" in ${targetWsFolder.name}`
+        );
+        vscode.window.showInformationMessage(
+            `Switched to "${newFolderName}". Your files in "${LEGACY_OUTPUT_FOLDER}" were not modified.`
         );
     }
 

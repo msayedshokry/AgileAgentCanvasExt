@@ -1,5 +1,59 @@
 # Changelog
 
+## 0.3.4
+
+### Namespace Separation from BMAD-METHOD
+
+- **Extension skills no longer collide with official BMAD agents** — All extension-generated skill directory names changed from `bmad-` prefix to `agileagentcanvas-` prefix (e.g. `bmad-agent-bmm-analyst` → `agileagentcanvas-agent-analyst`). Installing the extension alongside `npx bmad-method install` no longer causes official BMAD agents to disappear from VS Code Copilot Chat
+- **Resource directory renamed** — Bundled resources directory renamed from `resources/_bmad/` to `resources/_aac/` with a centralized `BMAD_RESOURCE_DIR` constant in `src/state/constants.ts`, making future renames a one-liner
+- **CSV manifest paths updated** — All 141 path entries across 4 CSV manifests (`agent-manifest`, `workflow-manifest`, `task-manifest`, `bmad-help`) updated from `_bmad/` to `_aac/`
+- **Module sub-prefix removed** — Dropped `bmm`, `tea`, `cis`, `bmb` sub-prefixes from skill directory names for cleaner naming (e.g. `bmad-bmm-create-story` → `agileagentcanvas-create-story`)
+- **Cleanup scoped to extension files only** — `cleanupExtensionSkills()` (renamed from `cleanupBmadSkills()`) now only removes `agileagentcanvas-` prefixed directories; official `bmad-*` skill directories are never touched
+- **Stopped cleaning official BMAD files** — Extension no longer deletes `.github/agents/`, `.github/prompts/`, or `<!-- BMAD:START/END -->` markers from `copilot-instructions.md`. All `legacyDirs` arrays emptied across all 20 IDE targets
+- **Fallback skills directory renamed** — Generic fallback from `.bmad/skills` to `.agileagentcanvas/skills`
+- **Auto-install marker updated** — Changed from `bmad-agent-bmad-master` to `agileagentcanvas-agent-master`
+
+### Native Agent File
+
+- **`agileagentcanvas.agent.md` installed to `.github/agents/`** — IDEs that support native agent files (GitHub Copilot) now discover a single `agileagentcanvas` agent entry alongside the `@agileagentcanvas` chat participant. The file includes a YAML frontmatter with `description` and `tools` fields and activation instructions for the LLM. Does not conflict with official BMAD agent files since it uses the `agileagentcanvas` prefix
+
+### Canvas Integrator Agent (Morph)
+
+- **New "Canvas Integrator" agent** — A dedicated agent persona ("Morph") that converts BMAD markdown artifacts to schema-compliant JSON for Agile Agent Canvas visualization. Supports single-file conversion, batch conversion of all artifacts in a folder, subfolder filtering, and type-based filtering (e.g. `--type=story`). Source folder is configurable at runtime — defaults to the configured output folder but can be pointed at `_bmad-output` or any custom path. Includes a "Scan & Report" mode that lists all convertible artifacts and their conversion status without modifying files
+- **`agileagentcanvas-canvas-integrator.agent.md` installed to `.github/agents/`** — A second native agent file is now installed alongside the main `agileagentcanvas.agent.md`, giving Copilot Chat users direct access to Morph's conversion capabilities via `@agileagentcanvas-canvas-integrator`
+- **Added to agent manifest** — Registered as `canvas-integrator` in the `core` module of `agent-manifest.csv`, making it discoverable through the BMad Master's agent listing and the extension's agent picker
+
+### Antigravity Alignment
+
+- **Removed `workflowsDir` from Antigravity IDE target** — The official BMAD-METHOD installer (`_config-driven.js`) treats `.agent/workflows` as a `legacy_target` (cleaned up before each reinstall), not an active directory. Our installer was creating `.agent/workflows/` on every auto-install, only for the official installer to delete it. Removed `workflowsDir: '.agent/workflows'` from the Antigravity target configuration to align with the official BMAD architecture
+
+### OutputFormat Consistency
+
+The `agileagentcanvas.outputFormat` setting (`json`, `markdown`, `dual`) was not consistently respected across all file-writing operations. The `agileagentcanvas_write_file` LLM tool correctly handled all three modes, but the internal `save*ToFile` methods always wrote JSON regardless of the setting and inconsistently generated Markdown companions.
+
+- **JSON writes gated by outputFormat** — All `save*ToFile` methods (`saveVisionToFile`, `saveProductBriefToFile`, `savePRDToFile`, `saveArchitectureToFile`, `saveTestCasesToFile`, `saveTestStrategyToFile`, `saveTestDesignToFile`, `saveGenericArtifactToFile`, `saveEpicsToFile`) now wrap JSON writes in a format check. When set to `markdown`-only, JSON files are no longer written
+- **Vision Markdown companion** — `saveVisionToFile` now generates a Markdown companion file via a new `generateVisionMarkdown()` method when outputFormat is `dual` or `markdown`. Previously it was the only save method that never generated Markdown
+- **Per-epic Markdown companions** — `saveEpicsToFile` now generates per-epic `.md` companion files (e.g. `epic-1.md` alongside `epic-1.json`) via a new `generateSingleEpicMarkdown()` method. The epics manifest file also gets a Markdown companion
+- **Vision included in combined Markdown** — `generateAllArtifactsMarkdown()` now includes the vision artifact in its output
+- **Standalone story files respect outputFormat** — Story files written to `implementation-artifacts/` now check the format setting before writing JSON and generate Markdown companions in `dual`/`markdown` mode
+- **Auto-migrated `requirements.json` respects outputFormat** — Both auto-migration sites (`loadFromFolder` and `syncToFiles`) now check the format setting and generate Markdown companions when appropriate
+- **`/convert-to-json` respects outputFormat** — The `/convert-to-json` chat command now generates a Markdown companion for `epics.json` when outputFormat is `dual`
+- **Migration writes respect outputFormat** — Story extraction and `epics.json` updates during `migrateToReferenceArchitecture` now check the format setting
+- **Index files gated by format** — `stories-index.json` and `epics-index.json` are only written when the format includes JSON (`json` or `dual`); `README.md` is always written regardless of format
+- **Schema repair respects outputFormat** — `fixAndSyncToFiles` now checks the format setting before writing repaired JSON files
+
+### Bug Fixes
+
+- **Canvas showing stale data after reload** — `loadFromFolder()` never cleared the in-memory `artifacts` Map before re-reading from disk. Collection arrays (`testDesigns`, `testReviews`, `researches`, `testCases`, etc.) accumulated duplicates on every reload, and artifacts from deleted files persisted indefinitely. Added `this.artifacts.clear()` at the top of `loadFromFolder()` so every reload starts from a clean slate
+- **Sample project writing to wrong folder** — `loadSampleProject()` used the resolver's auto-detected output URI, which could point to a legacy `_bmad-output` folder from an existing BMAD-METHOD install. Now explicitly computes the output folder from the configured/default name and calls `switchProject()` if the resolver was pointing elsewhere
+- **Legacy folder modal dialog** — When only a legacy `_bmad-output` folder is detected at startup, the extension now shows a modal warning dialog with three actionable choices: switch to the default `.agileagentcanvas-context`, enter a custom folder name, or keep using the legacy folder. Previously, only a passive informational message with a "Dismiss" button was shown. Existing files in `_bmad-output` are never moved or deleted
+- **Transitive vscode mock in tests** — Extracted `BMAD_RESOURCE_DIR` and `DEFAULT_OUTPUT_FOLDER` to a new `src/state/constants.ts` file with zero runtime imports, fixing 447 BDD test failures caused by transitive `import * as vscode from 'vscode'` via `workspace-resolver.ts` when modules were loaded through `proxyquire`
+
+### UI String Updates
+
+- **User-facing labels** — Changed "BMAD skills" to "Agile Agent Canvas skills" in IDE target descriptions, progress notifications, and quick-pick placeholders
+- **LLM prompt paths** — Updated hardcoded `_bmad/` resource paths in LLM system prompts to `_aac/`
+
 ## 0.3.3
 
 ### UI Improvements

@@ -58,10 +58,10 @@ function createValidator(world: BmadWorld): any {
     return new schemaValidatorModule.SchemaValidator();
 }
 
-/** Resolve the real BMAD schemas path */
+/** Resolve the real schemas path */
 function getRealSchemasParentPath(): string {
-    // resources/_bmad/ is the bmadPath; schemas are at resources/_bmad/schemas/
-    return path.resolve(__dirname, '../../resources/_bmad');
+    // resources/_aac/ is the bmadPath; schemas are at resources/_aac/schemas/
+    return path.resolve(__dirname, '../../resources/_aac');
 }
 
 // ============================================================================

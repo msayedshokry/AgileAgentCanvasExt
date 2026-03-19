@@ -13,13 +13,13 @@ import { schemaValidator } from '../state/schema-validator';
  *   agileagentcanvas_update_artifact — write changes to an artifact in the store
  *
  * These tools replace the old "pre-load one file → giant prompt string" pattern
- * and allow the LLM to navigate the _bmad framework folder and project source
+ * and allow the LLM to navigate the BMAD framework folder and project source
  * code autonomously, exactly as it does when running BMAD natively in a raw
  * chat session.
  *
  * ## Security boundary
  * Read access is scoped to:
- *   1. The bundled _bmad framework folder (agents, workflows, schemas)
+ *   1. The bundled BMAD framework folder (agents, workflows, schemas)
  *   2. The active project's output folder
  *   3. All workspace folders (so the agent can inspect source code across
  *      multi-root workspaces for context when creating/refining artifacts)
@@ -67,7 +67,7 @@ function getAllowedRoots(ctx: AgileAgentCanvasToolContext): string[] {
 // ─── Tool context ────────────────────────────────────────────────────────────
 
 export interface AgileAgentCanvasToolContext {
-    /** Resolved path to the _bmad framework folder (always the bundled extension copy) */
+    /** Resolved path to the BMAD framework folder (always the bundled extension copy) */
     bmadPath: string;
     /** Resolved path to the project output folder */
     outputPath: string;

@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { acOutput } from '../extension';
+import { BMAD_RESOURCE_DIR } from '../state/constants';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -23,6 +24,8 @@ interface IdeTarget {
     skillsDir: string;
     /** Directory for workflow stubs (slash-commands), relative to workspace root. Omit if IDE doesn't support workflows. */
     workflowsDir?: string;
+    /** Directory for .agent.md files, relative to workspace root. Omit if IDE doesn't support agent files. */
+    agentsDir?: string;
     /** Legacy directories to clean up on install */
     legacyDirs: string[];
     /** Whether this IDE is a preferred/recommended option */
@@ -40,7 +43,7 @@ interface Artifact {
     description: string;
     /** Module this artifact belongs to (core, bmm, bmb, cis, tea) */
     module: string;
-    /** Path to the artifact file relative to the _bmad resources root (e.g. core/agents/bmad-master.md) */
+    /** Path to the artifact file relative to the resources root (e.g. core/agents/bmad-master.md) */
     relativePath: string;
 }
 
@@ -54,18 +57,18 @@ const IDE_TARGETS: Record<IdeId, IdeTarget> = {
         id: 'claude',
         label: 'Claude Code',
         description: '.claude/skills/',
-        detail: 'Installs BMAD skills for Claude Code (Agent Skills format)',
+        detail: 'Installs Agile Agent Canvas skills for Claude Code (Agent Skills format)',
         skillsDir: '.claude/skills',
-        legacyDirs: ['.claude/commands'],
+        legacyDirs: [],
         preferred: true,
     },
     cursor: {
         id: 'cursor',
         label: 'Cursor',
         description: '.cursor/skills/',
-        detail: 'Installs BMAD skills for Cursor (Agent Skills format)',
+        detail: 'Installs Agile Agent Canvas skills for Cursor (Agent Skills format)',
         skillsDir: '.cursor/skills',
-        legacyDirs: ['.cursor/commands', '.cursor/rules'],
+        legacyDirs: [],
         preferred: true,
     },
 
@@ -74,107 +77,107 @@ const IDE_TARGETS: Record<IdeId, IdeTarget> = {
         id: 'antigravity',
         label: 'Google Antigravity',
         description: '.agent/skills/',
-        detail: 'Installs BMAD skills for Google Antigravity',
+        detail: 'Installs Agile Agent Canvas skills for Google Antigravity',
         skillsDir: '.agent/skills',
-        workflowsDir: '.agent/workflows',
-        legacyDirs: ['.antigravity'],
+        legacyDirs: [],
         preferred: false,
     },
     auggie: {
         id: 'auggie',
         label: 'Auggie',
         description: '.augment/skills/',
-        detail: 'Installs BMAD skills for Auggie',
+        detail: 'Installs Agile Agent Canvas skills for Auggie',
         skillsDir: '.augment/skills',
-        legacyDirs: ['.augment/commands'],
+        legacyDirs: [],
         preferred: false,
     },
     cline: {
         id: 'cline',
         label: 'Cline',
         description: '.cline/skills/',
-        detail: 'Installs BMAD skills for Cline',
+        detail: 'Installs Agile Agent Canvas skills for Cline',
         skillsDir: '.cline/skills',
-        legacyDirs: ['.clinerules/workflows'],
+        legacyDirs: [],
         preferred: false,
     },
     codex: {
         id: 'codex',
         label: 'Codex',
         description: '.agents/skills/',
-        detail: 'Installs BMAD skills for OpenAI Codex',
+        detail: 'Installs Agile Agent Canvas skills for OpenAI Codex',
         skillsDir: '.agents/skills',
-        legacyDirs: ['.codex/prompts'],
+        legacyDirs: [],
         preferred: false,
     },
     codebuddy: {
         id: 'codebuddy',
         label: 'CodeBuddy',
         description: '.codebuddy/skills/',
-        detail: 'Installs BMAD skills for CodeBuddy',
+        detail: 'Installs Agile Agent Canvas skills for CodeBuddy',
         skillsDir: '.codebuddy/skills',
-        legacyDirs: ['.codebuddy/commands'],
+        legacyDirs: [],
         preferred: false,
     },
     copilot: {
         id: 'copilot',
         label: 'GitHub Copilot / VS Code',
         description: '.github/skills/',
-        detail: 'Installs BMAD skills for GitHub Copilot (Agent Skills format)',
+        detail: 'Installs Agile Agent Canvas skills for GitHub Copilot (Agent Skills format)',
         skillsDir: '.github/skills',
-        legacyDirs: ['.github/agents', '.github/prompts'],
+        agentsDir: '.github/agents',
+        legacyDirs: [],
         preferred: false,
     },
     crush: {
         id: 'crush',
         label: 'Crush',
         description: '.crush/skills/',
-        detail: 'Installs BMAD skills for Crush',
+        detail: 'Installs Agile Agent Canvas skills for Crush',
         skillsDir: '.crush/skills',
-        legacyDirs: ['.crush/commands'],
+        legacyDirs: [],
         preferred: false,
     },
     gemini: {
         id: 'gemini',
         label: 'Gemini CLI',
         description: '.gemini/skills/',
-        detail: 'Installs BMAD skills for Gemini CLI',
+        detail: 'Installs Agile Agent Canvas skills for Gemini CLI',
         skillsDir: '.gemini/skills',
-        legacyDirs: ['.gemini/commands'],
+        legacyDirs: [],
         preferred: false,
     },
     iflow: {
         id: 'iflow',
         label: 'iFlow',
         description: '.iflow/skills/',
-        detail: 'Installs BMAD skills for iFlow',
+        detail: 'Installs Agile Agent Canvas skills for iFlow',
         skillsDir: '.iflow/skills',
-        legacyDirs: ['.iflow/commands'],
+        legacyDirs: [],
         preferred: false,
     },
     kiro: {
         id: 'kiro',
         label: 'Kiro',
         description: '.kiro/skills/',
-        detail: 'Installs BMAD skills for Kiro',
+        detail: 'Installs Agile Agent Canvas skills for Kiro',
         skillsDir: '.kiro/skills',
-        legacyDirs: ['.kiro/steering'],
+        legacyDirs: [],
         preferred: false,
     },
     opencode: {
         id: 'opencode',
         label: 'OpenCode',
         description: '.opencode/skills/',
-        detail: 'Installs BMAD skills for OpenCode',
+        detail: 'Installs Agile Agent Canvas skills for OpenCode',
         skillsDir: '.opencode/skills',
-        legacyDirs: ['.opencode/agents', '.opencode/commands', '.opencode/agent', '.opencode/command'],
+        legacyDirs: [],
         preferred: false,
     },
     pi: {
         id: 'pi',
         label: 'Pi',
         description: '.pi/skills/',
-        detail: 'Installs BMAD skills for Pi',
+        detail: 'Installs Agile Agent Canvas skills for Pi',
         skillsDir: '.pi/skills',
         legacyDirs: [],
         preferred: false,
@@ -183,25 +186,25 @@ const IDE_TARGETS: Record<IdeId, IdeTarget> = {
         id: 'qwen',
         label: 'QwenCoder',
         description: '.qwen/skills/',
-        detail: 'Installs BMAD skills for QwenCoder',
+        detail: 'Installs Agile Agent Canvas skills for QwenCoder',
         skillsDir: '.qwen/skills',
-        legacyDirs: ['.qwen/commands'],
+        legacyDirs: [],
         preferred: false,
     },
     roo: {
         id: 'roo',
         label: 'Roo Code',
         description: '.roo/skills/',
-        detail: 'Installs BMAD skills for Roo Code',
+        detail: 'Installs Agile Agent Canvas skills for Roo Code',
         skillsDir: '.roo/skills',
-        legacyDirs: ['.roo/commands'],
+        legacyDirs: [],
         preferred: false,
     },
     'rovo-dev': {
         id: 'rovo-dev',
         label: 'Rovo Dev',
         description: '.rovodev/skills/',
-        detail: 'Installs BMAD skills for Rovo Dev',
+        detail: 'Installs Agile Agent Canvas skills for Rovo Dev',
         skillsDir: '.rovodev/skills',
         legacyDirs: [],
         preferred: false,
@@ -210,18 +213,18 @@ const IDE_TARGETS: Record<IdeId, IdeTarget> = {
         id: 'trae',
         label: 'Trae',
         description: '.trae/skills/',
-        detail: 'Installs BMAD skills for Trae',
+        detail: 'Installs Agile Agent Canvas skills for Trae',
         skillsDir: '.trae/skills',
-        legacyDirs: ['.trae/rules'],
+        legacyDirs: [],
         preferred: false,
     },
     windsurf: {
         id: 'windsurf',
         label: 'Windsurf',
         description: '.windsurf/skills/',
-        detail: 'Installs BMAD skills for Windsurf (Agent Skills format)',
+        detail: 'Installs Agile Agent Canvas skills for Windsurf (Agent Skills format)',
         skillsDir: '.windsurf/skills',
-        legacyDirs: ['.windsurf/rules'],
+        legacyDirs: [],
         preferred: false,
     },
 
@@ -229,10 +232,10 @@ const IDE_TARGETS: Record<IdeId, IdeTarget> = {
     generic: {
         id: 'generic',
         label: 'Generic (plain markdown)',
-        description: '.bmad/skills/',
-        detail: 'Installs BMAD skill stubs into .bmad/skills/ for any AI tool',
-        skillsDir: '.bmad/skills',
-        legacyDirs: ['.bmad'],
+        description: '.agileagentcanvas/skills/',
+        detail: 'Installs skill stubs into .agileagentcanvas/skills/ for any AI tool',
+        skillsDir: '.agileagentcanvas/skills',
+        legacyDirs: [],
         preferred: false,
     },
 };
@@ -307,7 +310,7 @@ function skillContent(artifact: Artifact, bmadResourcePath: string): string {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Manifest parsing — reads CSV manifests from resources/_bmad/_config/
+// Manifest parsing — reads CSV manifests from resources/_aac/_config/
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Simple CSV parser for BMAD manifests (handles quoted fields with commas) */
@@ -370,14 +373,11 @@ function loadArtifacts(bmadResourcePath: string): Artifact[] {
             const filePath = rec['path'] ?? '';
             if (!name || !filePath) continue;
 
-            // Derive relative path from _bmad/ prefix
-            const relativePath = filePath.replace(/^_bmad\//, '');
+            // Derive relative path from _aac/ prefix
+            const relativePath = filePath.replace(/^_aac\//, '');
 
-            // Official naming: core agents skip module → bmad-agent-{name}
-            // Non-core agents → bmad-agent-{module}-{name}
-            const skillName = module === 'core'
-                ? `bmad-agent-${name}`
-                : `bmad-agent-${module}-${name}`;
+            // Namespaced naming: agileagentcanvas-agent-{name} (flat, no module sub-prefix)
+            const skillName = `agileagentcanvas-agent-${name}`;
 
             artifacts.push({
                 type: 'agent',
@@ -400,17 +400,14 @@ function loadArtifacts(bmadResourcePath: string): Artifact[] {
             const filePath = rec['path'] ?? '';
             if (!name || !filePath) continue;
 
-            const relativePath = filePath.replace(/^_bmad\//, '');
+            const relativePath = filePath.replace(/^_aac\//, '');
             // Extract a clean description (strip trigger phrase info)
             let desc = rec['description'] || `${name} workflow`;
             const useIdx = desc.indexOf('. Use when');
             if (useIdx > 0) desc = desc.substring(0, useIdx);
 
-            // Official naming: core workflows skip module → bmad-{name}
-            // Non-core workflows → bmad-{module}-{name}
-            const skillName = module === 'core'
-                ? `bmad-${name}`
-                : `bmad-${module}-${name}`;
+            // Namespaced naming: agileagentcanvas-{name} (flat, no module sub-prefix)
+            const skillName = `agileagentcanvas-${name}`;
 
             artifacts.push({
                 type: 'workflow',
@@ -434,16 +431,13 @@ function loadArtifacts(bmadResourcePath: string): Artifact[] {
             const standalone = rec['standalone'] ?? 'true';
             if (!name || !filePath || standalone === 'false') continue;
 
-            const relativePath = filePath.replace(/^_bmad\//, '');
+            const relativePath = filePath.replace(/^_aac\//, '');
             let desc = rec['description'] || rec['displayName'] || `${name} task`;
             const useIdx = desc.indexOf('. Use');
             if (useIdx > 0) desc = desc.substring(0, useIdx);
 
-            // Official naming: core tasks skip module → bmad-{name}
-            // Non-core tasks → bmad-{module}-{name}
-            const skillName = module === 'core'
-                ? `bmad-${name}`
-                : `bmad-${module}-${name}`;
+            // Namespaced naming: agileagentcanvas-{name} (flat, no module sub-prefix)
+            const skillName = `agileagentcanvas-${name}`;
 
             artifacts.push({
                 type: 'task',
@@ -508,16 +502,16 @@ export async function detectIde(): Promise<IdeId> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Remove all bmad-* skill directories from a target directory.
+ * Remove all agileagentcanvas-* skill directories from a target directory.
  */
-function cleanupBmadSkills(dirPath: string): number {
+function cleanupExtensionSkills(dirPath: string): number {
     if (!fs.existsSync(dirPath)) return 0;
 
     let count = 0;
     try {
         const entries = fs.readdirSync(dirPath);
         for (const entry of entries) {
-            if (entry.startsWith('bmad')) {
+            if (entry.startsWith('agileagentcanvas-')) {
                 const fullPath = path.join(dirPath, entry);
                 try {
                     fs.rmSync(fullPath, { recursive: true, force: true });
@@ -550,43 +544,10 @@ function cleanupBmadSkills(dirPath: string): number {
 function cleanupLegacyDirs(ide: IdeTarget, workspaceRoot: string): void {
     for (const legacyDir of ide.legacyDirs) {
         const fullPath = path.join(workspaceRoot, legacyDir);
-        const removed = cleanupBmadSkills(fullPath);
+        const removed = cleanupExtensionSkills(fullPath);
         if (removed > 0) {
-            acOutput.appendLine(`[IDE-Install] Cleaned ${removed} legacy BMAD files from ${legacyDir}`);
+            acOutput.appendLine(`[IDE-Install] Cleaned ${removed} legacy extension files from ${legacyDir}`);
         }
-    }
-
-    // Also clean up old copilot-instructions.md BMAD markers
-    if (ide.id === 'copilot') {
-        cleanupCopilotInstructions(workspaceRoot);
-    }
-}
-
-/**
- * Strip BMAD-owned content from .github/copilot-instructions.md (legacy format).
- */
-function cleanupCopilotInstructions(workspaceRoot: string): void {
-    const filePath = path.join(workspaceRoot, '.github', 'copilot-instructions.md');
-    if (!fs.existsSync(filePath)) return;
-
-    try {
-        const content = fs.readFileSync(filePath, 'utf-8');
-        const startIdx = content.indexOf('<!-- BMAD:START -->');
-        const endIdx = content.indexOf('<!-- BMAD:END -->');
-
-        if (startIdx === -1 || endIdx === -1 || endIdx <= startIdx) return;
-
-        const cleaned = content.slice(0, startIdx) + content.slice(endIdx + '<!-- BMAD:END -->'.length);
-
-        if (cleaned.trim().length === 0) {
-            fs.unlinkSync(filePath);
-            acOutput.appendLine('[IDE-Install] Removed empty copilot-instructions.md');
-        } else {
-            fs.writeFileSync(filePath, cleaned, 'utf-8');
-            acOutput.appendLine('[IDE-Install] Cleaned BMAD markers from copilot-instructions.md');
-        }
-    } catch {
-        // Best effort
     }
 }
 
@@ -983,7 +944,7 @@ This command is handled by the **Agile Agent Canvas** extension.
     },
     {
         name: 'party',
-        description: 'Multi-agent collaboration mode — all BMAD agents discuss your topic',
+        description: 'Multi-agent collaboration mode — all agents discuss your topic',
         body: `# Party Mode
 
 This command is handled by the **Agile Agent Canvas** extension.
@@ -992,7 +953,7 @@ This command is handled by the **Agile Agent Canvas** extension.
 
 1. Open the VS Code Chat panel
 2. Type: \`@agileagentcanvas /party <topic>\`
-3. All BMAD agents collaborate on your topic
+3. All agents collaborate on your topic
 `,
     },
     {
@@ -1114,6 +1075,180 @@ function writeWorkflowStubs(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Extension agent file — install a single .agent.md representing the extension
+// ─────────────────────────────────────────────────────────────────────────────
+
+const EXTENSION_AGENT_FILENAME = 'agileagentcanvas.agent.md';
+const INTEGRATOR_AGENT_FILENAME = 'agileagentcanvas-canvas-integrator.agent.md';
+
+/**
+ * Write a single `.agent.md` file into the IDE's agents directory so the
+ * extension appears as a native `@agileagentcanvas` agent in Copilot Chat.
+ * Only installs when the IDE target defines an `agentsDir`.
+ */
+function writeExtensionAgentFile(
+    ide: IdeTarget,
+    workspaceRoot: string,
+    overwrite: boolean
+): boolean {
+    if (!ide.agentsDir) return false;
+
+    const agentsDir = path.join(workspaceRoot, ide.agentsDir);
+    const agentFilePath = path.join(agentsDir, EXTENSION_AGENT_FILENAME);
+
+    if (!overwrite && fs.existsSync(agentFilePath)) {
+        return false;
+    }
+
+    if (!fs.existsSync(agentsDir)) {
+        fs.mkdirSync(agentsDir, { recursive: true });
+    }
+
+    const content = `---
+description: 'Agile Agent Canvas — Unified agile development assistant with expert personas for product management, architecture, development, QA, and more. Provides workflows for PRD creation, sprint planning, story development, architecture design, and testing.'
+tools: ['read', 'edit', 'search', 'execute']
+---
+
+You are the **Agile Agent Canvas** assistant — a unified agile development platform powered by the BMAD methodology.
+
+## Capabilities
+
+You provide access to multiple expert agent personas, structured workflows, and agile development tasks. Your installed skills are in \`.github/skills/agileagentcanvas-*\` directories.
+
+## Agent Personas
+
+You can embody any of the following expert personas when the user requests one:
+
+| Persona | Name | Specialty |
+|---------|------|-----------|
+| Master | BMad Master | Workflow orchestration, task execution, knowledge custodian |
+| Analyst | Mary | Market research, competitive analysis, requirements |
+| PM | John | Product management, PRD creation, stakeholder alignment |
+| Architect | Winston | System architecture, distributed systems, API design |
+| Dev | Amelia | Story execution, TDD, code implementation |
+| QA | Quinn | Test automation, API testing, coverage analysis |
+| Scrum Master | Bob | Sprint planning, agile ceremonies, backlog management |
+| UX Designer | Sally | User research, interaction design, UI patterns |
+| Tech Writer | Paige | Documentation, diagrams, standards compliance |
+| Test Architect | Murat | Risk-based testing, ATDD, CI/CD governance |
+| Solo Dev | Barry | Quick flow — rapid spec and implementation |
+
+## Workflows & Tasks
+
+Review the installed \`agileagentcanvas-*\` skills to discover available workflows (create PRD, architecture, stories, sprint planning, etc.) and standalone tasks (code review, editorial review, etc.).
+
+## Activation
+
+When a user asks for help, determine the most appropriate persona or workflow from your installed skills and follow the instructions in the corresponding SKILL.md file.
+`;
+
+    try {
+        fs.writeFileSync(agentFilePath, content, 'utf-8');
+        acOutput.appendLine(`[IDE-Install] Wrote: ${ide.agentsDir}/${EXTENSION_AGENT_FILENAME}`);
+        return true;
+    } catch (err) {
+        acOutput.appendLine(`[IDE-Install] Error writing agent file: ${err}`);
+        return false;
+    }
+}
+
+/**
+ * Write the Canvas Integrator `.agent.md` file into the IDE's agents directory
+ * so Morph appears as a native `@agileagentcanvas-canvas-integrator` agent in
+ * Copilot Chat.  Only installs when the IDE target defines an `agentsDir`.
+ */
+function writeIntegratorAgentFile(
+    ide: IdeTarget,
+    workspaceRoot: string,
+    overwrite: boolean
+): boolean {
+    if (!ide.agentsDir) return false;
+
+    const agentsDir = path.join(workspaceRoot, ide.agentsDir);
+    const agentFilePath = path.join(agentsDir, INTEGRATOR_AGENT_FILENAME);
+
+    if (!overwrite && fs.existsSync(agentFilePath)) {
+        return false;
+    }
+
+    if (!fs.existsSync(agentsDir)) {
+        fs.mkdirSync(agentsDir, { recursive: true });
+    }
+
+    const content = `---
+description: 'Agile Canvas Integrator (Morph) — converts BMAD markdown artifacts to schema-compliant JSON for Agile Agent Canvas visualization. Scans output folders, auto-detects artifact types, validates against schemas, and supports single-file, batch, and type-filtered conversions.'
+tools: ['read_file', 'create_file', 'replace_string_in_file', 'file_search', 'list_dir']
+---
+
+You are **Morph**, the Agile Canvas Integrator — an artifact conversion specialist that transforms BMAD markdown files into schema-compliant JSON for the Agile Agent Canvas VS Code extension.
+
+## How to Activate
+
+Load and fully follow the agent instructions in your installed skill file:
+
+\`\`\`
+.github/skills/agileagentcanvas-agent-canvas-integrator/SKILL.md
+\`\`\`
+
+That file contains your full persona, activation steps, menu system, and conversion rules. Embody the Morph persona and follow the activation sequence exactly.
+
+## Quick Reference
+
+| Command | Description |
+|---------|-------------|
+| **SF** | Set source folder (default: configured output folder) |
+| **SC** | Scan & report — list convertible artifacts without converting |
+| **CS** | Convert a single file |
+| **CA** | Convert ALL artifacts in the source folder |
+| **CF** | Convert a subfolder (e.g. planning-artifacts) |
+| **CT** | Convert by type (e.g. story, epics, use-case) |
+
+## Conversion Rules
+
+- **VERBOSE** — capture ALL content from the source, never summarize or truncate
+- **Separate user story fields** — always split into \`asA\`, \`iWant\`, \`soThat\`
+- **Full acceptance criteria** — always use \`given\`, \`when\`, \`then\`, \`and[]\`
+- **Full requirement descriptions** — always include \`id\`, \`title\`, AND complete \`description\`
+- **Valid JSON** — always parseable without errors
+- **Schema-compliant** — validate against the matching BMAD schema before saving
+
+The full conversion workflow with schema mappings, parsing patterns, and chunking strategy is in the installed skill's referenced workflow file.
+`;
+
+    try {
+        fs.writeFileSync(agentFilePath, content, 'utf-8');
+        acOutput.appendLine(`[IDE-Install] Wrote: ${ide.agentsDir}/${INTEGRATOR_AGENT_FILENAME}`);
+        return true;
+    } catch (err) {
+        acOutput.appendLine(`[IDE-Install] Error writing integrator agent file: ${err}`);
+        return false;
+    }
+}
+
+/**
+ * Remove extension agent files from the agents directory.
+ * Only removes files prefixed with `agileagentcanvas` — never touches official BMAD agent files.
+ */
+function cleanupExtensionAgentFiles(ide: IdeTarget, workspaceRoot: string): void {
+    if (!ide.agentsDir) return;
+
+    const agentsDir = path.join(workspaceRoot, ide.agentsDir);
+    if (!fs.existsSync(agentsDir)) return;
+
+    try {
+        const entries = fs.readdirSync(agentsDir);
+        for (const entry of entries) {
+            if (entry.startsWith('agileagentcanvas') && entry.endsWith('.agent.md')) {
+                fs.unlinkSync(path.join(agentsDir, entry));
+                acOutput.appendLine(`[IDE-Install] Removed old agent file: ${entry}`);
+            }
+        }
+    } catch (err) {
+        acOutput.appendLine(`[IDE-Install] Error cleaning agent files: ${err}`);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Schema reference — tell LLMs where BMAD schemas live
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1126,7 +1261,7 @@ function writeSchemaReference(
     extensionPath: string,
     workspaceRoot: string
 ): void {
-    const schemasDir = path.join(extensionPath, 'resources', '_bmad', 'schemas');
+    const schemasDir = path.join(extensionPath, 'resources', BMAD_RESOURCE_DIR, 'schemas');
     if (!fs.existsSync(schemasDir)) return;
 
     const agentDir = path.join(workspaceRoot, '.agent');
@@ -1177,7 +1312,7 @@ read the corresponding schema file from the path above. For example:
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Called from activate().  Detects the host IDE and installs BMAD skill stubs
+ * Called from activate().  Detects the host IDE and installs skill stubs
  * into the first workspace folder — but only if the marker skill does not yet exist.
  * Shows a single non-modal toast on first install; completely silent on subsequent launches.
  */
@@ -1198,14 +1333,14 @@ export async function autoInstallIfNeeded(extensionPath: string): Promise<void> 
         workspaceRoot = workspaceFolders[0].uri.fsPath;
     }
 
-    const bmadResourcePath = path.join(extensionPath, 'resources', '_bmad');
+    const bmadResourcePath = path.join(extensionPath, 'resources', BMAD_RESOURCE_DIR);
     if (!fs.existsSync(bmadResourcePath)) return;
 
     const ideId = await detectIde();
     const ide = IDE_TARGETS[ideId];
 
-    // Marker: the master agent skill directory (core agents skip module name)
-    const markerSkill = path.join(workspaceRoot, ide.skillsDir, 'bmad-agent-bmad-master', 'SKILL.md');
+    // Marker: the master agent skill directory
+    const markerSkill = path.join(workspaceRoot, ide.skillsDir, 'agileagentcanvas-agent-master', 'SKILL.md');
 
     if (fs.existsSync(markerSkill)) {
         acOutput.appendLine(`[IDE-Install] Already installed for ${ide.label} — skipping auto-install`);
@@ -1217,8 +1352,8 @@ export async function autoInstallIfNeeded(extensionPath: string): Promise<void> 
     // Clean up legacy dirs first
     cleanupLegacyDirs(ide, workspaceRoot);
 
-    // Clean existing bmad skills in the target dir (fresh install)
-    cleanupBmadSkills(path.join(workspaceRoot, ide.skillsDir));
+    // Clean existing extension skills in the target dir (fresh install)
+    cleanupExtensionSkills(path.join(workspaceRoot, ide.skillsDir));
 
     const artifacts = loadArtifacts(bmadResourcePath);
     const { written } = writeSkillDirs(ide, artifacts, workspaceRoot, true, bmadResourcePath);
@@ -1237,6 +1372,10 @@ export async function autoInstallIfNeeded(extensionPath: string): Promise<void> 
     // Write schema reference file so LLMs know where to find BMAD schemas
     writeSchemaReference(extensionPath, workspaceRoot);
 
+    // Write the extension agent files (.agent.md) if IDE supports it
+    cleanupExtensionAgentFiles(ide, workspaceRoot);
+    writeExtensionAgentFile(ide, workspaceRoot, true);
+    writeIntegratorAgentFile(ide, workspaceRoot, true);
     if (written > 0 || workflowsWritten > 0) {
         acOutput.appendLine(`[IDE-Install] Auto-install complete: ${written} skills, ${workflowsWritten} workflows`);
 
@@ -1334,17 +1473,17 @@ export async function installToIde(extensionPath: string): Promise<void> {
     }));
 
     const ideChoice = await vscode.window.showQuickPick(ideItems, {
-        placeHolder: 'Which IDE/tool do you want to install BMAD skills for?',
+        placeHolder: 'Which IDE/tool do you want to install Agile Agent Canvas skills for?',
         title: 'Agile Agent Canvas: Install Framework to IDE',
     });
     if (!ideChoice) return;
 
     const ide = ideChoice.target;
 
-    // ── Resolve BMAD resources ────────────────────────────────────────────────
-    const bmadResourcePath = path.join(extensionPath, 'resources', '_bmad');
+    // ── Resolve extension resources ────────────────────────────────────────────
+    const bmadResourcePath = path.join(extensionPath, 'resources', BMAD_RESOURCE_DIR);
     if (!fs.existsSync(bmadResourcePath)) {
-        vscode.window.showErrorMessage('BMAD resources not found. Please reinstall the extension.');
+        vscode.window.showErrorMessage('Extension resources not found. Please reinstall the extension.');
         return;
     }
 
@@ -1367,21 +1506,21 @@ export async function installToIde(extensionPath: string): Promise<void> {
         {
             label: '$(person) Agents only',
             description: `${agents.length} agents`,
-            detail: 'BMAD agent personas (Master, Analyst, PM, Architect, Dev, QA, ...)',
+            detail: 'Agent personas (Master, Analyst, PM, Architect, Dev, QA, ...)',
             types: ['agent'] as Artifact['type'][],
             picked: false,
         },
         {
             label: '$(play) Workflows only',
             description: `${workflows.length} workflows`,
-            detail: 'BMAD workflows (create PRD, dev story, sprint planning, ...)',
+            detail: 'Workflows (create PRD, dev story, sprint planning, ...)',
             types: ['workflow'] as Artifact['type'][],
             picked: false,
         },
         {
             label: '$(tools) Tasks only',
             description: `${tasks.length} tasks`,
-            detail: 'BMAD standalone tasks (editorial review, adversarial review, ...)',
+            detail: 'Standalone tasks (editorial review, adversarial review, ...)',
             types: ['task'] as Artifact['type'][],
             picked: false,
         },
@@ -1389,7 +1528,7 @@ export async function installToIde(extensionPath: string): Promise<void> {
 
     const typePicks = await vscode.window.showQuickPick(typeItems, {
         placeHolder: 'Which skill types to install?',
-        title: `Install BMAD Skills → ${ide.label}`,
+        title: `Install Skills → ${ide.label}`,
         canPickMany: true,
     });
     if (!typePicks || typePicks.length === 0) return;
@@ -1426,11 +1565,11 @@ export async function installToIde(extensionPath: string): Promise<void> {
     let totalWritten = 0;
     let totalSkipped = 0;
     await vscode.window.withProgress(
-        { location: vscode.ProgressLocation.Notification, title: `Installing BMAD skills for ${ide.label}...`, cancellable: false },
+        { location: vscode.ProgressLocation.Notification, title: `Installing Agile Agent Canvas skills for ${ide.label}...`, cancellable: false },
         async () => {
             for (const root of workspaceRoots) {
                 cleanupLegacyDirs(ide, root);
-                cleanupBmadSkills(path.join(root, ide.skillsDir));
+                cleanupExtensionSkills(path.join(root, ide.skillsDir));
                 const { written, skipped } = writeSkillDirs(ide, selectedArtifacts, root, overwrite, bmadResourcePath);
                 totalWritten += written;
                 totalSkipped += skipped;
@@ -1445,6 +1584,11 @@ export async function installToIde(extensionPath: string): Promise<void> {
 
                 // Deploy schema reference
                 writeSchemaReference(extensionPath, root);
+
+                // Deploy extension agent files (.agent.md) if IDE supports it
+                cleanupExtensionAgentFiles(ide, root);
+                writeExtensionAgentFile(ide, root, overwrite);
+                writeIntegratorAgentFile(ide, root, overwrite);
             }
         }
     );

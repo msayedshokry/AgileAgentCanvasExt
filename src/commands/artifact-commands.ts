@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ArtifactStore } from '../state/artifact-store';
+import { BMAD_RESOURCE_DIR } from '../state/constants';
 import { sendArtifactsToPanel } from '../canvas/artifact-transformer';
 import { acOutput } from '../extension';
 import { openChat } from './chat-bridge';
@@ -581,11 +582,11 @@ interface ElicitationMethod {
 }
 
 /**
- * Parse the methods.csv bundled under resources/_bmad/core/workflows/advanced-elicitation/
+ * Parse the methods.csv bundled under resources/_aac/core/workflows/advanced-elicitation/
  * Returns an array of ElicitationMethod objects.
  */
 export function loadElicitationMethods(extensionUri: vscode.Uri): ElicitationMethod[] {
-    const csvPath = path.join(extensionUri.fsPath, 'resources', '_bmad', 'core', 'workflows', 'advanced-elicitation', 'methods.csv');
+    const csvPath = path.join(extensionUri.fsPath, 'resources', BMAD_RESOURCE_DIR, 'core', 'workflows', 'advanced-elicitation', 'methods.csv');
 
     try {
         const raw = fs.readFileSync(csvPath, 'utf-8');
@@ -1081,11 +1082,11 @@ function parseWorkflowFile(filePath: string): { name: string; description: strin
 }
 
 /**
- * Scan the given root for _bmad/bmm/workflows and return all discovered workflows.
+ * Scan the given root for bundled BMM workflows and return all discovered workflows.
  * The caller passes the extension's bundled resources path (e.g. `<extensionPath>/resources`).
  */
 export function loadBmmWorkflows(resourcesRoot: string): BmmWorkflowInfo[] {
-    const workflowsRoot = path.join(resourcesRoot, '_bmad', 'bmm', 'workflows');
+    const workflowsRoot = path.join(resourcesRoot, BMAD_RESOURCE_DIR, 'bmm', 'workflows');
     acOutput.appendLine(`[Extension] loadBmmWorkflows: scanning ${workflowsRoot}`);
 
     if (!fs.existsSync(workflowsRoot)) {

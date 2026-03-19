@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import PDFDocument from 'pdfkit';
 import { ArtifactStore } from '../state/artifact-store';
+import { BMAD_RESOURCE_DIR } from '../state/constants';
 import { schemaValidator } from '../state/schema-validator';
 import { acOutput } from '../extension';
 import {
@@ -76,7 +77,7 @@ export async function handleCommonWebviewMessage(
             // Lazily initialise schema validator on first webview save
             if (!schemaValidator.isInitialized()) {
                 try {
-                    const bmadPath = path.join(extensionUri.fsPath, 'resources', '_bmad');
+                    const bmadPath = path.join(extensionUri.fsPath, 'resources', BMAD_RESOURCE_DIR);
                     schemaValidator.init(bmadPath, acOutput);
                 } catch (err: any) {
                     acOutput.appendLine(
@@ -444,14 +445,14 @@ export async function handleCommonWebviewMessage(
 
         case 'askAgent': {
             // User typed a thought/idea/question from the canvas Ask modal.
-            // Route through the bmad-help task so the agent loads the help
-            // instructions from _bmad/core/tasks/help.md and uses the
-            // _config/bmad-help.csv catalog to provide structured guidance.
+            // Route through the help task so the agent loads the help
+            // instructions from the help task file and uses the
+            // help CSV catalog to provide structured guidance.
             const userText = (message.text as string | undefined)?.trim();
             if (userText) {
                 const helpQuery = `[bmad-help] Use the BMAD help task: ` +
-                    `read _bmad/core/tasks/help.md for instructions, then ` +
-                    `read _bmad/_config/bmad-help.csv for the workflow catalog. ` +
+                    `read _aac/core/tasks/help.md for instructions, then ` +
+                    `read _aac/_config/bmad-help.csv for the workflow catalog. ` +
                     `Follow the help task routing and display rules to answer ` +
                     `this user question:\n\n${userText}`;
                 acOutput.appendLine(`${logPrefix} askAgent: sending bmad-help query to chat: "${userText}"`);
@@ -471,14 +472,14 @@ export async function handleCommonWebviewMessage(
                 const errorList = issue.errors.map(e => `  - ${e}`).join('\n');
                 return `### File ${i + 1}: ${issue.file}\n` +
                        `- **Schema type**: ${issue.type}\n` +
-                       `- **Schema path**: resources/_bmad/schemas/ (find the matching schema for type "${issue.type}")\n` +
+                       `- **Schema path**: resources/_aac/schemas/ (find the matching schema for type "${issue.type}")\n` +
                        `- **Validation errors**:\n${errorList}`;
             }).join('\n\n');
 
             const prompt = `[schema-fix] The following artifact files have schema validation errors ` +
                 `that auto-repair could not fix. Please:\n` +
                 `1. Read each affected file listed below\n` +
-                `2. Read the corresponding JSON schema from resources/_bmad/schemas/\n` +
+                `2. Read the corresponding JSON schema from resources/_aac/schemas/\n` +
                 `3. Fix the validation errors while preserving all existing data\n` +
                 `4. Save the corrected files\n\n` +
                 `## ${issues.length} File(s) With Schema Issues\n\n${issueBlocks}`;
