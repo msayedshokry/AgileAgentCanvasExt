@@ -349,6 +349,15 @@ export function ArtifactCard({ artifact, isSelected, isExpanded, expandedCategor
         <p>{artifact.description}</p>
       </div>
 
+      {/* Labels */}
+      {Array.isArray((artifact.metadata as any)?.labels) && (artifact.metadata as any).labels.length > 0 && (
+        <div className="artifact-labels">
+          {((artifact.metadata as any).labels as string[]).map((label: string, i: number) => (
+            <span key={i} className="artifact-label-tag">{label}</span>
+          ))}
+        </div>
+      )}
+
       {/* Categorized child breakdown badges — each badge independently toggles its category */}
       {hasChildren && artifact.childBreakdown && artifact.childBreakdown.length > 0 && (
         <div className="artifact-child-breakdown">

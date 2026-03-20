@@ -3461,13 +3461,17 @@ Engage the user in collaborative discussion — ask clarifying questions when us
             // Search multiple locations for markdown files
             let allMdFiles: {path: string, uri: vscode.Uri}[] = [];
             
-            // Check planning-artifacts
+            // Check planning-artifacts (backward compat old projects)
             const planningUri = vscode.Uri.joinPath(folderUri, 'planning-artifacts');
             allMdFiles.push(...await findMdFilesRecursive(planningUri, 'planning-artifacts'));
             
-            // Check implementation-artifacts (stores, use-cases, etc.)
+            // Check implementation-artifacts (backward compat old projects)
             const implUri = vscode.Uri.joinPath(folderUri, 'implementation-artifacts');
             allMdFiles.push(...await findMdFilesRecursive(implUri, 'implementation-artifacts'));
+
+            // Check epics/ (new epic-scoped structure)
+            const epicsUri = vscode.Uri.joinPath(folderUri, 'epics');
+            allMdFiles.push(...await findMdFilesRecursive(epicsUri, 'epics'));
             
             // Check root folder (non-recursive for root)
             try {
@@ -3607,18 +3611,9 @@ Output ONLY the JSON, no explanation.`;
             stream.markdown(`- **${storyCount}** stories\n`);
             stream.markdown(`- **${frCount}** functional requirements\n\n`);
 
-            // Save the JSON file to planning-artifacts folder
+            // Save the JSON file to project root
             const outputFileName = 'epics.json';
-            const planningArtifactsUri = vscode.Uri.joinPath(folderUri, 'planning-artifacts');
-            
-            // Ensure planning-artifacts folder exists
-            try {
-                await vscode.workspace.fs.createDirectory(planningArtifactsUri);
-            } catch {
-                // Folder may already exist
-            }
-            
-            const outputUri = vscode.Uri.joinPath(planningArtifactsUri, outputFileName);
+            const outputUri = vscode.Uri.joinPath(folderUri, outputFileName);
             
             const jsonContent = JSON.stringify(parsedJson, null, 2);
             const convertFormat = vscode.workspace
@@ -3650,7 +3645,7 @@ Output ONLY the JSON, no explanation.`;
                         mdLines.push('');
                     }
                 }
-                const mdUri = vscode.Uri.joinPath(planningArtifactsUri, 'epics.md');
+                const mdUri = vscode.Uri.joinPath(folderUri, 'epics.md');
                 await vscode.workspace.fs.writeFile(mdUri, Buffer.from(mdLines.join('\n'), 'utf-8'));
                 written.push(mdUri.fsPath);
             }

@@ -268,12 +268,12 @@ user_skill_level:
 
 planning_artifacts:
   prompt: "Where should planning artifacts be stored?"
-  default: "{output_folder}/planning-artifacts"
+  default: "{output_folder}/planning"
   result: "{project-root}/{value}"
 
 implementation_artifacts:
   prompt: "Where should implementation artifacts be stored?"
-  default: "{output_folder}/implementation-artifacts"
+  default: "{output_folder}/implementation"
   result: "{project-root}/{value}"
 
 project_knowledge:

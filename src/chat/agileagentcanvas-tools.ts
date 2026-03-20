@@ -477,7 +477,7 @@ export function getToolDefinitions(): vscode.LanguageModelChatTool[] {
                 '(flattened — do NOT wrap in a "content" key). Metadata fields can also be ' +
                 'included at the top level. ' +
                 'STORIES: When type="story", if the story does not already exist, a NEW standalone ' +
-                'story file is created in implementation-artifacts/. Stories MUST include "epicId" ' +
+                'story file is created in epics/epic-{N}/stories/. Stories MUST include "epicId" ' +
                 'to link to their parent epic (e.g. "EPIC-1"). Use "id" (NOT "storyId") as the ' +
                 'story identifier (e.g. "S-1.1", "S-2.3"). Each story call creates one file.',
             inputSchema: {

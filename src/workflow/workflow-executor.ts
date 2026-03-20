@@ -1218,8 +1218,8 @@ ${stepContent}
             // Ensure output paths are always absolute. Config values may be bare relative names
             // (e.g. ".agileagentcanvas-context") or contain {project-root} prefixes. Either way, resolve to absolute.
             const rawOutput = config.output_folder || '{project-root}/.agileagentcanvas-context';
-            const rawPlanning = config.planning_artifacts || '{project-root}/.agileagentcanvas-context/planning-artifacts';
-            const rawImpl = config.implementation_artifacts || '{project-root}/.agileagentcanvas-context/implementation-artifacts';
+            const rawPlanning = config.planning_artifacts || '{project-root}/.agileagentcanvas-context/epics';
+            const rawImpl = config.implementation_artifacts || '{project-root}/.agileagentcanvas-context/epics';
             
             const resolveToAbsolute = (val: string): string => {
                 const resolved = this.resolveVariable(val);
@@ -2371,7 +2371,7 @@ ${varTable}
 - **agileagentcanvas_read_file(path)** — read any file under \`${bmadPath}\` (use resolved absolute paths)
 - **agileagentcanvas_list_directory(path)** — list any directory under \`${bmadPath}\`
 - **agileagentcanvas_update_artifact(type, id, changes)** — persist changes to a BMAD artifact in the project
-- **agileagentcanvas_write_file(path, content)** — write a file to the output folder or workspace. This respects the output format setting: when "dual", writing .md also generates .json and vice versa. **ALWAYS use this tool instead of VS Code's built-in file editing** for any file under \`${outputFolder}\` or the implementation-artifacts directory.
+- **agileagentcanvas_write_file(path, content)** — write a file to the output folder or workspace. This respects the output format setting: when "dual", writing .md also generates .json and vice versa. **ALWAYS use this tool instead of VS Code's built-in file editing** for any file under \`${outputFolder}\` or the epics/ directory.
 
 ${schemaSection}
 
@@ -2403,7 +2403,7 @@ Do NOT skip checkpoints just to save.`
     : `Output should be in Markdown format.`}
 
 ### Writing Implementation Files
-When a workflow instructs you to write files to the implementation-artifacts directory (or any directory
+When a workflow instructs you to write files to the epics/ directory (or any directory
 under \`${outputFolder}\`), use the \`agileagentcanvas_write_file\` tool — **never use VS Code's built-in
 file editing** for these files. The \`agileagentcanvas_write_file\` tool automatically respects the user's
 output format setting and will generate both .json and .md files when the format is "dual".

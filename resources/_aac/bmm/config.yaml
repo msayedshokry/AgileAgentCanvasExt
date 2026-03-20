@@ -5,8 +5,8 @@
 
 project_name: _bmad_v603_install
 user_skill_level: intermediate
-planning_artifacts: "{project-root}/.agileagentcanvas-context/planning-artifacts"
-implementation_artifacts: "{project-root}/.agileagentcanvas-context/implementation-artifacts"
+planning_artifacts: "{project-root}/.agileagentcanvas-context/planning"
+implementation_artifacts: "{project-root}/.agileagentcanvas-context/implementation"
 project_knowledge: "{project-root}/docs"
 
 # Core Configuration Values

@@ -550,7 +550,7 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
             if (epic.testStrategy) { descParts.push('test strategy'); }
 
             const item = new ArtifactTreeItem(
-                `Epic ${index + 1}: ${epic.title}`,
+                `Epic ${epic.id}: ${epic.title}`,
                 hasChildren
                     ? vscode.TreeItemCollapsibleState.Collapsed
                     : vscode.TreeItemCollapsibleState.None,
@@ -581,7 +581,7 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
         (epic.stories || []).forEach((story, index) => {
             const storyTcs = allTestCases.filter(tc => tc.storyId === story.id);
             const item = new ArtifactTreeItem(
-                `Story ${index + 1}: ${story.title}`,
+                `Story ${story.id}: ${story.title}`,
                 storyTcs.length > 0
                     ? vscode.TreeItemCollapsibleState.Collapsed
                     : vscode.TreeItemCollapsibleState.None,
@@ -605,7 +605,7 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
         // Use Cases
         (epic.useCases || []).forEach((uc, index) => {
             const item = new ArtifactTreeItem(
-                `UC ${index + 1}: ${uc.title || uc.id}`,
+                `UC ${uc.id}: ${uc.title || uc.id}`,
                 vscode.TreeItemCollapsibleState.None,
                 'use-case',
                 this.getStatusIcon((uc as any).status),

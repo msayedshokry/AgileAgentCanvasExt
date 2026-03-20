@@ -53,6 +53,9 @@ const ARTIFACT_TYPE_TO_SCHEMA: Record<string, string> = {
     'project-overview':      'bmm/project-overview.schema.json',
     'source-tree':           'bmm/source-tree.schema.json',
     'use-case':              'bmm/use-case.schema.json',
+    'use-cases':             'bmm/use-cases.schema.json',
+    'epic-test-strategy':    'bmm/epic-test-strategy.schema.json',
+    'test-strategy':         'bmm/epic-test-strategy.schema.json', // per-epic alias
     'risks':                 'bmm/risks.schema.json',
     'definition-of-done':    'bmm/definition-of-done.schema.json',
     'fit-criteria':          'bmm/fit-criteria.schema.json',
@@ -64,14 +67,16 @@ const ARTIFACT_TYPE_TO_SCHEMA: Record<string, string> = {
     'change-proposal':       'bmm/change-proposal.schema.json',
     'test-summary':          'bmm/test-summary.schema.json',
 
+    // ── bmm — index/manifest schemas ──
+    'epics-index':           'bmm/epics-index.schema.json',
+    'stories-index':         'bmm/stories-index.schema.json',
+
     // ── tea ──
     'test-design':           'tea/test-design.schema.json',
     'test-design-qa':        'tea/test-design-qa.schema.json',
     'test-design-architecture': 'tea/test-design-architecture.schema.json',
-    // NOTE: 'test-case', 'test-cases', and 'test-strategy' intentionally have
-    // NO schema mapping.  No dedicated schemas exist for these types, and the
-    // test-design schema (coveragePlan P0-P3) is structurally incompatible.
-    // Callers receive undefined from getSchemaContent() and skip validation.
+    'test-cases':            'tea/test-cases.schema.json',
+    'test-case':             'tea/test-cases.schema.json',     // alias
     'atdd-checklist':        'tea/atdd-checklist.schema.json',
     'traceability-matrix':   'tea/traceability-matrix.schema.json',
     'test-review':           'tea/test-review.schema.json',
@@ -303,6 +308,21 @@ export class SchemaValidator {
             Object.assign(flatChanges, meta);
         }
 
+        // ── Deprecation warnings ──
+        if ('storyId' in flatChanges && !('id' in flatChanges)) {
+            this.logger.appendLine(
+                `[SchemaValidator] DEPRECATION: "storyId" is deprecated — use "id" instead. ` +
+                `Found in changes for "${artifactType}".`
+            );
+            // Auto-migrate: copy storyId → id if id is missing
+            flatChanges.id = flatChanges.storyId;
+        }
+
+        // ── x-aliases normalization ──
+        // Resolve alias values to their canonical form using x-aliases defined
+        // in schema properties. This lets LLMs use vocabulary variations.
+        this.normalizeAliases(schemaId, flatChanges);
+
         // ── Minimum-substance check ──
         // Reject changes that contain only system/bookkeeping fields with no
         // real content.  Status changes ARE substantive (e.g. marking a story
@@ -368,6 +388,11 @@ export class SchemaValidator {
             );
             return { valid: true, errors: [] };
         }
+
+        // Normalize x-aliases before validation — same as validateChanges().
+        // Without this, strict validation rejects aliased values like
+        // status="done" even when x-aliases maps done→pass.
+        this.normalizeAliasesDeep(schemaId, data);
 
         const valid = validateFn(data) as boolean;
 
@@ -491,6 +516,123 @@ export class SchemaValidator {
                 `[SchemaValidator] Failed to load schema content for "${artifactType}": ${err?.message ?? err}`
             );
             return undefined;
+        }
+    }
+
+    /**
+     * Normalise values in `data` using `x-aliases` defined on schema properties.
+     *
+     * `x-aliases` is a custom keyword we add to status/enum properties:
+     *
+     *    "status": { "enum": ["done",…], "x-aliases": { "complete": "done" } }
+     *
+     * When `data.status` is `"complete"` it gets rewritten to `"done"` so the
+     * value passes enum validation.  This is a one-level normalization — it
+     * only processes top-level properties of the schema.
+     */
+    private normalizeAliases(
+        schemaId: string,
+        data: Record<string, any>
+    ): void {
+        if (!this.ajv) return;
+
+        const schemaFn = this.ajv.getSchema(schemaId);
+        if (!schemaFn || !schemaFn.schema) return;
+
+        const schema = schemaFn.schema as Record<string, any>;
+
+        // Walk into content.properties if present (most BMAD schemas nest under content)
+        const propSources = [
+            schema.properties,
+            schema.properties?.content?.properties,
+        ].filter(Boolean);
+
+        for (const props of propSources) {
+            for (const [key, propDef] of Object.entries(props as Record<string, any>)) {
+                if (!propDef || typeof propDef !== 'object') continue;
+                const aliases = propDef['x-aliases'];
+                if (!aliases || typeof aliases !== 'object') continue;
+
+                const val = data[key];
+                if (typeof val === 'string' && val in aliases) {
+                    const canonical = aliases[val];
+                    this.logger.appendLine(
+                        `[SchemaValidator] Alias normalised: ${key}="${val}" → "${canonical}"`
+                    );
+                    data[key] = canonical;
+                }
+            }
+        }
+    }
+
+    /**
+     * Recursively normalise `x-aliases` at ALL nesting levels of `data`,
+     * walking the schema tree in parallel.  Used by `validate()` which
+     * receives fully-structured artifacts (not flat change objects).
+     *
+     * For each property in the schema that defines `x-aliases`, if the
+     * corresponding value in `data` is a known alias, it is rewritten
+     * to the canonical value.
+     */
+    private normalizeAliasesDeep(
+        schemaId: string,
+        data: any
+    ): void {
+        if (!this.ajv || !data || typeof data !== 'object') return;
+
+        const schemaFn = this.ajv.getSchema(schemaId);
+        if (!schemaFn || !schemaFn.schema) return;
+
+        this.applyAliasesRecursive(schemaFn.schema as Record<string, any>, data);
+    }
+
+    /**
+     * Internal recursive walker: applies `x-aliases` from `schemaPart`
+     * to `dataPart` at every nesting level.
+     */
+    private applyAliasesRecursive(
+        schemaPart: Record<string, any>,
+        dataPart: any
+    ): void {
+        if (!schemaPart || !dataPart || typeof dataPart !== 'object') return;
+
+        // If schemaPart has properties, walk them
+        const props = schemaPart.properties;
+        if (props && typeof props === 'object') {
+            for (const [key, propDef] of Object.entries(props as Record<string, any>)) {
+                if (!propDef || typeof propDef !== 'object') continue;
+                const val = dataPart[key];
+                if (val === undefined) continue;
+
+                // Apply alias if this property has x-aliases and val is a string
+                const aliases = propDef['x-aliases'];
+                if (aliases && typeof aliases === 'object' && typeof val === 'string' && val in aliases) {
+                    dataPart[key] = aliases[val];
+                }
+
+                // Recurse into nested objects
+                if (typeof val === 'object' && !Array.isArray(val)) {
+                    this.applyAliasesRecursive(propDef, val);
+                }
+
+                // Recurse into arrays
+                if (Array.isArray(val) && propDef.items) {
+                    for (const item of val) {
+                        if (typeof item === 'object' && item !== null) {
+                            this.applyAliasesRecursive(propDef.items, item);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Also walk oneOf/anyOf/allOf branches
+        for (const combiner of ['oneOf', 'anyOf', 'allOf']) {
+            if (Array.isArray(schemaPart[combiner])) {
+                for (const branch of schemaPart[combiner]) {
+                    this.applyAliasesRecursive(branch, dataPart);
+                }
+            }
         }
     }
 

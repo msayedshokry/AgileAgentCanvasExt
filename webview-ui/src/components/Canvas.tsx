@@ -1651,28 +1651,16 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
                     Risks
                   </div>
                 )}
-                {isEpicExpanded && subGroups?.testStrategy && (
+                {isEpicExpanded && subGroups?.testing && (
                   <div
                     className="epic-subgroup-label"
                     style={{
-                      left: subGroups.testStrategy.x - bandLeft,
-                      top: (subGroups.testStrategy.y - (epic.rowY ?? 0)) - 28,
-                      width: subGroups.testStrategy.width,
+                      left: subGroups.testing.x - bandLeft,
+                      top: (subGroups.testing.y - (epic.rowY ?? 0)) - 28,
+                      width: subGroups.testing.width,
                     }}
                   >
-                    Test Strategy
-                  </div>
-                )}
-                {isEpicExpanded && subGroups?.testCases && (
-                  <div
-                    className="epic-subgroup-label"
-                    style={{
-                      left: subGroups.testCases.x - bandLeft,
-                      top: (subGroups.testCases.y - (epic.rowY ?? 0)) - 28,
-                      width: subGroups.testCases.width,
-                    }}
-                  >
-                    Tests
+                    Testing
                   </div>
                 )}
                 {isEpicExpanded && subGroups?.stories && (

@@ -230,6 +230,16 @@ export class ArtifactStore {
     // before starting a fix, or await the promise stored here.
     private _fixInProgress: Promise<void> | null = null;
 
+    /**
+     * Build the epic-scoped directory path for a given epic ID.
+     * E.g. epicId = 'EPIC-3' → baseUri/epics/epic-3
+     *      epicId = '7'      → baseUri/epics/epic-7
+     */
+    private epicScopedDir(baseUri: vscode.Uri, epicId: string): vscode.Uri {
+        const idSlug = String(epicId).replace(/\D/g, '') || '0';
+        return vscode.Uri.joinPath(baseUri, 'epics', `epic-${idSlug}`);
+    }
+
 
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
@@ -858,7 +868,7 @@ export class ArtifactStore {
                                 }
                             };
 
-                            // Generate safe filename: epicNum-safe-title.json
+                            // Generate safe filename: {id}-{slug}.json
                             const epicNum = (epicId || '').replace(/\D/g, '') || '0';
                             const safeTitle = (newStory.title || artifactId)
                                 .toLowerCase()
@@ -867,10 +877,14 @@ export class ArtifactStore {
                                 .substring(0, 60);
                             const fileName = `${epicNum}-${safeTitle}.json`;
 
-                            const implDir = vscode.Uri.joinPath(this.sourceFolder, 'implementation-artifacts');
-                            try { await vscode.workspace.fs.createDirectory(implDir); } catch { /* exists */ }
+                            // Epic-scoped directory: epics/epic-{N}/stories/
+                            const storiesDir = vscode.Uri.joinPath(
+                                this.epicScopedDir(this.sourceFolder, epicId || '0'),
+                                'stories'
+                            );
+                            try { await vscode.workspace.fs.createDirectory(storiesDir); } catch { /* exists */ }
 
-                            const fileUri = vscode.Uri.joinPath(implDir, fileName);
+                            const fileUri = vscode.Uri.joinPath(storiesDir, fileName);
                             const storyOutputFormat = this.getOutputFormat();
 
                             // Write JSON if output format includes JSON
@@ -2452,8 +2466,12 @@ export class ArtifactStore {
                         }
 
                         case 'epic': {
-                            // Standalone single-epic file (e.g. epics/epic-1.json)
-                            const epicData = data.content || data;
+                            // Standalone single-epic file — merge metadata-level fields
+                            // (dependencies, status, priority, labels, etc.) into content
+                            const epicData = {
+                                ...(data.metadata || {}),
+                                ...(data.content || data),
+                            };
                             const epic = this.mapSchemaEpicToInternal(epicData);
                             if (epic) {
                                 acOutput.appendLine(`[ArtifactStore] Loaded standalone epic: ${epic.id} - ${epic.title} (${epic.stories.length} stories)`);
@@ -2469,8 +2487,13 @@ export class ArtifactStore {
                         }
                             
                         case 'story':
-                            // Standalone story file
-                            const storyData = data.content || data;
+                            // Standalone story file — merge metadata-level fields
+                            // (dependencies, status, priority, requirementRefs, testCases)
+                            // into content so they reach the mapper
+                            const storyData = {
+                                ...(data.metadata || {}),
+                                ...(data.content || data),
+                            };
                             const story = this.mapSchemaStoryToInternal(storyData);
                             if (story) {
                                 acOutput.appendLine(`[ArtifactStore] Loaded standalone story: ${story.title}`);
@@ -2537,6 +2560,96 @@ export class ArtifactStore {
                             } else {
                                 pendingUseCases.push({ uc, parentEpicId: null });
                                 acOutput.appendLine(`[ArtifactStore] No parent epic found for use-case ${uc.id}, queued for linking`);
+                            }
+                            break;
+                        }
+
+                        case 'use-cases': {
+                            // Per-epic use cases collection file (epics/epic-N/use-cases.json)
+                            acOutput.appendLine(`[ArtifactStore] Found use-cases collection: ${fileName}`);
+                            const ucArr = (data.content?.useCases || []).map((ucRaw: any) => {
+                                const ucId = ucRaw.id || fileName.replace(/\.json$/, '');
+                                const summary = ucRaw.summary || ucRaw.description || '';
+                                return {
+                                    id: ucId,
+                                    title: ucRaw.title || ucRaw.name || summary || `Use Case ${ucId}`,
+                                    summary,
+                                    description: summary,
+                                    scenario: ucRaw.scenario || { context: '', before: '', after: '', impact: '' },
+                                    actors: ucRaw.actors,
+                                    status: ucRaw.status,
+                                    primaryActor: ucRaw.primaryActor,
+                                    secondaryActors: ucRaw.secondaryActors,
+                                    trigger: ucRaw.trigger,
+                                    preconditions: ucRaw.preconditions,
+                                    postconditions: ucRaw.postconditions,
+                                    mainFlow: ucRaw.mainFlow,
+                                    alternativeFlows: ucRaw.alternativeFlows,
+                                    exceptionFlows: ucRaw.exceptionFlows,
+                                    businessRules: ucRaw.businessRules,
+                                    relatedRequirements: ucRaw.relatedRequirements,
+                                    relatedEpic: ucRaw.relatedEpic,
+                                    relatedStories: ucRaw.relatedStories,
+                                    sourceDocument: ucRaw.sourceDocument,
+                                    notes: ucRaw.notes
+                                };
+                            });
+                            // Derive parent epic from metadata or directory path
+                            const ucRelPath = fileUri.path.replace(folderUri.path, '');
+                            const ucDirMatch = ucRelPath.match(/epics[\/\\]epic-(\d+)/);
+                            const ucEpicId = normalizeEpicId(
+                                data.metadata?.epicId ||
+                                (ucDirMatch ? ucDirMatch[1] : null)
+                            );
+                            if (ucEpicId && ucArr.length) {
+                                const epicsArr: any[] = this.artifacts.get('epics') || allEpics;
+                                const parentEpic = epicsArr.find((e: any) => normalizeEpicId(e.id) === ucEpicId) ||
+                                                   allEpics.find((e: any) => normalizeEpicId(e.id) === ucEpicId);
+                                if (parentEpic) {
+                                    if (!parentEpic.useCases) { parentEpic.useCases = []; }
+                                    for (const uc of ucArr) {
+                                        const existing = parentEpic.useCases.find((u: any) => u.id === uc.id);
+                                        if (!existing) {
+                                            parentEpic.useCases.push(uc);
+                                        }
+                                    }
+                                    acOutput.appendLine(`[ArtifactStore] Linked ${ucArr.length} use-cases to epic ${ucEpicId}`);
+                                } else {
+                                    // Queue for deferred linking
+                                    for (const uc of ucArr) {
+                                        pendingUseCases.push({ uc, parentEpicId: ucEpicId });
+                                    }
+                                    acOutput.appendLine(`[ArtifactStore] Parent epic ${ucEpicId} not yet loaded, queued ${ucArr.length} use-cases`);
+                                }
+                            }
+                            break;
+                        }
+
+                        case 'epic-test-strategy':
+                        case 'test-strategy': {
+                            // Per-epic test strategy file (NOT the global test-summary)
+                            if (data.metadata?.artifactType === 'test-summary') {
+                                // Global test summary — fall through to default handler
+                                break;
+                            }
+                            acOutput.appendLine(`[ArtifactStore] Found epic test-strategy: ${fileName}`);
+                            const tsRelPath = fileUri.path.replace(folderUri.path, '');
+                            const tsDirMatch = tsRelPath.match(/epics[\/\\]epic-(\d+)/);
+                            const tsEpicId = normalizeEpicId(
+                                data.metadata?.epicId ||
+                                data.content?.epicId ||
+                                (tsDirMatch ? tsDirMatch[1] : null)
+                            );
+                            if (tsEpicId) {
+                                const epicsArr: any[] = this.artifacts.get('epics') || allEpics;
+                                const parentEpic = epicsArr.find((e: any) => normalizeEpicId(e.id) === tsEpicId) ||
+                                                   allEpics.find((e: any) => normalizeEpicId(e.id) === tsEpicId);
+                                if (parentEpic) {
+                                    parentEpic.testStrategy = data.content;
+                                    acOutput.appendLine(`[ArtifactStore] Linked test-strategy to epic ${tsEpicId}`);
+                                } else {
+                                    acOutput.appendLine(`[ArtifactStore] Parent epic ${tsEpicId} not yet loaded for test-strategy, skipped`);
+                                }
                             }
                             break;
                         }
@@ -3027,7 +3140,12 @@ export class ArtifactStore {
                                 }
                             } else if (data.content?.userStory || data.userStory) {
                                 // Has userStory - treat as story
-                                const story = this.mapSchemaStoryToInternal(data.content || data);
+                                // Merge metadata-level fields into content so dependencies etc. are preserved
+                                const storyMerged = {
+                                    ...(data.metadata || {}),
+                                    ...(data.content || data),
+                                };
+                                const story = this.mapSchemaStoryToInternal(storyMerged);
                                 if (story) standaloneStories.push(story);
                             }
                             break;
@@ -3216,6 +3334,16 @@ export class ArtifactStore {
                 || this.artifacts.get('testStrategy') || this.artifacts.get('vision');
             if (hasData) {
                 this.artifacts.set('projectName', projectName);
+                // Sort epics by numeric ID before storing.
+                // fs.readdir / vscode.workspace.fs.readDirectory returns entries
+                // in alphabetical order (epic-1, epic-10, epic-11, …, epic-2),
+                // which produces incorrect index-based numbering downstream.
+                allEpics.sort((a, b) => {
+                    const na = parseInt(a.id, 10);
+                    const nb = parseInt(b.id, 10);
+                    if (!isNaN(na) && !isNaN(nb)) return na - nb;
+                    return a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: 'base' });
+                });
                 this.artifacts.set('epics', allEpics);
 
                 // ─── Migration auto-detection ────────────────────────────
@@ -3776,6 +3904,24 @@ export class ArtifactStore {
         }
     }
 
+/**
+     * Extract a numeric story ID from various dependency string formats:
+     * - "S1.1 — Database Migration Infrastructure (User table...)"  → "1.1"
+     * - "S1.1"                                                       → "1.1"
+     * - "1.1"                                                        → "1.1"
+     * - "STORY-1.1"                                                  → "1.1"
+     * - "Story 1.1 - Some Title"                                     → "1.1"
+     * - Any unrecognized format                                      → original string
+     */
+    private static extractStoryId(dep: string): string {
+        const trimmed = dep.trim();
+        // Try: "S1.1", "S1.1 — ...", "STORY-1.1", "Story 1.1 - ..."
+        const match = trimmed.match(/^(?:S(?:TORY)?[\s-]*)?(\d+\.\d+)/i);
+        if (match) return match[1];
+        // Fallback: return as-is (might be a bare ID or unknown format)
+        return trimmed;
+    }
+
     /**
      * Map story from schema format to internal Story type
      */
@@ -3845,11 +3991,58 @@ export class ArtifactStore {
             uxReferences: storyData.uxReferences,
             references: storyData.references,
             notes: storyData.notes,
-            dependencies: Array.isArray(storyData.dependencies)
-                ? { blockedBy: storyData.dependencies.map((d: any) => typeof d === 'string' ? d : d) }
-                : storyData.dependencies,
+            dependencies: (() => {
+                const raw = storyData.dependencies;
+                // Already structured object with blockedBy
+                if (raw && !Array.isArray(raw) && typeof raw === 'object') {
+                    // Normalize each blockedBy item to ensure storyId is extractable
+                    if (Array.isArray(raw.blockedBy)) {
+                        raw.blockedBy = raw.blockedBy.map((d: any) =>
+                            typeof d === 'string' ? { storyId: ArtifactStore.extractStoryId(d), title: d } : d
+                        );
+                    }
+                    return raw;
+                }
+                // Flat string array → convert to structured format
+                if (Array.isArray(raw)) {
+                    return {
+                        blockedBy: raw.map((d: any) => {
+                            if (typeof d === 'string') {
+                                return { storyId: ArtifactStore.extractStoryId(d), title: d };
+                            }
+                            // Already an object (e.g. {storyId: '1.1', title: '...'})
+                            return d;
+                        }),
+                        blocks: [],
+                        relatedStories: []
+                    };
+                }
+                // No dependencies
+                return { blockedBy: [], blocks: [], relatedStories: [] };
+            })(),
             tasks: storyData.tasks,
-            devNotes: storyData.devNotes,
+            devNotes: (() => {
+                const dn = storyData.devNotes;
+                if (!dn || typeof dn !== 'object') return dn;
+                // Coerce object items in string-only arrays to strings
+                const stringArrayFields = [
+                    'architecturePatterns', 'securityConsiderations',
+                    'performanceConsiderations', 'accessibilityConsiderations',
+                    'edgeCases', 'potentialChallenges'
+                ];
+                for (const field of stringArrayFields) {
+                    if (Array.isArray(dn[field])) {
+                        dn[field] = dn[field].map((item: any) =>
+                            typeof item === 'string' ? item : (item.description || item.name || JSON.stringify(item))
+                        );
+                    }
+                }
+                // Normalize testingStrategy string → object
+                if (typeof dn.testingStrategy === 'string' && dn.testingStrategy) {
+                    dn.testingStrategy = { unitTests: [dn.testingStrategy] };
+                }
+                return dn;
+            })(),
             devAgentRecord: storyData.devAgentRecord,
             history: storyData.history,
             labels: storyData.labels,
@@ -4795,21 +4988,14 @@ export class ArtifactStore {
         // syncToFiles does NOT write requirementsInventory back to epics.json
         // (PRD is the authoritative source for NFR/additional). To prevent
         // data loss after save+reload, persist the in-memory requirements
-        // to a standalone requirements.json in the solutioning-artifacts dir.
+        // to a standalone requirements.json in the solutioning/ dir.
         // On reload, the `case 'requirements'` handler picks this file up.
         try {
             const reqs = state.requirements;
             if (reqs && (reqs.functional?.length || reqs.nonFunctional?.length || reqs.additional?.length)) {
-                // Determine the target directory — prefer solutioning-artifacts if it exists
-                let reqDir = baseUri;
-                for (const subdir of ['solutioning-artifacts', 'planning-artifacts']) {
-                    const candidate = vscode.Uri.joinPath(baseUri, subdir);
-                    try {
-                        await vscode.workspace.fs.stat(candidate);
-                        reqDir = candidate;
-                        break;
-                    } catch { /* dir doesn't exist, try next */ }
-                }
+                // Always write to solutioning/
+                const reqDir = vscode.Uri.joinPath(baseUri, 'solutioning');
+                try { await vscode.workspace.fs.createDirectory(reqDir); } catch { /* exists */ }
                 const reqFileUri = vscode.Uri.joinPath(reqDir, 'requirements.json');
                 const reqContent = {
                     metadata: {
@@ -4907,14 +5093,17 @@ export class ArtifactStore {
                 '## File Structure',
                 '',
                 '```',
-                'planning-artifacts/',
-                '  epics.json                  ← Manifest (metadata + refs to individual epic files)',
-                '  epics/                      ← One file per epic',
-                '    epic-{id}.json            ← Full epic content (goal, stories, metadata)',
-                '  stories/                    ← One file per story (when extracted)',
-                '    story-{id}.json           ← Full story content (AC, tasks, test cases)',
-                'epics-index.json              ← Summary index: id, title, status, storyCount',
-                'stories-index.json            ← Summary index: id, title, epicId, status',
+                'epics/',
+                '  epic-{id}/',
+                '    epic.json                  ← Full epic content (goal, stories, metadata)',
+                '    stories/',
+                '      {id}-{slug}.json         ← Full story content (AC, tasks, test cases)',
+                '    tests/',
+                '      test-cases.json          ← Test cases scoped to this epic',
+                '      test-design-{id}.json    ← Test design scoped to this epic',
+                'epics.json                     ← Manifest (metadata + refs to epic files)',
+                'epics-index.json               ← Summary index: id, title, status, storyCount',
+                'stories-index.json             ← Summary index: id, title, epicId, status',
                 '```',
                 '',
                 '## Quick Reference for LLMs',
@@ -4922,10 +5111,10 @@ export class ArtifactStore {
                 '| To find...               | Read this file                          |',
                 '|--------------------------|------------------------------------------|',
                 '| List of all epics        | `epics-index.json` or `epics.json`       |',
-                '| Full epic details        | `planning-artifacts/epics/epic-{id}.json`|',
+                '| Full epic details        | `epics/epic-{id}/epic.json`              |',
                 '| List of all stories      | `stories-index.json`                     |',
-                '| Full story details       | `planning-artifacts/stories/story-{id}.json` |',
-                '| Requirements             | `planning-artifacts/requirements.json`   |',
+                '| Full story details       | `epics/epic-{id}/stories/{id}-{slug}.json` |',
+                '| Epic test cases          | `epics/epic-{id}/tests/test-cases.json`  |',
                 '',
                 '## Key Conventions',
                 '',
@@ -4981,15 +5170,8 @@ export class ArtifactStore {
      * Save vision to JSON file
      */
     private async saveVisionToFile(state: BmadArtifacts, baseUri: vscode.Uri): Promise<void> {
-        let targetUri: vscode.Uri;
-        
-        if (this.sourceFiles.has('vision')) {
-            targetUri = this.sourceFiles.get('vision')!;
-            logDebug('Writing vision to original source file:', targetUri.fsPath);
-        } else {
-            targetUri = vscode.Uri.joinPath(baseUri, 'vision.json');
-            logDebug('Writing vision to default location:', targetUri.fsPath);
-        }
+        const targetUri = vscode.Uri.joinPath(baseUri, 'vision.json');
+        logDebug('Writing vision to:', targetUri.fsPath);
         
         const visionJson = {
             metadata: {
@@ -5093,7 +5275,7 @@ export class ArtifactStore {
      * 
      * Steps:
      * 1. Backup epics.json → epics.json.pre-migration.bak
-     * 2. For each inline story: write to implementation-artifacts/{epicId}-{storyId}.json
+     * 2. For each inline story: write to epics/epic-{N}/stories/{epicId}-{storyId}.json
      * 3. Replace inline story objects with string refs in epics.json
      * 4. Remove requirementsInventory from epics.json (PRD is authoritative)
      * 5. Reload from disk to verify
@@ -5125,9 +5307,7 @@ export class ArtifactStore {
             acOutput.appendLine(`[Migration] Backup created: ${backupUri.fsPath}`);
 
             // ── 3. Extract inline stories to files ─────────────────────────
-            const implDir = vscode.Uri.joinPath(this.sourceFolder, 'implementation-artifacts');
-            try { await vscode.workspace.fs.createDirectory(implDir); } catch { /* exists */ }
-
+            // ── 3. Extract inline stories to files ─────────────────────────
             const epics = epicsJson.content?.epics || epicsJson.epics || [];
             let extractedCount = 0;
             let skippedCount = 0;
@@ -5188,10 +5368,16 @@ export class ArtifactStore {
                     const fileName = storyNumSuffix
                         ? `${safeEpicId}-${storyNumSuffix}-${safeTitle}.json`
                         : `${safeEpicId}-${safeTitle}.json`;
-                    const fileUri = vscode.Uri.joinPath(implDir, fileName);
+                    // Epic-scoped stories dir: epics/epic-{N}/stories/
+                    const storiesDir = vscode.Uri.joinPath(
+                        this.epicScopedDir(this.sourceFolder!, epicId),
+                        'stories'
+                    );
+                    try { await vscode.workspace.fs.createDirectory(storiesDir); } catch { /* exists */ }
+                    const fileUri = vscode.Uri.joinPath(storiesDir, fileName);
 
                     // Check if a file already exists for this story — by exact match OR
-                    // by any file in implDir that starts with "{epicId}-{storyNum}-" or
+                    // by any file in storiesDir that starts with "{epicId}-{storyNum}-" or
                     // "{epicId}-{slug}" to avoid creating duplicates under a different
                     // naming convention.
                     let alreadyExists = false;
@@ -5207,7 +5393,7 @@ export class ArtifactStore {
                             ? [`${safeEpicId}-${storyNumSuffix}-`, `${safeEpicId}-${safeTitle}`]
                             : [`${safeEpicId}-${safeTitle}`];
                         try {
-                            const existingFiles = await vscode.workspace.fs.readDirectory(implDir);
+                            const existingFiles = await vscode.workspace.fs.readDirectory(storiesDir);
                             for (const [existingName] of existingFiles) {
                                 const lowerExisting = existingName.toLowerCase();
                                 if (lowerExisting.endsWith('.json') && prefixes.some(p => lowerExisting.startsWith(p))) {
@@ -5319,7 +5505,7 @@ export class ArtifactStore {
 
             return {
                 success: true,
-                summary: `Restored epics.json from pre-migration backup.\nNote: Extracted story files in implementation-artifacts/ were NOT deleted.\nYou can delete them manually if needed.`
+                summary: `Restored epics.json from pre-migration backup.\nNote: Extracted story files in epics/epic-{N}/stories/ were NOT deleted.\nYou can delete them manually if needed.`
             };
         } catch (err: any) {
             return {
@@ -5342,32 +5528,11 @@ export class ArtifactStore {
 
     private async saveEpicsToFile(state: BmadArtifacts, baseUri: vscode.Uri): Promise<void> {
         // Resolve the directory that contains (or will contain) epics.json
-        let manifestDir: vscode.Uri;
-        
-        if (this.sourceFiles.has('epics')) {
-            const existingUri = this.sourceFiles.get('epics')!;
-            // Parent directory of the existing epics file
-            const parts = existingUri.path.split('/');
-            parts.pop();
-            manifestDir = existingUri.with({ path: parts.join('/') });
-            logDebug('Writing epics to original source directory:', manifestDir.fsPath);
-        } else {
-            manifestDir = vscode.Uri.joinPath(baseUri, 'planning-artifacts');
-            try {
-                await vscode.workspace.fs.createDirectory(manifestDir);
-            } catch {
-                // Folder might already exist
-            }
-            logDebug('Writing epics to default location:', manifestDir.fsPath);
-        }
+        // Manifest always goes at project root
+        const manifestDir = baseUri;
+        logDebug('Writing epics manifest to project root:', manifestDir.fsPath);
 
         const manifestUri = vscode.Uri.joinPath(manifestDir, 'epics.json');
-        const epicsDir = vscode.Uri.joinPath(manifestDir, 'epics');
-        try {
-            await vscode.workspace.fs.createDirectory(epicsDir);
-        } catch {
-            // Folder might already exist
-        }
 
         const allEpics = state.epics || [];
         const epicRefs: { id: string; title: string; status: string; file: string }[] = [];
@@ -5382,7 +5547,15 @@ export class ArtifactStore {
                     const storyOut = { ...story };
                     // Normalize dependencies back to string[] for inline schema compat
                     if (storyOut.dependencies?.blockedBy && Array.isArray(storyOut.dependencies.blockedBy)) {
-                        storyOut.dependencies = storyOut.dependencies.blockedBy;
+                        // Preserve structured format for round-trip stability
+                        storyOut.dependencies = {
+                            blockedBy: storyOut.dependencies.blockedBy.map((d: any) => {
+                                if (typeof d === 'string') return { storyId: d };
+                                return d;
+                            }),
+                            blocks: storyOut.dependencies.blocks || [],
+                            relatedStories: storyOut.dependencies.relatedStories || []
+                        };
                     }
                     // Remove transient routing fields
                     delete storyOut._sourceEpicId;
@@ -5393,7 +5566,75 @@ export class ArtifactStore {
             // Derive a filesystem-safe ID slug
             const idSlug = String(epic.id).replace(/[^a-zA-Z0-9_-]/g, '-').toLowerCase();
             const epicFileName = `epic-${idSlug}.json`;
-            const epicFileUri = vscode.Uri.joinPath(epicsDir, epicFileName);
+
+            // Epic-scoped directory: epics/epic-{N}/epic.json
+            const epicDir = this.epicScopedDir(baseUri, epic.id);
+            try { await vscode.workspace.fs.createDirectory(epicDir); } catch { /* exists */ }
+            const epicFileUri = vscode.Uri.joinPath(epicDir, 'epic.json');
+
+            // === Extract useCases to separate file ===
+            const ucToWrite = epicFields.useCases;
+            if (Array.isArray(ucToWrite) && ucToWrite.length > 0) {
+                const ucFileUri = vscode.Uri.joinPath(epicDir, 'use-cases.json');
+                const ucJson = {
+                    metadata: {
+                        schemaVersion: '1.0.0',
+                        artifactType: 'use-cases',
+                        epicId: String(epic.id),
+                        timestamps: { lastModified: new Date().toISOString() }
+                    },
+                    content: { useCases: ucToWrite }
+                };
+                if (outputFormat === 'json' || outputFormat === 'dual') {
+                    await vscode.workspace.fs.writeFile(
+                        ucFileUri, Buffer.from(JSON.stringify(ucJson, null, 2), 'utf-8')
+                    );
+                    logDebug(`Saved use-cases.json for epic ${epic.id}`);
+                }
+            } else {
+                // Guard: don't delete existing on-disk use-cases when in-memory has none
+                try {
+                    const existingUcBytes = await vscode.workspace.fs.readFile(vscode.Uri.joinPath(epicDir, 'use-cases.json'));
+                    const existingUc = JSON.parse(Buffer.from(existingUcBytes).toString('utf-8'));
+                    if (existingUc.content?.useCases?.length) {
+                        logDebug(`Preserved on-disk use-cases.json for epic ${epic.id} (memory had none)`);
+                    }
+                } catch { /* no existing file — nothing to preserve */ }
+            }
+            delete epicFields.useCases; // Don't embed in epic.json
+
+            // === Extract testStrategy to separate file ===
+            const tsToWrite = epicFields.testStrategy;
+            if (tsToWrite && typeof tsToWrite === 'object' && Object.keys(tsToWrite).length > 0) {
+                const testsDir = vscode.Uri.joinPath(epicDir, 'tests');
+                try { await vscode.workspace.fs.createDirectory(testsDir); } catch { /* exists */ }
+                const tsFileUri = vscode.Uri.joinPath(testsDir, 'test-strategy.json');
+                const tsJson = {
+                    metadata: {
+                        schemaVersion: '1.0.0',
+                        artifactType: 'epic-test-strategy',
+                        epicId: String(epic.id),
+                        timestamps: { lastModified: new Date().toISOString() }
+                    },
+                    content: tsToWrite
+                };
+                if (outputFormat === 'json' || outputFormat === 'dual') {
+                    await vscode.workspace.fs.writeFile(
+                        tsFileUri, Buffer.from(JSON.stringify(tsJson, null, 2), 'utf-8')
+                    );
+                    logDebug(`Saved test-strategy.json for epic ${epic.id}`);
+                }
+            } else {
+                // Guard: don't delete existing on-disk test-strategy when in-memory has none
+                try {
+                    const existingTsBytes = await vscode.workspace.fs.readFile(vscode.Uri.joinPath(epicDir, 'tests', 'test-strategy.json'));
+                    const existingTs = JSON.parse(Buffer.from(existingTsBytes).toString('utf-8'));
+                    if (existingTs.content && Object.keys(existingTs.content).length > 0) {
+                        logDebug(`Preserved on-disk test-strategy.json for epic ${epic.id} (memory had none)`);
+                    }
+                } catch { /* no existing file — nothing to preserve */ }
+            }
+            delete epicFields.testStrategy; // Don't embed in epic.json
 
             const epicFileJson = {
                 metadata: {
@@ -5434,7 +5675,7 @@ export class ArtifactStore {
                 id: epic.id,
                 title: epic.title || 'Untitled Epic',
                 status: epic.status || 'draft',
-                file: `epics/${epicFileName}`
+                file: `epics/epic-${idSlug}/epic.json`
             });
         }
 
@@ -5452,9 +5693,10 @@ export class ArtifactStore {
                 status: 'draft',
                 _llmHint: [
                     'This is a manifest file. Each epic\'s full content is in a separate file.',
-                    'Epic files: epics/epic-{id}.json (relative to this file)',
-                    'Stories may be standalone files: stories/story-{id}.json (relative to parent dir)',
-                    'Summary indexes: epics-index.json, stories-index.json (in parent dir)',
+                    'Epic files: epics/epic-{id}/epic.json (relative to this file)',
+                    'Stories: epics/epic-{id}/stories/{storyId}-{slug}.json',
+                    'Tests: epics/epic-{id}/tests/test-cases.json, test-design.json',
+                    'Summary indexes: epics-index.json, stories-index.json (in this dir)',
                     'To read a specific epic, load its file from the epics array below.'
                 ].join(' ')
             },
@@ -5494,10 +5736,8 @@ export class ArtifactStore {
      */
     private async saveProductBriefToFile(state: BmadArtifacts, baseUri: vscode.Uri): Promise<void> {
         const targetUri = await resolveArtifactTargetUri({
-            sourceFiles: this.sourceFiles,
-            storeKey: 'productBrief',
             baseUri,
-            folderName: 'discovery-artifacts',
+            folderName: 'discovery',
             fileName: 'product-brief.json'
         });
         const json = {
@@ -5537,10 +5777,8 @@ export class ArtifactStore {
      */
     private async savePRDToFile(state: BmadArtifacts, baseUri: vscode.Uri): Promise<void> {
         const targetUri = await resolveArtifactTargetUri({
-            sourceFiles: this.sourceFiles,
-            storeKey: 'prd',
             baseUri,
-            folderName: 'planning-artifacts',
+            folderName: 'planning',
             fileName: 'prd.json'
         });
         const json = {
@@ -5580,10 +5818,8 @@ export class ArtifactStore {
      */
     private async saveArchitectureToFile(state: BmadArtifacts, baseUri: vscode.Uri): Promise<void> {
         const targetUri = await resolveArtifactTargetUri({
-            sourceFiles: this.sourceFiles,
-            storeKey: 'architecture',
             baseUri,
-            folderName: 'solutioning-artifacts',
+            folderName: 'solutioning',
             fileName: 'architecture.json'
         });
         const json = {
@@ -5622,72 +5858,83 @@ export class ArtifactStore {
      * Save test cases to JSON file
      */
     private async saveTestCasesToFile(state: BmadArtifacts, baseUri: vscode.Uri): Promise<void> {
-        let targetUri: vscode.Uri;
+        // Group test cases by epicId → per-epic files
+        const allCases = state.testCases || [];
+        const groupedByEpic = new Map<string, any[]>();
+        const orphans: any[] = [];
 
-        if (this.sourceFiles.has('testCases')) {
-            targetUri = this.sourceFiles.get('testCases')!;
-        } else {
-            const testingUri = vscode.Uri.joinPath(baseUri, 'testing-artifacts');
-            try {
-                await vscode.workspace.fs.createDirectory(testingUri);
-            } catch {
-                // Folder might already exist
+        for (const tc of allCases) {
+            const eid = (tc as any).epicId || (tc as any).epicInfo?.epicId || '';
+            if (eid) {
+                if (!groupedByEpic.has(eid)) groupedByEpic.set(eid, []);
+                groupedByEpic.get(eid)!.push({ ...tc });
+            } else {
+                orphans.push({ ...tc });
             }
-            targetUri = vscode.Uri.joinPath(testingUri, 'test-cases.json');
         }
 
-        const testCasesJson = {
-            metadata: {
-                schemaVersion: '1.0.0',
-                artifactType: 'test-cases',
-                workflowName: 'agileagentcanvas',
-                projectName: state.projectName,
-                timestamps: {
-                    created: new Date().toISOString(),
-                    lastModified: new Date().toISOString()
-                },
-                status: 'draft'
-            },
-            content: {
-                testCases: (state.testCases || []).map((tc: any) => {
-                    return { ...tc };
-                })
-            }
-        };
-
-        // Write JSON if output format includes JSON
         const outputFormat = this.getOutputFormat();
-        if (outputFormat === 'json' || outputFormat === 'dual') {
-            await writeJsonFile(targetUri, testCasesJson);
-            logDebug('Saved test cases to:', targetUri.fsPath);
+
+        // Write per-epic test case files
+        for (const [epicId, cases] of groupedByEpic) {
+            const testsDir = vscode.Uri.joinPath(
+                this.epicScopedDir(baseUri, epicId),
+                'tests'
+            );
+            try { await vscode.workspace.fs.createDirectory(testsDir); } catch { /* exists */ }
+            const targetUri = vscode.Uri.joinPath(testsDir, 'test-cases.json');
+            const json = {
+                metadata: {
+                    schemaVersion: '1.0.0',
+                    artifactType: 'test-cases',
+                    workflowName: 'agileagentcanvas',
+                    projectName: state.projectName,
+                    timestamps: { created: new Date().toISOString(), lastModified: new Date().toISOString() },
+                    status: 'draft'
+                },
+                content: { testCases: cases }
+            };
+            if (outputFormat === 'json' || outputFormat === 'dual') {
+                await writeJsonFile(targetUri, json);
+                logDebug(`Saved ${cases.length} test cases for ${epicId} to:`, targetUri.fsPath);
+            }
         }
 
-        // Write markdown companion if output format includes markdown
-        if (outputFormat === 'markdown' || outputFormat === 'dual') {
-            const mdUri = await writeMarkdownCompanion(targetUri, 'test-cases.md', this.generateTestCasesMarkdown(state));
-            logDebug('Saved markdown companion:', mdUri.fsPath);
+        // Write orphan test cases to root testing/
+        if (orphans.length > 0) {
+            const testingUri = vscode.Uri.joinPath(baseUri, 'testing');
+            try { await vscode.workspace.fs.createDirectory(testingUri); } catch { /* exists */ }
+            const targetUri = vscode.Uri.joinPath(testingUri, 'test-cases.json');
+            const json = {
+                metadata: {
+                    schemaVersion: '1.0.0',
+                    artifactType: 'test-cases',
+                    workflowName: 'agileagentcanvas',
+                    projectName: state.projectName,
+                    timestamps: { created: new Date().toISOString(), lastModified: new Date().toISOString() },
+                    status: 'draft'
+                },
+                content: { testCases: orphans }
+            };
+            if (outputFormat === 'json' || outputFormat === 'dual') {
+                await writeJsonFile(targetUri, json);
+                logDebug(`Saved ${orphans.length} orphan test cases to:`, targetUri.fsPath);
+            }
+            this.sourceFiles.set('testCases', targetUri);
         }
-
-        this.sourceFiles.set('testCases', targetUri);
     }
 
     /**
      * Save test strategy to JSON file
      */
     private async saveTestStrategyToFile(state: BmadArtifacts, baseUri: vscode.Uri): Promise<void> {
-        let targetUri: vscode.Uri;
-
-        if (this.sourceFiles.has('testStrategy')) {
-            targetUri = this.sourceFiles.get('testStrategy')!;
-        } else {
-            const testingUri = vscode.Uri.joinPath(baseUri, 'testing-artifacts');
-            try {
-                await vscode.workspace.fs.createDirectory(testingUri);
-            } catch {
-                // Folder might already exist
-            }
-            targetUri = vscode.Uri.joinPath(testingUri, 'test-strategy.json');
+        const testingUri = vscode.Uri.joinPath(baseUri, 'testing');
+        try {
+            await vscode.workspace.fs.createDirectory(testingUri);
+        } catch {
+            // Folder might already exist
         }
+        const targetUri = vscode.Uri.joinPath(testingUri, 'test-strategy.json');
 
         const testStrategyJson = {
             metadata: {
@@ -5733,10 +5980,17 @@ export class ArtifactStore {
         let targetUri: vscode.Uri;
         const sourceKey = `testDesign:${td.id}`;
 
-        if (this.sourceFiles.has(sourceKey)) {
-            targetUri = this.sourceFiles.get(sourceKey)!;
+        if (td.epicInfo?.epicId) {
+            // Epic-scoped: epics/epic-{N}/tests/test-design.json
+            const testsDir = vscode.Uri.joinPath(
+                this.epicScopedDir(baseUri, td.epicInfo.epicId),
+                'tests'
+            );
+            try { await vscode.workspace.fs.createDirectory(testsDir); } catch { /* exists */ }
+            const safeId = td.id.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            targetUri = vscode.Uri.joinPath(testsDir, `test-design-${safeId}.json`);
         } else {
-            const testingUri = vscode.Uri.joinPath(baseUri, 'testing-artifacts');
+            const testingUri = vscode.Uri.joinPath(baseUri, 'testing');
             try {
                 await vscode.workspace.fs.createDirectory(testingUri);
             } catch {
@@ -5744,12 +5998,7 @@ export class ArtifactStore {
             }
             // Generate a safe filename
             const safeId = td.id.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-            let filename = 'test-design.json';
-            if (td.epicInfo?.epicId) {
-                filename = `test-design-${safeId}.json`;
-            } else if (safeId) {
-                filename = `test-design-${safeId}.json`;
-            }
+            const filename = safeId ? `test-design-${safeId}.json` : 'test-design.json';
             targetUri = vscode.Uri.joinPath(testingUri, filename);
         }
         const testDesignJson = {
@@ -5829,29 +6078,25 @@ export class ArtifactStore {
     ): Promise<void> {
         let targetUri: vscode.Uri;
 
-        if (this.sourceFiles.has(storeKey)) {
-            targetUri = this.sourceFiles.get(storeKey)!;
+        // Determine the output folder based on the artifact module
+        let folder: string;
+        const baseType = storeKey.split(':')[0];
+        const teaTypes = ['traceabilityMatrix', 'testReview', 'nfrAssessment', 'testFramework', 'ciPipeline', 'automationSummary', 'atddChecklist'];
+        const cisTypes = ['storytelling', 'problemSolving', 'innovationStrategy', 'designThinking'];
+        if (teaTypes.includes(baseType)) {
+            folder = 'testing';
+        } else if (cisTypes.includes(baseType)) {
+            folder = 'cis';
         } else {
-            // Determine the output folder based on the artifact module
-            let folder: string;
-            const baseType = storeKey.split(':')[0];
-            const teaTypes = ['traceabilityMatrix', 'testReview', 'nfrAssessment', 'testFramework', 'ciPipeline', 'automationSummary', 'atddChecklist'];
-            const cisTypes = ['storytelling', 'problemSolving', 'innovationStrategy', 'designThinking'];
-            if (teaTypes.includes(baseType)) {
-                folder = 'testing-artifacts';
-            } else if (cisTypes.includes(baseType)) {
-                folder = 'cis-artifacts';
-            } else {
-                folder = 'bmm-artifacts';
-            }
-            const folderUri = vscode.Uri.joinPath(baseUri, folder);
-            try {
-                await vscode.workspace.fs.createDirectory(folderUri);
-            } catch {
-                // Folder might already exist
-            }
-            targetUri = vscode.Uri.joinPath(folderUri, `${fileSlug}.json`);
+            folder = 'bmm';
         }
+        const folderUri = vscode.Uri.joinPath(baseUri, folder);
+        try {
+            await vscode.workspace.fs.createDirectory(folderUri);
+        } catch {
+            // Folder might already exist
+        }
+        targetUri = vscode.Uri.joinPath(folderUri, `${fileSlug}.json`);
 
         // Build the JSON envelope: separate id/status into metadata, rest is content
         const { id, status, ...contentFields } = artifact;

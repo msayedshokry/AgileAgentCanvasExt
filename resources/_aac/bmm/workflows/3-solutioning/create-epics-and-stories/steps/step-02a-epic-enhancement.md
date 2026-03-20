@@ -358,9 +358,13 @@ After each section, get user confirmation before proceeding to next.
 
 After enhancement is complete:
 
-1. **Update {outputFile}** with all enhanced content for the epic
-2. **Display Summary:** Show what was added
-3. **Ask:** "Would you like to enhance another epic, or return to the design menu?"
+1. **Update {outputFile}** with all enhanced content for the epic in markdown
+2. **Write separate JSON files:**
+   - Use Cases → `epics/epic-{N}/use-cases.json` (artifactType: `use-cases`, metadata.epicId: epic number)
+   - Test Strategy → `epics/epic-{N}/tests/test-strategy.json` (artifactType: `epic-test-strategy`, metadata.epicId: epic number)
+3. **Do NOT embed** useCases or testStrategy inside `epic.json` — this causes data loss
+4. **Display Summary:** Show what was added
+5. **Ask:** "Would you like to enhance another epic, or return to the design menu?"
 
 If enhance another: Return to [Epic Selection](#2-epic-selection)
 If return: Read fully and follow: {returnToStep}

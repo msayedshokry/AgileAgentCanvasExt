@@ -680,7 +680,7 @@ export function renderStoryDetails(props: RendererProps) {
               <button className="btn btn-secondary btn-small" onClick={() => addToArray('implementationDetails', '')}>+ Add</button>
             </div>
           ) : (
-            <ul>{implementationDetails.map((item: string, i: number) => <li key={i}>{item}</li>)}</ul>
+            <ul>{implementationDetails.map((item: any, i: number) => <li key={i}>{typeof item === 'string' ? item : (item.description || item.name || JSON.stringify(item))}</li>)}</ul>
           )}
         </CollapsibleSection>
       )}
@@ -811,7 +811,7 @@ export function renderStoryDetails(props: RendererProps) {
               {devNotes.architecturePatterns?.length > 0 && (
                 <div className="devnote-group">
                   <h5>Architecture Patterns</h5>
-                  <ul>{devNotes.architecturePatterns.map((item: string, i: number) => <li key={i}>{item}</li>)}</ul>
+                  <ul>{devNotes.architecturePatterns.map((item: any, i: number) => <li key={i}>{typeof item === 'string' ? item : (item.name || item.pattern || JSON.stringify(item))}</li>)}</ul>
                 </div>
               )}
               {devNotes.componentsToCreate?.length > 0 && (
@@ -833,7 +833,19 @@ export function renderStoryDetails(props: RendererProps) {
               {devNotes.dataModels?.length > 0 && (
                 <div className="devnote-group">
                   <h5>Data Models</h5>
-                  <ul>{devNotes.dataModels.map((item: string, i: number) => <li key={i}>{item}</li>)}</ul>
+                  <ul>{devNotes.dataModels.map((item: any, i: number) => {
+                    if (typeof item === 'string') return <li key={i}>{item}</li>;
+                    // Object format: {name, schema, description, fields, note}
+                    return (
+                      <li key={i}>
+                        <strong>{item.name || 'Model'}</strong>
+                        {item.schema && <><br/><code>{item.schema}</code></>}
+                        {item.description && <> — {item.description}</>}
+                        {item.note && <> <em>({item.note})</em></>}
+                        {item.fields && Array.isArray(item.fields) && <> [{item.fields.join(', ')}]</>}
+                      </li>
+                    );
+                  })}</ul>
                 </div>
               )}
               {devNotes.apiEndpoints?.length > 0 && (
@@ -855,31 +867,31 @@ export function renderStoryDetails(props: RendererProps) {
               {devNotes.securityConsiderations?.length > 0 && (
                 <div className="devnote-group">
                   <h5>Security Considerations</h5>
-                  <ul>{devNotes.securityConsiderations.map((item: string, i: number) => <li key={i}>{item}</li>)}</ul>
+                  <ul>{devNotes.securityConsiderations.map((item: any, i: number) => <li key={i}>{typeof item === 'string' ? item : (item.description || item.name || JSON.stringify(item))}</li>)}</ul>
                 </div>
               )}
               {devNotes.performanceConsiderations?.length > 0 && (
                 <div className="devnote-group">
                   <h5>Performance Considerations</h5>
-                  <ul>{devNotes.performanceConsiderations.map((item: string, i: number) => <li key={i}>{item}</li>)}</ul>
+                  <ul>{devNotes.performanceConsiderations.map((item: any, i: number) => <li key={i}>{typeof item === 'string' ? item : (item.description || item.name || JSON.stringify(item))}</li>)}</ul>
                 </div>
               )}
               {devNotes.accessibilityConsiderations?.length > 0 && (
                 <div className="devnote-group">
                   <h5>Accessibility</h5>
-                  <ul>{devNotes.accessibilityConsiderations.map((item: string, i: number) => <li key={i}>{item}</li>)}</ul>
+                  <ul>{devNotes.accessibilityConsiderations.map((item: any, i: number) => <li key={i}>{typeof item === 'string' ? item : (item.description || item.name || JSON.stringify(item))}</li>)}</ul>
                 </div>
               )}
               {devNotes.edgeCases?.length > 0 && (
                 <div className="devnote-group">
                   <h5>Edge Cases</h5>
-                  <ul>{devNotes.edgeCases.map((item: string, i: number) => <li key={i}>{item}</li>)}</ul>
+                  <ul>{devNotes.edgeCases.map((item: any, i: number) => <li key={i}>{typeof item === 'string' ? item : (item.description || item.name || JSON.stringify(item))}</li>)}</ul>
                 </div>
               )}
               {devNotes.potentialChallenges?.length > 0 && (
                 <div className="devnote-group">
                   <h5>Potential Challenges</h5>
-                  <ul>{devNotes.potentialChallenges.map((item: string, i: number) => <li key={i}>{item}</li>)}</ul>
+                  <ul>{devNotes.potentialChallenges.map((item: any, i: number) => <li key={i}>{typeof item === 'string' ? item : (item.description || item.name || JSON.stringify(item))}</li>)}</ul>
                 </div>
               )}
             </div>

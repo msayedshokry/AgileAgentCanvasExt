@@ -68,7 +68,7 @@ You must fully embody this agent's persona and follow all activation instruction
     <item cmd="SC or fuzzy match on scan or report or list" action="#scan-report">[SC] Scan &amp; Report — list all convertible artifacts without converting</item>
     <item cmd="CS or fuzzy match on convert-single or single or one-file" exec="{bmad-path}/core/workflows/convert-to-json/workflow.md">[CS] Convert Single File — provide a file path to convert</item>
     <item cmd="CA or fuzzy match on convert-all or all or batch" exec="{bmad-path}/core/workflows/convert-to-json/workflow.md">[CA] Convert ALL Artifacts — convert everything in the source folder</item>
-    <item cmd="CF or fuzzy match on convert-folder or subfolder" exec="{bmad-path}/core/workflows/convert-to-json/workflow.md">[CF] Convert Subfolder — e.g. planning-artifacts, implementation-artifacts</item>
+    <item cmd="CF or fuzzy match on convert-folder or subfolder" exec="{bmad-path}/core/workflows/convert-to-json/workflow.md">[CF] Convert Subfolder — e.g. planning, epics, testing</item>
     <item cmd="CT or fuzzy match on convert-type or by-type or type" exec="{bmad-path}/core/workflows/convert-to-json/workflow.md">[CT] Convert by Type — e.g. story, epics, use-case, architecture</item>
     <item cmd="DA or fuzzy match on exit, leave, goodbye or dismiss agent">[DA] Dismiss Agent</item>
   </menu>

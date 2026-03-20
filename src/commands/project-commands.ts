@@ -99,7 +99,7 @@ export async function loadExistingProject(store: ArtifactStore): Promise<void> {
                 }
             } else {
                 vscode.window.showWarningMessage(
-                    'No BMAD artifacts found. Expected JSON files (epic-*.json) in planning-artifacts subfolder.'
+                    'No BMAD artifacts found. Expected JSON files (epic-*.json) in epics/, planning/, or root.'
                 );
             }
         }
@@ -111,7 +111,7 @@ export async function loadExistingProject(store: ArtifactStore): Promise<void> {
 
 /**
  * Check if a folder contains markdown files that could be converted to JSON.
- * Searches common BMAD locations: planning-artifacts, implementation-artifacts, docs, root.
+ * Searches common locations: epics/, planning-artifacts/ (legacy), implementation-artifacts/ (legacy), docs, root.
  */
 export async function checkForMarkdownFiles(folderUri: vscode.Uri): Promise<boolean> {
     acOutput.appendLine(`[checkForMarkdownFiles] Checking: ${folderUri.fsPath}`);
@@ -157,6 +157,10 @@ export async function checkForMarkdownFiles(folderUri: vscode.Uri): Promise<bool
 
         const implUri = vscode.Uri.joinPath(folderUri, 'implementation-artifacts');
         if (await countMdRecursive(implUri, 'implementation-artifacts') > 0) return true;
+
+        // Epic-scoped structure (new layout)
+        const epicsUri = vscode.Uri.joinPath(folderUri, 'epics');
+        if (await countMdRecursive(epicsUri, 'epics') > 0) return true;
 
         if (await countMdInDir(folderUri, 'Root folder') > 0) return true;
 

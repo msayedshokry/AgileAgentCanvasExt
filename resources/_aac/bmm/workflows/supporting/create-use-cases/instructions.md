@@ -119,9 +119,21 @@ Before finalizing each use case:
 
 ## Output Format
 
-Produce output in dual format:
-1. **Markdown** (`use-cases.md`) - Human-readable document
-2. **JSON** (`use-cases.json`) - Machine-processable format
+Produce one file **per epic** in dual format:
+
+### JSON (primary — read by Canvas)
+- **Path:** `epics/epic-{N}/use-cases.json`
+- **artifactType:** `use-cases`
+- **metadata.epicId:** set to the parent epic's numeric ID (e.g. "1", "15")
+- **content.useCases[]:** array of use case objects following `use-case.schema.json`
+
+### Markdown (companion)
+- **Path:** `epics/epic-{N}/use-cases.md`
+- Human-readable companion generated alongside the JSON
+
+> **⚠️ IMPORTANT:** Do NOT embed useCases inside `epic.json`. The Canvas reads
+> use cases from the separate `use-cases.json` file. Embedding them in
+> `epic.json` risks data loss during save cycles.
 
 ### Markdown Structure
 

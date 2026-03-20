@@ -58,22 +58,8 @@
         "storyCount": 0,
         
         "_verbose_comment": "--- OPTIONAL VERBOSE SECTIONS (from Epic Enhancement) ---",
-        
-        "useCases": [
-          {
-            "_template": true,
-            "id": "UC-01",
-            "title": "{{use_case_title}}",
-            "summary": "{{use_case_summary}}",
-            "primaryActor": "{{actor}}",
-            "scenario": {
-              "context": "{{context}}",
-              "before": "{{without_feature}}",
-              "after": "{{with_feature}}",
-              "impact": "{{benefit}}"
-            }
-          }
-        ],
+        "_useCases_note": "Use cases belong in a separate file: epics/epic-{N}/use-cases.json (artifactType: use-cases)",
+        "_testStrategy_note": "Test strategy belongs in a separate file: epics/epic-{N}/tests/test-strategy.json (artifactType: epic-test-strategy)",
         
         "fitCriteria": {
           "functional": [

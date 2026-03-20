@@ -623,4 +623,40 @@ describe('ArtifactCard', () => {
       expect(screen.getByText('Draft')).toBeInTheDocument();
     });
   });
+
+  describe('Labels', () => {
+    it('should render label tags when artifact has labels in metadata', () => {
+      const artifact = createMockArtifact({
+        type: 'story',
+        metadata: { labels: ['frontend', 'urgent', 'auth'] },
+      });
+      render(<ArtifactCard {...defaultProps} artifact={artifact} />);
+
+      expect(document.querySelector('.artifact-labels')).toBeInTheDocument();
+      expect(screen.getByText('frontend')).toBeInTheDocument();
+      expect(screen.getByText('urgent')).toBeInTheDocument();
+      expect(screen.getByText('auth')).toBeInTheDocument();
+      expect(document.querySelectorAll('.artifact-label-tag').length).toBe(3);
+    });
+
+    it('should not render labels row when labels array is empty', () => {
+      const artifact = createMockArtifact({
+        type: 'story',
+        metadata: { labels: [] },
+      });
+      render(<ArtifactCard {...defaultProps} artifact={artifact} />);
+
+      expect(document.querySelector('.artifact-labels')).not.toBeInTheDocument();
+    });
+
+    it('should not render labels row when no labels field exists', () => {
+      const artifact = createMockArtifact({
+        type: 'story',
+        metadata: {},
+      });
+      render(<ArtifactCard {...defaultProps} artifact={artifact} />);
+
+      expect(document.querySelector('.artifact-labels')).not.toBeInTheDocument();
+    });
+  });
 });

@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/bmm/epics-index.schema.json",
+  "title": "Epics Index Schema",
+  "description": "Schema for the epics-index.json manifest file. Maps epic IDs to titles, statuses, and file paths. Used for project navigation.",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["overview", "epics"],
+      "properties": {
+        "overview": {
+          "type": "object",
+          "properties": {
+            "projectName": { "type": "string", "examples": ["HubNex"] },
+            "totalEpics": { "type": "integer", "minimum": 0, "examples": [21] },
+            "totalStories": { "type": "integer", "minimum": 0, "examples": [138] }
+          }
+        },
+        "epics": {
+          "type": "array",
+          "description": "Ordered list of all epics in the project.",
+          "items": {
+            "type": "object",
+            "required": ["id", "title"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Epic ID (numeric string). Example: '1', '21'",
+                "examples": ["1", "15"]
+              },
+              "title": { "type": "string", "examples": ["Platform Foundation & Identity Management"] },
+              "status": { "$ref": "../common/status.schema.json#/definitions/epicStatus" },
+              "file": {
+                "type": "string",
+                "description": "Relative path to the full epic file.",
+                "examples": ["epics/epic-1/epic.json"]
+              },
+              "storyCount": { "type": "integer", "minimum": 0 },
+              "completed": {
+                "type": "boolean",
+                "description": "Deprecated. Use status='done' instead.",
+                "x-deprecated": true
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

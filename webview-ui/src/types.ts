@@ -447,8 +447,7 @@ export interface EpicMetadata {
   subGroups?: {
     stories?: { x: number; y: number; width: number };
     useCases?: { x: number; y: number; width: number };
-    testStrategy?: { x: number; y: number; width: number };
-    testCases?: { x: number; y: number; width: number };
+    testing?: { x: number; y: number; width: number };
     risks?: { x: number; y: number; width: number };
   };
 }

@@ -1,19 +1,13 @@
 import * as vscode from 'vscode';
 
 interface ResolveTargetUriOptions {
-    sourceFiles: Map<string, vscode.Uri>;
-    storeKey: string;
     baseUri: vscode.Uri;
     folderName?: string;
     fileName: string;
 }
 
 export async function resolveArtifactTargetUri(options: ResolveTargetUriOptions): Promise<vscode.Uri> {
-    const { sourceFiles, storeKey, baseUri, folderName, fileName } = options;
-
-    if (sourceFiles.has(storeKey)) {
-        return sourceFiles.get(storeKey)!;
-    }
+    const { baseUri, folderName, fileName } = options;
 
     if (!folderName) {
         return vscode.Uri.joinPath(baseUri, fileName);

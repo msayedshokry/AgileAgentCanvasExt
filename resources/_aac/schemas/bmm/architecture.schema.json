@@ -46,6 +46,8 @@
               "description": "Guiding architecture principles",
               "items": {
                 "type": "object",
+                "required": ["name"],
+                "minProperties": 1,
                 "properties": {
                   "name": {
                     "type": "string"

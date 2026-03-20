@@ -791,6 +791,14 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                     if (blockedBy > 0 || blocks > 0) storyExtras += 33;
                     // childBreakdown badges row ("N Tasks ›", "N Tests ›") — ~25px
                     // Inline summary chips row ("✓ 0/N ▸", "🧪 0/N ▸") — ~22px
+                    // Labels row — flex-wrap container; ~2 labels per row at max-width 120px
+                    // inside ~222px card content. Each row ~18px + 4px gap; 6px margin-top.
+                    const storyLabels: unknown[] = Array.isArray(story.labels) ? story.labels : [];
+                    if (storyLabels.length > 0) {
+                        const labelsPerRow = 2;
+                        const labelRows = Math.ceil(storyLabels.length / labelsPerRow);
+                        storyExtras += 6 + labelRows * 18 + (labelRows - 1) * 4;
+                    }
                     const storyTasks = story.tasks || [];
                     if (storyTasks.length > 0 || storyTCs.length > 0) storyExtras += 25 + 22;
 
@@ -813,31 +821,36 @@ export function buildArtifacts(store: ArtifactStore): any[] {
             // Epic-only TCs: single row
             const { totalHeight: epicOnlyTCGridHeight } = calcGridHeight(epicOnlyTCCount, epicOnlyTCHeights, Math.max(epicOnlyTCCount, 1));
 
-            // --- Sub-group X positions (vertical layout: use-cases row, then test-strategy, then epic-only TCs, then stories) ---
+            // --- Sub-group X positions (vertical layout: use-cases row, then testing row, then stories) ---
             // All sub-groups start at the same X. Each gets its own vertical row.
-            // Story children (tasks, TCs) are now shown as inline badges — no extra width needed.
+            // Test-strategy and test-coverage cards share a single "Testing" row side-by-side.
             const effectiveStoryCardWidth = CARD_WIDTHS.story;
             const storiesSubColWidth = calcGridWidth(storyCount, effectiveStoryCardWidth, Math.max(storyCount, 1));
             const ucSubColWidth = calcGridWidth(ucCount, CARD_WIDTHS['use-case'], Math.max(ucCount, 1));
 
             const storiesSubColX = CHILDREN_START_X;
             const ucSubColX = CHILDREN_START_X;           // same X — own row below stories
-            const epicOnlyTCSubColX = CHILDREN_START_X;   // same X — own row below use-cases
 
             // Label height added above each non-empty sub-group
             const labelOffset = SUBGROUP_LABEL_HEIGHT;
 
+            // --- Combined "Testing" row: test-strategy + test-coverage side-by-side ---
+            const hasTestingRow = epicTestStrategy || epicOnlyTCCount > 0;
+            const testingContentHeight = Math.max(tsHeight, epicOnlyTCGridHeight); // tallest card wins
+            const testingRowHeight = hasTestingRow ? labelOffset + testingContentHeight : 0;
+            // Width of the combined testing group for the sub-group label
+            const testingGroupWidth = epicTestStrategy && epicOnlyTCCount > 0
+                ? CARD_WIDTHS['test-strategy'] + CARD_SPACING + CARD_WIDTHS['test-coverage']
+                : epicTestStrategy ? CARD_WIDTHS['test-strategy']
+                : CARD_WIDTHS['test-coverage'];
+
             // --- Vertical row Y offsets (each sub-group stacks below the previous) ---
+            // Order: use-cases -> testing (merged) -> stories (last)
             const storiesRowHeight = storyCount > 0 ? labelOffset + storiesGridHeight : 0;
             const ucRowHeight = ucCount > 0 ? labelOffset + ucGridHeight : 0;
-            const epicOnlyTCRowHeight = epicOnlyTCCount > 0 ? labelOffset + epicOnlyTCGridHeight : 0;
-            const tsRowHeight = epicTestStrategy ? labelOffset + tsHeight : 0;
 
-            // Row height = sum of all sub-group rows (vertically stacked).
-            // Order: use-cases -> test-strategy -> epic-only TCs -> stories (last)
-            const prevHeightBeforeTS = ucRowHeight;
-            const prevHeightBeforeTC = prevHeightBeforeTS + (prevHeightBeforeTS > 0 && tsRowHeight > 0 ? SUBGROUP_GAP : 0) + tsRowHeight;
-            const prevHeightBeforeStories = prevHeightBeforeTC + (prevHeightBeforeTC > 0 && epicOnlyTCRowHeight > 0 ? SUBGROUP_GAP : 0) + epicOnlyTCRowHeight;
+            const prevHeightBeforeTesting = ucRowHeight;
+            const prevHeightBeforeStories = prevHeightBeforeTesting + (prevHeightBeforeTesting > 0 && testingRowHeight > 0 ? SUBGROUP_GAP : 0) + testingRowHeight;
             const totalSubgroupHeight = prevHeightBeforeStories + (prevHeightBeforeStories > 0 && storiesRowHeight > 0 ? SUBGROUP_GAP : 0) + storiesRowHeight;
             const rowContentHeight = Math.max(epicHeight, totalSubgroupHeight);
             const rowHeight = rowContentHeight + ROW_PADDING * 2;
@@ -845,8 +858,7 @@ export function buildArtifacts(store: ArtifactStore): any[] {
 
             // Per-row Y positions within the epic row band
             const ucRowY = rowTop;
-            const tsRowY = rowTop + prevHeightBeforeTS + (prevHeightBeforeTS > 0 && tsRowHeight > 0 ? SUBGROUP_GAP : 0);
-            const epicOnlyTCRowY = rowTop + prevHeightBeforeTC + (prevHeightBeforeTC > 0 && epicOnlyTCRowHeight > 0 ? SUBGROUP_GAP : 0);
+            const testingRowY = rowTop + prevHeightBeforeTesting + (prevHeightBeforeTesting > 0 && testingRowHeight > 0 ? SUBGROUP_GAP : 0);
             const storiesRowY = rowTop + prevHeightBeforeStories + (prevHeightBeforeStories > 0 && storiesRowHeight > 0 ? SUBGROUP_GAP : 0);
 
             const parentReqId = epic.functionalRequirements?.[0] || null;
@@ -896,8 +908,12 @@ export function buildArtifacts(store: ArtifactStore): any[] {
 
             const epicChildBreakdown: { label: string; count: number; types: string[] }[] = [];
             if (ucCount > 0) epicChildBreakdown.push({ label: 'UCs', count: ucCount, types: ['use-case'] });
-            if (epicTestStrategy) epicChildBreakdown.push({ label: 'Test Strategy', count: 1, types: ['test-strategy'] });
-            if (epicOnlyTCCount > 0) epicChildBreakdown.push({ label: 'Tests', count: epicOnlyTCs.length, types: ['test-coverage', 'test-case'] });
+            // Merge test-strategy + test-coverage into a single "Testing" badge
+            const testingTypes: string[] = [];
+            let testingBadgeCount = 0;
+            if (epicTestStrategy) { testingTypes.push('test-strategy'); testingBadgeCount += 1; }
+            if (epicOnlyTCCount > 0) { testingTypes.push('test-coverage', 'test-case'); testingBadgeCount += epicOnlyTCs.length; }
+            if (testingBadgeCount > 0) epicChildBreakdown.push({ label: 'Testing', count: testingBadgeCount, types: testingTypes });
             if (storyCount > 0) epicChildBreakdown.push({ label: 'Stories', count: storyCount, types: ['story'] });
             if (totalTaskCount > 0) epicChildBreakdown.push({ label: 'Tasks', count: totalTaskCount, types: ['task'] });
 
@@ -943,8 +959,7 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                     subGroups: {
                         ...(storyCount > 0 ? { stories: { x: storiesSubColX, y: storiesRowY + labelOffset, width: storiesSubColWidth } } : {}),
                         ...(ucCount > 0 ? { useCases: { x: ucSubColX, y: ucRowY + labelOffset, width: ucSubColWidth } } : {}),
-                        ...(epicTestStrategy ? { testStrategy: { x: CHILDREN_START_X, y: tsRowY + labelOffset, width: CARD_WIDTHS['test-strategy'] } } : {}),
-                        ...(epicOnlyTCCount > 0 ? { testCases: { x: epicOnlyTCSubColX, y: epicOnlyTCRowY + labelOffset, width: CARD_WIDTHS['test-coverage'] } } : {})
+                        ...(hasTestingRow ? { testing: { x: CHILDREN_START_X, y: testingRowY + labelOffset, width: testingGroupWidth } } : {})
                     }
                 }
             });
@@ -1100,9 +1115,9 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                 });
             }
 
-            // --- Place per-epic test-strategy in its own row below use-cases ---
+            // --- Place per-epic test-strategy in the merged "Testing" row ---
             if (epicTestStrategy) {
-                const tsCardY = tsRowY + labelOffset;
+                const tsCardY = testingRowY + labelOffset;
                 const tsTitle = epicTestStrategy.title || 'Test Strategy';
                 const tsDescription = epicTestStrategy.scope || epicTestStrategy.approach || '';
 
@@ -1123,9 +1138,13 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                 });
             }
 
-            // --- Place epic-level TCs (no storyId) as a consolidated test-coverage card ---
+            // --- Place epic-level TCs (no storyId) as a consolidated test-coverage card, beside test-strategy ---
             if (epicOnlyTCs.length > 0) {
-                const tcStartY = epicOnlyTCRowY + labelOffset;
+                const tcStartY = testingRowY + labelOffset;
+                // Position to the right of test-strategy (or at start if no test-strategy)
+                const tcCardX = epicTestStrategy
+                    ? CHILDREN_START_X + CARD_WIDTHS['test-strategy'] + CARD_SPACING
+                    : CHILDREN_START_X;
                 const passCount = epicOnlyTCs.filter((tc: any) => tc.status === 'complete' || tc.status === 'completed' || tc.status === 'done' || tc.status === 'passed').length;
                 const failCount = epicOnlyTCs.filter((tc: any) => tc.status === 'blocked' || tc.status === 'rejected' || tc.status === 'failed').length;
                 const draftCount = epicOnlyTCs.filter((tc: any) => !tc.status || tc.status === 'draft' || tc.status === 'ready').length;
@@ -1137,7 +1156,7 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                     title: `Test Coverage (${epicOnlyTCs.length})`,
                     description: `${passCount} pass, ${failCount} fail, ${draftCount} draft`,
                     status: failCount > 0 ? 'blocked' : passCount === epicOnlyTCs.length ? 'complete' : 'draft',
-                    position: { x: epicOnlyTCSubColX, y: tcStartY },
+                    position: { x: tcCardX, y: tcStartY },
                     size: { width: CARD_WIDTHS['test-coverage'], height: tcCovHeight },
                     dependencies: [],
                     parentId: epicId,

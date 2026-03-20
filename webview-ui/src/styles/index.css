@@ -1865,6 +1865,29 @@ body.ac-force-dark {
 .verbose-badge.risks { background: rgba(239, 68, 68, 0.2); color: var(--vscode-charts-red); }
 .verbose-badge.dod { background: rgba(234, 179, 8, 0.2); color: var(--vscode-charts-yellow); }
 
+/* Labels / tags rendered on card surfaces */
+.artifact-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.artifact-label-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 1px 6px;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--vscode-charts-purple) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--vscode-charts-purple) 30%, transparent);
+  color: var(--vscode-charts-purple);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Dependency Arrows */
 .dependency-arrows {
   position: absolute;

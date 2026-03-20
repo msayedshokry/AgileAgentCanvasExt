@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/tea/test-cases.schema.json",
+  "title": "Test Cases Schema",
+  "description": "Schema for test-cases.json files. Each file contains test cases for a specific epic or for the entire project. Supports both monolithic (all epics) and decomposed (per-epic) formats.",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["testCases"],
+      "properties": {
+        "epicId": {
+          "type": "string",
+          "description": "When decomposed per-epic, the epic ID this file covers.",
+          "examples": ["1", "9"]
+        },
+        "testCaseCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of test cases in this file."
+        },
+        "testCases": {
+          "type": "array",
+          "description": "Array of test case definitions.",
+          "items": {
+            "type": "object",
+            "required": ["id", "title", "type", "storyId"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique test case ID. Format: {storyId}-{TYPE}-{NNN}",
+                "examples": ["9.1-DICOM-001", "3.4-UNIT-001"]
+              },
+              "title": {
+                "type": "string",
+                "description": "Human-readable test case title, typically derived from acceptance criteria."
+              },
+              "description": {
+                "type": "string",
+                "description": "Detailed test steps and expected outcomes."
+              },
+              "type": {
+                "type": "string",
+                "enum": ["unit", "integration", "e2e", "acceptance", "performance", "security"],
+                "description": "Category of the test case."
+              },
+              "status": {
+                "$ref": "../common/status.schema.json#/definitions/testCaseStatus"
+              },
+              "priority": {
+                "type": "string",
+                "enum": ["P0", "P1", "P2", "P3"],
+                "description": "Test priority. P0 = must-have for launch."
+              },
+              "storyId": {
+                "type": "string",
+                "description": "Story ID this test case validates. Dot notation.",
+                "pattern": "^\\d+\\.\\d+$",
+                "examples": ["9.1", "3.4"]
+              },
+              "epicId": {
+                "type": "string",
+                "description": "Epic ID. May be plain number or EPIC-N format.",
+                "examples": ["9", "EPIC-9", "3"]
+              },
+              "relatedRequirements": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Acceptance criteria or requirement IDs this test validates.",
+                "examples": [["AC-9.1.1", "AC-3.4.2"]]
+              },
+              "tags": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Free-form tags for filtering (e.g., 'R-001', 'concurrency', 'security')."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

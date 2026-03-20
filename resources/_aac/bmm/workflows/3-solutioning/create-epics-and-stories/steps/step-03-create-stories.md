@@ -119,7 +119,7 @@ Every story MUST include:
 - `epicId`: Parent epic reference (e.g., `EPIC-1`) — required for routing
 - `requirementRefs`: Array of PRD requirement IDs this story fulfills (requirements live in PRD, not in epics)
 
-Stories are saved as standalone files in `implementation-artifacts/`. The `epicId` field is how stories are linked back to their parent epic.
+Stories are saved as standalone files in `epics/epic-{N}/stories/`. The `epicId` field is how stories are linked back to their parent epic.
 
 **✅ GOOD STORY EXAMPLES:**
 
@@ -208,7 +208,7 @@ agileagentcanvas_update_artifact(
 )
 ```
 
-Each call creates a standalone story file in `implementation-artifacts/`.
+Each call creates a standalone story file in `epics/epic-{N}/stories/`.
 
 ### 4. Epic Completion
 

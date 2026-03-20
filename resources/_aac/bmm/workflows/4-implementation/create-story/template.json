@@ -26,7 +26,11 @@
     "description": "",
     "acceptanceCriteria": [],
     "technicalNotes": "",
-    "dependencies": [],
+    "dependencies": {
+      "blockedBy": [],
+      "blocks": [],
+      "relatedStories": []
+    },
     "estimatedEffort": "",
     "priority": "medium",
     "risks": [],

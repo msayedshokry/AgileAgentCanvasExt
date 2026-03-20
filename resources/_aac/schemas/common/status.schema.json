@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/common/status.schema.json",
+  "title": "BMAD Status Enum Schema",
+  "description": "Shared status definitions for all BMAD artifacts. Use $ref to reference these from other schemas. This is the single source of truth for status values across the system.",
+
+  "definitions": {
+    "artifactStatus": {
+      "type": "string",
+      "description": "Top-level artifact status (PRD, architecture, epics, test-strategy, etc.)",
+      "enum": ["draft", "in-progress", "review", "approved", "ready", "archived"],
+      "x-aliases": {
+        "in-review": "review",
+        "completed": "done",
+        "complete": "done",
+        "ready-for-dev": "ready"
+      },
+      "examples": ["draft"]
+    },
+    "storyStatus": {
+      "type": "string",
+      "description": "Status of a user story within an epic.",
+      "enum": ["backlog", "refined", "ready", "in-progress", "in-review", "done", "blocked", "deferred"],
+      "x-aliases": {
+        "complete": "done",
+        "completed": "done",
+        "draft": "backlog",
+        "ready-for-dev": "ready"
+      },
+      "examples": ["backlog", "in-progress", "done"]
+    },
+    "epicStatus": {
+      "type": "string",
+      "description": "Status of an epic.",
+      "enum": ["backlog", "refined", "ready", "in-progress", "done", "deferred"],
+      "x-aliases": {
+        "complete": "done",
+        "completed": "done",
+        "draft": "backlog"
+      },
+      "examples": ["ready", "in-progress", "done"]
+    },
+    "testCaseStatus": {
+      "type": "string",
+      "description": "Status of a test case.",
+      "enum": ["draft", "ready", "in-progress", "pass", "fail", "blocked", "skipped", "done"],
+      "x-aliases": {
+        "done": "pass",
+        "passed": "pass",
+        "failed": "fail",
+        "complete": "pass"
+      },
+      "examples": ["draft", "pass", "fail"]
+    },
+    "taskStatus": {
+      "type": "string",
+      "description": "Status of a task or action item.",
+      "enum": ["not-started", "in-progress", "done", "blocked"],
+      "x-aliases": {
+        "complete": "done",
+        "completed": "done",
+        "todo": "not-started"
+      },
+      "examples": ["not-started", "in-progress", "done"]
+    }
+  }
+}

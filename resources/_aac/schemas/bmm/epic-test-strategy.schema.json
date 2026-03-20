@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/bmm/epic-test-strategy.schema.json",
+  "title": "Epic Test Strategy",
+  "description": "Per-epic test strategy stored in a standalone file (epics/epic-N/tests/test-strategy.json). Defines scope, approach, tooling, and coverage targets for testing an individual epic. Distinct from the global test-summary artifact.",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json",
+      "description": "Standard BMAD artifact metadata. artifactType MUST be 'epic-test-strategy'. Must include epicId."
+    },
+    "content": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Test strategy identifier (e.g. 'TS-1')"
+        },
+        "title": {
+          "type": "string",
+          "description": "Human-readable title for this test strategy"
+        },
+        "epicId": {
+          "type": "string",
+          "description": "Epic ID this test strategy covers, using numeric format (e.g. '1', '15')"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "approved"],
+          "default": "draft"
+        },
+        "scope": {
+          "type": "string",
+          "description": "What is in and out of scope for testing"
+        },
+        "description": {
+          "type": "string",
+          "description": "Overview of the testing approach"
+        },
+        "approach": {
+          "type": "string",
+          "description": "High-level testing methodology"
+        },
+        "testTypes": {
+          "type": "array",
+          "description": "Types of testing to be performed (unit, integration, e2e, etc.)",
+          "items": { "type": "string" }
+        },
+        "tooling": {
+          "type": "array",
+          "description": "Testing tools and frameworks to use",
+          "items": { "type": "string" }
+        },
+        "coverageTargets": {
+          "type": "array",
+          "description": "Coverage goals by area",
+          "items": {
+            "type": "object",
+            "properties": {
+              "area": { "type": "string" },
+              "target": { "type": "string" }
+            }
+          }
+        },
+        "riskAreas": {
+          "type": "array",
+          "description": "High-risk areas requiring additional test attention",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

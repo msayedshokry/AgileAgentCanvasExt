@@ -299,12 +299,29 @@
       <action>Update File List section with ALL new, modified, or deleted files (paths relative to repo root)</action>
       <action>Add completion notes to Dev Agent Record summarizing what was ACTUALLY implemented and tested</action>
 
-      <!-- CRITICAL: Sync task completion to the parent epic JSON file for canvas visibility -->
-      <action>Locate the parent epic JSON file in {implementation_artifacts}/../planning-artifacts/epics/ (e.g., epic-1.json for story 1-X)</action>
-      <action>In the epic JSON, find the story entry matching this story's ID</action>
-      <action>Set the matching task's "completed" field to true, and do the same for any completed subtasks</action>
-      <action>If ALL tasks in the story are now complete, also update the story's "status" field to "in-review"</action>
-      <action>Save the modified epic JSON file, preserving all other content exactly as-is</action>
+      <!-- CRITICAL: Sync ALL status fields to JSON for Canvas visibility -->
+      <!-- Story JSON File Updates -->
+      <action>Open the story JSON file and update these fields EXACTLY:
+        1. Set this task's "completed" = true
+        2. Set this task's "status" = "done"
+        3. For each completed subtask: set "completed" = true
+        4. If ALL tasks in the story are now complete:
+           - Set content.status = "in-review"
+           - Set content.completed = true
+           - Set metadata.status = "in-review"
+           - Set metadata.timestamps.lastModified = current ISO timestamp
+        5. Save the story JSON file, preserving all other content exactly as-is
+      </action>
+
+      <!-- Parent Epic JSON File Updates -->
+      <action>Open the parent epic JSON file (e.g., epics/epic-1/epic.json):
+        1. Find the storyRefs entry matching this story's ID
+        2. Set that storyRef's "status" = same as the story's content.status
+        3. If ALL storyRefs in the epic now have status "done":
+           - Set the epic's content.status = "done"
+           - Set the epic's metadata.status = "done"
+        4. Save the epic JSON file, preserving all other content exactly as-is
+      </action>
     </check>
 
     <check if="ANY validation fails">

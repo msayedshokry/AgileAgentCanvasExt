@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.dev/schemas/bmm/stories-index.schema.json",
+  "title": "Stories Index Schema",
+  "description": "Schema for the stories-index.json manifest file. Maps story IDs to titles, statuses, epic IDs, and file paths. Used for project-wide story navigation.",
+  "type": "object",
+  "required": ["metadata", "content"],
+  "properties": {
+    "metadata": {
+      "$ref": "../common/metadata.schema.json"
+    },
+    "content": {
+      "type": "object",
+      "required": ["totalStories", "stories"],
+      "properties": {
+        "projectName": { "type": "string" },
+        "totalStories": { "type": "integer", "minimum": 0, "examples": [138] },
+        "storiesByStatus": {
+          "type": "object",
+          "description": "Count of stories grouped by status.",
+          "additionalProperties": { "type": "integer" },
+          "examples": [{ "done": 23, "draft": 70, "refined": 44 }]
+        },
+        "stories": {
+          "type": "array",
+          "description": "Ordered list of all stories across all epics.",
+          "items": {
+            "type": "object",
+            "required": ["id", "title", "epicId"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Story ID using dot notation. Example: '1.3', '21.7'",
+                "pattern": "^\\d+\\.\\d+$",
+                "examples": ["1.3", "21.7"]
+              },
+              "title": { "type": "string" },
+              "epicId": { "type": "string", "examples": ["1", "21"] },
+              "status": { "$ref": "../common/status.schema.json#/definitions/storyStatus" },
+              "priority": {
+                "type": "string",
+                "enum": ["P0", "P1", "P2", "P3"],
+                "examples": ["P0"]
+              },
+              "files": {
+                "type": "object",
+                "description": "Relative paths to related artifact files for this story.",
+                "properties": {
+                  "story": { "type": "string" },
+                  "implementation": { "type": "string" },
+                  "testDesign": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

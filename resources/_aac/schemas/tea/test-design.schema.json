@@ -182,19 +182,15 @@
                     "description": "COMPLETE risk description"
                   },
                   "probability": {
-                    "type": "string",
-                    "enum": [
-                      "low",
-                      "medium",
-                      "high"
+                    "oneOf": [
+                      { "type": "string", "enum": ["low", "medium", "high"] },
+                      { "type": "integer", "minimum": 1, "maximum": 5 }
                     ]
                   },
                   "impact": {
-                    "type": "string",
-                    "enum": [
-                      "low",
-                      "medium",
-                      "high"
+                    "oneOf": [
+                      { "type": "string", "enum": ["low", "medium", "high"] },
+                      { "type": "integer", "minimum": 1, "maximum": 5 }
                     ]
                   },
                   "score": {

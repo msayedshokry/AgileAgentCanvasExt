@@ -2,7 +2,21 @@
 
 ## 0.3.4
 
+### Features
+
+- **Labels rendered on artifact cards** — Artifacts with a `labels` metadata field (e.g. stories) now display each label as a compact purple pill badge directly on the canvas card surface below the description, giving at-a-glance visibility without opening the detail panel
+
+### Bug Fixes
+
+- **Removed distracting selection notifications** — Selecting a card on the canvas or an entry from the sidebar artifact panel no longer fires a `showInformationMessage` toast for every click, eliminating notification noise that interrupted workflow
+- **Story dependency arrows restored** — Dependency lines between story cards were invisible because standalone story files store dependencies in `metadata` but the loader only passed `content` to the mapper, silently discarding all dependency data. A 4-layer fix merges metadata into content at load time, adds a robust `extractStoryId` parser, preserves the structured `{blockedBy, blocks, relatedStories}` format through save/load round-trips, and updates the schema + template to guide LLMs toward the correct format
+- **Epic swimlane height accounts for labels** — Story cards with labels overflowed their epic row band because the server-side height estimator didn't account for the labels row. Now estimates label row count (flex-wrap at ~2 per row) and adds proportional height to the pre-computed card size
+- **Story detail panel crash on implementation stories (React #31)** — Opening the detail panel for stories loaded from `implementation/*.json` files crashed with "Objects are not valid as a React child" because `devNotes.dataModels` contained objects (`{name, schema, note}`) instead of strings. Three-layer fix: (1) `renderStoryDetails` now handles both string and object formats in all devNotes arrays (`dataModels`, `architecturePatterns`, `securityConsiderations`, etc.), (2) `mapSchemaStoryToInternal` normalizes object items in string-only arrays to strings at load time, (3) story schema updated with explicit LLM-facing `"MUST be plain strings, NOT objects"` descriptions to prevent generation of invalid structures
+- **False schema warnings for stories 4.9 and 9.3** — `acceptanceCriteria` items with Given/When/Then format triggered "should match exactly one schema in oneOf" false positives in the extension's AJV runtime. Changed `oneOf` to `anyOf` for AC item validation in `story.schema.json` — semantically equivalent for this use case (AC items never match both branches) but more tolerant of validator edge cases
+
 ### Namespace Separation from BMAD-METHOD
+
+- **Epic test cards grouped into single row** — Test Strategy and Test Coverage cards within each epic lane are now rendered side-by-side in a unified "Testing" row instead of stacking vertically in separate rows, reducing epic row height and improving visual grouping of test-related artifacts
 
 - **Extension skills no longer collide with official BMAD agents** — All extension-generated skill directory names changed from `bmad-` prefix to `agileagentcanvas-` prefix (e.g. `bmad-agent-bmm-analyst` → `agileagentcanvas-agent-analyst`). Installing the extension alongside `npx bmad-method install` no longer causes official BMAD agents to disappear from VS Code Copilot Chat
 - **Resource directory renamed** — Bundled resources directory renamed from `resources/_bmad/` to `resources/_aac/` with a centralized `BMAD_RESOURCE_DIR` constant in `src/state/constants.ts`, making future renames a one-liner
@@ -12,6 +26,24 @@
 - **Stopped cleaning official BMAD files** — Extension no longer deletes `.github/agents/`, `.github/prompts/`, or `<!-- BMAD:START/END -->` markers from `copilot-instructions.md`. All `legacyDirs` arrays emptied across all 20 IDE targets
 - **Fallback skills directory renamed** — Generic fallback from `.bmad/skills` to `.agileagentcanvas/skills`
 - **Auto-install marker updated** — Changed from `bmad-agent-bmad-master` to `agileagentcanvas-agent-master`
+
+### Schema Improvements
+
+- **Shared status enum schema** — New `common/status.schema.json` defines 5 canonical status types (`artifactStatus`, `storyStatus`, `epicStatus`, `testCaseStatus`, `taskStatus`) with `x-aliases` for backward compatibility. Other schemas can `$ref` to this single source of truth instead of maintaining duplicate enum lists
+- **Epics index schema** — New `bmm/epics-index.schema.json` validates the `epics-index.json` manifest file, referencing the shared epic status enum
+- **Test-case status enum expanded** — Added `done` to `testCaseStatus` enum in `status.schema.json` so data using `done` passes strict validation without relying on alias resolution
+- **Metadata status enum expanded** — Added `refined`, `backlog`, `deferred` to `metadata.schema.json` status enum for story lifecycle status support
+- **Test-design risk fields accept numbers** — `probability` and `impact` in `test-design.schema.json` now accept both string (`low/medium/high`) and integer (1-5) formats
+- **Strict validation normalizes aliases** — Added `normalizeAliasesDeep()` to `SchemaValidator.validate()` so `x-aliases` are applied during full-scan validation, not only during partial `validateChanges()` calls
+- **Stories index schema** — New `bmm/stories-index.schema.json` validates the `stories-index.json` manifest file with enforced dot-notation story IDs
+- **Test cases schema** — New `tea/test-cases.schema.json` validates `test-cases.json` files in both monolithic and per-epic decomposed formats, with proper test case structure and shared test-case status enum
+- **Architecture principles hardened** — Added `minProperties: 1` and `required: ["name"]` to architecture principle items, preventing empty objects from passing validation
+
+### Validator Improvements
+
+- **x-aliases normalization** — New `normalizeAliases()` method reads `x-aliases` from schema properties and rewrites alias values to their canonical form before validation (e.g. `"complete"` → `"done"`), making validation tolerant of vocabulary variations
+- **storyId deprecation warning** — When `storyId` is used instead of `id` in artifact changes, the validator logs a deprecation warning and auto-migrates the value to `id`
+- **New schema mappings** — Registered `epics-index`, `stories-index`, `test-cases`, and `test-case` (alias) in the validator's artifact-type-to-schema map
 
 ### Native Agent File
 
@@ -42,9 +74,25 @@ The `agileagentcanvas.outputFormat` setting (`json`, `markdown`, `dual`) was not
 - **Index files gated by format** — `stories-index.json` and `epics-index.json` are only written when the format includes JSON (`json` or `dual`); `README.md` is always written regardless of format
 - **Schema repair respects outputFormat** — `fixAndSyncToFiles` now checks the format setting before writing repaired JSON files
 
+### File I/O Migration to Epic-Scoped Layout
+
+- **Epic-scoped directory structure** — All write operations now create files in `epics/epic-{N}/` instead of flat `planning-artifacts/` and `implementation-artifacts/` directories. New layout: `epics/epic-{N}/epic.json`, `epics/epic-{N}/stories/{id}-{slug}.json`, `epics/epic-{N}/tests/test-cases.json`
+- **`epicScopedDir()` path helper** — New private method in `ArtifactStore` that constructs consistent epic-scoped directory paths across all save methods
+- **Per-epic test case files** — `saveTestCasesToFile` now groups test cases by `epicId` and writes separate `test-cases.json` files into each epic's `tests/` directory. Orphan test cases without an epicId fall back to `testing-artifacts/`
+- **Epic-scoped test design** — `saveTestDesignToFile` writes to `epics/epic-{N}/tests/` when `epicInfo.epicId` is present
+- **LLM tool descriptions updated** — `agileagentcanvas_update_artifact` tool description now references `epics/epic-{N}/stories/` instead of `implementation-artifacts/`
+- **Workflow executor defaults updated** — Default planning/implementation paths and LLM system prompts reference the new `epics/` directory
+- **Project detection includes `epics/`** — `checkForMarkdownFiles` and `/convert-to-json` now scan the `epics/` directory for markdown files
+- **IDE installer docs updated** — Workflow stubs for `/epics` and `/stories` reference the new epic-scoped structure
+- **Auto-generated README updated** — The `syncToFiles` README template now shows the new directory tree and file paths
+- **Backward compatible** — Existing projects continue to work; files already tracked via `sourceFiles` map write to their original locations
+- **Legacy write paths removed** — Removed all `sourceFiles.has()` backward-compat fallbacks from every save method and `resolveArtifactTargetUri`. All writes now go exclusively to the new canonical paths regardless of where files were originally loaded from
+- **Directory names cleaned** — Renamed all project-level directories: `planning-artifacts/`→`planning/`, `discovery-artifacts/`→`discovery/`, `solutioning-artifacts/`→`solutioning/`, `testing-artifacts/`→`testing/`, `bmm-artifacts/`→`bmm/`, `cis-artifacts/`→`cis/`
+
 ### Bug Fixes
 
 - **Canvas showing stale data after reload** — `loadFromFolder()` never cleared the in-memory `artifacts` Map before re-reading from disk. Collection arrays (`testDesigns`, `testReviews`, `researches`, `testCases`, etc.) accumulated duplicates on every reload, and artifacts from deleted files persisted indefinitely. Added `this.artifacts.clear()` at the top of `loadFromFolder()` so every reload starts from a clean slate
+- **Sidebar clicking Epic 2 highlights Epic 10 on canvas** — Epics loaded from `epics/` directories arrived in alphabetical order (`epic-1, epic-10, epic-11, …, epic-2`), but the sidebar tree labeled them by array index (`Epic ${index+1}`). This made `epic-10` appear as "Epic 2". Fixed by (1) sorting `allEpics` numerically by ID before storing, and (2) using canonical `epic.id` / `story.id` / `uc.id` in tree labels instead of array index
 - **Sample project writing to wrong folder** — `loadSampleProject()` used the resolver's auto-detected output URI, which could point to a legacy `_bmad-output` folder from an existing BMAD-METHOD install. Now explicitly computes the output folder from the configured/default name and calls `switchProject()` if the resolver was pointing elsewhere
 - **Legacy folder modal dialog** — When only a legacy `_bmad-output` folder is detected at startup, the extension now shows a modal warning dialog with three actionable choices: switch to the default `.agileagentcanvas-context`, enter a custom folder name, or keep using the legacy folder. Previously, only a passive informational message with a "Dismiss" button was shown. Existing files in `_bmad-output` are never moved or deleted
 - **Transitive vscode mock in tests** — Extracted `BMAD_RESOURCE_DIR` and `DEFAULT_OUTPUT_FOLDER` to a new `src/state/constants.ts` file with zero runtime imports, fixing 447 BDD test failures caused by transitive `import * as vscode from 'vscode'` via `workspace-resolver.ts` when modules were loaded through `proxyquire`

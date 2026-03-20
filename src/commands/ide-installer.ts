@@ -714,12 +714,13 @@ This command is handled by the **Agile Agent Canvas** extension.
 
 ## File Structure Reference
 
-Epic artifacts are stored under \`.agileagentcanvas-context/planning-artifacts/\`:
+Epic artifacts are stored under \`.agileagentcanvas-context/\`:
 
 - **\`epics.json\`** — Lightweight manifest with refs to individual epic files
-- **\`epics/epic-{id}.json\`** — Full content for each epic (stories, metadata, goals)
+- **\`epics/epic-{id}/epic.json\`** — Full content for each epic (goal, stories, metadata)
+- **\`epics/epic-{id}/stories/\`** — Standalone story files for this epic
+- **\`epics/epic-{id}/tests/\`** — Test cases and test designs for this epic
 - **\`epics-index.json\`** — Summary index of all epics (id, title, status, storyCount)
-- **\`stories/story-{id}.json\`** — Standalone story files (when extracted from epics)
 - **\`stories-index.json\`** — Summary index of all stories
 
 To read a specific epic, check \`epics.json\` for the \`file\` path, then load that file.
@@ -740,11 +741,11 @@ This command is handled by the **Agile Agent Canvas** extension.
 
 ## File Structure Reference
 
-Story artifacts are stored under \`.agileagentcanvas-context/planning-artifacts/\`:
+Story artifacts are stored under \`.agileagentcanvas-context/\`:
 
-- **\`stories/story-{id}.json\`** — Standalone story files with full detail
+- **\`epics/epic-{id}/stories/{id}-{slug}.json\`** — Standalone story files with full detail
 - **\`stories-index.json\`** — Summary index of all stories (id, title, epicId, status)
-- **\`epics/epic-{id}.json\`** — Parent epic files (may contain inline stories)
+- **\`epics/epic-{id}/epic.json\`** — Parent epic file (may contain inline stories)
 - **\`epics-index.json\`** — Summary index of all epics
 
 Use \`stories-index.json\` to find a story, then load its standalone file.
@@ -1200,7 +1201,7 @@ That file contains your full persona, activation steps, menu system, and convers
 | **SC** | Scan & report — list convertible artifacts without converting |
 | **CS** | Convert a single file |
 | **CA** | Convert ALL artifacts in the source folder |
-| **CF** | Convert a subfolder (e.g. planning-artifacts) |
+| **CF** | Convert a subfolder (e.g. epics/) |
 | **CT** | Convert by type (e.g. story, epics, use-case) |
 
 ## Conversion Rules

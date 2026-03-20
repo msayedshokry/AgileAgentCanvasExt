@@ -54,6 +54,11 @@
           ],
           "default": "draft"
         },
+        "completed": {
+          "type": "boolean",
+          "description": "Overall story completion flag — set to true when all tasks are done",
+          "default": false
+        },
         "priority": {
           "type": "string",
           "enum": [
@@ -196,7 +201,7 @@
                 }
               }
             },
-            "oneOf": [
+            "anyOf": [
               {
                 "required": [
                   "given",
@@ -238,6 +243,9 @@
               "completed": {
                 "type": "boolean",
                 "default": false
+              },
+              "status": {
+                "$ref": "../common/status.schema.json#/definitions/taskStatus"
               },
               "completedAt": {
                 "type": "string"
@@ -294,7 +302,7 @@
               "items": {
                 "type": "string"
               },
-              "description": "Relevant architecture patterns and constraints"
+              "description": "Relevant architecture patterns and constraints. MUST be plain strings, NOT objects."
             },
             "componentsToCreate": {
               "type": "array",
@@ -390,41 +398,48 @@
               "type": "array",
               "items": {
                 "type": "string"
-              }
+              },
+              "description": "Security considerations as plain strings. MUST be plain strings, NOT objects."
             },
             "performanceConsiderations": {
               "type": "array",
               "items": {
                 "type": "string"
-              }
+              },
+              "description": "Performance considerations as plain strings. MUST be plain strings, NOT objects."
             },
             "accessibilityConsiderations": {
               "type": "array",
               "items": {
                 "type": "string"
-              }
+              },
+              "description": "Accessibility considerations as plain strings. MUST be plain strings, NOT objects."
             },
             "edgeCases": {
               "type": "array",
               "items": {
                 "type": "string"
-              }
+              },
+              "description": "Edge cases as plain strings. MUST be plain strings, NOT objects."
             },
             "potentialChallenges": {
               "type": "array",
               "items": {
                 "type": "string"
-              }
+              },
+              "description": "Potential challenges as plain strings. MUST be plain strings, NOT objects."
             }
           }
         },
         "dependencies": {
-          "description": "Story dependencies — supports simple string array or rich object",
+          "description": "Story dependencies. PREFERRED: use the structured object format with blockedBy/blocks/relatedStories. If using string array, items MUST be bare numeric story IDs (e.g. '1.1', '2.3') — NOT human-readable descriptions.",
           "oneOf": [
             {
               "type": "array",
+              "description": "Simple dependency list — each item MUST be a bare numeric story ID (e.g. '1.1', '2.3'). Do NOT use human-readable descriptions like 'S1.1 — Database Migration'. The structured object format below is PREFERRED over this flat array.",
               "items": {
-                "type": "string"
+                "type": "string",
+                "description": "Numeric story ID only, e.g. '1.1', '2.3'. NOT a description."
               }
             },
             {

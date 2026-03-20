@@ -434,7 +434,7 @@
               },
               "useCases": {
                 "type": "array",
-                "description": "Use cases that describe real-world scenarios for this epic",
+                "description": "Use cases for this epic. PREFERRED: store in separate epics/epic-N/use-cases.json file (artifactType: use-cases) instead of embedding here. Retained for backward compatibility.",
                 "items": {
                   "$ref": "use-case.schema.json"
                 }
@@ -657,7 +657,7 @@
               },
               "testStrategy": {
                 "type": "object",
-                "description": "Per-epic test strategy",
+                "description": "Per-epic test strategy. PREFERRED: store in separate epics/epic-N/tests/test-strategy.json file (artifactType: epic-test-strategy) instead of embedding here. Retained for backward compatibility.",
                 "properties": {
                   "id": {
                     "type": "string"
@@ -865,6 +865,11 @@
                             "complete",
                             "backlog"
                           ]
+                        },
+                        "completed": {
+                          "type": "boolean",
+                          "description": "Overall story completion flag — set to true when all tasks are done",
+                          "default": false
                         },
                         "storyPoints": {
                           "type": "integer",
