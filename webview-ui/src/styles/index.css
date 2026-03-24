@@ -1669,21 +1669,33 @@ body.ac-force-dark {
 
 /* ---- Inline Story Task/Test Summary ---- */
 
+.story-inline-summary-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--vscode-descriptionForeground);
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 1px solid color-mix(in srgb, var(--vscode-editorWidget-border) 50%, transparent);
+  text-align: center;
+  cursor: pointer;
+}
+
 .story-inline-summary {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 6px;
-  padding-top: 5px;
-  border-top: 1px solid color-mix(in srgb, var(--vscode-editorWidget-border) 50%, transparent);
+  justify-content: center;
+  gap: 4px;
+  margin-top: 4px;
   font-size: 10px;
+  overflow: hidden;
 }
 
 .story-summary-chip {
   display: inline-flex;
   align-items: center;
+  min-width: 0;
   gap: 3px;
-  padding: 1px 6px;
+  padding: 1px 4px;
   border-radius: 4px;
   font-weight: 600;
   white-space: nowrap;
@@ -1742,6 +1754,20 @@ body.ac-force-dark {
   color: var(--vscode-charts-red);
 }
 
+/* All ACs verified — green tint */
+.story-summary-chip.acs.all-pass {
+  background: color-mix(in srgb, var(--vscode-charts-green) 12%, transparent);
+  border-color: color-mix(in srgb, var(--vscode-charts-green) 30%, transparent);
+  color: var(--vscode-charts-green);
+}
+
+/* ACs with failures — red tint */
+.story-summary-chip.acs.has-fails {
+  background: color-mix(in srgb, var(--vscode-charts-red) 12%, transparent);
+  border-color: color-mix(in srgb, var(--vscode-charts-red) 30%, transparent);
+  color: var(--vscode-charts-red);
+}
+
 /* Make the summary row clickable */
 .story-inline-summary {
   cursor: pointer;
@@ -1778,18 +1804,39 @@ body.ac-force-dark {
   gap: 2px;
 }
 
-.story-section-header {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--vscode-descriptionForeground);
-  margin-bottom: 2px;
-  padding: 1px 0;
+.story-tabs-header {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid color-mix(in srgb, var(--vscode-editorWidget-border) 40%, transparent);
 }
 
-.story-section-divider {
-  height: 1px;
-  margin: 5px 0;
-  background: color-mix(in srgb, var(--vscode-editorWidget-border) 35%, transparent);
+.story-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--vscode-descriptionForeground);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 6px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: all 0.2s ease;
+}
+
+.story-tab:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--vscode-list-hoverBackground) 30%, transparent);
+}
+
+.story-tab.active {
+  opacity: 1;
+  color: var(--vscode-foreground);
+  border-bottom-color: var(--vscode-textLink-foreground);
+}
+
+.story-tab-content {
+  padding-top: 2px;
 }
 
 .story-task-row,
@@ -1841,6 +1888,46 @@ body.ac-force-dark {
   flex-shrink: 0;
   width: 16px;
   text-align: center;
+}
+
+/* ---- AC (Acceptance Criteria) rows ---- */
+
+.story-ac-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  line-height: 1.35;
+}
+
+.story-ac-row:hover {
+  background: color-mix(in srgb, var(--vscode-list-hoverBackground) 50%, transparent);
+}
+
+.story-ac-row.verified .ac-title {
+  color: var(--vscode-charts-green);
+}
+
+.story-ac-row.failed .ac-title {
+  color: var(--vscode-charts-red);
+  opacity: 0.8;
+}
+
+.ac-icon {
+  font-size: 11px;
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+  margin-top: 1px;
+}
+
+.ac-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--vscode-foreground);
 }
 /* Verbose section badges */
 .artifact-verbose-preview {
@@ -2290,6 +2377,32 @@ body.ac-force-dark {
   color: var(--vscode-descriptionForeground);
   white-space: nowrap;
 }
+
+/* ── Line category filter buttons (inside filter bar) ──────────────── */
+
+.filter-btn.line-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.line-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 3px;
+  border-radius: 1px;
+  border: 1px solid transparent;
+  flex-shrink: 0;
+}
+
+/* Per-category swatch colour overrides */
+.filter-btn.line-filter.structural .line-swatch { background: var(--vscode-charts-blue); }
+.filter-btn.line-filter.peer .line-swatch       { background: var(--vscode-charts-yellow); }
+.filter-btn.line-filter.default .line-swatch     { background: var(--vscode-editorWidget-border); }
+.filter-btn.line-filter.tree .line-swatch        { background: var(--vscode-editorWidget-border); border-style: dashed; }
+
+/* When inactive, dim the swatch to match the dimmed button */
+.filter-btn.line-filter.inactive .line-swatch { opacity: 0.35; }
 
 /* ─── Canvas Search ───────────────────────────────────────────────────── */
 
@@ -6017,6 +6130,83 @@ body.vscode-light .minimap-viewport {
 }
 
 /* ================================================
+   FIELDS / PREVIEW TOGGLE — Detail Panel header
+   ================================================ */
+
+.detail-view-toggle {
+  display: flex;
+  gap: 2px;
+  margin: 6px 0 2px;
+}
+
+.detail-view-toggle button {
+  padding: 2px 10px;
+  border-radius: 3px;
+  border: 1px solid var(--vscode-panel-border);
+  background: transparent;
+  color: var(--vscode-foreground);
+  opacity: 0.55;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: var(--vscode-font-family);
+  transition: opacity 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.detail-view-toggle button:hover {
+  opacity: 0.85;
+  background: var(--vscode-toolbar-hoverBackground);
+}
+
+.detail-view-toggle button.active {
+  opacity: 1;
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border-color: transparent;
+}
+
+/* ================================================
+   MARKDOWN PREVIEW PANE — Detail Panel content
+   ================================================ */
+
+.md-preview {
+  padding: 8px 0;
+}
+
+/* Scope md-content styles to only the preview pane */
+.md-preview .md-content h1 { font-size: 1.1em; margin: 0 0 8px; }
+.md-preview .md-content h2 { font-size: 0.95em; margin-top: 1em; margin-bottom: 4px; color: var(--vscode-descriptionForeground); }
+.md-preview .md-content h3 { font-size: 0.9em; margin-top: 0.75em; margin-bottom: 2px; }
+.md-preview .md-content table { border-collapse: collapse; width: 100%; font-size: 12px; margin-bottom: 8px; }
+.md-preview .md-content td,
+.md-preview .md-content th { padding: 3px 7px; border: 1px solid var(--vscode-panel-border); }
+.md-preview .md-content th { background: var(--vscode-textBlockQuote-background); font-weight: 600; }
+.md-preview .md-content blockquote { border-left: 3px solid var(--vscode-panel-border); margin: 0 0 8px; padding: 4px 8px; opacity: 0.8; font-style: italic; }
+.md-preview .md-content pre { background: var(--vscode-textCodeBlock-background); padding: 8px; border-radius: 4px; overflow-x: auto; font-size: 11px; }
+.md-preview .md-content code { background: var(--vscode-textCodeBlock-background); padding: 1px 4px; border-radius: 2px; font-size: 11px; }
+.md-preview .md-content ul, .md-preview .md-content ol { padding-left: 20px; margin: 4px 0 8px; }
+.md-preview .md-content li { margin-bottom: 2px; font-size: 12px; }
+
+/* ================================================
+   EXPORT MD BUTTON — Detail Panel footer
+   ================================================ */
+
+.btn-export-md {
+  background: rgba(20, 184, 166, 0.1);
+  color: var(--vscode-charts-green, #14b8a6);
+  border: 1px solid rgba(20, 184, 166, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-export-md:hover {
+  background: rgba(20, 184, 166, 0.2);
+  border-color: rgba(20, 184, 166, 0.5);
+}
+
+
+
+/* ================================================
    ELICITATION BUTTON — Artifact Card hover button
    ================================================ */
 
@@ -6125,308 +6315,6 @@ body.vscode-light .minimap-viewport {
 }
 
 
-/* ================================================
-   ELICITATION PICKER MODAL
-   ================================================ */
-
-.elicit-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(2px);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  animation: fadeIn 0.15s ease;
-}
-
-.elicit-modal {
-  background: var(--vscode-editor-background);
-  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
-  border-radius: 10px;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.45);
-  width: 100%;
-  max-width: 660px;
-  max-height: 82vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  animation: slideInUp 0.18s ease;
-}
-
-/* Header */
-.elicit-modal-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  padding: 18px 20px 14px;
-  border-bottom: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
-  flex-shrink: 0;
-}
-
-.elicit-modal-title {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.elicit-modal-icon {
-  display: inline-flex;
-  align-items: center;
-  line-height: 1;
-  margin-top: 2px;
-}
-
-.elicit-modal-title h2 {
-  margin: 0 0 4px;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--vscode-foreground);
-}
-
-.elicit-target-label {
-  margin: 0;
-  font-size: 12px;
-  color: var(--vscode-descriptionForeground);
-}
-
-.elicit-target-label strong {
-  color: var(--vscode-foreground);
-  text-transform: capitalize;
-}
-
-.elicit-close-btn {
-  background: none;
-  border: none;
-  color: var(--vscode-descriptionForeground);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  transition: color 0.15s, background 0.15s;
-  flex-shrink: 0;
-}
-
-.elicit-close-btn:hover {
-  color: var(--vscode-foreground);
-  background: var(--vscode-toolbar-hoverBackground);
-}
-
-/* Search */
-.elicit-modal-search {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
-  flex-shrink: 0;
-}
-
-.elicit-search-icon {
-  display: inline-flex;
-  align-items: center;
-  opacity: 0.6;
-  flex-shrink: 0;
-}
-
-.elicit-search-input {
-  flex: 1;
-  background: var(--vscode-input-background);
-  color: var(--vscode-input-foreground);
-  border: 1px solid var(--vscode-input-border, transparent);
-  border-radius: 4px;
-  padding: 5px 8px;
-  font-size: 13px;
-  outline: none;
-  font-family: var(--vscode-font-family);
-}
-
-.elicit-search-input:focus {
-  border-color: var(--vscode-focusBorder);
-}
-
-.elicit-search-input::placeholder {
-  color: var(--vscode-input-placeholderForeground);
-}
-
-.elicit-search-clear {
-  background: none;
-  border: none;
-  color: var(--vscode-descriptionForeground);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  cursor: pointer;
-  padding: 2px;
-  border-radius: 3px;
-  transition: color 0.15s;
-}
-
-.elicit-search-clear:hover {
-  color: var(--vscode-foreground);
-}
-
-/* Category tabs */
-.elicit-modal-tabs {
-  display: flex;
-  gap: 4px;
-  padding: 10px 16px 0;
-  overflow-x: auto;
-  flex-shrink: 0;
-  scrollbar-width: none;
-}
-
-.elicit-modal-tabs::-webkit-scrollbar {
-  display: none;
-}
-
-.elicit-tab {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 10px;
-  border: 1px solid transparent;
-  border-radius: 20px;
-  background: var(--vscode-badge-background, rgba(128,128,128,0.15));
-  color: var(--vscode-descriptionForeground);
-  font-size: 12px;
-  font-family: var(--vscode-font-family);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.15s ease;
-  flex-shrink: 0;
-}
-
-.elicit-tab:hover {
-  color: var(--vscode-foreground);
-  background: var(--vscode-toolbar-hoverBackground);
-}
-
-.elicit-tab.active {
-  background: linear-gradient(135deg, rgba(8, 145, 178, 0.25) 0%, rgba(6, 182, 212, 0.25) 100%);
-  color: #06b6d4;
-  border-color: rgba(6, 182, 212, 0.4);
-  font-weight: 600;
-}
-
-.elicit-tab-count {
-  background: rgba(128, 128, 128, 0.2);
-  border-radius: 10px;
-  padding: 0 5px;
-  font-size: 11px;
-  min-width: 18px;
-  text-align: center;
-}
-
-.elicit-tab.active .elicit-tab-count {
-  background: rgba(6, 182, 212, 0.2);
-}
-
-/* Methods list */
-.elicit-modal-methods {
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.elicit-method-card {
-  text-align: left;
-  background: var(--vscode-list-inactiveSelectionBackground, rgba(128,128,128,0.08));
-  border: 1px solid transparent;
-  border-radius: 7px;
-  padding: 10px 14px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  font-family: var(--vscode-font-family);
-  color: var(--vscode-foreground);
-  width: 100%;
-}
-
-.elicit-method-card:hover {
-  background: var(--vscode-list-hoverBackground);
-  border-color: rgba(6, 182, 212, 0.35);
-  transform: translateX(2px);
-}
-
-.elicit-method-card:active {
-  transform: translateX(1px);
-}
-
-.elicit-method-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 4px;
-}
-
-.elicit-method-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--vscode-foreground);
-}
-
-.elicit-method-category {
-  font-size: 10px;
-  padding: 2px 7px;
-  border-radius: 10px;
-  background: rgba(6, 182, 212, 0.12);
-  color: #06b6d4;
-  font-weight: 500;
-  flex-shrink: 0;
-}
-
-.elicit-method-desc {
-  font-size: 12px;
-  color: var(--vscode-descriptionForeground);
-  margin-bottom: 5px;
-  line-height: 1.4;
-}
-
-.elicit-method-output {
-  font-size: 11px;
-  color: var(--vscode-charts-green, #4ade80);
-  display: flex;
-  align-items: flex-start;
-  gap: 4px;
-  line-height: 1.3;
-}
-
-.elicit-output-arrow {
-  flex-shrink: 0;
-  font-size: 12px;
-}
-
-.elicit-no-results {
-  text-align: center;
-  padding: 32px 16px;
-  color: var(--vscode-descriptionForeground);
-  font-size: 13px;
-  font-style: italic;
-}
-
-/* Footer */
-.elicit-modal-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px;
-  border-top: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
-  flex-shrink: 0;
-}
-
-.elicit-footer-hint {
-  font-size: 11px;
-  color: var(--vscode-descriptionForeground);
-}
 
 /* =============================================================================
    Workflow Launcher FAB
@@ -7292,3 +7180,530 @@ body.vscode-light .minimap-viewport {
   padding: 1px 4px;
   border-radius: 3px;
 }
+
+/* ==========================================================================
+   Sprint Planning View (Kanban Board)
+   ========================================================================== */
+
+/* Toolbar button */
+.toolbar-sprint-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--vscode-foreground);
+  background: rgba(99, 102, 241, 0.12);
+  transition: background 0.15s, opacity 0.15s;
+}
+.toolbar-sprint-btn:hover {
+  background: rgba(99, 102, 241, 0.26);
+}
+
+/* Overlay */
+.sprint-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.65);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 24px;
+  overflow-y: auto;
+  animation: fadeIn 0.15s ease;
+}
+
+/* Modal container — wide to accommodate columns */
+.sprint-modal {
+  background: var(--vscode-editorWidget-background, var(--vscode-editor-background));
+  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+  border-radius: 12px;
+  width: 100%;
+  max-width: 1280px;
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.4), 0 8px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  overflow: hidden;
+}
+
+/* Header */
+.sprint-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+  flex-shrink: 0;
+}
+
+.sprint-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--vscode-foreground);
+}
+
+.sprint-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.sprint-close-btn {
+  background: none;
+  border: none;
+  color: var(--vscode-foreground);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  line-height: 1;
+  transition: opacity 0.15s, background 0.15s;
+}
+.sprint-close-btn:hover {
+  opacity: 1;
+  background: var(--vscode-toolbar-hoverBackground, rgba(128, 128, 128, 0.15));
+}
+
+/* Body — contains meta strip + board */
+.sprint-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Metadata strip */
+.sprint-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  padding: 10px 18px 8px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+  flex-shrink: 0;
+}
+
+.sprint-meta-item {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.sprint-meta-item strong {
+  color: var(--vscode-foreground);
+  font-weight: 600;
+}
+
+.sprint-meta-path {
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 10.5px;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Kanban board */
+.sprint-board {
+  display: flex;
+  flex-direction: row;
+  gap: 0;
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0;
+}
+
+/* Column */
+.sprint-column {
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  flex: 1;
+  border-right: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+  background: color-mix(in srgb, var(--vscode-editor-background) 80%, transparent);
+}
+.sprint-column:last-child {
+  border-right: none;
+}
+
+/* Column header — uses --sprint-col-accent CSS custom property set by the component */
+.sprint-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+  background: color-mix(in srgb, var(--sprint-col-accent) 5%, transparent);
+  flex-shrink: 0;
+  position: relative;
+}
+.sprint-column-header::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--sprint-col-accent, var(--vscode-descriptionForeground));
+}
+
+.sprint-column-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sprint-col-accent, var(--vscode-foreground));
+  opacity: 0.95;
+}
+
+.sprint-column-count {
+  font-size: 11px;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--sprint-col-accent) 15%, transparent);
+  color: var(--sprint-col-accent);
+  border-radius: 12px;
+  padding: 2px 8px;
+  min-width: 22px;
+  text-align: center;
+}
+
+/* Cards area */
+.sprint-column-cards {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sprint-column-empty {
+  text-align: center;
+  padding: 16px 0;
+  color: var(--vscode-descriptionForeground);
+  font-size: 18px;
+  opacity: 0.3;
+}
+
+/* Item card */
+.sprint-card {
+  background: var(--vscode-editorWidget-background);
+  border: 1px solid var(--vscode-editorWidget-border, rgba(128, 128, 128, 0.2));
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: default;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) calc(var(--card-index, 0) * 0.03s) backwards;
+}
+.sprint-card:hover {
+  border-color: rgba(99, 102, 241, 0.6);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.sprint-card--epic {
+  border-left: 4px solid #f59e0b;
+}
+
+.sprint-card--retro {
+  border-left: 4px solid #64748b;
+  opacity: 0.85;
+}
+
+.sprint-card-key {
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  word-break: break-all;
+  line-height: 1.3;
+}
+
+.sprint-card-epic-tag {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+  background: rgba(128, 128, 128, 0.12);
+  border-radius: 999px;
+  padding: 2px 8px;
+  align-self: flex-start;
+  transition: background 0.15s ease;
+}
+.sprint-card:hover .sprint-card-epic-tag {
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--vscode-foreground);
+}
+
+.sprint-card-type-tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #f59e0b;
+  align-self: flex-start;
+}
+
+.sprint-card--retro .sprint-card-type-tag {
+  color: #94a3b8;
+}
+
+/* Empty state */
+.sprint-empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--vscode-descriptionForeground);
+}
+
+.sprint-empty-icon {
+  opacity: 0.35;
+}
+
+.sprint-empty-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  opacity: 0.75;
+}
+
+.sprint-empty-desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  max-width: 380px;
+}
+
+.sprint-empty-desc code {
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 12px;
+  background: rgba(128, 128, 128, 0.15);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.sprint-run-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border: none;
+  border-radius: 8px;
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.sprint-run-btn:hover {
+  background: var(--vscode-button-hoverBackground);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.28);
+}
+
+/* ── Sprint tab bar ────────────────────────────────────────────────── */
+
+.sprint-tabs-wrapper {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+}
+
+/* Edge fade gradient hints when overflow exists */
+.sprint-tabs-wrapper.can-scroll-left::before,
+.sprint-tabs-wrapper.can-scroll-right::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 32px;
+  pointer-events: none;
+  z-index: 2;
+}
+.sprint-tabs-wrapper.can-scroll-left::before {
+  left: 28px; /* after the arrow button */
+  background: linear-gradient(to right, var(--vscode-sideBar-background, #1e1e1e), transparent);
+}
+.sprint-tabs-wrapper.can-scroll-right::after {
+  right: 28px; /* before the arrow button */
+  background: linear-gradient(to left, var(--vscode-sideBar-background, #1e1e1e), transparent);
+}
+
+/* Scroll arrow buttons */
+.sprint-tabs-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  flex-shrink: 0;
+  background: var(--vscode-sideBar-background, #1e1e1e);
+  border: none;
+  color: var(--vscode-descriptionForeground);
+  font-size: 18px;
+  cursor: pointer;
+  z-index: 3;
+  transition: color 0.15s, background 0.15s;
+}
+.sprint-tabs-arrow:hover {
+  color: var(--vscode-foreground);
+  background: rgba(128, 128, 128, 0.12);
+}
+
+.sprint-tabs {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+}
+.sprint-tabs::-webkit-scrollbar { display: none; }
+
+.sprint-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--vscode-descriptionForeground);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+.sprint-tab:hover {
+  color: var(--vscode-foreground);
+  background: rgba(128, 128, 128, 0.08);
+}
+.sprint-tab--active {
+  color: var(--vscode-foreground);
+  background: var(--vscode-button-secondaryBackground, rgba(128, 128, 128, 0.15));
+  border-color: var(--vscode-editorWidget-border, rgba(128, 128, 128, 0.2));
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.sprint-tab--unscheduled {
+  margin-left: auto;
+  opacity: 0.8;
+}
+.sprint-tab--unscheduled.sprint-tab--active {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+  border-color: rgba(245, 158, 11, 0.2);
+  opacity: 1;
+}
+
+.sprint-tab-count {
+  font-size: 10.5px;
+  font-weight: 600;
+  background: rgba(128, 128, 128, 0.15);
+  border-radius: 12px;
+  padding: 2px 6px;
+  min-width: 20px;
+  text-align: center;
+  line-height: 1;
+}
+.sprint-tab--active .sprint-tab-count {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+/* ── Sprint goal bar ───────────────────────────────────────────────── */
+.sprint-goal {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 16px;
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+  background: rgba(99, 102, 241, 0.05);
+  border-bottom: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+  flex-shrink: 0;
+}
+.sprint-goal svg {
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+.sprint-goal-dates {
+  margin-left: auto;
+  font-size: 11px;
+  font-family: var(--vscode-editor-font-family, monospace);
+  opacity: 0.7;
+}
+
+/* ── Flat-mode notice (when no sprints section exists) ─────────────── */
+.sprint-no-sprints-notice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  font-size: 11.5px;
+  color: var(--vscode-descriptionForeground);
+  background: rgba(245, 158, 11, 0.06);
+  border-bottom: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+  border-left: 3px solid #f59e0b;
+  flex-shrink: 0;
+}
+.sprint-no-sprints-notice strong {
+  color: var(--vscode-foreground);
+}
+
+/* ── Consistency badges (story/epic status mismatch) ───────────────── */
+.sprint-card--error {
+  border-left: 3px solid #ef4444;
+}
+.sprint-card--warn {
+  border-left: 3px solid #f59e0b;
+}
+
+.sprint-card-consistency-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 2px 6px;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+.sprint-card-consistency-badge--error {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+.sprint-card-consistency-badge--warn {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
