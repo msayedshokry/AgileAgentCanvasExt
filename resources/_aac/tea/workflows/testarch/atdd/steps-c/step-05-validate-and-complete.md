@@ -94,6 +94,28 @@ Report:
   - Set `lastSaved: '{date}'`
   - Append this step's output to the appropriate section.
 
+## SAVE JSON ARTIFACT
+
+**CRITICAL — Do this before reporting completion:**
+
+Read the complete `{outputFile}` working document, then call `agileagentcanvas_update_artifact` to persist the final structured artifact:
+
+```
+agileagentcanvas_update_artifact({
+  type: "atdd-checklist",
+  id: "{story_id}-atdd-checklist",
+  changes: { /* all content fields extracted from the working document, following the atdd-checklist schema */ }
+})
+```
+
+- Extract every section: story information, acceptance criteria, failing tests, test scenarios, data factories, fixtures, mock requirements, data test IDs, page objects, implementation checklist, running tests, completion status
+- Schema reference: `{bmad-path}/schemas/tea/atdd-checklist.schema.json` — use `agileagentcanvas_read_file` to read it if you need to verify field names
+- The `changes` object must conform to the atdd-checklist schema — do NOT wrap content in a `content` key
+- **Only call this after validation is complete** — do not skip the validation in step 1
+- If the tool call is rejected (schema mismatch), fix the field and retry
+
+---
+
 ## 🚨 SYSTEM SUCCESS/FAILURE METRICS:
 
 ### ✅ SUCCESS:

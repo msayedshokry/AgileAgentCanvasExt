@@ -851,26 +851,6 @@
                             "could-have"
                           ]
                         },
-                        "status": {
-                          "type": "string",
-                          "enum": [
-                            "draft",
-                            "ready",
-                            "ready-for-dev",
-                            "in-progress",
-                            "in-review",
-                            "blocked",
-                            "review",
-                            "done",
-                            "complete",
-                            "backlog"
-                          ]
-                        },
-                        "completed": {
-                          "type": "boolean",
-                          "description": "Overall story completion flag — set to true when all tasks are done",
-                          "default": false
-                        },
                         "storyPoints": {
                           "type": "integer",
                           "description": "Estimated story points"

@@ -55,13 +55,11 @@
     "taskStatus": {
       "type": "string",
       "description": "Status of a task or action item.",
-      "enum": ["not-started", "in-progress", "done", "blocked"],
+      "enum": ["pending", "in-progress", "implemented", "implemented-not-verified", "verified", "blocked", "not-started", "done"],
       "x-aliases": {
-        "complete": "done",
-        "completed": "done",
-        "todo": "not-started"
+        "todo": "pending"
       },
-      "examples": ["not-started", "in-progress", "done"]
+      "examples": ["pending", "implemented", "verified"]
     }
   }
 }

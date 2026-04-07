@@ -1,5 +1,7 @@
+import { createLogger } from '../utils/logger';
+const logger = createLogger('workspace-resolver');
 import * as vscode from 'vscode';
-import { acOutput } from '../extension';
+
 import { BMAD_RESOURCE_DIR, DEFAULT_OUTPUT_FOLDER } from './constants';
 
 // Re-export pure constants so existing `import { BMAD_RESOURCE_DIR } from './workspace-resolver'`
@@ -108,7 +110,7 @@ export class WorkspaceResolver {
     async initialize(): Promise<void> {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders || workspaceFolders.length === 0) {
-            acOutput.appendLine('[WorkspaceResolver] No workspace folders — skipping initialization');
+            logger.debug('[WorkspaceResolver] No workspace folders — skipping initialization');
             return;
         }
 
@@ -126,13 +128,13 @@ export class WorkspaceResolver {
                         outputUri: uri,
                         label: `${wsFolder.name} (${this._folderBasename(uri)})`
                     };
-                    acOutput.appendLine(`[WorkspaceResolver] Restored persisted project: ${uri.fsPath}`);
+                    logger.debug(`[WorkspaceResolver] Restored persisted project: ${uri.fsPath}`);
                     // Still scan for the detected projects list (for switch button visibility)
                     this._detectedProjects = await this._scanWorkspaceFolders();
                     return;
                 }
             } catch {
-                acOutput.appendLine(`[WorkspaceResolver] Persisted URI no longer exists: ${persistedUri}`);
+                logger.debug(`[WorkspaceResolver] Persisted URI no longer exists: ${persistedUri}`);
             }
             // Clear stale value
             await this._context.workspaceState.update(STATE_KEY, undefined);
@@ -140,7 +142,7 @@ export class WorkspaceResolver {
 
         // 2. Scan all workspace folders
         this._detectedProjects = await this._scanWorkspaceFolders();
-        acOutput.appendLine(`[WorkspaceResolver] Detected ${this._detectedProjects.length} project(s)`);
+        logger.debug(`[WorkspaceResolver] Detected ${this._detectedProjects.length} project(s)`);
 
         if (this._detectedProjects.length === 1) {
             // 3. Exactly one → auto-select
@@ -157,7 +159,7 @@ export class WorkspaceResolver {
                 outputUri: vscode.Uri.joinPath(workspaceFolders[0].uri, outputName),
                 label: `${workspaceFolders[0].name} (${outputName})`
             };
-            acOutput.appendLine(`[WorkspaceResolver] No projects detected — defaulting to ${this._activeProject.outputUri.fsPath}`);
+            logger.debug(`[WorkspaceResolver] No projects detected — defaulting to ${this._activeProject.outputUri.fsPath}`);
         }
 
         // Notify user if a legacy folder was detected (modal — await so the
@@ -240,14 +242,14 @@ export class WorkspaceResolver {
      * Re-scans and checks if the active project's folder was removed.
      */
     async onWorkspaceFoldersChanged(e: vscode.WorkspaceFoldersChangeEvent): Promise<void> {
-        acOutput.appendLine(`[WorkspaceResolver] Workspace folders changed: +${e.added.length} -${e.removed.length}`);
+        logger.debug(`[WorkspaceResolver] Workspace folders changed: +${e.added.length} -${e.removed.length}`);
 
         // Check if active project's workspace folder was removed
         if (this._activeProject) {
             const activeWsFolder = this._activeProject.workspaceFolder;
             const wasRemoved = e.removed.some(f => f.uri.toString() === activeWsFolder.uri.toString());
             if (wasRemoved) {
-                acOutput.appendLine(`[WorkspaceResolver] Active project's workspace folder was removed!`);
+                logger.debug(`[WorkspaceResolver] Active project's workspace folder was removed!`);
                 this._activeProject = null;
                 await this._context.workspaceState.update(STATE_KEY, undefined);
                 this._onDidChangeActiveProject.fire(null);
@@ -287,7 +289,7 @@ export class WorkspaceResolver {
         if (legacyProjects.length === 0) return;
 
         const folders = legacyProjects.map(p => p.workspaceFolder.name).join(', ');
-        acOutput.appendLine(
+        logger.debug(
             `[WorkspaceResolver] Legacy folder detected in workspace(s): ${folders}`
         );
 
@@ -310,7 +312,7 @@ export class WorkspaceResolver {
 
         // Treat both explicit "Keep" and Escape/dismiss as "keep legacy"
         if (!choice || choice === KEEP_LEGACY) {
-            acOutput.appendLine('[WorkspaceResolver] User chose to keep legacy folder');
+            logger.debug('[WorkspaceResolver] User chose to keep legacy folder');
             return;
         }
 
@@ -336,7 +338,7 @@ export class WorkspaceResolver {
             });
 
             if (!input) {
-                acOutput.appendLine('[WorkspaceResolver] User cancelled custom folder name input');
+                logger.debug('[WorkspaceResolver] User cancelled custom folder name input');
                 return;
             }
             newFolderName = input.trim();
@@ -362,7 +364,7 @@ export class WorkspaceResolver {
         // Re-scan so the project list is up to date
         this._detectedProjects = await this._scanWorkspaceFolders();
 
-        acOutput.appendLine(
+        logger.debug(
             `[WorkspaceResolver] Switched from legacy folder to "${newFolderName}" in ${targetWsFolder.name}`
         );
         vscode.window.showInformationMessage(
@@ -373,7 +375,7 @@ export class WorkspaceResolver {
     private async _setActiveProject(project: DetectedProject): Promise<void> {
         this._activeProject = project;
         await this._context.workspaceState.update(STATE_KEY, project.outputUri.toString());
-        acOutput.appendLine(`[WorkspaceResolver] Active project set: ${project.outputUri.fsPath}`);
+        logger.debug(`[WorkspaceResolver] Active project set: ${project.outputUri.fsPath}`);
     }
 
     /**
@@ -528,7 +530,7 @@ export class WorkspaceResolver {
         };
 
         await this.switchProject(project);
-        acOutput.appendLine(`[WorkspaceResolver] Created and switched to new folder: ${newUri.fsPath}`);
+        logger.debug(`[WorkspaceResolver] Created and switched to new folder: ${newUri.fsPath}`);
         vscode.window.showInformationMessage(`Project folder "${folderName.trim()}" created and activated.`);
         return true;
     }

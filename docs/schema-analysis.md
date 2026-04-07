@@ -189,33 +189,33 @@ Epic shows `draft` even when all stories are `complete`.
 
 ```
 .agileagentcanvas-context/
-├── discovery-artifacts/
+├── discovery/
 │   ├── product-brief.json              → product-brief card
 │   ├── vision.json                     → vision card
 │   ├── research-*.json                 → NEW: research cards
 │   └── ux-design-*.json               → NEW: ux-design cards
 │
-├── planning-artifacts/
+├── planning/
 │   ├── prd.json                        → prd card
 │   ├── requirements.json               → SINGLE source → FR/NFR/Add. Req cards
 │   ├── risks.json                      → UNIFIED → individual risk cards
 │   └── epics.json                      → manifest (refs epics/ and stories/)
 │
-├── solutioning-artifacts/
+├── solutioning/
 │   ├── architecture.json               → overview only (refs decisions/components)
 │   ├── decisions/adr-*.json            → STANDALONE decision cards
 │   ├── components/*.json               → STANDALONE component cards
 │   ├── tech-spec-*.json                → NEW: tech-spec cards
 │   └── functional-requirements.json    → domain detail (feeds requirements.json)
 │
-├── implementation-artifacts/
+├── implementation/
 │   ├── epics/epic-*.json               → epic cards (metadata + story ID refs only)
 │   ├── stories/*.json                  → STANDALONE story cards (source of truth)
 │   ├── sprint-status-*.json            → NEW: sprint-status cards
 │   ├── change-proposal-*.json          → NEW: change-proposal cards
 │   └── retrospective-*.json            → NEW: retrospective cards
 │
-├── test-artifacts/
+├── test/
 │   ├── test-cases.json                 → test-coverage cards (aggregated)
 │   ├── test-design-*.json              → NEW: test-design cards
 │   ├── test-review-*.json              → NEW: test-review cards

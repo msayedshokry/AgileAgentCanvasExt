@@ -39,6 +39,7 @@ Verify test status:
 - [ ] All existing tests still pass
 - [ ] New tests written for new functionality
 - [ ] No test warnings or skipped tests without reason
+- [ ] (If working within a story) Tests extracted into `content.testCases` array and the epic's `test-cases.json` file with status `"done"` (do not use 'passed' for definition status)
 
 ### 3. Acceptance Criteria Satisfied
 
@@ -56,6 +57,21 @@ Verify code quality:
 - [ ] Follows project-context rules (if exists)
 - [ ] Error handling consistent with codebase
 - [ ] No obvious code smells introduced
+
+### 5. Grep Self-Audit
+- [ ] Searched modified files for: TODO, FIXME, placeholder, stub, fake, simulated
+- [ ] All instances fixed or explicitly deferred to another task
+
+### 6. Proof of Work Gate
+- [ ] Actually executed the implemented script, UI, or endpoint
+- [ ] Captured REAL terminal output, HTTP response, or visual verification demonstrating working I/O
+- [ ] If local execution is impossible (e.g. requires Docker or external dependencies), fully documented why execution was skipped
+
+### 7. Test File Sync Gate (if applicable)
+- [ ] Checked File List for any new or modified test files (*.test.*, *.spec.*)
+- [ ] If test files exist: appended test case entries to `content.testCases[]` in story JSON
+- [ ] If test files exist: appended matching entries to epic's `test-cases.json`
+- [ ] If no test files were written, this section can be marked N/A
 
 ---
 

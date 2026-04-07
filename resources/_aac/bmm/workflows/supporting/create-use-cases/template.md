@@ -4,7 +4,7 @@ project: "{project_name}"
 version: "1.0"
 date: "{date}"
 status: "draft"
-output_format: dual
+output_format: json
 schema: "bmm/use-case.schema.json"
 ---
 

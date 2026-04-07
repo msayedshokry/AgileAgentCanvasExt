@@ -1,3 +1,4 @@
+import React from 'react';
 import type { Artifact } from '../types';
 import type { LayoutMode } from './Canvas';
 
@@ -7,6 +8,8 @@ interface DependencyArrowsProps {
   highlightedIds?: Set<string> | null;
   /** Current layout mode — in mindmap mode, parent→child tree lines are drawn. */
   layoutMode?: LayoutMode;
+  /** When set, arrows whose category is in this set are hidden. */
+  hiddenLineCategories?: Set<string>;
 }
 
 // Colour per dependency relationship inferred from artifact types involved.
@@ -20,17 +23,18 @@ function arrowStyle(fromType: Artifact['type'], toType: Artifact['type']): {
   strokeWidth: number;
   opacity: number;
   markerId: string;
+  category: 'structural' | 'peer' | 'default';
 } {
   if (STRUCTURAL_TYPES.has(fromType) && STRUCTURAL_TYPES.has(toType)) {
     // Structural flow: bright, solid
-    return { stroke: 'var(--vscode-charts-blue)', strokeWidth: 2, opacity: 0.7, markerId: 'arrowhead-structural' };
+    return { stroke: 'var(--vscode-charts-blue)', strokeWidth: 2, opacity: 0.7, markerId: 'arrowhead-structural', category: 'structural' as const };
   }
   if (fromType === 'story' && toType === 'story') {
     // Peer story cross-refs: warm, dashed-ish
-    return { stroke: 'var(--vscode-charts-yellow)', strokeWidth: 1.5, opacity: 0.55, markerId: 'arrowhead-peer' };
+    return { stroke: 'var(--vscode-charts-yellow)', strokeWidth: 1.5, opacity: 0.55, markerId: 'arrowhead-peer', category: 'peer' as const };
   }
   // Default: remaining cross-references (epic → req, architecture → epic, etc.)
-  return { stroke: 'var(--vscode-editorWidget-border)', strokeWidth: 1.5, opacity: 0.5, markerId: 'arrowhead-default' };
+  return { stroke: 'var(--vscode-editorWidget-border)', strokeWidth: 1.5, opacity: 0.5, markerId: 'arrowhead-default', category: 'default' as const };
 }
 
 /** Compute a cubic-bezier path between two endpoints */
@@ -80,7 +84,7 @@ interface ArrowData {
   isTreeLine?: boolean;
 }
 
-export function DependencyArrows({ artifacts, highlightedIds, layoutMode }: DependencyArrowsProps) {
+export const DependencyArrows = React.memo(function DependencyArrows({ artifacts, highlightedIds, layoutMode, hiddenLineCategories }: DependencyArrowsProps) {
   const isMindmap = layoutMode === 'mindmap';
 
   // Build a map of artifact positions and types by ID
@@ -112,6 +116,7 @@ export function DependencyArrows({ artifacts, highlightedIds, layoutMode }: Depe
   if (isMindmap) {
     artifacts.forEach(artifact => {
       if (!artifact.parentId) return;
+      if (hiddenLineCategories?.has('tree')) return;
       const from = infoMap.get(artifact.parentId);
       const to = infoMap.get(artifact.id);
       if (!from || !to) return;
@@ -154,6 +159,7 @@ export function DependencyArrows({ artifacts, highlightedIds, layoutMode }: Depe
 
       if (from && to) {
         const style = arrowStyle(from.type, artifact.type);
+        if (hiddenLineCategories?.has(style.category)) return;
         const path = computePath(from, to);
         arrows.push({ key: `${depId}-${artifact.id}`, fromId: depId, toId: artifact.id, path, ...style });
       }
@@ -202,4 +208,4 @@ export function DependencyArrows({ artifacts, highlightedIds, layoutMode }: Depe
       })}
     </svg>
   );
-}
+});

@@ -205,6 +205,8 @@ export interface AcceptanceCriterion {
   and?: string[];
   /** Prose format field */
   criterion?: string;
+  /** Verification status — single source of truth, replaces old verified boolean */
+  status?: 'draft' | 'implemented' | 'verified' | 'failed';
 }
 
 /**
@@ -215,11 +217,11 @@ export interface StoryTask {
   description: string;
   acReference?: string;
   estimatedHours?: number;
-  completed: boolean;
+  status?: string;
   subtasks?: {
     id: string;
     description: string;
-    completed: boolean;
+    status?: string;
   }[];
 }
 

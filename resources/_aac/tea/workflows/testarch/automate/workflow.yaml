@@ -31,8 +31,8 @@ variables:
 # Output configuration
 default_output_file: "{test_artifacts}/automation-summary.md"
 
-# Output format configuration (dual = JSON + Markdown)
-output_format: dual
+# Output format configuration
+output_format: json
 schema: "{bmad-path}/schemas/tea/automation-summary.schema.json"
 output_note: "Produces automation-summary.md and automation-summary.json with coverage analysis"
 

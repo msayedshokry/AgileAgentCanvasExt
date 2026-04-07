@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { ArtifactStore } from '../state/artifact-store';
 import { createLogger } from '../utils/logger';
+import type { AcceptanceCriterion } from '../types/index';
 
 const logger = createLogger('artifact-transformer');
 
@@ -784,7 +785,8 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                     // - Dependency badges row (~33px when blockedBy or blocks present)
                     // - Inline task/test summary row (~22px when tasks or TCs exist)
                     let storyExtras = 20; // parent epic label — always rendered for stories under an epic
-                    if (acCount > 0) storyExtras += 25;
+                    // Note: ACs are shown as a chip inside the story-inline-summary row (line below),
+                    // so they do NOT need a separate height addition here.
                     if (story.priority || story.storyPoints !== undefined) storyExtras += 22;
                     const blockedBy = story.dependencies?.blockedBy?.length ?? 0;
                     const blocks = story.dependencies?.blocks?.length ?? 0;
@@ -800,7 +802,7 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                         storyExtras += 6 + labelRows * 18 + (labelRows - 1) * 4;
                     }
                     const storyTasks = story.tasks || [];
-                    if (storyTasks.length > 0 || storyTCs.length > 0) storyExtras += 25 + 22;
+                    if (storyTasks.length > 0 || storyTCs.length > 0 || acCount > 0) storyExtras += 25 + 22;
 
                     const sh = calculateCardHeight('story', story.title, storyDescription, storyExtras);
                     storyHeights.push(sh);
@@ -1009,9 +1011,11 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                     // Build story childBreakdown for inline badges
                     const storyTaskList = storyTasksPerStory[storyIndex] || [];
                     const storyTCList = storyTCsPerStory[storyIndex] || [];
+                    const storyACList: AcceptanceCriterion[] = story.acceptanceCriteria || [];
                     const storyChildBreakdown: { label: string; count: number; types: string[] }[] = [];
                     if (storyTaskList.length > 0) storyChildBreakdown.push({ label: 'Tasks', count: storyTaskList.length, types: ['task'] });
                     if (storyTCList.length > 0) storyChildBreakdown.push({ label: 'Tests', count: storyTCList.length, types: ['test-coverage'] });
+                    if (storyACList.length > 0) storyChildBreakdown.push({ label: 'ACs', count: storyACList.length, types: ['acceptance-criterion'] });
 
                     artifacts.push({
                         id: storyId,
@@ -1023,7 +1027,7 @@ export function buildArtifacts(store: ArtifactStore): any[] {
                         size: { width: CARD_WIDTHS.story, height: storyHeight },
                         dependencies: storyDeps,
                         parentId: epicId,
-                        childCount: storyTaskList.length + storyTCList.length,
+                        childCount: storyTaskList.length + storyTCList.length + storyACList.length,
                         childBreakdown: storyChildBreakdown.length > 0 ? storyChildBreakdown : undefined,
                         metadata: {
                             userStory: story.userStory,

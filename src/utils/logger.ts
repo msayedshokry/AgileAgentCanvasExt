@@ -69,6 +69,7 @@ export function createLogger(scope: string) {
         debug: (...args: unknown[]) => {
             if (shouldLog('debug')) {
                 console.debug(formatPrefix(scope, 'debug'), ...args);
+                emitToSink(scope, 'debug', args);
             }
         },
         info: (...args: unknown[]) => {

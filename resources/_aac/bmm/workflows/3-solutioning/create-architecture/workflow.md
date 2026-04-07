@@ -1,7 +1,7 @@
 ---
 name: create-architecture
 description: 'Create architecture solution design decisions for AI agent consistency. Use when the user says "lets create architecture" or "create technical architecture" or "create a solution design"'
-output_format: dual
+output_format: json
 schema_file: "{bmad-path}/schemas/bmm/architecture.schema.json"
 template_json: "./architecture-decision-template.json"
 ---

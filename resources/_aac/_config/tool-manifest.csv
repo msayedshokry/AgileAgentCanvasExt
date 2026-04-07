@@ -1,1 +1,2 @@
 name,displayName,description,module,path,standalone
+json-schema-validator,JSON Schema Validator,"Validates JSON artifacts against their registered project schemas; reports violations with JSON path / expected / actual detail and optionally auto-fixes them",core,{bmad-path}/core/tasks/json-schema-validator.xml,yes

@@ -137,6 +137,36 @@ describe('DetailPanel', () => {
       
       expect(onUpdate).toHaveBeenCalledWith('test-1', expect.any(Object));
     });
+
+    it('should not include title/description/status inside metadata on Save', () => {
+      const onUpdate = vi.fn();
+      const artifact = createMockArtifact({
+        type: 'epic',
+        title: 'My Title',
+        description: 'My Desc',
+        status: 'draft',
+        metadata: { goal: 'Do the thing' },
+      });
+      render(<DetailPanel {...defaultProps} artifact={artifact} onUpdate={onUpdate} forceEditMode={true} />);
+
+      const saveBtn = screen.getByRole('button', { name: /save/i });
+      fireEvent.click(saveBtn);
+
+      expect(onUpdate).toHaveBeenCalledOnce();
+      const [, updates] = onUpdate.mock.calls[0];
+
+      // Top-level fields must be present at Artifact root
+      expect(updates.title).toBeDefined();
+      expect(updates.status).toBeDefined();
+
+      // Top-level fields must NOT be duplicated inside metadata
+      expect(updates.metadata?.title).toBeUndefined();
+      expect(updates.metadata?.description).toBeUndefined();
+      expect(updates.metadata?.status).toBeUndefined();
+
+      // Metadata-specific fields must still be present in metadata
+      expect(updates.metadata?.goal).toBe('Do the thing');
+    });
   });
 
   describe('Status Selector', () => {

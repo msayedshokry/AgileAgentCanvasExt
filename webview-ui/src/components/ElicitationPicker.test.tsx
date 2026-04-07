@@ -1,7 +1,7 @@
 /**
  * Tests for ElicitationPicker.tsx
  *
- * Tests: rendering, search, category tabs, method selection, escape/close
+ * Tests: rendering, search, category tabs, method selection, escape/close, grouping
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
@@ -60,7 +60,7 @@ describe('ElicitationPicker — rendering', () => {
 
   it('renders the modal overlay', () => {
     const { container } = render(<ElicitationPicker {...defaultProps} />);
-    expect(container.querySelector('.elicit-overlay')).toBeInTheDocument();
+    expect(container.querySelector('.wfl-overlay')).toBeInTheDocument();
   });
 
   it('renders the modal dialog', () => {
@@ -141,7 +141,7 @@ describe('ElicitationPicker — category tabs', () => {
 
   it('shows category count in tab badge', () => {
     const { container } = render(<ElicitationPicker {...defaultProps} />);
-    const tabCounts = container.querySelectorAll('.elicit-tab-count');
+    const tabCounts = container.querySelectorAll('.wfl-tab-count');
     // All (5), discovery (2), collaborative (2), creative (1)
     expect(tabCounts[0].textContent).toBe('5');
   });
@@ -165,6 +165,44 @@ describe('ElicitationPicker — category tabs', () => {
     expect(labels.some(l => l?.includes('Discovery'))).toBe(true);
     expect(labels.some(l => l?.includes('Collaborative'))).toBe(true);
     expect(labels.some(l => l?.includes('Creative'))).toBe(true);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Category grouping
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('ElicitationPicker — category grouping', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('shows category group headers when "All" tab is active', () => {
+    const { container } = render(<ElicitationPicker {...defaultProps} />);
+    const groupLabels = container.querySelectorAll('.wfl-phase-label');
+    // 3 categories: discovery, collaborative, creative
+    expect(groupLabels.length).toBe(3);
+    expect(groupLabels[0].textContent).toBe('Discovery');
+    expect(groupLabels[1].textContent).toBe('Collaborative');
+    expect(groupLabels[2].textContent).toBe('Creative');
+  });
+
+  it('hides group headers when a specific category tab is selected', () => {
+    const { container } = render(<ElicitationPicker {...defaultProps} />);
+
+    const tabs = screen.getAllByRole('tab');
+    const collabTab = tabs.find(t => t.textContent?.includes('Collaborative'))!;
+    fireEvent.click(collabTab);
+
+    const groupLabels = container.querySelectorAll('.wfl-phase-label');
+    expect(groupLabels.length).toBe(0);
+  });
+
+  it('wraps method cards inside phase group containers', () => {
+    const { container } = render(<ElicitationPicker {...defaultProps} />);
+    const groups = container.querySelectorAll('.wfl-phase-group');
+    // 3 groups: discovery (2 cards), collaborative (2 cards), creative (1 card)
+    expect(groups.length).toBe(3);
   });
 });
 
@@ -271,7 +309,7 @@ describe('ElicitationPicker — close behavior', () => {
 
   it('closes on overlay click', () => {
     const { container } = render(<ElicitationPicker {...defaultProps} />);
-    const overlay = container.querySelector('.elicit-overlay')!;
+    const overlay = container.querySelector('.wfl-overlay')!;
     
     fireEvent.click(overlay);
     expect(defaultProps.onClose).toHaveBeenCalled();
@@ -326,7 +364,7 @@ describe('ElicitationPicker — close behavior', () => {
 describe('ElicitationPicker — card display', () => {
   it('shows category badge on each card', () => {
     const { container } = render(<ElicitationPicker {...defaultProps} />);
-    const badges = container.querySelectorAll('.elicit-method-category');
+    const badges = container.querySelectorAll('.wfl-card-phase-badge');
     expect(badges.length).toBe(5);
   });
 

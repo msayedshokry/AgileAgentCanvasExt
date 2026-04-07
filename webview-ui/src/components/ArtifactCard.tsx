@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback } from 'react';
-import type { Artifact, ArtifactStatus, StoryMetadata, EpicMetadata, TestCoverageMetadata } from '../types';
+import React, { useState, useRef, useCallback } from 'react';
+import type { Artifact, ArtifactStatus, StoryMetadata, EpicMetadata, TestCoverageMetadata, AcceptanceCriterion } from '../types';
 import { Icon, ARTIFACT_TYPE_ICON } from './Icon';
 import { vscode } from '../vscodeApi';
 
@@ -105,9 +105,29 @@ const STATUS_BADGES: Record<Artifact['status'], { label: string; className: stri
   'rejected': { label: 'Rejected', className: 'status-blocked' },
 };
 
-export function ArtifactCard({ artifact, isSelected, isExpanded, expandedCategories, isFlashing, isDimmed, isSearchMatch, compact, isStoryExpanded, onSelect, onOpenDetail, onUpdate, onToggleExpand: _onToggleExpand, onToggleCategoryExpand, onToggleStoryExpand, onRefineWithAI, onElicit }: ArtifactCardProps) {
+export const ArtifactCard = React.memo(
+  function ArtifactCard({
+    artifact,
+    isSelected,
+    isExpanded,
+    expandedCategories,
+    isFlashing,
+    isDimmed,
+    isSearchMatch,
+    compact,
+    isStoryExpanded,
+    onSelect,
+    onOpenDetail,
+    onUpdate,
+    onToggleExpand: _onToggleExpand,
+    onToggleCategoryExpand,
+    onToggleStoryExpand,
+    onRefineWithAI,
+    onElicit
+  }: ArtifactCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(artifact.title);
+  const [activeStoryTab, setActiveStoryTab] = useState<'tasks' | 'tests' | 'acs'>('tasks');
   const storyExpanded = isStoryExpanded ?? false;
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -359,7 +379,7 @@ export function ArtifactCard({ artifact, isSelected, isExpanded, expandedCategor
       )}
 
       {/* Categorized child breakdown badges — each badge independently toggles its category */}
-      {hasChildren && artifact.childBreakdown && artifact.childBreakdown.length > 0 && (
+      {artifact.type !== 'story' && hasChildren && artifact.childBreakdown && artifact.childBreakdown.length > 0 && (
         <div className="artifact-child-breakdown">
           {artifact.childBreakdown.map(b => {
             // Story cards: toggle local inline expansion instead of parent-child visibility
@@ -451,25 +471,53 @@ export function ArtifactCard({ artifact, isSelected, isExpanded, expandedCategor
         const sm = artifact.metadata as StoryMetadata;
         const tasks = sm?.tasks || [];
         const testCases = sm?.testCases || [];
-        if (tasks.length === 0 && testCases.length === 0) return null;
-        const doneTasks = tasks.filter(t => t.completed).length;
+        const acs: AcceptanceCriterion[] = sm?.acceptanceCriteria || [];
+        if (tasks.length === 0 && testCases.length === 0 && acs.length === 0) return null;
+        const doneTasks = tasks.filter(t => t.status === 'done' || t.status === 'verified').length;
         const passTests = testCases.filter(tc => tc.status === 'complete' || tc.status === 'completed' || tc.status === 'done').length;
         const failTests = testCases.filter(tc => tc.status === 'blocked' || tc.status === 'rejected').length;
+        const verifiedACs = acs.filter(ac => ac.status === 'verified').length;
+        const failedACs = acs.filter(ac => ac.status === 'failed').length;
         const getStatusIcon = (status: ArtifactStatus | undefined) => {
           if (status === 'complete' || status === 'completed' || status === 'done') return '✅';
           if (status === 'blocked' || status === 'rejected') return '❌';
           if (status === 'in-progress' || status === 'implementing') return '🔄';
           return '⬜';
         };
+        const availableTabs = [
+          ...(tasks.length > 0 ? ['tasks'] : []),
+          ...(testCases.length > 0 ? ['tests'] : []),
+          ...(acs.length > 0 ? ['acs'] : [])
+        ];
+        const currentTab = availableTabs.includes(activeStoryTab) ? activeStoryTab : (availableTabs[0] || 'tasks');
+
+        const summaryParts = [];
+        if (tasks.length > 0) summaryParts.push(`${tasks.length} Task${tasks.length === 1 ? '' : 's'}`);
+        if (testCases.length > 0) summaryParts.push(`${testCases.length} Test${testCases.length === 1 ? '' : 's'}`);
+        if (acs.length > 0) summaryParts.push(`${acs.length} AC${acs.length === 1 ? '' : 's'}`);
+        const summaryText = summaryParts.join(' • ');
+
         return (
           <>
+            {summaryText && (
+              <div 
+                className="story-inline-summary-title"
+                onClick={(e) => { e.stopPropagation(); onToggleStoryExpand?.(artifact.id); }}
+                title={storyExpanded ? 'Click to collapse' : 'Click to expand tasks, tests & ACs'}
+              >
+                {summaryText}
+                <span style={{ marginLeft: '4px', opacity: 0.6 }}>
+                  <Icon name={storyExpanded ? 'chevron-down' : 'chevron-right'} size={10} />
+                </span>
+              </div>
+            )}
             <div
               className="story-inline-summary"
-              onClick={(e) => { e.stopPropagation(); onToggleStoryExpand?.(artifact.id); }}
-              title={storyExpanded ? 'Click to collapse' : 'Click to expand tasks & tests'}
             >
               {tasks.length > 0 && (
-                <span className={`story-summary-chip tasks${doneTasks === tasks.length ? ' all-done' : ''}`}>
+                <span className={`story-summary-chip tasks${doneTasks === tasks.length ? ' all-done' : ''}`}
+                      onClick={(e) => { e.stopPropagation(); if (!storyExpanded) onToggleStoryExpand?.(artifact.id); setActiveStoryTab('tasks'); }}
+                      title="Click to view tasks">
                   <span className="chip-icon">✓</span>
                   <span className="chip-label">{doneTasks}/{tasks.length}</span>
                   <span className="chip-bar">
@@ -478,7 +526,9 @@ export function ArtifactCard({ artifact, isSelected, isExpanded, expandedCategor
                 </span>
               )}
               {testCases.length > 0 && (
-                <span className={`story-summary-chip tests${failTests > 0 ? ' has-fails' : passTests === testCases.length ? ' all-pass' : ''}`}>
+                <span className={`story-summary-chip tests${failTests > 0 ? ' has-fails' : passTests === testCases.length ? ' all-pass' : ''}`}
+                      onClick={(e) => { e.stopPropagation(); if (!storyExpanded) onToggleStoryExpand?.(artifact.id); setActiveStoryTab('tests'); }}
+                      title="Click to view tests">
                   <span className="chip-icon">🧪</span>
                   <span className="chip-label">{passTests}/{testCases.length}</span>
                   <span className="chip-bar">
@@ -486,35 +536,73 @@ export function ArtifactCard({ artifact, isSelected, isExpanded, expandedCategor
                   </span>
                 </span>
               )}
-              <Icon name={storyExpanded ? 'chevron-down' : 'chevron-right'} size={10} />
+              {acs.length > 0 && (
+                <span className={`story-summary-chip acs${failedACs > 0 ? ' has-fails' : verifiedACs === acs.length ? ' all-pass' : ''}`}
+                      onClick={(e) => { e.stopPropagation(); if (!storyExpanded) onToggleStoryExpand?.(artifact.id); setActiveStoryTab('acs'); }}
+                      title="Click to view ACs">
+                  <span className="chip-icon">📋</span>
+                  <span className="chip-label">{verifiedACs}/{acs.length}</span>
+                  <span className="chip-bar">
+                    <span className="chip-fill" style={{ width: `${(verifiedACs / acs.length) * 100}%` }} />
+                  </span>
+                </span>
+              )}
             </div>
             {storyExpanded && (
               <div className="story-expanded-rows">
-                {tasks.length > 0 && (
-                  <div className="story-section">
-                    {tasks.map((t, i) => (
-                      <div key={i} className={`story-task-row${t.completed ? ' task-done' : ''}`}>
-                        <span className="task-check">{t.completed ? '✅' : '☐'}</span>
-                        <span className="task-title">{t.description || `Task ${i + 1}`}</span>
-                        {t.estimatedHours != null && <span className="task-effort">{t.estimatedHours}h</span>}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {tasks.length > 0 && testCases.length > 0 && (
-                  <div className="story-section-divider" />
-                )}
-                {testCases.length > 0 && (
-                  <div className="story-section">
-                    <div className="story-section-header">🧪 Tests ({testCases.length})</div>
-                    {testCases.map((tc, i) => (
-                      <div key={i} className={`story-test-row ${tc.status || 'draft'}`}>
-                        <span className="test-icon">{getStatusIcon(tc.status)}</span>
-                        <span className="test-title">{tc.title || `Test ${i + 1}`}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <div className="story-tabs-header">
+                  {tasks.length > 0 && (
+                    <button className={`story-tab ${currentTab === 'tasks' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); setActiveStoryTab('tasks'); }}>
+                      ✓ Tasks ({tasks.length})
+                    </button>
+                  )}
+                  {testCases.length > 0 && (
+                    <button className={`story-tab ${currentTab === 'tests' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); setActiveStoryTab('tests'); }}>
+                      🧪 Tests ({testCases.length})
+                    </button>
+                  )}
+                  {acs.length > 0 && (
+                    <button className={`story-tab ${currentTab === 'acs' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); setActiveStoryTab('acs'); }}>
+                      📋 ACs ({acs.length})
+                    </button>
+                  )}
+                </div>
+                
+                <div className="story-tab-content">
+                  {currentTab === 'tasks' && tasks.length > 0 && (
+                    <div className="story-section">
+                      {tasks.map((t, i) => (
+                        <div key={i} className={`story-task-row${t.status === 'done' || t.status === 'verified' ? ' task-done' : ''}`}>
+                          <span className="task-check">{t.status === 'done' || t.status === 'verified' ? '✅' : '☐'}</span>
+                          <span className="task-title">{t.description || `Task ${i + 1}`}</span>
+                          {t.estimatedHours != null && <span className="task-effort">{t.estimatedHours}h</span>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {currentTab === 'tests' && testCases.length > 0 && (
+                    <div className="story-section">
+                      {testCases.map((tc, i) => (
+                        <div key={i} className={`story-test-row ${tc.status || 'draft'}`}>
+                          <span className="test-icon">{getStatusIcon(tc.status)}</span>
+                          <span className="test-title">{tc.title || `Test ${i + 1}`}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {currentTab === 'acs' && acs.length > 0 && (
+                    <div className="story-section">
+                      {acs.map((ac, i) => (
+                        <div key={ac.id || i} className={`story-ac-row ${ac.status || 'draft'}`}>
+                          <span className="ac-icon">{ac.status === 'verified' ? '✅' : ac.status === 'failed' ? '❌' : '⬜'}</span>
+                          <span className="ac-title">{ac.criterion || (ac.given ? `Given ${ac.given}` : `AC ${i + 1}`)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </>
@@ -569,4 +657,25 @@ export function ArtifactCard({ artifact, isSelected, isExpanded, expandedCategor
       )}
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  if (prevProps.artifact !== nextProps.artifact) return false;
+  if (prevProps.isSelected !== nextProps.isSelected) return false;
+  if (prevProps.isExpanded !== nextProps.isExpanded) return false;
+  if (prevProps.isFlashing !== nextProps.isFlashing) return false;
+  if (prevProps.isDimmed !== nextProps.isDimmed) return false;
+  if (prevProps.isSearchMatch !== nextProps.isSearchMatch) return false;
+  if (prevProps.compact !== nextProps.compact) return false;
+  if (prevProps.isStoryExpanded !== nextProps.isStoryExpanded) return false;
+
+  const prevCat = prevProps.expandedCategories;
+  const nextCat = nextProps.expandedCategories;
+  if (prevCat !== nextCat) {
+    if (!prevCat || !nextCat) return false;
+    if (prevCat.size !== nextCat.size) return false;
+    for (const cat of prevCat) {
+      if (!nextCat.has(cat)) return false;
+    }
+  }
+
+  return true;
+});

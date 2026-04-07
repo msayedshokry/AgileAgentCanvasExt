@@ -1,6 +1,8 @@
+import { createLogger } from '../utils/logger';
+const logger = createLogger('project-commands');
 import * as vscode from 'vscode';
 import { ArtifactStore } from '../state/artifact-store';
-import { acOutput, getWorkspaceResolver } from '../extension';
+import { getWorkspaceResolver } from '../extension';
 import { openChat } from './chat-bridge';
 
 export async function createNewProject(store: ArtifactStore): Promise<void> {
@@ -16,7 +18,7 @@ export async function createNewProject(store: ArtifactStore): Promise<void> {
 }
 
 export async function loadExistingProject(store: ArtifactStore): Promise<void> {
-    acOutput.appendLine('[loadExistingProject] Starting...');
+    logger.debug('[loadExistingProject] Starting...');
 
     const loadFrom = await vscode.window.showQuickPick(
         [
@@ -27,7 +29,7 @@ export async function loadExistingProject(store: ArtifactStore): Promise<void> {
     );
 
     if (!loadFrom) {
-        acOutput.appendLine('[loadExistingProject] User cancelled');
+        logger.debug('[loadExistingProject] User cancelled');
         return;
     }
 
@@ -41,7 +43,7 @@ export async function loadExistingProject(store: ArtifactStore): Promise<void> {
             return;
         }
         bmadFolder = outputUri;
-        acOutput.appendLine(`[loadExistingProject] Using resolver folder: ${bmadFolder.fsPath}`);
+        logger.debug(`[loadExistingProject] Using resolver folder: ${bmadFolder.fsPath}`);
     } else {
         const selected = await vscode.window.showOpenDialog({
             canSelectFiles: false,
@@ -52,16 +54,16 @@ export async function loadExistingProject(store: ArtifactStore): Promise<void> {
         });
 
         if (!selected || selected.length === 0) {
-            acOutput.appendLine('[loadExistingProject] User cancelled folder selection');
+            logger.debug('[loadExistingProject] User cancelled folder selection');
             return;
         }
         bmadFolder = selected[0];
-        acOutput.appendLine(`[loadExistingProject] User selected folder: ${bmadFolder.fsPath}`);
+        logger.debug(`[loadExistingProject] User selected folder: ${bmadFolder.fsPath}`);
     }
 
     try {
         await vscode.workspace.fs.stat(bmadFolder);
-        acOutput.appendLine(`[loadExistingProject] Folder exists, calling loadFromFolder...`);
+        logger.debug(`[loadExistingProject] Folder exists, calling loadFromFolder...`);
 
         await vscode.window.withProgress(
             { location: vscode.ProgressLocation.Notification, title: 'Loading project…', cancellable: false },
@@ -72,7 +74,7 @@ export async function loadExistingProject(store: ArtifactStore): Promise<void> {
         );
 
         const state = store.getState();
-        acOutput.appendLine(`[loadExistingProject] After load - epics: ${state.epics?.length || 0}`);
+        logger.debug(`[loadExistingProject] After load - epics: ${state.epics?.length || 0}`);
 
         const summary = [];
         if (state.vision?.productName) summary.push(`Vision: ${state.vision.productName}`);
@@ -104,7 +106,7 @@ export async function loadExistingProject(store: ArtifactStore): Promise<void> {
             }
         }
     } catch (error) {
-        acOutput.appendLine(`[loadExistingProject] Error: ${error}`);
+        logger.debug(`[loadExistingProject] Error: ${error}`);
         vscode.window.showWarningMessage(`Could not load from folder: ${error}`);
     }
 }
@@ -114,7 +116,7 @@ export async function loadExistingProject(store: ArtifactStore): Promise<void> {
  * Searches common locations: epics/, planning-artifacts/ (legacy), implementation-artifacts/ (legacy), docs, root.
  */
 export async function checkForMarkdownFiles(folderUri: vscode.Uri): Promise<boolean> {
-    acOutput.appendLine(`[checkForMarkdownFiles] Checking: ${folderUri.fsPath}`);
+    logger.debug(`[checkForMarkdownFiles] Checking: ${folderUri.fsPath}`);
 
     async function countMdInDir(uri: vscode.Uri, label: string): Promise<number> {
         try {
@@ -122,10 +124,10 @@ export async function checkForMarkdownFiles(folderUri: vscode.Uri): Promise<bool
             const mdFiles = files.filter(([name, type]) =>
                 name.endsWith('.md') && type === vscode.FileType.File
             );
-            acOutput.appendLine(`[checkForMarkdownFiles] ${label} has ${mdFiles.length} .md files`);
+            logger.debug(`[checkForMarkdownFiles] ${label} has ${mdFiles.length} .md files`);
             return mdFiles.length;
         } catch (e) {
-            acOutput.appendLine(`[checkForMarkdownFiles] ${label} not found or error: ${e}`);
+            logger.debug(`[checkForMarkdownFiles] ${label} not found or error: ${e}`);
             return 0;
         }
     }
@@ -143,7 +145,7 @@ export async function checkForMarkdownFiles(folderUri: vscode.Uri): Promise<bool
                 }
             }
             if (total > 0) {
-                acOutput.appendLine(`[checkForMarkdownFiles] ${label} has ${total} .md files (recursive)`);
+                logger.debug(`[checkForMarkdownFiles] ${label} has ${total} .md files (recursive)`);
             }
         } catch (e) {
             // Directory doesn't exist or can't be read
@@ -152,11 +154,11 @@ export async function checkForMarkdownFiles(folderUri: vscode.Uri): Promise<bool
     }
 
     try {
-        const planningUri = vscode.Uri.joinPath(folderUri, 'planning-artifacts');
-        if (await countMdInDir(planningUri, 'planning-artifacts') > 0) return true;
+        const planningUri = vscode.Uri.joinPath(folderUri, 'planning');
+        if (await countMdInDir(planningUri, 'planning') > 0) return true;
 
-        const implUri = vscode.Uri.joinPath(folderUri, 'implementation-artifacts');
-        if (await countMdRecursive(implUri, 'implementation-artifacts') > 0) return true;
+        const implUri = vscode.Uri.joinPath(folderUri, 'solutioning');
+        if (await countMdRecursive(implUri, 'solutioning') > 0) return true;
 
         // Epic-scoped structure (new layout)
         const epicsUri = vscode.Uri.joinPath(folderUri, 'epics');
@@ -169,7 +171,7 @@ export async function checkForMarkdownFiles(folderUri: vscode.Uri): Promise<bool
 
         return false;
     } catch (e) {
-        acOutput.appendLine(`[checkForMarkdownFiles] Error: ${e}`);
+        logger.debug(`[checkForMarkdownFiles] Error: ${e}`);
         return false;
     }
 }
@@ -351,17 +353,17 @@ export function loadDemoData(store: ArtifactStore): Thenable<void> {
  * store.loadFromFolder() — no in-memory data construction needed.
  */
 export async function loadSampleProject(store: ArtifactStore, extensionUri?: vscode.Uri): Promise<void> {
-    acOutput.appendLine('[loadSampleProject] Starting...');
+    logger.debug('[loadSampleProject] Starting...');
 
     // 1. Resolve the extension URI
     const extUri = extensionUri
         ?? vscode.extensions.getExtension('msayedshokry.agileagentcanvas')?.extensionUri;
     if (!extUri) {
-        acOutput.appendLine('[loadSampleProject] ERROR: Cannot locate extension URI');
+        logger.debug('[loadSampleProject] ERROR: Cannot locate extension URI');
         vscode.window.showErrorMessage('Agile Agent Canvas: Cannot locate extension resources.');
         return;
     }
-    acOutput.appendLine(`[loadSampleProject] Extension URI: ${extUri.fsPath}`);
+    logger.debug(`[loadSampleProject] Extension URI: ${extUri.fsPath}`);
 
     // 2. Resolve the workspace output folder.
     //    Always target the configured/default folder name — never write sample
@@ -371,13 +373,13 @@ export async function loadSampleProject(store: ArtifactStore, extensionUri?: vsc
     const wsFolder = resolver?.getActiveWorkspaceFolder()
         ?? vscode.workspace.workspaceFolders?.[0];
     if (!wsFolder) {
-        acOutput.appendLine('[loadSampleProject] ERROR: No workspace folder');
+        logger.debug('[loadSampleProject] ERROR: No workspace folder');
         vscode.window.showWarningMessage('No active workspace — open a folder first.');
         return;
     }
     const outputFolderName = resolver?.getOutputFolderName() ?? '.agileagentcanvas-context';
     const outputUri = vscode.Uri.joinPath(wsFolder.uri, outputFolderName);
-    acOutput.appendLine(`[loadSampleProject] Output URI: ${outputUri.fsPath}`);
+    logger.debug(`[loadSampleProject] Output URI: ${outputUri.fsPath}`);
 
     // Ensure the output folder exists
     try {
@@ -387,7 +389,7 @@ export async function loadSampleProject(store: ArtifactStore, extensionUri?: vsc
     }
 
     const sampleRoot = vscode.Uri.joinPath(extUri, 'resources', 'sample-project');
-    acOutput.appendLine(`[loadSampleProject] Sample root: ${sampleRoot.fsPath}`);
+    logger.debug(`[loadSampleProject] Sample root: ${sampleRoot.fsPath}`);
 
     // 3. Recursively copy every JSON file from resources/sample-project → .agileagentcanvas-context
     let filesCopied = 0;
@@ -408,13 +410,13 @@ export async function loadSampleProject(store: ArtifactStore, extensionUri?: vsc
     }
 
     try {
-        acOutput.appendLine('[loadSampleProject] Copying sample files to .agileagentcanvas-context...');
+        logger.debug('[loadSampleProject] Copying sample files to .agileagentcanvas-context...');
 
         await vscode.window.withProgress(
             { location: vscode.ProgressLocation.Notification, title: 'Loading sample project…', cancellable: false },
             async () => {
                 await copyDir(sampleRoot, outputUri!);
-                acOutput.appendLine(`[loadSampleProject] Copied ${filesCopied} JSON files`);
+                logger.debug(`[loadSampleProject] Copied ${filesCopied} JSON files`);
 
                 // 4. Clear current state and reload from the freshly-copied files
                 store.clearProject();
@@ -435,7 +437,7 @@ export async function loadSampleProject(store: ArtifactStore, extensionUri?: vsc
         const state = store.getState();
         const epicCount = state.epics?.length ?? 0;
         const storyCount = state.epics?.reduce((s, e) => s + (e.stories?.length || 0), 0) ?? 0;
-        acOutput.appendLine(`[loadSampleProject] Loaded ${epicCount} epics, ${storyCount} stories`);
+        logger.debug(`[loadSampleProject] Loaded ${epicCount} epics, ${storyCount} stories`);
 
         const selection = await vscode.window.showInformationMessage(
             `TaskFlow Pro sample loaded — ${epicCount} epics, ${storyCount} stories. Explore the canvas!`,
@@ -445,7 +447,7 @@ export async function loadSampleProject(store: ArtifactStore, extensionUri?: vsc
             await vscode.commands.executeCommand('agileagentcanvas.openCanvas');
         }
     } catch (error) {
-        acOutput.appendLine(`[loadSampleProject] Error: ${error}`);
+        logger.debug(`[loadSampleProject] Error: ${error}`);
         vscode.window.showErrorMessage(`Failed to load sample project: ${error}`);
     }
 }

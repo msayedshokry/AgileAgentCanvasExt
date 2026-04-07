@@ -5,7 +5,7 @@ description: 'Create system-level or epic-level test plans. Use when the user sa
 author: "BMad"
 
 # Output format configuration
-output_format: dual  # JSON (primary) + Markdown (human-readable)
+output_format: json  # JSON (primary) structured artifact
 schema_file: "{bmad-path}/schemas/tea/test-design.schema.json"
 template_json: "{installed_path}/test-design-template.json"
 

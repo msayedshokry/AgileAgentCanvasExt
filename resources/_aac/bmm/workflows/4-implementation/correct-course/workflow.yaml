@@ -3,7 +3,7 @@ name: "correct-course"
 description: 'Manage significant changes during sprint execution. Use when the user says "correct course" or "propose sprint change"'
 
 # Output format configuration
-output_format: dual
+output_format: json
 schema_file: "{bmad-path}/schemas/bmm/change-proposal.schema.json"
 
 config_source: "{bmad-path}/bmm/config.yaml"

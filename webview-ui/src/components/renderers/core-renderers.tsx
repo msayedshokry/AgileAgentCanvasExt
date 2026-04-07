@@ -513,8 +513,8 @@ export function renderStoryDetails(props: RendererProps) {
                   <label>
                     <input
                       type="checkbox"
-                      checked={!!task.completed}
-                      onChange={(e) => updateArrayItem('tasks', i, { ...task, completed: e.target.checked })}
+                      checked={task.status === 'done' || task.status === 'verified'}
+                      onChange={(e) => updateArrayItem('tasks', i, { ...task, status: e.target.checked ? 'done' : 'in-progress' })}
                     /> Done
                   </label>
                 </div>
@@ -536,9 +536,11 @@ export function renderStoryDetails(props: RendererProps) {
         ) : (
           tasks.length > 0 ? (
             <ul className="task-list">
-              {tasks.map((task: any, i: number) => (
-                <li key={i} className={`task-item${task.completed ? ' completed' : ''}`}>
-                  <span className="task-check">{task.completed ? '☑' : '☐'}</span>
+              {tasks.map((task: any, i: number) => {
+                const taskDone = task.status === 'done' || task.status === 'verified';
+                return (
+                <li key={i} className={`task-item${taskDone ? ' completed' : ''}`}>
+                  <span className="task-check">{taskDone ? '☑' : '☐'}</span>
                   {task.id && <span className="ac-id-badge">{task.id}</span>}
                   <span className="task-title">{task.description || task.title || 'Untitled task'}</span>
                   {task.acReference && <span className="tag">{task.acReference}</span>}
@@ -546,15 +548,17 @@ export function renderStoryDetails(props: RendererProps) {
                   {task.notes && <p className="task-desc muted">{task.notes}</p>}
                   {task.subtasks?.length > 0 && (
                     <ul className="subtask-list">
-                      {task.subtasks.map((st: any, si: number) => (
-                        <li key={si} className={st.completed ? 'completed' : ''}>
-                          {st.completed ? '☑' : '☐'} {st.id && <span className="ac-id-badge">{st.id}</span>} {st.description}
+                      {task.subtasks.map((st: any, si: number) => {
+                        const subDone = st.status === 'done' || st.status === 'verified';
+                        return (
+                        <li key={si} className={subDone ? 'completed' : ''}>
+                          {subDone ? '☑' : '☐'} {st.id && <span className="ac-id-badge">{st.id}</span>} {st.description}
                         </li>
-                      ))}
+                      );})}
                     </ul>
                   )}
                 </li>
-              ))}
+              );})}
             </ul>
           ) : (
             <p className="empty-message">No tasks defined</p>
@@ -3447,14 +3451,16 @@ export function renderTaskDetails(props: RendererProps) {
       <CollapsibleSection title="Subtasks" count={subtasks.length} sectionId="task-subtasks">
         {subtasks.length > 0 ? (
           <ul className="criteria-list">
-            {subtasks.map((st: any, i: number) => (
-              <li key={i} style={{ opacity: st.completed ? 0.6 : 1 }}>
-                <span style={{ textDecoration: st.completed ? 'line-through' : 'none' }}>
+            {subtasks.map((st: any, i: number) => {
+              const subDone = st.status === 'done' || st.status === 'verified';
+              return (
+              <li key={i} style={{ opacity: subDone ? 0.6 : 1 }}>
+                <span style={{ textDecoration: subDone ? 'line-through' : 'none' }}>
                   {st.title || st.description || `Subtask ${i + 1}`}
                 </span>
-                {st.completed && <span className="tag" style={{ marginLeft: '6px', fontSize: '0.75em' }}>Done</span>}
+                {subDone && <span className="tag" style={{ marginLeft: '6px', fontSize: '0.75em' }}>Done</span>}
               </li>
-            ))}
+            );})}
           </ul>
         ) : (
           <p className="empty-message">No subtasks</p>

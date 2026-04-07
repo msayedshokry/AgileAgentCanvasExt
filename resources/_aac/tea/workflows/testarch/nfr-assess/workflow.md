@@ -1,7 +1,7 @@
 ---
 name: testarch-nfr
 description: Assess NFRs like performance security and reliability. Use when user says 'lets assess NFRs' or 'I want to evaluate non-functional requirements'
-output_format: dual
+output_format: json
 schema_file: "{bmad-path}/schemas/tea/nfr-assessment.schema.json"
 template_json: "./nfr-report-template.json"
 web_bundle: true

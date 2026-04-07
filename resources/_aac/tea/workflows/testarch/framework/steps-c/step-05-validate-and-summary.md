@@ -81,6 +81,27 @@ Report:
   - Set `lastSaved: '{date}'`
   - Append this step's output to the appropriate section of the document.
 
+## SAVE JSON ARTIFACT
+
+**CRITICAL — Do this before reporting completion:**
+
+Read the complete `{outputFile}` working document, then call `agileagentcanvas_update_artifact` to persist the final structured artifact:
+
+```
+agileagentcanvas_update_artifact({
+  type: "test-framework",
+  id: "{project_name}-test-framework",
+  changes: { /* all content fields extracted from the working document, following the test-framework schema */ }
+})
+```
+
+- Schema reference: `{bmad-path}/schemas/tea/test-framework.schema.json` — use `agileagentcanvas_read_file` to read it if you need to verify field names
+- The `changes` object must conform to the test-framework schema — do NOT wrap content in a `content` key
+- **Only call this after validation is complete** — do not skip checklist validation in step 1
+- If the tool call is rejected (schema mismatch), fix the field and retry
+
+---
+
 ## 🚨 SYSTEM SUCCESS/FAILURE METRICS:
 
 ### ✅ SUCCESS:

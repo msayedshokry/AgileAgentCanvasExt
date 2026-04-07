@@ -1,6 +1,8 @@
+import { createLogger } from '../utils/logger';
+const logger = createLogger('agileagentcanvas-tools');
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { acOutput } from '../extension';
+
 import { ArtifactStore } from '../state/artifact-store';
 import { schemaValidator } from '../state/schema-validator';
 
@@ -168,7 +170,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
 
                 if (!isPathAllowed(filePath, allowedRoots)) {
                     const msg = `Access denied: "${filePath}" is outside the allowed BMAD paths.`;
-                    acOutput.appendLine(`[agileagentcanvas_read_file] ${msg}`);
+                    logger.debug(`[agileagentcanvas_read_file] ${msg}`);
                     return new vscode.LanguageModelToolResult([
                         new vscode.LanguageModelTextPart(msg)
                     ]);
@@ -178,13 +180,13 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                     const uri = vscode.Uri.file(filePath);
                     const bytes = await vscode.workspace.fs.readFile(uri);
                     const content = Buffer.from(bytes).toString('utf-8');
-                    acOutput.appendLine(`[agileagentcanvas_read_file] Read ${content.length} chars from ${filePath}`);
+                    logger.debug(`[agileagentcanvas_read_file] Read ${content.length} chars from ${filePath}`);
                     return new vscode.LanguageModelToolResult([
                         new vscode.LanguageModelTextPart(content)
                     ]);
                 } catch (err: any) {
                     const msg = `Error reading "${filePath}": ${err?.message ?? err}`;
-                    acOutput.appendLine(`[agileagentcanvas_read_file] ${msg}`);
+                    logger.debug(`[agileagentcanvas_read_file] ${msg}`);
                     return new vscode.LanguageModelToolResult([
                         new vscode.LanguageModelTextPart(msg)
                     ]);
@@ -202,7 +204,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
 
                 if (!isPathAllowed(dirPath, allowedRoots)) {
                     const msg = `Access denied: "${dirPath}" is outside the allowed BMAD paths.`;
-                    acOutput.appendLine(`[agileagentcanvas_list_directory] ${msg}`);
+                    logger.debug(`[agileagentcanvas_list_directory] ${msg}`);
                     return new vscode.LanguageModelToolResult([
                         new vscode.LanguageModelTextPart(msg)
                     ]);
@@ -217,13 +219,13 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         return `${name}  [${kind}]`;
                     });
                     const result = lines.join('\n') || '(empty directory)';
-                    acOutput.appendLine(`[agileagentcanvas_list_directory] Listed ${entries.length} entries in ${dirPath}`);
+                    logger.debug(`[agileagentcanvas_list_directory] Listed ${entries.length} entries in ${dirPath}`);
                     return new vscode.LanguageModelToolResult([
                         new vscode.LanguageModelTextPart(result)
                     ]);
                 } catch (err: any) {
                     const msg = `Error listing "${dirPath}": ${err?.message ?? err}`;
-                    acOutput.appendLine(`[agileagentcanvas_list_directory] ${msg}`);
+                    logger.debug(`[agileagentcanvas_list_directory] ${msg}`);
                     return new vscode.LanguageModelToolResult([
                         new vscode.LanguageModelTextPart(msg)
                     ]);
@@ -242,7 +244,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
 
                     if (!type || !id || !changes || typeof changes !== 'object') {
                         const msg = 'agileagentcanvas_update_artifact requires type, id, and a changes object.';
-                        acOutput.appendLine(`[agileagentcanvas_update_artifact] ${msg}`);
+                        logger.debug(`[agileagentcanvas_update_artifact] ${msg}`);
                         return new vscode.LanguageModelToolResult([
                             new vscode.LanguageModelTextPart(msg)
                         ]);
@@ -253,9 +255,9 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                     // ctx.bmadPath is already set by the time we need it.
                     if (ctx.bmadPath && !schemaValidator.isInitialized()) {
                         try {
-                            schemaValidator.init(ctx.bmadPath, acOutput);
+                            schemaValidator.init(ctx.bmadPath);
                         } catch (err: any) {
-                            acOutput.appendLine(
+                            logger.debug(
                                 `[agileagentcanvas_update_artifact] Schema validator init failed: ${err?.message ?? err}`
                             );
                         }
@@ -269,7 +271,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                             validation.errors.map(e => `  - ${e}`).join('\n') +
                             `\n\nPlease fix the changes to match the schema exactly and call agileagentcanvas_update_artifact again. ` +
                             `Use only the field names, types, and enum values defined in the schema.`;
-                        acOutput.appendLine(
+                        logger.debug(
                             `[agileagentcanvas_update_artifact] REJECTED ${type}/${id}: ` +
                             validation.errors.join('; ')
                         );
@@ -281,13 +283,13 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                     try {
                         await ctx.store.updateArtifact(type, id, changes);
                         const msg = `Artifact ${type}/${id} updated successfully.`;
-                        acOutput.appendLine(`[agileagentcanvas_update_artifact] ${msg}`);
+                        logger.debug(`[agileagentcanvas_update_artifact] ${msg}`);
                         return new vscode.LanguageModelToolResult([
                             new vscode.LanguageModelTextPart(msg)
                         ]);
                     } catch (err: any) {
                         const msg = `Error updating artifact ${type}/${id}: ${err?.message ?? err}`;
-                        acOutput.appendLine(`[agileagentcanvas_update_artifact] ${msg}`);
+                        logger.debug(`[agileagentcanvas_update_artifact] ${msg}`);
                         return new vscode.LanguageModelToolResult([
                             new vscode.LanguageModelTextPart(msg)
                         ]);
@@ -310,7 +312,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
 
                     if (!isPathAllowed(filePath, allowedRoots)) {
                         const msg = `Access denied: "${filePath}" is outside the allowed AgileAgentCanvas paths.`;
-                        acOutput.appendLine(`[agileagentcanvas_write_file] ${msg}`);
+                        logger.debug(`[agileagentcanvas_write_file] ${msg}`);
                         return new vscode.LanguageModelToolResult([
                             new vscode.LanguageModelTextPart(msg)
                         ]);
@@ -318,7 +320,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
 
                     if (!content || typeof content !== 'string') {
                         const msg = 'agileagentcanvas_write_file requires a non-empty content string.';
-                        acOutput.appendLine(`[agileagentcanvas_write_file] ${msg}`);
+                        logger.debug(`[agileagentcanvas_write_file] ${msg}`);
                         return new vscode.LanguageModelToolResult([
                             new vscode.LanguageModelTextPart(msg)
                         ]);
@@ -400,13 +402,13 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         }
 
                         const msg = `File(s) written successfully: ${written.join(', ')}`;
-                        acOutput.appendLine(`[agileagentcanvas_write_file] ${msg}`);
+                        logger.debug(`[agileagentcanvas_write_file] ${msg}`);
                         return new vscode.LanguageModelToolResult([
                             new vscode.LanguageModelTextPart(msg)
                         ]);
                     } catch (err: any) {
                         const msg = `Error writing "${filePath}": ${err?.message ?? err}`;
-                        acOutput.appendLine(`[agileagentcanvas_write_file] ${msg}`);
+                        logger.debug(`[agileagentcanvas_write_file] ${msg}`);
                         return new vscode.LanguageModelToolResult([
                             new vscode.LanguageModelTextPart(msg)
                         ]);
@@ -416,7 +418,81 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
         )
     );
 
-    acOutput.appendLine('[AgileAgentCanvasTools] Registered 4 language model tools');
+    // ── agileagentcanvas_sync_story_status ────────────────────────────────────────────
+    disposables.push(
+        vscode.lm.registerTool<{ storyId: string; epicId: string; status: string }>(
+            'agileagentcanvas_sync_story_status',
+            {
+                async invoke(request, _token) {
+                    const { storyId, epicId, status } = request.input;
+
+                    if (!storyId || !epicId || !status) {
+                        const msg = 'agileagentcanvas_sync_story_status requires storyId, epicId, and status.';
+                        logger.debug(`[agileagentcanvas_sync_story_status] ${msg}`);
+                        return new vscode.LanguageModelToolResult([
+                            new vscode.LanguageModelTextPart(msg)
+                        ]);
+                    }
+
+                    try {
+                        const result = await ctx.store.syncStoryStatusAtomic(storyId, epicId, status);
+                        const msg = result.success
+                            ? `✅ Story ${storyId} status synced to "${status}" across ${result.updatedFiles.length} files: ${result.updatedFiles.join(', ')}`
+                            : `⚠️ Story sync partially failed. Updated files: ${result.updatedFiles.join(', ')}`;
+                        logger.debug(`[agileagentcanvas_sync_story_status] ${msg}`);
+                        return new vscode.LanguageModelToolResult([
+                            new vscode.LanguageModelTextPart(msg)
+                        ]);
+                    } catch (err: any) {
+                        const msg = `Error syncing story status: ${err?.message ?? err}`;
+                        logger.debug(`[agileagentcanvas_sync_story_status] ${msg}`);
+                        return new vscode.LanguageModelToolResult([
+                            new vscode.LanguageModelTextPart(msg)
+                        ]);
+                    }
+                }
+            }
+        )
+    );
+
+    // ── agileagentcanvas_sync_epic_status ──────────────────────────────────────────────
+    disposables.push(
+        vscode.lm.registerTool<{ epicId: string; status: string }>(
+            'agileagentcanvas_sync_epic_status',
+            {
+                async invoke(request, _token) {
+                    const { epicId, status } = request.input;
+
+                    if (!epicId || !status) {
+                        const msg = 'agileagentcanvas_sync_epic_status requires epicId and status.';
+                        logger.debug(`[agileagentcanvas_sync_epic_status] ${msg}`);
+                        return new vscode.LanguageModelToolResult([
+                            new vscode.LanguageModelTextPart(msg)
+                        ]);
+                    }
+
+                    try {
+                        const result = await ctx.store.syncEpicStatusAtomic(epicId, status);
+                        const msg = result.success
+                            ? `✅ Epic ${epicId} status synced to "${status}" across ${result.updatedFiles.length} files: ${result.updatedFiles.join(', ')}`
+                            : `⚠️ Epic sync partially failed. Updated files: ${result.updatedFiles.join(', ')}`;
+                        logger.debug(`[agileagentcanvas_sync_epic_status] ${msg}`);
+                        return new vscode.LanguageModelToolResult([
+                            new vscode.LanguageModelTextPart(msg)
+                        ]);
+                    } catch (err: any) {
+                        const msg = `Error syncing epic status: ${err?.message ?? err}`;
+                        logger.debug(`[agileagentcanvas_sync_epic_status] ${msg}`);
+                        return new vscode.LanguageModelToolResult([
+                            new vscode.LanguageModelTextPart(msg)
+                        ]);
+                    }
+                }
+            }
+        )
+    );
+
+    logger.debug('[AgileAgentCanvasTools] Registered 6 language model tools');
     return disposables;
 }
 
@@ -535,6 +611,52 @@ export function getToolDefinitions(): vscode.LanguageModelChatTool[] {
                     }
                 },
                 required: ['path', 'content']
+            }
+        },
+        {
+            name: 'agileagentcanvas_sync_story_status',
+            description:
+                'Atomically syncs a story\'s status in the standalone story JSON file ' +
+                '(content.status + metadata.status). This is the SINGLE SOURCE OF TRUTH for story status. ' +
+                'Use this instead of manually patching files when changing a story\'s status.',
+            inputSchema: {
+                type: 'object' as const,
+                properties: {
+                    storyId: {
+                        type: 'string',
+                        description: 'The story ID (e.g. "S-16.9")'
+                    },
+                    epicId: {
+                        type: 'string',
+                        description: 'The parent epic ID (e.g. "16")'
+                    },
+                    status: {
+                        type: 'string',
+                        description: 'The target status (e.g. "done", "in-progress", "in-review")'
+                    }
+                },
+                required: ['storyId', 'epicId', 'status']
+            }
+        },
+        {
+            name: 'agileagentcanvas_sync_epic_status',
+            description:
+                'Atomically syncs an epic\'s status in the standalone epic JSON file ' +
+                '(content.status + metadata.status). This is the SINGLE SOURCE OF TRUTH for epic status. ' +
+                'Use this instead of manually patching files when changing an epic\'s status.',
+            inputSchema: {
+                type: 'object' as const,
+                properties: {
+                    epicId: {
+                        type: 'string',
+                        description: 'The epic ID (e.g. "16")'
+                    },
+                    status: {
+                        type: 'string',
+                        description: 'The target status (e.g. "done", "in-progress")'
+                    }
+                },
+                required: ['epicId', 'status']
             }
         }
     ];

@@ -1,7 +1,7 @@
 ---
 name: create-product-brief
 description: 'Create product brief through collaborative discovery. Use when the user says "lets create a product brief" or "help me create a project brief"'
-output_format: dual
+output_format: json
 schema_file: "{bmad-path}/schemas/bmm/product-brief.schema.json"
 template_json: "./product-brief.template.json"
 ---

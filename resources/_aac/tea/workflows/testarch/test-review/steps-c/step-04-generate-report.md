@@ -99,6 +99,27 @@ Report:
 - Critical blockers
 - Next recommended workflow (e.g., `automate` or `trace`)
 
+## SAVE JSON ARTIFACT
+
+**CRITICAL — Do this before reporting completion:**
+
+Read the complete `{outputFile}` working document, then call `agileagentcanvas_update_artifact` to persist the final structured artifact:
+
+```
+agileagentcanvas_update_artifact({
+  type: "test-review",
+  id: "{project_name}-test-review",
+  changes: { /* all content fields extracted from the working document, following the test-review schema */ }
+})
+```
+
+- Schema reference: `{bmad-path}/schemas/tea/test-review.schema.json` — use `agileagentcanvas_read_file` to read it if you need to verify field names
+- The `changes` object must conform to the test-review schema — do NOT wrap content in a `content` key
+- **Only call this after the Completion Summary step is done** — do not skip any earlier steps
+- If the tool call is rejected (schema mismatch), fix the field and retry
+
+---
+
 ## 🚨 SYSTEM SUCCESS/FAILURE METRICS:
 
 ### ✅ SUCCESS:

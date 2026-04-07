@@ -1,6 +1,8 @@
+import { createLogger } from '../utils/logger';
+const logger = createLogger('workflow-commands');
 import * as vscode from 'vscode';
 import { ArtifactStore } from '../state/artifact-store';
-import { acOutput } from '../extension';
+
 import { openChat } from './chat-bridge';
 
 /**
@@ -17,7 +19,7 @@ export async function executeWorkflowStep(
     completionStatus?: Record<string, string>,
     store?: ArtifactStore
 ): Promise<void> {
-    acOutput.appendLine(`[WorkflowStep] Executing step "${stepId}" for ${artifactType} ${artifactId}`);
+    logger.debug(`[WorkflowStep] Executing step "${stepId}" for ${artifactType} ${artifactId}`);
 
     // Check dependencies if provided
     if (dependsOn && dependsOn.length > 0 && completionStatus) {
@@ -79,8 +81,8 @@ export async function executeWorkflowStep(
             `Ready to ${stepId}: Press Enter to send`,
             5000
         );
-        acOutput.appendLine(`[WorkflowStep] Opened chat with: ${fullCommand}`);
+        logger.debug(`[WorkflowStep] Opened chat with: ${fullCommand}`);
     } catch (error) {
-        acOutput.appendLine(`[WorkflowStep] Error opening chat: ${error}`);
+        logger.debug(`[WorkflowStep] Error opening chat: ${error}`);
     }
 }

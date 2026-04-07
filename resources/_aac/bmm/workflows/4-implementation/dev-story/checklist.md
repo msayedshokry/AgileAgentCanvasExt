@@ -57,8 +57,8 @@ validation-rules:
 
 ## 🔚 Final Status Verification
 
-- [ ] **Story JSON Status Synced:** In the story JSON file: content.status, content.completed, metadata.status, and metadata.timestamps.lastModified are all updated consistently
-- [ ] **Task Status Synced:** All completed tasks have both completed = true AND status = "done" in the story JSON
+- [ ] **Story JSON Status Synced:** In the story JSON file: content.status, metadata.status, and metadata.timestamps.lastModified are all updated consistently
+- [ ] **Task Status Synced:** All tasks have status set appropriately (status: "implemented" or "verified") in the story JSON
 - [ ] **Epic JSON Synced:** Parent epic.json storyRefs entry status matches the story's content.status
 - [ ] **Sprint Status Updated:** Sprint status updated to "in-review" (when sprint tracking is used)
 - [ ] **Quality Gates Passed:** All quality checks and validations completed successfully

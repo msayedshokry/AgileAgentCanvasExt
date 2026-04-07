@@ -65,3 +65,10 @@ CDATA*
 package-lock.json
 agileagentcanvas-*.vsix
 fix-sample-metadata.js
+search.js
+refactor_logger.js
+check-coverage-thresholds.js
+patch-workflows.js
+test-loaders.js
+fix_artifact_store.js
+fs.renameSync*

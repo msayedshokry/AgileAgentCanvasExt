@@ -95,6 +95,28 @@ PRD complete. Read fully and follow: `{bmad-path}/core/tasks/help.md`
 - Document now contains: Executive Summary, Success Criteria, User Journeys, Domain Requirements (if applicable), Innovation Analysis (if applicable), Project-Type Requirements, Functional Requirements (capability contract), Non-Functional Requirements, and has been polished for flow and coherence
 - Ask if they'd like to run validation workflow or proceed to next workflows
 
+## SAVE JSON ARTIFACT
+
+**CRITICAL — Do this before presenting the completion summary:**
+
+Read the complete `{outputFile}` working document, then call `agileagentcanvas_update_artifact` to persist the final structured artifact:
+
+```
+agileagentcanvas_update_artifact({
+  type: "prd",
+  id: "{project_name}-prd",
+  changes: { /* all content fields extracted from the working document, following the prd schema */ }
+})
+```
+
+- Extract every section: product overview, functional requirements, non-functional requirements, technical requirements, scope, constraints, risks, timeline
+- Schema reference: `{bmad-path}/schemas/bmm/prd.schema.json` — use `agileagentcanvas_read_file` to read it if you need to verify field names
+- The `changes` object must conform to the prd schema — do NOT wrap content in a `content` key
+- **Only call this once the user is satisfied** — do not skip any earlier checkpoints
+- If the tool call is rejected (schema mismatch), fix the field and retry
+
+---
+
 ## SUCCESS METRICS:
 
 ✅ PRD document contains all required sections and has been polished

@@ -248,6 +248,27 @@ Then append the gate decision summary (from section 5 above) to the end of the e
 
 ---
 
+## SAVE JSON ARTIFACT
+
+**CRITICAL — Do this after gate decision is displayed (step 5) and before workflow termination:**
+
+Read the complete `{outputFile}` working document, then call `agileagentcanvas_update_artifact` to persist the final structured artifact:
+
+```
+agileagentcanvas_update_artifact({
+  type: "traceability-matrix",
+  id: "{project_name}-traceability-matrix",
+  changes: { /* all content fields extracted from the working document, following the traceability-matrix schema */ }
+})
+```
+
+- Schema reference: `{bmad-path}/schemas/tea/traceability-matrix.schema.json` — use `agileagentcanvas_read_file` to read it if you need to verify field names
+- The `changes` object must conform to the traceability-matrix schema — do NOT wrap content in a `content` key
+- **Only call this after the gate decision has been generated and displayed**
+- If the tool call is rejected (schema mismatch), fix the field and retry
+
+---
+
 ## 🚨 PHASE 2 SUCCESS METRICS
 
 ### ✅ SUCCESS:

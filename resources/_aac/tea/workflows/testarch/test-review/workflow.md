@@ -1,7 +1,7 @@
 ---
 name: testarch-test-review
 description: Review test quality using best practices validation. Use when user says 'lets review tests' or 'I want to evaluate test quality'
-output_format: dual
+output_format: json
 schema_file: "{bmad-path}/schemas/tea/test-review.schema.json"
 template_json: "./test-review-template.json"
 web_bundle: true

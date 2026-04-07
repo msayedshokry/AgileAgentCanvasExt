@@ -41,7 +41,7 @@
         },
         "status": {
           "type": "string",
-          "description": "Story status",
+          "description": "Story status. Kanban column mapping: Backlog(draft,backlog,not-started) → Ready(ready,ready-for-dev,approved) → In Progress(in-progress,implementing,blocked) → Review(review,in-review,ready-for-review) → Done(done,complete,completed,archived)",
           "enum": [
             "draft",
             "ready",
@@ -53,11 +53,6 @@
             "complete"
           ],
           "default": "draft"
-        },
-        "completed": {
-          "type": "boolean",
-          "description": "Overall story completion flag — set to true when all tasks are done",
-          "default": false
         },
         "priority": {
           "type": "string",
@@ -199,6 +194,12 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "status": {
+                "type": "string",
+                "description": "Verification status: draft (not yet verified), implemented (implemented by dev but unverified), verified (implementation satisfies this AC), failed (implementation does not satisfy this AC)",
+                "enum": ["draft", "implemented", "verified", "failed"],
+                "default": "draft"
               }
             },
             "anyOf": [
@@ -240,10 +241,6 @@
               "estimatedHours": {
                 "type": "number"
               },
-              "completed": {
-                "type": "boolean",
-                "default": false
-              },
               "status": {
                 "$ref": "../common/status.schema.json#/definitions/taskStatus"
               },
@@ -265,9 +262,8 @@
                     "description": {
                       "type": "string"
                     },
-                    "completed": {
-                      "type": "boolean",
-                      "default": false
+                    "status": {
+                      "$ref": "../common/status.schema.json#/definitions/taskStatus"
                     },
                     "completedAt": {
                       "type": "string"

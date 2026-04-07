@@ -90,6 +90,28 @@ Congratulate the user on the completion you both completed together of the UX.
 
 
 
+## SAVE JSON ARTIFACT
+
+**CRITICAL — Do this before presenting the completion summary:**
+
+Read the complete `{planning_artifacts}/ux-design-specification.md` working document, then call `agileagentcanvas_update_artifact` to persist the final structured artifact:
+
+```
+agileagentcanvas_update_artifact({
+  type: "ux-design",
+  id: "{project_name}-ux-design",
+  changes: { /* all content fields extracted from the working document, following the ux-design schema */ }
+})
+```
+
+- Extract every section: design overview, core experience, design inspiration, design system, user journeys, wireframes, component strategy
+- Schema reference: `{bmad-path}/schemas/bmm/ux-design.schema.json` — use `agileagentcanvas_read_file` to read it if you need to verify field names
+- The `changes` object must conform to the ux-design schema — do NOT wrap content in a `content` key
+- **Only call this once the user is satisfied** — do not skip any earlier checkpoints
+- If the tool call is rejected (schema mismatch), fix the field and retry
+
+---
+
 ## SUCCESS METRICS:
 
 ✅ UX design specification contains all required sections

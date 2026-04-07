@@ -20,8 +20,8 @@ template: "{installed_path}/template.md"
 # Output configuration
 default_output_file: "{planning_artifacts}/use-cases.md"
 
-# Output format configuration (dual = JSON + Markdown)
-output_format: dual
+# Output format configuration
+output_format: json
 schema: "{bmad-path}/schemas/bmm/use-case.schema.json"
 output_note: "Produces use-cases.md and use-cases.json describing system behavior scenarios"
 

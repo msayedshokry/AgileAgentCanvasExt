@@ -132,6 +132,28 @@ Product Brief complete. Read fully and follow: `{bmad-path}/core/tasks/help.md`
 
 ---
 
+## SAVE JSON ARTIFACT
+
+**CRITICAL — Do this before presenting the completion summary:**
+
+Read the complete `{outputFile}` working document, then call `agileagentcanvas_update_artifact` to persist the final structured artifact:
+
+```
+agileagentcanvas_update_artifact({
+  type: "product-brief",
+  id: "{project_name}-product-brief",
+  changes: { /* all content fields extracted from the working document, following the product-brief schema */ }
+})
+```
+
+- Extract every section: product name, vision, problem statement, target users, market context, success metrics, scope, key features
+- Schema reference: `{bmad-path}/schemas/bmm/product-brief.schema.json` — use `agileagentcanvas_read_file` to read it if you need to verify field names
+- The `changes` object must conform to the product-brief schema — do NOT wrap content in a `content` key
+- **Only call this once the user is satisfied** — do not skip any earlier checkpoints
+- If the tool call is rejected (schema mismatch), fix the field and retry
+
+---
+
 ## 🚨 SYSTEM SUCCESS/FAILURE METRICS
 
 ### ✅ SUCCESS:

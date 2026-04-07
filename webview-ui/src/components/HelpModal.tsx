@@ -125,7 +125,6 @@ const HELP_SECTIONS: HelpSection[] = [
       'Canvas Screenshot: Export the visual canvas as PNG or PDF image',
       'Import: Load a previously exported JSON snapshot (replace or merge)',
       'Sync to Files: Write current state to .agileagentcanvas-context folder',
-      'Output Format: Cycle between JSON-only, Markdown-only, or Dual output via toolbar',
       'All exports are saved in an exports/ subfolder of your project',
     ],
   },

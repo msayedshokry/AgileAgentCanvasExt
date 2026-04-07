@@ -4,6 +4,8 @@ import { ARTIFACT_STATUS_OPTIONS } from '../types';
 import { Icon, ARTIFACT_TYPE_ICON } from './Icon';
 import { vscode } from '../vscodeApi';
 import type { RendererProps } from './renderers/shared';
+import { Md } from './renderers/shared';
+import { convertArtifactToMarkdown } from '../utils/artifact-md-exporter';
 
 // --- Core renderers ---
 import {
@@ -165,6 +167,7 @@ export function DetailPanel({ artifact, onClose, onUpdate, onDelete, onRefineWit
   const [editMode, setEditModeInternal] = useState(forceEditMode ?? false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [viewMode, setViewMode] = useState<'fields' | 'preview'>('fields');
   
   const setEditMode = useCallback((editing: boolean) => {
     setEditModeInternal(editing);
@@ -231,17 +234,24 @@ export function DetailPanel({ artifact, onClose, onUpdate, onDelete, onRefineWit
     });
     setHasChanges(false);
     setShowDeleteConfirm(false);
+    setViewMode('fields'); // Reset to fields view when artifact changes
   }, [artifact]);
 
   const handleSave = useCallback(() => {
     setSaveState('saving');
+    // Separate top-level artifact fields from metadata-only fields.
+    // `title`, `description`, and `status` live at the Artifact root level
+    // and must NOT be duplicated inside the `metadata` sub-object, otherwise
+    // they pollute the on-disk JSON and cause schema inconsistencies.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { title: _t, description: _d, status: _s, ...metadataFields } = editedData;
     onUpdate(artifact.id, {
       title: editedData.title,
       description: editedData.description,
       status: editedData.status,
       metadata: {
         ...artifact.metadata,
-        ...editedData
+        ...metadataFields
       }
     });
     // Exit edit mode immediately, then show saved feedback briefly
@@ -585,10 +595,35 @@ export function DetailPanel({ artifact, onClose, onUpdate, onDelete, onRefineWit
         {hasChanges && (
           <div className="unsaved-indicator">Unsaved changes</div>
         )}
+        {!editMode && (
+          <div className="detail-view-toggle" role="tablist" aria-label="View mode">
+            <button
+              role="tab"
+              aria-selected={viewMode === 'fields'}
+              className={viewMode === 'fields' ? 'active' : ''}
+              onClick={() => setViewMode('fields')}
+              title="View artifact fields"
+            >Fields</button>
+            <button
+              role="tab"
+              aria-selected={viewMode === 'preview'}
+              className={viewMode === 'preview' ? 'active' : ''}
+              onClick={() => setViewMode('preview')}
+              title="Preview as Markdown document"
+            >Preview</button>
+          </div>
+        )}
       </div>
 
       <div className="detail-panel-content">
-        {renderContent()}
+        {(editMode || viewMode === 'fields')
+          ? renderContent()
+          : (
+            <div className="md-preview">
+              <Md text={convertArtifactToMarkdown(artifact)} />
+            </div>
+          )
+        }
       </div>
 
       <div className="detail-panel-actions">
@@ -652,6 +687,25 @@ export function DetailPanel({ artifact, onClose, onUpdate, onDelete, onRefineWit
                 <span className="dev-icon"><Icon name="rocket" size={14} /></span> Start Dev
               </button>
             )}
+            <button
+              className="btn btn-export-md"
+              onClick={() => {
+                vscode.postMessage({
+                  type: 'exportToMarkdown',
+                  artifact: {
+                    id: artifact.id,
+                    type: artifact.type,
+                    title: artifact.title,
+                    description: artifact.description,
+                    status: artifact.status,
+                    metadata: artifact.metadata
+                  }
+                });
+              }}
+              title="Export this artifact to a Markdown file"
+            >
+              <Icon name="download" size={14} /> Export MD
+            </button>
             {!showDeleteConfirm ? (
               <button className="btn btn-danger" onClick={handleDelete} title="Delete this artifact">
                 Delete

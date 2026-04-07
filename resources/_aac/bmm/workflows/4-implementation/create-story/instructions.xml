@@ -2,6 +2,13 @@
   <critical>The workflow execution engine is governed by: {bmad-path}/core/tasks/workflow.xml</critical>
   <critical>You MUST have already loaded and processed: {installed_path}/workflow.yaml</critical>
   <critical>Communicate all responses in {communication_language} and generate all documents in {document_output_language}</critical>
+  <critical>Story data lives in ONE canonical location:
+    epics/epic-{epic_num}/stories/S-{epic_num}.{story_num}.json
+    NEVER write to an "implementation/" directory — that directory is deprecated.
+    Use agileagentcanvas_write_file with the canonical path above.</critical>
+  <critical>📁 STATUS PROPAGATION FILE MAP — when setting a story's status, touch ONLY:
+    1. epics/epic-{N}/stories/{id}.json     → content.status + metadata.status (SINGLE SOURCE OF TRUTH)
+    ⚠️ Prefer agileagentcanvas_sync_story_status tool for atomic updates.</critical>
 
   <critical>🔥 CRITICAL MISSION: You are creating the ULTIMATE story context engine that prevents LLM developer mistakes, omissions or
     disasters! 🔥</critical>
@@ -16,6 +23,16 @@
   <critical>❓ SAVE QUESTIONS: If you think of questions or clarifications during analysis, save them for the end after the complete story is
     written</critical>
   <critical>🎯 ZERO USER INTERVENTION: Process should be fully automated except for initial epic/story selection or missing documents</critical>
+
+  <critical>📋 AC STRUCTURE RULES — Acceptance Criteria are a SEPARATE canvas category from Tasks and Tests:
+    • ALL acceptance criteria MUST be placed in content.acceptanceCriteria[] using AcceptanceCriterion objects.
+    • Each AC must use EITHER structured format (given/when/then) OR prose format (criterion field) — not both.
+    • NEVER put ACs inside content.tasks[] or metadata.testCases[]. These are distinct categories.
+    • At creation time, initialize EVERY AC with: "status": "draft"
+    • The canvas displays a 📋 N/Total chip for ACs — it reads status to show progress.
+    • ACs are updated to status:"implemented" by the dev-story agent during implementation,
+      and confirmed by the code-review agent after review. Do NOT pre-set them at creation.
+  </critical>
 
   <step n="1" goal="Determine target story">
     <check if="{{story_path}} is provided by user or user provided the epic and story number such as 2-4 or 1.6 or epic 1 story 5">
@@ -105,9 +122,9 @@
           <output>2. Create a new epic for additional work</output>
           <action>HALT - Cannot proceed</action>
         </check>
-        <check if="epic status is not one of: backlog, contexted, in-progress, done">
+        <check if="epic status is not one of: backlog, draft, contexted, in-progress, implementing, blocked, review, in-review, done, complete, completed">
           <output>🚫 ERROR: Invalid epic status '{{epic_status}}'</output>
-          <output>Epic {{epic_num}} has invalid status. Expected: backlog, in-progress, or done</output>
+          <output>Epic {{epic_num}} has invalid status. Expected: backlog, draft, in-progress, implementing, blocked, review, in-review, done, complete, or completed</output>
           <output>Please fix sprint-status.yaml manually or run sprint-planning to regenerate</output>
           <action>HALT - Cannot proceed</action>
         </check>
@@ -162,9 +179,9 @@
         <output>2. Create a new epic for additional work</output>
         <action>HALT - Cannot proceed</action>
       </check>
-      <check if="epic status is not one of: backlog, contexted, in-progress, done">
+      <check if="epic status is not one of: backlog, draft, contexted, in-progress, implementing, blocked, review, in-review, done, complete, completed">
         <output>🚫 ERROR: Invalid epic status '{{epic_status}}'</output>
-        <output>Epic {{epic_num}} has invalid status. Expected: backlog, in-progress, or done</output>
+        <output>Epic {{epic_num}} has invalid status. Expected: backlog, draft, in-progress, implementing, blocked, review, in-review, done, complete, or completed</output>
         <output>Please fix sprint-status.yaml manually or run sprint-planning to regenerate</output>
         <action>HALT - Cannot proceed</action>
       </check>
@@ -308,6 +325,12 @@
     <action>Set story Status to: "ready-for-dev"</action>
     <action>Add completion note: "Ultimate
     context engine analysis completed - comprehensive developer guide created"</action>
+
+    <!-- CRITICAL: Write to the single canonical story file -->
+    <action>Save the story file to ONE location:
+      epics/{epic_num}/stories/S-{epic_num}.{story_num}.json (canonical)
+      Use agileagentcanvas_write_file with this exact path.
+    </action>
   </step>
 
   <step n="6" goal="Update sprint status and finalize">
@@ -323,6 +346,27 @@
       <action>Update development_status[{{story_key}}] = "ready-for-dev"</action>
       <action>Save file, preserving ALL comments and structure including STATUS DEFINITIONS</action>
     </check>
+
+    <!-- CRITICAL: Propagate status to JSON artifacts for Canvas visibility -->
+    <action>Update the story JSON file (epics/epic-{N}/stories/S-{epic_num}.{story_num}.json):
+      1. Set content.status = "ready-for-dev"
+      2. Set metadata.status = "ready-for-dev"
+      3. Set metadata.timestamps.lastModified = current ISO timestamp
+    </action>
+
+    <!-- Dependencies are tracked in standalone story files only.
+         The Canvas reads dependencies from the in-memory model, populated from standalone files at load time. -->
+    <action>For each story in the new story's dependencies.blockedBy array (storyId like "2.10"):
+      1. Load the standalone story file for that dependency (e.g., epics/epic-2/stories/S-2.10.json)
+      2. Ensure its content.dependencies.blocks[] contains this new story's id
+      3. Save the file
+    </action>
+    <action>For each story in the new story's dependencies.blocks array (storyId like "16.2"):
+      1. Load the standalone story file for that blocked story (e.g., epics/epic-16/stories/S-16.2.json)
+      2. Ensure its content.dependencies.blockedBy[] contains { storyId: this new story's id, title: ..., reason: ... }
+      3. Replace any generic placeholders (e.g., "Epic N (upstream)") that refer to the same dependency
+      4. Save the file
+    </action>
 
     <action>Report completion</action>
     <output>**🎯 ULTIMATE BMad Method STORY CONTEXT CREATED, {user_name}!**

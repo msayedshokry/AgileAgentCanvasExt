@@ -1,6 +1,370 @@
 # Changelog
 
-## 0.3.4
+## 0.4.1
+
+### Single Source of Truth — Status Field Consolidation
+
+- **Removed dual-field status pattern** — Acceptance criteria no longer use both `verified: boolean` and `status: string`; tasks no longer use both `completed: boolean` and `status: string`. The `status` field is now the single source of truth for both. Updated `story.schema.json`, `epics.schema.json`, all TypeScript types, UI components, and workflow instructions (dev-story, code-review, create-story).
+- **Transparent migration on load** — `normalizeLegacyArtifact()` runs on every artifact read and write, converting old dual-field format to the new single-field format automatically. Old files are upgraded on next save.
+
+### Single Source of Truth — Index Files Removed
+
+- **stories-index.json and epics-index.json deleted** — These generated manifest files were causing LLM confusion (agents treated them as editable sources of truth and stopped after updating them instead of the actual artifact files). Both files are now fully removed: generation code deleted, schema registrations removed, workflow checklist items removed, tool descriptions updated.
+- **Single source of truth for status** — Story status now has exactly one authoritative file: `epics/epic-{N}/stories/{id}.json → content.status + metadata.status`. The `syncStoryStatusAtomic` tool, all workflow checklists, and all documentation now reference only this file.
+
+### CLI Agent Integration — Full Tier Coverage
+
+- **13 New Workflows in Manifest** — Added `security-audit`, `ceo-review`, `eng-review`, `design-audit`, `verification-loop`, `coding-standards`, `e2e-testing`, `eval-harness`, `api-design`, `create-story-checklist`, `story-enhancement`, `epic-enhancement`, and `dev-story-checklist` to `workflow-manifest.csv`. All paths verified on disk.
+- **6 Delegation Stubs Converted to Executable** — `enhance`, `elicit`, `document`, `review-code`, `ci`, and `party` now have `STUB_TO_MANIFEST` entries and generate executable wrappers pointing to real workflow files instead of "go to VS Code Chat" delegation text.
+- **Artifact-Type Routing Table** — Added `## ARTIFACT-TYPE WORKFLOW ROUTER` section to `help.md` that maps Story, Epic, PRD, Architecture/Tech Spec, UX Design, Code/Implementation, and Test artifact types to their recommended refinement and dev workflows. Embedded directly in the `help` task so CLI agents auto-receive routing guidance on every invocation.
+- **Version-Aware Auto-Reinstall** — `autoInstallIfNeeded` now reads `package.json` version and stamps it as `<!-- aac-version: X.Y.Z -->` in every agent skill. On extension update, the version mismatch triggers silent reinstall, ensuring CLI agents always pick up new/changed skills without manual re-installation.
+
+## 0.4.0
+
+### Artifact Persistence & Sync Fixes
+
+- **Payload-Authoritative Merge (Zombie Fields Fixed)** — `writeJsonFile` now preserves only non-standard extension keys (`_` prefix) during re-serialization, ensuring that deleted standard fields in memory are properly removed from disk.
+- **Race Conditions in Synchronizer** — `deleteArtifact` now `await`s all underlying `fs.delete` operations. Prevents the sync engine from accidentally resurrecting files that were midway through deletion.
+- **Orphan File Cleanup** — `saveStoriesToFile` now actively prunes `.json` files stored in epic directories that are no longer part of the in-memory sprint state.
+- **Timestamp Churn Elimination** — Stopped `lastModified` sync loops from overwriting original `created` values. The JSON merge logic now perfectly preserves existing file creation timestamps.
+- **JSON Error Observability** — Replaced silent JSON parsing failure swallows in `readJsonFile` & `writeJsonFile` with dedicated `ioLogger` tracking for easier file corruption debugging.
+- **Redundant I/O Reduction** — Hoisted directory creation loops out of individual story saves in `saveStoriesToFile`, caching directory readiness per epic.
+
+### Claude Code Workflow Wrappers
+
+- **Executable CLI Workflow Stubs** — Replaced delegation-only slash-command stubs (e.g. `/dev`, `/sprint`, `/review`) with executable wrappers that instruct the CLI agent to load and follow the actual BMAD workflow definitions directly from the installed resource directory. When installed to Claude Code or other CLI IDEs, these stubs no longer say "go to VS Code Chat" — they now point the agent to the real workflow YAML files.
+- **Stub-to-Manifest Routing** — Added `STUB_TO_MANIFEST` lookup map that routes each stub to its correct BMAD workflow entry file (e.g. `/dev` → `bmm/workflows/4-implementation/dev-story/workflow.yaml`).
+- **VS Code-Only Stubs Preserved** — `refine`, `enhance`, and `elicit` remain as delegation stubs since they depend on VS Code extension APIs (artifact loading, schema resolution, apply command) with no CLI equivalent.
+- **Self-Contained Wrappers** — Generated stub bodies resolve `{bmad-path}` to the actual installed resource path at write-time, making stubs IDE-agnostic and self-contained.
+- **Graceful Fallback** — Executable stubs include a fallback message directing users to run the IDE installer if the workflow file cannot be found.
+
+## 0.3.9
+
+### GSD Workflows Integration
+
+- **5 New Specialized Skills** — Added `Codebase Mapper` (structural discovery), `Assumptions Analyzer` (risk/dependency extraction), `Trade-off Advisor` (5-column decision matrix), `Execution Task Protocol` (strict deviation bucketing and auth gates), and `Test Classification Strategy` (heuristic-based pre-test triage: TDD/E2E/Skip).
+- **Workflow Registry** — Registered all 5 new skills in `workflow-executor.ts` under the `4-review` phase with proper target artifact types.
+- **Canvas UI Integration** — Surfaced the new GSD-inspired review workflows in the "Refine with AI" context menu for Epic, Story, Architecture, and Test Strategy cards.
+- **4 New Elicitation Methods** — Appended `Codebase Discovery (GSD-Style)`, `Trade-off Matrix (GSD 5-Column)`, `Goal-Backward Planning`, and `User Behavioral Profiling` to the advanced elicitation registry.
+- **Production-Quality Workflow Structure** — All 5 GSD workflows use the full multi-file YAML format (`workflow.yaml` + `instructions.md` + `checklist.md`) with XML-structured steps, interactive prompts, halt-conditions, and execution-notes — matching existing advanced workflows like `correct-course`.
+- **Dynamic SKILL.md Generation** — Registered all 5 GSD workflows in `workflow-manifest.csv` so their SKILL.md files are generated dynamically by the IDE installer.
+- **Attribution** — Updated `LICENSE` to include formal attribution for `get-shit-done`, `everything-claude-code`, and `gstack` repositories.
+
+### Agent Honesty Guardrails
+
+- **3-State Task Status** — Replaced binary task completion with `pending` → `implemented` → `verified` progression. Dev agents can only set `"implemented"`; only Code Review can promote to `"verified"`. Updated `status.schema.json` and `story.schema.json` with backward-compatible aliases.
+- **Proof of Work Gate** — Dev agents must now paste actual terminal output or HTTP responses into `debugLog` before marking tasks complete. Tasks that cannot be executed are marked `"implemented-not-verified"`.
+- **Honesty Clause** — Added explicit prohibition against fake data seeding or success messages without real I/O operations in `dev-story` workflow.
+- **Grep Self-Audit** — Agents must search modified files for `TODO`, `FIXME`, `placeholder`, `stub`, `fake`, `simulated` before task completion; any hits block the task.
+- **Unbacked Success Ban** — Added coding standard banning `✅`/`"seeded"`/`"complete"` console output without preceding verifiable I/O.
+- **Path Resolution Standard** — Enforced `__dirname` / `import.meta.url` for file operations; banned `process.cwd()` and string-relative paths.
+
+### Test Tracking & Status Update Fix
+
+- **Step 8b Merge** — Merged unreachable `step 8b` (test tracking) into `step 8` before the `<goto>` jumps, ensuring test sync logic always executes.
+- **TEST SYNC GATE** — Added mandatory gate: if any `*.test.*` or `*.spec.*` files appear in the File List, agents must sync them to `content.testCases[]` and epic's `test-cases.json` before proceeding.
+- **Explicit Status Update Protocol** — Replaced vague "one-liner Node.js script" directives with field-by-field update instructions requiring `view_file` verification in both `dev-story` and `code-review` workflows.
+
+### Bug Fixes
+
+- **Dynamic Slug Resolution**: Fixed an issue where `epic.json` story references (e.g. `0.1`) failed to resolve physical story files generated with descriptive slugs (e.g. `0.1-graphql-api.json`). The loader now dynamically maps canonical IDs to slugged files, protecting project integrity when story titles change.
+
+### Artifact Store Refactoring
+
+- **Resilient Artifact Loading** — Refactored internal data discovery to explicitly traverse and load `storyRefs` from `epic.json` files as the authoritative source of truth, eliminating reliance on implicit directory scanning and the fragile `stories-index.json`.
+- **Sprint Board Data Integrity** — Replaced fragile exact-string matching in `SprintPlanningView.tsx` with robust prefix-based ID matching (e.g. `1-2`), preventing stories from being incorrectly categorized as "Unscheduled" due to title punctuation or casing differences.
+- **Broken Reference Observability** — Missing story files explicitly referenced by epics now render as "Broken Reference" placeholder cards on the sprint board instead of silently disappearing, preventing invisible data loss.
+
+## 0.3.8
+
+### Performance Optimizations
+
+- **Instantaneous Canvas Exporting** — Completely rewrote the Canvas to PDF/PNG export engine to eliminate absolute browser lock-ups and IDE crashes during large exports. Replaced the extremely slow DOM-tiling strategy with a single, perfectly-bounded offscreen capture pass driven directly by React state coordinates. Large exports that previously spun indefinitely now complete in seconds and automatically crop out all unused empty space.
+
+## 0.3.7
+
+### Gstack Elicitation Workflows Integration
+
+- **Security & Execution Audits** — Added "Security Audit" (STRIDE, OWASP) and "Execution Lock Review" (Eng Manager Mode) workflows for rigorous architectural and implementation compliance checks.
+- **Product & Design Validation** — Added "CEO Scope Review" (extreme MVP reduction, ambition checks) and "Design Dimension Audit" (0-10 visual hierarchy ratings) to elevate product rigour.
+- **Six Forcing Questions** — Integrated Garry Tan's Office Hours forcing questions method into the brainstorming workflow registry.
+- **Context Menu Integration** — The four new review workflows are directly accessible via the "Refine with AI" (Sparkle Icon) menu for PRD, Architecture, UX Design, and Product Brief artifact cards.
+
+### ECC-Inspired Skills & Workflows Integration
+
+- **5 New Review Skills** — Added `Verification Loop` (6-phase quality gate: Build, Types, Lint, Tests, Security, Diff Review), `Coding Standards` (naming, immutability, error handling), `E2E Testing` (Playwright POM, fixtures, CI integration, flaky-test strategies), `Eval Harness` (Eval-Driven Development with pass@k metrics), and `API Design Review` (REST conventions, status codes, pagination, error envelopes).
+- **Workflow Registry** — All 5 new skills registered in `workflow-executor.ts` under `4-review` phase with proper `artifactTypes` targeting.
+- **Canvas UI Integration** — New workflows surfaced in the "Refine with AI" context menu: Verification Loop on story/epic/architecture cards, Coding Standards + Eval Harness on story/epic, E2E Testing on story/test-strategy, API Design Review on architecture/epic.
+- **2 New Elicitation Methods** — Added `Eval-Driven Discovery` (technical: define evals before implementation) and `Research-First Discovery` (research: explore codebase before coding) to `methods.csv`.
+
+### Observability & Logging Enhancements
+
+- **Unified Output Channel Logging** — Replaced all direct `vscode.OutputChannel` usages with a structured `.debug/.info` logger interface. Routine synchronization and execution steps are now demoted to debug-level, drastically reducing output panel noise during standard use.
+- **Intelligent Schema Error Messages** — Refactored the internal schema validator to synthesize human-readable correction suggestions directly from underlying JSON schema failure parameters (surfacing missing properties, valid enums, or expected types instead of opaque schema errors), and to explicitly embed the artifact ID (e.g., `S-1.5`) in the warning text so you know exactly which file failed.
+
+### Performance Optimizations
+
+- **Buttery Smooth Canvas Panning** — Resolved significant lag during canvas interactions on dense projects. `ArtifactCard` and `DependencyArrows` components are now heavily memoized (`React.memo`) with custom deep-equality checks for complex state like expanded categories. React now completely skips re-rendering these hundreds of DOM/SVG nodes during `pan` and `zoom` operations, delivering a flawless 60fps interaction experience regardless of artifact count.
+
+### Workflow Enhancements: Test Case Tracking & Audit
+
+- **Explicit test case extraction rules** — Updated the `dev-story` and `quick-dev` workflow instructions to mandate that newly implemented automated tests (unit/integration) must be extracted into formal JSON test case definitions. These definitions must be appended to the `content.testCases` array of the story JSON and the epic's `test-cases.json` file.
+- **Formalized test status terminology** — Clarified in development workflows that when adding new test case definitions, their top-level `status` field must strictly be set to `done` to indicate full design and implementation (preventing invalid use of `passed` for schema status).
+- **Code-Review extraction audit** — Added an explicit audit step to the `code-review` workflow prior to updating execution statuses. If a story has implemented tests but the `content.testCases` array is empty, the review agent is now mandated to pause and backfill the JSON extraction before proceeding, closing a loophole where tests were written but not tracked.
+
+### Artifact Store Refactoring
+
+- **Automated Workflow Status Cascading** — Enforced workflow integrity by automatically cascading active states upward. Modifying a nested task to an open state downgrades its parent Story to `in-progress`, and creating or modifying an active Story automatically downgrades its parent Epic to `in-progress`.
+- **Story status source of truth consolidation** — Refactored the internal data loading and synchronization logic across the extension to treat the individual story JSON files as the absolute single source of truth for story lifecycle statuses. Reconciled caching and derived projections (like parent epic `storyRefs` and `sprint-status.yaml`) to prevent status overlap and redundancy.
+- **Removed bidirectional status sync** — Deleted legacy logic that allowed manual edits to `sprint-status.yaml` to overwrite story JSON files. `sprint-status.yaml` is now strictly a read-only projection, and any mismatched manual edits are safely overwritten on the next sync without triggering UI warning toasts.
+- **Stripped status from epic storyRefs** — Cleaned up `epic.json` serialization to only save `id`, `title`, and `file` in `storyRefs`. Removed the `status` field entirely to enforce standalone `story.json` files as the only system of record.
+
+### Canvas UX Improvements
+
+- **Refinement Menu Consolidation** — The "Code Review", "Dev Story", and "Sprint Planning" workflows have been added to the "Refine with AI" (Sparkle Icon) menu for Story and Epic cards. These implementation-phase options were previously explicitly segregated to the "Start Dev" button, but are now consolidated into the main refinement picker so all AI actions are accessible from a single dropdown.
+
+### Bug Fixes
+
+- **Sprint Planning view showing stale data** — Opening the Sprint Plan Kanban board could show an outdated version of `sprint-status.yaml` (visible via the `generated` timestamp), requiring repeated close/reopen cycles before the correct latest data appeared. Root cause: `vscode.workspace.fs.readFile()` was returning cached file content when the YAML file had been recently modified externally (e.g. by a sprint-planning workflow). Switched to Node's native `fs.promises.readFile()` in `webview-message-handler.ts` to bypass VS Code's file system caching layer and always read fresh content from disk
+
+## 0.3.6
+
+### Epic JSON Slim-Down — Lightweight storyRefs
+
+Removed full story object duplication from `epic.json`. Each `epic.json` now writes only lightweight `storyRefs` (id, title, status, storyPoints, priority, file path) instead of embedding the entire story payload. Full story data remains the single source of truth in `epics/epic-{N}/stories/{id}.json`.
+
+**Changes:**
+
+- **`artifact-store.ts` — `saveEpicsToFile()`** — Replaced full `Story[]` embedding with slim `storyRefs[]` array. Removed dead dep-normalization and `_sourceEpicId` cleanup code
+- **`artifact-store.ts` — `migrateToReferenceArchitecture()`** — Added a final `syncToFiles()` execution phase to ensure all loaded standalone `epic.json` files are automatically reformatted and stripped of their duplicate inline stories on disk
+- **`artifact-store.ts` — `epic.json` `_llmHint`** — Added metadata hint telling LLMs where full story data lives and not to embed story objects
+- **`artifact-store.ts` — `deleteArtifact()` story case** — Now deletes the standalone story file from disk when a story is removed
+- **`artifact-store.ts` — auto-generated `README.md`** — Updated text to describe `epic.json` as containing lightweight refs
+- **`create-story/instructions.xml`** — Dependency sync now targets standalone story files instead of embedded epic.json objects
+- **`dev-story/instructions.xml`** — Status Propagation Checklist updated: dep sync references standalone story files
+
+### Code-Review Workflow — Post-Fix Integrity Re-Scan Gate
+
+- **Mandatory re-scan before Step 5** — After applying ALL fixes (any of the three fix-choice paths), the agent must now re-scan every file it modified or created during the review session for the keywords `TODO`, `FIXME`, `time.Sleep`, `hardcoded`, `simulated`, `fake`, `placeholder`, `stub`. For each hit, the agent must either implement it properly or explicitly mark the parent task as `status="deferred"`. The agent may not proceed to Step 5 (status update) until this re-scan returns zero hits. This closes a loophole where fix-pass code itself introduced new stubs that went undetected.
+
+### Single Story File Architecture — Single Source of Truth
+
+Migrated from a dual-file story system (`stories/{id}.json` + `implementation/{id}.json`) to a single canonical location at `epics/epic-{N}/stories/{id}.json`.
+
+**Root cause:** All three implementation workflows (`dev-story`, `create-story`, `code-review`) contained `CRITICAL` blocks mandating that story data be written to two locations simultaneously, creating sync bugs and LLM confusion.
+
+**Changes:**
+
+- **`dev-story/instructions.xml`** — Removed dual-file sync critical block; updated status-write action and Status Propagation Checklist to reference the single canonical path `epics/epic-{N}/stories/{id}.json`
+- **`create-story/instructions.xml`** — Removed dual-file critical block; removed two separate dual-write save instructions (Step 5 and Step 6); workflow now writes to one location only using `agileagentcanvas_write_file`
+- **`code-review/instructions.xml`** — Removed dual-file critical block; updated all story JSON update actions and Status Propagation Checklist to target the single canonical file
+- **`artifact-store.ts` — `migrateImplementationFolder()`** — Added automatic migration that runs on project load: detects legacy `implementation/` directories, copies their `.json` files to the canonical `epics/epic-{N}/stories/{id}.json` path (if not already present), and renames the folder to `.deprecated_implementation/` so it is naturally excluded from future recursive scans while preserving all data
+- **`artifact-store.ts` — Story file naming** — Simplified from slug-based (`{epicId}-{storyNum}-{slug}.json`) to immutable ID-based (`{id}.json`, e.g. `S-1.2.json`) in `migrateToReferenceArchitecture()`. ID-based names are predictable, stable when titles change, and directly derivable by AI agents from the sprint-status key pattern
+- **`artifact-store.ts` — `_llmHint`** — Updated the `epics-index.json` LLM hint from the old slug pattern to the new `{id}.json` pattern so all AI path discovery is consistent
+
+**Backward compatibility:** Existing projects with `implementation/` directories are automatically migrated on next project load. No manual steps required.
+
+### Workflow Robustness & Status Propagation
+
+- **Atomic Status Sync Tools** — Introduced `agileagentcanvas_sync_story_status` and `agileagentcanvas_sync_epic_status` to allow LLM agents to atomically synchronize statuses across multiple tracker files (`story JSON`, `epic.json`, `stories-index.json`, `sprint-status.yaml`) in a single, robust tool call.
+- **Status Propagation File Maps** — Added explicit `CRITICAL` file maps to `code-review`, `dev-story`, and `create-story` workflow instructions to guarantee agents are aware of all required files when updating a status.
+- **Explicit Test Case Resolution** — Replaced vague test case update instructions with a concrete lookup algorithm in implementation workflows (checking `content.testCases` inline, then searching `test-cases.json` by `storyId`), ensuring tests are reliably discovered and synced.
+
+## 0.3.5
+
+### Tabbed Layout for Story Details
+
+- **Tabbed Interface** — The expanded story card view now uses a tabbed layout to organize Tasks, Tests, and Acceptance Criteria (ACs), replacing the previous long vertical list of sections. This significantly reduces vertical scroll and improves readability.
+- **Dynamic Tabs** — Tabs only appear for categories that have content. If a story only has Tasks and Tests, only those two tabs are shown. The first available tab is selected by default when a card is expanded.
+- **Fixed Elicitation Modal Tests** — Resolved a failing unit test suite (`App.test.tsx`) that was still targeting the old `.elicit-modal` class instead of the new unified `.wfl-modal` class after the recent Elicitation Modal redesign.
+
+### Code-Review Workflow — Adversarial Review Enhancements
+
+Four new instruction blocks added to `code-review/instructions.xml` to close classes of bugs that prior review sessions reliably missed:
+
+- **Ground-up baseline mandate** — A `CRITICAL` block at the top of Step 1 prohibits treating any prior review session as a validated baseline. Every task marked `[x]` and every AC marked `verified:true` must be re-proven from code in each new review run
+- **TODO / stub audit** — Step 3 now requires a full keyword scan of all reviewed files (`TODO`, `FIXME`, `time.Sleep`, `hardcoded`, `simulated`, `fake`, `placeholder`, `stub`). A hit on a completed (`[x]`) task → **CRITICAL** finding; a hit with no story task at all → **HIGH** finding (undocumented debt). Clarifies that `"Deferred to Story X.Y"` in `devAgentRecord` does not make a task done
+- **Round-trip persistence audit** — Step 3 now requires verifying that every DB write (`INSERT`, `UPDATE`, `saveXxxToDB`, etc.) has a corresponding read-back in the startup/load path and that every column written is also loaded back; any missing read-back → **HIGH** finding
+- **Response-truthfulness check** — Step 3 now requires that every handler returning status/health/connectivity data derives its values from real I/O (network call, DB query, file check), not literals or constants. Hardcoded success values (`"ok": true`, fixed latency numbers) with no observable I/O → **HIGH**; values derived from real operations but silently discarded (`_`) → **HIGH**
+- **AC verification on `done` transition** — Step 5 now sets `verified: true / status: "verified"` (or `false / "failed"`) on every `acceptanceCriteria` item in both story JSON copies before allowing a `done` transition; added to Status Propagation Checklist
+
+### Dependency Graph Sync — Canvas Arrow Fidelity
+
+Canvas dependency arrows are rendered from `epic.json → content.stories[].dependencies`, not from standalone `stories/*.json` files. Two workflows updated to keep these embedded objects accurate:
+
+- **`create-story` Step 6** — After updating `storyRefs`, two new `<action>` blocks bidirectionally sync the dependency fields in affected `epic.json` files:
+  - For `blockedBy` entries: load the upstream dependency's epic, ensure its embedded story object's `blocks[]` contains the new story's ID
+  - For `blocks` entries: load the downstream story's epic, ensure its embedded story object's `blockedBy[]` contains `{ storyId, title, reason }` and replaces any generic placeholders (e.g. `"Epic N (upstream)"`) with the precise story ID
+- **`dev-story` Step 9** — Sixth bullet added to the Status Propagation Checklist: `epic.json` (all affected epics) embedded story's `dependencies.blockedBy[].storyId` and `blocks[]` must use precise story IDs (e.g. `"2.10"`), NOT generic placeholders
+
+### Acceptance Criteria Lifecycle Sync — All Three Workflows
+
+`acceptanceCriteria` verified/status fields are now explicitly updated at every stage of the story lifecycle:
+
+- **`create-story`** — New top-level `CRITICAL` block defines the AC structure contract: ACs must live in `content.acceptanceCriteria[]`, use either structured (`given/when/then`) or prose (`criterion`) format but never both, must never appear inside `tasks[]` or `testCases[]`, and must be initialized with `verified: false, status: "draft"`. Explains the canvas `📋 N/Total` chip lifecycle
+- **`dev-story` Step 8** — After marking a task complete, the JSON update action now includes step 3: for each `acceptanceCriteria` item whose requirement is satisfied by the current task, set `verified: true AND status: "verified"` (unrelated ACs are left unchanged). Added as fifth checklist item in Status Propagation Checklist
+- **`dev-story` Step 5** — Evidence-Based Planning mandate: before writing any file path, API reference, or design decision into the implementation plan, the agent must read the actual file or source in the codebase to confirm it exists. Assumptions, guesses, and memory-based references are prohibited
+
+### Bug Fixes
+
+- **Detail Panel save no longer pollutes `metadata`** — `handleSave` in `DetailPanel.tsx` was spreading all of `editedData` (including the top-level `title`, `description`, and `status` fields) into the `metadata` object on every save. This caused those fields to be duplicated inside `metadata` on disk, scrambling the on-disk JSON schema. Fixed by destructuring the three top-level keys out of `editedData` before merging into `metadata`, ensuring only content-specific fields are written there. A targeted regression test was added to `DetailPanel.test.tsx` to permanently guard this contract
+- **Acceptance Criteria Verification Backend Parser** — The backend JSON parser (`mapSchemaStoryToInternal` in `artifact-store.ts`) was accidentally stripping the newly added `verified` and `status` fields during the object mapping process, causing stories that were correctly updated by agents to still show 0/N verified ACs on the Canvas UI. The parser now correctly propagates these fields to the Canvas state.
+
+### Dev-Story Workflow — Evidence-Based Planning Mandate
+
+- **No assumptions in implementation plans** — Step 5 of `dev-story/instructions.xml` now has a `CRITICAL` block requiring that every file path, API reference, or design decision written into the implementation plan must be verified by reading the actual codebase first. Memory-based references and unverified assumptions are explicitly prohibited; every claim must have a corresponding file read as its evidence
+
+### Acceptance Criteria — Separate Canvas Category
+
+Acceptance Criteria (ACs) are now a **distinct third category** on story cards, separate from Tasks and Tests.
+
+- **`📋 N/Total` AC chip** — Story cards display a `📋 0/3` chip alongside `✓ Tasks` and `🧪 Tests` in the inline summary row, with a micro progress bar that fills green when all ACs are verified
+- **AC expanded section** — Expanding a story card shows a dedicated `📋 ACs (N)` section with per-criterion rows: `✅` (verified), `❌` (failed), `⬜` (draft/pending)
+- **`verified` + `status` fields on `AcceptanceCriterion`** — Schema, extension types (`src/types/index.ts`), and webview types (`webview-ui/src/types.ts`) extended with `verified: boolean` and `status: 'draft' | 'verified' | 'failed'`
+- **Fully backward-compatible** — Existing story JSON files without the new fields render gracefully: `undefined` fields default to `⬜` / `'draft'` — no migration required
+- **LLM instruction lifecycle** — Three workflows updated:
+  - `create-story`: initializes every AC with `verified: false, status: "draft"`; must never place ACs inside `tasks[]` or `testCases[]`
+  - `dev-story`: after each task, sets `verified: true, status: "verified"` on satisfied ACs in both story JSON copies; added to Status Propagation Checklist
+  - `code-review`: sets `verified`/`status` on every AC item before marking a story `done`; added to Status Propagation Checklist
+- **Height calculation fix** — Removed a double-counting bug where stories with only ACs triggered +72px of extra card height (ACs share the existing inline summary row — no separate row needed)
+- **Type safety** — `AcceptanceCriterion` type now imported into `ArtifactCard.tsx` and `artifact-transformer.ts`; all `any` casts removed
+
+### Status Mapping Fix
+
+- **Rich statuses preserved on canvas cards** — `mapStatus()` in `artifact-store.ts` previously collapsed all statuses to just 4 values (`draft`/`ready`/`in-progress`/`done`), silently mapping valid statuses like `in-review`, `blocked`, `backlog`, and `approved` to `draft`. Now passes through all 22 valid `ArtifactStatus` values and handles legacy underscore aliases (`in_progress` → `in-progress`)
+- **Sprint YAML status mapping expanded** — `reconcileDerivedState()` now maps all valid statuses from `sprint-status.yaml` onto stories/epics instead of only 4 values
+- **Kanban column normalization (no new columns)** — `normalizeStatus()` in `SprintPlanningView.tsx` maps all rich statuses into the 5 existing Kanban columns: Backlog (`draft`/`not-started`/`proposed`), Ready for Dev (`ready`/`approved`/`accepted`), In Progress (`implementing`/`blocked`), Review (`in-review`/`ready-for-review`), Done (`complete`/`completed`/`archived`)
+- **LLM status awareness** — Sprint-planning and sprint-status workflow instructions now document all valid statuses with Kanban column mappings, ensuring LLMs use correct status values. Story schema description updated with column mapping reference
+
+### Dev-Story Workflow Hardening
+
+Six instruction enhancements added to `dev-story/instructions.xml` to prevent canvas data-sync issues discovered during real sprint execution:
+
+- **Two-field task completion contract** — Step 8 now explicitly requires setting BOTH `completed: true` AND `status: "done"` on every task/subtask; missing either field causes the canvas to show tasks as incomplete
+- **Dual story file sync** — Top-level critical block establishes that `stories/{id}.json` and `implementation/{id}.json` MUST stay in sync for status, completion, metadata, and all task fields
+- **Dev agent record schema** — Specifies that `implementationNotes`, `completionNotes`, and `debugLog` must all be `string[]` arrays (not strings), preventing serialization errors
+- **Step 8b: Test tracking artifacts** — New step after task completion creates/updates `tests/test-cases.json` and `tests/test-design.json` with ID collision avoidance rules (distinct prefixes for test cases vs test design entries)
+- **Required JSON fields before in-review** — Step 9 now lists mandatory fields (`content.fileList`, `content.changeLog`, `content.devAgentRecord`, `content.completed`) that must be populated before transitioning to `in-review`
+- **Status propagation checklist** — Replaces vague "update status" with a concrete 5-item checklist: both story files, `stories-index.json`, `epic.json` storyRefs, and all task/subtask completion flags
+
+### Code-Review Workflow Hardening
+
+Same six enhancements ported to `code-review/instructions.xml`, the terminal `done` transition workflow — highest risk for canvas data-sync:
+
+- **Dual file sync** — Top-level critical block; Step 5 now updates both `stories/` and `implementation/` copies when setting `done` or reverting to `in-progress`
+- **Required fields gate** — Verifies `fileList`, `changeLog`, `devAgentRecord`, and `content.completed` are populated before allowing `done` transition
+- **Two-field task completion** — Subtasks now require `completed: true` AND `status: "done"` (previously only `completed`)
+- **Dev agent record schema** — All three fields specified as `string[]` arrays
+- **Stories-index update** — Step 5 now explicitly updates `stories-index.json` entry status alongside story/epic JSON
+- **Status propagation checklist** — Same 5-item checklist ensuring all data locations are synchronized
+
+### Create-Story Workflow Hardening
+
+Two enhancements for `create-story/instructions.xml`, the initial `backlog → ready-for-dev` transition:
+
+- **Dual file write** — Step 5 now writes the new story to both `stories/` and `implementation/` locations
+- **JSON status propagation** — Step 6 now propagates `ready-for-dev` status to both story JSON files (`content.status` + `metadata.status`), parent epic `storyRefs[].status`, and `stories-index.json`
+
+### Dependency Lines Filter
+
+- **Lines section in filter bar** — The existing filter bar (`T`) now includes a **Lines** section with 4 colour-swatch toggle buttons: **Structural** (blue — architecture/epic/requirement cross-links), **Peer** (yellow — story ↔ story), **Other** (neutral — remaining cross-refs), and **Tree** (dashed — mindmap parent→child). Each button dims its swatch when inactive. "Clear all" resets line filters alongside type/status filters
+- **`DependencyArrows` category filtering** — `arrowStyle()` now returns a `category` field (`structural` / `peer` / `default`). Both dependency-arrow and tree-line render loops skip arrows whose category is in the new `hiddenLineCategories` prop
+- **8 new unit tests** — `DependencyArrows.test.tsx` covers undefined/empty filter, per-category hiding (structural, peer, default, tree), and independent category filtering
+
+### Elicitation Picker Modal Redesign
+
+- **Unified modal design** — Elicitation Picker now reuses the Workflow Launcher's `wfl-*` CSS classes, giving both modals identical styling (tab shape, color palette, card layout, shadows). Removed ~300 lines of duplicate `elicit-*` CSS
+- **Category grouping** — Methods are now grouped by category with uppercase group headers when the "All" tab is active (matching the Workflow Launcher's phase grouping pattern). Selecting a specific category tab hides the group headers
+- **3 new unit tests** — Category grouping: group headers render in "All" view, hide when a specific category is selected, and methods are wrapped in phase-group containers
+
+### Bidirectional Dependency Highlighting
+
+- **Peer-level highlight symmetry** — Selecting a card now highlights **both** what it depends on (upstream) and what depends on it (downstream). Previously only upstream dependencies were highlighted. Fixed by making `a.dependencies` and `blockedBy` cross-refs bidirectional in the `connectedIds` computation
+
+### Sprint Tab Bar Scroll Navigation
+
+- **Scroll arrows on tab overflow** — When the sprint modal has more tabs than can fit, left/right chevron `‹ ›` arrow buttons appear at the edges for smooth 200px step scrolling. Arrows auto-hide when the scroll position reaches the respective edge
+- **Edge fade gradients** — Subtle fade-to-background gradients appear on the overflowing edge(s), visually hinting that more tabs exist beyond the visible area
+- **ResizeObserver + scroll tracking** — Overflow state is re-evaluated on every scroll event and container resize, ensuring arrows appear/disappear correctly even after window resizing
+
+### Sprint Planning — Goal-Based Sprint Grouping
+
+- **`sprints:` section added to `sprint-status.yaml`** — New optional top-level map groups stories into named, goal-driven sprints (e.g. `mvp`, `beta`). Each sprint has a required `goal` string, optional `start_date`/`end_date`, and a `stories` list of keys from `development_status`. Stories not listed in any sprint appear as "Unscheduled"
+- **Sprint tab bar in the Kanban view** — The Sprint Plan panel now shows a tab bar at the top of the board when a `sprints:` section exists. Clicking a tab filters all status columns to only that sprint's stories. An "Unscheduled" tab auto-appears for any unassigned items. Falls back gracefully to the previous flat view (all-stories board) with an amber notice when no `sprints:` section is present
+- **Sprint goal bar** — The active sprint's goal is displayed in a tinted strip below the tab bar, with optional date range if provided
+- **`sprint-status.schema.json` extended** — Added `sprints` map definition with validated sprint object shape (`goal` required, `stories` required, dates optional)
+- **`sprint-status-template.yaml` updated** — Template now includes example `sprints:` section with comments explaining the goal-based grouping concept
+- **`sprint-planning/instructions.md` extended** — Added step 3.5 for sprint assignment using a 3-phase approach: (A) status-aware (skip `done` items, anchor `in-progress` to first sprint, `ready-for-dev` to nearest sprint); (B) dependency-aware (story B cannot precede its blocker A, epic dependency chains respected, circular dependency detection); (C) goal-based grouping by natural project milestones. LLM presents the proposed grouping for user confirmation before writing the file
+- **Sprint assignment validation** — Step 5 now verifies every key in a sprint's `stories` list exists in `development_status` and counts sprints in the summary output
+
+### Epic/Story Status Consistency Checks
+
+- **`sprint-status/instructions.md` — risk detection** — Added two new consistency rules to step 2: (1) any story with status `in-progress`, `review`, or `ready-for-dev` whose parent epic is `backlog` triggers a 🔴 **CONSISTENCY ERROR** with an auto-fix offer that promotes the epic to `in-progress`; (2) a story `done` with an epic still `backlog` triggers an ⚠️ **CONSISTENCY WARNING** suggesting epic promotion
+- **Validate mode (`sprint-status`) — consistency checks** — Step 30 (validate mode) now builds a consistency-error and consistency-warning list from the status file and reports them as validation failures/warnings
+- **Kanban board visual indicators** — Cards with consistency errors show a **red left border** and a `⚠ Epic not started` badge (with tooltip showing the mismatch). Cards with consistency warnings show an **amber left border** and a `↑ Promote epic` badge
+
+### Sprint Status File Discovery Fix
+
+- **Robust `sprint-status.yaml` discovery** — `webview-message-handler.ts` now uses `vscode.workspace.findFiles('**/sprint-status.yaml')` instead of a fixed list of candidate paths, finding the file regardless of which subdirectory the sprint-planning workflow writes it to (e.g. `implementation-artifacts/`, `implementation/`, project root)
+
+### Sprint-Status YAML → JSON Sync
+
+- **Sprint statuses persisted to JSON on load** — When a project containing `sprint-status.yaml` is loaded, the extension parses the `development_status` section and compares each entry against the corresponding epic/story JSON files. If mismatches are detected, an in-canvas toast notification (matching the extension's schema-issues style) lists the changes with **Apply** / **Dismiss** buttons; on Apply, statuses are surgically patched into the JSON files on disk, making them permanent across sessions
+- **Dedicated surgical patch methods** — Two targeted methods (`patchEpicStatusOnDisk`, `patchStoryStatusOnDisk`) read the specific JSON file from disk, update only `metadata.status` and `content.status`, validate the artifact ID matches the expected target, and write back. No other fields are touched, preventing file corruption
+- **Standalone + inline story handling** — Story status is patched in both the standalone story file (`epics/epic-{N}/stories/{slug}.json`) and the inline copy within `epic.json` when both exist, preventing status divergence between the two locations
+- **File watcher includes YAML** — `setupFileWatcher` glob extended from `*.{json,md}` to `*.{json,md,yaml,yml}` so external changes to `sprint-status.yaml` trigger the canvas reload badge
+- **Reverse sync: JSON → YAML** — When a status changes in JSON (via canvas detail panel, LLM tool call, or surgical patch), the corresponding `development_status` entry in `sprint-status.yaml` is updated in-place. Only the status value is modified; the `sprints:` section (goals, dates, story groupings) is never touched. During YAML→JSON apply, reverse sync is skipped to prevent circular writes
+- **Mismatch detection order fix** — `applySprintStatusesToFiles()` now runs before `reconcileDerivedState()` so in-memory statuses still reflect JSON files when mismatches are compared, fixing a bug where mismatches were invisible
+
+### Sprint Planning Kanban Board
+
+- **Sprint Plan button in canvas toolbar** — New kanban-style icon button opens a full-screen sprint board (Linear/Jira style) reading the project's `sprint-status.yaml`. Stories are arranged in 6 columns: **Backlog → Ready for Dev → In Progress → Review → Done → Retrospective**. Each card shows the item key and its epic tag (inferred from `.N-M-*` ID pattern). Column headers use color-coded accents with item count badges
+- **Empty state with workflow CTA** — If no `sprint-status.yaml` is found (checked in project root, `implementation/`, and `_implementation/`), the panel shows a "No sprint plan found" message with a **Run Sprint Planning** button that directly launches the sprint-planning workflow
+- **No new dependencies** — YAML parsed inline; backend handler reads the file via `vscode.workspace.fs` using the existing `store.getSourceFolder()` pattern
+
+### Sprint Planning Workflow Fixes
+
+- **Epic files unified to `.json`** — `epics_location`, `epics_pattern`, and all glob patterns in `sprint-planning/workflow.yaml` changed from `.md` to `.json`
+- **Story detection corrected** — `instructions.md` updated to check for `.json` story files (not `.md`) when determining `ready-for-dev` status
+- **`output_format` corrected to `yaml`** — Sprint planning's declared output format was `json` but the actual output is YAML; corrected the declaration
+- **Legacy status normalization** — Added rules to normalize `drafted` → `ready-for-dev` and `contexted` → `in-progress` when loading existing status files
+- **`create-story` epic references** — Updated `epics_file` variable and input patterns in `create-story/workflow.yaml` from `.md` to `.json`
+- **`sprint-status.schema.json` rewritten** — Schema now accurately validates the flat `development_status` map structure instead of the incorrect nested `metadata/content/epics[]` layout
+- **Stale date placeholder** — `sprint-status-template.yaml` hardcoded date replaced with an ISO format placeholder
+
+### JSON-Only Output Enforcement
+
+Enforced `json` as the exclusive output format for all structured artifact workflows, removing the legacy `dual` (JSON + Markdown) mode that caused LLM confusion.
+
+- **`output_format` unified to `json`** — All TEA testarch workflow aliases (`atdd`, `nfr-assess`, `test-design`, `test-review`, `trace`) and their corresponding YAML definitions (`framework`, `automate`, `ci`) changed from `output_format: dual` to `json`. BMM supporting workflow templates (`create-use-cases`, `create-risks`, `create-definition-of-done`) updated to match
+- **Stale dual-output comments removed** — Removed `# dual = JSON + Markdown` inline comments from all workflow YAML files (`dev-story`, `framework`, `automate`, `ci`, `create-use-cases`, `create-risks`, `create-definition-of-done`) that survived as misleading documentation after the format change
+- **`output-format-standards.md` rewritten** — Standards document updated to reflect the new single-format contract: `json` is the default for all structured workflows, `markdown` is reserved for narrative-only workflows, `dual` removed as a valid option
+- **`step-dual-output.md` deleted** — Obsolete core step file that instructed LLMs to produce both Markdown and JSON in sequence removed from `resources/_aac/core/steps/`
+- **`docs/` folder removed** — Deleted 8 obsolete reference documents (`dual-output-system.md`, `bmad-to-json.md`, `json-to-markdown.md`, `migration-guide.md`, `schema-reference.md`, `special-features.md`, `workflow-format-conventions.md`, `README.md`) that described the old dual-output architecture. These were not referenced by any live workflow and only added confusion
+- **TEA test-design step-05 corrected** — `step-05-generate-output.md` had an embedded dual-output instruction block telling the LLM to generate Markdown first then JSON. Replaced with a JSON-only instruction consistent with the workflow executor's actual behavior
+
+### Explicit JSON Save Instructions in Final Steps
+
+Added explicit `agileagentcanvas_update_artifact` call instructions directly into the final step of every multi-step workflow that produces a structured JSON artifact. Previously, JSON saving relied entirely on the executor's nudge mechanism (up to 3 retry prompts). Now the LLM receives a `SAVE JSON ARTIFACT` block in the step file itself, including the exact schema file path for reference.
+
+Affected workflows (13 final step files updated):
+
+- **BMM:** `create-architecture`, `create-product-brief`, `create-prd`, `create-ux-design`, `generate-project-context`, `check-implementation-readiness`
+- **TEA:** `atdd`, `automate`, `ci`, `framework`, `nfr-assess`, `test-review`, `trace`
+
+Each instruction block includes: the `agileagentcanvas_update_artifact` call with correct `type` and `id`, the schema path (`{bmad-path}/schemas/...`) with a hint to use `agileagentcanvas_read_file` if field names need verification, a reminder not to wrap content in a `content` key, and a retry instruction on schema mismatch.
+
+### Card Export to Markdown
+
+- **Fields | Preview toggle in Detail Panel** — The detail panel header now has a two-button toggle to switch between the default **Fields** editing view and a live **Preview** view that renders the artifact as a formatted Markdown document. The toggle resets to Fields automatically when switching to a different artifact
+- **Export MD button in action bar** — A **↓ Export MD** button appears in the detail panel's footer action bar (alongside Edit, Refine, Elicit, Delete). Clicking it converts the current artifact to Markdown and opens a Save dialog defaulting to `exports/md/` in the workspace root — separate from source JSON to avoid LLM confusion
+- **Programmatic conversion — no LLM cost** — Conversion uses a dedicated TypeScript module (`artifact-md-exporter.ts`) shared between the live preview and file export path. The full Markdown is produced instantly with no AI call
+- **All artifact types supported** — Dedicated renderers for `story`, `epic`, `requirement`, `use-case`, `architecture`, `prd`, and `product-brief`; other types fall back to a generic key-value renderer
+
+### Markdown Renderer Fixes
+
+- **Product Brief no longer renders as XML** — `ProductBriefMetadata`'s deeply nested object fields (`vision`, `targetUsers`, `marketContext`, `scope`, `timeline`, `stakeholders`, `additionalContext`, etc.) were previously JSON-stringified by the generic fallback. All sections are now properly expanded: Vision (statement, mission, problem statement, UVP, differentiators), Target Users (demographics, goals, needs, pain points), Market Context (market size table, trends, competitors table), Scope (in/out of scope, MVP definition), Success Metrics, Constraints, Assumptions, Risks, Dependencies, Timeline (milestones table, phases), Stakeholders, and Additional Context
+- **Epic — 9 missing fields restored** — The epic renderer now includes: `valueDelivered`, `acceptanceSummary`, `functionalRequirements`, `nonFunctionalRequirements`, `additionalRequirements`, `technicalSummary` (overview, patterns, tech stack), `effortEstimate` (story points, sprints, confidence), `dependencies`, `epicDependencies`, `implementationNotes`, and story roll-up counts (`totalStoryPoints`, `totalStoryCount`, `doneStoryCount`)
 
 ### Features
 

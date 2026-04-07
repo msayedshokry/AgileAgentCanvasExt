@@ -1,8 +1,10 @@
+import { createLogger } from '../utils/logger';
+const logger = createLogger('canvas-view-provider');
 import * as vscode from 'vscode';
 import { ArtifactStore } from '../state/artifact-store';
 import * as path from 'path';
 import * as fs from 'fs';
-import { acOutput } from '../extension';
+
 import { loadElicitationMethods, loadBmmWorkflows } from '../commands/artifact-commands';
 import { loadSampleProject } from '../commands/project-commands';
 import { handleCommonWebviewMessage } from './webview-message-handler';
@@ -26,15 +28,17 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
         store: ArtifactStore
     ) {
         this.store = store;
-        acOutput.appendLine('[CanvasProvider] Constructor called');
+        logger.debug('[CanvasProvider] Constructor called');
         
         // Register store listener in constructor so it's always active
         // This way we catch artifact changes even before the view is opened
         this.store.onDidChangeArtifacts(() => {
-            acOutput.appendLine(`[CanvasProvider] onDidChangeArtifacts fired, _view exists: ${!!this._view}`);
+            logger.debug(`[CanvasProvider] onDidChangeArtifacts fired, _view exists: ${!!this._view}`);
             this.sendArtifacts();
             this.sendArtifactsToDetailTabs();
         });
+
+
     }
 
     resolveWebviewView(
@@ -42,7 +46,7 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
         _context: vscode.WebviewViewResolveContext,
         _token: vscode.CancellationToken
     ): void | Thenable<void> {
-        acOutput.appendLine('[CanvasProvider] resolveWebviewView called');
+        logger.debug('[CanvasProvider] resolveWebviewView called');
         this._view = webviewView;
 
         webviewView.webview.options = {
@@ -56,7 +60,7 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
 
         // Handle messages from webview
         webviewView.webview.onDidReceiveMessage(async (message) => {
-            acOutput.appendLine(`[CanvasProvider] Received message: ${message.type}`);
+            logger.debug(`[CanvasProvider] Received message: ${message.type}`);
 
             // Try the shared handler first (covers refineWithAI, breakDown,
             // enhanceWithAI, elicitWithMethod, startDevelopment, launchWorkflow,
@@ -69,11 +73,11 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
             switch (message.type) {
                 case 'ready':
                     // Webview is ready, send initial artifacts
-                    acOutput.appendLine('[CanvasProvider] Webview ready, sending artifacts');
+                    logger.debug('[CanvasProvider] Webview ready, sending artifacts');
                     this.sendArtifacts();
                     // Also send any pending artifacts that were queued before view was ready
                     if (this.pendingArtifacts) {
-                        acOutput.appendLine(`[CanvasProvider] Sending ${this.pendingArtifacts.length} pending artifacts`);
+                        logger.debug(`[CanvasProvider] Sending ${this.pendingArtifacts.length} pending artifacts`);
                         this._view?.webview.postMessage({
                             type: 'updateArtifacts',
                             artifacts: this.pendingArtifacts
@@ -83,26 +87,21 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
                     // Send elicitation methods to webview
                     {
                         const methods = loadElicitationMethods(this.extensionUri);
-                        acOutput.appendLine(`[CanvasProvider] Sending ${methods.length} elicitation methods to webview`);
+                        logger.debug(`[CanvasProvider] Sending ${methods.length} elicitation methods to webview`);
                         this._view?.webview.postMessage({ type: 'elicitationMethods', methods });
                     }
                     // Send BMM workflows to webview — load from bundled extension resources
                     {
                         const bundledRoot = path.join(this.extensionUri.fsPath, 'resources');
                         const workflows = loadBmmWorkflows(bundledRoot);
-                        acOutput.appendLine(`[CanvasProvider] Sending ${workflows.length} BMM workflows to webview`);
+                        logger.debug(`[CanvasProvider] Sending ${workflows.length} BMM workflows to webview`);
                         this._view?.webview.postMessage({ type: 'bmmWorkflows', workflows });
-                    }
-                    // Send current output format setting to webview
-                    {
-                        const outputFormat = vscode.workspace.getConfiguration('agileagentcanvas').get<string>('outputFormat', 'dual');
-                        this._view?.webview.postMessage({ type: 'outputFormat', format: outputFormat });
                     }
                     // Send any load-time schema validation issues to webview
                     {
                         const issues = this.store.getLoadValidationIssues();
                         if (issues.length > 0) {
-                            acOutput.appendLine(`[CanvasProvider] Sending ${issues.length} schema issue(s) to webview`);
+                            logger.debug(`[CanvasProvider] Sending ${issues.length} schema issue(s) to webview`);
                             this._view?.webview.postMessage({ type: 'schemaIssues', issues });
                         }
                     }
@@ -146,7 +145,7 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
 
         // Listen for visibility changes and send artifacts when view becomes visible
         webviewView.onDidChangeVisibility(() => {
-            acOutput.appendLine(`[CanvasProvider] Visibility changed, visible: ${webviewView.visible}`);
+            logger.debug(`[CanvasProvider] Visibility changed, visible: ${webviewView.visible}`);
             if (webviewView.visible) {
                 this.sendArtifacts();
             }
@@ -183,13 +182,13 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
         }
         if (!outputUri) return;
 
-        acOutput.appendLine('[CanvasProvider] Reloading artifacts from disk');
+        logger.debug('[CanvasProvider] Reloading artifacts from disk');
         await this.store.loadFromFolder(outputUri);
-        acOutput.appendLine('[CanvasProvider] Reload complete');
+        logger.debug('[CanvasProvider] Reload complete');
     }
 
     private async handleAddArtifact(type: string, parentId?: string): Promise<void> {
-        acOutput.appendLine(`[CanvasProvider] handleAddArtifact: type=${type}`);
+        logger.debug(`[CanvasProvider] handleAddArtifact: type=${type}`);
         try {
             let newId: string;
             switch (type) {
@@ -255,31 +254,31 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
                     break;
                 }
                 default:
-                    acOutput.appendLine(`[CanvasProvider] Unknown artifact type: ${type}`);
+                    logger.debug(`[CanvasProvider] Unknown artifact type: ${type}`);
                     vscode.window.showWarningMessage(`Cannot create artifact of type: ${type}`);
                     return;
             }
             this.store.setSelectedArtifact(type, newId);
             // sendArtifacts is triggered automatically via onDidChangeArtifacts listener
             this._view?.webview.postMessage({ type: 'selectAndEdit', id: newId, artifactType: type });
-            acOutput.appendLine(`[CanvasProvider] Created and selected: ${type} ${newId}`);
+            logger.debug(`[CanvasProvider] Created and selected: ${type} ${newId}`);
         } catch (err) {
-            acOutput.appendLine(`[CanvasProvider] Error creating artifact: ${err}`);
+            logger.debug(`[CanvasProvider] Error creating artifact: ${err}`);
             vscode.window.showErrorMessage(`Failed to create ${type}: ${err}`);
         }
     }
 
     private sendArtifacts(): void {
-        acOutput.appendLine(`[CanvasProvider] sendArtifacts called, _view exists: ${!!this._view}`);
+        logger.debug(`[CanvasProvider] sendArtifacts called, _view exists: ${!!this._view}`);
         
         const state = this.store.getState();
         const storySummary = state.epics?.reduce((sum: number, e: any) => sum + (e.stories?.length || 0), 0) || 0;
-        acOutput.appendLine(`[CanvasProvider] Store state - epics: ${state.epics?.length || 0}, stories: ${storySummary}`);
+        logger.debug(`[CanvasProvider] Store state - epics: ${state.epics?.length || 0}, stories: ${storySummary}`);
         
         // Transform state to artifact format for webview — delegate to the single
         // authoritative layout engine in artifact-transformer.ts.
         const artifacts = buildArtifacts(this.store);
-        acOutput.appendLine(`[CanvasProvider] Transformed to ${artifacts.length} artifacts`);
+        logger.debug(`[CanvasProvider] Transformed to ${artifacts.length} artifacts`);
 
         // Derive active folder name for the toolbar display
         let activeFolderName = '';
@@ -295,12 +294,12 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
         }
         
         if (!this._view) {
-            acOutput.appendLine('[CanvasProvider] No view yet, queuing artifacts');
+            logger.debug('[CanvasProvider] No view yet, queuing artifacts');
             this.pendingArtifacts = artifacts;
             return;
         }
         
-        acOutput.appendLine(`[CanvasProvider] Posting ${artifacts.length} artifacts to webview`);
+        logger.debug(`[CanvasProvider] Posting ${artifacts.length} artifacts to webview`);
         this._lastArtifacts = artifacts;
         this._view.webview.postMessage({
             type: 'updateArtifacts',
@@ -376,7 +375,7 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
 
         // Handle messages from the detail tab — delegate common cases to shared handler
         panel.webview.onDidReceiveMessage(async (message) => {
-            acOutput.appendLine(`[DetailTab:${artifactId}] Received message: ${message.type}`);
+            logger.debug(`[DetailTab:${artifactId}] Received message: ${message.type}`);
 
             // Shared handler covers updateArtifact, deleteArtifact, refineWithAI,
             // breakDown, enhanceWithAI, elicitWithMethod, startDevelopment, launchWorkflow.
@@ -409,11 +408,11 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
         // Clean up when panel is closed
         panel.onDidDispose(() => {
             this._detailTabs.delete(artifactId);
-            acOutput.appendLine(`[DetailTab:${artifactId}] Panel disposed`);
+            logger.debug(`[DetailTab:${artifactId}] Panel disposed`);
         });
 
         this._detailTabs.set(artifactId, panel);
-        acOutput.appendLine(`[CanvasProvider] Opened detail tab for: ${artifactId}`);
+        logger.debug(`[CanvasProvider] Opened detail tab for: ${artifactId}`);
     }
 
     private sendArtifactsToDetailTabs(): void {
@@ -470,16 +469,16 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
         const buildPath = vscode.Uri.joinPath(this.extensionUri, 'webview-ui', 'build');
         const indexPath = vscode.Uri.joinPath(buildPath, 'index.html');
         
-        acOutput.appendLine(`[CanvasProvider] Looking for build at: ${buildPath.fsPath}`);
+        logger.debug(`[CanvasProvider] Looking for build at: ${buildPath.fsPath}`);
         
         try {
             // Check if index.html exists
             if (!fs.existsSync(indexPath.fsPath)) {
-                acOutput.appendLine('[CanvasProvider] Build not found, showing fallback');
+                logger.debug('[CanvasProvider] Build not found, showing fallback');
                 return this.getFallbackHtml(webview);
             }
             
-            acOutput.appendLine('[CanvasProvider] Build found, loading React app');
+            logger.debug('[CanvasProvider] Build found, loading React app');
             
             // Get URIs for assets
             const scriptUri = webview.asWebviewUri(
@@ -489,8 +488,8 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
                 vscode.Uri.joinPath(buildPath, 'assets', 'index.css')
             );
             
-            acOutput.appendLine(`[CanvasProvider] Script URI: ${scriptUri.toString()}`);
-            acOutput.appendLine(`[CanvasProvider] Style URI: ${styleUri.toString()}`);
+            logger.debug(`[CanvasProvider] Script URI: ${scriptUri.toString()}`);
+            logger.debug(`[CanvasProvider] Style URI: ${styleUri.toString()}`);
             
             // Return modified HTML with correct URIs
             return `<!DOCTYPE html>
@@ -509,7 +508,7 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
             </html>`;
         } catch (e) {
             // Fallback to simple inline HTML if build doesn't exist
-            acOutput.appendLine(`[CanvasProvider] Error loading build: ${e}`);
+            logger.debug(`[CanvasProvider] Error loading build: ${e}`);
             return this.getFallbackHtml(webview);
         }
     }

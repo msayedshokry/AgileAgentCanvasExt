@@ -252,6 +252,28 @@ Your optimized project context file is ready at:
 
 Your project context will help ensure high-quality, consistent implementation across all development work. Great work capturing your project's critical implementation requirements!"
 
+## SAVE JSON ARTIFACT
+
+**CRITICAL — Do this before presenting the completion message:**
+
+Read the complete `{output_folder}/project-context.md` working document, then call `agileagentcanvas_update_artifact` to persist the final structured artifact:
+
+```
+agileagentcanvas_update_artifact({
+  type: "project-context",
+  id: "{project_name}-project-context",
+  changes: { /* all content fields extracted from the working document, following the project-context schema */ }
+})
+```
+
+- Extract every section: project info, tech stack, implementation rules, patterns, forbidden patterns, key files, entry points, development workflow, error handling, state management, API interaction, security, performance, known issues
+- Schema reference: `{bmad-path}/schemas/bmm/project-context.schema.json` — use `agileagentcanvas_read_file` to read it if you need to verify field names
+- The `changes` object must conform to the project-context schema — do NOT wrap content in a `content` key
+- **Only call this once the user is satisfied** — do not skip any earlier checkpoints
+- If the tool call is rejected (schema mismatch), fix the field and retry
+
+---
+
 ## SUCCESS METRICS:
 
 ✅ Complete project context file with all critical rules

@@ -5,7 +5,7 @@ description: 'Document brownfield projects for AI context. Use when the user say
 author: "BMad"
 
 # Output format configuration
-output_format: dual  # JSON (primary) + Markdown (human-readable)
+output_format: markdown  # Generates Markdown wiki pages — not a structured JSON artifact
 schema_file: "{bmad-path}/schemas/bmm/project-overview.schema.json"
 template_json: "{installed_path}/templates/project-overview-template.json"
 

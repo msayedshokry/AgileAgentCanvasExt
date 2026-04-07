@@ -7,6 +7,8 @@ type AjvInstance = InstanceType<typeof Ajv>;
 type AjvValidateFunction = ReturnType<AjvInstance['compile']>;
 type AjvErrorObject = NonNullable<AjvValidateFunction['errors']>[number];
 
+import { createLogger } from '../utils/logger';
+
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface ValidationResult {
@@ -14,13 +16,7 @@ export interface ValidationResult {
     errors: string[];
 }
 
-/** Minimal logger interface — avoids importing vscode's OutputChannel. */
-export interface SchemaValidatorLogger {
-    appendLine(value: string): void;
-}
-
-/** Silent no-op logger used when no logger is provided. */
-const NO_OP_LOGGER: SchemaValidatorLogger = { appendLine: () => {} };
+const logger = createLogger('schema-validator');
 
 // ─── Artifact-type → schema-file mapping ────────────────────────────────────
 //
@@ -66,10 +62,6 @@ const ARTIFACT_TYPE_TO_SCHEMA: Record<string, string> = {
     'retrospective':         'bmm/retrospective.schema.json',
     'change-proposal':       'bmm/change-proposal.schema.json',
     'test-summary':          'bmm/test-summary.schema.json',
-
-    // ── bmm — index/manifest schemas ──
-    'epics-index':           'bmm/epics-index.schema.json',
-    'stories-index':         'bmm/stories-index.schema.json',
 
     // ── tea ──
     'test-design':           'tea/test-design.schema.json',
@@ -134,7 +126,6 @@ export class SchemaValidator {
     private schemasDir: string | null = null;
     private initialized = false;
     private schemaLoadErrors: string[] = [];
-    private logger: SchemaValidatorLogger = NO_OP_LOGGER;
 
     /** System/bookkeeping fields with no substantive content.
      *  Allocated once (module-level) to avoid re-creation per `validateChanges()` call.
@@ -155,21 +146,15 @@ export class SchemaValidator {
      * @param logger    Optional logger (e.g. `this.logger`).  If omitted,
      *                  log messages are silently discarded.
      */
-    init(bmadPath: string, logger?: SchemaValidatorLogger): void {
+    init(bmadPath: string): void {
         if (this.initialized) {
             return;
-        }
-
-        if (logger) {
-            this.logger = logger;
         }
 
         this.schemasDir = path.join(bmadPath, 'schemas');
 
         if (!fs.existsSync(this.schemasDir)) {
-            this.logger.appendLine(
-                `[SchemaValidator] Schemas directory not found: ${this.schemasDir}`
-            );
+            logger.error(`Schemas directory not found: ${this.schemasDir}`);
             return;
         }
 
@@ -206,7 +191,7 @@ export class SchemaValidator {
             } catch (err: any) {
                 const msg = `Failed to load schema ${filePath}: ${err?.message ?? err}`;
                 this.schemaLoadErrors.push(msg);
-                this.logger.appendLine(`[SchemaValidator] ${msg}`);
+                logger.error(msg);
             }
         }
 
@@ -214,8 +199,8 @@ export class SchemaValidator {
         this.buildRelaxedValidators();
 
         this.initialized = true;
-        this.logger.appendLine(
-            `[SchemaValidator] Initialized with ${schemaFiles.length} schemas, ` +
+        logger.debug(
+            `Initialized with ${schemaFiles.length} schemas, ` +
             `${this.relaxedValidators.size} relaxed validators ` +
             `(${this.schemaLoadErrors.length} load errors)`
         );
@@ -224,8 +209,8 @@ export class SchemaValidator {
         for (const [artifactType, relPath] of Object.entries(ARTIFACT_TYPE_TO_SCHEMA)) {
             const schemaId = `https://bmad.dev/schemas/${relPath}`;
             if (!this.relaxedValidators.has(schemaId)) {
-                this.logger.appendLine(
-                    `[SchemaValidator] WARNING: mapped type "${artifactType}" → "${relPath}" ` +
+                logger.warn(
+                    `Mapped type "${artifactType}" → "${relPath}" ` +
                     `has no compiled validator (schema may be missing or failed to load)`
                 );
             }
@@ -239,15 +224,14 @@ export class SchemaValidator {
      * @param bmadPath  Root of the BMAD framework directory.
      * @param logger    Optional logger — reuses the previous logger if omitted.
      */
-    reinit(bmadPath: string, logger?: SchemaValidatorLogger): void {
+    reinit(bmadPath: string): void {
         // Reset all state so init() will run fresh
         this.ajv = null;
         this.relaxedValidators.clear();
         this.schemasDir = null;
         this.initialized = false;
         this.schemaLoadErrors = [];
-        // Preserve existing logger if none provided
-        this.init(bmadPath, logger ?? this.logger);
+        this.init(bmadPath);
     }
 
     /**
@@ -269,11 +253,12 @@ export class SchemaValidator {
      */
     validateChanges(
         artifactType: string,
-        changes: Record<string, any>
+        changes: Record<string, any>,
+        fileName?: string
     ): ValidationResult {
         if (!this.initialized || !this.ajv) {
-            this.logger.appendLine(
-                `[SchemaValidator] WARNING: Validator not initialized — skipping validation for "${artifactType}". ` +
+            logger.warn(
+                `Validator not initialized — skipping validation for "${artifactType}". ` +
                 `Data will be accepted without schema checks.`
             );
             return { valid: true, errors: [] };
@@ -281,8 +266,8 @@ export class SchemaValidator {
 
         const schemaRelPath = ARTIFACT_TYPE_TO_SCHEMA[artifactType];
         if (!schemaRelPath) {
-            this.logger.appendLine(
-                `[SchemaValidator] WARNING: No schema mapping for type "${artifactType}" — ` +
+            logger.debug(
+                `No schema mapping for type "${artifactType}" — ` +
                 `skipping validation. Known types: ${Object.keys(ARTIFACT_TYPE_TO_SCHEMA).join(', ')}`
             );
             return { valid: true, errors: [] };
@@ -291,8 +276,8 @@ export class SchemaValidator {
         const schemaId = `https://bmad.dev/schemas/${schemaRelPath}`;
         const validateFn = this.relaxedValidators.get(schemaId);
         if (!validateFn) {
-            this.logger.appendLine(
-                `[SchemaValidator] WARNING: No relaxed validator compiled for "${schemaId}" — ` +
+            logger.warn(
+                `No relaxed validator compiled for "${schemaId}" — ` +
                 `skipping validation for "${artifactType}".`
             );
             return { valid: true, errors: [] };
@@ -310,8 +295,8 @@ export class SchemaValidator {
 
         // ── Deprecation warnings ──
         if ('storyId' in flatChanges && !('id' in flatChanges)) {
-            this.logger.appendLine(
-                `[SchemaValidator] DEPRECATION: "storyId" is deprecated — use "id" instead. ` +
+            logger.debug(
+                `DEPRECATION: "storyId" is deprecated — use "id" instead. ` +
                 `Found in changes for "${artifactType}".`
             );
             // Auto-migrate: copy storyId → id if id is missing
@@ -336,8 +321,8 @@ export class SchemaValidator {
             const msg =
                 `Changes contain only metadata fields (${Object.keys(flatChanges).join(', ')}). ` +
                 `Include at least one substantive content field.`;
-            this.logger.appendLine(
-                `[SchemaValidator] Rejected trivial update for "${artifactType}": ${msg}`
+            logger.warn(
+                `Rejected trivial update for "${artifactType}": ${msg}`
             );
             return { valid: false, errors: [msg] };
         }
@@ -350,8 +335,11 @@ export class SchemaValidator {
 
         const errors = this.formatErrors(validateFn.errors || []);
 
-        this.logger.appendLine(
-            `[SchemaValidator] Changes for "${artifactType}" have issues: ${errors.join('; ')}`
+        const identifier = fileName || flatChanges.id || flatChanges.title || flatChanges.name ||
+                           flatChanges.content?.id || flatChanges.content?.title || flatChanges.content?.name ||
+                           'unknown instance';
+        logger.warn(
+            `Changes for "${artifactType}" (${identifier}) have issues: ${errors.join('; ')}`
         );
 
         return { valid: false, errors };
@@ -363,19 +351,20 @@ export class SchemaValidator {
      */
     validate(
         artifactType: string,
-        data: Record<string, any>
+        data: Record<string, any>,
+        fileName?: string
     ): ValidationResult {
         if (!this.initialized || !this.ajv) {
-            this.logger.appendLine(
-                `[SchemaValidator] WARNING: Validator not initialized — skipping strict validation for "${artifactType}".`
+            logger.warn(
+                `Validator not initialized — skipping strict validation for "${artifactType}".`
             );
             return { valid: true, errors: [] };
         }
 
         const schemaRelPath = ARTIFACT_TYPE_TO_SCHEMA[artifactType];
         if (!schemaRelPath) {
-            this.logger.appendLine(
-                `[SchemaValidator] No schema mapping for type "${artifactType}"`
+            logger.debug(
+                `No schema mapping for type "${artifactType}"`
             );
             return { valid: true, errors: [] };
         }
@@ -383,8 +372,8 @@ export class SchemaValidator {
         const schemaId = `https://bmad.dev/schemas/${schemaRelPath}`;
         const validateFn = this.ajv.getSchema(schemaId);
         if (!validateFn) {
-            this.logger.appendLine(
-                `[SchemaValidator] Schema not found: "${schemaId}"`
+            logger.warn(
+                `Schema not found: "${schemaId}"`
             );
             return { valid: true, errors: [] };
         }
@@ -402,8 +391,11 @@ export class SchemaValidator {
 
         const errors = this.formatErrors(validateFn.errors || []);
 
-        this.logger.appendLine(
-            `[SchemaValidator] Validation failed for "${artifactType}": ${errors.join('; ')}`
+        const identifier = fileName || data.id || data.title || data.name ||
+                           data.content?.id || data.content?.title || data.content?.name ||
+                           'unknown instance';
+        logger.warn(
+            `Validation failed for "${artifactType}" (${identifier}): ${errors.join('; ')}`
         );
 
         return { valid: false, errors };
@@ -464,8 +456,8 @@ export class SchemaValidator {
 
             return schema;
         } catch (err: any) {
-            this.logger.appendLine(
-                `[SchemaValidator] Failed to load raw schema for "${artifactType}": ${err?.message ?? err}`
+            logger.error(
+                `Failed to load raw schema for "${artifactType}": ${err?.message ?? err}`
             );
             return undefined;
         }
@@ -512,8 +504,8 @@ export class SchemaValidator {
 
             return JSON.stringify(schema, null, 2);
         } catch (err: any) {
-            this.logger.appendLine(
-                `[SchemaValidator] Failed to load schema content for "${artifactType}": ${err?.message ?? err}`
+            logger.error(
+                `Failed to load schema content for "${artifactType}": ${err?.message ?? err}`
             );
             return undefined;
         }
@@ -556,8 +548,8 @@ export class SchemaValidator {
                 const val = data[key];
                 if (typeof val === 'string' && val in aliases) {
                     const canonical = aliases[val];
-                    this.logger.appendLine(
-                        `[SchemaValidator] Alias normalised: ${key}="${val}" → "${canonical}"`
+                    logger.debug(
+                        `Alias normalised: ${key}="${val}" → "${canonical}"`
                     );
                     data[key] = canonical;
                 }
@@ -780,8 +772,8 @@ export class SchemaValidator {
                 const validateFn = this.ajv.compile(relaxed);
                 this.relaxedValidators.set(schemaId, validateFn);
             } catch (err: any) {
-                this.logger.appendLine(
-                    `[SchemaValidator] Failed to build relaxed validator for ` +
+                logger.error(
+                    `Failed to build relaxed validator for ` +
                     `"${schemaId}": ${err?.message ?? err}`
                 );
             }
@@ -934,14 +926,28 @@ export class SchemaValidator {
         const result: string[] = [];
 
         for (const err of errors) {
-            const dataPath = err.dataPath || '';
+            const errAny = err as any;
+            const dataPath = errAny.instancePath || err.dataPath || '';
             const message = err.message || 'unknown error';
+
+            // Extract explicit correction suggestions
+            let suggestion = '';
+            const params = errAny.params || {};
+            if (err.keyword === 'enum' && params.allowedValues) {
+                suggestion = ` (Correction Suggestion: Use one of -> ${params.allowedValues.join(', ')})`;
+            } else if (err.keyword === 'required' && params.missingProperty) {
+                suggestion = ` (Correction Suggestion: Missing required property -> '${params.missingProperty}')`;
+            } else if (err.keyword === 'additionalProperties' && params.additionalProperty) {
+                suggestion = ` (Correction Suggestion: Remove extraneous property -> '${params.additionalProperty}')`;
+            } else if (err.keyword === 'type' && params.type) {
+                suggestion = ` (Correction Suggestion: Convert value to -> ${params.type})`;
+            }
 
             // Skip noisy oneOf "should match exactly one schema" when sub-errors
             // are already reported
             if (err.keyword === 'oneOf' && errors.length > 1) continue;
 
-            const formatted = `${dataPath || '(root)'}: ${message}`;
+            const formatted = `${dataPath || '(root)'}: ${message}${suggestion}`;
             if (!seen.has(formatted)) {
                 seen.add(formatted);
                 result.push(formatted);

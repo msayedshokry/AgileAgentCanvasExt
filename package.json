@@ -2,7 +2,7 @@
   "name": "agileagentcanvas",
   "displayName": "Agile Agent Canvas",
   "description": "Visual AI-assisted product development with BMAD methodology - Design epics, stories, and requirements collaboratively with interactive AI chat workflows",
-  "version": "0.3.4",
+  "version": "0.4.1",
   "publisher": "msayedshokry",
   "license": "MIT",
   "repository": {
@@ -402,21 +402,6 @@
           "type": "string",
           "default": ".agileagentcanvas-context",
           "description": "Name of the subfolder (inside your workspace) where Agile Agent Canvas stores artifacts. Change this to use a custom folder name instead of the default. You can also use the folder button in the canvas toolbar to browse for any folder or create a new one."
-        },
-        "agileagentcanvas.outputFormat": {
-          "type": "string",
-          "default": "dual",
-          "enum": [
-            "json",
-            "markdown",
-            "dual"
-          ],
-          "enumDescriptions": [
-            "Save artifacts as JSON files only",
-            "Save artifacts as Markdown files only",
-            "Save artifacts in both JSON and Markdown formats (recommended)"
-          ],
-          "description": "Output format for BMAD artifacts. 'dual' saves both JSON and Markdown files side by side."
         },
         "agileagentcanvas.autoSync": {
           "type": "boolean",

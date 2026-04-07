@@ -19,3 +19,10 @@ _Documented after discovery phase_
 ## Critical Implementation Rules
 
 _Documented after discovery phase_
+
+**Agent Integrity Patterns (CRITICAL)**
+- **Unbacked Success Logs Banned**: Never print a success message (✅, "seeded", "complete", "Done") unless the preceding lines contain a real operation (HTTP call, DB query, file write, docker exec). A console log without preceding verifiable I/O is considered hallucination and is strictly prohibited.
+
+**Path Resolution**
+- **Absolute Resolution**: Use `import.meta.url` (ESM) or `__dirname` (CJS) for all file reads/writes within the application logic.
+- **Banned Practices**: Do NOT use `process.cwd()` or string-relative paths (e.g. `'./config.json'`) which break unpredictably depending on execution location.

@@ -1,7 +1,7 @@
 ---
 name: testarch-atdd
 description: Generate failing acceptance tests using TDD cycle. Use when user says 'lets write acceptance tests' or 'I want to do ATDD'
-output_format: dual
+output_format: json
 schema_file: "{bmad-path}/schemas/tea/atdd-checklist.schema.json"
 template_json: "./atdd-checklist-template.json"
 web_bundle: true

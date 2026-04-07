@@ -42,6 +42,64 @@ Description: Create clear technical explanations with examples...
 
 Detect the active module from conversation context, recent workflows, or user query keywords. If ambiguous, ask the user.
 
+## ARTIFACT-TYPE WORKFLOW ROUTER
+
+When the user has a specific artifact type and needs guidance on which workflow to use, consult this routing table. Each artifact type maps to **refinement workflows** (improve content) and **dev workflows** (implementation actions).
+
+### Story
+**Refinement:**
+- `agileagentcanvas-create-story` — Create detailed implementation-ready story
+- `agileagentcanvas-create-story-checklist` — Validate story context completeness
+- `agileagentcanvas-story-enhancement` — Add technical details, tests, edge cases, dependencies
+**Dev:**
+- `agileagentcanvas-dev-story` — Execute story development with AI guidance
+- `agileagentcanvas-dev-story-checklist` — Verify implementation-readiness
+- `agileagentcanvas-code-review` — Review code changes for quality
+
+### Epic
+**Refinement:**
+- `agileagentcanvas-epic-enhancement` — Add use cases, risks, DoD, metrics
+- `agileagentcanvas-create-epics-and-stories` — Break requirements into epics and stories
+**Dev:**
+- `agileagentcanvas-check-implementation-readiness` — Verify epic is ready for development
+- `agileagentcanvas-sprint-planning` — Plan sprint with story selection and capacity
+
+### PRD
+**Refinement:**
+- `agileagentcanvas-edit-prd` — Improve and enhance PRD
+- `agileagentcanvas-validate-prd` — Validate against BMAD standards
+- `agileagentcanvas-ceo-review` — Challenge scope ambition
+- `agileagentcanvas-security-audit` — STRIDE + OWASP review
+
+### Architecture / Tech Spec
+**Refinement:**
+- `agileagentcanvas-create-architecture` — Review and improve technical spec
+- `agileagentcanvas-eng-review` — Lock data flow, edge cases, test coverage
+- `agileagentcanvas-security-audit` — STRIDE + OWASP assessment
+- `agileagentcanvas-api-design` — REST conventions review
+- `agileagentcanvas-tradeoff-advisor` — 5-column decision matrix
+- `agileagentcanvas-testarch-nfr` — Non-functional requirements assessment
+
+### UX Design
+**Refinement:**
+- `agileagentcanvas-create-ux-design` — Improve UX design, flows, patterns
+- `agileagentcanvas-design-audit` — Score 0-10 across dimensions
+
+### Code / Implementation
+**Quality:**
+- `agileagentcanvas-code-review` — Adversarial code review
+- `agileagentcanvas-verification-loop` — 6-phase quality gate
+- `agileagentcanvas-coding-standards` — Naming, immutability, error handling
+- `agileagentcanvas-e2e-testing` — Playwright POM, fixtures, CI
+- `agileagentcanvas-eval-harness` — Pass/fail criteria, pass@k metrics
+
+### Test
+**Refinement:**
+- `agileagentcanvas-testarch-test-review` — Review test completeness (0-100 scoring)
+- `agileagentcanvas-testarch-test-design` — Design tests based on gaps
+- `agileagentcanvas-testarch-atdd` — Generate Gherkin BDD steps
+- `agileagentcanvas-test-classification` — Heuristic triage (TDD/E2E/Skip)
+
 ## INPUT ANALYSIS
 
 Determine what was just completed:

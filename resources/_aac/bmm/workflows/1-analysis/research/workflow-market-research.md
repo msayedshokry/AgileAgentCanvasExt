@@ -1,7 +1,7 @@
 ---
 name: market-research
 description: 'Conduct market research on competition and customers. Use when the user says "create a market research report about [business idea]".'
-output_format: dual
+output_format: json
 schema_file: "{bmad-path}/schemas/bmm/research.schema.json"
 template_json: "./research.template.json"
 ---

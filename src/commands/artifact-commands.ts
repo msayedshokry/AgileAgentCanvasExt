@@ -157,6 +157,8 @@ const REFINE_WORKFLOWS: Record<string, { label: string; description: string }[]>
     'prd': [
         { label: 'Validate PRD',  description: 'Validate against BMAD standards' },
         { label: 'Edit PRD',      description: 'Edit and improve PRD' },
+        { label: 'CEO Scope Review', description: 'Challenge scope ambition: Expand, Hold, or Reduce (gstack /plan-ceo-review)' },
+        { label: 'Security Audit',   description: 'STRIDE + OWASP security assessment' },
     ],
     'requirement': [
         { label: 'Validate Requirement',          description: 'Validate quality and completeness of this requirement' },
@@ -166,22 +168,48 @@ const REFINE_WORKFLOWS: Record<string, { label: string; description: string }[]>
     'epic': [
         { label: 'Epic Enhancement',              description: 'Add use cases, risks, DoD, metrics' },
         { label: 'Check Implementation Readiness', description: 'Verify epic is ready for development' },
+        { label: 'Sprint Planning',               description: 'Plan sprint with story selection and capacity' },
         { label: 'Create Use Cases',              description: 'Define detailed use cases for this epic' },
         { label: 'Create Risks',                  description: 'Identify and document risks' },
+        { label: 'Code Review',                   description: 'Perform adversarial code review finding specific issues' },
+        { label: 'Dev Story',                     description: 'Execute story implementation following a context filled story spec file' },
+        { label: 'Security Audit',                description: 'STRIDE + OWASP security assessment' },
+        { label: 'Verification Loop',             description: '6-phase quality gate: Build, Types, Lint, Tests, Security, Diff' },
+        { label: 'Coding Standards',              description: 'Review code against naming, immutability, error handling standards' },
+        { label: 'Eval Harness',                  description: 'Define pass/fail evals before implementation (EDD)' },
+        { label: 'API Design Review',             description: 'Review API endpoints against REST conventions' },
+        { label: 'Assumptions Analyzer',          description: 'Extract and evaluate hidden technical/business assumptions' },
+        { label: 'Codebase Mapper',               description: 'Map architectural boundaries and trace data flow' },
     ],
     'story': [
         { label: 'Story Enhancement',   description: 'Add technical details, tests, edge cases, dependencies, risks, DoD' },
         { label: 'Story Quality Review', description: 'Validate story context for dev agent' },
         { label: 'Dev Story Checklist',  description: 'Verify story is implementation-ready' },
         { label: 'Test Design',          description: 'Design test strategy and cases for this story' },
+        { label: 'Code Review',          description: 'Perform adversarial code review finding specific issues' },
+        { label: 'Dev Story',            description: 'Execute story implementation following a context filled story spec file' },
+        { label: 'Sprint Planning',      description: 'Plan sprint with story selection and capacity' },
+        { label: 'Verification Loop',    description: '6-phase quality gate: Build, Types, Lint, Tests, Security, Diff' },
+        { label: 'Coding Standards',     description: 'Review code against naming, immutability, error handling standards' },
+        { label: 'E2E Testing',          description: 'Playwright E2E test design: POM, fixtures, CI integration' },
+        { label: 'Eval Harness',         description: 'Define pass/fail evals before implementation (EDD)' },
+        { label: 'Assumptions Analyzer', description: 'Extract and evaluate hidden technical/business assumptions' },
+        { label: 'Execution Task Protocol', description: 'Strict execution deviation and auth-gate rules' },
     ],
     'architecture': [
         { label: 'Refine Architecture', description: 'Review and improve architecture design' },
         { label: 'NFR Assessment',      description: 'Assess non-functional requirements' },
+        { label: 'Eng Execution Review', description: 'Lock architecture: data flow, edge cases, test coverage' },
+        { label: 'Security Audit',       description: 'STRIDE + OWASP security assessment' },
+        { label: 'Verification Loop',    description: '6-phase quality gate: Build, Types, Lint, Tests, Security, Diff' },
+        { label: 'API Design Review',    description: 'Review API endpoints against REST conventions' },
+        { label: 'Trade-off Advisor',    description: '5-column matrix (Option/Pros/Cons/Risk/Verdict) for tech choices' },
+        { label: 'Codebase Mapper',      description: 'Map architectural boundaries and trace data flow' },
     ],
     'product-brief': [
         { label: 'Refine Product Brief', description: 'Improve product brief clarity and completeness' },
         { label: 'Validate Product Brief', description: 'Validate against BMAD standards' },
+        { label: 'CEO Scope Review',       description: 'Challenge scope: is this ambitious enough or too broad?' },
     ],
     'use-case': [
         { label: 'Refine Use Case',    description: 'Improve use case detail, actors, and flow' },
@@ -196,6 +224,8 @@ const REFINE_WORKFLOWS: Record<string, { label: string; description: string }[]>
         { label: 'Test Design',         description: 'Develop overall test strategy and coverage plan' },
         { label: 'Test Review',         description: 'Review and validate test strategy' },
         { label: 'NFR Assessment',      description: 'Assess non-functional testing requirements' },
+        { label: 'E2E Testing',         description: 'Playwright E2E test design: POM, fixtures, CI integration' },
+        { label: 'Test Classification Strategy', description: 'Heuristic-based pre-test triage strategy (TDD/E2E/Skip)' },
     ],
     'test-design': [
         { label: 'Test Design',         description: 'Refine or extend test design coverage plan' },
@@ -293,6 +323,7 @@ const REFINE_WORKFLOWS: Record<string, { label: string; description: string }[]>
     ],
     'ux-design': [
         { label: 'Refine UX Design',   description: 'Improve UX design, flows, and interaction patterns' },
+        { label: 'Design Dimension Audit', description: 'Rate UX plan 0-10 across Visual Hierarchy, Interaction States, etc.' },
     ],
     'tech-spec': [
         { label: 'Refine Architecture', description: 'Review and improve technical specification' },
@@ -794,6 +825,47 @@ export async function exportArtifacts(store: ArtifactStore, webview?: vscode.Web
             }
         }
     );
+}
+
+/**
+ * Export a single artifact to Markdown and prompt user to save.
+ */
+export async function exportArtifactToMarkdown(artifact: any): Promise<void> {
+    const { convertArtifactToMarkdown } = await import('./artifact-md-exporter.js');
+    const md = convertArtifactToMarkdown(artifact);
+    
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const defaultName = `bmad-${artifact.type}-${artifact.id}-${timestamp}.md`;
+    
+    const defaultFolder = vscode.workspace.workspaceFolders?.[0]?.uri;
+    const defaultUri = defaultFolder
+        ? vscode.Uri.joinPath(defaultFolder, defaultName)
+        : undefined;
+
+    const targetUri = await vscode.window.showSaveDialog({
+        defaultUri,
+        filters: { 'Markdown': ['md'] },
+        title: `Export ${artifact.title || artifact.id} as Markdown`
+    });
+
+    if (!targetUri) return;
+
+    try {
+        await vscode.workspace.fs.writeFile(targetUri, Buffer.from(md, 'utf-8'));
+        const relativePath = typeof vscode.workspace.asRelativePath === 'function'
+            ? vscode.workspace.asRelativePath(targetUri, true)
+            : targetUri.fsPath;
+        const action = await vscode.window.showInformationMessage(
+            `Artifact exported to ${relativePath}`,
+            'Open File'
+        );
+        if (action === 'Open File') {
+            await vscode.commands.executeCommand('vscode.open', targetUri);
+        }
+    } catch (err: unknown) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        vscode.window.showErrorMessage(`Export failed: ${errMsg}`);
+    }
 }
 
 export async function importArtifacts(store: ArtifactStore): Promise<void> {

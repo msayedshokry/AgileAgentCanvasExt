@@ -1,7 +1,7 @@
 ---
 name: testarch-trace
 description: Generate traceability matrix and quality gate decision. Use when user says 'lets create traceability matrix' or 'I want to analyze test coverage'
-output_format: dual
+output_format: json
 schema_file: "{bmad-path}/schemas/tea/traceability-matrix.schema.json"
 template_json: "./trace-template.json"
 web_bundle: true

@@ -1,7 +1,7 @@
 ---
 name: testarch-test-design
 description: Create system-level or epic-level test plans. Use when user says 'lets design test plan' or 'I want to create test strategy'
-output_format: dual
+output_format: json
 schema_file: "{bmad-path}/schemas/tea/test-design.schema.json"
 template_json: "./test-design-template.json"
 web_bundle: true

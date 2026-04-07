@@ -55,6 +55,7 @@ For each task:
 ### 4. Mark Complete
 
 - Check off task: `- [x] Task N`
+- Set task status to `"implemented"` (NOT `"done"` or `"verified"` — those are reserved for Code Review)
 - Continue to next task immediately
 
 ---

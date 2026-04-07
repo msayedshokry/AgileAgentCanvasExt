@@ -8,6 +8,8 @@ import { ElicitationPicker } from './components/ElicitationPicker';
 import { WorkflowLauncher } from './components/WorkflowLauncher';
 import { HelpModal } from './components/HelpModal';
 import { AskModal } from './components/AskModal';
+import { SprintPlanningView, parseSprintStatusYaml } from './components/SprintPlanningView';
+import type { SprintData } from './components/SprintPlanningView';
 import { SearchBox } from './components/SearchBox';
 import { Icon } from './components/Icon';
 import { vscode } from './vscodeApi';
@@ -86,6 +88,10 @@ function App() {
   
   // Ask modal state
   const [askOpen, setAskOpen] = useState<boolean>(false);
+
+  // Sprint planning view state
+  const [showSprintView, setShowSprintView] = useState<boolean>(false);
+  const [sprintData, setSprintData] = useState<SprintData>({ found: false });
   
   // Canvas search state (SearchBox rendered in App, to the left of workflow FAB)
   const [searchOpen, setSearchOpen] = useState<boolean>(false);
@@ -97,8 +103,6 @@ function App() {
   // Active folder name (sent by extension alongside artifacts)
   const [activeFolderName, setActiveFolderName] = useState<string>('');
   
-  // Output format setting (synced with VS Code workspace config)
-  const [outputFormat, setOutputFormat] = useState<'json' | 'markdown' | 'dual'>('dual');
   
   // Force edit mode when a new artifact is created
   const [forceEditMode, setForceEditMode] = useState<boolean>(false);
@@ -116,6 +120,8 @@ function App() {
   const [schemaFixMessage, setSchemaFixMessage] = useState<string | null>(null);
   const [schemaValidating, setSchemaValidating] = useState<boolean>(false);
   const [schemaValidateSuccess, setSchemaValidateSuccess] = useState<boolean | null>(null);
+
+  // Sprint status mismatches state removed — statuses now come directly from epic/story JSON files.
 
   // Ref so the message handler (which has stale closures) can read current schemaFixing state
   const schemaFixingRef = useRef(false);
@@ -327,11 +333,6 @@ function App() {
         case 'detectedProjectCount':
           setDetectedProjectCount(message.count ?? 0);
           break;
-        case 'outputFormat':
-          if (message.format === 'json' || message.format === 'markdown' || message.format === 'dual') {
-            setOutputFormat(message.format);
-          }
-          break;
         case 'validationError':
           setValidationErrors({
             artifactType: message.artifactType || '',
@@ -406,6 +407,20 @@ function App() {
           // Extension command (e.g. Ctrl+Shift+A) requests the Ask modal
           setAskOpen(true);
           break;
+        case 'sprintStatusResult':
+          if (message.found) {
+            // Build sprint items from live epics (single source of truth)
+            // YAML content (if present) provides sprint groupings only
+            const parsed = parseSprintStatusYaml(
+              message.content as string | null | undefined,
+              (message.epics as any[]) ?? []
+            );
+            setSprintData({ found: true, ...parsed });
+          } else {
+            setSprintData({ found: false });
+          }
+          break;
+        // sprintStatusMismatches removed — statuses come from JSON files directly
       }
     };
 
@@ -453,11 +468,6 @@ function App() {
     setHelpOpen(true);
   }, []);
 
-  const handleOutputFormatChange = useCallback((format: 'json' | 'markdown' | 'dual') => {
-    setOutputFormat(format);
-    vscode.postMessage({ type: 'setOutputFormat', format });
-  }, []);
-
   const handleCloseHelp = useCallback(() => {
     setHelpOpen(false);
   }, []);
@@ -468,6 +478,26 @@ function App() {
 
   const handleCloseAsk = useCallback(() => {
     setAskOpen(false);
+  }, []);
+
+  const handleOpenSprintView = useCallback(() => {
+    setSprintData({ found: false, loading: true });
+    setShowSprintView(true);
+    vscode.postMessage({ type: 'getSprintStatus' });
+  }, []);
+
+  const handleCloseSprintView = useCallback(() => {
+    setShowSprintView(false);
+  }, []);
+
+  const handleRunSprintPlanning = useCallback(() => {
+    setShowSprintView(false);
+    vscode.postMessage({
+      type: 'launchWorkflow',
+      workflow: {
+        triggerPhrase: 'sprint planning',
+      }
+    });
   }, []);
 
   const handleAskSubmit = useCallback((text: string) => {
@@ -826,8 +856,7 @@ function App() {
         onImport={handleImport}
         onHelp={handleOpenHelp}
         onAsk={handleOpenAsk}
-        outputFormat={outputFormat}
-        onOutputFormatChange={handleOutputFormatChange}
+        onSprintView={handleOpenSprintView}
         schemaIssueCount={schemaIssues.length}
         onFixSchemas={handleFixSchemas}
         onValidateSchemas={handleValidateSchemas}
@@ -903,6 +932,13 @@ function App() {
       )}
       {askOpen && (
         <AskModal onSubmit={handleAskSubmit} onClose={handleCloseAsk} />
+      )}
+      {showSprintView && (
+        <SprintPlanningView
+          data={sprintData}
+          onClose={handleCloseSprintView}
+          onRunSprintPlanning={handleRunSprintPlanning}
+        />
       )}
       {/* Search box — positioned to the left of the Workflow FAB */}
       <SearchBox
@@ -1033,6 +1069,8 @@ function App() {
           </div>
         </div>
       )}
+      {/* Sprint status mismatch toast removed — statuses come from JSON files directly */}
+
       {schemaFixing && (
         <div className="toast-container toast-container-schema-fix">
           <div className="toast toast-info">

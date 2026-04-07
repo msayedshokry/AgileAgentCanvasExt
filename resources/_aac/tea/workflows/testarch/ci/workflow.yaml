@@ -27,8 +27,8 @@ variables:
 # Output configuration (resolved dynamically based on ci_platform detection)
 default_output_file: "{project-root}/.github/workflows/test.yml" # GitHub Actions default; overridden per platform
 
-# Output format configuration (dual = JSON + Markdown)
-output_format: dual
+# Output format configuration
+output_format: json
 schema: "{bmad-path}/schemas/tea/ci-pipeline.schema.json"
 output_note: "Produces CI workflow files and JSON configuration manifest"
 

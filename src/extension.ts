@@ -51,13 +51,13 @@ export function getWorkspaceResolver(): WorkspaceResolver {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-    acOutput.appendLine('Agile Agent Canvas is now active!');
-    acOutput.show(); // Show the output panel
     setLoggerOutputSink((line) => acOutput.appendLine(line));
+    logger.info('Agile Agent Canvas is now active!');
+    acOutput.show(); // Show the output panel
 
     // Wire chat-bridge logging into the shared output channel
-    setChatBridgeLogger((msg) => acOutput.appendLine(msg));
-    logger.debug('Agile Agent Canvas is now active!');
+    setChatBridgeLogger((msg) => logger.debug(msg));
+
     vscode.window.showInformationMessage('Agile Agent Canvas activated!');
 
     // Initialize the artifact store (shared state)
@@ -79,7 +79,7 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.chat.createChatParticipant('agileagentcanvas.analyst', chatParticipant.handleChat.bind(chatParticipant))
         );
     } else {
-        acOutput.appendLine('[Activate] vscode.chat API not available — chat participant not registered. Install GitHub Copilot for full functionality.');
+        logger.warn('vscode.chat API not available — chat participant not registered. Install GitHub Copilot for full functionality.');
     }
 
     // Register tree views
@@ -227,16 +227,16 @@ export function activate(context: vscode.ExtensionContext) {
             try {
                 await vscode.workspace.fs.stat(outputUri);
                 await artifactStore.loadFromFolder(outputUri);
-                acOutput.appendLine(`[Activate] Auto-loaded project from: ${outputUri.fsPath}`);
+                logger.info(`Auto-loaded project from: ${outputUri.fsPath}`);
             } catch {
-                acOutput.appendLine(`[Activate] Output folder not found (new project?): ${outputUri.fsPath}`);
+                logger.info(`Output folder not found (new project?): ${outputUri.fsPath}`);
             }
         }
 
         // Set up the file watcher AFTER the resolver has determined the active folder
         setupFileWatcher(artifactStore, context, (filePath) => {
             if (artifactStore.isSyncing()) {
-                acOutput.appendLine(`[FileWatcher] Suppressed self-write notification: ${filePath}`);
+                logger.debug(`[FileWatcher] Suppressed self-write notification: ${filePath}`);
                 return;
             }
             // Notify webview of external change (shows reload badge)
@@ -254,7 +254,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // React to project switches — reload store & re-point file watcher
     workspaceResolver.onDidChangeActiveProject(async (project) => {
-        acOutput.appendLine(`[WorkspaceResolver] Project switched: ${project?.outputUri.fsPath ?? 'none'}`);
+        logger.info(`[WorkspaceResolver] Project switched: ${project?.outputUri.fsPath ?? 'none'}`);
         artifactStore.clearProject();
 
         if (project) {
@@ -262,14 +262,14 @@ export function activate(context: vscode.ExtensionContext) {
                 await vscode.workspace.fs.stat(project.outputUri);
                 await artifactStore.loadFromFolder(project.outputUri);
             } catch {
-                acOutput.appendLine(`[WorkspaceResolver] New project folder doesn't exist yet: ${project.outputUri.fsPath}`);
+                logger.info(`[WorkspaceResolver] New project folder doesn't exist yet: ${project.outputUri.fsPath}`);
             }
         }
 
         // Re-point file watcher
         resetFileWatcher(artifactStore, context, (filePath) => {
             if (artifactStore.isSyncing()) {
-                acOutput.appendLine(`[FileWatcher] Suppressed self-write notification: ${filePath}`);
+                logger.debug(`[FileWatcher] Suppressed self-write notification: ${filePath}`);
                 return;
             }
             openCanvasPanels.forEach(panel => {
@@ -351,13 +351,13 @@ async function openCanvasPanel(context: vscode.ExtensionContext, store: Artifact
                     // Send elicitation methods (bundled with extension)
                     {
                         const methods = loadElicitationMethods(context.extensionUri);
-                        acOutput.appendLine(`[Panel] Sending ${methods.length} elicitation methods to webview`);
+                        logger.debug(`[Panel] Sending ${methods.length} elicitation methods to webview`);
                         panel.webview.postMessage({ type: 'elicitationMethods', methods });
                     }
                     // Send BMM workflows (bundled with extension under resources/)
                     {
                         const workflows = loadBmmWorkflows(context.extensionUri.fsPath + '/resources');
-                        acOutput.appendLine(`[Panel] Sending ${workflows.length} BMM workflows to webview`);
+                        logger.debug(`[Panel] Sending ${workflows.length} BMM workflows to webview`);
                         panel.webview.postMessage({ type: 'bmmWorkflows', workflows });
                     }
                     // Send current output format setting to webview
@@ -369,7 +369,7 @@ async function openCanvasPanel(context: vscode.ExtensionContext, store: Artifact
                     {
                         const issues = store.getLoadValidationIssues();
                         if (issues.length > 0) {
-                            acOutput.appendLine(`[Panel] Sending ${issues.length} schema issue(s) to webview`);
+                            logger.warn(`[Panel] Sending ${issues.length} schema issue(s) to webview`);
                             panel.webview.postMessage({ type: 'schemaIssues', issues });
                         }
                     }
@@ -591,7 +591,7 @@ function setupFileWatcher(
     const outputFolderName = outputUri.fsPath.replace(/\\/g, '/').split('/').pop() || '.agileagentcanvas-context';
     const pattern = new vscode.RelativePattern(
         wsFolder,
-        `${outputFolderName}/**/*.{json,md}`
+        `${outputFolderName}/**/*.{json,md,yaml,yml}`
     );
 
     fileWatcher = vscode.workspace.createFileSystemWatcher(pattern);

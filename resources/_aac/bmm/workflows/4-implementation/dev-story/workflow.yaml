@@ -19,7 +19,7 @@ implementation_artifacts: "{config_source}:implementation_artifacts"
 sprint_status: "{implementation_artifacts}/sprint-status.yaml"
 project_context: "**/project-context.md"
 
-# Output format configuration (dual = JSON + Markdown)
-output_format: dual
+# Output format configuration
+output_format: json
 schema: "{bmad-path}/schemas/bmm/story.schema.json"
 output_note: "Updates existing story file with implementation progress and task completion"

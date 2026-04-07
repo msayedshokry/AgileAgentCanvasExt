@@ -1,10 +1,13 @@
+import { createLogger } from '../utils/logger';
+const logger = createLogger('webview-message-handler');
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs';
 import PDFDocument from 'pdfkit';
 import { ArtifactStore } from '../state/artifact-store';
 import { BMAD_RESOURCE_DIR } from '../state/constants';
 import { schemaValidator } from '../state/schema-validator';
-import { acOutput } from '../extension';
+
 import {
     refineArtifactWithAI,
     breakDownArtifact,
@@ -14,7 +17,8 @@ import {
     startDocumentation,
     launchBmmWorkflow,
     exportArtifacts,
-    importArtifacts
+    importArtifacts,
+    exportArtifactToMarkdown
 } from '../commands/artifact-commands';
 import { openChat } from '../commands/chat-bridge';
 
@@ -78,9 +82,9 @@ export async function handleCommonWebviewMessage(
             if (!schemaValidator.isInitialized()) {
                 try {
                     const bmadPath = path.join(extensionUri.fsPath, 'resources', BMAD_RESOURCE_DIR);
-                    schemaValidator.init(bmadPath, acOutput);
+                    schemaValidator.init(bmadPath);
                 } catch (err: any) {
-                    acOutput.appendLine(
+                    logger.debug(
                         `${logPrefix} Schema validator init failed: ${err?.message ?? err}`
                     );
                 }
@@ -91,7 +95,7 @@ export async function handleCommonWebviewMessage(
             // errors are sent back to the webview so the user is clearly informed.
             const validation = schemaValidator.validateChanges(artType, message.updates ?? {});
             if (!validation.valid) {
-                acOutput.appendLine(
+                logger.debug(
                     `${logPrefix} Schema validation errors for ${artType}/${message.id}: ${validation.errors.join('; ')}`
                 );
 
@@ -131,22 +135,32 @@ export async function handleCommonWebviewMessage(
             return true;
 
         case 'startDevelopment':
-            acOutput.appendLine(`${logPrefix} startDevelopment: artifact=${JSON.stringify(message.artifact?.id)}, type=${JSON.stringify(message.artifact?.type)}`);
+            logger.debug(`${logPrefix} startDevelopment: artifact=${JSON.stringify(message.artifact?.id)}, type=${JSON.stringify(message.artifact?.type)}`);
             try {
                 await startDevelopment(message.artifact, store);
             } catch (err) {
-                acOutput.appendLine(`${logPrefix} startDevelopment threw: ${err}`);
+                logger.debug(`${logPrefix} startDevelopment threw: ${err}`);
                 vscode.window.showErrorMessage(`Start Dev error: ${err}`);
             }
             return true;
 
         case 'startDocumentation':
-            acOutput.appendLine(`${logPrefix} startDocumentation: artifact=${JSON.stringify(message.artifact?.id)}, type=${JSON.stringify(message.artifact?.type)}`);
+            logger.debug(`${logPrefix} startDocumentation: artifact=${JSON.stringify(message.artifact?.id)}, type=${JSON.stringify(message.artifact?.type)}`);
             try {
                 await startDocumentation(message.artifact, store);
             } catch (err) {
-                acOutput.appendLine(`${logPrefix} startDocumentation threw: ${err}`);
+                logger.debug(`${logPrefix} startDocumentation threw: ${err}`);
                 vscode.window.showErrorMessage(`Start Documentation error: ${err}`);
+            }
+            return true;
+
+        case 'exportToMarkdown':
+            logger.debug(`${logPrefix} exportToMarkdown: artifact=${JSON.stringify(message.artifact?.id)}, type=${JSON.stringify(message.artifact?.type)}`);
+            try {
+                await exportArtifactToMarkdown(message.artifact);
+            } catch (err) {
+                logger.debug(`${logPrefix} exportToMarkdown threw: ${err}`);
+                vscode.window.showErrorMessage(`Export to Markdown failed: ${err}`);
             }
             return true;
 
@@ -164,18 +178,6 @@ export async function handleCommonWebviewMessage(
             await importArtifacts(store);
             return true;
 
-        case 'setOutputFormat': {
-            const newFormat = message.format;
-            if (newFormat === 'json' || newFormat === 'markdown' || newFormat === 'dual') {
-                await vscode.workspace.getConfiguration('agileagentcanvas').update(
-                    'outputFormat',
-                    newFormat,
-                    vscode.ConfigurationTarget.Workspace
-                );
-                acOutput.appendLine(`${logPrefix} Output format changed to: ${newFormat}`);
-            }
-            return true;
-        }
 
         case 'closeDetailTab':
             // The caller must handle disposal of the actual panel reference.
@@ -190,7 +192,7 @@ export async function handleCommonWebviewMessage(
 
             // ── Guard: reject if another fix is already running ──
             if (store.isFixInProgress()) {
-                acOutput.appendLine(`${logPrefix} fixSchemas: already in progress — ignoring`);
+                logger.debug(`${logPrefix} fixSchemas: already in progress — ignoring`);
                 if (webview) {
                     webview.postMessage({
                         type: 'schemaFixResult',
@@ -222,7 +224,7 @@ export async function handleCommonWebviewMessage(
                 return true;
             }
 
-            acOutput.appendLine(`${logPrefix} fixSchemas: repairing artifacts and re-writing to disk...`);
+            logger.debug(`${logPrefix} fixSchemas: repairing artifacts and re-writing to disk...`);
             try {
                 // Capture issue count BEFORE the fix so we can detect progress
                 const issuesBefore = store.getLoadValidationIssues();
@@ -235,19 +237,19 @@ export async function handleCommonWebviewMessage(
                             // ── Backup existing files before overwriting ──
                             const backupUri = await store.backupArtifactFiles();
                             if (backupUri) {
-                                acOutput.appendLine(`${logPrefix} fixSchemas: backup created at ${backupUri.fsPath}`);
+                                logger.debug(`${logPrefix} fixSchemas: backup created at ${backupUri.fsPath}`);
                                 // Prune old backups (keep last 5) to prevent unlimited growth
                                 await store.pruneOldBackups(5);
                             } else {
                                 // Backup returned null — either no source folder or no JSON files.
                                 // Warn the user but don't abort (files may still need fixing).
-                                acOutput.appendLine(`${logPrefix} fixSchemas: WARNING — backup was not created (no source files found)`);
+                                logger.debug(`${logPrefix} fixSchemas: WARNING — backup was not created (no source files found)`);
                             }
 
                             // Use fixAndSyncToFiles which applies schema-aware repairs
                             // before writing, instead of plain syncToFiles.
                             await store.fixAndSyncToFiles();
-                            acOutput.appendLine(`${logPrefix} fixSchemas: fixAndSyncToFiles complete, reloading...`);
+                            logger.debug(`${logPrefix} fixSchemas: fixAndSyncToFiles complete, reloading...`);
 
                             // Reload from the same folder to re-validate against schemas
                             const sourceFolder = store.getSourceFolder();
@@ -256,7 +258,7 @@ export async function handleCommonWebviewMessage(
                                     await store.loadFromFolder(sourceFolder);
                                 } catch (reloadErr: any) {
                                     // Repair succeeded but reload failed — send a differentiated message
-                                    acOutput.appendLine(
+                                    logger.debug(
                                         `${logPrefix} fixSchemas: repair succeeded but reload failed: ${reloadErr?.message ?? reloadErr}`
                                     );
                                     if (webview) {
@@ -274,7 +276,7 @@ export async function handleCommonWebviewMessage(
                             const remainingIssues = store.getLoadValidationIssues();
                             const countAfter = remainingIssues.length;
                             const fixed = countBefore - countAfter;
-                            acOutput.appendLine(
+                            logger.debug(
                                 `${logPrefix} fixSchemas: done — ${countBefore} before, ${countAfter} after (${fixed} fixed)`
                             );
 
@@ -307,7 +309,7 @@ export async function handleCommonWebviewMessage(
                     }
                 );
             } catch (err: any) {
-                acOutput.appendLine(`${logPrefix} fixSchemas error: ${err?.message ?? err}`);
+                logger.debug(`${logPrefix} fixSchemas error: ${err?.message ?? err}`);
                 vscode.window.showErrorMessage(`Fix Schemas failed: ${err?.message ?? err}`);
                 if (webview) {
                     webview.postMessage({
@@ -325,14 +327,14 @@ export async function handleCommonWebviewMessage(
             // "Validate Schemas" — reload artifacts from disk (which re-validates
             // against JSON schemas) and send the results back to the webview.
             // Unlike fixSchemas this does NOT re-write files.
-            acOutput.appendLine(`${logPrefix} validateSchemas: re-loading artifacts to validate...`);
+            logger.debug(`${logPrefix} validateSchemas: re-loading artifacts to validate...`);
             try {
                 const sourceFolder = store.getSourceFolder();
                 if (sourceFolder) {
                     await store.loadFromFolder(sourceFolder);
                 }
                 const issues = store.getLoadValidationIssues();
-                acOutput.appendLine(
+                logger.debug(
                     `${logPrefix} validateSchemas: done — ${issues.length} issue(s)`
                 );
                 if (webview) {
@@ -342,7 +344,7 @@ export async function handleCommonWebviewMessage(
                     });
                 }
             } catch (err: any) {
-                acOutput.appendLine(`${logPrefix} validateSchemas error: ${err?.message ?? err}`);
+                logger.debug(`${logPrefix} validateSchemas error: ${err?.message ?? err}`);
                 if (webview) {
                     webview.postMessage({
                         type: 'schemaValidateResult',
@@ -357,7 +359,7 @@ export async function handleCommonWebviewMessage(
         case 'canvasScreenshotError': {
             // Webview screenshot capture failed — show the error to the user.
             const errMsg = (message.message as string) || 'Unknown error';
-            acOutput.appendLine(`${logPrefix} canvasScreenshotError: ${errMsg}`);
+            logger.debug(`${logPrefix} canvasScreenshotError: ${errMsg}`);
             vscode.window.showErrorMessage(`Canvas screenshot failed: ${errMsg}`);
             return true;
         }
@@ -437,7 +439,7 @@ export async function handleCommonWebviewMessage(
                 }
             } catch (err: unknown) {
                 const errMsg = err instanceof Error ? err.message : String(err);
-                acOutput.appendLine(`${logPrefix} canvasScreenshot error: ${errMsg}`);
+                logger.debug(`${logPrefix} canvasScreenshot error: ${errMsg}`);
                 vscode.window.showErrorMessage(`Failed to save canvas screenshot: ${errMsg}`);
             }
             return true;
@@ -455,7 +457,7 @@ export async function handleCommonWebviewMessage(
                     `read _aac/_config/bmad-help.csv for the workflow catalog. ` +
                     `Follow the help task routing and display rules to answer ` +
                     `this user question:\n\n${userText}`;
-                acOutput.appendLine(`${logPrefix} askAgent: sending bmad-help query to chat: "${userText}"`);
+                logger.debug(`${logPrefix} askAgent: sending bmad-help query to chat: "${userText}"`);
                 await openChat(`@agileagentcanvas ${helpQuery}`);
             }
             return true;
@@ -484,10 +486,58 @@ export async function handleCommonWebviewMessage(
                 `4. Save the corrected files\n\n` +
                 `## ${issues.length} File(s) With Schema Issues\n\n${issueBlocks}`;
 
-            acOutput.appendLine(
+            logger.debug(
                 `${logPrefix} sendSchemaFixToChat: sending ${issues.length} issue(s) to chat`
             );
             await openChat(`@agileagentcanvas ${prompt}`);
+            return true;
+        }
+
+        case 'getSprintStatus': {
+            // Build sprint status from two sources:
+            //   1. Epics + Stories (from ArtifactStore) — the SINGLE SOURCE OF TRUTH for statuses
+            //   2. sprint-status.yaml (optional) — only used for sprint groupings (goals, dates, story lists)
+            //
+            // If the YAML file doesn't exist, we still send found:true with epics so the
+            // frontend can render a flat Kanban board using live JSON statuses.
+            const sourceFolder = store.getSourceFolder();
+
+            // Always include the live epics from in-memory state
+            const epics = store.getEpics();
+
+            let content: string | null = null;
+            if (sourceFolder) {
+                try {
+                    const results = await vscode.workspace.findFiles(
+                        '**/sprint-status.yaml',
+                        '{**/node_modules/**,**/.git/**}',
+                        10
+                    );
+
+                    const sourceFsPath = sourceFolder.fsPath.replace(/\\/g, '/');
+                    const match = results.find(uri => {
+                        const p = uri.fsPath.replace(/\\/g, '/');
+                        return p.startsWith(sourceFsPath);
+                    }) ?? results[0];
+
+                    if (match) {
+                        content = await fs.promises.readFile(match.fsPath, 'utf-8');
+                        logger.debug(`${logPrefix} getSprintStatus: found YAML at ${match.fsPath}`);
+                    }
+                } catch (err: any) {
+                    logger.debug(`${logPrefix} getSprintStatus: search error: ${err?.message ?? err}`);
+                }
+            }
+
+            if (webview) {
+                webview.postMessage({
+                    type: 'sprintStatusResult',
+                    // found:true whenever we have epics — YAML is optional for groupings
+                    found: epics.length > 0 || content !== null,
+                    content: content ?? null,
+                    epics,
+                });
+            }
             return true;
         }
 

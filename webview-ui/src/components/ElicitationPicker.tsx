@@ -74,6 +74,22 @@ export function ElicitationPicker({ artifact, methods, onSelect, onClose }: Elic
     });
   }, [methods, activeCategory, search]);
 
+  // Group filtered methods by category (preserving category order)
+  const groupedMethods = useMemo(() => {
+    const groups = new Map<string, ElicitationMethod[]>();
+    filteredMethods.forEach(m => {
+      const group = groups.get(m.category) ?? [];
+      group.push(m);
+      groups.set(m.category, group);
+    });
+    // Re-sort groups by original category order
+    return Array.from(groups.entries()).sort((a, b) => {
+      const orderA = categories.indexOf(a[0]);
+      const orderB = categories.indexOf(b[0]);
+      return orderA - orderB;
+    });
+  }, [filteredMethods, categories]);
+
   const handleOverlayClick = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget) onClose();
   }, [onClose]);
@@ -85,94 +101,103 @@ export function ElicitationPicker({ artifact, methods, onSelect, onClose }: Elic
   const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
   return (
-    <div className="elicit-overlay" onClick={handleOverlayClick}>
-      <div className="elicit-modal" role="dialog" aria-modal="true" aria-label="Choose Elicitation Method">
+    <div className="wfl-overlay" onClick={handleOverlayClick}>
+      <div className="wfl-modal" role="dialog" aria-modal="true" aria-label="Choose Elicitation Method">
         {/* Header */}
-        <div className="elicit-modal-header">
-          <div className="elicit-modal-title">
-            <span className="elicit-modal-icon"><Icon name="crystal-ball" size={24} /></span>
+        <div className="wfl-modal-header">
+          <div className="wfl-modal-title">
+            <span className="wfl-modal-icon"><Icon name="crystal-ball" size={24} /></span>
             <div>
               <h2>Choose Elicitation Method</h2>
-              <p className="elicit-target-label">
+              <p className="wfl-subtitle">
                 for: <strong>{artifact.type}</strong> — {artifact.title}
               </p>
             </div>
           </div>
-          <button className="elicit-close-btn" onClick={onClose} title="Close (Esc)"><Icon name="close" size={16} /></button>
+          <button className="wfl-close-btn" onClick={onClose} title="Close (Esc)"><Icon name="close" size={16} /></button>
         </div>
 
         {/* Search */}
-        <div className="elicit-modal-search">
-          <span className="elicit-search-icon"><Icon name="search" size={14} /></span>
+        <div className="wfl-modal-search">
+          <span className="wfl-search-icon"><Icon name="search" size={14} /></span>
           <input
             ref={searchRef}
             type="text"
-            className="elicit-search-input"
+            className="wfl-search-input"
             placeholder="Search methods, descriptions, outputs…"
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
           {search && (
-            <button className="elicit-search-clear" onClick={() => setSearch('')} title="Clear search"><Icon name="close" size={14} /></button>
+            <button className="wfl-search-clear" onClick={() => setSearch('')} title="Clear search"><Icon name="close" size={14} /></button>
           )}
         </div>
 
         {/* Category tabs */}
-        <div className="elicit-modal-tabs" role="tablist">
+        <div className="wfl-modal-tabs" role="tablist">
           <button
-            className={`elicit-tab ${activeCategory === 'all' ? 'active' : ''}`}
+            className={`wfl-tab ${activeCategory === 'all' ? 'active' : ''}`}
             role="tab"
             aria-selected={activeCategory === 'all'}
             onClick={() => setActiveCategory('all')}
           >
             All
-            <span className="elicit-tab-count">{methods.length}</span>
+            <span className="wfl-tab-count">{methods.length}</span>
           </button>
           {categories.map(cat => (
             <button
               key={cat}
-              className={`elicit-tab ${activeCategory === cat ? 'active' : ''}`}
+              className={`wfl-tab ${activeCategory === cat ? 'active' : ''}`}
               role="tab"
               aria-selected={activeCategory === cat}
               onClick={() => setActiveCategory(cat)}
             >
               {capitalize(cat)}
-              <span className="elicit-tab-count">{categoryCounts[cat]}</span>
+              <span className="wfl-tab-count">{categoryCounts[cat]}</span>
             </button>
           ))}
         </div>
 
         {/* Methods list */}
-        <div className="elicit-modal-methods" role="tabpanel">
+        <div className="wfl-modal-list" role="tabpanel">
           {filteredMethods.length === 0 ? (
-            <div className="elicit-no-results">
+            <div className="wfl-no-results">
               No methods match "{search}"
             </div>
           ) : (
-            filteredMethods.map(method => (
-              <button
-                key={`${method.category}-${method.method_name}`}
-                className="elicit-method-card"
-                onClick={() => handleMethodClick(method)}
-                title={`${method.description}\n\nOutput: ${method.output_pattern}`}
-              >
-                <div className="elicit-method-top">
-                  <span className="elicit-method-name">{method.method_name}</span>
-                  <span className="elicit-method-category">{capitalize(method.category)}</span>
-                </div>
-                <div className="elicit-method-desc">{method.description}</div>
-                <div className="elicit-method-output">
-                  <span className="elicit-output-arrow">→</span>
-                  {method.output_pattern}
-                </div>
-              </button>
+            groupedMethods.map(([category, methods]) => (
+              <div key={category} className="wfl-phase-group">
+                {activeCategory === 'all' && (
+                  <div className="wfl-phase-label">
+                    {capitalize(category)}
+                  </div>
+                )}
+                {methods.map(method => (
+                  <button
+                    key={`${method.category}-${method.method_name}`}
+                    className="wfl-card"
+                    onClick={() => handleMethodClick(method)}
+                    title={`${method.description}\n\nOutput: ${method.output_pattern}`}
+                  >
+                    <div className="wfl-card-top">
+                      <span className="wfl-card-name">{method.method_name}</span>
+                      <span className="wfl-card-phase-badge">{capitalize(method.category)}</span>
+                    </div>
+                    <div className="wfl-card-desc">{method.description}</div>
+                    <div className="wfl-card-trigger">
+                      <span className="wfl-trigger-arrow">→</span>
+                      {method.output_pattern}
+                    </div>
+                  </button>
+                ))}
+              </div>
             ))
           )}
         </div>
 
         {/* Footer */}
-        <div className="elicit-modal-footer">
-          <span className="elicit-footer-hint">
+        <div className="wfl-modal-footer">
+          <span className="wfl-footer-hint">
             {filteredMethods.length} method{filteredMethods.length !== 1 ? 's' : ''}
             {search ? ` matching "${search}"` : activeCategory !== 'all' ? ` in ${capitalize(activeCategory)}` : ''}
           </span>

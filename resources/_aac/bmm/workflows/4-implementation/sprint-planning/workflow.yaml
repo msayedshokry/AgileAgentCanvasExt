@@ -3,7 +3,7 @@ description: 'Generate sprint status tracking from epics. Use when the user says
 author: "BMad"
 
 # Output format configuration
-output_format: dual
+output_format: yaml
 schema_file: "{bmad-path}/schemas/bmm/sprint-status.schema.json"
 
 # Critical variables from config
@@ -31,8 +31,8 @@ story_location: "{implementation_artifacts}" # Relative path for file-system, Fu
 story_location_absolute: "{implementation_artifacts}" # Absolute path for file operations
 
 # Source files (file-system only)
-epics_location: "{planning_artifacts}" # Directory containing epic*.md files
-epics_pattern: "epic*.md" # Pattern to find epic files
+epics_location: "{planning_artifacts}" # Directory containing epic*.json files
+epics_pattern: "epic*.json" # Pattern to find epic files
 
 # Output configuration
 status_file: "{implementation_artifacts}/sprint-status.yaml"
@@ -43,8 +43,8 @@ status_file: "{implementation_artifacts}/sprint-status.yaml"
 input_file_patterns:
   epics:
     description: "All epics with user stories"
-    whole: "{planning_artifacts}/*epic*.md"
-    sharded: "{planning_artifacts}/*epic*/*.md"
+    whole: "{planning_artifacts}/*epic*.json"
+    sharded: "{planning_artifacts}/*epic*/*.json"
     load_strategy: "FULL_LOAD"
 
 # Output configuration

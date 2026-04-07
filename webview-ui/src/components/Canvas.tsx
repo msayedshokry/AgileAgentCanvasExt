@@ -83,6 +83,14 @@ const STATUS_BUCKETS: { label: string; statuses: ArtifactStatus[] }[] = [
   { label: 'Other',      statuses: ['blocked', 'archived', 'deprecated', 'superseded', 'rejected'] },
 ];
 
+// Dependency-line category toggles
+const LINE_CATEGORIES: { key: string; label: string; color: string }[] = [
+  { key: 'structural', label: 'Structural', color: 'var(--vscode-charts-blue)' },
+  { key: 'peer',       label: 'Peer',       color: 'var(--vscode-charts-yellow)' },
+  { key: 'default',    label: 'Other',      color: 'var(--vscode-editorWidget-border)' },
+  { key: 'tree',       label: 'Tree',       color: 'var(--vscode-editorWidget-border)' },
+];
+
 // Short labels for filter buttons
 const FILTER_TYPE_LABELS: Record<ArtifactType, string> = {
   'product-brief': 'Brief',
@@ -158,10 +166,13 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
   const [hiddenStatusBuckets, setHiddenStatusBuckets] = useState<Set<number>>(new Set());
   // Lane hiding state
   const [hiddenLanes, setHiddenLanes] = useState<Set<string>>(new Set());
+  // Dependency-line category hiding
+  const [hiddenLineCategories, setHiddenLineCategories] = useState<Set<string>>(new Set());
   // Layout mode: 'lanes' (default column view) or 'mindmap' (tree view)
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('lanes');
   // Screenshot capture in progress
   const [capturing, setCapturing] = useState(false);
+  const [captureProgress, setCaptureProgress] = useState<string>('');
   // Track which story cards have their inline task/test rows expanded
   const [expandedStoryIds, setExpandedStoryIds] = useState<Set<string>>(new Set());
   const handleToggleStoryExpand = useCallback((id: string) => {
@@ -250,194 +261,250 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
 
     // Defer the heavy DOM-cloning and html2canvas work to the next animation
     // frame so React has time to render the spinner overlay first.
-    const rafId = requestAnimationFrame(() => {
+    let isCancelled = false;
 
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    cards.forEach(card => {
-      const rect = card as HTMLElement;
-      const left = rect.offsetLeft;
-      const top = rect.offsetTop;
-      const right = left + rect.offsetWidth;
-      const bottom = top + rect.offsetHeight;
-      minX = Math.min(minX, left);
-      minY = Math.min(minY, top);
-      maxX = Math.max(maxX, right);
-      maxY = Math.max(maxY, bottom);
-    });
+    const processScreenshot = async () => {
+      try {
+        setCapturing(true);
+        setCaptureProgress('Preparing layout...');
+        await new Promise(r => setTimeout(r, 50)); // let React render the spinner
 
-    // Add some padding around the content
-    const PAD = 40;
-    minX = Math.max(0, minX - PAD);
-    minY = Math.max(0, minY - PAD);
-    maxX += PAD;
-    maxY += PAD;
-    const cropW = maxX - minX;
-    const cropH = maxY - minY;
-
-    // Capture strategy: instead of passing the huge 4000×4000 canvas-content
-    // element to html2canvas (which can hang/OOM with very large DOM subtrees),
-    // we build a lightweight temporary off-screen container that holds only
-    // clones of the visible cards and the dependency-arrows SVG, repositioned
-    // so the bounding-box origin is at (0,0).
-
-    // Resolve the background colour now — CSS custom properties may not be
-    // available inside the html2canvas rendering context.
-    const resolvedBg = sanitizeColor(getComputedStyle(el).backgroundColor) || '#1e1e1e';
-
-    const tempContainer = document.createElement('div');
-    tempContainer.style.cssText = [
-      'position: fixed',
-      'left: -99999px',
-      'top: 0',
-      `width: ${cropW}px`,
-      `height: ${cropH}px`,
-      'overflow: hidden',
-      `background: ${resolvedBg}`,
-      'z-index: -1',
-    ].join(';');
-    document.body.appendChild(tempContainer);
-
-    // Clone the dependency-arrows SVG and shift it so arrows render
-    // in the correct positions relative to the cropped bounding box.
-    const arrowsSvg = el.querySelector('.dependency-arrows');
-    if (arrowsSvg) {
-      const arrowClone = arrowsSvg.cloneNode(true) as HTMLElement;
-      arrowClone.style.position = 'absolute';
-      arrowClone.style.left = `${-minX}px`;
-      arrowClone.style.top = `${-minY}px`;
-      // Use the real element dimensions rather than a stale React memo
-      arrowClone.style.width = `${el.scrollWidth}px`;
-      arrowClone.style.height = `${el.scrollHeight}px`;
-
-      // Resolve CSS variables in SVG attributes (stroke, fill) so they
-      // render correctly inside the html2canvas rendering context
-      // where CSS custom properties may not be available.
-      const resolveCssVar = (val: string): string => {
-        if (!val || !val.startsWith('var(')) return val;
-        const tmp = document.createElement('div');
-        tmp.style.color = val;
-        document.body.appendChild(tmp);
-        const resolved = getComputedStyle(tmp).color;
-        document.body.removeChild(tmp);
-        return sanitizeColor(resolved);
-      };
-      arrowClone.querySelectorAll('path, polygon, line, circle').forEach(svgEl => {
-        const stroke = svgEl.getAttribute('stroke');
-        if (stroke?.startsWith('var(')) svgEl.setAttribute('stroke', resolveCssVar(stroke));
-        const fill = svgEl.getAttribute('fill');
-        if (fill?.startsWith('var(')) svgEl.setAttribute('fill', resolveCssVar(fill));
-      });
-
-      tempContainer.appendChild(arrowClone);
-    }
-
-    // Clone each visible card, repositioned relative to the crop origin.
-    // Also inline all computed styles so they survive the iframe clone that
-    // html2canvas performs (CSS custom-properties / stylesheet rules are
-    // NOT available inside the cloned iframe document).
-    cards.forEach(card => {
-      const clone = card.cloneNode(true) as HTMLElement;
-      const orig = card as HTMLElement;
-      clone.style.position = 'absolute';
-      clone.style.left = `${orig.offsetLeft - minX}px`;
-      clone.style.top = `${orig.offsetTop - minY}px`;
-      clone.style.width = `${orig.offsetWidth}px`;
-      clone.style.height = `${orig.offsetHeight}px`;
-
-      // Inline key computed styles on the clone and its descendants so
-      // that html2canvas (which clones into an iframe without our stylesheets)
-      // can read them directly from element.style.  All colour values are
-      // sanitized through sanitizeColor() to convert the modern
-      // color(srgb ...) syntax (emitted by Chromium ≥128) to rgb()/rgba()
-      // that html2canvas v1.4.1 can parse.
-      const inlineStyles = (src: Element, dst: Element) => {
-        const cs = getComputedStyle(src);
-        const ds = (dst as HTMLElement).style;
-        ds.backgroundColor = sanitizeColor(cs.backgroundColor);
-        ds.color = sanitizeColor(cs.color);
-        ds.borderColor = sanitizeColor(cs.borderColor);
-        ds.borderWidth = cs.borderWidth;
-        ds.borderStyle = cs.borderStyle;
-        ds.borderRadius = cs.borderRadius;
-        ds.boxShadow = sanitizeColor(cs.boxShadow);
-        ds.fontSize = cs.fontSize;
-        ds.fontWeight = cs.fontWeight;
-        ds.fontFamily = cs.fontFamily;
-        ds.padding = cs.padding;
-        ds.margin = cs.margin;
-        ds.opacity = cs.opacity;
-        ds.overflow = cs.overflow;
-        ds.display = cs.display;
-        ds.flexDirection = cs.flexDirection;
-        ds.alignItems = cs.alignItems;
-        ds.justifyContent = cs.justifyContent;
-        ds.gap = cs.gap;
-        ds.textAlign = cs.textAlign;
-        ds.lineHeight = cs.lineHeight;
-        ds.letterSpacing = cs.letterSpacing;
-        ds.textDecoration = sanitizeColor(cs.textDecoration);
-        ds.whiteSpace = cs.whiteSpace;
-        ds.textOverflow = cs.textOverflow;
-        ds.minWidth = cs.minWidth;
-        ds.maxWidth = cs.maxWidth;
-        ds.minHeight = cs.minHeight;
-        ds.maxHeight = cs.maxHeight;
-        // Recurse into children
-        const srcChildren = src.children;
-        const dstChildren = dst.children;
-        for (let i = 0; i < srcChildren.length && i < dstChildren.length; i++) {
-          inlineStyles(srcChildren[i], dstChildren[i]);
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        finalArtifacts.forEach(art => {
+          minX = Math.min(minX, art.position.x);
+          minY = Math.min(minY, art.position.y);
+          maxX = Math.max(maxX, art.position.x + art.size.width);
+          maxY = Math.max(maxY, art.position.y + art.size.height);
+        });
+        if (layoutMode === 'mindmap') {
+          mindmapGroupBoxes.forEach(box => {
+            minX = Math.min(minX, box.x);
+            minY = Math.min(minY, box.y);
+            maxX = Math.max(maxX, box.x + box.w);
+            maxY = Math.max(maxY, box.y + box.h);
+          });
         }
-      };
-      inlineStyles(orig, clone);
+        
+        // Ensure bounds are valid if there are no artifacts
+        if (!isFinite(minX)) { minX = 0; minY = 0; maxX = 800; maxY = 600; }
 
-      tempContainer.appendChild(clone);
-    });
+        // Add some padding around the content
+        const PAD = 40;
+        minX = Math.max(0, minX - PAD);
+        minY = Math.max(0, minY - PAD);
+        maxX += PAD;
+        maxY += PAD;
+        const cropW = maxX - minX;
+        const cropH = maxY - minY;
 
-    // Race html2canvas against a timeout so it cannot freeze forever.
-    const TIMEOUT_MS = 30_000;
-    let settled = false;
+        // Capture strategy: intercept visible elements and clone them into a perfectly
+        // bounded temp container so html2canvas doesn't traverse the entire app layout.
 
-    const cleanup = () => {
-      if (tempContainer.parentNode) document.body.removeChild(tempContainer);
-    };
+        const resolvedBg = sanitizeColor(getComputedStyle(el).backgroundColor) || '#1e1e1e';
 
-    const timeoutPromise = new Promise<never>((_resolve, reject) => {
-      setTimeout(() => reject(new Error(`Screenshot capture timed out after ${TIMEOUT_MS / 1000}s`)), TIMEOUT_MS);
-    });
+        const tempContainer = document.createElement('div');
+        tempContainer.style.cssText = [
+          'position: fixed',
+          'left: -99999px',
+          'top: 0',
+          `width: ${cropW}px`,
+          `height: ${cropH}px`,
+          'overflow: hidden',
+          `background: ${resolvedBg}`,
+          'z-index: -1',
+        ].join(';');
+        document.body.appendChild(tempContainer);
 
-    Promise.race([
-      html2canvas(tempContainer, {
-        width: cropW,
-        height: cropH,
-        backgroundColor: resolvedBg,
-        useCORS: true,
-        logging: false,
-        imageTimeout: 5000,
-      }),
-      timeoutPromise,
-    ])
-      .then((canvas: HTMLCanvasElement) => {
-        if (settled) return;
-        settled = true;
-        cleanup();
+        const arrowsSvg = el.querySelector('.dependency-arrows');
+        if (arrowsSvg) {
+          const arrowClone = arrowsSvg.cloneNode(true) as HTMLElement;
+          arrowClone.style.position = 'absolute';
+          arrowClone.style.left = `${-minX}px`;
+          arrowClone.style.top = `${-minY}px`;
+          arrowClone.style.width = `${el.scrollWidth}px`;
+          arrowClone.style.height = `${el.scrollHeight}px`;
+
+          const resolveCssVar = (val: string): string => {
+            if (!val || !val.startsWith('var(')) return val;
+            const tmp = document.createElement('div');
+            tmp.style.color = val;
+            document.body.appendChild(tmp);
+            const resolved = getComputedStyle(tmp).color;
+            document.body.removeChild(tmp);
+            return sanitizeColor(resolved);
+          };
+          arrowClone.querySelectorAll('path, polygon, line, circle').forEach(svgEl => {
+            const stroke = svgEl.getAttribute('stroke');
+            if (stroke?.startsWith('var(')) svgEl.setAttribute('stroke', resolveCssVar(stroke));
+            const fill = svgEl.getAttribute('fill');
+            if (fill?.startsWith('var(')) svgEl.setAttribute('fill', resolveCssVar(fill));
+          });
+
+          tempContainer.appendChild(arrowClone);
+        }
+
+        // Clone background layers (lanes, bands, etc)
+        const bgElements = el.querySelectorAll('.column-header, .column-subheader, .epic-row-band, .testing-row-band, .mindmap-group-box');
+        for (let i = 0; i < bgElements.length; i++) {
+          const orig = bgElements[i] as HTMLElement;
+          const clone = orig.cloneNode(true) as HTMLElement;
+          clone.style.position = 'absolute';
+          const origLeft = parseFloat(orig.style.left || orig.style.marginLeft || '0');
+          const origTop = parseFloat(orig.style.top || orig.style.marginTop || '0');
+          clone.style.left = `${origLeft - minX}px`;
+          clone.style.top = `${origTop - minY}px`;
+          clone.style.width = `${orig.offsetWidth}px`;
+          clone.style.height = `${orig.offsetHeight}px`;
+          
+          Object.assign(clone.style, {
+            backgroundColor: sanitizeColor(getComputedStyle(orig).backgroundColor),
+            color: sanitizeColor(getComputedStyle(orig).color),
+            borderColor: sanitizeColor(getComputedStyle(orig).borderColor),
+            borderWidth: getComputedStyle(orig).borderWidth,
+            borderStyle: getComputedStyle(orig).borderStyle,
+            borderRadius: getComputedStyle(orig).borderRadius,
+            fontSize: getComputedStyle(orig).fontSize,
+            fontWeight: getComputedStyle(orig).fontWeight,
+            padding: getComputedStyle(orig).padding,
+            display: getComputedStyle(orig).display,
+            alignItems: getComputedStyle(orig).alignItems,
+            justifyContent: getComputedStyle(orig).justifyContent,
+            opacity: getComputedStyle(orig).opacity,
+          });
+          tempContainer.appendChild(clone);
+        }
+
+        const inlineStyles = (src: Element, dst: Element) => {
+          const cs = getComputedStyle(src);
+          const ds = (dst as HTMLElement).style;
+          ds.backgroundColor = sanitizeColor(cs.backgroundColor);
+          ds.color = sanitizeColor(cs.color);
+          ds.borderColor = sanitizeColor(cs.borderColor);
+          ds.borderWidth = cs.borderWidth;
+          ds.borderStyle = cs.borderStyle;
+          ds.borderRadius = cs.borderRadius;
+          ds.boxShadow = sanitizeColor(cs.boxShadow);
+          ds.fontSize = cs.fontSize;
+          ds.fontWeight = cs.fontWeight;
+          ds.fontFamily = cs.fontFamily;
+          ds.padding = cs.padding;
+          ds.margin = cs.margin;
+          ds.opacity = cs.opacity;
+          ds.overflow = cs.overflow;
+          ds.display = cs.display;
+          ds.flexDirection = cs.flexDirection;
+          ds.alignItems = cs.alignItems;
+          ds.justifyContent = cs.justifyContent;
+          ds.gap = cs.gap;
+          ds.textAlign = cs.textAlign;
+          ds.lineHeight = cs.lineHeight;
+          ds.letterSpacing = cs.letterSpacing;
+          ds.textDecoration = sanitizeColor(cs.textDecoration);
+          ds.whiteSpace = cs.whiteSpace;
+          ds.textOverflow = cs.textOverflow;
+          ds.minWidth = cs.minWidth;
+          ds.maxWidth = cs.maxWidth;
+          ds.minHeight = cs.minHeight;
+          ds.maxHeight = cs.maxHeight;
+          const srcChildren = src.children;
+          const dstChildren = dst.children;
+          for (let j = 0; j < srcChildren.length && j < dstChildren.length; j++) {
+            inlineStyles(srcChildren[j], dstChildren[j]);
+          }
+        };
+
+        for (let i = 0; i < cards.length; i++) {
+          if (isCancelled) break;
+          const card = cards[i];
+
+          if (i % 5 === 0) {
+            setCaptureProgress(`Cloning cards ${i + 1}/${cards.length}...`);
+            await new Promise(r => setTimeout(r, 0));
+          }
+
+          const clone = card.cloneNode(true) as HTMLElement;
+          const orig = card as HTMLElement;
+          clone.style.position = 'absolute';
+          const origLeft = parseFloat(orig.style.left || '0');
+          const origTop = parseFloat(orig.style.top || '0');
+          clone.style.left = `${origLeft - minX}px`;
+          clone.style.top = `${origTop - minY}px`;
+          clone.style.width = `${orig.offsetWidth}px`;
+          clone.style.height = `${orig.offsetHeight}px`;
+
+          inlineStyles(orig, clone);
+          tempContainer.appendChild(clone);
+        }
+
+        if (isCancelled) {
+          if (tempContainer.parentNode) document.body.removeChild(tempContainer);
+          return;
+        }
+
+        setCaptureProgress('Rendering canvas export...');
+        await new Promise(r => setTimeout(r, 50));
+
+        // Dynamically scale down the output if the canvas is monstrously huge 
+        // to prevent OOM errors in the browser and to keep string IPC sizes safe.
+        const MAX_DIM = 6000;
+        let scale = window.devicePixelRatio;
+        const maxCurrentDim = Math.max(cropW, cropH) * scale;
+        if (maxCurrentDim > MAX_DIM) {
+           scale = MAX_DIM / Math.max(cropW, cropH);
+        }
+
+        const tileCanvas = await html2canvas(tempContainer, {
+           backgroundColor: null,
+           scale: scale,
+           x: -99999,
+           y: 0,
+           width: cropW,
+           height: cropH,
+           windowWidth: cropW,
+           windowHeight: cropH,
+           useCORS: true,
+           logging: false,
+        });
+
+        if (isCancelled) {
+          if (tempContainer.parentNode) document.body.removeChild(tempContainer);
+          return;
+        }
+
+        setCaptureProgress('Generating final image...');
+        await new Promise(r => setTimeout(r, 50));
+
+        const finalCanvas = document.createElement('canvas');
+        finalCanvas.width = tileCanvas.width;
+        finalCanvas.height = tileCanvas.height;
+        const ctx = finalCanvas.getContext('2d');
+        if (ctx) {
+           ctx.fillStyle = resolvedBg;
+           ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+           ctx.drawImage(tileCanvas, 0, 0);
+        }
+
+        const dataUrl = finalCanvas.toDataURL(`image/${fmt}`, 1.0);
+
+        if (tempContainer.parentNode) document.body.removeChild(tempContainer);
         setCapturing(false);
-        const dataUrl = canvas.toDataURL('image/png');
+        setCaptureProgress('');
         onScreenshotReady(dataUrl, fmt);
-      })
-      .catch((err: unknown) => {
-        if (settled) return;
-        settled = true;
-        cleanup();
+
+      } catch (err) {
         setCapturing(false);
+        setCaptureProgress('');
         const msg = err instanceof Error ? err.message : String(err);
         console.error('[Canvas] screenshot capture failed:', msg);
         onScreenshotError?.(msg);
-      });
+      }
+    };
 
-    }); // end requestAnimationFrame
+    processScreenshot();
 
-    return () => cancelAnimationFrame(rafId);
+    return () => {
+      isCancelled = true;
+    };
   }, [screenshotTrigger, screenshotFormat, onScreenshotReady, onScreenshotError]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Filter visible artifacts based on expanded state
@@ -891,9 +958,10 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
         parentOf.set(a.id, a.parentId);
       }
 
-      // Explicit dependency arrows — cross-ref (1-hop)
+      // Explicit dependency arrows — bidirectional cross-ref (1-hop)
       for (const depId of a.dependencies) {
         addXRef(a.id, depId);
+        addXRef(depId, a.id);
       }
 
       // Metadata cross-references (1-hop)
@@ -915,9 +983,13 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
             if (sm.epicId && sm.epicId !== a.parentId) addXRef(a.id, sm.epicId);
             sm.requirementRefs?.forEach(id => addXRef(a.id, id));
             // blockedBy/blocks items may be objects {storyId, ...} or plain string IDs
+            // Bidirectional: selecting the blocker highlights the blocked story and vice versa
             sm.dependencies?.blockedBy?.forEach((item: any) => {
               const id = typeof item === 'string' ? item : item?.storyId;
-              if (id) addXRef(a.id, id);
+              if (id) {
+                addXRef(a.id, id);
+                addXRef(id, a.id);
+              }
             });
             // blocks: bidirectional — selecting either story highlights the other
             sm.dependencies?.blocks?.forEach((item: any) => {
@@ -1303,7 +1375,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
     return result;
   }, [hiddenStatusBuckets]);
 
-  const hasActiveFilters = hiddenTypes.size > 0 || hiddenStatuses.size > 0;
+  const hasActiveFilters = hiddenTypes.size > 0 || hiddenStatuses.size > 0 || hiddenLineCategories.size > 0;
 
   // ---------------------------------------------------------------------------
   // Focus-mode filtering: when focus mode is active, show only tree members.
@@ -1517,7 +1589,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
         ))}
 
         {/* Dependency arrows layer - only for displayed artifacts */}
-        <DependencyArrows artifacts={finalArtifacts} highlightedIds={arrowHighlightIds} layoutMode={layoutMode} />
+        <DependencyArrows artifacts={finalArtifacts} highlightedIds={arrowHighlightIds} layoutMode={layoutMode} hiddenLineCategories={hiddenLineCategories} />
         
         {/* Render visible artifacts with absolute positioning */}
         {finalArtifacts.map(artifact => (
@@ -1818,10 +1890,33 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
               })}
             </div>
           </div>
+          <div className="filter-bar-section">
+            <span className="filter-bar-label">Lines</span>
+            <div className="filter-bar-buttons">
+              {LINE_CATEGORIES.map(cat => {
+                const active = !hiddenLineCategories.has(cat.key);
+                return (
+                  <button
+                    key={cat.key}
+                    className={`filter-btn line-filter ${cat.key} ${active ? 'active' : 'inactive'}`}
+                    title={`${active ? 'Hide' : 'Show'} ${cat.label} lines`}
+                    onClick={() => setHiddenLineCategories(prev => {
+                      const next = new Set(prev);
+                      if (next.has(cat.key)) next.delete(cat.key); else next.add(cat.key);
+                      return next;
+                    })}
+                  >
+                    <span className={`line-swatch ${cat.key}`} />
+                    {cat.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           {hasActiveFilters && (
             <button
               className="filter-bar-clear"
-              onClick={() => { setHiddenTypes(new Set()); setHiddenStatusBuckets(new Set()); }}
+              onClick={() => { setHiddenTypes(new Set()); setHiddenStatusBuckets(new Set()); setHiddenLineCategories(new Set()); }}
             >
               Clear all
             </button>
@@ -1892,7 +1987,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
       {capturing && (
         <div className="canvas-capture-overlay">
           <div className="canvas-capture-spinner" />
-          <span className="canvas-capture-label">Exporting canvas…</span>
+          <span className="canvas-capture-label">{captureProgress || 'Exporting canvas…'}</span>
         </div>
       )}
     </div>

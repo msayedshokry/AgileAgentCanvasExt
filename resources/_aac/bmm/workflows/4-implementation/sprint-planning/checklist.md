@@ -4,14 +4,14 @@
 
 ### Complete Coverage Check
 
-- [ ] Every epic found in epic\*.md files appears in sprint-status.yaml
-- [ ] Every story found in epic\*.md files appears in sprint-status.yaml
+- [ ] Every epic found in epic files (any format) appears in sprint-status.yaml
+- [ ] Every story found in epic files (any format) appears in sprint-status.yaml
 - [ ] Every epic has a corresponding retrospective entry
 - [ ] No items in sprint-status.yaml that don't exist in epic files
 
 ### Parsing Verification
 
-Compare epic files against generated sprint-status.yaml:
+Compare epic files (`.md` or `.json`) against generated sprint-status.yaml:
 
 ```
 Epic Files Contains:                Sprint Status Contains:

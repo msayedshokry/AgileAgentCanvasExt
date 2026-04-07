@@ -13,9 +13,19 @@
   <critical>Tasks marked complete but not done = CRITICAL finding</critical>
   <critical>Acceptance Criteria not implemented = HIGH severity finding</critical>
   <critical>Do not review files that are not part of the application's source code. Always exclude the _bmad/ and .agileagentcanvas-context/ folders from the review. Always exclude IDE and CLI configuration folders like .cursor/ and .windsurf/ and .claude/</critical>
+  <critical>Story data lives in ONE canonical location:
+    epics/epic-{N}/stories/{id}.json  (e.g. epics/epic-1/stories/S-1.2.json)
+    NEVER write to an "implementation/" directory — that directory is deprecated.</critical>
+  <critical>📁 STATUS PROPAGATION FILE MAP — when changing a story's status, touch ONLY:
+    1. epics/epic-{N}/stories/{id}.json     → content.status + metadata.status (SINGLE SOURCE OF TRUTH)
+    ⚠️ Prefer agileagentcanvas_sync_story_status tool for atomic updates.</critical>
 
 
   <step n="1" goal="Load story and discover changes">
+    <critical>This is a GROUND-UP review — do NOT treat prior review sessions
+      as validated baseline. Every task with status:"verified" and every AC with status:"verified"
+      must be re-proven from code. Prior reviews may have missed things.
+    </critical>
     <action>Use provided {{story_path}} or ask user which story file to review</action>
     <action>Read COMPLETE story file</action>
     <action>Set {{story_key}} = extracted key from filename (e.g., "1-2-user-authentication.md" → "1-2-user-authentication") or story
@@ -83,6 +93,33 @@
       2. Search files for evidence it was actually done
       3. **CRITICAL**: If marked [x] but NOT DONE → CRITICAL finding
       4. Record specific proof (file:line)
+    </action>
+
+    <!-- TODO / Stub Audit -->
+    <action>Search ALL reviewed files for the keywords: TODO, FIXME, time.Sleep,
+      hardcoded, simulated, fake, placeholder, stub. For EACH hit:
+      1. Find the corresponding story task
+      2. If that task is marked [x] / status:"verified" → CRITICAL finding
+      3. If no story task exists for it → HIGH finding (undocumented debt)
+      Acceptance: "Deferred to Story X.Y" in devAgentRecord does NOT
+      make a task done. The task must be marked deferred/pending.
+    </action>
+
+    <!-- Round-Trip Persistence Audit -->
+    <action>For every DB write found (INSERT, UPDATE, saveXxxToDB, or equivalent):
+      1. Verify there is a corresponding read-back in the startup / load path
+      2. Verify EVERY column written is also read back
+      If any column is written but never loaded → HIGH finding.
+    </action>
+
+    <!-- Response Truthfulness Check -->
+    <action>For EACH handler that returns status/health/connectivity data:
+      1. Verify the response values come from real I/O (network call, DB query,
+         file check) — not literals or constants
+      2. Hardcoded success values (e.g., {"ok": true} with a fixed latency number)
+         with no observable I/O → HIGH finding
+      3. Values derived from real operations but never used (assigned then discarded
+         with _ or equivalent) → HIGH finding
     </action>
 
     <!-- Code Quality Deep Dive -->
@@ -166,34 +203,81 @@
       <action>Show detailed explanation with code examples</action>
       <action>Return to fix decision</action>
     </check>
+
+    <!-- Post-Fix Integrity Re-Scan -->
+    <action>After applying ALL fixes, re-scan every file you modified or created during
+      this review session for the same keywords: TODO, FIXME, time.Sleep, hardcoded,
+      simulated, fake, placeholder, stub.
+      This is NOT optional — fixes themselves can introduce new stubs.
+      For EACH hit found in your own output:
+        1. Implement it properly now, OR
+        2. Explicitly mark the parent task as status=&quot;deferred&quot; (not &quot;done&quot;)
+      Only when this re-scan returns zero hits may you proceed to Step 5.
+    </action>
   </step>
 
-  <step n="5" goal="Update story status and sync sprint tracking">
+  <step n="5" goal="Schema Validation (MANDATORY)">
+    <critical>You must stop thinking about code. Your sole objective for this step is to audit the schema. Check epic.json, the localized test-cases.json, and the local story .json. Do not proceed until you have explicitly verified the JSON structures using view_file.</critical>
+    <action>Audit the epic.json schema</action>
+    <action>Audit the localized test-cases.json schema</action>
+    <action>Audit the local story .json schema</action>
+  </step>
+
+  <step n="6" goal="Update story status and sync sprint tracking">
     <!-- Determine new status based on in-review outcome -->
     <check if="all HIGH and MEDIUM issues fixed AND all ACs implemented">
       <action>Set {{new_status}} = "done"</action>
       <action>Update story Status field to "done"</action>
 
+      <!-- CRITICAL: Required fields gate — verify BEFORE setting done -->
+      <critical>Required story JSON fields before status change to done:
+        - content.fileList: { created: string[], modified: string[], deleted: string[] }
+        - content.changeLog: Array&lt;{ date: string, summary: string }&gt;
+        - content.devAgentRecord: { implementationNotes: string[], completionNotes: string[], debugLog: string[] }
+        If any are missing, add them now before proceeding.</critical>
+
+      <!-- CRITICAL: Task Completion -->
+      <critical>When marking a task complete, set the status field to "verified".</critical>
+
+      <!-- CRITICAL: Dev Agent Record Schema -->
+      <critical>Required devAgentRecord fields (all arrays):
+        - implementationNotes: string[]  — key technical decisions
+        - completionNotes: string[]      — summary bullets (MUST be array, not string)
+        - debugLog: string[]             — issues encountered (can be empty [])</critical>
+
       <!-- CRITICAL: Sync ALL JSON status fields for Canvas visibility -->
-      <action>In the story JSON file, update these fields:
-        1. Set content.status = "done"
-        2. Set content.completed = true
-        3. Set metadata.status = "done"
-        4. Set metadata.timestamps.lastModified = current ISO timestamp
-        5. For ALL tasks: set completed = true, status = "done"
-        6. For ALL subtasks: set completed = true
-      </action>
-      <action>In the parent epic JSON file (epics/epic-{N}/epic.json):
-        1. Find the storyRefs entry matching this story's ID
-        2. Set that storyRef's "status" = "done"
-        3. If ALL storyRefs in the epic now have status "done":
-           - Set the epic's content.status = "done"
-           - Set the epic's metadata.status = "done"
-      </action>
+      <!-- Story JSON File Update — single canonical file -->
+      <critical>EXPLICIT STATUS UPDATE PROTOCOL — Do NOT use vague one-liner scripts.
+        For each task/subtask that passed review, use your file editing tool to make these EXACT changes in the story JSON file:
+        1. Find each task object by its ID in content.tasks[]
+        2. Set that task's "status": "verified"
+        3. For each Acceptance Criterion in content.acceptanceCriteria[]:
+           - If the AC is satisfied: set "status": "verified"
+           - If the AC failed: set "status": "failed"
+        4. For each test case in content.testCases[]:
+           - If the test passed: set "status": "passed"
+           - If the test failed: set "status": "failed"
+        5. After editing, re-read the file with view_file to VERIFY your changes were saved correctly.
+        If you cannot use file editing tools, write a targeted Node.js script that updates ONLY the specific fields by ID — not a bulk traversal.</critical>
+
+      <!-- Status Propagation Checklist — ALL must match -->
+      <critical>Status Propagation Checklist (ALL must match):
+        □ epics/epic-{N}/stories/{id}.json → content.status + metadata.status (SINGLE SOURCE OF TRUTH)
+        □ All tasks/subtasks               → status: "verified"
+        □ All acceptanceCriteria           → status: "verified" or "failed"
+        □ All testCases → status: "passed"/"failed" (executed tests only)
+            Lookup: content.testCases[] in story JSON, PLUS entries in
+            epics/epic-{N}/tests/test-cases.json where storyId == this story's ID
+      </critical>
     </check>
     <check if="HIGH or MEDIUM issues remain OR ACs not fully implemented">
       <action>Set {{new_status}} = "in-progress"</action>
       <action>Update story Status field to "in-progress"</action>
+      <!-- Update the single story file when reverting to in-progress -->
+      <action>Update the story JSON file at epics/epic-{N}/stories/{id}.json:
+        1. Set content.status = "in-progress"
+        2. Set metadata.status = "in-progress"
+      </action>
     </check>
     <action>Save story file</action>
 
@@ -230,6 +314,10 @@
     <check if="{{current_sprint_status}} == 'no-sprint-tracking'">
       <output>ℹ️ Story status updated (no sprint tracking configured)</output>
     </check>
+
+    <critical>Before notifying the user that the review flow is complete, your response MUST include a 'Definition of Done Attestation' confirming the following exact updates:
+[ ] Test cases migrated exactly to &lt;epic-id&gt;/tests/test-cases.json
+[ ] Inner story JSON injected with devAgentRecord, fileList, and changeLog</critical>
 
     <output>**✅ Review Complete!**
 

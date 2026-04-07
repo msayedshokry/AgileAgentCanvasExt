@@ -1,24 +1,46 @@
-MIT License
+Non-Commercial Use License
 
-Copyright (c) 2026 Mohamed Sayed
+Copyright (c) 2026 Mohamed Sayed. All rights reserved.
+
+This software and associated documentation files (the "Software") are the
+exclusive property of Mohamed Sayed (the "Author").
+
+GRANT OF NON-COMMERCIAL LICENSE:
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+of this Software, to use, copy, modify, and distribute the Software for
+personal, educational, academic, or other non-commercial purposes, subject to
+the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+  1. The above copyright notice and this permission notice shall be included
+     in all copies or substantial portions of the Software.
+
+  2. The Software, or any derivative work based thereon, shall NOT be used for
+     commercial purposes without the prior written consent of the Author.
+
+COMMERCIAL USE RESTRICTION:
+
+"Commercial use" means any use of the Software intended for or directed toward
+commercial advantage or monetary compensation. This includes, but is not
+limited to, selling the Software, incorporating it into a commercial product
+or service, using it in a revenue-generating business process, or distributing
+it as part of a paid offering.
+
+Any commercial use of the Software, in whole or in part, requires a separate
+commercial license obtained through prior written consent from the Author.
+
+Unauthorized commercial use of this Software may result in civil and criminal
+penalties and will be prosecuted to the maximum extent possible under the law.
+
+For commercial licensing inquiries or permission requests, please contact the
+Author.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
@@ -45,3 +67,12 @@ MIT License:
   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
   SOFTWARE.
+
+---
+
+This extension adapts concepts and workflows from the following repositories,
+which are used under the MIT License (Copyright applies to their respective authors):
+
+1. **get-shit-done** (https://github.com/gsd-build/get-shit-done)
+2. **everything-claude-code** (https://github.com/affaan-m/everything-claude-code)
+3. **gstack** (https://github.com/dzt/gstack)

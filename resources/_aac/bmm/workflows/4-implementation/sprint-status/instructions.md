@@ -42,15 +42,15 @@ Run `/bmad:bmm:workflows:sprint-planning` to generate it, then rerun sprint-stat
   - Retrospectives: keys ending with "-retrospective"
   - Stories: everything else (e.g., 1-2-login-form)
   <action>Map legacy story status "drafted" → "ready-for-dev"</action>
-  <action>Count story statuses: backlog, ready-for-dev, in-progress, review, done</action>
+  <action>Count story statuses by Kanban column: backlog (backlog/draft/not-started), ready-for-dev (ready-for-dev/ready/approved), in-progress (in-progress/implementing/blocked), review (review/in-review/ready-for-review), done (done/complete/completed/archived)</action>
   <action>Map legacy epic status "contexted" → "in-progress"</action>
-  <action>Count epic statuses: backlog, in-progress, done</action>
+  <action>Count epic statuses by Kanban column: backlog (backlog/draft), in-progress (in-progress/implementing/blocked), review (review/in-review), done (done/complete/completed)</action>
   <action>Count retrospective statuses: optional, done</action>
 
 <action>Validate all statuses against known values:</action>
 
-- Valid story statuses: backlog, ready-for-dev, in-progress, review, done, drafted (legacy)
-- Valid epic statuses: backlog, in-progress, done, contexted (legacy)
+- Valid story statuses: backlog, draft, not-started, ready-for-dev, ready, approved, in-progress, implementing, blocked, review, in-review, ready-for-review, done, complete, completed, archived (legacy: drafted)
+- Valid epic statuses: backlog, draft, in-progress, implementing, blocked, review, in-review, done, complete, completed (legacy: contexted)
 - Valid retrospective statuses: optional, done
 
   <check if="any status is unrecognized">
@@ -63,8 +63,8 @@ Run `/bmad:bmm:workflows:sprint-planning` to generate it, then rerun sprint-stat
 
 **Valid statuses:**
 
-- Stories: backlog, ready-for-dev, in-progress, review, done
-- Epics: backlog, in-progress, done
+- Stories: backlog, draft, not-started, ready-for-dev, ready, approved, in-progress, implementing, blocked, review, in-review, ready-for-review, done, complete, completed, archived
+- Epics: backlog, draft, in-progress, implementing, blocked, review, in-review, done, complete, completed
 - Retrospectives: optional, done
   </output>
   <ask>How should these be corrected?
@@ -87,6 +87,14 @@ Enter corrections (e.g., "1=in-progress, 2=backlog") or "skip" to continue witho
 - IF `generated` timestamp is more than 7 days old: warn "sprint-status.yaml may be stale"
 - IF any story key doesn't match an epic pattern (e.g., story "5-1-..." but no "epic-5"): warn "orphaned story detected"
 - IF any epic has status in-progress but has no associated stories: warn "in-progress epic has no stories"
+
+**Epic/Story consistency checks (inconsistent state → must fix before continuing):**
+
+- IF any story has status `in-progress` or `review` or `ready-for-dev` and its parent epic has status `backlog`:
+  → 🔴 **CONSISTENCY ERROR**: Epic `{{epic_key}}` is `backlog` but child story `{{story_key}}` is `{{story_status}}`. Epic must be promoted to `in-progress`. List all such pairs and ask the user to confirm auto-fix.
+  → If user confirms: update the epic's status to `in-progress` in sprint-status.yaml and re-run sprint-status workflow to reflect the corrected state.
+- IF any story has status `done` and its parent epic has status `backlog`:
+  → ⚠️ **CONSISTENCY WARNING**: Epic `{{epic_key}}` is `backlog` but story `{{story_key}}` is already `done`. Likely the epic was never promoted. Suggest promoting epic to `in-progress`.
   </step>
 
 <step n="3" goal="Select next action recommendation">
@@ -213,8 +221,8 @@ If the command targets a story, set `story_key={{next_story_id}}` when prompted.
 
 <action>Validate all status values against known valid statuses:</action>
 
-- Stories: backlog, ready-for-dev, in-progress, review, done (legacy: drafted)
-- Epics: backlog, in-progress, done (legacy: contexted)
+- Stories: backlog, draft, not-started, ready-for-dev, ready, approved, in-progress, implementing, blocked, review, in-review, ready-for-review, done, complete, completed, archived (legacy: drafted)
+- Epics: backlog, draft, in-progress, implementing, blocked, review, in-review, done, complete, completed (legacy: contexted)
 - Retrospectives: optional, done
   <check if="any invalid status found">
   <template-output>is_valid = false</template-output>
@@ -223,8 +231,27 @@ If the command targets a story, set `story_key={{next_story_id}}` when prompted.
   <action>Return</action>
   </check>
 
+<action>Check epic/story consistency across all entries:</action>
+
+- For each story, derive its parent epic key (e.g., story `2-3-foo` → epic `epic-2`)
+- IF story status is `in-progress`, `review`, or `ready-for-dev` AND parent epic status is `backlog`:
+  → consistency_errors.push(`{story_key}: {story_status} but {epic_key}: backlog`)
+- IF story status is `done` AND parent epic status is `backlog`:
+  → consistency_warnings.push(`{story_key}: done but {epic_key}: backlog`)
+
+<check if="consistency_errors is non-empty">
+<template-output>is_valid = false</template-output>
+<template-output>error = "Epic/story consistency errors: {{consistency_errors}}"</template-output>
+<template-output>suggestion = "Promote affected epics to 'in-progress' — run sprint-status workflow to auto-fix"</template-output>
+<action>Return</action>
+</check>
+
+<check if="consistency_warnings is non-empty">
+<template-output>consistency_warnings = {{consistency_warnings}}</template-output>
+</check>
+
 <template-output>is_valid = true</template-output>
-<template-output>message = "sprint-status.yaml valid: metadata complete, all statuses recognized"</template-output>
+<template-output>message = "sprint-status.yaml valid: metadata complete, all statuses recognized, no consistency errors"</template-output>
 </step>
 
 </workflow>

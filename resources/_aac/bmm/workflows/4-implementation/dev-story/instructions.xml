@@ -5,6 +5,17 @@
   <critical>Generate all documents in {document_output_language}</critical>
   <critical>Only modify the story file in these areas: Tasks/Subtasks checkboxes, Dev Agent Record (Debug Log, Completion Notes), File List,
     Change Log, and Status</critical>
+  <critical>Story data lives in ONE canonical location:
+    epics/epic-{N}/stories/{id}.json  (e.g. epics/epic-1/stories/S-1.2.json)
+    Use the file path constructed from the story's epicId and id fields.
+    NEVER write to an "implementation/" directory — that directory is deprecated.</critical>
+  <critical>📁 STATUS PROPAGATION FILE MAP — when changing a story's status, touch ONLY:
+    1. epics/epic-{N}/stories/{id}.json     → content.status + metadata.status (SINGLE SOURCE OF TRUTH)
+    ⚠️ Prefer agileagentcanvas_sync_story_status tool for atomic updates.</critical>
+  <critical>📁 EPIC STATUS FILE MAP — when changing an epic's status, touch ALL:
+    1. epics/epic-{N}/epic.json             → content.status + metadata.status
+    2. sprint-status.yaml                   → development_status[epic-N] (if enabled)
+    ⚠️ Prefer agileagentcanvas_sync_epic_status tool for atomic updates.</critical>
   <critical>Execute ALL steps in exact order; do NOT skip steps</critical>
   <critical>Absolutely DO NOT stop because of "milestones", "significant progress", or "session boundaries". Continue in a single execution
     until the story is COMPLETE (all ACs satisfied and all tasks/subtasks checked) UNLESS a HALT condition is triggered or the USER gives
@@ -223,7 +234,14 @@
 
   <step n="5" goal="Implement task following red-green-refactor cycle">
     <critical>FOLLOW THE STORY FILE TASKS/SUBTASKS SEQUENCE EXACTLY AS WRITTEN - NO DEVIATION</critical>
+    <critical>EVIDENCE-BASED PLANNING ONLY — Before writing any file path, API reference, or design decision
+      into the implementation plan: read the actual file or source in the codebase that confirms it exists
+      or is possible. Every claim in the plan MUST have a corresponding file read as its evidence.
+      Assumptions, guesses, and memory-based references are NOT permitted.</critical>
 
+    <critical>HONESTY CLAUSE: If a task requires seeding data for a missing schema/table, you MUST either create the schema, defer the task, or document query-time computation. Printing a fake 'success' log without executing real I/O operations is a critical violation.</critical>
+
+    <critical>CRITICAL: You must NOT defer status tracking to the end of the story. Immediately after implementing a specific Task, you must pause and update that task's "status": "implemented" in the Story JSON. You MAY NOT set "status": "verified" under any circumstances. Treat the schema file as a live state machine.</critical>
     <action>Review the current task/subtask from the story file - this is your authoritative implementation guide</action>
     <action>Plan implementation following red-green-refactor cycle</action>
 
@@ -235,6 +253,7 @@
     <action>Implement MINIMAL code to make tests pass</action>
     <action>Run tests to confirm they now pass</action>
     <action>Handle error conditions and edge cases as specified in task/subtask</action>
+    <action>PROOF OF WORK: Execute your script or endpoint and paste the ACTUAL terminal output/HTTP response into the Dev Agent Record → debugLog. If the code cannot be executed (e.g. requires Docker or external dependencies), document exactly why in debugLog and set the task status to "implemented-not-verified".</action>
 
     <!-- REFACTOR PHASE -->
     <action>Improve code structure while keeping tests green</action>
@@ -277,6 +296,7 @@
     <action>Confirm implementation matches EXACTLY what the task/subtask specifies - no extra features</action>
     <action>Validate that ALL acceptance criteria related to this task are satisfied</action>
     <action>Run full test suite to ensure NO regressions introduced</action>
+    <action>GREP SELF-AUDIT: Before proceeding, you MUST run a search in your modified files for keywords: TODO, FIXME, placeholder, stub, fake, simulated. If any are found, you cannot mark this task as completed. You must fix them or split the task into a deferred subtask.</action>
 
     <!-- REVIEW FOLLOW-UP HANDLING -->
     <check if="task is review follow-up (has [AI-Review] prefix)">
@@ -299,29 +319,27 @@
       <action>Update File List section with ALL new, modified, or deleted files (paths relative to repo root)</action>
       <action>Add completion notes to Dev Agent Record summarizing what was ACTUALLY implemented and tested</action>
 
-      <!-- CRITICAL: Sync ALL status fields to JSON for Canvas visibility -->
-      <!-- Story JSON File Updates -->
-      <action>Open the story JSON file and update these fields EXACTLY:
-        1. Set this task's "completed" = true
-        2. Set this task's "status" = "done"
-        3. For each completed subtask: set "completed" = true
-        4. If ALL tasks in the story are now complete:
-           - Set content.status = "in-review"
-           - Set content.completed = true
-           - Set metadata.status = "in-review"
-           - Set metadata.timestamps.lastModified = current ISO timestamp
-        5. Save the story JSON file, preserving all other content exactly as-is
-      </action>
+      <!-- CRITICAL: Task Completion -->
+    <critical>When marking a task complete, set the status field to "implemented" (or "implemented-not-verified"). Dev agents MAY NEVER use "verified" or "done".</critical>
 
-      <!-- Parent Epic JSON File Updates -->
-      <action>Open the parent epic JSON file (e.g., epics/epic-1/epic.json):
-        1. Find the storyRefs entry matching this story's ID
-        2. Set that storyRef's "status" = same as the story's content.status
-        3. If ALL storyRefs in the epic now have status "done":
-           - Set the epic's content.status = "done"
-           - Set the epic's metadata.status = "done"
-        4. Save the epic JSON file, preserving all other content exactly as-is
-      </action>
+      <!-- CRITICAL: Dev Agent Record Schema -->
+      <critical>Required devAgentRecord fields (all arrays):
+        - implementationNotes: string[]  — key technical decisions
+        - completionNotes: string[]      — summary bullets (MUST be array, not string)
+        - debugLog: string[]             — issues encountered (can be empty [])</critical>
+
+      <!-- CRITICAL: Sync ALL status fields to JSON for Canvas visibility -->
+      <!-- Story JSON File Update — single canonical file -->
+      <critical>EXPLICIT STATUS UPDATE PROTOCOL — Do NOT use vague one-liner scripts.
+        For each task/subtask you just completed, use your file editing tool to make these EXACT changes in the story JSON file:
+        1. Find the specific task object by its ID in content.tasks[]
+        2. Set that task's "status": "implemented" (or "implemented-not-verified" if Proof of Work was skipped)
+        3. For each Acceptance Criterion related to this task in content.acceptanceCriteria[]:
+           - Set "status": "implemented"
+        4. After editing, re-read the file with view_file to VERIFY your changes were saved correctly.
+        If you cannot use file editing tools, write a targeted Node.js script that updates ONLY the specific task by ID — not a bulk traversal.</critical>
+
+
     </check>
 
     <check if="ANY validation fails">
@@ -334,6 +352,32 @@
       <action>Add Change Log entry: "Addressed code review findings - {{resolved_count}} items resolved (Date: {{date}})"</action>
     </check>
 
+    <!-- TEST SYNC GATE (MANDATORY) — merged from former step 8b -->
+    <critical>TEST SYNC GATE: Check the File List you just updated. If ANY test files were added or modified (*.test.ts, *.spec.ts, *.test.js, *.spec.js, *.test.tsx), you MUST complete ALL of the following before proceeding. This gate BLOCKS task completion if test files exist but are not synced.</critical>
+
+    <check if="File List contains any test files (*.test.*, *.spec.*)">
+      <critical>You wrote tests — you MUST now sync them to JSON tracking artifacts:</critical>
+
+      <action>For EACH new test file, create a test case entry and append it to content.testCases[] in the story JSON:
+        - id: Use distinct prefixes (UNIT-*, INTG-*, E2E-*)
+        - title: Descriptive test name
+        - type: "unit" | "integration" | "e2e"
+        - status: "done" (indicating the test definition is complete — do NOT use "passed")
+        - storyId: e.g. "S-16.9" (the lookup key used by code-review)
+        - epicId: e.g. "epic-16"
+      </action>
+
+      <action>Append the SAME test case entries to the epic's test-cases.json file at epics/epic-{N}/tests/test-cases.json</action>
+
+      <action>Update tests/test-design.json: mark implemented coverage plan entries with status: "done" for the current story's ID prefix</action>
+
+      <critical>AVOID ID collisions: do NOT reuse IDs from test-design.json in
+        test-cases.json. Use distinct prefixes (e.g., UNIT-*, INTG-*, E2E-*
+        for test-cases; AUTH-*, SEC-*, WFLOW-* for test-design).</critical>
+
+      <action>After syncing, re-read the story JSON and test-cases.json with view_file to VERIFY the entries were added correctly.</action>
+    </check>
+
     <action>Save the story file</action>
     <action>Determine if more incomplete tasks remain</action>
     <action if="more tasks remain">
@@ -344,12 +388,37 @@
     </action>
   </step>
 
-  <step n="9" goal="Story completion and mark for review" tag="sprint-status">
+  <step n="9" goal="Schema Validation (MANDATORY)">
+    <critical>You must stop thinking about code. Your sole objective for this step is to audit the schema. Check epic.json, the localized test-cases.json, and the local story .json. Do not proceed until you have explicitly verified the JSON structures using view_file.</critical>
+    <action>Audit the epic.json schema</action>
+    <action>Audit the localized test-cases.json schema</action>
+    <action>Audit the local story .json schema</action>
+  </step>
+
+  <step n="10" goal="Story completion and mark for review" tag="sprint-status">
     <action>Verify ALL tasks and subtasks are marked [x] (re-scan the story document now)</action>
     <action>Run the full regression suite (do not skip)</action>
     <action>Confirm File List includes every changed file</action>
     <action>Execute enhanced definition-of-done validation</action>
     <action>Update the story Status to: "in-review"</action>
+
+    <!-- Required JSON Fields — MUST be present before status change to in-review -->
+    <critical>Required story JSON fields before status change to in-review:
+      - content.fileList: { created: string[], modified: string[], deleted: string[] }
+      - content.changeLog: Array&lt;{ date: string, summary: string }&gt;
+      - content.devAgentRecord: { implementationNotes: string[], completionNotes: string[], debugLog: string[] }
+    </critical>
+
+    <!-- Status Propagation Checklist — ALL must match -->
+    <critical>Status Propagation Checklist (ALL must match):
+      □ epics/epic-{N}/stories/{id}.json → content.status + metadata.status (SINGLE SOURCE OF TRUTH)
+      □ All tasks/subtasks               → status: "implemented"
+      □ All satisfied ACs                → status: "implemented"
+      □ Dependency sync: update affected standalone story files
+          In each dependency's story file, ensure dependencies.blockedBy[].storyId and blocks[]
+          use precise story IDs (e.g., "2.10"), NOT generic placeholders like "Epic 2 (upstream)".
+      □ Test cases: epics/epic-{N}/tests/test-cases.json entries where storyId matches
+    </critical>
 
     <!-- Enhanced Definition of Done Validation -->
     <action>Validate definition-of-done checklist with essential requirements:
@@ -394,9 +463,13 @@
     <action if="definition-of-done validation fails">HALT - Address DoD failures before completing</action>
   </step>
 
-  <step n="10" goal="Completion communication and user support">
+  <step n="11" goal="Completion communication and user support">
     <action>Execute the enhanced definition-of-done checklist using the validation framework</action>
     <action>Prepare a concise summary in Dev Agent Record → Completion Notes</action>
+
+    <critical>Before notifying the user that the dev flow is complete, your response MUST include a 'Definition of Done Attestation' confirming the following exact updates:
+[ ] Test cases migrated exactly to &lt;epic-id&gt;/tests/test-cases.json
+[ ] Inner story JSON injected with devAgentRecord, fileList, and changeLog</critical>
 
     <action>Communicate to {user_name} that story implementation is complete and ready for review</action>
     <action>Summarize key accomplishments: story ID, story key, title, key changes made, tests added, files modified</action>

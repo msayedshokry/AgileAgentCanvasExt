@@ -3,7 +3,7 @@ name: create-prd
 description: 'Create a PRD from scratch. Use when the user says "lets create a product requirements document" or "I want to create a new PRD"'
 main_config: '{bmad-path}/bmm/config.yaml'
 nextStep: './steps-c/step-01-init.md'
-output_format: dual
+output_format: json
 schema_file: "{bmad-path}/schemas/bmm/prd.schema.json"
 template_json: "./templates/prd-template.json"
 ---

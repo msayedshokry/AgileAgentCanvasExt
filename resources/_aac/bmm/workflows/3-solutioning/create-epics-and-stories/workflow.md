@@ -1,7 +1,7 @@
 ---
 name: create-epics-and-stories
 description: 'Break requirements into epics and user stories. Use when the user says "create the epics and stories list"'
-output_format: dual
+output_format: json
 schema_file: "{bmad-path}/schemas/bmm/epics.schema.json"
 template_json: "./templates/epics-template.json"
 ---

@@ -108,9 +108,9 @@ Before finalizing, review the complete output document for quality:
 
 ---
 
-## 5b. Generate Structured JSON (Dual Output)
+## 5b. Generate Structured JSON Output
 
-**CRITICAL:** The workflow is configured with `output_format: dual`. After generating Markdown, you MUST also produce a structured JSON artifact.
+**CRITICAL:** The workflow uses `output_format: json`. You MUST produce a structured JSON artifact.
 
 1. Read the test-design schema from `{bmad-path}/schemas/tea/test-design.schema.json`
 2. Transform the completed test design into JSON with `metadata` and `content` top-level keys
@@ -120,7 +120,7 @@ Before finalizing, review the complete output document for quality:
    - `changes`: an object containing all the content fields from the schema (epicInfo, summary, coveragePlan, riskAssessment, etc.)
 4. The `changes` object must use flattened content fields (NOT wrapped in a `content` key) — same convention as all other BMAD artifact updates
 
-> **Reference:** See `{bmad-path}/core/tasks/dual-output-json.md` for detailed JSON conversion rules. The JSON is the **primary** machine-readable output; the Markdown companion is generated automatically by the extension.
+> **Note:** The JSON is the **primary** machine-readable output. The extension renders a human-readable view automatically from the JSON.
 
 ---
 

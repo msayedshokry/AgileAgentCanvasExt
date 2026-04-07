@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import PDFDocument from 'pdfkit';
-import { acOutput } from '../extension';
+
 import { BMAD_RESOURCE_DIR } from './constants';
 import { openChat } from '../commands/chat-bridge';
 import { createLogger } from '../utils/logger';
-import { resolveArtifactTargetUri, writeJsonFile, writeMarkdownCompanion } from './artifact-file-io';
+import { resolveArtifactTargetUri, writeJsonFile, writeMarkdownCompanion, normalizeLegacyArtifact } from './artifact-file-io';
 import { schemaValidator } from './schema-validator';
 import { repairDataWithSchema } from './schema-repair-engine';
 import {
@@ -206,6 +206,7 @@ export class ArtifactStore {
     // Selection change event (for workflow progress panel)
     private _onDidChangeSelection = new vscode.EventEmitter<void>();
     readonly onDidChangeSelection = this._onDidChangeSelection.event;
+
     
     // Track source files for writing back
     private sourceFolder: vscode.Uri | null = null;
@@ -416,49 +417,11 @@ export class ArtifactStore {
             }
         }
         
-        // ── 3. Apply sprint-status mapping to Epics, Stories, and TestCases ──
+        // ── 3. test_execution_status from sprintStatuses ──────────────────────
+        // Story/Epic statuses are the single source of truth in their JSON files.
+        // Only test execution statuses are applied from sprintStatuses.
         const sprintStatusesArr = this.artifacts.get('sprintStatuses') || [];
         for (const sprintStatus of sprintStatusesArr) {
-            // Phase 1: development_status map
-            if (sprintStatus.development_status) {
-                for (const [key, rawStatus] of Object.entries(sprintStatus.development_status)) {
-                    let status: any = 'draft';
-                    if (rawStatus === 'ready-for-dev') status = 'ready';
-                    else if (rawStatus === 'in-progress') status = 'in-progress';
-                    else if (rawStatus === 'review') status = 'review';
-                    else if (rawStatus === 'done') status = 'done';
-
-                    const isEpic = key.toLowerCase().startsWith('epic');
-                    if (isEpic) {
-                        const epicId = key.replace(/^epic-/i, '');
-                        const ep = epics.find((e: Epic) => e.id === epicId || e.id === `EPIC-${epicId}`);
-                        if (ep && status !== 'draft') {
-                            ep.status = status;
-                        }
-                    } else {
-                        const parts = key.split('-');
-                        if (parts.length >= 2) {
-                            const storyId = `S-${parts[0]}.${parts[1]}`;
-                            for (const ep of epics) {
-                                const st = (ep.stories || []).find((s: Story) => s.id === storyId);
-                                if (st && status !== 'draft') {
-                                    st.status = status;
-                                    if (status === 'done') {
-                                        for (const t of (st.tasks || [])) {
-                                            t.completed = true;
-                                            for (const sub of (t.subtasks || [])) {
-                                                sub.completed = true;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Phase 4: test_execution_status map
             if (sprintStatus.test_execution_status) {
                 const testCases: any[] = this.artifacts.get('testCases') || [];
                 for (const [testId, rawStatus] of Object.entries(sprintStatus.test_execution_status)) {
@@ -576,7 +539,8 @@ export class ArtifactStore {
         if (!fileUri) return null;
         try {
             const raw = await vscode.workspace.fs.readFile(fileUri);
-            return JSON.parse(Buffer.from(raw).toString('utf-8'));
+            const parsed = JSON.parse(Buffer.from(raw).toString('utf-8'));
+            return normalizeLegacyArtifact(parsed);
         } catch {
             return null;
         }
@@ -690,6 +654,23 @@ export class ArtifactStore {
     }
 
     /**
+     * Recalculates Epic status based on its stories.
+     * If an epic is 'done' or 'completed' but has active stories, it downgrades to 'in-progress'.
+     * @returns boolean indicating if status changed
+     */
+    private recalculateEpicStatus(epic: Epic): boolean {
+        if (!epic || !epic.stories || epic.stories.length === 0) return false;
+        
+        const hasActiveStories = epic.stories.some(s => !['done', 'completed', 'archived', 'cancelled'].includes(s.status?.toLowerCase() || ''));
+        if (hasActiveStories && ['done', 'completed'].includes(epic.status?.toLowerCase() || '')) {
+            epic.status = 'in-progress';
+            logDebug(`Epic ${epic.id} status downgraded to in-progress due to active stories.`);
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * Update a specific artifact
      */
     async updateArtifact(
@@ -739,6 +720,8 @@ export class ArtifactStore {
                     epics[epicIndex] = updatedEpic;
                     this.artifacts.set('epics', [...epics]);
                     logDebug('Updated epic:', updatedEpic.id, updatedEpic.title);
+
+                    // Status changed — in-memory + JSON file are authoritative; no YAML sync needed
                     
                     // Bidirectional linking: update relatedEpics on requirements
                     this.syncRequirementLinks(
@@ -760,13 +743,16 @@ export class ArtifactStore {
                 // Find story across all epics by story ID
                 const allEpics = this.artifacts.get('epics') || [];
                 let storyFound = false;
+                let oldStoryStatus: string | undefined;
                 
                 for (const epic of allEpics) {
                     const storyIndex = epic.stories?.findIndex((s: Story) => s.id === artifactId);
                     if (storyIndex !== undefined && storyIndex >= 0) {
                         // Merge changes: accept fields at top level or inside metadata.
                         // Schema validator has already checked field names/types.
-                        const updatedStory = { ...epic.stories[storyIndex] };
+                        const oldStory = epic.stories[storyIndex];
+                        oldStoryStatus = oldStory.status;
+                        const updatedStory = { ...oldStory };
 
                         // Apply metadata-wrapped fields first
                         if (changes.metadata && typeof changes.metadata === 'object') {
@@ -777,6 +763,14 @@ export class ArtifactStore {
                         const { metadata: _meta, ...topFields } = changes;
                         Object.assign(updatedStory, topFields);
 
+                        // NEW LOGIC: Calculate dynamic status based on tasks
+                        const doneStatuses = ['done', 'verified'];
+                        const hasOpenTasks = updatedStory.tasks?.some((t: any) => !doneStatuses.includes(t.status));
+                        if (hasOpenTasks && ['done', 'completed'].includes(updatedStory.status?.toLowerCase() || '')) {
+                            updatedStory.status = 'in-progress';
+                            logDebug(`Story ${updatedStory.id} status downgraded to in-progress due to open tasks.`);
+                        }
+
                         epic.stories[storyIndex] = updatedStory;
                         storyFound = true;
                         logDebug('Updated story:', updatedStory.id, updatedStory.title);
@@ -786,6 +780,19 @@ export class ArtifactStore {
                 
                 if (storyFound) {
                     this.artifacts.set('epics', [...allEpics]);
+
+                    // Reverse sync status to YAML if status actually changed
+                    let finalStoryStatus: string | undefined;
+                    let parentEpicForSync: Epic | undefined;
+                    for (const epic of allEpics) {
+                        const st = epic.stories?.find((s: Story) => s.id === artifactId);
+                        if (st) {
+                            finalStoryStatus = st.status;
+                            parentEpicForSync = epic;
+                            break;
+                        }
+                    }
+                    // Status changed — story JSON file is authoritative; no YAML sync needed
                 } else {
                     // ── Create new standalone story ──────────────────────────
                     // Story not found in any epic → create it as a new standalone
@@ -832,11 +839,11 @@ export class ArtifactStore {
                         if (!parentEpic.stories) { parentEpic.stories = []; }
                         parentEpic.stories.push(newStory);
                         this.artifacts.set('epics', [...allEpics]);
-                        acOutput.appendLine(`[ArtifactStore] Created new story ${artifactId} in epic ${parentEpic.id}`);
+                        storeLogger.debug(`[ArtifactStore] Created new story ${artifactId} in epic ${parentEpic.id}`);
                     } else {
                         // No matching epic — still add to in-memory epics if any exist
                         if (allEpics.length > 0) {
-                            acOutput.appendLine(`[ArtifactStore] WARNING: No epic found for epicId "${epicId}" — story ${artifactId} created but not linked to any epic`);
+                            storeLogger.debug(`[ArtifactStore] WARNING: No epic found for epicId "${epicId}" — story ${artifactId} created but not linked to any epic`);
                         }
                     }
 
@@ -914,12 +921,24 @@ export class ArtifactStore {
                                 await writeMarkdownCompanion(fileUri, storyMdName, storyMd);
                             }
 
-                            acOutput.appendLine(`[ArtifactStore] Wrote standalone story file: ${fileName}`);
+                            storeLogger.debug(`[ArtifactStore] Wrote standalone story file: ${fileName}`);
                         } catch (err: any) {
-                            acOutput.appendLine(`[ArtifactStore] Failed to write standalone story file: ${err?.message ?? err}`);
+                            storeLogger.debug(`[ArtifactStore] Failed to write standalone story file: ${err?.message ?? err}`);
                         }
                     }
                 }
+
+                // NEW LOGIC: Recalculate Epic status based on all updated stories
+                let epicsChanged = false;
+                for (const epic of allEpics) {
+                    if (this.recalculateEpicStatus(epic)) {
+                        epicsChanged = true;
+                    }
+                }
+                if (epicsChanged) {
+                    this.artifacts.set('epics', [...allEpics]);
+                }
+
                 break;
             }
 
@@ -1563,6 +1582,18 @@ export class ArtifactStore {
                     if (deletedStoryIds.length > 0) {
                         this.removeStoryLinksFromRequirements(deletedStoryIds);
                     }
+                    
+                    // Clean up the entire epic folder from disk to prevent shadow cards on reload
+                    // Must be awaited to prevent race with syncToFiles re-creating files (CR-3)
+                    if (this.sourceFolder) {
+                        const epicDir = this.epicScopedDir(this.sourceFolder, artifactId);
+                        try {
+                            await vscode.workspace.fs.delete(epicDir, { recursive: true, useTrash: true });
+                            logDebug(`Deleted epic folder: ${epicDir.fsPath}`);
+                        } catch (err) {
+                            logDebug(`Failed to delete epic folder ${epicDir.fsPath}:`, err);
+                        }
+                    }
                 }
                 break;
             }
@@ -1571,10 +1602,12 @@ export class ArtifactStore {
                 const epics = this.artifacts.get('epics') || [];
                 let changed = false;
                 let deletedStoryId: string | null = null;
+                let deletedFromEpicId: string | null = null;
                 epics.forEach((epic: Epic) => {
                     if (epic.stories?.some((s: Story) => s.id === artifactId)) {
                         epic.stories = epic.stories.filter((s: Story) => s.id !== artifactId);
                         deletedStoryId = artifactId;
+                        deletedFromEpicId = epic.id;
                         changed = true;
                     }
                 });
@@ -1583,6 +1616,31 @@ export class ArtifactStore {
                 }
                 if (deletedStoryId) {
                     this.removeStoryLinksFromRequirements([deletedStoryId]);
+                }
+                // Clean up standalone story file from disk using exactly tracked source URI
+                // Must be awaited to prevent race with syncToFiles re-creating the file (CR-3)
+                const storySourceKey = `story:${artifactId}`;
+                if (this.sourceFiles.has(storySourceKey)) {
+                    const storyFileUri = this.sourceFiles.get(storySourceKey)!;
+                    try {
+                        await vscode.workspace.fs.delete(storyFileUri, { useTrash: true });
+                        logDebug(`Deleted exact story file: ${storyFileUri.fsPath}`);
+                    } catch (err) {
+                        logDebug('Failed to delete story file:', err);
+                    }
+                    this.sourceFiles.delete(storySourceKey);
+                } else if (deletedStoryId && deletedFromEpicId && this.sourceFolder) {
+                    // Fallback to deriving the path if sourceFiles mapping was lost
+                    const epicDir = this.epicScopedDir(this.sourceFolder, deletedFromEpicId);
+                    const storiesDir = vscode.Uri.joinPath(epicDir, 'stories');
+                    const storyFileName = `${String(deletedStoryId).replace(/[^a-zA-Z0-9.-]/g, '-')}.json`;
+                    const storyFileUri = vscode.Uri.joinPath(storiesDir, storyFileName);
+                    try {
+                        await vscode.workspace.fs.delete(storyFileUri, { useTrash: true });
+                        logDebug(`Deleted derived story file: ${storyFileUri.fsPath}`);
+                    } catch {
+                        /* file may not exist — ignore */
+                    }
                 }
                 break;
             }
@@ -1823,7 +1881,7 @@ export class ArtifactStore {
                 if (idx !== -1) {
                     req.relatedEpics.splice(idx, 1);
                     changed = true;
-                    acOutput.appendLine(`[ArtifactStore] Removed ${epicId} from ${reqId}.relatedEpics`);
+                    storeLogger.debug(`[ArtifactStore] Removed ${epicId} from ${reqId}.relatedEpics`);
                 }
             }
         }
@@ -1838,7 +1896,7 @@ export class ArtifactStore {
                 if (!req.relatedEpics.includes(epicId)) {
                     req.relatedEpics.push(epicId);
                     changed = true;
-                    acOutput.appendLine(`[ArtifactStore] Added ${epicId} to ${reqId}.relatedEpics`);
+                    storeLogger.debug(`[ArtifactStore] Added ${epicId} to ${reqId}.relatedEpics`);
                 }
             }
         }
@@ -1907,7 +1965,7 @@ export class ArtifactStore {
         };
         
         this.addEpic(newEpic);
-        acOutput.appendLine(`[ArtifactStore] Created new epic: ${newEpic.id}`);
+        storeLogger.debug(`[ArtifactStore] Created new epic: ${newEpic.id}`);
         return newEpic;
     }
 
@@ -1954,7 +2012,7 @@ export class ArtifactStore {
         };
         
         this.addStory(targetEpic.id, newStory);
-        acOutput.appendLine(`[ArtifactStore] Created new story: ${newStory.id} in ${targetEpic.id}`);
+        storeLogger.debug(`[ArtifactStore] Created new story: ${newStory.id} in ${targetEpic.id}`);
         return newStory;
     }
 
@@ -1981,7 +2039,7 @@ export class ArtifactStore {
         };
         
         this.addRequirement(newReq);
-        acOutput.appendLine(`[ArtifactStore] Created new requirement: ${newReq.id}`);
+        storeLogger.debug(`[ArtifactStore] Created new requirement: ${newReq.id}`);
         return newReq;
     }
 
@@ -2000,7 +2058,7 @@ export class ArtifactStore {
                 status: 'draft'
             });
             this.notifyChange();
-            acOutput.appendLine(`[ArtifactStore] Created new vision`);
+            storeLogger.debug(`[ArtifactStore] Created new vision`);
         }
     }
 
@@ -2063,7 +2121,7 @@ export class ArtifactStore {
         
         this.notifyChange();
         
-        acOutput.appendLine(`[ArtifactStore] Created new use case: ${newUseCase.id} in ${targetEpic.id}`);
+        storeLogger.debug(`[ArtifactStore] Created new use case: ${newUseCase.id} in ${targetEpic.id}`);
         return newUseCase;
     }
 
@@ -2073,7 +2131,7 @@ export class ArtifactStore {
     createProductBrief(): ProductBrief {
         const existing = this.artifacts.get('productBrief');
         if (existing) {
-            acOutput.appendLine(`[ArtifactStore] ProductBrief already exists, returning existing`);
+            storeLogger.debug(`[ArtifactStore] ProductBrief already exists, returning existing`);
             return existing;
         }
         
@@ -2089,7 +2147,7 @@ export class ArtifactStore {
         
         this.artifacts.set('productBrief', newBrief);
         this.notifyChange();
-        acOutput.appendLine(`[ArtifactStore] Created new product brief`);
+        storeLogger.debug(`[ArtifactStore] Created new product brief`);
         return newBrief;
     }
 
@@ -2099,7 +2157,7 @@ export class ArtifactStore {
     createPRD(): PRD {
         const existing = this.artifacts.get('prd');
         if (existing) {
-            acOutput.appendLine(`[ArtifactStore] PRD already exists, returning existing`);
+            storeLogger.debug(`[ArtifactStore] PRD already exists, returning existing`);
             return existing;
         }
         
@@ -2115,7 +2173,7 @@ export class ArtifactStore {
         
         this.artifacts.set('prd', newPRD);
         this.notifyChange();
-        acOutput.appendLine(`[ArtifactStore] Created new PRD`);
+        storeLogger.debug(`[ArtifactStore] Created new PRD`);
         return newPRD;
     }
 
@@ -2125,7 +2183,7 @@ export class ArtifactStore {
     createArchitecture(): Architecture {
         const existing = this.artifacts.get('architecture');
         if (existing) {
-            acOutput.appendLine(`[ArtifactStore] Architecture already exists, returning existing`);
+            storeLogger.debug(`[ArtifactStore] Architecture already exists, returning existing`);
             return existing;
         }
         
@@ -2141,7 +2199,7 @@ export class ArtifactStore {
         
         this.artifacts.set('architecture', newArch);
         this.notifyChange();
-        acOutput.appendLine(`[ArtifactStore] Created new architecture`);
+        storeLogger.debug(`[ArtifactStore] Created new architecture`);
         return newArch;
     }
 
@@ -2184,7 +2242,7 @@ export class ArtifactStore {
 
         this.artifacts.set('testCases', [...testCases, newTestCase]);
         this.notifyChange();
-        acOutput.appendLine(`[ArtifactStore] Created new test case: ${newTestCase.id}`);
+        storeLogger.debug(`[ArtifactStore] Created new test case: ${newTestCase.id}`);
         return newTestCase;
     }
 
@@ -2200,7 +2258,7 @@ export class ArtifactStore {
             const epic = epics.find((e: Epic) => e.id === epicId);
             if (epic) {
                 if (epic.testStrategy) {
-                    acOutput.appendLine(`[ArtifactStore] TestStrategy already exists on epic ${epicId}, returning existing`);
+                    storeLogger.debug(`[ArtifactStore] TestStrategy already exists on epic ${epicId}, returning existing`);
                     return epic.testStrategy;
                 }
                 // Derive next numeric suffix: scan all epics for existing TS-N ids
@@ -2232,7 +2290,7 @@ export class ArtifactStore {
                 epic.testStrategy = newStrategy;
                 this.artifacts.set('epics', [...epics]);
                 this.notifyChange();
-                acOutput.appendLine(`[ArtifactStore] Created new test strategy ${newStrategy.id} on epic ${epicId}`);
+                storeLogger.debug(`[ArtifactStore] Created new test strategy ${newStrategy.id} on epic ${epicId}`);
                 return newStrategy;
             }
         }
@@ -2240,7 +2298,7 @@ export class ArtifactStore {
         // Fallback: project-level singleton (backward compat)
         const existing = this.artifacts.get('testStrategy');
         if (existing) {
-            acOutput.appendLine(`[ArtifactStore] TestStrategy already exists, returning existing`);
+            storeLogger.debug(`[ArtifactStore] TestStrategy already exists, returning existing`);
             return existing;
         }
 
@@ -2256,7 +2314,7 @@ export class ArtifactStore {
 
         this.artifacts.set('testStrategy', newStrategy);
         this.notifyChange();
-        acOutput.appendLine(`[ArtifactStore] Created new test strategy`);
+        storeLogger.debug(`[ArtifactStore] Created new test strategy`);
         return newStrategy;
     }
 
@@ -2282,7 +2340,7 @@ export class ArtifactStore {
      * Handles various artifact types: epics, stories, use-cases, requirements
      */
     async loadFromFolder(folderUri: vscode.Uri): Promise<void> {
-        acOutput.appendLine(`[ArtifactStore] loadFromFolder called with: ${folderUri.fsPath}`);
+        storeLogger.debug(`[ArtifactStore] loadFromFolder called with: ${folderUri.fsPath}`);
         
         // Clear ALL in-memory state before re-reading from disk.
         // Without this, collection arrays (testDesigns, testReviews, etc.)
@@ -2327,7 +2385,7 @@ export class ArtifactStore {
 
             // Recursively find ALL JSON files in the folder and subfolders
             const allJsonFiles = await this.findAllJsonFiles(folderUri);
-            acOutput.appendLine(`[ArtifactStore] Found ${allJsonFiles.length} JSON files total`);
+            storeLogger.debug(`[ArtifactStore] Found ${allJsonFiles.length} JSON files total`);
 
             // Lazily initialise the schema validator for load-time checks.
             if (!schemaValidator.isInitialized()) {
@@ -2341,7 +2399,7 @@ export class ArtifactStore {
                             )
                         )
                     ).fsPath;
-                    schemaValidator.init(bmadPath, acOutput);
+                    schemaValidator.init(bmadPath);
                 } catch {
                     // Validator unavailable — load will proceed without checks.
                 }
@@ -2355,9 +2413,15 @@ export class ArtifactStore {
                 try {
                     const content = await vscode.workspace.fs.readFile(fileUri);
                     const data = JSON.parse(Buffer.from(content).toString('utf-8'));
-                    const fileName = fileUri.path.split('/').pop() || '';
+                    // Compute a relative path from the source folder so logs
+                    // can distinguish files with the same basename across dirs
+                    // (e.g. "epics/epic-3/test-cases.json" vs "epics/epic-5/test-cases.json").
+                    const folderBase = folderUri.path.replace(/\/$/, '');
+                    const fileName = fileUri.path.startsWith(folderBase)
+                        ? fileUri.path.slice(folderBase.length + 1)   // relative path
+                        : fileUri.path.split('/').pop() || '';         // fallback to basename
                     
-                    acOutput.appendLine(`[ArtifactStore] Processing: ${fileName}`);
+                    storeLogger.debug(`[ArtifactStore] Processing: ${fileName}`);
 
                     // Detect artifact type from metadata or content structure
                     const artifactType = data.metadata?.artifactType || this.detectArtifactType(data, fileName);
@@ -2367,7 +2431,7 @@ export class ArtifactStore {
                     // store flattens it.  Issues are collected and logged at the
                     // end of loading so the user can fix the source files.
                     if (schemaValidator.isInitialized() && artifactType) {
-                        const result = schemaValidator.validate(artifactType, data);
+                        const result = schemaValidator.validate(artifactType, data, fileName);
                         if (!result.valid) {
                             loadValidationIssues.push({
                                 file: fileName,
@@ -2405,7 +2469,8 @@ export class ArtifactStore {
                                         const epicData = epicJson.content || epicJson;
                                         const epic = this.mapSchemaEpicToInternal(epicData);
                                         if (epic) {
-                                            acOutput.appendLine(`[ArtifactStore] Loaded epic from ref: ${epic.id} - ${epic.title} (${epic.stories.length} stories)`);
+                                            await this.loadEpicStoryRefs(epic, epicData, epicFileUri);
+                                            storeLogger.debug(`[ArtifactStore] Loaded epic from ref: ${epic.id} - ${epic.title} (${epic.stories.length} stories)`);
                                             const existingIndex = allEpics.findIndex(e => e.id === epic.id);
                                             if (existingIndex >= 0) {
                                                 this.mergeEpicDuplicate(allEpics[existingIndex], epic);
@@ -2415,7 +2480,7 @@ export class ArtifactStore {
                                             this.sourceFiles.set(`epic:${epic.id}`, epicFileUri);
                                         }
                                     } catch (refErr: any) {
-                                        acOutput.appendLine(`[ArtifactStore] Failed to load epic ref '${refPath}': ${refErr?.message ?? refErr}`);
+                                        storeLogger.debug(`[ArtifactStore] Failed to load epic ref '${refPath}': ${refErr?.message ?? refErr}`);
                                     }
                                 }
                             } else {
@@ -2423,7 +2488,8 @@ export class ArtifactStore {
                                 for (const epicData of epicsArray) {
                                     const epic = this.mapSchemaEpicToInternal(epicData);
                                     if (epic) {
-                                        acOutput.appendLine(`[ArtifactStore] Loaded epic: ${epic.id} - ${epic.title} (${epic.stories.length} stories)`);
+                                        await this.loadEpicStoryRefs(epic, epicData, fileUri);
+                                        storeLogger.debug(`[ArtifactStore] Loaded epic: ${epic.id} - ${epic.title} (${epic.stories.length} stories)`);
                                         const existingIndex = allEpics.findIndex(e => e.id === epic.id);
                                         if (existingIndex >= 0) {
                                             this.mergeEpicDuplicate(allEpics[existingIndex], epic);
@@ -2474,7 +2540,8 @@ export class ArtifactStore {
                             };
                             const epic = this.mapSchemaEpicToInternal(epicData);
                             if (epic) {
-                                acOutput.appendLine(`[ArtifactStore] Loaded standalone epic: ${epic.id} - ${epic.title} (${epic.stories.length} stories)`);
+                                await this.loadEpicStoryRefs(epic, epicData, fileUri);
+                                storeLogger.debug(`[ArtifactStore] Loaded standalone epic: ${epic.id} - ${epic.title} (${epic.stories.length} stories)`);
                                 const existingIndex = allEpics.findIndex(e => e.id === epic.id);
                                 if (existingIndex >= 0) {
                                     this.mergeEpicDuplicate(allEpics[existingIndex], epic);
@@ -2496,15 +2563,16 @@ export class ArtifactStore {
                             };
                             const story = this.mapSchemaStoryToInternal(storyData);
                             if (story) {
-                                acOutput.appendLine(`[ArtifactStore] Loaded standalone story: ${story.title}`);
+                                storeLogger.debug(`[ArtifactStore] Loaded standalone story: ${story.title}`);
                                 standaloneStories.push(story);
+                                this.sourceFiles.set(`story:${story.id}`, fileUri);
                             }
                             break;
                             
                         case 'use-case':
                         case 'usecase': {
                             // Use case file — link to its parent epic via epicId field or ID prefix UC-N-*
-                            acOutput.appendLine(`[ArtifactStore] Found use-case: ${fileName}`);
+                            storeLogger.debug(`[ArtifactStore] Found use-case: ${fileName}`);
                             const ucData = data.content || data;
                             const ucId = ucData.id || fileName.replace(/\.json$/, '');
                             const summary = ucData.summary || ucData.description || '';
@@ -2547,26 +2615,26 @@ export class ArtifactStore {
                                         const hasNewContent = (uc.summary || uc.title || '').trim().length > 0;
                                         if (!hasExistingContent && hasNewContent) {
                                             Object.assign(existing, uc);
-                                            acOutput.appendLine(`[ArtifactStore] Updated placeholder use-case ${uc.id} in epic ${parentEpicId}`);
+                                            storeLogger.debug(`[ArtifactStore] Updated placeholder use-case ${uc.id} in epic ${parentEpicId}`);
                                         }
                                     } else {
                                         parentEpic.useCases.push(uc);
-                                        acOutput.appendLine(`[ArtifactStore] Linked use-case ${uc.id} to epic ${parentEpicId}`);
+                                        storeLogger.debug(`[ArtifactStore] Linked use-case ${uc.id} to epic ${parentEpicId}`);
                                     }
                                 } else {
                                     pendingUseCases.push({ uc, parentEpicId });
-                                    acOutput.appendLine(`[ArtifactStore] Parent epic ${parentEpicId} not found for use-case ${uc.id}, queued for linking`);
+                                    storeLogger.debug(`[ArtifactStore] Parent epic ${parentEpicId} not found for use-case ${uc.id}, queued for linking`);
                                 }
                             } else {
                                 pendingUseCases.push({ uc, parentEpicId: null });
-                                acOutput.appendLine(`[ArtifactStore] No parent epic found for use-case ${uc.id}, queued for linking`);
+                                storeLogger.debug(`[ArtifactStore] No parent epic found for use-case ${uc.id}, queued for linking`);
                             }
                             break;
                         }
 
                         case 'use-cases': {
                             // Per-epic use cases collection file (epics/epic-N/use-cases.json)
-                            acOutput.appendLine(`[ArtifactStore] Found use-cases collection: ${fileName}`);
+                            storeLogger.debug(`[ArtifactStore] Found use-cases collection: ${fileName}`);
                             const ucArr = (data.content?.useCases || []).map((ucRaw: any) => {
                                 const ucId = ucRaw.id || fileName.replace(/\.json$/, '');
                                 const summary = ucRaw.summary || ucRaw.description || '';
@@ -2613,13 +2681,13 @@ export class ArtifactStore {
                                             parentEpic.useCases.push(uc);
                                         }
                                     }
-                                    acOutput.appendLine(`[ArtifactStore] Linked ${ucArr.length} use-cases to epic ${ucEpicId}`);
+                                    storeLogger.debug(`[ArtifactStore] Linked ${ucArr.length} use-cases to epic ${ucEpicId}`);
                                 } else {
                                     // Queue for deferred linking
                                     for (const uc of ucArr) {
                                         pendingUseCases.push({ uc, parentEpicId: ucEpicId });
                                     }
-                                    acOutput.appendLine(`[ArtifactStore] Parent epic ${ucEpicId} not yet loaded, queued ${ucArr.length} use-cases`);
+                                    storeLogger.debug(`[ArtifactStore] Parent epic ${ucEpicId} not yet loaded, queued ${ucArr.length} use-cases`);
                                 }
                             }
                             break;
@@ -2632,7 +2700,6 @@ export class ArtifactStore {
                                 // Global test summary — fall through to default handler
                                 break;
                             }
-                            acOutput.appendLine(`[ArtifactStore] Found epic test-strategy: ${fileName}`);
                             const tsRelPath = fileUri.path.replace(folderUri.path, '');
                             const tsDirMatch = tsRelPath.match(/epics[\/\\]epic-(\d+)/);
                             const tsEpicId = normalizeEpicId(
@@ -2641,15 +2708,22 @@ export class ArtifactStore {
                                 (tsDirMatch ? tsDirMatch[1] : null)
                             );
                             if (tsEpicId) {
+                                storeLogger.debug(`[ArtifactStore] Found epic test-strategy: ${fileName}`);
                                 const epicsArr: any[] = this.artifacts.get('epics') || allEpics;
                                 const parentEpic = epicsArr.find((e: any) => normalizeEpicId(e.id) === tsEpicId) ||
                                                    allEpics.find((e: any) => normalizeEpicId(e.id) === tsEpicId);
                                 if (parentEpic) {
                                     parentEpic.testStrategy = data.content;
-                                    acOutput.appendLine(`[ArtifactStore] Linked test-strategy to epic ${tsEpicId}`);
+                                    storeLogger.debug(`[ArtifactStore] Linked test-strategy to epic ${tsEpicId}`);
                                 } else {
-                                    acOutput.appendLine(`[ArtifactStore] Parent epic ${tsEpicId} not yet loaded for test-strategy, skipped`);
+                                    storeLogger.debug(`[ArtifactStore] Parent epic ${tsEpicId} not yet loaded for test-strategy, skipped`);
                                 }
+                            } else {
+                                // Global test strategy
+                                this.sourceFiles.set('testStrategy', fileUri);
+                                const tsData = data.content || data;
+                                this.artifacts.set('testStrategy', tsData);
+                                storeLogger.debug(`[ArtifactStore] Loaded global test strategy: ${tsData.title || '(unnamed)'}`);
                             }
                             break;
                         }
@@ -2676,7 +2750,7 @@ export class ArtifactStore {
                                 );
                                 standaloneReqsLoaded.additional = true;
                             }
-                            acOutput.appendLine(`[ArtifactStore] Loaded standalone requirements: ${reqs.functional?.length || 0} FR, ${reqs.nonFunctional?.length || 0} NFR, ${reqs.additional?.length || 0} additional`);
+                            storeLogger.debug(`[ArtifactStore] Loaded standalone requirements: ${reqs.functional?.length || 0} FR, ${reqs.nonFunctional?.length || 0} NFR, ${reqs.additional?.length || 0} additional`);
                             break;
                         
                         case 'functional-requirements': {
@@ -2713,7 +2787,7 @@ export class ArtifactStore {
                                         }
                                     }
                                 }
-                                acOutput.appendLine(`[ArtifactStore] Loaded ${frCount} functional requirements from ${Object.keys(domains).length} domains in ${fileName}`);
+                                storeLogger.debug(`[ArtifactStore] Loaded ${frCount} functional requirements from ${Object.keys(domains).length} domains in ${fileName}`);
                             }
                             // Also check for top-level functional/nonFunctional/additional arrays
                             if (frContent.functional) {
@@ -2786,7 +2860,7 @@ export class ArtifactStore {
                                 status: data.status || data.metadata?.status || 'draft'
                             };
                             this.artifacts.set('vision', vision);
-                            acOutput.appendLine(`[ArtifactStore] Loaded vision: ${vision.productName}`);
+                            storeLogger.debug(`[ArtifactStore] Loaded vision: ${vision.productName}`);
                             
                             // Use vision product name as project name if not set
                             if (!projectName && vision.productName) {
@@ -2799,7 +2873,7 @@ export class ArtifactStore {
                             const pbData = data.content || data;
                             this.artifacts.set('productBrief', pbData);
                             if (!projectName) projectName = pbData.productName || data.metadata?.projectName || '';
-                            acOutput.appendLine(`[ArtifactStore] Loaded product-brief: ${pbData.productName || '(unnamed)'}`);
+                            storeLogger.debug(`[ArtifactStore] Loaded product-brief: ${pbData.productName || '(unnamed)'}`);
                             break;
                         }
 
@@ -2808,7 +2882,7 @@ export class ArtifactStore {
                             const prdData = data.content || data;
                             this.artifacts.set('prd', prdData);
                             if (!projectName) projectName = prdData.productOverview?.productName || data.metadata?.projectName || '';
-                            acOutput.appendLine(`[ArtifactStore] Loaded PRD: ${prdData.productOverview?.productName || '(unnamed)'}`);
+                            storeLogger.debug(`[ArtifactStore] Loaded PRD: ${prdData.productOverview?.productName || '(unnamed)'}`);
 
                             // ── Extract PRD requirements into the requirements map ──
                             // PRD is the seed source for NFR and additional requirements.
@@ -2823,18 +2897,18 @@ export class ArtifactStore {
                                     requirements.nonFunctional.push(
                                         ...prdReqs.nonFunctional.map((nfr: any) => this.mapSchemaNonFunctionalRequirement(nfr))
                                     );
-                                    acOutput.appendLine(`[ArtifactStore] Extracted ${prdReqs.nonFunctional.length} non-functional requirements from PRD`);
+                                    storeLogger.debug(`[ArtifactStore] Extracted ${prdReqs.nonFunctional.length} non-functional requirements from PRD`);
                                 } else if (standaloneReqsLoaded.nonFunctional) {
-                                    acOutput.appendLine(`[ArtifactStore] Skipped PRD NFR extraction (standalone requirements.json takes priority)`);
+                                    storeLogger.debug(`[ArtifactStore] Skipped PRD NFR extraction (standalone requirements.json takes priority)`);
                                 }
                                 if (!standaloneReqsLoaded.additional
                                     && Array.isArray(prdReqs.additional) && prdReqs.additional.length > 0) {
                                     requirements.additional.push(
                                         ...prdReqs.additional.map((ar: any) => this.mapSchemaAdditionalRequirement(ar))
                                     );
-                                    acOutput.appendLine(`[ArtifactStore] Extracted ${prdReqs.additional.length} additional requirements from PRD`);
+                                    storeLogger.debug(`[ArtifactStore] Extracted ${prdReqs.additional.length} additional requirements from PRD`);
                                 } else if (standaloneReqsLoaded.additional) {
-                                    acOutput.appendLine(`[ArtifactStore] Skipped PRD additional extraction (standalone requirements.json takes priority)`);
+                                    storeLogger.debug(`[ArtifactStore] Skipped PRD additional extraction (standalone requirements.json takes priority)`);
                                 }
                             }
                             break;
@@ -2844,7 +2918,7 @@ export class ArtifactStore {
                             this.sourceFiles.set('architecture', fileUri);
                             const archData = data.content || data;
                             this.artifacts.set('architecture', archData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded architecture: ${archData.overview?.projectName || '(unnamed)'}`);
+                            storeLogger.debug(`[ArtifactStore] Loaded architecture: ${archData.overview?.projectName || '(unnamed)'}`);
                             break;
                         }
 
@@ -2867,7 +2941,7 @@ export class ArtifactStore {
                                 }
                             });
                             this.artifacts.set('testCases', merged);
-                            acOutput.appendLine(`[ArtifactStore] Loaded ${tcArray.length} test case(s) from ${fileName}`);
+                            storeLogger.debug(`[ArtifactStore] Loaded ${tcArray.length} test case(s) from ${fileName}`);
                             break;
                         }
 
@@ -2880,24 +2954,18 @@ export class ArtifactStore {
                             const existingTDs = this.artifacts.get('testDesigns') || [];
                             existingTDs.push(tdContent);
                             this.artifacts.set('testDesigns', existingTDs);
-                            acOutput.appendLine(`[ArtifactStore] Loaded test-design ${tdId} from ${fileName}`);
+                            storeLogger.debug(`[ArtifactStore] Loaded test-design ${tdId} from ${fileName}`);
                             break;
                         }
 
-                        case 'test-strategy': {
-                            this.sourceFiles.set('testStrategy', fileUri);
-                            const tsData = data.content || data;
-                            this.artifacts.set('testStrategy', tsData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded test strategy: ${tsData.title || '(unnamed)'}`);
-                            break;
-                        }
+
 
                         // ─── TEA module artifacts ───────────────────────────────────
                         case 'traceability-matrix': {
                             this.sourceFiles.set('traceabilityMatrix', fileUri);
                             const tmData = data.content || data;
                             this.artifacts.set('traceabilityMatrix', tmData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded traceability matrix`);
+                            storeLogger.debug(`[ArtifactStore] Loaded traceability matrix`);
                             break;
                         }
 
@@ -2908,7 +2976,7 @@ export class ArtifactStore {
                             const existing = this.artifacts.get('testReviews') || [];
                             existing.push(trData);
                             this.artifacts.set('testReviews', existing);
-                            acOutput.appendLine(`[ArtifactStore] Loaded test review ${trId} from ${fileName}`);
+                            storeLogger.debug(`[ArtifactStore] Loaded test review ${trId} from ${fileName}`);
                             break;
                         }
 
@@ -2916,7 +2984,7 @@ export class ArtifactStore {
                             this.sourceFiles.set('nfrAssessment', fileUri);
                             const nfrData = data.content || data;
                             this.artifacts.set('nfrAssessment', nfrData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded NFR assessment`);
+                            storeLogger.debug(`[ArtifactStore] Loaded NFR assessment`);
                             break;
                         }
 
@@ -2924,7 +2992,7 @@ export class ArtifactStore {
                             this.sourceFiles.set('atddChecklist', fileUri);
                             const atddData = data.content || data;
                             this.artifacts.set('atddChecklist', atddData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded ATDD checklist`);
+                            storeLogger.debug(`[ArtifactStore] Loaded ATDD checklist`);
                             break;
                         }
 
@@ -2932,7 +3000,7 @@ export class ArtifactStore {
                             this.sourceFiles.set('testFramework', fileUri);
                             const tfData = data.content || data;
                             this.artifacts.set('testFramework', tfData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded test framework`);
+                            storeLogger.debug(`[ArtifactStore] Loaded test framework`);
                             break;
                         }
 
@@ -2940,7 +3008,7 @@ export class ArtifactStore {
                             this.sourceFiles.set('ciPipeline', fileUri);
                             const ciData = data.content || data;
                             this.artifacts.set('ciPipeline', ciData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded CI pipeline`);
+                            storeLogger.debug(`[ArtifactStore] Loaded CI pipeline`);
                             break;
                         }
 
@@ -2948,7 +3016,7 @@ export class ArtifactStore {
                             this.sourceFiles.set('automationSummary', fileUri);
                             const asData = data.content || data;
                             this.artifacts.set('automationSummary', asData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded automation summary`);
+                            storeLogger.debug(`[ArtifactStore] Loaded automation summary`);
                             break;
                         }
 
@@ -2960,7 +3028,7 @@ export class ArtifactStore {
                             const existing = this.artifacts.get('researches') || [];
                             existing.push(resData);
                             this.artifacts.set('researches', existing);
-                            acOutput.appendLine(`[ArtifactStore] Loaded research ${resId} from ${fileName}`);
+                            storeLogger.debug(`[ArtifactStore] Loaded research ${resId} from ${fileName}`);
                             break;
                         }
 
@@ -2971,7 +3039,7 @@ export class ArtifactStore {
                             const existing = this.artifacts.get('uxDesigns') || [];
                             existing.push(uxData);
                             this.artifacts.set('uxDesigns', existing);
-                            acOutput.appendLine(`[ArtifactStore] Loaded UX design ${uxId} from ${fileName}`);
+                            storeLogger.debug(`[ArtifactStore] Loaded UX design ${uxId} from ${fileName}`);
                             break;
                         }
 
@@ -2982,7 +3050,7 @@ export class ArtifactStore {
                             const existing = this.artifacts.get('readinessReports') || [];
                             existing.push(rrData);
                             this.artifacts.set('readinessReports', existing);
-                            acOutput.appendLine(`[ArtifactStore] Loaded readiness report ${rrId} from ${fileName}`);
+                            storeLogger.debug(`[ArtifactStore] Loaded readiness report ${rrId} from ${fileName}`);
                             break;
                         }
 
@@ -2993,7 +3061,7 @@ export class ArtifactStore {
                             const existing = this.artifacts.get('sprintStatuses') || [];
                             existing.push(ssData);
                             this.artifacts.set('sprintStatuses', existing);
-                            acOutput.appendLine(`[ArtifactStore] Loaded sprint status ${ssId} from ${fileName}`);
+                            storeLogger.debug(`[ArtifactStore] Loaded sprint status ${ssId} from ${fileName}`);
                             break;
                         }
 
@@ -3004,7 +3072,7 @@ export class ArtifactStore {
                             const existing = this.artifacts.get('retrospectives') || [];
                             existing.push(retroData);
                             this.artifacts.set('retrospectives', existing);
-                            acOutput.appendLine(`[ArtifactStore] Loaded retrospective ${retroId} from ${fileName}`);
+                            storeLogger.debug(`[ArtifactStore] Loaded retrospective ${retroId} from ${fileName}`);
                             break;
                         }
 
@@ -3015,7 +3083,7 @@ export class ArtifactStore {
                             const existing = this.artifacts.get('changeProposals') || [];
                             existing.push(cpData);
                             this.artifacts.set('changeProposals', existing);
-                            acOutput.appendLine(`[ArtifactStore] Loaded change proposal ${cpId} from ${fileName}`);
+                            storeLogger.debug(`[ArtifactStore] Loaded change proposal ${cpId} from ${fileName}`);
                             break;
                         }
 
@@ -3026,7 +3094,7 @@ export class ArtifactStore {
                             const existing = this.artifacts.get('codeReviews') || [];
                             existing.push(crData);
                             this.artifacts.set('codeReviews', existing);
-                            acOutput.appendLine(`[ArtifactStore] Loaded code review ${crId} from ${fileName}`);
+                            storeLogger.debug(`[ArtifactStore] Loaded code review ${crId} from ${fileName}`);
                             break;
                         }
 
@@ -3034,7 +3102,7 @@ export class ArtifactStore {
                             this.sourceFiles.set('projectOverview', fileUri);
                             const poData = data.content || data;
                             this.artifacts.set('projectOverview', poData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded project overview`);
+                            storeLogger.debug(`[ArtifactStore] Loaded project overview`);
                             break;
                         }
 
@@ -3042,7 +3110,7 @@ export class ArtifactStore {
                             this.sourceFiles.set('projectContext', fileUri);
                             const pcData = data.content || data;
                             this.artifacts.set('projectContext', pcData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded project context`);
+                            storeLogger.debug(`[ArtifactStore] Loaded project context`);
                             break;
                         }
 
@@ -3053,7 +3121,7 @@ export class ArtifactStore {
                             const existing = this.artifacts.get('techSpecs') || [];
                             existing.push(tspcData);
                             this.artifacts.set('techSpecs', existing);
-                            acOutput.appendLine(`[ArtifactStore] Loaded tech spec ${tspcId} from ${fileName}`);
+                            storeLogger.debug(`[ArtifactStore] Loaded tech spec ${tspcId} from ${fileName}`);
                             break;
                         }
 
@@ -3061,7 +3129,7 @@ export class ArtifactStore {
                             this.sourceFiles.set('sourceTree', fileUri);
                             const stData = data.content || data;
                             this.artifacts.set('sourceTree', stData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded source tree`);
+                            storeLogger.debug(`[ArtifactStore] Loaded source tree`);
                             break;
                         }
 
@@ -3069,7 +3137,7 @@ export class ArtifactStore {
                             this.sourceFiles.set('testSummary', fileUri);
                             const tsmData = data.content || data;
                             this.artifacts.set('testSummary', tsmData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded test summary`);
+                            storeLogger.debug(`[ArtifactStore] Loaded test summary`);
                             break;
                         }
 
@@ -3077,7 +3145,7 @@ export class ArtifactStore {
                             this.sourceFiles.set('risks', fileUri);
                             const risksData = data.content || data;
                             this.artifacts.set('risks', risksData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded risks`);
+                            storeLogger.debug(`[ArtifactStore] Loaded risks`);
                             break;
                         }
 
@@ -3085,7 +3153,7 @@ export class ArtifactStore {
                             this.sourceFiles.set('definitionOfDone', fileUri);
                             const dodData = data.content || data;
                             this.artifacts.set('definitionOfDone', dodData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded definition of done`);
+                            storeLogger.debug(`[ArtifactStore] Loaded definition of done`);
                             break;
                         }
 
@@ -3094,7 +3162,7 @@ export class ArtifactStore {
                             this.sourceFiles.set('storytelling', fileUri);
                             const storyData = data.content || data;
                             this.artifacts.set('storytelling', storyData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded storytelling`);
+                            storeLogger.debug(`[ArtifactStore] Loaded storytelling`);
                             break;
                         }
 
@@ -3102,7 +3170,7 @@ export class ArtifactStore {
                             this.sourceFiles.set('problemSolving', fileUri);
                             const psData = data.content || data;
                             this.artifacts.set('problemSolving', psData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded problem solving`);
+                            storeLogger.debug(`[ArtifactStore] Loaded problem solving`);
                             break;
                         }
 
@@ -3110,7 +3178,7 @@ export class ArtifactStore {
                             this.sourceFiles.set('innovationStrategy', fileUri);
                             const isData = data.content || data;
                             this.artifacts.set('innovationStrategy', isData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded innovation strategy`);
+                            storeLogger.debug(`[ArtifactStore] Loaded innovation strategy`);
                             break;
                         }
 
@@ -3118,7 +3186,7 @@ export class ArtifactStore {
                             this.sourceFiles.set('designThinking', fileUri);
                             const dtData = data.content || data;
                             this.artifacts.set('designThinking', dtData);
-                            acOutput.appendLine(`[ArtifactStore] Loaded design thinking`);
+                            storeLogger.debug(`[ArtifactStore] Loaded design thinking`);
                             break;
                         }
 
@@ -3146,12 +3214,15 @@ export class ArtifactStore {
                                     ...(data.content || data),
                                 };
                                 const story = this.mapSchemaStoryToInternal(storyMerged);
-                                if (story) standaloneStories.push(story);
+                                if (story) {
+                                    standaloneStories.push(story);
+                                    this.sourceFiles.set(`story:${story.id}`, fileUri);
+                                }
                             }
                             break;
                     }
                 } catch (e) {
-                    acOutput.appendLine(`[ArtifactStore] Could not parse ${fileUri.fsPath}: ${e}`);
+                    storeLogger.debug(`[ArtifactStore] Could not parse ${fileUri.fsPath}: ${e}`);
                 }
             }
 
@@ -3244,18 +3315,18 @@ export class ArtifactStore {
                             status: 'draft',
                             stories: orphanStories
                         });
-                        acOutput.appendLine(`[ArtifactStore] Created default epic for ${orphanStories.length} orphan stories`);
+                        storeLogger.debug(`[ArtifactStore] Created default epic for ${orphanStories.length} orphan stories`);
                     } else {
                         // DO NOT dump into first epic — log a warning instead.
                         // Users should add epicId to standalone story files.
-                        acOutput.appendLine(`[ArtifactStore] WARNING: ${orphanStories.length} standalone stories have no matching epicId and were NOT added to any epic. Add epicId to these story files or run "Migrate to Reference Architecture".`);
+                        storeLogger.debug(`[ArtifactStore] WARNING: ${orphanStories.length} standalone stories have no matching epicId and were NOT added to any epic. Add epicId to these story files or run "Migrate to Reference Architecture".`);
                         for (const orphan of orphanStories) {
-                            acOutput.appendLine(`[ArtifactStore]   Orphan: ${orphan.id} — "${orphan.title}"`);
+                            storeLogger.debug(`[ArtifactStore]   Orphan: ${orphan.id} — "${orphan.title}"`);
                         }
                     }
                 }
 
-                acOutput.appendLine(`[ArtifactStore] Standalone stories: ${routedCount} routed by epicId, ${mergedCount} merged, ${skippedCount} skipped, ${orphanStories.length} orphaned`);
+                storeLogger.debug(`[ArtifactStore] Standalone stories: ${routedCount} routed by epicId, ${mergedCount} merged, ${skippedCount} skipped, ${orphanStories.length} orphaned`);
             }
 
             // Link any pending use-cases now that epics are loaded
@@ -3267,7 +3338,7 @@ export class ArtifactStore {
                         parentEpicId || epicIdFromUseCaseId(uc.id)
                     );
                     if (!resolvedEpicId) {
-                        acOutput.appendLine(`[ArtifactStore] No parent epic found for use-case ${uc.id}, skipping link`);
+                        storeLogger.debug(`[ArtifactStore] No parent epic found for use-case ${uc.id}, skipping link`);
                         unresolvedCount += 1;
                         unresolvedUseCases.push(uc);
                         return;
@@ -3281,20 +3352,20 @@ export class ArtifactStore {
                             const hasNewContent = (uc.summary || uc.title || '').trim().length > 0;
                             if (!hasExistingContent && hasNewContent) {
                                 Object.assign(existing, uc);
-                                acOutput.appendLine(`[ArtifactStore] Updated placeholder use-case ${uc.id} in epic ${resolvedEpicId}`);
+                                storeLogger.debug(`[ArtifactStore] Updated placeholder use-case ${uc.id} in epic ${resolvedEpicId}`);
                             }
                         } else {
                             parentEpic.useCases.push(uc);
-                            acOutput.appendLine(`[ArtifactStore] Linked use-case ${uc.id} to epic ${resolvedEpicId}`);
+                            storeLogger.debug(`[ArtifactStore] Linked use-case ${uc.id} to epic ${resolvedEpicId}`);
                             linkedCount += 1;
                         }
                     } else {
-                        acOutput.appendLine(`[ArtifactStore] Parent epic ${resolvedEpicId} not found for use-case ${uc.id}`);
+                        storeLogger.debug(`[ArtifactStore] Parent epic ${resolvedEpicId} not found for use-case ${uc.id}`);
                         unresolvedCount += 1;
                         unresolvedUseCases.push(uc);
                     }
                 });
-                acOutput.appendLine(`[ArtifactStore] Use-case linking summary: ${linkedCount} linked, ${unresolvedCount} unresolved`);
+                storeLogger.debug(`[ArtifactStore] Use-case linking summary: ${linkedCount} linked, ${unresolvedCount} unresolved`);
             }
 
             if (unresolvedUseCases.length > 0) {
@@ -3317,7 +3388,7 @@ export class ArtifactStore {
                         useCases: unresolvedUseCases
                     });
                 }
-                acOutput.appendLine(`[ArtifactStore] Created Unlinked Use Cases epic with ${unresolvedUseCases.length} use-cases`);
+                storeLogger.debug(`[ArtifactStore] Created Unlinked Use Cases epic with ${unresolvedUseCases.length} use-cases`);
             }
 
             // Load .bmad-state.json if exists (for UI state)
@@ -3347,7 +3418,11 @@ export class ArtifactStore {
                 this.artifacts.set('epics', allEpics);
 
                 // ─── Migration auto-detection ────────────────────────────
-                // Check if epics.json still has inline story objects (pre-migration).
+                // 1. Migrate any legacy implementation/ directory to single-source story files.
+                //    Runs once per project load; fire-and-forget, does not block load path.
+                void this.migrateImplementationFolder(folderUri);
+
+                // 2. Check if epics.json still has inline story objects (pre-migration).
                 // Show a one-time nudge per session.
                 if (!this._migrationPromptShown) {
                     this.checkForInlineStories(folderUri);
@@ -3385,7 +3460,7 @@ export class ArtifactStore {
                     && (requirements.functional.length || requirements.nonFunctional.length || requirements.additional.length)) {
                     try {
                         let reqDir = folderUri;
-                        for (const subdir of ['solutioning-artifacts', 'planning-artifacts']) {
+                        for (const subdir of ['solutioning', 'planning']) {
                             const candidate = vscode.Uri.joinPath(folderUri, subdir);
                             try { await vscode.workspace.fs.stat(candidate); reqDir = candidate; break; }
                             catch { /* dir doesn't exist, try next */ }
@@ -3434,16 +3509,16 @@ export class ArtifactStore {
                             await writeMarkdownCompanion(reqFileUri, 'requirements.md', reqMd);
                         }
                         this.sourceFiles.set('requirements', reqFileUri);
-                        acOutput.appendLine(`[ArtifactStore] Auto-migrated requirements to standalone requirements.json (${requirements.functional.length} FR, ${requirements.nonFunctional.length} NFR, ${requirements.additional.length} additional)`);
+                        storeLogger.debug(`[ArtifactStore] Auto-migrated requirements to standalone requirements.json (${requirements.functional.length} FR, ${requirements.nonFunctional.length} NFR, ${requirements.additional.length} additional)`);
                     } catch (e) {
-                        acOutput.appendLine(`[ArtifactStore] WARNING: Failed to auto-migrate requirements: ${e}`);
+                        storeLogger.debug(`[ArtifactStore] WARNING: Failed to auto-migrate requirements: ${e}`);
                     }
                 }
                 this.artifacts.set('currentStep', 'review');
                 
                 const totalStories = allEpics.reduce((sum, e) => sum + (e.stories?.length || 0), 0);
                 const tcCount = (this.artifacts.get('testCases') || []).length;
-                acOutput.appendLine(`[ArtifactStore] SUCCESS: Loaded ${allEpics.length} epics, ${totalStories} stories, ${requirements.functional.length} FRs, ${tcCount} test cases`);
+                storeLogger.debug(`[ArtifactStore] SUCCESS: Loaded ${allEpics.length} epics, ${totalStories} stories, ${requirements.functional.length} FRs, ${tcCount} test cases`);
 
                 // ── Log load-time schema validation summary ──
                 // Always update the stored issues so stale data from a
@@ -3451,15 +3526,15 @@ export class ArtifactStore {
                 this.artifacts.set('_loadValidationIssues', loadValidationIssues);
 
                 if (loadValidationIssues.length > 0) {
-                    acOutput.appendLine(
+                    storeLogger.debug(
                         `[ArtifactStore] SCHEMA WARNINGS: ${loadValidationIssues.length} file(s) have schema issues:`
                     );
                     for (const issue of loadValidationIssues) {
-                        acOutput.appendLine(
+                        storeLogger.debug(
                             `  ${issue.file} (${issue.type}): ${issue.errors.join('; ')}`
                         );
                     }
-                    acOutput.appendLine(
+                    storeLogger.debug(
                         `[ArtifactStore] Data was loaded but may be incomplete. ` +
                         `Fix the source files to match the BMAD schemas.`
                     );
@@ -3483,6 +3558,7 @@ export class ArtifactStore {
                     }
                 }
 
+
                 // Rebuild all cross-artifact derived state (coveragePlan→TCs,
                 // riskAssessment→epic.risks) from whatever is now in memory.
                 // This runs AFTER artifacts.set('epics', allEpics) so epics
@@ -3491,11 +3567,11 @@ export class ArtifactStore {
 
                 this.notifyChange();
             } else {
-                acOutput.appendLine('[ArtifactStore] WARNING: No artifacts found in folder');
+                storeLogger.debug('[ArtifactStore] WARNING: No artifacts found in folder');
             }
 
         } catch (error) {
-            acOutput.appendLine(`[ArtifactStore] ERROR loading BMAD artifacts: ${error}`);
+            storeLogger.debug(`[ArtifactStore] ERROR loading BMAD artifacts: ${error}`);
         }
     }
 
@@ -3508,13 +3584,13 @@ export class ArtifactStore {
      */
     async backupArtifactFiles(): Promise<vscode.Uri | null> {
         if (!this.sourceFolder) {
-            acOutput.appendLine('[ArtifactStore] backupArtifactFiles: no sourceFolder — skipping');
+            storeLogger.debug('[ArtifactStore] backupArtifactFiles: no sourceFolder — skipping');
             return null;
         }
 
         const allJsonFiles = await this.findAllJsonFiles(this.sourceFolder);
         if (allJsonFiles.length === 0) {
-            acOutput.appendLine('[ArtifactStore] backupArtifactFiles: no JSON files found — skipping');
+            storeLogger.debug('[ArtifactStore] backupArtifactFiles: no JSON files found — skipping');
             return null;
         }
 
@@ -3545,11 +3621,11 @@ export class ArtifactStore {
                 await vscode.workspace.fs.copy(fileUri, destUri, { overwrite: true });
                 copied++;
             } catch (e) {
-                acOutput.appendLine(`[ArtifactStore] backupArtifactFiles: failed to copy ${fileUri.fsPath}: ${e}`);
+                storeLogger.debug(`[ArtifactStore] backupArtifactFiles: failed to copy ${fileUri.fsPath}: ${e}`);
             }
         }
 
-        acOutput.appendLine(
+        storeLogger.debug(
             `[ArtifactStore] backupArtifactFiles: backed up ${copied}/${allJsonFiles.length} files to ${backupFolderUri.fsPath}`
         );
         return backupFolderUri;
@@ -3588,14 +3664,459 @@ export class ArtifactStore {
             try {
                 const dirUri = vscode.Uri.joinPath(backupRootUri, dirName);
                 await vscode.workspace.fs.delete(dirUri, { recursive: true });
-                acOutput.appendLine(
+                storeLogger.debug(
                     `[ArtifactStore] pruneOldBackups: removed old backup ${dirName}`
                 );
             } catch (e) {
-                acOutput.appendLine(
+                storeLogger.debug(
                     `[ArtifactStore] pruneOldBackups: failed to remove ${dirName}: ${e}`
                 );
             }
+        }
+    }
+
+    // =========================================================================
+    // Sprint-Status YAML → JSON sync pipeline
+    // =========================================================================
+
+    /**
+     * Scan the project folder for sprint-status.yaml / sprint-status.yml.
+     * Checks the root folder and the bmm/ subfolder.
+     */
+    private async findSprintStatusYaml(folderUri: vscode.Uri): Promise<vscode.Uri | undefined> {
+        const candidates = [
+            vscode.Uri.joinPath(folderUri, 'sprint-status.yaml'),
+            vscode.Uri.joinPath(folderUri, 'sprint-status.yml'),
+            vscode.Uri.joinPath(folderUri, 'bmm', 'sprint-status.yaml'),
+            vscode.Uri.joinPath(folderUri, 'bmm', 'sprint-status.yml'),
+        ];
+        for (const uri of candidates) {
+            try {
+                await vscode.workspace.fs.stat(uri);
+                return uri;
+            } catch { /* file doesn't exist */ }
+        }
+        return undefined;
+    }
+
+    /**
+     * Parse sprint-status.yaml and extract the development_status map.
+     * Returns a flat Record<string, string> e.g. { "epic-3": "in-progress", "3-1-foo": "done" }.
+     */
+    private async parseSprintStatusYamlFile(fileUri: vscode.Uri): Promise<Record<string, string>> {
+        const raw = await vscode.workspace.fs.readFile(fileUri);
+        const text = Buffer.from(raw).toString('utf-8');
+        const lines = text.split('\n');
+        const statusMap: Record<string, string> = {};
+
+        let inDevStatus = false;
+        for (const rawLine of lines) {
+            const line = rawLine.trimEnd();
+            if (!line || line.startsWith('#')) continue;
+
+            // Detect section header
+            if (/^development_status:\s*$/.test(line)) {
+                inDevStatus = true;
+                continue;
+            }
+            // Any non-indented line (that isn't a comment) ends the section
+            if (inDevStatus && /^\S/.test(line)) {
+                inDevStatus = false;
+            }
+
+            if (inDevStatus) {
+                const m = line.match(/^\s{2}([^:]+):\s*(.+)$/);
+                if (m) {
+                    const key = m[1].trim();
+                    const value = m[2].trim().replace(/"/g, '');
+                    statusMap[key] = value;
+                }
+            }
+        }
+
+        return statusMap;
+    }
+
+    /**
+     * Map a raw YAML status string to the internal status enum.
+     * Returns undefined if the value shouldn't be applied.
+     */
+    private mapYamlStatusToInternal(rawStatus: string): string | undefined {
+        switch (rawStatus) {
+            case 'ready-for-dev': return 'ready';
+            case 'in-progress': return 'in-progress';
+            case 'review': return 'review';
+            case 'done': return 'done';
+            case 'backlog': return 'draft';
+            default: return undefined;
+        }
+    }
+
+    /**
+     * Map an internal status string back to the YAML format.
+     */
+    private mapInternalStatusToYaml(status: string): string {
+        switch (status) {
+            case 'ready': return 'ready-for-dev';
+            case 'in-progress': return 'in-progress';
+            case 'review': return 'review';
+            case 'done': return 'done';
+            case 'draft': return 'backlog';
+            default: return status;
+        }
+    }
+
+    /**
+     * Reverse sync: update a single development_status entry in sprint-status.yaml.
+     * Reads the YAML, finds the matching key, replaces only its value, writes back.
+     * The sprints: section and all other content is preserved exactly as-is.
+     *
+     * @param type    'epic' or 'story'
+     * @param epicId  The internal epic ID (e.g. '3')
+     * @param storyId Optional story ID (e.g. 'S-3.1') — required when type='story'
+     * @param newStatus The new internal status (e.g. 'in-progress')
+     */
+    async syncStatusToYaml(
+        type: 'epic' | 'story',
+        epicId: string,
+        storyId: string | undefined,
+        newStatus: string
+    ): Promise<void> {
+        if (!this.sourceFolder) return;
+        const acOutput = this.getOutputChannel();
+
+        const yamlUri = await this.findSprintStatusYaml(this.sourceFolder);
+        if (!yamlUri) return; // No YAML file — nothing to sync back
+
+        try {
+            const raw = await vscode.workspace.fs.readFile(yamlUri);
+            const text = Buffer.from(raw).toString('utf-8');
+            const lines = text.split('\n');
+            const yamlStatus = this.mapInternalStatusToYaml(newStatus);
+
+            // Determine the key prefix to search for
+            let keyPrefix: string;
+            if (type === 'epic') {
+                keyPrefix = `epic-${epicId.replace(/\D/g, '')}`;
+            } else {
+                // Story: S-3.1 → prefix "3-1-"
+                const normalized = (storyId || '').replace(/^S-/i, '');
+                const parts = normalized.split('.');
+                keyPrefix = parts.length >= 2 ? `${parts[0]}-${parts[1]}-` : normalized;
+            }
+
+            // Find and replace the matching line in development_status section
+            let inDevStatus = false;
+            let updated = false;
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trimEnd();
+                if (!line || line.startsWith('#')) continue;
+
+                if (/^development_status:\s*$/.test(line)) {
+                    inDevStatus = true;
+                    continue;
+                }
+                if (inDevStatus && /^\S/.test(line)) {
+                    inDevStatus = false;
+                }
+
+                if (inDevStatus) {
+                    const m = line.match(/^(\s{2})([^:]+):(\s*)(.+)$/);
+                    if (m) {
+                        const key = m[2].trim();
+                        const matchesEpic = type === 'epic' && key === keyPrefix;
+                        const matchesStory = type === 'story' && key.startsWith(keyPrefix);
+
+                        if (matchesEpic || matchesStory) {
+                            // Preserve original indentation and spacing
+                            lines[i] = `${m[1]}${key}:${m[3]}${yamlStatus}`;
+                            updated = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (updated) {
+                // Suppress file-watcher during write
+                this._syncingUntil = Date.now() + 2000;
+                await vscode.workspace.fs.writeFile(
+                    yamlUri,
+                    Buffer.from(lines.join('\n'), 'utf-8')
+                );
+                storeLogger.debug(`[SprintSync] Reverse-synced ${type} ${epicId}${storyId ? '/' + storyId : ''} → ${yamlStatus} in YAML`);
+            }
+        } catch (e) {
+            storeLogger.debug(`[SprintSync] Failed to reverse-sync to YAML: ${e}`);
+        }
+    }
+
+    /**
+     * Compare the YAML development_status map against loaded in-memory epics/stories.
+     * Returns an array of mismatches with the target ID, type, current status, and desired status.
+     */
+    private detectSprintStatusMismatches(
+        statusMap: Record<string, string>
+    ): { key: string; type: 'epic' | 'story'; epicId: string; storyId?: string; currentStatus: string; newStatus: string }[] {
+        const epics: any[] = this.artifacts.get('epics') || [];
+        const mismatches: { key: string; type: 'epic' | 'story'; epicId: string; storyId?: string; currentStatus: string; newStatus: string }[] = [];
+
+        for (const [key, rawStatus] of Object.entries(statusMap)) {
+            const newStatus = this.mapYamlStatusToInternal(rawStatus);
+            if (!newStatus) continue;
+
+            const isEpic = key.toLowerCase().startsWith('epic');
+            if (isEpic) {
+                const epicId = key.replace(/^epic-/i, '');
+                const ep = epics.find((e: any) => e.id === epicId || e.id === `EPIC-${epicId}` || String(e.id) === epicId);
+                if (ep) {
+                    const currentStatus = ep.status || 'draft';
+                    if (currentStatus !== newStatus) {
+                        mismatches.push({ key, type: 'epic', epicId: String(ep.id), currentStatus, newStatus });
+                    }
+                }
+            } else {
+                // Story key format: X-Y-slug → storyId S-X.Y
+                const parts = key.split('-');
+                if (parts.length >= 2) {
+                    const storyId = `S-${parts[0]}.${parts[1]}`;
+                    for (const ep of epics) {
+                        const st = (ep.stories || []).find((s: any) => s.id === storyId);
+                        if (st) {
+                            const currentStatus = st.status || 'draft';
+                            if (currentStatus !== newStatus) {
+                                mismatches.push({ key, type: 'story', epicId: String(ep.id), storyId, currentStatus, newStatus });
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        return mismatches;
+    }
+
+    /**
+     * Surgically patch an epic's status on disk.
+     * Reads the JSON file, updates ONLY metadata.status + content.status, validates, writes back.
+     * Also updates the in-memory epic status.
+     */
+    private async patchEpicStatusOnDisk(epicId: string, newStatus: string, skipYamlSync = false): Promise<boolean> {
+        const acOutput = this.getOutputChannel();
+        const fileUri = this.sourceFiles.get(`epic:${epicId}`);
+        if (!fileUri) {
+            storeLogger.debug(`[SprintSync] No source file found for epic:${epicId} — skipping`);
+            return false;
+        }
+
+        try {
+            // 1. Read from disk
+            const raw = await vscode.workspace.fs.readFile(fileUri);
+            const data = JSON.parse(Buffer.from(raw).toString('utf-8'));
+
+            // 2. Validate target — make sure content.id matches
+            const contentId = String(data.content?.id ?? data.content?.epicId ?? '');
+            if (contentId !== epicId && contentId !== `EPIC-${epicId}`) {
+                storeLogger.debug(`[SprintSync] Epic ID mismatch in ${fileUri.fsPath}: expected ${epicId}, found ${contentId} — skipping`);
+                return false;
+            }
+
+            // 3. Patch status (both locations for backward compat)
+            if (data.metadata) {
+                data.metadata.status = newStatus;
+                // Update timestamp
+                if (data.metadata.timestamps) {
+                    data.metadata.timestamps.lastModified = new Date().toISOString();
+                }
+            }
+            if (data.content) {
+                data.content.status = newStatus;
+            }
+
+            // 4. Write back
+            await vscode.workspace.fs.writeFile(
+                fileUri,
+                Buffer.from(JSON.stringify(data, null, 2), 'utf-8')
+            );
+
+            // 5. Update in-memory
+            const epics: any[] = this.artifacts.get('epics') || [];
+            const ep = epics.find((e: any) => String(e.id) === epicId);
+            if (ep) ep.status = newStatus;
+
+            storeLogger.debug(`[SprintSync] Patched epic ${epicId} status → ${newStatus} in ${fileUri.fsPath}`);
+
+            // Epic JSON file is the authoritative status source; no YAML sync needed
+
+            return true;
+        } catch (e) {
+            storeLogger.debug(`[SprintSync] Failed to patch epic ${epicId}: ${e}`);
+            return false;
+        }
+    }
+
+    /**
+     * Surgically patch a story's status on disk.
+     * Tries standalone story file first, then falls back to inline in epic.json.
+     * Always patches both locations if both exist.
+     * Also updates the in-memory story status.
+     */
+    private async patchStoryStatusOnDisk(epicId: string, storyId: string, newStatus: string, skipYamlSync = false): Promise<boolean> {
+        const acOutput = this.getOutputChannel();
+        let patchedStandalone = false;
+
+        // ── Path A: Standalone story file ────────────────────────────────
+        if (this.sourceFolder) {
+            const storiesDir = vscode.Uri.joinPath(
+                this.epicScopedDir(this.sourceFolder, epicId),
+                'stories'
+            );
+            try {
+                const entries = await vscode.workspace.fs.readDirectory(storiesDir);
+                for (const [name, type] of entries) {
+                    if ((type & vscode.FileType.File) === 0 || !name.endsWith('.json')) continue;
+                    const fileUri = vscode.Uri.joinPath(storiesDir, name);
+                    try {
+                        const raw = await vscode.workspace.fs.readFile(fileUri);
+                        const data = JSON.parse(Buffer.from(raw).toString('utf-8'));
+                        const contentId = String(data.content?.id ?? '');
+                        if (contentId === storyId) {
+                            // Found the standalone file — patch it
+                            if (data.metadata) {
+                                data.metadata.status = newStatus;
+                                if (data.metadata.timestamps) {
+                                    data.metadata.timestamps.lastModified = new Date().toISOString();
+                                }
+                            }
+                            if (data.content) {
+                                data.content.status = newStatus;
+                            }
+                            await vscode.workspace.fs.writeFile(
+                                fileUri,
+                                Buffer.from(JSON.stringify(data, null, 2), 'utf-8')
+                            );
+                            storeLogger.debug(`[SprintSync] Patched standalone story ${storyId} status → ${newStatus} in ${name}`);
+                            patchedStandalone = true;
+                            break;
+                        }
+                    } catch { /* skip unreadable files */ }
+                }
+            } catch { /* stories dir may not exist */ }
+        }
+
+
+        // ── Update in-memory ─────────────────────────────────────────────
+        if (patchedStandalone) {
+            const epics: any[] = this.artifacts.get('epics') || [];
+            for (const ep of epics) {
+                if (String(ep.id) !== epicId) continue;
+                const st = (ep.stories || []).find((s: any) => s.id === storyId);
+                if (st) {
+                    st.status = newStatus;
+                }
+                break;
+            }
+        }
+
+        if (!patchedStandalone) {
+            storeLogger.debug(`[SprintSync] Could not find story ${storyId} in epic ${epicId} — skipping`);
+            return false;
+        }
+
+        // Story JSON file is the authoritative status source; no YAML sync needed
+
+        return true;
+    }
+
+
+    // =========================================================================
+    // Atomic Status Sync (LLM tool backing)
+    // =========================================================================
+
+    /**
+     * Atomically sync a story's status across ALL tracker files:
+     *   1. epics/epic-{N}/stories/{id}.json  → content.status + metadata.status (SINGLE SOURCE OF TRUTH)
+     *   2. In-memory model
+     *
+     * Story JSON files are the single source of truth for status.
+     * Called by the `agileagentcanvas_sync_story_status` LM tool.
+     */
+    async syncStoryStatusAtomic(
+        storyId: string,
+        epicId: string,
+        newStatus: string
+    ): Promise<{ success: boolean; updatedFiles: string[] }> {
+        const acOutput = this.getOutputChannel();
+        const updatedFiles: string[] = [];
+
+        storeLogger.debug(`[AtomicSync] Story ${storyId} in epic ${epicId} → ${newStatus}`);
+
+        // Suppress file-watcher during batch
+        this._syncingUntil = Date.now() + 10_000;
+
+        try {
+            // 1. Patch standalone story file + in-memory model
+            const storyPatched = await this.patchStoryStatusOnDisk(epicId, storyId, newStatus, true);
+            if (storyPatched) {
+                updatedFiles.push(`epics/epic-${epicId}/stories/${storyId}.json`);
+            }
+
+
+            // Story JSON is authoritative — no YAML sync
+
+            // 5. Notify canvas
+            this.notifyChange();
+
+            storeLogger.debug(`[AtomicSync] Story sync complete: ${updatedFiles.length} files updated`);
+            return { success: true, updatedFiles };
+        } catch (e) {
+            storeLogger.debug(`[AtomicSync] Story sync failed: ${e}`);
+            return { success: false, updatedFiles };
+        } finally {
+            this._syncingUntil = Date.now() + 500;
+        }
+    }
+
+    /**
+     * Atomically sync an epic's status across ALL tracker files:
+     *   1. epics/epic-{N}/epic.json  → content.status + metadata.status
+     *   2. In-memory model
+     *
+     * Epic JSON files are the single source of truth for status.
+     * Called by the `agileagentcanvas_sync_epic_status` LM tool.
+     */
+    async syncEpicStatusAtomic(
+        epicId: string,
+        newStatus: string
+    ): Promise<{ success: boolean; updatedFiles: string[] }> {
+        const acOutput = this.getOutputChannel();
+        const updatedFiles: string[] = [];
+
+        storeLogger.debug(`[AtomicSync] Epic ${epicId} → ${newStatus}`);
+
+        this._syncingUntil = Date.now() + 10_000;
+
+        try {
+            // 1. Patch epic.json + in-memory
+            const patched = await this.patchEpicStatusOnDisk(epicId, newStatus, true);
+            if (patched) {
+                updatedFiles.push(`epics/epic-${epicId}/epic.json`);
+            }
+
+            // Epic JSON is authoritative — no YAML sync
+
+            // 3. Notify canvas
+            this.notifyChange();
+
+            storeLogger.debug(`[AtomicSync] Epic sync complete: ${updatedFiles.length} files updated`);
+            return { success: true, updatedFiles };
+        } catch (e) {
+            storeLogger.debug(`[AtomicSync] Epic sync failed: ${e}`);
+            return { success: false, updatedFiles };
+        } finally {
+            this._syncingUntil = Date.now() + 500;
         }
     }
 
@@ -3614,14 +4135,14 @@ export class ArtifactStore {
         maxDepth = 10
     ): Promise<vscode.Uri[]> {
         if (depth > maxDepth) {
-            acOutput.appendLine(`[ArtifactStore] findAllJsonFiles: max depth (${maxDepth}) reached at ${folderUri.fsPath}`);
+            storeLogger.debug(`[ArtifactStore] findAllJsonFiles: max depth (${maxDepth}) reached at ${folderUri.fsPath}`);
             return [];
         }
 
         // Cycle detection: normalise the path and skip if already seen
         const canonical = folderUri.fsPath.toLowerCase();
         if (visited.has(canonical)) {
-            acOutput.appendLine(`[ArtifactStore] findAllJsonFiles: cycle detected at ${folderUri.fsPath}`);
+            storeLogger.debug(`[ArtifactStore] findAllJsonFiles: cycle detected at ${folderUri.fsPath}`);
             return [];
         }
         visited.add(canonical);
@@ -3645,7 +4166,7 @@ export class ArtifactStore {
                 }
             }
         } catch (e) {
-            acOutput.appendLine(`[ArtifactStore] Could not read directory ${folderUri.fsPath}: ${e}`);
+            storeLogger.debug(`[ArtifactStore] Could not read directory ${folderUri.fsPath}: ${e}`);
         }
         
         return results;
@@ -3673,13 +4194,6 @@ export class ArtifactStore {
             if (dt.includes('prd')) return 'prd';
         }
         
-        // stories-index.json and epics-index.json are generated manifests, not artifacts — skip.
-        // IMPORTANT: this check MUST come BEFORE the content-structure checks below,
-        // because epics-index.json has a root-level `epics` array that would match
-        // the `data.epics` check and be misidentified as an 'epics' artifact.
-        const lowerNameEarly = fileName.toLowerCase();
-        if (lowerNameEarly === 'stories-index.json' || lowerNameEarly === 'epics-index.json') return 'unknown';
-
         // Check content structure
         if (data.content?.epics || data.epics) return 'epics';
         if (data.content?.userStory || data.userStory) return 'story';
@@ -3696,7 +4210,6 @@ export class ArtifactStore {
         
         // Check filename patterns (use word-boundary-aware matching to avoid false positives)
         const lowerName = fileName.toLowerCase();
-        // stories-index.json and epics-index.json exclusion moved above content checks
         // Standalone epic files in epics/ subdirectory (e.g. epic-1.json, epic-15.json)
         if (/^epic-[a-z0-9_-]+\.json$/.test(lowerName)) return 'epic';
         if (/\bepics?\b/.test(lowerName)) return 'epics';
@@ -3756,10 +4269,105 @@ export class ArtifactStore {
                 const content = await vscode.workspace.fs.readFile(stateUri);
                 const stateData = JSON.parse(Buffer.from(content).toString('utf-8'));
                 this.artifacts.set('uiState', stateData.ui);
-                acOutput.appendLine(`[ArtifactStore] Loaded UI state from ${stateUri.fsPath}`);
+                storeLogger.debug(`[ArtifactStore] Loaded UI state from ${stateUri.fsPath}`);
                 return;
             } catch {
                 // Try next path
+            }
+        }
+    }
+
+    /**
+     * Resolves storyRefs from an epic's JSON data and explicitly loads them.
+     * Missing or unparseable files will generate "Broken Reference" story cards.
+     */
+    private async loadEpicStoryRefs(epic: Epic, epicData: any, epicFileUri: vscode.Uri): Promise<void> {
+        if (!epicData.storyRefs || !Array.isArray(epicData.storyRefs)) return;
+
+        // Resolve the epic directory (where 'stories/' usually lives alongside 'epic.json')
+        let epicDir = epicFileUri;
+        const lastSlashPos = epicFileUri.path.lastIndexOf('/');
+        if (lastSlashPos > 0) {
+            epicDir = epicFileUri.with({ path: epicFileUri.path.substring(0, lastSlashPos) });
+        }
+        
+        // Pre-read the stories directory to handle slug-based filenames
+        // Many projects have files like "0.1-some-slug.json" but the ref just says "stories/0.1.json"
+        let availableStoryFiles: [string, vscode.FileType][] = [];
+        const storiesDirUri = vscode.Uri.joinPath(epicDir, 'stories');
+        try {
+            availableStoryFiles = await vscode.workspace.fs.readDirectory(storiesDirUri);
+        } catch (e) {
+            // Ignore if stories dir doesn't exist
+        }
+
+        for (const ref of epicData.storyRefs) {
+            const refId = typeof ref === 'string' ? ref : ref.id;
+            let refPath = typeof ref === 'string' ? ref : ref.file;
+            
+            let storyUri: vscode.Uri | null = null;
+            let finalRefPath = refPath || String(refId);
+
+            // 1. If we have availableStoryFiles, try to find by ID prefix
+            if (refId) {
+                const exactBase = `${refId}.json`;
+                const expectedBase = `${refId}-`;
+                const foundMatch = availableStoryFiles.find(([name, type]) => 
+                    type === vscode.FileType.File && (name === exactBase || name.startsWith(expectedBase))
+                );
+                if (foundMatch) {
+                    storyUri = vscode.Uri.joinPath(storiesDirUri, foundMatch[0]);
+                    finalRefPath = `stories/${foundMatch[0]}`;
+                }
+            }
+
+            // 2. Fallback to the exact refPath provided
+            if (!storyUri && refPath) {
+                storyUri = vscode.Uri.joinPath(epicDir, refPath);
+                finalRefPath = refPath;
+            }
+
+            if (!storyUri) continue;
+            
+            try {
+                const storyContent = await vscode.workspace.fs.readFile(storyUri);
+                const storyJson = JSON.parse(Buffer.from(storyContent).toString('utf-8'));
+                const storyMerged = { ...(storyJson.metadata || {}), ...(storyJson.content || storyJson) };
+                
+                // Track source for deduplication logic later
+                storyMerged._sourceEpicId = epic.id;
+                
+                const story = this.mapSchemaStoryToInternal(storyMerged);
+                if (story) {
+                    // Prevent duplicate if also defined inline
+                    if (!epic.stories.find(s => String(s.id) === String(story.id))) {
+                        epic.stories.push(story);
+                        storeLogger.debug(`[ArtifactStore] Specifically loaded storyRef: ${story.id} from ${storyUri.fsPath}`);
+                    }
+                }
+            } catch (err: any) {
+                const errMsg = err?.message || String(err);
+                if (errMsg.includes('ENOENT') || errMsg.includes('FileNotFound')) {
+                    storeLogger.error(`[ArtifactStore] ❌ Missing referenced story file: ${storyUri.fsPath}`);
+                    this.getOutputChannel().appendLine(`[ArtifactStore] ❌ ERROR: Missing referenced story file found in epic ${epic.id}: ${storyUri.fsPath}`);
+                } else {
+                    storeLogger.error(`[ArtifactStore] ❌ Failed to parse referenced story file: ${storyUri.fsPath} (${errMsg})`);
+                    this.getOutputChannel().appendLine(`[ArtifactStore] ❌ ERROR: Failed to parse referenced story file in epic ${epic.id}: ${storyUri.fsPath} (${errMsg})`);
+                }
+                
+                const refTitle = typeof ref === 'string' ? ref : ref.title;
+                // Only push placeholder if not already populated inline
+                if (refId && !epic.stories.find(s => String(s.id) === String(refId))) {
+                    const placeholderStory: any = {
+                        id: refId,
+                        title: `⚠️ Broken Reference: ${refTitle || finalRefPath}`,
+                        status: 'draft',
+                        userStory: { asA: '', iWant: '', soThat: '' },
+                        acceptanceCriteria: [],
+                        technicalNotes: `Missing or unparseable file: ${finalRefPath}`
+                    };
+                    epic.stories.push(placeholderStory as Story);
+                }
             }
         }
     }
@@ -3834,7 +4442,7 @@ export class ArtifactStore {
             functionalRequirements: epicData.functionalRequirements || [],
             nonFunctionalRequirements: epicData.nonFunctionalRequirements || [],
             additionalRequirements: epicData.additionalRequirements || [],
-            status: this.mapStatus(epicData.status),
+            status: this.mapStatus(epicData.status) as Epic['status'],
             stories,
             priority: epicData.priority,
             storyCount: epicData.storyCount,
@@ -3936,7 +4544,8 @@ export class ArtifactStore {
                     // Prose format
                     acceptanceCriteria.push({
                         id: ac.id,
-                        criterion: ac.criterion
+                        criterion: ac.criterion,
+                        status: ac.status
                     });
                 } else {
                     // GWT format
@@ -3945,7 +4554,8 @@ export class ArtifactStore {
                         given: ac.given || '',
                         when: ac.when || '',
                         then: ac.then || '',
-                        and: ac.and || []
+                        and: ac.and || [],
+                        status: ac.status
                     });
                 }
             }
@@ -3976,7 +4586,7 @@ export class ArtifactStore {
                 then: 'it works as expected'
             }],
             technicalNotes: storyData.technicalNotes,
-            status: this.mapStatus(storyData.status),
+            status: this.mapStatus(storyData.status) as Story['status'],
             storyPoints: storyData.storyPoints,
             priority: storyData.priority,
             estimatedEffort: storyData.estimatedEffort,
@@ -4059,12 +4669,39 @@ export class ArtifactStore {
     /**
      * Map status string to valid status enum
      */
-    private mapStatus(status: string | undefined): 'draft' | 'ready' | 'in-progress' | 'done' {
+    /**
+     * Map a raw status string to a canonical status value.
+     *
+     * Valid canonical statuses (superset across stories, epics, and metadata):
+     *   draft, ready, ready-for-dev, in-progress, in-review, review,
+     *   ready-for-review, blocked, complete, completed, done,
+     *   approved, archived, implementing, not-started, backlog
+     *
+     * Legacy aliases are mapped to their canonical equivalents:
+     *   in_progress → in-progress, approved → ready (for stories/epics),
+     *   complete/completed → done, etc.
+     */
+    private mapStatus(status: string | undefined): string {
         if (!status) return 'draft';
-        const normalized = status.toLowerCase();
-        if (normalized === 'ready' || normalized === 'approved') return 'ready';
-        if (normalized === 'in-progress' || normalized === 'in_progress') return 'in-progress';
-        if (normalized === 'done' || normalized === 'complete' || normalized === 'completed') return 'done';
+        const normalized = status.toLowerCase().trim();
+
+        // ── Pass-through: all canonical statuses used by Story / Epic types ──
+        const VALID_STATUSES = new Set([
+            'draft', 'ready', 'ready-for-dev', 'in-progress', 'in-review',
+            'review', 'ready-for-review', 'blocked', 'complete', 'completed',
+            'done', 'approved', 'archived', 'implementing', 'not-started',
+            'backlog', 'proposed', 'accepted', 'deprecated', 'superseded', 'rejected'
+        ]);
+        if (VALID_STATUSES.has(normalized)) return normalized;
+
+        // ── Legacy aliases ──
+        if (normalized === 'in_progress') return 'in-progress';
+        if (normalized === 'in_review')   return 'in-review';
+        if (normalized === 'ready_for_dev') return 'ready-for-dev';
+        if (normalized === 'not_started') return 'not-started';
+        if (normalized === 'ready_for_review') return 'ready-for-review';
+
+        // Unknown status — default to draft
         return 'draft';
     }
 
@@ -4153,10 +4790,10 @@ export class ArtifactStore {
      *   • story: strip unknown metadata fields
      */
     async fixAndSyncToFiles(): Promise<void> {
-        acOutput.appendLine('[ArtifactStore] fixAndSyncToFiles: starting schema-aware repair pass');
+        storeLogger.debug('[ArtifactStore] fixAndSyncToFiles: starting schema-aware repair pass');
         const sourceFolder = this.sourceFolder;
         if (!sourceFolder) {
-            acOutput.appendLine('[ArtifactStore] fixAndSyncToFiles: no sourceFolder — falling back to plain syncToFiles');
+            storeLogger.debug('[ArtifactStore] fixAndSyncToFiles: no sourceFolder — falling back to plain syncToFiles');
             this._dirty = true; // Force sync even if not otherwise dirty
             await this.syncToFiles();
             return;
@@ -4167,21 +4804,24 @@ export class ArtifactStore {
 
         try {
             const allJsonFiles = await this.findAllJsonFiles(sourceFolder);
-            acOutput.appendLine(`[ArtifactStore] fixAndSyncToFiles: found ${allJsonFiles.length} JSON files`);
+            storeLogger.debug(`[ArtifactStore] fixAndSyncToFiles: found ${allJsonFiles.length} JSON files`);
 
             let repaired = 0;
             for (const fileUri of allJsonFiles) {
                 try {
                     const raw = await vscode.workspace.fs.readFile(fileUri);
                     const data = JSON.parse(Buffer.from(raw).toString('utf-8'));
-                    const fileName = fileUri.path.split('/').pop() || '';
+                    const sfBase = sourceFolder.path.replace(/\/$/, '');
+                    const fileName = fileUri.path.startsWith(sfBase)
+                        ? fileUri.path.slice(sfBase.length + 1)
+                        : fileUri.path.split('/').pop() || '';
                     const artifactType = data.metadata?.artifactType || this.detectArtifactType(data, fileName);
 
                     if (!artifactType || artifactType === 'unknown') continue;
 
                     // Validate before repair — skip files that are already valid
                     if (schemaValidator.isInitialized()) {
-                        const pre = schemaValidator.validate(artifactType, data);
+                        const pre = schemaValidator.validate(artifactType, data, fileName);
                         if (pre.valid) continue;
                     }
 
@@ -4197,14 +4837,14 @@ export class ArtifactStore {
                         // Note: markdown companions are regenerated when syncToFiles
                         // runs after the reload that follows this repair pass.
                         repaired++;
-                        acOutput.appendLine(`[ArtifactStore] fixAndSyncToFiles: repaired ${fileName}`);
+                        storeLogger.debug(`[ArtifactStore] fixAndSyncToFiles: repaired ${fileName}`);
                     }
                 } catch (e) {
-                    acOutput.appendLine(`[ArtifactStore] fixAndSyncToFiles: error repairing ${fileUri.fsPath}: ${e}`);
+                    storeLogger.debug(`[ArtifactStore] fixAndSyncToFiles: error repairing ${fileUri.fsPath}: ${e}`);
                 }
             }
 
-            acOutput.appendLine(`[ArtifactStore] fixAndSyncToFiles: repaired ${repaired}/${allJsonFiles.length} files`);
+            storeLogger.debug(`[ArtifactStore] fixAndSyncToFiles: repaired ${repaired}/${allJsonFiles.length} files`);
 
             // NOTE: We intentionally do NOT call syncToFiles() here.
             // syncToFiles() re-serialises from in-memory state which may still
@@ -4247,7 +4887,7 @@ export class ArtifactStore {
                 if (result.changed) {
                     changed = true;
                     for (const r of result.repairs) {
-                        acOutput.appendLine(
+                        storeLogger.debug(
                             `[ArtifactStore] schema-repair: ${r} in ${fileName}`
                         );
                     }
@@ -4321,7 +4961,7 @@ export class ArtifactStore {
             if (!d.content.vision) {
                 d.content.vision = {};
                 changed = true;
-                acOutput.appendLine(
+                storeLogger.debug(
                     `[ArtifactStore] fixAndSyncToFiles: added empty content.vision to ${fileName}`
                 );
             }
@@ -4364,7 +5004,7 @@ export class ArtifactStore {
                 }
                 if (coerced) {
                     changed = true;
-                    acOutput.appendLine(
+                    storeLogger.debug(
                         `[ArtifactStore] fixAndSyncToFiles: coerced targetUsers strings to objects in ${fileName}`
                     );
                 }
@@ -4378,14 +5018,14 @@ export class ArtifactStore {
             if (!d.content.productOverview) {
                 d.content.productOverview = {};
                 changed = true;
-                acOutput.appendLine(
+                storeLogger.debug(
                     `[ArtifactStore] fixAndSyncToFiles: added empty content.productOverview to ${fileName}`
                 );
             }
             if (!d.content.requirements) {
                 d.content.requirements = {};
                 changed = true;
-                acOutput.appendLine(
+                storeLogger.debug(
                     `[ArtifactStore] fixAndSyncToFiles: added empty content.requirements to ${fileName}`
                 );
             }
@@ -4397,14 +5037,14 @@ export class ArtifactStore {
             if (!d.content.overview) {
                 d.content.overview = {};
                 changed = true;
-                acOutput.appendLine(
+                storeLogger.debug(
                     `[ArtifactStore] fixAndSyncToFiles: added empty content.overview to ${fileName}`
                 );
             }
             if (!d.content.decisions) {
                 d.content.decisions = [];
                 changed = true;
-                acOutput.appendLine(
+                storeLogger.debug(
                     `[ArtifactStore] fixAndSyncToFiles: added empty content.decisions to ${fileName}`
                 );
             }
@@ -4420,14 +5060,14 @@ export class ArtifactStore {
             if (!d.content.summary) {
                 d.content.summary = {};
                 changed = true;
-                acOutput.appendLine(
+                storeLogger.debug(
                     `[ArtifactStore] fixAndSyncToFiles: added empty content.summary to ${fileName}`
                 );
             }
             if (!d.content.coveragePlan) {
                 d.content.coveragePlan = {};
                 changed = true;
-                acOutput.appendLine(
+                storeLogger.debug(
                     `[ArtifactStore] fixAndSyncToFiles: added empty content.coveragePlan to ${fileName}`
                 );
             }
@@ -4494,7 +5134,7 @@ export class ArtifactStore {
                 // Content is an object but missing the required epics array
                 d.content.epics = [];
                 changed = true;
-                acOutput.appendLine(
+                storeLogger.debug(
                     `[ArtifactStore] fixAndSyncToFiles: added empty content.epics to ${fileName}`
                 );
             }
@@ -4540,7 +5180,7 @@ export class ArtifactStore {
                                 if (story.storyId) {
                                     epic.stories[si] = story.storyId;
                                     changed = true;
-                                    acOutput.appendLine(
+                                    storeLogger.debug(
                                         `[ArtifactStore] fixAndSyncToFiles: converted inline story with storyId "${story.storyId}" to string ref in ${fileName}`
                                     );
                                     continue;
@@ -4558,7 +5198,7 @@ export class ArtifactStore {
                                     formatted: story.title || `Story ${story.id}`
                                 };
                                 changed = true;
-                                acOutput.appendLine(
+                                storeLogger.debug(
                                     `[ArtifactStore] fixAndSyncToFiles: added missing userStory to inline story ${story.id} in ${fileName}`
                                 );
                             }
@@ -4567,7 +5207,7 @@ export class ArtifactStore {
                                     { criterion: `${story.title || story.id} works as expected` }
                                 ];
                                 changed = true;
-                                acOutput.appendLine(
+                                storeLogger.debug(
                                     `[ArtifactStore] fixAndSyncToFiles: added placeholder acceptanceCriteria to inline story ${story.id} in ${fileName}`
                                 );
                             }
@@ -4586,7 +5226,7 @@ export class ArtifactStore {
                                 });
                                 if (uxChanged) {
                                     changed = true;
-                                    acOutput.appendLine(
+                                    storeLogger.debug(
                                         `[ArtifactStore] fixAndSyncToFiles: flattened uxReferences objects to strings in ${fileName} story ${story.id || '?'}`
                                     );
                                 }
@@ -4648,7 +5288,7 @@ export class ArtifactStore {
                                 const prev = sc.category;
                                 sc.category = mapped || 'compliance';
                                 changed = true;
-                                acOutput.appendLine(
+                                storeLogger.debug(
                                     `[ArtifactStore] fixAndSyncToFiles: remapped fitCriteria.security category "${prev}" → "${sc.category}" in ${fileName} epic ${epic.id || '?'}`
                                 );
                             }
@@ -4657,7 +5297,7 @@ export class ArtifactStore {
                                 const prev = sc.verificationMethod;
                                 sc.verificationMethod = mapped || 'inspection';
                                 changed = true;
-                                acOutput.appendLine(
+                                storeLogger.debug(
                                     `[ArtifactStore] fixAndSyncToFiles: remapped fitCriteria.security verificationMethod "${prev}" → "${sc.verificationMethod}" in ${fileName} epic ${epic.id || '?'}`
                                 );
                             }
@@ -4673,7 +5313,7 @@ export class ArtifactStore {
                 d.content.id = d.content.storyId;
                 delete d.content.storyId;
                 changed = true;
-                acOutput.appendLine(
+                storeLogger.debug(
                     `[ArtifactStore] fixAndSyncToFiles: migrated storyId → id ("${d.content.id}") in ${fileName}`
                 );
             }
@@ -4684,7 +5324,7 @@ export class ArtifactStore {
                 if (epicMatch) {
                     d.content.epicId = epicMatch[1];
                     changed = true;
-                    acOutput.appendLine(
+                    storeLogger.debug(
                         `[ArtifactStore] fixAndSyncToFiles: derived epicId "${d.content.epicId}" from filename ${fileName}`
                     );
                 }
@@ -4697,7 +5337,7 @@ export class ArtifactStore {
                     || d.metadata?.artifactType
                     || 'Untitled Story';
                 changed = true;
-                acOutput.appendLine(
+                storeLogger.debug(
                     `[ArtifactStore] fixAndSyncToFiles: added missing content.title to ${fileName}`
                 );
             }
@@ -4789,6 +5429,7 @@ export class ArtifactStore {
         // Save epics if they exist
         try {
             if (state.epics && state.epics.length > 0) {
+                await this.saveStoriesToFile(state, baseUri);
                 await this.saveEpicsToFile(state, baseUri);
             }
         } catch (e) { errors.push(`epics: ${e}`); }
@@ -4980,8 +5621,8 @@ export class ArtifactStore {
         } catch (e) { errors.push(`designThinking: ${e}`); }
 
         if (errors.length > 0) {
-            acOutput.appendLine(`[ArtifactStore] syncToFiles completed with ${errors.length} error(s):`);
-            errors.forEach(err => acOutput.appendLine(`  - ${err}`));
+            storeLogger.debug(`[ArtifactStore] syncToFiles completed with ${errors.length} error(s):`);
+            errors.forEach(err => storeLogger.debug(`  - ${err}`));
         }
         
         // ─── Persist requirements to standalone file ──────────────────────
@@ -5036,52 +5677,9 @@ export class ArtifactStore {
                     }
                     await writeMarkdownCompanion(reqFileUri, 'requirements.md', reqMd);
                 }
-                acOutput.appendLine(`[ArtifactStore] syncToFiles: wrote requirements.json (${reqs.functional?.length || 0} FR, ${reqs.nonFunctional?.length || 0} NFR, ${reqs.additional?.length || 0} additional)`);
+                storeLogger.debug(`[ArtifactStore] syncToFiles: wrote requirements.json (${reqs.functional?.length || 0} FR, ${reqs.nonFunctional?.length || 0} NFR, ${reqs.additional?.length || 0} additional)`);
             }
         } catch (e) { errors.push(`requirements: ${e}`); }
-
-        // ─── Generate stories-index.json manifest ─────────────────────────
-        // Index files are JSON navigation aids — only generate if format includes JSON
-        const indexFormat = this.getOutputFormat();
-        if (indexFormat === 'json' || indexFormat === 'dual') {
-        try {
-            const epics = state.epics || [];
-            const storiesIndex: { id: string; title: string; epicId: string; status: string }[] = [];
-            for (const epic of epics) {
-                for (const story of (epic as any).stories || []) {
-                    storiesIndex.push({
-                        id: story.id || '',
-                        title: story.title || '',
-                        epicId: (epic as any).id || '',
-                        status: story.status || 'draft'
-                    });
-                }
-            }
-            const indexUri = vscode.Uri.joinPath(baseUri, 'stories-index.json');
-            const indexContent = Buffer.from(JSON.stringify({
-                metadata: { schema: 'stories-index', generatedAt: new Date().toISOString() },
-                stories: storiesIndex
-            }, null, 2), 'utf-8');
-            await vscode.workspace.fs.writeFile(indexUri, indexContent);
-        } catch (e) { errors.push(`stories-index: ${e}`); }
-
-        // ─── Generate epics-index.json manifest ───────────────────────────
-        try {
-            const epics = state.epics || [];
-            const epicsIndex = epics.map((epic: any) => ({
-                id: epic.id || '',
-                title: epic.title || '',
-                status: epic.status || 'draft',
-                storyCount: epic.stories?.length || 0
-            }));
-            const epicsIndexUri = vscode.Uri.joinPath(baseUri, 'epics-index.json');
-            const epicsIndexContent = Buffer.from(JSON.stringify({
-                metadata: { schema: 'epics-index', generatedAt: new Date().toISOString() },
-                epics: epicsIndex
-            }, null, 2), 'utf-8');
-            await vscode.workspace.fs.writeFile(epicsIndexUri, epicsIndexContent);
-        } catch (e) { errors.push(`epics-index: ${e}`); }
-        } // end indexFormat check
 
         // ─── Generate README.md — LLM orientation guide ──────────────────
         try {
@@ -5095,26 +5693,24 @@ export class ArtifactStore {
                 '```',
                 'epics/',
                 '  epic-{id}/',
-                '    epic.json                  ← Full epic content (goal, stories, metadata)',
+                '    epic.json                  ← Epic metadata + storyRefs (lightweight references)',
                 '    stories/',
-                '      {id}-{slug}.json         ← Full story content (AC, tasks, test cases)',
+                '      {id}.json                ← Full story content (AC, tasks, test cases)',
                 '    tests/',
                 '      test-cases.json          ← Test cases scoped to this epic',
                 '      test-design-{id}.json    ← Test design scoped to this epic',
                 'epics.json                     ← Manifest (metadata + refs to epic files)',
-                'epics-index.json               ← Summary index: id, title, status, storyCount',
-                'stories-index.json             ← Summary index: id, title, epicId, status',
                 '```',
                 '',
                 '## Quick Reference for LLMs',
                 '',
-                '| To find...               | Read this file                          |',
-                '|--------------------------|------------------------------------------|',
-                '| List of all epics        | `epics-index.json` or `epics.json`       |',
-                '| Full epic details        | `epics/epic-{id}/epic.json`              |',
-                '| List of all stories      | `stories-index.json`                     |',
-                '| Full story details       | `epics/epic-{id}/stories/{id}-{slug}.json` |',
-                '| Epic test cases          | `epics/epic-{id}/tests/test-cases.json`  |',
+                '| To find...               | Read this file                           |',
+                '|--------------------------|-------------------------------------------|',
+                '| List of all epics        | `epics.json` or `epics/epic-{id}/epic.json` |',
+                '| Full epic details        | `epics/epic-{id}/epic.json`               |',
+                '| List of all stories      | Iterate `epics/*/stories/*.json`          |',
+                '| Full story details       | `epics/epic-{id}/stories/{id}.json`       |',
+                '| Epic test cases          | `epics/epic-{id}/tests/test-cases.json`   |',
                 '',
                 '## Key Conventions',
                 '',
@@ -5228,6 +5824,168 @@ export class ArtifactStore {
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
+     * Migrate legacy `implementation/` directory files to the canonical single-source
+     * location at `epics/epic-{N}/stories/{id}.json`.
+     *
+     * Steps:
+     * 1. Check if `{sourceFolder}/implementation/` exists.
+     * 2. Iterate over all .json files found inside it.
+     * 3. For each file, extract the story `id` and `epicId` from its content.
+     * 4. Determine the canonical target path: epics/epic-{N}/stories/{id}.json
+     * 5. If the canonical file does NOT already exist, write the content there.
+     * 6. Rename `implementation/` → `.deprecated_implementation/` so it is naturally
+     *    excluded from recursive scans (dot-folders are skipped) while preserving data.
+     *
+     * Runs fire-and-forget — does not block the load path.
+     */
+    private async migrateImplementationFolder(folderUri: vscode.Uri): Promise<void> {
+        try {
+            // The implementation/ directories live inside each epic folder:
+            //   epics/epic-{N}/implementation/
+            // NOT at the project root. Iterate all epic-{N} dirs and migrate each.
+            const epicsDir = vscode.Uri.joinPath(folderUri, 'epics');
+            let epicEntries: [string, vscode.FileType][];
+            try {
+                epicEntries = await vscode.workspace.fs.readDirectory(epicsDir);
+            } catch {
+                // No epics/ directory — nothing to migrate
+                return;
+            }
+
+            let totalMigrated = 0;
+            let totalSkipped = 0;
+
+            for (const [epicDirName, epicType] of epicEntries) {
+                if (epicType !== vscode.FileType.Directory) { continue; }
+
+                const epicFolderUri = vscode.Uri.joinPath(epicsDir, epicDirName);
+                const implDir = vscode.Uri.joinPath(epicFolderUri, 'implementation');
+
+                // Check if this epic has an implementation/ subdirectory
+                try {
+                    await vscode.workspace.fs.stat(implDir);
+                } catch {
+                    continue; // this epic has no implementation/ — skip
+                }
+
+                storeLogger.debug(`[Migration] Detected legacy implementation/ in ${epicDirName} — migrating...`);
+
+                let migratedCount = 0;
+                let skippedCount = 0;
+
+                // Pre-read stories/ directory so we can do prefix-based matching
+                // (implementation/ may use slightly different slugs than stories/)
+                let existingStoryFiles: [string, vscode.FileType][] = [];
+                const storiesDirUri = vscode.Uri.joinPath(epicFolderUri, 'stories');
+                try {
+                    existingStoryFiles = await vscode.workspace.fs.readDirectory(storiesDirUri);
+                } catch { /* stories/ doesn't exist yet */ }
+
+                // Helper: extract story number prefix like "16.1-" from a filename
+                const storyPrefix = (fname: string) => {
+                    const m = fname.match(/^(\d+\.\d+(?:\.\d+)?)-/);
+                    return m ? m[1] + '-' : null;
+                };
+
+                const entries = await vscode.workspace.fs.readDirectory(implDir);
+                for (const [name, type] of entries) {
+                    if (type !== vscode.FileType.File || !name.endsWith('.json')) { continue; }
+
+                    try {
+                        const fileUri = vscode.Uri.joinPath(implDir, name);
+                        const rawBytes = await vscode.workspace.fs.readFile(fileUri);
+                        const raw = Buffer.from(rawBytes).toString('utf-8');
+                        const data = JSON.parse(raw);
+
+                        // Extract id and epicId from the story payload
+                        const storyId: string = data?.content?.id || data?.id || '';
+                        const epicId: string = data?.content?.epicId || data?.epicId || '';
+
+                        if (!storyId) {
+                            storeLogger.debug(`[Migration] Skipping ${name}: missing id field`);
+                            skippedCount++;
+                            continue;
+                        }
+
+                        // Canonical path: epics/epic-{N}/stories/
+                        // Derive epic folder from epicId if present, otherwise stay in current epic dir
+                        const resolvedEpicFolder = epicId
+                            ? vscode.Uri.joinPath(epicsDir, `epic-${epicId.replace(/\D/g, '')}`)
+                            : epicFolderUri;
+                        const storiesDir = vscode.Uri.joinPath(resolvedEpicFolder, 'stories');
+                        try { await vscode.workspace.fs.createDirectory(storiesDir); } catch { /* exists */ }
+
+                        // Re-read stories dir for this epic (may differ from epicFolderUri)
+                        let currentStoryFiles = existingStoryFiles;
+                        if (epicId && epicId.replace(/\D/g, '') !== epicDirName.replace(/\D/g, '')) {
+                            try { currentStoryFiles = await vscode.workspace.fs.readDirectory(storiesDir); } catch { currentStoryFiles = []; }
+                        }
+
+                        // Find an existing file in stories/ by story number prefix (fuzzy slug match)
+                        const prefix = storyPrefix(name);
+                        const existingMatch = prefix
+                            ? currentStoryFiles.find(([fn]) => fn.startsWith(prefix) && fn.endsWith('.json'))
+                            : undefined;
+
+                        let shouldWrite = true;
+                        let targetFilename = name; // default: keep implementation/ filename
+
+                        if (existingMatch) {
+                            const [existingName] = existingMatch;
+                            const existingUri = vscode.Uri.joinPath(storiesDir, existingName);
+                            const existingStat = await vscode.workspace.fs.stat(existingUri);
+
+                            if (existingStat.size >= rawBytes.byteLength) {
+                                // Existing file is same size or larger — leave it alone
+                                storeLogger.debug(`[Migration] ${existingName} already up-to-date (${existingStat.size}B ≥ ${rawBytes.byteLength}B) — skipping`);
+                                shouldWrite = false;
+                                skippedCount++;
+                            } else {
+                                // Implementation file is richer — delete old stub, write richer version
+                                storeLogger.debug(`[Migration] ${existingName} is smaller (${existingStat.size}B < ${rawBytes.byteLength}B) — replacing with richer version`);
+                                try { await vscode.workspace.fs.delete(existingUri); } catch { /* best-effort */ }
+                                targetFilename = existingName; // keep the original slug to avoid new dupes
+                            }
+                        }
+
+                        if (shouldWrite) {
+                            const canonicalUri = vscode.Uri.joinPath(storiesDir, targetFilename);
+                            await vscode.workspace.fs.writeFile(canonicalUri, rawBytes);
+                            storeLogger.debug(`[Migration] Migrated ${epicDirName}/implementation/${name} → stories/${targetFilename}`);
+                            migratedCount++;
+                        }
+                    } catch (err) {
+                        storeLogger.debug(`[Migration] Error processing ${epicDirName}/implementation/${name}: ${err}`);
+                        skippedCount++;
+                    }
+                }
+
+                // Rename implementation/ → .deprecated_implementation/ to exclude from future scans
+                const deprecatedDir = vscode.Uri.joinPath(epicFolderUri, '.deprecated_implementation');
+                try {
+                    await vscode.workspace.fs.rename(implDir, deprecatedDir, { overwrite: false });
+                    storeLogger.debug(`[Migration] ${epicDirName}: Renamed implementation/ → .deprecated_implementation/ (${migratedCount} migrated, ${skippedCount} skipped)`);
+                } catch (err) {
+                    storeLogger.debug(`[Migration] ${epicDirName}: Could not rename implementation/: ${err}`);
+                }
+
+                totalMigrated += migratedCount;
+                totalSkipped += skippedCount;
+            }
+
+            if (totalMigrated > 0) {
+                void vscode.window.showInformationMessage(
+                    `Migrated ${totalMigrated} story file${totalMigrated > 1 ? 's' : ''} from epic implementation/ folders to canonical stories/ locations. ` +
+                    `The old implementation/ folders have been renamed to .deprecated_implementation/ for safety.`
+                );
+            }
+        } catch (err) {
+            // Silent — migration is best-effort, should never break the load path
+            storeLogger.debug(`[Migration] migrateImplementationFolder failed: ${err}`);
+        }
+    }
+
+    /**
      * Check if the project's epics.json still contains inline story objects.
      * If so, show a one-time nudge suggesting migration.
      * Runs fire-and-forget — does not block the load path.
@@ -5288,7 +6046,7 @@ export class ArtifactStore {
         }
 
         const acOutput = this.getOutputChannel();
-        acOutput.appendLine('[Migration] Starting migrate-to-reference-architecture...');
+        storeLogger.debug('[Migration] Starting migrate-to-reference-architecture...');
 
         try {
             // ── 1. Find epics.json ─────────────────────────────────────────
@@ -5304,7 +6062,7 @@ export class ArtifactStore {
             // ── 2. Backup ──────────────────────────────────────────────────
             const backupUri = vscode.Uri.file(epicsFile.fsPath + '.pre-migration.bak');
             await vscode.workspace.fs.writeFile(backupUri, raw);
-            acOutput.appendLine(`[Migration] Backup created: ${backupUri.fsPath}`);
+            storeLogger.debug(`[Migration] Backup created: ${backupUri.fsPath}`);
 
             // ── 3. Extract inline stories to files ─────────────────────────
             // ── 3. Extract inline stories to files ─────────────────────────
@@ -5353,21 +6111,10 @@ export class ArtifactStore {
                     storyFileContent.content.id = storyId;
                     storyFileContent.content.epicId = epicId;
 
-                    // Generate a safe filename using epicId-storyNum-slug pattern
-                    // to match the established convention (e.g. "1-1-database-migration-infrastructure.json")
-                    const normalizedStoryId = String(storyId).replace(/^S/i, '');
-                    const storyNumSuffix = normalizedStoryId.includes('.')
-                        ? normalizedStoryId.split('.').pop() || ''
-                        : '';
-                    const safeTitle = (story.title || storyId)
-                        .toLowerCase()
-                        .replace(/[^a-z0-9]+/g, '-')
-                        .replace(/^-|-$/g, '')
-                        .substring(0, 60);
-                    const safeEpicId = epicId.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-                    const fileName = storyNumSuffix
-                        ? `${safeEpicId}-${storyNumSuffix}-${safeTitle}.json`
-                        : `${safeEpicId}-${safeTitle}.json`;
+                    // Generate an immutable filename using the story ID: {id}.json
+                    // e.g. S-1.2.json — predictable, slug-free, AI-agent friendly
+                    const safeStoryId = String(storyId).replace(/[^a-zA-Z0-9.-]/g, '-');
+                    const fileName = `${safeStoryId}.json`;
                     // Epic-scoped stories dir: epics/epic-{N}/stories/
                     const storiesDir = vscode.Uri.joinPath(
                         this.epicScopedDir(this.sourceFolder!, epicId),
@@ -5376,37 +6123,16 @@ export class ArtifactStore {
                     try { await vscode.workspace.fs.createDirectory(storiesDir); } catch { /* exists */ }
                     const fileUri = vscode.Uri.joinPath(storiesDir, fileName);
 
-                    // Check if a file already exists for this story — by exact match OR
-                    // by any file in storiesDir that starts with "{epicId}-{storyNum}-" or
-                    // "{epicId}-{slug}" to avoid creating duplicates under a different
-                    // naming convention.
+                    // Check if a file already exists for this story by exact ID match.
+                    // Filenames are now immutable: {id}.json (e.g. S-1.2.json)
                     let alreadyExists = false;
                     try {
                         await vscode.workspace.fs.stat(fileUri);
                         alreadyExists = true;
-                    } catch { /* file doesn't exist at the generated path */ }
-
-                    if (!alreadyExists) {
-                        // Scan for any existing file starting with the storyId prefix
-                        // e.g. "1-1-" for story 1.1, or matching the slug
-                        const prefixes = storyNumSuffix
-                            ? [`${safeEpicId}-${storyNumSuffix}-`, `${safeEpicId}-${safeTitle}`]
-                            : [`${safeEpicId}-${safeTitle}`];
-                        try {
-                            const existingFiles = await vscode.workspace.fs.readDirectory(storiesDir);
-                            for (const [existingName] of existingFiles) {
-                                const lowerExisting = existingName.toLowerCase();
-                                if (lowerExisting.endsWith('.json') && prefixes.some(p => lowerExisting.startsWith(p))) {
-                                    alreadyExists = true;
-                                    acOutput.appendLine(`[Migration] Story file already exists: ${existingName} (matches ${normalizedStoryId}) — skipping`);
-                                    break;
-                                }
-                            }
-                        } catch { /* directory read failed — proceed with write */ }
-                    }
+                    } catch { /* file doesn't exist at the generated path — safe to write */ }
 
                     if (alreadyExists) {
-                        acOutput.appendLine(`[Migration] Story file already exists: ${fileName} — skipping (standalone wins)`);
+                        storeLogger.debug(`[Migration] Story file already exists: ${fileName} — skipping (standalone wins)`);
                         skippedCount++;
                     } else {
                         // File doesn't exist — write it
@@ -5449,10 +6175,14 @@ export class ArtifactStore {
                 const updatedContent = Buffer.from(JSON.stringify(epicsJson, null, 2), 'utf-8');
                 await vscode.workspace.fs.writeFile(epicsFile, updatedContent);
             }
-            acOutput.appendLine(`[Migration] Updated epics.json with story refs`);
+            storeLogger.debug(`[Migration] Updated epics.json with story refs`);
 
             // ── 6. Reload from disk to verify ──────────────────────────────
             await this.loadFromFolder(this.sourceFolder);
+
+            // ── 7. Enforce slim architecture across all files ──────────────
+            await this.syncToFiles();
+            migrationLog.push('  Re-synced all project files to enforce slim epic format');
 
             // Truncate migration log to prevent uncloseable modals
             const maxLogLines = 10;
@@ -5470,12 +6200,12 @@ export class ArtifactStore {
                 ...truncatedLog
             ].filter(Boolean).join('\n');
 
-            acOutput.appendLine(`[Migration] ${summary}`);
+            storeLogger.debug(`[Migration] ${summary}`);
             return { success: true, summary };
 
         } catch (err: any) {
             const msg = `Migration failed: ${err?.message ?? err}`;
-            acOutput.appendLine(`[Migration] ${msg}`);
+            storeLogger.debug(`[Migration] ${msg}`);
             return { success: false, summary: msg };
         }
     }
@@ -5498,7 +6228,7 @@ export class ArtifactStore {
         try {
             const backupContent = await vscode.workspace.fs.readFile(backupUri);
             await vscode.workspace.fs.writeFile(epicsFile, backupContent);
-            acOutput.appendLine(`[Migration] Restored epics.json from backup: ${backupUri.fsPath}`);
+            storeLogger.debug(`[Migration] Restored epics.json from backup: ${backupUri.fsPath}`);
 
             // Reload from disk
             await this.loadFromFolder(this.sourceFolder);
@@ -5515,15 +6245,72 @@ export class ArtifactStore {
         }
     }
 
-    /**
-     * Get the output channel for logging.
-     */
     private getOutputChannel(): vscode.OutputChannel {
         // Use the shared output channel from the extension, which allows for testing mocks
-        if (typeof acOutput !== 'undefined' && acOutput) {
-            return acOutput;
-        }
+        
         return (globalThis as any).__acOutputChannel || vscode.window.createOutputChannel('Agile Agent Canvas');
+    }
+
+    private async saveStoriesToFile(state: BmadArtifacts, baseUri: vscode.Uri): Promise<void> {
+        const allEpics = state.epics || [];
+        const outputFormat = this.getOutputFormat();
+
+        for (const epic of allEpics) {
+            if (!epic.stories || !Array.isArray(epic.stories) || epic.stories.length === 0) continue;
+
+            // CR-5: hoist createDirectory to per-epic, not per-story
+            const epicDir = this.epicScopedDir(baseUri, epic.id);
+            const storiesDir = vscode.Uri.joinPath(epicDir, 'stories');
+            try { await vscode.workspace.fs.createDirectory(storiesDir); } catch { /* exists */ }
+
+            const writtenFileNames = new Set<string>();
+
+            for (const story of epic.stories) {
+                const safeId = String(story.id).replace(/[^a-zA-Z0-9.-]/g, '-');
+                const storyFileName = `${safeId}.json`;
+                const storyFileUri = vscode.Uri.joinPath(storiesDir, storyFileName);
+                writtenFileNames.add(storyFileName);
+
+                const storyJson: Record<string, unknown> = {
+                    metadata: {
+                        schemaVersion: '1.0.0',
+                        artifactType: 'story',
+                        workflowName: 'agileagentcanvas',
+                        projectName: state.projectName,
+                        timestamps: {
+                            // CR-2: only set lastModified; writeJsonFile will preserve
+                            // the original `created` from the existing file on disk
+                            lastModified: new Date().toISOString()
+                        },
+                        status: story.status || 'draft'
+                    },
+                    content: { ...story }
+                };
+
+                if (outputFormat === 'json' || outputFormat === 'dual') {
+                    await writeJsonFile(storyFileUri, storyJson);
+                    logDebug(`Saved standalone story file: ${storyFileName}`);
+                }
+
+                this.sourceFiles.set(`story:${story.id}`, storyFileUri);
+            }
+
+            // CR-7: delete orphaned story files that are no longer in state
+            try {
+                const entries = await vscode.workspace.fs.readDirectory(storiesDir);
+                for (const [name, type] of entries) {
+                    if (type === vscode.FileType.File && name.endsWith('.json') && !writtenFileNames.has(name)) {
+                        const orphanUri = vscode.Uri.joinPath(storiesDir, name);
+                        try {
+                            await vscode.workspace.fs.delete(orphanUri, { useTrash: true });
+                            logDebug(`Deleted orphan story file: ${name}`);
+                        } catch { /* ignore */ }
+                    }
+                }
+            } catch {
+                // stories/ directory listing failed — may not exist yet, ignore
+            }
+        }
     }
 
     private async saveEpicsToFile(state: BmadArtifacts, baseUri: vscode.Uri): Promise<void> {
@@ -5541,26 +6328,15 @@ export class ArtifactStore {
         // ── Write each epic to its own file ────────────────────────────
         for (const epic of allEpics) {
             const epicFields = { ...epic };
-            // Sanitise stories before writing
+            // Write slim storyRefs instead of full story objects to epic.json.
+            // Full story data lives in standalone files: stories/{id}.json
             if (Array.isArray(epicFields.stories)) {
-                epicFields.stories = epicFields.stories.map((story: any) => {
-                    const storyOut = { ...story };
-                    // Normalize dependencies back to string[] for inline schema compat
-                    if (storyOut.dependencies?.blockedBy && Array.isArray(storyOut.dependencies.blockedBy)) {
-                        // Preserve structured format for round-trip stability
-                        storyOut.dependencies = {
-                            blockedBy: storyOut.dependencies.blockedBy.map((d: any) => {
-                                if (typeof d === 'string') return { storyId: d };
-                                return d;
-                            }),
-                            blocks: storyOut.dependencies.blocks || [],
-                            relatedStories: storyOut.dependencies.relatedStories || []
-                        };
-                    }
-                    // Remove transient routing fields
-                    delete storyOut._sourceEpicId;
-                    return storyOut;
-                });
+                (epicFields as any).storyRefs = epicFields.stories.map((story: any) => ({
+                    id: story.id,
+                    title: story.title || 'Untitled',
+                    file: `stories/${String(story.id).replace(/[^a-zA-Z0-9.-]/g, '-')}.json`
+                }));
+                delete (epicFields as any).stories;
             }
 
             // Derive a filesystem-safe ID slug
@@ -5586,9 +6362,7 @@ export class ArtifactStore {
                     content: { useCases: ucToWrite }
                 };
                 if (outputFormat === 'json' || outputFormat === 'dual') {
-                    await vscode.workspace.fs.writeFile(
-                        ucFileUri, Buffer.from(JSON.stringify(ucJson, null, 2), 'utf-8')
-                    );
+                    await writeJsonFile(ucFileUri, ucJson);
                     logDebug(`Saved use-cases.json for epic ${epic.id}`);
                 }
             } else {
@@ -5619,9 +6393,7 @@ export class ArtifactStore {
                     content: tsToWrite
                 };
                 if (outputFormat === 'json' || outputFormat === 'dual') {
-                    await vscode.workspace.fs.writeFile(
-                        tsFileUri, Buffer.from(JSON.stringify(tsJson, null, 2), 'utf-8')
-                    );
+                    await writeJsonFile(tsFileUri, tsJson);
                     logDebug(`Saved test-strategy.json for epic ${epic.id}`);
                 }
             } else {
@@ -5646,17 +6418,19 @@ export class ArtifactStore {
                         created: new Date().toISOString(),
                         lastModified: new Date().toISOString()
                     },
-                    status: epic.status || 'draft'
+                    status: epic.status || 'draft',
+                    _llmHint: [
+                        'This file contains epic metadata and lightweight storyRefs.',
+                        'Full story content is at: stories/{storyId}.json (relative to this file).',
+                        'Do NOT add full story objects to this file — they belong in standalone story files.'
+                    ].join(' ')
                 },
                 content: epicFields
             };
 
             // Write JSON if output format includes JSON
             if (outputFormat === 'json' || outputFormat === 'dual') {
-                await vscode.workspace.fs.writeFile(
-                    epicFileUri,
-                    Buffer.from(JSON.stringify(epicFileJson, null, 2), 'utf-8')
-                );
+                await writeJsonFile(epicFileUri, epicFileJson);
                 logDebug(`Saved standalone epic file: ${epicFileName}`);
             }
 
@@ -5694,9 +6468,8 @@ export class ArtifactStore {
                 _llmHint: [
                     'This is a manifest file. Each epic\'s full content is in a separate file.',
                     'Epic files: epics/epic-{id}/epic.json (relative to this file)',
-                    'Stories: epics/epic-{id}/stories/{storyId}-{slug}.json',
+                    'Stories: epics/epic-{id}/stories/{id}.json  (e.g. S-1.2.json — immutable ID, no slugs)',
                     'Tests: epics/epic-{id}/tests/test-cases.json, test-design.json',
-                    'Summary indexes: epics-index.json, stories-index.json (in this dir)',
                     'To read a specific epic, load its file from the epics array below.'
                 ].join(' ')
             },
@@ -5714,10 +6487,7 @@ export class ArtifactStore {
 
         // Write manifest JSON if output format includes JSON
         if (outputFormat === 'json' || outputFormat === 'dual') {
-            await vscode.workspace.fs.writeFile(
-                manifestUri,
-                Buffer.from(JSON.stringify(manifestJson, null, 2), 'utf-8')
-            );
+            await writeJsonFile(manifestUri, manifestJson);
             logDebug('Saved epics manifest:', manifestUri.fsPath);
         }
 
@@ -6118,10 +6888,7 @@ export class ArtifactStore {
         // Write JSON if output format includes JSON
         const outputFormat = this.getOutputFormat();
         if (outputFormat === 'json' || outputFormat === 'dual') {
-            await vscode.workspace.fs.writeFile(
-                targetUri,
-                Buffer.from(JSON.stringify(jsonEnvelope, null, 2), 'utf-8')
-            );
+            await writeJsonFile(targetUri, jsonEnvelope);
             logDebug(`Saved ${fileSlug} to:`, targetUri.fsPath);
         }
 
@@ -8058,7 +8825,7 @@ export class ArtifactStore {
         if (data.testCases !== undefined) this.artifacts.set('testCases', data.testCases);
         if (data.testStrategy !== undefined) this.artifacts.set('testStrategy', data.testStrategy);
         this.notifyChange();
-        acOutput.appendLine(`[ArtifactStore] loadFromState: loaded project "${data.projectName || '(unnamed)'}"`);
+        storeLogger.debug(`[ArtifactStore] loadFromState: loaded project "${data.projectName || '(unnamed)'}"`);
     }
 
     /**
@@ -8142,7 +8909,7 @@ export class ArtifactStore {
         }
 
         this.notifyChange();
-        acOutput.appendLine(`[ArtifactStore] mergeFromState: merged data into current project`);
+        storeLogger.debug(`[ArtifactStore] mergeFromState: merged data into current project`);
     }
 
     /**
@@ -8280,7 +9047,7 @@ export class ArtifactStore {
             // Use the authoritative type from findArtifactById; the caller may
             // have guessed incorrectly from an ID prefix.
             this._selectedArtifact = { type: found.type, id, artifact: found.artifact };
-            acOutput.appendLine(`[ArtifactStore] Selected artifact: ${found.type} ${id}`);
+            storeLogger.debug(`[ArtifactStore] Selected artifact: ${found.type} ${id}`);
             this._onDidChangeSelection.fire();
         }
     }

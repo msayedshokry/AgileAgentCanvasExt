@@ -1,0 +1,12 @@
+name: "tradeoff-advisor"
+description: '5-column decision matrix for technical unknowns and architecture'
+
+config_source: "{bmad-path}/bmm/config.yaml"
+user_name: "{config_source}:user_name"
+communication_language: "{config_source}:communication_language"
+
+installed_path: "{bmad-path}/bmm/workflows/4-review/tradeoff-advisor"
+instructions: "{installed_path}/instructions.md"
+validation: "{installed_path}/checklist.md"
+
+output_format: markdown

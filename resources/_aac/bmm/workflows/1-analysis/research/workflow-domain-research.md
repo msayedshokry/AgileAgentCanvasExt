@@ -1,7 +1,7 @@
 ---
 name: domain-research
 description: 'Conduct domain and industry research. Use when the user says "lets create a research report on [domain or industry]"'
-output_format: dual
+output_format: json
 schema_file: "{bmad-path}/schemas/bmm/research.schema.json"
 template_json: "./research.template.json"
 ---

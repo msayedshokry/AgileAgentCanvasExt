@@ -1,7 +1,9 @@
+import { createLogger } from '../utils/logger';
+const logger = createLogger('workflow-executor');
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as yaml from 'yaml';
-import { acOutput } from '../extension';
+
 import { BMAD_RESOURCE_DIR } from '../state/constants';
 import { getToolDefinitions } from '../chat/agileagentcanvas-tools';
 import { schemaValidator } from '../state/schema-validator';
@@ -388,6 +390,165 @@ export const WORKFLOW_REGISTRY: WorkflowDefinition[] = [
     },
 
     // ============================================
+    // BMM MODULE - Phase 4: Review (4 workflows)
+    // ============================================
+    {
+        id: 'security-audit',
+        name: 'Security Audit',
+        description: 'STRIDE + OWASP security assessment',
+        module: 'bmm',
+        phase: '4-review',
+        path: 'bmm/workflows/4-review/security-audit/workflow.md',
+        format: 'md',
+        artifactTypes: ['prd', 'architecture', 'epic'],
+        tags: ['review', 'security', 'audit']
+    },
+    {
+        id: 'ceo-scope-review',
+        name: 'CEO Scope Review',
+        description: 'Challenge scope ambition: Expand, Hold, or Reduce',
+        module: 'bmm',
+        phase: '4-review',
+        path: 'bmm/workflows/4-review/ceo-scope-review/workflow.md',
+        format: 'md',
+        artifactTypes: ['prd', 'product-brief'],
+        tags: ['review', 'scope', 'calibration']
+    },
+    {
+        id: 'eng-execution-review',
+        name: 'Eng Execution Review',
+        description: 'Lock architecture: data flow, edge cases, test coverage',
+        module: 'bmm',
+        phase: '4-review',
+        path: 'bmm/workflows/4-review/eng-execution-review/workflow.md',
+        format: 'md',
+        artifactTypes: ['architecture'],
+        tags: ['review', 'architecture', 'execution']
+    },
+    {
+        id: 'design-dimension-audit',
+        name: 'Design Dimension Audit',
+        description: 'Rate UX plan 0-10 across Visual Hierarchy, Interaction States, etc.',
+        module: 'bmm',
+        phase: '4-review',
+        path: 'bmm/workflows/4-review/design-dimension-audit/workflow.md',
+        format: 'md',
+        artifactTypes: ['ux-design'],
+        tags: ['review', 'ux', 'design']
+    },
+    {
+        id: 'verification-loop',
+        name: 'Verification Loop',
+        description: '6-phase quality gate: Build, Types, Lint, Tests, Security, Diff Review',
+        module: 'bmm',
+        phase: '4-review',
+        path: 'bmm/workflows/4-review/verification-loop/workflow.md',
+        format: 'md',
+        artifactTypes: ['story', 'epic', 'architecture'],
+        tags: ['review', 'verification', 'quality', 'gate']
+    },
+    {
+        id: 'coding-standards',
+        name: 'Coding Standards',
+        description: 'Review code against universal naming, immutability, error handling standards',
+        module: 'bmm',
+        phase: '4-review',
+        path: 'bmm/workflows/4-review/coding-standards/workflow.md',
+        format: 'md',
+        artifactTypes: ['story', 'epic'],
+        tags: ['review', 'standards', 'quality', 'naming']
+    },
+    {
+        id: 'e2e-testing',
+        name: 'E2E Testing',
+        description: 'Playwright E2E test design: POM, fixtures, CI integration, flaky-test strategies',
+        module: 'bmm',
+        phase: '4-review',
+        path: 'bmm/workflows/4-review/e2e-testing/workflow.md',
+        format: 'md',
+        artifactTypes: ['story', 'test-strategy'],
+        tags: ['review', 'testing', 'e2e', 'playwright']
+    },
+    {
+        id: 'eval-harness',
+        name: 'Eval Harness',
+        description: 'Eval-Driven Development: define pass/fail criteria, pass@k metrics, regression tracking',
+        module: 'bmm',
+        phase: '4-review',
+        path: 'bmm/workflows/4-review/eval-harness/workflow.md',
+        format: 'md',
+        artifactTypes: ['story', 'epic'],
+        tags: ['review', 'eval', 'testing', 'metrics']
+    },
+    {
+        id: 'api-design',
+        name: 'API Design Review',
+        description: 'Review API endpoints against REST conventions, status codes, pagination, error envelopes',
+        module: 'bmm',
+        phase: '4-review',
+        path: 'bmm/workflows/4-review/api-design/workflow.md',
+        format: 'md',
+        artifactTypes: ['architecture', 'epic'],
+        tags: ['review', 'api', 'rest', 'design']
+    },
+
+    // ============================================
+
+    {
+        id: 'codebase-mapper',
+        name: 'Codebase Mapper',
+        description: 'Map architectural boundaries and trace data flow',
+        module: 'bmm',
+        phase: '4-review',
+        path: 'bmm/workflows/4-review/codebase-mapper/workflow.yaml',
+        format: 'yaml',
+        artifactTypes: ['epic', 'architecture'],
+        tags: ['review', 'architecture', 'codebase', 'mapping']
+    },
+    {
+        id: 'assumptions-analyzer',
+        name: 'Assumptions Analyzer',
+        description: 'Extract and evaluate hidden technical/business assumptions',
+        module: 'bmm',
+        phase: '4-review',
+        path: 'bmm/workflows/4-review/assumptions-analyzer/workflow.yaml',
+        format: 'yaml',
+        artifactTypes: ['epic', 'story'],
+        tags: ['review', 'assumptions', 'risk']
+    },
+    {
+        id: 'tradeoff-advisor',
+        name: 'Trade-off Advisor',
+        description: '5-column matrix (Option/Pros/Cons/Risk/Verdict) for tech choices',
+        module: 'bmm',
+        phase: '4-review',
+        path: 'bmm/workflows/4-review/tradeoff-advisor/workflow.yaml',
+        format: 'yaml',
+        artifactTypes: ['architecture'],
+        tags: ['review', 'architecture', 'tradeoffs']
+    },
+    {
+        id: 'execution-task-protocol',
+        name: 'Execution Task Protocol',
+        description: 'Strict execution deviation and auth-gate rules',
+        module: 'bmm',
+        phase: '4-review',
+        path: 'bmm/workflows/4-review/execution-task-protocol/workflow.yaml',
+        format: 'yaml',
+        artifactTypes: ['story'],
+        tags: ['review', 'execution', 'protocol']
+    },
+    {
+        id: 'test-classification',
+        name: 'Test Classification Strategy',
+        description: 'Heuristic-based pre-test triage strategy (TDD/E2E/Skip)',
+        module: 'bmm',
+        phase: '4-review',
+        path: 'bmm/workflows/4-review/test-classification/workflow.yaml',
+        format: 'yaml',
+        artifactTypes: ['test-strategy'],
+        tags: ['review', 'testing', 'classification', 'strategy']
+    },
     // BMM MODULE - Quick Flow (2 workflows)
     // ============================================
     {
@@ -829,7 +990,7 @@ export class WorkflowExecutor {
         this.sessions.set(sessionId, session);
         this.currentSessionId = sessionId;
         
-        acOutput.appendLine(`[WorkflowExecutor] Created session ${sessionId} for workflow: ${workflowName}`);
+        logger.debug(`[WorkflowExecutor] Created session ${sessionId} for workflow: ${workflowName}`);
         
         return session;
     }
@@ -890,7 +1051,7 @@ export class WorkflowExecutor {
         if (session) {
             session.status = 'completed';
             session.lastActivityAt = new Date();
-            acOutput.appendLine(`[WorkflowExecutor] Session ${session.id} completed`);
+            logger.debug(`[WorkflowExecutor] Session ${session.id} completed`);
         }
         this.currentSessionId = null;
     }
@@ -903,7 +1064,7 @@ export class WorkflowExecutor {
         if (session) {
             session.status = 'cancelled';
             session.lastActivityAt = new Date();
-            acOutput.appendLine(`[WorkflowExecutor] Session ${session.id} cancelled`);
+            logger.debug(`[WorkflowExecutor] Session ${session.id} cancelled`);
         }
         this.currentSessionId = null;
     }
@@ -1118,7 +1279,7 @@ ${stepContent}
             const content = await vscode.workspace.fs.readFile(uri);
             return Buffer.from(content).toString('utf-8');
         } catch (e) {
-            acOutput.appendLine(`[WorkflowExecutor] Error loading step: ${stepPath} - ${e}`);
+            logger.debug(`[WorkflowExecutor] Error loading step: ${stepPath} - ${e}`);
             return null;
         }
     }
@@ -1140,7 +1301,7 @@ ${stepContent}
         // Resolve projectRoot — prefer parameter, then resolver, then workspaceFolders[0]
         if (projectRoot) {
             this.context.projectRoot = projectRoot;
-            acOutput.appendLine(`[WorkflowExecutor] Using provided project root: ${projectRoot}`);
+            logger.debug(`[WorkflowExecutor] Using provided project root: ${projectRoot}`);
         } else {
             // Try the resolver first for multi-root awareness
             let resolved = false;
@@ -1150,7 +1311,7 @@ ${stepContent}
                 const wsFolder = resolver?.getActiveWorkspaceFolder();
                 if (wsFolder) {
                     this.context.projectRoot = wsFolder.uri.fsPath;
-                    acOutput.appendLine(`[WorkflowExecutor] Using resolver workspace root: ${this.context.projectRoot}`);
+                    logger.debug(`[WorkflowExecutor] Using resolver workspace root: ${this.context.projectRoot}`);
                     resolved = true;
                 }
             } catch {
@@ -1158,7 +1319,7 @@ ${stepContent}
             }
             if (!resolved && workspaceFolders) {
                 this.context.projectRoot = workspaceFolders[0].uri.fsPath;
-                acOutput.appendLine(`[WorkflowExecutor] Fallback to workspace root: ${this.context.projectRoot}`);
+                logger.debug(`[WorkflowExecutor] Fallback to workspace root: ${this.context.projectRoot}`);
             }
         }
 
@@ -1166,20 +1327,20 @@ ${stepContent}
         if (extensionPath) {
             const bundled = path.join(extensionPath, 'resources', BMAD_RESOURCE_DIR);
             const bundledUri = vscode.Uri.file(bundled);
-            acOutput.appendLine(`[WorkflowExecutor] Probing bundled: ${bundled}`);
+            logger.debug(`[WorkflowExecutor] Probing bundled: ${bundled}`);
             try {
                 await vscode.workspace.fs.stat(bundledUri);
                 this.context.bmadPath = bundled;
-                acOutput.appendLine(`[WorkflowExecutor] Using bundled BMAD: ${bundled}`);
+                logger.debug(`[WorkflowExecutor] Using bundled BMAD: ${bundled}`);
                 await this._loadConfig();
                 this.initializeVariables();
                 return true;
             } catch {
-                acOutput.appendLine(`[WorkflowExecutor] Bundled resources not found at: ${bundled}`);
+                logger.debug(`[WorkflowExecutor] Bundled resources not found at: ${bundled}`);
             }
         }
 
-        acOutput.appendLine('[WorkflowExecutor] No bundled BMAD resources found — ensure the extension is installed correctly');
+        logger.debug('[WorkflowExecutor] No bundled BMAD resources found — ensure the extension is installed correctly');
         return false;
     }
 
@@ -1190,9 +1351,9 @@ ${stepContent}
             const configContent = await vscode.workspace.fs.readFile(configPath);
             this.context.config = yaml.parse(configContent.toString());
             this.context.configPath = configPath.fsPath;
-            acOutput.appendLine(`[WorkflowExecutor] Loaded config: ${configPath.fsPath}`);
+            logger.debug(`[WorkflowExecutor] Loaded config: ${configPath.fsPath}`);
         } catch (e) {
-            acOutput.appendLine(`[WorkflowExecutor] config.yaml not found, using defaults: ${e}`);
+            logger.debug(`[WorkflowExecutor] config.yaml not found, using defaults: ${e}`);
         }
     }
 
@@ -1235,7 +1396,7 @@ ${stepContent}
             vars.set('implementation_artifacts', resolveToAbsolute(rawImpl));
         }
         
-        acOutput.appendLine(`[WorkflowExecutor] Variables initialized: ${vars.size} variables`);
+        logger.debug(`[WorkflowExecutor] Variables initialized: ${vars.size} variables`);
     }
 
     /**
@@ -1271,14 +1432,14 @@ ${stepContent}
             // Check if it's YAML or MD
             if (resolvedPath.endsWith('.yaml') || resolvedPath.endsWith('.yml')) {
                 const parsed = yaml.parse(contentStr);
-                acOutput.appendLine(`[WorkflowExecutor] Loaded YAML workflow: ${parsed.name || resolvedPath}`);
+                logger.debug(`[WorkflowExecutor] Loaded YAML workflow: ${parsed.name || resolvedPath}`);
                 return {
                     ...parsed,
                     _path: resolvedPath
                 };
             } else {
                 const { frontmatter, body } = parseFrontmatter(contentStr);
-                acOutput.appendLine(`[WorkflowExecutor] Loaded MD workflow: ${frontmatter.name || resolvedPath}`);
+                logger.debug(`[WorkflowExecutor] Loaded MD workflow: ${frontmatter.name || resolvedPath}`);
                 return {
                     ...frontmatter,
                     _body: body,
@@ -1286,7 +1447,7 @@ ${stepContent}
                 };
             }
         } catch (e) {
-            acOutput.appendLine(`[WorkflowExecutor] Error loading workflow: ${e}`);
+            logger.debug(`[WorkflowExecutor] Error loading workflow: ${e}`);
             return null;
         }
     }
@@ -1301,10 +1462,10 @@ ${stepContent}
             const content = await vscode.workspace.fs.readFile(uri);
             const parsed = parseFrontmatter(content.toString());
             
-            acOutput.appendLine(`[WorkflowExecutor] Loaded step: ${parsed.frontmatter.name || resolvedPath}`);
+            logger.debug(`[WorkflowExecutor] Loaded step: ${parsed.frontmatter.name || resolvedPath}`);
             return parsed;
         } catch (e) {
-            acOutput.appendLine(`[WorkflowExecutor] Error loading step: ${e}`);
+            logger.debug(`[WorkflowExecutor] Error loading step: ${e}`);
             return null;
         }
     }
@@ -2107,9 +2268,9 @@ ${stepContent}
         const bmadPath = this.context.bmadPath;
         if (bmadPath && !schemaValidator.isInitialized()) {
             try {
-                schemaValidator.init(bmadPath, acOutput);
+                schemaValidator.init(bmadPath);
             } catch (err: any) {
-                acOutput.appendLine(
+                logger.debug(
                     `[buildWorkflowPrompt] Schema validator init failed: ${err?.message ?? err}`
                 );
             }
@@ -2294,9 +2455,9 @@ the correct workflow file for this task, then follow its steps.`;
         // content for injection into the prompt.
         if (bmadPath && !schemaValidator.isInitialized()) {
             try {
-                schemaValidator.init(bmadPath, acOutput);
+                schemaValidator.init(bmadPath);
             } catch (err: any) {
-                acOutput.appendLine(
+                logger.debug(
                     `[executeWithTools] Schema validator init failed: ${err?.message ?? err}`
                 );
             }
@@ -2372,6 +2533,8 @@ ${varTable}
 - **agileagentcanvas_list_directory(path)** — list any directory under \`${bmadPath}\`
 - **agileagentcanvas_update_artifact(type, id, changes)** — persist changes to a BMAD artifact in the project
 - **agileagentcanvas_write_file(path, content)** — write a file to the output folder or workspace. This respects the output format setting: when "dual", writing .md also generates .json and vice versa. **ALWAYS use this tool instead of VS Code's built-in file editing** for any file under \`${outputFolder}\` or the epics/ directory.
+- **agileagentcanvas_sync_story_status(storyId, epicId, status)** — atomically sync a story's status in the standalone story JSON file (content.status + metadata.status). SINGLE SOURCE OF TRUTH for story status.
+- **agileagentcanvas_sync_epic_status(epicId, status)** — atomically sync an epic's status in the standalone epic JSON file (content.status + metadata.status). SINGLE SOURCE OF TRUTH for epic status.
 
 ${schemaSection}
 
@@ -2444,7 +2607,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
 
         while (rounds < MAX_ROUNDS && !token.isCancellationRequested) {
             rounds++;
-            acOutput.appendLine(`[executeWithTools] Round ${rounds}`);
+            logger.debug(`[executeWithTools] Round ${rounds}`);
 
             let response: vscode.LanguageModelChatResponse;
             try {
@@ -2484,21 +2647,21 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
             // If no tool calls, the LLM is done
             if (toolCalls.length === 0) {
                 lastRoundText = roundText;
-                acOutput.appendLine(`[executeWithTools] LLM finished after ${rounds} round(s)`);
+                logger.debug(`[executeWithTools] LLM finished after ${rounds} round(s)`);
                 break;
             }
 
             // Invoke each tool and collect results
             const toolResultParts: vscode.LanguageModelToolResultPart[] = [];
             for (const tc of toolCalls) {
-                acOutput.appendLine(`[executeWithTools] Tool call: ${tc.name}(${JSON.stringify(tc.input)})`);
+                logger.debug(`[executeWithTools] Tool call: ${tc.name}(${JSON.stringify(tc.input)})`);
 
                 let result: vscode.LanguageModelToolResult;
                 try {
                     result = await vscode.lm.invokeTool(tc.name, { input: tc.input, toolInvocationToken: undefined }, token);
                 } catch (err: any) {
                     const errText = `Tool "${tc.name}" failed: ${err?.message ?? err}`;
-                    acOutput.appendLine(`[executeWithTools] ${errText}`);
+                    logger.debug(`[executeWithTools] ${errText}`);
                     result = new vscode.LanguageModelToolResult([
                         new vscode.LanguageModelTextPart(errText)
                     ]);
@@ -2578,12 +2741,12 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                                     if (diskData && typeof diskData === 'object') {
                                         envelope = diskData;
                                         usedDiskFile = true;
-                                        acOutput.appendLine(
+                                        logger.debug(
                                             `[executeWithTools] Read on-disk artifact for ${artType} (key: ${storeKey}) — validating merged state`
                                         );
                                     }
                                 } catch (readErr: any) {
-                                    acOutput.appendLine(
+                                    logger.debug(
                                         `[executeWithTools] Failed to read on-disk artifact for ${artType}: ${readErr?.message ?? readErr}`
                                     );
                                 }
@@ -2597,7 +2760,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                                         envelope = diskData;
                                         validationType = 'epics';
                                         usedDiskFile = true;
-                                        acOutput.appendLine(
+                                        logger.debug(
                                             `[executeWithTools] Read on-disk epics file for epic update — validating merged state`
                                         );
                                     }
@@ -2622,7 +2785,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                                     },
                                     content: contentFields
                                 };
-                                acOutput.appendLine(
+                                logger.debug(
                                     `[executeWithTools] Using synthetic envelope for ${artType} validation (no on-disk file available)`
                                 );
                             }
@@ -2651,7 +2814,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                                             `\n\nPlease call agileagentcanvas_update_artifact again with corrected content to fix these issues. ` +
                                             `Ensure ALL required fields are present and match the schema exactly.`;
 
-                                        acOutput.appendLine(
+                                        logger.debug(
                                             `[executeWithTools] Post-save validation failed for ${artType} ` +
                                             `(retry ${validationRetryCount}/${MAX_VALIDATION_RETRIES}): ` +
                                             actionableErrors.join('; ')
@@ -2663,20 +2826,20 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                                             new vscode.LanguageModelTextPart(warningMsg)
                                         ]);
                                     } else {
-                                        acOutput.appendLine(
+                                        logger.debug(
                                             `[executeWithTools] Post-save validation failed for ${artType} ` +
                                             `but max retries (${MAX_VALIDATION_RETRIES}) exceeded — accepting as-is`
                                         );
                                     }
                                 } else {
                                     // Only had "required" errors — likely a partial update, skip retry
-                                    acOutput.appendLine(
+                                    logger.debug(
                                         `[executeWithTools] Post-save validation for ${artType}: ` +
                                         `${strictResult.errors.length} error(s) were all "required" — skipping (likely partial update)`
                                     );
                                 }
                             } else {
-                                acOutput.appendLine(
+                                logger.debug(
                                     `[executeWithTools] Post-save strict validation PASSED for ${artType}`
                                 );
                             }
@@ -2699,7 +2862,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                 const checkpoint = this.detectUserPrompt(roundText);
                 if (checkpoint.waitingForInput) {
                     lastRoundText = roundText;
-                    acOutput.appendLine(
+                    logger.debug(
                         `[executeWithTools] Checkpoint detected in round ${rounds} — pausing for user input. ` +
                         `Menu options: ${checkpoint.menuOptions?.join(', ') || '(explicit prompt)'}`
                     );
@@ -2722,7 +2885,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
             && !token.isCancellationRequested
             && !looksLikeCheckpoint
         ) {
-            acOutput.appendLine('[executeWithTools] LLM finished without calling agileagentcanvas_update_artifact — sending nudge');
+            logger.debug('[executeWithTools] LLM finished without calling agileagentcanvas_update_artifact — sending nudge');
             stream.markdown('\n\n---\n*Artifact not saved yet — requesting JSON save...*\n\n');
 
             messages.push(vscode.LanguageModelChatMessage.User(
@@ -2740,7 +2903,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
             try {
                 while (nudgeRound < MAX_NUDGE_ROUNDS && !artifactSaved && !token.isCancellationRequested) {
                     nudgeRound++;
-                    acOutput.appendLine(`[executeWithTools] Nudge round ${nudgeRound}/${MAX_NUDGE_ROUNDS}`);
+                    logger.debug(`[executeWithTools] Nudge round ${nudgeRound}/${MAX_NUDGE_ROUNDS}`);
 
                     const nudgeResponse = await model.vscodeLm!.sendRequest(messages, { tools }, token);
 
@@ -2775,7 +2938,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                     // Invoke each tool and collect results
                     const nudgeToolResults: vscode.LanguageModelToolResultPart[] = [];
                     for (const tc of nudgeToolCalls) {
-                        acOutput.appendLine(`[executeWithTools] Nudge tool call: ${tc.name}(${JSON.stringify(tc.input)})`);
+                        logger.debug(`[executeWithTools] Nudge tool call: ${tc.name}(${JSON.stringify(tc.input)})`);
                         let result: vscode.LanguageModelToolResult;
                         try {
                             result = await vscode.lm.invokeTool(tc.name, { input: tc.input, toolInvocationToken: undefined }, token);
@@ -2792,9 +2955,9 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                                 .join('');
                             if (nudgeText.includes('updated successfully')) {
                                 artifactSaved = true;
-                                acOutput.appendLine('[executeWithTools] Artifact saved via nudge');
+                                logger.debug('[executeWithTools] Artifact saved via nudge');
                             } else {
-                                acOutput.appendLine(`[executeWithTools] Nudge agileagentcanvas_update_artifact did not save: ${nudgeText.substring(0, 100)}`);
+                                logger.debug(`[executeWithTools] Nudge agileagentcanvas_update_artifact did not save: ${nudgeText.substring(0, 100)}`);
                             }
                         }
 
@@ -2805,7 +2968,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                     messages.push(vscode.LanguageModelChatMessage.User(nudgeToolResults));
                 }
             } catch (err: any) {
-                acOutput.appendLine(`[executeWithTools] Nudge loop failed: ${err?.message ?? err}`);
+                logger.debug(`[executeWithTools] Nudge loop failed: ${err?.message ?? err}`);
             }
 
             if (!artifactSaved) {
@@ -2815,7 +2978,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
         }
 
         if (!artifactSaved && looksLikeCheckpoint) {
-            acOutput.appendLine('[executeWithTools] LLM paused at checkpoint — skipping save nudge (interactive pause is expected)');
+            logger.debug('[executeWithTools] LLM paused at checkpoint — skipping save nudge (interactive pause is expected)');
         }
 
         if (rounds >= MAX_ROUNDS) {
@@ -2880,7 +3043,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                     autonomous: wfConfig.execution_hints.autonomous,
                     iterative: wfConfig.execution_hints.iterative,
                 };
-                acOutput.appendLine(
+                logger.debug(
                     `[executeWithDirectApi] execution_hints from workflow: ` +
                     `interactive=${executionHints.interactive}, autonomous=${executionHints.autonomous}`
                 );
@@ -2918,9 +3081,9 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
         const artifactType = artifact?.type || '';
         if (bmadPath && !schemaValidator.isInitialized()) {
             try {
-                schemaValidator.init(bmadPath, acOutput);
+                schemaValidator.init(bmadPath);
             } catch (err: any) {
-                acOutput.appendLine(
+                logger.debug(
                     `[executeWithDirectApi] Schema validator init failed: ${err?.message ?? err}`
                 );
             }

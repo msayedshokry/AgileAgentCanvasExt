@@ -80,6 +80,27 @@ Report:
   - Set `lastSaved: '{date}'`
   - Append this step's output to the appropriate section of the document.
 
+## SAVE JSON ARTIFACT
+
+**CRITICAL — Do this before reporting completion:**
+
+Read the complete `{outputFile}` working document, then call `agileagentcanvas_update_artifact` to persist the final structured artifact:
+
+```
+agileagentcanvas_update_artifact({
+  type: "ci-pipeline",
+  id: "{project_name}-ci-pipeline",
+  changes: { /* all content fields extracted from the working document, following the ci-pipeline schema */ }
+})
+```
+
+- Schema reference: `{bmad-path}/schemas/tea/ci-pipeline.schema.json` — use `agileagentcanvas_read_file` to read it if you need to verify field names
+- The `changes` object must conform to the ci-pipeline schema — do NOT wrap content in a `content` key
+- **Only call this after validation is complete** — do not skip checklist validation in step 1
+- If the tool call is rejected (schema mismatch), fix the field and retry
+
+---
+
 ## 🚨 SYSTEM SUCCESS/FAILURE METRICS:
 
 ### ✅ SUCCESS:

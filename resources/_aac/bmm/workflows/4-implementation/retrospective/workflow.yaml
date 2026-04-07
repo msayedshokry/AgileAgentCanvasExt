@@ -3,7 +3,7 @@ name: "retrospective"
 description: 'Post-epic review to extract lessons and assess success. Use when the user says "run a retrospective" or "lets retro the epic [epic]"'
 
 # Output format configuration
-output_format: dual
+output_format: json
 schema_file: "{bmad-path}/schemas/bmm/retrospective.schema.json"
 
 config_source: "{bmad-path}/bmm/config.yaml"

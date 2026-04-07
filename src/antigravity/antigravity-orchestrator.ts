@@ -1,6 +1,8 @@
+import { createLogger } from '../utils/logger';
+const logger = createLogger('antigravity-orchestrator');
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { acOutput } from '../extension';
+
 import { schemaValidator } from '../state/schema-validator';
 import { getPersonaForArtifactType, formatFullAgentForPrompt } from '../chat/agent-personas';
 
@@ -233,9 +235,9 @@ ${projectContextNotes.map(n => `- ${n}`).join('\n')}
     // ── Schema ───────────────────────────────────────────────────────────
     if (bmadPath && !schemaValidator.isInitialized()) {
         try {
-            schemaValidator.init(bmadPath, acOutput);
+            schemaValidator.init(bmadPath);
         } catch (err: any) {
-            acOutput.appendLine(
+            logger.debug(
                 `[antigravity-orchestrator] Schema validator init failed: ${err?.message ?? err}`
             );
         }
@@ -558,7 +560,7 @@ async function loadProjectContextNotes(outputFolder: string): Promise<string[]> 
         const parsed = JSON.parse(Buffer.from(raw).toString('utf-8'));
         const notes: unknown = parsed?.content?.additionalNotes;
         if (Array.isArray(notes) && notes.length > 0 && notes.every((n: unknown) => typeof n === 'string')) {
-            acOutput.appendLine(
+            logger.debug(
                 `[antigravity-orchestrator] Loaded ${notes.length} projectContextNotes from project-context.json`
             );
             return notes as string[];
@@ -585,7 +587,7 @@ export async function orchestrateAntigravityWorkflow(
     const { outputFolder, executionHints } = params;
     const mode = resolveExecutionMode(executionHints);
 
-    acOutput.appendLine(
+    logger.debug(
         `[antigravity-orchestrator] Execution mode: ${mode}` +
         (executionHints ? ` (hints: interactive=${executionHints.interactive}, autonomous=${executionHints.autonomous})` : ' (no hints)')
     );
@@ -607,10 +609,10 @@ export async function orchestrateAntigravityWorkflow(
         await vscode.workspace.fs.createDirectory(vscode.Uri.file(outputFolder));
         // Write the guide file
         await vscode.workspace.fs.writeFile(guideUri, Buffer.from(guideContent, 'utf-8'));
-        acOutput.appendLine(`[antigravity-orchestrator] Guide file written: ${guidePath}`);
+        logger.debug(`[antigravity-orchestrator] Guide file written: ${guidePath}`);
     } catch (err: any) {
         const msg = `Failed to write guide file: ${err?.message ?? err}`;
-        acOutput.appendLine(`[antigravity-orchestrator] ${msg}`);
+        logger.debug(`[antigravity-orchestrator] ${msg}`);
         stream?.markdown(`**AntiGravity error:** ${msg}\n`);
         return false;
     }
@@ -624,10 +626,10 @@ export async function orchestrateAntigravityWorkflow(
             'antigravity.sendPromptToAgentPanel',
             pointerPrompt
         );
-        acOutput.appendLine('[antigravity-orchestrator] Prompt sent to Agent Panel');
+        logger.debug('[antigravity-orchestrator] Prompt sent to Agent Panel');
     } catch (err: any) {
         // Fallback: try the legacy sendTextToChat command
-        acOutput.appendLine(
+        logger.debug(
             `[antigravity-orchestrator] sendPromptToAgentPanel failed: ${err?.message ?? err} -- trying sendTextToChat`
         );
         try {
@@ -636,10 +638,10 @@ export async function orchestrateAntigravityWorkflow(
                 true,
                 pointerPrompt
             );
-            acOutput.appendLine('[antigravity-orchestrator] Fallback sendTextToChat succeeded');
+            logger.debug('[antigravity-orchestrator] Fallback sendTextToChat succeeded');
         } catch (err2: any) {
             const msg = `Could not send prompt to AntiGravity: ${err2?.message ?? err2}`;
-            acOutput.appendLine(`[antigravity-orchestrator] ${msg}`);
+            logger.debug(`[antigravity-orchestrator] ${msg}`);
             stream?.markdown(`**AntiGravity error:** ${msg}\n`);
             return false;
         }
@@ -650,7 +652,7 @@ export async function orchestrateAntigravityWorkflow(
     // Calling openAgent again can toggle/collapse it, so we skip it.
     // If only the fallback sendTextToChat was used, the panel may not be open,
     // but that path is rare and we prefer not to risk collapsing.
-    acOutput.appendLine('[antigravity-orchestrator] Prompt sent — skipping explicit focus (sendPromptToAgentPanel self-focuses)');
+    logger.debug('[antigravity-orchestrator] Prompt sent — skipping explicit focus (sendPromptToAgentPanel self-focuses)');
 
     // ── 4. Inform the user (mode-aware) ──────────────────────────────────
     if (stream) {
@@ -754,15 +756,15 @@ Honor all checkpoints and pause instructions in the workflow.`;
 export async function sendSimplePrompt(prompt: string): Promise<boolean> {
     try {
         await vscode.commands.executeCommand('antigravity.sendPromptToAgentPanel', prompt);
-        acOutput.appendLine('[antigravity-orchestrator] Simple prompt sent via sendPromptToAgentPanel');
+        logger.debug('[antigravity-orchestrator] Simple prompt sent via sendPromptToAgentPanel');
         return true;
     } catch {
         try {
             await vscode.commands.executeCommand('antigravity.sendTextToChat', true, prompt);
-            acOutput.appendLine('[antigravity-orchestrator] Simple prompt sent via sendTextToChat (fallback)');
+            logger.debug('[antigravity-orchestrator] Simple prompt sent via sendTextToChat (fallback)');
             return true;
         } catch (err: any) {
-            acOutput.appendLine(
+            logger.debug(
                 `[antigravity-orchestrator] Simple prompt failed: ${err?.message ?? err}`
             );
             return false;

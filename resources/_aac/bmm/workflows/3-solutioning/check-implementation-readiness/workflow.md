@@ -1,7 +1,7 @@
 ---
 name: check-implementation-readiness
 description: 'Validate PRD, UX, Architecture and Epics specs are complete. Use when the user says "check implementation readiness".'
-output_format: dual
+output_format: json
 schema_file: "{bmad-path}/schemas/bmm/readiness-report.schema.json"
 template_json: "./templates/readiness-report-template.json"
 ---

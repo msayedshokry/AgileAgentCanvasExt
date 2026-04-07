@@ -20,8 +20,8 @@ template: "{installed_path}/template.md"
 # Output configuration
 default_output_file: "{planning_artifacts}/risks.md"
 
-# Output format configuration (dual = JSON + Markdown)
-output_format: dual
+# Output format configuration
+output_format: json
 schema: "{bmad-path}/schemas/bmm/risks.schema.json"
 output_note: "Produces risks.md and risks.json with risk assessment and mitigation strategies"
 

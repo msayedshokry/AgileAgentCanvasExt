@@ -8,26 +8,18 @@ Two patterns:
 1. **Direct-to-Final:** Steps append to final document
 2. **Plan-then-Build:** Steps append to plan → build step consumes plan
 
-## Dual Output Format (JSON + Markdown)
+## Output Format
 
-All artifacts support **dual output** - structured JSON as the primary data format with Markdown for human readability.
+All structured artifacts use **JSON-only output** — structured JSON is the primary data format. The extension renders a human-readable canvas view automatically from the JSON.
 
 ### Output Format Modes
 
 ```yaml
-output_format: json      # JSON only (structured data)
-output_format: markdown  # Markdown only (legacy)
-output_format: dual      # Both JSON and Markdown (recommended)
+output_format: json      # JSON only — use for all structured artifacts (DEFAULT)
+output_format: markdown  # Markdown only — use for narrative/documentation workflows only
 ```
 
-### Dual Output File Pattern
-
-When `output_format: dual`:
-```
-{output_folder}/
-├── {artifact}-{project_name}.json    # Primary structured data
-└── {artifact}-{project_name}.md      # Human-readable view
-```
+> **Note:** `output_format: dual` is deprecated and must not be used in new workflows.
 
 ### JSON Structure
 
@@ -211,18 +203,17 @@ For free-form workflows, include a polish step that:
 ## Output File Patterns
 
 ```yaml
-# Single output (Markdown only - legacy)
-outputFile: '{output_folder}/document-{project_name}.md'
+# JSON output (default for structured artifacts)
+outputFile: '{output_folder}/document-{project_name}.json'
 
 # Time-stamped
-outputFile: '{output_folder}/document-{project_name}-{timestamp}.md'
+outputFile: '{output_folder}/document-{project_name}-{timestamp}.json'
 
 # User-specific
-outputFile: '{output_folder}/document-{user_name}-{project_name}.md'
+outputFile: '{output_folder}/document-{user_name}-{project_name}.json'
 
-# Dual output (JSON + Markdown)
-outputFileJson: '{output_folder}/document-{project_name}.json'
-outputFileMd: '{output_folder}/document-{project_name}.md'
+# Markdown only (for narrative/documentation workflows)
+outputFile: '{output_folder}/document-{project_name}.md'
 ```
 
 ## JSON-Specific Patterns
@@ -263,14 +254,9 @@ draft → in_progress → review → approved → archived
 
 Update `metadata.status` and `metadata.updatedAt` on each transition.
 
-### Markdown Generation from JSON
+### Canvas Rendering
 
-When generating the Markdown companion file:
-1. Read the JSON artifact
-2. Transform structured data to readable prose
-3. Use ## Level 2 headers for main sections
-4. Include metadata as YAML frontmatter (for tooling compatibility)
-5. Write to `.md` file alongside `.json`
+The extension renders a human-readable canvas view automatically from the JSON artifact. You do not need to generate a Markdown companion file.
 
 ### Schema Validation
 

@@ -1,7 +1,7 @@
 ---
 name: generate-project-context
 description: 'Create project-context.md with AI rules. Use when the user says "generate project context" or "create project context"'
-output_format: dual
+output_format: json
 schema_file: "{bmad-path}/schemas/bmm/project-context.schema.json"
 template_json: "./project-context-template.json"
 ---

@@ -345,4 +345,86 @@ describe('DependencyArrows', () => {
       expect(d).toContain('350 250');
     });
   });
+
+  describe('Line Category Filtering', () => {
+    it('should render all arrows when hiddenLineCategories is undefined', () => {
+      const artifacts = [
+        createMockArtifact({ id: 'epic-1', type: 'epic', position: { x: 0, y: 100 } }),
+        createMockArtifact({ id: 'epic-2', type: 'epic', position: { x: 300, y: 100 }, dependencies: ['epic-1'] }),
+      ];
+      render(<DependencyArrows artifacts={artifacts} />);
+      expect(document.querySelectorAll('.dependency-arrows > path').length).toBe(1);
+    });
+
+    it('should render all arrows when hiddenLineCategories is empty', () => {
+      const artifacts = [
+        createMockArtifact({ id: 'epic-1', type: 'epic', position: { x: 0, y: 100 } }),
+        createMockArtifact({ id: 'epic-2', type: 'epic', position: { x: 300, y: 100 }, dependencies: ['epic-1'] }),
+      ];
+      render(<DependencyArrows artifacts={artifacts} hiddenLineCategories={new Set()} />);
+      expect(document.querySelectorAll('.dependency-arrows > path').length).toBe(1);
+    });
+
+    it('should hide structural arrows when structural category is hidden', () => {
+      // Two epics → structural arrow
+      const artifacts = [
+        createMockArtifact({ id: 'epic-1', type: 'epic', position: { x: 0, y: 100 } }),
+        createMockArtifact({ id: 'epic-2', type: 'epic', position: { x: 300, y: 100 }, dependencies: ['epic-1'] }),
+      ];
+      render(<DependencyArrows artifacts={artifacts} hiddenLineCategories={new Set(['structural'])} />);
+      expect(document.querySelectorAll('.dependency-arrows > path').length).toBe(0);
+    });
+
+    it('should hide peer arrows when peer category is hidden', () => {
+      // Two stories → peer arrow
+      const artifacts = [
+        createMockArtifact({ id: 'story-1', type: 'story', position: { x: 0, y: 100 } }),
+        createMockArtifact({ id: 'story-2', type: 'story', position: { x: 300, y: 100 }, dependencies: ['story-1'] }),
+      ];
+      render(<DependencyArrows artifacts={artifacts} hiddenLineCategories={new Set(['peer'])} />);
+      expect(document.querySelectorAll('.dependency-arrows > path').length).toBe(0);
+    });
+
+    it('should hide default arrows when default category is hidden', () => {
+      // story → epic = "default" category (neither structural nor peer)
+      const artifacts = [
+        createMockArtifact({ id: 'story-1', type: 'story', position: { x: 0, y: 100 } }),
+        createMockArtifact({ id: 'epic-1', type: 'epic', position: { x: 300, y: 100 }, dependencies: ['story-1'] }),
+      ];
+      render(<DependencyArrows artifacts={artifacts} hiddenLineCategories={new Set(['default'])} />);
+      expect(document.querySelectorAll('.dependency-arrows > path').length).toBe(0);
+    });
+
+    it('should hide tree lines when tree category is hidden in mindmap mode', () => {
+      const artifacts = [
+        createMockArtifact({ id: 'epic-1', type: 'epic', position: { x: 0, y: 100 } }),
+        createMockArtifact({ id: 'story-1', type: 'story', position: { x: 300, y: 100 }, parentId: 'epic-1' }),
+      ];
+      render(<DependencyArrows artifacts={artifacts} layoutMode="mindmap" hiddenLineCategories={new Set(['tree'])} />);
+      // Tree line should be hidden; only dependency arrows remain (and there are none)
+      expect(document.querySelectorAll('.dependency-arrows > path').length).toBe(0);
+    });
+
+    it('should show tree lines when tree category is NOT hidden in mindmap mode', () => {
+      const artifacts = [
+        createMockArtifact({ id: 'epic-1', type: 'epic', position: { x: 0, y: 100 } }),
+        createMockArtifact({ id: 'story-1', type: 'story', position: { x: 300, y: 100 }, parentId: 'epic-1' }),
+      ];
+      render(<DependencyArrows artifacts={artifacts} layoutMode="mindmap" hiddenLineCategories={new Set()} />);
+      expect(document.querySelectorAll('.dependency-arrows > path').length).toBe(1);
+    });
+
+    it('should independently filter categories — hiding one keeps others visible', () => {
+      const artifacts = [
+        createMockArtifact({ id: 'epic-1', type: 'epic', position: { x: 0, y: 100 } }),
+        createMockArtifact({ id: 'epic-2', type: 'epic', position: { x: 300, y: 100 }, dependencies: ['epic-1'] }),
+        createMockArtifact({ id: 'story-1', type: 'story', position: { x: 0, y: 300 } }),
+        createMockArtifact({ id: 'story-2', type: 'story', position: { x: 300, y: 300 }, dependencies: ['story-1'] }),
+      ];
+      // Hide structural but keep peer
+      render(<DependencyArrows artifacts={artifacts} hiddenLineCategories={new Set(['structural'])} />);
+      // Only the story→story peer arrow should remain
+      expect(document.querySelectorAll('.dependency-arrows > path').length).toBe(1);
+    });
+  });
 });

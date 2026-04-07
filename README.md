@@ -21,7 +21,9 @@ Cards are color-coded by artifact type and connected with dependency arrows. Cli
 
 ### AI Chat Participant
 
-Type `@agileagentcanvas` in VS Code chat to access 30+ slash commands powered by AI:
+We have two native agents available in VS Code Copilot Chat:
+
+1. **`@agileagentcanvas` (Analyst)** — Access 30+ slash commands for comprehensive product development:
 
 | Command | Description |
 |---------|-------------|
@@ -32,10 +34,14 @@ Type `@agileagentcanvas` in VS Code chat to access 30+ slash commands powered by
 | `/enhance` | Add verbose details: use cases, fit criteria, risks |
 | `/review` | Review and validate artifact completeness |
 | `/refine` | Refine a specific artifact with AI suggestions |
+| `/apply` | Apply pending AI refinements to the artifact JSON file |
 | `/dev` | Start development workflow for a story, epic, or test case |
 | `/sprint` | Sprint planning from epics or check sprint status |
+| `/ux` | Create UX design specifications through collaborative exploration |
 | `/readiness` | Check implementation readiness of PRD, architecture, epics and stories |
 | `/workflows` | Browse all 44 BMAD workflows by module or artifact type |
+| `/continue` | Continue to the next step in the current workflow |
+| `/status` | Show current workflow session status |
 | `/context` | Generate an LLM-optimized project-context.md |
 | `/document` | Document a brownfield project for AI context |
 | `/review-code` | Adversarial code review finding specific issues |
@@ -47,12 +53,14 @@ Type `@agileagentcanvas` in VS Code chat to access 30+ slash commands powered by
 | `/innovate` | Identify disruption opportunities and architect business model innovation |
 | `/solve` | Apply systematic problem-solving methodologies to complex challenges |
 | `/story-craft` | Craft compelling narratives using storytelling frameworks |
-| `/ux` | Create UX design specifications through collaborative exploration |
 | `/write-doc` | Write a document following documentation best practices |
 | `/mermaid` | Generate Mermaid diagrams |
 | `/readme` | Generate or update a README.md from project analysis |
 | `/changelog` | Generate changelog or release notes |
 | `/api-docs` | Generate API documentation from source code |
+| `/convert-to-json` | Convert markdown artifacts to structured JSON format |
+
+2. **`@agileagentcanvas-canvas-integrator` (Morph)** — A dedicated agent for converting BMAD markdown artifacts to schema-compliant JSON for Canvas visualization. Supports bulk/batch processing of files.
 
 ### Language Model Tools
 
@@ -61,6 +69,8 @@ Agile Agent Canvas registers tools that AI models can call autonomously during c
 - **agileagentcanvas_read_file** — Read BMAD framework files, schemas, workflows, and agent definitions
 - **agileagentcanvas_list_directory** — Discover available workflows, agents, schemas, and steps
 - **agileagentcanvas_update_artifact** — Persist artifact changes directly from AI refinement
+- **agileagentcanvas_sync_story_status** — Atomically sync a story's status across all tracker files
+- **agileagentcanvas_sync_epic_status** — Atomically sync an epic's status across all tracker files
 
 ### Workflow System
 
@@ -68,13 +78,14 @@ Agile Agent Canvas registers tools that AI models can call autonomously during c
 
 ### Export and Import
 
-- **Export** artifacts as Markdown, JSON, JIRA CSV, or all formats at once
+- **Export** artifacts as Markdown (live preview available), JSON, JIRA CSV, or all formats at once
 - **Import** from a JSON file with Replace or Merge strategies
 - Overwrite protection warns you before replacing existing artifacts
 
 ### Sidebar and Canvas
 
 - **Visual Canvas** — Opens in an editor tab via `Agile Agent Canvas: Open Visual Canvas` or the sidebar header icon
+- **Sprint Kanban Board** — Dedicated full-screen sprint board reflecting your `sprint-status.yaml`
 - **Artifacts** — Sidebar tree view of all project artifacts organized by type
 - **Workflow Progress** — Sidebar tree view showing current workflow steps and completion status
 
@@ -122,7 +133,6 @@ Agile Agent Canvas supports multiple AI providers. Set `agileagentcanvas.aiProvi
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `agileagentcanvas.outputFolder` | `.agileagentcanvas-context` | Folder for BMAD output artifacts |
-| `agileagentcanvas.outputFormat` | `dual` | Output format: `json`, `markdown`, or `dual` (both) |
 | `agileagentcanvas.autoSync` | `true` | Automatically sync visual changes to files |
 | `agileagentcanvas.showAICursor` | `true` | Show AI cursor position in canvas |
 | `agileagentcanvas.defaultAgent` | `analyst` | Default BMAD agent (`analyst`, `pm`, `architect`) |
@@ -130,6 +140,7 @@ Agile Agent Canvas supports multiple AI providers. Set `agileagentcanvas.aiProvi
 | `agileagentcanvas.apiKey` | — | API key for OpenAI, Anthropic, or Gemini |
 | `agileagentcanvas.modelId` | — | Override the default model for your provider |
 | `agileagentcanvas.baseUrl` | — | Base URL for Ollama or custom OpenAI-compatible endpoints |
+| `agileagentcanvas.logLevel` | `info` | Controls extension logging verbosity (`debug`/`info`/`warn`/`error`) |
 
 ---
 
@@ -140,11 +151,14 @@ Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and type "Agile Agent 
 - **Agile Agent Canvas: Open Visual Canvas** — Open the full canvas in an editor tab
 - **Agile Agent Canvas: New Project** — Create a new project
 - **Agile Agent Canvas: Load Existing Project** — Load artifacts from an existing output folder
+- **Agile Agent Canvas: Switch Project** — Switch between multiple projects or create a new folder
 - **Agile Agent Canvas: Export Artifacts** — Export to Markdown, JSON, or JIRA CSV
 - **Agile Agent Canvas: Import Artifacts** — Import artifacts from a JSON file
 - **Agile Agent Canvas: Sync to .agileagentcanvas-context** — Manually sync canvas state to files
+- **Agile Agent Canvas: Migrate to Reference Architecture** — Migrate inline epics/stories to individual files
+- **Agile Agent Canvas: Restore Pre-Migration Backup** — Revert `epics.json` after migration
+- **Agile Agent Canvas: Ask Agent (Help)** — Ask the AI what to do next based on your current state
 - **Agile Agent Canvas: Load Demo Data** — Populate canvas with sample artifacts
-- **Agile Agent Canvas: Switch Project** — Switch between multiple projects in your workspace
 - **Agile Agent Canvas: Install Framework to IDE** — Install the BMAD framework files
 
 ---

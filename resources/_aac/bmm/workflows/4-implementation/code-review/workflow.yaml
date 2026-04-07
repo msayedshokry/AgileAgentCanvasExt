@@ -3,7 +3,7 @@ name: code-review
 description: 'Perform adversarial code review finding specific issues. Use when the user says "run code review" or "review this code"'
 
 # Output format configuration
-output_format: dual
+output_format: json
 schema_file: "{bmad-path}/schemas/bmm/code-review.schema.json"
 
 # Critical variables from config

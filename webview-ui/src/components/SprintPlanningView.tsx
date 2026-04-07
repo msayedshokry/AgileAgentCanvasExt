@@ -14,7 +14,7 @@ export interface SprintGroup {
   goal?: string;
   startDate?: string;
   endDate?: string;
-  storyKeys: string[];  // keys from development_status
+  storyKeys: string[];  // kebab-case story/epic keys listed in the sprints section
 }
 
 export interface SprintStatusLoaded {
@@ -148,126 +148,151 @@ function prettifySprintId(id: string): string {
     .replace(/\bApi\b/i, 'API');
 }
 
-/**
- * Parse the epic key from an item key.
- * Patterns:
- *  - epic-N              → epic-N   (IS the epic)
- *  - N-M-kebab-title     → epic-N   (story)
- *  - epic-N-retrospective→ epic-N   (retro)
- */
-function parseEpicKey(key: string): string | null {
-  if (/^epic-\d+$/.test(key)) return key;                     // epic itself
-  if (/^epic-\d+-retrospective$/.test(key)) return key.replace(/-retrospective$/, ''); // retro
-  const storyMatch = key.match(/^(\d+)-\d+-.+/);
-  if (storyMatch) return `epic-${storyMatch[1]}`;
-  return null;
-}
-
 // ─── YAML parser ──────────────────────────────────────────────────────────────
 
-export function parseSprintStatusYaml(yaml: string): Omit<SprintStatusLoaded, 'found'> {
-  const lines = yaml.split('\n');
+/**
+ * Build the sprint Kanban data.
+ *
+ * @param yaml   Raw text of sprint-status.yaml (used only for sprint groupings).
+ *               Pass null/undefined if no YAML file exists yet.
+ * @param epics  Live epic+story data from ArtifactStore — the single source of truth.
+ *               Items and their statuses are built entirely from this array.
+ */
+export function parseSprintStatusYaml(
+  yaml: string | null | undefined,
+  epics: any[] = []
+): Omit<SprintStatusLoaded, 'found'> {
   let project: string | undefined;
   let projectKey: string | undefined;
   let trackingSystem: string | undefined;
   let generated: string | undefined;
   let storyLocation: string | undefined;
-  const items: SprintItem[] = [];
   const sprints: SprintGroup[] = [];
 
-  type Section = 'none' | 'devStatus' | 'sprints' | 'sprintBody';
-  let section: Section = 'none';
-  let currentSprint: SprintGroup | null = null;
-  let inStoriesList = false;
+  // ── Parse YAML for sprint groupings only (no status data) ─────────────────
+  if (yaml) {
+    const lines = yaml.split('\n');
+    type Section = 'none' | 'sprints';
+    let section: Section = 'none';
+    let currentSprint: SprintGroup | null = null;
+    let inStoriesList = false;
 
-  for (const raw of lines) {
-    const line = raw.trimEnd();
-    if (!line || line.startsWith('#')) continue;
+    for (const raw of lines) {
+      const line = raw.trimEnd();
+      if (!line || line.startsWith('#')) continue;
 
-    // ── Detect top-level section headers ─────────────────────────────────────
-    if (/^development_status:\s*$/.test(line)) {
-      section = 'devStatus';
-      continue;
-    }
-    if (/^sprints:\s*$/.test(line)) {
-      // Commit any in-progress sprint
-      if (currentSprint) { sprints.push(currentSprint); currentSprint = null; }
-      section = 'sprints';
-      inStoriesList = false;
-      continue;
-    }
-
-    // ── development_status entries ────────────────────────────────────────────
-    if (section === 'devStatus') {
-      // A non-indented line that isn't a comment ends the section
-      if (line.match(/^\S/) && !line.startsWith('  ')) { section = 'none'; }
-
-      const m = line.match(/^\s{2}([^:]+):\s*(.+)$/);
-      if (m) {
-        const key = m[1].trim();
-        const status = m[2].trim().replace(/"/g, '') as SprintStatus;
-        const isEpic = /^epic-\d+$/.test(key);
-        const isRetro = /^epic-\d+-retrospective$/.test(key);
-        const epicKey = parseEpicKey(key);
-        items.push({ key, status, epicKey: isEpic ? null : epicKey, isEpic, isRetro });
-        continue;
-      }
-    }
-
-    // ── sprints: section ─────────────────────────────────────────────────────
-    if (section === 'sprints') {
-      // New sprint id at 2-space indent: "  sprint_1:"
-      const sprintIdMatch = line.match(/^  ([^:\s][^:#]*):\s*$/);
-      if (sprintIdMatch) {
-        if (currentSprint) { sprints.push(currentSprint); }
-        const id = sprintIdMatch[1].trim();
-        currentSprint = { id, label: prettifySprintId(id), storyKeys: [] };
+      if (/^sprints:\s*$/.test(line)) {
+        if (currentSprint) { sprints.push(currentSprint); currentSprint = null; }
+        section = 'sprints';
         inStoriesList = false;
         continue;
       }
 
-      if (currentSprint) {
-        // goal:
-        const goalMatch = line.match(/^\s{4}goal:\s*["']?(.+?)["']?\s*$/);
-        if (goalMatch) { currentSprint.goal = goalMatch[1]; continue; }
+      if (section === 'sprints') {
+        const sprintIdMatch = line.match(/^  ([^:\s][^:#]*):\s*$/);
+        if (sprintIdMatch) {
+          if (currentSprint) { sprints.push(currentSprint); }
+          const id = sprintIdMatch[1].trim();
+          currentSprint = { id, label: prettifySprintId(id), storyKeys: [] };
+          inStoriesList = false;
+          continue;
+        }
+        if (currentSprint) {
+          const goalMatch = line.match(/^\s{4}goal:\s*["']?(.+?)["']?\s*$/);
+          if (goalMatch) { currentSprint.goal = goalMatch[1]; continue; }
+          const startMatch = line.match(/^\s{4}start_date:\s*["']?(.+?)["']?\s*$/);
+          if (startMatch) { currentSprint.startDate = startMatch[1]; continue; }
+          const endMatch = line.match(/^\s{4}end_date:\s*["']?(.+?)["']?\s*$/);
+          if (endMatch) { currentSprint.endDate = endMatch[1]; continue; }
+          if (/^\s{4}stories:\s*$/.test(line)) { inStoriesList = true; continue; }
+          if (inStoriesList) {
+            const itemMatch = line.match(/^\s{6}-\s+(.+)$/);
+            if (itemMatch) { currentSprint.storyKeys.push(itemMatch[1].trim()); continue; }
+            if (/^\s{4}\S/.test(line)) { inStoriesList = false; }
+          }
+        }
+        continue;
+      }
 
-        // start_date / end_date
-        const startMatch = line.match(/^\s{4}start_date:\s*["']?(.+?)["']?\s*$/);
-        if (startMatch) { currentSprint.startDate = startMatch[1]; continue; }
-        const endMatch = line.match(/^\s{4}end_date:\s*["']?(.+?)["']?\s*$/);
-        if (endMatch) { currentSprint.endDate = endMatch[1]; continue; }
-
-        // stories:
-        if (/^\s{4}stories:\s*$/.test(line)) { inStoriesList = true; continue; }
-
-        // - story-key list items
-        if (inStoriesList) {
-          const itemMatch = line.match(/^\s{6}-\s+(.+)$/);
-          if (itemMatch) { currentSprint.storyKeys.push(itemMatch[1].trim()); continue; }
-          // 4-space key inside sprint (non-list) → stop list
-          if (/^\s{4}\S/.test(line)) { inStoriesList = false; }
+      if (section === 'none') {
+        const scalar = line.match(/^([^:]+):\s*(.+)$/);
+        if (scalar) {
+          const k = scalar[1].trim();
+          const v = scalar[2].trim().replace(/^"|"$/g, '');
+          if (k === 'project') project = v;
+          else if (k === 'project_key') projectKey = v;
+          else if (k === 'tracking_system') trackingSystem = v;
+          else if (k === 'generated') generated = v;
+          else if (k === 'story_location') storyLocation = v;
         }
       }
-      continue;
     }
 
-    // ── Top-level scalar fields (outside devStatus/sprints sections) ──────────
-    if (section === 'none') {
-      const scalar = line.match(/^([^:]+):\s*(.+)$/);
-      if (scalar) {
-        const k = scalar[1].trim();
-        const v = scalar[2].trim().replace(/^"|"$/g, '');
-        if (k === 'project') project = v;
-        else if (k === 'project_key') projectKey = v;
-        else if (k === 'tracking_system') trackingSystem = v;
-        else if (k === 'generated') generated = v;
-        else if (k === 'story_location') storyLocation = v;
+    if (currentSprint) sprints.push(currentSprint);
+  }
+
+  // ── Build items from live epics (single source of truth for statuses) ──────
+  //
+  // Key format mirrors the sprint YAML convention:
+  //   epic           → "epic-{N}"
+  //   story S-3.1   → "3-1-{kebab-title}"
+  //   retrospective  → "epic-{N}-retrospective"
+  const items: SprintItem[] = [];
+
+  for (const epic of epics) {
+    const epicNum = String(epic.id ?? '').replace(/^epic-/i, '');
+    const epicKey = `epic-${epicNum}`;
+
+    // Epic row
+    const epicStatus = (epic.status ?? 'backlog') as SprintStatus;
+    items.push({
+      key: epicKey,
+      status: epicStatus,
+      epicKey: null,
+      isEpic: true,
+      isRetro: false,
+    });
+
+    // Story rows
+    for (const story of (epic.stories ?? [])) {
+      const storyStatus = (story.status ?? 'backlog') as SprintStatus;
+      // Build story key: "S-3.1" → "3-1-kebab-title" (prefix match format for sprint grouping)
+      const rawId = String(story.id ?? '').replace(/^S-/i, ''); // e.g. "3.1"
+      const parts = rawId.split('.');
+      const prefix = parts.length >= 2 ? `${parts[0]}-${parts[1]}` : rawId;
+      const titleSlug = (story.title ?? '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      const storyKey = titleSlug ? `${prefix}-${titleSlug}` : prefix;
+
+      items.push({
+        key: storyKey,
+        status: storyStatus,
+        epicKey,
+        isEpic: false,
+        isRetro: false,
+      });
+    }
+
+    // Retrospective row (if exists in stories list)
+    const retroStory = (epic.stories ?? []).find(
+      (s: any) => /retro/i.test(s.title ?? '')
+    );
+    if (!retroStory) {
+      // Many projects include a named retro — add it as optional if epic has stories
+      // Only when epics have at least one story, to avoid noise on empty epics
+      if ((epic.stories ?? []).length > 0) {
+        items.push({
+          key: `${epicKey}-retrospective`,
+          status: 'optional' as SprintStatus,
+          epicKey: null,
+          isEpic: false,
+          isRetro: true,
+        });
       }
     }
   }
-
-  // Commit last sprint
-  if (currentSprint) sprints.push(currentSprint);
 
   // Build epic status map for consistency checks
   const epicStatusMap = new Map<string, SprintStatus>();
@@ -460,15 +485,14 @@ export function SprintPlanningView({ data, onClose, onRunSprintPlanning }: Sprin
       );
     }
 
-    // Not found / empty state
+    // Not found / empty state (no epics at all — project not loaded)
     if (!data.found) {
       return (
         <div className="sprint-empty-state">
           <Icon name="sprint" size={48} className="sprint-empty-icon" />
-          <p className="sprint-empty-title">No sprint plan found</p>
+          <p className="sprint-empty-title">No project data found</p>
           <p className="sprint-empty-desc">
-            Run the <strong>sprint-planning</strong> workflow to generate a{' '}
-            <code>sprint-status.yaml</code> file for your project.
+            Open a project on the canvas first, then return here to view the sprint board.
           </p>
           <button className="sprint-run-btn" onClick={onRunSprintPlanning}>
             <Icon name="rocket" size={16} />
@@ -496,9 +520,13 @@ export function SprintPlanningView({ data, onClose, onRunSprintPlanning }: Sprin
 
     // ── Sprint tab mode ───────────────────────────────────────────────────────
 
-    // Build a set of all scheduled keys
-    const scheduledKeys = new Set(sprints.flatMap(s => s.storyKeys));
-    const unscheduledItems = items.filter(i => !scheduledKeys.has(i.key));
+    // Helper to safely extract the prefix from a key for mapping
+    // e.g., "4-8-dark-mode" -> "4-8", but "epic-1" -> "epic-1"
+    const extractPrefix = (k: string) => k.startsWith('epic-') ? k : k.split('-').slice(0, 2).join('-');
+
+    // Build a set of all scheduled keys by their prefix
+    const scheduledKeys = new Set(sprints.flatMap(s => s.storyKeys.map(extractPrefix)));
+    const unscheduledItems = items.filter(i => !scheduledKeys.has(extractPrefix(i.key)));
 
     // All tab descriptors (sprints + optional unscheduled)
     const tabs = [
@@ -517,8 +545,9 @@ export function SprintPlanningView({ data, onClose, onRunSprintPlanning }: Sprin
     if (effectiveActiveId === UNSCHEDULED_ID) {
       boardItems = unscheduledItems;
     } else {
-      const keySet = new Set(activeSprint?.storyKeys ?? []);
-      boardItems = items.filter(i => keySet.has(i.key));
+      const activeSprintKeys = activeSprint?.storyKeys.map(extractPrefix) ?? [];
+      const keySet = new Set(activeSprintKeys);
+      boardItems = items.filter(i => keySet.has(extractPrefix(i.key)));
     }
 
     const activeSprint_full = sprints.find(s => s.id === effectiveActiveId);

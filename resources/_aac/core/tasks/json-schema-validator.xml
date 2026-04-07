@@ -1,0 +1,178 @@
+<?xml version="1.0"?>
+<!-- Can be run in a separate subagent with read access to the project for maximum isolation -->
+
+<task id="_aac/core/tasks/json-schema-validator.xml"
+  name="JSON Schema Validator"
+  description="Validates a JSON artifact against its registered project schema. Reports violations
+               and optionally auto-fixes them and injects the $schema field. Use when the user
+               asks to validate, check, or verify a JSON artifact, or after writing any JSON output.">
+
+  <objective>Validate a JSON artifact against its schema and report (or fix) any violations</objective>
+
+  <inputs>
+    <input name="content" required="true"
+      desc="The JSON artifact to validate — provide either a file path or raw JSON text" />
+    <input name="schema_path" required="false"
+      desc="Override the auto-resolved schema path. Use when the artifact type cannot be inferred
+            or when a non-standard schema applies." />
+    <input name="mode" required="false" default="report"
+      desc="'report' = list all violations and warnings only (default).
+            'fix'    = apply violations as corrections and output the corrected JSON,
+                       then inject $schema field if missing." />
+  </inputs>
+
+  <llm critical="true">
+    <i>MANDATORY: Execute ALL steps in the flow section IN EXACT ORDER</i>
+    <i>DO NOT skip steps or change the sequence</i>
+    <i>HALT immediately when halt-conditions are met</i>
+    <i>Each action xml tag within step xml tag is a REQUIRED action to complete that step</i>
+    <i>Sections outside flow (validation, output-format, halt-conditions) provide essential
+       context — review and apply throughout execution</i>
+  </llm>
+
+  <schema-registry>
+    <!-- BMM module -->
+    <entry pattern="story-*.json"              schema="{aac-path}/schemas/bmm/story.schema.json" />
+    <entry pattern="epics.json"                schema="{aac-path}/schemas/bmm/epics.schema.json" />
+    <entry pattern="prd.json"                  schema="{aac-path}/schemas/bmm/prd.schema.json" />
+    <entry pattern="architecture.json"         schema="{aac-path}/schemas/bmm/architecture.schema.json" />
+    <entry pattern="research.json"             schema="{aac-path}/schemas/bmm/research.schema.json" />
+    <entry pattern="product-brief.json"        schema="{aac-path}/schemas/bmm/product-brief.schema.json" />
+    <entry pattern="ux-design.json"            schema="{aac-path}/schemas/bmm/ux-design.schema.json" />
+    <entry pattern="tech-spec.json"            schema="{aac-path}/schemas/bmm/tech-spec.schema.json" />
+    <entry pattern="risks.json"                schema="{aac-path}/schemas/bmm/risks.schema.json" />
+    <entry pattern="sprint-status.json"        schema="{aac-path}/schemas/bmm/sprint-status.schema.json" />
+    <entry pattern="retrospective.json"        schema="{aac-path}/schemas/bmm/retrospective.schema.json" />
+    <entry pattern="readiness-report.json"     schema="{aac-path}/schemas/bmm/readiness-report.schema.json" />
+    <entry pattern="success-metrics.json"      schema="{aac-path}/schemas/bmm/success-metrics.schema.json" />
+    <entry pattern="source-tree.json"          schema="{aac-path}/schemas/bmm/source-tree.schema.json" />
+    <entry pattern="change-proposal.json"      schema="{aac-path}/schemas/bmm/change-proposal.schema.json" />
+    <entry pattern="code-review.json"          schema="{aac-path}/schemas/bmm/code-review.schema.json" />
+    <entry pattern="fit-criteria.json"         schema="{aac-path}/schemas/bmm/fit-criteria.schema.json" />
+    <entry pattern="use-case-*.json"           schema="{aac-path}/schemas/bmm/use-case.schema.json" />
+    <entry pattern="use-cases.json"            schema="{aac-path}/schemas/bmm/use-cases.schema.json" />
+    <entry pattern="definition-of-done.json"   schema="{aac-path}/schemas/bmm/definition-of-done.schema.json" />
+    <entry pattern="epic-test-strategy.json"   schema="{aac-path}/schemas/bmm/epic-test-strategy.schema.json" />
+    <entry pattern="requirements.json"         schema="{aac-path}/schemas/bmm/requirements.schema.json" />
+    <entry pattern="project-overview.json"     schema="{aac-path}/schemas/bmm/project-overview.schema.json" />
+    <entry pattern="project-context.json"      schema="{aac-path}/schemas/bmm/project-context.schema.json" />
+    <!-- TEA module -->
+    <entry pattern="test-design.json"              schema="{aac-path}/schemas/tea/test-design.schema.json" />
+    <entry pattern="test-design-architecture.json" schema="{aac-path}/schemas/tea/test-design-architecture.schema.json" />
+    <entry pattern="test-design-qa.json"           schema="{aac-path}/schemas/tea/test-design-qa.schema.json" />
+    <entry pattern="test-review.json"              schema="{aac-path}/schemas/tea/test-review.schema.json" />
+    <entry pattern="atdd-checklist.json"           schema="{aac-path}/schemas/tea/atdd-checklist.schema.json" />
+    <entry pattern="ci-pipeline.json"              schema="{aac-path}/schemas/tea/ci-pipeline.schema.json" />
+    <entry pattern="automation-summary.json"       schema="{aac-path}/schemas/tea/automation-summary.schema.json" />
+    <entry pattern="nfr-assessment.json"           schema="{aac-path}/schemas/tea/nfr-assessment.schema.json" />
+    <entry pattern="test-framework.json"           schema="{aac-path}/schemas/tea/test-framework.schema.json" />
+    <entry pattern="test-cases.json"               schema="{aac-path}/schemas/tea/test-cases.schema.json" />
+    <entry pattern="traceability-matrix.json"      schema="{aac-path}/schemas/tea/traceability-matrix.schema.json" />
+    <!-- CIS module -->
+    <entry pattern="design-thinking.json"      schema="{aac-path}/schemas/cis/design-thinking.schema.json" />
+    <entry pattern="innovation-strategy.json"  schema="{aac-path}/schemas/cis/innovation-strategy.schema.json" />
+    <entry pattern="problem-solving.json"      schema="{aac-path}/schemas/cis/problem-solving.schema.json" />
+    <entry pattern="storytelling.json"         schema="{aac-path}/schemas/cis/storytelling.schema.json" />
+    <!-- common: if artifact already has $schema pointing to schemas/common/, resolve it directly -->
+  </schema-registry>
+
+  <flow>
+    <step n="1" title="Load Content">
+      <action>If content is a file path, read the file contents; otherwise treat content as raw JSON</action>
+      <action>Parse the JSON to confirm it is syntactically valid</action>
+      <action if="JSON parse fails">HALT with error: "Invalid JSON — fix syntax errors before running validation"
+        and show the parse error location</action>
+      <action>Note the filename (or infer a placeholder like "inline-artifact") for the report header</action>
+    </step>
+
+    <step n="2" title="Resolve Schema">
+      <action>If schema_path input was provided, use it directly — skip auto-detection</action>
+      <action>Otherwise, check if the artifact contains a "$schema" field; if so, resolve that path relative
+        to the artifact's location and use it</action>
+      <action>Otherwise, match the filename against the schema-registry entries above (longest/most-specific
+        pattern wins)</action>
+      <action if="no match found">HALT and ask the user to supply the schema_path input, listing
+        all available patterns from the schema-registry</action>
+      <action>Confirm the resolved schema file exists on disk before proceeding</action>
+      <action if="schema file not found">HALT with error: "Schema file not found at [path] — verify
+        {aac-path} resolves correctly in this context"</action>
+    </step>
+
+    <step n="3" title="Read Schema">
+      <action>Read the full schema JSON file</action>
+      <action>Extract: required fields list, property types, enum values, nested object shapes,
+        array item schemas, and any $ref references that need resolving</action>
+      <action>Follow and inline any $ref references within the schema before validation</action>
+    </step>
+
+    <step n="4" title="Validate" critical="true">
+      <action>Check all top-level required fields are present and non-empty
+        (null, "", or [] counts as missing unless the schema explicitly allows it)</action>
+      <action>For each property in the artifact, verify its type matches the schema type</action>
+      <action>For enum fields, verify the value is in the schema's enum array; flag unknowns as violations</action>
+      <action>For object fields (e.g. userStory), verify the expected sub-keys are present
+        (e.g. asA / iWant / soThat — never a plain string)</action>
+      <action>For array fields, verify each item conforms to the array item schema</action>
+      <action>For acceptanceCriteria items, verify each has at minimum: given, when, then — not just IDs or counts</action>
+      <action>Collect every violation with: JSON path, issue description, expected value/type, actual value/type</action>
+      <action>Collect warnings for: missing optional-but-recommended fields, fields present in schema description
+        but absent in artifact, deprecated field names</action>
+    </step>
+
+    <step n="5" title="Output Results">
+      <action>Render the findings using the output-format below</action>
+      <action if="mode='fix' and violations found">Apply each violation as a correction to the artifact JSON</action>
+      <action if="mode='fix' and $schema field missing">Inject "$schema" as the very first key, using a
+        relative path from the artifact's location to the resolved schema file.
+        DO NOT modify an existing $schema field.</action>
+      <action if="mode='fix'">Output the complete corrected JSON in a fenced code block</action>
+      <action if="mode='fix'">Note: $schema injection is this task's responsibility only when mode=fix.
+        For Markdown→JSON conversion, use the dual-output-json task instead.</action>
+    </step>
+  </flow>
+
+  <validation>
+    <i>userStory MUST be an object with asA / iWant / soThat keys — never a plain string</i>
+    <i>acceptanceCriteria items MUST have given / when / then — IDs or counts alone are violations</i>
+    <i>Enum fields: compare value against schema enum array; any value not in the array is a violation</i>
+    <i>Required fields that are null, "", or [] are treated as missing unless schema explicitly allows it</i>
+    <i>$schema field: only inject if missing AND mode=fix; never remove or modify an existing $schema</i>
+    <i>$schema relative path: calculate from the artifact file's directory to the schema file</i>
+    <i>Do not silently skip unresolvable $ref entries in the schema — flag them as warnings</i>
+  </validation>
+
+  <output-format>
+    <example>
+## Schema Validation Report
+**Artifact:** story-4.1.json
+**Schema:**   schemas/bmm/story.schema.json
+**Result:**   INVALID ❌  (3 violations, 1 warning)
+
+### Violations (3)
+| # | JSON Path | Issue | Expected | Actual |
+|---|---|---|---|---|
+| 1 | $.metadata.status | Invalid enum value | "draft" \| "active" \| "completed" \| "archived" | "unknown" |
+| 2 | $.userStory | Must be an object, not a string | { asA, iWant, soThat } | "As a user..." |
+| 3 | $.acceptanceCriteria[0] | Missing required field | "given" | (absent) |
+
+### Warnings (1)
+| # | JSON Path | Recommendation |
+|---|---|---|
+| 1 | $.implementationNotes | Optional field present in schema but absent — consider adding |
+    </example>
+    <example title="valid result">
+## Schema Validation Report
+**Artifact:** prd.json
+**Schema:**   schemas/bmm/prd.schema.json
+**Result:**   VALID ✅  (0 violations, 0 warnings)
+    </example>
+  </output-format>
+
+  <halt-conditions>
+    <condition>HALT if content is empty or not provided</condition>
+    <condition>HALT if JSON is syntactically invalid — show parse error; do not attempt schema validation</condition>
+    <condition>HALT if no schema can be resolved and no schema_path override was given</condition>
+    <condition>HALT if the resolved schema file does not exist on disk</condition>
+  </halt-conditions>
+
+</task>

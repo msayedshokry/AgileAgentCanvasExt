@@ -675,7 +675,7 @@ describe('App - Additional Message Types', () => {
 
       // The elicitation picker should open with the methods
       await waitFor(() => {
-        expect(document.querySelector('.elicit-modal')).toBeInTheDocument();
+        expect(document.querySelector('.wfl-modal')).toBeInTheDocument();
       });
 
       // Verify methods are shown
@@ -761,35 +761,6 @@ describe('App - Additional Message Types', () => {
     });
   });
 
-  describe('outputFormat message', () => {
-    it('should set the output format state', async () => {
-      render(<App />);
-
-      act(() => {
-        dispatchMessage('outputFormat', { format: 'json' });
-      });
-
-      // The toolbar format button should show JSON
-      await waitFor(() => {
-        const formatBtn = document.querySelector('.toolbar-format-btn');
-        expect(formatBtn).toBeInTheDocument();
-        expect(formatBtn!.textContent).toContain('JSON');
-      });
-    });
-
-    it('should set markdown format', async () => {
-      render(<App />);
-
-      act(() => {
-        dispatchMessage('outputFormat', { format: 'markdown' });
-      });
-
-      await waitFor(() => {
-        const formatBtn = document.querySelector('.toolbar-format-btn');
-        expect(formatBtn!.textContent).toContain('MD');
-      });
-    });
-  });
 
   describe('validationError message', () => {
     it('should show validation error toast', async () => {
@@ -1146,30 +1117,6 @@ describe('App - Toolbar Callbacks', () => {
     });
   });
 
-  describe('handleOutputFormatChange', () => {
-    it('should cycle format and post setOutputFormat', async () => {
-      render(<App />);
-
-      const formatBtn = document.querySelector('.toolbar-format-btn') as HTMLElement;
-      expect(formatBtn).toBeInTheDocument();
-
-      // Default is 'dual', click should cycle to 'json'
-      fireEvent.click(formatBtn);
-
-      expect(mockVsCodeApi.postMessage).toHaveBeenCalledWith({
-        type: 'setOutputFormat',
-        format: 'json',
-      });
-
-      // Click again should cycle to 'markdown'
-      fireEvent.click(formatBtn);
-
-      expect(mockVsCodeApi.postMessage).toHaveBeenCalledWith({
-        type: 'setOutputFormat',
-        format: 'markdown',
-      });
-    });
-  });
 
   describe('handleDismissExternalChange', () => {
     it('should clear external change toast on dismiss', async () => {
@@ -1331,7 +1278,7 @@ describe('App - Elicitation, Workflow, Search, and Schema Actions', () => {
       fireEvent.click(elicitBtn);
 
       await waitFor(() => {
-        expect(document.querySelector('.elicit-modal')).toBeInTheDocument();
+        expect(document.querySelector('.wfl-modal')).toBeInTheDocument();
       });
     });
 

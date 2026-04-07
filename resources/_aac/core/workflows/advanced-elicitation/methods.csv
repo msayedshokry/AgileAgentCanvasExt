@@ -49,3 +49,13 @@ num,category,method_name,description,output_pattern
 48,philosophical,Trolley Problem Variations,Explore ethical trade-offs through moral dilemmas - valuable for understanding values and difficult decisions,dilemma → analysis → decision
 49,retrospective,Hindsight Reflection,Imagine looking back from the future to gain perspective - powerful for project reviews,future view → insights → application
 50,retrospective,Lessons Learned Extraction,Systematically identify key takeaways and actionable improvements - essential for continuous improvement,experience → lessons → actions
+51,core,Forcing Questions (Office Hours),Apply six constraints (Demand Reality Status Quo Specificity Narrowest Wedge Insight Why Now) to validate product ideas and uncover true pain points,demand → status quo → specificity → wedge → insight → timing
+52,risk,Scope Calibration Review,Review technical plans against four ambition modes (Scope Expansion Selective Expansion Hold Scope Scope Reduction) to calibrate right-sizing,current scope → mode selection → challenge → calibrated scope
+53,technical,Design Dimension Audit,Rate UX/UI plans across specific dimensions (Visual Hierarchy Interaction States AI Slop Risk) on a 0-10 scale and define what a 10 looks like,dimensions → rating → target 10 → amendments
+54,technical,Execution Lock Review,Act as Engineering Manager to lock in execution plans by aggressively interrogating data flow edge cases test coverage and DB architecture,architecture → data flow → edge cases → test gaps → locked plan
+55,technical,Eval-Driven Discovery,Define capability and regression evals before implementation. Use pass@k metrics to measure reliability and track regressions across changes,evals → baseline → implementation → verification → pass@k report
+56,research,Research-First Discovery,Systematically explore the existing codebase and documentation before writing any code. Search for existing patterns and prior art to avoid reinvention,search → understand → patterns → design → implement
+57,research,Codebase Discovery (GSD-Style),Identify entry points and trace data flow to map architectural boundaries before proposing edits,entry points → context groups → data flow
+58,technical,Trade-off Matrix (GSD 5-Column),5-column matrix (Option/Pros/Cons/Risk/Recommendation) for evaluating technical decisions,options → pros/cons → risk → verdict
+59,core,Goal-Backward Planning,Start from the ideal end state and work backwards to define the critical path of execution,end state → dependencies → execution chain
+60,collaboration,User Behavioral Profiling,Analyze expected user interaction patterns and edge cases to harden the happy path,user intent → happy path → edge cases → hardening

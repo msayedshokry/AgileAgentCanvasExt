@@ -1261,6 +1261,8 @@ Skip your activation menu — the user is mid-workflow and has already been inte
 - **agileagentcanvas_read_file(path)** — read any file under \`${bmadPath}\` (use resolved absolute paths)
 - **agileagentcanvas_list_directory(path)** — list any directory under \`${bmadPath}\`
 - **agileagentcanvas_update_artifact(type, id, changes)** — persist changes to a BMAD artifact in the project
+- **agileagentcanvas_sync_story_status(storyId, epicId, status)** — atomically sync a story's status across ALL tracker files
+- **agileagentcanvas_sync_epic_status(epicId, status)** — atomically sync an epic's status across ALL tracker files
 
 ## BMAD Framework Location
 The complete BMAD framework is at: \`${bmadPath}\`
@@ -3461,13 +3463,13 @@ Engage the user in collaborative discussion — ask clarifying questions when us
             // Search multiple locations for markdown files
             let allMdFiles: {path: string, uri: vscode.Uri}[] = [];
             
-            // Check planning-artifacts (backward compat old projects)
-            const planningUri = vscode.Uri.joinPath(folderUri, 'planning-artifacts');
-            allMdFiles.push(...await findMdFilesRecursive(planningUri, 'planning-artifacts'));
+            // Check planning (backward compat old projects)
+            const planningUri = vscode.Uri.joinPath(folderUri, 'planning');
+            allMdFiles.push(...await findMdFilesRecursive(planningUri, 'planning'));
             
-            // Check implementation-artifacts (backward compat old projects)
-            const implUri = vscode.Uri.joinPath(folderUri, 'implementation-artifacts');
-            allMdFiles.push(...await findMdFilesRecursive(implUri, 'implementation-artifacts'));
+            // Check solutioning (backward compat old projects)
+            const implUri = vscode.Uri.joinPath(folderUri, 'solutioning');
+            allMdFiles.push(...await findMdFilesRecursive(implUri, 'solutioning'));
 
             // Check epics/ (new epic-scoped structure)
             const epicsUri = vscode.Uri.joinPath(folderUri, 'epics');

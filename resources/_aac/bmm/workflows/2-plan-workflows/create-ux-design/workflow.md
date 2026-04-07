@@ -1,7 +1,7 @@
 ---
 name: create-ux-design
 description: 'Plan UX patterns and design specifications. Use when the user says "lets create UX design" or "create UX specifications" or "help me plan the UX"'
-output_format: dual
+output_format: json
 schema_file: "{bmad-path}/schemas/bmm/ux-design.schema.json"
 template_json: "./ux-design-template.json"
 ---

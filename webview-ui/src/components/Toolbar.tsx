@@ -16,13 +16,12 @@ interface ToolbarProps {
   onImport?: () => void;
   onHelp?: () => void;
   onAsk?: () => void;
-  outputFormat?: 'json' | 'markdown' | 'dual';
-  onOutputFormatChange?: (format: 'json' | 'markdown' | 'dual') => void;
   schemaIssueCount?: number;
   onFixSchemas?: () => void;
   onValidateSchemas?: () => void;
   schemaValidating?: boolean;
   schemaFixing?: boolean;
+  onSprintView?: () => void;
 }
 
 /** All artifact types that can be created via the Add menu. */
@@ -68,7 +67,7 @@ const ROOT_TYPES: Set<Artifact['type']> = new Set([
   'epic', 'requirement', 'prd', 'architecture', 'vision', 'product-brief',
 ]);
 
-export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhance, onElicit, themeOverride, onToggleTheme, onSwitchProject, activeFolderName, onExport, onImport, onHelp, onAsk, outputFormat, onOutputFormatChange, schemaIssueCount, onFixSchemas, onValidateSchemas, schemaValidating, schemaFixing }: ToolbarProps) {
+export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhance, onElicit, themeOverride, onToggleTheme, onSwitchProject, activeFolderName, onExport, onImport, onHelp, onAsk, schemaIssueCount, onFixSchemas, onValidateSchemas, schemaValidating, schemaFixing, onSprintView }: ToolbarProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -205,6 +204,17 @@ export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhanc
         </button>
       )}
 
+      {/* Sprint Planning View button */}
+      {onSprintView && (
+        <button
+          className="toolbar-sprint-btn"
+          onClick={onSprintView}
+          title="Sprint Plan — view Kanban board"
+        >
+          <Icon name="sprint" size={16} />
+        </button>
+      )}
+
       {/* Ask / Chat button */}
       {onAsk && (
         <button
@@ -227,23 +237,6 @@ export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhanc
         </button>
       )}
 
-      {/* Output format selector — cycle button */}
-      {onOutputFormatChange && (
-        <button
-          className={`toolbar-format-btn ${outputFormat || 'dual'}`}
-          title={`Output format: ${outputFormat === 'json' ? 'JSON only' : outputFormat === 'markdown' ? 'Markdown only' : 'Dual (JSON + Markdown)'}. Click to cycle.`}
-          onClick={() => {
-            const order: ('dual' | 'json' | 'markdown')[] = ['dual', 'json', 'markdown'];
-            const idx = order.indexOf(outputFormat || 'dual');
-            onOutputFormatChange(order[(idx + 1) % order.length]);
-          }}
-        >
-          <Icon name="settings" size={13} />
-          <span className="toolbar-format-label">
-            {outputFormat === 'json' ? 'JSON' : outputFormat === 'markdown' ? 'MD' : 'Dual'}
-          </span>
-        </button>
-      )}
 
       {/* Theme toggle */}
       {onToggleTheme && (

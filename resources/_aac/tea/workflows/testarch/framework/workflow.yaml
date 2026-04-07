@@ -27,8 +27,8 @@ variables:
 # Output configuration
 default_output_file: "{test_dir}/README.md" # Main deliverable is test setup README
 
-# Output format configuration (dual = JSON + Markdown)
-output_format: dual
+# Output format configuration
+output_format: json
 schema: "{bmad-path}/schemas/tea/test-framework.schema.json"
 output_note: "Produces framework setup documentation and JSON configuration manifest"
 

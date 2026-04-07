@@ -4,7 +4,7 @@ description: 'Guide human-centered design processes using empathy-driven methodo
 author: "BMad"
 
 # Output format configuration
-output_format: dual  # JSON (primary) + Markdown (human-readable)
+output_format: json  # JSON (primary) structured artifact
 schema_file: "{bmad-path}/schemas/cis/design-thinking.schema.json"
 template_json: "{installed_path}/template.json"
 

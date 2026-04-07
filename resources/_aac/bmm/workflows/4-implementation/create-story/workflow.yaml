@@ -2,7 +2,7 @@ name: create-story
 description: 'Creates a dedicated story file with all the context the agent will need to implement it later. Use when the user says "create the next story" or "create story [story identifier]"'
 
 # Output format configuration
-output_format: dual  # JSON (primary) + Markdown (human-readable)
+output_format: json  # JSON (primary) structured artifact
 schema_file: "{bmad-path}/schemas/bmm/story.schema.json"
 template_json: "{installed_path}/template.json"
 
@@ -29,13 +29,13 @@ validation: "{installed_path}/checklist.md"
 
 # Variables and inputs
 sprint_status: "{implementation_artifacts}/sprint-status.yaml" # Primary source for story tracking
-epics_file: "{planning_artifacts}/epics.md" # Enhanced epics+stories with BDD and source hints
+epics_file: "{planning_artifacts}/epics.json" # Enhanced epics+stories with BDD and source hints
 prd_file: "{planning_artifacts}/prd.md" # Fallback for requirements (if not in epics file)
 architecture_file: "{planning_artifacts}/architecture.md" # Fallback for constraints (if not in epics file)
 ux_file: "{planning_artifacts}/*ux*.md" # Fallback for UX requirements (if not in epics file)
 story_title: "" # Will be elicited if not derivable
 project_context: "**/project-context.md"
-default_output_file: "{implementation_artifacts}/{{story_key}}.md"
+default_output_file: "{implementation_artifacts}/{{story_key}}.json"
 
 # Smart input file references - Simplified for enhanced approach
 # The epics+stories file should contain everything needed with source hints
@@ -57,6 +57,6 @@ input_file_patterns:
     load_strategy: "SELECTIVE_LOAD" # Only load if needed
   epics:
     description: "Enhanced epics+stories file with BDD and source hints"
-    whole: "{planning_artifacts}/*epic*.md"
-    sharded: "{planning_artifacts}/*epic*/*.md"
+    whole: "{planning_artifacts}/*epic*.json"
+    sharded: "{planning_artifacts}/*epic*/*.json"
     load_strategy: "SELECTIVE_LOAD" # Only load needed epic

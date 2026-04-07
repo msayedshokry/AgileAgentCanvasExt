@@ -96,6 +96,27 @@ Report:
 - Critical blockers or waivers needed
 - Next recommended workflow (`trace` or release gate)
 
+## SAVE JSON ARTIFACT
+
+**CRITICAL — Do this before reporting completion:**
+
+Read the complete `{outputFile}` working document, then call `agileagentcanvas_update_artifact` to persist the final structured artifact:
+
+```
+agileagentcanvas_update_artifact({
+  type: "nfr-assessment",
+  id: "{project_name}-nfr-assessment",
+  changes: { /* all content fields extracted from the working document, following the nfr-assessment schema */ }
+})
+```
+
+- Schema reference: `{bmad-path}/schemas/tea/nfr-assessment.schema.json` — use `agileagentcanvas_read_file` to read it if you need to verify field names
+- The `changes` object must conform to the nfr-assessment schema — do NOT wrap content in a `content` key
+- **Only call this after the Completion Summary step is done** — do not skip any earlier steps
+- If the tool call is rejected (schema mismatch), fix the field and retry
+
+---
+
 ## 🚨 SYSTEM SUCCESS/FAILURE METRICS:
 
 ### ✅ SUCCESS:
