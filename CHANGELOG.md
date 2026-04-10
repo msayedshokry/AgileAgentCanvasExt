@@ -2,6 +2,20 @@
 
 ## 0.4.1
 
+### Jira Cloud Read Integration
+
+- **Fetch epics & stories from Jira** — New `agileagentcanvas.fetchFromJira` command (command palette) lets you test your connection, fetch epics, fetch stories (by epic or entire project), and sync Jira data into your canvas artifacts.
+- **`/jira` chat command** — `@agileagentcanvas /jira` with four subcommands:
+  - `/jira config` — shows connection status and tests credentials
+  - `/jira epics [projectKey]` — streams a markdown table of all epics
+  - `/jira stories [epicKey|projectKey]` — lists stories for an epic or a whole project
+  - `/jira sync [projectKey]` — fetches all epics + stories and merges them into your canvas (local-only artifacts are never removed)
+- **`agileagentcanvas_read_jira` LM tool** — AI can autonomously call this tool when you ask about your Jira board in natural language (e.g. "show me my Jira epics"). Actions: `test_connection`, `list_epics`, `list_stories`, `list_all`.
+- **Jira settings** — Four new VS Code settings under `agileagentcanvas.jira.*`: `baseUrl`, `email`, `apiToken`, `projectKey`. Search "Jira" in Settings to configure.
+- **Zero new dependencies** — Uses Node's built-in `https` module; no npm packages added.
+- **Classic & next-gen project support** — Story→Epic linking tries the modern `parent` field first, then falls back to the legacy `"Epic Link"` field for older board configurations.
+- **Token expiry awareness** — API tokens now expire yearly (Atlassian policy since Dec 2024). A 401 response surfaces a targeted error with a direct link to generate a replacement token.
+
 ### OpenCode Full Integration
 
 - **Agents directory** — OpenCode IDE target now writes `agileagentcanvas.md` and `agileagentcanvas-canvas-integrator.md` into `.opencode/agents/` with proper `mode: all` / `mode: subagent` frontmatter (per OpenCode agent spec). Replaces the Copilot-style `tools: [...]` frontmatter that would have been ignored by OpenCode.
