@@ -7707,3 +7707,242 @@ body.vscode-light .minimap-viewport {
   border: 1px solid rgba(245, 158, 11, 0.25);
 }
 
+/* =============================================================================
+   Jira FAB button
+   ============================================================================= */
+.jira-fab {
+  right: 138px; /* sits to the left of the workflow-fab (~120px) + 8px gap */
+  background: #0052CC;
+  color: #fff;
+}
+.jira-fab:hover {
+  background: #0065FF;
+}
+body.vscode-light .jira-fab,
+body.ac-force-light .jira-fab {
+  background: #0052CC;
+  color: #fff;
+}
+.app.with-detail-panel .jira-fab {
+  right: calc(396px + 138px);
+}
+
+/* =============================================================================
+   Toolbar Jira button
+   ============================================================================= */
+.toolbar-jira-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #0052CC;
+  background: rgba(0, 82, 204, 0.12);
+  transition: background 0.15s, opacity 0.15s;
+}
+.toolbar-jira-btn:hover {
+  background: rgba(0, 82, 204, 0.26);
+}
+
+/* =============================================================================
+   Jira Modal
+   ============================================================================= */
+.jira-modal-icon {
+  border-radius: 6px;
+  overflow: hidden;
+  line-height: 0;
+}
+
+/* Body / form area */
+.jira-modal-body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.jira-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.jira-modal-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.jira-modal-hint {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--vscode-descriptionForeground);
+  font-size: 11px;
+}
+
+.jira-modal-input {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--vscode-input-border, rgba(128,128,128,0.35));
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  font-size: 13px;
+  font-family: var(--vscode-font-family);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+.jira-modal-input:focus {
+  border-color: var(--vscode-focusBorder, #0052CC);
+  box-shadow: 0 0 0 1px var(--vscode-focusBorder, #0052CC);
+}
+
+/* Info / warning banners */
+.jira-modal-info,
+.jira-modal-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--vscode-foreground);
+}
+.jira-modal-info {
+  background: rgba(0, 82, 204, 0.08);
+  border: 1px solid rgba(0, 82, 204, 0.2);
+}
+.jira-modal-warning {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+/* Loading spinner */
+.jira-modal-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  font-size: 13px;
+  color: var(--vscode-descriptionForeground);
+}
+.jira-modal-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--vscode-button-background);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: jira-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes jira-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Result area */
+.jira-modal-result {
+  border-radius: 6px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  font-size: 12px;
+}
+.jira-modal-result.success {
+  background: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-panel-border, rgba(128,128,128,0.2));
+}
+.jira-modal-result.error {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+.jira-modal-error-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--vscode-errorForeground, #ef4444);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Run button */
+.jira-run-btn {
+  background: #0052CC !important;
+  color: #fff !important;
+  min-width: 80px;
+}
+.jira-run-btn:hover:not(:disabled) {
+  background: #0065FF !important;
+}
+.jira-run-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Markdown result rendering */
+.jira-md-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.jira-md-h2 {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--vscode-foreground);
+}
+.jira-md-h3 {
+  margin: 4px 0 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+}
+.jira-md-line,
+.jira-md-status {
+  margin: 0;
+  font-size: 12px;
+  color: var(--vscode-foreground);
+  line-height: 1.5;
+}
+.jira-md-table-wrap {
+  overflow-x: auto;
+}
+.jira-md-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 11px;
+}
+.jira-md-table th {
+  text-align: left;
+  padding: 4px 8px;
+  font-weight: 600;
+  background: var(--vscode-list-hoverBackground);
+  border: 1px solid var(--vscode-panel-border, rgba(128,128,128,0.2));
+  white-space: nowrap;
+  color: var(--vscode-foreground);
+}
+.jira-md-table td {
+  padding: 3px 8px;
+  border: 1px solid var(--vscode-panel-border, rgba(128,128,128,0.15));
+  color: var(--vscode-foreground);
+  vertical-align: top;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.jira-md-table tr:nth-child(even) td {
+  background: var(--vscode-list-hoverBackground);
+}
+
+

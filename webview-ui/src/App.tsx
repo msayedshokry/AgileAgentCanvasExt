@@ -8,6 +8,7 @@ import { ElicitationPicker } from './components/ElicitationPicker';
 import { WorkflowLauncher } from './components/WorkflowLauncher';
 import { HelpModal } from './components/HelpModal';
 import { AskModal } from './components/AskModal';
+import { JiraModal } from './components/JiraModal';
 import { SprintPlanningView, parseSprintStatusYaml } from './components/SprintPlanningView';
 import type { SprintData } from './components/SprintPlanningView';
 import { SearchBox } from './components/SearchBox';
@@ -92,6 +93,9 @@ function App() {
   // Sprint planning view state
   const [showSprintView, setShowSprintView] = useState<boolean>(false);
   const [sprintData, setSprintData] = useState<SprintData>({ found: false });
+
+  // Jira modal state
+  const [jiraModalOpen, setJiraModalOpen] = useState<boolean>(false);
   
   // Canvas search state (SearchBox rendered in App, to the left of workflow FAB)
   const [searchOpen, setSearchOpen] = useState<boolean>(false);
@@ -783,6 +787,11 @@ function App() {
     setWorkflowLauncherOpen(true);
   }, []);
 
+  // Open the Jira modal
+  const handleOpenJira = useCallback(() => {
+    setJiraModalOpen(true);
+  }, []);
+
   // Search box: open from Canvas `/` key
   const handleOpenSearch = useCallback(() => {
     setSearchOpen(true);
@@ -842,7 +851,7 @@ function App() {
 
   return (
     <div className={`app ${detailPanelOpen && selectedArtifact ? 'with-detail-panel' : ''}`}>
-      <Toolbar 
+      <Toolbar
         onAddArtifact={handleAddArtifact}
         selectedArtifact={selectedArtifact}
         onBreakDown={handleBreakDown}
@@ -857,6 +866,7 @@ function App() {
         onHelp={handleOpenHelp}
         onAsk={handleOpenAsk}
         onSprintView={handleOpenSprintView}
+        onJira={handleOpenJira}
         schemaIssueCount={schemaIssues.length}
         onFixSchemas={handleFixSchemas}
         onValidateSchemas={handleValidateSchemas}
@@ -927,6 +937,9 @@ function App() {
           onClose={() => setWorkflowLauncherOpen(false)}
         />
       )}
+      {jiraModalOpen && (
+        <JiraModal onClose={() => setJiraModalOpen(false)} />
+      )}
       {helpOpen && (
         <HelpModal onClose={handleCloseHelp} />
       )}
@@ -957,6 +970,21 @@ function App() {
       >
         <span className="workflow-fab-icon"><Icon name="workflow" size={18} /></span>
         <span className="workflow-fab-label">Workflows</span>
+      </button>
+      {/* Jira FAB */}
+      <button
+        className="workflow-fab jira-fab"
+        title="Jira — fetch epics & stories"
+        onClick={handleOpenJira}
+        aria-label="Jira Integration"
+      >
+        <span className="workflow-fab-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12.53 4h-1.7v8.63a2.37 2.37 0 0 0 2.37 2.37h4.63v-1.7h-4.63a.67.67 0 0 1-.67-.67V4z" fill="currentColor" />
+            <path d="M8.17 8.83H6.47v4.97a2.37 2.37 0 0 0 2.37 2.37h4.63v-1.7H8.84a.67.67 0 0 1-.67-.67V8.83z" fill="currentColor" opacity="0.6" />
+          </svg>
+        </span>
+        <span className="workflow-fab-label">Jira</span>
       </button>
       {artifacts.length === 0 && (
         <div className="empty-state">

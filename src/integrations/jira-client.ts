@@ -50,11 +50,13 @@ interface JiraIssueRaw {
     fields: JiraIssueFields;
 }
 
+/** Response shape for the new /rest/api/3/search/jql endpoint (cursor-based pagination) */
 interface JiraSearchResponse {
     issues: JiraIssueRaw[];
-    total: number;
-    startAt: number;
-    maxResults: number;
+    /** Cursor token for the next page. Absent/null when this is the last page. */
+    nextPageToken?: string | null;
+    /** True when there are no more pages. */
+    isLast?: boolean;
 }
 
 // ─── Normalized output types ─────────────────────────────────────────────────
@@ -172,6 +174,14 @@ export class JiraClient {
                         ));
                         return;
                     }
+                    if (statusCode === 410) {
+                        reject(new JiraClientError(
+                            'Jira API endpoint removed (410). The old /search endpoint was deprecated. ' +
+                            'Please update the extension to the latest version.',
+                            410
+                        ));
+                        return;
+                    }
                     if (statusCode < 200 || statusCode >= 300) {
                         reject(new JiraClientError(
                             `Jira API returned HTTP ${statusCode}. Response: ${body.slice(0, 200)}`,
@@ -205,28 +215,37 @@ export class JiraClient {
     }
 
     /**
-     * Paginate through all results of a JQL search, returning every issue.
-     * Jira Cloud caps maxResults at 100; we loop until startAt + returned >= total.
+     * Paginate through all results of a JQL search using the new
+     * /rest/api/3/search/jql endpoint (cursor-based pagination).
+     *
+     * The old /rest/api/3/search endpoint was removed (HTTP 410) in 2025.
+     * The new endpoint uses nextPageToken / isLast instead of startAt / total.
      */
     private async searchAll(jql: string, fields: string): Promise<JiraIssueRaw[]> {
         const PAGE_SIZE = 100;
         const all: JiraIssueRaw[] = [];
-        let startAt = 0;
+        let nextPageToken: string | null = null;
 
         while (true) {
-            const page = await this.request<JiraSearchResponse>('/rest/api/3/search', {
+            const params: Record<string, string | number> = {
                 jql,
                 fields,
-                maxResults: PAGE_SIZE,
-                startAt
-            });
+                maxResults: PAGE_SIZE
+            };
+            if (nextPageToken) {
+                params['nextPageToken'] = nextPageToken;
+            }
+
+            const page = await this.request<JiraSearchResponse>('/rest/api/3/search/jql', params);
 
             all.push(...page.issues);
 
-            if (all.length >= page.total || page.issues.length === 0) {
+            // Stop when explicitly told this is the last page, or no token for next page,
+            // or we got an empty page (safety guard)
+            if (page.isLast || !page.nextPageToken || page.issues.length === 0) {
                 break;
             }
-            startAt += page.issues.length;
+            nextPageToken = page.nextPageToken;
         }
 
         logger.debug(`[JiraClient] searchAll returned ${all.length} issues for JQL: ${jql}`);

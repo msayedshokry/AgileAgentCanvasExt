@@ -21,6 +21,13 @@ import {
     exportArtifactToMarkdown
 } from '../commands/artifact-commands';
 import { openChat } from '../commands/chat-bridge';
+import { JiraClient } from '../integrations/jira-client';
+import {
+    getJiraConfig,
+    formatEpicsAsMarkdown,
+    formatStoriesAsMarkdown,
+    mergeJiraIntoArtifacts
+} from '../integrations/jira-importer';
 
 /**
  * Shared message handler for webview→extension messages.
@@ -537,6 +544,98 @@ export async function handleCommonWebviewMessage(
                     content: content ?? null,
                     epics,
                 });
+            }
+            return true;
+        }
+
+        case 'jiraAction': {
+            if (!webview) return true;
+
+            const jiraConfig = getJiraConfig();
+            if (!jiraConfig) {
+                webview.postMessage({
+                    type: 'jiraResult',
+                    success: false,
+                    error: 'Jira is not configured. Open VS Code Settings and search "Jira" to set your Base URL, email, API token, and project key.'
+                });
+                return true;
+            }
+
+            const jiraClient = new JiraClient(jiraConfig);
+            const action: string = message.action ?? 'config';
+            const projectKey: string | undefined = message.projectKey || jiraConfig.projectKey;
+            const epicKey: string | undefined = message.epicKey;
+
+            try {
+                if (action === 'config') {
+                    const me = await jiraClient.testConnection();
+                    const masked = jiraClient.getMaskedConfig();
+                    const md = [
+                        '## Jira Connection — OK ✅',
+                        '',
+                        `| Setting | Value |`,
+                        `|---|---|`,
+                        `| Base URL | \`${masked.baseUrl}\` |`,
+                        `| Email | \`${masked.email}\` |`,
+                        `| API Token | \`${masked.apiToken}\` |`,
+                        `| Default Project | \`${masked.projectKey ?? '(not set)'}\` |`,
+                        '',
+                        `✅ Authenticated as **${me.displayName}** (${me.email})`,
+                        '',
+                        '> API tokens expire after 1 year. Rotate at [id.atlassian.com → Security → API tokens](https://id.atlassian.com/manage-profile/security/api-tokens).'
+                    ].join('\n');
+                    webview.postMessage({ type: 'jiraResult', success: true, markdown: md });
+                }
+                else if (action === 'epics') {
+                    if (!projectKey) {
+                        webview.postMessage({ type: 'jiraResult', success: false, error: 'Please enter a Project Key (e.g. PROJ) or set a default in Settings.' });
+                        return true;
+                    }
+                    const epics = await jiraClient.fetchEpics(projectKey);
+                    webview.postMessage({ type: 'jiraResult', success: true, markdown: formatEpicsAsMarkdown(epics) });
+                }
+                else if (action === 'stories') {
+                    if (epicKey) {
+                        const resolvedProject = projectKey || epicKey.replace(/-\d+$/, '');
+                        const stories = await jiraClient.fetchStoriesForEpic(epicKey, resolvedProject);
+                        webview.postMessage({ type: 'jiraResult', success: true, markdown: formatStoriesAsMarkdown(stories, epicKey) });
+                    } else if (projectKey) {
+                        const stories = await jiraClient.fetchAllStoriesInProject(projectKey);
+                        webview.postMessage({ type: 'jiraResult', success: true, markdown: formatStoriesAsMarkdown(stories) });
+                    } else {
+                        webview.postMessage({ type: 'jiraResult', success: false, error: 'Please enter a Project Key or Epic Key.' });
+                    }
+                }
+                else if (action === 'sync') {
+                    if (!projectKey) {
+                        webview.postMessage({ type: 'jiraResult', success: false, error: 'Please enter a Project Key to sync.' });
+                        return true;
+                    }
+                    const jiraEpics = await jiraClient.fetchEpicsWithStories(projectKey);
+                    const existing = store.getState();
+                    const { merged, added, updated } = mergeJiraIntoArtifacts(existing, jiraEpics);
+                    store.mergeFromState({ epics: merged.epics });
+                    const totalStories = jiraEpics.reduce((n, e) => n + e.stories.length, 0);
+                    const md = [
+                        `## Sync Complete ✅`,
+                        '',
+                        `| | Count |`,
+                        `|---|---|`,
+                        `| Epics fetched | ${jiraEpics.length} |`,
+                        `| Stories fetched | ${totalStories} |`,
+                        `| Epics added | ${added} |`,
+                        `| Epics updated | ${updated} |`,
+                        '',
+                        'Your canvas artifacts have been updated.'
+                    ].join('\n');
+                    webview.postMessage({ type: 'jiraResult', success: true, markdown: md });
+                }
+                else {
+                    webview.postMessage({ type: 'jiraResult', success: false, error: `Unknown action: ${action}` });
+                }
+            } catch (err: any) {
+                logger.debug(`${logPrefix} jiraAction error: ${err?.message ?? err}`);
+                webview.postMessage({ type: 'jiraResult', success: false, error: err?.message ?? String(err) });
             }
             return true;
         }
