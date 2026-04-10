@@ -27,6 +27,7 @@ import {
 import { executeWorkflowStep } from './commands/workflow-commands';
 import { installToIde, autoInstallIfNeeded } from './commands/ide-installer';
 import { openChat, setChatBridgeLogger } from './commands/chat-bridge';
+import { JiraCommands } from './commands/jira-commands';
 import { createLogger, setLoggerOutputSink } from './utils/logger';
 
 const logger = createLogger('extension');
@@ -155,6 +156,11 @@ export function activate(context: vscode.ExtensionContext) {
         // Install BMAD framework to IDE (Cursor, Claude Code, Windsurf, Copilot, Antigravity)
         vscode.commands.registerCommand('agileagentcanvas.installToIde', () => {
             return installToIde(context.extensionPath);
+        }),
+        // Fetch from Jira — read epics and stories from a Jira Cloud project
+        vscode.commands.registerCommand('agileagentcanvas.fetchFromJira', () => {
+            const jiraCommands = new JiraCommands(artifactStore);
+            return jiraCommands.handleFetchFromJira();
         }),
         // Open the IDE chat panel (IDE-agnostic, optionally with a pre-filled query)
         vscode.commands.registerCommand('agileagentcanvas.openChatPanel', (query?: string) => {

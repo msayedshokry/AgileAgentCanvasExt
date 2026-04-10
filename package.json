@@ -107,6 +107,31 @@
             "changes"
           ]
         }
+      },
+      {
+        "name": "agileagentcanvas_read_jira",
+        "displayName": "Agile Agent Canvas Read Jira",
+        "modelDescription": "Reads epics and stories from the user's Jira Cloud project via the REST API. Use this when the user asks about their Jira board, wants to see Jira issues, or asks about epics/stories in Jira. Requires Jira to be configured in VS Code Settings (agileagentcanvas.jira.*).",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "enum": ["test_connection", "list_epics", "list_stories", "list_all"],
+              "description": "Action: test_connection, list_epics, list_stories, list_all"
+            },
+            "projectKey": {
+              "type": "string",
+              "description": "Jira project key, e.g. PROJ"
+            },
+            "epicKey": {
+              "type": "string",
+              "description": "Epic issue key, e.g. PROJ-42 (for list_stories)"
+            }
+          },
+          "required": ["action"]
+        }
       }
     ],
     "chatParticipants": [
@@ -244,6 +269,10 @@
           {
             "name": "api-docs",
             "description": "Generate API documentation from source code (OpenAPI, JSDoc, etc.)"
+          },
+          {
+            "name": "jira",
+            "description": "Read epics and stories from Jira Cloud. Subcommands: config, epics [projectKey], stories [epicKey|projectKey], sync [projectKey]"
           }
         ]
       }
@@ -338,6 +367,11 @@
         "command": "agileagentcanvas.restorePreMigration",
         "title": "Agile Agent Canvas: Restore Pre-Migration Backup",
         "icon": "$(history)"
+      },
+      {
+        "command": "agileagentcanvas.fetchFromJira",
+        "title": "Agile Agent Canvas: Fetch from Jira",
+        "icon": "$(cloud-download)"
       }
     ],
     "keybindings": [
@@ -471,6 +505,26 @@
             "error"
           ],
           "description": "Controls extension logging verbosity. Use info/warn/error for normal use; debug for troubleshooting."
+        },
+        "agileagentcanvas.jira.baseUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Your Jira Cloud base URL, e.g. https://mycompany.atlassian.net (no trailing slash). Required for Jira integration."
+        },
+        "agileagentcanvas.jira.email": {
+          "type": "string",
+          "default": "",
+          "description": "Your Atlassian account email address. Used for Jira API authentication."
+        },
+        "agileagentcanvas.jira.apiToken": {
+          "type": "string",
+          "default": "",
+          "description": "Your Atlassian API token. Generate one at https://id.atlassian.com/manage-profile/security/api-tokens — Note: tokens expire after 1 year (since Dec 2024)."
+        },
+        "agileagentcanvas.jira.projectKey": {
+          "type": "string",
+          "default": "",
+          "description": "Default Jira project key to use when none is specified (e.g. PROJ). You can override this per command."
         }
       }
     }

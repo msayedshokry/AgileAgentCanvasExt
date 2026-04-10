@@ -5,6 +5,12 @@ import * as path from 'path';
 
 import { ArtifactStore } from '../state/artifact-store';
 import { schemaValidator } from '../state/schema-validator';
+import { JiraClient } from '../integrations/jira-client';
+import {
+    getJiraConfig,
+    formatEpicsAsMarkdown,
+    formatStoriesAsMarkdown
+} from '../integrations/jira-importer';
 
 /**
  * AgileAgentCanvas Language Model Tools
@@ -492,7 +498,123 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
         )
     );
 
-    logger.debug('[AgileAgentCanvasTools] Registered 6 language model tools');
+    // ── agileagentcanvas_read_jira ─────────────────────────────────────────────
+    disposables.push(
+        vscode.lm.registerTool<{ action: string; projectKey?: string; epicKey?: string }>(
+            'agileagentcanvas_read_jira',
+            {
+                async invoke(request, _token) {
+                    const { action, projectKey, epicKey } = request.input;
+
+                    // Read config at call time so it always reflects current settings
+                    const config = getJiraConfig();
+                    if (!config) {
+                        const msg =
+                            'Jira is not configured. Ask the user to set ' +
+                            'agileagentcanvas.jira.baseUrl, agileagentcanvas.jira.email, and ' +
+                            'agileagentcanvas.jira.apiToken in VS Code Settings ' +
+                            '(File → Preferences → Settings, search "Jira").';
+                        logger.debug(`[agileagentcanvas_read_jira] ${msg}`);
+                        return new vscode.LanguageModelToolResult([
+                            new vscode.LanguageModelTextPart(msg)
+                        ]);
+                    }
+
+                    const resolvedProject = projectKey ?? config.projectKey;
+                    const client = new JiraClient(config);
+
+                    try {
+                        if (action === 'test_connection') {
+                            const me = await client.testConnection();
+                            const msg = `Connected to Jira as ${me.displayName} (${me.email}).`;
+                            logger.debug(`[agileagentcanvas_read_jira] ${msg}`);
+                            return new vscode.LanguageModelToolResult([
+                                new vscode.LanguageModelTextPart(msg)
+                            ]);
+                        }
+
+                        if (action === 'list_epics') {
+                            if (!resolvedProject) {
+                                return new vscode.LanguageModelToolResult([
+                                    new vscode.LanguageModelTextPart(
+                                        'Please provide a projectKey (e.g. "PROJ") to list epics.'
+                                    )
+                                ]);
+                            }
+                            const epics = await client.fetchEpics(resolvedProject);
+                            const md = formatEpicsAsMarkdown(epics);
+                            logger.debug(`[agileagentcanvas_read_jira] list_epics: ${epics.length} epics`);
+                            return new vscode.LanguageModelToolResult([
+                                new vscode.LanguageModelTextPart(md)
+                            ]);
+                        }
+
+                        if (action === 'list_stories') {
+                            if (epicKey) {
+                                if (!resolvedProject) {
+                                    return new vscode.LanguageModelToolResult([
+                                        new vscode.LanguageModelTextPart(
+                                            'Please provide a projectKey along with epicKey to list stories.'
+                                        )
+                                    ]);
+                                }
+                                const stories = await client.fetchStoriesForEpic(epicKey, resolvedProject);
+                                const md = formatStoriesAsMarkdown(stories, epicKey);
+                                logger.debug(`[agileagentcanvas_read_jira] list_stories (epic ${epicKey}): ${stories.length}`);
+                                return new vscode.LanguageModelToolResult([
+                                    new vscode.LanguageModelTextPart(md)
+                                ]);
+                            }
+                            if (!resolvedProject) {
+                                return new vscode.LanguageModelToolResult([
+                                    new vscode.LanguageModelTextPart(
+                                        'Please provide a projectKey or epicKey to list stories.'
+                                    )
+                                ]);
+                            }
+                            const stories = await client.fetchAllStoriesInProject(resolvedProject);
+                            const md = formatStoriesAsMarkdown(stories);
+                            logger.debug(`[agileagentcanvas_read_jira] list_stories (project ${resolvedProject}): ${stories.length}`);
+                            return new vscode.LanguageModelToolResult([
+                                new vscode.LanguageModelTextPart(md)
+                            ]);
+                        }
+
+                        if (action === 'list_all') {
+                            if (!resolvedProject) {
+                                return new vscode.LanguageModelToolResult([
+                                    new vscode.LanguageModelTextPart(
+                                        'Please provide a projectKey to list all epics and stories.'
+                                    )
+                                ]);
+                            }
+                            const epics = await client.fetchEpicsWithStories(resolvedProject);
+                            const md = formatEpicsAsMarkdown(epics);
+                            logger.debug(`[agileagentcanvas_read_jira] list_all (${resolvedProject}): ${epics.length} epics`);
+                            return new vscode.LanguageModelToolResult([
+                                new vscode.LanguageModelTextPart(md)
+                            ]);
+                        }
+
+                        return new vscode.LanguageModelToolResult([
+                            new vscode.LanguageModelTextPart(
+                                `Unknown action "${action}". Valid actions: test_connection, list_epics, list_stories, list_all.`
+                            )
+                        ]);
+
+                    } catch (err: any) {
+                        const msg = `Jira error (${action}): ${err?.message ?? err}`;
+                        logger.debug(`[agileagentcanvas_read_jira] ${msg}`);
+                        return new vscode.LanguageModelToolResult([
+                            new vscode.LanguageModelTextPart(msg)
+                        ]);
+                    }
+                }
+            }
+        )
+    );
+
+    logger.debug('[AgileAgentCanvasTools] Registered 7 language model tools');
     return disposables;
 }
 
@@ -657,6 +779,39 @@ export function getToolDefinitions(): vscode.LanguageModelChatTool[] {
                     }
                 },
                 required: ['epicId', 'status']
+            }
+        },
+        {
+            name: 'agileagentcanvas_read_jira',
+            description:
+                'Reads epics and stories from the user\'s Jira Cloud project via the REST API. ' +
+                'Use this when the user asks about their Jira board, wants to see Jira issues, ' +
+                'wants to import data from Jira, or asks about epics/stories in Jira. ' +
+                'Requires Jira to be configured in VS Code Settings (agileagentcanvas.jira.*). ' +
+                'If not configured, instructs the user how to set it up.',
+            inputSchema: {
+                type: 'object' as const,
+                properties: {
+                    action: {
+                        type: 'string',
+                        enum: ['test_connection', 'list_epics', 'list_stories', 'list_all'],
+                        description:
+                            'Action to perform: ' +
+                            '"test_connection" — verify credentials; ' +
+                            '"list_epics" — list all epics in a project; ' +
+                            '"list_stories" — list stories (optionally filtered by epicKey); ' +
+                            '"list_all" — list all epics with their stories.'
+                    },
+                    projectKey: {
+                        type: 'string',
+                        description: 'Jira project key, e.g. "PROJ". Falls back to the configured default project key if omitted.'
+                    },
+                    epicKey: {
+                        type: 'string',
+                        description: 'Epic issue key, e.g. "PROJ-42". Required when action is "list_stories" and you want stories for a specific epic.'
+                    }
+                },
+                required: ['action']
             }
         }
     ];

@@ -5,6 +5,13 @@ import { getWorkflowExecutor, WorkflowExecutor } from '../workflow/workflow-exec
 import { sharedToolContext, getToolDefinitions } from './agileagentcanvas-tools';
 import { BmadModel, selectModel, streamChatResponse, getNoModelMessage as providerNoModelMessage, ChatMessage } from './ai-provider';
 import { getPersonaForArtifactType, formatFullAgentForPrompt, loadAgentPersona, clearPersonaCache, AgentPersona, loadAllAgentPersonas, formatAgentRoster } from './agent-personas';
+import { JiraClient } from '../integrations/jira-client';
+import {
+    getJiraConfig,
+    formatEpicsAsMarkdown,
+    formatStoriesAsMarkdown,
+    mergeJiraIntoArtifacts
+} from '../integrations/jira-importer';
 
 /**
  * AgileAgentCanvas Chat Participant - Integrates with VS Code Copilot Chat
@@ -82,7 +89,8 @@ export class AgileAgentCanvasChatParticipant {
             'mermaid': () => this.handleMermaidCommand(prompt, context, stream, token),
             'readme': () => this.handleReadmeCommand(prompt, context, stream, token),
             'changelog': () => this.handleChangelogCommand(prompt, context, stream, token),
-            'api-docs': () => this.handleApiDocsCommand(prompt, context, stream, token)
+            'api-docs': () => this.handleApiDocsCommand(prompt, context, stream, token),
+            'jira': () => this.handleJiraCommand(prompt, stream)
         };
 
         const handler = handlers[command];
@@ -4345,5 +4353,201 @@ Output ONLY the JSON, no explanation.`;
             .split('-')
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
             .join(' ');
+    }
+
+    // ─── /jira command ────────────────────────────────────────────────────────
+
+    /**
+     * Handle @agileagentcanvas /jira [subcommand] [arg]
+     *
+     * Subcommands:
+     *   config               — show current Jira config status
+     *   epics [projectKey]   — list epics
+     *   stories [epicKey]    — list stories for an epic or all in project
+     *   sync [projectKey]    — fetch and merge into canvas artifacts
+     */
+    private async handleJiraCommand(
+        prompt: string,
+        stream: vscode.ChatResponseStream
+    ): Promise<vscode.ChatResult> {
+        const parts = prompt.trim().split(/\s+/);
+        const sub = (parts[0] ?? '').toLowerCase();
+        const arg = parts[1] ?? '';
+
+        // ── config ────────────────────────────────────────────────────────────
+        if (!sub || sub === 'config') {
+            return this.handleJiraConfig(stream);
+        }
+
+        // All other subcommands require a configured Jira
+        const config = getJiraConfig();
+        if (!config) {
+            stream.markdown(
+                '## Jira — Not Configured\n\n' +
+                'Please add your Jira credentials in **VS Code Settings** (`Ctrl/Cmd + ,`, search `"Jira"`):\n\n' +
+                '| Setting | Example |\n' +
+                '|---|---|\n' +
+                '| `agileagentcanvas.jira.baseUrl` | `https://mycompany.atlassian.net` |\n' +
+                '| `agileagentcanvas.jira.email` | `me@company.com` |\n' +
+                '| `agileagentcanvas.jira.apiToken` | *(from id.atlassian.com → Security → API tokens)* |\n' +
+                '| `agileagentcanvas.jira.projectKey` | `PROJ` *(optional default)* |\n\n' +
+                'Then run `/jira config` to verify the connection.\n'
+            );
+            return { metadata: { command: 'jira', status: 'not-configured' } };
+        }
+
+        const client = new JiraClient(config);
+        const resolvedProject = arg || config.projectKey;
+
+        // ── epics ─────────────────────────────────────────────────────────────
+        if (sub === 'epics') {
+            if (!resolvedProject) {
+                stream.markdown('Please provide a project key: `/jira epics PROJ`\n');
+                return { metadata: { command: 'jira', status: 'missing-arg' } };
+            }
+            stream.markdown(`## Fetching Jira Epics for \`${resolvedProject}\`…\n\n`);
+            try {
+                const epics = await client.fetchEpics(resolvedProject);
+                stream.markdown(formatEpicsAsMarkdown(epics));
+            } catch (err: any) {
+                stream.markdown(`**Error:** ${err?.message ?? err}\n`);
+                this.addJiraTokenHint(stream, err);
+            }
+            return { metadata: { command: 'jira', subcommand: 'epics' } };
+        }
+
+        // ── stories ───────────────────────────────────────────────────────────
+        if (sub === 'stories') {
+            if (!arg && !resolvedProject) {
+                stream.markdown('Please provide an epic key or project key: `/jira stories PROJ-42` or `/jira stories PROJ`\n');
+                return { metadata: { command: 'jira', status: 'missing-arg' } };
+            }
+            // Heuristic: if arg looks like PROJECT-NUMBER it's an epic key, else a project key
+            const looksLikeEpicKey = /^[A-Z]+-\d+$/i.test(arg);
+
+            if (looksLikeEpicKey) {
+                const projectForEpic = resolvedProject || arg.replace(/-\d+$/, '');
+                stream.markdown(`## Fetching Stories for Epic \`${arg}\`…\n\n`);
+                try {
+                    const stories = await client.fetchStoriesForEpic(arg, projectForEpic);
+                    stream.markdown(formatStoriesAsMarkdown(stories, arg));
+                } catch (err: any) {
+                    stream.markdown(`**Error:** ${err?.message ?? err}\n`);
+                    this.addJiraTokenHint(stream, err);
+                }
+            } else {
+                const proj = arg || resolvedProject!;
+                stream.markdown(`## Fetching All Stories in \`${proj}\`…\n\n`);
+                try {
+                    const stories = await client.fetchAllStoriesInProject(proj);
+                    stream.markdown(formatStoriesAsMarkdown(stories));
+                } catch (err: any) {
+                    stream.markdown(`**Error:** ${err?.message ?? err}\n`);
+                    this.addJiraTokenHint(stream, err);
+                }
+            }
+            return { metadata: { command: 'jira', subcommand: 'stories' } };
+        }
+
+        // ── sync ──────────────────────────────────────────────────────────────
+        if (sub === 'sync') {
+            if (!resolvedProject) {
+                stream.markdown('Please provide a project key: `/jira sync PROJ`\n');
+                return { metadata: { command: 'jira', status: 'missing-arg' } };
+            }
+            stream.markdown(`## Syncing Jira Project \`${resolvedProject}\` into Canvas…\n\n`);
+            try {
+                const jiraEpics = await client.fetchEpicsWithStories(resolvedProject);
+                const existing = this.store.getState();
+                const { merged, added, updated } = mergeJiraIntoArtifacts(existing, jiraEpics);
+                this.store.mergeFromState({ epics: merged.epics });
+
+                const totalStories = jiraEpics.reduce((n, e) => n + e.stories.length, 0);
+                stream.markdown(
+                    `✅ **Sync complete** from \`${resolvedProject}\`\n\n` +
+                    `| | Count |\n|---|---|\n` +
+                    `| Epics fetched | ${jiraEpics.length} |\n` +
+                    `| Stories fetched | ${totalStories} |\n` +
+                    `| Epics added | ${added} |\n` +
+                    `| Epics updated | ${updated} |\n\n` +
+                    `Your canvas artifacts have been updated. Open the canvas to see the changes.\n`
+                );
+            } catch (err: any) {
+                stream.markdown(`**Error:** ${err?.message ?? err}\n`);
+                this.addJiraTokenHint(stream, err);
+            }
+            return { metadata: { command: 'jira', subcommand: 'sync' } };
+        }
+
+        // ── unknown subcommand ────────────────────────────────────────────────
+        stream.markdown(
+            `Unknown Jira subcommand: \`${sub}\`\n\n` +
+            'Available subcommands:\n' +
+            '- `/jira config` — show connection status\n' +
+            '- `/jira epics [projectKey]` — list epics\n' +
+            '- `/jira stories [epicKey|projectKey]` — list stories\n' +
+            '- `/jira sync [projectKey]` — merge into canvas artifacts\n'
+        );
+        return { metadata: { command: 'jira', status: 'unknown-subcommand' } };
+    }
+
+    private async handleJiraConfig(stream: vscode.ChatResponseStream): Promise<vscode.ChatResult> {
+        const config = getJiraConfig();
+
+        if (!config) {
+            stream.markdown(
+                '## Jira Configuration\n\n' +
+                '**Status:** ❌ Not configured\n\n' +
+                'Set the following in **VS Code Settings** (`Ctrl/Cmd + ,`, search `"Jira"`):\n\n' +
+                '| Setting | Example |\n' +
+                '|---|---|\n' +
+                '| `agileagentcanvas.jira.baseUrl` | `https://mycompany.atlassian.net` |\n' +
+                '| `agileagentcanvas.jira.email` | `me@company.com` |\n' +
+                '| `agileagentcanvas.jira.apiToken` | *(generate at id.atlassian.com → Security → API tokens)* |\n' +
+                '| `agileagentcanvas.jira.projectKey` | `PROJ` *(optional default project)* |\n\n' +
+                '> ⚠️ **Note:** API tokens expire after 1 year. Rotate before expiry to avoid disruption.\n'
+            );
+            return { metadata: { command: 'jira', subcommand: 'config', status: 'not-configured' } };
+        }
+
+        // Show masked config
+        const client = new JiraClient(config);
+        const masked = client.getMaskedConfig();
+
+        stream.markdown(
+            '## Jira Configuration\n\n' +
+            '**Status:** ✅ Configured\n\n' +
+            '| Setting | Value |\n' +
+            '|---|---|\n' +
+            `| Base URL | \`${masked.baseUrl}\` |\n` +
+            `| Email | \`${masked.email}\` |\n` +
+            `| API Token | \`${masked.apiToken}\` |\n` +
+            `| Default Project | \`${masked.projectKey ?? '(not set)'}\` |\n\n` +
+            'Testing connection…\n'
+        );
+
+        try {
+            const me = await client.testConnection();
+            stream.markdown(
+                `✅ **Connection OK** — authenticated as **${me.displayName}** (${me.email})\n\n` +
+                '> ⚠️ API tokens expire after 1 year. Rotate before expiry at ' +
+                '[id.atlassian.com → Security → API tokens](https://id.atlassian.com/manage-profile/security/api-tokens).\n'
+            );
+        } catch (err: any) {
+            stream.markdown(`❌ **Connection failed:** ${err?.message ?? err}\n`);
+        }
+
+        return { metadata: { command: 'jira', subcommand: 'config' } };
+    }
+
+    /** Append a hint about token expiry when a 401 error occurs */
+    private addJiraTokenHint(stream: vscode.ChatResponseStream, err: any): void {
+        if (err?.statusCode === 401) {
+            stream.markdown(
+                '\n> 💡 **Tip:** 401 usually means your API token has expired (tokens expire after 1 year). ' +
+                'Generate a new one at [id.atlassian.com → Security → API tokens](https://id.atlassian.com/manage-profile/security/api-tokens) ' +
+                'and update `agileagentcanvas.jira.apiToken` in Settings.\n'
+            );
+        }
     }
 }
