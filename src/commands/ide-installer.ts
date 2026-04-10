@@ -28,6 +28,8 @@ interface IdeTarget {
     workflowsDir?: string;
     /** Directory for .agent.md files, relative to workspace root. Omit if IDE doesn't support agent files. */
     agentsDir?: string;
+    /** Agent file format: 'copilot' (Copilot .agent.md frontmatter) or 'opencode' (mode: all frontmatter) */
+    agentFormat?: 'copilot' | 'opencode';
     /** Legacy directories to clean up on install */
     legacyDirs: string[];
     /** Whether this IDE is a preferred/recommended option */
@@ -169,9 +171,12 @@ const IDE_TARGETS: Record<IdeId, IdeTarget> = {
     opencode: {
         id: 'opencode',
         label: 'OpenCode',
-        description: '.opencode/skills/',
-        detail: 'Installs Agile Agent Canvas skills for OpenCode',
+        description: '.opencode/skills/ + .opencode/agents/ + .opencode/commands/',
+        detail: 'Installs Agile Agent Canvas skills, agents, and commands for OpenCode',
         skillsDir: '.opencode/skills',
+        workflowsDir: '.opencode/commands',
+        agentsDir: '.opencode/agents',
+        agentFormat: 'opencode',
         legacyDirs: [],
         preferred: false,
     },
@@ -851,29 +856,52 @@ const EXTENSION_AGENT_FILENAME = 'agileagentcanvas.agent.md';
 const INTEGRATOR_AGENT_FILENAME = 'agileagentcanvas-canvas-integrator.agent.md';
 
 /**
- * Write a single `.agent.md` file into the IDE's agents directory so the
- * extension appears as a native `@agileagentcanvas` agent in Copilot Chat.
- * Only installs when the IDE target defines an `agentsDir`.
+ * Build the content for the main extension agent file.
+ * Produces Copilot-format (.agent.md) or OpenCode-format (mode: all) depending on `agentFormat`.
  */
-function writeExtensionAgentFile(
-    ide: IdeTarget,
-    workspaceRoot: string,
-    overwrite: boolean
-): boolean {
-    if (!ide.agentsDir) return false;
+function extensionAgentContent(ide: IdeTarget): string {
+    const skillsDir = ide.skillsDir;
+    if (ide.agentFormat === 'opencode') {
+        return `---
+description: Agile Agent Canvas — Unified agile development assistant with expert personas for product management, architecture, development, QA, and more. Provides workflows for PRD creation, sprint planning, story development, architecture design, and testing.
+mode: all
+---
 
-    const agentsDir = path.join(workspaceRoot, ide.agentsDir);
-    const agentFilePath = path.join(agentsDir, EXTENSION_AGENT_FILENAME);
+You are the **Agile Agent Canvas** assistant — a unified agile development platform powered by the BMAD methodology.
 
-    if (!overwrite && fs.existsSync(agentFilePath)) {
-        return false;
+## Capabilities
+
+You provide access to multiple expert agent personas, structured workflows, and agile development tasks. Your installed skills are in \`${skillsDir}/agileagentcanvas-*\` directories.
+
+## Agent Personas
+
+You can embody any of the following expert personas when the user requests one:
+
+| Persona | Name | Specialty |
+|---------|------|-----------|
+| Master | BMad Master | Workflow orchestration, task execution, knowledge custodian |
+| Analyst | Mary | Market research, competitive analysis, requirements |
+| PM | John | Product management, PRD creation, stakeholder alignment |
+| Architect | Winston | System architecture, distributed systems, API design |
+| Dev | Amelia | Story execution, TDD, code implementation |
+| QA | Quinn | Test automation, API testing, coverage analysis |
+| Scrum Master | Bob | Sprint planning, agile ceremonies, backlog management |
+| UX Designer | Sally | User research, interaction design, UI patterns |
+| Tech Writer | Paige | Documentation, diagrams, standards compliance |
+| Test Architect | Murat | Risk-based testing, ATDD, CI/CD governance |
+| Solo Dev | Barry | Quick flow — rapid spec and implementation |
+
+## Workflows & Commands
+
+Run \`/dev\`, \`/requirements\`, \`/epics\`, \`/stories\`, \`/sprint\`, \`/vision\`, \`/ux\`, \`/quick\`, \`/review-code\`, \`/context\`, \`/party\`, and more — all installed in \`.opencode/commands/\`.
+
+## Activation
+
+When a user asks for help, determine the most appropriate persona or workflow from your installed skills and follow the instructions in the corresponding SKILL.md file.
+`;
     }
 
-    if (!fs.existsSync(agentsDir)) {
-        fs.mkdirSync(agentsDir, { recursive: true });
-    }
-
-    const content = `---
+    return `---
 description: 'Agile Agent Canvas — Unified agile development assistant with expert personas for product management, architecture, development, QA, and more. Provides workflows for PRD creation, sprint planning, story development, architecture design, and testing.'
 tools: ['read', 'edit', 'search', 'execute']
 ---
@@ -882,7 +910,7 @@ You are the **Agile Agent Canvas** assistant — a unified agile development pla
 
 ## Capabilities
 
-You provide access to multiple expert agent personas, structured workflows, and agile development tasks. Your installed skills are in \`.github/skills/agileagentcanvas-*\` directories.
+You provide access to multiple expert agent personas, structured workflows, and agile development tasks. Your installed skills are in \`${skillsDir}/agileagentcanvas-*\` directories.
 
 ## Agent Personas
 
@@ -910,23 +938,15 @@ Review the installed \`agileagentcanvas-*\` skills to discover available workflo
 
 When a user asks for help, determine the most appropriate persona or workflow from your installed skills and follow the instructions in the corresponding SKILL.md file.
 `;
-
-    try {
-        fs.writeFileSync(agentFilePath, content, 'utf-8');
-        logger.debug(`[IDE-Install] Wrote: ${ide.agentsDir}/${EXTENSION_AGENT_FILENAME}`);
-        return true;
-    } catch (err) {
-        logger.debug(`[IDE-Install] Error writing agent file: ${err}`);
-        return false;
-    }
 }
 
 /**
- * Write the Canvas Integrator `.agent.md` file into the IDE's agents directory
- * so Morph appears as a native `@agileagentcanvas-canvas-integrator` agent in
- * Copilot Chat.  Only installs when the IDE target defines an `agentsDir`.
+ * Write a single agent file into the IDE's agents directory.
+ * - Copilot: `.agent.md` files with Copilot-specific frontmatter
+ * - OpenCode: `.md` files with `mode: all` frontmatter in `.opencode/agents/`
+ * Only installs when the IDE target defines an `agentsDir`.
  */
-function writeIntegratorAgentFile(
+function writeExtensionAgentFile(
     ide: IdeTarget,
     workspaceRoot: string,
     overwrite: boolean
@@ -934,7 +954,10 @@ function writeIntegratorAgentFile(
     if (!ide.agentsDir) return false;
 
     const agentsDir = path.join(workspaceRoot, ide.agentsDir);
-    const agentFilePath = path.join(agentsDir, INTEGRATOR_AGENT_FILENAME);
+    const fileName = ide.agentFormat === 'opencode'
+        ? 'agileagentcanvas.md'
+        : EXTENSION_AGENT_FILENAME;
+    const agentFilePath = path.join(agentsDir, fileName);
 
     if (!overwrite && fs.existsSync(agentFilePath)) {
         return false;
@@ -944,7 +967,85 @@ function writeIntegratorAgentFile(
         fs.mkdirSync(agentsDir, { recursive: true });
     }
 
-    const content = `---
+    const content = extensionAgentContent(ide);
+
+    try {
+        fs.writeFileSync(agentFilePath, content, 'utf-8');
+        logger.debug(`[IDE-Install] Wrote: ${ide.agentsDir}/${fileName}`);
+        return true;
+    } catch (err) {
+        logger.debug(`[IDE-Install] Error writing agent file: ${err}`);
+        return false;
+    }
+}
+
+/**
+ * Write the Canvas Integrator agent file into the IDE's agents directory.
+ * - Copilot: `.agent.md` with Copilot-specific frontmatter
+ * - OpenCode: `.md` with `mode: subagent` frontmatter in `.opencode/agents/`
+ * Only installs when the IDE target defines an `agentsDir`.
+ */
+function writeIntegratorAgentFile(
+    ide: IdeTarget,
+    workspaceRoot: string,
+    overwrite: boolean
+): boolean {
+    if (!ide.agentsDir) return false;
+
+    const agentsDir = path.join(workspaceRoot, ide.agentsDir);
+    const fileName = ide.agentFormat === 'opencode'
+        ? 'agileagentcanvas-canvas-integrator.md'
+        : INTEGRATOR_AGENT_FILENAME;
+    const agentFilePath = path.join(agentsDir, fileName);
+
+    if (!overwrite && fs.existsSync(agentFilePath)) {
+        return false;
+    }
+
+    if (!fs.existsSync(agentsDir)) {
+        fs.mkdirSync(agentsDir, { recursive: true });
+    }
+
+    const skillsDir = ide.skillsDir;
+    const content = ide.agentFormat === 'opencode'
+        ? `---
+description: Agile Canvas Integrator (Morph) — converts BMAD markdown artifacts to schema-compliant JSON for Agile Agent Canvas visualization. Scans output folders, auto-detects artifact types, validates against schemas, and supports single-file, batch, and type-filtered conversions.
+mode: subagent
+---
+
+You are **Morph**, the Agile Canvas Integrator — an artifact conversion specialist that transforms BMAD markdown files into schema-compliant JSON for the Agile Agent Canvas VS Code extension.
+
+## How to Activate
+
+Load and fully follow the agent instructions in your installed skill file:
+
+\`\`\`
+${skillsDir}/agileagentcanvas-agent-canvas-integrator/SKILL.md
+\`\`\`
+
+That file contains your full persona, activation steps, menu system, and conversion rules. Embody the Morph persona and follow the activation sequence exactly.
+
+## Quick Reference
+
+| Command | Description |
+|---------|-------------|
+| **SF** | Set source folder (default: configured output folder) |
+| **SC** | Scan & report — list convertible artifacts without converting |
+| **CS** | Convert a single file |
+| **CA** | Convert ALL artifacts in the source folder |
+| **CF** | Convert a subfolder (e.g. epics/) |
+| **CT** | Convert by type (e.g. story, epics, use-case) |
+
+## Conversion Rules
+
+- **VERBOSE** — capture ALL content from the source, never summarize or truncate
+- **Separate user story fields** — always split into \`asA\`, \`iWant\`, \`soThat\`
+- **Full acceptance criteria** — always use \`given\`, \`when\`, \`then\`, \`and[]\`
+- **Full requirement descriptions** — always include \`id\`, \`title\`, AND complete \`description\`
+- **Valid JSON** — always parseable without errors
+- **Schema-compliant** — validate against the matching BMAD schema before saving
+`
+        : `---
 description: 'Agile Canvas Integrator (Morph) — converts BMAD markdown artifacts to schema-compliant JSON for Agile Agent Canvas visualization. Scans output folders, auto-detects artifact types, validates against schemas, and supports single-file, batch, and type-filtered conversions.'
 tools: ['read_file', 'create_file', 'replace_string_in_file', 'file_search', 'list_dir']
 ---
@@ -956,7 +1057,7 @@ You are **Morph**, the Agile Canvas Integrator — an artifact conversion specia
 Load and fully follow the agent instructions in your installed skill file:
 
 \`\`\`
-.github/skills/agileagentcanvas-agent-canvas-integrator/SKILL.md
+${skillsDir}/agileagentcanvas-agent-canvas-integrator/SKILL.md
 \`\`\`
 
 That file contains your full persona, activation steps, menu system, and conversion rules. Embody the Morph persona and follow the activation sequence exactly.
@@ -986,7 +1087,7 @@ The full conversion workflow with schema mappings, parsing patterns, and chunkin
 
     try {
         fs.writeFileSync(agentFilePath, content, 'utf-8');
-        logger.debug(`[IDE-Install] Wrote: ${ide.agentsDir}/${INTEGRATOR_AGENT_FILENAME}`);
+        logger.debug(`[IDE-Install] Wrote: ${ide.agentsDir}/${fileName}`);
         return true;
     } catch (err) {
         logger.debug(`[IDE-Install] Error writing integrator agent file: ${err}`);
@@ -1007,7 +1108,8 @@ function cleanupExtensionAgentFiles(ide: IdeTarget, workspaceRoot: string): void
     try {
         const entries = fs.readdirSync(agentsDir);
         for (const entry of entries) {
-            if (entry.startsWith('agileagentcanvas') && entry.endsWith('.agent.md')) {
+            if (entry.startsWith('agileagentcanvas') &&
+                (entry.endsWith('.agent.md') || entry.endsWith('.md'))) {
                 fs.unlinkSync(path.join(agentsDir, entry));
                 logger.debug(`[IDE-Install] Removed old agent file: ${entry}`);
             }

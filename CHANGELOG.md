@@ -2,6 +2,14 @@
 
 ## 0.4.1
 
+### OpenCode Full Integration
+
+- **Agents directory** — OpenCode IDE target now writes `agileagentcanvas.md` and `agileagentcanvas-canvas-integrator.md` into `.opencode/agents/` with proper `mode: all` / `mode: subagent` frontmatter (per OpenCode agent spec). Replaces the Copilot-style `tools: [...]` frontmatter that would have been ignored by OpenCode.
+- **Slash commands** — OpenCode target now sets `workflowsDir: '.opencode/commands'`, installing all workflow stubs (`/dev`, `/requirements`, `/epics`, `/sprint`, `/vision`, `/ux`, `/quick`, `/review-code`, `/context`, `/party`, etc.) as native OpenCode slash commands.
+- **Skills unchanged** — BMAD agent personas (analyst, dev, pm, architect, etc.) continue to install as SKILL.md packages into `.opencode/skills/` where OpenCode's native `skill` tool discovers them on demand.
+- **`agentFormat` field** — Added `agentFormat: 'copilot' | 'opencode'` to `IdeTarget` so agent file content is generated correctly per platform. `writeExtensionAgentFile` and `writeIntegratorAgentFile` now branch on this field.
+- **Updated IDE target description** — OpenCode target description now reflects all three install locations: `.opencode/skills/ + .opencode/agents/ + .opencode/commands/`.
+
 ### Single Source of Truth — Status Field Consolidation
 
 - **Removed dual-field status pattern** — Acceptance criteria no longer use both `verified: boolean` and `status: string`; tasks no longer use both `completed: boolean` and `status: string`. The `status` field is now the single source of truth for both. Updated `story.schema.json`, `epics.schema.json`, all TypeScript types, UI components, and workflow instructions (dev-story, code-review, create-story).
