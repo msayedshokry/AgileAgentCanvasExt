@@ -403,6 +403,47 @@ export class JiraClient {
     }
 
     /**
+     * Fetch a single Jira issue by key (e.g. PROJ-42).
+     * Returns a typed object indicating whether it is an epic or a story/task,
+     * plus the normalized data.  If the issue is an Epic its child stories are
+     * also fetched so the result is immediately useful.
+     */
+    async fetchIssue(issueKey: string): Promise<
+        | { kind: 'epic';  epic: JiraEpic }
+        | { kind: 'story'; story: JiraStory }
+        | { kind: 'other'; key: string; issueType: string; summary: string; status: string }
+    > {
+        const fields = 'summary,status,assignee,priority,description,labels,parent,issuetype,customfield_10016,customfield_10028,created,updated';
+        const raw = await this.request<JiraIssueRaw>(`/rest/api/3/issue/${encodeURIComponent(issueKey)}`, { fields });
+
+        const issueType = raw.fields.issuetype?.name ?? '';
+
+        if (issueType.toLowerCase() === 'epic') {
+            const epic = this.normalizeEpic(raw);
+            // Also fetch child stories so the result is useful immediately
+            try {
+                const projectKey = issueKey.replace(/-\d+$/, '');
+                epic.stories = await this.fetchStoriesForEpic(issueKey, projectKey);
+            } catch {
+                // Non-fatal — return the epic without stories rather than failing
+            }
+            return { kind: 'epic', epic };
+        }
+
+        if (['story', 'subtask', 'task', 'bug'].includes(issueType.toLowerCase())) {
+            return { kind: 'story', story: this.normalizeStory(raw) };
+        }
+
+        return {
+            kind: 'other',
+            key: raw.key,
+            issueType,
+            summary: raw.fields.summary,
+            status: raw.fields.status?.name ?? 'Unknown'
+        };
+    }
+
+    /**
      * Return the config with the API token masked, safe for display.
      */
     getMaskedConfig(): Omit<JiraConfig, 'apiToken'> & { apiToken: string } {

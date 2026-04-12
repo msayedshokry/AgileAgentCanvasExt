@@ -212,11 +212,7 @@ export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhanc
           onClick={onJira}
           title="Jira — fetch epics & stories"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" style={{ display: 'block' }}>
-            <rect width="24" height="24" rx="4" fill="currentColor" opacity="0.15" />
-            <path d="M12.53 4h-1.7v8.63a2.37 2.37 0 0 0 2.37 2.37h4.63v-1.7h-4.63a.67.67 0 0 1-.67-.67V4z" fill="currentColor" />
-            <path d="M8.17 8.83H6.47v4.97a2.37 2.37 0 0 0 2.37 2.37h4.63v-1.7H8.84a.67.67 0 0 1-.67-.67V8.83z" fill="currentColor" opacity="0.6" />
-          </svg>
+          <Icon name="jira" size={16} />
         </button>
       )}
 

@@ -2430,7 +2430,22 @@ export class ArtifactStore {
                     // Validate the raw JSON against the full schema before the
                     // store flattens it.  Issues are collected and logged at the
                     // end of loading so the user can fix the source files.
-                    if (schemaValidator.isInitialized() && artifactType) {
+                    //
+                    // Skip schema validation for the epics manifest file: the
+                    // manifest stores lightweight refs ({ id, title, status, file })
+                    // rather than full epic objects, so it cannot satisfy the
+                    // epics.schema.json requirement for `stories` arrays in each
+                    // epic.  Individual epic files use artifactType:'epic' which
+                    // intentionally has no schema mapping.
+                    const epicsContent = data.content?.epics;
+                    const isEpicsManifest = artifactType === 'epics' &&
+                        Array.isArray(epicsContent) &&
+                        (epicsContent.length === 0 ||          // empty manifest
+                         epicsContent.every(
+                             (e: any) => typeof e === 'string' || (e.file && typeof e.file === 'string' && !e.stories)
+                         ));
+
+                    if (schemaValidator.isInitialized() && artifactType && !isEpicsManifest) {
                         const result = schemaValidator.validate(artifactType, data, fileName);
                         if (!result.valid) {
                             loadValidationIssues.push({

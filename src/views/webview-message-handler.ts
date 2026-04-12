@@ -26,7 +26,14 @@ import {
     getJiraConfig,
     formatEpicsAsMarkdown,
     formatStoriesAsMarkdown,
-    mergeJiraIntoArtifacts
+    mergeJiraIntoArtifacts,
+    mergeJiraEpicIntoArtifacts,
+    mergeJiraStoryIntoArtifacts,
+    diffJiraEpics,
+    applyConflictResolutions,
+    JIRA_ID_PREFIX,
+    type EpicConflict,
+    type ConflictResolution,
 } from '../integrations/jira-importer';
 
 /**
@@ -607,31 +614,181 @@ export async function handleCommonWebviewMessage(
                     }
                 }
                 else if (action === 'sync') {
+                    // Step 1: fetch + diff → send conflicts to webview for user resolution
                     if (!projectKey) {
                         webview.postMessage({ type: 'jiraResult', success: false, error: 'Please enter a Project Key to sync.' });
                         return true;
                     }
                     const jiraEpics = await jiraClient.fetchEpicsWithStories(projectKey);
                     const existing = store.getState();
-                    const { merged, added, updated } = mergeJiraIntoArtifacts(existing, jiraEpics);
+                    const epicConflicts = diffJiraEpics(jiraEpics, existing);
+                    const hasConflicts = epicConflicts.some(
+                        ec => !ec.isNew && (ec.conflicts.length > 0 || ec.storyConflicts.some(sc => !sc.isNew && sc.conflicts.length > 0))
+                    );
+                    if (!hasConflicts) {
+                        // No conflicts — apply immediately
+                        const resolution: ConflictResolution = { choices: {} };
+                        const merged = applyConflictResolutions(existing, epicConflicts, resolution);
+                        store.mergeFromState({ epics: merged.epics });
+                        await store.syncToFiles();
+                        const totalStories = jiraEpics.reduce((n, e) => n + e.stories.length, 0);
+                        const added = epicConflicts.filter(ec => ec.isNew).length;
+                        const updated = epicConflicts.filter(ec => !ec.isNew).length;
+                        const md = [
+                            `## Sync Complete ✅`,
+                            '',
+                            `| | Count |`,
+                            `|---|---|`,
+                            `| Epics fetched | ${jiraEpics.length} |`,
+                            `| Stories fetched | ${totalStories} |`,
+                            `| Epics added | ${added} |`,
+                            `| Epics updated | ${updated} |`,
+                            '',
+                            'Your canvas artifacts have been saved to disk.'
+                        ].join('\n');
+                        webview.postMessage({ type: 'jiraResult', success: true, markdown: md });
+                    } else {
+                        // Send conflicts to webview for user to resolve
+                        webview.postMessage({ type: 'jiraConflicts', epicConflicts });
+                    }
+                }
+                else if (action === 'applySync') {
+                    // Step 2: user has resolved conflicts — apply choices and persist
+                    const epicConflicts: EpicConflict[] = message.epicConflicts;
+                    const resolution: ConflictResolution = message.resolution;
+                    const existing = store.getState();
+                    const merged = applyConflictResolutions(existing, epicConflicts, resolution);
                     store.mergeFromState({ epics: merged.epics });
-                    const totalStories = jiraEpics.reduce((n, e) => n + e.stories.length, 0);
+                    await store.syncToFiles();
+                    const added = epicConflicts.filter(ec => ec.isNew).length;
+                    const updated = epicConflicts.filter(ec => !ec.isNew).length;
+                    const totalStories = epicConflicts.reduce((n, ec) => n + ec.jiraEpic.stories.length, 0);
                     const md = [
                         `## Sync Complete ✅`,
                         '',
                         `| | Count |`,
                         `|---|---|`,
-                        `| Epics fetched | ${jiraEpics.length} |`,
-                        `| Stories fetched | ${totalStories} |`,
                         `| Epics added | ${added} |`,
                         `| Epics updated | ${updated} |`,
+                        `| Stories synced | ${totalStories} |`,
                         '',
-                        'Your canvas artifacts have been updated.'
+                        'Your canvas artifacts have been saved to disk.'
                     ].join('\n');
                     webview.postMessage({ type: 'jiraResult', success: true, markdown: md });
                 }
-                else {
-                    webview.postMessage({ type: 'jiraResult', success: false, error: `Unknown action: ${action}` });
+                else if (action === 'syncIssue') {
+                    // Sync a single issue — diff first, send conflicts if any
+                    const issueKey: string | undefined = message.issueKey?.trim().toUpperCase();
+                    if (!issueKey) {
+                        webview.postMessage({ type: 'jiraResult', success: false, error: 'Please enter an issue key (e.g. PROJ-42).' });
+                        return true;
+                    }
+                    const fetchResult = await jiraClient.fetchIssue(issueKey);
+                    const existing = store.getState();
+
+                    if (fetchResult.kind === 'epic') {
+                        const epicConflicts = diffJiraEpics([fetchResult.epic], existing);
+                        const ec = epicConflicts[0];
+                        const hasConflicts = !ec.isNew && (ec.conflicts.length > 0 || ec.storyConflicts.some(sc => !sc.isNew && sc.conflicts.length > 0));
+                        if (!hasConflicts) {
+                            const merged = applyConflictResolutions(existing, epicConflicts, { choices: {} });
+                            store.mergeFromState({ epics: merged.epics });
+                            await store.syncToFiles();
+                            const md = [
+                                `## Sync Complete ✅`,
+                                '',
+                                `| | |`,
+                                `|---|---|`,
+                                `| Epic | \`${fetchResult.epic.key}\` — ${fetchResult.epic.summary} |`,
+                                `| Stories | ${fetchResult.epic.stories.length} |`,
+                                `| Canvas action | ${ec.isNew ? 'Added new epic' : 'Updated existing epic'} |`,
+                                '',
+                                'Saved to disk.'
+                            ].join('\n');
+                            webview.postMessage({ type: 'jiraResult', success: true, markdown: md });
+                        } else {
+                            webview.postMessage({ type: 'jiraConflicts', epicConflicts });
+                        }
+                    } else if (fetchResult.kind === 'story') {
+                        // For a single story, wrap it in a synthetic epic for the diff engine
+                        const parentKey = fetchResult.story.epicKey;
+                        const parentId = parentKey ? `${JIRA_ID_PREFIX}${parentKey}` : `${JIRA_ID_PREFIX}__imported__`;
+                        const canvasEpic = existing.epics?.find(e => e.id === parentId);
+                        const canvasStory = canvasEpic?.stories?.find(s => s.id === `${JIRA_ID_PREFIX}${fetchResult.story.key}`);
+                        if (canvasStory) {
+                            // Story exists — check for conflicts on title/description
+                            const titleSame = (fetchResult.story.summary ?? '').trim() === (canvasStory.title ?? '').trim();
+                            const descSame  = (fetchResult.story.description ?? '').trim() === (canvasStory.technicalNotes ?? '').trim();
+                            if (!titleSame || !descSame) {
+                                // Build a minimal synthetic epicConflict so the picker can handle it
+                                const syntheticEpicConflict: EpicConflict = {
+                                    key: parentKey ?? '__imported__',
+                                    canvasId: parentId,
+                                    isNew: !canvasEpic,
+                                    conflicts: [],
+                                    storyConflicts: [{
+                                        key: fetchResult.story.key,
+                                        canvasId: `${JIRA_ID_PREFIX}${fetchResult.story.key}`,
+                                        isNew: false,
+                                        conflicts: [
+                                            ...(!titleSame ? [{ field: 'title' as const, jiraValue: fetchResult.story.summary, canvasValue: canvasStory.title }] : []),
+                                            ...(!descSame && (fetchResult.story.description || canvasStory.technicalNotes) ? [{ field: 'description' as const, jiraValue: fetchResult.story.description ?? '', canvasValue: canvasStory.technicalNotes ?? '' }] : []),
+                                        ],
+                                        jiraStory: fetchResult.story,
+                                    }],
+                                    jiraEpic: {
+                                        key: parentKey ?? '__imported__',
+                                        summary: canvasEpic?.title ?? 'Imported Stories (Jira)',
+                                        status: canvasEpic?.status ?? 'in-progress',
+                                        stories: [fetchResult.story],
+                                    },
+                                };
+                                webview.postMessage({ type: 'jiraConflicts', epicConflicts: [syntheticEpicConflict] });
+                                return true;
+                            }
+                        }
+                        // No conflict (new story or identical) — apply directly
+                        const { merged, action: mergeAction, epicTitle } = mergeJiraStoryIntoArtifacts(existing, fetchResult.story, parentKey);
+                        store.mergeFromState({ epics: merged.epics });
+                        await store.syncToFiles();
+                        const md = [
+                            `## Sync Complete ✅`,
+                            '',
+                            `| | |`,
+                            `|---|---|`,
+                            `| Story | \`${fetchResult.story.key}\` — ${fetchResult.story.summary} |`,
+                            `| Added to epic | ${epicTitle} |`,
+                            `| Canvas action | ${mergeAction === 'added' ? 'Added new story' : 'Updated existing story'} |`,
+                            '',
+                            'Saved to disk.'
+                        ].join('\n');
+                        webview.postMessage({ type: 'jiraResult', success: true, markdown: md });
+                    } else {
+                        webview.postMessage({ type: 'jiraResult', success: false, error: `Issue \`${fetchResult.key}\` is of type "${fetchResult.issueType}" — only Epics and Stories can be synced to the canvas.` });
+                    }
+                }
+                else if (action === 'issue') {
+                    const issueKey: string | undefined = message.issueKey?.trim().toUpperCase();
+                    if (!issueKey) {
+                        webview.postMessage({ type: 'jiraResult', success: false, error: 'Please enter an issue key (e.g. PROJ-42).' });
+                        return true;
+                    }
+                    const result = await jiraClient.fetchIssue(issueKey);
+                    if (result.kind === 'epic') {
+                        webview.postMessage({ type: 'jiraResult', success: true, markdown: formatEpicsAsMarkdown([result.epic]) });
+                    } else if (result.kind === 'story') {
+                        webview.postMessage({ type: 'jiraResult', success: true, markdown: formatStoriesAsMarkdown([result.story]) });
+                    } else {
+                        const md = [
+                            `## ${result.key} — ${result.summary}`,
+                            '',
+                            `| Field | Value |`,
+                            `|---|---|`,
+                            `| Type | ${result.issueType} |`,
+                            `| Status | ${result.status} |`,
+                        ].join('\n');
+                        webview.postMessage({ type: 'jiraResult', success: true, markdown: md });
+                    }
                 }
             } catch (err: any) {
                 logger.debug(`${logPrefix} jiraAction error: ${err?.message ?? err}`);

@@ -54,7 +54,8 @@ export type IconName =
   | 'help'            // question-mark circle
   | 'keyboard'        // keyboard shortcuts
   | 'chat'            // chat bubble / ask
-  | 'sprint';         // kanban board / sprint view
+  | 'sprint'          // kanban board / sprint view
+  | 'jira';           // Jira integration
 
 interface IconProps {
   name: IconName;
@@ -383,6 +384,24 @@ const paths: Record<IconName, JSX.Element> = {
       <rect x="2" y="3" width="6" height="18" rx="1" fill="none" stroke="currentColor" strokeWidth="2" />
       <rect x="9" y="3" width="6" height="11" rx="1" fill="none" stroke="currentColor" strokeWidth="2" />
       <rect x="16" y="3" width="6" height="15" rx="1" fill="none" stroke="currentColor" strokeWidth="2" />
+    </>
+  ),
+  'jira': (
+    // Jira logo — two diagonal arrow-heads (chevrons) stacked at 45°,
+    // top-right one full opacity, bottom-left one dimmed, matching the
+    // official Jira logomark.
+    <>
+      {/* top-right chevron (full) */}
+      <path
+        d="M12.5 3 L21 11.5 L17.5 15 L9 6.5 Z"
+        fill="currentColor"
+      />
+      {/* bottom-left chevron (dimmed) */}
+      <path
+        d="M3 12.5 L11.5 21 L15 17.5 L6.5 9 Z"
+        fill="currentColor"
+        opacity="0.45"
+      />
     </>
   ),
 };

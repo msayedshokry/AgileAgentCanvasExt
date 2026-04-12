@@ -5,6 +5,21 @@
 ### Jira Cloud Read Integration
 
 - **Fetch epics & stories from Jira** — New `agileagentcanvas.fetchFromJira` command (command palette) lets you test your connection, fetch epics, fetch stories (by epic or entire project), and sync Jira data into your canvas artifacts.
+- **Jira modal UI** — Dedicated **Jira** button on the canvas (same pill style as the Workflows button) opens a modal with five tabs:
+  - **Fetch Epics** — lists all epics in a project
+  - **Fetch Stories** — lists stories for a specific epic key or an entire project
+  - **Fetch Issue** — fetch any single epic or story by its issue key (e.g. `PROJ-42`); if the issue is an Epic its child stories are included automatically; a **Sync to Canvas** button appears after a successful fetch to import that single issue
+  - **Sync to Canvas** — merges all Jira epics & stories into canvas artifacts; local-only artifacts are never removed; conflicts are surfaced for review before writing
+  - **Connection** — tests credentials and shows masked configuration
+- **Conflict picker** — Before any sync that would overwrite existing canvas data, a field-level conflict picker is shown:
+  - Only **Title/Summary** and **Description/Goal** are presented as choices — the user picks Jira or Canvas value for each conflicting field
+  - **Status, story points, and assignee** always take the Jira value silently
+  - Conflicts are shown grouped by epic, with child story conflicts nested inside each epic block
+  - New artifacts (not yet on the canvas) are always added automatically — no prompt needed
+  - If there are zero conflicts, the sync applies and persists immediately without any interruption
+  - **Apply & Save** commits the resolved merge and persists to disk via `syncToFiles()`; Cancel dismisses without touching the canvas
+- **Sync persists to disk** — All sync operations (full project sync, single issue sync) now call `store.syncToFiles()` after merging, so Jira data is written to the project folder immediately and survives VS Code reloads.
+- **Single-issue sync** — The Fetch Issue tab allows syncing a single epic (with all its child stories) or a single story to the canvas, placing orphan stories into a synthetic "Imported Stories (Jira)" epic when no parent epic exists on the canvas yet.
 - **`/jira` chat command** — `@agileagentcanvas /jira` with four subcommands:
   - `/jira config` — shows connection status and tests credentials
   - `/jira epics [projectKey]` — streams a markdown table of all epics
@@ -15,6 +30,12 @@
 - **Zero new dependencies** — Uses Node's built-in `https` module; no npm packages added.
 - **Classic & next-gen project support** — Story→Epic linking tries the modern `parent` field first, then falls back to the legacy `"Epic Link"` field for older board configurations.
 - **Token expiry awareness** — API tokens now expire yearly (Atlassian policy since Dec 2024). A 401 response surfaces a targeted error with a direct link to generate a replacement token.
+- **API endpoint updated** — Migrated from the removed `/rest/api/3/search` (HTTP 410) to `/rest/api/3/search/jql` with cursor-based pagination (`nextPageToken` / `isLast`).
+- **Jira icon** — Both the canvas FAB button and toolbar button now use the official Jira logo mark (two diagonal arrow-head shapes at 45°) rendered as a theme-aware `currentColor` SVG.
+
+### Bug Fixes
+
+- **Schema validation false positive on epics manifest** — The `epics.json` manifest file (which stores lightweight refs, not full epic objects) was triggering a `[schema-validator:warn] Validation failed for "epics"` warning on every project load because the full `epics.schema.json` requires `stories` arrays inside each epic. Manifest files are now detected and excluded from strict schema validation.
 
 ### OpenCode Full Integration
 

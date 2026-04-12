@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Icon } from './Icon';
 import { vscode } from '../vscodeApi';
+import { JiraConflictPicker, type EpicConflict } from './JiraConflictPicker';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type JiraAction = 'epics' | 'stories' | 'sync' | 'config';
+type JiraAction = 'epics' | 'stories' | 'issue' | 'sync' | 'config';
 
 interface JiraResult {
   success: boolean;
@@ -22,14 +23,24 @@ export function JiraModal({ onClose }: JiraModalProps) {
   const [activeAction, setActiveAction] = useState<JiraAction>('epics');
   const [projectKey, setProjectKey] = useState('');
   const [epicKey, setEpicKey] = useState('');
+  const [issueKey, setIssueKey] = useState('');
   const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [result, setResult] = useState<JiraResult | null>(null);
+  const [conflicts, setConflicts] = useState<EpicConflict[] | null>(null);
   const projectKeyRef = useRef<HTMLInputElement>(null);
+  const issueKeyRef   = useRef<HTMLInputElement>(null);
 
-  // Focus first input on open
+  // Focus first relevant input on open / tab switch
   useEffect(() => {
-    setTimeout(() => projectKeyRef.current?.focus(), 50);
-  }, []);
+    setTimeout(() => {
+      if (activeAction === 'issue') {
+        issueKeyRef.current?.focus();
+      } else {
+        projectKeyRef.current?.focus();
+      }
+    }, 50);
+  }, [activeAction]);
 
   // Listen for results posted back from the extension host
   useEffect(() => {
@@ -37,7 +48,15 @@ export function JiraModal({ onClose }: JiraModalProps) {
       const msg = event.data;
       if (msg?.type === 'jiraResult') {
         setLoading(false);
+        setSyncing(false);
+        setConflicts(null);
         setResult({ success: msg.success, markdown: msg.markdown, error: msg.error });
+      }
+      if (msg?.type === 'jiraConflicts') {
+        setLoading(false);
+        setSyncing(false);
+        setConflicts(msg.epicConflicts as EpicConflict[]);
+        setResult(null);
       }
     };
     window.addEventListener('message', handler);
@@ -68,9 +87,21 @@ export function JiraModal({ onClose }: JiraModalProps) {
       type: 'jiraAction',
       action: activeAction,
       projectKey: projectKey.trim() || undefined,
-      epicKey: epicKey.trim() || undefined,
+      epicKey:    epicKey.trim()    || undefined,
+      issueKey:   issueKey.trim()   || undefined,
     });
-  }, [activeAction, projectKey, epicKey]);
+  }, [activeAction, projectKey, epicKey, issueKey]);
+
+  // Sync the currently displayed single issue to the canvas
+  const handleSyncIssue = useCallback(() => {
+    setSyncing(true);
+    setResult(null);
+    vscode.postMessage({
+      type: 'jiraAction',
+      action: 'syncIssue',
+      issueKey: issueKey.trim() || undefined,
+    });
+  }, [issueKey]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !loading) handleRun();
@@ -80,13 +111,22 @@ export function JiraModal({ onClose }: JiraModalProps) {
   const tabs: { id: JiraAction; label: string; description: string }[] = [
     { id: 'epics',   label: 'Fetch Epics',   description: 'List all epics in a Jira project' },
     { id: 'stories', label: 'Fetch Stories', description: 'List stories for an epic or whole project' },
+    { id: 'issue',   label: 'Fetch Issue',   description: 'Fetch a single epic or story by its issue key' },
     { id: 'sync',    label: 'Sync to Canvas', description: 'Merge Jira epics & stories into canvas artifacts' },
     { id: 'config',  label: 'Connection',    description: 'Check Jira connection and configuration status' },
   ];
 
-  const showProjectKey = activeAction !== 'config';
+  const showProjectKey = activeAction !== 'config' && activeAction !== 'issue';
   const showEpicKey    = activeAction === 'stories';
+  const showIssueKey   = activeAction === 'issue';
   const activeTab      = tabs.find(t => t.id === activeAction)!;
+
+  const runLabel = () => {
+    if (loading)                   return 'Running…';
+    if (activeAction === 'config') return 'Test Connection';
+    if (activeAction === 'sync')   return 'Sync Now';
+    return 'Fetch';
+  };
 
   return (
     <div className="wfl-overlay" onClick={handleOverlayClick}>
@@ -96,11 +136,12 @@ export function JiraModal({ onClose }: JiraModalProps) {
         <div className="wfl-modal-header">
           <div className="wfl-modal-title">
             <span className="wfl-modal-icon jira-modal-icon">
-              {/* Jira-style "J" icon using SVG */}
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <rect width="24" height="24" rx="4" fill="var(--vscode-button-background, #0052CC)" />
-                <path d="M12.53 4h-1.7v8.63a2.37 2.37 0 0 0 2.37 2.37h4.63v-1.7h-4.63a.67.67 0 0 1-.67-.67V4z" fill="white" />
-                <path d="M8.17 8.83H6.47v4.97a2.37 2.37 0 0 0 2.37 2.37h4.63v-1.7H8.84a.67.67 0 0 1-.67-.67V8.83z" fill="rgba(255,255,255,0.7)" />
+                {/* top-right chevron */}
+                <path d="M12.5 3 L21 11.5 L17.5 15 L9 6.5 Z" fill="white" />
+                {/* bottom-left chevron */}
+                <path d="M3 12.5 L11.5 21 L15 17.5 L6.5 9 Z" fill="white" opacity="0.55" />
               </svg>
             </span>
             <div>
@@ -121,7 +162,7 @@ export function JiraModal({ onClose }: JiraModalProps) {
               className={`wfl-tab ${activeAction === tab.id ? 'active' : ''}`}
               role="tab"
               aria-selected={activeAction === tab.id}
-              onClick={() => { setActiveAction(tab.id); setResult(null); }}
+              onClick={() => { setActiveAction(tab.id); setResult(null); setConflicts(null); }}
             >
               {tab.label}
             </button>
@@ -130,6 +171,8 @@ export function JiraModal({ onClose }: JiraModalProps) {
 
         {/* ── Inputs ───────────────────────────────────────────────────── */}
         <div className="jira-modal-body">
+
+          {/* Project Key — shown for epics / stories / sync */}
           {showProjectKey && (
             <div className="jira-modal-field">
               <label htmlFor="jira-project-key" className="jira-modal-label">
@@ -151,6 +194,7 @@ export function JiraModal({ onClose }: JiraModalProps) {
             </div>
           )}
 
+          {/* Epic Key — shown only for stories tab */}
           {showEpicKey && (
             <div className="jira-modal-field">
               <label htmlFor="jira-epic-key" className="jira-modal-label">
@@ -171,6 +215,34 @@ export function JiraModal({ onClose }: JiraModalProps) {
             </div>
           )}
 
+          {/* Issue Key — shown only for the Fetch Issue tab */}
+          {showIssueKey && (
+            <div className="jira-modal-field">
+              <label htmlFor="jira-issue-key" className="jira-modal-label">
+                Issue Key
+                <span className="jira-modal-hint"> — any epic or story, e.g. PROJ-12 or PROJ-42</span>
+              </label>
+              <input
+                id="jira-issue-key"
+                ref={issueKeyRef}
+                type="text"
+                className="jira-modal-input"
+                placeholder="PROJ-42"
+                value={issueKey}
+                onChange={e => setIssueKey(e.target.value.toUpperCase())}
+                onKeyDown={handleKeyDown}
+                autoComplete="off"
+                spellCheck={false}
+              />
+              {!result && !loading && (
+                <p className="jira-modal-hint" style={{ marginTop: 6 }}>
+                  If the issue is an <strong>Epic</strong>, its child stories are fetched automatically.
+                  If it is a <strong>Story</strong> or <strong>Task</strong>, its details are shown.
+                </p>
+              )}
+            </div>
+          )}
+
           {activeAction === 'config' && !result && !loading && (
             <div className="jira-modal-info">
               <Icon name="info" size={16} />
@@ -188,15 +260,24 @@ export function JiraModal({ onClose }: JiraModalProps) {
             </div>
           )}
 
+          {/* ── Conflict picker — shown when extension sends jiraConflicts ── */}
+          {conflicts && (
+            <JiraConflictPicker
+              epicConflicts={conflicts}
+              onApplied={() => { setConflicts(null); setLoading(true); }}
+              onCancel={() => setConflicts(null)}
+            />
+          )}
+
           {/* ── Result area ─────────────────────────────────────────────── */}
-          {loading && (
+          {!conflicts && loading && (
             <div className="jira-modal-loading">
               <span className="jira-modal-spinner" />
               <span>Connecting to Jira…</span>
             </div>
           )}
 
-          {result && (
+          {!conflicts && result && (
             <div className={`jira-modal-result ${result.success ? 'success' : 'error'}`}>
               {result.success ? (
                 <MarkdownTable content={result.markdown ?? ''} />
@@ -219,12 +300,23 @@ export function JiraModal({ onClose }: JiraModalProps) {
           </span>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button className="btn btn-secondary" onClick={onClose}>Close</button>
+            {/* On the Fetch Issue tab show a Sync button once a result is available */}
+            {activeAction === 'issue' && result?.success && (
+              <button
+                className="btn btn-secondary"
+                onClick={handleSyncIssue}
+                disabled={syncing || loading}
+                title="Merge this issue into your canvas artifacts"
+              >
+                {syncing ? 'Syncing…' : 'Sync to Canvas'}
+              </button>
+            )}
             <button
               className="btn btn-primary jira-run-btn"
               onClick={handleRun}
-              disabled={loading}
+              disabled={loading || syncing}
             >
-              {loading ? 'Running…' : activeAction === 'config' ? 'Test Connection' : activeAction === 'sync' ? 'Sync Now' : 'Fetch'}
+              {runLabel()}
             </button>
           </div>
         </div>

@@ -978,12 +978,7 @@ function App() {
         onClick={handleOpenJira}
         aria-label="Jira Integration"
       >
-        <span className="workflow-fab-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M12.53 4h-1.7v8.63a2.37 2.37 0 0 0 2.37 2.37h4.63v-1.7h-4.63a.67.67 0 0 1-.67-.67V4z" fill="currentColor" />
-            <path d="M8.17 8.83H6.47v4.97a2.37 2.37 0 0 0 2.37 2.37h4.63v-1.7H8.84a.67.67 0 0 1-.67-.67V8.83z" fill="currentColor" opacity="0.6" />
-          </svg>
-        </span>
+        <span className="workflow-fab-icon"><Icon name="jira" size={18} /></span>
         <span className="workflow-fab-label">Jira</span>
       </button>
       {artifacts.length === 0 && (
