@@ -4380,7 +4380,7 @@ Output ONLY the JSON, no explanation.`;
         }
 
         // All other subcommands require a configured Jira
-        const config = getJiraConfig();
+        const config = await getJiraConfig();
         if (!config) {
             stream.markdown(
                 '## Jira — Not Configured\n\n' +
@@ -4389,8 +4389,8 @@ Output ONLY the JSON, no explanation.`;
                 '|---|---|\n' +
                 '| `agileagentcanvas.jira.baseUrl` | `https://mycompany.atlassian.net` |\n' +
                 '| `agileagentcanvas.jira.email` | `me@company.com` |\n' +
-                '| `agileagentcanvas.jira.apiToken` | *(from id.atlassian.com → Security → API tokens)* |\n' +
                 '| `agileagentcanvas.jira.projectKey` | `PROJ` *(optional default)* |\n\n' +
+                'Then store your API token securely via the command palette: **Agile Agent Canvas: Set Jira API Token**\n\n' +
                 'Then run `/jira config` to verify the connection.\n'
             );
             return { metadata: { command: 'jira', status: 'not-configured' } };
@@ -4492,7 +4492,7 @@ Output ONLY the JSON, no explanation.`;
     }
 
     private async handleJiraConfig(stream: vscode.ChatResponseStream): Promise<vscode.ChatResult> {
-        const config = getJiraConfig();
+        const config = await getJiraConfig();
 
         if (!config) {
             stream.markdown(
@@ -4503,8 +4503,9 @@ Output ONLY the JSON, no explanation.`;
                 '|---|---|\n' +
                 '| `agileagentcanvas.jira.baseUrl` | `https://mycompany.atlassian.net` |\n' +
                 '| `agileagentcanvas.jira.email` | `me@company.com` |\n' +
-                '| `agileagentcanvas.jira.apiToken` | *(generate at id.atlassian.com → Security → API tokens)* |\n' +
                 '| `agileagentcanvas.jira.projectKey` | `PROJ` *(optional default project)* |\n\n' +
+                'Then store your API token securely via the command palette:\n\n' +
+                '> **Agile Agent Canvas: Set Jira API Token** — stores the token in the OS keychain (never in plain text).\n\n' +
                 '> ⚠️ **Note:** API tokens expire after 1 year. Rotate before expiry to avoid disruption.\n'
             );
             return { metadata: { command: 'jira', subcommand: 'config', status: 'not-configured' } };

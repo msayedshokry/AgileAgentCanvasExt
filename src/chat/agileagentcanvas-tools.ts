@@ -507,13 +507,12 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                     const { action, projectKey, epicKey } = request.input;
 
                     // Read config at call time so it always reflects current settings
-                    const config = getJiraConfig();
+                    const config = await getJiraConfig();
                     if (!config) {
                         const msg =
                             'Jira is not configured. Ask the user to set ' +
-                            'agileagentcanvas.jira.baseUrl, agileagentcanvas.jira.email, and ' +
-                            'agileagentcanvas.jira.apiToken in VS Code Settings ' +
-                            '(File → Preferences → Settings, search "Jira").';
+                            'agileagentcanvas.jira.baseUrl and agileagentcanvas.jira.email in VS Code Settings, ' +
+                            'then run the command "Agile Agent Canvas: Set Jira API Token" to store the token securely in the OS keychain.';
                         logger.debug(`[agileagentcanvas_read_jira] ${msg}`);
                         return new vscode.LanguageModelToolResult([
                             new vscode.LanguageModelTextPart(msg)

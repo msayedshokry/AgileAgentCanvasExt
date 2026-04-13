@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.2
+
+### Jira API Token — Secure Storage
+
+- **Token moved to OS keychain** — The Jira API token is no longer stored in plain-text VS Code settings (`settings.json`). It is now persisted securely via `vscode.SecretStorage`, which uses the OS keychain on every platform: macOS Keychain, Windows Credential Manager, Linux libsecret.
+- **Two new commands**:
+  - **Agile Agent Canvas: Set Jira API Token** — Opens a password input box (characters masked); stores the token directly into the OS keychain. No file is written.
+  - **Agile Agent Canvas: Clear Jira API Token** — Prompts for confirmation, then removes the stored token from the OS keychain.
+- **Automatic one-time migration** — On first use after upgrading, if a token is still present in the legacy `agileagentcanvas.jira.apiToken` setting it is migrated silently to the keychain and the setting is cleared. No manual action needed.
+- **Deprecated setting** — `agileagentcanvas.jira.apiToken` is marked deprecated with an in-Settings warning and will be removed in a future release. Use the **Set Jira API Token** command instead.
+- **Not-configured guidance updated** — All error messages, the `/jira config` chat command, and the Jira modal now instruct users to run the **Set Jira API Token** command rather than pasting a token into Settings.
+
 ## 0.4.1
 
 ### Jira Cloud Read Integration

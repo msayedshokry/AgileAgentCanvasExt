@@ -3,7 +3,6 @@ import { ArtifactStore } from '../state/artifact-store';
 import { JiraClient, JiraClientError } from '../integrations/jira-client';
 import {
     getJiraConfig,
-    createJiraClientFromSettings,
     formatEpicsAsMarkdown,
     formatStoriesAsMarkdown,
     mergeJiraIntoArtifacts
@@ -48,14 +47,17 @@ export class JiraCommands {
      * Main entry point — shows a quick pick menu and dispatches to the chosen action.
      */
     async handleFetchFromJira(): Promise<void> {
-        const config = getJiraConfig();
+        const config = await getJiraConfig();
         if (!config) {
             const choice = await vscode.window.showErrorMessage(
-                'Jira is not configured. Set your Base URL, email, and API token in Settings.',
-                'Open Settings'
+                'Jira is not configured. Set your Base URL and email in Settings, then run "Set Jira API Token" to store your token securely.',
+                'Open Settings',
+                'Set API Token'
             );
             if (choice === 'Open Settings') {
                 vscode.commands.executeCommand('workbench.action.openSettings', 'agileagentcanvas.jira');
+            } else if (choice === 'Set API Token') {
+                vscode.commands.executeCommand('agileagentcanvas.setJiraToken');
             }
             return;
         }

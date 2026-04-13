@@ -28,6 +28,7 @@ import { executeWorkflowStep } from './commands/workflow-commands';
 import { installToIde, autoInstallIfNeeded } from './commands/ide-installer';
 import { openChat, setChatBridgeLogger } from './commands/chat-bridge';
 import { JiraCommands } from './commands/jira-commands';
+import { JiraSecrets } from './integrations/jira-secrets';
 import { createLogger, setLoggerOutputSink } from './utils/logger';
 
 const logger = createLogger('extension');
@@ -55,6 +56,9 @@ export function activate(context: vscode.ExtensionContext) {
     setLoggerOutputSink((line) => acOutput.appendLine(line));
     logger.info('Agile Agent Canvas is now active!');
     acOutput.show(); // Show the output panel
+
+    // Initialise SecretStorage for Jira API token (must happen before any Jira operation)
+    JiraSecrets.init(context);
 
     // Wire chat-bridge logging into the shared output channel
     setChatBridgeLogger((msg) => logger.debug(msg));
@@ -161,6 +165,31 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('agileagentcanvas.fetchFromJira', () => {
             const jiraCommands = new JiraCommands(artifactStore);
             return jiraCommands.handleFetchFromJira();
+        }),
+        // Set Jira API token securely in OS keychain
+        vscode.commands.registerCommand('agileagentcanvas.setJiraToken', async () => {
+            const token = await vscode.window.showInputBox({
+                prompt: 'Enter your Atlassian API token',
+                placeHolder: 'Paste your API token here…',
+                password: true,
+                ignoreFocusOut: true,
+                validateInput: (v) => v.trim() ? undefined : 'Token cannot be empty'
+            });
+            if (!token) { return; }
+            await JiraSecrets.setToken(token.trim());
+            vscode.window.showInformationMessage('Jira API token saved securely to OS keychain.');
+        }),
+        // Clear the stored Jira API token from OS keychain
+        vscode.commands.registerCommand('agileagentcanvas.clearJiraToken', async () => {
+            const confirm = await vscode.window.showWarningMessage(
+                'Remove the stored Jira API token from the OS keychain?',
+                { modal: true },
+                'Remove'
+            );
+            if (confirm === 'Remove') {
+                await JiraSecrets.clearToken();
+                vscode.window.showInformationMessage('Jira API token removed from OS keychain.');
+            }
         }),
         // Open the IDE chat panel (IDE-agnostic, optionally with a pre-filled query)
         vscode.commands.registerCommand('agileagentcanvas.openChatPanel', (query?: string) => {

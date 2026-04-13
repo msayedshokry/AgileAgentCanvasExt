@@ -558,12 +558,12 @@ export async function handleCommonWebviewMessage(
         case 'jiraAction': {
             if (!webview) return true;
 
-            const jiraConfig = getJiraConfig();
+            const jiraConfig = await getJiraConfig();
             if (!jiraConfig) {
                 webview.postMessage({
                     type: 'jiraResult',
                     success: false,
-                    error: 'Jira is not configured. Open VS Code Settings and search "Jira" to set your Base URL, email, API token, and project key.'
+                    error: 'Jira is not configured. Open VS Code Settings and search "Jira" to set your Base URL and email. Then run the command "Agile Agent Canvas: Set Jira API Token" to store your token securely.'
                 });
                 return true;
             }

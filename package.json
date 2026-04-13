@@ -2,7 +2,7 @@
   "name": "agileagentcanvas",
   "displayName": "Agile Agent Canvas",
   "description": "Visual AI-assisted product development with BMAD methodology - Design epics, stories, and requirements collaboratively with interactive AI chat workflows",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "publisher": "msayedshokry",
   "license": "MIT",
   "repository": {
@@ -372,6 +372,16 @@
         "command": "agileagentcanvas.fetchFromJira",
         "title": "Agile Agent Canvas: Fetch from Jira",
         "icon": "$(cloud-download)"
+      },
+      {
+        "command": "agileagentcanvas.setJiraToken",
+        "title": "Agile Agent Canvas: Set Jira API Token",
+        "icon": "$(key)"
+      },
+      {
+        "command": "agileagentcanvas.clearJiraToken",
+        "title": "Agile Agent Canvas: Clear Jira API Token",
+        "icon": "$(trash)"
       }
     ],
     "keybindings": [
@@ -519,7 +529,8 @@
         "agileagentcanvas.jira.apiToken": {
           "type": "string",
           "default": "",
-          "description": "Your Atlassian API token. Generate one at https://id.atlassian.com/manage-profile/security/api-tokens — Note: tokens expire after 1 year (since Dec 2024)."
+          "markdownDeprecationMessage": "**Deprecated:** Storing the API token in plain-text settings is insecure. Use the command **Agile Agent Canvas: Set Jira API Token** (`agileagentcanvas.setJiraToken`) instead — it stores the token in the OS keychain. If a value is present here it will be migrated automatically on next use.",
+          "description": "[Deprecated — use setJiraToken command] Your Atlassian API token. Tokens expire after 1 year."
         },
         "agileagentcanvas.jira.projectKey": {
           "type": "string",

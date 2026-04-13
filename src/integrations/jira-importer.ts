@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { JiraClient, JiraConfig, JiraEpic, JiraStory } from './jira-client';
+import { JiraSecrets } from './jira-secrets';
 import { Epic, Story, BmadArtifacts, AcceptanceCriterion } from '../types';
 import { createLogger } from '../utils/logger';
 
@@ -8,17 +9,43 @@ const logger = createLogger('jira-importer');
 // ─── Config reader ────────────────────────────────────────────────────────────
 
 /**
- * Read Jira connection settings from VS Code workspace configuration.
- * Returns null if the required fields (baseUrl, email, apiToken) are not set.
+ * Read Jira connection settings.
+ *
+ * - baseUrl, email, projectKey  → VS Code workspace settings (non-sensitive)
+ * - apiToken                    → OS keychain via SecretStorage (never plain-text)
+ *
+ * One-time migration: if no token is found in secrets but the legacy
+ * `agileagentcanvas.jira.apiToken` setting is populated, the value is
+ * silently migrated to secrets and cleared from settings.
+ *
+ * Returns null if any required field (baseUrl, email, apiToken) is missing.
  */
-export function getJiraConfig(): JiraConfig | null {
+export async function getJiraConfig(): Promise<JiraConfig | null> {
     const cfg = vscode.workspace.getConfiguration('agileagentcanvas.jira');
     const baseUrl = cfg.get<string>('baseUrl', '').trim().replace(/\/$/, '');
     const email = cfg.get<string>('email', '').trim();
-    const apiToken = cfg.get<string>('apiToken', '').trim();
     const projectKey = cfg.get<string>('projectKey', '').trim() || undefined;
 
-    if (!baseUrl || !email || !apiToken) {
+    if (!baseUrl || !email) {
+        return null;
+    }
+
+    // Prefer secret storage; fall back to legacy plain-text setting for migration
+    let apiToken = await JiraSecrets.getToken();
+
+    if (!apiToken) {
+        const legacyToken = cfg.get<string>('apiToken', '').trim();
+        if (legacyToken) {
+            // Migrate: store in keychain and clear from settings
+            await JiraSecrets.setToken(legacyToken);
+            await cfg.update('apiToken', undefined, vscode.ConfigurationTarget.Global);
+            await cfg.update('apiToken', undefined, vscode.ConfigurationTarget.Workspace);
+            apiToken = legacyToken;
+            logger.debug('[jira-importer] Migrated API token from settings to SecretStorage');
+        }
+    }
+
+    if (!apiToken) {
         return null;
     }
 
@@ -27,9 +54,10 @@ export function getJiraConfig(): JiraConfig | null {
 
 /**
  * Returns true if all required Jira settings are configured.
+ * Async because it reads the token from SecretStorage.
  */
-export function isJiraConfigured(): boolean {
-    return getJiraConfig() !== null;
+export async function isJiraConfigured(): Promise<boolean> {
+    return (await getJiraConfig()) !== null;
 }
 
 // ─── Status mapping ───────────────────────────────────────────────────────────
@@ -516,8 +544,8 @@ export function applyConflictResolutions(
  * Create a JiraClient from VS Code settings.
  * Returns null and optionally shows an error message if not configured.
  */
-export function createJiraClientFromSettings(showError = true): JiraClient | null {
-    const config = getJiraConfig();
+export async function createJiraClientFromSettings(showError = true): Promise<JiraClient | null> {
+    const config = await getJiraConfig();
     if (!config) {
         if (showError) {
             vscode.window.showErrorMessage(
