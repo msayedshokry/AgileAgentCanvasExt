@@ -11,6 +11,7 @@ import {
     formatEpicsAsMarkdown,
     formatStoriesAsMarkdown
 } from '../integrations/jira-importer';
+import { graphQuery, graphPath } from '../integrations/graphify/graph-query';
 
 /**
  * AgileAgentCanvas Language Model Tools
@@ -613,7 +614,76 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
         )
     );
 
-    logger.debug('[AgileAgentCanvasTools] Registered 7 language model tools');
+    // ── agileagentcanvas_graph_query ──────────────────────────────────────────────
+    disposables.push(
+        vscode.lm.registerTool<{ question: string; budget?: number }>(
+            'agileagentcanvas_graph_query',
+            {
+                async invoke(request, _token) {
+                    const question = request.input.question;
+                    const budget = request.input.budget ?? 1500;
+
+                    const workspaceFolders = vscode.workspace.workspaceFolders;
+                    const workspaceRoot = workspaceFolders?.[0]?.uri?.fsPath ?? '';
+                    if (!workspaceRoot) {
+                        return new vscode.LanguageModelToolResult([
+                            new vscode.LanguageModelTextPart('No workspace open.')
+                        ]);
+                    }
+
+                    try {
+                        const result = await graphQuery(workspaceRoot, question, budget);
+                        logger.debug(`[agileagentcanvas_graph_query] success=${result.success}`);
+                        return new vscode.LanguageModelToolResult([
+                            new vscode.LanguageModelTextPart(result.text)
+                        ]);
+                    } catch (err: any) {
+                        const msg = `graph_query error: ${err?.message ?? err}`;
+                        logger.debug(`[agileagentcanvas_graph_query] ${msg}`);
+                        return new vscode.LanguageModelToolResult([
+                            new vscode.LanguageModelTextPart(msg)
+                        ]);
+                    }
+                }
+            }
+        )
+    );
+
+    // ── agileagentcanvas_graph_path ───────────────────────────────────────────────
+    disposables.push(
+        vscode.lm.registerTool<{ nodeA: string; nodeB: string }>(
+            'agileagentcanvas_graph_path',
+            {
+                async invoke(request, _token) {
+                    const { nodeA, nodeB } = request.input;
+
+                    const workspaceFolders = vscode.workspace.workspaceFolders;
+                    const workspaceRoot = workspaceFolders?.[0]?.uri?.fsPath ?? '';
+                    if (!workspaceRoot) {
+                        return new vscode.LanguageModelToolResult([
+                            new vscode.LanguageModelTextPart('No workspace open.')
+                        ]);
+                    }
+
+                    try {
+                        const result = await graphPath(workspaceRoot, nodeA, nodeB);
+                        logger.debug(`[agileagentcanvas_graph_path] success=${result.success}`);
+                        return new vscode.LanguageModelToolResult([
+                            new vscode.LanguageModelTextPart(result.text)
+                        ]);
+                    } catch (err: any) {
+                        const msg = `graph_path error: ${err?.message ?? err}`;
+                        logger.debug(`[agileagentcanvas_graph_path] ${msg}`);
+                        return new vscode.LanguageModelToolResult([
+                            new vscode.LanguageModelTextPart(msg)
+                        ]);
+                    }
+                }
+            }
+        )
+    );
+
+    logger.debug('[AgileAgentCanvasTools] Registered 9 language model tools');
     return disposables;
 }
 
@@ -811,6 +881,50 @@ export function getToolDefinitions(): vscode.LanguageModelChatTool[] {
                     }
                 },
                 required: ['action']
+            }
+        },
+        {
+            name: 'agileagentcanvas_graph_query',
+            description:
+                'Run a natural-language question against the graphify knowledge graph of the codebase. ' +
+                'Use this to understand code structure, trace connections between components, find rationale, ' +
+                'or surface surprising relationships. Returns a focused subgraph answer. ' +
+                'Requires graphify-out/graph.json to exist (run /graph-bootstrap if missing).',
+            inputSchema: {
+                type: 'object' as const,
+                properties: {
+                    question: {
+                        type: 'string',
+                        description: 'Natural-language question about the codebase, e.g. "what connects ArtifactStore to the canvas view?"'
+                    },
+                    budget: {
+                        type: 'number',
+                        description: 'Max tokens to return (default 1500). Use a smaller value for focused answers.'
+                    }
+                },
+                required: ['question']
+            }
+        },
+        {
+            name: 'agileagentcanvas_graph_path',
+            description:
+                'Find the shortest path between two nodes in the graphify knowledge graph. ' +
+                'Use this to trace dependencies, understand how two concepts are related, ' +
+                'or find the chain of calls between a feature and an implementation. ' +
+                'Requires graphify-out/graph.json to exist.',
+            inputSchema: {
+                type: 'object' as const,
+                properties: {
+                    nodeA: {
+                        type: 'string',
+                        description: 'Source node label or ID, e.g. "ChatParticipant"'
+                    },
+                    nodeB: {
+                        type: 'string',
+                        description: 'Target node label or ID, e.g. "ArtifactStore"'
+                    }
+                },
+                required: ['nodeA', 'nodeB']
             }
         }
     ];

@@ -105,8 +105,12 @@ export interface WorkflowContext {
 }
 
 /**
- * Complete BMAD Workflow Registry
- * All 56 workflows organized by module and phase
+ * BMAD Workflow Registry — built dynamically from skills/ directory.
+ * Falls back to a hardcoded set for backward compatibility when skills/ scanning
+ * is unavailable (e.g. no bmadPath yet).
+ *
+ * NOTE: The static entries below are kept as a fallback. At runtime, the
+ * WorkflowExecutor class uses buildWorkflowRegistry() which scans skills/.
  */
 export const WORKFLOW_REGISTRY: WorkflowDefinition[] = [
     // ============================================
@@ -921,6 +925,121 @@ export const WORKFLOW_REGISTRY: WorkflowDefinition[] = [
     }
 ];
 
+/**
+ * Map from legacy workflow file paths (relative to bmadPath) to their
+ * corresponding skill directory names. Used to translate the curated
+ * getAvailableWorkflows() paths to the new skills/ structure.
+ */
+const LEGACY_WORKFLOW_PATH_TO_SKILL: Record<string, string> = {
+    // BMM Analysis
+    'bmm/workflows/1-analysis/create-product-brief/workflow.md': 'bmad-product-brief',
+    'bmm/workflows/1-analysis/research/workflow-domain-research.md': 'bmad-domain-research',
+    'bmm/workflows/1-analysis/research/workflow-market-research.md': 'bmad-market-research',
+    'bmm/workflows/1-analysis/research/workflow-technical-research.md': 'bmad-technical-research',
+    // BMM Planning
+    'bmm/workflows/2-plan-workflows/create-prd/workflow-create-prd.md': 'bmad-create-prd',
+    'bmm/workflows/2-plan-workflows/create-prd/workflow-edit-prd.md': 'bmad-edit-prd',
+    'bmm/workflows/2-plan-workflows/create-prd/workflow-validate-prd.md': 'bmad-validate-prd',
+    'bmm/workflows/2-plan-workflows/create-ux-design/workflow.md': 'bmad-create-ux-design',
+    // BMM Solutioning
+    'bmm/workflows/3-solutioning/create-architecture/workflow.md': 'bmad-create-architecture',
+    'bmm/workflows/3-solutioning/create-epics-and-stories/workflow.md': 'bmad-create-epics-and-stories',
+    'bmm/workflows/3-solutioning/create-epics-and-stories/steps/step-02a-epic-enhancement.md': 'bmad-create-epics-and-stories',
+    'bmm/workflows/3-solutioning/create-epics-and-stories/steps/step-03a-story-enhancement.md': 'bmad-create-epics-and-stories',
+    'bmm/workflows/3-solutioning/check-implementation-readiness/workflow.md': 'bmad-create-epics-and-stories',
+    // BMM Implementation
+    'bmm/workflows/4-implementation/sprint-planning/workflow.yaml': 'bmad-sprint-planning',
+    'bmm/workflows/4-implementation/sprint-status/workflow.yaml': 'bmad-sprint-status',
+    'bmm/workflows/4-implementation/create-story/workflow.yaml': 'bmad-create-story',
+    'bmm/workflows/4-implementation/create-story/checklist.md': 'bmad-create-story',
+    'bmm/workflows/4-implementation/dev-story/workflow.yaml': 'bmad-dev-story',
+    'bmm/workflows/4-implementation/dev-story/checklist.md': 'bmad-dev-story',
+    'bmm/workflows/4-implementation/code-review/workflow.yaml': 'bmad-review-adversarial-general',
+    'bmm/workflows/4-implementation/retrospective/workflow.yaml': 'bmad-retrospective',
+    'bmm/workflows/4-implementation/correct-course/workflow.yaml': 'bmad-retrospective',
+    // BMM Review
+    'bmm/workflows/4-review/security-audit/workflow.md': 'aac-review-security-audit',
+    'bmm/workflows/4-review/ceo-scope-review/workflow.md': 'aac-review-ceo-scope-review',
+    'bmm/workflows/4-review/eng-execution-review/workflow.md': 'aac-review-eng-execution-review',
+    'bmm/workflows/4-review/design-dimension-audit/workflow.md': 'aac-review-design-dimension-audit',
+    'bmm/workflows/4-review/verification-loop/workflow.md': 'aac-review-verification-loop',
+    'bmm/workflows/4-review/coding-standards/workflow.md': 'aac-review-coding-standards',
+    'bmm/workflows/4-review/e2e-testing/workflow.md': 'aac-review-e2e-testing',
+    'bmm/workflows/4-review/eval-harness/workflow.md': 'aac-review-eval-harness',
+    'bmm/workflows/4-review/api-design/workflow.md': 'aac-review-api-design',
+    'bmm/workflows/4-review/codebase-mapper/workflow.yaml': 'aac-review-codebase-mapper',
+    'bmm/workflows/4-review/assumptions-analyzer/workflow.yaml': 'aac-review-assumptions-analyzer',
+    'bmm/workflows/4-review/tradeoff-advisor/workflow.yaml': 'aac-review-tradeoff-advisor',
+    'bmm/workflows/4-review/execution-task-protocol/workflow.yaml': 'aac-review-execution-task-protocol',
+    'bmm/workflows/4-review/test-classification/workflow.yaml': 'aac-review-test-classification',
+    // BMM Quick Flow
+    'bmm/workflows/bmad-quick-flow/quick-spec/workflow.md': 'bmad-quick-dev',
+    'bmm/workflows/bmad-quick-flow/quick-dev/workflow.md': 'bmad-quick-dev',
+    // BMM QA
+    'bmm/workflows/qa-generate-e2e-tests/workflow.yaml': 'bmad-qa-generate-e2e-tests',
+    // BMM Supporting
+    'bmm/workflows/supporting/create-use-cases/workflow.yaml': 'bmad-create-epics-and-stories',
+    'bmm/workflows/supporting/create-use-cases/instructions.md': 'bmad-create-epics-and-stories',
+    'bmm/workflows/supporting/create-risks/workflow.yaml': 'bmad-create-epics-and-stories',
+    'bmm/workflows/supporting/create-definition-of-done/workflow.yaml': 'bmad-create-epics-and-stories',
+    // BMM Utility
+    'bmm/workflows/document-project/workflow.yaml': 'bmad-document-project',
+    'bmm/workflows/generate-project-context/workflow.md': 'bmad-generate-project-context',
+    // Core
+    'core/workflows/brainstorming/workflow.md': 'bmad-party-mode',
+    'core/workflows/party-mode/workflow.md': 'bmad-party-mode',
+    'core/workflows/convert-to-json/workflow.md': 'aac-agent-canvas-integrator',
+    // TEA
+    'tea/workflows/testarch/teach-me-testing/workflow.md': 'aac-tea-teach-me-testing',
+    'tea/workflows/testarch/test-design/workflow.md': 'aac-tea-test-design',
+    'tea/workflows/testarch/test-review/workflow.md': 'aac-tea-test-review',
+    'tea/workflows/testarch/framework/workflow.md': 'aac-tea-framework',
+    'tea/workflows/testarch/ci/workflow.md': 'aac-tea-ci',
+    'tea/workflows/testarch/automate/workflow.md': 'aac-tea-automate',
+    'tea/workflows/testarch/atdd/workflow.md': 'aac-tea-atdd',
+    'tea/workflows/testarch/trace/workflow.md': 'aac-tea-trace',
+    'tea/workflows/testarch/nfr-assess/workflow.md': 'aac-tea-nfr-assess',
+    // CIS
+    'cis/workflows/design-thinking/workflow.yaml': 'aac-cis-design-thinking',
+    'cis/workflows/innovation-strategy/workflow.yaml': 'aac-cis-innovation-strategy',
+    'cis/workflows/problem-solving/workflow.yaml': 'aac-cis-problem-solving',
+    'cis/workflows/storytelling/workflow.yaml': 'aac-cis-storytelling',
+    // BMB
+    'bmb/workflows/agent/workflow-create-agent.md': 'aac-bmb-agent',
+    'bmb/workflows/agent/workflow-edit-agent.md': 'aac-bmb-agent',
+    'bmb/workflows/agent/workflow-validate-agent.md': 'aac-bmb-agent',
+    'bmb/workflows/module/workflow-create-module-brief.md': 'aac-bmb-module',
+    'bmb/workflows/module/workflow-create-module.md': 'aac-bmb-module',
+    'bmb/workflows/module/workflow-edit-module.md': 'aac-bmb-module',
+    'bmb/workflows/module/workflow-validate-module.md': 'aac-bmb-module',
+    'bmb/workflows/workflow/workflow-create-workflow.md': 'aac-bmb-workflow',
+    'bmb/workflows/workflow/workflow-edit-workflow.md': 'aac-bmb-workflow',
+    'bmb/workflows/workflow/workflow-validate-workflow.md': 'aac-bmb-workflow',
+    'bmb/workflows/workflow/workflow-validate-max-parallel-workflow.md': 'aac-bmb-workflow',
+    'bmb/workflows/workflow/workflow-rework-workflow.md': 'aac-bmb-workflow',
+};
+
+/**
+ * Resolve a legacy workflow path to its skills/ SKILL.md equivalent.
+ * If the path already points to skills/, returns it unchanged.
+ * If no mapping exists, returns the original path (backward compat).
+ */
+function resolveWorkflowPath(bmadPath: string, legacyPath: string): string {
+    // Already a skills/ path
+    if (legacyPath.includes('/skills/')) {
+        return legacyPath;
+    }
+    // Strip bmadPath prefix to get the relative portion
+    const relative = legacyPath.startsWith(bmadPath)
+        ? legacyPath.slice(bmadPath.length).replace(/^[/\\]+/, '')
+        : legacyPath;
+    const skillName = LEGACY_WORKFLOW_PATH_TO_SKILL[relative.replace(/\\/g, '/')];
+    if (skillName) {
+        return `${bmadPath}/skills/${skillName}/SKILL.md`;
+    }
+    return legacyPath;
+}
+
 export { parseFrontmatter } from './frontmatter';
 
 /**
@@ -1346,7 +1465,7 @@ ${stepContent}
 
     /** Load config.yaml from the resolved bmadPath */
     private async _loadConfig(): Promise<void> {
-        const configPath = vscode.Uri.file(path.join(this.context.bmadPath, 'bmm', 'config.yaml'));
+        const configPath = vscode.Uri.file(path.join(this.context.bmadPath, '_memory', 'config.yaml'));
         try {
             const configContent = await vscode.workspace.fs.readFile(configPath);
             this.context.config = yaml.parse(configContent.toString());
@@ -1505,8 +1624,15 @@ ${stepContent}
      */
     getAvailableWorkflows(artifactType: string): { path: string; name: string; description: string }[] {
         const bmadPath = this.context.bmadPath;
+        const results = this._getAvailableWorkflowsRaw(artifactType);
+        return results.map(w => ({ ...w, path: resolveWorkflowPath(bmadPath, w.path) }));
+    }
+
+    private _getAvailableWorkflowsRaw(artifactType: string): { path: string; name: string; description: string }[] {
+        const bmadPath = this.context.bmadPath;
         
         // Return curated refinement workflows based on artifact type
+        // Paths are resolved through resolveWorkflowPath() to point to skills/ SKILL.md files
         switch (artifactType) {
             case 'vision':
             case 'prd':
@@ -2141,6 +2267,12 @@ ${stepContent}
      */
     getDevWorkflows(artifactType: string): { path: string; name: string; description: string }[] {
         const bmadPath = this.context.bmadPath;
+        const results = this._getDevWorkflowsRaw(artifactType);
+        return results.map(w => ({ ...w, path: resolveWorkflowPath(bmadPath, w.path) }));
+    }
+
+    private _getDevWorkflowsRaw(artifactType: string): { path: string; name: string; description: string }[] {
+        const bmadPath = this.context.bmadPath;
 
         switch (artifactType) {
             case 'story':
@@ -2411,6 +2543,7 @@ Begin executing the workflow now.`;
 |---|---|
 | \`{project-root}\` | \`${projectRoot}\` |
 | \`{bmad-path}\` | \`${bmadPath}\` |
+| \`{skill-root}\` | \`${bmadPath}/skills\` |
 | \`{output-folder}\` | \`${outputFolder}\` |`;
 
         // ── Load workflow config for output_format awareness ─────────────────

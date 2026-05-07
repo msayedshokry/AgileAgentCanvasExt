@@ -2,6 +2,20 @@
 
 ## 0.4.2
 
+### BMAD v6.6.0 Resource Migration
+
+- **Skills-based architecture** — Migrated all BMAD resources from the legacy v6.0.3 XML-in-markdown module layout (`bmm/`, `bmb/`, `cis/`, `tea/`, `core/`) to the v6.6.0 flat `skills/{skill-name}/SKILL.md` + optional `customize.toml` structure. 86 skill directories now live under `resources/_aac/skills/`.
+- **Skill manifest** — New `resources/_aac/_config/skill-manifest.csv` (columns: `name,type,description,module`) replaces the three legacy CSV manifests (`agent-manifest.csv`, `workflow-manifest.csv`, `task-manifest.csv`).
+- **Agent persona parser rewrite** — `src/chat/agent-personas.ts` now reads `SKILL.md` files directly (extracts persona name, role description, and instructions from markdown headings) instead of parsing XML frontmatter blocks.
+- **Workflow discovery** — `artifact-commands.ts` scans `skills/` for workflow-type entries from `skill-manifest.csv` instead of walking `bmm/workflows/` and `core/workflows/`.
+- **Workflow executor adaptation** — `LEGACY_WORKFLOW_PATH_TO_SKILL` map in `workflow-executor.ts` translates all legacy registry paths to their `skills/{name}/SKILL.md` equivalents at runtime.
+- **Chat participant paths** — All 25+ workflow path references in `chat-participant.ts` updated to `skills/{name}/SKILL.md`.
+- **IDE installer rewrite** — `STUB_TO_MANIFEST` (22 entries), `loadArtifacts()`, and all `*SkillContent()` functions rewritten for the new layout. External IDE agents (Claude, Cursor, Antigravity, OpenCode) now receive full SKILL.md content directly instead of stub-based "LOAD" instructions.
+- **Config.yaml relocated** — `_loadConfig()` in `workflow-executor.ts` updated from `bmm/config.yaml` to `_memory/config.yaml`.
+- **Tech-writer agent paths** — Both `write-doc` and `mermaid-diagram` commands now reference `skills/bmad-agent-tech-writer/SKILL.md`.
+- **Legacy fallback retained** — `loadLegacyBmmWorkflows()` scanner remains for backward compatibility but is inert (guarded by `fs.existsSync`; old directories removed).
+- **TOML parser** — Added `@iarna/toml` ^2.2.5 for reading `customize.toml` files.
+
 ### Jira API Token — Secure Storage
 
 - **Token moved to OS keychain** — The Jira API token is no longer stored in plain-text VS Code settings (`settings.json`). It is now persisted securely via `vscode.SecretStorage`, which uses the OS keychain on every platform: macOS Keychain, Windows Credential Manager, Linux libsecret.

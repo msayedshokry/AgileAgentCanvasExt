@@ -1,178 +1,143 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import * as TOML from '@iarna/toml';
 
 /**
- * Agent Persona Loader
+ * Agent Persona Loader — v6.6.0 Skill-Directory Architecture
  *
- * Reads BMAD agent persona files from disk and extracts both:
- *   1. The parsed <persona> fields (name, title, role, etc.) for lightweight
- *      formatting in workflow-execution prompts.
- *   2. The **full agent file content** (activation instructions, menus,
- *      menu-handlers, rules) for conversational mode where the AI should
- *      present menus, wait for user input, and follow the official BMAD
- *      interaction model.
- *
- * Each agent .md file wraps its XML inside a fenced code block.  We extract
- * the key agent attributes (name, title, icon, capabilities) from the
- * <agent> tag, the full <persona> section (role, identity,
- * communication_style, principles), and preserve the complete raw content
- * for full-activation prompts.
+ * Reads BMAD agent persona data from the skills/ directory structure:
+ *   - `skills/{skill-name}/SKILL.md` — frontmatter (name, description) + activation instructions
+ *   - `skills/{skill-name}/customize.toml` — agent config (icon, role, identity, menu, etc.)
  */
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export interface AgentPersona {
-    /** Agent short-name, e.g. "Mary" */
     name: string;
-    /** Agent job title, e.g. "Business Analyst" */
     title: string;
-    /** Emoji icon */
     icon: string;
-    /** Comma-separated capabilities string */
     capabilities: string;
-    /** <role> text */
     role: string;
-    /** <identity> text */
     identity: string;
-    /** <communication_style> text */
     communicationStyle: string;
-    /** <principles> text */
     principles: string;
-    /**
-     * The complete, unmodified content of the agent .md file.
-     * Includes the preamble, full XML (activation, persona, menu,
-     * menu-handlers, rules) — everything the AI needs to follow
-     * the official BMAD interactive activation model.
-     */
+    skillName: string;
     rawContent: string;
+    menu?: AgentMenuItem[];
 }
 
-/** Which agent should be used for a given artifact type */
+export interface AgentMenuItem {
+    code: string;
+    description: string;
+    skill?: string;
+    prompt?: string;
+}
+
 export type ArtifactAgentKey =
     | 'analyst'
     | 'pm'
-    | 'sm'
     | 'architect'
-    | 'qa'
-    | 'tea'
     | 'dev'
     | 'ux-designer'
-    | 'bmad-master'
-    | 'quick-flow'
-    | 'design-thinking-coach'
-    | 'innovation-strategist'
-    | 'creative-problem-solver'
-    | 'presentation-master';
+    | 'tech-writer'
+    | 'tea'
+    | 'canvas-integrator'
+    | 'brainstorming'
+    | 'design-thinking'
+    | 'innovation'
+    | 'problem-solver'
+    | 'presentation'
+    | 'storyteller';
 
-// ── Artifact-type → agent mapping ────────────────────────────────────────────
+// ── Artifact-type → skill mapping ────────────────────────────────────────────
 
-/**
- * Maps each artifact type to the agent file that should provide the persona
- * for that artifact's refinement / creation workflow.
- *
- * The returned path is relative to the bmad root (e.g. `bmm/agents/analyst.md`).
- */
-const ARTIFACT_TYPE_TO_AGENT: Record<string, { relativePath: string; key: ArtifactAgentKey }> = {
-    'vision':         { relativePath: 'bmm/agents/pm.md',        key: 'pm' },
-    'product-brief':  { relativePath: 'bmm/agents/pm.md',        key: 'pm' },
-    'prd':            { relativePath: 'bmm/agents/pm.md',        key: 'pm' },
-    'requirement':    { relativePath: 'bmm/agents/analyst.md',   key: 'analyst' },
-    'epic':           { relativePath: 'bmm/agents/pm.md',        key: 'pm' },
-    'story':          { relativePath: 'bmm/agents/sm.md',        key: 'sm' },
-    'use-case':       { relativePath: 'bmm/agents/analyst.md',   key: 'analyst' },
-    'architecture':   { relativePath: 'bmm/agents/architect.md', key: 'architect' },
-    'test-case':      { relativePath: 'tea/agents/tea.md',       key: 'tea' },
-    'test-strategy':  { relativePath: 'tea/agents/tea.md',       key: 'tea' },
-    'nfr':            { relativePath: 'tea/agents/tea.md',       key: 'tea' },
-    'sprint':         { relativePath: 'bmm/agents/sm.md',       key: 'sm' },
-    'ux-design':      { relativePath: 'bmm/agents/ux-designer.md', key: 'ux-designer' },
-    'readiness':      { relativePath: 'bmm/agents/architect.md', key: 'architect' },
-    'party':          { relativePath: 'core/agents/bmad-master.md', key: 'bmad-master' },
-    // /document command — Mary (Analyst) handles brownfield project documentation
-    'document':       { relativePath: 'bmm/agents/analyst.md',   key: 'analyst' },
-    // /review-code command — Quinn (QA) performs adversarial code review
-    'code-review':    { relativePath: 'bmm/agents/qa.md',        key: 'qa' },
-    // /ci command — Murat (TEA) scaffolds CI/CD pipelines
-    'ci-pipeline':    { relativePath: 'tea/agents/tea.md',       key: 'tea' },
-    // /quick command — Barry (Quick Flow Solo Dev) for rapid spec + implementation
-    'quick-spec':     { relativePath: 'bmm/agents/quick-flow-solo-dev.md', key: 'quick-flow' },
-    'quick-dev':      { relativePath: 'bmm/agents/quick-flow-solo-dev.md', key: 'quick-flow' },
-    // CIS creative workflows
-    'design-thinking':     { relativePath: 'cis/agents/design-thinking-coach.md',  key: 'design-thinking-coach' },
-    'innovation-strategy': { relativePath: 'cis/agents/innovation-strategist.md',  key: 'innovation-strategist' },
-    'problem-solving':     { relativePath: 'cis/agents/creative-problem-solver.md', key: 'creative-problem-solver' },
-    'storytelling':        { relativePath: 'cis/agents/presentation-master.md',    key: 'presentation-master' },
+const ARTIFACT_TYPE_TO_AGENT: Record<string, { skillName: string; key: ArtifactAgentKey }> = {
+    'vision':              { skillName: 'bmad-agent-pm',             key: 'pm' },
+    'product-brief':       { skillName: 'bmad-agent-pm',             key: 'pm' },
+    'prd':                 { skillName: 'bmad-agent-pm',             key: 'pm' },
+    'requirement':         { skillName: 'bmad-agent-analyst',        key: 'analyst' },
+    'epic':                { skillName: 'bmad-agent-pm',             key: 'pm' },
+    'story':               { skillName: 'bmad-agent-dev',            key: 'dev' },
+    'use-case':            { skillName: 'bmad-agent-analyst',        key: 'analyst' },
+    'architecture':        { skillName: 'bmad-agent-architect',      key: 'architect' },
+    'test-case':           { skillName: 'aac-agent-tea',             key: 'tea' },
+    'test-strategy':       { skillName: 'aac-agent-tea',             key: 'tea' },
+    'nfr':                 { skillName: 'aac-agent-tea',             key: 'tea' },
+    'sprint':              { skillName: 'bmad-agent-dev',            key: 'dev' },
+    'ux-design':           { skillName: 'bmad-agent-ux-designer',    key: 'ux-designer' },
+    'readiness':           { skillName: 'bmad-agent-architect',      key: 'architect' },
+    'party':               { skillName: 'bmad-party-mode',           key: 'analyst' },
+    'document':            { skillName: 'bmad-agent-analyst',        key: 'analyst' },
+    'code-review':         { skillName: 'bmad-agent-dev',            key: 'dev' },
+    'ci-pipeline':         { skillName: 'aac-agent-tea',             key: 'tea' },
+    'quick-spec':          { skillName: 'bmad-agent-dev',            key: 'dev' },
+    'quick-dev':           { skillName: 'bmad-agent-dev',            key: 'dev' },
+    'design-thinking':     { skillName: 'aac-cis-agent-design-thinking',   key: 'design-thinking' },
+    'innovation-strategy': { skillName: 'aac-cis-agent-innovation',        key: 'innovation' },
+    'problem-solving':     { skillName: 'aac-cis-agent-problem-solver',    key: 'problem-solver' },
+    'storytelling':        { skillName: 'aac-cis-agent-storyteller',        key: 'storyteller' },
+    'canvas-convert':      { skillName: 'aac-agent-canvas-integrator',     key: 'canvas-integrator' },
 };
 
-// Default when the artifact type is unknown
-const DEFAULT_AGENT = { relativePath: 'bmm/agents/analyst.md', key: 'analyst' as ArtifactAgentKey };
+const DEFAULT_AGENT = { skillName: 'bmad-agent-analyst', key: 'analyst' as ArtifactAgentKey };
 
 // ── Persona cache ────────────────────────────────────────────────────────────
 
 const personaCache = new Map<string, AgentPersona>();
 
-// ── Public API ───────────────────────────────────────────────────────────────
-
-/**
- * Clear the persona cache.  Call this when the BMAD path changes (e.g. a new
- * project folder is opened).
- */
 export function clearPersonaCache(): void {
     personaCache.clear();
 }
 
-/**
- * Load an agent persona from disk.
- *
- * @param bmadPath  Absolute path to the BMAD root directory (e.g. `…/_aac`)
- * @param agentRelativePath  Relative path to the agent file inside the BMAD root
- *                           (e.g. `bmm/agents/analyst.md`)
- * @returns The parsed persona, or `undefined` if the file cannot be read/parsed.
- */
-export function loadAgentPersona(bmadPath: string, agentRelativePath: string): AgentPersona | undefined {
-    const cacheKey = `${bmadPath}::${agentRelativePath}`;
+// ── Public API ───────────────────────────────────────────────────────────────
+
+export function loadAgentPersona(bmadPath: string, skillName: string): AgentPersona | undefined {
+    const cacheKey = `${bmadPath}::${skillName}`;
     if (personaCache.has(cacheKey)) {
         return personaCache.get(cacheKey);
     }
 
-    const filePath = path.join(bmadPath, agentRelativePath);
-    let content: string;
+    const skillDir = path.join(bmadPath, 'skills', skillName);
+    const skillMdPath = path.join(skillDir, 'SKILL.md');
+    const tomlPath = path.join(skillDir, 'customize.toml');
+
+    let skillMdContent: string;
     try {
-        content = fs.readFileSync(filePath, 'utf-8');
+        skillMdContent = fs.readFileSync(skillMdPath, 'utf-8');
     } catch {
         return undefined;
     }
 
-    const persona = parseAgentPersona(content);
+    let tomlData: Record<string, unknown> = {};
+    try {
+        const tomlContent = fs.readFileSync(tomlPath, 'utf-8');
+        tomlData = TOML.parse(tomlContent);
+    } catch {
+        // No customize.toml or parse error
+    }
+
+    const persona = parseSkillPersona(skillName, skillMdContent, tomlData);
     if (persona) {
         personaCache.set(cacheKey, persona);
     }
     return persona;
 }
 
-/**
- * Get the correct agent persona for a given artifact type.
- *
- * @param bmadPath      Absolute path to the BMAD root
- * @param artifactType  The artifact type (e.g. 'vision', 'story', 'test-case')
- * @returns The agent persona, or undefined if it cannot be loaded.
- */
+export function loadAgentPersonaByPath(bmadPath: string, agentRelativePath: string): AgentPersona | undefined {
+    const skillName = legacyPathToSkillName(agentRelativePath);
+    if (!skillName) { return undefined; }
+    return loadAgentPersona(bmadPath, skillName);
+}
+
 export function getPersonaForArtifactType(bmadPath: string, artifactType: string): AgentPersona | undefined {
     const mapping = ARTIFACT_TYPE_TO_AGENT[artifactType] ?? DEFAULT_AGENT;
-    return loadAgentPersona(bmadPath, mapping.relativePath);
+    return loadAgentPersona(bmadPath, mapping.skillName);
 }
 
-/**
- * Get the agent-file relative path for a given artifact type.
- */
 export function getAgentPathForArtifactType(artifactType: string): string {
-    return (ARTIFACT_TYPE_TO_AGENT[artifactType] ?? DEFAULT_AGENT).relativePath;
+    return (ARTIFACT_TYPE_TO_AGENT[artifactType] ?? DEFAULT_AGENT).skillName;
 }
 
-/**
- * Format a loaded persona into a markdown section suitable for injection into
- * an LLM system prompt.
- */
 export function formatPersonaForPrompt(persona: AgentPersona): string {
     return `## Your Persona
 - **Name:** ${persona.name}
@@ -183,44 +148,44 @@ export function formatPersonaForPrompt(persona: AgentPersona): string {
 - **Principles:** ${persona.principles}`;
 }
 
-// ── All known agent file paths (for party mode roster) ───────────────────────
+// ── All agent skills discovery ───────────────────────────────────────────────
 
-const ALL_AGENT_PATHS: { relativePath: string; module: string }[] = [
-    // BMM agents
-    { relativePath: 'bmm/agents/analyst.md',           module: 'BMM' },
-    { relativePath: 'bmm/agents/pm.md',                module: 'BMM' },
-    { relativePath: 'bmm/agents/sm.md',                module: 'BMM' },
-    { relativePath: 'bmm/agents/architect.md',          module: 'BMM' },
-    { relativePath: 'bmm/agents/qa.md',                module: 'BMM' },
-    { relativePath: 'bmm/agents/dev.md',               module: 'BMM' },
-    { relativePath: 'bmm/agents/ux-designer.md',        module: 'BMM' },
-    // TEA agent
-    { relativePath: 'tea/agents/tea.md',               module: 'TEA' },
-    // Core orchestrator
-    { relativePath: 'core/agents/bmad-master.md',       module: 'Core' },
-];
-
-/**
- * Load all known agent personas from disk.
- * Returns an array of successfully loaded personas with their module tags.
- * Used by party mode to build a complete agent roster.
- */
 export function loadAllAgentPersonas(bmadPath: string): { persona: AgentPersona; module: string; relativePath: string }[] {
+    const skillsDir = path.join(bmadPath, 'skills');
+    if (!fs.existsSync(skillsDir)) { return []; }
+
     const results: { persona: AgentPersona; module: string; relativePath: string }[] = [];
-    for (const entry of ALL_AGENT_PATHS) {
-        const persona = loadAgentPersona(bmadPath, entry.relativePath);
-        if (persona) {
-            results.push({ persona, module: entry.module, relativePath: entry.relativePath });
-        }
+
+    let entries: string[];
+    try {
+        entries = fs.readdirSync(skillsDir);
+    } catch {
+        return [];
     }
+
+    for (const entry of entries) {
+        if (!entry.includes('agent')) { continue; }
+
+        const skillDir = path.join(skillsDir, entry);
+        try {
+            if (!fs.statSync(skillDir).isDirectory()) { continue; }
+        } catch { continue; }
+
+        const persona = loadAgentPersona(bmadPath, entry);
+        if (!persona) { continue; }
+
+        let module = 'BMM';
+        if (entry.startsWith('aac-tea') || entry === 'aac-agent-tea') { module = 'TEA'; }
+        else if (entry.startsWith('aac-cis')) { module = 'CIS'; }
+        else if (entry.startsWith('aac-bmb')) { module = 'BMB'; }
+        else if (entry.startsWith('aac-')) { module = 'Core'; }
+
+        results.push({ persona, module, relativePath: `skills/${entry}` });
+    }
+
     return results;
 }
 
-/**
- * Format all loaded agent personas into a party-mode roster string for the
- * LLM system prompt.  Each agent gets a concise block with their name, title,
- * icon, role, communication style and principles so the LLM can role-play them.
- */
 export function formatAgentRoster(agents: { persona: AgentPersona; module: string }[]): string {
     const lines: string[] = ['## BMAD Agent Roster\n'];
     for (const { persona, module } of agents) {
@@ -234,10 +199,103 @@ export function formatAgentRoster(agents: { persona: AgentPersona; module: strin
     return lines.join('\n');
 }
 
-// ── XML parsing helpers (lightweight, no dependency) ─────────────────────────
+// ── Skill parsing ────────────────────────────────────────────────────────────
+
+function parseSkillPersona(skillName: string, skillMdContent: string, tomlData: Record<string, unknown>): AgentPersona | undefined {
+    const agent = (tomlData as any)?.agent;
+
+    if (agent && agent.name) {
+        const menu: AgentMenuItem[] = [];
+        if (Array.isArray(agent.menu)) {
+            for (const item of agent.menu) {
+                menu.push({
+                    code: item.code ?? '',
+                    description: item.description ?? '',
+                    skill: item.skill,
+                    prompt: item.prompt,
+                });
+            }
+        }
+
+        const principles = Array.isArray(agent.principles)
+            ? agent.principles.join('\n- ')
+            : (agent.principles ?? '');
+
+        return {
+            name: agent.name,
+            title: agent.title ?? '',
+            icon: agent.icon ?? '',
+            capabilities: '',
+            role: agent.role ?? '',
+            identity: agent.identity ?? '',
+            communicationStyle: agent.communication_style ?? '',
+            principles: principles ? `- ${principles}` : '',
+            skillName,
+            rawContent: skillMdContent,
+            menu: menu.length > 0 ? menu : undefined,
+        };
+    }
+
+    // Fallback: legacy XML-in-markdown
+    const fenceMatch = skillMdContent.match(/```xml\s*([\s\S]*?)```/);
+    if (fenceMatch) {
+        return parseLegacyXmlPersona(skillName, skillMdContent, fenceMatch[1]);
+    }
+
+    // Minimal: SKILL.md frontmatter only
+    const frontmatter = parseFrontmatter(skillMdContent);
+    if (frontmatter.name) {
+        return {
+            name: frontmatter.name,
+            title: frontmatter.description ?? '',
+            icon: '',
+            capabilities: '',
+            role: '',
+            identity: '',
+            communicationStyle: '',
+            principles: '',
+            skillName,
+            rawContent: skillMdContent,
+        };
+    }
+
+    return undefined;
+}
+
+function parseLegacyXmlPersona(skillName: string, fullContent: string, xml: string): AgentPersona | undefined {
+    const name = extractAttribute(xml, 'agent', 'name');
+    const title = extractAttribute(xml, 'agent', 'title');
+    const icon = extractAttribute(xml, 'agent', 'icon');
+    const capabilities = extractAttribute(xml, 'agent', 'capabilities');
+
+    const personaXml = extractTagContent(xml, 'persona');
+    if (!personaXml && !name) { return undefined; }
+
+    const role = extractTagContent(personaXml, 'role');
+    const identity = extractTagContent(personaXml, 'identity').replace(/&apos;/g, "'");
+    const communicationStyle = extractTagContent(personaXml, 'communication_style').replace(/&apos;/g, "'");
+    let principles = extractTagContent(personaXml, 'principles');
+    principles = principles.replace(/&apos;/g, "'").replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+
+    if (!name) { return undefined; }
+
+    return { name, title, icon, capabilities, role, identity, communicationStyle, principles, skillName, rawContent: fullContent };
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function parseFrontmatter(content: string): Record<string, string> {
+    const match = content.match(/^---\s*\n([\s\S]*?)\n---/);
+    if (!match) { return {}; }
+    const result: Record<string, string> = {};
+    for (const line of match[1].split('\n')) {
+        const kv = line.match(/^(\w+)\s*:\s*['"]?(.+?)['"]?\s*$/);
+        if (kv) { result[kv[1]] = kv[2]; }
+    }
+    return result;
+}
 
 function extractTagContent(xml: string, tag: string): string {
-    // Match both <tag>content</tag> and <tag attr="...">content</tag>
     const re = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, 'i');
     const m = xml.match(re);
     return m ? m[1].trim() : '';
@@ -249,64 +307,37 @@ function extractAttribute(xml: string, tag: string, attr: string): string {
     return m ? m[1].trim() : '';
 }
 
-/**
- * Parse the agent XML embedded in a BMAD agent markdown file and extract the
- * persona section.  Also preserves the full raw file content for
- * full-activation prompts.
- */
-function parseAgentPersona(content: string): AgentPersona | undefined {
-    // The XML is inside a fenced code block (```xml ... ```)
-    const fenceMatch = content.match(/```xml\s*([\s\S]*?)```/);
-    if (!fenceMatch) {
-        return undefined;
-    }
-    const xml = fenceMatch[1];
-
-    const name = extractAttribute(xml, 'agent', 'name');
-    const title = extractAttribute(xml, 'agent', 'title');
-    const icon = extractAttribute(xml, 'agent', 'icon');
-    const capabilities = extractAttribute(xml, 'agent', 'capabilities');
-
-    const personaXml = extractTagContent(xml, 'persona');
-    if (!personaXml) {
-        return undefined;
-    }
-
-    const role = extractTagContent(personaXml, 'role');
-    const identity = extractTagContent(personaXml, 'identity');
-    const communicationStyle = extractTagContent(personaXml, 'communication_style');
-    // Principles may contain XML entities (&apos; etc.)
-    let principles = extractTagContent(personaXml, 'principles');
-    principles = principles.replace(/&apos;/g, "'").replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
-
-    if (!name || !role) {
-        return undefined;
-    }
-
-    return {
-        name,
-        title,
-        icon,
-        capabilities,
-        role,
-        identity: identity.replace(/&apos;/g, "'"),
-        communicationStyle: communicationStyle.replace(/&apos;/g, "'"),
-        principles,
-        rawContent: content,
-    };
-}
-
-// ── Full-activation prompt formatting ────────────────────────────────────────
-
-/**
- * Format a loaded persona into a **full activation prompt** that includes
- * the complete agent file content — activation instructions, menus,
- * menu-handlers, and rules.
- *
- * This is used in conversational mode where the AI should present menus,
- * wait for user input, and follow the official BMAD interaction model
- * (as opposed to directed workflow execution where only the persona is needed).
- */
 export function formatFullAgentForPrompt(persona: AgentPersona): string {
     return persona.rawContent;
+}
+
+// ── Legacy path translation ──────────────────────────────────────────────────
+
+const LEGACY_PATH_MAP: Record<string, string> = {
+    'bmm/agents/analyst.md': 'bmad-agent-analyst',
+    'bmm/agents/pm.md': 'bmad-agent-pm',
+    'bmm/agents/sm.md': 'bmad-agent-dev',
+    'bmm/agents/architect.md': 'bmad-agent-architect',
+    'bmm/agents/qa.md': 'bmad-agent-dev',
+    'bmm/agents/dev.md': 'bmad-agent-dev',
+    'bmm/agents/ux-designer.md': 'bmad-agent-ux-designer',
+    'bmm/agents/quick-flow-solo-dev.md': 'bmad-agent-dev',
+    'bmm/agents/tech-writer/tech-writer.md': 'bmad-agent-tech-writer',
+    'tea/agents/tea.md': 'aac-agent-tea',
+    'core/agents/bmad-master.md': 'bmad-agent-analyst',
+    'core/agents/canvas-integrator.md': 'aac-agent-canvas-integrator',
+    'cis/agents/brainstorming-coach.md': 'aac-cis-agent-brainstorming',
+    'cis/agents/creative-problem-solver.md': 'aac-cis-agent-problem-solver',
+    'cis/agents/design-thinking-coach.md': 'aac-cis-agent-design-thinking',
+    'cis/agents/innovation-strategist.md': 'aac-cis-agent-innovation',
+    'cis/agents/presentation-master.md': 'aac-cis-agent-presentation',
+    'cis/agents/storyteller/storyteller.md': 'aac-cis-agent-storyteller',
+    'bmb/agents/agent-builder.md': 'aac-bmb-agent-builder',
+    'bmb/agents/module-builder.md': 'aac-bmb-agent-module-builder',
+    'bmb/agents/workflow-builder.md': 'aac-bmb-agent-workflow-builder',
+};
+
+function legacyPathToSkillName(relativePath: string): string | undefined {
+    const normalized = relativePath.replace(/\\/g, '/');
+    return LEGACY_PATH_MAP[normalized];
 }

@@ -277,7 +277,7 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
         
         // Transform state to artifact format for webview — delegate to the single
         // authoritative layout engine in artifact-transformer.ts.
-        const artifacts = buildArtifacts(this.store);
+        const artifacts = buildArtifacts(this.store, vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath);
         logger.debug(`[CanvasProvider] Transformed to ${artifacts.length} artifacts`);
 
         // Derive active folder name for the toolbar display
@@ -314,7 +314,7 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
      * sendArtifactsToDetailTabs) continue to compile unchanged.
      */
     private stateToArtifacts(_state: any): any[] {
-        return buildArtifacts(this.store);
+        return buildArtifacts(this.store, vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath);
     }
 
     public showAICursor(targetId: string, action: string, label?: string): void {

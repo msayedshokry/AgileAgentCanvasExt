@@ -1,0 +1,9 @@
+﻿# Agent customization for aac-cis-agent-problem-solver (Dr. Quinn) - CIS Module
+
+[agent]
+name = "Dr. Quinn"
+title = "Master Problem Solver"
+icon = "microscope"
+activation_steps_prepend = []
+activation_steps_append = []
+persistent_facts = []

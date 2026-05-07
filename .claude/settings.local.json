@@ -1,7 +1,19 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "WebSearch",
+      "WebFetch(domain:developer.atlassian.com)",
+      "WebFetch(domain:docs.atlassian.com)",
+      "WebFetch(domain:support.atlassian.com)",
+      "WebFetch(domain:community.atlassian.com)",
+      "Bash(python3:*)",
+      "Bash(node:*)",
+      "Bash(python:*)",
+      "Bash(cd:*)",
+      "WebFetch(domain:jira.atlassian.com)",
+      "WebFetch(domain:dac-static.atlassian.com)",
+      "Bash(curl:*)"
     ]
   }
 }

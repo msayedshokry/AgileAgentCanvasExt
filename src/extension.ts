@@ -18,6 +18,7 @@ import {
     selectArtifact
 } from './commands/artifact-commands';
 import { handleCommonWebviewMessage } from './views/webview-message-handler';
+import { createGraphifyStatusBar, refreshGraphifyStatusBar } from './views/graphify-status-bar';
 import {
     createNewProject,
     loadExistingProject,
@@ -28,6 +29,15 @@ import { executeWorkflowStep } from './commands/workflow-commands';
 import { installToIde, autoInstallIfNeeded } from './commands/ide-installer';
 import { openChat, setChatBridgeLogger } from './commands/chat-bridge';
 import { JiraCommands } from './commands/jira-commands';
+import {
+    bootstrapGraphify,
+    updateGraph,
+    rebuildGraph,
+    installGraphifyHook,
+    detectGraphify,
+    clearGraphifyCache,
+    loadReport
+} from './integrations/graphify';
 import { JiraSecrets } from './integrations/jira-secrets';
 import { createLogger, setLoggerOutputSink } from './utils/logger';
 
@@ -191,6 +201,41 @@ export function activate(context: vscode.ExtensionContext) {
                 vscode.window.showInformationMessage('Jira API token removed from OS keychain.');
             }
         }),
+        // ── graphify commands ─────────────────────────────────────────────────
+        vscode.commands.registerCommand('agileagentcanvas.graphify.bootstrap', () => {
+            const root = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath ?? '';
+            if (!root) { return vscode.window.showWarningMessage('No workspace open.'); }
+            return bootstrapGraphify(root).finally(() => refreshGraphifyStatusBar(root));
+        }),
+        vscode.commands.registerCommand('agileagentcanvas.graphify.update', () => {
+            const root = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath ?? '';
+            if (!root) { return vscode.window.showWarningMessage('No workspace open.'); }
+            return updateGraph(root).finally(() => refreshGraphifyStatusBar(root));
+        }),
+        vscode.commands.registerCommand('agileagentcanvas.graphify.rebuild', () => {
+            const root = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath ?? '';
+            if (!root) { return vscode.window.showWarningMessage('No workspace open.'); }
+            return rebuildGraph(root).finally(() => refreshGraphifyStatusBar(root));
+        }),
+        vscode.commands.registerCommand('agileagentcanvas.graphify.openReport', async () => {
+            const root = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath ?? '';
+            if (!root) { return; }
+            // Use already-imported loadReport to check existence — avoids inline require()
+            const report = loadReport(root);
+            if (report === null) {
+                vscode.window.showWarningMessage('No graphify report found. Run "Bootstrap graphify" first.');
+                return;
+            }
+            const reportUri = vscode.Uri.joinPath(
+                vscode.workspace.workspaceFolders![0].uri,
+                'graphify-out', 'GRAPH_REPORT.md'
+            );
+            await vscode.window.showTextDocument(reportUri);
+        }),
+        vscode.commands.registerCommand('agileagentcanvas.graphify.installHook', () => {
+            const root = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath ?? '';
+            return root ? installGraphifyHook(root) : vscode.window.showWarningMessage('No workspace open.');
+        }),
         // Open the IDE chat panel (IDE-agnostic, optionally with a pre-filled query)
         vscode.commands.registerCommand('agileagentcanvas.openChatPanel', (query?: string) => {
             return openChat(query);
@@ -340,6 +385,63 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Auto-install BMAD agents for the detected IDE (silent, only on first activation)
     autoInstallIfNeeded(context.extensionPath);
+
+    // ── graphify: optional auto-bootstrap prompt ──────────────────────────────
+    createGraphifyStatusBar(context);
+
+    const autoBootstrap = vscode.workspace
+        .getConfiguration('agileagentcanvas')
+        .get<boolean>('graphify.autoBootstrapOnNewProject', false);
+
+    if (autoBootstrap && vscode.workspace.isTrusted) {
+        const root = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath;
+        if (root) {
+            const status = detectGraphify(root);
+            if (status.recommendation === 'bootstrap') {
+                // Fire-and-forget toast — user can dismiss
+                vscode.window.showInformationMessage(
+                    'Agile Agent Canvas: This workspace has BMAD artifacts but no graphify knowledge graph. ' +
+                    'Bootstrap graphify for graph-aware AI assistance?',
+                    'Bootstrap',
+                    'Not now'
+                ).then(choice => {
+                    if (choice === 'Bootstrap') {
+                        // User already confirmed via toast — skip the redundant modal inside bootstrap
+                        bootstrapGraphify(root, { silent: true });
+                    }
+                });
+            }
+        }
+    }
+
+    // ── graphify: auto-update on save (opt-in) ────────────────────────────────
+    const autoUpdate = vscode.workspace
+        .getConfiguration('agileagentcanvas')
+        .get<boolean>('graphify.autoUpdateOnSave', false);
+
+    if (autoUpdate) {
+        const rootFolder = vscode.workspace.workspaceFolders?.[0];
+        if (rootFolder) {
+            let autoUpdateTimer: ReturnType<typeof setTimeout> | undefined;
+            // Scope the watcher to the workspace folder to avoid firing on extension host files
+            const graphifyWatcher = vscode.workspace.createFileSystemWatcher(
+                new vscode.RelativePattern(rootFolder, '**/*.{ts,js,py,go,rs,java,cs,rb,md}'),
+                false, false, true  // only create/change events, not delete
+            );
+            graphifyWatcher.onDidChange(() => {
+                if (autoUpdateTimer) { clearTimeout(autoUpdateTimer); }
+                autoUpdateTimer = setTimeout(async () => {
+                    const root = rootFolder.uri.fsPath;
+                    const st = detectGraphify(root);
+                    if (st.graphPresent) {
+                        clearGraphifyCache(root);
+                        await updateGraph(root);
+                    }
+                }, 5000);
+            });
+            context.subscriptions.push(graphifyWatcher);
+        }
+    }
 }
 
 async function openCanvasPanel(context: vscode.ExtensionContext, store: ArtifactStore) {
@@ -477,7 +579,7 @@ function openDetailTab(artifactId: string, context: vscode.ExtensionContext, sto
     }
 
     // Look up artifact title for the tab label
-    const artifacts = buildArtifacts(store);
+    const artifacts = buildArtifacts(store, vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath);
     const artifact = artifacts.find((a: any) => a.id === artifactId);
     const title = artifact ? `Detail: ${artifact.title || artifactId}` : `Detail: ${artifactId}`;
 
@@ -510,7 +612,7 @@ function openDetailTab(artifactId: string, context: vscode.ExtensionContext, sto
         switch (message.type) {
             case 'ready':
                 {
-                    const allArtifacts = buildArtifacts(store);
+                    const allArtifacts = buildArtifacts(store, vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath);
                     const art = allArtifacts.find((a: any) => a.id === artifactId);
                     if (art) {
                         panel.webview.postMessage({
@@ -530,7 +632,7 @@ function openDetailTab(artifactId: string, context: vscode.ExtensionContext, sto
     // Update detail tab when artifacts change
     const sub = store.onDidChangeArtifacts(() => {
         try {
-            const allArtifacts = buildArtifacts(store);
+            const allArtifacts = buildArtifacts(store, vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath);
             const art = allArtifacts.find((a: any) => a.id === artifactId);
             if (art) {
                 panel.webview.postMessage({

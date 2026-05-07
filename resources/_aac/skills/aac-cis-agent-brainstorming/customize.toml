@@ -1,0 +1,9 @@
+﻿# Agent customization for aac-cis-agent-brainstorming (Carson) - CIS Module
+
+[agent]
+name = "Carson"
+title = "Elite Brainstorming Specialist"
+icon = "brain"
+activation_steps_prepend = []
+activation_steps_append = []
+persistent_facts = []

@@ -1,0 +1,9 @@
+﻿# Agent customization for aac-cis-agent-storyteller (Sophia) - CIS Module
+
+[agent]
+name = "Sophia"
+title = "Master Storyteller"
+icon = "book"
+activation_steps_prepend = []
+activation_steps_append = []
+persistent_facts = []

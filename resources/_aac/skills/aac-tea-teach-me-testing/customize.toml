@@ -1,0 +1,6 @@
+﻿# Workflow customization for aac-tea-teach-me-testing (TEA module)
+
+[workflow]
+activation_steps_prepend = []
+activation_steps_append = []
+persistent_facts = []

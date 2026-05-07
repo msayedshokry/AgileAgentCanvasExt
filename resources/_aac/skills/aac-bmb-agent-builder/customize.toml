@@ -1,0 +1,9 @@
+﻿# Agent customization for aac-bmb-agent-builder (Bond) - BMB Module
+
+[agent]
+name = "Bond"
+title = "Agent Building Expert"
+icon = "robot"
+activation_steps_prepend = []
+activation_steps_append = []
+persistent_facts = []

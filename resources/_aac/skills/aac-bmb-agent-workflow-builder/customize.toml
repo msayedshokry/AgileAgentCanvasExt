@@ -1,0 +1,9 @@
+﻿# Agent customization for aac-bmb-agent-workflow-builder (Wendy) - BMB Module
+
+[agent]
+name = "Wendy"
+title = "Workflow Building Master"
+icon = "arrows"
+activation_steps_prepend = []
+activation_steps_append = []
+persistent_facts = []
