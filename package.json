@@ -109,6 +109,49 @@
         }
       },
       {
+        "name": "agileagentcanvas_graph_query",
+        "displayName": "Agile Agent Canvas Graph Query",
+        "modelDescription": "Run a natural-language question against the graphify knowledge graph of the codebase. Use this to understand code structure, trace connections between components, or surface design rationale. Requires graphify-out/graph.json to exist.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "question": {
+              "type": "string",
+              "description": "Natural-language question about the codebase"
+            },
+            "budget": {
+              "type": "number",
+              "description": "Max tokens to return (default 1500)"
+            }
+          },
+          "required": [
+            "question"
+          ]
+        }
+      },
+      {
+        "name": "agileagentcanvas_graph_path",
+        "displayName": "Agile Agent Canvas Graph Path",
+        "modelDescription": "Find the shortest path between two nodes in the graphify knowledge graph. Use this to trace dependencies or understand how two components relate. Requires graphify-out/graph.json.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "nodeA": {
+              "type": "string",
+              "description": "Source node label, e.g. \"ChatParticipant\""
+            },
+            "nodeB": {
+              "type": "string",
+              "description": "Target node label, e.g. \"ArtifactStore\""
+            }
+          },
+          "required": [
+            "nodeA",
+            "nodeB"
+          ]
+        }
+      },
+      {
         "name": "agileagentcanvas_read_jira",
         "displayName": "Agile Agent Canvas Read Jira",
         "modelDescription": "Reads epics and stories from the user's Jira Cloud project via the REST API. Use this when the user asks about their Jira board, wants to see Jira issues, or asks about epics/stories in Jira. Requires Jira to be configured in VS Code Settings (agileagentcanvas.jira.*).",
@@ -118,7 +161,12 @@
           "properties": {
             "action": {
               "type": "string",
-              "enum": ["test_connection", "list_epics", "list_stories", "list_all"],
+              "enum": [
+                "test_connection",
+                "list_epics",
+                "list_stories",
+                "list_all"
+              ],
               "description": "Action: test_connection, list_epics, list_stories, list_all"
             },
             "projectKey": {
@@ -130,7 +178,9 @@
               "description": "Epic issue key, e.g. PROJ-42 (for list_stories)"
             }
           },
-          "required": ["action"]
+          "required": [
+            "action"
+          ]
         }
       }
     ],
@@ -273,6 +323,22 @@
           {
             "name": "jira",
             "description": "Read epics and stories from Jira Cloud. Subcommands: config, epics [projectKey], stories [epicKey|projectKey], sync [projectKey]"
+          },
+          {
+            "name": "graph",
+            "description": "Show the graphify knowledge graph report (god nodes, communities, suggested questions)"
+          },
+          {
+            "name": "graph-query",
+            "description": "Query the codebase knowledge graph with a natural-language question"
+          },
+          {
+            "name": "graph-bootstrap",
+            "description": "Install graphify and build the initial knowledge graph for this project"
+          },
+          {
+            "name": "graph-update",
+            "description": "Incrementally update the graphify knowledge graph (code-only, no LLM re-extraction)"
           }
         ]
       }
@@ -382,6 +448,31 @@
         "command": "agileagentcanvas.clearJiraToken",
         "title": "Agile Agent Canvas: Clear Jira API Token",
         "icon": "$(trash)"
+      },
+      {
+        "command": "agileagentcanvas.graphify.bootstrap",
+        "title": "Agile Agent Canvas: Bootstrap graphify",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "agileagentcanvas.graphify.update",
+        "title": "Agile Agent Canvas: Update graphify Graph",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "agileagentcanvas.graphify.rebuild",
+        "title": "Agile Agent Canvas: Rebuild graphify Graph",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "agileagentcanvas.graphify.openReport",
+        "title": "Agile Agent Canvas: Open graphify Report",
+        "icon": "$(preview)"
+      },
+      {
+        "command": "agileagentcanvas.graphify.installHook",
+        "title": "Agile Agent Canvas: Install graphify Git Hook",
+        "icon": "$(git-commit)"
       }
     ],
     "keybindings": [
@@ -536,9 +627,87 @@
           "type": "string",
           "default": "",
           "description": "Default Jira project key to use when none is specified (e.g. PROJ). You can override this per command."
+        },
+        "agileagentcanvas.graphify.pythonPath": {
+          "type": "string",
+          "default": "python",
+          "description": "Path to the Python executable used to run graphify (python -m graphify). Change this if Python is not on your PATH, e.g. C:/Python311/python.exe or python3."
+        },
+        "agileagentcanvas.graphify.backend": {
+          "type": "string",
+          "default": "",
+          "enum": [
+            "",
+            "gemini",
+            "kimi",
+            "claude",
+            "openai",
+            "ollama"
+          ],
+          "description": "AI backend for graphify semantic extraction. Leave empty to use graphify's default. Passed as --backend flag to 'graphify extract'."
+        },
+        "agileagentcanvas.graphify.autoBootstrapOnNewProject": {
+          "type": "boolean",
+          "default": true,
+          "description": "Prompt to bootstrap graphify when a workspace with BMAD artifacts but no knowledge graph is opened."
+        },
+        "agileagentcanvas.graphify.autoUpdateOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically run 'graphify update' when source files change (debounced 5 s). Code-only — no LLM calls. Requires a graph to already exist."
+        },
+        "agileagentcanvas.graphify.showCodebaseLane": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show the Codebase lane on the canvas when a graphify knowledge graph is present."
         }
       }
-    }
+    },
+    "walkthroughs": [
+      {
+        "id": "agileagentcanvas.getStarted",
+        "title": "Get Started with Agile Agent Canvas",
+        "description": "Set up AI-assisted agile development with BMAD workflows and a code-aware knowledge graph — in minutes.",
+        "steps": [
+          {
+            "id": "agileagentcanvas.getStarted.openCanvas",
+            "title": "Open the Agile Canvas",
+            "description": "The canvas is your visual workspace for BMAD artifacts — epics, stories, vision, architecture, and more.\n\n[Open Canvas](command:agileagentcanvas.openCanvas)",
+            "media": {
+              "image": "resources/icons/agileagentcanvas-icon.png",
+              "altText": "Agile Agent Canvas"
+            },
+            "completionEvents": [
+              "onCommand:agileagentcanvas.openCanvas"
+            ]
+          },
+          {
+            "id": "agileagentcanvas.getStarted.bootstrapGraphify",
+            "title": "Build a Codebase Knowledge Graph",
+            "description": "graphify builds a semantic knowledge graph of your codebase so AI suggestions are automatically code-aware. Bootstrap once — it stays up to date automatically.\n\n[Bootstrap graphify](command:agileagentcanvas.graphify.bootstrap)",
+            "media": {
+              "image": "resources/icons/agileagentcanvas-icon.png",
+              "altText": "graphify knowledge graph"
+            },
+            "completionEvents": [
+              "onCommand:agileagentcanvas.graphify.bootstrap"
+            ]
+          },
+          {
+            "id": "agileagentcanvas.getStarted.chat",
+            "title": "Start AI-Assisted Development",
+            "description": "Use **@agileagentcanvas** in Copilot Chat to design epics, break down stories, review code, plan sprints — all grounded in your actual codebase and BMAD artifacts.\n\n[Open Copilot Chat](command:workbench.action.chat.open)",
+            "media": {
+              "image": "resources/icons/agileagentcanvas-activity-bar.svg",
+              "altText": "AI-assisted development"
+            },
+            "completionEvents": [
+              "onCommand:workbench.action.chat.open"
+            ]
+          }
+        ]
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -578,6 +747,7 @@
     "typescript": "^5.x"
   },
   "dependencies": {
+    "@iarna/toml": "^2.2.5",
     "@types/pdfkit": "^0.17.5",
     "ajv": "^6.14.0",
     "pdfkit": "^0.17.2",

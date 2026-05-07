@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import { ArtifactStore } from '../state/artifact-store';
 import { createLogger } from '../utils/logger';
 import type { AcceptanceCriterion } from '../types/index';
+import { detectGraphify } from '../integrations/graphify/graphify-detector';
+import { loadCommunities } from '../integrations/graphify/graph-loader';
 
 const logger = createLogger('artifact-transformer');
 
@@ -9,7 +11,7 @@ const logger = createLogger('artifact-transformer');
  * Transform store state to the artifact array format expected by the canvas webview.
  * Used by the editor panel (extension.ts) and detail tabs (canvas-view-provider.ts).
  */
-export function buildArtifacts(store: ArtifactStore): any[] {
+export function buildArtifacts(store: ArtifactStore, workspaceRoot?: string): any[] {
     const state = store.getState();
 
     const artifacts: any[] = [];
@@ -1307,6 +1309,68 @@ export function buildArtifacts(store: ArtifactStore): any[] {
     }
 
     // =========================================================================
+    // COLUMN 5: CODEBASE LANE (graphify code communities)
+    // Gated by config: agileagentcanvas.graphify.showCodebaseLane
+    // =========================================================================
+
+    const showCodebaseLane = vscode.workspace
+        .getConfiguration('agileagentcanvas')
+        .get<boolean>('graphify.showCodebaseLane', false);
+
+    if (showCodebaseLane && workspaceRoot) {
+        const status = detectGraphify(workspaceRoot);
+        if (status.graphPresent) {
+            const communities = loadCommunities(workspaceRoot);
+            if (communities.length > 0) {
+                // Fixed X position for the Codebase lane — placed far right of Implementation
+                const CODEBASE_START_X = 4600;
+                const CODEBASE_CARD_WIDTH = 280;
+                const CODEBASE_CARD_SPACING = 20;
+                const CODEBASE_GRID_COLS = 3;
+                let cbCol = 0;
+                let cbRowY = LANE_CARD_TOP;
+                let cbRowMaxH = 0;
+
+                communities.forEach((comm, idx) => {
+                    const title = comm.label || `Community ${idx + 1}`;
+                    const description = comm.godNodes.slice(0, 3).join(', ') || '';
+                    const height = calculateCardHeight('code-community', title, description, 30);
+
+                    if (cbCol >= CODEBASE_GRID_COLS) {
+                        cbRowY += cbRowMaxH + CODEBASE_CARD_SPACING;
+                        cbRowMaxH = 0;
+                        cbCol = 0;
+                    }
+                    const x = CODEBASE_START_X + cbCol * (CODEBASE_CARD_WIDTH + CODEBASE_CARD_SPACING);
+                    cbRowMaxH = Math.max(cbRowMaxH, height);
+                    cbCol++;
+
+                    artifacts.push({
+                        id: comm.id,
+                        type: 'code-community',
+                        title,
+                        description,
+                        status: 'approved',
+                        position: { x, y: cbRowY },
+                        size: { width: CODEBASE_CARD_WIDTH, height },
+                        dependencies: comm.neighbors.slice(0, 3),
+                        childCount: comm.size,
+                        metadata: {
+                            godNodes: comm.godNodes,
+                            files: comm.files.slice(0, 10),
+                            size: comm.size,
+                            neighbors: comm.neighbors,
+                            summary: comm.summary
+                        }
+                    });
+                });
+
+                logger.debug(`Injected ${communities.length} code-community cards into canvas`);
+            }
+        }
+    }
+
+    // =========================================================================
     // POST-PROCESSING: Architecture → Epic arrows (REMOVED)
     // Previously injected the architecture ID into every epic's dependencies,
     // but this created redundant structural arrows that added visual noise
@@ -1324,7 +1388,8 @@ export function buildArtifacts(store: ArtifactStore): any[] {
 export function sendArtifactsToPanel(panel: vscode.WebviewPanel, store: ArtifactStore): void {
     try {
         const state = store.getState();
-        const artifacts = buildArtifacts(store);
+        const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath;
+        const artifacts = buildArtifacts(store, workspaceRoot);
 
         // Derive active folder name for the toolbar display
         let activeFolderName = '';

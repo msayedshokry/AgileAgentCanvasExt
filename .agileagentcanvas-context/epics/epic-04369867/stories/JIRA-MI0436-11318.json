@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "story",
+    "workflowName": "agileagentcanvas",
+    "projectName": "",
+    "timestamps": {
+      "lastModified": "2026-04-12T14:12:31.885Z"
+    },
+    "status": "done"
+  },
+  "content": {
+    "id": "JIRA:MI0436-11318",
+    "title": "Extend cached data from Synapse DB",
+    "userStory": {
+      "asA": "user",
+      "iWant": "Extend cached data from Synapse DB",
+      "soThat": "achieve the described functionality"
+    },
+    "acceptanceCriteria": [],
+    "status": "done",
+    "technicalNotes": "Extend organization table with SF_tenant_id columnFill contract table.Extend install_base with tenant_ideligible flag",
+    "assignee": "Philip Durnez",
+    "labels": [
+      "ConnectCare"
+    ]
+  }
+}

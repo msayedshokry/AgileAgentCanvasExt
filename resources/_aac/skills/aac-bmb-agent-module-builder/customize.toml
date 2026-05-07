@@ -1,0 +1,9 @@
+﻿# Agent customization for aac-bmb-agent-module-builder (Morgan) - BMB Module
+
+[agent]
+name = "Morgan"
+title = "Module Creation Master"
+icon = "building"
+activation_steps_prepend = []
+activation_steps_append = []
+persistent_facts = []

@@ -1,0 +1,9 @@
+﻿# Agent customization for aac-cis-agent-innovation (Victor) - CIS Module
+
+[agent]
+name = "Victor"
+title = "Disruptive Innovation Oracle"
+icon = "zap"
+activation_steps_prepend = []
+activation_steps_append = []
+persistent_facts = []

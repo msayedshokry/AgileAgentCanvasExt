@@ -1,0 +1,30 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "story",
+    "workflowName": "agileagentcanvas",
+    "projectName": "",
+    "timestamps": {
+      "lastModified": "2026-04-12T14:12:31.857Z"
+    },
+    "status": "in-progress"
+  },
+  "content": {
+    "id": "JIRA:MI0436-10201",
+    "title": "Link SF Display asset to a SF Tenant",
+    "userStory": {
+      "asA": "user",
+      "iWant": "Link SF Display asset to a SF Tenant",
+      "soThat": "achieve the described functionality"
+    },
+    "acceptanceCriteria": [],
+    "status": "in-progress",
+    "technicalNotes": "GoalWhen a Display is published to QAWeb Enterprise as part of an organization, this link should be replicated to SalesForce as the Tenant field of the asset.ImplementationNeed to lookup asset_id in install_base table based on model_name and serial (only data which can be acquired via discovery, not via communication - part number, …)Call SalesForce only when tenant is updated.Join below tables and filter on the asset which got the most recent update.assetsinstall_baseorganizationsIf the assets.org_id differs from organizations.id, it needs to be synced to SalesForce.For those assets, we call the ProductExperienceAPI (patch) to set the tenants field of the asset to the ID we have in our organizations table.",
+    "assignee": "Philip Durnez",
+    "labels": [
+      "2025-Q1",
+      "2025-Q2-candidate",
+      "2025-Q3"
+    ]
+  }
+}

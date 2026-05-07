@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "story",
+    "workflowName": "agileagentcanvas",
+    "projectName": "",
+    "timestamps": {
+      "lastModified": "2026-04-12T14:12:31.875Z"
+    },
+    "status": "done"
+  },
+  "content": {
+    "id": "JIRA:MI0436-11317",
+    "title": "BackOffice shows ConnectCare contract + override",
+    "userStory": {
+      "asA": "user",
+      "iWant": "BackOffice shows ConnectCare contract + override",
+      "soThat": "achieve the described functionality"
+    },
+    "acceptanceCriteria": [],
+    "status": "done",
+    "technicalNotes": "For selected roles, the user ca set the ConnectCare override based on a start + stop date.The user can also read out the ConnectCare contract (not override)This is based on the Contracts table which has entries for the type ‘ConnectCare’ and ‘ConnectCareOverride’.",
+    "assignee": "Philip Durnez",
+    "labels": [
+      "ConnectCare"
+    ]
+  }
+}

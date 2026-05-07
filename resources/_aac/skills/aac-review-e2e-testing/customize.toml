@@ -1,0 +1,6 @@
+﻿# Workflow customization for aac-review-e2e-testing
+
+[workflow]
+activation_steps_prepend = []
+activation_steps_append = []
+persistent_facts = []

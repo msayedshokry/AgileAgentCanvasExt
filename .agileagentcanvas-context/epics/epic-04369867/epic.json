@@ -1,0 +1,69 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "epic",
+    "workflowName": "agileagentcanvas",
+    "projectName": "",
+    "timestamps": {
+      "created": "2026-04-12T14:12:31.919Z",
+      "lastModified": "2026-04-12T14:12:31.919Z"
+    },
+    "status": "in-progress",
+    "_llmHint": "This file contains epic metadata and lightweight storyRefs. Full story content is at: stories/{storyId}.json (relative to this file). Do NOT add full story objects to this file — they belong in standalone story files."
+  },
+  "content": {
+    "id": "JIRA:MI0436-9867",
+    "title": "Replicate QAWeb orgs to SalesForce + link orgs to displays.",
+    "goal": "In this epic, we need to:Replicate QAWeb orgs into SalesForce(un)Link SF displays to their SF organization (link, move, unlink)Data model  (see Salesforce System API)Data tablesThese are tables which need to exist in the data platform (SWIT) and which are synced to QAWeb Enterprise.install_baseThe install base table will contain for each display asset:SalesForce IDConnectCare eligible flag on the display.contractsThere needs to be a list with orgs and their contractsasset_contract_linesThere needs to be a list of contract lines per asset.This table contains info:Asset IDStart dateEnd dateContract line type (id)Display nameactiveImplementationWe work with queues to avoid a runtime dependency on the availability of the SalesForce System API.Create tenants in SalesForceflowchart TD\n    User[User]\n    webapi[QAWeb WebAPI]\n    DB@{ shape: cyl, label: \"QAWeb Postgres DB\" }\n    Queue>Event queue]\n    Worker[Worker Lambda]\n    SalesForce[SalesForce System API]\n\n    User --> |Create organization| webapi\n    webapi --> DB\n    webapi --> Queue\n    Queue --> Worker\n    Worker --> |POST /api/v1/sapi-salesforce/tenants|SalesForceThe reply needs to contain the ID of the tenant. This will be put in the organizations table.|id|name|**salesforce-id**|Extend install_base with SF asset IDThe install_base table in the QAWeb DB (which is a mirror of the same table in the Data platform (synapse)) needs to be extended with an assetID field (SalesForce ID)|modelname|serial|shipto-date|warranty-end|**salesforce-id**|Link display to orgPATCH of /api/v1/sapi-salesforce/assets/{assetId} See  (see Salesforce System API){\n    \"tenant\": \"<tenant-id>\"\n}This is called for every display which is moved to an org. We should avoid calling this at every asset registration (calls for displays that remain in an org are unnecessary).Fit criteriaIn SalesForce, a tenant object is created for each of the QAWeb organizations.The SalesForce asset, related to a display is linked to the Tenant via the tenant field. This maps the display to organization relation in QAWeb Enterprise.The link between SalesForce asset and tenant is update when an asset moves between organizations.The link between SalesForce asset and tenant is broken when an asset is deactivated in QAWeb Portal.The system gracefully absorbs outages of the SalesForce System APIFailing tenant creation should be retriedLink displays to an org without salesforce-id should be retried",
+    "functionalRequirements": [],
+    "status": "in-progress",
+    "storyCount": 9,
+    "storyRefs": [
+      {
+        "id": "JIRA:MI0436-10200",
+        "title": "Mark ConnectCare_eligible flag for selected models",
+        "file": "stories/JIRA-MI0436-10200.json"
+      },
+      {
+        "id": "JIRA:MI0436-10201",
+        "title": "Link SF Display asset to a SF Tenant",
+        "file": "stories/JIRA-MI0436-10201.json"
+      },
+      {
+        "id": "JIRA:MI0436-10202",
+        "title": "Link hospital organization to Tenants in SalesForce",
+        "file": "stories/JIRA-MI0436-10202.json"
+      },
+      {
+        "id": "JIRA:MI0436-11317",
+        "title": "BackOffice shows ConnectCare contract + override",
+        "file": "stories/JIRA-MI0436-11317.json"
+      },
+      {
+        "id": "JIRA:MI0436-11316",
+        "title": "Remove licenses table and all related code (such as the connectcare-get-organizations lambda)",
+        "file": "stories/JIRA-MI0436-11316.json"
+      },
+      {
+        "id": "JIRA:MI0436-11318",
+        "title": "Extend cached data from Synapse DB",
+        "file": "stories/JIRA-MI0436-11318.json"
+      },
+      {
+        "id": "JIRA:MI0436-11857",
+        "title": "Add test cases in Windchill",
+        "file": "stories/JIRA-MI0436-11857.json"
+      },
+      {
+        "id": "JIRA:MI0436-12090",
+        "title": "Add QuickSight dashboard to the backoffice for QAWeb-SF sync issues ",
+        "file": "stories/JIRA-MI0436-12090.json"
+      },
+      {
+        "id": "JIRA:MI0436-12337",
+        "title": "Refactor master_displays table",
+        "file": "stories/JIRA-MI0436-12337.json"
+      }
+    ]
+  }
+}

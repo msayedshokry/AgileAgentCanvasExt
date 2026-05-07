@@ -1,0 +1,29 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "epics",
+    "workflowName": "agileagentcanvas",
+    "projectName": "",
+    "timestamps": {
+      "created": "2026-04-12T14:12:31.934Z",
+      "lastModified": "2026-04-12T14:12:31.934Z"
+    },
+    "status": "draft",
+    "_llmHint": "This is a manifest file. Each epic's full content is in a separate file. Epic files: epics/epic-{id}/epic.json (relative to this file) Stories: epics/epic-{id}/stories/{id}.json  (e.g. S-1.2.json — immutable ID, no slugs) Tests: epics/epic-{id}/tests/test-cases.json, test-design.json To read a specific epic, load its file from the epics array below."
+  },
+  "content": {
+    "overview": {
+      "projectName": "",
+      "totalEpics": 1,
+      "totalStories": 9
+    },
+    "epics": [
+      {
+        "id": "JIRA:MI0436-9867",
+        "title": "Replicate QAWeb orgs to SalesForce + link orgs to displays.",
+        "status": "in-progress",
+        "file": "epics/epic-jira-mi0436-9867/epic.json"
+      }
+    ]
+  }
+}

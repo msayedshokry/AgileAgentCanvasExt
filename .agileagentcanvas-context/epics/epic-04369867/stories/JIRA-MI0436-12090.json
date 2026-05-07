@@ -1,0 +1,24 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "story",
+    "workflowName": "agileagentcanvas",
+    "projectName": "",
+    "timestamps": {
+      "lastModified": "2026-04-12T14:12:31.900Z"
+    },
+    "status": "draft"
+  },
+  "content": {
+    "id": "JIRA:MI0436-12090",
+    "title": "Add QuickSight dashboard to the backoffice for QAWeb-SF sync issues ",
+    "userStory": {
+      "asA": "user",
+      "iWant": "Add QuickSight dashboard to the backoffice for QAWeb-SF sync issues",
+      "soThat": "achieve the described functionality"
+    },
+    "acceptanceCriteria": [],
+    "status": "draft",
+    "technicalNotes": "Data to show:missing warranty dates, duplicate serial numbersunmatched displaysmissing partnummers…"
+  }
+}

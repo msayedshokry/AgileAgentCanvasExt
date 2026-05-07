@@ -1,0 +1,31 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "story",
+    "workflowName": "agileagentcanvas",
+    "projectName": "",
+    "timestamps": {
+      "lastModified": "2026-04-12T14:12:31.867Z"
+    },
+    "status": "done"
+  },
+  "content": {
+    "id": "JIRA:MI0436-10202",
+    "title": "Link hospital organization to Tenants in SalesForce",
+    "userStory": {
+      "asA": "user",
+      "iWant": "Link hospital organization to Tenants in SalesForce",
+      "soThat": "achieve the described functionality"
+    },
+    "acceptanceCriteria": [],
+    "status": "done",
+    "technicalNotes": "GoalWhile creating a QAWeb organization, a corresponding Tenant object in SalesForce should be created. The tenant link should be available in the QAWeb DB.ImplementationA daily lambda will check the QAWeb Organizations table. For every org where the SF_tenant_id is NULL, it will call CustomerExperienceAPI to create a tenant. The resulting tenant_id will be filled in the QAWeb Organizations table.",
+    "assignee": "Philip Durnez",
+    "labels": [
+      "2025-Q1",
+      "2025-Q2-candidate",
+      "2025-Q3",
+      "goal"
+    ]
+  }
+}

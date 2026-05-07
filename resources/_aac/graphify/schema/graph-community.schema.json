@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GraphCommunity",
+  "description": "A community (cluster) of code nodes extracted from a graphify knowledge graph",
+  "type": "object",
+  "required": ["kind", "id", "label"],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "const": "code-community"
+    },
+    "id": {
+      "type": "string",
+      "description": "Unique community identifier, e.g. comm-3"
+    },
+    "label": {
+      "type": "string",
+      "description": "Human-readable community name, e.g. Auth & Session"
+    },
+    "godNodes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Highest-degree concept nodes in this community"
+    },
+    "files": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Source files belonging to this community"
+    },
+    "size": {
+      "type": "number",
+      "description": "Number of nodes in the community"
+    },
+    "neighbors": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Adjacent community IDs"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Plain-language summary of the community's responsibility"
+    }
+  },
+  "additionalProperties": false
+}

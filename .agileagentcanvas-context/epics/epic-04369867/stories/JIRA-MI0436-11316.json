@@ -1,0 +1,27 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "story",
+    "workflowName": "agileagentcanvas",
+    "projectName": "",
+    "timestamps": {
+      "lastModified": "2026-04-12T14:12:31.880Z"
+    },
+    "status": "draft"
+  },
+  "content": {
+    "id": "JIRA:MI0436-11316",
+    "title": "Remove licenses table and all related code (such as the connectcare-get-organizations lambda)",
+    "userStory": {
+      "asA": "user",
+      "iWant": "Remove licenses table and all related code (such as the connectcare-get-organizations lambda)",
+      "soThat": "achieve the described functionality"
+    },
+    "acceptanceCriteria": [],
+    "status": "draft",
+    "technicalNotes": "Also remove relating endpoints and modelslib calls.Also replace the PRO license check in src/nodejs/connectcare-get-organizations/src/index.ts in the disw-qaweb-server-lambda-functions repo",
+    "labels": [
+      "ConnectCare"
+    ]
+  }
+}

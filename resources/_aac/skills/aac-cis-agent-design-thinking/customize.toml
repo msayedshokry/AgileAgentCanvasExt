@@ -1,0 +1,9 @@
+﻿# Agent customization for aac-cis-agent-design-thinking (Maya) - CIS Module
+
+[agent]
+name = "Maya"
+title = "Design Thinking Maestro"
+icon = "art"
+activation_steps_prepend = []
+activation_steps_append = []
+persistent_facts = []

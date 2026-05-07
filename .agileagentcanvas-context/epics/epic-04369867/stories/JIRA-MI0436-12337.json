@@ -1,0 +1,29 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "story",
+    "workflowName": "agileagentcanvas",
+    "projectName": "",
+    "timestamps": {
+      "lastModified": "2026-04-12T14:12:31.908Z"
+    },
+    "status": "done"
+  },
+  "content": {
+    "id": "JIRA:MI0436-12337",
+    "title": "Refactor master_displays table",
+    "userStory": {
+      "asA": "user",
+      "iWant": "Refactor master_displays table",
+      "soThat": "achieve the described functionality"
+    },
+    "acceptanceCriteria": [],
+    "status": "done",
+    "storyPoints": 8,
+    "technicalNotes": "GoalWe need to make the sync from SAP/SalesForce to QAWeb more robust. One of the weak aspects is that QAWeb only fetches information from known part numbers.SolutionReplace the master_displays table by two new tables: a warranty and default_use tablewarranty tableIntroduce a warranty table containing these fields:|part_number|edid_id|model_name|guaranteed_lifetime_hrs|end_of_service_date|end_of_life_dateThe sync between QAWeb and SAP/SalesForce will be based on a fixed query. The sync will take input from SalesForce/SAP and fills the warranty table.Query to populate the warranty table (this query can still be fine tuned, eg. to filter out MXRT and MXRV assets):\tSELECT\n\tm.[MaterialCode],\n\tm.[Material],\n\tm.[EstimatedEOSDate],\n\tm.[EstimatedEOLDate],\n\tmcce.[GuaranteedLifeTimeHRS],\n\tFROM [bsc].[v_Material] AS m\n\tLEFT JOIN [bsc].[v_MaterialClassCharESG] AS mcce ON m.MaterialCode = mcce.MaterialCode\n\twhere [ProfitCenterCode] = 'F0023'\n\tAND [InterfaceMatToSalesForce] = 'YES'\n\tAND [CICCode] = 'FIN_PROD_GEN'\n\tAND (m.[MaterialCode] LIKE 'K93%' OR m.[MaterialCode] = '991932582012');Filter out display controllers:\tSELECT\r\n\tm.[MaterialCode] as ,\r\n\tm.[Material],\r\n\tm.[EstimatedEOSDate],\r\n\tm.[EstimatedEOLDate],\r\n\tm.[MaterialHierarchyLev1],\r\n\tmcce.[GuaranteedLifeTimeHRS]\r\n\tFROM [bsc].[v_Material] AS m\r\n\tLEFT JOIN [bsc].[v_MaterialClassCharESG] AS mcce ON m.MaterialCode = mcce.MaterialCode\r\n\twhere [ProfitCenterCode] = 'F0023'\r\n\tAND [InterfaceMatToSalesForce] = 'YES'\r\n\tAND [CICCode] = 'FIN_PROD_GEN'\r\n\tAND (m.[MaterialCode] LIKE 'K93%' OR m.[MaterialCode] = '991932582012')\r\n\tAND m.[MaterialHierarchyLev1] != 'MEDICAL GRAPHIC CONTROLLERS';\r\n\rPlease note that 1X and 2X are no longer stripped from the part number.default_use tableIntroduce a default_use table used to lookup the default_use of a newly registered display.|edid_id|edid_name|default_use|This table will be filled up manually via migrations.The edid_name field is only used to print the list of supported displays in the manual.install_base tableThe install_base table will contain all SF assets  whose part number appears in the warranty table.The ibase_ingestion lambda that runs daily to sync this table with SF needs to take into account that 1X and 2X are no longer stripped from the part number.BackOffice EditorThe current BackOffice editor is working on the master_displays table. We will remove the editor completely.",
+    "assignee": "Philip Durnez",
+    "labels": [
+      "goal"
+    ]
+  }
+}

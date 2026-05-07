@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0.0",
+    "artifactType": "story",
+    "workflowName": "agileagentcanvas",
+    "projectName": "",
+    "timestamps": {
+      "lastModified": "2026-04-12T14:12:31.809Z"
+    },
+    "status": "draft"
+  },
+  "content": {
+    "id": "JIRA:MI0436-10200",
+    "title": "Mark ConnectCare_eligible flag for selected models",
+    "userStory": {
+      "asA": "user",
+      "iWant": "Mark ConnectCare_eligible flag for selected models",
+      "soThat": "achieve the described functionality"
+    },
+    "acceptanceCriteria": [],
+    "status": "draft",
+    "technicalNotes": "GoalVia a SalesForce API, the displays which need to be eligible for ConnectCare will be marked to true.Criteria:Organization has an active ConnectCare contract. This rule got removed. All assets get an eligible flag.Display model is not End-Of-ServiceDisplay age is less than 8 years old.Backlight runtime is less than 100% of model warranty maximumDisplay is not an MDMC-12133Display is not an MDRCImplementationImplementation via a lambda running daily.Active ConnectCare contract?This will use the service_contracts table which is synced from the Data Product.Service_contracts:FieldDescriptiontypeIs this a ConnectCare contract?tenant_idID of the tenant of the contract. This field is linked to a QAWeb OrganizationstartStart date of the contractendEnd date of the contractIs display model not End-Of-Service?Lookup the display in the  install_base table (based on the display’s sf_asset_id)Get the part_number from the install_base table, and look it up in the master_data table: this gives an end-of-service date for the model.Is the display age < 8Y ?Do not use the shipping date, since this is not correct in case of a swapThe warranty end date is updated after a swap, but the shipping date isn'tprocedure to check the criterium:Lookup the display in the  install_base table (based on the display’s sf_asset_id): this gives the warranty_end_date  date for the displayCriterium is passed if warranty_end_date + 2 year is not passed yet.if warranty_end_date is missing -> criterium is passed (as if the display would have an infinite warranty) -> generate an alarm(report a missing warranty end date in SF for given display)Backlight runtime is less than 100% of model warranty maximum?Get the warranty maximum from the master_data table associated to a part_number. If there is no backlight data known in QAWeb (because there is no communication), the display should not be eligible.",
+    "labels": [
+      "2025-Q2-candidate",
+      "2025-Q3"
+    ]
+  }
+}

@@ -613,11 +613,11 @@ interface ElicitationMethod {
 }
 
 /**
- * Parse the methods.csv bundled under resources/_aac/core/workflows/advanced-elicitation/
+ * Parse the methods.csv bundled under resources/_aac/skills/bmad-advanced-elicitation/
  * Returns an array of ElicitationMethod objects.
  */
 export function loadElicitationMethods(extensionUri: vscode.Uri): ElicitationMethod[] {
-    const csvPath = path.join(extensionUri.fsPath, 'resources', BMAD_RESOURCE_DIR, 'core', 'workflows', 'advanced-elicitation', 'methods.csv');
+    const csvPath = path.join(extensionUri.fsPath, 'resources', BMAD_RESOURCE_DIR, 'skills', 'bmad-advanced-elicitation', 'methods.csv');
 
     try {
         const raw = fs.readFileSync(csvPath, 'utf-8');
@@ -1098,21 +1098,117 @@ function parseWorkflowFile(filePath: string): { name: string; description: strin
 }
 
 /**
- * Scan the given root for bundled BMM workflows and return all discovered workflows.
+ * Scan the skills/ directory for all non-agent workflow skills and return them.
  * The caller passes the extension's bundled resources path (e.g. `<extensionPath>/resources`).
  */
 export function loadBmmWorkflows(resourcesRoot: string): BmmWorkflowInfo[] {
-    const workflowsRoot = path.join(resourcesRoot, BMAD_RESOURCE_DIR, 'bmm', 'workflows');
-    acOutput.appendLine(`[Extension] loadBmmWorkflows: scanning ${workflowsRoot}`);
+    const skillsRoot = path.join(resourcesRoot, BMAD_RESOURCE_DIR, 'skills');
+    acOutput.appendLine(`[Extension] loadBmmWorkflows: scanning ${skillsRoot}`);
 
-    if (!fs.existsSync(workflowsRoot)) {
+    if (!fs.existsSync(skillsRoot)) {
         acOutput.appendLine(`[Extension] loadBmmWorkflows: directory not found`);
         return [];
     }
 
     const results: BmmWorkflowInfo[] = [];
 
-    // Walk the top-level phase folders
+    let entries: fs.Dirent[];
+    try {
+        entries = fs.readdirSync(skillsRoot, { withFileTypes: true });
+    } catch {
+        return [];
+    }
+
+    for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
+        // Skip agent skills — they're personas, not workflows
+        if (entry.name.includes('agent')) continue;
+
+        const skillDir = path.join(skillsRoot, entry.name);
+        const skillMdPath = path.join(skillDir, 'SKILL.md');
+        if (!fs.existsSync(skillMdPath)) continue;
+
+        const parsed = parseWorkflowFile(skillMdPath);
+        if (!parsed) continue;
+
+        const phaseInfo = resolveSkillPhase(entry.name);
+        results.push({
+            id: entry.name,
+            name: parsed.name || entry.name,
+            description: parsed.description,
+            triggerPhrase: extractTriggerPhrase(parsed.description),
+            phase: phaseInfo.label,
+            phaseOrder: phaseInfo.order,
+            workflowFilePath: skillMdPath,
+        });
+    }
+
+    // Also scan legacy bmm/workflows/ if it still exists (transition support)
+    const legacyRoot = path.join(resourcesRoot, BMAD_RESOURCE_DIR, 'bmm', 'workflows');
+    if (fs.existsSync(legacyRoot)) {
+        const legacyWorkflows = loadLegacyBmmWorkflows(legacyRoot);
+        // Only add legacy workflows whose IDs don't conflict with skill-based ones
+        const existingIds = new Set(results.map(r => r.id));
+        for (const wf of legacyWorkflows) {
+            if (!existingIds.has(wf.id)) {
+                results.push(wf);
+            }
+        }
+    }
+
+    acOutput.appendLine(`[Extension] loadBmmWorkflows: found ${results.length} workflows`);
+    return results;
+}
+
+/**
+ * Derive the phase label + sort order from a skill name.
+ */
+function resolveSkillPhase(skillName: string): { label: string; order: number } {
+    // bmad-* core workflows
+    if (skillName.startsWith('bmad-product-brief') || skillName.startsWith('bmad-domain') || skillName.startsWith('bmad-market')) {
+        return { label: 'Analysis', order: 1 };
+    }
+    if (skillName.startsWith('bmad-create-prd') || skillName.startsWith('bmad-edit-prd') || skillName.startsWith('bmad-validate-prd') || skillName.startsWith('bmad-create-epics') || skillName.startsWith('bmad-sprint')) {
+        return { label: 'Planning', order: 2 };
+    }
+    if (skillName.startsWith('bmad-create-architecture') || skillName.startsWith('bmad-create-ux') || skillName.startsWith('bmad-create-story')) {
+        return { label: 'Solutioning', order: 3 };
+    }
+    if (skillName.startsWith('bmad-dev-story') || skillName.startsWith('bmad-quick-dev') || skillName.startsWith('bmad-qa-generate')) {
+        return { label: 'Implementation', order: 4 };
+    }
+    if (skillName.startsWith('bmad-quick')) {
+        return { label: 'Quick Flow', order: 5 };
+    }
+    if (skillName.startsWith('bmad-document') || skillName.startsWith('bmad-generate') || skillName.startsWith('aac-generate') || skillName.startsWith('bmad-index-docs')) {
+        return { label: 'Documentation', order: 6 };
+    }
+    // TEA workflows
+    if (skillName.startsWith('aac-tea')) {
+        return { label: 'Testing', order: 7 };
+    }
+    // CIS workflows
+    if (skillName.startsWith('aac-cis')) {
+        return { label: 'Creative', order: 8 };
+    }
+    // BMB workflows
+    if (skillName.startsWith('aac-bmb')) {
+        return { label: 'Meta-Build', order: 9 };
+    }
+    // Review skills
+    if (skillName.startsWith('aac-review') || skillName.startsWith('bmad-review')) {
+        return { label: 'Review', order: 10 };
+    }
+    // Supporting / misc
+    return PHASE_MAP[skillName] ?? { label: 'Supporting', order: 11 };
+}
+
+/**
+ * Legacy scanner for the old bmm/workflows/ directory tree (transition support).
+ */
+function loadLegacyBmmWorkflows(workflowsRoot: string): BmmWorkflowInfo[] {
+    const results: BmmWorkflowInfo[] = [];
+
     const topEntries = fs.readdirSync(workflowsRoot, { withFileTypes: true });
     for (const topEntry of topEntries) {
         if (!topEntry.isDirectory()) continue;
@@ -1120,13 +1216,11 @@ export function loadBmmWorkflows(resourcesRoot: string): BmmWorkflowInfo[] {
         const phaseInfo = PHASE_MAP[topFolder] ?? { label: topFolder, order: 99 };
         const topPath = path.join(workflowsRoot, topFolder);
 
-        // Check if there's a workflow file directly in this top-level folder
         const directFiles = ['workflow.yaml', 'workflow.yml', 'workflow.md']
             .map(f => path.join(topPath, f))
             .filter(f => fs.existsSync(f));
 
         if (directFiles.length > 0) {
-            // Top-level single-file workflow (e.g. document-project/workflow.yaml)
             const parsed = parseWorkflowFile(directFiles[0]);
             if (parsed) {
                 results.push({
@@ -1141,14 +1235,12 @@ export function loadBmmWorkflows(resourcesRoot: string): BmmWorkflowInfo[] {
             }
         }
 
-        // Also walk subdirectories (e.g. 1-analysis/create-product-brief/)
         const subEntries = fs.readdirSync(topPath, { withFileTypes: true });
         for (const subEntry of subEntries) {
             if (!subEntry.isDirectory()) continue;
             const subFolder = subEntry.name;
             const subPath = path.join(topPath, subFolder);
 
-            // Look for any workflow file (including workflow-*.md variants in research/)
             const subFiles = fs.readdirSync(subPath)
                 .filter(f => (f === 'workflow.yaml' || f === 'workflow.yml' || f.startsWith('workflow') && f.endsWith('.md')))
                 .map(f => path.join(subPath, f));
@@ -1171,7 +1263,6 @@ export function loadBmmWorkflows(resourcesRoot: string): BmmWorkflowInfo[] {
         }
     }
 
-    acOutput.appendLine(`[Extension] loadBmmWorkflows: found ${results.length} workflows`);
     return results;
 }
 

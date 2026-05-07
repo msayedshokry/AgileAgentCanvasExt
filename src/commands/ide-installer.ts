@@ -258,55 +258,60 @@ function yamlQuote(value: string): string {
 
 function agentSkillContent(artifact: Artifact, bmadResourcePath: string, extensionVersion?: string): string {
     const versionStamp = extensionVersion ? `\n<!-- aac-version: ${extensionVersion} -->` : '';
-    return `---
-name: ${yamlQuote(artifact.skillName)}
-description: ${yamlQuote(artifact.description)}
----${versionStamp}
-
-You must fully embody this agent's persona and follow all activation instructions exactly as specified. NEVER break character until given an exit command.
-
-<variable-resolution>
-In all BMAD resource files, the template variable {bmad-path} refers to the absolute path to the BMAD framework resources directory: ${bmadResourcePath}
-The template variable {project-root} refers to the workspace/project root directory.
-</variable-resolution>
-
-<agent-activation CRITICAL="TRUE">
-1. LOAD the FULL agent file from ${bmadResourcePath}/${artifact.relativePath}
-2. READ its entire contents - this contains the complete agent persona, menu, and instructions
-3. FOLLOW every step in the <activation> section precisely
-4. DISPLAY the welcome/greeting as instructed
-5. PRESENT the numbered menu
-6. WAIT for user input before proceeding
-</agent-activation>
-`;
+    // Read the source SKILL.md directly and prepend variable resolution + version stamp
+    const sourcePath = path.join(bmadResourcePath, artifact.relativePath);
+    try {
+        const sourceContent = fs.readFileSync(sourcePath, 'utf-8');
+        // If the source has frontmatter, inject version stamp after the closing ---
+        const fmEnd = sourceContent.indexOf('---', sourceContent.indexOf('---') + 3);
+        if (fmEnd > 0) {
+            return sourceContent.substring(0, fmEnd + 3) + versionStamp + '\n\n' +
+                `<variable-resolution>\nIn all BMAD resource files, the template variable {bmad-path} refers to: ${bmadResourcePath}\nThe template variable {project-root} refers to the workspace/project root directory.\nThe template variable {skill-root} refers to: ${bmadResourcePath}/skills\n</variable-resolution>\n` +
+                sourceContent.substring(fmEnd + 3);
+        }
+        return `---\nname: ${yamlQuote(artifact.skillName)}\ndescription: ${yamlQuote(artifact.description)}\n---${versionStamp}\n\n` +
+            `<variable-resolution>\nIn all BMAD resource files, the template variable {bmad-path} refers to: ${bmadResourcePath}\nThe template variable {project-root} refers to the workspace/project root directory.\nThe template variable {skill-root} refers to: ${bmadResourcePath}/skills\n</variable-resolution>\n\n` +
+            sourceContent;
+    } catch {
+        // Fallback if source can't be read
+        return `---\nname: ${yamlQuote(artifact.skillName)}\ndescription: ${yamlQuote(artifact.description)}\n---${versionStamp}\n\nLOAD the FULL agent file from ${bmadResourcePath}/${artifact.relativePath}\n`;
+    }
 }
 
 function workflowSkillContent(artifact: Artifact, bmadResourcePath: string): string {
-    return `---
-name: ${yamlQuote(artifact.skillName)}
-description: ${yamlQuote(artifact.description)}
----
-
-In all BMAD resource files, the template variable {bmad-path} resolves to: ${bmadResourcePath}
-The template variable {project-root} refers to the workspace/project root directory.
-
-IT IS CRITICAL THAT YOU FOLLOW THIS COMMAND: LOAD the FULL ${bmadResourcePath}/${artifact.relativePath}, READ its entire contents and follow its directions exactly!
-`;
+    const sourcePath = path.join(bmadResourcePath, artifact.relativePath);
+    try {
+        const sourceContent = fs.readFileSync(sourcePath, 'utf-8');
+        const fmEnd = sourceContent.indexOf('---', sourceContent.indexOf('---') + 3);
+        if (fmEnd > 0) {
+            return sourceContent.substring(0, fmEnd + 3) + '\n\n' +
+                `<variable-resolution>\nIn all BMAD resource files, the template variable {bmad-path} refers to: ${bmadResourcePath}\nThe template variable {project-root} refers to the workspace/project root directory.\nThe template variable {skill-root} refers to: ${bmadResourcePath}/skills\n</variable-resolution>\n` +
+                sourceContent.substring(fmEnd + 3);
+        }
+        return `---\nname: ${yamlQuote(artifact.skillName)}\ndescription: ${yamlQuote(artifact.description)}\n---\n\n` +
+            `<variable-resolution>\nIn all BMAD resource files, the template variable {bmad-path} refers to: ${bmadResourcePath}\nThe template variable {project-root} refers to the workspace/project root directory.\nThe template variable {skill-root} refers to: ${bmadResourcePath}/skills\n</variable-resolution>\n\n` +
+            sourceContent;
+    } catch {
+        return `---\nname: ${yamlQuote(artifact.skillName)}\ndescription: ${yamlQuote(artifact.description)}\n---\n\nLOAD the FULL workflow from ${bmadResourcePath}/${artifact.relativePath}\n`;
+    }
 }
 
 function taskSkillContent(artifact: Artifact, bmadResourcePath: string): string {
-    return `---
-name: ${yamlQuote(artifact.skillName)}
-description: ${yamlQuote(artifact.description)}
----
-
-In all BMAD resource files, the template variable {bmad-path} resolves to: ${bmadResourcePath}
-The template variable {project-root} refers to the workspace/project root directory.
-
-Read the entire task file at: ${bmadResourcePath}/${artifact.relativePath}
-
-Follow all instructions in the task file exactly as written.
-`;
+    const sourcePath = path.join(bmadResourcePath, artifact.relativePath);
+    try {
+        const sourceContent = fs.readFileSync(sourcePath, 'utf-8');
+        const fmEnd = sourceContent.indexOf('---', sourceContent.indexOf('---') + 3);
+        if (fmEnd > 0) {
+            return sourceContent.substring(0, fmEnd + 3) + '\n\n' +
+                `<variable-resolution>\nIn all BMAD resource files, the template variable {bmad-path} refers to: ${bmadResourcePath}\nThe template variable {project-root} refers to the workspace/project root directory.\nThe template variable {skill-root} refers to: ${bmadResourcePath}/skills\n</variable-resolution>\n` +
+                sourceContent.substring(fmEnd + 3);
+        }
+        return `---\nname: ${yamlQuote(artifact.skillName)}\ndescription: ${yamlQuote(artifact.description)}\n---\n\n` +
+            `<variable-resolution>\nIn all BMAD resource files, the template variable {bmad-path} refers to: ${bmadResourcePath}\nThe template variable {project-root} refers to the workspace/project root directory.\nThe template variable {skill-root} refers to: ${bmadResourcePath}/skills\n</variable-resolution>\n\n` +
+            sourceContent;
+    } catch {
+        return `---\nname: ${yamlQuote(artifact.skillName)}\ndescription: ${yamlQuote(artifact.description)}\n---\n\nRead the task file at: ${bmadResourcePath}/${artifact.relativePath}\n`;
+    }
 }
 
 function skillContent(artifact: Artifact, bmadResourcePath: string, extensionVersion?: string): string {
@@ -366,59 +371,36 @@ function parseCsvLine(line: string): string[] {
     return fields;
 }
 
-/** Load all installable artifacts from BMAD manifests */
+/** Load all installable artifacts from the unified skill-manifest.csv */
 function loadArtifacts(bmadResourcePath: string): Artifact[] {
     const configDir = path.join(bmadResourcePath, '_config');
     const artifacts: Artifact[] = [];
 
-    // ── Agents ──
-    const agentManifestPath = path.join(configDir, 'agent-manifest.csv');
-    if (fs.existsSync(agentManifestPath)) {
-        const records = parseCsv(fs.readFileSync(agentManifestPath, 'utf-8'));
+    const skillManifestPath = path.join(configDir, 'skill-manifest.csv');
+    if (fs.existsSync(skillManifestPath)) {
+        const records = parseCsv(fs.readFileSync(skillManifestPath, 'utf-8'));
         for (const rec of records) {
             const name = rec['name'] ?? '';
+            const type = (rec['type'] ?? 'workflow') as 'agent' | 'workflow' | 'task';
             const module = rec['module'] ?? 'core';
-            const filePath = rec['path'] ?? '';
-            if (!name || !filePath) continue;
+            let desc = rec['description'] || `${name} ${type}`;
 
-            // Derive relative path from _aac/ prefix
-            const relativePath = filePath.replace(/^_aac\//, '');
+            if (!name) continue;
 
-            // Namespaced naming: agileagentcanvas-agent-{name} (flat, no module sub-prefix)
-            const skillName = `agileagentcanvas-agent-${name}`;
+            // Path is implied: skills/{name}/SKILL.md
+            const relativePath = `skills/${name}/SKILL.md`;
 
-            artifacts.push({
-                type: 'agent',
-                skillName,
-                displayName: rec['displayName'] || name,
-                description: rec['title'] || `${name} agent`,
-                module,
-                relativePath,
-            });
-        }
-    }
-
-    // ── Workflows ──
-    const workflowManifestPath = path.join(configDir, 'workflow-manifest.csv');
-    if (fs.existsSync(workflowManifestPath)) {
-        const records = parseCsv(fs.readFileSync(workflowManifestPath, 'utf-8'));
-        for (const rec of records) {
-            const name = rec['name'] ?? '';
-            const module = rec['module'] ?? 'core';
-            const filePath = rec['path'] ?? '';
-            if (!name || !filePath) continue;
-
-            const relativePath = filePath.replace(/^_aac\//, '');
-            // Extract a clean description (strip trigger phrase info)
-            let desc = rec['description'] || `${name} workflow`;
+            // Strip trigger phrases from description for cleaner frontmatter
             const useIdx = desc.indexOf('. Use when');
             if (useIdx > 0) desc = desc.substring(0, useIdx);
 
-            // Namespaced naming: agileagentcanvas-{name} (flat, no module sub-prefix)
-            const skillName = `agileagentcanvas-${name}`;
+            // Namespaced target skill name for the IDE
+            const skillName = type === 'agent'
+                ? `agileagentcanvas-agent-${name}`
+                : `agileagentcanvas-${name}`;
 
             artifacts.push({
-                type: 'workflow',
+                type,
                 skillName,
                 displayName: name,
                 description: desc,
@@ -428,37 +410,7 @@ function loadArtifacts(bmadResourcePath: string): Artifact[] {
         }
     }
 
-    // ── Tasks ──
-    const taskManifestPath = path.join(configDir, 'task-manifest.csv');
-    if (fs.existsSync(taskManifestPath)) {
-        const records = parseCsv(fs.readFileSync(taskManifestPath, 'utf-8'));
-        for (const rec of records) {
-            const name = rec['name'] ?? '';
-            const module = rec['module'] ?? 'core';
-            const filePath = rec['path'] ?? '';
-            const standalone = rec['standalone'] ?? 'true';
-            if (!name || !filePath || standalone === 'false') continue;
-
-            const relativePath = filePath.replace(/^_aac\//, '');
-            let desc = rec['description'] || rec['displayName'] || `${name} task`;
-            const useIdx = desc.indexOf('. Use');
-            if (useIdx > 0) desc = desc.substring(0, useIdx);
-
-            // Namespaced naming: agileagentcanvas-{name} (flat, no module sub-prefix)
-            const skillName = `agileagentcanvas-${name}`;
-
-            artifacts.push({
-                type: 'task',
-                skillName,
-                displayName: rec['displayName'] || name,
-                description: desc,
-                module,
-                relativePath,
-            });
-        }
-    }
-
-    // Validate that source files exist
+    // Validate that source skill directories exist
     return artifacts.filter(a => {
         const fullPath = path.join(bmadResourcePath, a.relativePath);
         return fs.existsSync(fullPath);
@@ -622,30 +574,28 @@ interface WorkflowStub {
  * Undefined means the stub is VS Code-only (keeps delegation body).
  */
 const STUB_TO_MANIFEST: Record<string, string | undefined> = {
-    'dev': 'bmm/workflows/4-implementation/dev-story/workflow.yaml',
-    'review': 'bmm/workflows/4-implementation/code-review/workflow.yaml',
-    'sprint': 'bmm/workflows/4-implementation/sprint-planning/workflow.yaml',
-    'quick': 'bmm/workflows/bmad-quick-flow/quick-spec/workflow.md',
-    'epics': 'bmm/workflows/3-solutioning/create-epics-and-stories/workflow.md',
-    'stories': 'bmm/workflows/4-implementation/create-story/workflow.yaml',
-    'readiness': 'bmm/workflows/3-solutioning/check-implementation-readiness/workflow.md',
-    'ux': 'bmm/workflows/2-plan-workflows/create-ux-design/workflow.md',
-    'requirements': 'bmm/workflows/2-plan-workflows/create-prd/workflow-create-prd.md',
-    'vision': 'bmm/workflows/1-analysis/create-product-brief/workflow.md',
-    'context': 'bmm/workflows/generate-project-context/workflow.md',
-    'convert-to-json': 'core/workflows/convert-to-json/workflow.md',
-    'design-thinking': 'cis/workflows/design-thinking/workflow.yaml',
-    'innovate': 'cis/workflows/innovation-strategy/workflow.yaml',
-    'solve': 'cis/workflows/problem-solving/workflow.yaml',
-    'story-craft': 'cis/workflows/storytelling/workflow.yaml',
-    // VS Code-only — no CLI equivalent (depend on VS Code extension APIs)
-    'enhance': 'bmm/workflows/3-solutioning/create-epics-and-stories/steps/step-02a-epic-enhancement.md',
-    'elicit': 'core/workflows/advanced-elicitation/workflow.xml',
-    'document': 'bmm/workflows/document-project/workflow.yaml',
-    'review-code': 'bmm/workflows/4-implementation/code-review/workflow.yaml',
-    'ci': 'tea/workflows/testarch/ci/workflow.yaml',
-    'party': 'core/workflows/party-mode/workflow.md',
-
+    'dev': 'skills/bmad-dev-story/SKILL.md',
+    'review': 'skills/bmad-review-adversarial-general/SKILL.md',
+    'sprint': 'skills/bmad-sprint-planning/SKILL.md',
+    'quick': 'skills/bmad-quick-dev/SKILL.md',
+    'epics': 'skills/bmad-create-epics-and-stories/SKILL.md',
+    'stories': 'skills/bmad-create-story/SKILL.md',
+    'readiness': 'skills/bmad-check-implementation-readiness/SKILL.md',
+    'ux': 'skills/bmad-create-ux-design/SKILL.md',
+    'requirements': 'skills/bmad-create-prd/SKILL.md',
+    'vision': 'skills/bmad-product-brief/SKILL.md',
+    'context': 'skills/bmad-generate-project-context/SKILL.md',
+    'convert-to-json': 'skills/bmad-to-json/SKILL.md',
+    'design-thinking': 'skills/aac-cis-design-thinking/SKILL.md',
+    'innovate': 'skills/aac-cis-innovation-strategy/SKILL.md',
+    'solve': 'skills/aac-cis-problem-solving/SKILL.md',
+    'story-craft': 'skills/aac-cis-storytelling/SKILL.md',
+    'enhance': 'skills/bmad-create-epics-and-stories/SKILL.md',
+    'elicit': 'skills/bmad-advanced-elicitation/SKILL.md',
+    'document': 'skills/bmad-document-project/SKILL.md',
+    'review-code': 'skills/bmad-code-review/SKILL.md',
+    'ci': 'skills/aac-tea-ci/SKILL.md',
+    'party': 'skills/bmad-party-mode/SKILL.md',
     // VS Code-only — no CLI equivalent (depend on VS Code extension APIs)
     'refine': undefined,
 };

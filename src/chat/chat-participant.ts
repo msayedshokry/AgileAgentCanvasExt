@@ -12,6 +12,9 @@ import {
     formatStoriesAsMarkdown,
     mergeJiraIntoArtifacts
 } from '../integrations/jira-importer';
+import { loadReport, detectGraphify } from '../integrations/graphify';
+import { graphQuery } from '../integrations/graphify/graph-query';
+import { loadGraph, loadCommunities } from '../integrations/graphify/graph-loader';
 
 /**
  * AgileAgentCanvas Chat Participant - Integrates with VS Code Copilot Chat
@@ -90,7 +93,11 @@ export class AgileAgentCanvasChatParticipant {
             'readme': () => this.handleReadmeCommand(prompt, context, stream, token),
             'changelog': () => this.handleChangelogCommand(prompt, context, stream, token),
             'api-docs': () => this.handleApiDocsCommand(prompt, context, stream, token),
-            'jira': () => this.handleJiraCommand(prompt, stream)
+            'jira': () => this.handleJiraCommand(prompt, stream),
+            'graph': () => this.handleGraphCommand(prompt, stream),
+            'graph-query': () => this.handleGraphQueryCommand(prompt, stream),
+            'graph-bootstrap': () => this.handleGraphBootstrapCommand(stream),
+            'graph-update': () => this.handleGraphUpdateCommand(stream)
         };
 
         const handler = handlers[command];
@@ -154,6 +161,7 @@ export class AgileAgentCanvasChatParticipant {
         const artifactContext = this.buildArtifactContext();
         const history = this.buildHistory(context);
         const bmadContext = this.buildBmadMethodologyContext();
+        const graphContext = this.buildGraphContext();
 
         // ── Detect active workflow session (checkpoint resumption) ───────
         // When the LLM stops at a checkpoint during executeWithTools(), the
@@ -192,6 +200,7 @@ export class AgileAgentCanvasChatParticipant {
                     vscode.LanguageModelChatMessage.User(systemPrompt + outputFormatHint + workflowResumeHint),
                     vscode.LanguageModelChatMessage.User(`BMAD methodology context:\n${bmadContext}`),
                     vscode.LanguageModelChatMessage.User(`Current project state:\n${artifactContext}`),
+                    ...(graphContext ? [vscode.LanguageModelChatMessage.User(`Codebase knowledge graph:\n${graphContext}`)] : []),
                     vscode.LanguageModelChatMessage.User(`Conversation history:\n${history}`),
                     vscode.LanguageModelChatMessage.User(`User message: ${prompt}`)
                 ];
@@ -260,6 +269,7 @@ export class AgileAgentCanvasChatParticipant {
                     { role: 'system', content: systemPrompt + outputFormatHint + workflowResumeHint },
                     { role: 'user', content: `BMAD methodology context:\n${bmadContext}` },
                     { role: 'user', content: `Current project state:\n${artifactContext}` },
+                    ...(graphContext ? [{ role: 'user' as const, content: `Codebase knowledge graph:\n${graphContext}` }] : []),
                     { role: 'user', content: `Conversation history:\n${history}` },
                     { role: 'user', content: `User message: ${prompt}` }
                 ];
@@ -339,6 +349,53 @@ export class AgileAgentCanvasChatParticipant {
      * Build a concise BMAD methodology context string for general conversation.
      * This ensures the LLM stays in BMAD methodology mode even without slash commands.
      */
+    /**
+     * Build a compact graph context block to inject into every LLM conversation.
+     * Returns null if no knowledge graph is present (no-op when graphify not bootstrapped).
+     * Caps at ~3000 chars to avoid token bloat.
+     */
+    private buildGraphContext(): string | null {
+        const root = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath;
+        if (!root) { return null; }
+
+        const status = detectGraphify(root);
+        if (!status.graphPresent) { return null; }
+
+        const graph = loadGraph(root);
+        if (!graph) { return null; }
+
+        const nodeCount = graph.nodes?.length ?? 0;
+        const edgeCount = graph.edges?.length ?? 0;
+        const communities = loadCommunities(root);
+
+        const lines: string[] = [
+            `## Codebase Knowledge Graph (graphify)`,
+            `Nodes: ${nodeCount}  |  Edges: ${edgeCount}  |  Communities: ${communities.length}`,
+            ``
+        ];
+
+        if (communities.length > 0) {
+            lines.push('### Code Communities (clusters)');
+            for (const c of communities.slice(0, 12)) {
+                const gods = c.godNodes.slice(0, 3).join(', ');
+                lines.push(`- **${c.label}** (${c.size} nodes)${gods ? ` — key nodes: ${gods}` : ''}`);
+            }
+            lines.push('');
+        }
+
+        // Append truncated GRAPH_REPORT.md if short enough
+        const report = loadReport(root);
+        if (report) {
+            const truncated = report.length > 2000 ? report.slice(0, 2000) + '\n…(truncated)' : report;
+            lines.push('### GRAPH_REPORT.md (summary)');
+            lines.push(truncated);
+        }
+
+        const result = lines.join('\n');
+        // Hard cap at 3500 chars
+        return result.length > 3500 ? result.slice(0, 3500) + '\n…(truncated)' : result;
+    }
+
     private buildBmadMethodologyContext(): string {
         const executor = getWorkflowExecutor();
         const bmadPath = executor.getBmadPath();
@@ -471,7 +528,7 @@ export class AgileAgentCanvasChatParticipant {
             ? `Refine and enhance the existing product vision. User input: "${prompt || 'improve it'}". Existing vision: ${existingVision}`
             : `Create a new product vision. User description: "${prompt}"`;
 
-        const workflowPath = path.join(executor.getBmadPath(), 'bmm', 'workflows', '1-analysis', 'create-product-brief', 'workflow.md');
+        const workflowPath = path.join(executor.getBmadPath(), 'skills', 'bmad-product-brief', 'SKILL.md');
 
         await executor.executeWithTools(
             model,
@@ -537,7 +594,7 @@ export class AgileAgentCanvasChatParticipant {
                 ? `Extract functional and non-functional requirements from this PRD document. PRD content:\n\n${prdContent.substring(0, 8000)}`
                 : `Extract functional and non-functional requirements from this description. Description: "${sourceText}"`;
 
-            const workflowPath = path.join(executor.getBmadPath(), 'bmm', 'workflows', '2-plan-workflows', 'create-prd', 'workflow-create-prd.md');
+            const workflowPath = path.join(executor.getBmadPath(), 'skills', 'bmad-create-prd', 'SKILL.md');
 
             await executor.executeWithTools(model, task, null, stream, token, this.store, workflowPath);
 
@@ -601,7 +658,7 @@ export class AgileAgentCanvasChatParticipant {
                 ? `Design epics that organize these requirements by user value.\n\nRequirements:\n${reqSummary}${prompt ? `\n\nAdditional instructions: ${prompt}` : ''}`
                 : `Design epics. User description: "${prompt}"`;
 
-            const workflowPath = path.join(executor.getBmadPath(), 'bmm', 'workflows', '3-solutioning', 'create-epics-and-stories', 'workflow.md');
+            const workflowPath = path.join(executor.getBmadPath(), 'skills', 'bmad-create-epics-and-stories', 'SKILL.md');
 
             await executor.executeWithTools(model, task, null, stream, token, this.store, workflowPath);
 
@@ -690,7 +747,7 @@ export class AgileAgentCanvasChatParticipant {
 Epic goal: ${targetEpic.goal || 'Not set'}
 Requirements covered: ${targetEpic.functionalRequirements?.join(', ') || 'None'}${prompt ? `\nAdditional instructions: ${prompt}` : ''}`;
 
-            const workflowPath = path.join(executor.getBmadPath(), 'bmm', 'workflows', '3-solutioning', 'create-epics-and-stories', 'steps', 'step-03-create-stories.md');
+            const workflowPath = path.join(executor.getBmadPath(), 'skills', 'bmad-create-epics-and-stories', 'SKILL.md');
 
             await executor.executeWithTools(
                 model,
@@ -812,15 +869,9 @@ Requirements covered: ${targetEpic.functionalRequirements?.join(', ') || 'None'}
                 : 'all details (use cases, fit criteria, success metrics, risks, definition of done)';
 
             // Route to the most relevant supporting workflow; for "all" fall back to epic-enhancement step
-            const supportingBase = path.join(executor.getBmadPath(), 'bmm', 'workflows', 'supporting');
-            const enhancementStep = path.join(executor.getBmadPath(), 'bmm', 'workflows', '3-solutioning', 'create-epics-and-stories', 'steps', 'step-02a-epic-enhancement.md');
-            const workflowPath = lowerPrompt.includes('use case')
-                ? path.join(supportingBase, 'create-use-cases', 'workflow.yaml')
-                : lowerPrompt.includes('risk')
-                    ? path.join(supportingBase, 'create-risks', 'workflow.yaml')
-                    : lowerPrompt.includes('dod') || lowerPrompt.includes('definition')
-                        ? path.join(supportingBase, 'create-definition-of-done', 'workflow.yaml')
-                        : enhancementStep;
+            const supportingBase = path.join(executor.getBmadPath(), 'skills', 'bmad-create-epics-and-stories');
+            const enhancementStep = path.join(executor.getBmadPath(), 'skills', 'bmad-create-epics-and-stories', 'SKILL.md');
+            const workflowPath = enhancementStep;
 
             const task = `Enhance the epic "${targetEpic.title}" (${targetEpic.id}) with ${enhanceType}.
 Epic goal: ${targetEpic.goal || 'Not set'}
@@ -2031,7 +2082,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
 
         if (subMode === 'status') {
             // Sprint-status workflow — reads existing sprint-status.yaml
-            workflowPath = path.join(bmadPath, 'bmm', 'workflows', '4-implementation', 'sprint-status', 'workflow.yaml');
+            workflowPath = path.join(bmadPath, 'skills', 'bmad-sprint-status', 'SKILL.md');
             task = [
                 'Read and analyze the existing sprint-status.yaml file.',
                 'Summarize the current sprint status: count stories by status, detect risks,',
@@ -2040,7 +2091,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
             ].filter(Boolean).join(' ');
         } else {
             // Sprint-planning workflow — generates sprint-status.yaml from epics
-            workflowPath = path.join(bmadPath, 'bmm', 'workflows', '4-implementation', 'sprint-planning', 'workflow.yaml');
+            workflowPath = path.join(bmadPath, 'skills', 'bmad-sprint-planning', 'SKILL.md');
 
             // Provide epic context from the store
             const epicSummary = epics
@@ -2138,7 +2189,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
 
         // ── Build task description ────────────────────────────────────────
         const bmadPath = executor.getBmadPath();
-        const workflowPath = path.join(bmadPath, 'bmm', 'workflows', '2-plan-workflows', 'create-ux-design', 'workflow.md');
+        const workflowPath = path.join(bmadPath, 'skills', 'bmad-create-ux-design', 'SKILL.md');
 
         // Gather available context from the store
         const state = this.store.getState();
@@ -2252,7 +2303,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
 
         // ── Build task description ────────────────────────────────────────
         const bmadPath = executor.getBmadPath();
-        const workflowPath = path.join(bmadPath, 'bmm', 'workflows', '3-solutioning', 'check-implementation-readiness', 'workflow.md');
+        const workflowPath = path.join(bmadPath, 'skills', 'bmad-create-epics-and-stories', 'SKILL.md');
 
         // Summarise what artifacts exist in the store to give the LLM context
         const state = this.store.getState();
@@ -2361,7 +2412,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
 
         // ── Build agent roster ────────────────────────────────────────────
         const bmadPath = executor.getBmadPath();
-        const workflowPath = path.join(bmadPath, 'core', 'workflows', 'party-mode', 'workflow.md');
+        const workflowPath = path.join(bmadPath, 'skills', 'bmad-party-mode', 'SKILL.md');
 
         const agentEntries = loadAllAgentPersonas(bmadPath);
         const rosterMarkdown = formatAgentRoster(agentEntries);
@@ -2466,7 +2517,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
         }
 
         const bmadPath = executor.getBmadPath();
-        const workflowPath = path.join(bmadPath, 'bmm', 'workflows', 'document-project', 'workflow.yaml');
+        const workflowPath = path.join(bmadPath, 'skills', 'bmad-document-project', 'SKILL.md');
 
         const contextParts: string[] = [
             'Start the document-project workflow. You are Mary, the Business Analyst.',
@@ -2540,7 +2591,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
         }
 
         const bmadPath = executor.getBmadPath();
-        const workflowPath = path.join(bmadPath, 'bmm', 'workflows', '4-implementation', 'code-review', 'workflow.yaml');
+        const workflowPath = path.join(bmadPath, 'skills', 'bmad-review-adversarial-general', 'SKILL.md');
 
         const contextParts: string[] = [
             'Start the adversarial code review workflow. You are Quinn, the QA Engineer.',
@@ -2625,7 +2676,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
         }
 
         const bmadPath = executor.getBmadPath();
-        const workflowPath = path.join(bmadPath, 'tea', 'workflows', 'testarch', 'ci', 'workflow.md');
+        const workflowPath = path.join(bmadPath, 'skills', 'aac-tea-ci', 'SKILL.md');
 
         const contextParts: string[] = [
             'Start the CI/CD pipeline setup workflow. You are Murat, the Master Test Architect.',
@@ -2706,8 +2757,8 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
 
         const bmadPath = executor.getBmadPath();
         const workflowPath = subCommand === 'dev'
-            ? path.join(bmadPath, 'bmm', 'workflows', 'bmad-quick-flow', 'quick-dev', 'workflow.md')
-            : path.join(bmadPath, 'bmm', 'workflows', 'bmad-quick-flow', 'quick-spec', 'workflow.md');
+            ? path.join(bmadPath, 'skills', 'bmad-quick-dev', 'SKILL.md')
+            : path.join(bmadPath, 'skills', 'bmad-quick-dev', 'SKILL.md');
 
         const artifactType = subCommand === 'dev' ? 'quick-dev' : 'quick-spec';
 
@@ -2786,7 +2837,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
         }
 
         const bmadPath = executor.getBmadPath();
-        const workflowPath = path.join(bmadPath, 'cis', 'workflows', 'design-thinking', 'workflow.yaml');
+        const workflowPath = path.join(bmadPath, 'skills', 'aac-cis-design-thinking', 'SKILL.md');
 
         const contextParts: string[] = [
             'Start the design thinking workflow. You are Maya, the Design Thinking Maestro.',
@@ -2865,7 +2916,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
         }
 
         const bmadPath = executor.getBmadPath();
-        const workflowPath = path.join(bmadPath, 'cis', 'workflows', 'innovation-strategy', 'workflow.yaml');
+        const workflowPath = path.join(bmadPath, 'skills', 'aac-cis-innovation-strategy', 'SKILL.md');
 
         const contextParts: string[] = [
             'Start the innovation strategy workflow. You are Victor, the Disruptive Innovation Oracle.',
@@ -2943,7 +2994,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
         }
 
         const bmadPath = executor.getBmadPath();
-        const workflowPath = path.join(bmadPath, 'cis', 'workflows', 'problem-solving', 'workflow.yaml');
+        const workflowPath = path.join(bmadPath, 'skills', 'aac-cis-problem-solving', 'SKILL.md');
 
         const contextParts: string[] = [
             'Start the problem-solving workflow. You are Dr. Quinn, the Master Problem Solver.',
@@ -3022,7 +3073,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
         }
 
         const bmadPath = executor.getBmadPath();
-        const workflowPath = path.join(bmadPath, 'cis', 'workflows', 'storytelling', 'workflow.yaml');
+        const workflowPath = path.join(bmadPath, 'skills', 'aac-cis-storytelling', 'SKILL.md');
 
         const contextParts: string[] = [
             'Start the storytelling workflow. You are Caravaggio, the Visual Communication + Presentation Expert.',
@@ -3196,7 +3247,7 @@ Expected output pattern: ${outputPattern}
 Always end the interaction by either saving confirmed changes or acknowledging the user's decision not to save.`;
 
         const bmadPath = executor.getBmadPath();
-        const workflowPath = path.join(bmadPath, 'core', 'workflows', 'advanced-elicitation', 'workflow.xml');
+        const workflowPath = path.join(bmadPath, 'skills', 'bmad-advanced-elicitation', 'SKILL.md');
 
         try {
             await executor.executeWithTools(
@@ -3279,7 +3330,7 @@ Always end the interaction by either saving confirmed changes or acknowledging t
         const displayPath = bmadPath || '(not yet resolved — run /refine or load a project folder)';
 
         // Load the analyst persona from disk; fall back to a minimal inline version
-        const persona = bmadPath ? loadAgentPersona(bmadPath, 'bmm/agents/analyst.md') : undefined;
+        const persona = bmadPath ? loadAgentPersona(bmadPath, 'bmad-agent-analyst') : undefined;
 
         // ── Full-activation mode ─────────────────────────────────────────────
         // When we have the full agent file, inject it verbatim so the AI gets
@@ -3292,8 +3343,7 @@ Always end the interaction by either saving confirmed changes or acknowledging t
 ## VS Code Extension Context
 You are running inside the AgileAgentCanvas VS Code extension.
 - BMAD installation path: \`${displayPath}\`
-- All workflows are under: \`${displayPath}/bmm/workflows/\`, \`${displayPath}/core/workflows/\`, etc.
-- All agents are under: \`${displayPath}/core/agents/\`, \`${displayPath}/bmm/agents/\`, etc.
+- All skills (workflows + agents) are under: \`${displayPath}/skills/\`
 - All JSON schemas are under: \`${displayPath}/schemas/\`
 - **Never invent workflow steps, agent personas, or schema fields** — always reference the actual files.
 
@@ -3878,7 +3928,7 @@ Output ONLY the JSON, no explanation.`;
         }
 
         const bmadPath = executor.getBmadPath();
-        const workflowPath = path.join(bmadPath, 'bmm', 'workflows', 'generate-project-context', 'workflow.md');
+        const workflowPath = path.join(bmadPath, 'skills', 'bmad-generate-project-context', 'SKILL.md');
 
         const contextParts: string[] = [
             'Start the generate-project-context workflow. You are Paige, the Technical Writer.',
@@ -3960,7 +4010,7 @@ Output ONLY the JSON, no explanation.`;
 
         // The write-doc command loads the Tech Writer agent definition and memory
         // then engages in multi-turn document writing following documentation standards.
-        const agentPath = path.join(bmadPath, 'bmm', 'agents', 'tech-writer', 'tech-writer.md');
+        const agentPath = path.join(bmadPath, 'skills', 'bmad-agent-tech-writer', 'SKILL.md');
         const standardsPath = path.join(bmadPath, '_memory', 'tech-writer-sidecar', 'documentation-standards.md');
 
         const contextParts: string[] = [
@@ -4044,7 +4094,7 @@ Output ONLY the JSON, no explanation.`;
         }
 
         const bmadPath = executor.getBmadPath();
-        const agentPath = path.join(bmadPath, 'bmm', 'agents', 'tech-writer', 'tech-writer.md');
+        const agentPath = path.join(bmadPath, 'skills', 'bmad-agent-tech-writer', 'SKILL.md');
         const standardsPath = path.join(bmadPath, '_memory', 'tech-writer-sidecar', 'documentation-standards.md');
 
         const contextParts: string[] = [
@@ -4132,7 +4182,7 @@ Output ONLY the JSON, no explanation.`;
         }
 
         const bmadPath = executor.getBmadPath();
-        const workflowPath = path.join(bmadPath, 'bmm', 'workflows', 'generate-readme', 'workflow.yaml');
+        const workflowPath = path.join(bmadPath, 'skills', 'aac-generate-readme', 'SKILL.md');
 
         const contextParts: string[] = [
             'Start the generate-readme workflow. You are Paige, the Technical Writer.',
@@ -4221,7 +4271,7 @@ Output ONLY the JSON, no explanation.`;
         }
 
         const bmadPath = executor.getBmadPath();
-        const workflowPath = path.join(bmadPath, 'bmm', 'workflows', 'generate-changelog', 'workflow.yaml');
+        const workflowPath = path.join(bmadPath, 'skills', 'aac-generate-changelog', 'SKILL.md');
 
         const contextParts: string[] = [
             'Start the generate-changelog workflow. You are Paige, the Technical Writer.',
@@ -4301,7 +4351,7 @@ Output ONLY the JSON, no explanation.`;
         }
 
         const bmadPath = executor.getBmadPath();
-        const workflowPath = path.join(bmadPath, 'bmm', 'workflows', 'generate-api-docs', 'workflow.yaml');
+        const workflowPath = path.join(bmadPath, 'skills', 'aac-generate-api-docs', 'SKILL.md');
 
         const contextParts: string[] = [
             'Start the generate-api-docs workflow. You are Paige, the Technical Writer.',
@@ -4551,4 +4601,94 @@ Output ONLY the JSON, no explanation.`;
             );
         }
     }
+
+    // ─── graphify slash commands ──────────────────────────────────────────────
+
+    /** /graph — show GRAPH_REPORT.md summary inline */
+    private async handleGraphCommand(
+        _prompt: string,
+        stream: vscode.ChatResponseStream
+    ): Promise<vscode.ChatResult> {
+        const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath ?? '';
+        if (!workspaceRoot) {
+            stream.markdown('No workspace open.\n');
+            return { metadata: { command: 'graph' } };
+        }
+
+        const status = detectGraphify(workspaceRoot);
+
+        if (!status.reportPresent) {
+            stream.markdown(
+                '## graphify — No knowledge graph found\n\n' +
+                'Run `/graph-bootstrap` to install graphify and build the initial knowledge graph.\n\n' +
+                'Or run the command **Agile Agent Canvas: Bootstrap graphify** from the Command Palette.\n'
+            );
+            return { metadata: { command: 'graph', status: 'missing' } };
+        }
+
+        const report = loadReport(workspaceRoot);
+        if (report) {
+            stream.markdown(report);
+        } else {
+            stream.markdown('Could not read GRAPH_REPORT.md.\n');
+        }
+
+        stream.markdown(
+            '\n---\n' +
+            '**Next steps:**\n' +
+            '- `/graph-query <question>` — query the graph\n' +
+            '- `/graph-update` — incrementally update the graph\n'
+        );
+
+        return { metadata: { command: 'graph' } };
+    }
+
+    /** /graph-query <question> — query the knowledge graph */
+    private async handleGraphQueryCommand(
+        prompt: string,
+        stream: vscode.ChatResponseStream
+    ): Promise<vscode.ChatResult> {
+        const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath ?? '';
+        if (!workspaceRoot) {
+            stream.markdown('No workspace open.\n');
+            return { metadata: { command: 'graph-query' } };
+        }
+
+        const question = prompt.trim();
+        if (!question) {
+            stream.markdown('Usage: `/graph-query <your question>`, e.g. `/graph-query what connects ArtifactStore to the canvas?`\n');
+            return { metadata: { command: 'graph-query', status: 'missing-arg' } };
+        }
+
+        stream.markdown(`**Querying knowledge graph:** *${question}*\n\n`);
+
+        const result = await graphQuery(workspaceRoot, question);
+
+        if (result.success) {
+            stream.markdown(result.text);
+        } else {
+            stream.markdown(`**Error:** ${result.text}\n\nRun \`/graph-bootstrap\` if no graph exists.\n`);
+        }
+
+        return { metadata: { command: 'graph-query' } };
+    }
+
+    /** /graph-bootstrap — trigger the bootstrap wizard */
+    private async handleGraphBootstrapCommand(
+        stream: vscode.ChatResponseStream
+    ): Promise<vscode.ChatResult> {
+        stream.markdown('Starting graphify bootstrap…\n\nCheck the notification and output channel for progress.\n');
+        await vscode.commands.executeCommand('agileagentcanvas.graphify.bootstrap');
+        return { metadata: { command: 'graph-bootstrap' } };
+    }
+
+    /** /graph-update — incremental graph update */
+    private async handleGraphUpdateCommand(
+        stream: vscode.ChatResponseStream
+    ): Promise<vscode.ChatResult> {
+        stream.markdown('Updating graphify knowledge graph…\n\nCheck the output channel for progress.\n');
+        await vscode.commands.executeCommand('agileagentcanvas.graphify.update');
+        return { metadata: { command: 'graph-update' } };
+    }
 }
+
