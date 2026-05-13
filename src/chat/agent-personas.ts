@@ -91,36 +91,69 @@ export function clearPersonaCache(): void {
 
 // ── Public API ───────────────────────────────────────────────────────────────
 
+/**
+ * Load a persona by skill name from a single bmadPath (legacy — used by most callers).
+ * If the CatalogueService is initialised, user overrides are automatically preferred.
+ */
 export function loadAgentPersona(bmadPath: string, skillName: string): AgentPersona | undefined {
-    const cacheKey = `${bmadPath}::${skillName}`;
-    if (personaCache.has(cacheKey)) {
-        return personaCache.get(cacheKey);
-    }
-
-    const skillDir = path.join(bmadPath, 'skills', skillName);
-    const skillMdPath = path.join(skillDir, 'SKILL.md');
-    const tomlPath = path.join(skillDir, 'customize.toml');
-
-    let skillMdContent: string;
+    // If CatalogueService is available, use its ordered search paths so user overrides win.
+    let searchPaths: string[] | undefined;
     try {
-        skillMdContent = fs.readFileSync(skillMdPath, 'utf-8');
+        const { getCatalogueService } = require('../state/catalogue-service');
+        const svc = getCatalogueService();
+        // getCatalogueService().getSearchPaths() returns [userPath, builtinPath]
+        // The builtinPath is already <extensionPath>/resources/_aac/skills
+        // bmadPath is <extensionPath>/resources/_aac, so we need to append 'skills'
+        searchPaths = svc.getSearchPaths();
     } catch {
-        return undefined;
+        // CatalogueService not yet available — fall back to single path
     }
 
-    let tomlData: Record<string, unknown> = {};
-    try {
-        const tomlContent = fs.readFileSync(tomlPath, 'utf-8');
-        tomlData = TOML.parse(tomlContent);
-    } catch {
-        // No customize.toml or parse error
+    if (searchPaths && searchPaths.length > 0) {
+        return loadAgentPersonaFromPaths(searchPaths, skillName);
     }
 
-    const persona = parseSkillPersona(skillName, skillMdContent, tomlData);
-    if (persona) {
-        personaCache.set(cacheKey, persona);
+    return loadAgentPersonaFromPaths([path.join(bmadPath, 'skills')], skillName);
+}
+
+/**
+ * Load a persona by searching an ordered list of skills directories.
+ * The first directory that contains a SKILL.md for the given skill name wins.
+ */
+export function loadAgentPersonaFromPaths(skillsDirs: string[], skillName: string): AgentPersona | undefined {
+    for (const skillsDir of skillsDirs) {
+        const cacheKey = `${skillsDir}::${skillName}`;
+        if (personaCache.has(cacheKey)) {
+            return personaCache.get(cacheKey);
+        }
+
+        const skillDir = path.join(skillsDir, skillName);
+        const skillMdPath = path.join(skillDir, 'SKILL.md');
+        const tomlPath = path.join(skillDir, 'customize.toml');
+
+        let skillMdContent: string;
+        try {
+            skillMdContent = fs.readFileSync(skillMdPath, 'utf-8');
+        } catch {
+            continue; // Not in this directory — try the next
+        }
+
+        let tomlData: Record<string, unknown> = {};
+        try {
+            const tomlContent = fs.readFileSync(tomlPath, 'utf-8');
+            tomlData = TOML.parse(tomlContent);
+        } catch {
+            // No customize.toml or parse error
+        }
+
+        const persona = parseSkillPersona(skillName, skillMdContent, tomlData);
+        if (persona) {
+            personaCache.set(cacheKey, persona);
+            return persona;
+        }
     }
-    return persona;
+
+    return undefined;
 }
 
 export function loadAgentPersonaByPath(bmadPath: string, agentRelativePath: string): AgentPersona | undefined {
@@ -151,36 +184,51 @@ export function formatPersonaForPrompt(persona: AgentPersona): string {
 // ── All agent skills discovery ───────────────────────────────────────────────
 
 export function loadAllAgentPersonas(bmadPath: string): { persona: AgentPersona; module: string; relativePath: string }[] {
-    const skillsDir = path.join(bmadPath, 'skills');
-    if (!fs.existsSync(skillsDir)) { return []; }
-
-    const results: { persona: AgentPersona; module: string; relativePath: string }[] = [];
-
-    let entries: string[];
+    // Use the CatalogueService search paths when available so user overrides are included
+    let searchPaths: string[];
     try {
-        entries = fs.readdirSync(skillsDir);
+        const { getCatalogueService } = require('../state/catalogue-service');
+        searchPaths = getCatalogueService().getSearchPaths();
     } catch {
-        return [];
+        searchPaths = [path.join(bmadPath, 'skills')];
     }
 
-    for (const entry of entries) {
-        if (!entry.includes('agent')) { continue; }
+    const seen = new Set<string>();
+    const results: { persona: AgentPersona; module: string; relativePath: string }[] = [];
 
-        const skillDir = path.join(skillsDir, entry);
+    for (const skillsDir of searchPaths) {
+        if (!fs.existsSync(skillsDir)) { continue; }
+
+        let entries: string[];
         try {
-            if (!fs.statSync(skillDir).isDirectory()) { continue; }
-        } catch { continue; }
+            entries = fs.readdirSync(skillsDir);
+        } catch {
+            continue;
+        }
 
-        const persona = loadAgentPersona(bmadPath, entry);
-        if (!persona) { continue; }
+        for (const entry of entries) {
+            if (!entry.includes('agent')) { continue; }
+            if (seen.has(entry)) { continue; } // user path takes precedence
 
-        let module = 'BMM';
-        if (entry.startsWith('aac-tea') || entry === 'aac-agent-tea') { module = 'TEA'; }
-        else if (entry.startsWith('aac-cis')) { module = 'CIS'; }
-        else if (entry.startsWith('aac-bmb')) { module = 'BMB'; }
-        else if (entry.startsWith('aac-')) { module = 'Core'; }
+            const skillDir = path.join(skillsDir, entry);
+            try {
+                if (!fs.statSync(skillDir).isDirectory()) { continue; }
+            } catch { continue; }
 
-        results.push({ persona, module, relativePath: `skills/${entry}` });
+            const persona = loadAgentPersonaFromPaths(searchPaths, entry);
+            if (!persona) { continue; }
+
+            seen.add(entry);
+
+            let module = 'BMM';
+            if (entry.startsWith('aac-tea') || entry === 'aac-agent-tea') { module = 'TEA'; }
+            else if (entry.startsWith('aac-cis')) { module = 'CIS'; }
+            else if (entry.startsWith('aac-bmb')) { module = 'BMB'; }
+            else if (entry.startsWith('aac-')) { module = 'Core'; }
+            else if (!entry.startsWith('bmad-')) { module = 'User'; }
+
+            results.push({ persona, module, relativePath: `skills/${entry}` });
+        }
     }
 
     return results;

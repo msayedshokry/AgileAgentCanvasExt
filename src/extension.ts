@@ -17,7 +17,7 @@ import {
     goToStep,
     selectArtifact
 } from './commands/artifact-commands';
-import { handleCommonWebviewMessage } from './views/webview-message-handler';
+import { handleCommonWebviewMessage, handleCatalogueWebviewMessage } from './views/webview-message-handler';
 import { createGraphifyStatusBar, refreshGraphifyStatusBar } from './views/graphify-status-bar';
 import {
     createNewProject,
@@ -40,6 +40,9 @@ import {
 } from './integrations/graphify';
 import { JiraSecrets } from './integrations/jira-secrets';
 import { createLogger, setLoggerOutputSink } from './utils/logger';
+import { initialiseCatalogueService } from './state/catalogue-service';
+import { initialiseSkillRepoManager } from './state/skill-repo-manager';
+import { USER_CATALOGUE_SETTING } from './state/constants';
 
 const logger = createLogger('extension');
 
@@ -77,6 +80,28 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Initialize the artifact store (shared state)
     artifactStore = new ArtifactStore(context);
+
+    // ── Skill Catalogue & Repo Manager ──────────────────────────────────────
+    const catalogueService = initialiseCatalogueService(context, context.extensionPath);
+    catalogueService.startWatcher();
+    initialiseSkillRepoManager(context);
+
+    // Restart watcher when user catalogue path changes
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeConfiguration(e => {
+            if (e.affectsConfiguration(USER_CATALOGUE_SETTING)) {
+                catalogueService.stopWatcher();
+                catalogueService.startWatcher();
+            }
+        }),
+        // Push catalogue changes to all open canvas panels
+        catalogueService.onCatalogueChanged(() => {
+            for (const panel of openCanvasPanels) {
+                panel.webview.postMessage({ type: 'catalogueChanged' });
+            }
+        }),
+        catalogueService,
+    );
 
     // Initialize the shared tool context and register tools ONCE.
     // chat-participant.ts and workflow-executor.ts mutate sharedToolContext
@@ -220,21 +245,55 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('agileagentcanvas.graphify.openReport', async () => {
             const root = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath ?? '';
             if (!root) { return; }
-            // Use already-imported loadReport to check existence — avoids inline require()
-            const report = loadReport(root);
-            if (report === null) {
-                vscode.window.showWarningMessage('No graphify report found. Run "Bootstrap graphify" first.');
+            const status = detectGraphify(root);
+
+            if (status.htmlReportPath) {
+                // Open in the system browser — graph.html is a D3 visualization that loads
+                // graph.json via fetch(); a webview panel can't serve local file requests.
+                await vscode.env.openExternal(vscode.Uri.file(status.htmlReportPath));
                 return;
             }
-            const reportUri = vscode.Uri.joinPath(
-                vscode.workspace.workspaceFolders![0].uri,
-                'graphify-out', 'GRAPH_REPORT.md'
-            );
-            await vscode.window.showTextDocument(reportUri);
+
+            // Fallback: open GRAPH_REPORT.md in VS Code markdown preview
+            const reportUri = vscode.Uri.file(require('path').join(root, 'graphify-out', 'GRAPH_REPORT.md'));
+            try {
+                await vscode.commands.executeCommand('markdown.showPreviewToSide', reportUri);
+            } catch {
+                // Markdown extension not available — open as text
+                await vscode.window.showTextDocument(reportUri);
+            }
         }),
         vscode.commands.registerCommand('agileagentcanvas.graphify.installHook', () => {
             const root = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath ?? '';
             return root ? installGraphifyHook(root) : vscode.window.showWarningMessage('No workspace open.');
+        }),
+        vscode.commands.registerCommand('agileagentcanvas.graphify.index', async () => {
+            const root = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath ?? '';
+            if (!root) { return vscode.window.showWarningMessage('No workspace open.'); }
+            const { runGraphify } = await import('./integrations/graphify/graphify-runner.js');
+            const { GFY } = await import('./integrations/graphify/graphify-commands.js');
+            // `index` was removed in graphify 0.7.16; `cluster-only` regenerates clustering + report
+            const result = await runGraphify(GFY.clusterOnly(), { cwd: root });
+            clearGraphifyCache(root);
+            refreshGraphifyStatusBar(root);
+            if (!result.success) {
+                vscode.window.showWarningMessage(`graphify cluster-only failed: ${result.stderr}`);
+            }
+        }),
+        vscode.commands.registerCommand('agileagentcanvas.graphify.openStatus', async () => {
+            if (openCanvasPanels.length === 0) {
+                // Canvas not open — open it first, then trigger the modal
+                await openCanvasPanel(context, artifactStore);
+                setTimeout(() => {
+                    for (const panel of openCanvasPanels) {
+                        panel.webview.postMessage({ type: 'showGraphifyModal' });
+                    }
+                }, 800);
+            } else {
+                for (const panel of openCanvasPanels) {
+                    panel.webview.postMessage({ type: 'showGraphifyModal' });
+                }
+            }
         }),
         // Open the IDE chat panel (IDE-agnostic, optionally with a pre-filled query)
         vscode.commands.registerCommand('agileagentcanvas.openChatPanel', (query?: string) => {
@@ -428,7 +487,21 @@ export function activate(context: vscode.ExtensionContext) {
                 new vscode.RelativePattern(rootFolder, '**/*.{ts,js,py,go,rs,java,cs,rb,md}'),
                 false, false, true  // only create/change events, not delete
             );
-            graphifyWatcher.onDidChange(() => {
+            graphifyWatcher.onDidChange((uri) => {
+                // Ignore files written by graphify itself to avoid an infinite update loop
+                if (uri.fsPath.includes('graphify-out')) { return; }
+                if (autoUpdateTimer) { clearTimeout(autoUpdateTimer); }
+                autoUpdateTimer = setTimeout(async () => {
+                    const root = rootFolder.uri.fsPath;
+                    const st = detectGraphify(root);
+                    if (st.graphPresent) {
+                        clearGraphifyCache(root);
+                        await updateGraph(root);
+                    }
+                }, 5000);
+            });
+            graphifyWatcher.onDidCreate((uri) => {
+                if (uri.fsPath.includes('graphify-out')) { return; }
                 if (autoUpdateTimer) { clearTimeout(autoUpdateTimer); }
                 autoUpdateTimer = setTimeout(async () => {
                     const root = rootFolder.uri.fsPath;
@@ -475,6 +548,9 @@ async function openCanvasPanel(context: vscode.ExtensionContext, store: Artifact
 
             // Shared handler covers updateArtifact, deleteArtifact, refineWithAI,
             // breakDown, enhanceWithAI, elicitWithMethod, startDevelopment, launchWorkflow.
+            if (await handleCatalogueWebviewMessage(message, panel.webview)) {
+                return;
+            }
             if (await handleCommonWebviewMessage(message, store, context.extensionUri, '[Panel]', panel.webview)) {
                 return;
             }
@@ -604,6 +680,9 @@ function openDetailTab(artifactId: string, context: vscode.ExtensionContext, sto
 
         // Shared handler covers updateArtifact, deleteArtifact, refineWithAI,
         // breakDown, enhanceWithAI, elicitWithMethod, startDevelopment, launchWorkflow.
+        if (await handleCatalogueWebviewMessage(message, panel.webview)) {
+            return;
+        }
         if (await handleCommonWebviewMessage(message, store, context.extensionUri, `[DetailTab:${artifactId}]`, panel.webview)) {
             return;
         }

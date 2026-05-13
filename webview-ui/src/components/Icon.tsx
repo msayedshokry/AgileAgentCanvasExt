@@ -55,7 +55,10 @@ export type IconName =
   | 'keyboard'        // keyboard shortcuts
   | 'chat'            // chat bubble / ask
   | 'sprint'          // kanban board / sprint view
-  | 'jira';           // Jira integration
+  | 'jira'            // Jira integration
+  | 'trash'           // delete / remove
+  | 'package'         // package / repo / module
+  | 'catalogue';      // skill & agent catalogue (was 🗂️)
 
 interface IconProps {
   name: IconName;
@@ -402,6 +405,32 @@ const paths: Record<IconName, JSX.Element> = {
         fill="currentColor"
         opacity="0.45"
       />
+    </>
+  ),
+  'trash': (
+    // Trash can
+    <>
+      <polyline points="3 6 5 6 21 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 3h4a1 1 0 0 1 1 1v2H9V4a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" strokeWidth="2" />
+    </>
+  ),
+  'package': (
+    // Package / box — repo or module
+    <>
+      <path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M12 22V12" stroke="currentColor" strokeWidth="2" />
+      <path d="M3 7l9 5 9-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M7.5 4.5L16.5 9.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </>
+  ),
+  'catalogue': (
+    // 2×2 grid — skill & agent catalogue
+    <>
+      <rect x="3" y="3" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" strokeWidth="2" />
+      <rect x="13" y="3" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" strokeWidth="2" />
+      <rect x="3" y="13" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" strokeWidth="2" />
+      <rect x="13" y="13" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" strokeWidth="2" />
     </>
   ),
 };

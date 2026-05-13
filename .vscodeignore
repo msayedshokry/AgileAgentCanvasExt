@@ -72,3 +72,15 @@ patch-workflows.js
 test-loaders.js
 fix_artifact_store.js
 fs.renameSync*
+
+# Python virtual environments (graphify tooling — not part of the extension)
+.venv/**
+.venv-1/**
+
+# Workspace-specific generated/config files that should not ship
+.opencode/**
+.agileagentcanvas-context/**
+.claude/**
+.agent/**
+graphify-out/**
+docs/**

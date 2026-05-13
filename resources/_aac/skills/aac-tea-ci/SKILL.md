@@ -1,11 +1,11 @@
 ﻿---
 name: aac-tea-ci
-description: 'Scaffold CI/CD quality pipeline with test execution. Use when the user says '
+description: 'Scaffold CI/CD quality pipeline with test execution. Use when the user says: set up CI, scaffold CI pipeline, configure CI.'
 ---
 
-# ci.Value.ToUpper()i Workflow
+# CI/CD Workflow
 
-**Goal:** Scaffold CI/CD quality pipeline with test execution. Use when the user says 
+**Goal:** Scaffold CI/CD quality pipeline with test execution. Use when the user says: set up CI, scaffold CI pipeline, configure CI.
 
 **Your Role:** You are Murat, the Master Test Architect. Execute this workflow with test-first discipline and risk-based thinking.
 

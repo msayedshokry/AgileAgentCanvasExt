@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { createLogger } from '../../utils/logger';
 import { runGraphify } from './graphify-runner';
+import { GFY } from './graphify-commands';
 import { detectGraphify, clearGraphifyCache, resetCliFormCache } from './graphify-detector';
 
 const logger = createLogger('graphify-bootstrap');
@@ -152,7 +153,11 @@ export async function updateGraph(workspaceRoot: string): Promise<void> {
     await vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: 'graphify: updating graph…', cancellable: true },
         async (_progress, token) => {
-            const result = await runGraphify(['update', '.'], { cwd: workspaceRoot, cancellation: token });
+            const result = await runGraphify(GFY.update(), { cwd: workspaceRoot, cancellation: token });
+            if (result.success) {
+                // Regenerate clustering + report after code graph update (replaces deprecated `index` command)
+                await runGraphify(GFY.clusterOnly(), { cwd: workspaceRoot, cancellation: token });
+            }
             clearGraphifyCache(workspaceRoot);
             if (result.success) {
                 vscode.window.showInformationMessage('graphify graph updated.');
@@ -193,7 +198,7 @@ export async function rebuildGraph(workspaceRoot: string): Promise<void> {
 
 export async function installGraphifyHook(workspaceRoot: string): Promise<void> {
     if (!vscode.workspace.isTrusted) { return; }
-    const result = await runGraphify(['hook', 'install'], { cwd: workspaceRoot });
+    const result = await runGraphify(GFY.hookInstall(), { cwd: workspaceRoot });
     if (result.success) {
         vscode.window.showInformationMessage('graphify git hook installed. Graph will auto-rebuild on commit.');
     } else {
@@ -213,7 +218,7 @@ export async function exportWiki(workspaceRoot: string): Promise<void> {
     await vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: 'graphify: exporting wiki…', cancellable: true },
         async (_progress, token) => {
-            const result = await runGraphify(['export', 'wiki'], { cwd: workspaceRoot, cancellation: token });
+            const result = await runGraphify(GFY.exportWiki(), { cwd: workspaceRoot, cancellation: token });
             clearGraphifyCache(workspaceRoot);
             if (result.success) {
                 vscode.window.showInformationMessage('graphify wiki exported to graphify-out/wiki/.');
@@ -230,7 +235,7 @@ export async function checkGraphStaleness(workspaceRoot: string): Promise<boolea
     const needsUpdate = path.join(workspaceRoot, 'graphify-out', 'needs_update');
     if (fs.existsSync(needsUpdate)) { return true; }
 
-    const result = await runGraphify(['check-update', '.'], { cwd: workspaceRoot, timeoutMs: 10_000 });
+    const result = await runGraphify(GFY.checkUpdate(), { cwd: workspaceRoot, timeoutMs: 10_000 });
     // check-update exits 0 = up-to-date, 1 = stale
     return result.exitCode === 1;
 }
@@ -285,15 +290,10 @@ async function buildGraph(workspaceRoot: string, token: vscode.CancellationToken
         .getConfiguration('agileagentcanvas')
         .get<string>('graphify.backend', '');
 
-    const extractArgs = backend
-        ? ['extract', '.', '--backend', backend]
-        : ['extract', '.'];
-
+    // graphify 0.7.16+: `extract` runs the full pipeline (detect + extract + cluster + report).
+    // Earlier multi-step commands (detect, build, report, index) were removed upstream.
     const stages: string[][] = [
-        ['detect', '.'],
-        extractArgs,
-        ['build', '.'],
-        ['report', '.']
+        GFY.extract(backend || undefined),
     ];
 
     for (const args of stages) {
@@ -309,7 +309,7 @@ async function buildGraph(workspaceRoot: string, token: vscode.CancellationToken
 
 async function wireVsCode(workspaceRoot: string, token: vscode.CancellationToken): Promise<void> {
     // Try `python -m graphify vscode install` first
-    const result = await runGraphify(['vscode', 'install'], { cwd: workspaceRoot, cancellation: token });
+    const result = await runGraphify(GFY.vscodeInstall(), { cwd: workspaceRoot, cancellation: token });
     if (!result.success) {
         // Fallback: append a minimal graphify block to copilot-instructions ourselves
         appendCopilotInstructionsBlock(workspaceRoot);
@@ -322,9 +322,10 @@ function appendCopilotInstructionsBlock(workspaceRoot: string): void {
 
 ## graphify
 
-Before answering architecture or codebase questions, read \`graphify-out/GRAPH_REPORT.md\` if it exists.
-If \`graphify-out/wiki/index.md\` exists, navigate it for deep questions.
-Type \`/graph\` in Copilot Chat to rebuild or query the knowledge graph.
+Architecture Index: \`graphify-out/ARCH_INDEX.md\` — always read this first for codebase orientation.
+For deep context on a community: read \`graphify-out/wiki/{community-label}.md\`
+For symbol tracing: use \`/graph-query\` in Copilot Chat.
+Full report: \`graphify-out/GRAPH_REPORT.md\`
 `;
     try {
         const dir = path.dirname(instructionsPath);

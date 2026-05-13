@@ -11,7 +11,7 @@ import {
     formatEpicsAsMarkdown,
     formatStoriesAsMarkdown
 } from '../integrations/jira-importer';
-import { graphQuery, graphPath } from '../integrations/graphify/graph-query';
+import { graphQuery, graphPath, loadCommunityWiki } from '../integrations/graphify/graph-query';
 
 /**
  * AgileAgentCanvas Language Model Tools
@@ -683,7 +683,44 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
         )
     );
 
-    logger.debug('[AgileAgentCanvasTools] Registered 9 language model tools');
+    // ── agileagentcanvas_graph_community ──────────────────────────────────────────
+    disposables.push(
+        vscode.lm.registerTool<{ community: string }>(
+            'agileagentcanvas_graph_community',
+            {
+                async invoke(request, _token) {
+                    const { community } = request.input;
+
+                    const workspaceFolders = vscode.workspace.workspaceFolders;
+                    const workspaceRoot = workspaceFolders?.[0]?.uri?.fsPath ?? '';
+                    if (!workspaceRoot) {
+                        return new vscode.LanguageModelToolResult([
+                            new vscode.LanguageModelTextPart('No workspace open.')
+                        ]);
+                    }
+
+                    try {
+                        const content = await loadCommunityWiki(workspaceRoot, community);
+                        const text = content
+                            ? content
+                            : `No community found matching "${community}". Use the Architecture Index (ARCH_INDEX.md) to find valid community labels.`;
+                        logger.debug(`[agileagentcanvas_graph_community] community="${community}" found=${!!content}`);
+                        return new vscode.LanguageModelToolResult([
+                            new vscode.LanguageModelTextPart(text)
+                        ]);
+                    } catch (err: any) {
+                        const msg = `graph_community error: ${err?.message ?? err}`;
+                        logger.debug(`[agileagentcanvas_graph_community] ${msg}`);
+                        return new vscode.LanguageModelToolResult([
+                            new vscode.LanguageModelTextPart(msg)
+                        ]);
+                    }
+                }
+            }
+        )
+    );
+
+    logger.debug('[AgileAgentCanvasTools] Registered 10 language model tools');
     return disposables;
 }
 
@@ -925,6 +962,26 @@ export function getToolDefinitions(): vscode.LanguageModelChatTool[] {
                     }
                 },
                 required: ['nodeA', 'nodeB']
+            }
+        },
+        {
+            name: 'agileagentcanvas_graph_community',
+            description:
+                'Get detailed context about a specific code community (module/domain) from the ' +
+                'graphify knowledge graph. Returns the wiki page for that community, or a ' +
+                'synthesised summary of its nodes, files, and relationships. ' +
+                'Use this when you need deep understanding of a particular area of the codebase ' +
+                'after identifying relevant communities via the Architecture Index (ARCH_INDEX.md). ' +
+                'Requires graphify-out/graph.json to exist.',
+            inputSchema: {
+                type: 'object' as const,
+                properties: {
+                    community: {
+                        type: 'string',
+                        description: 'Community label as shown in ARCH_INDEX.md, e.g. "Auth & Session"'
+                    }
+                },
+                required: ['community']
             }
         }
     ];

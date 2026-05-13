@@ -9,9 +9,11 @@ import { WorkflowLauncher } from './components/WorkflowLauncher';
 import { HelpModal } from './components/HelpModal';
 import { AskModal } from './components/AskModal';
 import { JiraModal } from './components/JiraModal';
+import { GraphifyModal } from './components/GraphifyModal';
 import { SprintPlanningView, parseSprintStatusYaml } from './components/SprintPlanningView';
 import type { SprintData } from './components/SprintPlanningView';
 import { SearchBox } from './components/SearchBox';
+import { CatalogueModal } from './components/CatalogueModal';
 import { Icon } from './components/Icon';
 import { vscode } from './vscodeApi';
 import type { Artifact, AICursorState, ElicitationMethod, BmmWorkflow } from './types';
@@ -96,6 +98,13 @@ function App() {
 
   // Jira modal state
   const [jiraModalOpen, setJiraModalOpen] = useState<boolean>(false);
+
+  // Graphify modal state
+  const [graphifyModalOpen, setGraphifyModalOpen] = useState<boolean>(false);
+  const [graphifyReady, setGraphifyReady] = useState<boolean>(false);
+
+  // Skill Catalogue modal state
+  const [catalogueOpen, setCatalogueOpen] = useState<boolean>(false);
   
   // Canvas search state (SearchBox rendered in App, to the left of workflow FAB)
   const [searchOpen, setSearchOpen] = useState<boolean>(false);
@@ -410,6 +419,17 @@ function App() {
         case 'openAskModal':
           // Extension command (e.g. Ctrl+Shift+A) requests the Ask modal
           setAskOpen(true);
+          break;
+        case 'showGraphifyModal':
+          setGraphifyModalOpen(true);
+          break;
+        case 'openCatalogueModal':
+          setCatalogueOpen(true);
+          break;
+        case 'graphifyStatusResponse':
+          if (message.status) {
+            setGraphifyReady(message.status.recommendation === 'ready' || message.status.recommendation === 'update');
+          }
           break;
         case 'sprintStatusResult':
           if (message.found) {
@@ -792,6 +812,16 @@ function App() {
     setJiraModalOpen(true);
   }, []);
 
+  // Open the graphify modal
+  const handleOpenGraphify = useCallback(() => {
+    setGraphifyModalOpen(true);
+  }, []);
+
+  // Open the skill catalogue modal
+  const handleOpenCatalogue = useCallback(() => {
+    setCatalogueOpen(true);
+  }, []);
+
   // Search box: open from Canvas `/` key
   const handleOpenSearch = useCallback(() => {
     setSearchOpen(true);
@@ -867,11 +897,14 @@ function App() {
         onAsk={handleOpenAsk}
         onSprintView={handleOpenSprintView}
         onJira={handleOpenJira}
+        onGraphify={handleOpenGraphify}
+        graphifyReady={graphifyReady}
         schemaIssueCount={schemaIssues.length}
         onFixSchemas={handleFixSchemas}
         onValidateSchemas={handleValidateSchemas}
         schemaValidating={schemaValidating}
         schemaFixing={schemaFixing}
+        onCatalogue={handleOpenCatalogue}
       />
       
       <div className="main-content">
@@ -940,8 +973,17 @@ function App() {
       {jiraModalOpen && (
         <JiraModal onClose={() => setJiraModalOpen(false)} />
       )}
+      {graphifyModalOpen && (
+        <GraphifyModal
+          onClose={() => setGraphifyModalOpen(false)}
+          onSendMessage={msg => vscode.postMessage(msg as Parameters<typeof vscode.postMessage>[0])}
+        />
+      )}
       {helpOpen && (
         <HelpModal onClose={handleCloseHelp} />
+      )}
+      {catalogueOpen && (
+        <CatalogueModal onClose={() => setCatalogueOpen(false)} />
       )}
       {askOpen && (
         <AskModal onSubmit={handleAskSubmit} onClose={handleCloseAsk} />
@@ -970,16 +1012,6 @@ function App() {
       >
         <span className="workflow-fab-icon"><Icon name="workflow" size={18} /></span>
         <span className="workflow-fab-label">Workflows</span>
-      </button>
-      {/* Jira FAB */}
-      <button
-        className="workflow-fab jira-fab"
-        title="Jira — fetch epics & stories"
-        onClick={handleOpenJira}
-        aria-label="Jira Integration"
-      >
-        <span className="workflow-fab-icon"><Icon name="jira" size={18} /></span>
-        <span className="workflow-fab-label">Jira</span>
       </button>
       {artifacts.length === 0 && (
         <div className="empty-state">

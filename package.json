@@ -339,6 +339,10 @@
           {
             "name": "graph-update",
             "description": "Incrementally update the graphify knowledge graph (code-only, no LLM re-extraction)"
+          },
+          {
+            "name": "help",
+            "description": "Describe what you want to do and the extension will recommend the best skills and agents for your task"
           }
         ]
       }
@@ -473,6 +477,16 @@
         "command": "agileagentcanvas.graphify.installHook",
         "title": "Agile Agent Canvas: Install graphify Git Hook",
         "icon": "$(git-commit)"
+      },
+      {
+        "command": "agileagentcanvas.graphify.index",
+        "title": "Agile Agent Canvas: Generate graphify Architecture Index",
+        "icon": "$(list-tree)"
+      },
+      {
+        "command": "agileagentcanvas.graphify.openStatus",
+        "title": "Agile Agent Canvas: Open graphify Status",
+        "icon": "$(graph)"
       }
     ],
     "keybindings": [
@@ -533,6 +547,25 @@
     "configuration": {
       "title": "Agile Agent Canvas",
       "properties": {
+        "agileagentcanvas.userCataloguePath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to a folder containing user-managed skills and agents. Skills placed here are merged with the built-in catalogue; a skill with the same folder name overrides the built-in. Leave empty to use built-ins only. This is a global (user-level) setting shared across all workspaces.",
+          "scope": "machine"
+        },
+        "agileagentcanvas.skillRepos": {
+          "type": "array",
+          "default": [],
+          "description": "List of git repository URLs that contain skill folders to clone into your user catalogue. Each repo is cloned under <userCataloguePath>/_repos/<slug>/. Use the Skill Catalogue UI to manage repos.",
+          "scope": "machine",
+          "items": {
+            "type": "object",
+            "properties": {
+              "url": { "type": "string" },
+              "name": { "type": "string" }
+            }
+          }
+        },
         "agileagentcanvas.outputFolder": {
           "type": "string",
           "default": ".agileagentcanvas-context",
@@ -751,6 +784,7 @@
     "@types/pdfkit": "^0.17.5",
     "ajv": "^6.14.0",
     "pdfkit": "^0.17.2",
+    "simple-git": "^3.36.0",
     "yaml": "^2.8.2"
   }
 }

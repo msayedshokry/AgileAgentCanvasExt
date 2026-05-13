@@ -7135,6 +7135,361 @@ body.vscode-light .minimap-viewport {
    Toolbar: Output Format Cycle Button
    ========================================================================== */
 
+/* ==========================================================================
+   GraphifyModal — gfy- prefix
+   ========================================================================== */
+
+.gfy-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.gfy-modal {
+  background: var(--vscode-editorWidget-background, var(--vscode-editor-background));
+  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+  border-radius: 8px;
+  width: 92%;
+  max-width: 700px;
+  max-height: 84vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  animation: slideInUp 0.2s ease-out;
+  overflow: hidden;
+}
+
+.gfy-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+  flex-shrink: 0;
+}
+
+.gfy-modal-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  letter-spacing: 0.02em;
+}
+
+.gfy-close-btn {
+  background: none;
+  border: none;
+  color: var(--vscode-foreground);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  opacity: 0.7;
+  line-height: 1;
+}
+.gfy-close-btn:hover { opacity: 1; background: var(--vscode-toolbar-hoverBackground); }
+
+.gfy-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gfy-loading {
+  color: var(--vscode-descriptionForeground);
+  font-size: 13px;
+  padding: 24px 0;
+  text-align: center;
+}
+
+/* ── Section blocks ─────────────────────────────────────────────────────── */
+.gfy-section-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gfy-section-heading {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--vscode-descriptionForeground);
+  border-bottom: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+  padding-bottom: 4px;
+}
+
+/* ── Pipeline tracker ───────────────────────────────────────────────────── */
+.gfy-pipeline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0 4px;
+}
+
+.gfy-stage {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.gfy-stage-icon {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.gfy-stage-icon--done { background: var(--vscode-terminal-ansiGreen, #3fb950); color: #fff; }
+.gfy-stage-icon--running { background: var(--vscode-terminal-ansiYellow, #e3b341); color: #000; }
+.gfy-stage-icon--pending { background: var(--vscode-editorWidget-border, #444); color: var(--vscode-foreground); opacity: 0.6; }
+.gfy-stage-icon--failed { background: var(--vscode-terminal-ansiRed, #f85149); color: #fff; }
+
+.gfy-stage-label {
+  color: var(--vscode-foreground);
+  white-space: nowrap;
+}
+
+.gfy-stage--pending .gfy-stage-label { opacity: 0.55; }
+.gfy-stage--done .gfy-stage-label { opacity: 0.85; }
+
+.gfy-stage-arrow {
+  color: var(--vscode-descriptionForeground);
+  margin: 0 2px;
+  opacity: 0.5;
+}
+
+/* ── Stats bar ──────────────────────────────────────────────────────────── */
+.gfy-stats-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 0;
+}
+
+.gfy-stat-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--vscode-badge-background, rgba(128,128,128,0.15));
+  border-radius: 6px;
+  padding: 4px 12px;
+  min-width: 54px;
+}
+
+.gfy-stat-badge__value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--vscode-foreground);
+  line-height: 1.2;
+}
+
+.gfy-stat-badge__label {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ── Community list ─────────────────────────────────────────────────────── */
+.gfy-section { display: flex; flex-direction: column; gap: 4px; }
+.gfy-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  margin-bottom: 4px;
+}
+
+.gfy-community-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gfy-community-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: var(--vscode-list-hoverBackground, rgba(128,128,128,0.07));
+  transition: background 0.12s;
+}
+.gfy-community-row:hover { background: var(--vscode-list-activeSelectionBackground, rgba(128,128,128,0.14)); }
+
+.gfy-community-toggle {
+  background: none;
+  border: none;
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+  padding: 0 2px;
+  font-size: 11px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.gfy-community-content { flex: 1; min-width: 0; }
+
+.gfy-community-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.gfy-community-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+}
+
+.gfy-community-meta {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.gfy-community-summary {
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+/* ── God node chips ─────────────────────────────────────────────────────── */
+.gfy-god-nodes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.gfy-god-node {
+  background: rgba(0, 180, 180, 0.15);
+  color: var(--vscode-terminal-ansiCyan, #58c8c8);
+  border: 1px solid rgba(0, 180, 180, 0.3);
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-family: var(--vscode-editor-font-family, monospace);
+  white-space: nowrap;
+}
+
+/* ── Directory chips ────────────────────────────────────────────────────── */
+.gfy-dir-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 4px;
+}
+
+.gfy-dir-chip {
+  background: var(--vscode-badge-background, rgba(128,128,128,0.15));
+  color: var(--vscode-foreground);
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-family: var(--vscode-editor-font-family, monospace);
+  opacity: 0.75;
+}
+
+/* ── Cross-community edges ──────────────────────────────────────────────── */
+.gfy-edge-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.gfy-edge-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 3px 0;
+}
+
+.gfy-edge-from, .gfy-edge-to {
+  color: var(--vscode-foreground);
+  font-weight: 500;
+}
+
+.gfy-edge-arrow { color: var(--vscode-descriptionForeground); opacity: 0.6; }
+
+.gfy-edge-count {
+  background: var(--vscode-badge-background, rgba(128,128,128,0.2));
+  color: var(--vscode-badge-foreground, var(--vscode-foreground));
+  border-radius: 8px;
+  padding: 0 5px;
+  font-size: 10px;
+  margin-left: auto;
+}
+
+/* ── Actions ────────────────────────────────────────────────────────────── */
+.gfy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.gfy-action-btn {
+  padding: 5px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--vscode-button-border, transparent);
+  cursor: pointer;
+  font-size: 12px;
+  background: var(--vscode-button-secondaryBackground, rgba(128,128,128,0.15));
+  color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
+  transition: background 0.12s, opacity 0.12s;
+}
+.gfy-action-btn:hover { background: var(--vscode-button-secondaryHoverBackground, rgba(128,128,128,0.25)); }
+.gfy-action-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.gfy-action-btn--primary {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border-color: transparent;
+}
+.gfy-action-btn--primary:hover { background: var(--vscode-button-hoverBackground); }
+
+/* Toolbar graphify button */
+.toolbar-graphify-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--vscode-descriptionForeground);
+  font-size: 16px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  position: relative;
+  line-height: 1;
+  transition: color 0.12s;
+}
+.toolbar-graphify-btn:hover { color: var(--vscode-foreground); background: var(--vscode-toolbar-hoverBackground); }
+.toolbar-graphify-btn--ready { color: var(--vscode-terminal-ansiCyan, #58c8c8); }
+.toolbar-graphify-dot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--vscode-terminal-ansiYellow, #e3b341);
+}
+
 .toolbar-format-btn {
   display: inline-flex;
   align-items: center;
@@ -8140,6 +8495,428 @@ body.vscode-light .minimap-viewport {
 .jira-cp-footer-hint {
   font-size: 11px;
   color: var(--vscode-descriptionForeground);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   Catalogue Modal — skill management UI (.cat-*)
+   Uses shared .wfl-overlay / .wfl-modal / .wfl-modal-tabs shell
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Modal size override — wider than default wfl-modal for the card grid */
+.cat-modal {
+  max-width: 780px;
+  max-height: 86vh;
+}
+
+/* ── Content scrollable body ─────────────────────────────────────────────── */
+.cat-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 14px 16px;
+  min-height: 0;
+}
+
+/* ── Error banner ────────────────────────────────────────────────────────── */
+.cat-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  margin: 0 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  background: rgba(248, 81, 73, 0.08);
+  border: 1px solid rgba(248, 81, 73, 0.25);
+  color: var(--vscode-errorForeground, #f85149);
+}
+
+/* ── Actions bar (Create New Skill) ──────────────────────────────────────── */
+.cat-actions-bar {
+  margin-bottom: 12px;
+}
+
+.cat-create-btn {
+  background: none;
+  border: 1px dashed var(--vscode-editorWidget-border, rgba(128,128,128,0.4));
+  border-radius: 6px;
+  color: var(--vscode-textLink-foreground, #818cf8);
+  font-size: 12px;
+  padding: 8px 14px;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+  transition: background 0.1s, border-color 0.15s;
+}
+.cat-create-btn:hover {
+  background: rgba(99, 102, 241, 0.06);
+  border-color: rgba(99, 102, 241, 0.5);
+}
+.cat-create-btn span {
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.cat-create-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cat-create-form .wfl-search-input {
+  flex: 1;
+}
+
+/* ── Shared buttons ──────────────────────────────────────────────────────── */
+.cat-btn {
+  background: var(--vscode-button-secondaryBackground, rgba(128,128,128,0.2));
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
+  font-size: 12px;
+  padding: 5px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.1s, opacity 0.1s;
+}
+.cat-btn:hover {
+  background: var(--vscode-button-secondaryHoverBackground, rgba(128,128,128,0.3));
+}
+.cat-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.cat-btn--primary {
+  background: var(--vscode-button-background, #4f46e5);
+  color: var(--vscode-button-foreground, #fff);
+  border-color: transparent;
+}
+.cat-btn--primary:hover {
+  background: var(--vscode-button-hoverBackground, #4338ca);
+}
+.cat-btn--danger {
+  background: rgba(248, 81, 73, 0.12);
+  color: var(--vscode-errorForeground, #f85149);
+}
+.cat-btn--danger:hover {
+  background: rgba(248, 81, 73, 0.2);
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+.cat-empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--vscode-descriptionForeground);
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+/* ── Card grid ───────────────────────────────────────────────────────────── */
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px;
+}
+
+/* ── Skill card ──────────────────────────────────────────────────────────── */
+.cat-card {
+  background: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-editorWidget-border, rgba(128,128,128,0.25));
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color 0.15s, background 0.1s, opacity 0.15s;
+}
+.cat-card:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  background: var(--vscode-list-hoverBackground, rgba(99, 102, 241, 0.04));
+}
+.cat-card--disabled {
+  opacity: 0.5;
+}
+.cat-card--disabled:hover {
+  opacity: 0.65;
+}
+
+.cat-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cat-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.cat-card-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.cat-card-desc {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cat-card-footer {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--vscode-editorWidget-border, rgba(128,128,128,0.15));
+}
+
+.cat-card-action {
+  background: none;
+  border: none;
+  color: var(--vscode-textLink-foreground, #818cf8);
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.cat-card-action:hover {
+  background: rgba(99, 102, 241, 0.1);
+}
+.cat-card-action--danger {
+  color: var(--vscode-errorForeground, #f85149);
+}
+.cat-card-action--danger:hover {
+  background: rgba(248, 81, 73, 0.1);
+}
+
+/* ── Badges ──────────────────────────────────────────────────────────────── */
+.cat-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.cat-badge--agent {
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+}
+.cat-badge--skill {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+.cat-badge--user {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+.cat-badge--repo {
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--vscode-descriptionForeground);
+}
+.cat-badge--status-cloned {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+.cat-badge--status-error {
+  background: rgba(248, 81, 73, 0.15);
+  color: #f85149;
+}
+.cat-badge--status-cloning,
+.cat-badge--status-pending {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+/* ── Toggle switch ───────────────────────────────────────────────────────── */
+.cat-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.cat-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.cat-toggle-track {
+  width: 32px;
+  height: 18px;
+  border-radius: 9px;
+  background: var(--vscode-editorWidget-border, rgba(128,128,128,0.4));
+  position: relative;
+  transition: background 0.2s;
+}
+.cat-toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--vscode-foreground);
+  opacity: 0.7;
+  transition: transform 0.2s, opacity 0.2s;
+}
+.cat-toggle input:checked + .cat-toggle-track {
+  background: var(--vscode-button-background, #4f46e5);
+}
+.cat-toggle input:checked + .cat-toggle-track::after {
+  transform: translateX(14px);
+  opacity: 1;
+  background: #fff;
+}
+
+/* ── Repos tab ───────────────────────────────────────────────────────────── */
+.cat-repos {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cat-repos-add {
+  background: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-editorWidget-border, rgba(128,128,128,0.25));
+  border-radius: 8px;
+  padding: 14px;
+}
+.cat-repos-add-header h3 {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+}
+.cat-repos-add-header p {
+  margin: 0 0 10px;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  line-height: 1.5;
+}
+.cat-repos-add-header code {
+  font-size: 10px;
+  background: rgba(128,128,128,0.1);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.cat-repos-add-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.cat-repos-add-row .wfl-search-input {
+  flex: 1;
+}
+
+.cat-repos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Repo card ───────────────────────────────────────────────────────────── */
+.cat-repo-card {
+  background: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-editorWidget-border, rgba(128,128,128,0.25));
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color 0.15s;
+}
+.cat-repo-card:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+}
+.cat-repo-card--error {
+  border-color: rgba(248, 81, 73, 0.3);
+}
+
+.cat-repo-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.cat-repo-card-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+}
+.cat-repo-card-url {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--vscode-editor-font-family, monospace);
+}
+.cat-repo-card-meta {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+  opacity: 0.8;
+}
+.cat-repo-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* ── Progress spinner ────────────────────────────────────────────────────── */
+.cat-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  padding: 4px 0;
+}
+.cat-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--vscode-editorWidget-border, rgba(128,128,128,0.3));
+  border-top-color: var(--vscode-button-background, #818cf8);
+  border-radius: 50%;
+  animation: catSpin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes catSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Confirm dialog ──────────────────────────────────────────────────────── */
+.cat-confirm {
+  background: var(--vscode-editorWidget-background, var(--vscode-editor-background));
+  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+  border-radius: 10px;
+  padding: 20px 24px;
+  max-width: 380px;
+  width: 100%;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+}
+.cat-confirm-message {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--vscode-foreground);
+}
+.cat-confirm-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 

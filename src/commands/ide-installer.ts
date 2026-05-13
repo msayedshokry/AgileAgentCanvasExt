@@ -1129,6 +1129,237 @@ read the corresponding schema file from the path above. For example:
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Slim Install — 1 agent + 1 help/routing skill
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Build a catalogue table for embedding in the help skill.
+ * Each row contains: name, type, description, and the absolute path to the SKILL.md file.
+ */
+function buildCatalogueTable(artifacts: Artifact[], bmadResourcePath: string): string {
+    if (artifacts.length === 0) return '(No skills found — ensure the extension is installed correctly.)';
+
+    const lines: string[] = [
+        '| # | Name | Type | Description | File |',
+        '|---|------|------|-------------|------|',
+    ];
+
+    for (let i = 0; i < artifacts.length; i++) {
+        const a = artifacts[i];
+        const filePath = path.join(bmadResourcePath, a.relativePath).replace(/\\/g, '/');
+        const desc = a.description.replace(/\|/g, '\\|').replace(/\n/g, ' ').substring(0, 120);
+        lines.push(`| ${i + 1} | ${a.displayName} | ${a.type} | ${desc} | \`${filePath}\` |`);
+    }
+
+    return lines.join('\n');
+}
+
+/**
+ * Generate the content for the single `help` skill that acts as a routing layer.
+ * Contains the full catalogue manifest so external agents can self-route to any skill.
+ */
+function generateHelpSkillContent(bmadResourcePath: string, extensionVersion: string): string {
+    const artifacts = loadArtifacts(bmadResourcePath);
+    const catalogueTable = buildCatalogueTable(artifacts, bmadResourcePath);
+    const skillsRoot = path.join(bmadResourcePath, 'skills').replace(/\\/g, '/');
+    const schemasDir = path.join(bmadResourcePath, 'schemas').replace(/\\/g, '/');
+    const skillCount = artifacts.length;
+    return `---
+name: help
+description: 'Smart skill router for Agile Agent Canvas — describe your task and get matched to the best skills/agents. This is the single entry point to the full BMAD methodology.'
+---
+<!-- aac-version: ${extensionVersion} -->
+
+# Agile Agent Canvas — Help & Skill Router
+
+You have access to the **full Agile Agent Canvas** skill catalogue (${skillCount} skills and agents). When a user asks for help or describes a task, use this catalogue to identify the best matching skill(s) and then load and execute them.
+
+## How to Use
+
+1. **Match** — Given a user request, scan the catalogue below and identify the top 1–3 most relevant skills by matching the user's intent to skill descriptions.
+2. **Present** — Show the user a brief numbered list of matches with a one-sentence reason why each fits.
+3. **Load & Execute** — When the user selects a skill (or if there's only one strong match), READ the full contents of the skill file at the path shown in the catalogue, resolve template variables, and follow the skill's instructions completely.
+4. **If unsure** — Ask the user a clarifying question, then re-match.
+
+## Variable Resolution
+
+In all BMAD skill files, template variables resolve as follows:
+
+| Variable | Resolves To |
+|----------|-------------|
+| \`{bmad-path}\` | \`${bmadResourcePath.replace(/\\/g, '/')}\` |
+| \`{project-root}\` | The workspace/project root directory |
+| \`{skill-root}\` | \`${skillsRoot}\` |
+
+## Schema Files
+
+BMAD JSON schemas for artifact validation are located at: \`${schemasDir}\`
+
+## Quick Categories
+
+| Category | Best Skills |
+|----------|-------------|
+| **Planning & requirements** | bmad-create-product-brief, bmad-create-prd, bmad-create-epics-and-stories |
+| **Development** | bmad-dev-story, bmad-quick-dev, bmad-code-review |
+| **Testing & quality** | aac-agent-tea, aac-tea-ci, bmad-tea-testarch-test-design |
+| **Architecture** | bmad-create-architecture, bmad-generate-project-context |
+| **UX & design** | bmad-create-ux-design, aac-cis-design-thinking |
+| **Creativity & innovation** | aac-cis-innovation-strategy, aac-cis-problem-solving, aac-cis-storytelling |
+| **Sprint & project management** | bmad-sprint-planning, bmad-sprint-status, bmad-retrospective |
+| **Documentation** | bmad-document-project, aac-generate-readme, aac-generate-api-docs |
+| **Conversion** | bmad-to-json, aac-agent-canvas-integrator |
+
+## Full Skill Catalogue
+
+${catalogueTable}
+
+## Agent Personas
+
+When the user asks to "talk to" a persona by name, match to the corresponding agent skill:
+
+| Persona | Name | Skill |
+|---------|------|-------|
+| Master | BMad Master | bmad-master |
+| Analyst | Mary | bmad-agent-analyst |
+| PM | John | bmad-agent-pm |
+| Architect | Winston | bmad-agent-architect |
+| Dev | Amelia | bmad-agent-dev |
+| QA | Quinn | bmad-agent-qa |
+| Scrum Master | Bob | bmad-agent-sm |
+| UX Designer | Sally | bmad-agent-ux-designer |
+| Tech Writer | Paige | bmad-agent-tech-writer |
+| Test Architect | Murat | aac-agent-tea |
+| Solo Dev | Barry | bmad-agent-quick-flow-solo-dev |
+| Agent Builder | Bond | aac-bmb-agent-builder |
+| Module Builder | Morgan | aac-bmb-agent-module-builder |
+| Workflow Builder | Wendy | aac-bmb-agent-workflow-builder |
+| Brainstorming | Carson | aac-cis-agent-brainstorming |
+| Design Thinking | Maya | aac-cis-agent-design-thinking |
+| Innovation | Victor | aac-cis-agent-innovation |
+| Problem Solver | Dr. Quinn | aac-cis-agent-problem-solver |
+| Storyteller | Sophia | aac-cis-agent-storyteller |
+| Presentation | Caravaggio | aac-cis-agent-presentation |
+
+## Fallback
+
+If no skill matches the user's request, suggest they:
+- Rephrase their task and try again
+- Browse the categories table above for inspiration
+- Ask for a specific persona by name
+`;
+}
+
+/**
+ * Generate the content for the single agent file that references the help skill.
+ * Kept minimal — the help skill does all the heavy lifting.
+ */
+function generateSlimAgentContent(ide: IdeTarget, extensionVersion: string, skillCount: number): string {
+    const skillPath = `${ide.skillsDir}/agileagentcanvas-help/SKILL.md`;
+
+    if (ide.agentFormat === 'opencode') {
+        return `---
+description: Agile Agent Canvas — Unified agile development assistant with ${skillCount}+ expert skills and agents for product management, architecture, development, QA, and more.
+mode: all
+---
+<!-- aac-version: ${extensionVersion} -->
+
+You are **Agile Agent Canvas** — a unified agile development assistant powered by the BMAD methodology.
+
+## Activation
+
+To discover available skills and find the right one for the user's task, **READ** and follow the help skill:
+
+\`${skillPath}\`
+
+That file contains the full catalogue of all available skills/agents with routing instructions. Always start there.
+
+## Identity
+
+You have access to ${skillCount}+ expert skills and agent personas covering the entire product development lifecycle — from vision and requirements through architecture, development, testing, deployment, and documentation.
+
+When the user describes what they want to do, use the help skill to find the best match and then load the matching skill file to get detailed instructions.
+`;
+    }
+
+    return `---
+description: 'Agile Agent Canvas — Unified agile development assistant with ${skillCount}+ expert skills and agents for product management, architecture, development, QA, and more.'
+tools: ['read', 'edit', 'search', 'execute']
+---
+<!-- aac-version: ${extensionVersion} -->
+
+You are **Agile Agent Canvas** — a unified agile development assistant powered by the BMAD methodology.
+
+## Activation
+
+To discover available skills and find the right one for the user's task, **READ** and follow the help skill:
+
+\`${skillPath}\`
+
+That file contains the full catalogue of all available skills/agents with routing instructions. Always start there.
+
+## Identity
+
+You have access to ${skillCount}+ expert skills and agent personas covering the entire product development lifecycle — from vision and requirements through architecture, development, testing, deployment, and documentation.
+
+When the user describes what they want to do, use the help skill to find the best match and then load the matching skill file to get detailed instructions.
+`;
+}
+
+/**
+ * Write the slim install: 1 help skill + 1 agent file.
+ * Returns true if anything was written.
+ */
+function writeSlimInstall(
+    ide: IdeTarget,
+    workspaceRoot: string,
+    bmadResourcePath: string,
+    extensionVersion: string,
+    overwrite: boolean,
+): boolean {
+    let didWrite = false;
+
+    // ── Write the help skill ──────────────────────────────────────────────────
+    const skillsDir = path.join(workspaceRoot, ide.skillsDir);
+    const helpSkillDir = path.join(skillsDir, 'agileagentcanvas-help');
+    const helpSkillFile = path.join(helpSkillDir, 'SKILL.md');
+    const artifacts = loadArtifacts(bmadResourcePath);
+
+    if (overwrite || !fs.existsSync(helpSkillFile)) {
+        fs.mkdirSync(helpSkillDir, { recursive: true });
+        fs.writeFileSync(helpSkillFile, generateHelpSkillContent(bmadResourcePath, extensionVersion), 'utf-8');
+        logger.debug(`[IDE-Install] Wrote: ${ide.skillsDir}/agileagentcanvas-help/SKILL.md`);
+        didWrite = true;
+    }
+
+    // ── Write the agent file (if IDE supports it) ─────────────────────────────
+    if (ide.agentsDir) {
+        const agentsDir = path.join(workspaceRoot, ide.agentsDir);
+        const agentFileName = ide.agentFormat === 'opencode'
+            ? 'agileagentcanvas.md'
+            : EXTENSION_AGENT_FILENAME;
+        const agentFilePath = path.join(agentsDir, agentFileName);
+
+        if (overwrite || !fs.existsSync(agentFilePath)) {
+            fs.mkdirSync(agentsDir, { recursive: true });
+            fs.writeFileSync(agentFilePath, generateSlimAgentContent(ide, extensionVersion, artifacts.length), 'utf-8');
+            logger.debug(`[IDE-Install] Wrote: ${ide.agentsDir}/${agentFileName}`);
+            didWrite = true;
+        }
+    }
+
+    // ── Write workflow stubs (slash-commands) if IDE supports them ─────────────
+    if (ide.workflowsDir) {
+        const wfDir = path.join(workspaceRoot, ide.workflowsDir);
+        const wfResult = writeWorkflowStubs(wfDir, overwrite, bmadResourcePath);
+        if (wfResult.written > 0) {
+            didWrite = true;
+        }
+    }
+
+    return didWrite;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Auto-install on activation (silent, no prompts)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1168,8 +1399,11 @@ export async function autoInstallIfNeeded(extensionPath: string): Promise<void> 
         extensionVersion = pkg.version || 'unknown';
     } catch { /* ignore */ }
 
-    // Marker: the master agent skill directory
-    const markerSkill = path.join(workspaceRoot, ide.skillsDir, 'agileagentcanvas-agent-master', 'SKILL.md');
+    // Marker: the help skill (new slim format)
+    const markerSkill = path.join(workspaceRoot, ide.skillsDir, 'agileagentcanvas-help', 'SKILL.md');
+
+    // Also check legacy marker for migration
+    const legacyMarker = path.join(workspaceRoot, ide.skillsDir, 'agileagentcanvas-agent-master', 'SKILL.md');
 
     if (fs.existsSync(markerSkill)) {
         // Version-aware: only skip if the installed marker matches the current extension version
@@ -1184,44 +1418,31 @@ export async function autoInstallIfNeeded(extensionPath: string): Promise<void> 
         } catch { /* proceed with install */ }
     }
 
-    logger.debug(`[IDE-Install] Auto-installing skills for detected IDE: ${ide.label}`);
+    logger.debug(`[IDE-Install] Auto-installing slim framework for detected IDE: ${ide.label}`);
 
-    // Clean up legacy dirs first
+    // Clean up legacy dirs first (removes old 86+ individual skill dirs)
     cleanupLegacyDirs(ide, workspaceRoot);
 
-    // Clean existing extension skills in the target dir (fresh install)
-    cleanupExtensionSkills(path.join(workspaceRoot, ide.skillsDir));
-
-    const artifacts = loadArtifacts(bmadResourcePath);
-    const { written } = writeSkillDirs(ide, artifacts, workspaceRoot, true, bmadResourcePath, extensionVersion);
-
-    // Also provision workflow stubs (slash-commands) if IDE supports them
-    let workflowsWritten = 0;
-    if (ide.workflowsDir) {
-        const wfDir = path.join(workspaceRoot, ide.workflowsDir);
-        const wfResult = writeWorkflowStubs(wfDir, true, bmadResourcePath);
-        workflowsWritten = wfResult.written;
-        if (workflowsWritten > 0) {
-            logger.debug(`[IDE-Install] Auto-installed ${workflowsWritten} workflow stubs`);
-        }
+    // Clean existing extension skills in the target dir (migration from old format)
+    if (fs.existsSync(legacyMarker)) {
+        cleanupExtensionSkills(path.join(workspaceRoot, ide.skillsDir));
+        logger.debug('[IDE-Install] Migrated from legacy full-install to slim format');
     }
+
+    // Clean old agent files
+    cleanupExtensionAgentFiles(ide, workspaceRoot);
+
+    // Write slim install: 1 help skill + 1 agent + workflow stubs
+    const didWrite = writeSlimInstall(ide, workspaceRoot, bmadResourcePath, extensionVersion, true);
 
     // Write schema reference file so LLMs know where to find BMAD schemas
     writeSchemaReference(extensionPath, workspaceRoot);
 
-    // Write the extension agent files (.agent.md) if IDE supports it
-    cleanupExtensionAgentFiles(ide, workspaceRoot);
-    writeExtensionAgentFile(ide, workspaceRoot, true);
-    writeIntegratorAgentFile(ide, workspaceRoot, true);
-    if (written > 0 || workflowsWritten > 0) {
-        logger.debug(`[IDE-Install] Auto-install complete: ${written} skills, ${workflowsWritten} workflows`);
-
-        const counts = countByType(artifacts);
-        const summary = formatCountSummary(counts);
-        const wfNote = workflowsWritten > 0 ? ` + ${workflowsWritten} workflows` : '';
+    if (didWrite) {
+        logger.debug(`[IDE-Install] Auto-install complete: slim format (1 help skill + 1 agent)`);
 
         const action = await vscode.window.showInformationMessage(
-            `AgileAgentCanvas: Installed ${summary}${wfNote} for ${ide.label} into \`${ide.skillsDir}/\``,
+            `AgileAgentCanvas: Installed framework for ${ide.label} — 1 agent + routing skill with full catalogue access`,
             'Show Files',
             'Dismiss'
         );
@@ -1238,7 +1459,7 @@ export async function autoInstallIfNeeded(extensionPath: string): Promise<void> 
 
 /**
  * Interactive "Install Framework to IDE" command.
- * Lets the user choose target IDE, artifact types, and whether to overwrite existing files.
+ * Installs the slim format: 1 agent + 1 help/routing skill with full catalogue access.
  */
 export async function installToIde(extensionPath: string): Promise<void> {
     logger.debug('[IDE-Install] Manual install started');
@@ -1267,7 +1488,7 @@ export async function installToIde(extensionPath: string): Promise<void> {
         const items: (vscode.QuickPickItem & { _all?: boolean; _fsPath?: string })[] = [
             {
                 label: allLabel,
-                description: 'Install identical skills into every workspace folder',
+                description: 'Install into every workspace folder',
                 _all: true,
             },
             ...workspaceFolders.map(f => ({
@@ -1278,7 +1499,7 @@ export async function installToIde(extensionPath: string): Promise<void> {
         ];
 
         const picked = await vscode.window.showQuickPick(items, {
-            placeHolder: 'Skills are identical across folders — install into all, or pick one?',
+            placeHolder: 'Install into all workspace folders, or pick one?',
         });
         if (!picked) return;
 
@@ -1310,7 +1531,7 @@ export async function installToIde(extensionPath: string): Promise<void> {
     }));
 
     const ideChoice = await vscode.window.showQuickPick(ideItems, {
-        placeHolder: 'Which IDE/tool do you want to install Agile Agent Canvas skills for?',
+        placeHolder: 'Which IDE/tool do you want to install Agile Agent Canvas for?',
         title: 'Agile Agent Canvas: Install Framework to IDE',
     });
     if (!ideChoice) return;
@@ -1324,7 +1545,7 @@ export async function installToIde(extensionPath: string): Promise<void> {
         return;
     }
 
-    // Read extension version for version-stamping skills
+    // Read extension version for version-stamping
     let extensionVersion = 'unknown';
     try {
         const pkgPath = path.join(extensionPath, 'package.json');
@@ -1332,127 +1553,54 @@ export async function installToIde(extensionPath: string): Promise<void> {
         extensionVersion = pkg.version || 'unknown';
     } catch { /* ignore */ }
 
-    // ── Load and categorise artifacts ─────────────────────────────────────────
-    const allArtifacts = loadArtifacts(bmadResourcePath);
-
-    const agents = allArtifacts.filter(a => a.type === 'agent');
-    const workflows = allArtifacts.filter(a => a.type === 'workflow');
-    const tasks = allArtifacts.filter(a => a.type === 'task');
-
-    // ── Pick artifact types ───────────────────────────────────────────────────
-    const typeItems = [
-        {
-            label: '$(check-all) All skills',
-            description: `${allArtifacts.length} total`,
-            detail: `${agents.length} agents, ${workflows.length} workflows, ${tasks.length} tasks`,
-            types: ['agent', 'workflow', 'task'] as Artifact['type'][],
-            picked: true,
-        },
-        {
-            label: '$(person) Agents only',
-            description: `${agents.length} agents`,
-            detail: 'Agent personas (Master, Analyst, PM, Architect, Dev, QA, ...)',
-            types: ['agent'] as Artifact['type'][],
-            picked: false,
-        },
-        {
-            label: '$(play) Workflows only',
-            description: `${workflows.length} workflows`,
-            detail: 'Workflows (create PRD, dev story, sprint planning, ...)',
-            types: ['workflow'] as Artifact['type'][],
-            picked: false,
-        },
-        {
-            label: '$(tools) Tasks only',
-            description: `${tasks.length} tasks`,
-            detail: 'Standalone tasks (editorial review, adversarial review, ...)',
-            types: ['task'] as Artifact['type'][],
-            picked: false,
-        },
-    ];
-
-    const typePicks = await vscode.window.showQuickPick(typeItems, {
-        placeHolder: 'Which skill types to install?',
-        title: `Install Skills → ${ide.label}`,
-        canPickMany: true,
-    });
-    if (!typePicks || typePicks.length === 0) return;
-
-    const selectedTypes = new Set(typePicks.flatMap(p => p.types));
-    const selectedArtifacts = allArtifacts.filter(a => selectedTypes.has(a.type));
-    if (selectedArtifacts.length === 0) return;
-
-    // ── Overwrite check (across all target roots) ──────────────────────────────
+    // ── Overwrite check ──────────────────────────────────────────────────────
     const existingCount = workspaceRoots.reduce((count, root) => {
-        const dir = path.join(root, ide.skillsDir);
-        return count + selectedArtifacts.filter(a =>
-            fs.existsSync(path.join(dir, a.skillName, 'SKILL.md'))
-        ).length;
+        const helpFile = path.join(root, ide.skillsDir, 'agileagentcanvas-help', 'SKILL.md');
+        return count + (fs.existsSync(helpFile) ? 1 : 0);
     }, 0);
 
-    let overwrite = false;
     if (existingCount > 0) {
-        const locationHint = workspaceRoots.length > 1
-            ? `across ${workspaceRoots.length} folders`
-            : `in \`${ide.skillsDir}/\``;
         const ow = await vscode.window.showInformationMessage(
-            `${existingCount} skill(s) already exist ${locationHint}. Overwrite?`,
+            `AgileAgentCanvas is already installed. Overwrite and update?`,
             { modal: true },
-            'Overwrite',
-            'Skip existing',
+            'Update',
             'Cancel'
         );
         if (ow === 'Cancel' || !ow) return;
-        overwrite = ow === 'Overwrite';
     }
 
     // ── Write into each target root ───────────────────────────────────────────
-    let totalWritten = 0;
-    let totalSkipped = 0;
+    let totalRootsWritten = 0;
     await vscode.window.withProgress(
-        { location: vscode.ProgressLocation.Notification, title: `Installing Agile Agent Canvas skills for ${ide.label}...`, cancellable: false },
+        { location: vscode.ProgressLocation.Notification, title: `Installing Agile Agent Canvas for ${ide.label}...`, cancellable: false },
         async () => {
             for (const root of workspaceRoots) {
+                // Clean up legacy 86+ skill dirs if migrating
                 cleanupLegacyDirs(ide, root);
                 cleanupExtensionSkills(path.join(root, ide.skillsDir));
-                const { written, skipped } = writeSkillDirs(ide, selectedArtifacts, root, overwrite, bmadResourcePath, extensionVersion);
-                totalWritten += written;
-                totalSkipped += skipped;
+                cleanupExtensionAgentFiles(ide, root);
 
-                // Also provision workflow stubs if IDE supports them
-                if (ide.workflowsDir) {
-                    const wfDir = path.join(root, ide.workflowsDir);
-                    const wfResult = writeWorkflowStubs(wfDir, overwrite, bmadResourcePath);
-                    totalWritten += wfResult.written;
-                    totalSkipped += wfResult.skipped;
-                }
+                // Write slim install
+                const didWrite = writeSlimInstall(ide, root, bmadResourcePath, extensionVersion, true);
+                if (didWrite) totalRootsWritten++;
 
                 // Deploy schema reference
                 writeSchemaReference(extensionPath, root);
-
-                // Deploy extension agent files (.agent.md) if IDE supports it
-                cleanupExtensionAgentFiles(ide, root);
-                writeExtensionAgentFile(ide, root, overwrite);
-                writeIntegratorAgentFile(ide, root, overwrite);
             }
         }
     );
 
     // ── Result ────────────────────────────────────────────────────────────────
-    const writtenCounts = countByType(selectedArtifacts);
-    const summary = formatCountSummary(writtenCounts);
     const folderHint = workspaceRoots.length > 1
         ? ` across ${workspaceRoots.length} folders`
         : ` into \`${ide.skillsDir}/\``;
 
+    const artifactCount = loadArtifacts(bmadResourcePath).length;
     const action = await vscode.window.showInformationMessage(
-        totalWritten > 0
-            ? `AgileAgentCanvas: Installed ${totalWritten} skills (${summary})${folderHint}`
-            : `AgileAgentCanvas: No skills written (all already existed${overwrite ? '' : ' — choose Overwrite to update'})`,
+        `AgileAgentCanvas: Installed 1 agent + help skill with access to ${artifactCount} skills${folderHint}`,
         'Show Files'
     );
     if (action === 'Show Files') {
-        // Reveal the first target's skills directory
         vscode.commands.executeCommand('revealFileInOS',
             vscode.Uri.file(path.join(workspaceRoots[0], ide.skillsDir)));
     }

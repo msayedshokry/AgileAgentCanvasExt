@@ -45,6 +45,53 @@ export interface GraphJson {
     };
 }
 
+// ─── Architecture Index types ─────────────────────────────────────────────────
+// Mirrors the output of `graphify index .` → graphify-out/ARCH_INDEX.json
+
+export interface ArchCommunity {
+    id: number;
+    label: string;
+    directories: string[];
+    fileCount: number;
+    nodeCount: number;
+    godNodes: string[];
+    neighbors: number[];
+    summary: string;
+}
+
+export interface ArchGodNode {
+    id: string;
+    label: string;
+    degree: number;
+    community: number | null;
+}
+
+export interface ArchCrossEdge {
+    from: number;
+    to: number;
+    edgeCount: number;
+    topRelations: string[];
+}
+
+export interface ArchIndex {
+    repo: string;
+    generatedAt: string;
+    stats: {
+        files: number;
+        nodes: number;
+        edges: number;
+        communities: number;
+    };
+    communities: ArchCommunity[];
+    globalGodNodes: ArchGodNode[];
+    crossCommunityEdges: ArchCrossEdge[];
+    navigation: {
+        fullReport: string;
+        wiki: string;
+        graph: string;
+    };
+}
+
 export type GraphifyCliForm = 'cli' | 'module' | 'unavailable';
 
 export type GraphifyRecommendation =
@@ -60,6 +107,9 @@ export interface GraphifyStatus {
     graphPresent: boolean;
     reportPresent: boolean;
     wikiPresent: boolean;
+    archIndexPresent: boolean;
+    /** Absolute path to an HTML report file in graphify-out/ (e.g. report.html, index.html) if one exists. */
+    htmlReportPath?: string;
     wired: boolean;
     builtAtCommit?: string;
     recommendation: GraphifyRecommendation;

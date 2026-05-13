@@ -1,5 +1,9 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import { createLogger } from '../../utils/logger';
 import { runGraphify } from './graphify-runner';
+import { GFY } from './graphify-commands';
+import { loadGraph, loadCommunities } from './graph-loader';
 
 const logger = createLogger('graph-query');
 
@@ -27,7 +31,7 @@ export async function graphQuery(
     logger.debug(`graph-query: "${question}"`);
 
     const result = await runGraphify(
-        ['query', question, '--graph', GRAPH_JSON_REL, '--budget', String(budget)],
+        GFY.query(question, GRAPH_JSON_REL, budget),
         { cwd: workspaceRoot, timeoutMs: 60_000 }
     );
 
@@ -57,7 +61,7 @@ export async function graphPath(
     logger.debug(`graph-path: "${nodeA}" → "${nodeB}"`);
 
     const result = await runGraphify(
-        ['path', nodeA, nodeB, '--graph', GRAPH_JSON_REL],
+        GFY.path(nodeA, nodeB, GRAPH_JSON_REL),
         { cwd: workspaceRoot, timeoutMs: 60_000 }
     );
 
@@ -86,7 +90,7 @@ export async function graphExplain(
     logger.debug(`graph-explain: "${node}"`);
 
     const result = await runGraphify(
-        ['explain', node, '--graph', GRAPH_JSON_REL],
+        GFY.explain(node, GRAPH_JSON_REL),
         { cwd: workspaceRoot, timeoutMs: 60_000 }
     );
 
@@ -98,4 +102,69 @@ export async function graphExplain(
     }
 
     return { success: true, text: result.stdout.trim() };
+}
+
+// ─── Community wiki loader ────────────────────────────────────────────────────
+
+/**
+ * Load the wiki page for a specific code community.
+ * Normalises the community label to a filename and tries an exact + fuzzy match.
+ * Falls back to synthesising a summary from graph data if no wiki exists.
+ */
+export async function loadCommunityWiki(
+    workspaceRoot: string,
+    communityLabel: string
+): Promise<string | null> {
+    const wikiDir = path.join(workspaceRoot, 'graphify-out', 'wiki');
+
+    const normalise = (s: string) =>
+        s.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+
+    const target = normalise(communityLabel);
+
+    if (fs.existsSync(wikiDir)) {
+        // 1. Exact filename match
+        const exactPath = path.join(wikiDir, `${target}.md`);
+        if (fs.existsSync(exactPath)) {
+            try { return fs.readFileSync(exactPath, 'utf-8'); } catch { /* fall through */ }
+        }
+
+        // 2. Fuzzy match: find best file in wiki dir
+        try {
+            const files = fs.readdirSync(wikiDir).filter(f => f.endsWith('.md') && f !== 'index.md');
+            const bestMatch = files.find(f => {
+                const base = normalise(f.replace(/\.md$/, ''));
+                return base.includes(target) || target.includes(base);
+            });
+            if (bestMatch) {
+                return fs.readFileSync(path.join(wikiDir, bestMatch), 'utf-8');
+            }
+        } catch { /* ignore */ }
+    }
+
+    // 3. Fallback: synthesise from graph data (no wiki generated yet)
+    const graph = loadGraph(workspaceRoot);
+    if (!graph) { return null; }
+
+    const communities = loadCommunities(workspaceRoot);
+    const comm = communities.find(
+        c => normalise(c.label) === target ||
+             c.label.toLowerCase().includes(communityLabel.toLowerCase())
+    );
+    if (!comm) { return null; }
+
+    const lines = [
+        `# Community: ${comm.label}`,
+        ``,
+        `**Size**: ${comm.size} nodes  |  **Files**: ${comm.files.length}`,
+        `**Key nodes**: ${comm.godNodes.join(', ')}`,
+        `**Neighbor communities**: ${comm.neighbors.join(', ') || 'none'}`,
+        ``,
+        `## Files`,
+        ...comm.files.slice(0, 30).map(f => `- ${f}`),
+        ...(comm.files.length > 30 ? [`- … and ${comm.files.length - 30} more`] : []),
+        ``,
+        `_Wiki not yet generated. Run \`graphify export wiki\` for richer community pages._`,
+    ];
+    return lines.join('\n');
 }

@@ -102,8 +102,8 @@ function _resolveDisplay(
             return {
                 icon: '$(graph)',
                 label: `graphify${countLabel}`,
-                tooltip: 'Knowledge graph ready but not wired into Copilot instructions. Click to open report.',
-                command: 'agileagentcanvas.graphify.openReport'
+                tooltip: 'Knowledge graph ready but not wired into Copilot instructions. Click to open graphify status.',
+                command: 'agileagentcanvas.graphify.openStatus'
             };
         }
 
@@ -114,8 +114,8 @@ function _resolveDisplay(
             return {
                 icon: '$(graph)',
                 label: `graphify${countLabel}`,
-                tooltip: `Knowledge graph is active and wired.\nNodes: ${nodeCount ?? '?'}${commitSuffix}\nClick to open GRAPH_REPORT.md`,
-                command: 'agileagentcanvas.graphify.openReport'
+                tooltip: `Knowledge graph is active and wired.\nNodes: ${nodeCount ?? '?'}${commitSuffix}\nClick to open graphify status.`,
+                command: 'agileagentcanvas.graphify.openStatus'
             };
         }
 
@@ -123,8 +123,8 @@ function _resolveDisplay(
             return {
                 icon: '$(graph)',
                 label: 'graphify',
-                tooltip: 'Graphify knowledge graph. Click to open report.',
-                command: 'agileagentcanvas.graphify.openReport'
+                tooltip: 'Graphify knowledge graph. Click to open graphify status.',
+                command: 'agileagentcanvas.graphify.openStatus'
             };
     }
 }

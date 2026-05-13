@@ -22,6 +22,10 @@ import {
 } from '../commands/artifact-commands';
 import { openChat } from '../commands/chat-bridge';
 import { JiraClient } from '../integrations/jira-client';
+import { detectGraphify, clearGraphifyCache } from '../integrations/graphify/graphify-detector';
+import { loadArchIndex } from '../integrations/graphify/graph-loader';
+import { runGraphify } from '../integrations/graphify/graphify-runner';
+import { GFY } from '../integrations/graphify/graphify-commands';
 import {
     getJiraConfig,
     formatEpicsAsMarkdown,
@@ -70,6 +74,25 @@ import {
 export interface WebviewMessage {
     type: string;
     [key: string]: any;
+}
+
+/**
+ * Map the backend GraphifyStatus to the shape the webview expects.
+ * - Converts cliForm → installed boolean
+ * - Converts htmlReportPath → htmlReportPresent boolean (keeps the path out of the webview)
+ */
+function toGraphifyStatusWebview(status: import('../integrations/graphify/graph-types').GraphifyStatus) {
+    return {
+        installed: status.cliForm !== 'unavailable',
+        graphPresent: status.graphPresent,
+        reportPresent: status.reportPresent,
+        wikiPresent: status.wikiPresent,
+        archIndexPresent: status.archIndexPresent,
+        htmlReportPresent: !!status.htmlReportPath,
+        wired: status.wired,
+        recommendation: status.recommendation,
+        builtAtCommit: status.builtAtCommit,
+    };
 }
 
 /**
@@ -793,6 +816,217 @@ export async function handleCommonWebviewMessage(
             } catch (err: any) {
                 logger.debug(`${logPrefix} jiraAction error: ${err?.message ?? err}`);
                 webview.postMessage({ type: 'jiraResult', success: false, error: err?.message ?? String(err) });
+            }
+            return true;
+        }
+
+        // ── Graphify modal messages ─────────────────────────────────────────────
+        case 'requestGraphifyStatus': {
+            if (!webview) { return true; }
+            const root = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath ?? '';
+            if (!root) {
+                webview.postMessage({ type: 'graphifyStatusResponse', status: null, archIndex: null });
+                return true;
+            }
+            const status = detectGraphify(root);
+            const archIndex = loadArchIndex(root);
+            webview.postMessage({
+                type: 'graphifyStatusResponse',
+                status: toGraphifyStatusWebview(status),
+                archIndex,
+            });
+            return true;
+        }
+
+        case 'graphifyAction': {
+            if (!webview) { return true; }
+            const root = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath ?? '';
+            if (!root) { return true; }
+            const action = message.action as string;
+            const validActions = ['bootstrap', 'index', 'update', 'wiki', 'wire', 'rebuild', 'openReport'];
+            if (!validActions.includes(action)) {
+                logger.warn(`${logPrefix} graphifyAction: unknown action "${action}"`);
+                return true;
+            }
+            try {
+                switch (action) {
+                    case 'bootstrap':
+                        await vscode.commands.executeCommand('agileagentcanvas.graphify.bootstrap');
+                        break;
+                    case 'index':
+                        await vscode.commands.executeCommand('agileagentcanvas.graphify.index');
+                        break;
+                    case 'update':
+                        await vscode.commands.executeCommand('agileagentcanvas.graphify.update');
+                        break;
+                    case 'wiki':
+                        await runGraphify(GFY.exportWiki(), { cwd: root });
+                        clearGraphifyCache(root);
+                        break;
+                    case 'wire':
+                        await runGraphify(GFY.vscodeInstall(), { cwd: root });
+                        clearGraphifyCache(root);
+                        break;
+                    case 'rebuild':
+                        await vscode.commands.executeCommand('agileagentcanvas.graphify.rebuild');
+                        break;
+                    case 'openReport':
+                        // Fire-and-forget: opens a webview/preview panel independently
+                        vscode.commands.executeCommand('agileagentcanvas.graphify.openReport');
+                        return true; // Don't refresh status — panel open has no status effect
+                }
+                // Refresh status after action
+                const freshStatus = detectGraphify(root);
+                const freshIndex = loadArchIndex(root);
+                webview.postMessage({
+                    type: 'graphifyStatusResponse',
+                    status: toGraphifyStatusWebview(freshStatus),
+                    archIndex: freshIndex,
+                });
+            } catch (err: any) {
+                logger.debug(`${logPrefix} graphifyAction "${action}" error: ${err?.message ?? err}`);
+            }
+            return true;
+        }
+
+        default:
+            return false;
+    }
+}
+
+// ── Catalogue & Skill Repo message handlers ───────────────────────────────────
+
+/**
+ * Handle catalogue and skill-repo messages from the webview.
+ * Call this from the webview's onDidReceiveMessage handler BEFORE the common handler.
+ *
+ * Returns true if the message was handled.
+ */
+export async function handleCatalogueWebviewMessage(
+    message: WebviewMessage,
+    webview: vscode.Webview,
+): Promise<boolean> {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getCatalogueService } = require('../state/catalogue-service') as typeof import('../state/catalogue-service');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getSkillRepoManager } = require('../state/skill-repo-manager') as typeof import('../state/skill-repo-manager');
+
+    const postCatalogueData = () => {
+        try {
+            const svc = getCatalogueService();
+            webview.postMessage({ type: 'catalogueData', entries: svc.getSkillManifest() });
+        } catch (err: any) {
+            webview.postMessage({ type: 'catalogueError', message: err?.message ?? String(err) });
+        }
+    };
+
+    switch (message.type) {
+        case 'getCatalogue': {
+            postCatalogueData();
+            return true;
+        }
+
+        case 'toggleSkill': {
+            try {
+                const svc = getCatalogueService();
+                await svc.toggleSkill(String(message.name), Boolean(message.enabled));
+                postCatalogueData();
+            } catch (err: any) {
+                webview.postMessage({ type: 'catalogueError', message: err?.message ?? String(err) });
+            }
+            return true;
+        }
+
+        case 'deleteSkill': {
+            try {
+                const svc = getCatalogueService();
+                await svc.deleteUserSkill(String(message.name));
+                postCatalogueData();
+            } catch (err: any) {
+                webview.postMessage({ type: 'catalogueError', message: err?.message ?? String(err) });
+            }
+            return true;
+        }
+
+        case 'createSkill': {
+            try {
+                const svc = getCatalogueService();
+                await svc.createSkillFromTemplate(String(message.name));
+                postCatalogueData();
+            } catch (err: any) {
+                webview.postMessage({ type: 'catalogueError', message: err?.message ?? String(err) });
+            }
+            return true;
+        }
+
+        case 'openSkillFolder': {
+            try {
+                const svc = getCatalogueService();
+                svc.openSkillFolder(String(message.name));
+            } catch (err: any) {
+                webview.postMessage({ type: 'catalogueError', message: err?.message ?? String(err) });
+            }
+            return true;
+        }
+
+        case 'listSkillRepos': {
+            try {
+                const mgr = getSkillRepoManager();
+                webview.postMessage({ type: 'skillRepoList', repos: mgr.listRepos() });
+            } catch (err: any) {
+                webview.postMessage({ type: 'catalogueError', message: err?.message ?? String(err) });
+            }
+            return true;
+        }
+
+        case 'addSkillRepo': {
+            const url = String(message.url || '').trim();
+            if (!url) {
+                webview.postMessage({ type: 'skillRepoResult', slug: '', success: false, error: 'URL is required.' });
+                return true;
+            }
+            const slug = url.replace(/\.git$/, '').split(/[/:]/).filter(Boolean).pop()?.toLowerCase().replace(/[^a-z0-9-]/g, '-') ?? 'repo';
+            webview.postMessage({ type: 'skillRepoProgress', slug, status: 'cloning', message: `Cloning ${url}…` });
+            try {
+                const mgr = getSkillRepoManager();
+                const entry = await mgr.addRepo(url, (msg: string) => {
+                    webview.postMessage({ type: 'skillRepoProgress', slug, status: 'cloning', message: msg });
+                });
+                webview.postMessage({ type: 'skillRepoResult', slug: entry.slug, success: true, result: entry });
+                webview.postMessage({ type: 'skillRepoList', repos: mgr.listRepos() });
+                postCatalogueData();
+            } catch (err: any) {
+                webview.postMessage({ type: 'skillRepoResult', slug, success: false, error: err?.message ?? String(err) });
+            }
+            return true;
+        }
+
+        case 'syncSkillRepo': {
+            const slug = String(message.slug || '');
+            webview.postMessage({ type: 'skillRepoProgress', slug, status: 'syncing', message: `Pulling latest for ${slug}…` });
+            try {
+                const mgr = getSkillRepoManager();
+                const result = await mgr.syncRepo(slug, (msg: string) => {
+                    webview.postMessage({ type: 'skillRepoProgress', slug, status: 'syncing', message: msg });
+                });
+                webview.postMessage({ type: 'skillRepoResult', slug, success: true, result });
+                webview.postMessage({ type: 'skillRepoList', repos: mgr.listRepos() });
+                postCatalogueData();
+            } catch (err: any) {
+                webview.postMessage({ type: 'skillRepoResult', slug, success: false, error: err?.message ?? String(err) });
+            }
+            return true;
+        }
+
+        case 'removeSkillRepo': {
+            const slug = String(message.slug || '');
+            try {
+                const mgr = getSkillRepoManager();
+                await mgr.removeRepo(slug);
+                webview.postMessage({ type: 'skillRepoList', repos: mgr.listRepos() });
+                postCatalogueData();
+            } catch (err: any) {
+                webview.postMessage({ type: 'catalogueError', message: err?.message ?? String(err) });
             }
             return true;
         }
