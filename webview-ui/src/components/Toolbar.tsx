@@ -23,6 +23,9 @@ interface ToolbarProps {
   schemaFixing?: boolean;
   onSprintView?: () => void;
   onJira?: () => void;
+  onGraphify?: () => void;
+  graphifyReady?: boolean;
+  onCatalogue?: () => void;
 }
 
 /** All artifact types that can be created via the Add menu. */
@@ -68,7 +71,7 @@ const ROOT_TYPES: Set<Artifact['type']> = new Set([
   'epic', 'requirement', 'prd', 'architecture', 'vision', 'product-brief',
 ]);
 
-export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhance, onElicit, themeOverride, onToggleTheme, onSwitchProject, activeFolderName, onExport, onImport, onHelp, onAsk, schemaIssueCount, onFixSchemas, onValidateSchemas, schemaValidating, schemaFixing, onSprintView, onJira }: ToolbarProps) {
+export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhance, onElicit, themeOverride, onToggleTheme, onSwitchProject, activeFolderName, onExport, onImport, onHelp, onAsk, schemaIssueCount, onFixSchemas, onValidateSchemas, schemaValidating, schemaFixing, onSprintView, onJira, onGraphify, graphifyReady, onCatalogue }: ToolbarProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -235,6 +238,29 @@ export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhanc
           title="Ask Agile Agent Canvas a question"
         >
           <Icon name="chat" size={16} />
+        </button>
+      )}
+
+      {/* graphify status button */}
+      {onGraphify && (
+        <button
+          className={`toolbar-graphify-btn${graphifyReady ? ' toolbar-graphify-btn--ready' : ''}`}
+          onClick={onGraphify}
+          title={graphifyReady ? 'graphify — knowledge graph active' : 'graphify — click to open status'}
+        >
+          ⬡
+          {!graphifyReady && <span className="toolbar-graphify-dot" />}
+        </button>
+      )}
+
+      {/* Skill Catalogue button */}
+      {onCatalogue && (
+        <button
+          className="toolbar-catalogue-btn"
+          onClick={onCatalogue}
+          title="Manage Skill &amp; Agent Catalogue"
+        >
+          <Icon name="catalogue" size={16} />
         </button>
       )}
 

@@ -67,11 +67,14 @@ export function detectGraphify(workspaceRoot: string, pythonPath = 'python'): Gr
     const graphJson = path.join(workspaceRoot, 'graphify-out', 'graph.json');
     const graphReport = path.join(workspaceRoot, 'graphify-out', 'GRAPH_REPORT.md');
     const wikiIndex = path.join(workspaceRoot, 'graphify-out', 'wiki', 'index.md');
+    const archIndexMd = path.join(workspaceRoot, 'graphify-out', 'ARCH_INDEX.md');
+    const archIndexJson = path.join(workspaceRoot, 'graphify-out', 'ARCH_INDEX.json');
     const copilotInstructions = path.join(workspaceRoot, '.github', 'copilot-instructions.md');
 
     const graphPresent = fs.existsSync(graphJson);
     const reportPresent = fs.existsSync(graphReport);
     const wikiPresent = fs.existsSync(wikiIndex);
+    const archIndexPresent = fs.existsSync(archIndexMd) || fs.existsSync(archIndexJson);
 
     let wired = false;
     try {
@@ -97,7 +100,10 @@ export function detectGraphify(workspaceRoot: string, pythonPath = 'python'): Gr
 
     const recommendation = deriveRecommendation(cliForm, graphPresent, wired);
 
-    const status: GraphifyStatus = { cliForm, graphPresent, reportPresent, wikiPresent, wired, builtAtCommit, recommendation };
+    // Scan graphify-out/ for an HTML report file (graphify report may produce one)
+    const htmlReportPath = findHtmlReport(path.join(workspaceRoot, 'graphify-out'));
+
+    const status: GraphifyStatus = { cliForm, graphPresent, reportPresent, wikiPresent, archIndexPresent, htmlReportPath, wired, builtAtCommit, recommendation };
     statusCache.set(workspaceRoot, status);
     logger.debug('graphify status', JSON.stringify(status));
     return status;
@@ -112,4 +118,29 @@ function deriveRecommendation(
     if (!graphPresent)             { return 'bootstrap'; }
     if (!wired)                    { return 'wire'; }
     return 'ready';
+}
+
+/**
+ * Look for an HTML report produced by graphify in the graphify-out directory.
+ * Checks a prioritised list of candidate filenames, then falls back to any *.html.
+ * Returns the absolute path if found, undefined otherwise.
+ */
+function findHtmlReport(graphifyOutDir: string): string | undefined {
+    if (!fs.existsSync(graphifyOutDir)) { return undefined; }
+    // Priority-ordered candidates that graphify tooling commonly produces
+    const candidates = ['graph.html', 'GRAPH_TREE.html', 'report.html', 'index.html', 'corpus.html'];
+    for (const name of candidates) {
+        const p = path.join(graphifyOutDir, name);
+        if (fs.existsSync(p)) { return p; }
+    }
+    // Fall back: any .html file directly inside graphify-out (not subdirs)
+    try {
+        const entries = fs.readdirSync(graphifyOutDir);
+        for (const entry of entries) {
+            if (entry.endsWith('.html')) {
+                return path.join(graphifyOutDir, entry);
+            }
+        }
+    } catch { /* ignore */ }
+    return undefined;
 }

@@ -1,6 +1,78 @@
 # Changelog
 
+## 0.4.3
+
+### Skill Catalogue Manager
+
+- **User-managed skill folder** — A new global setting `agileagentcanvas.userCataloguePath` lets you point the extension at any folder on your machine. Each subfolder containing a `SKILL.md` file is treated as a skill or agent. The extension watches this folder with `vscode.FileSystemWatcher` and reloads automatically whenever skills are added, edited, or removed.
+- **Merged catalogue** — Skills from the user catalogue are merged with the 86 built-in skills at runtime. User skills always win: a user-defined skill with the same folder name as a built-in overrides it. All other built-in skills remain available.
+- **Enable/disable per skill** — Any skill (built-in or user-added) can be individually toggled on or off. Disabled skills are excluded from AI routing and the `/help` command. State is persisted in VS Code global storage (not `settings.json`).
+- **Skill Catalogue Modal** — A new 🗂️ button on the canvas toolbar opens a full-screen catalogue management modal with five tabs:
+  - **All** — all skills + agents with search; toggle, open folder, or delete from here
+  - **Agents** — filter to agent-type entries only
+  - **Skills** — filter to task-skill entries only
+  - **User-Added** — shows only skills sourced from your user catalogue folder; Open Folder and Delete actions are available here
+  - **Skill Repos** — manage git-sourced skill repos (see below)
+- **Create skill from template** — A "Create New Skill" form in the modal scaffolds a new `SKILL.md` + `customize.toml` inside your user catalogue folder instantly.
+- **Delete user skill** — Permanently removes a skill folder from your user catalogue. A confirmation dialog is shown before any destructive action.
+- **Open skill folder** — Reveals the skill's folder in the VS Code Explorer for quick editing.
+- **Live canvas sync** — When the catalogue changes (file system or repo sync), all open canvas panels receive a `catalogueChanged` message and refresh their data automatically.
+
+### Git Skill Repository Support
+
+- **Add a skill repo by URL** — Paste any git repository URL (`https://`, `git@`, or `ssh://`) in the **Skill Repos** tab and the extension clones it with `git clone --depth 1` into a managed `_repos/` subfolder inside your user catalogue path. Any subfolder in the cloned repo that contains a `SKILL.md` is automatically imported as a user skill.
+- **`.repo-source` sidecar file** — Each skill imported from a git repo carries a `.repo-source` file recording the repo slug, so the catalogue UI can show which repo a skill came from (📦 badge).
+- **Sync** — The **Sync** button on each repo card runs `git pull` and re-discovers skills: new skill folders are added, removed folders are cleaned up, and changed `SKILL.md` files are updated. A real-time progress indicator shows the current clone/pull status.
+- **Remove repo** — Removes all skills sourced from that repo, deletes the cloned folder, and clears the repo from the tracked list. A confirmation dialog is shown first.
+- **`agileagentcanvas.skillRepos`** — New global setting (array of `{url, name?}`) persists the list of tracked skill repos across sessions.
+- **`simple-git`** — Added as a runtime dependency; wraps the system `git` binary for clone/pull operations.
+
+### `/help` Smart Skill Routing
+
+- **New `/help` command** — `@agileagentcanvas /help` is now the recommended first stop. With no arguments it shows a quick-start table of skill categories. With a natural-language prompt (e.g. `@agileagentcanvas /help I need to write test cases`) it uses the active LLM to read the live catalogue manifest and return the top 3–5 best-matching skills with a one-sentence explanation for each.
+- **CLI-compatible output** — Results are streamed as a numbered markdown list that renders correctly in VS Code Copilot Chat, opencode, claude-code, and any other markdown-aware terminal.
+- **Keyword fallback** — If the LLM response cannot be parsed as JSON, the command falls back to a fast keyword-match against skill names and descriptions.
+- **Respects enabled/disabled state** — Only skills that are currently enabled in the catalogue are considered for routing.
+
 ## 0.4.2
+
+### Graphify — Semantic Knowledge Graph Integration
+
+- **`graphify` CLI integration** — The extension now detects and drives the [graphify](https://pypi.org/project/graphifyy/) Python CLI, which builds a semantic dependency graph (`graph.json`) of the codebase using NetworkX. Auto-detects CLI form: bare `graphify` command takes priority; falls back to `python -m graphify`; gracefully surfaces "unavailable" state when neither is found.
+- **Four-stage pipeline** — `detect → extract → build → report` runs the full knowledge-graph pipeline. Each stage is skipped when its output is already up-to-date. Output is streamed live to a dedicated **Agile Agent Canvas — graphify** VS Code output channel.
+- **Bootstrap command** (`agileagentcanvas.graphify.bootstrap`) — One-shot setup: installs the graphify CLI via pip if missing, writes `.graphifyignore`, builds the initial graph, and wires the result into VS Code Copilot Chat instructions. Guarded by workspace trust; shows a confirmation dialog when invoked manually.
+- **Update command** (`agileagentcanvas.graphify.update`) — Re-runs the extract + build + report stages against current source files. Skips unchanged files for speed.
+- **Rebuild command** (`agileagentcanvas.graphify.rebuild`) — Forces a full cold rebuild of the graph, bypassing incremental caching.
+- **Graphify status bar** — Persistent status bar item shows graph state at a glance: `$(graph) Graphify — wire` (not wired), `$(pass-filled) Graphify — ready` (graph present), or a neutral idle state. Click opens the graph report or bootstrap prompt.
+- **`/graphify` chat slash command** — `@agileagentcanvas /graphify` with subcommands: `bootstrap`, `update`, `query <text>`, `path <from> <to>`.
+- **`agileagentcanvas_graph_query` LM tool** — AI can autonomously query the semantic graph for relationships, callers, dependencies, and similar symbols using natural language or Cypher-like syntax.
+- **`agileagentcanvas_graph_path` LM tool** — AI can find shortest dependency paths between two nodes in the graph (e.g. "how does `AuthService` reach `PaymentGateway`?").
+- **Graph loader with mtime caching** — `graph.json` is parsed once per mtime epoch; subsequent reads hit the in-process cache. Cache is invalidated when graphify re-runs.
+- **Community extraction** — Community memberships from `graph.json` are surfaced as typed `GraphCommunity` objects, enabling the `/graphify` chat command to answer "what's in the auth community?".
+- **`copilot-instructions.md` auto-wiring** — Bootstrap injects graphify graph-awareness directives into `.github/copilot-instructions.md` so all Copilot Chat sessions automatically receive codebase context.
+- **Two new VS Code settings**:
+  - `agileagentcanvas.graphify.pythonPath` — override the Python executable used to run graphify (default: `python`).
+  - `agileagentcanvas.graphify.autoBootstrapOnNewProject` — when `true`, prompts to bootstrap graphify automatically when a new trusted project is opened (default: `false`).
+- **`docs/graphify-multi-repo-guide.md`** — New guide covering single-repo setup, CI automation, and cross-repo graph federation patterns.
+
+### Graphify Index — Architecture Corpus & Modal
+
+- **`graphify index .` CLI command** — New Python pipeline stage generates `ARCH_INDEX.md` (human-readable) and `ARCH_INDEX.json` (machine-readable) from the NetworkX dependency graph. Outputs community summaries, god-node detection, cross-community edge lists, and token-budget metadata. Uses `datetime.now(timezone.utc)` for Python 3.12+ compatibility.
+- **GraphifyModal component** — New full-screen React modal (`webview-ui/src/components/GraphifyModal.tsx`) with three sections:
+  - **Pipeline Tracker** — Visual stage indicators (detect → extract → build → report → wiki → index) reflecting actual pipeline completion status, including `wikiPresent` detection.
+  - **Arch Corpus** — Stats bar (nodes/edges/communities/god-nodes), expandable community rows with directory chips, and cross-community edge list.
+  - **Recommended Actions** — Context-aware action buttons (bootstrap, index, update, wiki, wire, rebuild) dispatched as `graphifyAction` messages.
+- **Graphify status bar rework** — Status bar item states (wire/ready/default) now open the GraphifyModal via `agileagentcanvas.graphify.openStatus` instead of the old report view.
+- **Toolbar integration** — New Graphify button on the canvas toolbar opens the modal directly.
+- **`requestGraphifyStatus` message handler** — Webview can request current graphify pipeline status + arch index data; handler responds with `graphifyStatus` message including parsed `ARCH_INDEX.json` content.
+- **`graphifyAction` message handler** — Dispatches bootstrap/index/update/wiki/wire/rebuild actions from the modal to the Python CLI runner with appropriate arguments.
+- **`loadCommunityWiki` function** — `src/integrations/graphify/graph-query.ts` loads wiki content for a community label using exact/fuzzy file matching with graph-data fallback.
+- **`agileagentcanvas_graph_community` LM tool** — AI can query community-specific wiki content via natural language (e.g. "tell me about the auth community"). Registered as tool #10 in chat tools.
+- **Two new commands** — `agileagentcanvas.graphify.index` (runs index pipeline) and `agileagentcanvas.graphify.openStatus` (opens modal on all active panels).
+- **Webview types** — Added `GraphifyStatusWebview`, `ArchIndexWebview`, `ArchCommunityWebview`, `ArchGodNodeWebview`, `ArchCrossEdgeWebview` interfaces.
+- **CSS namespace** — Full `gfy-` prefixed stylesheet for modal overlay, pipeline stages, stats bar, community rows, god-node/dir chips, cross-edge list, and action buttons.
+- **JSON Schema** — `resources/_aac/graphify/schema/arch-index.schema.json` (draft-07) validates the generated arch index structure.
+- **CI documentation** — Updated `docs/graphify-multi-repo-guide.md` with `graphify index .` in per-repo and cross-repo CI YAML templates, "Tiered Context for Coding Agents" section with token budget table, and "What to commit" guidance.
 
 ### BMAD v6.6.0 Resource Migration
 

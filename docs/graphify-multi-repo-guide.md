@@ -187,6 +187,9 @@ jobs:
             python -m graphify . --no-viz
           fi
 
+      - name: Generate Architecture Index
+        run: graphify index .
+
       - name: Commit updated graph
         run: |
           git config user.name "github-actions[bot]"
@@ -267,6 +270,8 @@ jobs:
             ~/.graphify/repos/your-org/repo-B/graphify-out/graph.json \
             ~/.graphify/repos/your-org/repo-C/graphify-out/graph.json \
             --out graphify-out/graph.json
+          # Generate architecture index for the merged graph
+          graphify index .
 
       - name: Commit
         run: |
@@ -276,6 +281,47 @@ jobs:
           git diff --cached --quiet || git commit -m "chore: update cross-repo graph"
           git push
 ```
+
+---
+
+## Tiered Context for Coding Agents
+
+Instead of injecting the full `GRAPH_REPORT.md` (~10–50 K tokens) into every AI interaction, use a **tiered approach** that keeps token cost low while preserving depth on demand.
+
+| Tier | File | Size | When to use |
+|---|---|---|---|
+| **1 — Always-on** | `graphify-out/ARCH_INDEX.md` | ~800–1,500 tokens | Automatically injected into every Copilot Chat system prompt |
+| **2 — On demand** | `graphify-out/wiki/{community}.md` | ~1,000–3,000 tokens | Agent calls `agileagentcanvas_graph_community` when it needs to dive deeper |
+| **3 — Symbol tracing** | `graphify-out/graph.json` | varies | Agent calls `agileagentcanvas_graph_query` for path/relationship queries |
+| **4 — Full audit** | `graphify-out/GRAPH_REPORT.md` | 10–50 K tokens | Human reads it directly; rarely needed by agents |
+
+### Generating the Architecture Index
+
+Run once after bootstrapping (or after any `graphify .` / `graphify update`):
+
+```bash
+graphify index .
+```
+
+The pipeline now runs this automatically as stage 5. In CI:
+
+```yaml
+- name: Build graphify graph
+  run: |
+    graphify .
+    graphify index .
+```
+
+### What to commit
+
+| File | Commit? | Notes |
+|---|---|---|
+| `graphify-out/graph.json` | ✅ Yes | Source of truth for all graph queries |
+| `graphify-out/GRAPH_REPORT.md` | ✅ Yes | Human-readable full report |
+| `graphify-out/ARCH_INDEX.md` | ✅ Yes | Always-on agent context — **commit this** |
+| `graphify-out/ARCH_INDEX.json` | ✅ Yes | Machine-readable arch index |
+| `graphify-out/wiki/*.md` | ✅ Yes | Community wiki pages |
+| `graphify-out/cache/` | ❌ No | Add to `.gitignore` |
 
 ---
 

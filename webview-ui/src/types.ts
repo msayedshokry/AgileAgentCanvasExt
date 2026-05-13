@@ -1453,3 +1453,79 @@ export const ARTIFACT_STATUS_OPTIONS: ArtifactStatus[] = [
   'in-review', 'review', 'ready-for-review',
   'complete', 'completed', 'approved', 'done', 'archived',
 ];
+
+// =============================================================================
+// Graphify Modal Types
+// =============================================================================
+
+export interface GraphifyStatusWebview {
+    installed: boolean;
+    graphPresent: boolean;
+    reportPresent: boolean;
+    wikiPresent: boolean;
+    archIndexPresent: boolean;
+    /** True when graphify produced an HTML report file (report.html / index.html etc.) */
+    htmlReportPresent: boolean;
+    wired: boolean;
+    recommendation: 'unavailable' | 'install' | 'bootstrap' | 'wire' | 'update' | 'ready';
+    builtAtCommit?: string;
+    nodeCount?: number;
+}
+
+export interface ArchCommunityWebview {
+    id: number;
+    label: string;
+    directories: string[];
+    fileCount: number;
+    nodeCount: number;
+    godNodes: string[];
+    neighbors: number[];
+    summary: string;
+}
+
+export interface ArchGodNodeWebview {
+    id: string;
+    label: string;
+    degree: number;
+    community: number | null;
+}
+
+export interface ArchCrossEdgeWebview {
+    from: number;
+    to: number;
+    edgeCount: number;
+    topRelations: string[];
+}
+
+export interface ArchIndexWebview {
+    repo: string;
+    generatedAt: string;
+    stats: { files: number; nodes: number; edges: number; communities: number };
+    communities: ArchCommunityWebview[];
+    globalGodNodes: ArchGodNodeWebview[];
+    crossCommunityEdges: ArchCrossEdgeWebview[];
+    navigation: { fullReport: string; wiki: string; graph: string };
+}
+
+/** Sent from webview → extension to request current graphify status */
+export interface RequestGraphifyStatusMessage {
+    type: 'requestGraphifyStatus';
+}
+
+/** Sent from extension → webview with graphify status + arch index */
+export interface GraphifyStatusResponseMessage {
+    type: 'graphifyStatusResponse';
+    status: GraphifyStatusWebview | null;
+    archIndex: ArchIndexWebview | null;
+}
+
+/** Sent from webview → extension to trigger a graphify action */
+export interface GraphifyActionMessage {
+    type: 'graphifyAction';
+    action: 'bootstrap' | 'index' | 'update' | 'wiki' | 'wire' | 'rebuild';
+}
+
+/** Sent from extension → webview to show the graphify modal */
+export interface ShowGraphifyModalMessage {
+    type: 'showGraphifyModal';
+}

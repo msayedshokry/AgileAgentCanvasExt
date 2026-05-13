@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { createLogger } from '../../utils/logger';
-import { GraphCommunity, GraphJson } from './graph-types';
+import { ArchIndex, GraphCommunity, GraphJson } from './graph-types';
 
 const logger = createLogger('graph-loader');
 
@@ -178,4 +178,62 @@ export function loadReport(workspaceRoot: string): string | null {
 /** Invalidate the loader cache when graphify-out changes. */
 export function invalidateLoaderCache(workspaceRoot: string): void {
     _cache.delete(workspaceRoot);
+}
+
+// ─── Architecture Index loaders ───────────────────────────────────────────────
+
+const _archCache = new Map<string, { mtime: number; index: ArchIndex }>();
+
+function archIndexJsonPath(workspaceRoot: string) {
+    return path.join(workspaceRoot, 'graphify-out', 'ARCH_INDEX.json');
+}
+
+function archIndexMdPath(workspaceRoot: string) {
+    return path.join(workspaceRoot, 'graphify-out', 'ARCH_INDEX.md');
+}
+
+/**
+ * Load and parse ARCH_INDEX.json with mtime-based caching.
+ * Returns null if neither file exists.
+ */
+export function loadArchIndex(workspaceRoot: string): ArchIndex | null {
+    const jsonPath = archIndexJsonPath(workspaceRoot);
+    if (!fs.existsSync(jsonPath)) { return null; }
+
+    try {
+        const stat = fs.statSync(jsonPath);
+        const mtime = stat.mtimeMs;
+        const cached = _archCache.get(workspaceRoot);
+        if (cached && cached.mtime === mtime) { return cached.index; }
+
+        const raw = fs.readFileSync(jsonPath, 'utf-8');
+        const index: ArchIndex = JSON.parse(raw);
+        _archCache.set(workspaceRoot, { mtime, index });
+        logger.info(`Loaded ARCH_INDEX.json (${index.stats?.communities ?? '?'} communities)`);
+        return index;
+    } catch (err: any) {
+        logger.error('Failed to load ARCH_INDEX.json:', err.message);
+        return null;
+    }
+}
+
+/**
+ * Read ARCH_INDEX.md as a raw string for direct system-prompt injection.
+ * Returns null if the file does not exist.
+ */
+export function loadArchIndexMarkdown(workspaceRoot: string): string | null {
+    const mdPath = archIndexMdPath(workspaceRoot);
+    if (!fs.existsSync(mdPath)) { return null; }
+
+    try {
+        return fs.readFileSync(mdPath, 'utf-8');
+    } catch (err: any) {
+        logger.error('Failed to read ARCH_INDEX.md:', err.message);
+        return null;
+    }
+}
+
+/** Invalidate the arch-index cache when graphify-out changes. */
+export function invalidateArchIndexCache(workspaceRoot: string): void {
+    _archCache.delete(workspaceRoot);
 }
