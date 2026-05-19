@@ -720,7 +720,33 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
         )
     );
 
-    logger.debug('[AgileAgentCanvasTools] Registered 10 language model tools');
+    // ── agileagentcanvas_codeburn_report ──────────────────────────────────────
+    disposables.push(
+        vscode.lm.registerTool<{ period?: string; action?: string }>(
+            'agileagentcanvas_codeburn_report',
+            {
+                async invoke(request, token) {
+                    const { period, action } = request.input;
+                    const { CodeburnCommands } = await import('../commands/codeburn-commands.js');
+                    const cb = new CodeburnCommands();
+
+                    if (action === 'models') {
+                        const md = await cb.getChatModels(undefined, token);
+                        return new vscode.LanguageModelToolResult([
+                            new vscode.LanguageModelTextPart(md)
+                        ]);
+                    }
+
+                    const summary = await cb.getChatSummary(period || undefined, token);
+                    return new vscode.LanguageModelToolResult([
+                        new vscode.LanguageModelTextPart(summary)
+                    ]);
+                }
+            }
+        )
+    );
+
+    logger.debug('[AgileAgentCanvasTools] Registered 11 language model tools');
     return disposables;
 }
 
@@ -982,6 +1008,31 @@ export function getToolDefinitions(): vscode.LanguageModelChatTool[] {
                     }
                 },
                 required: ['community']
+            }
+        },
+        {
+            name: 'agileagentcanvas_codeburn_report',
+            description:
+                'Reads AI coding cost and token usage data from Codeburn. ' +
+                'Use this when the user asks about their AI spend, token usage, costs, ' +
+                'budget, or wants to compare model pricing. ' +
+                'Codeburn reads session data directly from disk (no API keys needed). ' +
+                'Returns a formatted markdown summary with cost, tokens, sessions, and provider. ' +
+                'If codeburn is not installed, instructs the user how to install it.',
+            inputSchema: {
+                type: 'object' as const,
+                properties: {
+                    period: {
+                        type: 'string',
+                        description: 'Time period: "today", "7days", "30days", or omit for current status'
+                    },
+                    action: {
+                        type: 'string',
+                        enum: ['summary', 'models'],
+                        description: 'Type of report: "summary" (default) for cost overview, "models" for per-model breakdown'
+                    }
+                },
+                required: []
             }
         }
     ];

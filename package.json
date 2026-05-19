@@ -182,6 +182,26 @@
             "action"
           ]
         }
+      },
+      {
+        "name": "agileagentcanvas_codeburn_report",
+        "displayName": "Agile Agent Canvas Codeburn Report",
+        "modelDescription": "Reads AI coding cost and token usage from Codeburn. Use when the user asks about AI spend, token usage, costs, budget, or model pricing. Codeburn reads session data directly from disk (no API keys).",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "period": {
+              "type": "string",
+              "description": "Time period: today, 7days, 30days, or omit for current status"
+            },
+            "action": {
+              "type": "string",
+              "enum": ["summary", "models"],
+              "description": "summary (default) for cost overview, models for per-model breakdown"
+            }
+          }
+        }
       }
     ],
     "chatParticipants": [
@@ -341,6 +361,22 @@
             "description": "Incrementally update the graphify knowledge graph (code-only, no LLM re-extraction)"
           },
           {
+            "name": "codeburn",
+            "description": "Show AI coding cost and token usage via Codeburn. Subcommands: today, week, month, report, models, claude, copilot, antigravity, opencode, compare, export, dashboard"
+          },
+          {
+            "name": "cost",
+            "description": "Alias for /codeburn report — show AI spend breakdown"
+          },
+          {
+            "name": "tokens",
+            "description": "Alias for /codeburn models — show per-model token usage"
+          },
+          {
+            "name": "caveman",
+            "description": "Toggle caveman communication mode. Subcommands: on, off, toggle, lite, full, ultra, wenyan, status"
+          },
+          {
             "name": "help",
             "description": "Describe what you want to do and the extension will recommend the best skills and agents for your task"
           }
@@ -487,6 +523,56 @@
         "command": "agileagentcanvas.graphify.openStatus",
         "title": "Agile Agent Canvas: Open graphify Status",
         "icon": "$(graph)"
+      },
+      {
+        "command": "agileagentcanvas.codeburn.menu",
+        "title": "Agile Agent Canvas: Codeburn Menu",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "agileagentcanvas.codeburn.bootstrap",
+        "title": "Agile Agent Canvas: Install Codeburn",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "agileagentcanvas.codeburn.dashboard",
+        "title": "Agile Agent Canvas: Open Codeburn Dashboard",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "agileagentcanvas.codeburn.report",
+        "title": "Agile Agent Canvas: Codeburn Cost Report",
+        "icon": "$(report)"
+      },
+      {
+        "command": "agileagentcanvas.codeburn.models",
+        "title": "Agile Agent Canvas: Codeburn Model Breakdown",
+        "icon": "$(database)"
+      },
+      {
+        "command": "agileagentcanvas.codeburn.optimize",
+        "title": "Agile Agent Canvas: Codeburn Optimize",
+        "icon": "$(debug-start)"
+      },
+      {
+        "command": "agileagentcanvas.codeburn.compare",
+        "title": "Agile Agent Canvas: Codeburn Compare",
+        "icon": "$(git-compare)"
+      },
+      {
+        "command": "agileagentcanvas.codeburn.export",
+        "title": "Agile Agent Canvas: Codeburn Export JSON",
+        "icon": "$(export)"
+      },
+      {
+        "command": "agileagentcanvas.caveman.toggle",
+        "title": "Agile Agent Canvas: Toggle Caveman Mode",
+        "icon": "$(megaphone)"
+      },
+      {
+        "command": "agileagentcanvas.caveman.setIntensity",
+        "title": "Agile Agent Canvas: Set Caveman Intensity",
+        "icon": "$(settings-gear)"
       }
     ],
     "keybindings": [
@@ -693,6 +779,33 @@
           "type": "boolean",
           "default": false,
           "description": "Show the Codebase lane on the canvas when a graphify knowledge graph is present."
+        },
+        "agileagentcanvas.codeburn.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Codeburn cost observability integration. When enabled, the extension can query codeburn for AI coding spend data."
+        },
+        "agileagentcanvas.codeburn.path": {
+          "type": "string",
+          "default": "",
+          "description": "Optional absolute path to the codeburn executable. Leave empty to auto-detect (global npm, local node_modules, or npx)."
+        },
+        "agileagentcanvas.caveman.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable caveman communication mode. When enabled, the AI responds in ultra-terse style that cuts token usage ~75%."
+        },
+        "agileagentcanvas.caveman.intensity": {
+          "type": "string",
+          "default": "full",
+          "enum": ["lite", "full", "ultra", "wenyan"],
+          "enumDescriptions": [
+            "Lite — drops filler and hedging, keeps basic grammar",
+            "Full — drops articles, filler, pleasantries; fragments OK (default)",
+            "Ultra — maximum compression; abbreviate everything, arrows for causality",
+            "Wenyan — classical Chinese literary terse (ultra-minimal poetic form)"
+          ],
+          "description": "Intensity level for caveman communication mode. Only applies when caveman is enabled."
         }
       }
     },

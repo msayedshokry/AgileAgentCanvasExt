@@ -13,6 +13,7 @@ import {
     mergeJiraIntoArtifacts
 } from '../integrations/jira-importer';
 import { loadReport, detectGraphify } from '../integrations/graphify';
+import { CavemanService, getCavemanService } from './caveman-service';
 import { graphQuery } from '../integrations/graphify/graph-query';
 import { loadGraph, loadCommunities, loadArchIndexMarkdown } from '../integrations/graphify/graph-loader';
 
@@ -98,6 +99,10 @@ export class AgileAgentCanvasChatParticipant {
             'graph-query': () => this.handleGraphQueryCommand(prompt, stream),
             'graph-bootstrap': () => this.handleGraphBootstrapCommand(stream),
             'graph-update': () => this.handleGraphUpdateCommand(stream),
+            'codeburn': () => this.handleCodeburnCommand(prompt, stream),
+            'cost': () => this.handleCodeburnCommand(`report ${prompt}`, stream),
+            'tokens': () => this.handleCodeburnCommand(`models ${prompt}`, stream),
+            'caveman': () => this.handleCavemanCommand(prompt, stream),
             'help': () => this.handleHelpCommand(prompt, stream, token)
         };
 
@@ -159,6 +164,7 @@ export class AgileAgentCanvasChatParticipant {
         }
 
         const systemPrompt = this.getAnalystPersona();
+        const cavemanSuffix = getCavemanService()?.getSystemPromptSuffix() ?? '';
         const artifactContext = this.buildArtifactContext();
         const history = this.buildHistory(context);
         const bmadContext = this.buildBmadMethodologyContext();
@@ -198,7 +204,7 @@ export class AgileAgentCanvasChatParticipant {
         if (model.vscodeLm) {
             try {
                 const vsMessages: vscode.LanguageModelChatMessage[] = [
-                    vscode.LanguageModelChatMessage.User(systemPrompt + outputFormatHint + workflowResumeHint),
+                    vscode.LanguageModelChatMessage.User(systemPrompt + cavemanSuffix + outputFormatHint + workflowResumeHint),
                     vscode.LanguageModelChatMessage.User(`BMAD methodology context:\n${bmadContext}`),
                     vscode.LanguageModelChatMessage.User(`Current project state:\n${artifactContext}`),
                     ...(graphContext ? [vscode.LanguageModelChatMessage.User(`Codebase knowledge graph:\n${graphContext}`)] : []),
@@ -267,7 +273,7 @@ export class AgileAgentCanvasChatParticipant {
             // Direct API providers — text-only streaming (no tool support yet)
             try {
                 const messages: ChatMessage[] = [
-                    { role: 'system', content: systemPrompt + outputFormatHint + workflowResumeHint },
+                    { role: 'system', content: systemPrompt + cavemanSuffix + outputFormatHint + workflowResumeHint },
                     { role: 'user', content: `BMAD methodology context:\n${bmadContext}` },
                     { role: 'user', content: `Current project state:\n${artifactContext}` },
                     ...(graphContext ? [{ role: 'user' as const, content: `Codebase knowledge graph:\n${graphContext}` }] : []),
@@ -3345,13 +3351,15 @@ Always end the interaction by either saving confirmed changes or acknowledging t
         // Load the analyst persona from disk; fall back to a minimal inline version
         const persona = bmadPath ? loadAgentPersona(bmadPath, 'bmad-agent-analyst') : undefined;
 
+        const cavemanSuffix = getCavemanService()?.getSystemPromptSuffix() ?? '';
+
         // ── Full-activation mode ─────────────────────────────────────────────
         // When we have the full agent file, inject it verbatim so the AI gets
         // the complete activation instructions, menus, menu-handlers, and rules
         // — exactly as the official BMAD-METHOD intends.  This enables the
         // interactive menu-driven conversational model.
         if (persona) {
-            return `${formatFullAgentForPrompt(persona)}
+            return `${formatFullAgentForPrompt(persona)}${cavemanSuffix}
 
 ## VS Code Extension Context
 You are running inside the AgileAgentCanvas VS Code extension.
@@ -3391,7 +3399,7 @@ You MUST always ground your responses in the actual BMAD methodology files on di
 
 Be professional, thorough, and focus on actionable outputs.
 When generating artifacts, always use the exact JSON format from the BMAD schemas.
-Engage the user in collaborative discussion — ask clarifying questions when useful, present options, and confirm understanding before producing final outputs.`;
+Engage the user in collaborative discussion — ask clarifying questions when useful, present options, and confirm understanding before producing final outputs.${cavemanSuffix}`;
     }
 
     private buildArtifactContext(): string {
@@ -4702,6 +4710,208 @@ Output ONLY the JSON, no explanation.`;
         stream.markdown('Updating graphify knowledge graph…\n\nCheck the output channel for progress.\n');
         await vscode.commands.executeCommand('agileagentcanvas.graphify.update');
         return { metadata: { command: 'graph-update' } };
+    }
+
+    // ─── codeburn slash commands ─────────────────────────────────────────────
+
+    /** /codeburn [today|week|month|report|models|export|status] */
+    private async handleCodeburnCommand(
+        prompt: string,
+        stream: vscode.ChatResponseStream
+    ): Promise<vscode.ChatResult> {
+        const parts = prompt.trim().split(/\s+/);
+        const sub = (parts[0] ?? '').toLowerCase();
+        const arg = parts.slice(1).join(' ');
+
+        const { CodeburnCommands } = await import('../commands/codeburn-commands.js');
+        const cb = new CodeburnCommands();
+
+        try {
+            // Default /codeburn with no args → show status + menu
+            if (!sub || sub === 'status') {
+                const summary = await cb.getChatSummary();
+                stream.markdown(summary + '\n\n');
+                stream.markdown(
+                    '**Subcommands:**\n' +
+                    '- `/codeburn today` — today\'s usage\n' +
+                    '- `/codeburn week` — last 7 days\n' +
+                    '- `/codeburn month` — last 30 days\n' +
+                    '- `/codeburn report` — full cost report\n' +
+                    '- `/codeburn models` — per-model breakdown\n' +
+                    '- `/codeburn claude` — Claude Code costs\n' +
+                    '- `/codeburn copilot` — GitHub Copilot costs\n' +
+                    '- `/codeburn antigravity` — Antigravity costs\n' +
+                    '- `/codeburn opencode` — OpenCode costs\n' +
+                    '- `/codeburn compare` — side-by-side comparison\n' +
+                    '- `/codeburn export` — raw JSON export\n'
+                );
+                return { metadata: { command: 'codeburn', subcommand: 'status' } };
+            }
+
+            if (sub === 'today') {
+                const summary = await cb.getChatSummary('today');
+                stream.markdown(summary);
+                return { metadata: { command: 'codeburn', subcommand: 'today' } };
+            }
+
+            if (sub === 'week' || sub === '7days') {
+                const summary = await cb.getChatSummary('7days');
+                stream.markdown(summary);
+                return { metadata: { command: 'codeburn', subcommand: 'week' } };
+            }
+
+            if (sub === 'month' || sub === '30days') {
+                const summary = await cb.getChatSummary('30days');
+                stream.markdown(summary);
+                return { metadata: { command: 'codeburn', subcommand: 'month' } };
+            }
+
+            if (sub === 'report') {
+                stream.markdown('Running full cost report…\n\n');
+                await cb.showReport();
+                stream.markdown('Report sent to the **Codeburn** output panel.\n');
+                return { metadata: { command: 'codeburn', subcommand: 'report' } };
+            }
+
+            if (sub === 'models') {
+                const md = await cb.getChatModels();
+                stream.markdown(md);
+                return { metadata: { command: 'codeburn', subcommand: 'models' } };
+            }
+
+            if (sub === 'claude' || sub === 'claude-code') {
+                const md = await cb.getChatModels('claude');
+                stream.markdown(md);
+                return { metadata: { command: 'codeburn', subcommand: 'claude' } };
+            }
+
+            if (sub === 'copilot' || sub === 'github') {
+                const md = await cb.getChatModels('copilot');
+                stream.markdown(md);
+                return { metadata: { command: 'codeburn', subcommand: 'copilot' } };
+            }
+
+            if (sub === 'antigravity') {
+                const md = await cb.getChatModels('antigravity');
+                stream.markdown(md);
+                return { metadata: { command: 'codeburn', subcommand: 'antigravity' } };
+            }
+
+            if (sub === 'opencode') {
+                const md = await cb.getChatModels('opencode');
+                stream.markdown(md);
+                return { metadata: { command: 'codeburn', subcommand: 'opencode' } };
+            }
+
+            if (sub === 'compare') {
+                const md = await cb.getChatProviderComparison();
+                stream.markdown(md);
+                return { metadata: { command: 'codeburn', subcommand: 'compare' } };
+            }
+
+            if (sub === 'export') {
+                stream.markdown('Exporting Codeburn data…\n\n');
+                await cb.exportJson();
+                stream.markdown('Export sent to the **Codeburn** output panel.\n');
+                return { metadata: { command: 'codeburn', subcommand: 'export' } };
+            }
+
+            if (sub === 'dashboard' || sub === 'ui' || sub === 'tui') {
+                await cb.openDashboard();
+                stream.markdown('Opening Codeburn dashboard in integrated terminal.\n');
+                return { metadata: { command: 'codeburn', subcommand: 'dashboard' } };
+            }
+
+            if (sub === 'optimize') {
+                await cb.runOptimize();
+                stream.markdown('Opening Codeburn optimize in integrated terminal.\n');
+                return { metadata: { command: 'codeburn', subcommand: 'optimize' } };
+            }
+
+            stream.markdown(
+                `Unknown Codeburn subcommand: \`${sub}\`\n\n` +
+                'Available: `today`, `week`, `month`, `report`, `models`, `claude`, `copilot`, `antigravity`, `opencode`, `compare`, `export`, `dashboard`, `optimize`\n'
+            );
+            return { metadata: { command: 'codeburn', status: 'unknown-subcommand' } };
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            stream.markdown(`**Codeburn error:** ${msg}\n`);
+            return { metadata: { command: 'codeburn', status: 'error' } };
+        }
+    }
+
+    /**
+     * /caveman command — Toggle caveman communication mode.
+     */
+    private async handleCavemanCommand(
+        prompt: string,
+        stream: vscode.ChatResponseStream
+    ): Promise<vscode.ChatResult> {
+        const svc = getCavemanService();
+        if (!svc) {
+            stream.markdown('Caveman service not initialized.\n');
+            return { metadata: { command: 'caveman', status: 'error' } };
+        }
+
+        const args = prompt.trim().toLowerCase();
+
+        // Show status when no args
+        if (!args) {
+            stream.markdown(svc.getStatusMarkdown());
+            return { metadata: { command: 'caveman', status: 'status' } };
+        }
+
+        // Parse subcommand
+        const firstWord = args.split(/\s+/)[0];
+
+        if (firstWord === 'on' || firstWord === 'start' || firstWord === 'enable') {
+            await svc.setEnabled(true);
+            stream.markdown(svc.getStatusMarkdown());
+            return { metadata: { command: 'caveman', status: 'enabled' } };
+        }
+
+        if (firstWord === 'off' || firstWord === 'stop' || firstWord === 'disable' || firstWord === 'normal') {
+            await svc.setEnabled(false);
+            stream.markdown(svc.getStatusMarkdown());
+            return { metadata: { command: 'caveman', status: 'disabled' } };
+        }
+
+        if (firstWord === 'toggle') {
+            const next = await svc.toggle();
+            stream.markdown(svc.getStatusMarkdown());
+            return { metadata: { command: 'caveman', status: next ? 'enabled' : 'disabled' } };
+        }
+
+        if (firstWord === 'status') {
+            stream.markdown(svc.getStatusMarkdown());
+            return { metadata: { command: 'caveman', status: 'status' } };
+        }
+
+        // Intensity levels
+        const intensityArgs = ['lite', 'full', 'ultra', 'wenyan'];
+        if (intensityArgs.includes(firstWord)) {
+            const ok = await svc.setIntensity(firstWord);
+            if (!ok) {
+                stream.markdown(`Unknown intensity: ${firstWord}. Use: lite, full, ultra, wenyan.\n`);
+                return { metadata: { command: 'caveman', status: 'error' } };
+            }
+            // Enable if setting an intensity
+            await svc.setEnabled(true);
+            stream.markdown(svc.getStatusMarkdown());
+            return { metadata: { command: 'caveman', status: 'enabled' } };
+        }
+
+        // Unknown — show help
+        stream.markdown(`## 🗿 Caveman Mode\n\nUnknown command: "${args}"\n\nUsage:\n`);
+        stream.markdown('- \`/caveman\` — show status\n');
+        stream.markdown('- \`/caveman on\` — enable caveman mode\n');
+        stream.markdown('- \`/caveman off\` — disable caveman mode\n');
+        stream.markdown('- \`/caveman toggle\` — toggle on/off\n');
+        stream.markdown('- \`/caveman lite\` — lite intensity\n');
+        stream.markdown('- \`/caveman full\` — full intensity (default)\n');
+        stream.markdown('- \`/caveman ultra\` — ultra compression\n');
+        stream.markdown('- \`/caveman wenyan\` — classical terse\n');
+        return { metadata: { command: 'caveman', status: 'help' } };
     }
 
     /**

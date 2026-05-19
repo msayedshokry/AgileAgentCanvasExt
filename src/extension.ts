@@ -19,6 +19,8 @@ import {
 } from './commands/artifact-commands';
 import { handleCommonWebviewMessage, handleCatalogueWebviewMessage } from './views/webview-message-handler';
 import { createGraphifyStatusBar, refreshGraphifyStatusBar } from './views/graphify-status-bar';
+import { createCodeburnStatusBar, refreshCodeburnStatusBar } from './views/codeburn-status-bar';
+import { CavemanService, setCavemanService } from './chat/caveman-service.js';
 import {
     createNewProject,
     loadExistingProject,
@@ -29,6 +31,7 @@ import { executeWorkflowStep } from './commands/workflow-commands';
 import { installToIde, autoInstallIfNeeded } from './commands/ide-installer';
 import { openChat, setChatBridgeLogger } from './commands/chat-bridge';
 import { JiraCommands } from './commands/jira-commands';
+import { CodeburnCommands } from './commands/codeburn-commands';
 import {
     bootstrapGraphify,
     updateGraph,
@@ -38,6 +41,7 @@ import {
     clearGraphifyCache,
     loadReport
 } from './integrations/graphify';
+import { detectCodeburn } from './integrations/codeburn';
 import { JiraSecrets } from './integrations/jira-secrets';
 import { createLogger, setLoggerOutputSink } from './utils/logger';
 import { initialiseCatalogueService } from './state/catalogue-service';
@@ -200,6 +204,42 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('agileagentcanvas.fetchFromJira', () => {
             const jiraCommands = new JiraCommands(artifactStore);
             return jiraCommands.handleFetchFromJira();
+        }),
+        // ── codeburn commands ────────────────────────────────────────────────
+        vscode.commands.registerCommand('agileagentcanvas.codeburn.menu', () => {
+            const cb = new CodeburnCommands();
+            return cb.handleMenu().finally(() => refreshCodeburnStatusBar());
+        }),
+        vscode.commands.registerCommand('agileagentcanvas.codeburn.bootstrap', async () => {
+            const root = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath ?? '';
+            if (!root) { return vscode.window.showWarningMessage('No workspace open.'); }
+            const { bootstrapCodeburn } = await import('./integrations/codeburn/codeburn-bootstrap.js');
+            await bootstrapCodeburn(root);
+            refreshCodeburnStatusBar();
+        }),
+        vscode.commands.registerCommand('agileagentcanvas.codeburn.dashboard', () => {
+            const cb = new CodeburnCommands();
+            return cb.openDashboard().finally(() => refreshCodeburnStatusBar());
+        }),
+        vscode.commands.registerCommand('agileagentcanvas.codeburn.report', () => {
+            const cb = new CodeburnCommands();
+            return cb.showReport().finally(() => refreshCodeburnStatusBar());
+        }),
+        vscode.commands.registerCommand('agileagentcanvas.codeburn.models', () => {
+            const cb = new CodeburnCommands();
+            return cb.showModels().finally(() => refreshCodeburnStatusBar());
+        }),
+        vscode.commands.registerCommand('agileagentcanvas.codeburn.optimize', () => {
+            const cb = new CodeburnCommands();
+            return cb.runOptimize().finally(() => refreshCodeburnStatusBar());
+        }),
+        vscode.commands.registerCommand('agileagentcanvas.codeburn.compare', () => {
+            const cb = new CodeburnCommands();
+            return cb.openCompare().finally(() => refreshCodeburnStatusBar());
+        }),
+        vscode.commands.registerCommand('agileagentcanvas.codeburn.export', () => {
+            const cb = new CodeburnCommands();
+            return cb.exportJson().finally(() => refreshCodeburnStatusBar());
         }),
         // Set Jira API token securely in OS keychain
         vscode.commands.registerCommand('agileagentcanvas.setJiraToken', async () => {
@@ -445,8 +485,74 @@ export function activate(context: vscode.ExtensionContext) {
     // Auto-install BMAD agents for the detected IDE (silent, only on first activation)
     autoInstallIfNeeded(context.extensionPath);
 
+    // ── caveman service ───────────────────────────────────────────────────────
+    const cavemanService = new CavemanService(context);
+    setCavemanService(cavemanService);
+
+    // Sync caveman settings from workspace configuration to global state on startup,
+    // but ONLY if the user has explicitly set them (inspect() tells us if it's default).
+    const cavemanConfig = vscode.workspace.getConfiguration('agileagentcanvas.caveman');
+    const enabledInspect = cavemanConfig.inspect<boolean>('enabled');
+    const intensityInspect = cavemanConfig.inspect<string>('intensity');
+    // Use workspaceValue if explicitly set, otherwise globalValue, otherwise leave globalState alone
+    const configEnabled = enabledInspect?.workspaceValue ?? enabledInspect?.globalValue;
+    const configIntensity = intensityInspect?.workspaceValue ?? intensityInspect?.globalValue;
+    if (configEnabled !== undefined) {
+        cavemanService.setEnabled(configEnabled);
+    }
+    if (configIntensity && ['lite', 'full', 'ultra', 'wenyan'].includes(configIntensity)) {
+        cavemanService.setIntensity(configIntensity);
+    }
+
+    // Listen for setting changes and update globalState live
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeConfiguration(e => {
+            if (e.affectsConfiguration('agileagentcanvas.caveman.enabled')) {
+                const next = vscode.workspace.getConfiguration('agileagentcanvas.caveman').get<boolean>('enabled', false);
+                cavemanService.setEnabled(next);
+            }
+            if (e.affectsConfiguration('agileagentcanvas.caveman.intensity')) {
+                const next = vscode.workspace.getConfiguration('agileagentcanvas.caveman').get<string>('intensity', 'full');
+                if (['lite', 'full', 'ultra', 'wenyan'].includes(next)) {
+                    cavemanService.setIntensity(next);
+                }
+            }
+        })
+    );
+
+    // ── caveman commands ──────────────────────────────────────────────────────
+    context.subscriptions.push(
+        vscode.commands.registerCommand('agileagentcanvas.caveman.toggle', async () => {
+            const next = await cavemanService.toggle();
+            vscode.window.showInformationMessage(`🗿 Caveman mode ${next ? 'ON' : 'OFF'} (${cavemanService.getIntensity()})`);
+        }),
+        vscode.commands.registerCommand('agileagentcanvas.caveman.setIntensity', async () => {
+            const picked = await cavemanService.pickIntensity();
+            if (picked) {
+                await cavemanService.setIntensity(picked);
+                await cavemanService.setEnabled(true);
+                vscode.window.showInformationMessage(`🗿 Caveman intensity set to ${picked}`);
+            }
+        })
+    );
+
+    // Listen for codeburn.path changes and invalidate the detector cache
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeConfiguration(e => {
+            if (e.affectsConfiguration('agileagentcanvas.codeburn.path')) {
+                const { clearCodeburnCache } = require('./integrations/codeburn/codeburn-detector.js');
+                const root = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath;
+                if (root) { clearCodeburnCache(root); }
+                refreshCodeburnStatusBar();
+            }
+        })
+    );
+
     // ── graphify: optional auto-bootstrap prompt ──────────────────────────────
     createGraphifyStatusBar(context);
+
+    // ── codeburn: status bar (Menu Bar equivalent) ────────────────────────────
+    createCodeburnStatusBar(context);
 
     const autoBootstrap = vscode.workspace
         .getConfiguration('agileagentcanvas')
