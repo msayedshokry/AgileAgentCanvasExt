@@ -271,12 +271,24 @@ export class SkillRepoManager {
     // ── Internal helpers ──────────────────────────────────────────────────────
 
     /** Discover skill folders in the cloned repo and copy them to the user catalogue.
-     *  Walks the tree up to MAX_SCAN_DEPTH levels deep looking for folders containing SKILL.md. */
+     *  First checks if the repo root itself is a skill (has a SKILL.md at root).
+     *  Otherwise walks the tree up to MAX_SCAN_DEPTH levels deep looking for subfolders containing SKILL.md. */
     private _discoverAndCopySkills(cloneDir: string, userPath: string, slug: string): string[] {
         const MAX_SCAN_DEPTH = 4;
         const SKIP_DIRS = new Set(['.git', 'node_modules', '.venv', '__pycache__', 'dist', 'build', '.next']);
         const discovered: string[] = [];
 
+        // ── Root-level skill (entire repo is a single skill) ──────────────────
+        if (fs.existsSync(path.join(cloneDir, 'SKILL.md'))) {
+            const dest = path.join(userPath, slug);
+            this._copyDir(cloneDir, dest);
+            fs.writeFileSync(path.join(dest, '.repo-source'), slug, 'utf-8');
+            discovered.push(slug);
+            logger.info(`Repo root is a skill — imported as "${slug}"`);
+            return discovered;
+        }
+
+        // ── Subfolder skills ──────────────────────────────────────────────────
         const walk = (dir: string, depth: number): void => {
             if (depth > MAX_SCAN_DEPTH) { return; }
             let entries: string[];

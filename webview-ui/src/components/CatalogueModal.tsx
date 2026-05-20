@@ -296,6 +296,7 @@ export function CatalogueModal({ onClose }: CatalogueModalProps) {
               newRepoUrl={newRepoUrl}
               onNewRepoUrlChange={setNewRepoUrl}
               onAddRepo={handleAddRepo}
+              onAddRepoByUrl={(url: string) => vscode.postMessage({ type: 'addSkillRepo', url })}
               onSyncRepo={handleSyncRepo}
               onRemoveRepo={handleRemoveRepo}
               repoUrlRef={repoUrlRef}
@@ -385,16 +386,66 @@ interface ReposTabProps {
   newRepoUrl: string;
   onNewRepoUrlChange: (url: string) => void;
   onAddRepo: () => void;
+  onAddRepoByUrl: (url: string) => void;
   onSyncRepo: (slug: string) => void;
   onRemoveRepo: (slug: string) => void;
   repoUrlRef: React.RefObject<HTMLInputElement>;
 }
 
-function ReposTab({ repos, operation, error, newRepoUrl, onNewRepoUrlChange, onAddRepo, onSyncRepo, onRemoveRepo, repoUrlRef }: ReposTabProps) {
+// ─── Featured Repos ───────────────────────────────────────────────────────────
+
+const FEATURED_REPOS: { url: string; name: string; description: string; stars: string }[] = [
+  {
+    url: 'https://github.com/fr33d3m0n/threat-modeling.git',
+    name: 'threat-modeling',
+    description: 'AI-native 8-phase STRIDE threat modeling, security audit, and penetration test planning (v3.2.0)',
+    stars: '285',
+  },
+];
+
+function ReposTab({ repos, operation, error, newRepoUrl, onNewRepoUrlChange, onAddRepo, onAddRepoByUrl, onSyncRepo, onRemoveRepo, repoUrlRef }: ReposTabProps) {
   const isAdding = operation?.status === 'cloning' && !repos.some(r => r.slug === operation.slug);
+
+  // Filter out already-added featured repos
+  const trackedUrls = new Set(repos.map(r => r.url));
+  const availableFeatured = FEATURED_REPOS.filter(f => !trackedUrls.has(f.url));
 
   return (
     <div className="cat-repos">
+      {/* Featured repos */}
+      {availableFeatured.length > 0 && (
+        <div className="cat-repos-featured">
+          <div className="cat-repos-add-header">
+            <h3>Featured</h3>
+            <p>Community skill repos recommended for use with Agile Agent Canvas.</p>
+          </div>
+          <div className="cat-repos-list">
+            {availableFeatured.map(feat => (
+              <div key={feat.url} className="cat-repo-card cat-repo-card--featured">
+                <div className="cat-repo-card-top">
+                  <div className="cat-repo-card-name">{feat.name}</div>
+                  <div className="cat-card-badges">
+                    <span className="cat-badge cat-badge--featured">Featured</span>
+                    <span className="cat-badge cat-badge--skill">{feat.stars} ★</span>
+                  </div>
+                </div>
+                <div className="cat-repo-card-url" title={feat.url}>{feat.url}</div>
+                <div className="cat-card-desc">{feat.description}</div>
+                <div className="cat-repo-card-actions">
+                  <button
+                    className="cat-btn cat-btn--primary"
+                    onClick={() => onAddRepoByUrl(feat.url)}
+                    disabled={!!operation}
+                  >
+                    <Icon name="plus" size={12} /> Add Repo
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Add repo form */}
       <div className="cat-repos-add">
         <div className="cat-repos-add-header">

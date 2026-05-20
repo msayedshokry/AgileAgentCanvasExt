@@ -32,6 +32,18 @@ export class AgileAgentCanvasChatParticipant {
         this.extensionContext = extensionContext;
     }
 
+    private getConfiguredDefaultAgent(): 'analyst' | 'pm' | 'architect' {
+        const configured = vscode.workspace
+            .getConfiguration('agileagentcanvas')
+            .get<string>('defaultAgent', 'analyst')
+            .toLowerCase();
+
+        if (configured === 'pm' || configured === 'architect' || configured === 'analyst') {
+            return configured;
+        }
+        return 'analyst';
+    }
+
     /**
      * Main handler for chat messages sent to @agileagentcanvas
      */
@@ -163,7 +175,7 @@ export class AgileAgentCanvasChatParticipant {
             sharedToolContext.store = this.store;
         }
 
-        const systemPrompt = this.getAnalystPersona();
+        const systemPrompt = this.getDefaultChatPersona();
         const cavemanSuffix = getCavemanService()?.getSystemPromptSuffix() ?? '';
         const artifactContext = this.buildArtifactContext();
         const history = this.buildHistory(context);
@@ -3343,13 +3355,45 @@ Always end the interaction by either saving confirmed changes or acknowledging t
 
     // Helper methods
 
-    private getAnalystPersona(): string {
+    private getDefaultChatPersona(): string {
+        const configuredAgent = this.getConfiguredDefaultAgent();
+        const personaByAgent: Record<'analyst' | 'pm' | 'architect', { agentId: string; fallback: string }> = {
+            analyst: {
+                agentId: 'bmad-agent-analyst',
+                fallback: `You are Mary, a Business Analyst from the BMAD (Business Method for AI Development) methodology team.
+
+## Your Persona:
+- **Role**: Strategic Business Analyst + Requirements Expert
+- **Style**: Speaks with the excitement of a treasure hunter - thrilled by every clue, energized when patterns emerge
+- **Principles**: Channel expert business analysis frameworks. Articulate requirements with absolute precision. Ground findings in verifiable evidence.`
+            },
+            pm: {
+                agentId: 'bmad-agent-pm',
+                fallback: `You are John, a Product Manager from the BMAD (Business Method for AI Development) methodology team.
+
+## Your Persona:
+- **Role**: Product Manager focused on value delivery and outcome-driven planning
+- **Style**: Clear, pragmatic, collaborative
+- **Principles**: Prioritize user value, define measurable outcomes, maintain roadmap clarity.`
+            },
+            architect: {
+                agentId: 'bmad-agent-architect',
+                fallback: `You are Winston, a Solution Architect from the BMAD (Business Method for AI Development) methodology team.
+
+## Your Persona:
+- **Role**: Solution Architect focused on technical strategy and implementation feasibility
+- **Style**: Structured, risk-aware, systems-thinking
+- **Principles**: Optimize architecture decisions for scalability, reliability, and maintainability.`
+            }
+        };
+
+        const selected = personaByAgent[configuredAgent];
         const executor = getWorkflowExecutor();
         const bmadPath = executor.getBmadPath() || '';
         const displayPath = bmadPath || '(not yet resolved — run /refine or load a project folder)';
 
-        // Load the analyst persona from disk; fall back to a minimal inline version
-        const persona = bmadPath ? loadAgentPersona(bmadPath, 'bmad-agent-analyst') : undefined;
+        // Load configured default persona from disk; fall back to a minimal inline version
+        const persona = bmadPath ? loadAgentPersona(bmadPath, selected.agentId) : undefined;
 
         const cavemanSuffix = getCavemanService()?.getSystemPromptSuffix() ?? '';
 
@@ -3377,12 +3421,7 @@ Use these tools to load config.yaml, workflow files, data files, etc. as instruc
         }
 
         // Fallback when BMAD path is not yet resolved
-        return `You are Mary, a Business Analyst from the BMAD (Business Method for AI Development) methodology team.
-
-## Your Persona:
-- **Role**: Strategic Business Analyst + Requirements Expert
-- **Style**: Speaks with the excitement of a treasure hunter - thrilled by every clue, energized when patterns emerge
-- **Principles**: Channel expert business analysis frameworks. Articulate requirements with absolute precision. Ground findings in verifiable evidence.
+        return `${selected.fallback}
 
 ## Your Capabilities:
 - Create and refine product visions, requirements, epics, and user stories
@@ -4948,10 +4987,10 @@ Output ONLY the JSON, no explanation.`;
         }
 
         // With a prompt — load the catalogue manifest and ask the LLM to pick the best matches
-        let manifest: Array<{ name: string; description: string; isAgent: boolean; enabled: boolean }> = [];
+        let manifest: Array<{ name: string; folderName: string; description: string; isAgent: boolean; enabled: boolean }> = [];
         try {
             const { getCatalogueService } = require('../state/catalogue-service');
-            manifest = (getCatalogueService().getSkillManifest() as Array<{ name: string; description: string; isAgent: boolean; enabled: boolean }>)
+            manifest = (getCatalogueService().getSkillManifest() as Array<{ name: string; folderName: string; description: string; isAgent: boolean; enabled: boolean }>)
                 .filter(e => e.enabled);
         } catch {
             // CatalogueService not yet available
@@ -5035,6 +5074,46 @@ Output ONLY the JSON, no explanation.`;
         suggestions.forEach((s, i) => {
             stream.markdown(`**${i + 1}. ${s.name}**\n${s.reason}\n\n`);
         });
+
+        // If the top match is an agent, load that persona and provide guidance in that voice.
+        const byName = new Map(manifest.map(m => [m.name.toLowerCase(), m] as const));
+        const topAgent = suggestions
+            .map(s => byName.get(s.name.toLowerCase()))
+            .find((m): m is { name: string; folderName: string; description: string; isAgent: boolean; enabled: boolean } => !!m && m.isAgent);
+
+        if (topAgent) {
+            const executor = getWorkflowExecutor();
+            const bmadPath = executor.getBmadPath() || '';
+            const persona = bmadPath ? loadAgentPersona(bmadPath, topAgent.folderName) : undefined;
+
+            if (persona) {
+                stream.markdown(`### Agent guidance (${persona.name})\n\n`);
+
+                const personaMessages: ChatMessage[] = [
+                    {
+                        role: 'system',
+                        content: `${formatFullAgentForPrompt(persona)}\n\n` +
+                            `You are helping the user via /help routing. Give concise, practical next steps in your persona voice.`
+                    },
+                    {
+                        role: 'user',
+                        content: `User request: ${prompt}\n\n` +
+                            `Provide:\n` +
+                            `1. The best immediate command to run\n` +
+                            `2. Why this is the best fit\n` +
+                            `3. Two follow-up options`
+                    }
+                ];
+
+                try {
+                    await streamChatResponse(model, personaMessages, stream, token);
+                    stream.markdown('\n\n');
+                } catch {
+                    // Keep the ranked suggestions even if persona generation fails.
+                }
+            }
+        }
+
         stream.markdown([
             '---\n',
             '_To use a skill, run its command in this chat, e.g. `@agileagentcanvas /vision`_\n',

@@ -43,7 +43,7 @@ export interface SkillManifestEntry {
 export class CatalogueService {
     private readonly context: vscode.ExtensionContext;
     private readonly builtinSkillsPath: string;
-    private watcher: vscode.FileSystemWatcher | undefined;
+    private watchers: vscode.FileSystemWatcher[] = [];
 
     private readonly _onCatalogueChanged = new vscode.EventEmitter<void>();
     /** Fires whenever the catalogue changes (user file added/removed, skill toggled). */
@@ -306,28 +306,38 @@ export class CatalogueService {
 
     startWatcher(): void {
         this.stopWatcher();
-        const userPath = this.getUserCataloguePath();
-        if (!userPath || !fs.existsSync(userPath)) { return; }
-
-        const pattern = new vscode.RelativePattern(userPath, '**/*');
-        this.watcher = vscode.workspace.createFileSystemWatcher(pattern);
 
         const onChange = () => {
-            logger.debug('User catalogue changed — invalidating persona cache');
+            logger.debug('Skill catalogue changed — invalidating persona cache');
             clearPersonaCache();
             this._onCatalogueChanged.fire();
         };
 
-        this.watcher.onDidCreate(onChange);
-        this.watcher.onDidDelete(onChange);
-        this.watcher.onDidChange(onChange);
+        const watchPaths: string[] = [];
 
-        logger.info(`Watching user catalogue: ${userPath}`);
+        const userPath = this.getUserCataloguePath();
+        if (userPath && fs.existsSync(userPath)) {
+            watchPaths.push(userPath);
+        }
+
+        if (fs.existsSync(this.builtinSkillsPath)) {
+            watchPaths.push(this.builtinSkillsPath);
+        }
+
+        for (const watchPath of watchPaths) {
+            const pattern = new vscode.RelativePattern(vscode.Uri.file(watchPath), '**/*');
+            const w = vscode.workspace.createFileSystemWatcher(pattern);
+            w.onDidCreate(onChange);
+            w.onDidDelete(onChange);
+            w.onDidChange(onChange);
+            this.watchers.push(w);
+            logger.info(`Watching skill catalogue: ${watchPath}`);
+        }
     }
 
     stopWatcher(): void {
-        this.watcher?.dispose();
-        this.watcher = undefined;
+        for (const w of this.watchers) { w.dispose(); }
+        this.watchers = [];
     }
 
     dispose(): void {

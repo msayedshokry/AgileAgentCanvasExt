@@ -5,6 +5,7 @@ import { createLogger } from '../../utils/logger';
 import { runGraphify } from './graphify-runner';
 import { GFY } from './graphify-commands';
 import { detectGraphify, clearGraphifyCache, resetCliFormCache } from './graphify-detector';
+import { buildGraphIntegrated } from './graphify-lm-extractor';
 
 const logger = createLogger('graphify-bootstrap');
 
@@ -285,26 +286,31 @@ async function runShell(
 }
 
 async function buildGraph(workspaceRoot: string, token: vscode.CancellationToken): Promise<boolean> {
-    // Run staged pipeline (per user-memory: graphify . is unsupported in this env)
     const backend = vscode.workspace
         .getConfiguration('agileagentcanvas')
         .get<string>('graphify.backend', '');
 
-    // graphify 0.7.16+: `extract` runs the full pipeline (detect + extract + cluster + report).
-    // Earlier multi-step commands (detect, build, report, index) were removed upstream.
-    const stages: string[][] = [
-        GFY.extract(backend || undefined),
-    ];
-
-    for (const args of stages) {
-        if (token.isCancellationRequested) { return false; }
-        const result = await runGraphify(args, { cwd: workspaceRoot, cancellation: token, timeoutMs: 300_000 });
-        if (!result.success) {
-            logger.error(`graphify ${args[0]} failed:`, result.stderr);
-            return false;
+    // If a specific backend is configured, the user likely has an API key set — use the CLI directly.
+    // Otherwise, use the integrated pipeline that routes through the VS Code Language Model API.
+    if (backend) {
+        const stages: string[][] = [
+            GFY.extract(backend),
+        ];
+        for (const args of stages) {
+            if (token.isCancellationRequested) { return false; }
+            const result = await runGraphify(args, { cwd: workspaceRoot, cancellation: token, timeoutMs: 300_000 });
+            if (!result.success) {
+                logger.error(`graphify ${args[0]} failed:`, result.stderr);
+                return false;
+            }
         }
+        return true;
     }
-    return true;
+
+    // Integrated pipeline: Python for non-LLM steps, VS Code LM for semantic extraction
+    return buildGraphIntegrated(workspaceRoot, token, (msg) => {
+        logger.debug(msg);
+    });
 }
 
 async function wireVsCode(workspaceRoot: string, token: vscode.CancellationToken): Promise<void> {
