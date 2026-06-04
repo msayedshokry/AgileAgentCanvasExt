@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.4.3
+
+### Skill Catalogue Manager
+
+- **User-managed skill folder** — A new global setting `agileagentcanvas.userCataloguePath` lets you point the extension at any folder on your machine. Each subfolder containing a `SKILL.md` file is treated as a skill or agent. The extension watches this folder with `vscode.FileSystemWatcher` and reloads automatically whenever skills are added, edited, or removed.
+- **Merged catalogue** — Skills from the user catalogue are merged with the 86 built-in skills at runtime. User skills always win: a user-defined skill with the same folder name as a built-in overrides it. All other built-in skills remain available.
+- **Enable/disable per skill** — Any skill (built-in or user-added) can be individually toggled on or off. Disabled skills are excluded from AI routing and the `/help` command. State is persisted in VS Code global storage (not `settings.json`).
+- **Skill Catalogue Modal** — A new 🗂️ button on the canvas toolbar opens a full-screen catalogue management modal with five tabs:
+  - **All** — all skills + agents with search; toggle, open folder, or delete from here
+  - **Agents** — filter to agent-type entries only
+  - **Skills** — filter to task-skill entries only
+  - **User-Added** — shows only skills sourced from your user catalogue folder; Open Folder and Delete actions are available here
+  - **Skill Repos** — manage git-sourced skill repos (see below)
+- **Create skill from template** — A "Create New Skill" form in the modal scaffolds a new `SKILL.md` + `customize.toml` inside your user catalogue folder instantly.
+- **Delete user skill** — Permanently removes a skill folder from your user catalogue. A confirmation dialog is shown before any destructive action.
+- **Open skill folder** — Reveals the skill's folder in the VS Code Explorer for quick editing.
+- **Live canvas sync** — When the catalogue changes (file system or repo sync), all open canvas panels receive a `catalogueChanged` message and refresh their data automatically.
+
+### Git Skill Repository Support
+
+- **Add a skill repo by URL** — Paste any git repository URL (`https://`, `git@`, or `ssh://`) in the **Skill Repos** tab and the extension clones it with `git clone --depth 1` into a managed `_repos/` subfolder inside your user catalogue path. Any subfolder in the cloned repo that contains a `SKILL.md` is automatically imported as a user skill.
+- **`.repo-source` sidecar file** — Each skill imported from a git repo carries a `.repo-source` file recording the repo slug, so the catalogue UI can show which repo a skill came from (📦 badge).
+- **Sync** — The **Sync** button on each repo card runs `git pull` and re-discovers skills: new skill folders are added, removed folders are cleaned up, and changed `SKILL.md` files are updated. A real-time progress indicator shows the current clone/pull status.
+- **Remove repo** — Removes all skills sourced from that repo, deletes the cloned folder, and clears the repo from the tracked list. A confirmation dialog is shown first.
+- **`agileagentcanvas.skillRepos`** — New global setting (array of `{url, name?}`) persists the list of tracked skill repos across sessions.
+- **`simple-git`** — Added as a runtime dependency; wraps the system `git` binary for clone/pull operations.
+
+### `/help` Smart Skill Routing
+
+- **New `/help` command** — `@agileagentcanvas /help` is now the recommended first stop. With no arguments it shows a quick-start table of skill categories. With a natural-language prompt (e.g. `@agileagentcanvas /help I need to write test cases`) it uses the active LLM to read the live catalogue manifest and return the top 3–5 best-matching skills with a one-sentence explanation for each.
+- **CLI-compatible output** — Results are streamed as a numbered markdown list that renders correctly in VS Code Copilot Chat, opencode, claude-code, and any other markdown-aware terminal.
+- **Keyword fallback** — If the LLM response cannot be parsed as JSON, the command falls back to a fast keyword-match against skill names and descriptions.
+- **Respects enabled/disabled state** — Only skills that are currently enabled in the catalogue are considered for routing.
+
 ## 0.4.2
 
 ### Codeburn Integration — AI Cost and Token Observability
