@@ -1,15 +1,16 @@
-# Graph Report - .  (2026-06-04)
+# Graph Report - AgileAgentCanvasExt  (2026-06-04)
 
 ## Corpus Check
-- cluster-only mode — file stats not available
+- 900 files · ~1,124,011 words
+- Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 22919 nodes · 24668 edges · 1493 communities (1431 shown, 62 thin omitted)
+- 22920 nodes · 24670 edges · 1498 communities (1435 shown, 63 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 53 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `73d93d92`
+- Built from commit: `e2f8808f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -1489,6 +1490,11 @@
 - [[_COMMUNITY_Community 1475|Community 1475]]
 - [[_COMMUNITY_Community 1476|Community 1476]]
 - [[_COMMUNITY_Community 1477|Community 1477]]
+- [[_COMMUNITY_Community 1493|Community 1493]]
+- [[_COMMUNITY_Community 1494|Community 1494]]
+- [[_COMMUNITY_Community 1495|Community 1495]]
+- [[_COMMUNITY_Community 1496|Community 1496]]
+- [[_COMMUNITY_Community 1497|Community 1497]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `ArtifactStore` - 127 edges
@@ -1503,6 +1509,8 @@
 10. `SchemaValidator` - 26 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `main()` --calls--> `watch`  [EXTRACTED]
+  C:/DATA/Projects/BMAD UI/AgileAgentCanvasExt/esbuild.mjs → esbuild.mjs
 - `autoInstallIfNeeded()` --calls--> `getWorkspaceResolver()`  [INFERRED]
   src/commands/ide-installer.ts → src/extension.ts
 - `activate()` --calls--> `detectGraphify()`  [INFERRED]
@@ -1511,10 +1519,8 @@
   src/chat/agent-personas.ts → src/state/catalogue-service.ts
 - `loadAllAgentPersonas()` --calls--> `getCatalogueService()`  [INFERRED]
   src/chat/agent-personas.ts → src/state/catalogue-service.ts
-- `_refresh()` --calls--> `detectCodeburn()`  [INFERRED]
-  src/views/codeburn-status-bar.ts → src/integrations/codeburn/codeburn-detector.ts
 
-## Communities (1493 total, 62 thin omitted)
+## Communities (1498 total, 63 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.04
@@ -1530,39 +1536,39 @@ Nodes (95): ArtifactCard, ArtifactCardProps, STATUS_BADGES, TYPE_LABELS, Canvas(
 
 ### Community 3 - "Community 3"
 Cohesion: 0.04
-Nodes (71): sendArtifactsToPanel(), registerTools(), CavemanIntensity, INTENSITY_DESCRIPTIONS, INTENSITY_PROMPT_SUFFIX, setCavemanService(), VALID_INTENSITIES, handleAddArtifact() (+63 more)
+Nodes (69): buildArtifacts(), logger, sendArtifactsToPanel(), registerTools(), handleAddArtifact(), loadElicitationMethods(), CHAT_COMMANDS, ChatCommand (+61 more)
 
 ### Community 4 - "Community 4"
 Cohesion: 0.04
-Nodes (84): logger, storeLogger, AcceptanceCriterion, AdditionalRequirement, AICursor, Architecture, ArchitectureDecision, ArchitecturePattern (+76 more)
+Nodes (80): storeLogger, AdditionalRequirement, AICursor, Architecture, ArchitectureDecision, ArchitecturePattern, AtddChecklist, AutomationSummary (+72 more)
 
 ### Community 5 - "Community 5"
 Cohesion: 0.03
 Nodes (62): AskModal(), AskModalProps, DetailPanel(), ElicitationPicker(), ElicitationPickerProps, HELP_SECTIONS, HelpModal(), HelpModalProps (+54 more)
 
 ### Community 6 - "Community 6"
-Cohesion: 0.06
-Nodes (64): BmmWorkflowInfo, breakDownArtifact(), DEV_WORKFLOWS, elicitArtifactWithMethod(), ElicitationMethod, enhanceArtifactWithAI(), exportArtifacts(), exportArtifactToMarkdown() (+56 more)
+Cohesion: 0.05
+Nodes (69): BmmWorkflowInfo, breakDownArtifact(), DEV_WORKFLOWS, elicitArtifactWithMethod(), ElicitationMethod, enhanceArtifactWithAI(), exportArtifacts(), exportArtifactToMarkdown() (+61 more)
 
 ### Community 7 - "Community 7"
 Cohesion: 0.03
 Nodes (65): addButtons, allArtifacts, artifact, cancelBtn, closeBtn, confirmBtn, defaultProps, deleteBtn (+57 more)
 
 ### Community 8 - "Community 8"
-Cohesion: 0.05
-Nodes (44): AntigravityWorkflowParams, autonomousExecutionBlock(), buildGuideContent(), buildPointerPrompt(), defaultExecutionBlock(), ExecutionHints, ExecutionMode, interactiveExecutionBlock() (+36 more)
+Cohesion: 0.07
+Nodes (31): AntigravityWorkflowParams, autonomousExecutionBlock(), buildGuideContent(), buildPointerPrompt(), defaultExecutionBlock(), ExecutionHints, ExecutionMode, interactiveExecutionBlock() (+23 more)
 
 ### Community 9 - "Community 9"
-Cohesion: 0.07
-Nodes (4): formatFullAgentForPrompt(), loadAgentPersona(), getCavemanService(), AgileAgentCanvasChatParticipant
+Cohesion: 0.06
+Nodes (5): formatFullAgentForPrompt(), loadAgentPersona(), getToolDefinitions(), getCavemanService(), AgileAgentCanvasChatParticipant
 
 ### Community 10 - "Community 10"
-Cohesion: 0.06
-Nodes (48): graphExplain(), graphPath(), ArchCommunity, ArchCrossEdge, ArchGodNode, ArchIndex, GraphCommunity, GraphEdge (+40 more)
+Cohesion: 0.05
+Nodes (58): AgileAgentCanvasToolContext, logger, sharedToolContext, _archCache, archIndexJsonPath(), archIndexMdPath(), _cache, extractCommunities() (+50 more)
 
 ### Community 11 - "Community 11"
-Cohesion: 0.04
-Nodes (51): description, items, type, properties, description, items, type, description (+43 more)
+Cohesion: 0.05
+Nodes (46): properties, description, items, type, description, items, type, description (+38 more)
 
 ### Community 12 - "Community 12"
 Cohesion: 0.04
@@ -1622,7 +1628,7 @@ Nodes (44): description, enum, examples, type, x-aliases, definitions, artifactS
 
 ### Community 27 - "Community 27"
 Cohesion: 0.10
-Nodes (24): bootstrapCodeburn(), logger, runShell(), tryInstallCodeburn(), cache, clearCodeburnCache(), CodeburnCliForm, CodeburnStatus (+16 more)
+Nodes (25): bootstrapCodeburn(), logger, runShell(), tryInstallCodeburn(), cache, clearCodeburnCache(), CodeburnCliForm, CodeburnStatus (+17 more)
 
 ### Community 28 - "Community 28"
 Cohesion: 0.05
@@ -1666,7 +1672,7 @@ Nodes (41): description, items, type, description, items, type, properties, desc
 
 ### Community 38 - "Community 38"
 Cohesion: 0.06
-Nodes (41): description, items, type, properties, description, items, type, description (+33 more)
+Nodes (37): description, items, type, description, items, type, properties, description (+29 more)
 
 ### Community 39 - "Community 39"
 Cohesion: 0.05
@@ -1714,7 +1720,7 @@ Nodes (38): properties, action, application, aspect, category, components, conte
 
 ### Community 51 - "Community 51"
 Cohesion: 0.06
-Nodes (38): properties, description, items, type, description, items, type, description (+30 more)
+Nodes (41): description, type, properties, description, items, type, description, items (+33 more)
 
 ### Community 52 - "Community 52"
 Cohesion: 0.05
@@ -1749,8 +1755,8 @@ Cohesion: 0.05
 Nodes (37): 1. Check for Existing Workflow, 1. Update Placeholders, 2. Customize Welcome Message, 2. Handle Continuation (If Document Exists), 3. Handle Completed Workflow, 3. Update Success Metrics, 4. Adjust Next Step References, 4. Fresh Workflow Setup (If No Document) (+29 more)
 
 ### Community 60 - "Community 60"
-Cohesion: 0.09
-Nodes (25): AgileAgentCanvasToolContext, getToolDefinitions(), logger, sharedToolContext, _archCache, archIndexJsonPath(), archIndexMdPath(), _cache (+17 more)
+Cohesion: 0.10
+Nodes (33): sendSimplePrompt(), BmadModel, getConfig(), getModel(), getNoModelMessage(), httpsPostStream(), isAntigravity(), ProviderType (+25 more)
 
 ### Community 61 - "Community 61"
 Cohesion: 0.05
@@ -1869,8 +1875,8 @@ Cohesion: 0.08
 Nodes (31): 1. Check for Existing Workflow, 1. Confirm Research Understanding, 2. Handle Continuation (If Document Exists), 2. Refine Research Scope, 3. Document Initial Scope, 3. Fresh Workflow Setup (If No Document), 4. Present Confirmation and Continue Option, 5. Handle User Response (+23 more)
 
 ### Community 90 - "Community 90"
-Cohesion: 0.07
-Nodes (33): description, items, type, description, items, type, description, items (+25 more)
+Cohesion: 0.08
+Nodes (30): description, items, type, description, items, type, description, items (+22 more)
 
 ### Community 91 - "Community 91"
 Cohesion: 0.07
@@ -1899,10 +1905,6 @@ Nodes (32): 1. Initialize Best Practices Validation, 2. Epic Structure Validatio
 ### Community 97 - "Community 97"
 Cohesion: 0.06
 Nodes (32): 1. Analyze Current State, 1. Update Placeholders, 2. Add Workflow-Specific Context, 2. Read All Completed Step Files, 3. Customize Welcome Message, 3. Review Previous Output, 4. Add Continuation-Specific Validations, 4. Determine Next Step (+24 more)
-
-### Community 98 - "Community 98"
-Cohesion: 0.11
-Nodes (13): CatalogueEntry, getCatalogueService(), initialiseCatalogueService(), logger, SkillManifestEntry, getSkillRepoManager(), initialiseSkillRepoManager(), logger (+5 more)
 
 ### Community 99 - "Community 99"
 Cohesion: 0.06
@@ -1986,11 +1988,11 @@ Nodes (26): columnHeight(), columnWidth(), computeMindmapLayout(), DEPTH_ORDER, 
 
 ### Community 119 - "Community 119"
 Cohesion: 0.08
-Nodes (30): properties, description, items, type, description, items, type, description (+22 more)
+Nodes (30): properties, description, type, description, items, type, description, items (+22 more)
 
 ### Community 120 - "Community 120"
-Cohesion: 0.08
-Nodes (30): description, items, type, properties, description, required, type, required (+22 more)
+Cohesion: 0.11
+Nodes (23): description, items, type, properties, required, type, description, items (+15 more)
 
 ### Community 121 - "Community 121"
 Cohesion: 0.07
@@ -2081,8 +2083,8 @@ Cohesion: 0.07
 Nodes (28): description, properties, type, description, properties, type, description, items (+20 more)
 
 ### Community 143 - "Community 143"
-Cohesion: 0.07
-Nodes (28): description, items, type, description, type, description, items, type (+20 more)
+Cohesion: 0.06
+Nodes (31): description, items, type, description, type, description, items, type (+23 more)
 
 ### Community 144 - "Community 144"
 Cohesion: 0.07
@@ -2185,8 +2187,8 @@ Cohesion: 0.07
 Nodes (28): description, items, type, description, type, description, items, type (+20 more)
 
 ### Community 169 - "Community 169"
-Cohesion: 0.07
-Nodes (28): properties, category, code, dependencies, effort, examples, file, findingsRelated (+20 more)
+Cohesion: 0.08
+Nodes (24): properties, category, code, dependencies, effort, examples, file, findingsRelated (+16 more)
 
 ### Community 171 - "Community 171"
 Cohesion: 0.07
@@ -2210,7 +2212,7 @@ Nodes (27): description, items, type, properties, description, items, type, desc
 
 ### Community 176 - "Community 176"
 Cohesion: 0.07
-Nodes (27): description, items, type, description, type, description, items, type (+19 more)
+Nodes (30): description, items, type, description, type, description, items, type (+22 more)
 
 ### Community 177 - "Community 177"
 Cohesion: 0.07
@@ -2393,8 +2395,8 @@ Cohesion: 0.08
 Nodes (25): 1. Define Responsive Strategy, 2. Establish Breakpoint Strategy, 3. Design Accessibility Strategy, 4. Define Testing Strategy, 5. Document Implementation Guidelines, 6. Generate Responsive & Accessibility Content, 7. Present Content and Menu, 8. Handle Menu Selection (+17 more)
 
 ### Community 222 - "Community 222"
-Cohesion: 0.08
-Nodes (25): 💼 BUSINESS MODEL ANALYSIS, Business Model Weaknesses, Competitive Dynamics, Critical Insights, Critical Success Factors, Current Business Model, Current Situation, 📋 EXECUTION ROADMAP (+17 more)
+Cohesion: 0.09
+Nodes (22): 💼 BUSINESS MODEL ANALYSIS, Business Model Weaknesses, Competitive Dynamics, Critical Insights, Current Business Model, Current Situation, ⚡ DISRUPTION OPPORTUNITIES, Disruption Vectors (+14 more)
 
 ### Community 223 - "Community 223"
 Cohesion: 0.08
@@ -2409,8 +2411,8 @@ Cohesion: 0.09
 Nodes (26): items, description, items, type, description, items, type, properties (+18 more)
 
 ### Community 226 - "Community 226"
-Cohesion: 0.09
-Nodes (26): description, items, type, properties, required, type, description, items (+18 more)
+Cohesion: 0.08
+Nodes (30): description, items, type, properties, required, type, description, items (+22 more)
 
 ### Community 227 - "Community 227"
 Cohesion: 0.08
@@ -2434,11 +2436,11 @@ Nodes (25): type, enum, type, description, type, items, type, description (+17 m
 
 ### Community 232 - "Community 232"
 Cohesion: 0.09
-Nodes (25): description, items, type, description, type, description, items, type (+17 more)
+Nodes (25): description, items, type, description, items, type, properties, description (+17 more)
 
 ### Community 233 - "Community 233"
 Cohesion: 0.08
-Nodes (25): description, properties, type, properties, description, properties, type, description (+17 more)
+Nodes (24): description, properties, type, description, properties, type, description, properties (+16 more)
 
 ### Community 234 - "Community 234"
 Cohesion: 0.08
@@ -2453,8 +2455,8 @@ Cohesion: 0.08
 Nodes (25): description, type, description, items, type, description, expectedOutcomes, rationale (+17 more)
 
 ### Community 237 - "Community 237"
-Cohesion: 0.08
-Nodes (25): description, type, properties, description, type, description, type, completeStory (+17 more)
+Cohesion: 0.09
+Nodes (22): description, type, properties, description, type, description, type, completeStory (+14 more)
 
 ### Community 238 - "Community 238"
 Cohesion: 0.08
@@ -2525,8 +2527,8 @@ Cohesion: 0.08
 Nodes (25): description, type, description, properties, type, assessment, executiveSummary, recommendation (+17 more)
 
 ### Community 255 - "Community 255"
-Cohesion: 0.08
-Nodes (25): enum, type, description, properties, type, enum, type, description (+17 more)
+Cohesion: 0.10
+Nodes (21): enum, type, description, properties, type, enum, type, properties (+13 more)
 
 ### Community 256 - "Community 256"
 Cohesion: 0.08
@@ -2833,8 +2835,8 @@ Cohesion: 0.09
 Nodes (22): properties, description, properties, type, description, type, description, items (+14 more)
 
 ### Community 332 - "Community 332"
-Cohesion: 0.09
-Nodes (22): content, completeStory, frameworkApplication, frameworkName, nextSteps, purpose, storyTitle, storyType (+14 more)
+Cohesion: 0.11
+Nodes (18): content, completeStory, frameworkApplication, frameworkName, nextSteps, purpose, storyTitle, storyType (+10 more)
 
 ### Community 333 - "Community 333"
 Cohesion: 0.09
@@ -2981,8 +2983,8 @@ Cohesion: 0.10
 Nodes (21): description, items, type, description, items, type, properties, type (+13 more)
 
 ### Community 369 - "Community 369"
-Cohesion: 0.10
-Nodes (21): description, items, type, description, items, type, type, description (+13 more)
+Cohesion: 0.07
+Nodes (33): description, items, type, description, items, type, properties, type (+25 more)
 
 ### Community 370 - "Community 370"
 Cohesion: 0.10
@@ -2993,8 +2995,8 @@ Cohesion: 0.10
 Nodes (21): properties, action, actionable, appliesTo, blockers, category, dueDate, id (+13 more)
 
 ### Community 372 - "Community 372"
-Cohesion: 0.10
-Nodes (21): type, type, type, type, type, type, enum, type (+13 more)
+Cohesion: 0.11
+Nodes (18): type, type, type, type, type, type, enum, type (+10 more)
 
 ### Community 373 - "Community 373"
 Cohesion: 0.10
@@ -3089,7 +3091,7 @@ Cohesion: 0.10
 Nodes (21): average, peak, status, target, iops, status, usage, average (+13 more)
 
 ### Community 396 - "Community 396"
-Cohesion: 0.13
+Cohesion: 0.14
 Nodes (17): AgentMenuItem, AgentPersona, ARTIFACT_TYPE_TO_AGENT, ArtifactAgentKey, DEFAULT_AGENT, extractAttribute(), extractTagContent(), formatAgentRoster() (+9 more)
 
 ### Community 398 - "Community 398"
@@ -3121,24 +3123,24 @@ Cohesion: 0.10
 Nodes (20): description, type, items, type, description, properties, type, properties (+12 more)
 
 ### Community 405 - "Community 405"
-Cohesion: 0.10
-Nodes (20): properties, description, type, productName, stakeholders, status, tagline, version (+12 more)
+Cohesion: 0.67
+Nodes (3): tagline, description, type
 
 ### Community 406 - "Community 406"
 Cohesion: 0.10
 Nodes (20): description, items, type, description, items, type, description, properties (+12 more)
 
 ### Community 407 - "Community 407"
-Cohesion: 0.10
-Nodes (20): format, type, type, description, type, properties, description, type (+12 more)
+Cohesion: 0.08
+Nodes (24): format, type, type, description, type, description, properties, required (+16 more)
 
 ### Community 408 - "Community 408"
 Cohesion: 0.10
 Nodes (20): description, items, type, description, properties, type, description, items (+12 more)
 
 ### Community 409 - "Community 409"
-Cohesion: 0.12
-Nodes (20): description, items, type, items, items, type, type, items (+12 more)
+Cohesion: 0.08
+Nodes (27): description, items, type, items, items, type, type, items (+19 more)
 
 ### Community 410 - "Community 410"
 Cohesion: 0.10
@@ -3325,8 +3327,8 @@ Cohesion: 0.11
 Nodes (19): description, items, type, description, items, type, description, items (+11 more)
 
 ### Community 457 - "Community 457"
-Cohesion: 0.11
-Nodes (19): mainConflict, obstacles, stakes, structure, arcPoints, climax, description, emotionalTrigger (+11 more)
+Cohesion: 0.10
+Nodes (20): mainConflict, obstacles, stakes, structure, emotionalTrigger, technique, text, callToAction (+12 more)
 
 ### Community 458 - "Community 458"
 Cohesion: 0.11
@@ -3485,8 +3487,8 @@ Cohesion: 0.11
 Nodes (18): devDependencies, assert, c8, chai, @cucumber/cucumber, esbuild, eslint, mock-require (+10 more)
 
 ### Community 499 - "Community 499"
-Cohesion: 0.11
-Nodes (18): description, items, type, properties, type, properties, type, description (+10 more)
+Cohesion: 0.10
+Nodes (21): description, items, type, properties, type, properties, type, description (+13 more)
 
 ### Community 500 - "Community 500"
 Cohesion: 0.11
@@ -3653,16 +3655,16 @@ Cohesion: 0.12
 Nodes (16): Closing menu, code:block1 (Orientation → Walkthrough → [Detail Pass] → Testing), code:block2 (- `path:line` — [tag] reason-phrase), code:block3 (- `src/auth/middleware.ts:42` — [auth] New token validation ), code:block4 (### Machine Hardening), code:block5 (---), EARLY EXIT, Follow Global Step Rules in SKILL.md (+8 more)
 
 ### Community 541 - "Community 541"
-Cohesion: 0.12
-Nodes (17): type, type, type, type, type, type, arCovered, coveragePercentage (+9 more)
+Cohesion: 0.10
+Nodes (20): type, type, type, type, type, type, arCovered, coveragePercentage (+12 more)
 
 ### Community 542 - "Community 542"
 Cohesion: 0.12
-Nodes (17): description, type, description, items, type, properties, description, type (+9 more)
+Nodes (17): description, type, description, items, type, description, properties, type (+9 more)
 
 ### Community 543 - "Community 543"
-Cohesion: 0.12
-Nodes (17): items, type, properties, items, type, description, type, items (+9 more)
+Cohesion: 0.10
+Nodes (20): items, type, description, properties, type, items, type, description (+12 more)
 
 ### Community 544 - "Community 544"
 Cohesion: 0.12
@@ -3678,11 +3680,11 @@ Nodes (17): type, type, description, type, type, properties, type, action (+9 mo
 
 ### Community 547 - "Community 547"
 Cohesion: 0.12
-Nodes (17): description, items, type, required, type, description, items, type (+9 more)
+Nodes (17): description, items, type, description, items, type, required, type (+9 more)
 
 ### Community 548 - "Community 548"
-Cohesion: 0.12
-Nodes (17): description, type, description, properties, type, description, items, type (+9 more)
+Cohesion: 0.14
+Nodes (14): description, type, properties, description, items, type, description, type (+6 more)
 
 ### Community 549 - "Community 549"
 Cohesion: 0.12
@@ -3845,8 +3847,8 @@ Cohesion: 0.12
 Nodes (16): description, items, type, description, items, type, description, items (+8 more)
 
 ### Community 591 - "Community 591"
-Cohesion: 0.12
-Nodes (16): description, items, type, description, properties, type, description, items (+8 more)
+Cohesion: 0.15
+Nodes (13): description, items, type, properties, description, items, type, criticalPath (+5 more)
 
 ### Community 592 - "Community 592"
 Cohesion: 0.12
@@ -3857,8 +3859,8 @@ Cohesion: 0.12
 Nodes (16): description, properties, type, description, type, items, type, items (+8 more)
 
 ### Community 594 - "Community 594"
-Cohesion: 0.12
-Nodes (16): items, type, description, properties, type, items, type, items (+8 more)
+Cohesion: 0.15
+Nodes (13): items, type, properties, items, type, items, type, criticalPath (+5 more)
 
 ### Community 595 - "Community 595"
 Cohesion: 0.12
@@ -3866,7 +3868,7 @@ Nodes (16): items, type, items, type, description, type, items, type (+8 more)
 
 ### Community 596 - "Community 596"
 Cohesion: 0.12
-Nodes (16): description, items, type, description, type, required, properties, assumptions (+8 more)
+Nodes (16): description, items, type, description, type, description, $id, properties (+8 more)
 
 ### Community 597 - "Community 597"
 Cohesion: 0.12
@@ -4013,8 +4015,8 @@ Cohesion: 0.12
 Nodes (16): description, format, type, description, format, type, completed, last_updated (+8 more)
 
 ### Community 634 - "Community 634"
-Cohesion: 0.12
-Nodes (16): qualityScoreBreakdown, contribution, score, weight, contribution, weight, contribution, score (+8 more)
+Cohesion: 0.15
+Nodes (13): qualityScoreBreakdown, contribution, score, weight, contribution, score, weight, contribution (+5 more)
 
 ### Community 635 - "Community 635"
 Cohesion: 0.12
@@ -4057,8 +4059,8 @@ Cohesion: 0.13
 Nodes (14): additionalProperties, additionalProperties, required, type, description, $id, $ref, properties (+6 more)
 
 ### Community 646 - "Community 646"
-Cohesion: 0.13
-Nodes (15): description, properties, type, description, type, description, items, type (+7 more)
+Cohesion: 0.17
+Nodes (12): properties, description, type, description, items, type, description, items (+4 more)
 
 ### Community 647 - "Community 647"
 Cohesion: 0.13
@@ -4289,12 +4291,12 @@ Cohesion: 0.14
 Nodes (14): type, items, type, coveragePercentage, missingTestTypes, testCoverageAnalysis, testQualityNotes, uncoveredAreas (+6 more)
 
 ### Community 704 - "Community 704"
-Cohesion: 0.14
-Nodes (14): description, items, type, description, items, type, required, type (+6 more)
+Cohesion: 0.10
+Nodes (21): description, items, type, properties, description, items, type, required (+13 more)
 
 ### Community 705 - "Community 705"
-Cohesion: 0.14
-Nodes (14): description, type, epicId, storyFilePath, storyId, storyKey, storyTitle, type (+6 more)
+Cohesion: 0.11
+Nodes (18): description, type, epicId, storyFilePath, storyId, storyKey, storyReference, storyTitle (+10 more)
 
 ### Community 706 - "Community 706"
 Cohesion: 0.14
@@ -4305,8 +4307,8 @@ Cohesion: 0.14
 Nodes (14): description, type, description, type, properties, generated, project, story_location (+6 more)
 
 ### Community 708 - "Community 708"
-Cohesion: 0.14
-Nodes (14): content, companyName, risks, strategicContext, strategicFocus, strategicOptions, contingencyPlans, keyRisks (+6 more)
+Cohesion: 0.33
+Nodes (6): strategicContext, currentSituation, keyQuestions, strategicChallenge, strategicObjectives, visionStatement
 
 ### Community 709 - "Community 709"
 Cohesion: 0.14
@@ -4318,11 +4320,11 @@ Nodes (13): bulletList(), convertArtifactToMarkdown(), frontmatter(), heading(),
 
 ### Community 711 - "Community 711"
 Cohesion: 0.14
-Nodes (14): description, type, description, type, additionalProperties, description, type, description (+6 more)
+Nodes (14): description, type, description, type, description, type, properties, author (+6 more)
 
 ### Community 712 - "Community 712"
 Cohesion: 0.14
-Nodes (14): description, type, description, examples, type, description, type, properties (+6 more)
+Nodes (14): description, type, description, examples, type, description, type, description (+6 more)
 
 ### Community 713 - "Community 713"
 Cohesion: 0.14
@@ -4722,7 +4724,7 @@ Nodes (12): recommendations, securityAnalysis, securityChecksPerformed, vulnerab
 
 ### Community 812 - "Community 812"
 Cohesion: 0.17
-Nodes (12): properties, description, items, type, oneOf, description, type, epics (+4 more)
+Nodes (12): properties, description, type, description, items, type, oneOf, dependencies (+4 more)
 
 ### Community 813 - "Community 813"
 Cohesion: 0.17
@@ -4738,7 +4740,7 @@ Nodes (12): description, items, type, items, items, description, items, type (+4
 
 ### Community 816 - "Community 816"
 Cohesion: 0.17
-Nodes (12): default, type, description, type, properties, type, achieved, baseline (+4 more)
+Nodes (12): description, type, description, type, properties, type, baseline, id (+4 more)
 
 ### Community 817 - "Community 817"
 Cohesion: 0.17
@@ -4797,8 +4799,8 @@ Cohesion: 0.17
 Nodes (11): 1. Identify Natural Boundaries, 2. Assign Items to Sections, 3. Produce Root Distillate, 4. Produce Section Distillates, 5. Output Structure, code:block1 ({base-name}-distillate/), code:block2 (product-brief-distillate/), Semantic Splitting Strategy (+3 more)
 
 ### Community 831 - "Community 831"
-Cohesion: 0.17
-Nodes (12): techStack, caching, orm, primary, rationale, schemaStrategy, secondary, linting (+4 more)
+Cohesion: 0.29
+Nodes (7): caching, orm, primary, rationale, schemaStrategy, secondary, database
 
 ### Community 832 - "Community 832"
 Cohesion: 0.17
@@ -4927,10 +4929,6 @@ Nodes (10): Classify, Commit, Generate Spec Trace, Implement, INSTRUCTIONS, On C
 ### Community 864 - "Community 864"
 Cohesion: 0.18
 Nodes (11): impactAnalysis, affectedEpics, affectedStories, overallImpact, resourceImpact, riskAssessment, timelineImpact, additionalEffort (+3 more)
-
-### Community 865 - "Community 865"
-Cohesion: 0.18
-Nodes (11): properties, reviewerNotes, reviewSummary, storyReference, description, type, description, type (+3 more)
 
 ### Community 866 - "Community 866"
 Cohesion: 0.18
@@ -5090,7 +5088,7 @@ Nodes (10): proposal, documentsToUpdate, storiesToAdd, storiesToModify, storiesT
 
 ### Community 905 - "Community 905"
 Cohesion: 0.20
-Nodes (10): description, type, properties, description, type, approach, description, title (+2 more)
+Nodes (10): properties, description, type, description, type, description, id, title (+2 more)
 
 ### Community 906 - "Community 906"
 Cohesion: 0.20
@@ -5146,7 +5144,7 @@ Nodes (10): properties, required, type, description, type, content, coverageAnal
 
 ### Community 919 - "Community 919"
 Cohesion: 0.20
-Nodes (10): designSystem, borderRadius, components, description, iconography, name, version, library (+2 more)
+Nodes (10): designSystem, borderRadius, components, description, name, spacing, version, baseUnit (+2 more)
 
 ### Community 920 - "Community 920"
 Cohesion: 0.20
@@ -5161,8 +5159,8 @@ Cohesion: 0.20
 Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
 
 ### Community 923 - "Community 923"
-Cohesion: 0.20
-Nodes (10): diagnosis, keyData, sources, contributingFactors, dataCollection, problemBoundaries, systemDynamics, timelineAnalysis (+2 more)
+Cohesion: 0.13
+Nodes (15): diagnosis, keyData, sources, contributingFactors, dataCollection, problemBoundaries, rootCauseAnalysis, systemDynamics (+7 more)
 
 ### Community 924 - "Community 924"
 Cohesion: 0.20
@@ -5255,6 +5253,10 @@ Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestam
 ### Community 946 - "Community 946"
 Cohesion: 0.20
 Nodes (10): traceability, critical, high, low, medium, summary, detailedMapping, gapAnalysis (+2 more)
+
+### Community 947 - "Community 947"
+Cohesion: 0.17
+Nodes (6): CavemanIntensity, CavemanService, INTENSITY_DESCRIPTIONS, INTENSITY_PROMPT_SUFFIX, setCavemanService(), VALID_INTENSITIES
 
 ### Community 948 - "Community 948"
 Cohesion: 0.22
@@ -5662,7 +5664,7 @@ Nodes (8): responseTime, actual, notes, p50, p95, p99, status, target
 
 ### Community 1051 - "Community 1051"
 Cohesion: 0.25
-Nodes (7): content, entryExitCriteria, resourceEstimates, entry, exit, breakdown, totalEffort
+Nodes (7): content, resourceEstimates, testEnvironment, breakdown, totalEffort, environments, tools
 
 ### Community 1052 - "Community 1052"
 Cohesion: 0.25
@@ -5717,7 +5719,7 @@ Cohesion: 0.29
 Nodes (7): 0.3.9, Agent Honesty Guardrails, Artifact Store Refactoring, Bug Fixes, Bug Fixes, GSD Workflows Integration, Test Tracking & Status Update Fix
 
 ### Community 1065 - "Community 1065"
-Cohesion: 0.38
+Cohesion: 0.36
 Nodes (6): buildOptions, copyPdfkitFontData(), __dirname, main(), production, watch
 
 ### Community 1066 - "Community 1066"
@@ -5777,8 +5779,8 @@ Cohesion: 0.29
 Nodes (7): prdAnalysis, completeness, findings, gaps, status, strengths, summary
 
 ### Community 1080 - "Community 1080"
-Cohesion: 0.29
-Nodes (7): properties, type, properties, codeMetrics, qualityMetrics, properties, type
+Cohesion: 0.20
+Nodes (10): properties, type, description, properties, type, codeMetrics, metricsSnapshot, qualityMetrics (+2 more)
 
 ### Community 1081 - "Community 1081"
 Cohesion: 0.29
@@ -5821,8 +5823,8 @@ Cohesion: 0.29
 Nodes (7): Accountability & Logistics, Entry Criteria, Exit Criteria, Interworking & Regression, Not in Scope, Project Team (Optional), Tooling & Access (System-Level Only, If Applicable)
 
 ### Community 1091 - "Community 1091"
-Cohesion: 0.29
-Nodes (7): additionalLibraries, apiStyle, framework, language, rationale, runtime, backend
+Cohesion: 0.17
+Nodes (12): additionalLibraries, apiStyle, framework, language, rationale, runtime, techStack, linting (+4 more)
 
 ### Community 1093 - "Community 1093"
 Cohesion: 0.29
@@ -5941,8 +5943,8 @@ Cohesion: 0.33
 Nodes (6): resourceAssessment, environmentReadiness, skillGaps, summary, teamReadiness, toolsReadiness
 
 ### Community 1122 - "Community 1122"
-Cohesion: 0.33
-Nodes (5): description, $id, $schema, title, type
+Cohesion: 0.40
+Nodes (5): required, risks, description, items, type
 
 ### Community 1123 - "Community 1123"
 Cohesion: 0.33
@@ -6153,20 +6155,20 @@ Cohesion: 0.40
 Nodes (5): executionRoadmap, capabilityBuildPlan, overview, phases, quickWins
 
 ### Community 1175 - "Community 1175"
-Cohesion: 0.40
-Nodes (5): governanceAndReview, escalationPath, nextReviewDate, reviewCadence, reviewForum
+Cohesion: 0.15
+Nodes (13): analysisDetails, competitorProfiles, dataSourcesa, content, appendix, companyName, governanceAndReview, strategicFocus (+5 more)
 
 ### Community 1176 - "Community 1176"
 Cohesion: 0.40
-Nodes (5): rootCauseAnalysis, analysis, fishboneDiagram, method, rootCauses
+Nodes (5): description, items, type, $ref, acceptanceCriteria
 
 ### Community 1177 - "Community 1177"
 Cohesion: 0.40
 Nodes (5): strategicContext, brandVoice, callToAction, constraints, keyMessages
 
 ### Community 1178 - "Community 1178"
-Cohesion: 0.40
-Nodes (5): callToAction, lingeringEmotion, text, transformation, resolution
+Cohesion: 0.50
+Nodes (4): description, properties, type, epicQuality
 
 ### Community 1179 - "Community 1179"
 Cohesion: 0.40
@@ -6313,8 +6315,8 @@ Cohesion: 0.40
 Nodes (5): Business Model Innovation, Innovation Initiatives, 🚀 INNOVATION OPPORTUNITIES, Partnership and Ecosystem Plays, Value Chain Opportunities
 
 ### Community 1215 - "Community 1215"
-Cohesion: 0.40
-Nodes (5): ⚡ DISRUPTION OPPORTUNITIES, Disruption Vectors, Strategic White Space, Technology Enablers, Unmet Customer Jobs
+Cohesion: 0.50
+Nodes (4): questions, description, items, type
 
 ### Community 1216 - "Community 1216"
 Cohesion: 0.40
@@ -6369,8 +6371,8 @@ Cohesion: 0.40
 Nodes (5): antiPatterns, goodPatterns, notes, score, fixturePatterns
 
 ### Community 1229 - "Community 1229"
-Cohesion: 0.40
-Nodes (5): notes, orderDependencies, score, sharedStateIssues, isolation
+Cohesion: 0.25
+Nodes (8): contribution, notes, orderDependencies, score, sharedStateIssues, weight, isolation, isolation
 
 ### Community 1230 - "Community 1230"
 Cohesion: 0.40
@@ -6558,7 +6560,7 @@ Nodes (4): verified, default, description, type
 
 ### Community 1276 - "Community 1276"
 Cohesion: 0.50
-Nodes (4): targetUsers, description, items, type
+Nodes (4): risks, description, items, type
 
 ### Community 1277 - "Community 1277"
 Cohesion: 0.50
@@ -6578,11 +6580,11 @@ Nodes (4): maximum, minimum, type, overallScore
 
 ### Community 1281 - "Community 1281"
 Cohesion: 0.50
-Nodes (4): description, items, type, appendices
+Nodes (4): technicalFindings, description, items, type
 
 ### Community 1282 - "Community 1282"
 Cohesion: 0.50
-Nodes (4): trends, description, items, type
+Nodes (4): relatedStories, description, items, type
 
 ### Community 1283 - "Community 1283"
 Cohesion: 0.50
@@ -6590,7 +6592,7 @@ Nodes (4): teamFeedback, communicationImprovements, processImprovements, tooling
 
 ### Community 1284 - "Community 1284"
 Cohesion: 0.50
-Nodes (4): triggers, description, items, type
+Nodes (4): iconography, library, sizes, style
 
 ### Community 1285 - "Community 1285"
 Cohesion: 0.50
@@ -6682,7 +6684,7 @@ Nodes (4): targetFeatures, description, items, type
 
 ### Community 1307 - "Community 1307"
 Cohesion: 0.50
-Nodes (4): description, items, type, businessRules
+Nodes (4): wireframes, description, items, type
 
 ### Community 1308 - "Community 1308"
 Cohesion: 0.50
@@ -6710,7 +6712,7 @@ Nodes (4): secondaryActors, description, items, type
 
 ### Community 1314 - "Community 1314"
 Cohesion: 0.50
-Nodes (4): spacing, baseUnit, description, scale
+Nodes (4): risks, contingencyPlans, keyRisks, mitigationStrategies
 
 ### Community 1315 - "Community 1315"
 Cohesion: 0.50
@@ -6718,7 +6720,7 @@ Nodes (4): description, items, type, errorStates
 
 ### Community 1316 - "Community 1316"
 Cohesion: 0.50
-Nodes (4): description, items, type, loadingStates
+Nodes (4): testing, feedback, metrics, testingPlan
 
 ### Community 1317 - "Community 1317"
 Cohesion: 0.50
@@ -6726,7 +6728,7 @@ Nodes (3): content, designChallenge, projectName
 
 ### Community 1318 - "Community 1318"
 Cohesion: 0.50
-Nodes (4): analysisDetails, competitorProfiles, dataSourcesa, appendix
+Nodes (4): arcPoints, climax, description, emotionalArc
 
 ### Community 1319 - "Community 1319"
 Cohesion: 0.50
@@ -6778,7 +6780,7 @@ Nodes (4): description, format, type, lastModified
 
 ### Community 1331 - "Community 1331"
 Cohesion: 0.50
-Nodes (4): workflowName, description, examples, type
+Nodes (4): additionalProperties, description, type, customFields
 
 ### Community 1332 - "Community 1332"
 Cohesion: 0.50
@@ -7005,8 +7007,8 @@ Cohesion: 0.67
 Nodes (3): description, type, epicId
 
 ### Community 1391 - "Community 1391"
-Cohesion: 0.67
-Nodes (3): description, type, id
+Cohesion: 0.50
+Nodes (4): Critical Success Factors, Key Hypotheses to Validate, 🏆 RECOMMENDED STRATEGY, Strategic Direction
 
 ### Community 1392 - "Community 1392"
 Cohesion: 0.67
@@ -7057,16 +7059,16 @@ Cohesion: 0.67
 Nodes (3): description, type, actualValue
 
 ### Community 1404 - "Community 1404"
-Cohesion: 0.67
-Nodes (3): description, type, id
+Cohesion: 0.50
+Nodes (4): 📋 EXECUTION ROADMAP, Phase 1: Immediate Impact, Phase 2: Foundation Building, Phase 3: Scale & Optimization
 
 ### Community 1405 - "Community 1405"
 Cohesion: 0.67
 Nodes (3): description, type, metric
 
 ### Community 1407 - "Community 1407"
-Cohesion: 0.67
-Nodes (3): description, type, implementationNotes
+Cohesion: 0.50
+Nodes (4): description, properties, type, evidenceSummary
 
 ### Community 1408 - "Community 1408"
 Cohesion: 0.67
@@ -7166,21 +7168,41 @@ Nodes (3): timestamps, created, lastModified
 
 ### Community 1438 - "Community 1438"
 Cohesion: 0.67
-Nodes (3): testEnvironment, environments, tools
+Nodes (3): description, type, approach
+
+### Community 1493 - "Community 1493"
+Cohesion: 0.67
+Nodes (3): status, enum, type
+
+### Community 1494 - "Community 1494"
+Cohesion: 0.67
+Nodes (3): version, description, type
+
+### Community 1495 - "Community 1495"
+Cohesion: 0.67
+Nodes (3): default, type, achieved
+
+### Community 1496 - "Community 1496"
+Cohesion: 0.67
+Nodes (3): rationale, description, type
+
+### Community 1497 - "Community 1497"
+Cohesion: 0.67
+Nodes (3): entryExitCriteria, entry, exit
 
 ## Knowledge Gaps
 - **14897 isolated node(s):** `all`, `src`, `include`, `exclude`, `reporter` (+14892 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **62 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **63 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `ArtifactStore` connect `Community 16` to `Community 3`, `Community 4`, `Community 1092`, `Community 6`, `Community 616`, `Community 8`, `Community 880`, `Community 473`, `Community 474`, `Community 987`, `Community 60`, `Community 223`?**
+- **Why does `ArtifactStore` connect `Community 16` to `Community 3`, `Community 4`, `Community 1092`, `Community 6`, `Community 616`, `Community 8`, `Community 10`, `Community 880`, `Community 473`, `Community 474`, `Community 987`, `Community 223`?**
   _High betweenness centrality (0.001) - this node is a cross-community bridge._
-- **Why does `AgileAgentCanvasChatParticipant` connect `Community 9` to `Community 396`, `Community 3`, `Community 60`, `Community 6`?**
+- **Why does `AgileAgentCanvasChatParticipant` connect `Community 9` to `Community 10`, `Community 3`, `Community 6`?**
   _High betweenness centrality (0.001) - this node is a cross-community bridge._
-- **Why does `SchemaValidator` connect `Community 397` to `Community 3`, `Community 4`, `Community 6`, `Community 8`, `Community 60`?**
+- **Why does `SchemaValidator` connect `Community 397` to `Community 8`, `Community 10`, `Community 4`, `Community 6`?**
   _High betweenness centrality (0.001) - this node is a cross-community bridge._
 - **What connects `all`, `src`, `include` to the rest of the system?**
   _14935 weakly-connected nodes found - possible documentation gaps or missing edges._
