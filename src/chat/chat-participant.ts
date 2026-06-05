@@ -3,7 +3,9 @@ import * as path from 'path';
 import { ArtifactStore, Epic } from '../state/artifact-store';
 import { getWorkflowExecutor, WorkflowExecutor } from '../workflow/workflow-executor';
 import { sharedToolContext, getToolDefinitions } from './agileagentcanvas-tools';
+import { TOOL_FEW_SHOT } from './tool-examples';
 import { BmadModel, selectModel, streamChatResponse, getNoModelMessage as providerNoModelMessage, ChatMessage } from './ai-provider';
+import { extractJson } from '../lib/json-extract';
 import { getPersonaForArtifactType, formatFullAgentForPrompt, loadAgentPersona, clearPersonaCache, AgentPersona, loadAllAgentPersonas, formatAgentRoster } from './agent-personas';
 import { JiraClient } from '../integrations/jira-client';
 import {
@@ -432,11 +434,35 @@ export class AgileAgentCanvasChatParticipant {
         const bmadPath = executor.getBmadPath();
         const projectRoot = executor.getProjectRoot() || this.store.getProjectRoot() || 'unknown';
 
+        const toolsBlock = [
+            `## Available Tools (CRITICAL — read first)`,
+            ``,
+            `You have access to a curated set of BMAD-aware tools. Before writing a`,
+            `script, parsing JSON inline, or calling a shell command to manipulate`,
+            `data, **check the tool catalog at \`docs/tool-catalog.md\` first**.`,
+            ``,
+            `All 16 tools are documented in the catalog (see \`docs/tool-catalog.md\`). The 5 most common:`,
+            ``,
+            `- \`agileagentcanvas_repair_json\` — fix malformed JSON against a BMAD schema`,
+            `- \`agileagentcanvas_frontmatter_extract\` — parse YAML frontmatter from .md files`,
+            `- \`agileagentcanvas_json_diff\` — diff two JSON objects (saves ~400 tokens per diff)`,
+            `- \`agileagentcanvas_json_merge\` — merge two JSON objects (deep/shallow/right/array)`,
+            `- \`agileagentcanvas_sync_story_status\` — atomic story status update across tracker files`,
+            ``,
+            `If no tool fits, you may write a script — but first verify with the catalog.`,
+            ``,
+        ].join('\n');
+
+        const fewShotBlock = Object.entries(TOOL_FEW_SHOT)
+            .map(([tool, example]) => `### ${tool}\n${example}`)
+            .join('\n\n');
+
         return [
             `You are operating within the BMAD (Business Method for AI Development) methodology.`,
             `Project root: ${projectRoot}`,
             bmadPath ? `BMAD installation: ${bmadPath}` : 'BMAD installation path: not yet resolved (user may need to load a project folder)',
             ``,
+            toolsBlock,
             `BMAD workflow phases:`,
             `  1. /vision    — Define product vision (product-brief schema)`,
             `  2. /requirements — Extract functional & non-functional requirements`,
@@ -460,7 +486,11 @@ export class AgileAgentCanvasChatParticipant {
             `  20. /story-craft — Craft compelling narratives using story frameworks`,
             ``,
             `Always guide the user through BMAD phases in order. When the user asks a question,`,
-            `answer in the context of BMAD methodology and their current project state.`
+            `answer in the context of BMAD methodology and their current project state.`,
+            ``,
+            `## Tool Examples (few-shot)`,
+            ``,
+            fewShotBlock,
         ].join('\n');
     }
 
@@ -1439,22 +1469,24 @@ The complete BMAD framework is at: \`${bmadPath}\`
             const inputDetection = executor.detectUserPrompt(fullResponse);
 
             // Try to extract JSON refinements
-            const jsonMatch = fullResponse.match(/```json\s*([\s\S]*?)```/);
-            if (jsonMatch) {
-                try {
-                    const refinements = JSON.parse(jsonMatch[1]);
-                    stream.markdown('\n\n---\n');
-                    stream.markdown('**Refinements detected!** Use `@agileagentcanvas /apply` to save changes.\n');
-                    
-                    this.store.setRefineContext({ 
-                        ...session.artifact, 
-                        refinements, 
-                        type: session.artifactType, 
-                        id: session.artifactId 
-                    });
-                } catch {
-                    // JSON parsing failed
+            const result = extractJson(fullResponse);
+            if (result.ok) {
+                if (!Array.isArray(result.data)) {
+                    stream.markdown('⚠️ Expected array, got ' + typeof result.data);
+                    return { metadata: { command: 'conversation' } };
                 }
+                const refinements = result.data;
+                stream.markdown('\n\n---\n');
+                stream.markdown('**Refinements detected!** Use `@agileagentcanvas /apply` to save changes.\n');
+
+                this.store.setRefineContext({
+                    ...session.artifact,
+                    refinements,
+                    type: session.artifactType,
+                    id: session.artifactId
+                });
+            } else {
+                stream.markdown(`⚠️ Could not parse refinements as JSON: ${result.error}\n\n`);
             }
 
             // Show navigation hints
@@ -3704,21 +3736,24 @@ Output ONLY the JSON, no explanation.`;
                 }
             } else {
                 const chatMessages: ChatMessage[] = [{ role: 'user', content: conversionPrompt }];
-                jsonOutput = await streamChatResponse(model, chatMessages, stream, token);
+                // TODO: pass activeArtifactType from command context when available
+                jsonOutput = await streamChatResponse(model, chatMessages, stream, token, {
+                    forceStructuredOutput: true,
+                    activeArtifactType: undefined
+                });
             }
 
-            // Clean up the response - extract JSON from potential markdown code block
-            jsonOutput = jsonOutput.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-
-            // Validate JSON
-            let parsedJson: any;
-            try {
-                parsedJson = JSON.parse(jsonOutput);
-            } catch (e) {
-                stream.markdown('⚠️ Generated JSON has syntax errors. Attempting to fix...\n\n');
-                stream.markdown('```json\n' + jsonOutput.substring(0, 500) + '...\n```\n\n');
-                return { metadata: { command: 'convert-to-json', status: 'parse-error' } };
+            // Extract JSON from potential markdown code block
+            const parsedResult = extractJson(jsonOutput);
+            if (!parsedResult.ok) {
+                stream.markdown(`⚠️ Could not parse response as JSON: ${parsedResult.error}\n\n`);
+                return { metadata: { command: 'convert-to-json', status: 'parse-error', error: parsedResult.error } };
             }
+            if (!Array.isArray(parsedResult.data)) {
+                stream.markdown(`⚠️ Expected array, got ${typeof parsedResult.data}\n\n`);
+                return { metadata: { command: 'convert-to-json', status: 'parse-error', error: 'not an array' } };
+            }
+            const parsedJson = parsedResult.data as any;
 
             // Show summary
             const epicCount = parsedJson.content?.epics?.length || 0;
@@ -5047,8 +5082,14 @@ Output ONLY the JSON, no explanation.`;
             } as unknown as vscode.ChatResponseStream;
 
             const raw = await streamChatResponse(model, messages, nullStream, token);
-            const jsonStr = raw.replace(/^```[a-zA-Z]*\n?/m, '').replace(/\n?```$/m, '').trim();
-            suggestions = JSON.parse(jsonStr) as Array<{ name: string; reason: string }>;
+            const extractResult = extractJson(raw);
+            if (!extractResult.ok) {
+                throw new Error(`Could not parse suggestions as JSON: ${extractResult.error}`);
+            }
+            if (!Array.isArray(extractResult.data)) {
+                throw new Error(`Expected array, got ${typeof extractResult.data}`);
+            }
+            suggestions = extractResult.data as Array<{ name: string; reason: string }>;
         } catch {
             // JSON parse failed or LLM error — fall back to keyword match
             const lower = prompt.toLowerCase();

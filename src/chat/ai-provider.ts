@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as https from 'https';
 import * as http from 'http';
 import { sendSimplePrompt } from '../antigravity/antigravity-orchestrator';
+import { schemaValidator } from '../state/schema-validator';
 
 /**
  * Unified AI provider abstraction for AgileAgentCanvas.
@@ -25,6 +26,29 @@ export interface StreamChunk {
 }
 
 /**
+ * Optional parameters for streamChatResponse. When `forceStructuredOutput` is
+ * true, the provider is told to emit a JSON object matching the schema for
+ * `activeArtifactType` (when both are set). Default behaviour is plain-text
+ * streaming — the model may respond conversationally.
+ */
+export interface StreamOptions {
+    /** BMAD artifact type whose schema constrains the response (e.g. "story",
+     *  "prd", "requirement"). When omitted or unknown, no schema is sent. */
+    activeArtifactType?: string;
+    /** Force the model to use the structured-output facility (tool_choice on
+     *  Anthropic, response_format on OpenAI, responseSchema on Gemini, format
+     *  on Ollama, responseFormat on VS Code LM). Default false. */
+    forceStructuredOutput?: boolean;
+}
+
+/** Shared options passed to each per-provider streaming function. */
+interface ProviderStructuredOptions {
+    schema: Record<string, unknown>;
+    temperature: number;
+    forceStructuredOutput: boolean;
+}
+
+/**
  * A unified model handle.  Either wraps a native vscode.LanguageModelChat,
  * or represents a direct-HTTP / Antigravity provider.
  */
@@ -41,8 +65,42 @@ export interface BmadModel {
 // Detection helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** In-memory cache for artifact schemas — avoids repeated re-parsing. */
+const schemaCache = new Map<string, Record<string, unknown> | null>();
+
 function getConfig() {
     return vscode.workspace.getConfiguration('agileagentcanvas');
+}
+
+function getDefaultTemperature(): number {
+    const t = getConfig().get<number>('defaultTemperature', 0.2);
+    return typeof t === 'number' && Number.isFinite(t) ? Math.max(0, Math.min(2, t)) : 0.2;
+}
+
+/**
+ * Load the artifact schema JSON for the given type as a plain object.
+ * Returns an empty object on any failure. Result is cached per type.
+ * Logs a warning when the requested type has no mapping so the degraded
+ * state (unconstrained prompt) is visible to operators.
+ */
+function loadArtifactSchemaForContext(artifactType?: string): Record<string, unknown> {
+    if (!artifactType) return {};
+    if (schemaCache.has(artifactType)) {
+        return schemaCache.get(artifactType) ?? {};
+    }
+    try {
+        const schema = schemaValidator.getRawSchema(artifactType);
+        if (schema && typeof schema === 'object') {
+            schemaCache.set(artifactType, schema);
+            return schema;
+        }
+        console.warn(`[aac] Schema for artifact type "${artifactType}" not found — sending unconstrained prompt.`);
+        schemaCache.set(artifactType, null);
+    } catch (e) {
+        console.warn(`[aac] Schema load failed for "${artifactType}":`, e);
+        schemaCache.set(artifactType, null);
+    }
+    return {};
 }
 
 /**
@@ -136,19 +194,24 @@ export async function streamChatResponse(
     model: BmadModel,
     messages: ChatMessage[],
     stream: vscode.ChatResponseStream,
-    token: vscode.CancellationToken
+    token: vscode.CancellationToken,
+    options: StreamOptions = {}
 ): Promise<string> {
+    const { activeArtifactType, forceStructuredOutput = false } = options;
+    const schema = forceStructuredOutput ? loadArtifactSchemaForContext(activeArtifactType) : {};
+    const temperature = getDefaultTemperature();
+
     switch (model.provider) {
         case 'copilot':
-            return streamVsCodeLm(model.vscodeLm!, messages, stream, token);
+            return streamVsCodeLm(model.vscodeLm!, messages, stream, token, forceStructuredOutput);
         case 'openai':
-            return streamOpenAI(messages, stream, token);
+            return streamOpenAI(messages, stream, token, { schema, temperature, forceStructuredOutput });
         case 'anthropic':
-            return streamAnthropic(messages, stream, token);
+            return streamAnthropic(messages, stream, token, { schema, temperature, forceStructuredOutput });
         case 'gemini':
-            return streamGemini(messages, stream, token);
+            return streamGemini(messages, stream, token, { schema, temperature, forceStructuredOutput });
         case 'ollama':
-            return streamOllama(messages, stream, token);
+            return streamOllama(messages, stream, token, { schema, temperature, forceStructuredOutput });
         case 'antigravity':
             return sendToAntigravity(messages, stream);
         default:
@@ -173,7 +236,8 @@ async function streamVsCodeLm(
     lm: vscode.LanguageModelChat,
     messages: ChatMessage[],
     stream: vscode.ChatResponseStream,
-    token: vscode.CancellationToken
+    token: vscode.CancellationToken,
+    forceStructuredOutput: boolean
 ): Promise<string> {
     const vsMessages = messages.map(m =>
         m.role === 'assistant'
@@ -182,7 +246,25 @@ async function streamVsCodeLm(
     );
 
     let full = '';
-    const response = await lm.sendRequest(vsMessages, {}, token);
+    let response: vscode.LanguageModelChatResponse;
+    if (forceStructuredOutput) {
+        try {
+            response = await lm.sendRequest(vsMessages, {
+                responseFormat: { type: 'json_object' } as unknown as undefined,
+            } as vscode.LanguageModelChatRequestOptions, token);
+        } catch (e: any) {
+            const msg = String(e?.message ?? e ?? '');
+            if (msg.includes('Unsupported') || msg.includes('unsupported') ||
+                msg.includes('responseFormat') || msg.includes('not supported')) {
+                console.warn('[aac] responseFormat not supported, falling back:', e);
+                response = await lm.sendRequest(vsMessages, {}, token);
+            } else {
+                throw e;
+            }
+        }
+    } else {
+        response = await lm.sendRequest(vsMessages, {}, token);
+    }
     for await (const chunk of response.text) {
         if (token.isCancellationRequested) break;
         stream.markdown(chunk);
@@ -262,7 +344,8 @@ function httpsPostStream(
 async function streamOpenAI(
     messages: ChatMessage[],
     stream: vscode.ChatResponseStream,
-    token: vscode.CancellationToken
+    token: vscode.CancellationToken,
+    opts: ProviderStructuredOptions
 ): Promise<string> {
     const cfg = getConfig();
     const apiKey = cfg.get<string>('apiKey', '');
@@ -270,12 +353,37 @@ async function streamOpenAI(
     const baseUrl = cfg.get<string>('baseUrl', '') || 'https://api.openai.com';
 
     const url = `${baseUrl.replace(/\/$/, '')}/v1/chat/completions`;
-    const body = JSON.stringify({ model: modelId, messages, stream: true });
+
+    const messagesWithHint = opts.forceStructuredOutput
+        ? (() => {
+            const jsonHint = '\n\n[Output Format]\nRespond with a single JSON object. No prose, no markdown, no code fences. The response must be parseable by JSON.parse() directly.';
+            const result = messages.map((m, i) =>
+                i === 0 && m.role === 'system'
+                    ? { ...m, content: m.content + jsonHint }
+                    : (i === 0 && m.role !== 'system' ? null : m)
+            ).filter(Boolean) as ChatMessage[];
+            if (result[0]?.role !== 'system') {
+                result.unshift({ role: 'system', content: jsonHint });
+            }
+            return result;
+        })()
+        : messages;
+
+    const body: Record<string, unknown> = {
+        model: modelId,
+        messages: messagesWithHint,
+        stream: true,
+        temperature: opts.temperature
+    };
+    if (opts.forceStructuredOutput) {
+        body.response_format = { type: 'json_object' };
+    }
+
     const headers = { Authorization: `Bearer ${apiKey}` };
 
     let full = '';
     try {
-        await httpsPostStream(url, headers, body,
+        await httpsPostStream(url, headers, JSON.stringify(body),
             text => { if (!token.isCancellationRequested) { stream.markdown(text); full += text; } },
             line => {
                 if (!line.startsWith('data: ') || line === 'data: [DONE]') return null;
@@ -298,7 +406,8 @@ async function streamOpenAI(
 async function streamAnthropic(
     messages: ChatMessage[],
     stream: vscode.ChatResponseStream,
-    token: vscode.CancellationToken
+    token: vscode.CancellationToken,
+    opts: ProviderStructuredOptions
 ): Promise<string> {
     const cfg = getConfig();
     const apiKey = cfg.get<string>('apiKey', '');
@@ -309,13 +418,23 @@ async function streamAnthropic(
     const chatMessages = messages.filter(m => m.role !== 'system');
     const systemPrompt = systemMessages.map(m => m.content).join('\n\n');
 
-    const body = JSON.stringify({
+    const body: Record<string, unknown> = {
         model: modelId,
         max_tokens: 8192,
         system: systemPrompt || undefined,
         messages: chatMessages.map(m => ({ role: m.role, content: m.content })),
-        stream: true
-    });
+        stream: true,
+        temperature: opts.temperature
+    };
+
+    if (opts.forceStructuredOutput) {
+        body.tools = [{
+            name: 'emit_artifact',
+            description: 'Emit the structured artifact as a JSON object matching the provided schema.',
+            input_schema: opts.schema
+        }];
+        body.tool_choice = { type: 'tool', name: 'emit_artifact' };
+    }
 
     const headers = {
         'x-api-key': apiKey,
@@ -323,17 +442,24 @@ async function streamAnthropic(
     };
 
     let full = '';
+    let parseErrorCount = 0;
     try {
-        await httpsPostStream('https://api.anthropic.com/v1/messages', headers, body,
+        await httpsPostStream('https://api.anthropic.com/v1/messages', headers, JSON.stringify(body),
             text => { if (!token.isCancellationRequested) { stream.markdown(text); full += text; } },
             line => {
                 if (!line.startsWith('data: ')) return null;
                 try {
                     const json = JSON.parse(line.slice(6));
-                    if (json.type === 'content_block_delta') {
-                        return json.delta?.text ?? null;
+                    parseErrorCount = 0;
+                    if (json.type === 'content_block_delta' && json.delta?.type === 'text_delta') {
+                        return json.delta.text ?? null;
                     }
-                } catch { /* ignore */ }
+                } catch (e) {
+                    parseErrorCount++;
+                    if (parseErrorCount > 5) {
+                        console.warn(`[aac] Anthropic SSE: ${parseErrorCount} consecutive parse errors — last error: ${e}`);
+                    }
+                }
                 return null;
             }
         );
@@ -350,7 +476,8 @@ async function streamAnthropic(
 async function streamGemini(
     messages: ChatMessage[],
     stream: vscode.ChatResponseStream,
-    token: vscode.CancellationToken
+    token: vscode.CancellationToken,
+    opts: ProviderStructuredOptions
 ): Promise<string> {
     const cfg = getConfig();
     const apiKey = cfg.get<string>('apiKey', '');
@@ -369,11 +496,24 @@ async function streamGemini(
     });
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?alt=sse&key=${apiKey}`;
-    const body = JSON.stringify({ contents });
+    const body: Record<string, unknown> = {
+        contents,
+        generationConfig: {
+            temperature: opts.temperature,
+            maxOutputTokens: 8192,
+        },
+    };
+    if (opts.forceStructuredOutput) {
+        body.generationConfig = {
+            ...body.generationConfig as Record<string, unknown>,
+            responseMimeType: 'application/json',
+            responseSchema: opts.schema,
+        };
+    }
 
     let full = '';
     try {
-        await httpsPostStream(url, {}, body,
+        await httpsPostStream(url, {}, JSON.stringify(body),
             text => { if (!token.isCancellationRequested) { stream.markdown(text); full += text; } },
             line => {
                 if (!line.startsWith('data: ')) return null;
@@ -396,18 +536,27 @@ async function streamGemini(
 async function streamOllama(
     messages: ChatMessage[],
     stream: vscode.ChatResponseStream,
-    token: vscode.CancellationToken
+    token: vscode.CancellationToken,
+    opts: ProviderStructuredOptions
 ): Promise<string> {
     const cfg = getConfig();
     const modelId = cfg.get<string>('modelId', '') || 'llama3';
     const baseUrl = cfg.get<string>('baseUrl', '') || 'http://localhost:11434';
 
     const url = `${baseUrl.replace(/\/$/, '')}/api/chat`;
-    const body = JSON.stringify({ model: modelId, messages, stream: true });
+    const body: Record<string, unknown> = {
+        model: modelId,
+        messages,
+        stream: true,
+        options: { temperature: opts.temperature }
+    };
+    if (opts.forceStructuredOutput) {
+        body.format = opts.schema;
+    }
 
     let full = '';
     try {
-        await httpsPostStream(url, {}, body,
+        await httpsPostStream(url, {}, JSON.stringify(body),
             text => { if (!token.isCancellationRequested) { stream.markdown(text); full += text; } },
             line => {
                 if (!line) return null;

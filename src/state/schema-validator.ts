@@ -93,6 +93,15 @@ const ARTIFACT_TYPE_TO_SCHEMA: Record<string, string> = {
 // ─── Schema Validator ───────────────────────────────────────────────────────
 
 /**
+ * Returns the list of valid schema names (artifact type strings) the
+ * `agileagentcanvas_repair_json` tool accepts.  Used to build the `enum`
+ * constraint in the tool descriptor so the LLM has a discoverable list.
+ */
+export function getAvailableSchemaTypes(): string[] {
+    return Object.keys(ARTIFACT_TYPE_TO_SCHEMA);
+}
+
+/**
  * Validates artifact data against BMAD JSON schemas (draft-07).
  *
  * **Design rationale**

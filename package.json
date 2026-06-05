@@ -2,7 +2,7 @@
   "name": "agileagentcanvas",
   "displayName": "Agile Agent Canvas",
   "description": "Visual AI-assisted product development with BMAD methodology - Design epics, stories, and requirements collaboratively with interactive AI chat workflows",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "publisher": "msayedshokry",
   "license": "MIT",
   "repository": {
@@ -197,10 +197,342 @@
             },
             "action": {
               "type": "string",
-              "enum": ["summary", "models"],
+              "enum": [
+                "summary",
+                "models"
+              ],
               "description": "summary (default) for cost overview, models for per-model breakdown"
             }
           }
+        }
+      },
+      {
+        "name": "agileagentcanvas_write_file",
+        "displayName": "Agile Agent Canvas Write File",
+        "modelDescription": "Write a file (BMAD artifact or generic). Auto-handles .md/.json dual format. Required for any file creation. NEVER use shell commands or write temp scripts to create files — call this tool instead.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Absolute path to the file to write"
+            },
+            "content": {
+              "type": "string",
+              "description": "File contents to write"
+            }
+          },
+          "required": [
+            "path",
+            "content"
+          ]
+        }
+      },
+      {
+        "name": "agileagentcanvas_sync_story_status",
+        "displayName": "Agile Agent Canvas Sync Story Status",
+        "modelDescription": "Atomically update a story's status across ALL tracker files (story.md, epic.md, sprint-status.yaml, etc.) in one call. Use this when changing a story's lifecycle state — never read+modify+write the files manually.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "storyId": {
+              "type": "string",
+              "description": "Story identifier, e.g. STORY-1-1"
+            },
+            "epicId": {
+              "type": "string",
+              "description": "The parent epic ID (e.g. '16')"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "todo",
+                "in-progress",
+                "review",
+                "done",
+                "blocked"
+              ],
+              "description": "New lifecycle status for the story"
+            }
+          },
+          "required": [
+            "storyId",
+            "epicId",
+            "status"
+          ]
+        }
+      },
+      {
+        "name": "agileagentcanvas_sync_epic_status",
+        "displayName": "Agile Agent Canvas Sync Epic Status",
+        "modelDescription": "Atomically update an epic's status across ALL tracker files. Use instead of manual multi-file edits.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "epicId": {
+              "type": "string",
+              "description": "Epic identifier, e.g. EPIC-1"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "planning",
+                "in-progress",
+                "completed",
+                "archived"
+              ],
+              "description": "New lifecycle status for the epic"
+            }
+          },
+          "required": [
+            "epicId",
+            "status"
+          ]
+        }
+      },
+      {
+        "name": "agileagentcanvas_graph_community",
+        "displayName": "Agile Agent Canvas Graph Community",
+        "modelDescription": "Get the wiki summary for a code community (e.g. 'authentication', 'payments') from the graphify knowledge graph. Use BEFORE writing code in an unfamiliar module to learn the architecture. Requires graphify-out/graph.json.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "community": {
+              "type": "string",
+              "description": "Community name or topic, e.g. 'authentication', 'payments'"
+            }
+          },
+          "required": [
+            "community"
+          ]
+        }
+      },
+      {
+        "name": "agileagentcanvas_repair_json",
+        "displayName": "Agile Agent Canvas Repair JSON",
+        "modelDescription": "Repair malformed JSON against a BMAD schema. Auto-fills missing required fields, coerces type mismatches (string↔number↔boolean), fuzzy-matches invalid enum values (e.g. 'urgent' → 'P0', 'in progress' → 'in-progress'), clamps numeric ranges, picks the best oneOf branch, strips disallowed properties. Use this when an agileagentcanvas_update_artifact call was REJECTED with validation errors (feed it the same changes object — it will return a fixed version), or when the LLM produced incomplete JSON for any BMAD artifact type. Returns { ok, changed, data, repairs, repairCount }. NEVER write your own JSON repair code; always call this tool instead.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "object",
+              "description": "The malformed JSON to repair. Pass the LLM output as-is."
+            },
+            "schemaName": {
+              "type": "string",
+              "description": "BMAD schema name. Examples: story, prd, architecture, requirement, test-case, sprint-status, risk. The schemaName input has an `enum` constraint listing all valid types."
+            },
+            "strict": {
+              "type": "boolean",
+              "description": "If true, only succeeds when no repairs were needed. Default false — best-effort repair is usually what you want."
+            }
+          },
+          "required": [
+            "data",
+            "schemaName"
+          ]
+        }
+      },
+      {
+        "name": "agileagentcanvas_frontmatter_extract",
+        "displayName": "Agile Agent Canvas Extract Frontmatter",
+        "modelDescription": "Extract YAML frontmatter from a markdown file as JSON. ALWAYS use this instead of writing a YAML parser or calling Python — saves tokens and avoids parse errors. Returns { frontmatter, body }.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Absolute path to the .md file under allowed roots."
+            }
+          },
+          "required": [
+            "path"
+          ]
+        }
+      },
+      {
+        "name": "agileagentcanvas_yaml_to_json",
+        "displayName": "Agile Agent Canvas YAML to JSON",
+        "modelDescription": "Convert a YAML string to a JSON object. Use when reading BMAD artifacts stored as .yaml files, or when the LLM emits YAML and you need JSON. NEVER write a YAML parser inline.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "yaml": {
+              "type": "string",
+              "description": "The YAML string to convert."
+            }
+          },
+          "required": [
+            "yaml"
+          ]
+        }
+      },
+      {
+        "name": "agileagentcanvas_json_diff",
+        "displayName": "Agile Agent Canvas JSON Diff",
+        "modelDescription": "Compute a structured diff between two JSON objects. Returns a patch array and a summary { added, removed, modified }. Use instead of reading two files and comparing them in-context — saves ~400 tokens per diff.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "left": {
+              "type": "object",
+              "description": "The \"before\" JSON object."
+            },
+            "right": {
+              "type": "object",
+              "description": "The \"after\" JSON object."
+            },
+            "format": {
+              "type": "string",
+              "enum": ["patch", "unified", "summary"],
+              "description": "Output format. \"summary\" is fastest; \"unified\" mimics git diff.",
+              "default": "summary"
+            }
+          },
+          "required": ["left", "right"]
+        }
+      },
+      {
+        "name": "agileagentcanvas_json_merge",
+        "displayName": "Agile Agent Canvas JSON Merge",
+        "modelDescription": "Deep-merge two JSON objects with a configurable strategy. Use instead of manually combining JSON in-context. Strategies: 'deep' (recursive), 'shallow' (top-level only), 'right-authoritative' (right wins on conflict), 'array-replace' (arrays overwritten, not concatenated).",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "left": {
+              "type": "object",
+              "description": "Base JSON object."
+            },
+            "right": {
+              "type": "object",
+              "description": "Override JSON object."
+            },
+            "strategy": {
+              "type": "string",
+              "enum": ["deep", "shallow", "right-authoritative", "array-replace"],
+              "default": "deep"
+            }
+          },
+          "required": ["left", "right"]
+        }
+      },
+      {
+        "name": "agileagentcanvas_artifact_query",
+        "displayName": "Agile Agent Canvas Artifact Query",
+        "modelDescription": "Query the artifact store with filter criteria (type, status, epicId, priority, etc.) and return matching artifacts. Use this instead of reading the entire artifact directory and filtering in context — saves hundreds of tokens per query.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "Artifact type filter (e.g. 'epic', 'story', 'prd')"
+            },
+            "status": {
+              "type": "string",
+              "description": "Status filter (e.g. 'todo', 'in-progress', 'done')"
+            },
+            "epicId": {
+              "type": "string",
+              "description": "Filter by parent epic ID"
+            },
+            "priority": {
+              "type": "string",
+              "description": "Filter by priority (P0/P1/P2/P3)"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Max results to return (default 50, max 500)"
+            }
+          },
+          "required": []
+        }
+      },
+      {
+        "name": "agileagentcanvas_workflow_resolve_vars",
+        "displayName": "Agile Agent Canvas Workflow Resolve Vars",
+        "modelDescription": "Resolve {{variable}} placeholders in a BMAD workflow template string. Variables can come from (a) the provided `vars` object, (b) artifact fields referenced as {{artifact.field}}, or (c) environment / config. Use this instead of writing your own regex replacement.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "template": {
+              "type": "string",
+              "description": "The workflow template string containing {{var}} placeholders"
+            },
+            "vars": {
+              "type": "object",
+              "description": "Variable values keyed by name (e.g. {'epic_id': 'E-001', 'story_id': 'S-001-1'})"
+            }
+          },
+          "required": ["template"]
+        }
+      },
+      {
+        "name": "agileagentcanvas_types_from_schema",
+        "displayName": "Agile Agent Canvas Types From Schema",
+        "modelDescription": "Generate TypeScript interface declarations from a JSON schema object. Handles required/optional, enums, nested objects, and arrays. Use this instead of writing the interfaces by hand from a schema.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "schema": {
+              "type": "object",
+              "description": "The JSON schema object (output of `agileagentcanvas_repair_json` or read from `resources/_aac/schemas/`)"
+            },
+            "rootName": {
+              "type": "string",
+              "description": "Name of the root interface (default: 'Root')"
+            }
+          },
+          "required": ["schema"]
+        }
+      },
+      {
+        "name": "agileagentcanvas_schema_from_json",
+        "displayName": "Agile Agent Canvas Schema From JSON",
+        "modelDescription": "Infer a JSON schema from one or more sample JSON objects. The more samples provided, the more accurate the schema. Use this when you have JSON output but no schema — avoids hand-rolling a schema.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "samples": {
+              "type": "array",
+              "description": "Array of sample JSON objects (1-10)",
+              "items": {
+                "type": "object"
+              }
+            },
+            "rootName": {
+              "type": "string",
+              "description": "Name for the root schema (default: 'Root')"
+            }
+          },
+          "required": ["samples"]
+        }
+      },
+      {
+        "name": "agileagentcanvas_codebase_search",
+        "displayName": "Agile Agent Canvas Codebase Search",
+        "modelDescription": "Search the workspace for symbol definitions, references, or text matches. Use this instead of running `grep` via shell — returns structured results with file paths, line numbers, and context. Backed by ripgrep with built-in ignore (.gitignore, node_modules, dist).",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Search query — symbol name, function call, or text pattern. Supports ripgrep regex."
+            },
+            "kind": {
+              "type": "string",
+              "enum": ["definition", "reference", "text"],
+              "description": "Search kind. 'definition' finds where symbols are defined (e.g. `function foo`, `class Bar`); 'reference' finds all uses; 'text' is plain ripgrep text search. Default: 'text'."
+            },
+            "filePattern": {
+              "type": "string",
+              "description": "Glob pattern to scope the search (e.g. '**/*.ts')"
+            },
+            "maxResults": {
+              "type": "number",
+              "description": "Max results to return (default 30, max 200)"
+            }
+          },
+          "required": ["query"]
         }
       }
     ],
@@ -573,6 +905,11 @@
         "command": "agileagentcanvas.caveman.setIntensity",
         "title": "Agile Agent Canvas: Set Caveman Intensity",
         "icon": "$(settings-gear)"
+      },
+      {
+        "command": "agileagentcanvas.suggestTool",
+        "title": "Suggest New Tool",
+        "category": "Agile Agent Canvas"
       }
     ],
     "keybindings": [
@@ -647,8 +984,12 @@
           "items": {
             "type": "object",
             "properties": {
-              "url": { "type": "string" },
-              "name": { "type": "string" }
+              "url": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
             }
           }
         },
@@ -714,6 +1055,13 @@
           "type": "string",
           "default": "",
           "description": "Base URL for the AI API. Only needed for Ollama (e.g. http://localhost:11434) or a custom OpenAI-compatible endpoint."
+        },
+        "agileagentcanvas.defaultTemperature": {
+          "type": "number",
+          "default": 0.2,
+          "minimum": 0,
+          "maximum": 2,
+          "description": "Default sampling temperature for LLM calls. 0 = deterministic, 2 = creative. Lower values improve structured output reliability. Used by OpenAI, Anthropic, Gemini, and Ollama providers."
         },
         "agileagentcanvas.logLevel": {
           "type": "string",
@@ -798,7 +1146,12 @@
         "agileagentcanvas.caveman.intensity": {
           "type": "string",
           "default": "full",
-          "enum": ["lite", "full", "ultra", "wenyan"],
+          "enum": [
+            "lite",
+            "full",
+            "ultra",
+            "wenyan"
+          ],
           "enumDescriptions": [
             "Lite — drops filler and hedging, keeps basic grammar",
             "Full — drops articles, filler, pleasantries; fragments OK (default)",
@@ -896,6 +1249,8 @@
     "@iarna/toml": "^2.2.5",
     "@types/pdfkit": "^0.17.5",
     "ajv": "^6.14.0",
+    "deepmerge": "^4.3.1",
+    "microdiff": "^1.5.0",
     "pdfkit": "^0.17.2",
     "simple-git": "^3.36.0",
     "yaml": "^2.8.2"

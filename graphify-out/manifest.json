@@ -155,13 +155,13 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\chat\\agileagentcanvas-tools.ts": {
-    "mtime": 1778765275.6453264,
-    "ast_hash": "adbba6ef8f5266629cd9fe88ea250cd9",
+    "mtime": 1780599713.520802,
+    "ast_hash": "feab4b91e889d294c7f6d0c72a19a275",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\chat\\ai-provider.ts": {
-    "mtime": 1774039019.6910572,
-    "ast_hash": "e45ec0e1c3a8112e58a82d9fa54a7eea",
+    "mtime": 1780604180.162016,
+    "ast_hash": "5e9e2c438bcb4a5680f0d7ccd614fabc",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\chat\\caveman-service.ts": {
@@ -170,8 +170,8 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\chat\\chat-participant.ts": {
-    "mtime": 1780565692.1207619,
-    "ast_hash": "f24a9d0d2219b1a05e21a22de10871d2",
+    "mtime": 1780604711.7782233,
+    "ast_hash": "fa2a7c08a5b204d4492a5e984a0e0660",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\commands\\artifact-commands.ts": {
@@ -310,13 +310,13 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\state\\schema-repair-engine.ts": {
-    "mtime": 1774039019.6955993,
-    "ast_hash": "e4ca90eb73571de2b224f72ac81352af",
+    "mtime": 1780599660.548769,
+    "ast_hash": "67b29075bf0805c76b391f8690beb8e0",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\state\\schema-validator.ts": {
-    "mtime": 1774692686.152179,
-    "ast_hash": "28540735cfbac3263099af451a03d172",
+    "mtime": 1780599598.0205183,
+    "ast_hash": "d996e2f4d0036e617cf16b9c6dc1c110",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\state\\skill-repo-manager.ts": {
@@ -375,8 +375,8 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\workflow\\workflow-executor.ts": {
-    "mtime": 1778753587.707051,
-    "ast_hash": "4b411a2effb392a6ab34b8eeb396f367",
+    "mtime": 1780604755.247061,
+    "ast_hash": "f3f50cd8845e6081382d1e8cfb001704",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\webview-ui\\vite.config.ts": {
@@ -640,8 +640,8 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\CHANGELOG.md": {
-    "mtime": 1780565692.0959148,
-    "ast_hash": "60170d06d4cee1a2059bb76ea6d9e806",
+    "mtime": 1780566888.573179,
+    "ast_hash": "d6fdd21e31bc6346f996ad28fe41e63e",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\CLAUDE.md": {
@@ -4135,8 +4135,8 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\package.json": {
-    "mtime": 1778766271.187056,
-    "ast_hash": "60c8cb923935fde803d9e3072aee46ae",
+    "mtime": 1780600320.2851143,
+    "ast_hash": "ca27b4d8eab091a5e62e366bc64ba616",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\tsconfig.json": {
@@ -4762,6 +4762,21 @@
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\_aac\\skills\\aac-threat-modeling\\SKILL.md": {
     "mtime": 1780565692.119762,
     "ast_hash": "09be1b04370cb49797093974fe372b69",
+    "semantic_hash": ""
+  },
+  "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\docs\\agentic-output-reliability-roadmap.md": {
+    "mtime": 1780600430.549099,
+    "ast_hash": "acebb4375ffa8ea633692920e9ddadfb",
+    "semantic_hash": ""
+  },
+  "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\ai-provider-diff.txt": {
+    "mtime": 1780603631.193175,
+    "ast_hash": "8e2b87dc6b3cb8d4267d12a70862c8e9",
+    "semantic_hash": ""
+  },
+  "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\lib\\json-extract.ts": {
+    "mtime": 1780604623.1117282,
+    "ast_hash": "1c03a66a85977462a1240de6785400b7",
     "semantic_hash": ""
   }
 }

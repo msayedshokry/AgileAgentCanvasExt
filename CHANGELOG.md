@@ -1,5 +1,93 @@
 # Changelog
 
+## 0.5.0
+
+### Provider-Level Structured Outputs
+
+Five layers of defence against LLM JSON drift are now active in every chat completion. Set `agileagentcanvas.defaultTemperature` (default `0.2`, range `0–2`) to tune determinism globally.
+
+- **OpenAI `response_format: json_object`** — `streamOpenAI` now sends `response_format: { type: 'json_object' }` and auto-injects a JSON hint into the system message so the request is never rejected for missing "JSON" in the prompt.
+- **Anthropic tool-use schema** — `streamAnthropic` accepts an opt-in `StreamOptions { forceStructuredOutput, activeArtifactType }` and registers an `emit_artifact` tool with `tool_choice: { type: 'tool' }` when forced. Default is plain-text streaming.
+- **Gemini `responseSchema`** — `streamGemini` wraps the request in `generationConfig: { responseMimeType: 'application/json', responseSchema, temperature, maxOutputTokens: 8192 }`.
+- **Ollama `format` parameter** — `streamOllama` now sends `format: <schema>` and `options: { temperature }` so local models also produce schema-constrained JSON.
+- **VS Code LM `responseFormat: JsonObject`** — `streamVsCodeLm` requests `LanguageModelChatResponseFormat.JsonObject` when forced. Falls back gracefully on older Copilot models that reject the parameter.
+- **Configurable temperature** — `agileagentcanvas.defaultTemperature` setting (default `0.2`, clamped to `0–2`) is read by `getDefaultTemperature()` and applied across all four HTTP providers.
+
+### Robust Fence Stripping & Validation
+
+- **`extractJson()` helper** — New `src/lib/json-extract.ts` (108 lines). Handles fenced code blocks (` ```json {...} ``` `, ` ``` {...} ``` `, bare `{...}`), strips leading/trailing prose, returns a typed `ExtractResult` (never throws). Internal type-guard rejects "valid JSON but not an object" cases.
+- **Inline regex replaced** — 3 call sites in `chat-participant.ts` (refinements at L1443, `/convert-to-json` at L3714, suggestions at L5048) now use `extractJson` with `Array.isArray` runtime guards. No more silent parse failures; users see a `⚠️ Could not parse response as JSON` message + raw text.
+- **Validation retry loop** — `executeWithDirectApi` in `workflow-executor.ts` now retries up to 3 times. On each failure the actual parse/validation error is injected into the next attempt's system prompt as a `## Correction Required` block (escalating feedback, not generic "try again"). Final attempt streams a clear failure message.
+- **Format footer in agent personas** — `formatFullAgentForPrompt(persona, context?)` appends a 5-line `## Output Format (CRITICAL)` block. The optional `context.artifactType` is referenced in the footer for schema-aware guidance. All 6 existing call sites are backward compatible (parameter is optional).
+
+### New Built-In Tools (16 → 26)
+
+Phase 1 quick wins exposed 4 previously hidden tools; Phase 6 added 5 more high-leverage tools. All appear in the VS Code LM tool picker.
+
+- **`agileagentcanvas_repair_json`** — Repairs malformed JSON against any BMAD schema. Auto-fills missing required fields, coerces type mismatches, fuzzy-matches invalid enums (e.g. `'urgent'` → `'P0'`), clamps numeric ranges, picks the best `oneOf` branch, strips disallowed properties. Resolves `$ref` pointers inline. Returns `{ ok, changed, data, repairs, repairCount }`.
+- **`agileagentcanvas_frontmatter_extract`** — Parses YAML frontmatter from any `.md` file. Backed by dynamic `import('yaml')` to keep bundle size minimal.
+- **`agileagentcanvas_yaml_to_json`** — Converts any YAML string to a JSON object. Same `yaml` package, same dynamic import.
+- **`agileagentcanvas_json_diff`** — Structured diff between two JSON objects with `patch | unified | summary` output formats. Backed by `microdiff@^1.5.0`.
+- **`agileagentcanvas_json_merge`** — Deep-merge two JSON objects with 4 strategies: `deep`, `shallow`, `right-authoritative`, `array-replace`. Backed by `deepmerge@^4.3.1`.
+- **`agileagentcanvas_write_file`** — Write a file (BMAD artifact or generic) with auto-handling of `.md`/`.json` dual format. Replaces shell-based file creation in every LLM workflow.
+- **`agileagentcanvas_sync_story_status`** — Atomically update a story's status across all tracker files in one call. **`epicId` is now a required input** (fixes a 100% failure rate bug).
+- **`agileagentcanvas_sync_epic_status`** — Atomically update an epic's status across all tracker files.
+- **`agileagentcanvas_graph_community`** — Get the wiki summary for a code community (e.g. `'authentication'`, `'payments'`) from the graphify knowledge graph.
+- **`agileagentcanvas_artifact_query`** (Phase 6) — Query the artifact store with filter criteria (`type`, `status`, `epicId`, `priority`). Returns `{ id, type, title, status }` — not full content. Refuses empty filters to prevent accidental dump.
+- **`agileagentcanvas_workflow_resolve_vars`** (Phase 6) — Resolve `{{variable}}` and `{{var.subfield}}` placeholders in BMAD workflow templates. Missing variables left as `{{var}}` (not replaced with empty).
+- **`agileagentcanvas_types_from_schema`** (Phase 6) — Generate TypeScript interface declarations from a JSON schema. Handles primitives, arrays, enums (string literal unions), nested objects, and `required` array.
+- **`agileagentcanvas_schema_from_json`** (Phase 6) — Infer a JSON schema from 1–10 sample JSON objects. Required = present in ALL samples. Returns a valid JSON Schema object.
+- **`agileagentcanvas_codebase_search`** (Phase 6) — Search the workspace for symbol definitions, references, or text matches. Three kinds: `definition`, `reference`, `text`. Backed by `vscode.workspace.findFiles` (no shell injection).
+
+### Tool Catalog & Discovery
+
+- **`docs/tool-catalog.md`** (NEW, 1987 words) — Authoritative reference for all 26 tools. Each entry has **Purpose**, **When to use**, **When NOT to use**, and a concrete **Example** with realistic BMAD paths. Quick reference table at the top.
+- **System prompt injection** — `buildBmadMethodologyContext` now prepends an "Available Tools (CRITICAL — read first)" block naming all 26 tools + reference to the catalog.
+- **Few-shot examples** — New `src/chat/tool-examples.ts` exports 5 worked examples for the highest-traffic tools: `repair_json`, `frontmatter_extract`, `json_diff`, `sync_story_status`, `update_artifact`. Always injected into the system prompt via `Object.entries(TOOL_FEW_SHOT)`.
+
+### Telemetry & Learning Loop
+
+- **`toolTelemetry` singleton** — New `src/chat/tool-telemetry.ts` with `record()`, `getStats()`, and the `trackToolCall(name, fn)` wrapper. All 21 tools wrapped. In-memory ring buffer (1000 entries max).
+- **JSONL persistence** — `setPersistenceDir()` + `persistToDisk()` survive extension reloads (writes to `.agileagentcanvas-context/tool-calls-{date}.jsonl`).
+- **Debounced Codeburn emit** — Per-call `executeCommand` IPC is debounced to a 5-second flush window. Errors logged at debug level (no longer silently swallowed).
+- **Anti-pattern detector** — New `src/learning/anti-pattern-detector.ts` (93 lines) with 5 patterns: `shell_for_json`, `inline_yaml_parser`, `read_modify_write_loop`, `inline_schema_gen`, `manual_diff`. Uses `matchAll` for accurate frequency counting.
+- **`/suggest-tool` command** — New `src/commands/suggest-tool.ts` (120 lines). LLM proposes a complete tool spec, the command validates the name (`/^[a-zA-Z0-9_-]+$/` to prevent path traversal), and writes to `.agileagentcanvas-context/proposed-tools/`. Registered as `agileagentcanvas.suggestTool` in the command palette.
+- **Skill promoter** — New `src/learning/skill-promoter.ts` (85 lines). Telemetry-backed: scans real tool call history and proposes skills that have been called > 5 times in the last 7 days. No longer a stub.
+- **Weekly waste report** — New `src/learning/waste-report.ts` (89 lines). Output: `.agileagentcanvas-context/waste-reports/YYYY-Www.md` (ISO 8601 week notation). Correctly handles year boundaries. Includes anti-pattern detection from the detector module.
+
+### Internal Wiring
+
+- **`StreamOptions` interface** — New exported interface on `streamChatResponse`. The 2 artifact-emission call sites (`workflow-executor.ts:3310` and `chat-participant.ts:3708`) pass `{ forceStructuredOutput: true, activeArtifactType: <type> }`. The 5 conversational call sites use the default (plain text).
+- **Schema cache** — `loadArtifactSchemaForContext(artifactType?)` caches loaded schemas per type to avoid re-reading the file on every request. Returns `{}` on any failure and logs a warning so degraded mode is visible.
+- **`trackToolCall` signature** — Changed to `trackToolCall<T>(name, fn: () => T | Promise<T>)` to eliminate the previous `async` outer + `async` inner double-wrap. Accepts both sync and async handlers.
+
+### Quality & Code Review
+
+- **Two adversarial reviews** — 7 findings on T-002's `repair_json` implementation and 18 findings on Phases 4–5, all addressed. Highlights:
+  - **Critical fix**: `epicId` was missing from `agileagentcanvas_sync_story_status` inputSchema — every LLM call without `epicId` was failing silently. Now `epicId` is a required input.
+  - **Path-traversal guard** added to `suggest-tool` (only `[a-zA-Z0-9_-]` allowed in proposed tool names).
+  - **Anti-pattern regexes** now use `matchAll` so frequency counts are accurate on long chat histories.
+  - **ISO week algorithm** rewritten in `waste-report.ts` to handle year boundaries correctly.
+  - **Anti-pattern regexes** anchored to full tool names to eliminate natural-language false positives.
+  - **`console.warn`** replaced with project logger in `suggest-tool.ts`. Bare `catch {}` blocks now log at debug level.
+  - **`as any` casts** removed from `json_diff` and `json_merge` tool invocations.
+
+### Dependencies
+
+- Added `yaml@^2.8.2` (lazy-loaded via dynamic `import('yaml')`).
+- Added `microdiff@^1.5.0`.
+- Added `deepmerge@^4.3.1`.
+
+## 0.4.4
+
+### graphify Backend Auto-Detect & Remediation
+
+- **Bootstrap & Rebuild guard** — if `agileagentcanvas.graphify.backend` is set to a non-empty value, a modal now appears before any work begins explaining that this setting routes extraction through the graphify CLI (which requires its own provider API key). Users can:
+  - **Clear setting & use VS Code LM** — removes the setting at both Global and Workspace scopes and falls through to the integrated, key-free VS Code Language Model pipeline.
+  - **Keep backend setting & continue** — proceeds with the CLI path as configured.
+  - **Dismiss** — cancels the operation with no changes.
+- Fixes the common issue where users were prompted for an API key during graphify bootstrap despite having a VS Code Copilot subscription.
+
 ## 0.4.3
 
 ### Skill Catalogue Manager

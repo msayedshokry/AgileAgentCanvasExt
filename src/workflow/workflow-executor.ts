@@ -8,6 +8,7 @@ import { BMAD_RESOURCE_DIR } from '../state/constants';
 import { getToolDefinitions } from '../chat/agileagentcanvas-tools';
 import { schemaValidator } from '../state/schema-validator';
 import { BmadModel, streamChatResponse, ChatMessage } from '../chat/ai-provider';
+import { extractJson } from '../lib/json-extract';
 import { getPersonaForArtifactType, formatFullAgentForPrompt } from '../chat/agent-personas';
 import { orchestrateAntigravityWorkflow, ExecutionHints } from '../antigravity/antigravity-orchestrator';
 import { parseFrontmatter } from './frontmatter';
@@ -3301,13 +3302,67 @@ ${directOutputFormat === 'dual' || directOutputFormat === 'json'
     : ''}
 - Always respond in English`;
 
-        const messages: ChatMessage[] = [
-            { role: 'system', content: systemPrompt }
-        ];
-
         stream.markdown(`*Running BMAD workflow${workflowPath ? ` — \`${path.basename(path.dirname(workflowPath))}\`` : ''}...*\n\n`);
 
-        await streamChatResponse(model, messages, stream, token);
+        // ── Retry loop: parse + validate up to 3 attempts ──────────────────
+        const MAX_RETRIES = 3;
+        let attempt = 0;
+        let lastError: string | undefined;
+
+        while (attempt < MAX_RETRIES) {
+            attempt++;
+
+            // Build system prompt — append a correction hint on retry attempts
+            const correctionHint = (attempt > 1 && lastError)
+                ? `\n\n## Correction Required (attempt ${attempt}/${MAX_RETRIES})
+
+Your previous response could not be parsed as valid JSON for artifact type \`${artifactType}\`.
+Error: ${lastError}
+
+${artifactType ? `Schema \`${artifactType}\` requires fields per the JSON schema above.` : ''}
+Instructions: Return ONLY a \`\`\`json code block containing the artifact JSON. Do NOT add any prose before or after the code block.`
+                : '';
+
+            const fullSystemPrompt = systemPrompt + correctionHint;
+
+            const messages: ChatMessage[] = [
+                { role: 'system', content: fullSystemPrompt }
+            ];
+
+            if (attempt > 1) {
+                stream.markdown(`*Retry attempt ${attempt}/${MAX_RETRIES}…*\n\n`);
+            }
+
+            const fullResponse = await streamChatResponse(model, messages, stream, token, {
+                forceStructuredOutput: true,
+                activeArtifactType: artifactType
+            });
+
+            // ── Extract JSON ──────────────────────────────────────────────
+            const extracted = extractJson(fullResponse);
+            if (!extracted.ok) {
+                lastError = extracted.error;
+                stream.markdown(`⚠️ Could not parse response as JSON (${attempt}/${MAX_RETRIES}): ${extracted.error}\n\n`);
+                continue;
+            }
+
+            // ── Validate against schema ───────────────────────────────────
+            if (artifactType) {
+                const validation = schemaValidator.validate(artifactType, extracted.data);
+                if (!validation.valid) {
+                    lastError = validation.errors.join('; ');
+                    stream.markdown(`⚠️ Validation failed (${attempt}/${MAX_RETRIES}): ${validation.errors.join('; ')}\n\n`);
+                    continue;
+                }
+            }
+
+            // Success
+            break;
+        }
+
+        if (attempt >= MAX_RETRIES) {
+            stream.markdown(`\n*Could not produce valid JSON after ${MAX_RETRIES} attempts. Please try a different task or simplify the request.*\n`);
+        }
     }
 
     /**

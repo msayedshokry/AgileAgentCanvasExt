@@ -1,16 +1,15 @@
-# Graph Report - AgileAgentCanvasExt  (2026-06-04)
+# Graph Report - .  (2026-06-04)
 
 ## Corpus Check
-- 900 files · ~1,124,011 words
-- Verdict: corpus is large enough that graph structure adds value.
+- cluster-only mode — file stats not available
 
 ## Summary
-- 22920 nodes · 24670 edges · 1498 communities (1435 shown, 63 thin omitted)
+- 23111 nodes · 24918 edges · 1504 communities (1444 shown, 60 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 53 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `e2f8808f`
+- Built from commit: `f117f334`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -488,6 +487,7 @@
 - [[_COMMUNITY_Community 470|Community 470]]
 - [[_COMMUNITY_Community 471|Community 471]]
 - [[_COMMUNITY_Community 472|Community 472]]
+- [[_COMMUNITY_Community 473|Community 473]]
 - [[_COMMUNITY_Community 474|Community 474]]
 - [[_COMMUNITY_Community 475|Community 475]]
 - [[_COMMUNITY_Community 476|Community 476]]
@@ -627,7 +627,6 @@
 - [[_COMMUNITY_Community 610|Community 610]]
 - [[_COMMUNITY_Community 611|Community 611]]
 - [[_COMMUNITY_Community 612|Community 612]]
-- [[_COMMUNITY_Community 613|Community 613]]
 - [[_COMMUNITY_Community 614|Community 614]]
 - [[_COMMUNITY_Community 615|Community 615]]
 - [[_COMMUNITY_Community 616|Community 616]]
@@ -681,7 +680,6 @@
 - [[_COMMUNITY_Community 664|Community 664]]
 - [[_COMMUNITY_Community 665|Community 665]]
 - [[_COMMUNITY_Community 666|Community 666]]
-- [[_COMMUNITY_Community 667|Community 667]]
 - [[_COMMUNITY_Community 668|Community 668]]
 - [[_COMMUNITY_Community 669|Community 669]]
 - [[_COMMUNITY_Community 670|Community 670]]
@@ -1001,6 +999,7 @@
 - [[_COMMUNITY_Community 984|Community 984]]
 - [[_COMMUNITY_Community 985|Community 985]]
 - [[_COMMUNITY_Community 986|Community 986]]
+- [[_COMMUNITY_Community 987|Community 987]]
 - [[_COMMUNITY_Community 988|Community 988]]
 - [[_COMMUNITY_Community 989|Community 989]]
 - [[_COMMUNITY_Community 990|Community 990]]
@@ -1011,7 +1010,6 @@
 - [[_COMMUNITY_Community 995|Community 995]]
 - [[_COMMUNITY_Community 996|Community 996]]
 - [[_COMMUNITY_Community 997|Community 997]]
-- [[_COMMUNITY_Community 998|Community 998]]
 - [[_COMMUNITY_Community 999|Community 999]]
 - [[_COMMUNITY_Community 1000|Community 1000]]
 - [[_COMMUNITY_Community 1001|Community 1001]]
@@ -1105,6 +1103,7 @@
 - [[_COMMUNITY_Community 1089|Community 1089]]
 - [[_COMMUNITY_Community 1090|Community 1090]]
 - [[_COMMUNITY_Community 1091|Community 1091]]
+- [[_COMMUNITY_Community 1092|Community 1092]]
 - [[_COMMUNITY_Community 1093|Community 1093]]
 - [[_COMMUNITY_Community 1094|Community 1094]]
 - [[_COMMUNITY_Community 1095|Community 1095]]
@@ -1490,23 +1489,29 @@
 - [[_COMMUNITY_Community 1475|Community 1475]]
 - [[_COMMUNITY_Community 1476|Community 1476]]
 - [[_COMMUNITY_Community 1477|Community 1477]]
-- [[_COMMUNITY_Community 1493|Community 1493]]
-- [[_COMMUNITY_Community 1494|Community 1494]]
-- [[_COMMUNITY_Community 1495|Community 1495]]
-- [[_COMMUNITY_Community 1496|Community 1496]]
-- [[_COMMUNITY_Community 1497|Community 1497]]
+- [[_COMMUNITY_Community 1478|Community 1478]]
+- [[_COMMUNITY_Community 1479|Community 1479]]
+- [[_COMMUNITY_Community 1480|Community 1480]]
+- [[_COMMUNITY_Community 1481|Community 1481]]
+- [[_COMMUNITY_Community 1482|Community 1482]]
+- [[_COMMUNITY_Community 1483|Community 1483]]
+- [[_COMMUNITY_Community 1484|Community 1484]]
+- [[_COMMUNITY_Community 1485|Community 1485]]
+- [[_COMMUNITY_Community 1486|Community 1486]]
+- [[_COMMUNITY_Community 1487|Community 1487]]
+- [[_COMMUNITY_Community 1488|Community 1488]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `ArtifactStore` - 127 edges
 2. `AgileAgentCanvasChatParticipant` - 69 edges
-3. `content` - 44 edges
-4. `0.3.5` - 41 edges
+3. `0.3.5` - 55 edges
+4. `content` - 44 edges
 5. `WorkflowExecutor` - 40 edges
 6. `Process Steps` - 38 edges
 7. `createLogger()` - 33 edges
 8. `ArtifactsTreeProvider` - 29 edges
 9. `Artifact` - 29 edges
-10. `SchemaValidator` - 26 edges
+10. `0.3.0` - 28 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `main()` --calls--> `watch`  [EXTRACTED]
@@ -1520,69 +1525,69 @@
 - `loadAllAgentPersonas()` --calls--> `getCatalogueService()`  [INFERRED]
   src/chat/agent-personas.ts → src/state/catalogue-service.ts
 
-## Communities (1498 total, 63 thin omitted)
+## Communities (1504 total, 60 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.04
 Nodes (100): DetailPanelProps, renderChangeProposalDetails(), renderCodeReviewDetails(), renderDefinitionOfDoneDetails(), renderFitCriteriaDetails(), renderProjectContextDetails(), renderProjectOverviewDetails(), renderReadinessReportDetails() (+92 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.02
-Nodes (103): actionInput, addAssumption, addBtn, addComp, addEnv, addFRBtn, addInScope, addMilestone (+95 more)
+Cohesion: 0.03
+Nodes (85): logger, AgileAgentCanvasToolContext, logger, sharedToolContext, _archCache, archIndexJsonPath(), archIndexMdPath(), _cache (+77 more)
 
 ### Community 2 - "Community 2"
 Cohesion: 0.02
-Nodes (95): ArtifactCard, ArtifactCardProps, STATUS_BADGES, TYPE_LABELS, Canvas(), CanvasProps, FILTER_TYPE_GROUPS, FILTER_TYPE_LABELS (+87 more)
+Nodes (103): actionInput, addAssumption, addBtn, addComp, addEnv, addFRBtn, addInScope, addMilestone (+95 more)
 
 ### Community 3 - "Community 3"
-Cohesion: 0.04
-Nodes (69): buildArtifacts(), logger, sendArtifactsToPanel(), registerTools(), handleAddArtifact(), loadElicitationMethods(), CHAT_COMMANDS, ChatCommand (+61 more)
+Cohesion: 0.02
+Nodes (95): ArtifactCard, ArtifactCardProps, STATUS_BADGES, TYPE_LABELS, Canvas(), CanvasProps, FILTER_TYPE_GROUPS, FILTER_TYPE_LABELS (+87 more)
 
 ### Community 4 - "Community 4"
 Cohesion: 0.04
-Nodes (80): storeLogger, AdditionalRequirement, AICursor, Architecture, ArchitectureDecision, ArchitecturePattern, AtddChecklist, AutomationSummary (+72 more)
+Nodes (84): storeLogger, AcceptanceCriterion, AdditionalRequirement, AICursor, Architecture, ArchitectureDecision, ArchitecturePattern, AtddChecklist (+76 more)
 
 ### Community 5 - "Community 5"
 Cohesion: 0.03
 Nodes (62): AskModal(), AskModalProps, DetailPanel(), ElicitationPicker(), ElicitationPickerProps, HELP_SECTIONS, HelpModal(), HelpModalProps (+54 more)
 
 ### Community 6 - "Community 6"
-Cohesion: 0.05
-Nodes (69): BmmWorkflowInfo, breakDownArtifact(), DEV_WORKFLOWS, elicitArtifactWithMethod(), ElicitationMethod, enhanceArtifactWithAI(), exportArtifacts(), exportArtifactToMarkdown() (+61 more)
+Cohesion: 0.06
+Nodes (66): sendArtifactsToPanel(), registerTools(), BmmWorkflowInfo, breakDownArtifact(), DEV_WORKFLOWS, elicitArtifactWithMethod(), ElicitationMethod, enhanceArtifactWithAI() (+58 more)
 
 ### Community 7 - "Community 7"
+Cohesion: 0.04
+Nodes (49): AntigravityWorkflowParams, autonomousExecutionBlock(), buildGuideContent(), buildPointerPrompt(), defaultExecutionBlock(), ExecutionHints, ExecutionMode, interactiveExecutionBlock() (+41 more)
+
+### Community 8 - "Community 8"
 Cohesion: 0.03
 Nodes (65): addButtons, allArtifacts, artifact, cancelBtn, closeBtn, confirmBtn, defaultProps, deleteBtn (+57 more)
 
-### Community 8 - "Community 8"
-Cohesion: 0.07
-Nodes (31): AntigravityWorkflowParams, autonomousExecutionBlock(), buildGuideContent(), buildPointerPrompt(), defaultExecutionBlock(), ExecutionHints, ExecutionMode, interactiveExecutionBlock() (+23 more)
-
 ### Community 9 - "Community 9"
 Cohesion: 0.06
-Nodes (5): formatFullAgentForPrompt(), loadAgentPersona(), getToolDefinitions(), getCavemanService(), AgileAgentCanvasChatParticipant
+Nodes (5): formatFullAgentForPrompt(), getToolDefinitions(), getCavemanService(), AgileAgentCanvasChatParticipant, extractJson()
 
 ### Community 10 - "Community 10"
-Cohesion: 0.05
-Nodes (58): AgileAgentCanvasToolContext, logger, sharedToolContext, _archCache, archIndexJsonPath(), archIndexMdPath(), _cache, extractCommunities() (+50 more)
+Cohesion: 0.07
+Nodes (38): detectIdeForChat(), buildGraph(), buildGraphIntegrated(), callLmForExtraction(), DETECT_SCRIPT(), DetectResult, ExtractionFragment, extractSemantic() (+30 more)
 
 ### Community 11 - "Community 11"
-Cohesion: 0.05
-Nodes (46): properties, description, items, type, description, items, type, description (+38 more)
-
-### Community 12 - "Community 12"
 Cohesion: 0.04
-Nodes (47): Agent Architecture, Agent Architecture for Modules, Agent Memory & Learning, Agent-Workflow Coordination, BMM Agent Overview, Both Types, code:block1 (Agent: PM (John)), code:yaml (# Single folder (most common)) (+39 more)
+Nodes (52): 0.3.5, Acceptance Criteria Lifecycle Sync — All Three Workflows, Acceptance Criteria — Separate Canvas Category, Antigravity Alignment, Bidirectional Dependency Highlighting, Bug Fixes, Bug Fixes, Bug Fixes (+44 more)
 
 ### Community 13 - "Community 13"
 Cohesion: 0.04
-Nodes (48): 1. Simple Text Input, 2. Boolean/Flag, 3. Single Select, 4. Multi Select, 5. Multi-Line Prompt, 6. Required Variable, 7. Path Variable, Best Practices (+40 more)
+Nodes (47): Agent Architecture, Agent Architecture for Modules, Agent Memory & Learning, Agent-Workflow Coordination, BMM Agent Overview, Both Types, code:block1 (Agent: PM (John)), code:yaml (# Single folder (most common)) (+39 more)
 
 ### Community 14 - "Community 14"
 Cohesion: 0.04
-Nodes (48): Classification Decisions, code:yaml (user: { user_name }), code:yaml (user: { user_name }), code:block3 (teach-me-testing/), code:block4 (teach-me-testing/), code:bash (cp -r /Users/murat.ozcan/opensource/bmad-playground/.agileag), Complete Flow Overview, CREATE Mode (12 step files) (+40 more)
+Nodes (48): 1. Simple Text Input, 2. Boolean/Flag, 3. Single Select, 4. Multi Select, 5. Multi-Line Prompt, 6. Required Variable, 7. Path Variable, Best Practices (+40 more)
 
 ### Community 15 - "Community 15"
+Cohesion: 0.04
+Nodes (48): Classification Decisions, code:yaml (user: { user_name }), code:yaml (user: { user_name }), code:block3 (teach-me-testing/), code:block4 (teach-me-testing/), code:bash (cp -r /Users/murat.ozcan/opensource/bmad-playground/.agileag), Complete Flow Overview, CREATE Mode (12 step files) (+40 more)
+
+### Community 16 - "Community 16"
 Cohesion: 0.04
 Nodes (47): 1. Record Network Traffic, 2. Playback Network Traffic, Anti-Patterns, API Reference, Authentication and Network Recording, code:typescript (// Set mode to 'record' to capture network traffic), code:typescript (await networkRecorder.setup(context, {), code:typescript (await networkRecorder.setup(context, {) (+39 more)
 
@@ -1611,48 +1616,48 @@ Cohesion: 0.04
 Nodes (45): content, appendices, approvals, constraints, domainModel, productOverview, projectType, requirements (+37 more)
 
 ### Community 23 - "Community 23"
-Cohesion: 0.04
-Nodes (45): enabled, failureThreshold, iterations, targetTests, caches, enabled, cancelInProgress, group (+37 more)
+Cohesion: 0.05
+Nodes (46): properties, description, items, type, description, items, type, description (+38 more)
 
 ### Community 24 - "Community 24"
 Cohesion: 0.04
-Nodes (43): aiBtn, architectureButton, artifacts, badge, breakDownBtn, cancelBtn, canvas, card (+35 more)
+Nodes (45): enabled, failureThreshold, iterations, targetTests, caches, enabled, cancelInProgress, group (+37 more)
 
 ### Community 25 - "Community 25"
-Cohesion: 0.05
-Nodes (37): Minimap(), MinimapProps, a1, a2, artifacts, { container }, defaultProps, dot (+29 more)
+Cohesion: 0.04
+Nodes (43): aiBtn, architectureButton, artifacts, badge, breakDownBtn, cancelBtn, canvas, card (+35 more)
 
 ### Community 26 - "Community 26"
 Cohesion: 0.05
-Nodes (44): description, enum, examples, type, x-aliases, definitions, artifactStatus, epicStatus (+36 more)
+Nodes (37): Minimap(), MinimapProps, a1, a2, artifacts, { container }, defaultProps, dot (+29 more)
 
 ### Community 27 - "Community 27"
 Cohesion: 0.10
-Nodes (25): bootstrapCodeburn(), logger, runShell(), tryInstallCodeburn(), cache, clearCodeburnCache(), CodeburnCliForm, CodeburnStatus (+17 more)
+Nodes (24): bootstrapCodeburn(), logger, runShell(), tryInstallCodeburn(), cache, clearCodeburnCache(), CodeburnCliForm, CodeburnStatus (+16 more)
 
 ### Community 28 - "Community 28"
 Cohesion: 0.05
-Nodes (43): **2.1 Epics and Stories Analysis**, **2.2 Architecture Deep-Dive**, **2.3 Previous Story Intelligence (if applicable)**, **2.4 Git History Analysis (if available)**, **2.5 Latest Technical Research**, **3.1 Reinvention Prevention Gaps**, **3.2 Technical Specification DISASTERS**, **3.3 File Structure DISASTERS** (+35 more)
+Nodes (44): description, enum, examples, type, x-aliases, definitions, artifactStatus, epicStatus (+36 more)
 
 ### Community 29 - "Community 29"
 Cohesion: 0.05
-Nodes (42): compliant, notes, violations, content, acceptanceCriteriaVerification, architectureCompliance, findings, nextSteps (+34 more)
+Nodes (43): **2.1 Epics and Stories Analysis**, **2.2 Architecture Deep-Dive**, **2.3 Previous Story Intelligence (if applicable)**, **2.4 Git History Analysis (if available)**, **2.5 Latest Technical Research**, **3.1 Reinvention Prevention Gaps**, **3.2 Technical Specification DISASTERS**, **3.3 File Structure DISASTERS** (+35 more)
 
 ### Community 30 - "Community 30"
 Cohesion: 0.05
-Nodes (43): description, items, type, description, items, type, properties, type (+35 more)
+Nodes (42): compliant, notes, violations, content, acceptanceCriteriaVerification, architectureCompliance, findings, nextSteps (+34 more)
 
 ### Community 31 - "Community 31"
 Cohesion: 0.05
-Nodes (42): description, examples, type, additionalProperties, description, examples, type, description (+34 more)
+Nodes (43): description, items, type, description, items, type, properties, type (+35 more)
 
 ### Community 32 - "Community 32"
 Cohesion: 0.05
-Nodes (42): Anti-Patterns, API Reference, code:typescript (import { handleDownload, readCSV } from '@seontechnologies/p), code:typescript ({), code:typescript ({), code:typescript ({), code:typescript (test.afterEach(async () => {), code:typescript (// ~80 lines of boilerplate!) (+34 more)
+Nodes (42): description, examples, type, additionalProperties, description, examples, type, description (+34 more)
 
 ### Community 33 - "Community 33"
-Cohesion: 0.11
-Nodes (23): BMADValidator, Colors, fail(), header(), info(), main(), ok(), Validate all JSON Schema files (+15 more)
+Cohesion: 0.05
+Nodes (42): Anti-Patterns, API Reference, code:typescript (import { handleDownload, readCSV } from '@seontechnologies/p), code:typescript ({), code:typescript ({), code:typescript ({), code:typescript (test.afterEach(async () => {), code:typescript (// ~80 lines of boilerplate!) (+34 more)
 
 ### Community 34 - "Community 34"
 Cohesion: 0.05
@@ -1660,7 +1665,7 @@ Nodes (41): Appendix, Approval, Assumptions, Assumptions and Dependencies, Cover
 
 ### Community 35 - "Community 35"
 Cohesion: 0.05
-Nodes (41): 0.3.5, Acceptance Criteria Lifecycle Sync — All Three Workflows, Acceptance Criteria — Separate Canvas Category, Antigravity Alignment, Bidirectional Dependency Highlighting, Bug Fixes, Bug Fixes, Bug Fixes (+33 more)
+Nodes (42): description, items, type, properties, description, items, type, description (+34 more)
 
 ### Community 36 - "Community 36"
 Cohesion: 0.05
@@ -1672,7 +1677,7 @@ Nodes (41): description, items, type, description, items, type, properties, desc
 
 ### Community 38 - "Community 38"
 Cohesion: 0.06
-Nodes (37): description, items, type, description, items, type, properties, description (+29 more)
+Nodes (41): description, type, properties, description, items, type, description, items (+33 more)
 
 ### Community 39 - "Community 39"
 Cohesion: 0.05
@@ -1702,153 +1707,153 @@ Nodes (37): 1. Analyze Current State, 1. Load Progress File, 1. Welcome Back, 2.
 Cohesion: 0.05
 Nodes (38): Appendix, Assertions Analysis, Best Practices Found, code:block1 (Starting Score:          100), code:typescript (// ❌ Bad (current implementation)), code:typescript (// ✅ Good (recommended approach)), code:typescript (// ⚠️ Could be improved (current implementation)), code:typescript (// ✅ Better approach (recommended)) (+30 more)
 
-### Community 47 - "Community 47"
+### Community 46 - "Community 46"
 Cohesion: 0.05
 Nodes (38): properties, baseline, behaviors, category, comments, contingency, criterion, date (+30 more)
 
-### Community 48 - "Community 48"
-Cohesion: 0.06
-Nodes (38): description, items, type, properties, required, type, description, items (+30 more)
-
-### Community 49 - "Community 49"
-Cohesion: 0.05
-Nodes (38): description, items, type, description, items, type, description, items (+30 more)
-
-### Community 50 - "Community 50"
-Cohesion: 0.05
-Nodes (38): properties, action, application, aspect, category, components, context, description (+30 more)
-
-### Community 51 - "Community 51"
-Cohesion: 0.06
-Nodes (41): description, type, properties, description, items, type, description, items (+33 more)
-
-### Community 52 - "Community 52"
-Cohesion: 0.05
-Nodes (37): Anti-Patterns, code:typescript (import { log } from '@seontechnologies/playwright-utils';), code:bash (# Disable all logging), code:typescript (log.configure({), code:typescript (// Use sync methods when async/await isn't available), code:typescript (await log.step({ user: 'test', action: 'create' }); // Shows), code:typescript (await log.step('Creating user: test'); // Readable in UI), code:typescript (await log.info(`Password: ${password}`); // Security risk!) (+29 more)
-
-### Community 53 - "Community 53"
-Cohesion: 0.05
-Nodes (37): code:typescript (// playwright.config.ts - Central config loader), code:typescript (// Usage in tests - Per-test timeout override), code:typescript (// Per-assertion timeout override (inline)), code:typescript (// playwright.config.ts - Artifact configuration), code:typescript (// playwright/support/fixtures/artifact-fixture.ts - Custom ), code:yaml (# .github/workflows/e2e.yml - CI artifact upload), code:typescript (// Example: Custom screenshot on specific condition), code:typescript (// playwright.config.ts - Parallelization settings) (+29 more)
-
-### Community 54 - "Community 54"
+### Community 47 - "Community 47"
 Cohesion: 0.06
 Nodes (38): description, items, type, properties, description, items, type, description (+30 more)
 
-### Community 55 - "Community 55"
+### Community 48 - "Community 48"
+Cohesion: 0.05
+Nodes (38): description, items, type, description, items, type, description, items (+30 more)
+
+### Community 49 - "Community 49"
+Cohesion: 0.05
+Nodes (38): properties, action, application, aspect, category, components, context, description (+30 more)
+
+### Community 50 - "Community 50"
+Cohesion: 0.05
+Nodes (37): Anti-Patterns, code:typescript (import { log } from '@seontechnologies/playwright-utils';), code:bash (# Disable all logging), code:typescript (log.configure({), code:typescript (// Use sync methods when async/await isn't available), code:typescript (await log.step({ user: 'test', action: 'create' }); // Shows), code:typescript (await log.step('Creating user: test'); // Readable in UI), code:typescript (await log.info(`Password: ${password}`); // Security risk!) (+29 more)
+
+### Community 51 - "Community 51"
+Cohesion: 0.05
+Nodes (37): code:typescript (// playwright.config.ts - Central config loader), code:typescript (// Usage in tests - Per-test timeout override), code:typescript (// Per-assertion timeout override (inline)), code:typescript (// playwright.config.ts - Artifact configuration), code:typescript (// playwright/support/fixtures/artifact-fixture.ts - Custom ), code:yaml (# .github/workflows/e2e.yml - CI artifact upload), code:typescript (// Example: Custom screenshot on specific condition), code:typescript (// playwright.config.ts - Parallelization settings) (+29 more)
+
+### Community 52 - "Community 52"
 Cohesion: 0.08
 Nodes (19): analyze(), detect_doc_type(), main(), output_json(), Detect document type from filename., Suggest document groupings based on naming conventions., Main analysis function., Write JSON to file or stdout. (+11 more)
 
-### Community 56 - "Community 56"
+### Community 54 - "Community 54"
 Cohesion: 0.05
 Nodes (37): 1. Load Documentation, 2. Sidecar Decision Conversation, 3. Sidecar Determination, 4. Define All Metadata Properties, 5. Document to Plan File, 6. Present MENU OPTIONS, code:yaml (# Agent Sidecar Decision & Metadata), code:block2 (Based on our discussion, I recommend hasSidecar: [true/false) (+29 more)
 
-### Community 57 - "Community 57"
+### Community 55 - "Community 55"
 Cohesion: 0.06
 Nodes (38): description, type, description, items, type, description, items, type (+30 more)
 
-### Community 58 - "Community 58"
+### Community 56 - "Community 56"
 Cohesion: 0.05
 Nodes (37): properties, required, type, description, description, examples, type, $id (+29 more)
 
-### Community 59 - "Community 59"
+### Community 57 - "Community 57"
 Cohesion: 0.05
 Nodes (37): 1. Check for Existing Workflow, 1. Update Placeholders, 2. Customize Welcome Message, 2. Handle Continuation (If Document Exists), 3. Handle Completed Workflow, 3. Update Success Metrics, 4. Adjust Next Step References, 4. Fresh Workflow Setup (If No Document) (+29 more)
 
-### Community 60 - "Community 60"
-Cohesion: 0.10
-Nodes (33): sendSimplePrompt(), BmadModel, getConfig(), getModel(), getNoModelMessage(), httpsPostStream(), isAntigravity(), ProviderType (+25 more)
+### Community 58 - "Community 58"
+Cohesion: 0.06
+Nodes (37): description, items, type, description, items, type, properties, description (+29 more)
 
-### Community 61 - "Community 61"
+### Community 59 - "Community 59"
 Cohesion: 0.05
 Nodes (36): content, coverageByPackage, defectsFound, executiveSummary, generatedTests, nextSprintTestPlan, overallResults, recommendations (+28 more)
 
-### Community 62 - "Community 62"
+### Community 60 - "Community 60"
 Cohesion: 0.05
 Nodes (36): code:yaml (bmb_creations_output_folder: '{bmad-path}/bmb-creations'), code:block10 (draft → in_progress → review → approved → archived), code:yaml (# Generated Markdown frontmatter (from JSON)), code:json (// Before step execution), code:yaml (---), code:yaml (---), code:yaml (---), code:yaml (---) (+28 more)
 
-### Community 63 - "Community 63"
+### Community 61 - "Community 61"
 Cohesion: 0.05
 Nodes (36): 3A. ArtifactStore — New Data Source, 3B. Artifact Transformer — Support All 42 Types, 4A. 5-Lane Layout, 4B. Status Rollup Visualization, 4C. New Card Renderers, 4D. Detail Panel Renderers, Architecture Overview, Code Changes in Canvas.tsx (+28 more)
 
-### Community 64 - "Community 64"
+### Community 62 - "Community 62"
 Cohesion: 0.05
 Nodes (36): Acceptance Criteria, API Tests ({api_test_count} tests), ATDD Checklist - Epic {epic_num}, Story {story_num}: {story_title}, code:typescript (const user = createUser({ email: 'specific@example.com' });), code:typescript (import { test } from './fixtures/{feature}.fixture';), code:json ({), code:json ({), code:tsx (<button data-testid="login-button">Log In</button>) (+28 more)
 
-### Community 65 - "Community 65"
+### Community 63 - "Community 63"
 Cohesion: 0.08
 Nodes (34): 1. Analyze Current Document State, 1. Analyze Current State, 1. Analyze Existing Session, 2. Load All Input Documents, 2. Present Continuation Options, 2. Present Continuation Summary, 3. Handle User Choice, 3. Summarize Current Progress (+26 more)
 
-### Community 66 - "Community 66"
+### Community 64 - "Community 64"
 Cohesion: 0.06
 Nodes (37): properties, description, items, type, description, type, description, items (+29 more)
 
-### Community 67 - "Community 67"
+### Community 65 - "Community 65"
 Cohesion: 0.06
 Nodes (37): properties, type, description, properties, type, description, properties, type (+29 more)
 
-### Community 68 - "Community 68"
+### Community 66 - "Community 66"
 Cohesion: 0.06
 Nodes (35): default, description, items, type, additionalProperties, additionalProperties, description, properties (+27 more)
 
-### Community 69 - "Community 69"
+### Community 67 - "Community 67"
 Cohesion: 0.06
 Nodes (36): properties, category, children, contents, convention, conventions, count, dependents (+28 more)
 
-### Community 70 - "Community 70"
-Cohesion: 0.06
-Nodes (35): Custom NFR Assessment (if applicable), Deliverables Generated, Documentation and Communication, Evidence Checklist (if enabled), Fail-Fast Mechanisms, Final Validation, FINAL VALIDATION (Both Phases), Gate YAML Snippet (if enabled) (+27 more)
-
-### Community 71 - "Community 71"
+### Community 68 - "Community 68"
 Cohesion: 0.06
 Nodes (35): additionalProperties, description, description, items, type, description, items, type (+27 more)
 
-### Community 72 - "Community 72"
+### Community 69 - "Community 69"
+Cohesion: 0.09
+Nodes (29): logger, JiraAdfNode, JiraClientError, JiraConfig, JiraEpic, JiraIssueFields, JiraIssueRaw, JiraSearchResponse (+21 more)
+
+### Community 70 - "Community 70"
 Cohesion: 0.10
 Nodes (32): AC_WORKFLOWS, agentSkillContent(), Artifact, autoInstallIfNeeded(), buildCatalogueTable(), cleanupExtensionAgentFiles(), cleanupExtensionSkills(), cleanupLegacyDirs() (+24 more)
 
-### Community 73 - "Community 73"
+### Community 71 - "Community 71"
+Cohesion: 0.06
+Nodes (35): Custom NFR Assessment (if applicable), Deliverables Generated, Documentation and Communication, Evidence Checklist (if enabled), Fail-Fast Mechanisms, Final Validation, FINAL VALIDATION (Both Phases), Gate YAML Snippet (if enabled) (+27 more)
+
+### Community 72 - "Community 72"
 Cohesion: 0.06
 Nodes (35): 1. anytime, 2. Phases (phase-1, phase-2, phase-3...), 3. Module Integration Patterns, code:block1 (module,phase,name,code,sequence,workflow-file,command,requir), code:block10 (module,phase,name,code,sequence,workflow-file,command,requir), code:block11 (Write to: {moduleHelpCsvFile}), code:csv (module,phase,name,code,sequence,workflow-file,command,requir), code:csv (module,phase,name,code,sequence,workflow-file,command,requir) (+27 more)
 
-### Community 74 - "Community 74"
+### Community 73 - "Community 73"
 Cohesion: 0.06
 Nodes (36): description, properties, type, description, properties, type, description, items (+28 more)
 
-### Community 75 - "Community 75"
+### Community 74 - "Community 74"
 Cohesion: 0.07
 Nodes (28): CatalogueModal(), CatalogueModalProps, ConfirmDialogProps, FEATURED_REPOS, RepoEntry, RepoOperation, ReposTabProps, SkillCardProps (+20 more)
 
-### Community 76 - "Community 76"
+### Community 75 - "Community 75"
 Cohesion: 0.06
 Nodes (34): content, achievements, blockers, completionPercentage, dateRange, developmentStatus, overallHealth, overallStatus (+26 more)
 
-### Community 77 - "Community 77"
+### Community 76 - "Community 76"
 Cohesion: 0.06
 Nodes (34): authentication, baseUrl, endpoints, errorFormat, rateLimiting, content, apiDesign, databaseSchema (+26 more)
 
-### Community 78 - "Community 78"
+### Community 77 - "Community 77"
 Cohesion: 0.06
 Nodes (34): Anti-Patterns, API Reference, code:typescript (import { test } from '@seontechnologies/playwright-utils/int), code:typescript (// Vanilla Playwright - complex predicate), code:typescript (await page.goto('/dashboard'); // Navigation starts), code:typescript (const usersCall = interceptNetworkCall({ url: '**/api/users'), code:typescript (interceptNetworkCall({ url: '**/api/users' }); // Not awaite), code:typescript (const usersCall = interceptNetworkCall({ url: '**/api/users') (+26 more)
 
-### Community 79 - "Community 79"
+### Community 78 - "Community 78"
 Cohesion: 0.06
 Nodes (34): 1. Read Subprocess Outputs, 2. Write All Test Files to Disk, 3. Aggregate Fixture Needs, 4. Generate Fixture Infrastructure, 5. Calculate Summary Statistics, 6. Optional Cleanup, 7. Save Progress, code:javascript (const apiTestsPath = '/tmp/tea-automate-api-tests-{{timestam) (+26 more)
 
-### Community 80 - "Community 80"
+### Community 79 - "Community 79"
 Cohesion: 0.06
 Nodes (34): 1. Read Subprocess Outputs, 2. Verify TDD Red Phase Compliance, 3. Write All Test Files to Disk, 4. Aggregate Fixture Needs, 5. Generate Fixture Infrastructure, 6. Generate ATDD Checklist, 7. Calculate Summary Statistics, 8. Save Progress (+26 more)
 
-### Community 81 - "Community 81"
+### Community 80 - "Community 80"
 Cohesion: 0.06
 Nodes (34): 1. Load Reference Documents, 2. Confirm Routing Decision, 3. Discuss Activation Needs, 4. Define critical_actions OR Explicitly Omit, 5. Document to Plan, 6. Present MENU OPTIONS, Build Step Route (determined by hasSidecar), code:yaml (# Route determination based on hasSidecar only) (+26 more)
 
-### Community 82 - "Community 82"
+### Community 81 - "Community 81"
 Cohesion: 0.06
 Nodes (34): 10. Present MENU OPTIONS, 1. Step Structure Design, 1a. Continuation Support Assessment, 2. Interaction Pattern Design, 3. Data Flow Design, 4. File Structure Design, 5. Role and Persona Definition, 6. Validation and Error Handling (+26 more)
 
-### Community 83 - "Community 83"
+### Community 82 - "Community 82"
 Cohesion: 0.06
 Nodes (26): 1. Create Validation Report, 1. Load Checklist, 2. Load File Structure Standards, 2. Validate Outputs, 3. Check Folder Structure, 3. Write Report, 4. Check File Sizes, 5. Verify File Presence (+18 more)
+
+### Community 83 - "Community 83"
+Cohesion: 0.08
+Nodes (33): 0.3.6, 0.3.8, 0.4.0, 0.4.1, 0.4.2, 0.4.3, Artifact Persistence & Sync Fixes, BMAD v6.6.0 Resource Migration (+25 more)
 
 ### Community 84 - "Community 84"
 Cohesion: 0.06
@@ -1875,34 +1880,38 @@ Cohesion: 0.08
 Nodes (31): 1. Check for Existing Workflow, 1. Confirm Research Understanding, 2. Handle Continuation (If Document Exists), 2. Refine Research Scope, 3. Document Initial Scope, 3. Fresh Workflow Setup (If No Document), 4. Present Confirmation and Continue Option, 5. Handle User Response (+23 more)
 
 ### Community 90 - "Community 90"
-Cohesion: 0.08
-Nodes (30): description, items, type, description, items, type, description, items (+22 more)
+Cohesion: 0.07
+Nodes (33): description, items, type, description, items, type, description, items (+25 more)
 
 ### Community 91 - "Community 91"
 Cohesion: 0.07
-Nodes (33): description, items, type, description, type, description, items, type (+25 more)
+Nodes (33): description, items, type, description, items, type, properties, required (+25 more)
 
 ### Community 92 - "Community 92"
-Cohesion: 0.06
-Nodes (32): Automate Workflow Validation Checklist, Automation Summary Document, BMad Artifacts (If Available - OPTIONAL), Coverage Analysis, Coverage Plan Created, Data Factories, Duplicate Coverage Avoidance, Fixture Architecture (+24 more)
+Cohesion: 0.11
+Nodes (13): CatalogueEntry, getCatalogueService(), initialiseCatalogueService(), logger, SkillManifestEntry, getSkillRepoManager(), initialiseSkillRepoManager(), logger (+5 more)
 
 ### Community 93 - "Community 93"
 Cohesion: 0.06
-Nodes (33): Process Steps, Step 10: Documentation, Step 11: Build & Test Script Updates, Step 1: Context Loading, Step 1: Preflight Checks, Step 2: CI Pipeline Configuration, Step 2: Evidence Parsing, Step 2: Framework Selection (+25 more)
+Nodes (32): Automate Workflow Validation Checklist, Automation Summary Document, BMad Artifacts (If Available - OPTIONAL), Coverage Analysis, Coverage Plan Created, Data Factories, Duplicate Coverage Avoidance, Fixture Architecture (+24 more)
 
 ### Community 94 - "Community 94"
 Cohesion: 0.06
-Nodes (32): 1. Read Edit Plan, 2. For Each Direct Change Goal, 3. Handle Common Change Patterns, 4. After All Changes Complete, 5. Present MENU OPTIONS, A. Identify Change Type and Load Standards, Adding a New Step, Adding/Modifying Data Files (+24 more)
+Nodes (33): Process Steps, Step 10: Documentation, Step 11: Build & Test Script Updates, Step 1: Context Loading, Step 1: Preflight Checks, Step 2: CI Pipeline Configuration, Step 2: Evidence Parsing, Step 2: Framework Selection (+25 more)
 
 ### Community 95 - "Community 95"
 Cohesion: 0.06
-Nodes (32): 0. Check Technical Preferences & Context, 10. Handle Menu Selection, 1. Identify Primary Technology Domain, 2. UX Requirements Consideration, 3. Research Current Starter Options, 4. Investigate Top Starter Options, 5. Analyze What Each Starter Provides, 6. Present Starter Options (+24 more)
+Nodes (32): 1. Read Edit Plan, 2. For Each Direct Change Goal, 3. Handle Common Change Patterns, 4. After All Changes Complete, 5. Present MENU OPTIONS, A. Identify Change Type and Load Standards, Adding a New Step, Adding/Modifying Data Files (+24 more)
 
 ### Community 96 - "Community 96"
 Cohesion: 0.06
-Nodes (32): 1. Initialize Best Practices Validation, 2. Epic Structure Validation, 3. Story Quality Assessment, 4. Dependency Analysis, 5. Special Implementation Checks, 6. Best Practices Compliance Checklist, 7. Quality Assessment Documentation, 8. Autonomous Review Execution (+24 more)
+Nodes (32): 0. Check Technical Preferences & Context, 10. Handle Menu Selection, 1. Identify Primary Technology Domain, 2. UX Requirements Consideration, 3. Research Current Starter Options, 4. Investigate Top Starter Options, 5. Analyze What Each Starter Provides, 6. Present Starter Options (+24 more)
 
 ### Community 97 - "Community 97"
+Cohesion: 0.06
+Nodes (32): 1. Initialize Best Practices Validation, 2. Epic Structure Validation, 3. Story Quality Assessment, 4. Dependency Analysis, 5. Special Implementation Checks, 6. Best Practices Compliance Checklist, 7. Quality Assessment Documentation, 8. Autonomous Review Execution (+24 more)
+
+### Community 98 - "Community 98"
 Cohesion: 0.06
 Nodes (32): 1. Analyze Current State, 1. Update Placeholders, 2. Add Workflow-Specific Context, 2. Read All Completed Step Files, 3. Customize Welcome Message, 3. Review Previous Output, 4. Add Continuation-Specific Validations, 4. Determine Next Step (+24 more)
 
@@ -1991,8 +2000,8 @@ Cohesion: 0.08
 Nodes (30): properties, description, type, description, items, type, description, items (+22 more)
 
 ### Community 120 - "Community 120"
-Cohesion: 0.11
-Nodes (23): description, items, type, properties, required, type, description, items (+15 more)
+Cohesion: 0.08
+Nodes (30): description, items, type, properties, description, required, type, required (+22 more)
 
 ### Community 121 - "Community 121"
 Cohesion: 0.07
@@ -2003,36 +2012,36 @@ Cohesion: 0.07
 Nodes (29): Anti-Pattern Examples, Anti-patterns to Avoid, code:yaml (unit_test:), code:yaml (integration_test:), code:yaml (e2e_test:), code:typescript (// tests/e2e/checkout-flow.spec.ts), code:typescript (// tests/integration/user-service.spec.ts), code:typescript (// src/components/Button.cy.tsx (Cypress Component Test)) (+21 more)
 
 ### Community 123 - "Community 123"
-Cohesion: 0.07
-Nodes (30): description, enum, type, description, type, description, type, description (+22 more)
+Cohesion: 0.26
+Nodes (22): Cohesive Review, Collaborative Experience Check, Config Variables (Exceptions), Critical Path Violations, File Structure & Size, Frontmatter Validation, Instruction Style Check, Menu Handling Validation (+14 more)
 
 ### Community 124 - "Community 124"
-Cohesion: 0.09
-Nodes (27): Actionable Feedback, Best Practices, Best Practices Compliance, BMAD Handoff Validation (System-Level Mode Only), CI/CD Pipeline Setup - Validation Checklist, Code Quality, Common Issues, Completion Criteria (+19 more)
-
-### Community 125 - "Community 125"
 Cohesion: 0.07
 Nodes (29): 1. Prepare Subprocess Inputs, 2. Subprocess Dispatch Matrix, 3. Launch Subprocess A: API Test Generation (always), 4. Launch Subprocess B: E2E Test Generation (frontend/fullstack only), 5. Launch Subprocess B-backend: Backend Test Generation (backend/fullstack only), 6. Wait for All Subprocesses to Complete, 7. Performance Report, 8. Proceed to Aggregation (+21 more)
 
-### Community 126 - "Community 126"
+### Community 125 - "Community 125"
 Cohesion: 0.07
 Nodes (29): 1. Load Project-Type Innovation Data, 2. Listen for Innovation Indicators, 3. Initial Innovation Screening, 4. Deep Innovation Exploration (If Detected), 5. Generate Innovation Content (If Innovation Detected), 6. Present MENU OPTIONS (Only if Innovation Detected), APPEND TO DOCUMENT:, code:markdown (## Innovation & Novel Patterns) (+21 more)
 
-### Community 127 - "Community 127"
+### Community 126 - "Community 126"
 Cohesion: 0.07
 Nodes (29): 1. Load Standards for Init Steps, 2. Determine Step 01 Type, 3. Build step-01-init.md, 4. Build step-01b-continue.md (If Continuable), 5. Create Supporting Files (If Needed), 5a. Apply Subprocess Optimization (If Designed), 6. Document Build in Plan, 7. Present MENU OPTIONS (+21 more)
 
-### Community 128 - "Community 128"
+### Community 127 - "Community 127"
 Cohesion: 0.07
 Nodes (29): 1. Load Workflow Plan, 2. Check Conversion Metadata, 3. Conversion Confirmation Path, 4. New Workflow Confirmation Path, 5. Completion Handoff, 6. Validation Offer, A. Load Plan Requirements, A. Original Goal Coverage (+21 more)
+
+### Community 128 - "Community 128"
+Cohesion: 0.09
+Nodes (27): Actionable Feedback, Best Practices, Best Practices Compliance, BMAD Handoff Validation (System-Level Mode Only), CI/CD Pipeline Setup - Validation Checklist, Code Quality, Common Issues, Completion Criteria (+19 more)
 
 ### Community 129 - "Community 129"
 Cohesion: 0.07
 Nodes (29): 10. Present MENU OPTIONS, 1. Welcome and Overview, 2. Document Discovery and Validation, 3. Extract Functional Requirements (FRs), 4. Extract Non-Functional Requirements (NFRs), 5. Extract Additional Requirements from Architecture, 6. Extract UX Design Requirements (if UX document exists), 7. Load and Initialize Template (+21 more)
 
 ### Community 130 - "Community 130"
-Cohesion: 0.26
-Nodes (22): Cohesive Review, Collaborative Experience Check, Config Variables (Exceptions), Critical Path Violations, File Structure & Size, Frontmatter Validation, Instruction Style Check, Menu Handling Validation (+14 more)
+Cohesion: 0.08
+Nodes (30): description, items, type, properties, required, type, description, items (+22 more)
 
 ### Community 131 - "Community 131"
 Cohesion: 0.07
@@ -2083,328 +2092,328 @@ Cohesion: 0.07
 Nodes (28): description, properties, type, description, properties, type, description, items (+20 more)
 
 ### Community 143 - "Community 143"
-Cohesion: 0.06
-Nodes (31): description, items, type, description, type, description, items, type (+23 more)
+Cohesion: 0.07
+Nodes (28): description, items, type, description, type, description, items, type (+20 more)
 
 ### Community 144 - "Community 144"
 Cohesion: 0.07
-Nodes (28): type, description, type, type, description, type, description, type (+20 more)
+Nodes (28): description, type, type, items, type, items, type, description (+20 more)
 
 ### Community 145 - "Community 145"
 Cohesion: 0.07
-Nodes (28): description, type, type, items, type, items, type, description (+20 more)
+Nodes (28): description, type, description, items, type, description, items, type (+20 more)
 
 ### Community 146 - "Community 146"
 Cohesion: 0.07
-Nodes (28): description, type, description, items, type, description, items, type (+20 more)
+Nodes (28): description, properties, type, description, properties, type, description, properties (+20 more)
 
 ### Community 147 - "Community 147"
 Cohesion: 0.07
-Nodes (28): description, properties, type, description, properties, type, description, properties (+20 more)
+Nodes (28): description, properties, type, description, type, description, properties, type (+20 more)
 
 ### Community 148 - "Community 148"
 Cohesion: 0.07
-Nodes (28): description, properties, type, description, type, description, properties, type (+20 more)
+Nodes (28): description, properties, type, description, properties, type, description, properties (+20 more)
 
 ### Community 149 - "Community 149"
 Cohesion: 0.07
-Nodes (28): description, properties, type, description, properties, type, description, properties (+20 more)
+Nodes (27): Anti-Patterns, Benefits of Fixture Composition, code:typescript (// playwright/support/merged-fixtures.ts), code:typescript (// ❌ Without mergeTests (verbose)), code:typescript (import { test } from '@seontechnologies/playwright-utils/api), code:typescript (import { test } from '../support/merged-fixtures';), code:typescript (// Merging 20+ fixtures makes test signature huge), code:typescript (// Merge the 4-6 fixtures your project actually needs) (+19 more)
 
 ### Community 150 - "Community 150"
 Cohesion: 0.07
-Nodes (27): Anti-Patterns, Benefits of Fixture Composition, code:typescript (// playwright/support/merged-fixtures.ts), code:typescript (// ❌ Without mergeTests (verbose)), code:typescript (import { test } from '@seontechnologies/playwright-utils/api), code:typescript (import { test } from '../support/merged-fixtures';), code:typescript (// Merging 20+ fixtures makes test signature huge), code:typescript (// Merge the 4-6 fixtures your project actually needs) (+19 more)
-
-### Community 151 - "Community 151"
-Cohesion: 0.07
 Nodes (27): Anti-Patterns, Available Utilities, code:bash (npm install -D @seontechnologies/pactjs-utils), code:block2 (Is this a monorepo (consumer + provider in same repo)?), code:typescript (import { PactV3 } from '@pact-foundation/pact';), code:typescript (import { Verifier } from '@pact-foundation/pact';), code:typescript (// ❌ Don't assemble VerifierOptions manually), code:typescript (// ✅ Single call handles all configuration) (+19 more)
 
-### Community 152 - "Community 152"
-Cohesion: 0.07
-Nodes (28): properties, accessRequired, action, availability, category, comments, configuration, date (+20 more)
-
-### Community 153 - "Community 153"
-Cohesion: 0.07
-Nodes (27): Assessment Step, Completion Step, Content Quality, Custom NFR Categories (if applicable), Data File Quality, Documentation, Edit Mode, Error Handling (+19 more)
-
-### Community 154 - "Community 154"
+### Community 151 - "Community 151"
 Cohesion: 0.08
 Nodes (25): 1. Determine Scope and Stack, 1. Prerequisites, 2. Load Configuration, 2. Load Knowledge Base, 3. Gather Context Artifacts, 3. Load Artifacts, 3. Load Knowledge Base Fragments, 4. Load Artifacts (+17 more)
 
-### Community 155 - "Community 155"
+### Community 152 - "Community 152"
 Cohesion: 0.07
 Nodes (27): 1. Gap Analysis, 2. Coverage Heuristics Checks, 3. Generate Recommendations, 4. Calculate Coverage Statistics, 5. Generate Complete Coverage Matrix, 6. Output Coverage Matrix to Temp File, 7. Display Phase 1 Summary, 8. Save Progress (+19 more)
 
-### Community 156 - "Community 156"
+### Community 153 - "Community 153"
 Cohesion: 0.07
 Nodes (27): 1. Confirm Foundation Readiness, 2. Create Folder Structure, 3. Generate workflow.md, 4. Create Main Output Template, 5. Document Foundation in Plan, 6. Present MENU OPTIONS, code:block1 ({targetWorkflowPath}/), code:yaml (---) (+19 more)
 
-### Community 157 - "Community 157"
+### Community 154 - "Community 154"
 Cohesion: 0.07
 Nodes (27): 1. Grand Celebration, 2. Agent Capabilities Showcase, 3. Activation Guidance, 4. Installation Guidance, 5. Final Documentation, 6. Workflow Completion, 7. Present MENU OPTIONS, code:block1 (my-custom-stuff/) (+19 more)
 
-### Community 158 - "Community 158"
+### Community 155 - "Community 155"
+Cohesion: 0.07
+Nodes (27): Assessment Step, Completion Step, Content Quality, Custom NFR Categories (if applicable), Data File Quality, Documentation, Edit Mode, Error Handling (+19 more)
+
+### Community 156 - "Community 156"
 Cohesion: 0.07
 Nodes (27): 1. Read Edit Plan Context, 2. Determine Discovery Approach, 3a. Discovery With Validation Issues, 3b. Discovery For Direct Change, 4. Document Fix Goals (For Validation Issues), 5. Document Change Goals, 6. Confirm and Route, 7. Present MENU OPTIONS (Final) (+19 more)
 
-### Community 159 - "Community 159"
+### Community 157 - "Community 157"
 Cohesion: 0.07
 Nodes (27): 10. Handle Menu Selection, 1. Technology Stack & Versions, 2. Language-Specific Rules, 3. Framework-Specific Rules, 4. Testing Rules, 5. Code Quality & Style Rules, 6. Development Workflow Rules, 7. Critical Don't-Miss Rules (+19 more)
 
-### Community 160 - "Community 160"
+### Community 158 - "Community 158"
 Cohesion: 0.07
 Nodes (27): 1. Initialize Technique with Coaching Frame, 2. Execute First Technique Element Interactively, 3. Deep Dive Based on User Response, 4.1. Energy Checkpoint (After Every 4-5 Exchanges), 4. Check Technique Continuation, 4a. Handle Immediate Technique Transition, 5. Facilitate Multi-Technique Sessions, 6. Document Ideas Organically (+19 more)
 
-### Community 161 - "Community 161"
+### Community 159 - "Community 159"
 Cohesion: 0.09
 Nodes (19): 1. Configuration Loading, 1. Mode Determination, 2. Mode Determination, 2. Route to First Step, 3. Route to First Step, Acceptance Test-Driven Development (ATDD), CI/CD Pipeline Setup, Core Principles (+11 more)
 
-### Community 162 - "Community 162"
-Cohesion: 0.07
-Nodes (28): properties, actions, applied, appliedIn, automationStatus, category, completed, completedDate (+20 more)
-
-### Community 163 - "Community 163"
+### Community 160 - "Community 160"
 Cohesion: 0.07
 Nodes (28): description, type, description, type, description, type, description, type (+20 more)
 
-### Community 164 - "Community 164"
+### Community 161 - "Community 161"
+Cohesion: 0.07
+Nodes (28): properties, actions, applied, appliedIn, automationStatus, category, completed, completedDate (+20 more)
+
+### Community 162 - "Community 162"
 Cohesion: 0.07
 Nodes (28): description, properties, type, description, properties, type, description, items (+20 more)
 
-### Community 165 - "Community 165"
+### Community 163 - "Community 163"
 Cohesion: 0.07
 Nodes (28): properties, architecturalChanges, architecturalConcern, category, component, concern, concernId, effort (+20 more)
 
-### Community 166 - "Community 166"
+### Community 164 - "Community 164"
 Cohesion: 0.07
 Nodes (28): description, items, type, description, properties, type, description, properties (+20 more)
 
-### Community 167 - "Community 167"
+### Community 165 - "Community 165"
+Cohesion: 0.07
+Nodes (28): properties, accessRequired, action, availability, category, comments, configuration, date (+20 more)
+
+### Community 166 - "Community 166"
 Cohesion: 0.07
 Nodes (28): description, type, description, type, description, items, type, description (+20 more)
 
-### Community 168 - "Community 168"
+### Community 167 - "Community 167"
 Cohesion: 0.07
 Nodes (28): description, items, type, description, type, description, items, type (+20 more)
 
 ### Community 169 - "Community 169"
-Cohesion: 0.08
-Nodes (24): properties, category, code, dependencies, effort, examples, file, findingsRelated (+16 more)
-
-### Community 171 - "Community 171"
 Cohesion: 0.07
 Nodes (27): numFailedTests, numFailedTestSuites, numPassedTests, numPassedTestSuites, numPendingTests, numPendingTestSuites, numTodoTests, numTotalTests (+19 more)
 
-### Community 172 - "Community 172"
+### Community 170 - "Community 170"
 Cohesion: 0.07
 Nodes (27): properties, alternatives, category, consequences, dataFormat, date, deciders, decision (+19 more)
 
-### Community 173 - "Community 173"
+### Community 171 - "Community 171"
 Cohesion: 0.08
 Nodes (27): description, items, type, properties, category, components, contents, dependencies (+19 more)
 
-### Community 174 - "Community 174"
+### Community 172 - "Community 172"
 Cohesion: 0.07
 Nodes (26): gaps, summary, themes, content, analysis, appendices, findings, methodology (+18 more)
 
-### Community 175 - "Community 175"
+### Community 173 - "Community 173"
 Cohesion: 0.07
 Nodes (27): description, items, type, properties, description, items, type, description (+19 more)
 
-### Community 176 - "Community 176"
+### Community 174 - "Community 174"
 Cohesion: 0.07
-Nodes (30): description, items, type, description, type, description, items, type (+22 more)
+Nodes (27): description, items, type, description, type, description, items, type (+19 more)
 
-### Community 177 - "Community 177"
+### Community 175 - "Community 175"
 Cohesion: 0.07
 Nodes (26): Branching Workflows, code:block1 (brainstorming → research → brief → PRD → UX → architecture →), code:yaml (---), code:yaml (# In BMGD narrative workflow), code:yaml (---), code:markdown (## 1. Discover Required Inputs), code:markdown (## Next Steps), code:yaml (nextWorkflow: 'create-ux') (+18 more)
 
-### Community 178 - "Community 178"
+### Community 176 - "Community 176"
 Cohesion: 0.07
 Nodes (26): 1. Read All Subprocess Outputs, 2. Calculate Weighted Overall Score, 3. Aggregate Violations by Severity, 4. Prioritize Recommendations, 5. Create Review Summary Object, 6. Display Summary to User, 7. Save Progress, code:javascript (// Use the SAME timestamp generated in Step 3 (do not regene) (+18 more)
 
-### Community 179 - "Community 179"
+### Community 177 - "Community 177"
 Cohesion: 0.07
 Nodes (26): 10. Complete Message, 11. Menu, 1. Session Welcome, 2. Update Progress (Started), 3. Teaching: Fixture Architecture, 4. Teaching: Network-First Patterns, 5. Teaching: Data Factories, 6. Teaching: Step-File Architecture (+18 more)
 
-### Community 180 - "Community 180"
+### Community 178 - "Community 178"
 Cohesion: 0.07
 Nodes (26): 10. Present MENU OPTIONS, 1. Present Design Preview, 2. Initialize Tools Discussion, 3. Load and Present Available Tools, 4. Configure Core Tools WITH Context, 5. Configure LLM Features WITH Context, 6. Configure Memory Systems, 7. External Integrations (Optional) (+18 more)
 
-### Community 181 - "Community 181"
+### Community 179 - "Community 179"
 Cohesion: 0.07
 Nodes (26): 1. Generate README.md, 2. Generate TODO.md, 3.1. getting-started.md, 3.2. agents.md, 3.3. workflows.md, 3.4. examples.md, 3. Create docs/ Folder, 4. Update Build Tracking (+18 more)
 
-### Community 182 - "Community 182"
+### Community 180 - "Community 180"
 Cohesion: 0.07
 Nodes (26): 1. Load Project-Type Configuration Data, 2. Conduct Guided Discovery Using Key Questions, 3. Document Project-Type Specific Requirements, 4. Generate Dynamic Content Sections, 5. Generate Project-Type Content, 6. Present MENU OPTIONS, APPEND TO DOCUMENT:, code:markdown (## [Project Type] Specific Requirements) (+18 more)
 
-### Community 183 - "Community 183"
+### Community 181 - "Community 181"
 Cohesion: 0.07
 Nodes (26): 1. Explain NFR Purpose and Scope, 2. Assess Product Context for NFR Relevance, 3. Explore Relevant NFR Categories, 4. Make NFRs Specific and Measurable, 5. Generate NFR Content (Only Relevant Categories), 6. Present MENU OPTIONS, Accessibility NFRs (If relevant):, APPEND TO DOCUMENT: (+18 more)
 
-### Community 184 - "Community 184"
+### Community 182 - "Community 182"
 Cohesion: 0.07
 Nodes (26): 1. Read Edit Plan Context, 2. Present Edit Categories, 3. Deep Dive Discovery, 4. Document Edits to Plan, 5. Present MENU OPTIONS, code:markdown (## Edits Planned), CONTEXT BOUNDARIES:, CRITICAL STEP COMPLETION NOTE (+18 more)
 
-### Community 185 - "Community 185"
+### Community 183 - "Community 183"
 Cohesion: 0.07
 Nodes (26): 1. Read Edit Plan and Validation Report, 2. Generate Completion Summary, 3. Update Edit Plan with Completion, 4. Provide Next Steps Guidance, 5. Final Confirmation, 6. Save Summary (If Requested), Changes Made, code:markdown (## Completion Summary) (+18 more)
 
-### Community 186 - "Community 186"
+### Community 184 - "Community 184"
 Cohesion: 0.07
 Nodes (26): 1. Check for Existing Sessions, 2. Handle Existing Sessions (If Files Found), 3. Fresh Workflow Setup (If No Files or User Chooses New), 4. Handle User Selection and Initial Document Append, 5. Handle User Selection, A. Initialize Document, APPEND TO DOCUMENT:, B. Context File Check and Loading (+18 more)
 
-### Community 187 - "Community 187"
+### Community 185 - "Community 185"
 Cohesion: 0.07
 Nodes (26): 1. Analyze Design System Coverage, 2. Design Custom Components, 3. Document Component Specifications, 4. Define Component Strategy, 5. Plan Implementation Roadmap, 6. Generate Component Strategy Content, 7. Present Content and Menu, 8. Handle Menu Selection (+18 more)
 
-### Community 188 - "Community 188"
+### Community 186 - "Community 186"
 Cohesion: 0.07
 Nodes (26): 1. Identify Pattern Categories, 2. Define Critical Patterns First, 3. Establish Pattern Guidelines, 4. Design System Integration, 5. Create Pattern Documentation, 6. Generate UX Patterns Content, 7. Present Content and Menu, 8. Handle Menu Selection (+18 more)
 
-### Community 189 - "Community 189"
+### Community 187 - "Community 187"
 Cohesion: 0.07
 Nodes (26): 1. Load PRD Purpose and Standards, 2. Discover PRD to Validate, 3. Validate PRD Exists and Load, 4. Extract Frontmatter and Input Documents, 5. Load Input Documents, 6. Ask About Additional Reference Documents, 7. Initialize Validation Report, 8. Present Discovery Summary (+18 more)
 
-### Community 190 - "Community 190"
+### Community 188 - "Community 188"
 Cohesion: 0.07
 Nodes (27): description, type, description, type, description, enum, type, businessValue (+19 more)
 
-### Community 191 - "Community 191"
+### Community 189 - "Community 189"
 Cohesion: 0.07
 Nodes (27): description, items, type, description, format, type, description, items (+19 more)
 
-### Community 192 - "Community 192"
+### Community 190 - "Community 190"
 Cohesion: 0.07
 Nodes (27): description, format, type, description, type, description, type, description (+19 more)
 
-### Community 193 - "Community 193"
+### Community 191 - "Community 191"
 Cohesion: 0.07
 Nodes (26): code:bash ({{setup_commands}}), code:bash ({{run_commands}}), code:bash ({{test_commands}}), code:bash (cd {{root_path}}), Core Documentation, Cross-Part Integration, Existing Documentation, For AI-Assisted Development (+18 more)
 
-### Community 194 - "Community 194"
+### Community 192 - "Community 192"
+Cohesion: 0.08
+Nodes (26): 0.3.0, Artifact Reference Architecture, Bug Fixes, Bug Fixes, Bug Fixes, Bug Fixes, Bug Fixes, Bug Fixes (+18 more)
+
+### Community 193 - "Community 193"
 Cohesion: 0.08
 Nodes (26): description, items, type, description, type, description, items, type (+18 more)
 
-### Community 195 - "Community 195"
+### Community 194 - "Community 194"
 Cohesion: 0.08
-Nodes (26): properties, description, type, description, type, description, type, changeType (+18 more)
+Nodes (26): type, type, description, type, description, type, properties, description (+18 more)
 
-### Community 196 - "Community 196"
+### Community 195 - "Community 195"
 Cohesion: 0.08
 Nodes (26): description, items, type, description, items, type, description, items (+18 more)
 
-### Community 197 - "Community 197"
+### Community 196 - "Community 196"
 Cohesion: 0.08
 Nodes (26): description, items, type, description, items, type, description, type (+18 more)
 
-### Community 198 - "Community 198"
+### Community 197 - "Community 197"
 Cohesion: 0.08
 Nodes (26): description, type, description, properties, type, description, type, properties (+18 more)
 
-### Community 199 - "Community 199"
+### Community 198 - "Community 198"
 Cohesion: 0.08
 Nodes (25): 10. Final Step, 1. Init (Non-Continuable), 2. Init (Continuable), 3. Continuation (01b), 4. Middle (Standard), 5. Middle (Simple), 6. Branch Step, 7. Validation Sequence (+17 more)
 
-### Community 200 - "Community 200"
+### Community 199 - "Community 199"
 Cohesion: 0.08
 Nodes (25): Anti-Patterns to Avoid, code:markdown (Launch a subprocess that:), code:json ({"violations": [{"file": "step-02.md", "line": 45, "match": ), code:markdown (DO NOT BE LAZY - For EACH file, launch a subprocess that:), code:markdown (Launch a subprocess that:), code:markdown (Launch subprocesses in parallel that:), code:markdown (- ⚙️ If any instruction references a subprocess, subagent, o), code:markdown (### Step-Specific Rules:) (+17 more)
 
-### Community 201 - "Community 201"
+### Community 200 - "Community 200"
 Cohesion: 0.08
 Nodes (25): code:typescript (// tests/contract/user-api.pact.spec.ts), code:typescript (// scripts/pact-broker-housekeeping.ts), code:json ({), code:yaml (# .github/workflows/deploy-production.yml), code:yaml (# .github/workflows/pact-housekeeping.yml), code:json ({), code:typescript (// tests/contract/user-api.provider.spec.ts), code:yaml (# .github/workflows/pact-provider.yml) (+17 more)
 
-### Community 202 - "Community 202"
+### Community 201 - "Community 201"
 Cohesion: 0.08
 Nodes (25): Anti-Patterns, code:typescript (import { PactV3, MatchersV3 } from '@pact-foundation/pact';), code:typescript (import { toJsonMap } from '@seontechnologies/pactjs-utils';), code:typescript (import { createProviderState } from '@seontechnologies/pactj), code:typescript (import { createProviderState } from '@seontechnologies/pactj), code:typescript (// ❌ Manual casting — verbose, error-prone, no type safety), code:typescript (// ✅ Automatic conversion with type safety), code:typescript (// ❌ Duplicated state names between consumer and provider — ) (+17 more)
 
-### Community 203 - "Community 203"
+### Community 202 - "Community 202"
 Cohesion: 0.08
 Nodes (25): Anti-Patterns, code:typescript (import { buildVerifierOptions, createRequestFilter } from '@), code:typescript (import { createRequestFilter } from '@seontechnologies/pactj), code:typescript (import { buildVerifierOptions, noOpRequestFilter } from '@se), code:typescript (import { buildVerifierOptions, createRequestFilter } from '@), code:typescript (// ❌ Risk of double-prefix: "Bearer Bearer token"), code:typescript (// ✅ tokenGenerator returns raw value — filter handles prefi), code:typescript (// ❌ Auth logic mixed with verifier config) (+17 more)
 
-### Community 204 - "Community 204"
-Cohesion: 0.08
-Nodes (25): 1. Read Phase 1 Coverage Matrix, 2. Apply Gate Decision Logic, 3. Generate Gate Report, 4. Generate Traceability Report, 5. Display Gate Decision, 6. Save Progress, code:javascript (const matrixPath = '/tmp/tea-trace-coverage-matrix-{{timesta), code:javascript (if (coverageMatrix.phase !== 'PHASE_1_COMPLETE') {) (+17 more)
-
-### Community 205 - "Community 205"
-Cohesion: 0.08
-Nodes (25): 1. Load Configuration, 2. Load Project Artifacts (Mode-Specific), 3. Analyze Existing Test Coverage (Epic-Level), 4. Load Knowledge Base Fragments, 5. Confirm Loaded Inputs, 6. Save Progress, Browser Exploration (if `tea_browser_automation` is `cli` or `auto`), code:yaml (---) (+17 more)
-
-### Community 206 - "Community 206"
-Cohesion: 0.08
-Nodes (25): 10. Present MENU OPTIONS, 1. Initialize Requirements, 2. Workflow Flow and Structure, 3. User Interaction Style, 4. Input Requirements, 5. Output Specifications (IF document-producing), 6. Output Specifications (IF non-document), 7. Success Criteria (+17 more)
-
-### Community 207 - "Community 207"
-Cohesion: 0.08
-Nodes (25): 1. Prepare Subprocess Inputs, 2. Launch Subprocess A: Failing API Test Generation, 3. Launch Subprocess B: Failing E2E Test Generation, 4. Wait for Both Subprocesses to Complete, 5. TDD Red Phase Report, 6. Performance Report, 7. Proceed to Aggregation, code:javascript (const timestamp = new Date().toISOString().replace(/[:.]/g, ) (+17 more)
-
-### Community 208 - "Community 208"
-Cohesion: 0.08
-Nodes (25): 10. Present MENU OPTIONS, 1. Session Welcome, 2. Update Progress File (Session Started), 3. Teaching: What is TEA?, 4. Teaching: TEA Lite Quick Start, 5. Teaching: Key Concepts, 6. Quiz: Validate Understanding, 7. Generate Session Notes (+17 more)
-
-### Community 209 - "Community 209"
-Cohesion: 0.08
-Nodes (25): 1. Check Domain Complexity, 2. Load Domain Reference Data, 3. Explore Domain-Specific Concerns, 4. Document Domain Requirements, 5. Validate Completeness, APPEND TO DOCUMENT, code:markdown (### Compliance & Regulatory), code:markdown (## Domain-Specific Requirements) (+17 more)
-
-### Community 210 - "Community 210"
+### Community 203 - "Community 203"
 Cohesion: 0.08
 Nodes (25): 1. Load PRD Purpose Standards, 2. Discover PRD to Edit, 3. Validate PRD Exists and Load, 4. Check for Existing Validation Report, 5. Ask About Validation Report, 6. Discover Edit Requirements, 7. Detect PRD Format, 8. Route Based on Format and Context (+17 more)
 
-### Community 211 - "Community 211"
+### Community 204 - "Community 204"
+Cohesion: 0.08
+Nodes (25): 1. Load Configuration, 2. Load Project Artifacts (Mode-Specific), 3. Analyze Existing Test Coverage (Epic-Level), 4. Load Knowledge Base Fragments, 5. Confirm Loaded Inputs, 6. Save Progress, Browser Exploration (if `tea_browser_automation` is `cli` or `auto`), code:yaml (---) (+17 more)
+
+### Community 205 - "Community 205"
+Cohesion: 0.08
+Nodes (25): 10. Present MENU OPTIONS, 1. Initialize Requirements, 2. Workflow Flow and Structure, 3. User Interaction Style, 4. Input Requirements, 5. Output Specifications (IF document-producing), 6. Output Specifications (IF non-document), 7. Success Criteria (+17 more)
+
+### Community 206 - "Community 206"
+Cohesion: 0.08
+Nodes (25): 1. Prepare Subprocess Inputs, 2. Launch Subprocess A: Failing API Test Generation, 3. Launch Subprocess B: Failing E2E Test Generation, 4. Wait for Both Subprocesses to Complete, 5. TDD Red Phase Report, 6. Performance Report, 7. Proceed to Aggregation, code:javascript (const timestamp = new Date().toISOString().replace(/[:.]/g, ) (+17 more)
+
+### Community 207 - "Community 207"
+Cohesion: 0.08
+Nodes (25): 10. Present MENU OPTIONS, 1. Session Welcome, 2. Update Progress File (Session Started), 3. Teaching: What is TEA?, 4. Teaching: TEA Lite Quick Start, 5. Teaching: Key Concepts, 6. Quiz: Validate Understanding, 7. Generate Session Notes (+17 more)
+
+### Community 208 - "Community 208"
+Cohesion: 0.08
+Nodes (25): 1. Check Domain Complexity, 2. Load Domain Reference Data, 3. Explore Domain-Specific Concerns, 4. Document Domain Requirements, 5. Validate Completeness, APPEND TO DOCUMENT, code:markdown (### Compliance & Regulatory), code:markdown (## Domain-Specific Requirements) (+17 more)
+
+### Community 209 - "Community 209"
+Cohesion: 0.08
+Nodes (25): 1. Read Phase 1 Coverage Matrix, 2. Apply Gate Decision Logic, 3. Generate Gate Report, 4. Generate Traceability Report, 5. Display Gate Decision, 6. Save Progress, code:javascript (const matrixPath = '/tmp/tea-trace-coverage-matrix-{{timesta), code:javascript (if (coverageMatrix.phase !== 'PHASE_1_COMPLETE') {) (+17 more)
+
+### Community 210 - "Community 210"
 Cohesion: 0.08
 Nodes (25): 1. Review Extracted Requirements, 2. Explain Epic Design Principles, 3. Design Epic Structure Collaboratively, 4. Present Epic List for Review, 5. Create Requirements Coverage Map, 6. Collaborative Refinement, 7. Get Final Approval, 8. Present MENU OPTIONS (+17 more)
 
-### Community 212 - "Community 212"
+### Community 211 - "Community 211"
 Cohesion: 0.08
 Nodes (25): 1. Define Core User Action, 2. Explore Platform Requirements, 3. Identify Effortless Interactions, 4. Define Critical Success Moments, 5. Synthesize Experience Principles, 6. Generate Core Experience Content, 7. Present Content and Menu, 8. Handle Menu Selection (+17 more)
 
-### Community 213 - "Community 213"
+### Community 212 - "Community 212"
 Cohesion: 0.08
 Nodes (25): 1. Explore Core Emotional Goals, 2. Identify Emotional Journey Mapping, 3. Define Micro-Emotions, 4. Connect Emotions to UX Decisions, 5. Validate Emotional Goals, 6. Generate Emotional Response Content, 7. Present Content and Menu, 8. Handle Menu Selection (+17 more)
 
-### Community 214 - "Community 214"
+### Community 213 - "Community 213"
 Cohesion: 0.08
 Nodes (25): 1. Identify User's Favorite Apps, 2. Analyze UX Patterns and Principles, 3. Extract Transferable Patterns, 4. Identify Anti-Patterns to Avoid, 5. Define Design Inspiration Strategy, 6. Generate Inspiration Analysis Content, 7. Present Content and Menu, 8. Handle Menu Selection (+17 more)
 
-### Community 215 - "Community 215"
+### Community 214 - "Community 214"
 Cohesion: 0.08
 Nodes (25): 1. Present Design System Options, 2. Analyze Project Requirements, 3. Explore Specific Design System Options, 4. Facilitate Decision Process, 5. Finalize Design System Choice, 6. Generate Design System Content, 7. Present Content and Menu, 8. Handle Menu Selection (+17 more)
 
-### Community 216 - "Community 216"
+### Community 215 - "Community 215"
 Cohesion: 0.08
 Nodes (25): 1. Identify the Defining Experience, 2. Explore the User's Mental Model, 3. Define Success Criteria for Core Experience, 4. Identify Novel vs. Established Patterns, 5. Define Experience Mechanics, 6. Generate Defining Experience Content, 7. Present Content and Menu, 8. Handle Menu Selection (+17 more)
 
-### Community 217 - "Community 217"
+### Community 216 - "Community 216"
 Cohesion: 0.08
 Nodes (25): 1. Coherence Validation, 2. Requirements Coverage Validation, 3. Implementation Readiness Validation, 4. Gap Analysis, 5. Address Validation Issues, 6. Generate Validation Content, 7. Present Content and Menu, 8. Handle Menu Selection (+17 more)
 
-### Community 218 - "Community 218"
+### Community 217 - "Community 217"
 Cohesion: 0.08
 Nodes (25): 1. Brand Guidelines Assessment, 2. Generate Color Theme Options (If no brand guidelines), 3. Define Typography System, 4. Establish Spacing and Layout Foundation, 5. Create Visual Foundation Strategy, 6. Generate Visual Foundation Content, 7. Present Content and Menu, 8. Handle Menu Selection (+17 more)
 
-### Community 219 - "Community 219"
+### Community 218 - "Community 218"
 Cohesion: 0.08
 Nodes (25): 1. Generate Design Direction Variations, 2. Create HTML Design Direction Showcase, 3. Present Design Exploration Framework, 4. Facilitate Design Direction Selection, 5. Document Design Direction Decision, 6. Generate Design Direction Content, 7. Present Content and Menu, 8. Handle Menu Selection (+17 more)
 
-### Community 220 - "Community 220"
+### Community 219 - "Community 219"
 Cohesion: 0.08
 Nodes (25): 1. Load PRD User Journeys as Foundation, 2. Design Each Journey Flow, 3. Create Flow Diagrams, 4. Optimize for Efficiency and Delight, 5. Document Journey Patterns, 6. Generate User Journey Content, 7. Present Content and Menu, 8. Handle Menu Selection (+17 more)
 
-### Community 221 - "Community 221"
+### Community 220 - "Community 220"
 Cohesion: 0.08
 Nodes (25): 1. Define Responsive Strategy, 2. Establish Breakpoint Strategy, 3. Design Accessibility Strategy, 4. Define Testing Strategy, 5. Document Implementation Guidelines, 6. Generate Responsive & Accessibility Content, 7. Present Content and Menu, 8. Handle Menu Selection (+17 more)
 
-### Community 222 - "Community 222"
-Cohesion: 0.09
-Nodes (22): 💼 BUSINESS MODEL ANALYSIS, Business Model Weaknesses, Competitive Dynamics, Critical Insights, Current Business Model, Current Situation, ⚡ DISRUPTION OPPORTUNITIES, Disruption Vectors (+14 more)
-
-### Community 223 - "Community 223"
+### Community 221 - "Community 221"
 Cohesion: 0.08
 Nodes (12): MockDisposable, MockEventEmitter, MockExtensionContext, MockFileType, MockMarkdownString, MockRelativePattern, MockThemeColor, MockThemeIcon (+4 more)
 
-### Community 224 - "Community 224"
+### Community 222 - "Community 222"
 Cohesion: 0.08
 Nodes (26): properties, action, alertAction, category, dashboard, dependencies, description, effort (+18 more)
+
+### Community 223 - "Community 223"
+Cohesion: 0.10
+Nodes (26): description, items, type, description, type, properties, required, type (+18 more)
+
+### Community 224 - "Community 224"
+Cohesion: 0.08
+Nodes (26): description, enum, type, description, type, description, type, description (+18 more)
 
 ### Community 225 - "Community 225"
 Cohesion: 0.09
@@ -2412,71 +2421,71 @@ Nodes (26): items, description, items, type, description, items, type, propertie
 
 ### Community 226 - "Community 226"
 Cohesion: 0.08
-Nodes (30): description, items, type, properties, required, type, description, items (+22 more)
+Nodes (24): Acknowledgments, Agile Agent Canvas, AI Chat Participant, AI Provider Configuration, Canvas Keyboard Shortcuts, code:block1 (Agile Agent Canvas: Bootstrap graphify), code:block2 (@agileagentcanvas /graphify bootstrap   # install + build + ), code:block3 (@agileagentcanvas /jira config              # test connectio) (+16 more)
 
 ### Community 227 - "Community 227"
 Cohesion: 0.08
-Nodes (24): Acknowledgments, Agile Agent Canvas, AI Chat Participant, AI Provider Configuration, Canvas Keyboard Shortcuts, code:block1 (Agile Agent Canvas: Bootstrap graphify), code:block2 (@agileagentcanvas /graphify bootstrap   # install + build + ), code:block3 (@agileagentcanvas /jira config              # test connectio) (+16 more)
+Nodes (24): Architecture Documentation Quality, Batching Strategy (Deep/Exhaustive Scans), Brownfield PRD Readiness, Codebase Scanning Completeness, Completion Criteria, Content Quality, Critical Issues (must fix before completion), Deep-Dive Mode Validation (if deep-dive was performed) (+16 more)
 
 ### Community 228 - "Community 228"
 Cohesion: 0.08
-Nodes (24): Architecture Documentation Quality, Batching Strategy (Deep/Exhaustive Scans), Brownfield PRD Readiness, Codebase Scanning Completeness, Completion Criteria, Content Quality, Critical Issues (must fix before completion), Deep-Dive Mode Validation (if deep-dive was performed) (+16 more)
+Nodes (25): description, type, description, type, description, type, description, type (+17 more)
 
 ### Community 229 - "Community 229"
 Cohesion: 0.08
-Nodes (25): description, type, description, type, description, type, description, type (+17 more)
+Nodes (25): properties, alternative, category, consideration, detection, enforcedBy, examples, exceptions (+17 more)
 
 ### Community 230 - "Community 230"
 Cohesion: 0.08
-Nodes (25): properties, alternative, category, consideration, detection, enforcedBy, examples, exceptions (+17 more)
-
-### Community 231 - "Community 231"
-Cohesion: 0.08
 Nodes (25): type, enum, type, description, type, items, type, description (+17 more)
 
-### Community 232 - "Community 232"
+### Community 231 - "Community 231"
 Cohesion: 0.09
-Nodes (25): description, items, type, description, items, type, properties, description (+17 more)
+Nodes (25): description, items, type, description, type, description, items, type (+17 more)
+
+### Community 232 - "Community 232"
+Cohesion: 0.08
+Nodes (25): description, properties, type, properties, description, properties, type, description (+17 more)
 
 ### Community 233 - "Community 233"
 Cohesion: 0.08
-Nodes (24): description, properties, type, description, properties, type, description, properties (+16 more)
+Nodes (25): description, type, description, items, type, description, properties, type (+17 more)
 
 ### Community 234 - "Community 234"
 Cohesion: 0.08
-Nodes (25): description, type, description, items, type, description, properties, type (+17 more)
+Nodes (25): description, type, description, items, type, description, type, description (+17 more)
 
 ### Community 235 - "Community 235"
 Cohesion: 0.08
-Nodes (25): description, type, description, items, type, description, type, description (+17 more)
+Nodes (25): description, type, description, items, type, description, expectedOutcomes, rationale (+17 more)
 
 ### Community 236 - "Community 236"
 Cohesion: 0.08
-Nodes (25): description, type, description, items, type, description, expectedOutcomes, rationale (+17 more)
+Nodes (25): description, type, properties, description, type, description, type, completeStory (+17 more)
 
 ### Community 237 - "Community 237"
-Cohesion: 0.09
-Nodes (22): description, type, properties, description, type, description, type, completeStory (+14 more)
-
-### Community 238 - "Community 238"
 Cohesion: 0.08
 Nodes (24): Acceptance Criteria validation, Canonical file location, Code quality (per file), Code Review Workflow, code:block1 (epics/epic-{N}/stories/{id}.json), Definition of Done attestation (required before closing), Exclusions, Git vs Story discrepancies (+16 more)
 
-### Community 239 - "Community 239"
+### Community 238 - "Community 238"
 Cohesion: 0.08
 Nodes (24): code:typescript (// tests/e2e/checkout.spec.ts), code:yaml (# .github/workflows/test-changed.yml), code:typescript (// scripts/test-promotion-strategy.ts), code:bash (#!/bin/bash), code:yaml (# .github/workflows/test-promotion.yml), code:`markdown (# Test Selection Strategy), code:block15, code:block16 (+16 more)
 
-### Community 240 - "Community 240"
+### Community 239 - "Community 239"
 Cohesion: 0.08
 Nodes (24): Automated Priority Classification, code:block1 (Is it revenue-critical?), code:typescript (// src/testing/priority-calculator.ts), code:typescript (// tests/e2e/checkout.spec.ts), code:bash (# P0 only (smoke tests, 2-5 min)), Continuous Adjustment, Decrease Priority When:, Example: Priority Calculator (Risk-Based Automation) (+16 more)
 
-### Community 241 - "Community 241"
+### Community 240 - "Community 240"
 Cohesion: 0.08
 Nodes (24): code:typescript (// playwright.config.ts), code:javascript (// cypress/support/commands.ts), code:typescript (// tests/e2e/checkout-debug.spec.ts), code:bash (# Open Playwright Inspector (GUI debugger)), code:typescript (// Pattern 1: Debug selector issues), code:bash (# After test failure in CI, download trace artifact), code:typescript (// tests/e2e/checkout-with-har.spec.ts), code:typescript (// tests/e2e/checkout-replay-har.spec.ts) (+16 more)
 
+### Community 241 - "Community 241"
+Cohesion: 0.18
+Nodes (22): sendSimplePrompt(), getConfig(), getDefaultTemperature(), getModel(), getNoModelMessage(), httpsPostStream(), isAntigravity(), loadArtifactSchemaForContext() (+14 more)
+
 ### Community 242 - "Community 242"
-Cohesion: 0.08
-Nodes (24): 1. Load Agent File, 2. Parse Agent Structure, 3. Display Agent Summary, 4. Create Edit Plan Document, 5. Present MENU OPTIONS, code:yaml (# Basic Metadata), code:markdown (## Agent Analysis: {agent-name}), code:markdown (---) (+16 more)
+Cohesion: 0.26
+Nodes (4): resolveArtifactTargetUri(), writeJsonFile(), writeMarkdownCompanion(), logDebug()
 
 ### Community 243 - "Community 243"
 Cohesion: 0.08
@@ -2496,71 +2505,71 @@ Nodes (24): 1. Read All Subprocess Outputs, 2. Calculate Overall Risk Level, 3. 
 
 ### Community 247 - "Community 247"
 Cohesion: 0.08
-Nodes (24): 1. Retrieve Approved Change Plan, 2. Attempt Sub-Process Edits (For Complex Changes), 3. Execute Changes Section-by-Section, 4. Handle Restructuring (If Needed), 5. Update PRD Frontmatter, 6. Final Review of Changes, 7. Confirm Completion, 8. Present MENU OPTIONS (+16 more)
+Nodes (24): 1. Load Agent File, 2. Parse Agent Structure, 3. Display Agent Summary, 4. Create Edit Plan Document, 5. Present MENU OPTIONS, code:yaml (# Basic Metadata), code:markdown (## Agent Analysis: {agent-name}), code:markdown (---) (+16 more)
 
 ### Community 248 - "Community 248"
 Cohesion: 0.08
-Nodes (24): 1. Read Edit Plan, 2. Execute Validation Workflow, 3. Review Validation Results, 4. Present Validation Results, 5. Menu Options Based on Results, 6. Update Edit Plan, code:yaml (completionDate: '{current-date}'), code:markdown (## Final Validation) (+16 more)
+Nodes (24): 1. Retrieve Approved Change Plan, 2. Attempt Sub-Process Edits (For Complex Changes), 3. Execute Changes Section-by-Section, 4. Handle Restructuring (If Needed), 5. Update PRD Frontmatter, 6. Final Review of Changes, 7. Confirm Completion, 8. Present MENU OPTIONS (+16 more)
 
 ### Community 249 - "Community 249"
 Cohesion: 0.08
-Nodes (24): 1. Begin Strategic Synthesis, 2. Web Search for Market Entry Strategies, 3. Web Search for Risk Assessment, 4. Generate Complete Market Research Document, 5. Present Complete Market Research Document and Final Option, 6. Handle Complete Selection, APPEND TO DOCUMENT:, code:markdown (# [Compelling Title]: Comprehensive {{research_topic}} Marke) (+16 more)
+Nodes (24): 1. Read Edit Plan, 2. Execute Validation Workflow, 3. Review Validation Results, 4. Present Validation Results, 5. Menu Options Based on Results, 6. Update Edit Plan, code:yaml (completionDate: '{current-date}'), code:markdown (## Final Validation) (+16 more)
 
 ### Community 250 - "Community 250"
 Cohesion: 0.08
-Nodes (24): 1. Blockers to Fast Feedback (WHAT WE NEED FROM ARCHITECTURE), 2. Architectural Improvements Needed (WHAT SHOULD BE CHANGED), Accepted Trade-offs (No Action Required), Assumptions, Assumptions and Dependencies, 🚨 BLOCKERS - Team Must Decide (Can't Proceed Without), Dependencies, Executive Summary (+16 more)
+Nodes (24): 1. Begin Strategic Synthesis, 2. Web Search for Market Entry Strategies, 3. Web Search for Risk Assessment, 4. Generate Complete Market Research Document, 5. Present Complete Market Research Document and Final Option, 6. Handle Complete Selection, APPEND TO DOCUMENT:, code:markdown (# [Compelling Title]: Comprehensive {{research_topic}} Marke) (+16 more)
 
 ### Community 251 - "Community 251"
 Cohesion: 0.08
-Nodes (24): 1. Load Frontmatter Standards, 2. Validate EVERY Step File - Systematic Algorithm with Subprocess Optimization, 3. Aggregate Findings and Document Results, 4. List All Violations, 5. Append to Report, 6. Save Report and Auto-Proceed, code:python (# Algorithm to extract variables from frontmatter:), code:yaml (---) (+16 more)
+Nodes (24): 1. Blockers to Fast Feedback (WHAT WE NEED FROM ARCHITECTURE), 2. Architectural Improvements Needed (WHAT SHOULD BE CHANGED), Accepted Trade-offs (No Action Required), Assumptions, Assumptions and Dependencies, 🚨 BLOCKERS - Team Must Decide (Can't Proceed Without), Dependencies, Executive Summary (+16 more)
 
 ### Community 252 - "Community 252"
+Cohesion: 0.08
+Nodes (24): 1. Load Frontmatter Standards, 2. Validate EVERY Step File - Systematic Algorithm with Subprocess Optimization, 3. Aggregate Findings and Document Results, 4. List All Violations, 5. Append to Report, 6. Save Report and Auto-Proceed, code:python (# Algorithm to extract variables from frontmatter:), code:yaml (---) (+16 more)
+
+### Community 253 - "Community 253"
 Cohesion: 0.27
 Nodes (17): Critical Path Violations, File Structure & Size, Frontmatter Validation, Instruction Style Check, Menu Handling Validation, Output Format Validation, Step Type Validation, Summary (+9 more)
 
-### Community 253 - "Community 253"
+### Community 254 - "Community 254"
 Cohesion: 0.08
 Nodes (25): description, type, description, items, type, description, format, type (+17 more)
 
-### Community 254 - "Community 254"
+### Community 255 - "Community 255"
 Cohesion: 0.08
 Nodes (25): description, type, description, properties, type, assessment, executiveSummary, recommendation (+17 more)
 
-### Community 255 - "Community 255"
-Cohesion: 0.10
-Nodes (21): enum, type, description, properties, type, enum, type, properties (+13 more)
-
 ### Community 256 - "Community 256"
 Cohesion: 0.08
-Nodes (25): type, properties, type, files_analyzed, files_scanned, output_file, part_id, path (+17 more)
+Nodes (25): enum, type, description, properties, type, enum, type, description (+17 more)
 
 ### Community 257 - "Community 257"
 Cohesion: 0.08
-Nodes (23): activationEvents, bugs, url, categories, description, displayName, engines, vscode (+15 more)
+Nodes (25): type, properties, type, files_analyzed, files_scanned, output_file, part_id, path (+17 more)
 
 ### Community 258 - "Community 258"
 Cohesion: 0.08
-Nodes (24): description, properties, type, description, properties, type, description, properties (+16 more)
+Nodes (24): 0.3.7, Artifact Store Refactoring, Artifact Store Refactoring, Artifact Store Refactoring, Artifact Store Refactoring, Artifact Store Refactoring, Artifact Store Refactoring, Bug Fixes (+16 more)
 
 ### Community 259 - "Community 259"
 Cohesion: 0.08
-Nodes (24): description, items, type, description, items, type, description, items (+16 more)
+Nodes (23): activationEvents, bugs, url, categories, description, displayName, engines, vscode (+15 more)
 
 ### Community 260 - "Community 260"
 Cohesion: 0.08
-Nodes (24): properties, action, blocker, category, contingency, deadline, dependencies, effort (+16 more)
+Nodes (24): description, properties, type, description, properties, type, description, properties (+16 more)
 
 ### Community 261 - "Community 261"
 Cohesion: 0.08
-Nodes (24): description, items, type, description, items, type, description, properties (+16 more)
+Nodes (24): properties, action, blocker, category, contingency, deadline, dependencies, effort (+16 more)
 
 ### Community 262 - "Community 262"
 Cohesion: 0.08
-Nodes (24): description, items, type, description, items, type, hypothesisValidation, keyLearnings (+16 more)
+Nodes (24): description, items, type, description, items, type, description, properties (+16 more)
 
 ### Community 263 - "Community 263"
 Cohesion: 0.08
-Nodes (24): description, properties, type, description, items, type, description, properties (+16 more)
+Nodes (24): description, items, type, description, items, type, hypothesisValidation, keyLearnings (+16 more)
 
 ### Community 264 - "Community 264"
 Cohesion: 0.08
@@ -2568,35 +2577,35 @@ Nodes (24): description, properties, type, description, items, type, description
 
 ### Community 265 - "Community 265"
 Cohesion: 0.08
-Nodes (24): description, items, type, description, properties, type, properties, description (+16 more)
+Nodes (24): description, properties, type, description, items, type, description, properties (+16 more)
 
 ### Community 266 - "Community 266"
 Cohesion: 0.08
-Nodes (23): 1. Micro-File Design, 2. Just-In-Time Loading, 3. Sequential Enforcement, 4. State Tracking, code:block1 (workflow-folder/), code:yaml (stepsCompleted: ['step-01-init', 'step-02-gather', 'step-03-), code:block3 (workflow.md → step-01-init.md → step-02-[name].md → ... → st), code:block4 (workflow.md → step-01-init.md (detects existing) → step-01b-) (+15 more)
+Nodes (24): description, items, type, description, properties, type, properties, description (+16 more)
 
 ### Community 267 - "Community 267"
 Cohesion: 0.08
-Nodes (23): code:markdown (### N. Present MENU OPTIONS), code:markdown (#### Menu Handling Logic:), code:markdown (#### EXECUTION RULES:), code:markdown (Display: "**Select an Option:** [A] Advanced Elicitation [P]), code:markdown (Display: "**Select:** [C] Continue"), code:markdown (Display: "**Proceeding to [next step]...**"), code:markdown (Display: "**Select:** [L] Load Existing [N] Create New [C] C), Critical Rules (+15 more)
+Nodes (23): 1. Micro-File Design, 2. Just-In-Time Loading, 3. Sequential Enforcement, 4. State Tracking, code:block1 (workflow-folder/), code:yaml (stepsCompleted: ['step-01-init', 'step-02-gather', 'step-03-), code:block3 (workflow.md → step-01-init.md → step-02-[name].md → ... → st), code:block4 (workflow.md → step-01-init.md (detects existing) → step-01b-) (+15 more)
 
 ### Community 268 - "Community 268"
 Cohesion: 0.08
-Nodes (23): code:yaml (# ✅ CORRECT), code:yaml (role: |), code:yaml (agent:), code:yaml (# ✅ CORRECT), code:yaml (# ✅ CORRECT), code:yaml (# ✅ CORRECT), code:yaml (communication_style: |), code:yaml (role: |) (+15 more)
+Nodes (23): code:markdown (### N. Present MENU OPTIONS), code:markdown (#### Menu Handling Logic:), code:markdown (#### EXECUTION RULES:), code:markdown (Display: "**Select an Option:** [A] Advanced Elicitation [P]), code:markdown (Display: "**Select:** [C] Continue"), code:markdown (Display: "**Proceeding to [next step]...**"), code:markdown (Display: "**Select:** [L] Load Existing [N] Create New [C] C), Critical Rules (+15 more)
 
 ### Community 269 - "Community 269"
 Cohesion: 0.08
-Nodes (23): Architecture Sub-Entities, Artifact Type → Canvas Card Mapping, BMAD Metadata Format, Code References, code:block1 (JSON file → detectArtifactType() → loadFromFolder switch/cas), code:json ({), Complete Type Registry (42 types), Confusing Type Pairs (+15 more)
+Nodes (23): code:yaml (# ✅ CORRECT), code:yaml (role: |), code:yaml (agent:), code:yaml (# ✅ CORRECT), code:yaml (# ✅ CORRECT), code:yaml (# ✅ CORRECT), code:yaml (communication_style: |), code:yaml (role: |) (+15 more)
 
 ### Community 270 - "Community 270"
 Cohesion: 0.08
-Nodes (23): 1. Document Structure Planning, 2. Generate Compelling Narrative Introduction, 3. Synthesize All Research Sections, 4. Generate Complete Document Content, 5. Present Complete Document and Final Option, 6. Handle Final Completion, APPEND TO DOCUMENT:, code:markdown (# [Compelling Title]: Comprehensive {{research_topic}} Resea) (+15 more)
+Nodes (23): Architecture Sub-Entities, Artifact Type → Canvas Card Mapping, BMAD Metadata Format, Code References, code:block1 (JSON file → detectArtifactType() → loadFromFolder switch/cas), code:json ({), Complete Type Registry (42 types), Confusing Type Pairs (+15 more)
 
 ### Community 271 - "Community 271"
 Cohesion: 0.08
-Nodes (23): code:typescript (// src/testing/healing/selector-healing.ts), code:typescript (// tests/healing/hard-wait-healing.spec.ts), code:typescript (// tests/healing/selector-healing.spec.ts), code:typescript (// src/testing/healing/timing-healing.ts), code:typescript (// tests/healing/timing-healing.spec.ts), code:typescript (// src/testing/healing/data-healing.ts), code:typescript (// tests/healing/data-healing.spec.ts), code:typescript (// src/testing/healing/network-healing.ts) (+15 more)
+Nodes (23): 1. Document Structure Planning, 2. Generate Compelling Narrative Introduction, 3. Synthesize All Research Sections, 4. Generate Complete Document Content, 5. Present Complete Document and Final Option, 6. Handle Final Completion, APPEND TO DOCUMENT:, code:markdown (# [Compelling Title]: Comprehensive {{research_topic}} Resea) (+15 more)
 
 ### Community 272 - "Community 272"
 Cohesion: 0.08
-Nodes (24): description, properties, type, description, properties, type, description, properties (+16 more)
+Nodes (23): code:typescript (// src/testing/healing/selector-healing.ts), code:typescript (// tests/healing/hard-wait-healing.spec.ts), code:typescript (// tests/healing/selector-healing.spec.ts), code:typescript (// src/testing/healing/timing-healing.ts), code:typescript (// tests/healing/timing-healing.spec.ts), code:typescript (// src/testing/healing/data-healing.ts), code:typescript (// tests/healing/data-healing.spec.ts), code:typescript (// src/testing/healing/network-healing.ts) (+15 more)
 
 ### Community 273 - "Community 273"
 Cohesion: 0.12
@@ -2631,12 +2640,12 @@ Cohesion: 0.08
 Nodes (23): 1. Initialize Coverage Validation, 2. Load Epics Document, 3. Extract Epic FR Coverage, 4. Compare Coverage Against PRD, 5. Document Missing Coverage, 6. Add to Assessment Report, 7. Auto-Proceed to Next Step, code:block1 (## Epic FR Coverage Extracted) (+15 more)
 
 ### Community 281 - "Community 281"
-Cohesion: 0.09
-Nodes (24): description, type, properties, description, items, type, description, items (+16 more)
+Cohesion: 0.08
+Nodes (24): description, type, description, items, type, description, properties, required (+16 more)
 
 ### Community 282 - "Community 282"
 Cohesion: 0.08
-Nodes (24): description, type, description, items, type, description, properties, required (+16 more)
+Nodes (24): description, properties, type, description, properties, type, description, properties (+16 more)
 
 ### Community 283 - "Community 283"
 Cohesion: 0.08
@@ -2644,403 +2653,403 @@ Nodes (24): properties, type, description, properties, type, description, proper
 
 ### Community 284 - "Community 284"
 Cohesion: 0.08
-Nodes (23): 1. Technical Document Structure Planning, 2. Generate Compelling Technical Introduction, 3. Synthesize All Technical Research Sections, 4. Generate Complete Technical Document Content, 5. Present Complete Technical Document and Final Option, 6. Handle Final Technical Completion, APPEND TO DOCUMENT:, code:markdown (# [Compelling Technical Title]: Comprehensive {{research_top) (+15 more)
+Nodes (24): properties, category, code, dependencies, effort, examples, file, findingsRelated (+16 more)
 
 ### Community 285 - "Community 285"
-Cohesion: 0.09
-Nodes (21): checkboxes, clearBtn, { container }, defaultArtifacts, epicA, epicB, epicC, epicD (+13 more)
+Cohesion: 0.08
+Nodes (23): 1. Technical Document Structure Planning, 2. Generate Compelling Technical Introduction, 3. Synthesize All Technical Research Sections, 4. Generate Complete Technical Document Content, 5. Present Complete Technical Document and Final Option, 6. Handle Final Technical Completion, APPEND TO DOCUMENT:, code:markdown (# [Compelling Technical Title]: Comprehensive {{research_top) (+15 more)
 
 ### Community 286 - "Community 286"
 Cohesion: 0.09
-Nodes (23): description, items, type, enum, type, description, type, description (+15 more)
+Nodes (21): checkboxes, clearBtn, { container }, defaultArtifacts, epicA, epicB, epicC, epicD (+13 more)
 
 ### Community 287 - "Community 287"
 Cohesion: 0.09
-Nodes (23): description, properties, type, description, type, type, description, properties (+15 more)
+Nodes (23): description, items, type, enum, type, description, type, description (+15 more)
 
 ### Community 288 - "Community 288"
 Cohesion: 0.09
-Nodes (23): items, type, description, properties, type, description, items, type (+15 more)
+Nodes (23): description, properties, type, description, type, type, description, properties (+15 more)
 
 ### Community 289 - "Community 289"
 Cohesion: 0.09
-Nodes (23): description, items, type, description, items, type, description, items (+15 more)
+Nodes (23): items, type, description, properties, type, description, items, type (+15 more)
 
 ### Community 290 - "Community 290"
 Cohesion: 0.09
-Nodes (23): description, items, type, description, items, type, description, properties (+15 more)
+Nodes (23): description, items, type, description, items, type, description, items (+15 more)
 
 ### Community 291 - "Community 291"
 Cohesion: 0.09
-Nodes (23): description, items, type, description, properties, type, description, items (+15 more)
+Nodes (23): description, items, type, description, items, type, description, properties (+15 more)
 
 ### Community 292 - "Community 292"
 Cohesion: 0.09
-Nodes (23): description, items, type, description, type, description, properties, type (+15 more)
+Nodes (23): description, items, type, description, properties, type, description, items (+15 more)
 
 ### Community 293 - "Community 293"
 Cohesion: 0.09
-Nodes (22): 1. Edit → Create (Non-Compliant Detection), 2. Create/Edit → Validation, 3. Validation → Edit, 4. Conversion Coverage Tracking, code:block1 (workflow-name/), code:yaml (## INITIALIZATION SEQUENCE), code:yaml (Check workflow compliance:), code:yaml (# In create final step or edit post-edit step) (+14 more)
+Nodes (23): description, items, type, description, type, description, properties, type (+15 more)
 
 ### Community 294 - "Community 294"
 Cohesion: 0.09
-Nodes (22): 1. Begin Regulatory Analysis, 2. Web Search for Specific Regulations, 3. Web Search for Industry Standards, 4. Web Search for Data Privacy Requirements, 5. Generate Regulatory Analysis Content, 6. Present Analysis and Continue Option, 7. Handle Continue Selection, APPEND TO DOCUMENT: (+14 more)
+Nodes (22): 1. Edit → Create (Non-Compliant Detection), 2. Create/Edit → Validation, 3. Validation → Edit, 4. Conversion Coverage Tracking, code:block1 (workflow-name/), code:yaml (## INITIALIZATION SEQUENCE), code:yaml (Check workflow compliance:), code:yaml (# In create final step or edit post-edit step) (+14 more)
 
 ### Community 295 - "Community 295"
 Cohesion: 0.09
-Nodes (22): 1. Begin Technical Trends Analysis, 2. Web Search for Emerging Technologies, 3. Web Search for Digital Transformation, 4. Web Search for Future Outlook, 5. Generate Technical Trends Content, 6. Present Analysis and Complete Option, 7. Handle Continue Selection, APPEND TO DOCUMENT: (+14 more)
+Nodes (22): 1. Begin Regulatory Analysis, 2. Web Search for Specific Regulations, 3. Web Search for Industry Standards, 4. Web Search for Data Privacy Requirements, 5. Generate Regulatory Analysis Content, 6. Present Analysis and Continue Option, 7. Handle Continue Selection, APPEND TO DOCUMENT: (+14 more)
 
 ### Community 296 - "Community 296"
 Cohesion: 0.09
-Nodes (22): Anti-Patterns, Burn-in Test Runner, code:typescript (// Step 1: Create burn-in script), code:typescript (burnInTestPercentage: 0.2; // 20% in CI, provides good cover), code:yaml (# .github/workflows/burn-in.yml), code:block3 (Git diff finds: 21 changed files), code:typescript (import type { BurnInConfig } from '@seontechnologies/playwri), code:typescript (// burn-in-changed.ts with sharding) (+14 more)
+Nodes (22): 1. Begin Technical Trends Analysis, 2. Web Search for Emerging Technologies, 3. Web Search for Digital Transformation, 4. Web Search for Future Outlook, 5. Generate Technical Trends Content, 6. Present Analysis and Complete Option, 7. Handle Continue Selection, APPEND TO DOCUMENT: (+14 more)
 
 ### Community 297 - "Community 297"
 Cohesion: 0.09
-Nodes (22): Audit Trail, CI/CD Pipeline, Compliance, Conflicting Evidence, Consistency, Decision Integrity, Evidence-Based, Gate Decision Document (+14 more)
+Nodes (22): Anti-Patterns, Burn-in Test Runner, code:typescript (// Step 1: Create burn-in script), code:typescript (burnInTestPercentage: 0.2; // 20% in CI, provides good cover), code:yaml (# .github/workflows/burn-in.yml), code:block3 (Git diff finds: 21 changed files), code:typescript (import type { BurnInConfig } from '@seontechnologies/playwri), code:typescript (// burn-in-changed.ts with sharding) (+14 more)
 
 ### Community 298 - "Community 298"
 Cohesion: 0.09
-Nodes (22): 1. Mode Detection (Priority Order), 2. Prerequisite Check (Mode-Specific), 3. Confirm Mode, 4. Save Progress, A) User Intent (Highest Priority), B) File-Based Detection (BMad-Integrated), C) Ambiguous → Ask, code:yaml (---) (+14 more)
+Nodes (15): 1. Confirm Requested Changes, 2. Apply Changes, 3. Report, CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES (READ FIRST):, MANDATORY SEQUENCE, Role Reinforcement: (+7 more)
 
 ### Community 299 - "Community 299"
 Cohesion: 0.09
-Nodes (22): 1. Synthesize Available Context, 2. Draft Executive Summary Content, 3. Present Draft for Review, APPEND TO DOCUMENT:, code:markdown (## Executive Summary), CONTEXT BOUNDARIES:, CRITICAL STEP COMPLETION NOTE, EXECUTION PROTOCOLS: (+14 more)
+Nodes (22): 1. Load Project Types Data, 2. Extract Project Type Classification, 3. Determine Required and Excluded Sections from CSV Data, 4. Attempt Sub-Process Validation, 4. Validate Against CSV-Based Requirements, 5. Build Compliance Table, 6. Report Project-Type Compliance Findings to Validation Report, 7. Display Progress and Auto-Proceed (+14 more)
 
 ### Community 300 - "Community 300"
 Cohesion: 0.09
-Nodes (22): 3.1 Role Development, 3.2 Identity Development, 3.3 Communication Style Development, 3.4 Principles Development, 9. Present MENU OPTIONS, code:yaml (role: >), CONTEXT BOUNDARIES, CRITICAL STEP COMPLETION NOTE (+14 more)
+Nodes (22): 1. Mode Detection (Priority Order), 2. Prerequisite Check (Mode-Specific), 3. Confirm Mode, 4. Save Progress, A) User Intent (Highest Priority), B) File-Based Detection (BMad-Integrated), C) Ambiguous → Ask, code:yaml (---) (+14 more)
 
 ### Community 301 - "Community 301"
 Cohesion: 0.09
-Nodes (22): 10. Complete Message, 11. Menu, 1. Welcome, 2. Update Progress (Started), 3. Teaching: ATDD Workflow, 4. Teaching: Automate Workflow, 5. Teaching: Component TDD, 6. Teaching: API Testing Patterns (+14 more)
+Nodes (22): 1. Synthesize Available Context, 2. Draft Executive Summary Content, 3. Present Draft for Review, APPEND TO DOCUMENT:, code:markdown (## Executive Summary), CONTEXT BOUNDARIES:, CRITICAL STEP COMPLETION NOTE, EXECUTION PROTOCOLS: (+14 more)
 
 ### Community 302 - "Community 302"
 Cohesion: 0.09
-Nodes (22): 1. Review Current PRD State, 2. Define MVP Strategy, 3. Scoping Decision Framework, 4. Progressive Feature Roadmap, 5. Risk-Based Scoping, 6. Generate Scoping Content, 7. Present MENU OPTIONS, APPEND TO DOCUMENT: (+14 more)
+Nodes (22): 3.1 Role Development, 3.2 Identity Development, 3.3 Communication Style Development, 3.4 Principles Development, 9. Present MENU OPTIONS, code:yaml (role: >), CONTEXT BOUNDARIES, CRITICAL STEP COMPLETION NOTE (+14 more)
 
 ### Community 303 - "Community 303"
 Cohesion: 0.09
-Nodes (22): 1. Understand FR Purpose and Usage, 2. Review Existing Content for Capability Extraction, 3. Organize Requirements by Capability Area, 4. Generate Comprehensive FR List, 5. Self-Validation Process, 6. Generate Functional Requirements Content, 7. Present MENU OPTIONS, APPEND TO DOCUMENT: (+14 more)
+Nodes (22): 10. Complete Message, 11. Menu, 1. Welcome, 2. Update Progress (Started), 3. Teaching: ATDD Workflow, 4. Teaching: Automate Workflow, 5. Teaching: Component TDD, 6. Teaching: API Testing Patterns (+14 more)
 
 ### Community 304 - "Community 304"
 Cohesion: 0.09
-Nodes (22): 1. Present Completion Summary, 2. Update Plan with Completion Status, 3. Provide Next Steps Guidance, 4. Conversion-Specific Summary (If Applicable), 5. Final Completion Message, code:yaml (---), CONTEXT BOUNDARIES:, CRITICAL STEP COMPLETION NOTE (+14 more)
+Nodes (22): 1. Review Current PRD State, 2. Define MVP Strategy, 3. Scoping Decision Framework, 4. Progressive Feature Roadmap, 5. Risk-Based Scoping, 6. Generate Scoping Content, 7. Present MENU OPTIONS, APPEND TO DOCUMENT: (+14 more)
 
 ### Community 305 - "Community 305"
 Cohesion: 0.09
-Nodes (22): 1. Load Reference Documents, 2. Load Edit Plan and Agent, 3. Create Backup, 4. Apply Edits in Sequence, 5. Validate After Each Edit, 6. Document Applied Edits, 7. Present MENU OPTIONS, code:bash (cp {agentFile} {agentBackup}) (+14 more)
+Nodes (22): 1. Understand FR Purpose and Usage, 2. Review Existing Content for Capability Extraction, 3. Organize Requirements by Capability Area, 4. Generate Comprehensive FR List, 5. Self-Validation Process, 6. Generate Functional Requirements Content, 7. Present MENU OPTIONS, APPEND TO DOCUMENT: (+14 more)
 
 ### Community 306 - "Community 306"
 Cohesion: 0.09
-Nodes (22): 1. Read Edit Plan, 2. Grand Celebration, 3. Edit Summary, 4. Verification Guidance, 5. Document Completion, 6. Present MENU OPTIONS, code:markdown (## Edit Summary for {agent-name}), code:markdown (## Edit Session Complete ✅) (+14 more)
+Nodes (22): 1. Present Completion Summary, 2. Update Plan with Completion Status, 3. Provide Next Steps Guidance, 4. Conversion-Specific Summary (If Applicable), 5. Final Completion Message, code:yaml (---), CONTEXT BOUNDARIES:, CRITICAL STEP COMPLETION NOTE (+14 more)
 
 ### Community 307 - "Community 307"
 Cohesion: 0.09
-Nodes (15): 1. Identify Target, 2. Load Target, 3. Confirm, CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES (READ FIRST):, MANDATORY SEQUENCE, Role Reinforcement: (+7 more)
+Nodes (22): Audit Trail, CI/CD Pipeline, Compliance, Conflicting Evidence, Consistency, Decision Integrity, Evidence-Based, Gate Decision Document (+14 more)
 
 ### Community 308 - "Community 308"
 Cohesion: 0.09
-Nodes (15): 1. Confirm Requested Changes, 2. Apply Changes, 3. Report, CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES (READ FIRST):, MANDATORY SEQUENCE, Role Reinforcement: (+7 more)
+Nodes (22): 1. Load Reference Documents, 2. Load Edit Plan and Agent, 3. Create Backup, 4. Apply Edits in Sequence, 5. Validate After Each Edit, 6. Document Applied Edits, 7. Present MENU OPTIONS, code:bash (cp {agentFile} {agentBackup}) (+14 more)
 
 ### Community 309 - "Community 309"
 Cohesion: 0.09
-Nodes (22): 1. Attempt Sub-Process Deep Review, 2. Build Change Plan, 3. Prepare Change Plan Summary, 4. Present Change Plan to User, 5. Get User Confirmation, 6. Document Approved Plan, 7. Present MENU OPTIONS (If User Wants Discussion), CONTEXT BOUNDARIES: (+14 more)
+Nodes (22): 1. Read Edit Plan, 2. Grand Celebration, 3. Edit Summary, 4. Verification Guidance, 5. Document Completion, 6. Present MENU OPTIONS, code:markdown (## Edit Summary for {agent-name}), code:markdown (## Edit Session Complete ✅) (+14 more)
 
 ### Community 310 - "Community 310"
 Cohesion: 0.09
-Nodes (22): 1. Review Loaded Context, 2. Fill Context Gaps (If no documents or gaps exist), 3. Explore User Context Deeper, 4. Identify UX Design Challenges, 5. Generate Project Understanding Content, 6. Present Content and Menu, 7. Handle Menu Selection, APPEND TO DOCUMENT: (+14 more)
+Nodes (15): 1. Identify Target, 2. Load Target, 3. Confirm, CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES (READ FIRST):, MANDATORY SEQUENCE, Role Reinforcement: (+7 more)
 
 ### Community 311 - "Community 311"
 Cohesion: 0.09
-Nodes (22): 1. Initialize PRD Analysis, 2. Load and Read PRD, 3. Extract Functional Requirements (FRs), 4. Extract Non-Functional Requirements (NFRs), 5. Document Additional Requirements, 6. Add to Assessment Report, 7. Auto-Proceed to Next Step, code:block1 (## Functional Requirements Extracted) (+14 more)
+Nodes (22): 1. Attempt Sub-Process Deep Review, 2. Build Change Plan, 3. Prepare Change Plan Summary, 4. Present Change Plan to User, 5. Get User Confirmation, 6. Document Approved Plan, 7. Present MENU OPTIONS (If User Wants Discussion), CONTEXT BOUNDARIES: (+14 more)
 
 ### Community 312 - "Community 312"
 Cohesion: 0.09
-Nodes (22): 1. Load Brain Techniques Library, 2. Context Analysis for Technique Matching, 3. Generate Technique Recommendations, 4. Present Recommendation Details, 5. Get User Confirmation, 6. Handle User Response, 7. Update Frontmatter and Document, AI RECOMMENDATION PROTOCOLS: (+14 more)
+Nodes (22): 1. Review Loaded Context, 2. Fill Context Gaps (If no documents or gaps exist), 3. Explore User Context Deeper, 4. Identify UX Design Challenges, 5. Generate Project Understanding Content, 6. Present Content and Menu, 7. Handle Menu Selection, APPEND TO DOCUMENT: (+14 more)
 
 ### Community 313 - "Community 313"
 Cohesion: 0.09
-Nodes (23): Acceptable Overlap (Defense in Depth), Auth/Authz Negative-Path Gaps, Coverage by Test Level, Coverage Heuristics Findings, Coverage Summary, {CRITERION_ID}: {CRITERION_DESCRIPTION} ({PRIORITY}), Critical Gaps (BLOCKER) ❌, Detailed Mapping (+15 more)
+Nodes (22): 1. Initialize PRD Analysis, 2. Load and Read PRD, 3. Extract Functional Requirements (FRs), 4. Extract Non-Functional Requirements (NFRs), 5. Document Additional Requirements, 6. Add to Assessment Report, 7. Auto-Proceed to Next Step, code:block1 (## Functional Requirements Extracted) (+14 more)
 
 ### Community 314 - "Community 314"
 Cohesion: 0.09
-Nodes (22): 1. Check for Plan File, 2. Load Complete Validation Report, 3. Create Summary Section, 4. Update Report Status, 5. Present Summary to User, 6. Present MENU OPTIONS, 7. If User Wants to Fix Issues, 8. Update Plan with Validation Status (+14 more)
+Nodes (22): 1. Load Brain Techniques Library, 2. Context Analysis for Technique Matching, 3. Generate Technique Recommendations, 4. Present Recommendation Details, 5. Get User Confirmation, 6. Handle User Response, 7. Update Frontmatter and Document, AI RECOMMENDATION PROTOCOLS: (+14 more)
 
 ### Community 315 - "Community 315"
 Cohesion: 0.09
-Nodes (22): 1. Extract PRD Structure, 2. Check for BMAD PRD Core Sections, 3. Classify PRD Format, 4. Report Format Findings to Validation Report, 5. Route Based on Format Classification, 6. Present MENU OPTIONS (Non-Standard PRDs Only), code:markdown (## Format Detection), CONTEXT BOUNDARIES: (+14 more)
+Nodes (22): 💼 BUSINESS MODEL ANALYSIS, Business Model Weaknesses, Competitive Dynamics, Critical Insights, Current Business Model, Current Situation, ⚡ DISRUPTION OPPORTUNITIES, Disruption Vectors (+14 more)
 
 ### Community 316 - "Community 316"
 Cohesion: 0.09
-Nodes (22): 1. Load Domain Complexity Data, 2. Determine Domain Complexity, 2. Extract Domain Classification, 3. For High-Complexity Domains: Validate Required Special Sections, 5. For Low-Complexity Domains: Skip Detailed Checks, 6. Report Compliance Findings (High-Complexity Domains), 7. Display Progress and Auto-Proceed, code:markdown (## Domain Compliance Validation) (+14 more)
+Nodes (23): Acceptable Overlap (Defense in Depth), Auth/Authz Negative-Path Gaps, Coverage by Test Level, Coverage Heuristics Findings, Coverage Summary, {CRITERION_ID}: {CRITERION_DESCRIPTION} ({PRIORITY}), Critical Gaps (BLOCKER) ❌, Detailed Mapping (+15 more)
 
 ### Community 317 - "Community 317"
 Cohesion: 0.09
-Nodes (22): 1. Load Project Types Data, 2. Extract Project Type Classification, 3. Determine Required and Excluded Sections from CSV Data, 4. Attempt Sub-Process Validation, 4. Validate Against CSV-Based Requirements, 5. Build Compliance Table, 6. Report Project-Type Compliance Findings to Validation Report, 7. Display Progress and Auto-Proceed (+14 more)
+Nodes (22): 1. Check for Plan File, 2. Load Complete Validation Report, 3. Create Summary Section, 4. Update Report Status, 5. Present Summary to User, 6. Present MENU OPTIONS, 7. If User Wants to Fix Issues, 8. Update Plan with Validation Status (+14 more)
 
 ### Community 318 - "Community 318"
 Cohesion: 0.09
-Nodes (22): changes, epic, epicIndex, epics, getArtifactStore(), id, launch, proxyquire (+14 more)
+Nodes (22): 1. Extract PRD Structure, 2. Check for BMAD PRD Core Sections, 3. Classify PRD Format, 4. Report Format Findings to Validation Report, 5. Route Based on Format Classification, 6. Present MENU OPTIONS (Non-Standard PRDs Only), code:markdown (## Format Detection), CONTEXT BOUNDARIES: (+14 more)
 
 ### Community 319 - "Community 319"
-Cohesion: 0.11
-Nodes (23): description, items, type, properties, required, type, description, items (+15 more)
+Cohesion: 0.09
+Nodes (22): 1. Load Domain Complexity Data, 2. Determine Domain Complexity, 2. Extract Domain Classification, 3. For High-Complexity Domains: Validate Required Special Sections, 5. For Low-Complexity Domains: Skip Detailed Checks, 6. Report Compliance Findings (High-Complexity Domains), 7. Display Progress and Auto-Proceed, code:markdown (## Domain Compliance Validation) (+14 more)
 
 ### Community 320 - "Community 320"
 Cohesion: 0.09
-Nodes (22): 1. Begin Implementation Research, 2. Web Search for Technology Adoption, 3. Web Search for Development Workflows, 4. Web Search for Operational Excellence, 5. Generate Implementation Research Content, 6. Present Analysis and Continue Option, 7. Handle Continue Selection, APPEND TO DOCUMENT: (+14 more)
+Nodes (22): changes, epic, epicIndex, epics, getArtifactStore(), id, launch, proxyquire (+14 more)
 
 ### Community 321 - "Community 321"
 Cohesion: 0.09
-Nodes (23): reliability, actual, status, target, uptimeData, actual, errorTypes, status (+15 more)
+Nodes (22): 1. Begin Implementation Research, 2. Web Search for Technology Adoption, 3. Web Search for Development Workflows, 4. Web Search for Operational Excellence, 5. Generate Implementation Research Content, 6. Present Analysis and Continue Option, 7. Handle Continue Selection, APPEND TO DOCUMENT: (+14 more)
 
 ### Community 322 - "Community 322"
 Cohesion: 0.09
-Nodes (22): content, approach, coverageTargets, environments, riskBasedPriority, scope, testLevels, title (+14 more)
+Nodes (23): reliability, actual, status, target, uptimeData, actual, errorTypes, status (+15 more)
 
 ### Community 323 - "Community 323"
 Cohesion: 0.09
-Nodes (21): code:markdown (# Test Automation Summary), Conventions, Execution, Keep It Simple, On Activation, On Complete, Output, Paths (+13 more)
+Nodes (22): content, approach, coverageTargets, environments, riskBasedPriority, scope, testLevels, title (+14 more)
 
 ### Community 324 - "Community 324"
 Cohesion: 0.09
-Nodes (21): Additional Documentation, code:yaml (development_status:), code:yaml (# generated: {date}), code:block3 (backlog → in-progress → done), code:block4 (backlog → ready-for-dev → in-progress → review → done), code:block5 (optional ↔ done), Conventions, Document Discovery - Full Epic Loading (+13 more)
+Nodes (21): code:markdown (# Test Automation Summary), Conventions, Execution, Keep It Simple, On Activation, On Complete, Output, Paths (+13 more)
 
 ### Community 325 - "Community 325"
 Cohesion: 0.09
-Nodes (22): default, description, type, description, type, description, type, description (+14 more)
+Nodes (21): Additional Documentation, code:yaml (development_status:), code:yaml (# generated: {date}), code:block3 (backlog → in-progress → done), code:block4 (backlog → ready-for-dev → in-progress → review → done), code:block5 (optional ↔ done), Conventions, Document Discovery - Full Epic Loading (+13 more)
 
 ### Community 326 - "Community 326"
 Cohesion: 0.09
-Nodes (22): type, format, type, description, items, type, description, items (+14 more)
+Nodes (22): properties, description, type, description, type, description, type, changeType (+14 more)
 
 ### Community 327 - "Community 327"
 Cohesion: 0.09
-Nodes (21): content, keyFiles, overview, packageManager, packages, repositoryType, rootStructure, metadata (+13 more)
+Nodes (22): default, description, type, description, type, description, type, description (+14 more)
 
 ### Community 328 - "Community 328"
 Cohesion: 0.09
-Nodes (22): format, type, description, properties, type, type, type, analysisDate (+14 more)
+Nodes (22): type, format, type, description, items, type, description, items (+14 more)
 
 ### Community 329 - "Community 329"
 Cohesion: 0.09
-Nodes (22): description, items, type, description, type, description, type, description (+14 more)
+Nodes (21): content, keyFiles, overview, packageManager, packages, repositoryType, rootStructure, metadata (+13 more)
 
 ### Community 330 - "Community 330"
 Cohesion: 0.09
-Nodes (22): description, items, type, description, items, type, featuresToTest, limitations (+14 more)
+Nodes (22): format, type, description, properties, type, type, type, analysisDate (+14 more)
 
 ### Community 331 - "Community 331"
 Cohesion: 0.09
-Nodes (22): properties, description, properties, type, description, type, description, items (+14 more)
+Nodes (21): additionalProperties, additionalProperties, properties, required, type, description, $id, $ref (+13 more)
 
 ### Community 332 - "Community 332"
-Cohesion: 0.11
-Nodes (18): content, completeStory, frameworkApplication, frameworkName, nextSteps, purpose, storyTitle, storyType (+10 more)
-
-### Community 333 - "Community 333"
 Cohesion: 0.09
 Nodes (22): description, items, type, description, type, description, type, description (+14 more)
 
+### Community 333 - "Community 333"
+Cohesion: 0.09
+Nodes (22): description, items, type, description, items, type, featuresToTest, limitations (+14 more)
+
 ### Community 334 - "Community 334"
 Cohesion: 0.09
-Nodes (21): Agent Menu Patterns, Agent Types, code:yaml (- trigger: XX or fuzzy match on command-name), code:yaml (# Action - reference prompt), code:yaml (- trigger: TS or fuzzy match on team-standup), code:yaml (prompts:), code:yaml (# ✅ CORRECT), code:yaml (critical_actions:) (+13 more)
+Nodes (22): properties, description, properties, type, description, type, description, items (+14 more)
 
 ### Community 335 - "Community 335"
 Cohesion: 0.09
-Nodes (19): BMAD PRD Purpose, code:block1 (Vision → Success Criteria → User Journeys → Functional Requi), code:block2 ("The system shall [metric] [condition] [measurement method]"), Core Philosophy: Information Density, Document Structure (Markdown, Human-Readable), Domain-Specific Requirements, Downstream Impact, Formatting for Dual Consumption (+11 more)
+Nodes (22): content, completeStory, frameworkApplication, frameworkName, nextSteps, purpose, storyTitle, storyType (+14 more)
 
 ### Community 336 - "Community 336"
 Cohesion: 0.09
-Nodes (21): code:markdown (---), code:markdown (### N. Present MENU OPTIONS), Common Violations, Continuable Workflows, Critical Rules (Quick Reference), Data Files Reference, File Size Limits, Frontmatter (+13 more)
+Nodes (22): description, items, type, description, type, description, type, description (+14 more)
 
 ### Community 337 - "Community 337"
 Cohesion: 0.09
-Nodes (21): 1. Module Affiliation, 2. Continuable or Single-Session?, 3. Edit/Validate Support, 4. Document Output, code:yaml (stepsCompleted: ['step-01-init', 'step-02-gather']), code:block2 (workflow-folder/), code:block3 (workflow-folder/), code:block4 (START: Creating a workflow) (+13 more)
+Nodes (21): Agent Menu Patterns, Agent Types, code:yaml (- trigger: XX or fuzzy match on command-name), code:yaml (# Action - reference prompt), code:yaml (- trigger: TS or fuzzy match on team-standup), code:yaml (prompts:), code:yaml (# ✅ CORRECT), code:yaml (critical_actions:) (+13 more)
 
 ### Community 338 - "Community 338"
 Cohesion: 0.09
-Nodes (21): C-1. `better-sqlite3` Cannot Run in VS Code Extensions ✅ FIXED, C-2. ~30-40 Child Table DDLs Missing ✅ FIXED, C-3. Polymorphic FKs Have No Referential Integrity ✅ FIXED, 🔴 CRITICAL (3 Findings — All Fixed), H-1. No Schema Evolution / Migration Strategy ✅ FIXED, H-2. DAL Interface Returns `any` ✅ FIXED, H-3. LLM Tool SQL Injection Surface ✅ FIXED, H-4. Business Logic Extraction Gap ✅ FIXED (+13 more)
+Nodes (19): BMAD PRD Purpose, code:block1 (Vision → Success Criteria → User Journeys → Functional Requi), code:block2 ("The system shall [metric] [condition] [measurement method]"), Core Philosophy: Information Density, Document Structure (Markdown, Human-Readable), Domain-Specific Requirements, Downstream Impact, Formatting for Dual Consumption (+11 more)
 
 ### Community 339 - "Community 339"
 Cohesion: 0.09
-Nodes (21): 1. Begin Industry Analysis, 2. Parallel Industry Research Execution, 3. Analyze and Aggregate Results, 4. Generate Industry Analysis Content, 5. Present Analysis and Continue Option, 6. Handle Continue Selection, APPEND TO DOCUMENT:, code:markdown (## Industry Analysis) (+13 more)
+Nodes (21): code:markdown (---), code:markdown (### N. Present MENU OPTIONS), Common Violations, Continuable Workflows, Critical Rules (Quick Reference), Data Files Reference, File Size Limits, Frontmatter (+13 more)
 
 ### Community 340 - "Community 340"
 Cohesion: 0.09
-Nodes (21): 1. Begin Competitive Landscape Analysis, 2. Parallel Competitive Research Execution, 3. Analyze and Aggregate Results, 4. Generate Competitive Landscape Content, 5. Present Analysis and Continue Option, 6. Handle Continue Selection, APPEND TO DOCUMENT:, code:markdown (## Competitive Landscape) (+13 more)
+Nodes (21): 1. Module Affiliation, 2. Continuable or Single-Session?, 3. Edit/Validate Support, 4. Document Output, code:yaml (stepsCompleted: ['step-01-init', 'step-02-gather']), code:block2 (workflow-folder/), code:block3 (workflow-folder/), code:block4 (START: Creating a workflow) (+13 more)
 
 ### Community 341 - "Community 341"
 Cohesion: 0.09
-Nodes (21): additionalProperties, additionalProperties, properties, required, type, description, $id, $ref (+13 more)
+Nodes (21): C-1. `better-sqlite3` Cannot Run in VS Code Extensions ✅ FIXED, C-2. ~30-40 Child Table DDLs Missing ✅ FIXED, C-3. Polymorphic FKs Have No Referential Integrity ✅ FIXED, 🔴 CRITICAL (3 Findings — All Fixed), H-1. No Schema Evolution / Migration Strategy ✅ FIXED, H-2. DAL Interface Returns `any` ✅ FIXED, H-3. LLM Tool SQL Injection Surface ✅ FIXED, H-4. Business Logic Extraction Gap ✅ FIXED (+13 more)
 
 ### Community 342 - "Community 342"
 Cohesion: 0.09
-Nodes (21): 1. Get Source Workflow Path, 2. Load EVERYTHING - DO NOT BE LAZY, 3. Extract and Document Workflow Essence, 4. Present Extracted Information to User, 5. Discovery Questions for Conversion, 6. Confirm and Proceed to Classification, code:markdown (---), CONTEXT BOUNDARIES: (+13 more)
+Nodes (21): 1. Begin Industry Analysis, 2. Parallel Industry Research Execution, 3. Analyze and Aggregate Results, 4. Generate Industry Analysis Content, 5. Present Analysis and Continue Option, 6. Handle Continue Selection, APPEND TO DOCUMENT:, code:markdown (## Industry Analysis) (+13 more)
 
 ### Community 343 - "Community 343"
 Cohesion: 0.09
-Nodes (21): 1. Check for Existing Work, 2. Get the Brief or Write-Up, 3. Validate Brief Completeness, 4. Confirm and Create Tracking, 5. Preview the Build Process, 6. Present MENU OPTIONS, code:yaml (---), CONTEXT BOUNDARIES: (+13 more)
+Nodes (21): 1. Begin Competitive Landscape Analysis, 2. Parallel Competitive Research Execution, 3. Analyze and Aggregate Results, 4. Generate Competitive Landscape Content, 5. Present Analysis and Continue Option, 6. Handle Continue Selection, APPEND TO DOCUMENT:, code:markdown (## Competitive Landscape) (+13 more)
 
 ### Community 344 - "Community 344"
 Cohesion: 0.09
-Nodes (21): 1. Welcome and Explain Assessment, 2. Gather Role, 3. Gather Experience Level, 4. Gather Learning Goals, 5. Gather Pain Points (Optional), 6. Summarize Assessment, 7. Update Progress File, 8. Provide Next Steps Preview (+13 more)
+Nodes (21): 1. Get Source Workflow Path, 2. Load EVERYTHING - DO NOT BE LAZY, 3. Extract and Document Workflow Essence, 4. Present Extracted Information to User, 5. Discovery Questions for Conversion, 6. Confirm and Proceed to Classification, code:markdown (---), CONTEXT BOUNDARIES: (+13 more)
 
 ### Community 345 - "Community 345"
 Cohesion: 0.09
-Nodes (21): 1. Acknowledge Classification Context, 2. Explore What Makes It Special, 3. Understand the Vision, 4. Validate Understanding, CONTEXT BOUNDARIES:, CRITICAL STEP COMPLETION NOTE, EXECUTION PROTOCOLS:, EXECUTION RULES: (+13 more)
+Nodes (21): 1. Check for Existing Work, 2. Get the Brief or Write-Up, 3. Validate Brief Completeness, 4. Confirm and Create Tracking, 5. Preview the Build Process, 6. Present MENU OPTIONS, code:yaml (---), CONTEXT BOUNDARIES: (+13 more)
 
 ### Community 346 - "Community 346"
 Cohesion: 0.09
-Nodes (21): 1. Prepare Subprocess Inputs, 2. Launch 4 Parallel Quality Subprocesses, 3. Wait for All Subprocesses, 4. Verify All Outputs Exist, 5. Performance Report, 6. Proceed to Aggregation, code:javascript (const timestamp = new Date().toISOString().replace(/[:.]/g, ), code:javascript (const subprocessContext = {) (+13 more)
+Nodes (21): 1. Welcome and Explain Assessment, 2. Gather Role, 3. Gather Experience Level, 4. Gather Learning Goals, 5. Gather Pain Points (Optional), 6. Summarize Assessment, 7. Update Progress File, 8. Provide Next Steps Preview (+13 more)
 
 ### Community 347 - "Community 347"
 Cohesion: 0.09
-Nodes (21): 10. Present MENU OPTIONS, Capability Discovery Conversation, code:yaml (menu:), Command Structure Development, CONTEXT BOUNDARIES, CRITICAL STEP COMPLETION NOTE, Document Menu YAML, Example Menus (for reference) (+13 more)
+Nodes (21): 1. Acknowledge Classification Context, 2. Explore What Makes It Special, 3. Understand the Vision, 4. Validate Understanding, CONTEXT BOUNDARIES:, CRITICAL STEP COMPLETION NOTE, EXECUTION PROTOCOLS:, EXECUTION RULES: (+13 more)
 
 ### Community 348 - "Community 348"
 Cohesion: 0.09
-Nodes (21): 1. Verify All Sessions Complete, 2. Calculate Final Metrics, 3. Congratulations Message, 4. Generate Completion Certificate, 5. Update Progress File (Final), 6. Display Certificate, 7. Final Celebration, 8. Workflow Complete (+13 more)
+Nodes (21): 1. Prepare Subprocess Inputs, 2. Launch 4 Parallel Quality Subprocesses, 3. Wait for All Subprocesses, 4. Verify All Outputs Exist, 5. Performance Report, 6. Proceed to Aggregation, code:javascript (const timestamp = new Date().toISOString().replace(/[:.]/g, ), code:javascript (const subprocessContext = {) (+13 more)
 
 ### Community 349 - "Community 349"
 Cohesion: 0.09
-Nodes (21): 1. Read Edit Plan, 2. Present Edit Summary, 3. Menu Handling Logic, 4. Update Edit Plan (If Completing Without Validation), 5. Handle Validation Return, code:yaml (completionDate: '{current-date}'), code:markdown (## Completion), CONTEXT BOUNDARIES: (+13 more)
+Nodes (21): 10. Present MENU OPTIONS, Capability Discovery Conversation, code:yaml (menu:), Command Structure Development, CONTEXT BOUNDARIES, CRITICAL STEP COMPLETION NOTE, Document Menu YAML, Example Menus (for reference) (+13 more)
 
 ### Community 350 - "Community 350"
-Cohesion: 0.14
-Nodes (15): 1. Configuration Loading, 2. First Step, 3. Resume Support, Acceptance Test-Driven Development (ATDD), CI/CD Pipeline Setup, Core Principles, INITIALIZATION SEQUENCE, Non-Functional Requirements Assessment (+7 more)
+Cohesion: 0.09
+Nodes (21): 1. Verify All Sessions Complete, 2. Calculate Final Metrics, 3. Congratulations Message, 4. Generate Completion Certificate, 5. Update Progress File (Final), 6. Display Certificate, 7. Final Celebration, 8. Workflow Complete (+13 more)
 
 ### Community 351 - "Community 351"
 Cohesion: 0.09
-Nodes (21): 1. Begin Customer Behavior Analysis, 2. Parallel Customer Behavior Research Execution, 3. Analyze and Aggregate Results, 4. Generate Customer Behavior Content, 5. Present Analysis and Continue Option, 6. Handle Continue Selection, APPEND TO DOCUMENT:, BEHAVIOR ANALYSIS STANDARDS: (+13 more)
+Nodes (21): 1. Read Edit Plan, 2. Present Edit Summary, 3. Menu Handling Logic, 4. Update Edit Plan (If Completing Without Validation), 5. Handle Validation Return, code:yaml (completionDate: '{current-date}'), code:markdown (## Completion), CONTEXT BOUNDARIES: (+13 more)
 
 ### Community 352 - "Community 352"
-Cohesion: 0.09
-Nodes (21): 1. Build Excitement for Random Discovery, 2. Intelligent Random Selection, 3. Present Random Techniques, 4. Highlight the Creative Potential, 5. Handle User Response, 6. Update Frontmatter and Document, code:yaml (---), code:markdown (## Technique Selection) (+13 more)
+Cohesion: 0.14
+Nodes (15): 1. Configuration Loading, 2. First Step, 3. Resume Support, Acceptance Test-Driven Development (ATDD), CI/CD Pipeline Setup, Core Principles, INITIALIZATION SEQUENCE, Non-Functional Requirements Assessment (+7 more)
 
 ### Community 353 - "Community 353"
 Cohesion: 0.09
-Nodes (21): 1. Begin Customer Pain Points Analysis, 2. Parallel Pain Points Research Execution, 3. Analyze and Aggregate Results, 4. Generate Customer Pain Points Content, 5. Present Analysis and Continue Option, 6. Handle Continue Selection, APPEND TO DOCUMENT:, code:markdown (## Customer Pain Points and Needs) (+13 more)
+Nodes (21): 1. Begin Customer Behavior Analysis, 2. Parallel Customer Behavior Research Execution, 3. Analyze and Aggregate Results, 4. Generate Customer Behavior Content, 5. Present Analysis and Continue Option, 6. Handle Continue Selection, APPEND TO DOCUMENT:, BEHAVIOR ANALYSIS STANDARDS: (+13 more)
 
 ### Community 354 - "Community 354"
 Cohesion: 0.09
-Nodes (21): 1. Begin Customer Decisions Analysis, 2. Parallel Decisions Research Execution, 3. Analyze and Aggregate Results, 4. Generate Customer Decisions Content, 5. Present Analysis and Continue Option, 6. Handle Continue Selection, APPEND TO DOCUMENT:, code:markdown (## Customer Decision Processes and Journey) (+13 more)
+Nodes (21): 1. Build Excitement for Random Discovery, 2. Intelligent Random Selection, 3. Present Random Techniques, 4. Highlight the Creative Potential, 5. Handle User Response, 6. Update Frontmatter and Document, code:yaml (---), code:markdown (## Technique Selection) (+13 more)
 
 ### Community 355 - "Community 355"
 Cohesion: 0.09
-Nodes (21): 1. Review Creative Output, 2. Theme Identification and Clustering, 3. Present Organized Idea Themes, 4. Facilitate Prioritization, 5. Develop Action Plans, 6. Create Comprehensive Session Documentation, 7. Session Completion and Next Steps, 8. Handle Completion Selection (+13 more)
+Nodes (21): 1. Begin Customer Pain Points Analysis, 2. Parallel Pain Points Research Execution, 3. Analyze and Aggregate Results, 4. Generate Customer Pain Points Content, 5. Present Analysis and Continue Option, 6. Handle Continue Selection, APPEND TO DOCUMENT:, code:markdown (## Customer Pain Points and Needs) (+13 more)
 
 ### Community 356 - "Community 356"
 Cohesion: 0.09
-Nodes (21): 1. Initialize UX Validation, 2. Search for UX Documentation, 3. If UX Document Exists, 4. If No UX Document, 5. Add Findings to Report, 6. Auto-Proceed to Next Step, A. UX ↔ PRD Alignment, B. UX ↔ Architecture Alignment (+13 more)
+Nodes (21): 1. Begin Customer Decisions Analysis, 2. Parallel Decisions Research Execution, 3. Analyze and Aggregate Results, 4. Generate Customer Decisions Content, 5. Present Analysis and Continue Option, 6. Handle Continue Selection, APPEND TO DOCUMENT:, code:markdown (## Customer Decision Processes and Journey) (+13 more)
 
 ### Community 357 - "Community 357"
 Cohesion: 0.09
-Nodes (21): 1. Perform Critical Path Violation Detection, 2. Process Findings and Update Report, 3. Handle Critical Violations, 4. Save Report and Auto-Proceed, code:bash (# Extract config variables from workflow.md), code:bash (# Extract content after frontmatter from all files, search f), code:bash (# Extract all frontmatter path references from all files), code:bash (# Check if in non-bmb module, then search for bmb-specific p) (+13 more)
+Nodes (21): 1. Review Creative Output, 2. Theme Identification and Clustering, 3. Present Organized Idea Themes, 4. Facilitate Prioritization, 5. Develop Action Plans, 6. Create Comprehensive Session Documentation, 7. Session Completion and Next Steps, 8. Handle Completion Selection (+13 more)
 
 ### Community 358 - "Community 358"
 Cohesion: 0.09
-Nodes (21): 1. Analyze Each BMAD PRD Section, 2. Estimate Effort to Reach Parity, 3. Report Parity Analysis to Validation Report, 4. Present Parity Analysis and Options, 5. Present MENU OPTIONS, code:markdown (## Parity Analysis (Non-Standard PRD)), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS: (+13 more)
+Nodes (21): 1. Initialize UX Validation, 2. Search for UX Documentation, 3. If UX Document Exists, 4. If No UX Document, 5. Add Findings to Report, 6. Auto-Proceed to Next Step, A. UX ↔ PRD Alignment, B. UX ↔ Architecture Alignment (+13 more)
 
 ### Community 359 - "Community 359"
 Cohesion: 0.09
-Nodes (21): 1. Check for Product Brief, 2. Attempt Sub-Process Validation, 3. Graceful Degradation (if Task tool unavailable), 4. Assess Coverage and Severity, 5. Report Coverage Findings to Validation Report, 6. Display Progress and Auto-Proceed, code:markdown (## Product Brief Coverage), code:markdown (## Product Brief Coverage) (+13 more)
+Nodes (21): 1. Perform Critical Path Violation Detection, 2. Process Findings and Update Report, 3. Handle Critical Violations, 4. Save Report and Auto-Proceed, code:bash (# Extract config variables from workflow.md), code:bash (# Extract content after frontmatter from all files, search f), code:bash (# Extract all frontmatter path references from all files), code:bash (# Check if in non-bmb module, then search for bmb-specific p) (+13 more)
 
 ### Community 360 - "Community 360"
 Cohesion: 0.09
-Nodes (21): 1. Load Complete Validation Report, 2. Update Report Frontmatter with Final Status, 3. Create Summary of Findings, 4. Present Summary to User Conversationally, 5. Present MENU OPTIONS, code:yaml (---), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS: (+13 more)
+Nodes (21): 1. Analyze Each BMAD PRD Section, 2. Estimate Effort to Reach Parity, 3. Report Parity Analysis to Validation Report, 4. Present Parity Analysis and Options, 5. Present MENU OPTIONS, code:markdown (## Parity Analysis (Non-Standard PRD)), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS: (+13 more)
 
 ### Community 361 - "Community 361"
 Cohesion: 0.09
-Nodes (21): content, acceptanceCriteria, assignee, id, labels, status, storyPoints, technicalNotes (+13 more)
+Nodes (21): 1. Check for Product Brief, 2. Attempt Sub-Process Validation, 3. Graceful Degradation (if Task tool unavailable), 4. Assess Coverage and Severity, 5. Report Coverage Findings to Validation Report, 6. Display Progress and Auto-Proceed, code:markdown (## Product Brief Coverage), code:markdown (## Product Brief Coverage) (+13 more)
 
 ### Community 362 - "Community 362"
-Cohesion: 0.10
-Nodes (21): call, { context }, createChatParticipantCalls, createFileSystemWatcherCalls, createTreeViewCalls, createWebviewPanelCalls, executeCommandCalls, found (+13 more)
+Cohesion: 0.09
+Nodes (21): 1. Load Complete Validation Report, 2. Update Report Frontmatter with Final Status, 3. Create Summary of Findings, 4. Present Summary to User Conversationally, 5. Present MENU OPTIONS, code:yaml (---), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS: (+13 more)
 
 ### Community 363 - "Community 363"
 Cohesion: 0.09
-Nodes (22): type, description, type, properties, properties, type, baseUrl, configFile (+14 more)
+Nodes (21): content, acceptanceCriteria, assignee, id, labels, status, storyPoints, technicalNotes (+13 more)
 
 ### Community 364 - "Community 364"
-Cohesion: 0.09
-Nodes (22): properties, type, description, properties, type, description, type, description (+14 more)
+Cohesion: 0.10
+Nodes (21): call, { context }, createChatParticipantCalls, createFileSystemWatcherCalls, createTreeViewCalls, createWebviewPanelCalls, executeCommandCalls, found (+13 more)
 
 ### Community 365 - "Community 365"
 Cohesion: 0.09
-Nodes (21): 1. Begin Technology Stack Analysis, 2. Parallel Technology Stack Research Execution, 3. Analyze and Aggregate Results, 4. Generate Technology Stack Content, 5. Present Analysis and Continue Option, 6. Handle Continue Selection, APPEND TO DOCUMENT:, code:markdown (## Technology Stack Analysis) (+13 more)
+Nodes (22): description, type, type, description, type, description, type, coverageTarget (+14 more)
 
 ### Community 366 - "Community 366"
 Cohesion: 0.09
-Nodes (21): 1. Begin Integration Patterns Analysis, 2. Parallel Integration Patterns Research Execution, 3. Analyze and Aggregate Results, 4. Generate Integration Patterns Content, 5. Present Analysis and Continue Option, 6. Handle Continue Selection, APPEND TO DOCUMENT:, code:markdown (## Integration Patterns Analysis) (+13 more)
+Nodes (22): type, description, type, properties, properties, type, baseUrl, configFile (+14 more)
 
 ### Community 367 - "Community 367"
 Cohesion: 0.09
-Nodes (21): 1. Begin Architectural Patterns Analysis, 2. Web Search for System Architecture Patterns, 3. Web Search for Design Principles, 4. Web Search for Scalability Patterns, 5. Generate Architectural Patterns Content, 6. Present Analysis and Continue Option, 7. Handle Continue Selection, APPEND TO DOCUMENT: (+13 more)
+Nodes (22): properties, type, description, properties, type, description, type, description (+14 more)
 
 ### Community 368 - "Community 368"
-Cohesion: 0.10
-Nodes (21): description, items, type, description, items, type, properties, type (+13 more)
+Cohesion: 0.09
+Nodes (21): 1. Begin Technology Stack Analysis, 2. Parallel Technology Stack Research Execution, 3. Analyze and Aggregate Results, 4. Generate Technology Stack Content, 5. Present Analysis and Continue Option, 6. Handle Continue Selection, APPEND TO DOCUMENT:, code:markdown (## Technology Stack Analysis) (+13 more)
 
 ### Community 369 - "Community 369"
-Cohesion: 0.07
-Nodes (33): description, items, type, description, items, type, properties, type (+25 more)
+Cohesion: 0.09
+Nodes (21): 1. Begin Integration Patterns Analysis, 2. Parallel Integration Patterns Research Execution, 3. Analyze and Aggregate Results, 4. Generate Integration Patterns Content, 5. Present Analysis and Continue Option, 6. Handle Continue Selection, APPEND TO DOCUMENT:, code:markdown (## Integration Patterns Analysis) (+13 more)
 
 ### Community 370 - "Community 370"
-Cohesion: 0.10
-Nodes (21): description, items, type, description, items, type, description, items (+13 more)
+Cohesion: 0.09
+Nodes (21): 1. Begin Architectural Patterns Analysis, 2. Web Search for System Architecture Patterns, 3. Web Search for Design Principles, 4. Web Search for Scalability Patterns, 5. Generate Architectural Patterns Content, 6. Present Analysis and Continue Option, 7. Handle Continue Selection, APPEND TO DOCUMENT: (+13 more)
 
 ### Community 371 - "Community 371"
 Cohesion: 0.10
-Nodes (21): properties, action, actionable, appliesTo, blockers, category, dueDate, id (+13 more)
+Nodes (21): description, items, type, properties, type, properties, type, description (+13 more)
 
 ### Community 372 - "Community 372"
-Cohesion: 0.11
-Nodes (18): type, type, type, type, type, type, enum, type (+10 more)
+Cohesion: 0.10
+Nodes (21): description, items, type, description, items, type, properties, type (+13 more)
 
 ### Community 373 - "Community 373"
 Cohesion: 0.10
-Nodes (21): description, properties, type, items, type, description, items, type (+13 more)
+Nodes (21): description, items, type, type, assumptions, risks, stakeholders, successMetrics (+13 more)
 
 ### Community 374 - "Community 374"
 Cohesion: 0.10
-Nodes (21): description, type, description, items, type, currentSituation, keyQuestions, strategicChallenge (+13 more)
+Nodes (21): description, items, type, description, items, type, description, items (+13 more)
 
 ### Community 375 - "Community 375"
 Cohesion: 0.10
-Nodes (21): properties, description, type, description, type, description, type, description (+13 more)
+Nodes (21): description, items, type, description, items, type, description, items (+13 more)
 
 ### Community 376 - "Community 376"
 Cohesion: 0.10
-Nodes (20): code:yaml (---), code:markdown (---), code:markdown (## 1. Check Known Prior Workflow Outputs), code:markdown (## INPUT REQUIREMENT:), code:markdown (## OPTIONAL INPUTS:), code:yaml (---), code:markdown (## 1. Discover Prior Workflow Outputs), code:markdown (## INPUT VALIDATION:) (+12 more)
+Nodes (21): properties, action, actionable, appliesTo, blockers, category, dueDate, id (+13 more)
 
 ### Community 377 - "Community 377"
 Cohesion: 0.10
-Nodes (19): Cleanup Strategy, code:typescript (// test-utils/factories/user-factory.ts), code:typescript (// test-utils/factories/order-factory.ts), code:typescript (// playwright/support/helpers/seed-helpers.ts), code:typescript (// ❌ BAD: Hardcoded test data), code:typescript (// ✅ GOOD: Factory-based data), code:typescript (// test-utils/factories/user-factory.ts (base)), code:typescript (// Track created IDs for cleanup) (+11 more)
+Nodes (21): type, type, type, type, type, type, enum, type (+13 more)
 
 ### Community 378 - "Community 378"
 Cohesion: 0.10
-Nodes (20): code:typescript (// tests/e2e/magic-link-auth.spec.ts), code:typescript (// tests/global-setup.ts (runs once)), code:javascript (// cypress/e2e/magic-link-auth.cy.ts), code:typescript (// playwright/fixtures/email-auth-fixture.ts), code:javascript (// cypress/support/commands/email-auth.js), code:javascript (// cypress/e2e/dashboard.cy.ts), code:typescript (// tests/e2e/email-auth-negative.spec.ts), code:javascript (// cypress/support/commands/register-and-sign-in.js) (+12 more)
+Nodes (21): description, properties, type, items, type, description, items, type (+13 more)
 
 ### Community 379 - "Community 379"
 Cohesion: 0.10
-Nodes (20): 10. Complete Message, 11. Menu, 1. Welcome, 2. Update Progress (Started), 3. Teaching: Test Design Workflow, 4. Teaching: Risk/Testability Assessment, 5. Teaching: Coverage Planning, 6. Teaching: Test Priorities Matrix (+12 more)
+Nodes (21): description, type, description, items, type, currentSituation, keyQuestions, strategicChallenge (+13 more)
 
 ### Community 380 - "Community 380"
 Cohesion: 0.10
-Nodes (20): Asset Locations, code:block1 ({{complete_source_tree}}), code:block2 ({{source_tree}}), Complete Directory Structure, Configuration Files, Critical Directories, Entry Points, File Organization Patterns (+12 more)
+Nodes (21): properties, description, type, description, type, description, type, description (+13 more)
 
 ### Community 381 - "Community 381"
 Cohesion: 0.10
-Nodes (20): content, productName, successMetrics, targetUsers, vision, metadata, artifactType, author (+12 more)
+Nodes (20): code:yaml (---), code:markdown (---), code:markdown (## 1. Check Known Prior Workflow Outputs), code:markdown (## INPUT REQUIREMENT:), code:markdown (## OPTIONAL INPUTS:), code:yaml (---), code:markdown (## 1. Discover Prior Workflow Outputs), code:markdown (## INPUT VALIDATION:) (+12 more)
 
 ### Community 382 - "Community 382"
 Cohesion: 0.10
-Nodes (20): 1. Load Progress File, 2. Display Session Menu with Status, 3. Check for Completion, 4a. Present Session Menu Options (Sessions Remaining), 4b. Route to Completion (All Sessions Done), 📚 Available Sessions, CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS: (+12 more)
+Nodes (19): Cleanup Strategy, code:typescript (// test-utils/factories/user-factory.ts), code:typescript (// test-utils/factories/order-factory.ts), code:typescript (// playwright/support/helpers/seed-helpers.ts), code:typescript (// ❌ BAD: Hardcoded test data), code:typescript (// ✅ GOOD: Factory-based data), code:typescript (// test-utils/factories/user-factory.ts (base)), code:typescript (// Track created IDs for cleanup) (+11 more)
 
 ### Community 383 - "Community 383"
 Cohesion: 0.10
-Nodes (20): 1. Select Output Template(s), 2. Populate Templates, 3. Validation, 4. Generate BMAD Handoff Document (System-Level Mode Only), 5. Polish Output, 5b. Generate Structured JSON Output, 6. Completion Report, 7. Save Progress (+12 more)
+Nodes (20): code:typescript (// tests/e2e/magic-link-auth.spec.ts), code:typescript (// tests/global-setup.ts (runs once)), code:javascript (// cypress/e2e/magic-link-auth.cy.ts), code:typescript (// playwright/fixtures/email-auth-fixture.ts), code:javascript (// cypress/support/commands/email-auth.js), code:javascript (// cypress/e2e/dashboard.cy.ts), code:typescript (// tests/e2e/email-auth-negative.spec.ts), code:javascript (// cypress/support/commands/register-and-sign-in.js) (+12 more)
 
 ### Community 384 - "Community 384"
 Cohesion: 0.10
@@ -3048,131 +3057,131 @@ Nodes (20): 1. Load Reference Documents, 2. Review Critical Actions, 3. Determin
 
 ### Community 385 - "Community 385"
 Cohesion: 0.10
-Nodes (20): 1. Attempt Sub-Process Assessment, 2. Build Gap Analysis, 3. Present Conversion Assessment, 4. Present MENU OPTIONS, 5. Document Conversion Strategy, CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, EXECUTION RULES: (+12 more)
+Nodes (20): 1. Load the Entire Workflow, 2. Walk Through the Workflow Mentally, 3. Assess Cohesiveness, 4. Assess Overall Quality, 5. Identify Strengths and Weaknesses, 6. Provide Recommendation, 7. Document Findings, 8. Append to Report (+12 more)
 
 ### Community 386 - "Community 386"
 Cohesion: 0.10
-Nodes (20): 1. Load Brain Techniques Library, 2. Present Technique Categories, 3. Handle Category Selection, 4. Allow Technique Selection, 5. Handle Technique Confirmation, 6. Update Frontmatter and Continue, 7. Handle Back Option, code:yaml (---) (+12 more)
-
-### Community 387 - "Community 387"
-Cohesion: 0.10
-Nodes (20): 1. Announce Workflow Completion, 2. Workflow Status Update, 3. Suggest Next Steps, 5. Final Completion Confirmation, CONTEXT BOUNDARIES:, Design Specification Complete:, EXECUTION PROTOCOLS:, FAILURE MODES: (+12 more)
+Nodes (20): content, productName, successMetrics, targetUsers, vision, metadata, artifactType, author (+12 more)
 
 ### Community 388 - "Community 388"
 Cohesion: 0.10
-Nodes (21): content, companyName, completeStory, designChallenge, executionRoadmap, frameworkName, problemCategory, problemTitle (+13 more)
+Nodes (20): 1. Load Progress File, 2. Display Session Menu with Status, 3. Check for Completion, 4a. Present Session Menu Options (Sessions Remaining), 4b. Route to Completion (All Sessions Done), 📚 Available Sessions, CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS: (+12 more)
 
 ### Community 389 - "Community 389"
 Cohesion: 0.10
-Nodes (20): 1. Load the Entire Workflow, 2. Walk Through the Workflow Mentally, 3. Assess Cohesiveness, 4. Assess Overall Quality, 5. Identify Strengths and Weaknesses, 6. Provide Recommendation, 7. Document Findings, 8. Append to Report (+12 more)
+Nodes (20): 10. Complete Message, 11. Menu, 1. Welcome, 2. Update Progress (Started), 3. Teaching: Test Design Workflow, 4. Teaching: Risk/Testability Assessment, 5. Teaching: Coverage Planning, 6. Teaching: Test Priorities Matrix (+12 more)
 
 ### Community 390 - "Community 390"
 Cohesion: 0.10
-Nodes (20): 10. Display Results, 1. Validation Start, 2. Foundation Structure Validation, 3. Template Validation, 4. Step File Validation (CREATE Mode), 5. Data File Validation, 6. Content Quality Validation, 7. State Management Validation (+12 more)
+Nodes (20): 1. Select Output Template(s), 2. Populate Templates, 3. Validation, 4. Generate BMAD Handoff Document (System-Level Mode Only), 5. Polish Output, 5b. Generate Structured JSON Output, 6. Completion Report, 7. Save Progress (+12 more)
 
 ### Community 391 - "Community 391"
 Cohesion: 0.10
-Nodes (20): content, acceptanceCriteria, assignee, id, labels, status, technicalNotes, title (+12 more)
+Nodes (20): 1. Attempt Sub-Process Assessment, 2. Build Gap Analysis, 3. Present Conversion Assessment, 4. Present MENU OPTIONS, 5. Document Conversion Strategy, CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, EXECUTION RULES: (+12 more)
 
 ### Community 392 - "Community 392"
 Cohesion: 0.10
-Nodes (20): content, acceptanceCriteria, assignee, id, labels, status, technicalNotes, title (+12 more)
+Nodes (20): 1. Load Brain Techniques Library, 2. Present Technique Categories, 3. Handle Category Selection, 4. Allow Technique Selection, 5. Handle Technique Confirmation, 6. Update Frontmatter and Continue, 7. Handle Back Option, code:yaml (---) (+12 more)
 
 ### Community 393 - "Community 393"
 Cohesion: 0.10
-Nodes (20): content, acceptanceCriteria, assignee, id, labels, status, technicalNotes, title (+12 more)
+Nodes (20): 1. Announce Workflow Completion, 2. Workflow Status Update, 3. Suggest Next Steps, 5. Final Completion Confirmation, CONTEXT BOUNDARIES:, Design Specification Complete:, EXECUTION PROTOCOLS:, FAILURE MODES: (+12 more)
 
 ### Community 394 - "Community 394"
 Cohesion: 0.10
-Nodes (20): content, acceptanceCriteria, assignee, id, labels, status, technicalNotes, title (+12 more)
+Nodes (21): content, companyName, completeStory, designChallenge, executionRoadmap, frameworkName, problemCategory, problemTitle (+13 more)
 
 ### Community 395 - "Community 395"
 Cohesion: 0.10
-Nodes (21): average, peak, status, target, iops, status, usage, average (+13 more)
+Nodes (20): 10. Display Results, 1. Validation Start, 2. Foundation Structure Validation, 3. Template Validation, 4. Step File Validation (CREATE Mode), 5. Data File Validation, 6. Content Quality Validation, 7. State Management Validation (+12 more)
 
 ### Community 396 - "Community 396"
-Cohesion: 0.14
-Nodes (17): AgentMenuItem, AgentPersona, ARTIFACT_TYPE_TO_AGENT, ArtifactAgentKey, DEFAULT_AGENT, extractAttribute(), extractTagContent(), formatAgentRoster() (+9 more)
+Cohesion: 0.10
+Nodes (20): content, acceptanceCriteria, assignee, id, labels, status, technicalNotes, title (+12 more)
+
+### Community 397 - "Community 397"
+Cohesion: 0.10
+Nodes (20): content, acceptanceCriteria, assignee, id, labels, status, technicalNotes, title (+12 more)
 
 ### Community 398 - "Community 398"
 Cohesion: 0.10
-Nodes (20): default, description, type, default, description, type, default, description (+12 more)
+Nodes (20): content, acceptanceCriteria, assignee, id, labels, status, technicalNotes, title (+12 more)
 
 ### Community 399 - "Community 399"
 Cohesion: 0.10
-Nodes (19): code:markdown (## Document Summary), Editorial Review - Structure, Explanation (Conceptual), HALT CONDITIONS, Human-Reader Principles, LLM-Reader Principles, Principles, Prompt/Task Definition (Functional) (+11 more)
+Nodes (20): content, acceptanceCriteria, assignee, id, labels, status, technicalNotes, title (+12 more)
 
 ### Community 400 - "Community 400"
-Cohesion: 0.10
-Nodes (20): description, type, description, properties, type, description, items, type (+12 more)
+Cohesion: 0.11
+Nodes (21): description, type, properties, description, items, type, description, items (+13 more)
 
 ### Community 401 - "Community 401"
-Cohesion: 0.10
-Nodes (20): description, items, type, description, properties, type, description, properties (+12 more)
+Cohesion: 0.11
+Nodes (21): description, items, type, description, type, properties, type, description (+13 more)
 
 ### Community 402 - "Community 402"
 Cohesion: 0.10
-Nodes (20): description, items, type, description, items, type, description, items (+12 more)
+Nodes (20): Asset Locations, code:block1 ({{complete_source_tree}}), code:block2 ({{source_tree}}), Complete Directory Structure, Configuration Files, Critical Directories, Entry Points, File Organization Patterns (+12 more)
 
 ### Community 403 - "Community 403"
 Cohesion: 0.10
-Nodes (20): description, items, type, description, items, type, description, items (+12 more)
+Nodes (21): average, peak, status, target, iops, status, usage, average (+13 more)
 
 ### Community 404 - "Community 404"
 Cohesion: 0.10
-Nodes (20): description, type, items, type, description, properties, type, properties (+12 more)
+Nodes (20): default, description, type, default, description, type, default, description (+12 more)
 
 ### Community 405 - "Community 405"
-Cohesion: 0.67
-Nodes (3): tagline, description, type
+Cohesion: 0.10
+Nodes (19): code:markdown (## Document Summary), Editorial Review - Structure, Explanation (Conceptual), HALT CONDITIONS, Human-Reader Principles, LLM-Reader Principles, Principles, Prompt/Task Definition (Functional) (+11 more)
 
 ### Community 406 - "Community 406"
 Cohesion: 0.10
-Nodes (20): description, items, type, description, items, type, description, properties (+12 more)
+Nodes (20): description, type, description, properties, type, description, items, type (+12 more)
 
 ### Community 407 - "Community 407"
-Cohesion: 0.08
-Nodes (24): format, type, type, description, type, description, properties, required (+16 more)
+Cohesion: 0.10
+Nodes (20): description, items, type, description, properties, type, description, properties (+12 more)
 
 ### Community 408 - "Community 408"
 Cohesion: 0.10
-Nodes (20): description, items, type, description, properties, type, description, items (+12 more)
+Nodes (20): description, items, type, description, items, type, description, items (+12 more)
 
 ### Community 409 - "Community 409"
-Cohesion: 0.08
-Nodes (27): description, items, type, items, items, type, type, items (+19 more)
+Cohesion: 0.10
+Nodes (20): description, items, type, description, items, type, description, items (+12 more)
 
 ### Community 410 - "Community 410"
 Cohesion: 0.10
-Nodes (20): description, type, description, type, description, type, description, type (+12 more)
+Nodes (20): description, type, items, type, description, properties, type, properties (+12 more)
 
 ### Community 411 - "Community 411"
 Cohesion: 0.10
-Nodes (20): description, properties, type, properties, type, properties, type, accessibility (+12 more)
+Nodes (20): description, items, type, description, items, type, description, properties (+12 more)
 
 ### Community 412 - "Community 412"
 Cohesion: 0.10
-Nodes (20): description, properties, type, description, items, type, description, items (+12 more)
+Nodes (20): properties, description, items, type, description, type, keyFeatures, productName (+12 more)
 
 ### Community 413 - "Community 413"
 Cohesion: 0.10
-Nodes (19): Agent Metadata Properties, code:yaml (id: _bmad/agents/commit-poet/commit-poet.md), code:yaml (# ✅ CORRECT), code:yaml (# ✅ CORRECT), code:yaml (# ✅ CORRECT), code:yaml (# ✅ CORRECT), code:yaml (# Simple Agent), code:yaml (# ❌ name = title (duplicate)) (+11 more)
+Nodes (20): format, type, type, description, type, properties, description, type (+12 more)
 
 ### Community 414 - "Community 414"
 Cohesion: 0.10
-Nodes (19): Agent Validation, code:yaml (critical_actions:), Common (All Agents), Common Fixes, Compiler-Injected (Skip Validation), critical_actions (MANDATORY), critical_actions (OPTIONAL), hasSidecar: false (+11 more)
+Nodes (20): description, items, type, description, properties, type, description, items (+12 more)
 
 ### Community 415 - "Community 415"
-Cohesion: 0.10
-Nodes (19): Bad Examples (Avoid These), Checklist, code:block1 ("Channel expert [domain] knowledge: draw upon deep understan), code:yaml (principles:), code:yaml (principles:), code:yaml (principles:), code:yaml (principles:), code:yaml (# ❌ Job description, not philosophy) (+11 more)
+Cohesion: 0.12
+Nodes (20): description, items, type, items, items, type, type, items (+12 more)
 
 ### Community 416 - "Community 416"
 Cohesion: 0.10
-Nodes (19): `architecture-audit.md`, Changes Required by Document, code:sql (stories.epic_id REFERENCES epics(id) ON DELETE CASCADE), code:sql (SELECT), code:typescript (// Aliases), DB Migration Impact Analysis, Detailed Findings, Finding 1: Requirements — ✅ Already Solved by DB (+11 more)
+Nodes (20): description, type, description, type, description, type, description, type (+12 more)
 
 ### Community 417 - "Community 417"
 Cohesion: 0.10
-Nodes (19): Async Debugging Techniques, code:typescript (// tests/timing/race-condition-prevention.spec.ts), code:typescript (// tests/timing/deterministic-waits.spec.ts), code:typescript (// tests/timing/anti-patterns.spec.ts), code:typescript (test('debug async waterfall with console logs', async ({ pag), code:typescript (test('inspect network timing with trace viewer', async ({ pa), code:typescript (test('use trace viewer to debug timing', async ({ page }) =>), Example 1: Race Condition Identification (Network-First Pattern) (+11 more)
+Nodes (20): description, properties, type, properties, type, properties, type, accessibility (+12 more)
 
 ### Community 418 - "Community 418"
 Cohesion: 0.10
@@ -3180,391 +3189,395 @@ Nodes (20): description, properties, type, description, items, type, description
 
 ### Community 419 - "Community 419"
 Cohesion: 0.10
-Nodes (20): description, properties, required, type, description, type, description, type (+12 more)
+Nodes (19): Agent Metadata Properties, code:yaml (id: _bmad/agents/commit-poet/commit-poet.md), code:yaml (# ✅ CORRECT), code:yaml (# ✅ CORRECT), code:yaml (# ✅ CORRECT), code:yaml (# ✅ CORRECT), code:yaml (# Simple Agent), code:yaml (# ❌ name = title (duplicate)) (+11 more)
 
 ### Community 420 - "Community 420"
-Cohesion: 0.11
-Nodes (20): Accuracy Checks, Actionability Checks, Completeness Checks, Context Loading, Coverage Badge/Metric (if enabled), Coverage Classification, Coverage Metrics, Criteria-to-Test Mapping (+12 more)
+Cohesion: 0.10
+Nodes (19): Agent Validation, code:yaml (critical_actions:), Common (All Agents), Common Fixes, Compiler-Injected (Skip Validation), critical_actions (MANDATORY), critical_actions (OPTIONAL), hasSidecar: false (+11 more)
 
 ### Community 421 - "Community 421"
-Cohesion: 0.13
-Nodes (18): 1. Discover Test Files, 1. Discover Tests, 2. Categorize by Level, 2. Parse Metadata (per file), 3. Build Coverage Heuristics Inventory, 3. Evidence Collection (if `tea_browser_automation` is `cli` or `auto`), 4. Save Progress, code:yaml (---) (+10 more)
+Cohesion: 0.10
+Nodes (19): Bad Examples (Avoid These), Checklist, code:block1 ("Channel expert [domain] knowledge: draw upon deep understan), code:yaml (principles:), code:yaml (principles:), code:yaml (principles:), code:yaml (principles:), code:yaml (# ❌ Job description, not philosophy) (+11 more)
 
 ### Community 422 - "Community 422"
 Cohesion: 0.10
-Nodes (19): 1. Extract All Functional Requirements, 2. Attempt Sub-Process Validation, 3. Build Scoring Table, 4. Report SMART Findings to Validation Report, 5. Display Progress and Auto-Proceed, code:markdown (## SMART Requirements Validation), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS: (+11 more)
+Nodes (19): `architecture-audit.md`, Changes Required by Document, code:sql (stories.epic_id REFERENCES epics(id) ON DELETE CASCADE), code:sql (SELECT), code:typescript (// Aliases), DB Migration Impact Analysis, Detailed Findings, Finding 1: Requirements — ✅ Already Solved by DB (+11 more)
 
 ### Community 423 - "Community 423"
 Cohesion: 0.10
-Nodes (18): Before/After Examples, code:yaml (---), code:block10 (- Rejected: own platform support matrix. Reason: unsustainab), code:markdown (---), code:block2 (## What Makes This Different), code:block3 (## Differentiation), code:block4 (## Competitive Landscape), code:block5 (## Competitive Landscape) (+10 more)
+Nodes (19): Async Debugging Techniques, code:typescript (// tests/timing/race-condition-prevention.spec.ts), code:typescript (// tests/timing/deterministic-waits.spec.ts), code:typescript (// tests/timing/anti-patterns.spec.ts), code:typescript (test('debug async waterfall with console logs', async ({ pag), code:typescript (test('inspect network timing with trace viewer', async ({ pa), code:typescript (test('use trace viewer to debug timing', async ({ page }) =>), Example 1: Race Condition Identification (Network-First Pattern) (+11 more)
+
+### Community 424 - "Community 424"
+Cohesion: 0.13
+Nodes (18): 1. Discover Test Files, 1. Discover Tests, 2. Categorize by Level, 2. Parse Metadata (per file), 3. Build Coverage Heuristics Inventory, 3. Evidence Collection (if `tea_browser_automation` is `cli` or `auto`), 4. Save Progress, code:yaml (---) (+10 more)
 
 ### Community 425 - "Community 425"
 Cohesion: 0.10
-Nodes (19): 1. Welcome with Enthusiasm, 2. Select Collaboration Mode, 3. Gather the Initial Idea, 4. Preview the Journey Ahead, 5. Present MENU OPTIONS, CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, EXECUTION RULES: (+11 more)
+Nodes (19): 1. Attempt Sub-Process Validation, 2. Graceful Degradation (if Task tool unavailable), 3. Classify Severity, 4. Report Density Findings to Validation Report, 5. Display Progress and Auto-Proceed, code:markdown (## Information Density Validation), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS: (+11 more)
 
 ### Community 426 - "Community 426"
 Cohesion: 0.10
-Nodes (19): 1. Connect to Their Idea, 2. Explore the Problem Space, 3. Identify the Users, 4. Adjust for Mode, 5. Capture Insights, 6. Present MENU OPTIONS, EXECUTION PROTOCOLS:, EXECUTION RULES: (+11 more)
-
-### Community 427 - "Community 427"
-Cohesion: 0.10
-Nodes (19): 1. Identify Test Targets, 2. Detect Framework & Language, 3. Generate Unit Tests, 4. Generate Integration Tests, 5. Generate Contract Tests (if applicable), 6. Track Fixture Needs, code:python (import pytest), code:go (func TestUserService_Create(t *testing.T) {) (+11 more)
+Nodes (18): Before/After Examples, code:yaml (---), code:block10 (- Rejected: own platform support matrix. Reason: unsustainab), code:markdown (---), code:block2 (## What Makes This Different), code:block3 (## Differentiation), code:block4 (## Competitive Landscape), code:block5 (## Competitive Landscape) (+10 more)
 
 ### Community 428 - "Community 428"
 Cohesion: 0.10
-Nodes (19): 10. Menu, 1. Welcome, 2. Update Progress (Started), 3. Teaching: Test Review Workflow, 4. Teaching: Trace Workflow, 5. Teaching: Quality Metrics, 6. Quiz (3 questions), 7. Generate Session Notes (+11 more)
+Nodes (19): 1. Welcome with Enthusiasm, 2. Select Collaboration Mode, 3. Gather the Initial Idea, 4. Preview the Journey Ahead, 5. Present MENU OPTIONS, CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, EXECUTION RULES: (+11 more)
 
 ### Community 429 - "Community 429"
 Cohesion: 0.10
-Nodes (19): 1. Load Context and Document, 2. Document Quality Review, 2b. Brainstorming Reconciliation (if brainstorming input exists), 3. Optimization Actions, 4. Preserve Critical Information, 5. Generate Optimized Document, 6. Present MENU OPTIONS, APPEND TO DOCUMENT: (+11 more)
+Nodes (19): 1. Connect to Their Idea, 2. Explore the Problem Space, 3. Identify the Users, 4. Adjust for Mode, 5. Capture Insights, 6. Present MENU OPTIONS, EXECUTION PROTOCOLS:, EXECUTION RULES: (+11 more)
 
 ### Community 430 - "Community 430"
 Cohesion: 0.10
-Nodes (19): 1. Review Complete Context File, 2. Optimize for LLM Context, 3. Final Content Structure, 4. Present Completion Summary, 5. Final File Updates, 6. Completion Validation, 7. Completion Message, code:markdown (# Project Context for AI Agents) (+11 more)
+Nodes (19): 1. Identify Test Targets, 2. Detect Framework & Language, 3. Generate Unit Tests, 4. Generate Integration Tests, 5. Generate Contract Tests (if applicable), 6. Track Fixture Needs, code:python (import pytest), code:go (func TestUserService_Create(t *testing.T) {) (+11 more)
 
 ### Community 431 - "Community 431"
 Cohesion: 0.10
-Nodes (19): 1. Begin Competitive Analysis, 2. Generate Competitive Analysis Content, 3. Present Analysis and Complete Option, 4. Handle Complete Selection, APPEND TO DOCUMENT:, code:markdown (## Competitive Landscape), COMPETITIVE ANALYSIS SEQUENCE:, COMPETITIVE RESEARCH PROTOCOLS: (+11 more)
+Nodes (19): 10. Menu, 1. Welcome, 2. Update Progress (Started), 3. Teaching: Test Review Workflow, 4. Teaching: Trace Workflow, 5. Teaching: Quality Metrics, 6. Quiz (3 questions), 7. Generate Session Notes (+11 more)
 
 ### Community 432 - "Community 432"
 Cohesion: 0.10
-Nodes (19): 1. Initialize Final Assessment, 2. Review Previous Findings, 3. Add Final Assessment Section, 4. Complete the Report, 5. Present Completion, code:markdown (## Summary and Recommendations), EXECUTION PROTOCOLS:, FINAL ASSESSMENT PROCESS: (+11 more)
+Nodes (19): 1. Load Context and Document, 2. Document Quality Review, 2b. Brainstorming Reconciliation (if brainstorming input exists), 3. Optimization Actions, 4. Preserve Critical Information, 5. Generate Optimized Document, 6. Present MENU OPTIONS, APPEND TO DOCUMENT: (+11 more)
 
 ### Community 433 - "Community 433"
-Cohesion: 0.10
-Nodes (19): 1. Load Step Type Patterns, 2. Check EACH Step Against Its Type, 3. Aggregate Findings and Document, 4. List Violations, 5. Append to Report, 6. Save Report and Auto-Proceed, code:markdown (Launch a subprocess that:), code:markdown (Load {stepTypePatterns} in main context) (+11 more)
+Cohesion: 0.11
+Nodes (20): Accuracy Checks, Actionability Checks, Completeness Checks, Context Loading, Coverage Badge/Metric (if enabled), Coverage Classification, Coverage Metrics, Criteria-to-Test Mapping (+12 more)
 
 ### Community 434 - "Community 434"
 Cohesion: 0.10
-Nodes (19): 1. Load Output Format Standards, 2. Check Design Specification, 3. Validate Template File, 4. Check for Final Polish Step, 5. Validate Step-to-Output Mapping, 6. Document Findings, 7. Append to Report, 8. Save Report and Auto-Proceed (+11 more)
+Nodes (19): 1. Review Complete Context File, 2. Optimize for LLM Context, 3. Final Content Structure, 4. Present Completion Summary, 5. Final File Updates, 6. Completion Validation, 7. Completion Message, code:markdown (# Project Context for AI Agents) (+11 more)
 
 ### Community 435 - "Community 435"
 Cohesion: 0.10
-Nodes (19): 1. Load the Workflow Design, 2. Review EACH Step for Collaborative Quality, 3. Check Progression and Arc, 4. Check Error Handling, 5. Document Findings, 6. Append to Report, 7. Save Report and Auto-Proceed, code:markdown (### Collaborative Experience Check Results) (+11 more)
+Nodes (19): 1. Begin Competitive Analysis, 2. Generate Competitive Analysis Content, 3. Present Analysis and Complete Option, 4. Handle Complete Selection, APPEND TO DOCUMENT:, code:markdown (## Competitive Landscape), COMPETITIVE ANALYSIS SEQUENCE:, COMPETITIVE RESEARCH PROTOCOLS: (+11 more)
 
 ### Community 436 - "Community 436"
 Cohesion: 0.10
-Nodes (19): 1. Load Subprocess Pattern Reference (Context Optimization!), 2. Aggregate Findings and Create Report Section, 2. Perform Subprocess Optimization Analysis, 3. Save Report and Auto-Proceed, code:markdown (Launch a subprocess that:), code:markdown (Load {subprocessPatterns} in main context), code:json ({), code:markdown (## Subprocess Optimization Opportunities) (+11 more)
+Nodes (19): 1. Initialize Final Assessment, 2. Review Previous Findings, 3. Add Final Assessment Section, 4. Complete the Report, 5. Present Completion, code:markdown (## Summary and Recommendations), EXECUTION PROTOCOLS:, FINAL ASSESSMENT PROCESS: (+11 more)
 
 ### Community 437 - "Community 437"
 Cohesion: 0.10
-Nodes (19): 1. Attempt Sub-Process Validation, 2. Graceful Degradation (if Task tool unavailable), 3. Classify Severity, 4. Report Density Findings to Validation Report, 5. Display Progress and Auto-Proceed, code:markdown (## Information Density Validation), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS: (+11 more)
+Nodes (19): 1. Load Step Type Patterns, 2. Check EACH Step Against Its Type, 3. Aggregate Findings and Document, 4. List Violations, 5. Append to Report, 6. Save Report and Auto-Proceed, code:markdown (Launch a subprocess that:), code:markdown (Load {stepTypePatterns} in main context) (+11 more)
 
 ### Community 438 - "Community 438"
 Cohesion: 0.10
-Nodes (19): 1. Attempt Sub-Process Validation, 2. Graceful Degradation (if Task tool unavailable), 3. Tally Violations, 4. Report Measurability Findings to Validation Report, 5. Display Progress and Auto-Proceed, code:markdown (## Measurability Validation), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS: (+11 more)
+Nodes (19): 1. Load Output Format Standards, 2. Check Design Specification, 3. Validate Template File, 4. Check for Final Polish Step, 5. Validate Step-to-Output Mapping, 6. Document Findings, 7. Append to Report, 8. Save Report and Auto-Proceed (+11 more)
 
 ### Community 439 - "Community 439"
 Cohesion: 0.10
-Nodes (19): 1. Attempt Sub-Process Validation, 2. Graceful Degradation (if Task tool unavailable), 3. Tally Traceability Issues, 4. Report Traceability Findings to Validation Report, 5. Display Progress and Auto-Proceed, code:markdown (## Traceability Validation), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS: (+11 more)
+Nodes (19): 1. Load the Workflow Design, 2. Review EACH Step for Collaborative Quality, 3. Check Progression and Arc, 4. Check Error Handling, 5. Document Findings, 6. Append to Report, 7. Save Report and Auto-Proceed, code:markdown (### Collaborative Experience Check Results) (+11 more)
 
 ### Community 440 - "Community 440"
 Cohesion: 0.10
-Nodes (19): 1. Attempt Sub-Process Validation, 2. Graceful Degradation (if Task tool unavailable), 3. Tally Implementation Leakage, 4. Report Implementation Leakage Findings to Validation Report, 5. Display Progress and Auto-Proceed, code:markdown (## Implementation Leakage Validation), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS: (+11 more)
+Nodes (19): 1. Load Subprocess Pattern Reference (Context Optimization!), 2. Aggregate Findings and Create Report Section, 2. Perform Subprocess Optimization Analysis, 3. Save Report and Auto-Proceed, code:markdown (Launch a subprocess that:), code:markdown (Load {subprocessPatterns} in main context), code:json ({), code:markdown (## Subprocess Optimization Opportunities) (+11 more)
 
 ### Community 441 - "Community 441"
 Cohesion: 0.10
-Nodes (19): content, acceptanceCriteria, id, labels, status, technicalNotes, title, userStory (+11 more)
+Nodes (19): 1. Attempt Sub-Process Validation, 2. Graceful Degradation (if Task tool unavailable), 3. Tally Violations, 4. Report Measurability Findings to Validation Report, 5. Display Progress and Auto-Proceed, code:markdown (## Measurability Validation), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS: (+11 more)
 
 ### Community 442 - "Community 442"
 Cohesion: 0.10
-Nodes (19): content, acceptanceCriteria, id, labels, status, technicalNotes, title, userStory (+11 more)
+Nodes (19): 1. Attempt Sub-Process Validation, 2. Graceful Degradation (if Task tool unavailable), 3. Tally Traceability Issues, 4. Report Traceability Findings to Validation Report, 5. Display Progress and Auto-Proceed, code:markdown (## Traceability Validation), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS: (+11 more)
 
 ### Community 443 - "Community 443"
-Cohesion: 0.11
-Nodes (16): allOutput, buttonCalls, epics, getChatParticipant(), markdownCalls, mockAgileAgentCanvasTools, mockAiProvider, mockGetAvailableWorkflowsResult (+8 more)
+Cohesion: 0.10
+Nodes (19): 1. Attempt Sub-Process Validation, 2. Graceful Degradation (if Task tool unavailable), 3. Tally Implementation Leakage, 4. Report Implementation Leakage Findings to Validation Report, 5. Display Progress and Auto-Proceed, code:markdown (## Implementation Leakage Validation), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS: (+11 more)
 
 ### Community 444 - "Community 444"
-Cohesion: 0.11
-Nodes (18): allErrors, bmadPath, buildWarnings, changes, contexts, createValidator(), ctx, data (+10 more)
+Cohesion: 0.10
+Nodes (19): 1. Extract All Functional Requirements, 2. Attempt Sub-Process Validation, 3. Build Scoring Table, 4. Report SMART Findings to Validation Report, 5. Display Progress and Auto-Proceed, code:markdown (## SMART Requirements Validation), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS: (+11 more)
 
 ### Community 445 - "Community 445"
 Cohesion: 0.10
-Nodes (20): description, properties, type, description, properties, type, description, items (+12 more)
+Nodes (19): content, acceptanceCriteria, id, labels, status, technicalNotes, title, userStory (+11 more)
 
 ### Community 446 - "Community 446"
 Cohesion: 0.10
-Nodes (20): description, items, type, description, properties, type, description, items (+12 more)
+Nodes (19): content, acceptanceCriteria, id, labels, status, technicalNotes, title, userStory (+11 more)
 
 ### Community 447 - "Community 447"
+Cohesion: 0.11
+Nodes (16): allOutput, buttonCalls, epics, getChatParticipant(), markdownCalls, mockAgileAgentCanvasTools, mockAiProvider, mockGetAvailableWorkflowsResult (+8 more)
+
+### Community 448 - "Community 448"
+Cohesion: 0.11
+Nodes (18): allErrors, bmadPath, buildWarnings, changes, contexts, createValidator(), ctx, data (+10 more)
+
+### Community 449 - "Community 449"
+Cohesion: 0.10
+Nodes (20): description, properties, type, description, properties, type, description, items (+12 more)
+
+### Community 450 - "Community 450"
+Cohesion: 0.10
+Nodes (20): description, properties, type, description, items, type, description, items (+12 more)
+
+### Community 451 - "Community 451"
+Cohesion: 0.10
+Nodes (20): description, properties, required, type, description, type, description, type (+12 more)
+
+### Community 452 - "Community 452"
+Cohesion: 0.10
+Nodes (20): description, items, type, description, properties, type, description, items (+12 more)
+
+### Community 453 - "Community 453"
 Cohesion: 0.10
 Nodes (20): description, properties, type, description, items, type, description, properties (+12 more)
 
-### Community 448 - "Community 448"
+### Community 454 - "Community 454"
 Cohesion: 0.10
 Nodes (20): security, assessment, findings, mechanism, status, assessment, findings, mechanism (+12 more)
 
-### Community 449 - "Community 449"
+### Community 455 - "Community 455"
 Cohesion: 0.11
 Nodes (19): properties, acDescription, acId, action, autoFixable, autoFixApplied, category, codeSnippet (+11 more)
 
-### Community 450 - "Community 450"
+### Community 456 - "Community 456"
 Cohesion: 0.11
 Nodes (19): type, type, type, allRequiredComplete, completedItems, completionPercentage, requiredCompleted, requiredItems (+11 more)
 
-### Community 451 - "Community 451"
+### Community 457 - "Community 457"
 Cohesion: 0.11
 Nodes (19): description, items, type, description, items, type, description, enum (+11 more)
 
-### Community 452 - "Community 452"
+### Community 458 - "Community 458"
 Cohesion: 0.11
 Nodes (19): description, items, type, description, properties, type, items, type (+11 more)
 
-### Community 453 - "Community 453"
+### Community 459 - "Community 459"
 Cohesion: 0.11
 Nodes (19): description, type, description, type, properties, notes, primaryActor, relatedEpic (+11 more)
 
-### Community 454 - "Community 454"
+### Community 460 - "Community 460"
 Cohesion: 0.11
 Nodes (19): description, items, type, description, type, description, items, type (+11 more)
 
-### Community 455 - "Community 455"
+### Community 461 - "Community 461"
 Cohesion: 0.11
 Nodes (19): description, items, type, description, properties, type, description, type (+11 more)
 
-### Community 456 - "Community 456"
+### Community 462 - "Community 462"
 Cohesion: 0.11
 Nodes (19): description, items, type, description, items, type, description, items (+11 more)
 
-### Community 457 - "Community 457"
-Cohesion: 0.10
-Nodes (20): mainConflict, obstacles, stakes, structure, emotionalTrigger, technique, text, callToAction (+12 more)
-
-### Community 458 - "Community 458"
-Cohesion: 0.11
-Nodes (18): Continuable vs Single-Session, Design Questions, Example 10: Room Renovation Planner, Example 1: Personalized Meal Plan Generator, Example 2: Year-End Tax Organizer, Example 3: Employee Termination Checklist, Example 4: Tabletop RPG Campaign Builder, Example 5: Course Syllabus Creator (+10 more)
-
-### Community 459 - "Community 459"
-Cohesion: 0.11
-Nodes (18): content, functionalRequirements, goal, id, status, storyCount, storyRefs, title (+10 more)
-
-### Community 460 - "Community 460"
-Cohesion: 0.11
-Nodes (18): code:typescript (// tests/e2e/error-handling.spec.ts), code:javascript (// cypress/e2e/error-handling.cy.ts), code:typescript (// tests/e2e/retry-resilience.spec.ts), code:javascript (// cypress/e2e/retry-resilience.cy.ts), code:typescript (// tests/e2e/telemetry-logging.spec.ts), code:javascript (// cypress/e2e/telemetry-logging.cy.ts), code:typescript (// src/utils/error-logger.ts), code:typescript (// tests/e2e/graceful-degradation.spec.ts) (+10 more)
-
-### Community 461 - "Community 461"
-Cohesion: 0.11
-Nodes (18): code:typescript (// src/utils/feature-flags.ts), code:typescript (// components/Checkout.tsx), code:typescript (// tests/e2e/checkout-feature-flag.spec.ts), code:javascript (// cypress/e2e/checkout-feature-flag.cy.ts), code:typescript (// tests/support/feature-flag-helpers.ts), code:typescript (// playwright/fixtures/feature-flag-fixture.ts), code:typescript (// scripts/feature-flag-audit.ts), code:json ({) (+10 more)
-
-### Community 462 - "Community 462"
-Cohesion: 0.11
-Nodes (18): Anti-Pattern: Inheritance-Based Page Objects, code:typescript (// playwright/support/helpers/api-request.ts), code:typescript (// playwright/support/fixtures/merged-fixtures.ts), code:typescript (// network-fixture.ts), code:typescript (// shared/helpers/http-helper.ts), code:typescript (// playwright/support/fixtures/database-fixture.ts), code:typescript (// ❌ BAD: Page Object Model with inheritance), code:typescript (// ✅ GOOD: Pure functions with fixture composition) (+10 more)
-
 ### Community 463 - "Community 463"
 Cohesion: 0.11
-Nodes (18): code:typescript (// ✅ CORRECT: Intercept BEFORE navigate), code:typescript (// playwright.config.ts - Enable HAR recording), code:typescript (// Test happy path), code:typescript (// ✅ GOOD: Wait for response with predicate), code:typescript (// ❌ BAD: Race condition - mock registered AFTER navigation ), code:typescript (// ✅ GOOD: Intercept BEFORE navigate), code:typescript (// Debug network issues with logging), Debugging Network Issues (+10 more)
+Nodes (19): mainConflict, obstacles, stakes, structure, arcPoints, climax, description, emotionalTrigger (+11 more)
 
 ### Community 464 - "Community 464"
 Cohesion: 0.11
-Nodes (18): code:bash (npm install -g @playwright/cli@latest    # Install globally ), code:bash (# 1. Open a page), code:block3 (snapshot ref {role: "button", name: "Sign In"}), code:bash (# Agent uses CLI to observe network traffic on the dashboard), code:typescript (// Agent generates API tests using what it discovered, with ), code:bash (# Workflow A uses one session), code:bash (playwright-cli -s=tea-explore-<timestamp> open https://app.c), Command Quick Reference (+10 more)
+Nodes (18): Continuable vs Single-Session, Design Questions, Example 10: Room Renovation Planner, Example 1: Personalized Meal Plan Generator, Example 2: Year-End Tax Organizer, Example 3: Employee Termination Checklist, Example 4: Tabletop RPG Campaign Builder, Example 5: Course Syllabus Creator (+10 more)
 
 ### Community 465 - "Community 465"
 Cohesion: 0.11
-Nodes (18): code:typescript (// tests/selectors/hierarchy-examples.spec.ts), code:typescript (// tests/selectors/dynamic-selectors.spec.ts), code:typescript (// tests/selectors/anti-patterns.spec.ts), code:typescript (// tests/selectors/debugging-techniques.spec.ts), code:typescript (// tests/selectors/refactoring-guide.spec.ts), code:typescript (// tests/selectors/validation-checklist.spec.ts), Example 1: Selector Hierarchy (Priority Order with Examples), Example 2: Dynamic Selector Patterns (Lists, Filters, Regex) (+10 more)
+Nodes (19): code:typescript ({), code:bash (npm install microdiff --save), code:typescript ({), code:bash (npm install deepmerge --save), code:json ({), code:bash (npm run compile && npm run package), code:typescript (// Place near line 700 (after graph_community, before codebu), code:json ({) (+11 more)
 
 ### Community 466 - "Community 466"
 Cohesion: 0.11
-Nodes (18): 1. Present Brainstorming Opportunity, 2. Handle User Choice, 3. Present MENU OPTIONS, CONTEXT BOUNDARIES:, CRITICAL STEP COMPLETION NOTE, EXECUTION PROTOCOLS:, EXECUTION RULES:, File References (+10 more)
+Nodes (18): content, functionalRequirements, goal, id, status, storyCount, storyRefs, title (+10 more)
 
 ### Community 467 - "Community 467"
 Cohesion: 0.11
-Nodes (18): 1. Load Reference Documents, 2. Review Current Persona, 3. Discuss Persona Edits, 4. Document to Edit Plan, 5. Present MENU OPTIONS, code:yaml (personaEdits:), CRITICAL STEP COMPLETION NOTE, Edit Step 5: Persona (+10 more)
+Nodes (18): code:typescript (// tests/e2e/error-handling.spec.ts), code:javascript (// cypress/e2e/error-handling.cy.ts), code:typescript (// tests/e2e/retry-resilience.spec.ts), code:javascript (// cypress/e2e/retry-resilience.cy.ts), code:typescript (// tests/e2e/telemetry-logging.spec.ts), code:javascript (// cypress/e2e/telemetry-logging.cy.ts), code:typescript (// src/utils/error-logger.ts), code:typescript (// tests/e2e/graceful-degradation.spec.ts) (+10 more)
 
 ### Community 468 - "Community 468"
 Cohesion: 0.11
-Nodes (18): 1. Determine If Validation Is Critical, 2. If Validation Is Critical, Check Validation Steps, 3. Aggregate Findings from All Subprocesses, 4. Check Validation Data Files, 5. Document Findings, 6. Append to Report, 7. Save Report and Auto-Proceed, CONTEXT BOUNDARIES: (+10 more)
+Nodes (18): code:typescript (// src/utils/feature-flags.ts), code:typescript (// components/Checkout.tsx), code:typescript (// tests/e2e/checkout-feature-flag.spec.ts), code:javascript (// cypress/e2e/checkout-feature-flag.cy.ts), code:typescript (// tests/support/feature-flag-helpers.ts), code:typescript (// playwright/fixtures/feature-flag-fixture.ts), code:typescript (// scripts/feature-flag-audit.ts), code:json ({) (+10 more)
 
 ### Community 469 - "Community 469"
 Cohesion: 0.11
-Nodes (18): Edge Cases and Special Situations, Empty or Minimal Tests, Integration Points, Justified Violations, Knowledge Base Integration, Legacy Tests, Status File Integration, Story File Integration (+10 more)
+Nodes (18): Anti-Pattern: Inheritance-Based Page Objects, code:typescript (// playwright/support/helpers/api-request.ts), code:typescript (// playwright/support/fixtures/merged-fixtures.ts), code:typescript (// network-fixture.ts), code:typescript (// shared/helpers/http-helper.ts), code:typescript (// playwright/support/fixtures/database-fixture.ts), code:typescript (// ❌ BAD: Page Object Model with inheritance), code:typescript (// ✅ GOOD: Pure functions with fixture composition) (+10 more)
 
 ### Community 470 - "Community 470"
 Cohesion: 0.11
-Nodes (18): 1. Attempt Sub-Process Validation, 2. Build Completeness Matrix, 3. Report Completeness Findings to Validation Report, 4. Display Progress and Auto-Proceed, code:markdown (## Completeness Validation), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, File references (ONLY variables used in this step) (+10 more)
+Nodes (18): code:typescript (// ✅ CORRECT: Intercept BEFORE navigate), code:typescript (// playwright.config.ts - Enable HAR recording), code:typescript (// Test happy path), code:typescript (// ✅ GOOD: Wait for response with predicate), code:typescript (// ❌ BAD: Race condition - mock registered AFTER navigation ), code:typescript (// ✅ GOOD: Intercept BEFORE navigate), code:typescript (// Debug network issues with logging), Debugging Network Issues (+10 more)
 
 ### Community 471 - "Community 471"
 Cohesion: 0.11
-Nodes (19): description, minimum, type, minimum, type, minimum, type, minimum (+11 more)
+Nodes (18): code:bash (npm install -g @playwright/cli@latest    # Install globally ), code:bash (# 1. Open a page), code:block3 (snapshot ref {role: "button", name: "Sign In"}), code:bash (# Agent uses CLI to observe network traffic on the dashboard), code:typescript (// Agent generates API tests using what it discovered, with ), code:bash (# Workflow A uses one session), code:bash (playwright-cli -s=tea-explore-<timestamp> open https://app.c), Command Quick Reference (+10 more)
 
 ### Community 472 - "Community 472"
 Cohesion: 0.11
-Nodes (19): content, context, dataFlow, decisions, implementationNotes, integrations, patterns, references (+11 more)
+Nodes (18): code:typescript (// tests/selectors/hierarchy-examples.spec.ts), code:typescript (// tests/selectors/dynamic-selectors.spec.ts), code:typescript (// tests/selectors/anti-patterns.spec.ts), code:typescript (// tests/selectors/debugging-techniques.spec.ts), code:typescript (// tests/selectors/refactoring-guide.spec.ts), code:typescript (// tests/selectors/validation-checklist.spec.ts), Example 1: Selector Hierarchy (Priority Order with Examples), Example 2: Dynamic Selector Patterns (Lists, Filters, Regex) (+10 more)
 
-### Community 474 - "Community 474"
-Cohesion: 0.37
-Nodes (4): resolveArtifactTargetUri(), writeJsonFile(), writeMarkdownCompanion(), logDebug()
-
-### Community 475 - "Community 475"
-Cohesion: 0.11
-Nodes (18): 1. Explain Module Types, 2. Determine Type Together, 3. Confirm and Store, 4. Preview Implications, 5. Present MENU OPTIONS, EXECUTION PROTOCOLS:, EXECUTION RULES:, MANDATORY EXECUTION RULES (READ FIRST): (+10 more)
-
-### Community 476 - "Community 476"
+### Community 473 - "Community 473"
 Cohesion: 0.11
 Nodes (18): 1. Prepare Subprocess Inputs, 2. Launch 4 Parallel NFR Subprocesses, 3. Wait for All Subprocesses, 4. Performance Report, 5. Proceed to Aggregation, code:javascript (const timestamp = new Date().toISOString().replace(/[:.]/g, ), code:javascript (const subprocessContext = {), code:block3 (⏳ Waiting for 4 NFR subprocesses to complete...) (+10 more)
 
-### Community 477 - "Community 477"
+### Community 474 - "Community 474"
 Cohesion: 0.11
 Nodes (18): 1. Welcome, 2. Update Progress (Started), 3. Display Knowledge Fragment Categories, 4. Fragment Exploration Loop, 5. Session Summary, 6. Generate Session Notes, 7. Update Progress (Completed), 8. Complete Message (+10 more)
 
+### Community 475 - "Community 475"
+Cohesion: 0.11
+Nodes (19): description, minimum, type, minimum, type, minimum, type, minimum (+11 more)
+
+### Community 476 - "Community 476"
+Cohesion: 0.11
+Nodes (19): content, context, dataFlow, decisions, implementationNotes, integrations, patterns, references (+11 more)
+
+### Community 477 - "Community 477"
+Cohesion: 0.11
+Nodes (18): 1. Explain Module Types, 2. Determine Type Together, 3. Confirm and Store, 4. Preview Implications, 5. Present MENU OPTIONS, EXECUTION PROTOCOLS:, EXECUTION RULES:, MANDATORY EXECUTION RULES (READ FIRST): (+10 more)
+
 ### Community 478 - "Community 478"
 Cohesion: 0.11
-Nodes (18): 1. Generate module-help.csv, 2. Final Build Summary, 3. Next Steps, 3. Update Build Tracking, 4. Offer Validation, 5. MENU OPTIONS, 6. Completion Message (if Done selected), code:block1 ({moduleHelpGenerateWorkflow}) (+10 more)
+Nodes (18): 1. Present Brainstorming Opportunity, 2. Handle User Choice, 3. Present MENU OPTIONS, CONTEXT BOUNDARIES:, CRITICAL STEP COMPLETION NOTE, EXECUTION PROTOCOLS:, EXECUTION RULES:, File References (+10 more)
 
 ### Community 479 - "Community 479"
 Cohesion: 0.11
-Nodes (18): 1. Load Reference Documents, 2. Review Current Metadata, 3. Discuss Metadata Edits, 4. Document to Edit Plan, 5. Present MENU OPTIONS, code:yaml (metadataEdits:), CRITICAL STEP COMPLETION NOTE, Edit Step 4: Sidecar and Metadata (+10 more)
+Nodes (18): 1. Generate module-help.csv, 2. Final Build Summary, 3. Next Steps, 3. Update Build Tracking, 4. Offer Validation, 5. MENU OPTIONS, 6. Completion Message (if Done selected), code:block1 ({moduleHelpGenerateWorkflow}) (+10 more)
 
 ### Community 480 - "Community 480"
 Cohesion: 0.11
-Nodes (18): 1. Load Reference Documents, 2. Review Current Commands, 3. Discuss Command Edits, 4. Document to Edit Plan, 5. Present MENU OPTIONS, code:yaml (commandEdits:), CRITICAL STEP COMPLETION NOTE, Edit Step 6: Commands Menu (+10 more)
+Nodes (18): Edge Cases and Special Situations, Empty or Minimal Tests, Integration Points, Justified Violations, Knowledge Base Integration, Legacy Tests, Status File Integration, Story File Integration (+10 more)
 
 ### Community 481 - "Community 481"
 Cohesion: 0.11
-Nodes (18): 1. Compile Edit Summary, 2. Present Completion Summary, 3. Present MENU OPTIONS, CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, EXECUTION RULES:, File references (ONLY variables used in this step), MANDATORY EXECUTION RULES (READ FIRST): (+10 more)
+Nodes (18): 1. Load Reference Documents, 2. Review Current Metadata, 3. Discuss Metadata Edits, 4. Document to Edit Plan, 5. Present MENU OPTIONS, code:yaml (metadataEdits:), CRITICAL STEP COMPLETION NOTE, Edit Step 4: Sidecar and Metadata (+10 more)
 
 ### Community 482 - "Community 482"
 Cohesion: 0.11
-Nodes (18): Adaptation Suggestions, Audience Considerations, Best Channels, Character/Voice, Complete Story, Conflict/Tension, Emotional Touchpoints, Extended Version (Article/Presentation) (+10 more)
+Nodes (18): 1. Load Reference Documents, 2. Review Current Persona, 3. Discuss Persona Edits, 4. Document to Edit Plan, 5. Present MENU OPTIONS, code:yaml (personaEdits:), CRITICAL STEP COMPLETION NOTE, Edit Step 5: Persona (+10 more)
 
 ### Community 483 - "Community 483"
 Cohesion: 0.11
-Nodes (18): 1. Load Instruction Style Standards, 2. Determine Domain Type, 3. Check EACH Step's Instruction Style, 4. Validate Appropriateness, 5. Aggregate Findings and Document, 6. Update Report with Aggregated Findings, 7. Save Report and Auto-Proceed, CONTEXT BOUNDARIES: (+10 more)
+Nodes (18): 1. Load Reference Documents, 2. Review Current Commands, 3. Discuss Command Edits, 4. Document to Edit Plan, 5. Present MENU OPTIONS, code:yaml (commandEdits:), CRITICAL STEP COMPLETION NOTE, Edit Step 6: Commands Menu (+10 more)
 
 ### Community 484 - "Community 484"
 Cohesion: 0.11
-Nodes (18): 1. Attempt Sub-Process with Advanced Elicitation, 2. Synthesize Assessment, 3. Report Holistic Quality Findings to Validation Report, 4. Display Progress and Auto-Proceed, code:markdown (## Holistic Quality Assessment), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, File references (ONLY variables used in this step) (+10 more)
+Nodes (18): 1. Compile Edit Summary, 2. Present Completion Summary, 3. Present MENU OPTIONS, CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, EXECUTION RULES:, File references (ONLY variables used in this step), MANDATORY EXECUTION RULES (READ FIRST): (+10 more)
 
 ### Community 485 - "Community 485"
 Cohesion: 0.11
-Nodes (18): 1. Load Agent File, 2. Display Agent Summary, 3. Create Validation Report, 4. Present MENU OPTIONS, code:markdown (## Agent to Validate: {agent-name}), code:markdown (---), CRITICAL STEP COMPLETION NOTE, EXECUTION PROTOCOLS: (+10 more)
+Nodes (18): Adaptation Suggestions, Audience Considerations, Best Channels, Character/Voice, Complete Story, Conflict/Tension, Emotional Touchpoints, Extended Version (Article/Presentation) (+10 more)
 
 ### Community 486 - "Community 486"
 Cohesion: 0.11
-Nodes (18): content, acceptanceCriteria, id, status, technicalNotes, title, userStory, metadata (+10 more)
+Nodes (18): 1. Determine If Validation Is Critical, 2. If Validation Is Critical, Check Validation Steps, 3. Aggregate Findings from All Subprocesses, 4. Check Validation Data Files, 5. Document Findings, 6. Append to Report, 7. Save Report and Auto-Proceed, CONTEXT BOUNDARIES: (+10 more)
 
 ### Community 487 - "Community 487"
 Cohesion: 0.11
-Nodes (13): a1, a2, artifact, contexts, ctx, hasType, proxyquire, stories (+5 more)
+Nodes (18): 1. Load Instruction Style Standards, 2. Determine Domain Type, 3. Check EACH Step's Instruction Style, 4. Validate Appropriateness, 5. Aggregate Findings and Document, 6. Update Report with Aggregated Findings, 7. Save Report and Auto-Proceed, CONTEXT BOUNDARIES: (+10 more)
 
 ### Community 488 - "Community 488"
 Cohesion: 0.11
-Nodes (19): description, type, type, description, type, description, type, coverageTarget (+11 more)
+Nodes (18): 1. Attempt Sub-Process with Advanced Elicitation, 2. Synthesize Assessment, 3. Report Holistic Quality Findings to Validation Report, 4. Display Progress and Auto-Proceed, code:markdown (## Holistic Quality Assessment), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, File references (ONLY variables used in this step) (+10 more)
 
 ### Community 489 - "Community 489"
 Cohesion: 0.11
-Nodes (19): properties, blocking, condition, dependsOn, description, environment, id, path (+11 more)
+Nodes (18): 1. Attempt Sub-Process Validation, 2. Build Completeness Matrix, 3. Report Completeness Findings to Validation Report, 4. Display Progress and Auto-Proceed, code:markdown (## Completeness Validation), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, File references (ONLY variables used in this step) (+10 more)
 
 ### Community 490 - "Community 490"
 Cohesion: 0.11
-Nodes (19): description, type, description, type, description, properties, type, description (+11 more)
+Nodes (18): 1. Load Agent File, 2. Display Agent Summary, 3. Create Validation Report, 4. Present MENU OPTIONS, code:markdown (## Agent to Validate: {agent-name}), code:markdown (---), CRITICAL STEP COMPLETION NOTE, EXECUTION PROTOCOLS: (+10 more)
 
 ### Community 491 - "Community 491"
 Cohesion: 0.11
-Nodes (19): description, properties, type, description, items, type, description, items (+11 more)
+Nodes (18): content, acceptanceCriteria, id, status, technicalNotes, title, userStory, metadata (+10 more)
 
 ### Community 492 - "Community 492"
 Cohesion: 0.11
-Nodes (19): description, type, description, items, type, comments, conditions, reviewDate (+11 more)
+Nodes (13): a1, a2, artifact, contexts, ctx, hasType, proxyquire, stories (+5 more)
 
 ### Community 493 - "Community 493"
 Cohesion: 0.11
-Nodes (19): type, description, type, description, enum, type, description, type (+11 more)
+Nodes (19): properties, blocking, condition, dependsOn, description, environment, id, path (+11 more)
+
+### Community 494 - "Community 494"
+Cohesion: 0.11
+Nodes (19): description, type, description, items, type, comments, conditions, reviewDate (+11 more)
 
 ### Community 495 - "Community 495"
 Cohesion: 0.11
-Nodes (17): aiBtn, artifact, badge, badgeIcon, card, defaultProps, expandedCats, infoBtn (+9 more)
+Nodes (19): description, type, description, type, description, properties, type, description (+11 more)
 
 ### Community 496 - "Community 496"
 Cohesion: 0.11
-Nodes (18): compilerOptions, allowImportingTsExtensions, isolatedModules, jsx, lib, module, moduleResolution, noEmit (+10 more)
-
-### Community 497 - "Community 497"
-Cohesion: 0.11
-Nodes (18): 0.3.0, Artifact Reference Architecture, Bug Fixes, Bug Fixes, Data Persistence, Documentation, Documentation, Folder Selection Discoverability (+10 more)
+Nodes (19): type, description, type, description, enum, type, description, type (+11 more)
 
 ### Community 498 - "Community 498"
 Cohesion: 0.11
-Nodes (18): devDependencies, assert, c8, chai, @cucumber/cucumber, esbuild, eslint, mock-require (+10 more)
+Nodes (17): aiBtn, artifact, badge, badgeIcon, card, defaultProps, expandedCats, infoBtn (+9 more)
 
 ### Community 499 - "Community 499"
-Cohesion: 0.10
-Nodes (21): description, items, type, properties, type, properties, type, description (+13 more)
+Cohesion: 0.11
+Nodes (18): compilerOptions, allowImportingTsExtensions, isolatedModules, jsx, lib, module, moduleResolution, noEmit (+10 more)
 
 ### Community 500 - "Community 500"
 Cohesion: 0.11
-Nodes (18): description, type, description, type, description, items, type, description (+10 more)
+Nodes (18): devDependencies, assert, c8, chai, @cucumber/cucumber, esbuild, eslint, mock-require (+10 more)
 
 ### Community 501 - "Community 501"
 Cohesion: 0.11
-Nodes (18): properties, type, description, items, type, implementationPlan, options, rationale (+10 more)
+Nodes (18): description, type, description, type, description, items, type, description (+10 more)
 
 ### Community 502 - "Community 502"
 Cohesion: 0.11
-Nodes (18): description, type, type, type, description, properties, type, description (+10 more)
+Nodes (18): properties, type, description, items, type, implementationPlan, options, rationale (+10 more)
 
 ### Community 503 - "Community 503"
 Cohesion: 0.11
-Nodes (18): description, items, type, description, properties, type, properties, type (+10 more)
+Nodes (18): description, type, type, type, description, properties, type, description (+10 more)
 
 ### Community 504 - "Community 504"
 Cohesion: 0.11
-Nodes (18): description, properties, type, properties, type, items, type, description (+10 more)
+Nodes (18): description, items, type, description, properties, type, properties, type (+10 more)
 
 ### Community 505 - "Community 505"
 Cohesion: 0.11
-Nodes (18): details, issues, rating, epicQuality, details, rating, acceptanceCriteriaQuality, dependencyMapping (+10 more)
+Nodes (18): description, properties, type, properties, type, items, type, description (+10 more)
 
 ### Community 506 - "Community 506"
 Cohesion: 0.11
-Nodes (18): description, items, type, description, items, type, description, properties (+10 more)
+Nodes (18): details, issues, rating, epicQuality, details, rating, acceptanceCriteriaQuality, dependencyMapping (+10 more)
 
 ### Community 507 - "Community 507"
 Cohesion: 0.11
-Nodes (18): description, properties, type, description, items, type, description, items (+10 more)
+Nodes (18): description, items, type, description, items, type, description, properties (+10 more)
 
 ### Community 508 - "Community 508"
 Cohesion: 0.11
-Nodes (18): description, format, type, description, type, description, type, description (+10 more)
+Nodes (18): description, properties, type, description, items, type, description, items (+10 more)
 
 ### Community 509 - "Community 509"
 Cohesion: 0.11
-Nodes (18): format, type, type, type, description, items, type, items (+10 more)
+Nodes (18): description, format, type, description, type, description, type, description (+10 more)
 
 ### Community 510 - "Community 510"
 Cohesion: 0.11
-Nodes (18): description, type, description, type, description, items, type, description (+10 more)
+Nodes (18): format, type, type, type, description, items, type, items (+10 more)
 
 ### Community 511 - "Community 511"
 Cohesion: 0.11
-Nodes (17): CI Configuration Checklist, CI Pipeline and Burn-In Strategy, code:yaml (# .github/workflows/e2e-tests.yml), code:bash (#!/bin/bash), code:bash (# Run locally with default settings (10 iterations, compare ), code:javascript (// scripts/run-sharded-tests.js), code:json ({), code:bash (#!/bin/bash) (+9 more)
+Nodes (18): description, type, description, type, description, items, type, description (+10 more)
 
 ### Community 512 - "Community 512"
 Cohesion: 0.11
-Nodes (17): code:typescript (// tests/nfr/security.spec.ts), code:javascript (// tests/nfr/performance.k6.js), code:bash (# Local smoke test (10 VUs, 30s)), code:typescript (// tests/nfr/reliability.spec.ts), code:yaml (# .github/workflows/nfr-maintainability.yml), code:typescript (// tests/nfr/observability.spec.ts), Example 1: Security NFR Validation (Auth, Secrets, OWASP), Example 2: Performance NFR Validation (k6 Load Testing for SLO/SLA) (+9 more)
+Nodes (17): CI Configuration Checklist, CI Pipeline and Burn-In Strategy, code:yaml (# .github/workflows/e2e-tests.yml), code:bash (#!/bin/bash), code:bash (# Run locally with default settings (10 iterations, compare ), code:javascript (// scripts/run-sharded-tests.js), code:json ({), code:bash (#!/bin/bash) (+9 more)
 
 ### Community 513 - "Community 513"
 Cohesion: 0.11
-Nodes (17): code:typescript (// risk-scoring.ts - Risk classification and scoring system), code:typescript (// gate-decision-engine.ts), code:typescript (// Example: Running gate check before deployment), code:typescript (// risk-mitigation.ts), code:typescript (const tracker = new RiskMitigationTracker();), code:typescript (// coverage-traceability.ts), code:typescript (// Define acceptance criteria), Example 1: Risk Scoring Matrix with Automated Classification (TypeScript) (+9 more)
+Nodes (17): code:typescript (// tests/nfr/security.spec.ts), code:javascript (// tests/nfr/performance.k6.js), code:bash (# Local smoke test (10 VUs, 30s)), code:typescript (// tests/nfr/reliability.spec.ts), code:yaml (# .github/workflows/nfr-maintainability.yml), code:typescript (// tests/nfr/observability.spec.ts), Example 1: Security NFR Validation (Auth, Secrets, OWASP), Example 2: Performance NFR Validation (k6 Load Testing for SLO/SLA) (+9 more)
 
 ### Community 514 - "Community 514"
 Cohesion: 0.11
-Nodes (17): code:`markdown, code:block2, code:`markdown, code:block4, code:yaml (---), CommonMark Essentials, Core Writing Rules, Documentation Types: Quick Reference (+9 more)
+Nodes (17): code:typescript (// risk-scoring.ts - Risk classification and scoring system), code:typescript (// gate-decision-engine.ts), code:typescript (// Example: Running gate check before deployment), code:typescript (// risk-mitigation.ts), code:typescript (const tracker = new RiskMitigationTracker();), code:typescript (// coverage-traceability.ts), code:typescript (// Define acceptance criteria), Example 1: Risk Scoring Matrix with Automated Classification (TypeScript) (+9 more)
 
 ### Community 515 - "Community 515"
 Cohesion: 0.11
-Nodes (18): description, items, type, description, items, type, description, type (+10 more)
+Nodes (17): 1. Check if Plan Exists, 2. Extract Plan Requirements, 3. Validate Each Requirement Against Built Workflow, 4. Aggregate Findings and Update Report, 5. Append to Report, 6. Save and Complete, CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS: (+9 more)
 
 ### Community 516 - "Community 516"
-Cohesion: 0.11
-Nodes (17): 1. Identify User Journeys from Acceptance Criteria, 2. Browser Interaction (Selector Verification), 3. Generate FAILING E2E Test Files, 4. Track Fixture Needs, code:block1 (Story: User Registration), code:typescript (import { test, expect } from '@playwright/test';), code:json ({), code:json ({) (+9 more)
-
-### Community 517 - "Community 517"
 Cohesion: 0.16
 Nodes (18): items, description, oneOf, items, items, additionalProperties, properties, required (+10 more)
 
-### Community 518 - "Community 518"
+### Community 517 - "Community 517"
 Cohesion: 0.11
 Nodes (17): 1. Report Generation, 2. Polish Output, 3. Validation, 4. Save Progress, 5. Completion Summary, code:yaml (---), code:block2 (agileagentcanvas_update_artifact({), CONTEXT BOUNDARIES: (+9 more)
+
+### Community 518 - "Community 518"
+Cohesion: 0.11
+Nodes (17): 1. Identify User Journeys from Acceptance Criteria, 2. Browser Interaction (Selector Verification), 3. Generate FAILING E2E Test Files, 4. Track Fixture Needs, code:block1 (Story: User Registration), code:typescript (import { test, expect } from '@playwright/test';), code:json ({), code:json ({) (+9 more)
 
 ### Community 519 - "Community 519"
 Cohesion: 0.11
@@ -3592,31 +3605,31 @@ Nodes (17): 1. Load Menu Standards, 2. Check EVERY Step File, 3. Aggregate Findi
 
 ### Community 525 - "Community 525"
 Cohesion: 0.11
-Nodes (17): 1. Check if Plan Exists, 2. Extract Plan Requirements, 3. Validate Each Requirement Against Built Workflow, 4. Aggregate Findings and Update Report, 5. Append to Report, 6. Save and Complete, CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS: (+9 more)
+Nodes (17): 1. Load Validation Report, 2. Display Complete Report, 3. Present Next Steps, 4. Present MENU OPTIONS, code:markdown (## Validation Complete: {agent-name}), CRITICAL STEP COMPLETION NOTE, EXECUTION PROTOCOLS:, EXECUTION RULES: (+9 more)
 
 ### Community 526 - "Community 526"
 Cohesion: 0.11
-Nodes (17): 1. Load Validation Report, 2. Display Complete Report, 3. Present Next Steps, 4. Present MENU OPTIONS, code:markdown (## Validation Complete: {agent-name}), CRITICAL STEP COMPLETION NOTE, EXECUTION PROTOCOLS:, EXECUTION RULES: (+9 more)
-
-### Community 527 - "Community 527"
-Cohesion: 0.11
 Nodes (17): content, acceptanceCriteria, id, status, title, userStory, metadata, artifactType (+9 more)
 
-### Community 528 - "Community 528"
+### Community 527 - "Community 527"
 Cohesion: 0.14
 Nodes (16): buildCommunitiesFromFixture(), commNodes, communities, ctx, ctxMap, expected, found, GraphifyTestContext (+8 more)
 
-### Community 529 - "Community 529"
+### Community 528 - "Community 528"
 Cohesion: 0.14
 Nodes (10): buildHandler(), contexts, ctx, getCtx(), HandlerTestContext, match, msg, proxyquire (+2 more)
 
+### Community 529 - "Community 529"
+Cohesion: 0.11
+Nodes (18): description, items, type, description, items, type, description, type (+10 more)
+
 ### Community 530 - "Community 530"
-Cohesion: 0.13
-Nodes (18): description, items, type, properties, type, description, items, type (+10 more)
+Cohesion: 0.11
+Nodes (18): type, description, type, description, type, description, properties, type (+10 more)
 
 ### Community 531 - "Community 531"
 Cohesion: 0.11
-Nodes (18): type, description, type, description, type, description, properties, type (+10 more)
+Nodes (17): code:`markdown, code:block2, code:`markdown, code:block4, code:yaml (---), CommonMark Essentials, Core Writing Rules, Documentation Types: Quick Reference (+9 more)
 
 ### Community 532 - "Community 532"
 Cohesion: 0.11
@@ -3636,11 +3649,11 @@ Nodes (13): LayoutMode, ArrowData, DependencyArrows, DependencyArrowsProps, STRU
 
 ### Community 536 - "Community 536"
 Cohesion: 0.12
-Nodes (16): Epic 1: Replicate QAWeb orgs to SalesForce + link orgs to displays., - Epic Breakdown, Epics, Functional Requirements, Overview, Requirements Inventory, Stories, Story 1.1: Mark ConnectCare_eligible flag for selected models (+8 more)
+Nodes (16): content, epics, overview, metadata, artifactType, _llmHint, projectName, schemaVersion (+8 more)
 
 ### Community 537 - "Community 537"
 Cohesion: 0.12
-Nodes (16): content, epics, overview, metadata, artifactType, _llmHint, projectName, schemaVersion (+8 more)
+Nodes (16): Epic 1: Replicate QAWeb orgs to SalesForce + link orgs to displays., - Epic Breakdown, Epics, Functional Requirements, Overview, Requirements Inventory, Stories, Story 1.1: Mark ConnectCare_eligible flag for selected models (+8 more)
 
 ### Community 538 - "Community 538"
 Cohesion: 0.12
@@ -3655,16 +3668,16 @@ Cohesion: 0.12
 Nodes (16): Closing menu, code:block1 (Orientation → Walkthrough → [Detail Pass] → Testing), code:block2 (- `path:line` — [tag] reason-phrase), code:block3 (- `src/auth/middleware.ts:42` — [auth] New token validation ), code:block4 (### Machine Hardening), code:block5 (---), EARLY EXIT, Follow Global Step Rules in SKILL.md (+8 more)
 
 ### Community 541 - "Community 541"
-Cohesion: 0.10
-Nodes (20): type, type, type, type, type, type, arCovered, coveragePercentage (+12 more)
+Cohesion: 0.12
+Nodes (17): type, type, type, type, type, type, arCovered, coveragePercentage (+9 more)
 
 ### Community 542 - "Community 542"
 Cohesion: 0.12
-Nodes (17): description, type, description, items, type, description, properties, type (+9 more)
+Nodes (17): description, type, description, items, type, properties, description, type (+9 more)
 
 ### Community 543 - "Community 543"
-Cohesion: 0.10
-Nodes (20): items, type, description, properties, type, items, type, description (+12 more)
+Cohesion: 0.12
+Nodes (17): items, type, properties, items, type, description, type, items (+9 more)
 
 ### Community 544 - "Community 544"
 Cohesion: 0.12
@@ -3672,19 +3685,19 @@ Nodes (17): description, type, type, type, description, properties, type, descri
 
 ### Community 545 - "Community 545"
 Cohesion: 0.12
-Nodes (17): properties, description, items, type, filesToCreate, slug, status, title (+9 more)
+Nodes (16): description, items, type, description, type, description, $id, properties (+8 more)
 
 ### Community 546 - "Community 546"
 Cohesion: 0.12
-Nodes (17): type, type, description, type, type, properties, type, action (+9 more)
+Nodes (17): properties, description, items, type, filesToCreate, slug, status, title (+9 more)
 
 ### Community 547 - "Community 547"
 Cohesion: 0.12
-Nodes (17): description, items, type, description, items, type, required, type (+9 more)
+Nodes (17): description, items, type, required, type, description, items, type (+9 more)
 
 ### Community 548 - "Community 548"
-Cohesion: 0.14
-Nodes (14): description, type, properties, description, items, type, description, type (+6 more)
+Cohesion: 0.12
+Nodes (17): type, type, description, type, type, properties, type, action (+9 more)
 
 ### Community 549 - "Community 549"
 Cohesion: 0.12
@@ -3712,27 +3725,19 @@ Nodes (16): code:typescript (// ❌ BAD: Non-deterministic test with conditional
 
 ### Community 555 - "Community 555"
 Cohesion: 0.12
-Nodes (17): description, type, description, type, description, type, cleanup, dataGeneration (+9 more)
-
-### Community 556 - "Community 556"
-Cohesion: 0.12
-Nodes (16): required, type, definitions, testScenario, description, $id, $ref, properties (+8 more)
-
-### Community 557 - "Community 557"
-Cohesion: 0.12
-Nodes (16): 1. Resolve Output Path and Select Template, 2. Pipeline Stages, 3. Test Execution, 4. Save Progress, code:yaml (env:), code:yaml (---), CONTEXT BOUNDARIES:, Contract Testing Pipeline (if `tea_use_pactjs_utils` enabled) (+8 more)
+Nodes (16): 1. Identify Determinism Violations, 2. Analyze Each Test File, 3. Calculate Determinism Score, code:javascript (const violations = [];), code:javascript (const totalChecks = testFiles.length * checksPerFile;), code:json ({), code:json ({), EXIT CONDITION (+8 more)
 
 ### Community 558 - "Community 558"
 Cohesion: 0.12
-Nodes (16): 1. Load Conventions, 2. Generate Base module.yaml, 3. Add Custom Variables, 4. Write module.yaml, 5. Update Build Tracking, 6. Report and Confirm, 7. MENU OPTIONS, code:yaml (code: {module_code}) (+8 more)
+Nodes (16): 1. Resolve Output Path and Select Template, 2. Pipeline Stages, 3. Test Execution, 4. Save Progress, code:yaml (env:), code:yaml (---), CONTEXT BOUNDARIES:, Contract Testing Pipeline (if `tea_use_pactjs_utils` enabled) (+8 more)
 
 ### Community 559 - "Community 559"
 Cohesion: 0.12
-Nodes (16): 1. Create Directory Structure, 2. Generate Framework Config, 3. Environment Setup, 4. Fixtures & Factories, 5. Sample Tests & Helpers, 6. Save Progress, code:yaml (---), CONTEXT BOUNDARIES: (+8 more)
+Nodes (16): 1. Load Conventions, 2. Generate Base module.yaml, 3. Add Custom Variables, 4. Write module.yaml, 5. Update Build Tracking, 6. Report and Confirm, 7. MENU OPTIONS, code:yaml (code: {module_code}) (+8 more)
 
 ### Community 560 - "Community 560"
 Cohesion: 0.12
-Nodes (16): 1. Identify Determinism Violations, 2. Analyze Each Test File, 3. Calculate Determinism Score, code:javascript (const violations = [];), code:javascript (const totalChecks = testFiles.length * checksPerFile;), code:json ({), code:json ({), EXIT CONDITION (+8 more)
+Nodes (16): 1. Create Directory Structure, 2. Generate Framework Config, 3. Environment Setup, 4. Fixtures & Factories, 5. Sample Tests & Helpers, 6. Save Progress, code:yaml (---), CONTEXT BOUNDARIES: (+8 more)
 
 ### Community 561 - "Community 561"
 Cohesion: 0.12
@@ -3800,267 +3805,275 @@ Nodes (17): type, description, properties, type, type, items, type, type (+9 mor
 
 ### Community 577 - "Community 577"
 Cohesion: 0.12
-Nodes (17): description, items, type, items, type, items, type, highPriority (+9 more)
+Nodes (17): description, type, description, type, description, type, cleanup, dataGeneration (+9 more)
 
 ### Community 578 - "Community 578"
 Cohesion: 0.12
-Nodes (17): maintainability, assessments, status, summary, technicalDebt, testCoverage, assessment, estimatedEffort (+9 more)
+Nodes (16): required, type, definitions, testScenario, description, $id, $ref, properties (+8 more)
 
 ### Community 579 - "Community 579"
 Cohesion: 0.12
-Nodes (17): additionalCriteria, p0, p1, p2, decisionCriteria, actual, notes, pass (+9 more)
+Nodes (17): description, items, type, items, type, items, type, highPriority (+9 more)
 
 ### Community 580 - "Community 580"
+Cohesion: 0.12
+Nodes (17): maintainability, assessments, status, summary, technicalDebt, testCoverage, assessment, estimatedEffort (+9 more)
+
+### Community 581 - "Community 581"
+Cohesion: 0.12
+Nodes (17): additionalCriteria, p0, p2, p3, decisionCriteria, actual, notes, pass (+9 more)
+
+### Community 582 - "Community 582"
 Cohesion: 0.12
 Nodes (16): compilerOptions, declaration, declarationMap, esModuleInterop, forceConsistentCasingInFileNames, lib, module, outDir (+8 more)
 
 ### Community 583 - "Community 583"
 Cohesion: 0.12
-Nodes (15): 0.1.0, 0.3.8, 0.4.0, 0.4.2, Artifact Persistence & Sync Fixes, BMAD v6.6.0 Resource Migration, Changelog, Claude Code Workflow Wrappers (+7 more)
+Nodes (15): Conventions, Core Principles, Critical Rules (NO EXCEPTIONS), Execution, On Activation, Paths, PRD Create Workflow, Step 1: Resolve the Workflow Block (+7 more)
 
 ### Community 584 - "Community 584"
 Cohesion: 0.12
-Nodes (15): Conventions, Core Principles, Critical Rules (NO EXCEPTIONS), Execution, On Activation, Paths, PRD Create Workflow, Step 1: Resolve the Workflow Block (+7 more)
+Nodes (15): Conventions, Critical Rules (NO EXCEPTIONS), FIRST STEP, On Activation, Quick Dev New Preview Workflow, READY FOR DEVELOPMENT STANDARD, SCOPE STANDARD, Step 1: Resolve the Workflow Block (+7 more)
 
 ### Community 585 - "Community 585"
 Cohesion: 0.12
-Nodes (15): Conventions, Critical Rules (NO EXCEPTIONS), FIRST STEP, On Activation, Quick Dev New Preview Workflow, READY FOR DEVELOPMENT STANDARD, SCOPE STANDARD, Step 1: Resolve the Workflow Block (+7 more)
+Nodes (15): Conventions, Core Principles, Critical Rules (NO EXCEPTIONS), Execution, On Activation, Paths, PRD Validate Workflow, Step 1: Resolve the Workflow Block (+7 more)
 
 ### Community 586 - "Community 586"
 Cohesion: 0.12
-Nodes (15): Conventions, Core Principles, Critical Rules (NO EXCEPTIONS), Execution, On Activation, Paths, PRD Validate Workflow, Step 1: Resolve the Workflow Block (+7 more)
+Nodes (16): properties, type, properties, type, properties, type, description, properties (+8 more)
 
 ### Community 587 - "Community 587"
 Cohesion: 0.12
-Nodes (16): properties, type, properties, type, properties, type, description, properties (+8 more)
+Nodes (16): description, properties, type, items, type, properties, type, deployment (+8 more)
 
 ### Community 588 - "Community 588"
 Cohesion: 0.12
-Nodes (16): description, properties, type, items, type, properties, type, deployment (+8 more)
+Nodes (16): description, items, type, findings, status, validation, validationDate, validators (+8 more)
 
 ### Community 589 - "Community 589"
 Cohesion: 0.12
-Nodes (16): description, items, type, findings, status, validation, validationDate, validators (+8 more)
+Nodes (16): description, items, type, description, properties, type, description, items (+8 more)
 
 ### Community 590 - "Community 590"
 Cohesion: 0.12
 Nodes (16): description, items, type, description, items, type, description, items (+8 more)
 
 ### Community 591 - "Community 591"
-Cohesion: 0.15
-Nodes (13): description, items, type, properties, description, items, type, criticalPath (+5 more)
-
-### Community 592 - "Community 592"
 Cohesion: 0.12
 Nodes (16): summary, totalCriteria, totalFunctional, totalNonFunctional, totalSecurity, verificationPercentage, verifiedCount, description (+8 more)
 
-### Community 593 - "Community 593"
+### Community 592 - "Community 592"
 Cohesion: 0.12
 Nodes (16): description, properties, type, description, type, items, type, items (+8 more)
 
-### Community 594 - "Community 594"
-Cohesion: 0.15
-Nodes (13): items, type, properties, items, type, items, type, criticalPath (+5 more)
+### Community 593 - "Community 593"
+Cohesion: 0.12
+Nodes (16): items, type, description, properties, type, items, type, items (+8 more)
 
-### Community 595 - "Community 595"
+### Community 594 - "Community 594"
 Cohesion: 0.12
 Nodes (16): items, type, items, type, description, type, items, type (+8 more)
 
-### Community 596 - "Community 596"
-Cohesion: 0.12
-Nodes (16): description, items, type, description, type, description, $id, properties (+8 more)
-
-### Community 597 - "Community 597"
+### Community 595 - "Community 595"
 Cohesion: 0.12
 Nodes (16): items, type, items, type, items, type, items, type (+8 more)
 
-### Community 598 - "Community 598"
+### Community 596 - "Community 596"
 Cohesion: 0.12
 Nodes (16): properties, type, properties, type, items, type, e2eTests, integrationTests (+8 more)
 
-### Community 599 - "Community 599"
+### Community 597 - "Community 597"
 Cohesion: 0.12
 Nodes (16): description, type, frameworkUsed, scope, testingApproach, totalFilesCreated, totalTestsGenerated, description (+8 more)
 
-### Community 600 - "Community 600"
+### Community 598 - "Community 598"
 Cohesion: 0.12
 Nodes (16): description, type, description, type, description, type, description, type (+8 more)
 
-### Community 601 - "Community 601"
+### Community 599 - "Community 599"
 Cohesion: 0.12
 Nodes (16): properties, description, type, description, type, description, type, define (+8 more)
 
-### Community 602 - "Community 602"
+### Community 600 - "Community 600"
+Cohesion: 0.12
+Nodes (16): description, items, type, description, items, type, description, items (+8 more)
+
+### Community 601 - "Community 601"
 Cohesion: 0.12
 Nodes (16): businessModelCanvas, currentBusinessModel, modelStrengths, modelWeaknesses, revenueCostStructure, valueProposition, channels, costStructure (+8 more)
 
-### Community 603 - "Community 603"
+### Community 602 - "Community 602"
 Cohesion: 0.12
 Nodes (16): description, items, type, description, items, type, description, items (+8 more)
+
+### Community 603 - "Community 603"
+Cohesion: 0.12
+Nodes (16): description, examples, items, type, type, architectureDecisions, relatedEpics, relatedStories (+8 more)
 
 ### Community 604 - "Community 604"
 Cohesion: 0.12
-Nodes (16): description, items, type, description, items, type, description, items (+8 more)
+Nodes (16): description, properties, type, metrics, target, threshold, unit, description (+8 more)
 
 ### Community 605 - "Community 605"
 Cohesion: 0.12
-Nodes (16): description, examples, items, type, type, dependencies, relatedEpics, relatedStories (+8 more)
+Nodes (16): code:typescript (// BEFORE), code:typescript (// When response_format is set, inject this into the system ), code:typescript (// BEFORE), code:typescript (function loadArtifactSchemaForContext(): Record<string, unkn), code:typescript (// AFTER), code:typescript (// AFTER), code:typescript (// BEFORE), code:typescript (interface ModelConfig {) (+8 more)
 
 ### Community 606 - "Community 606"
 Cohesion: 0.12
-Nodes (16): description, properties, type, metrics, target, threshold, unit, description (+8 more)
+Nodes (15): 1. Begin Scope Confirmation, 2. Scope Confirmation, 3. Handle Continue Selection, APPEND TO DOCUMENT:, code:markdown (## Domain Research Scope Confirmation), CONTEXT BOUNDARIES:, Domain Research Step 1: Domain Research Scope Confirmation, DOMAIN SCOPE CONFIRMATION: (+7 more)
 
 ### Community 607 - "Community 607"
 Cohesion: 0.12
-Nodes (15): 1. Begin Scope Confirmation, 2. Scope Confirmation, 3. Handle Continue Selection, APPEND TO DOCUMENT:, code:markdown (## Domain Research Scope Confirmation), CONTEXT BOUNDARIES:, Domain Research Step 1: Domain Research Scope Confirmation, DOMAIN SCOPE CONFIRMATION: (+7 more)
+Nodes (15): 1. Testability & Automation, 2. Test Data Strategy, 3. Scalability & Availability, 4. Disaster Recovery (DR), 5. Security, 6. Monitorability, Debuggability & Manageability, 7. QoS (Quality of Service) & QoE (Quality of Experience), 8. Deployability (+7 more)
 
 ### Community 608 - "Community 608"
 Cohesion: 0.12
-Nodes (15): 1. Testability & Automation, 2. Test Data Strategy, 3. Scalability & Availability, 4. Disaster Recovery (DR), 5. Security, 6. Monitorability, Debuggability & Manageability, 7. QoS (Quality of Service) & QoE (Quality of Experience), 8. Deployability (+7 more)
+Nodes (15): code:typescript (// src/testing/risk-matrix.ts), code:typescript (// tests/e2e/test-planning/risk-assessment.ts), code:typescript (// src/testing/risk-tracking.ts), code:typescript (// src/testing/gate-decision.ts), Example 1: Probability-Impact Matrix Implementation (Automated Classification), Example 2: Risk Assessment Workflow (Test Planning Integration), Example 3: Dynamic Risk Re-Assessment (Continuous Evaluation), Example 4: Risk Matrix in Gate Decision (Integration with Trace Workflow) (+7 more)
 
 ### Community 609 - "Community 609"
 Cohesion: 0.12
-Nodes (15): code:typescript (// src/testing/risk-matrix.ts), code:typescript (// tests/e2e/test-planning/risk-assessment.ts), code:typescript (// src/testing/risk-tracking.ts), code:typescript (// src/testing/gate-decision.ts), Example 1: Probability-Impact Matrix Implementation (Automated Classification), Example 2: Risk Assessment Workflow (Test Planning Integration), Example 3: Dynamic Risk Re-Assessment (Continuous Evaluation), Example 4: Risk Matrix in Gate Decision (Integration with Trace Workflow) (+7 more)
+Nodes (15): 1. Get Workflow List from Brief, 2. For Each Workflow, Create Spec, 3. Create All Workflow Specs, 4. Update Build Tracking, 5. Report Success, 6. MENU OPTIONS, code:markdown (# Workflow Specification: {workflow_name}), code:block2 (+7 more)
 
 ### Community 610 - "Community 610"
 Cohesion: 0.12
-Nodes (16): description, properties, type, description, items, type, description, items (+8 more)
+Nodes (15): 1. Create Validation Report, 2. Launch Mass Parallelization and consolidate results!, 3. CRITICAL WRITES to the report., 4. Proceed to Completion Step, code:markdown (---), EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES (READ FIRST):, MANDATORY SEQUENCE (+7 more)
 
 ### Community 611 - "Community 611"
-Cohesion: 0.12
-Nodes (16): description, items, type, priorities, recommendations, sprintGoals, sprintPlanningHandoff, description (+8 more)
-
-### Community 612 - "Community 612"
-Cohesion: 0.12
-Nodes (15): 1. Get Workflow List from Brief, 2. For Each Workflow, Create Spec, 3. Create All Workflow Specs, 4. Update Build Tracking, 5. Report Success, 6. MENU OPTIONS, code:markdown (# Workflow Specification: {workflow_name}), code:block2 (+7 more)
-
-### Community 613 - "Community 613"
-Cohesion: 0.12
-Nodes (15): 1. Load Agent Files, 2. Categorize Agents, 3. Validate Spec Agents (.spec.md), 4. Validate Built Agents (.agent.yaml), 5. Record Results, 6. Note Sub-Process Opportunity, 7. Auto-Proceed, code:markdown (## Agent Specs Validation) (+7 more)
+Cohesion: 0.17
+Nodes (6): CavemanIntensity, CavemanService, INTENSITY_DESCRIPTIONS, INTENSITY_PROMPT_SUFFIX, setCavemanService(), VALID_INTENSITIES
 
 ### Community 614 - "Community 614"
 Cohesion: 0.12
-Nodes (15): 1. Module Configuration Loading, 2. First Step EXECUTION, BMAD Workflow Template, code:block1 ([workflow-folder]/), Core Principles, Critical Rules (NO EXCEPTIONS), How to Use This Template, INITIALIZATION SEQUENCE (+7 more)
+Nodes (15): 1. Determine Targets, 2. Choose Test Levels, 3. Assign Priorities, 4. Coverage Plan, 5. Save Progress, code:yaml (---), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS: (+7 more)
 
 ### Community 615 - "Community 615"
 Cohesion: 0.12
 Nodes (15): 1. Map Acceptance Criteria, 2. Select Test Levels, 3. Prioritize Tests, 4. Confirm Red Phase Requirements, 5. Save Progress, code:yaml (---), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS: (+7 more)
 
-### Community 617 - "Community 617"
-Cohesion: 0.12
-Nodes (15): 1. Determine Targets, 2. Choose Test Levels, 3. Assign Priorities, 4. Coverage Plan, 5. Save Progress, code:yaml (---), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS: (+7 more)
-
-### Community 618 - "Community 618"
+### Community 616 - "Community 616"
 Cohesion: 0.12
 Nodes (15): 1. Identify API Endpoints, 2. Generate API Test Files, 3. Track Fixture Needs, code:typescript (import { test, expect } from '@playwright/test';), code:json ({), code:json ({), EXIT CONDITION, ❌ FAILURE: (+7 more)
 
-### Community 619 - "Community 619"
+### Community 617 - "Community 617"
 Cohesion: 0.12
 Nodes (15): 1. Coverage Matrix, 2. Execution Strategy (Keep Simple), 3. Resource Estimates (Ranges Only), 4. Quality Gates, 5. Save Progress, code:yaml (---), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS: (+7 more)
 
+### Community 618 - "Community 618"
+Cohesion: 0.12
+Nodes (15): 1. Validation, 2. Completion Summary, 3. Save Progress, code:yaml (---), code:block2 (agileagentcanvas_update_artifact({), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES (+7 more)
+
+### Community 619 - "Community 619"
+Cohesion: 0.12
+Nodes (15): 1. Validation, 2. Completion Summary, 3. Save Progress, code:yaml (---), code:block2 (agileagentcanvas_update_artifact({), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES (+7 more)
+
 ### Community 620 - "Community 620"
-Cohesion: 0.12
-Nodes (15): 1. Validation, 2. Completion Summary, 3. Save Progress, code:yaml (---), code:block2 (agileagentcanvas_update_artifact({), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES (+7 more)
-
-### Community 621 - "Community 621"
-Cohesion: 0.12
-Nodes (15): 1. Validation, 2. Completion Summary, 3. Save Progress, code:yaml (---), code:block2 (agileagentcanvas_update_artifact({), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES (+7 more)
-
-### Community 622 - "Community 622"
 Cohesion: 0.12
 Nodes (15): Contributing Factors, Creative Alternatives, 🔍 DIAGNOSIS AND ROOT CAUSE ANALYSIS, Generated Solutions, Initial Problem Statement, Methods Used, Problem Boundaries (Is/Is Not), Problem Context (+7 more)
 
-### Community 623 - "Community 623"
+### Community 621 - "Community 621"
 Cohesion: 0.12
 Nodes (16): traceability, Example Recommendations, critical, high, low, medium, Immediate Actions (Before PR Merge), Long-term Actions (Backlog) (+8 more)
 
-### Community 624 - "Community 624"
+### Community 622 - "Community 622"
 Cohesion: 0.12
-Nodes (15): 1. Create Validation Report, 2. Launch Mass Parallelization and consolidate results!, 3. CRITICAL WRITES to the report., 4. Proceed to Completion Step, code:markdown (---), EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES (READ FIRST):, MANDATORY SEQUENCE (+7 more)
+Nodes (15): 1. Load Agent Files, 2. Categorize Agents, 3. Validate Spec Agents (.spec.md), 4. Validate Built Agents (.agent.yaml), 5. Record Results, 6. Note Sub-Process Opportunity, 7. Auto-Proceed, code:markdown (## Agent Specs Validation) (+7 more)
 
-### Community 625 - "Community 625"
+### Community 623 - "Community 623"
 Cohesion: 0.12
 Nodes (15): 1. Load Workflow Files, 2. Categorize Workflows, 3. Validate Spec Workflows (.spec.md), 4. Validate Built Workflows (workflow.md), 5. Record Results, 6. Note Sub-Process Opportunity, 7. Auto-Proceed, code:markdown (## Workflow Specs Validation) (+7 more)
 
-### Community 626 - "Community 626"
+### Community 624 - "Community 624"
 Cohesion: 0.12
 Nodes (15): 1. Load Documentation Files, 2. Validate README.md, 3. Validate TODO.md, 4. Validate docs/ Folder, 5. Generate User Docs Recommendation, 6. Record Results, 7. Auto-Proceed, code:markdown (## Documentation Validation) (+7 more)
 
-### Community 627 - "Community 627"
+### Community 625 - "Community 625"
 Cohesion: 0.14
 Nodes (14): artifact, buildModules(), buildProvider(), epic, epics, executeCommandCalls, found, freshProvider (+6 more)
 
-### Community 628 - "Community 628"
+### Community 626 - "Community 626"
+Cohesion: 0.12
+Nodes (16): properties, description, items, type, description, items, type, description (+8 more)
+
+### Community 627 - "Community 627"
 Cohesion: 0.12
 Nodes (16): description, items, type, description, items, type, description, items (+8 more)
 
+### Community 628 - "Community 628"
+Cohesion: 0.12
+Nodes (16): description, properties, type, description, items, type, description, items (+8 more)
+
 ### Community 629 - "Community 629"
 Cohesion: 0.12
-Nodes (16): description, items, type, description, properties, type, description, type (+8 more)
+Nodes (16): description, items, type, priorities, recommendations, sprintGoals, sprintPlanningHandoff, description (+8 more)
 
 ### Community 630 - "Community 630"
 Cohesion: 0.12
-Nodes (16): description, properties, type, description, items, type, additionalProperties, description (+8 more)
+Nodes (16): description, items, type, description, properties, type, description, type (+8 more)
 
 ### Community 631 - "Community 631"
 Cohesion: 0.12
-Nodes (16): description, type, type, format, type, type, epicId, epicTitle (+8 more)
+Nodes (16): description, properties, type, description, items, type, additionalProperties, description (+8 more)
 
 ### Community 632 - "Community 632"
 Cohesion: 0.12
-Nodes (15): 1. Begin Scope Confirmation, 2. Scope Confirmation, 3. Handle Continue Selection, APPEND TO DOCUMENT:, code:markdown (## Technical Research Scope Confirmation), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, FAILURE MODES: (+7 more)
+Nodes (16): description, type, type, format, type, type, epicId, epicTitle (+8 more)
 
 ### Community 633 - "Community 633"
 Cohesion: 0.12
-Nodes (16): description, format, type, description, format, type, completed, last_updated (+8 more)
+Nodes (15): 1. Begin Scope Confirmation, 2. Scope Confirmation, 3. Handle Continue Selection, APPEND TO DOCUMENT:, code:markdown (## Technical Research Scope Confirmation), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, FAILURE MODES: (+7 more)
 
 ### Community 634 - "Community 634"
-Cohesion: 0.15
-Nodes (13): qualityScoreBreakdown, contribution, score, weight, contribution, score, weight, contribution (+5 more)
+Cohesion: 0.12
+Nodes (16): description, format, type, description, format, type, completed, last_updated (+8 more)
 
 ### Community 635 - "Community 635"
+Cohesion: 0.12
+Nodes (15): 1. Module Configuration Loading, 2. First Step EXECUTION, BMAD Workflow Template, code:block1 ([workflow-folder]/), Core Principles, Critical Rules (NO EXCEPTIONS), How to Use This Template, INITIALIZATION SEQUENCE (+7 more)
+
+### Community 636 - "Community 636"
 Cohesion: 0.12
 Nodes (16): count, percentage, count, percentage, api, component, e2e, integration (+8 more)
 
 ### Community 637 - "Community 637"
 Cohesion: 0.13
-Nodes (14): Advanced Elicitation, code:bash (python3 {project-root}/_bmad/scripts/resolve_config.py --pro), code:block2 (**Advanced Elicitation Options**), Context Analysis, CRITICAL LLM INSTRUCTIONS, CSV Structure, Display Format, FLOW (+6 more)
+Nodes (14): all, branches, check-coverage, clean, exclude, functions, include, lines (+6 more)
 
 ### Community 638 - "Community 638"
 Cohesion: 0.13
-Nodes (14): Conventions, Core Principles, Critical Rules (NO EXCEPTIONS), Execution, Implementation Readiness, On Activation, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps (+6 more)
+Nodes (14): Advanced Elicitation, code:bash (python3 {project-root}/_bmad/scripts/resolve_config.py --pro), code:block2 (**Advanced Elicitation Options**), Context Analysis, CRITICAL LLM INSTRUCTIONS, CSV Structure, Display Format, FLOW (+6 more)
 
 ### Community 639 - "Community 639"
 Cohesion: 0.13
-Nodes (14): code:block1 (Story: [STORY-123] User Authentication), Conventions, Correct Course - Sprint Change Management Workflow, Document Discovery - Loading Project Artifacts, Execution, Input Files, On Activation, Paths (+6 more)
+Nodes (14): Conventions, Core Principles, Critical Rules (NO EXCEPTIONS), Execution, Implementation Readiness, On Activation, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps (+6 more)
 
 ### Community 640 - "Community 640"
 Cohesion: 0.13
-Nodes (14): Conventions, Core Principles, Create Epics and Stories, Critical Rules (NO EXCEPTIONS), Execution, On Activation, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps (+6 more)
+Nodes (14): code:block1 (Story: [STORY-123] User Authentication), Conventions, Correct Course - Sprint Change Management Workflow, Document Discovery - Loading Project Artifacts, Execution, Input Files, On Activation, Paths (+6 more)
 
 ### Community 641 - "Community 641"
 Cohesion: 0.13
-Nodes (14): Conventions, Core Principles, Critical Rules (NO EXCEPTIONS), Execution, On Activation, PRD Edit Workflow, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps (+6 more)
+Nodes (14): Conventions, Core Principles, Create Epics and Stories, Critical Rules (NO EXCEPTIONS), Execution, On Activation, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps (+6 more)
 
 ### Community 642 - "Community 642"
 Cohesion: 0.13
-Nodes (14): 1. Pick the Right Voices, 2. Build Context and Spawn, 3. Present Responses, 4. Handle Follow-ups, Arguments, code:bash (python3 {project-root}/_bmad/scripts/resolve_config.py --pro), code:block2 (You are {name} ({title}), a BMAD agent in a collaborative ro), Exit (+6 more)
+Nodes (14): Conventions, Core Principles, Critical Rules (NO EXCEPTIONS), Execution, On Activation, PRD Edit Workflow, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps (+6 more)
 
 ### Community 643 - "Community 643"
 Cohesion: 0.13
-Nodes (14): Conventions, Execution, Input Files, On Activation, Paths, Sprint Status, Sprint Status Workflow, Step 1: Resolve the Workflow Block (+6 more)
+Nodes (14): 1. Pick the Right Voices, 2. Build Context and Spawn, 3. Present Responses, 4. Handle Follow-ups, Arguments, code:bash (python3 {project-root}/_bmad/scripts/resolve_config.py --pro), code:block2 (You are {name} ({title}), a BMAD agent in a collaborative ro), Exit (+6 more)
 
 ### Community 644 - "Community 644"
 Cohesion: 0.13
-Nodes (15): type, properties, type, properties, type, properties, type, availabilityTarget (+7 more)
+Nodes (14): Conventions, Execution, Input Files, On Activation, Paths, Sprint Status, Sprint Status Workflow, Step 1: Resolve the Workflow Block (+6 more)
 
 ### Community 645 - "Community 645"
 Cohesion: 0.13
-Nodes (14): additionalProperties, additionalProperties, required, type, description, $id, $ref, properties (+6 more)
+Nodes (15): type, properties, type, properties, type, properties, type, availabilityTarget (+7 more)
 
 ### Community 646 - "Community 646"
-Cohesion: 0.17
-Nodes (12): properties, description, type, description, items, type, description, items (+4 more)
+Cohesion: 0.13
+Nodes (14): additionalProperties, additionalProperties, required, type, description, $id, $ref, properties (+6 more)
 
 ### Community 647 - "Community 647"
 Cohesion: 0.13
@@ -4092,435 +4105,431 @@ Nodes (15): description, type, items, type, items, type, description, inScope (+
 
 ### Community 654 - "Community 654"
 Cohesion: 0.13
-Nodes (15): properties, area, description, effort, examples, filePath, pattern, patternsUsed (+7 more)
+Nodes (15): description, properties, type, items, type, items, type, items (+7 more)
 
 ### Community 655 - "Community 655"
 Cohesion: 0.13
-Nodes (15): description, items, type, description, items, type, adaptiveElements, breakpoints (+7 more)
+Nodes (15): properties, area, description, effort, examples, filePath, pattern, patternsUsed (+7 more)
 
 ### Community 656 - "Community 656"
 Cohesion: 0.13
-Nodes (14): all, branches, check-coverage, clean, exclude, functions, include, lines (+6 more)
+Nodes (15): description, items, type, description, items, type, adaptiveElements, breakpoints (+7 more)
 
 ### Community 657 - "Community 657"
 Cohesion: 0.13
-Nodes (15): description, type, description, items, type, comparisonMatrix, evaluationCriteria, solutionAnalysis (+7 more)
+Nodes (15): diagnosis, keyData, sources, contributingFactors, dataCollection, problemBoundaries, rootCauseAnalysis, systemDynamics (+7 more)
 
 ### Community 658 - "Community 658"
 Cohesion: 0.13
-Nodes (15): description, items, type, description, items, type, feedback, metrics (+7 more)
+Nodes (15): description, type, description, items, type, comparisonMatrix, evaluationCriteria, solutionAnalysis (+7 more)
 
 ### Community 659 - "Community 659"
 Cohesion: 0.13
-Nodes (14): Agent Integration, Agent Menu, Agent Metadata, Agent Persona, Agent Specification: {agent_name}, code:yaml (agent:), Communication Style, Identity (+6 more)
+Nodes (15): description, items, type, description, items, type, feedback, metrics (+7 more)
 
 ### Community 660 - "Community 660"
 Cohesion: 0.13
-Nodes (14): code:typescript (// Step 1: RED - Write failing test), code:typescript (// test-utils/AllTheProviders.tsx), code:typescript (// Cypress with axe-core), code:typescript (// Playwright visual regression), Component Test-Driven Development Loop, Example 1: Red-Green-Refactor Loop, Example 2: Provider Isolation Pattern, Example 3: Accessibility Assertions (+6 more)
+Nodes (14): Agent Integration, Agent Menu, Agent Metadata, Agent Persona, Agent Specification: {agent_name}, code:yaml (agent:), Communication Style, Identity (+6 more)
 
 ### Community 661 - "Community 661"
 Cohesion: 0.13
-Nodes (15): description, properties, type, description, items, type, interworkingAndRegression, interworkingTests (+7 more)
+Nodes (14): 10. Change Log, 1. Executive Summary, 2.1 The 7 Root Causes (Why LLMs Drift in General), 2.2 The 6 Specific Failure Points (This Codebase), 2.3 The Hidden Gem, 2.4 The 4-Invisible-Tools Bug, 2. Problem Analysis, 3. Target Architecture (+6 more)
 
 ### Community 662 - "Community 662"
 Cohesion: 0.13
-Nodes (15): Acceptance Criteria Parsing, code:markdown (As a developer,), code:markdown (**Given** I am starting a new project), code:json ({), code:markdown (- **FR 1.1: Parse BMAD Markdown Files** - System reads epic ), code:json ({), code:markdown (# Story: Centralize policy HTTP retry/backoff in CloudConnec), code:json ({) (+7 more)
+Nodes (14): code:typescript (// Step 1: RED - Write failing test), code:typescript (// test-utils/AllTheProviders.tsx), code:typescript (// Cypress with axe-core), code:typescript (// Playwright visual regression), Component Test-Driven Development Loop, Example 1: Red-Green-Refactor Loop, Example 2: Provider Isolation Pattern, Example 3: Accessibility Assertions (+6 more)
 
 ### Community 663 - "Community 663"
 Cohesion: 0.13
-Nodes (15): Common Issues and Resolutions, Issue: BMad artifacts not found, Issue: Duplicate coverage detected, Issue: Fixtures don't clean up data, Issue: Fixtures missing auto-cleanup, Issue: Framework configuration not found, Issue: Hardcoded test data in tests, Issue: Network-first pattern not applied (+7 more)
+Nodes (14): 1. System-Level Mode: Testability Review, 2. All Modes: Risk Assessment, 3. Summarize Risk Findings, 4. Save Progress, code:yaml (---), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES (+6 more)
 
 ### Community 664 - "Community 664"
 Cohesion: 0.13
-Nodes (15): Configuration Validation, Coverage Matrix, Directory Structure Validation, Execution Strategy, Execution Validation, File Integrity Validation, Output Validation, Performance Validation (+7 more)
+Nodes (15): description, type, description, type, additionalProperties, description, properties, required (+7 more)
 
 ### Community 665 - "Community 665"
 Cohesion: 0.13
-Nodes (15): description, type, description, type, additionalProperties, description, properties, required (+7 more)
-
-### Community 666 - "Community 666"
-Cohesion: 0.13
 Nodes (15): description, method, tokenStrategy, description, method, roles, security, atRest (+7 more)
 
-### Community 667 - "Community 667"
-Cohesion: 0.13
-Nodes (14): 1. Gather All Decisions, 2. Read It Back, 3. The Excitement Check, 4. Final Confirmation, 5. MENU OPTIONS, EXECUTION RULES:, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE (+6 more)
+### Community 666 - "Community 666"
+Cohesion: 0.18
+Nodes (10): describeDefault(), fuzzyMatchEnum(), levenshtein(), repairDataWithSchema(), RepairResult, resolveJsonPointers(), resolvePointer(), resolveType() (+2 more)
 
 ### Community 668 - "Community 668"
 Cohesion: 0.13
-Nodes (14): 1. Select Categories, 2. Define Thresholds, 3. Confirm NFR Matrix, 4. Save Progress, code:yaml (---), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES (+6 more)
+Nodes (14): 1. Gather All Decisions, 2. Read It Back, 3. The Excitement Check, 4. Final Confirmation, 5. MENU OPTIONS, EXECUTION RULES:, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE (+6 more)
 
 ### Community 669 - "Community 669"
 Cohesion: 0.13
-Nodes (14): 1. Default Mode: AI Generation, 2. Optional Mode: Recording (Complex UI), 3. Confirm Mode, 4. Save Progress, code:yaml (---), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES (+6 more)
+Nodes (14): 1. Select Categories, 2. Define Thresholds, 3. Confirm NFR Matrix, 4. Save Progress, code:yaml (---), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES (+6 more)
 
 ### Community 670 - "Community 670"
 Cohesion: 0.13
-Nodes (14): 1. Determine Target Location, 2. Present Structure Plan, 3. Confirm and Create, 4. Update Build Tracking, 5. Report Success, 6. MENU OPTIONS, code:block1 ({target_location}/), MANDATORY EXECUTION RULES: (+6 more)
+Nodes (14): 1. Default Mode: AI Generation, 2. Optional Mode: Recording (Complex UI), 3. Confirm Mode, 4. Save Progress, code:yaml (---), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES (+6 more)
 
 ### Community 671 - "Community 671"
 Cohesion: 0.13
-Nodes (14): 1. Burn-In Configuration, 2. Quality Gates, 3. Notifications, 4. Save Progress, code:yaml (---), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES (+6 more)
+Nodes (14): 1. Determine Target Location, 2. Present Structure Plan, 3. Confirm and Create, 4. Update Build Tracking, 5. Report Success, 6. MENU OPTIONS, code:block1 ({target_location}/), MANDATORY EXECUTION RULES: (+6 more)
 
 ### Community 672 - "Community 672"
 Cohesion: 0.13
-Nodes (14): 1. Evidence Sources, 2. Browser-Based Evidence Collection (if `tea_browser_automation` is `cli` or `auto`), 3. Evidence Gaps, 4. Save Progress, code:yaml (---), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES (+6 more)
+Nodes (14): 1. Burn-In Configuration, 2. Quality Gates, 3. Notifications, 4. Save Progress, code:yaml (---), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES (+6 more)
 
 ### Community 673 - "Community 673"
 Cohesion: 0.13
-Nodes (14): 1. System-Level Mode: Testability Review, 2. All Modes: Risk Assessment, 3. Summarize Risk Findings, 4. Save Progress, code:yaml (---), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES (+6 more)
+Nodes (14): 1. Evidence Sources, 2. Browser-Based Evidence Collection (if `tea_browser_automation` is `cli` or `auto`), 3. Evidence Gaps, 4. Save Progress, code:yaml (---), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES (+6 more)
 
 ### Community 674 - "Community 674"
 Cohesion: 0.13
-Nodes (14): 1. Review Edit Plan, 2. Apply Edits by Category, 3. Validate Edits, 4. Summary of Changes, 5. Completion, Edit Step 2: Apply Edits, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES (READ FIRST): (+6 more)
+Nodes (15): Common Issues and Resolutions, Issue: BMad artifacts not found, Issue: Duplicate coverage detected, Issue: Fixtures don't clean up data, Issue: Fixtures missing auto-cleanup, Issue: Framework configuration not found, Issue: Hardcoded test data in tests, Issue: Network-first pattern not applied (+7 more)
 
 ### Community 675 - "Community 675"
-Cohesion: 0.28
-Nodes (11): code:bash (# Basic invocation), Design Thinking Workflow, Distinctive Features, Innovation Strategy Workflow, Inputs, Outputs, Problem Solving Workflow, Purpose (+3 more)
+Cohesion: 0.13
+Nodes (15): Configuration Validation, Coverage Matrix, Directory Structure Validation, Execution Strategy, Execution Validation, File Integrity Validation, Output Validation, Performance Validation (+7 more)
 
 ### Community 676 - "Community 676"
 Cohesion: 0.13
-Nodes (14): 1. Clean review shortcut, 2. Write findings to the story file, 3. Present summary, 4. Resolve decision-needed findings, 5. Handle `patch` findings, 6. Update story status and sync sprint tracking, 7. Next steps, Completion summary (+6 more)
+Nodes (15): Acceptance Criteria Parsing, code:markdown (As a developer,), code:markdown (**Given** I am starting a new project), code:json ({), code:markdown (- **FR 1.1: Parse BMAD Markdown Files** - System reads epic ), code:json ({), code:markdown (# Story: Centralize policy HTTP retry/backoff in CloudConnec), code:json ({) (+7 more)
 
 ### Community 677 - "Community 677"
 Cohesion: 0.13
-Nodes (14): 🎯 Design Challenge, Design Thinking Session: {{project_name}}, 👥 EMPATHIZE: Understanding Users, Empathy Map Summary, Generated Ideas, 💡 IDEATE: Generate Solutions, Key Features to Test, Key Observations (+6 more)
+Nodes (14): 1. Review Edit Plan, 2. Apply Edits by Category, 3. Validate Edits, 4. Summary of Changes, 5. Completion, Edit Step 2: Apply Edits, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES (READ FIRST): (+6 more)
 
 ### Community 678 - "Community 678"
-Cohesion: 0.13
-Nodes (14): 1. Load module.yaml, 2. Validate Required Fields, 3. Validate Custom Variables, 4. Validate Extension Module Code, 5. Record Results, 6. Auto-Proceed, code:markdown (## module.yaml Validation), MANDATORY EXECUTION RULES: (+6 more)
+Cohesion: 0.28
+Nodes (11): code:bash (# Basic invocation), Design Thinking Workflow, Distinctive Features, Innovation Strategy Workflow, Inputs, Outputs, Problem Solving Workflow, Purpose (+3 more)
 
 ### Community 679 - "Community 679"
-Cohesion: 0.14
-Nodes (13): blocked, epic, hasTooltip, labels, loadWizardProvider(), origGetSelectedArtifact, { provider }, proxyquire (+5 more)
+Cohesion: 0.13
+Nodes (14): 1. Clean review shortcut, 2. Write findings to the story file, 3. Present summary, 4. Resolve decision-needed findings, 5. Handle `patch` findings, 6. Update story status and sync sprint tracking, 7. Next steps, Completion summary (+6 more)
 
 ### Community 680 - "Community 680"
 Cohesion: 0.13
-Nodes (15): description, type, description, enum, type, description, items, type (+7 more)
+Nodes (14): 🎯 Design Challenge, Design Thinking Session: {{project_name}}, 👥 EMPATHIZE: Understanding Users, Empathy Map Summary, Generated Ideas, 💡 IDEATE: Generate Solutions, Key Features to Test, Key Observations (+6 more)
 
 ### Community 681 - "Community 681"
 Cohesion: 0.13
-Nodes (15): description, items, type, description, properties, type, description, enum (+7 more)
+Nodes (14): 1. Load module.yaml, 2. Validate Required Fields, 3. Validate Custom Variables, 4. Validate Extension Module Code, 5. Record Results, 6. Auto-Proceed, code:markdown (## module.yaml Validation), MANDATORY EXECUTION RULES: (+6 more)
 
 ### Community 682 - "Community 682"
-Cohesion: 0.13
-Nodes (14): additionalProperties, additionalProperties, required, type, description, $id, $ref, properties (+6 more)
+Cohesion: 0.14
+Nodes (13): blocked, epic, hasTooltip, labels, loadWizardProvider(), origGetSelectedArtifact, { provider }, proxyquire (+5 more)
 
 ### Community 683 - "Community 683"
 Cohesion: 0.13
-Nodes (15): description, properties, type, description, items, type, properties, type (+7 more)
+Nodes (15): description, type, description, enum, type, description, items, type (+7 more)
 
 ### Community 684 - "Community 684"
 Cohesion: 0.13
-Nodes (15): type, format, type, comments, date, role, signature, signedBy (+7 more)
+Nodes (15): description, items, type, description, properties, type, description, enum (+7 more)
 
 ### Community 685 - "Community 685"
 Cohesion: 0.13
-Nodes (15): items, description, items, type, required, type, description, description (+7 more)
+Nodes (15): description, properties, type, description, items, type, interworkingAndRegression, interworkingTests (+7 more)
 
 ### Community 686 - "Community 686"
 Cohesion: 0.13
-Nodes (15): performance, scalability, status, summary, testEvidence, throughput, bottlenecks, horizontalScaling (+7 more)
+Nodes (14): additionalProperties, additionalProperties, required, type, description, $id, $ref, properties (+6 more)
 
 ### Community 687 - "Community 687"
 Cohesion: 0.13
-Nodes (15): branch, requirement, statement, coverage, flakinessScore, nfrStatus, performanceStatus, regressionStatus (+7 more)
+Nodes (15): description, properties, type, description, items, type, properties, type (+7 more)
 
 ### Community 688 - "Community 688"
 Cohesion: 0.13
-Nodes (15): overall, p0, p2, covered, percentage, total, covered, percentage (+7 more)
+Nodes (15): type, format, type, comments, date, role, signature, signedBy (+7 more)
 
 ### Community 689 - "Community 689"
 Cohesion: 0.13
-Nodes (12): badges, { container }, defaultProps, groupLabels, groups, input, labels, modal (+4 more)
+Nodes (15): items, description, items, type, required, type, description, description (+7 more)
 
 ### Community 690 - "Community 690"
-Cohesion: 0.14
-Nodes (13): Conventions, Conversion Rules, Morph — Agile Canvas Integrator, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Execute Prepend Steps, Step 3: Adopt Persona (+5 more)
+Cohesion: 0.13
+Nodes (15): performance, scalability, status, summary, testEvidence, throughput, bottlenecks, horizontalScaling (+7 more)
 
 ### Community 691 - "Community 691"
-Cohesion: 0.14
-Nodes (13): Conventions, Murat — Master Test Architect, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Execute Prepend Steps, Step 3: Adopt Persona, Step 4: Load Knowledge Base (+5 more)
+Cohesion: 0.13
+Nodes (15): branch, requirement, statement, coverage, flakinessScore, nfrStatus, performanceStatus, regressionStatus (+7 more)
 
 ### Community 692 - "Community 692"
-Cohesion: 0.14
-Nodes (13): code:block1 (N files changed · M modules touched · ~L lines of logic · B ), code:block2 ([Orientation] → Walkthrough → Detail Pass → Testing), DETERMINE WHAT YOU HAVE, ENRICH, FALLBACK TRAIL GENERATION, FIND THE CHANGE, Follow Global Step Rules in SKILL.md, Intent Summary (+5 more)
+Cohesion: 0.13
+Nodes (15): overall, p0, p3, covered, percentage, total, covered, percentage (+7 more)
 
 ### Community 693 - "Community 693"
-Cohesion: 0.14
-Nodes (13): Code Review Workflow, Conventions, Critical Rules (NO EXCEPTIONS), FIRST STEP, On Activation, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps, Step 3: Load Persistent Facts (+5 more)
+Cohesion: 0.13
+Nodes (12): badges, { container }, defaultProps, groupLabels, groups, input, labels, modal (+4 more)
 
 ### Community 694 - "Community 694"
 Cohesion: 0.14
-Nodes (13): Activation, BMad Customize, code:block1 (python3 {skill-root}/scripts/list_customizable_skills.py --p), code:block2 (python3 {project-root}/_bmad/scripts/resolve_customization.p), Complete when, Preflight, Step 1: Classify intent, Step 2: Discovery (+5 more)
+Nodes (13): Conventions, Conversion Rules, Morph — Agile Canvas Integrator, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Execute Prepend Steps, Step 3: Adopt Persona (+5 more)
 
 ### Community 695 - "Community 695"
 Cohesion: 0.14
-Nodes (13): Conventions, Domain Research Workflow, On Activation, PREREQUISITE, QUICK TOPIC DISCOVERY, ROUTE TO DOMAIN RESEARCH STEPS, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps (+5 more)
+Nodes (13): Conventions, Murat — Master Test Architect, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Execute Prepend Steps, Step 3: Adopt Persona, Step 4: Load Knowledge Base (+5 more)
 
 ### Community 696 - "Community 696"
 Cohesion: 0.14
-Nodes (13): Conventions, Market Research Workflow, On Activation, PREREQUISITE, QUICK TOPIC DISCOVERY, ROUTE TO MARKET RESEARCH STEPS, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps (+5 more)
+Nodes (14): 0.3.1, Bug Fixes, Bug Fixes, Bug Fixes, Bug Fixes, Bug Fixes, Bug Fixes, IDE Installer Overhaul (+6 more)
 
 ### Community 697 - "Community 697"
 Cohesion: 0.14
-Nodes (13): Conventions, On Activation, Overview, Pre-workflow Setup, Stage 1: Ignition, Stages, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps (+5 more)
+Nodes (13): code:block1 (N files changed · M modules touched · ~L lines of logic · B ), code:block2 ([Orientation] → Walkthrough → Detail Pass → Testing), DETERMINE WHAT YOU HAVE, ENRICH, FALLBACK TRAIL GENERATION, FIND THE CHANGE, Follow Global Step Rules in SKILL.md, Intent Summary (+5 more)
 
 ### Community 698 - "Community 698"
 Cohesion: 0.14
-Nodes (13): Activation Mode Detection, Conventions, Create Product Brief, On Activation, Overview, Stage 1: Understand Intent, Stages, Step 1: Resolve the Workflow Block (+5 more)
+Nodes (13): Code Review Workflow, Conventions, Critical Rules (NO EXCEPTIONS), FIRST STEP, On Activation, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps, Step 3: Load Persistent Facts (+5 more)
 
 ### Community 699 - "Community 699"
 Cohesion: 0.14
-Nodes (13): Conventions, Execution, Input Files, On Activation, Paths, Required Inputs, Retrospective Workflow, Step 1: Resolve the Workflow Block (+5 more)
+Nodes (13): Activation, BMad Customize, code:block1 (python3 {skill-root}/scripts/list_customizable_skills.py --p), code:block2 (python3 {project-root}/_bmad/scripts/resolve_customization.p), Complete when, Preflight, Step 1: Classify intent, Step 2: Discovery (+5 more)
 
 ### Community 700 - "Community 700"
 Cohesion: 0.14
-Nodes (13): CRITICAL RULES, EXECUTION, HALT CONDITIONS, If user selects `d` (delete), If user selects `k` (keep), If user selects `m` (move), Shard Document, Step 1: Get Source Document (+5 more)
+Nodes (13): Conventions, Domain Research Workflow, On Activation, PREREQUISITE, QUICK TOPIC DISCOVERY, ROUTE TO DOMAIN RESEARCH STEPS, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps (+5 more)
 
 ### Community 701 - "Community 701"
 Cohesion: 0.14
-Nodes (13): Conventions, On Activation, PREREQUISITE, QUICK TOPIC DISCOVERY, ROUTE TO TECHNICAL RESEARCH STEPS, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps, Step 3: Load Persistent Facts (+5 more)
+Nodes (13): Conventions, Market Research Workflow, On Activation, PREREQUISITE, QUICK TOPIC DISCOVERY, ROUTE TO MARKET RESEARCH STEPS, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps (+5 more)
 
 ### Community 702 - "Community 702"
 Cohesion: 0.14
-Nodes (14): properties, type, type, type, items, type, approvalDate, approvalNotes (+6 more)
+Nodes (13): Conventions, On Activation, Overview, Pre-workflow Setup, Stage 1: Ignition, Stages, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps (+5 more)
 
 ### Community 703 - "Community 703"
 Cohesion: 0.14
-Nodes (14): type, items, type, coveragePercentage, missingTestTypes, testCoverageAnalysis, testQualityNotes, uncoveredAreas (+6 more)
+Nodes (13): Activation Mode Detection, Conventions, Create Product Brief, On Activation, Overview, Stage 1: Understand Intent, Stages, Step 1: Resolve the Workflow Block (+5 more)
 
 ### Community 704 - "Community 704"
-Cohesion: 0.10
-Nodes (21): description, items, type, properties, description, items, type, required (+13 more)
+Cohesion: 0.14
+Nodes (13): Conventions, Execution, Input Files, On Activation, Paths, Required Inputs, Retrospective Workflow, Step 1: Resolve the Workflow Block (+5 more)
 
 ### Community 705 - "Community 705"
-Cohesion: 0.11
-Nodes (18): description, type, epicId, storyFilePath, storyId, storyKey, storyReference, storyTitle (+10 more)
+Cohesion: 0.14
+Nodes (13): CRITICAL RULES, EXECUTION, HALT CONDITIONS, If user selects `d` (delete), If user selects `k` (keep), If user selects `m` (move), Shard Document, Step 1: Get Source Document (+5 more)
 
 ### Community 706 - "Community 706"
 Cohesion: 0.14
-Nodes (14): description, properties, type, type, type, type, type, acceptanceSummary (+6 more)
+Nodes (13): Conventions, On Activation, PREREQUISITE, QUICK TOPIC DISCOVERY, ROUTE TO TECHNICAL RESEARCH STEPS, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps, Step 3: Load Persistent Facts (+5 more)
 
 ### Community 707 - "Community 707"
 Cohesion: 0.14
-Nodes (14): description, type, description, type, properties, generated, project, story_location (+6 more)
+Nodes (14): properties, type, type, type, items, type, approvalDate, approvalNotes (+6 more)
 
 ### Community 708 - "Community 708"
-Cohesion: 0.33
-Nodes (6): strategicContext, currentSituation, keyQuestions, strategicChallenge, strategicObjectives, visionStatement
+Cohesion: 0.14
+Nodes (14): type, items, type, coveragePercentage, missingTestTypes, testCoverageAnalysis, testQualityNotes, uncoveredAreas (+6 more)
 
 ### Community 709 - "Community 709"
 Cohesion: 0.14
-Nodes (14): description, type, description, type, properties, businessModelAnalysis, companyName, recommendedStrategy (+6 more)
+Nodes (14): description, items, type, description, items, type, required, type (+6 more)
 
 ### Community 710 - "Community 710"
-Cohesion: 0.41
-Nodes (13): bulletList(), convertArtifactToMarkdown(), frontmatter(), heading(), keyValueTable(), renderArchitecture(), renderEpic(), renderGeneric() (+5 more)
+Cohesion: 0.14
+Nodes (14): description, type, epicId, storyFilePath, storyId, storyKey, storyTitle, type (+6 more)
 
 ### Community 711 - "Community 711"
 Cohesion: 0.14
-Nodes (14): description, type, description, type, description, type, properties, author (+6 more)
+Nodes (14): description, properties, type, type, type, type, type, acceptanceSummary (+6 more)
 
 ### Community 712 - "Community 712"
 Cohesion: 0.14
-Nodes (14): description, type, description, examples, type, description, type, description (+6 more)
+Nodes (14): description, type, description, type, properties, generated, project, story_location (+6 more)
 
 ### Community 713 - "Community 713"
 Cohesion: 0.14
-Nodes (14): description, properties, type, description, type, defectManagement, process, severityDefinitions (+6 more)
+Nodes (14): description, properties, type, description, items, type, properties, type (+6 more)
 
 ### Community 714 - "Community 714"
-Cohesion: 0.14
-Nodes (13): 1. Check module.yaml Install Variables, 2. Check module-help.csv, 3. Module Type Installation, 4. Record Results, 5. Auto-Proceed, code:markdown (## Installation Readiness), MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE (+5 more)
+Cohesion: 0.16
+Nodes (14): properties, description, items, type, type, generatedTests, recommendations, testPatterns (+6 more)
 
 ### Community 715 - "Community 715"
 Cohesion: 0.14
-Nodes (13): All Tests Verified to Fail (RED Phase), ATDD Checklist Document Created, ATDD Workflow Validation Checklist, Data Factories Created, data-testid Requirements Listed, Mock Requirements Documented, Step 1: Story Context and Requirements, Step 2: Test Level Selection and Strategy (+5 more)
+Nodes (14): description, type, properties, description, items, type, description, type (+6 more)
 
 ### Community 716 - "Community 716"
 Cohesion: 0.14
-Nodes (14): Assertions (if `check_assertions: true`), BDD Format (if `check_given_when_then: true`), Data Factories (if `check_data_factories: true`), Determinism (if `check_determinism: true`), Fixture Patterns (if `check_fixture_patterns: true`), Flakiness Patterns (if `check_flakiness_patterns: true`), Hard Waits (if `check_hard_waits: true`), Isolation (if `check_isolation: true`) (+6 more)
+Nodes (14): description, type, description, type, properties, businessModelAnalysis, companyName, recommendedStrategy (+6 more)
 
 ### Community 717 - "Community 717"
-Cohesion: 0.14
-Nodes (14): notes, score, qualityAssessment, notes, score, notes, score, bddFormat (+6 more)
-
-### Community 718 - "Community 718"
-Cohesion: 0.14
-Nodes (13): metadata, artifactType, author, currentStep, projectName, schemaVersion, status, stepsCompleted (+5 more)
-
-### Community 719 - "Community 719"
-Cohesion: 0.14
-Nodes (14): description, type, description, format, type, description, type, properties (+6 more)
-
-### Community 720 - "Community 720"
-Cohesion: 0.14
-Nodes (14): frequency, recoveryProcess, retention, reliability, circuitBreaker, retryPolicy, strategy, failoverMechanism (+6 more)
-
-### Community 721 - "Community 721"
-Cohesion: 0.14
-Nodes (13): metadata, artifactType, author, inputDocuments, projectName, schemaVersion, status, stepsCompleted (+5 more)
-
-### Community 722 - "Community 722"
-Cohesion: 0.14
-Nodes (13): 1. Module Code, 2. Module Name, 3. Personality Theme, 4. Store Identity, 5. MENU OPTIONS, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement: (+5 more)
-
-### Community 723 - "Community 723"
-Cohesion: 0.14
-Nodes (13): 1. Single vs Multi-Agent, 2. Design the Agent Team, 3. Party Mode Simulation, 4. Agent Menu Coordination, 5. MENU OPTIONS, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement: (+5 more)
-
-### Community 724 - "Community 724"
-Cohesion: 0.14
-Nodes (13): 1. Set the Creative Tone, 2. Explore Creative Elements, 3. Party Mode Ideation, 4. Capture the Creative Elements, 5. MENU OPTIONS, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement: (+5 more)
-
-### Community 725 - "Community 725"
-Cohesion: 0.14
-Nodes (13): 1. Selection Logic, 2. Announce Decision, 3. Save Progress, code:yaml (---), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES, MANDATORY SEQUENCE (+5 more)
-
-### Community 726 - "Community 726"
-Cohesion: 0.14
-Nodes (13): 1. Build Matrix, 2. Validate Coverage Logic, 3. Save Progress, code:yaml (---), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES, MANDATORY SEQUENCE (+5 more)
-
-### Community 727 - "Community 727"
-Cohesion: 0.14
-Nodes (13): 1. Identify Isolation Violations, 2. Calculate Isolation Score, code:javascript (const totalChecks = testFiles.length * checksPerFile;), code:json ({), EXIT CONDITION, ❌ FAILURE:, MANDATORY EXECUTION RULES, OUTPUT FORMAT (+5 more)
-
-### Community 728 - "Community 728"
-Cohesion: 0.14
-Nodes (13): 1. tests/README.md, 2. Build & Test Scripts, 3. Save Progress, code:yaml (---), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES, MANDATORY SEQUENCE (+5 more)
-
-### Community 729 - "Community 729"
-Cohesion: 0.14
-Nodes (13): 1. Congratulate the User on Completion, 2. Update the created document's frontmatter, 3. Next Steps Guidance, code:yaml (stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]), COMPLETION SEQUENCE:, EXECUTION PROTOCOLS:, FAILURE MODES:, MANDATORY EXECUTION RULES (READ FIRST): (+5 more)
-
-### Community 730 - "Community 730"
-Cohesion: 0.14
-Nodes (14): Action Items, Additional Versions Needed, Adjustment Triggers, Decision Gates, Lagging Indicators, Leading Indicators, 📈 MONITORING AND VALIDATION, Next Steps (+6 more)
-
-### Community 731 - "Community 731"
-Cohesion: 0.14
-Nodes (13): 1. Determine Validation Target, 2. Load Target, 3. Confirm Target, 4. Initialize Validation Report, 5. Proceed to Validation, code:yaml (---), MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE (+5 more)
-
-### Community 732 - "Community 732"
-Cohesion: 0.14
-Nodes (13): 1. Load Standards, 2. Perform Structure Checks, 3. Check Module Type Compliance, 4. Record Results, 5. Auto-Proceed, code:markdown (## File Structure Validation), MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE (+5 more)
-
-### Community 733 - "Community 733"
-Cohesion: 0.14
-Nodes (13): 1. Compile Overall Status, 2. Generate Summary, 3. Present Report, 4. Offer Next Actions, 5. Menu Handling, code:markdown (---), MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE (+5 more)
-
-### Community 734 - "Community 734"
-Cohesion: 0.14
-Nodes (14): description, properties, type, burnIn, sharding, testExecution, testSuites, properties (+6 more)
-
-### Community 735 - "Community 735"
-Cohesion: 0.14
-Nodes (14): description, type, description, type, properties, bestPractices, configuration, scripts (+6 more)
-
-### Community 736 - "Community 736"
-Cohesion: 0.14
-Nodes (13): Additional Notes, Documentation, Key Concepts Covered, Key Takeaways, Knowledge Fragments, Next Recommended Session, Online Resources, Practical Examples (+5 more)
-
-### Community 737 - "Community 737"
-Cohesion: 0.15
-Nodes (8): derivePipelineStages(), GraphifyModal(), GraphifyModalProps, PipelineStage, PipelineStageState, PipelineTracker(), ArchIndexWebview, GraphifyStatusWebview
-
-### Community 738 - "Community 738"
 Cohesion: 0.41
 Nodes (13): bulletList(), convertArtifactToMarkdown(), frontmatter(), heading(), keyValueTable(), renderArchitecture(), renderEpic(), renderGeneric() (+5 more)
 
+### Community 718 - "Community 718"
+Cohesion: 0.14
+Nodes (14): description, examples, type, description, type, description, type, description (+6 more)
+
+### Community 719 - "Community 719"
+Cohesion: 0.14
+Nodes (14): notes, score, qualityAssessment, notes, score, notes, score, bddFormat (+6 more)
+
+### Community 720 - "Community 720"
+Cohesion: 0.14
+Nodes (13): metadata, artifactType, author, currentStep, projectName, schemaVersion, status, stepsCompleted (+5 more)
+
+### Community 721 - "Community 721"
+Cohesion: 0.14
+Nodes (14): description, type, description, format, type, description, type, properties (+6 more)
+
+### Community 722 - "Community 722"
+Cohesion: 0.14
+Nodes (14): frequency, recoveryProcess, retention, reliability, circuitBreaker, retryPolicy, strategy, failoverMechanism (+6 more)
+
+### Community 723 - "Community 723"
+Cohesion: 0.14
+Nodes (13): metadata, artifactType, author, inputDocuments, projectName, schemaVersion, status, stepsCompleted (+5 more)
+
+### Community 724 - "Community 724"
+Cohesion: 0.14
+Nodes (13): 1. Module Code, 2. Module Name, 3. Personality Theme, 4. Store Identity, 5. MENU OPTIONS, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement: (+5 more)
+
+### Community 725 - "Community 725"
+Cohesion: 0.14
+Nodes (13): 1. Single vs Multi-Agent, 2. Design the Agent Team, 3. Party Mode Simulation, 4. Agent Menu Coordination, 5. MENU OPTIONS, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement: (+5 more)
+
+### Community 726 - "Community 726"
+Cohesion: 0.14
+Nodes (13): 1. Set the Creative Tone, 2. Explore Creative Elements, 3. Party Mode Ideation, 4. Capture the Creative Elements, 5. MENU OPTIONS, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement: (+5 more)
+
+### Community 727 - "Community 727"
+Cohesion: 0.14
+Nodes (13): 1. Selection Logic, 2. Announce Decision, 3. Save Progress, code:yaml (---), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES, MANDATORY SEQUENCE (+5 more)
+
+### Community 728 - "Community 728"
+Cohesion: 0.14
+Nodes (13): 1. Build Matrix, 2. Validate Coverage Logic, 3. Save Progress, code:yaml (---), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES, MANDATORY SEQUENCE (+5 more)
+
+### Community 729 - "Community 729"
+Cohesion: 0.14
+Nodes (13): 1. Identify Isolation Violations, 2. Calculate Isolation Score, code:javascript (const totalChecks = testFiles.length * checksPerFile;), code:json ({), EXIT CONDITION, ❌ FAILURE:, MANDATORY EXECUTION RULES, OUTPUT FORMAT (+5 more)
+
+### Community 730 - "Community 730"
+Cohesion: 0.14
+Nodes (13): 1. tests/README.md, 2. Build & Test Scripts, 3. Save Progress, code:yaml (---), CONTEXT BOUNDARIES:, EXECUTION PROTOCOLS:, MANDATORY EXECUTION RULES, MANDATORY SEQUENCE (+5 more)
+
+### Community 731 - "Community 731"
+Cohesion: 0.14
+Nodes (13): All Tests Verified to Fail (RED Phase), ATDD Checklist Document Created, ATDD Workflow Validation Checklist, Data Factories Created, data-testid Requirements Listed, Mock Requirements Documented, Step 1: Story Context and Requirements, Step 2: Test Level Selection and Strategy (+5 more)
+
+### Community 732 - "Community 732"
+Cohesion: 0.14
+Nodes (14): Assertions (if `check_assertions: true`), BDD Format (if `check_given_when_then: true`), Data Factories (if `check_data_factories: true`), Determinism (if `check_determinism: true`), Fixture Patterns (if `check_fixture_patterns: true`), Flakiness Patterns (if `check_flakiness_patterns: true`), Hard Waits (if `check_hard_waits: true`), Isolation (if `check_isolation: true`) (+6 more)
+
+### Community 733 - "Community 733"
+Cohesion: 0.14
+Nodes (13): 1. Congratulate the User on Completion, 2. Update the created document's frontmatter, 3. Next Steps Guidance, code:yaml (stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]), COMPLETION SEQUENCE:, EXECUTION PROTOCOLS:, FAILURE MODES:, MANDATORY EXECUTION RULES (READ FIRST): (+5 more)
+
+### Community 734 - "Community 734"
+Cohesion: 0.14
+Nodes (14): Action Items, Additional Versions Needed, Adjustment Triggers, Decision Gates, Lagging Indicators, Leading Indicators, 📈 MONITORING AND VALIDATION, Next Steps (+6 more)
+
+### Community 735 - "Community 735"
+Cohesion: 0.14
+Nodes (13): 1. Determine Validation Target, 2. Load Target, 3. Confirm Target, 4. Initialize Validation Report, 5. Proceed to Validation, code:yaml (---), MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE (+5 more)
+
+### Community 736 - "Community 736"
+Cohesion: 0.14
+Nodes (13): 1. Load Standards, 2. Perform Structure Checks, 3. Check Module Type Compliance, 4. Record Results, 5. Auto-Proceed, code:markdown (## File Structure Validation), MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE (+5 more)
+
+### Community 737 - "Community 737"
+Cohesion: 0.14
+Nodes (13): 1. Check module.yaml Install Variables, 2. Check module-help.csv, 3. Module Type Installation, 4. Record Results, 5. Auto-Proceed, code:markdown (## Installation Readiness), MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE (+5 more)
+
+### Community 738 - "Community 738"
+Cohesion: 0.14
+Nodes (13): 1. Compile Overall Status, 2. Generate Summary, 3. Present Report, 4. Offer Next Actions, 5. Menu Handling, code:markdown (---), MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE (+5 more)
+
 ### Community 739 - "Community 739"
-Cohesion: 0.16
-Nodes (11): ACTION_COLORS, ACTION_LABELS, AICursor(), AICursorProps, cursor, editingColor, path, { rerender } (+3 more)
+Cohesion: 0.14
+Nodes (14): description, properties, type, burnIn, sharding, testExecution, testSuites, properties (+6 more)
 
 ### Community 740 - "Community 740"
-Cohesion: 0.15
-Nodes (12): code:json ({), Compression Process, Distillate Compressor Agent, Return Format, Semantic Splitting, Step 1: Read Sources, Step 2: Extract, Step 3: Deduplicate (+4 more)
+Cohesion: 0.14
+Nodes (14): description, properties, type, description, type, defectManagement, process, severityDefinitions (+6 more)
 
 ### Community 741 - "Community 741"
-Cohesion: 0.15
-Nodes (12): Epic JIRA:MI0436-9867: Replicate QAWeb orgs to SalesForce + link orgs to displays., Goal, JIRA:MI0436-10200: Mark ConnectCare_eligible flag for selected models, JIRA:MI0436-10201: Link SF Display asset to a SF Tenant, JIRA:MI0436-10202: Link hospital organization to Tenants in SalesForce, JIRA:MI0436-11316: Remove licenses table and all related code (such as the connectcare-get-organizations lambda), JIRA:MI0436-11317: BackOffice shows ConnectCare contract + override, JIRA:MI0436-11318: Extend cached data from Synapse DB (+4 more)
+Cohesion: 0.14
+Nodes (14): description, type, description, type, properties, description, type, bestPractices (+6 more)
 
 ### Community 742 - "Community 742"
-Cohesion: 0.15
-Nodes (13): contributes, chatParticipants, commands, keybindings, languageModelTools, menus, views, viewsContainers (+5 more)
+Cohesion: 0.14
+Nodes (13): Additional Notes, Documentation, Key Concepts Covered, Key Takeaways, Knowledge Fragments, Next Recommended Session, Online Resources, Practical Examples (+5 more)
 
 ### Community 743 - "Community 743"
 Cohesion: 0.15
-Nodes (12): Conventions, Mary — Business Analyst, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Execute Prepend Steps, Step 3: Adopt Persona, Step 4: Load Persistent Facts (+4 more)
+Nodes (8): derivePipelineStages(), GraphifyModal(), GraphifyModalProps, PipelineStage, PipelineStageState, PipelineTracker(), ArchIndexWebview, GraphifyStatusWebview
 
 ### Community 744 - "Community 744"
-Cohesion: 0.15
-Nodes (12): Conventions, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Execute Prepend Steps, Step 3: Adopt Persona, Step 4: Load Persistent Facts, Step 5: Load Config (+4 more)
+Cohesion: 0.41
+Nodes (13): bulletList(), convertArtifactToMarkdown(), frontmatter(), heading(), keyValueTable(), renderArchitecture(), renderEpic(), renderGeneric() (+5 more)
 
 ### Community 745 - "Community 745"
-Cohesion: 0.15
-Nodes (12): Amelia — Senior Software Engineer, Conventions, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Execute Prepend Steps, Step 3: Adopt Persona, Step 4: Load Persistent Facts (+4 more)
+Cohesion: 0.16
+Nodes (11): ACTION_COLORS, ACTION_LABELS, AICursor(), AICursorProps, cursor, editingColor, path, { rerender } (+3 more)
 
 ### Community 746 - "Community 746"
 Cohesion: 0.15
-Nodes (12): Conventions, John — Product Manager, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Execute Prepend Steps, Step 3: Adopt Persona, Step 4: Load Persistent Facts (+4 more)
+Nodes (12): code:json ({), Compression Process, Distillate Compressor Agent, Return Format, Semantic Splitting, Step 1: Read Sources, Step 2: Extract, Step 3: Deduplicate (+4 more)
 
 ### Community 747 - "Community 747"
 Cohesion: 0.15
-Nodes (12): Conventions, On Activation, Overview, Paige — Technical Writer, Step 1: Resolve the Agent Block, Step 2: Execute Prepend Steps, Step 3: Adopt Persona, Step 4: Load Persistent Facts (+4 more)
+Nodes (13): 0.2.0, Canvas Layout Overhaul, Dynamic Swimlane Height, Epic Children Reorder, Lane Top Margin Fix, Per-Category Badge Toggle, Refactoring, Refactoring (+5 more)
 
 ### Community 748 - "Community 748"
 Cohesion: 0.15
-Nodes (12): Conventions, On Activation, Overview, Sally — UX Designer, Step 1: Resolve the Agent Block, Step 2: Execute Prepend Steps, Step 3: Adopt Persona, Step 4: Load Persistent Facts (+4 more)
+Nodes (13): contributes, chatParticipants, commands, keybindings, languageModelTools, menus, views, viewsContainers (+5 more)
 
 ### Community 749 - "Community 749"
 Cohesion: 0.15
-Nodes (12): BUILD THE WALKTHROUGH, code:block1 (Orientation → [Walkthrough] → Detail Pass → Testing), code:block2 (### {Concern Heading}), code:block3 (---), EARLY EXIT, Follow Global Step Rules in SKILL.md, Identify Concerns, NEXT (+4 more)
+Nodes (12): Conventions, Mary — Business Analyst, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Execute Prepend Steps, Step 3: Adopt Persona, Step 4: Load Persistent Facts (+4 more)
 
 ### Community 750 - "Community 750"
 Cohesion: 0.15
-Nodes (12): Conventions, Create Story Workflow, Execution, Input Files, On Activation, Paths, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps (+4 more)
+Nodes (12): Conventions, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Execute Prepend Steps, Step 3: Adopt Persona, Step 4: Load Persistent Facts, Step 5: Load Config (+4 more)
 
 ### Community 751 - "Community 751"
 Cohesion: 0.15
-Nodes (12): Acceptance Criteria, Agent Model Used, Completion Notes List, Debug Log References, Dev Agent Record, Dev Notes, File List, Project Structure Notes (+4 more)
+Nodes (12): Amelia — Senior Software Engineer, Conventions, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Execute Prepend Steps, Step 3: Adopt Persona, Step 4: Load Persistent Facts (+4 more)
 
 ### Community 752 - "Community 752"
 Cohesion: 0.15
-Nodes (12): Conventions, Create UX Design Workflow, EXECUTION, On Activation, Paths, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps, Step 3: Load Persistent Facts (+4 more)
+Nodes (12): Conventions, John — Product Manager, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Execute Prepend Steps, Step 3: Adopt Persona, Step 4: Load Persistent Facts (+4 more)
 
 ### Community 753 - "Community 753"
 Cohesion: 0.15
-Nodes (12): code:yaml (---), code:block2 ({base-name}-distillate/), code:json ({), code:markdown (---), Distillator: A Document Distillation Engine, On Activation, Overview, Stage 1: Analyze (+4 more)
+Nodes (12): Conventions, On Activation, Overview, Paige — Technical Writer, Step 1: Resolve the Agent Block, Step 2: Execute Prepend Steps, Step 3: Adopt Persona, Step 4: Load Persistent Facts (+4 more)
 
 ### Community 754 - "Community 754"
 Cohesion: 0.15
-Nodes (12): Conventions, Execution, Generate Project Context Workflow, On Activation, Paths, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps, Step 3: Load Persistent Facts (+4 more)
+Nodes (12): Conventions, On Activation, Overview, Sally — UX Designer, Step 1: Resolve the Agent Block, Step 2: Execute Prepend Steps, Step 3: Adopt Persona, Step 4: Load Persistent Facts (+4 more)
 
 ### Community 755 - "Community 755"
 Cohesion: 0.15
-Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
+Nodes (12): BUILD THE WALKTHROUGH, code:block1 (Orientation → [Walkthrough] → Detail Pass → Testing), code:block2 (### {Concern Heading}), code:block3 (---), EARLY EXIT, Follow Global Step Rules in SKILL.md, Identify Concerns, NEXT (+4 more)
 
 ### Community 756 - "Community 756"
 Cohesion: 0.15
-Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
+Nodes (12): Conventions, Create Story Workflow, Execution, Input Files, On Activation, Paths, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps (+4 more)
 
 ### Community 757 - "Community 757"
 Cohesion: 0.15
-Nodes (13): items, type, description, type, items, type, milestones, overview (+5 more)
+Nodes (12): Acceptance Criteria, Agent Model Used, Completion Notes List, Debug Log References, Dev Agent Record, Dev Notes, File List, Project Structure Notes (+4 more)
 
 ### Community 758 - "Community 758"
 Cohesion: 0.15
-Nodes (13): description, type, description, type, items, type, properties, architecture (+5 more)
+Nodes (12): Conventions, Create UX Design Workflow, EXECUTION, On Activation, Paths, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps, Step 3: Load Persistent Facts (+4 more)
 
 ### Community 759 - "Community 759"
 Cohesion: 0.15
-Nodes (13): properties, type, properties, type, description, type, globalState, localState (+5 more)
+Nodes (12): code:yaml (---), code:block2 ({base-name}-distillate/), code:json ({), code:markdown (---), Distillator: A Document Distillation Engine, On Activation, Overview, Stage 1: Analyze (+4 more)
 
 ### Community 760 - "Community 760"
 Cohesion: 0.15
-Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
+Nodes (12): Conventions, Execution, Generate Project Context Workflow, On Activation, Paths, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps, Step 3: Load Persistent Facts (+4 more)
 
 ### Community 761 - "Community 761"
 Cohesion: 0.15
-Nodes (13): covered, percentage, total, additional, functional, nonFunctional, byType, covered (+5 more)
+Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
 
 ### Community 762 - "Community 762"
 Cohesion: 0.15
@@ -4528,15 +4537,15 @@ Nodes (12): required, type, description, $id, $ref, properties, content, metadat
 
 ### Community 763 - "Community 763"
 Cohesion: 0.15
-Nodes (13): type, environmentReadiness, resourceAssessment, skillGaps, teamReadiness, toolsReadiness, description, properties (+5 more)
+Nodes (13): items, type, description, type, items, type, milestones, overview (+5 more)
 
 ### Community 764 - "Community 764"
 Cohesion: 0.15
-Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
+Nodes (13): description, type, description, type, items, type, properties, architecture (+5 more)
 
 ### Community 765 - "Community 765"
 Cohesion: 0.15
-Nodes (13): items, type, items, type, communicationImprovements, processImprovements, teamFeedback, toolingImprovements (+5 more)
+Nodes (13): properties, type, properties, type, description, type, globalState, localState (+5 more)
 
 ### Community 766 - "Community 766"
 Cohesion: 0.15
@@ -4548,7 +4557,7 @@ Nodes (12): required, type, description, $id, $ref, properties, content, metadat
 
 ### Community 768 - "Community 768"
 Cohesion: 0.15
-Nodes (13): items, type, items, type, description, properties, type, circularDependencies (+5 more)
+Nodes (13): covered, percentage, total, additional, functional, nonFunctional, byType, covered (+5 more)
 
 ### Community 769 - "Community 769"
 Cohesion: 0.15
@@ -4556,15 +4565,15 @@ Nodes (12): required, type, description, $id, $ref, properties, content, metadat
 
 ### Community 770 - "Community 770"
 Cohesion: 0.15
-Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
+Nodes (13): type, environmentReadiness, resourceAssessment, skillGaps, teamReadiness, toolsReadiness, description, properties (+5 more)
 
 ### Community 771 - "Community 771"
 Cohesion: 0.15
-Nodes (13): description, properties, type, items, type, items, type, description (+5 more)
+Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
 
 ### Community 772 - "Community 772"
 Cohesion: 0.15
-Nodes (13): semantic, usage, value, usage, value, error, info, success (+5 more)
+Nodes (13): items, type, items, type, communicationImprovements, processImprovements, teamFeedback, toolingImprovements (+5 more)
 
 ### Community 773 - "Community 773"
 Cohesion: 0.15
@@ -4572,19 +4581,19 @@ Nodes (12): required, type, description, $id, $ref, properties, content, metadat
 
 ### Community 774 - "Community 774"
 Cohesion: 0.15
-Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
+Nodes (13): items, type, items, type, description, properties, type, circularDependencies (+5 more)
 
 ### Community 775 - "Community 775"
 Cohesion: 0.15
-Nodes (13): competitiveAdvantages, competitors, overview, threatLevel, marketAnalysis, competitiveDynamics, criticalInsights, marketOpportunities (+5 more)
+Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
 
 ### Community 776 - "Community 776"
 Cohesion: 0.15
-Nodes (13): description, type, description, properties, type, items, type, items (+5 more)
+Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
 
 ### Community 777 - "Community 777"
 Cohesion: 0.15
-Nodes (13): type, description, properties, type, format, type, escalationPath, governanceAndReview (+5 more)
+Nodes (13): description, properties, type, items, type, items, type, description (+5 more)
 
 ### Community 778 - "Community 778"
 Cohesion: 0.15
@@ -4592,7 +4601,7 @@ Nodes (12): required, type, description, $id, $ref, properties, content, metadat
 
 ### Community 779 - "Community 779"
 Cohesion: 0.15
-Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
+Nodes (13): semantic, usage, value, usage, value, error, info, success (+5 more)
 
 ### Community 780 - "Community 780"
 Cohesion: 0.15
@@ -4600,567 +4609,571 @@ Nodes (12): required, type, description, $id, $ref, properties, content, metadat
 
 ### Community 781 - "Community 781"
 Cohesion: 0.15
-Nodes (13): description, format, type, description, format, type, completed, created (+5 more)
+Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
 
 ### Community 782 - "Community 782"
 Cohesion: 0.15
-Nodes (12): code:yaml (critical_actions:), code:yaml (critical_actions:), code:yaml (critical_actions:), Compiler Auto-Adds (Don't Duplicate), critical_actions, Dos & Don'ts, hasSidecar: false (OPTIONAL), hasSidecar: true + extras (+4 more)
+Nodes (13): description, type, description, properties, type, items, type, items (+5 more)
 
 ### Community 783 - "Community 783"
 Cohesion: 0.15
-Nodes (12): Best Practices, code:csv (category,name,pattern,description), code:csv (category,name,pattern), code:csv (keywords,document_path,section), code:csv (scenario,required_steps,output_sections), Common Use Cases, Configuration Lookup, CSV Data File Standards (+4 more)
+Nodes (13): type, description, properties, type, format, type, escalationPath, governanceAndReview (+5 more)
 
 ### Community 784 - "Community 784"
 Cohesion: 0.15
-Nodes (12): 1. Show Diff, 2. Confirm Satisfaction, 3. Handle Response, 4. Offer Validation, 5. Proceed to Confirm, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement: (+4 more)
+Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
 
 ### Community 785 - "Community 785"
 Cohesion: 0.15
-Nodes (12): Data-TestId Requirements, Epic-Level Integration Guidance, P0/P1 Test Scenarios → Story Acceptance Criteria, Phase Transition Quality Gates, Purpose, Quality Gates, Recommended BMAD → TEA Workflow Sequence, Risk References (+4 more)
+Nodes (13): analysisDetails, competitorProfiles, dataSourcesa, content, appendix, companyName, governanceAndReview, strategicFocus (+5 more)
 
 ### Community 786 - "Community 786"
 Cohesion: 0.15
-Nodes (13): channels, escalation, strategy, observability, aggregation, format, levels, strategy (+5 more)
+Nodes (13): competitiveAdvantages, competitors, overview, threatLevel, marketAnalysis, competitiveDynamics, criticalInsights, marketOpportunities (+5 more)
 
 ### Community 787 - "Community 787"
 Cohesion: 0.15
-Nodes (12): 1. Set the Visioning Tone, 2. Explore the Vision, 3. Capture the Vision, 4. MENU OPTIONS, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement:, Step 4: Vision (+4 more)
+Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
 
 ### Community 788 - "Community 788"
 Cohesion: 0.15
-Nodes (12): 1. Brainstorm Workflows, 2. For Each Workflow, 3. Workflow Connections, 4. MENU OPTIONS, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement:, Step 9: Workflows (+4 more)
+Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
 
 ### Community 789 - "Community 789"
 Cohesion: 0.15
-Nodes (12): 1. MCP Tools, 2. External Services, 3. Module Integrations, 4. Capture the List, 5. MENU OPTIONS, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement: (+4 more)
+Nodes (13): description, format, type, description, format, type, completed, created (+5 more)
 
 ### Community 790 - "Community 790"
 Cohesion: 0.15
-Nodes (12): 1. Load Target File, 2. Apply Edit, 3. Save Changes, 4. Report Success, 5. Proceed to Review, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement: (+4 more)
+Nodes (13): description, type, description, type, description, type, properties, description (+5 more)
 
 ### Community 791 - "Community 791"
 Cohesion: 0.15
-Nodes (13): gateDecision, criticalIssues, decision, decisionMode, gateType, nextSteps, rationale, recommendations (+5 more)
+Nodes (12): code:yaml (critical_actions:), code:yaml (critical_actions:), code:yaml (critical_actions:), Compiler Auto-Adds (Don't Duplicate), critical_actions, Dos & Don'ts, hasSidecar: false (OPTIONAL), hasSidecar: true + extras (+4 more)
 
 ### Community 792 - "Community 792"
 Cohesion: 0.15
-Nodes (13): p0, p1, p2, p3, covered, total, covered, total (+5 more)
+Nodes (12): Best Practices, code:csv (category,name,pattern,description), code:csv (category,name,pattern), code:csv (keywords,document_path,section), code:csv (scenario,required_steps,output_sections), Common Use Cases, Configuration Lookup, CSV Data File Standards (+4 more)
 
 ### Community 793 - "Community 793"
 Cohesion: 0.15
-Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
+Nodes (13): code:typescript (import * as vscode from 'vscode';), code:typescript (// Before), code:typescript (import * as fs from 'fs';), code:typescript (// src/commands/suggest-tool.ts), code:json ({), code:typescript (import { catalogueService } from '../state/catalogue-service), code:typescript (import { toolTelemetry } from '../chat/tool-telemetry';), PHASE 5 — Telemetry & Learning Loop (Week 4, ~3 days) (+5 more)
 
 ### Community 794 - "Community 794"
 Cohesion: 0.15
-Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
+Nodes (12): Epic JIRA:MI0436-9867: Replicate QAWeb orgs to SalesForce + link orgs to displays., Goal, JIRA:MI0436-10200: Mark ConnectCare_eligible flag for selected models, JIRA:MI0436-10201: Link SF Display asset to a SF Tenant, JIRA:MI0436-10202: Link hospital organization to Tenants in SalesForce, JIRA:MI0436-11316: Remove licenses table and all related code (such as the connectcare-get-organizations lambda), JIRA:MI0436-11317: BackOffice shows ConnectCare contract + override, JIRA:MI0436-11318: Extend cached data from Synapse DB (+4 more)
 
 ### Community 795 - "Community 795"
 Cohesion: 0.15
-Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
+Nodes (13): channels, escalation, strategy, observability, aggregation, format, levels, strategy (+5 more)
 
 ### Community 796 - "Community 796"
 Cohesion: 0.15
-Nodes (13): items, type, performanceTests, reliabilityTests, securityTests, testEvidence, items, type (+5 more)
+Nodes (12): 1. Set the Visioning Tone, 2. Explore the Vision, 3. Capture the Vision, 4. MENU OPTIONS, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement:, Step 4: Vision (+4 more)
 
 ### Community 797 - "Community 797"
 Cohesion: 0.15
-Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
+Nodes (12): 1. Brainstorm Workflows, 2. For Each Workflow, 3. Workflow Connections, 4. MENU OPTIONS, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement:, Step 9: Workflows (+4 more)
 
 ### Community 798 - "Community 798"
 Cohesion: 0.15
-Nodes (13): items, type, environments, testData, testEnvironment, tools, properties, type (+5 more)
+Nodes (12): 1. MCP Tools, 2. External Services, 3. Module Integrations, 4. Capture the List, 5. MENU OPTIONS, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement: (+4 more)
 
 ### Community 799 - "Community 799"
 Cohesion: 0.15
-Nodes (13): description, items, type, breakdown, resourceEstimates, timeline, totalEffort, description (+5 more)
+Nodes (12): 1. Load Target File, 2. Apply Edit, 3. Save Changes, 4. Report Success, 5. Proceed to Review, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement: (+4 more)
 
 ### Community 800 - "Community 800"
 Cohesion: 0.15
-Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
+Nodes (12): 1. Show Diff, 2. Confirm Satisfaction, 3. Handle Response, 4. Offer Validation, 5. Proceed to Confirm, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement: (+4 more)
 
 ### Community 801 - "Community 801"
 Cohesion: 0.15
-Nodes (13): description, type, properties, description, type, cicdYamlSnippet, gateDecision, storyInfo (+5 more)
+Nodes (12): Data-TestId Requirements, Epic-Level Integration Guidance, P0/P1 Test Scenarios → Story Acceptance Criteria, Phase Transition Quality Gates, Purpose, Quality Gates, Recommended BMAD → TEA Workflow Sequence, Risk References (+4 more)
 
 ### Community 802 - "Community 802"
 Cohesion: 0.15
-Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
+Nodes (13): p0, p1, p2, p3, covered, total, covered, total (+5 more)
 
 ### Community 803 - "Community 803"
 Cohesion: 0.15
-Nodes (13): description, items, type, description, properties, type, type, batches_completed (+5 more)
+Nodes (13): gateDecision, criticalIssues, decision, decisionMode, gateType, nextSteps, rationale, recommendations (+5 more)
 
 ### Community 804 - "Community 804"
-Cohesion: 0.17
-Nodes (12): 0.3.7, Artifact Store Refactoring, Artifact Store Refactoring, Bug Fixes, Bug Fixes, Canvas UX Improvements, ECC-Inspired Skills & Workflows Integration, Gstack Elicitation Workflows Integration (+4 more)
+Cohesion: 0.15
+Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
 
 ### Community 805 - "Community 805"
-Cohesion: 0.17
-Nodes (11): Customer FAQ, Getting Started, {Headline}, How It Works, Internal FAQ, Q: {Hardest customer question first}, Q: {Hardest internal question first}, Q: {Next question} (+3 more)
+Cohesion: 0.15
+Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
 
 ### Community 806 - "Community 806"
-Cohesion: 0.17
-Nodes (11): Checkpoint Review Workflow, Conventions, FIRST STEP, Global Step Rules (apply to every step), On Activation, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps, Step 3: Load Persistent Facts (+3 more)
+Cohesion: 0.15
+Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
 
 ### Community 807 - "Community 807"
-Cohesion: 0.17
-Nodes (11): Architecture Workflow, Conventions, Execution, On Activation, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps, Step 3: Load Persistent Facts, Step 4: Load Config (+3 more)
+Cohesion: 0.15
+Nodes (13): items, type, performanceTests, reliabilityTests, securityTests, testEvidence, items, type (+5 more)
 
 ### Community 808 - "Community 808"
-Cohesion: 0.17
-Nodes (11): 2a: Try Sharded Documents First, 2b: Try Whole Document if No Sharded Found, 2c: Handle Not Found, code:block1 (OK Loaded {prd_content} from 5 sharded files: prd/index.md, ), Discover Inputs Protocol, FULL_LOAD Strategy, INDEX_GUIDED Strategy, SELECTIVE_LOAD Strategy (+3 more)
+Cohesion: 0.15
+Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
 
 ### Community 809 - "Community 809"
-Cohesion: 0.17
-Nodes (11): Conventions, Dev Story Workflow, Execution, On Activation, Paths, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps, Step 3: Load Persistent Facts (+3 more)
+Cohesion: 0.15
+Nodes (13): items, type, environments, testData, testEnvironment, tools, properties, type (+5 more)
 
 ### Community 810 - "Community 810"
-Cohesion: 0.17
-Nodes (12): type, description, properties, type, type, type, completedAt, implementation (+4 more)
+Cohesion: 0.15
+Nodes (13): description, items, type, breakdown, resourceEstimates, timeline, totalEffort, description (+5 more)
 
 ### Community 811 - "Community 811"
-Cohesion: 0.17
-Nodes (12): recommendations, securityAnalysis, securityChecksPerformed, vulnerabilitiesFound, items, type, description, properties (+4 more)
+Cohesion: 0.15
+Nodes (13): items, type, items, type, installationSteps, prerequisites, runCommands, setupInstructions (+5 more)
 
 ### Community 812 - "Community 812"
-Cohesion: 0.17
-Nodes (12): properties, description, type, description, items, type, oneOf, dependencies (+4 more)
+Cohesion: 0.15
+Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
 
 ### Community 813 - "Community 813"
-Cohesion: 0.17
-Nodes (12): description, type, description, type, description, type, properties, type (+4 more)
+Cohesion: 0.15
+Nodes (13): description, type, properties, description, type, cicdYamlSnippet, gateDecision, storyInfo (+5 more)
 
 ### Community 814 - "Community 814"
-Cohesion: 0.17
-Nodes (12): properties, items, type, items, type, items, type, type (+4 more)
+Cohesion: 0.15
+Nodes (12): required, type, description, $id, $ref, properties, content, metadata (+4 more)
 
 ### Community 815 - "Community 815"
-Cohesion: 0.21
-Nodes (12): description, items, type, items, items, description, items, type (+4 more)
+Cohesion: 0.15
+Nodes (13): description, items, type, description, properties, type, type, batches_completed (+5 more)
 
 ### Community 816 - "Community 816"
-Cohesion: 0.17
-Nodes (12): description, type, description, type, properties, type, baseline, id (+4 more)
+Cohesion: 0.15
+Nodes (13): qualityScoreBreakdown, contribution, score, weight, contribution, score, weight, contribution (+5 more)
 
 ### Community 817 - "Community 817"
 Cohesion: 0.17
-Nodes (12): type, dataRecovery, rollbackPlan, steps, triggers, description, properties, type (+4 more)
+Nodes (11): Customer FAQ, Getting Started, {Headline}, How It Works, Internal FAQ, Q: {Hardest customer question first}, Q: {Hardest internal question first}, Q: {Next question} (+3 more)
 
 ### Community 818 - "Community 818"
 Cohesion: 0.17
-Nodes (12): description, properties, type, description, items, type, description, items (+4 more)
+Nodes (11): Checkpoint Review Workflow, Conventions, FIRST STEP, Global Step Rules (apply to every step), On Activation, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps, Step 3: Load Persistent Facts (+3 more)
 
 ### Community 819 - "Community 819"
 Cohesion: 0.17
-Nodes (12): description, properties, type, items, type, items, type, executionNotes (+4 more)
+Nodes (11): Architecture Workflow, Conventions, Execution, On Activation, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps, Step 3: Load Persistent Facts, Step 4: Load Config (+3 more)
 
 ### Community 820 - "Community 820"
 Cohesion: 0.17
-Nodes (12): problemDefinition, businessImpact, customerImpact, financialImpact, operationalImpact, context, impact, initialStatement (+4 more)
+Nodes (11): 2a: Try Sharded Documents First, 2b: Try Whole Document if No Sharded Found, 2c: Handle Not Found, code:block1 (OK Loaded {prd_content} from 5 sharded files: prd/index.md, ), Discover Inputs Protocol, FULL_LOAD Strategy, INDEX_GUIDED Strategy, SELECTIVE_LOAD Strategy (+3 more)
 
 ### Community 821 - "Community 821"
 Cohesion: 0.17
-Nodes (12): elements, characters, characterVoice, conflictTension, emotionalTouchpoints, keyMessages, memorableLines, setting (+4 more)
+Nodes (11): Conventions, Dev Story Workflow, Execution, On Activation, Paths, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps, Step 3: Load Persistent Facts (+3 more)
 
 ### Community 822 - "Community 822"
 Cohesion: 0.17
-Nodes (12): aspirations, demographics, knowledgeLevel, painPoints, psychographics, targetAudience, currentState, desiredState (+4 more)
+Nodes (12): properties, description, type, description, items, type, description, items (+4 more)
 
 ### Community 823 - "Community 823"
 Cohesion: 0.17
-Nodes (12): description, items, type, dataVisualization, suggestedImagery, visualElements, description, items (+4 more)
+Nodes (12): type, description, properties, type, type, type, completedAt, implementation (+4 more)
 
 ### Community 824 - "Community 824"
 Cohesion: 0.17
-Nodes (11): 1. Identity (WHO), 2. Voice (HOW), 3. Purpose (WHAT), 4. Architecture (TYPE), Agent Brainstorming Context, Example Sparks, Four Pillars, Golden Rule (+3 more)
+Nodes (12): recommendations, securityAnalysis, securityChecksPerformed, vulnerabilitiesFound, items, type, description, properties (+4 more)
 
 ### Community 825 - "Community 825"
 Cohesion: 0.17
-Nodes (11): code:block1 (Multiple personas/roles OR multi-user OR mixed data scope?), code:block2 (agent-name.agent.yaml), code:block3 (agent-name.agent.yaml), code:yaml (critical_actions:), Comparison, Decision Tree, Quick Tips, Selection Checklist (+3 more)
+Nodes (12): properties, description, items, type, oneOf, description, type, epics (+4 more)
 
 ### Community 826 - "Community 826"
 Cohesion: 0.17
-Nodes (12): metadata, artifactType, author, projectName, schemaVersion, status, stepsCompleted, tags (+4 more)
+Nodes (12): description, type, description, type, description, type, properties, type (+4 more)
 
 ### Community 827 - "Community 827"
-Cohesion: 0.17
-Nodes (12): description, items, type, description, items, type, description, properties (+4 more)
+Cohesion: 0.21
+Nodes (12): description, items, type, items, items, description, items, type (+4 more)
 
 ### Community 828 - "Community 828"
 Cohesion: 0.17
-Nodes (12): description, items, type, description, properties, type, description, items (+4 more)
+Nodes (12): default, type, description, type, properties, type, achieved, baseline (+4 more)
 
 ### Community 829 - "Community 829"
 Cohesion: 0.17
-Nodes (12): Context Gathering, Evidence Gathering, Evidence Validation, Knowledge Base Loading, Maintainability Evidence, Multi-Platform Detection, Multi-Stack Detection, Performance Evidence (+4 more)
+Nodes (12): type, dataRecovery, rollbackPlan, steps, triggers, description, properties, type (+4 more)
 
 ### Community 830 - "Community 830"
 Cohesion: 0.17
-Nodes (11): 1. Identify Natural Boundaries, 2. Assign Items to Sections, 3. Produce Root Distillate, 4. Produce Section Distillates, 5. Output Structure, code:block1 ({base-name}-distillate/), code:block2 (product-brief-distillate/), Semantic Splitting Strategy (+3 more)
+Nodes (12): description, properties, type, description, items, type, description, items (+4 more)
 
 ### Community 831 - "Community 831"
-Cohesion: 0.29
-Nodes (7): caching, orm, primary, rationale, schemaStrategy, secondary, database
+Cohesion: 0.17
+Nodes (12): description, properties, type, items, type, items, type, executionNotes (+4 more)
 
 ### Community 832 - "Community 832"
 Cohesion: 0.17
-Nodes (11): API Reference — {project_name}, Authentication, code:bash (# Example authenticated request), code:json ({request_body_example}), code:json ({response_body_example}), code:json ({), Endpoints, Error Handling (+3 more)
+Nodes (12): problemDefinition, businessImpact, customerImpact, financialImpact, operationalImpact, context, impact, initialStatement (+4 more)
 
 ### Community 833 - "Community 833"
 Cohesion: 0.17
-Nodes (11): 1. Define the Users, 2. Build User Personas, 3. Tell the User Journey Story, 4. MENU OPTIONS, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement:, Step 6: Users (+3 more)
+Nodes (12): elements, characters, characterVoice, conflictTension, emotionalTouchpoints, keyMessages, memorableLines, setting (+4 more)
 
 ### Community 834 - "Community 834"
 Cohesion: 0.17
-Nodes (11): 1. Explore Differentiation, 2. Identify the Unique Value Proposition, 3. Competitive Context, 4. MENU OPTIONS, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement:, Step 7: Value (+3 more)
+Nodes (12): aspirations, demographics, knowledgeLevel, painPoints, psychographics, targetAudience, currentState, desiredState (+4 more)
 
 ### Community 835 - "Community 835"
 Cohesion: 0.17
-Nodes (11): 1. Set the Scene, 2. Tell Usage Stories, 3. Validate the Stories, 4. MENU OPTIONS, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement:, Step 11: Scenarios (+3 more)
+Nodes (12): description, items, type, dataVisualization, suggestedImagery, visualElements, description, items (+4 more)
 
 ### Community 836 - "Community 836"
 Cohesion: 0.17
-Nodes (11): 1. Load Template, 2. Assemble the Brief, 3. Write the Brief File, 4. Celebrate and Next Steps, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement:, Step 14: Finalize (+3 more)
+Nodes (11): 1. Identity (WHO), 2. Voice (HOW), 3. Purpose (WHAT), 4. Architecture (TYPE), Agent Brainstorming Context, Example Sparks, Four Pillars, Golden Rule (+3 more)
 
 ### Community 837 - "Community 837"
 Cohesion: 0.17
-Nodes (11): 1. Determine Edit Target, 2. Load Target, 3. Display Current Content, 4. Proceed to Selection, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement:, Step 1: Load Target (Edit Mode) (+3 more)
+Nodes (11): code:block1 (Multiple personas/roles OR multi-user OR mixed data scope?), code:block2 (agent-name.agent.yaml), code:block3 (agent-name.agent.yaml), code:yaml (critical_actions:), Comparison, Decision Tree, Quick Tips, Selection Checklist (+3 more)
 
 ### Community 838 - "Community 838"
 Cohesion: 0.17
-Nodes (11): 1. Select Edit Type, 2. Gather Edit Details, 3. Confirm Change, 4. Store Edit Plan, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement:, Step 2: Select Edit Type (+3 more)
+Nodes (12): metadata, artifactType, author, projectName, schemaVersion, status, stepsCompleted, tags (+4 more)
 
 ### Community 839 - "Community 839"
 Cohesion: 0.17
-Nodes (11): 1. Summary of Changes, 2. Offer Next Actions, 3. Handle Response, 4. Complete Session, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement:, Step 5: Confirm Completion (+3 more)
+Nodes (11): 1. Load References, 2. Validate Metadata, 3. Append Findings to Report, 4. Auto-Advance, code:markdown (### Metadata Validation), EXECUTION PROTOCOLS, MANDATORY EXECUTION RULES, MANDATORY SEQUENCE (+3 more)
 
 ### Community 840 - "Community 840"
 Cohesion: 0.17
-Nodes (11): content, evidenceGaps, executiveSummary, failFastMechanisms, findingsSummary, gateYamlSnippet, monitoringHooks, quickWins (+3 more)
+Nodes (11): 1. Load References, 2. Validate Persona, 3. Append Findings to Report, 4. Auto-Advance, code:markdown (### Persona Validation), EXECUTION PROTOCOLS, MANDATORY EXECUTION RULES, MANDATORY SEQUENCE (+3 more)
 
 ### Community 841 - "Community 841"
 Cohesion: 0.17
-Nodes (12): metadata, artifactType, author, currentStep, projectName, schemaVersion, status, stepsCompleted (+4 more)
+Nodes (11): 1. Load References, 2. Validate Menu, 3. Append Findings to Report, 4. Auto-Advance, code:markdown (### Menu Validation), EXECUTION PROTOCOLS, MANDATORY EXECUTION RULES, MANDATORY SEQUENCE (+3 more)
 
 ### Community 842 - "Community 842"
 Cohesion: 0.17
-Nodes (12): reliability, actual, target, actual, target, availability, ciBurnIn, disasterRecovery (+4 more)
+Nodes (11): 1. Identify Natural Boundaries, 2. Assign Items to Sections, 3. Produce Root Distillate, 4. Produce Section Distillates, 5. Output Structure, code:block1 ({base-name}-distillate/), code:block2 (product-brief-distillate/), Semantic Splitting Strategy (+3 more)
 
 ### Community 843 - "Community 843"
 Cohesion: 0.17
-Nodes (11): content, cicdYamlSnippet, relatedArtifacts, signOff, storyInfo, $schema, date, role (+3 more)
-
-### Community 844 - "Community 844"
-Cohesion: 0.17
-Nodes (12): metadata, artifactType, author, currentStep, projectName, schemaVersion, status, stepsCompleted (+4 more)
+Nodes (12): additionalLibraries, apiStyle, framework, language, rationale, runtime, techStack, linting (+4 more)
 
 ### Community 845 - "Community 845"
-Cohesion: 0.17
-Nodes (11): 1. Load References, 2. Validate Metadata, 3. Append Findings to Report, 4. Auto-Advance, code:markdown (### Metadata Validation), EXECUTION PROTOCOLS, MANDATORY EXECUTION RULES, MANDATORY SEQUENCE (+3 more)
+Cohesion: 0.23
+Nodes (8): CodeburnMenuItem, logger, pick(), createCodeburnStatusBar(), logger, _refresh(), refreshCodeburnStatusBar(), _scheduleRefresh()
 
 ### Community 846 - "Community 846"
 Cohesion: 0.17
-Nodes (11): 1. Load References, 2. Validate Persona, 3. Append Findings to Report, 4. Auto-Advance, code:markdown (### Persona Validation), EXECUTION PROTOCOLS, MANDATORY EXECUTION RULES, MANDATORY SEQUENCE (+3 more)
+Nodes (11): API Reference — {project_name}, Authentication, code:bash (# Example authenticated request), code:json ({request_body_example}), code:json ({response_body_example}), code:json ({), Endpoints, Error Handling (+3 more)
 
 ### Community 847 - "Community 847"
 Cohesion: 0.17
-Nodes (11): 1. Load References, 2. Validate Menu, 3. Append Findings to Report, 4. Auto-Advance, code:markdown (### Menu Validation), EXECUTION PROTOCOLS, MANDATORY EXECUTION RULES, MANDATORY SEQUENCE (+3 more)
+Nodes (11): 1. Define the Users, 2. Build User Personas, 3. Tell the User Journey Story, 4. MENU OPTIONS, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement:, Step 6: Users (+3 more)
 
 ### Community 848 - "Community 848"
-Cohesion: 0.18
-Nodes (8): buildArtifactCommandsModule(), loadResult, mockFs, openChatCalls, parts, proxyquire, vfsDirs, vfsFiles
+Cohesion: 0.17
+Nodes (11): 1. Explore Differentiation, 2. Identify the Unique Value Proposition, 3. Competitive Context, 4. MENU OPTIONS, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement:, Step 7: Value (+3 more)
 
 ### Community 849 - "Community 849"
-Cohesion: 0.18
-Nodes (11): category, epicItem, epicsCategory, expandedItems, fakeEpicItem, getTreeProvider(), item, { provider } (+3 more)
+Cohesion: 0.17
+Nodes (11): 1. Set the Scene, 2. Tell Usage Stories, 3. Validate the Stories, 4. MENU OPTIONS, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement:, Step 11: Scenarios (+3 more)
 
 ### Community 850 - "Community 850"
 Cohesion: 0.17
-Nodes (12): type, type, properties, duration, errorMessage, runAt, status, format (+4 more)
+Nodes (11): 1. Load Template, 2. Assemble the Brief, 3. Write the Brief File, 4. Celebrate and Next Steps, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement:, Step 14: Finalize (+3 more)
 
 ### Community 851 - "Community 851"
 Cohesion: 0.17
-Nodes (12): items, type, description, properties, type, acceptanceCriteriaMapped, bmadIntegration, storiesReferenced (+4 more)
+Nodes (12): Context Gathering, Evidence Gathering, Evidence Validation, Knowledge Base Loading, Maintainability Evidence, Multi-Platform Detection, Multi-Stack Detection, Performance Evidence (+4 more)
 
 ### Community 852 - "Community 852"
 Cohesion: 0.17
-Nodes (12): description, type, description, type, description, properties, type, configFile (+4 more)
+Nodes (11): 1. Determine Edit Target, 2. Load Target, 3. Display Current Content, 4. Proceed to Selection, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement:, Step 1: Load Target (Edit Mode) (+3 more)
 
 ### Community 853 - "Community 853"
 Cohesion: 0.17
-Nodes (12): description, items, type, description, properties, type, description, items (+4 more)
+Nodes (11): 1. Select Edit Type, 2. Gather Edit Details, 3. Confirm Change, 4. Store Edit Plan, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement:, Step 2: Select Edit Type (+3 more)
 
 ### Community 854 - "Community 854"
 Cohesion: 0.17
-Nodes (12): description, items, type, description, properties, type, description, items (+4 more)
+Nodes (11): 1. Summary of Changes, 2. Offer Next Actions, 3. Handle Response, 4. Complete Session, MANDATORY EXECUTION RULES:, MANDATORY SEQUENCE, Role Reinforcement:, Step 5: Confirm Completion (+3 more)
 
 ### Community 855 - "Community 855"
 Cohesion: 0.17
-Nodes (12): items, type, items, type, description, properties, type, libraries (+4 more)
+Nodes (11): content, evidenceGaps, executiveSummary, failFastMechanisms, findingsSummary, gateYamlSnippet, monitoringHooks, quickWins (+3 more)
 
 ### Community 856 - "Community 856"
 Cohesion: 0.17
-Nodes (11): Additional Requirements, Epic List, Epic {{N}}: {{epic_title_N}}, FR Coverage Map, Functional Requirements, NonFunctional Requirements, Overview, {{project_name}} - Epic Breakdown (+3 more)
+Nodes (12): metadata, artifactType, author, currentStep, projectName, schemaVersion, status, stepsCompleted (+4 more)
 
 ### Community 857 - "Community 857"
 Cohesion: 0.17
-Nodes (11): content, testCases, metadata, artifactType, projectName, schemaVersion, status, timestamps (+3 more)
+Nodes (12): reliability, actual, target, actual, target, availability, ciBurnIn, disasterRecovery (+4 more)
 
 ### Community 858 - "Community 858"
 Cohesion: 0.17
-Nodes (12): content, bestPracticesFound, criticalIssues, executiveSummary, nextSteps, recommendations, testFileAnalysis, assessment (+4 more)
+Nodes (12): metadata, artifactType, author, currentStep, projectName, schemaVersion, status, stepsCompleted (+4 more)
+
+### Community 859 - "Community 859"
+Cohesion: 0.17
+Nodes (11): content, cicdYamlSnippet, relatedArtifacts, signOff, storyInfo, $schema, date, role (+3 more)
 
 ### Community 860 - "Community 860"
 Cohesion: 0.18
-Nodes (10): Closing, code:block1 (Orientation → Walkthrough → Detail Pass → [Testing]), code:block2 (### How to See It Working), code:block3 (### How to See It Working), code:block4 (---), Follow Global Step Rules in SKILL.md, IDENTIFY OBSERVABLE BEHAVIOR, NEXT (+2 more)
+Nodes (8): buildArtifactCommandsModule(), loadResult, mockFs, openChatCalls, parts, proxyquire, vfsDirs, vfsFiles
 
 ### Community 861 - "Community 861"
 Cohesion: 0.18
-Nodes (10): Conventions, Document Project Workflow, Execution, On Activation, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps, Step 3: Load Persistent Facts, Step 4: Load Config (+2 more)
+Nodes (11): category, epicItem, epicsCategory, expandedItems, fakeEpicItem, getTreeProvider(), item, { provider } (+3 more)
 
 ### Community 862 - "Community 862"
-Cohesion: 0.18
-Nodes (10): code:markdown (# Directory Index), EXECUTION, HALT CONDITIONS, Index Docs, OUTPUT FORMAT, Step 1: Scan Directory, Step 2: Group Content, Step 3: Generate Descriptions (+2 more)
+Cohesion: 0.17
+Nodes (12): type, type, properties, duration, errorMessage, runAt, status, format (+4 more)
 
 ### Community 863 - "Community 863"
-Cohesion: 0.18
-Nodes (10): Classify, Commit, Generate Spec Trace, Implement, INSTRUCTIONS, On Complete, Present, Review (+2 more)
+Cohesion: 0.17
+Nodes (12): items, type, description, properties, type, acceptanceCriteriaMapped, bmadIntegration, storiesReferenced (+4 more)
 
 ### Community 864 - "Community 864"
-Cohesion: 0.18
-Nodes (11): impactAnalysis, affectedEpics, affectedStories, overallImpact, resourceImpact, riskAssessment, timelineImpact, additionalEffort (+3 more)
+Cohesion: 0.17
+Nodes (12): description, type, description, type, description, properties, type, configFile (+4 more)
+
+### Community 865 - "Community 865"
+Cohesion: 0.17
+Nodes (12): description, items, type, description, properties, type, description, items (+4 more)
 
 ### Community 866 - "Community 866"
-Cohesion: 0.18
-Nodes (11): description, properties, type, type, type, architectureCompliance, compliant, notes (+3 more)
+Cohesion: 0.17
+Nodes (12): description, items, type, description, items, type, description, properties (+4 more)
 
 ### Community 867 - "Community 867"
-Cohesion: 0.22
-Nodes (11): items, description, items, required, type, properties, items, qualityGates (+3 more)
+Cohesion: 0.17
+Nodes (12): description, items, type, description, properties, type, description, items (+4 more)
 
 ### Community 868 - "Community 868"
-Cohesion: 0.18
-Nodes (11): formatter, language, linter, namingConventions, codeStyle, components, constants, files (+3 more)
+Cohesion: 0.17
+Nodes (12): description, items, type, description, properties, type, description, items (+4 more)
 
 ### Community 869 - "Community 869"
-Cohesion: 0.18
-Nodes (11): content, appendices, blockers, dependencyAnalysis, nextSteps, recommendations, risks, criticalPath (+3 more)
+Cohesion: 0.17
+Nodes (12): items, type, items, type, description, properties, type, libraries (+4 more)
 
 ### Community 870 - "Community 870"
-Cohesion: 0.18
-Nodes (11): properties, description, items, type, properties, type, gapsIdentified, priorCoverage (+3 more)
+Cohesion: 0.17
+Nodes (11): Additional Requirements, Epic List, Epic {{N}}: {{epic_title_N}}, FR Coverage Map, Functional Requirements, NonFunctional Requirements, Overview, {{project_name}} - Epic Breakdown (+3 more)
 
 ### Community 871 - "Community 871"
-Cohesion: 0.18
-Nodes (11): content, accessibilityRequirements, designDecisions, designPhase, designTitle, usabilityTestingPlan, userFlows, wireframes (+3 more)
+Cohesion: 0.17
+Nodes (11): content, testCases, metadata, artifactType, projectName, schemaVersion, status, timestamps (+3 more)
 
 ### Community 872 - "Community 872"
-Cohesion: 0.18
-Nodes (11): content, problemCategory, problemTitle, solutionEvaluation, solutionGeneration, comparisonMatrix, evaluationCriteria, solutionAnalysis (+3 more)
+Cohesion: 0.17
+Nodes (12): content, bestPracticesFound, criticalIssues, executiveSummary, nextSteps, recommendations, testFileAnalysis, assessment (+4 more)
 
 ### Community 873 - "Community 873"
 Cohesion: 0.18
-Nodes (11): description, properties, type, description, items, type, description, type (+3 more)
+Nodes (11): 0.3.2, Artifact Array Migration, Bug Fixes, Bug Fixes, Bug Fixes, Bug Fixes, Bug Fixes, Bug Fixes (+3 more)
 
 ### Community 874 - "Community 874"
 Cohesion: 0.18
-Nodes (10): code:block1 ("Guide the user through discovering their ideal nutrition pl), code:block2 ("Medical intake - ask exactly:), Examples, Intent-Based (Default), Intent-Based (Good for most), Intent vs Prescriptive Spectrum, Prescriptive (Exception), Prescriptive (Only when required) (+2 more)
+Nodes (11): 0.3.9, Agent Honesty Guardrails, Artifact Store Refactoring, Bug Fixes, Bug Fixes, Bug Fixes, Bug Fixes, Bug Fixes (+3 more)
 
 ### Community 875 - "Community 875"
 Cohesion: 0.18
-Nodes (6): `acceptance_criteria` — from [acceptance-criteria.schema.json](file:///d:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/resources/_bmad/schemas/common/acceptance-criteria.schema.json), `action_items` — shared by retrospective, readiness-report, `findings` — shared by code-review, readiness-report, test-review, research, `recommendations` — shared by readiness-report, research, test-review, source-tree, project-overview, `requirements` — from [requirement.schema.json](file:///d:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/resources/_bmad/schemas/common/requirement.schema.json), Shared Child Tables (Used by Multiple Schemas)
+Nodes (10): Closing, code:block1 (Orientation → Walkthrough → Detail Pass → [Testing]), code:block2 (### How to See It Working), code:block3 (### How to See It Working), code:block4 (---), Follow Global Step Rules in SKILL.md, IDENTIFY OBSERVABLE BEHAVIOR, NEXT (+2 more)
 
 ### Community 876 - "Community 876"
 Cohesion: 0.18
-Nodes (11): summary, arCovered, coveragePercentage, frCovered, lastUpdated, nfrCovered, notes, status (+3 more)
+Nodes (10): Conventions, Document Project Workflow, Execution, On Activation, Step 1: Resolve the Workflow Block, Step 2: Execute Prepend Steps, Step 3: Load Persistent Facts, Step 4: Load Config (+2 more)
 
 ### Community 877 - "Community 877"
 Cohesion: 0.18
-Nodes (10): Approach, Market & Differentiation, Stage 3: Guided Elicitation, Stage Complete, Success & Scope, The Flow, Topics to Cover (flexibly, conversationally), Users & Value (+2 more)
+Nodes (10): code:markdown (# Directory Index), EXECUTION, HALT CONDITIONS, Index Docs, OUTPUT FORMAT, Step 1: Scan Directory, Step 2: Group Content, Step 3: Generate Descriptions (+2 more)
 
 ### Community 878 - "Community 878"
-Cohesion: 0.22
-Nodes (11): API Tests (If Applicable), Component Tests (If Applicable), E2E Tests (If Applicable), Network-First Pattern Applied, Quality Standards Enforced, Step 3: Failing Tests Generated, Step 4: Test Files Generated, Test File Structure (+3 more)
+Cohesion: 0.18
+Nodes (10): Classify, Commit, Generate Spec Trace, Implement, INSTRUCTIONS, On Complete, Present, Review (+2 more)
 
 ### Community 879 - "Community 879"
-Cohesion: 0.27
-Nodes (10): default_skills_root(), load_customize(), main(), parse_args(), Derive the skills root from this script's location.      Layout assumption: {s, Extract the `description:` value from a SKILL.md YAML frontmatter block., Return the parsed TOML, or None if unreadable., Scan each skills root for directories that contain a customize.toml. (+2 more)
+Cohesion: 0.18
+Nodes (11): impactAnalysis, affectedEpics, affectedStories, overallImpact, resourceImpact, riskAssessment, timelineImpact, additionalEffort (+3 more)
 
 ### Community 880 - "Community 880"
-Cohesion: 0.22
-Nodes (5): deepClone(), ioLogger, normalizeContent(), normalizeLegacyArtifact(), ResolveTargetUriOptions
+Cohesion: 0.18
+Nodes (11): properties, reviewerNotes, reviewSummary, storyReference, description, type, description, type (+3 more)
 
 ### Community 881 - "Community 881"
-Cohesion: 0.24
-Nodes (7): describeDefault(), fuzzyMatchEnum(), levenshtein(), RepairResult, resolveType(), scaffoldDefault(), SchemaNode
+Cohesion: 0.18
+Nodes (11): description, properties, type, type, type, architectureCompliance, compliant, notes (+3 more)
 
 ### Community 882 - "Community 882"
-Cohesion: 0.18
-Nodes (10): metadata, artifactType, author, currentStep, projectName, schemaVersion, status, stepsCompleted (+2 more)
+Cohesion: 0.22
+Nodes (11): items, description, items, required, type, properties, items, qualityGates (+3 more)
 
 ### Community 883 - "Community 883"
 Cohesion: 0.18
-Nodes (10): 1. Identify Maintainability Violations, 2. Calculate Maintainability Score, code:javascript (const severityWeights = { HIGH: 10, MEDIUM: 5, LOW: 2 };), code:json ({), EXIT CONDITION, MANDATORY EXECUTION RULES, OUTPUT FORMAT, Subprocess 3C: Maintainability Quality Check (+2 more)
+Nodes (11): formatter, language, linter, namingConventions, codeStyle, components, constants, files (+3 more)
 
 ### Community 884 - "Community 884"
 Cohesion: 0.18
-Nodes (10): 1. Identify Performance Violations, 2. Calculate Performance Score, code:javascript (const severityWeights = { HIGH: 10, MEDIUM: 5, LOW: 2 };), code:json ({), EXIT CONDITION, MANDATORY EXECUTION RULES, OUTPUT FORMAT, Subprocess 3E: Performance Quality Check (+2 more)
+Nodes (11): content, appendices, blockers, dependencyAnalysis, nextSteps, recommendations, risks, criticalPath (+3 more)
 
 ### Community 885 - "Community 885"
 Cohesion: 0.18
-Nodes (10): 1. Security Assessment Categories, 2. Risk Assessment, 3. Compliance Check, code:json ({), EXIT CONDITION, MANDATORY EXECUTION RULES, OUTPUT FORMAT, Subprocess 4A: Security NFR Assessment (+2 more)
+Nodes (11): content, accessibilityRequirements, designDecisions, designPhase, designTitle, usabilityTestingPlan, userFlows, wireframes (+3 more)
 
 ### Community 886 - "Community 886"
 Cohesion: 0.18
-Nodes (11): performance, resourceUsage, scalability, status, throughput, cpu, memory, status (+3 more)
+Nodes (11): content, problemCategory, problemTitle, solutionEvaluation, solutionGeneration, comparisonMatrix, evaluationCriteria, solutionAnalysis (+3 more)
 
 ### Community 887 - "Community 887"
 Cohesion: 0.18
-Nodes (10): code:yaml (nfr_assessment:), Evidence Gaps, Executive Summary, Findings Summary, Gate YAML Snippet, NFR Assessment - {FEATURE_NAME}, Quick Wins, Recommendations Summary (+2 more)
+Nodes (11): description, properties, type, description, items, type, description, type (+3 more)
 
 ### Community 888 - "Community 888"
 Cohesion: 0.18
-Nodes (10): metadata, artifactType, author, currentStep, projectName, schemaVersion, status, stepsCompleted (+2 more)
+Nodes (10): code:block1 ("Guide the user through discovering their ideal nutrition pl), code:block2 ("Medical intake - ask exactly:), Examples, Intent-Based (Default), Intent-Based (Good for most), Intent vs Prescriptive Spectrum, Prescriptive (Exception), Prescriptive (Only when required) (+2 more)
 
 ### Community 889 - "Community 889"
 Cohesion: 0.18
-Nodes (10): 1. Configuration Loading, 2. Route to Create Workflow, CONFIGURATION, Core Principles, Create Module, Critical Rules, INITIALIZATION SEQUENCE, OUTPUT (+2 more)
+Nodes (6): `acceptance_criteria` — from [acceptance-criteria.schema.json](file:///d:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/resources/_bmad/schemas/common/acceptance-criteria.schema.json), `action_items` — shared by retrospective, readiness-report, `findings` — shared by code-review, readiness-report, test-review, research, `recommendations` — shared by readiness-report, research, test-review, source-tree, project-overview, `requirements` — from [requirement.schema.json](file:///d:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/resources/_bmad/schemas/common/requirement.schema.json), Shared Child Tables (Used by Multiple Schemas)
 
 ### Community 890 - "Community 890"
 Cohesion: 0.18
-Nodes (11): type, properties, items, type, type, approach, patternsApplied, prioritization (+3 more)
+Nodes (11): summary, arCovered, coveragePercentage, frCovered, lastUpdated, nfrCovered, notes, status (+3 more)
 
 ### Community 891 - "Community 891"
 Cohesion: 0.18
-Nodes (11): properties, type, description, properties, type, concurrency, pipeline, triggers (+3 more)
+Nodes (10): Approach, Market & Differentiation, Stage 3: Guided Elicitation, Stage Complete, Success & Scope, The Flow, Topics to Cover (flexibly, conversationally), Users & Value (+2 more)
 
 ### Community 892 - "Community 892"
 Cohesion: 0.18
-Nodes (11): description, properties, type, type, documentation, maintenance, readme, troubleshooting (+3 more)
+Nodes (10): metadata, artifactType, author, currentStep, projectName, schemaVersion, status, stepsCompleted (+2 more)
 
 ### Community 893 - "Community 893"
-Cohesion: 0.18
-Nodes (11): description, properties, type, type, type, defectManagement, escalationPath, process (+3 more)
+Cohesion: 0.27
+Nodes (10): default_skills_root(), load_customize(), main(), parse_args(), Derive the skills root from this script's location.      Layout assumption: {s, Extract the `description:` value from a SKILL.md YAML frontmatter block., Return the parsed TOML, or None if unreadable., Scan each skills root for directories that contain a customize.toml. (+2 more)
 
 ### Community 894 - "Community 894"
-Cohesion: 0.18
-Nodes (11): backupStrategy, lastDrTest, recoveryTested, rpo, rto, status, disasterRecovery, actual (+3 more)
+Cohesion: 0.22
+Nodes (5): deepClone(), ioLogger, normalizeContent(), normalizeLegacyArtifact(), ResolveTargetUriOptions
 
 ### Community 895 - "Community 895"
 Cohesion: 0.18
-Nodes (10): code:block1 (project-root/), Existing Documentation, Full Project Scan Instructions, Generated Documentation, Getting Started, {{part_name}} ({{part_id}}), Project Documentation Complete! ✓, Project Documentation Index (+2 more)
+Nodes (10): metadata, artifactType, author, currentStep, projectName, schemaVersion, status, stepsCompleted (+2 more)
 
 ### Community 896 - "Community 896"
-Cohesion: 0.20
-Nodes (9): code:markdown (# Changelog), FORMAT REFERENCE, Generate Changelog Instructions, STANDARDS, Step 1: Determine Scope, Step 2: Gather Changes, Step 3: Categorize & Draft, Step 4: Review & Finalize (+1 more)
+Cohesion: 0.18
+Nodes (10): 1. Identify Maintainability Violations, 2. Calculate Maintainability Score, code:javascript (const severityWeights = { HIGH: 10, MEDIUM: 5, LOW: 2 };), code:json ({), EXIT CONDITION, MANDATORY EXECUTION RULES, OUTPUT FORMAT, Subprocess 3C: Maintainability Quality Check (+2 more)
 
 ### Community 897 - "Community 897"
-Cohesion: 0.20
-Nodes (9): 1. Resource Naming, 2. HTTP Methods, 3. Status Codes, 4. Error Responses, 5. Pagination, 6. Versioning, API Design Review Workflow, Output (+1 more)
+Cohesion: 0.18
+Nodes (10): 1. Identify Performance Violations, 2. Calculate Performance Score, code:javascript (const severityWeights = { HIGH: 10, MEDIUM: 5, LOW: 2 };), code:json ({), EXIT CONDITION, MANDATORY EXECUTION RULES, OUTPUT FORMAT, Subprocess 3E: Performance Quality Check (+2 more)
 
 ### Community 898 - "Community 898"
-Cohesion: 0.20
-Nodes (9): 1. Define Capability Evals, 2. Define Regression Evals, 3. Select Grader Type, 4. Run Evals, 5. Report, code:block1 (EVAL REPORT), Eval Harness Workflow, Metrics Targets (+1 more)
+Cohesion: 0.18
+Nodes (10): 1. Security Assessment Categories, 2. Risk Assessment, 3. Compliance Check, code:json ({), EXIT CONDITION, MANDATORY EXECUTION RULES, OUTPUT FORMAT, Subprocess 4A: Security NFR Assessment (+2 more)
 
 ### Community 899 - "Community 899"
-Cohesion: 0.20
-Nodes (9): code:block1 (VERIFICATION REPORT), Output, Phase 1: Build Verification, Phase 2: Type Check, Phase 3: Lint Check, Phase 4: Test Suite, Phase 5: Security Scan, Phase 6: Diff Review (+1 more)
+Cohesion: 0.22
+Nodes (11): API Tests (If Applicable), Component Tests (If Applicable), E2E Tests (If Applicable), Network-First Pattern Applied, Quality Standards Enforced, Step 3: Failing Tests Generated, Step 4: Test Files Generated, Test File Structure (+3 more)
 
 ### Community 900 - "Community 900"
-Cohesion: 0.20
-Nodes (9): code:markdown (---), code:json ({), Process, Round-Trip Reconstructor Agent, Step 1: Analyze the Distillate, Step 2: Detect Document Types, Step 3: Reconstruct Each Source, Step 4: Save Reconstructions (+1 more)
+Cohesion: 0.18
+Nodes (11): performance, resourceUsage, scalability, status, throughput, cpu, memory, status (+3 more)
 
 ### Community 901 - "Community 901"
-Cohesion: 0.20
-Nodes (10): default, description, items, scope, type, properties, type, agileagentcanvas.skillRepos (+2 more)
+Cohesion: 0.18
+Nodes (10): code:yaml (nfr_assessment:), Evidence Gaps, Executive Summary, Findings Summary, Gate YAML Snippet, NFR Assessment - {FEATURE_NAME}, Quick Wins, Recommendations Summary (+2 more)
 
 ### Community 902 - "Community 902"
-Cohesion: 0.20
-Nodes (9): code:markdown (## Suggested Review Order), Commit and Open, Display Summary, Generate Suggested Review Order, INSTRUCTIONS, Mark Spec Done, On Complete, RULES (+1 more)
+Cohesion: 0.18
+Nodes (10): 1. Configuration Loading, 2. Route to Create Workflow, CONFIGURATION, Core Principles, Create Module, Critical Rules, INITIALIZATION SEQUENCE, OUTPUT (+2 more)
 
 ### Community 903 - "Community 903"
-Cohesion: 0.20
-Nodes (9): code:json ([{), Edge Case Hunter Review, EXECUTION, HALT CONDITIONS, OUTPUT FORMAT, Step 1: Receive Content, Step 2: Exhaustive Path Analysis, Step 3: Validate Completeness (+1 more)
+Cohesion: 0.18
+Nodes (11): type, properties, items, type, type, approach, patternsApplied, prioritization (+3 more)
 
 ### Community 904 - "Community 904"
-Cohesion: 0.20
-Nodes (10): proposal, documentsToUpdate, storiesToAdd, storiesToModify, storiesToRemove, implementationPlan, options, rationale (+2 more)
+Cohesion: 0.18
+Nodes (11): properties, type, description, properties, type, concurrency, pipeline, triggers (+3 more)
 
 ### Community 905 - "Community 905"
-Cohesion: 0.20
-Nodes (10): properties, description, type, description, type, description, id, title (+2 more)
+Cohesion: 0.18
+Nodes (11): description, properties, type, type, documentation, maintenance, readme, troubleshooting (+3 more)
 
 ### Community 906 - "Community 906"
-Cohesion: 0.20
-Nodes (10): type, riskAreas, testTypes, description, items, type, description, items (+2 more)
+Cohesion: 0.18
+Nodes (11): description, properties, type, type, type, defectManagement, escalationPath, process (+3 more)
 
 ### Community 907 - "Community 907"
-Cohesion: 0.20
-Nodes (10): conventions, gitConventions, testingConventions, branchNaming, commitFormat, prProcess, e2eTests, integrationTests (+2 more)
+Cohesion: 0.18
+Nodes (11): backupStrategy, lastDrTest, recoveryTested, rpo, rto, status, disasterRecovery, actual (+3 more)
 
 ### Community 908 - "Community 908"
-Cohesion: 0.20
-Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
+Cohesion: 0.18
+Nodes (10): code:block1 (project-root/), Existing Documentation, Full Project Scan Instructions, Generated Documentation, Getting Started, {{part_name}} ({{part_id}}), Project Documentation Complete! ✓, Project Documentation Index (+2 more)
 
 ### Community 909 - "Community 909"
 Cohesion: 0.20
-Nodes (9): description, $id, $ref, properties, metadata, required, $schema, title (+1 more)
+Nodes (9): code:markdown (# Changelog), FORMAT REFERENCE, Generate Changelog Instructions, STANDARDS, Step 1: Determine Scope, Step 2: Gather Changes, Step 3: Categorize & Draft, Step 4: Review & Finalize (+1 more)
 
 ### Community 910 - "Community 910"
 Cohesion: 0.20
-Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
+Nodes (9): 1. Resource Naming, 2. HTTP Methods, 3. Status Codes, 4. Error Responses, 5. Pagination, 6. Versioning, API Design Review Workflow, Output (+1 more)
 
 ### Community 911 - "Community 911"
 Cohesion: 0.20
-Nodes (10): items, type, items, type, debtAddressed, debtIntroduced, technicalDebt, description (+2 more)
+Nodes (9): 1. Define Capability Evals, 2. Define Regression Evals, 3. Select Grader Type, 4. Run Evals, 5. Report, code:block1 (EVAL REPORT), Eval Harness Workflow, Metrics Targets (+1 more)
 
 ### Community 912 - "Community 912"
 Cohesion: 0.20
-Nodes (10): filesChanged, linesAdded, linesRemoved, testCoverage, metricsSnapshot, codeMetrics, qualityMetrics, bugsFixed (+2 more)
+Nodes (9): code:block1 (VERIFICATION REPORT), Output, Phase 1: Build Verification, Phase 2: Type Check, Phase 3: Lint Check, Phase 4: Test Suite, Phase 5: Security Scan, Phase 6: Diff Review (+1 more)
 
 ### Community 913 - "Community 913"
 Cohesion: 0.20
-Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
+Nodes (9): code:markdown (---), code:json ({), Process, Round-Trip Reconstructor Agent, Step 1: Analyze the Distillate, Step 2: Detect Document Types, Step 3: Reconstruct Each Source, Step 4: Save Reconstructions (+1 more)
 
 ### Community 914 - "Community 914"
 Cohesion: 0.20
-Nodes (10): properties, description, type, description, type, end_date, goal, start_date (+2 more)
+Nodes (10): default, description, items, scope, type, properties, type, agileagentcanvas.skillRepos (+2 more)
 
 ### Community 915 - "Community 915"
 Cohesion: 0.20
-Nodes (10): type, type, enum, type, achievedCount, achievementPercentage, overallStatus, totalMetrics (+2 more)
+Nodes (9): code:markdown (## Suggested Review Order), Commit and Open, Display Summary, Generate Suggested Review Order, INSTRUCTIONS, Mark Spec Done, On Complete, RULES (+1 more)
 
 ### Community 916 - "Community 916"
 Cohesion: 0.20
-Nodes (10): description, type, description, type, properties, codeQuality, customerImpact, summary (+2 more)
+Nodes (9): code:json ([{), Edge Case Hunter Review, EXECUTION, HALT CONDITIONS, OUTPUT FORMAT, Step 1: Receive Content, Step 2: Exhaustive Path Analysis, Step 3: Validate Completeness (+1 more)
 
 ### Community 917 - "Community 917"
 Cohesion: 0.20
-Nodes (9): description, $id, $ref, properties, metadata, required, $schema, title (+1 more)
+Nodes (10): proposal, documentsToUpdate, storiesToAdd, storiesToModify, storiesToRemove, implementationPlan, options, rationale (+2 more)
 
 ### Community 918 - "Community 918"
 Cohesion: 0.20
-Nodes (10): properties, required, type, description, type, content, coverageAnalysis, summary (+2 more)
+Nodes (10): description, type, properties, description, type, approach, description, title (+2 more)
 
 ### Community 919 - "Community 919"
 Cohesion: 0.20
-Nodes (10): designSystem, borderRadius, components, description, name, spacing, version, baseUnit (+2 more)
+Nodes (10): type, riskAreas, testTypes, description, items, type, description, items (+2 more)
 
 ### Community 920 - "Community 920"
 Cohesion: 0.20
-Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
+Nodes (10): conventions, gitConventions, testingConventions, branchNaming, commitFormat, prProcess, e2eTests, integrationTests (+2 more)
 
 ### Community 921 - "Community 921"
 Cohesion: 0.20
-Nodes (10): allocation, initiatives, allocation, initiatives, innovationPortfolio, adjacent, core, transformational (+2 more)
+Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
 
 ### Community 922 - "Community 922"
 Cohesion: 0.20
 Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
 
 ### Community 923 - "Community 923"
-Cohesion: 0.13
-Nodes (15): diagnosis, keyData, sources, contributingFactors, dataCollection, problemBoundaries, rootCauseAnalysis, systemDynamics (+7 more)
+Cohesion: 0.20
+Nodes (10): filesChanged, linesAdded, linesRemoved, testCoverage, metricsSnapshot, codeMetrics, qualityMetrics, bugsFixed (+2 more)
 
 ### Community 924 - "Community 924"
 Cohesion: 0.20
@@ -5168,407 +5181,407 @@ Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestam
 
 ### Community 925 - "Community 925"
 Cohesion: 0.20
-Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
+Nodes (10): items, type, items, type, debtAddressed, debtIntroduced, technicalDebt, description (+2 more)
 
 ### Community 926 - "Community 926"
 Cohesion: 0.20
-Nodes (10): description, items, type, required, type, inputDocuments, tags, description (+2 more)
+Nodes (9): description, $id, $ref, properties, metadata, required, $schema, title (+1 more)
 
 ### Community 927 - "Community 927"
 Cohesion: 0.20
-Nodes (10): properties, description, type, path, type, version, description, type (+2 more)
+Nodes (10): properties, description, type, description, type, end_date, goal, start_date (+2 more)
 
 ### Community 928 - "Community 928"
 Cohesion: 0.20
-Nodes (9): Agent Compilation: YAML → Compiled, Auto-Injected Menu Items (NEVER add), code:yaml (agent:), code:markdown (---), code:block3, code:block4 (→ Injected as steps 4, 5, 6), Compiled Output Structure, What Compiler Adds (DO NOT WRITE) (+1 more)
+Nodes (10): type, type, enum, type, achievedCount, achievementPercentage, overallStatus, totalMetrics (+2 more)
 
 ### Community 929 - "Community 929"
 Cohesion: 0.20
-Nodes (10): code:json ("acceptanceCriteriaCount": 7  // ❌ FORBIDDEN), code:json ("userStory": "As a developer, I want X, So that Y"  // ❌ FOR), code:json ("functionalRequirements": ["FR 1.1", "FR 1.2"]  // ❌ FORBIDD), code:json ("description": "Parser functionality..."  // ❌ FORBIDDEN (if), code:json ("userStory": {), code:json ("acceptanceCriteria": [), code:json ("requirements": {), CRITICAL INSTRUCTIONS (+2 more)
+Nodes (10): description, type, description, type, properties, codeQuality, customerImpact, summary (+2 more)
 
 ### Community 930 - "Community 930"
 Cohesion: 0.20
-Nodes (9): 1. Configuration Loading, 2. Route to Edit Workflow, Core Principles, Critical Rules, Edit Agent, EDIT MODE NOTES, INITIALIZATION SEQUENCE, Step Processing Rules (+1 more)
+Nodes (10): designSystem, borderRadius, components, description, iconography, name, version, library (+2 more)
 
 ### Community 931 - "Community 931"
 Cohesion: 0.20
-Nodes (10): content, bestPracticesFound, criticalIssues, decision, knowledgeBaseReferences, nextSteps, recommendations, testFileAnalysis (+2 more)
+Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
 
 ### Community 932 - "Community 932"
 Cohesion: 0.20
-Nodes (9): 1. Configuration Loading, 2. Route to Create Workflow, Core Principles, Create Agent, CREATE MODE NOTES, Critical Rules, INITIALIZATION SEQUENCE, Step Processing Rules (+1 more)
+Nodes (10): allocation, initiatives, allocation, initiatives, innovationPortfolio, adjacent, core, transformational (+2 more)
 
 ### Community 933 - "Community 933"
 Cohesion: 0.20
-Nodes (9): 1. Configuration Loading, 2. Route to Brief Workflow, Core Principles, Create Module Brief, Critical Rules, INITIALIZATION SEQUENCE, OUTPUT, Step Processing Rules (+1 more)
+Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
 
 ### Community 934 - "Community 934"
 Cohesion: 0.20
-Nodes (9): 1. Configuration Loading, 2. Create Mode Selection, 3. Route to First Step, Core Principles, Create Workflow, Critical Rules (NO EXCEPTIONS), INITIALIZATION SEQUENCE, Step Processing Rules (+1 more)
+Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
 
 ### Community 935 - "Community 935"
 Cohesion: 0.20
-Nodes (9): 1. Configuration Loading, 2. Route to Validate Workflow, Core Principles, Critical Rules, INITIALIZATION SEQUENCE, Step Processing Rules, Validate Agent, VALIDATE MODE NOTES (+1 more)
+Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
 
 ### Community 936 - "Community 936"
 Cohesion: 0.20
-Nodes (10): description, properties, type, items, type, items, type, notifications (+2 more)
+Nodes (10): description, items, type, required, type, inputDocuments, tags, description (+2 more)
 
 ### Community 937 - "Community 937"
 Cohesion: 0.20
-Nodes (10): items, type, items, type, installationSteps, prerequisites, runCommands, items (+2 more)
+Nodes (10): properties, description, type, path, type, version, description, type (+2 more)
 
 ### Community 938 - "Community 938"
 Cohesion: 0.20
-Nodes (10): description, properties, type, items, type, items, type, dependencies (+2 more)
+Nodes (9): Agent Compilation: YAML → Compiled, Auto-Injected Menu Items (NEVER add), code:yaml (agent:), code:markdown (---), code:block3, code:block4 (→ Injected as steps 4, 5, 6), Compiled Output Structure, What Compiler Adds (DO NOT WRITE) (+1 more)
 
 ### Community 939 - "Community 939"
 Cohesion: 0.20
-Nodes (9): description, $id, $ref, properties, metadata, required, $schema, title (+1 more)
+Nodes (10): 0. Workflow Progress Tracker, Cumulative Token Savings Target, Cumulative Token Savings Target, Cumulative Token Savings Target, Phase 1 — Quick Wins, Phase 2 — Provider-Level Structured Outputs, Phase 3 — Fence Stripping & Validation, Phase 4 — Tool Catalog & Discovery (+2 more)
 
 ### Community 940 - "Community 940"
 Cohesion: 0.20
-Nodes (10): properties, type, artifact, path, relatedArtifacts, version, description, items (+2 more)
+Nodes (9): 1. Configuration Loading, 2. Route to Edit Workflow, Core Principles, Critical Rules, Edit Agent, EDIT MODE NOTES, INITIALIZATION SEQUENCE, Step Processing Rules (+1 more)
 
 ### Community 941 - "Community 941"
 Cohesion: 0.20
-Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
+Nodes (9): 1. Configuration Loading, 2. Route to Brief Workflow, Core Principles, Create Module Brief, Critical Rules, INITIALIZATION SEQUENCE, OUTPUT, Step Processing Rules (+1 more)
 
 ### Community 942 - "Community 942"
 Cohesion: 0.20
-Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
+Nodes (9): 1. Configuration Loading, 2. Create Mode Selection, 3. Route to First Step, Core Principles, Create Workflow, Critical Rules (NO EXCEPTIONS), INITIALIZATION SEQUENCE, Step Processing Rules (+1 more)
 
 ### Community 943 - "Community 943"
 Cohesion: 0.20
-Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
+Nodes (10): content, bestPracticesFound, criticalIssues, decision, knowledgeBaseReferences, nextSteps, recommendations, testFileAnalysis (+2 more)
 
 ### Community 944 - "Community 944"
 Cohesion: 0.20
-Nodes (10): issues, notes, score, examples, notes, score, qualityAssessment, assertions (+2 more)
+Nodes (10): code:json ("acceptanceCriteriaCount": 7  // ❌ FORBIDDEN), code:json ("userStory": "As a developer, I want X, So that Y"  // ❌ FOR), code:json ("functionalRequirements": ["FR 1.1", "FR 1.2"]  // ❌ FORBIDD), code:json ("description": "Parser functionality..."  // ❌ FORBIDDEN (if), code:json ("userStory": {), code:json ("acceptanceCriteria": [), code:json ("requirements": {), CRITICAL INSTRUCTIONS (+2 more)
 
 ### Community 945 - "Community 945"
 Cohesion: 0.20
-Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
+Nodes (9): 1. Configuration Loading, 2. Route to Create Workflow, Core Principles, Create Agent, CREATE MODE NOTES, Critical Rules, INITIALIZATION SEQUENCE, Step Processing Rules (+1 more)
 
 ### Community 946 - "Community 946"
 Cohesion: 0.20
-Nodes (10): traceability, critical, high, low, medium, summary, detailedMapping, gapAnalysis (+2 more)
+Nodes (9): 1. Configuration Loading, 2. Route to Validate Workflow, Core Principles, Critical Rules, INITIALIZATION SEQUENCE, Step Processing Rules, Validate Agent, VALIDATE MODE NOTES (+1 more)
 
 ### Community 947 - "Community 947"
-Cohesion: 0.17
-Nodes (6): CavemanIntensity, CavemanService, INTENSITY_DESCRIPTIONS, INTENSITY_PROMPT_SUFFIX, setCavemanService(), VALID_INTENSITIES
+Cohesion: 0.20
+Nodes (10): description, properties, type, items, type, items, type, notifications (+2 more)
 
 ### Community 948 - "Community 948"
-Cohesion: 0.22
-Nodes (8): Bond - Agent Building Expert, Conventions, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Adopt Persona, Step 3: Load Config, Step 4: Greet and Present Menu
+Cohesion: 0.20
+Nodes (10): description, properties, type, items, type, items, type, dependencies (+2 more)
 
 ### Community 949 - "Community 949"
-Cohesion: 0.22
-Nodes (8): Conventions, Morgan - Module Creation Master, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Adopt Persona, Step 3: Load Config, Step 4: Greet and Present Menu
+Cohesion: 0.20
+Nodes (9): description, $id, $ref, properties, metadata, required, $schema, title (+1 more)
 
 ### Community 950 - "Community 950"
-Cohesion: 0.22
-Nodes (8): Conventions, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Adopt Persona, Step 3: Load Config, Step 4: Greet and Present Menu, Wendy - Workflow Building Master
+Cohesion: 0.20
+Nodes (10): properties, type, artifact, path, relatedArtifacts, version, description, items (+2 more)
 
 ### Community 951 - "Community 951"
-Cohesion: 0.22
-Nodes (8): Carson - Elite Brainstorming Specialist, Conventions, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Adopt Persona, Step 3: Load Config, Step 4: Greet and Present Menu
+Cohesion: 0.20
+Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
 
 ### Community 952 - "Community 952"
-Cohesion: 0.22
-Nodes (8): Conventions, Maya - Design Thinking Maestro, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Adopt Persona, Step 3: Load Config, Step 4: Greet and Present Menu
+Cohesion: 0.20
+Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
 
 ### Community 953 - "Community 953"
-Cohesion: 0.22
-Nodes (8): Conventions, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Adopt Persona, Step 3: Load Config, Step 4: Greet and Present Menu, Victor - Disruptive Innovation Oracle
+Cohesion: 0.20
+Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
 
 ### Community 954 - "Community 954"
-Cohesion: 0.22
-Nodes (8): Caravaggio - Visual Communication Expert, Conventions, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Adopt Persona, Step 3: Load Config, Step 4: Greet and Present Menu
+Cohesion: 0.20
+Nodes (10): issues, notes, score, examples, notes, score, qualityAssessment, assertions (+2 more)
 
 ### Community 955 - "Community 955"
-Cohesion: 0.22
-Nodes (8): Conventions, Dr. Quinn - Master Problem Solver, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Adopt Persona, Step 3: Load Config, Step 4: Greet and Present Menu
+Cohesion: 0.20
+Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
 
 ### Community 956 - "Community 956"
-Cohesion: 0.22
-Nodes (8): Conventions, On Activation, Overview, Sophia - Master Storyteller, Step 1: Resolve the Agent Block, Step 2: Adopt Persona, Step 3: Load Config, Step 4: Greet and Present Menu
+Cohesion: 0.20
+Nodes (10): traceability, critical, high, low, medium, summary, detailedMapping, gapAnalysis (+2 more)
 
 ### Community 957 - "Community 957"
 Cohesion: 0.22
-Nodes (8): 1. Naming Conventions, 2. Immutability, 3. Error Handling, 4. Async Patterns, 5. Code Structure, Coding Standards Workflow, Output, Review Checklist
+Nodes (8): Bond - Agent Building Expert, Conventions, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Adopt Persona, Step 3: Load Config, Step 4: Greet and Present Menu
 
 ### Community 958 - "Community 958"
 Cohesion: 0.22
-Nodes (8): 1. Identify Critical User Flows, 2. Design Page Objects, 3. Write Test Specs, 4. Handle Flaky Tests, 5. CI Integration, E2E Testing Workflow, Output, Steps
+Nodes (8): Conventions, Morgan - Module Creation Master, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Adopt Persona, Step 3: Load Config, Step 4: Greet and Present Menu
 
 ### Community 959 - "Community 959"
 Cohesion: 0.22
-Nodes (9): 0.2.0, Canvas Layout Overhaul, Dynamic Swimlane Height, Epic Children Reorder, Lane Top Margin Fix, Per-Category Badge Toggle, Refactoring, Refactoring (+1 more)
+Nodes (8): Conventions, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Adopt Persona, Step 3: Load Config, Step 4: Greet and Present Menu, Wendy - Workflow Building Master
 
 ### Community 960 - "Community 960"
 Cohesion: 0.22
-Nodes (8): code:block1 (Definition of Done: {{PASS/FAIL}}), 📋 Context & Requirements Validation, 📝 Documentation & Tracking, 🎯 Enhanced Definition of Done Checklist, 🔚 Final Status Verification, 🎯 Final Validation Output, ✅ Implementation Completion, 🧪 Testing & Quality Assurance
+Nodes (8): Carson - Elite Brainstorming Specialist, Conventions, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Adopt Persona, Step 3: Load Config, Step 4: Greet and Present Menu
 
 ### Community 961 - "Community 961"
 Cohesion: 0.22
-Nodes (8): Editorial Review - Prose, HALT CONDITIONS, PRINCIPLES, Step 1: Validate Input, Step 2: Analyze Style, Step 3: Editorial Review (CRITICAL), Step 4: Output Results, STEPS
+Nodes (8): Conventions, Maya - Design Thinking Maestro, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Adopt Persona, Step 3: Load Config, Step 4: Greet and Present Menu
 
 ### Community 962 - "Community 962"
 Cohesion: 0.22
-Nodes (8): BMad Help, code:block1 (module,skill,display-name,menu-code,description,action,args,), Constraints, CSV Interpretation, Data Sources, Desired Outcomes, Purpose, Response Format
+Nodes (8): Conventions, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Adopt Persona, Step 3: Load Config, Step 4: Greet and Present Menu, Victor - Disruptive Innovation Oracle
 
 ### Community 963 - "Community 963"
 Cohesion: 0.22
-Nodes (8): Baseline, Implement, INSTRUCTIONS, NEXT, PRECONDITION, RULES, Self-Check, Step 3: Implement
+Nodes (8): Caravaggio - Visual Communication Expert, Conventions, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Adopt Persona, Step 3: Load Config, Step 4: Greet and Present Menu
 
 ### Community 964 - "Community 964"
 Cohesion: 0.22
-Nodes (9): changeType, description, id, requestDate, requestedBy, source, title, urgency (+1 more)
+Nodes (8): Conventions, Dr. Quinn - Master Problem Solver, On Activation, Overview, Step 1: Resolve the Agent Block, Step 2: Adopt Persona, Step 3: Load Config, Step 4: Greet and Present Menu
 
 ### Community 965 - "Community 965"
 Cohesion: 0.22
-Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
+Nodes (8): Conventions, On Activation, Overview, Sophia - Master Storyteller, Step 1: Resolve the Agent Block, Step 2: Adopt Persona, Step 3: Load Config, Step 4: Greet and Present Menu
 
 ### Community 966 - "Community 966"
 Cohesion: 0.22
-Nodes (9): codeGeneration, performanceGuidelines, securityGuidelines, content, additionalNotes, aiGuidelines, description, keyDecisions (+1 more)
+Nodes (8): 1. Naming Conventions, 2. Immutability, 3. Error Handling, 4. Async Patterns, 5. Code Structure, Coding Standards Workflow, Output, Review Checklist
 
 ### Community 967 - "Community 967"
 Cohesion: 0.22
-Nodes (9): summary, assessedBy, assessmentDate, criticalActions, keyFindings, overallScore, overallStatus, projectName (+1 more)
+Nodes (8): 1. Identify Critical User Flows, 2. Design Page Objects, 3. Write Test Specs, 4. Handle Flaky Tests, 5. CI Integration, E2E Testing Workflow, Output, Steps
 
 ### Community 968 - "Community 968"
 Cohesion: 0.22
-Nodes (9): content, actionItems, lessonsLearned, storyAnalysis, technicalDebt, whatDidNotGoWell, whatWentWell, debtAddressed (+1 more)
+Nodes (9): 0.3.3, Bug Fixes, Bug Fixes, Bug Fixes, Bug Fixes, Bug Fixes, Bug Fixes, Schema Relaxation (+1 more)
 
 ### Community 969 - "Community 969"
 Cohesion: 0.22
-Nodes (9): summary, keyAchievements, mainChallenges, overallSuccess, velocityAnalysis, actualEffort, estimatedEffort, variance (+1 more)
+Nodes (9): dependencies, ajv, deepmerge, @iarna/toml, microdiff, pdfkit, simple-git, @types/pdfkit (+1 more)
 
 ### Community 970 - "Community 970"
 Cohesion: 0.22
-Nodes (9): $defs, statusDefinitions, contexted, drafted, description, epicStatuses, legacyAliases, retrospectiveStatuses (+1 more)
+Nodes (8): code:block1 (Definition of Done: {{PASS/FAIL}}), 📋 Context & Requirements Validation, 📝 Documentation & Tracking, 🎯 Enhanced Definition of Done Checklist, 🔚 Final Status Verification, 🎯 Final Validation Output, ✅ Implementation Completion, 🧪 Testing & Quality Assurance
 
 ### Community 971 - "Community 971"
 Cohesion: 0.22
-Nodes (9): description, items, type, type, generatedTests, testPatterns, description, items (+1 more)
+Nodes (8): Editorial Review - Prose, HALT CONDITIONS, PRINCIPLES, Step 1: Validate Input, Step 2: Analyze Style, Step 3: Editorial Review (CRITICAL), Step 4: Output Results, STEPS
 
 ### Community 972 - "Community 972"
 Cohesion: 0.22
-Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
+Nodes (8): BMad Help, code:block1 (module,skill,display-name,menu-code,description,action,args,), Constraints, CSV Interpretation, Data Sources, Desired Outcomes, Purpose, Response Format
 
 ### Community 973 - "Community 973"
 Cohesion: 0.22
-Nodes (9): marketLandscape, growthRate, keyTrends, marketSize, overview, regulatoryEnvironment, sam, som (+1 more)
+Nodes (8): Baseline, Implement, INSTRUCTIONS, NEXT, PRECONDITION, RULES, Self-Check, Step 3: Implement
 
 ### Community 974 - "Community 974"
 Cohesion: 0.22
-Nodes (9): successMetrics, currentValue, metric, targetValue, timeframe, decisionGates, laggingIndicators, leadingIndicators (+1 more)
+Nodes (9): changeType, description, id, requestDate, requestedBy, source, title, urgency (+1 more)
 
 ### Community 975 - "Community 975"
 Cohesion: 0.22
-Nodes (9): implementationPlan, actionSteps, approach, changeManagement, communicationPlan, phases, resourcesNeeded, responsibleParties (+1 more)
+Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
 
 ### Community 976 - "Community 976"
 Cohesion: 0.22
-Nodes (8): Architecture (Target), code:block1 (LLM Tools (7) → ArtifactService (business logic) → ArtifactD), DB Migration: JSON → SQLite (Relational), Documents, How to Start, Implementation Phases, Key Decisions, Overview
+Nodes (9): codeGeneration, performanceGuidelines, securityGuidelines, content, additionalNotes, aiGuidelines, description, keyDecisions (+1 more)
 
 ### Community 977 - "Community 977"
 Cohesion: 0.22
-Nodes (8): CIS Module — 4 Schemas, code:sql (-- 1. test_designs (test-design.schema.json, 108 lines)), code:sql (-- 1. storytelling_artifacts (storytelling.schema.json, 71 l), Complete BMAD Schema → Fully Relational DB Mapping, Design Principles, Next Steps After DB Structure Approval, Table Count Summary, TEA Module — 10 Schemas
+Nodes (9): summary, assessedBy, assessmentDate, criticalActions, keyFindings, overallScore, overallStatus, projectName (+1 more)
 
 ### Community 978 - "Community 978"
 Cohesion: 0.22
-Nodes (9): requirementsInventory, additional, functional, nonFunctional, summary, totalAdditional, totalFunctional, totalNonFunctional (+1 more)
+Nodes (9): content, actionItems, lessonsLearned, storyAnalysis, technicalDebt, whatDidNotGoWell, whatWentWell, debtAddressed (+1 more)
 
 ### Community 979 - "Community 979"
 Cohesion: 0.22
-Nodes (8): code:yaml (---), Graceful Degradation, Stage 4: Draft & Review, Stage Complete, Step 1: Draft the Executive Brief, Step 2: Fan Out Review Subagents, Step 3: Integrate Review Insights, Step 4: Present to User
+Nodes (9): summary, keyAchievements, mainChallenges, overallSuccess, velocityAnalysis, actualEffort, estimatedEffort, variance (+1 more)
 
 ### Community 980 - "Community 980"
 Cohesion: 0.22
-Nodes (8): Coaching Approach, Coaching Notes Capture, Headless Mode, Quality Bars, Stage 2: The Press Release, Stage Complete, The Forge, Updating the Document
+Nodes (9): $defs, statusDefinitions, contexted, drafted, description, epicStatuses, legacyAliases, retrospectiveStatuses (+1 more)
 
 ### Community 981 - "Community 981"
 Cohesion: 0.22
-Nodes (8): code:yaml (---), code:json ({), Finalize the Document, Present Completion, Produce the Distillate, Stage 5: The Verdict, Stage Complete, The Assessment
+Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
 
 ### Community 982 - "Community 982"
 Cohesion: 0.22
-Nodes (9): Chunking Process, code:json ({), code:block20 (Convert Epic 1, 2, and 3 from epics.md and add to epics.json), code:block21 (Continue converting Epics 4, 5, and 6 from epics.md), code:block22 (Finish converting Epics 7, 8, and 9 from epics.md), code:block23 (Validate epics.json is complete and matches the schema), Step A: Create JSON Shell First, Step B: Convert Epics in Batches (+1 more)
+Nodes (9): marketLandscape, growthRate, keyTrends, marketSize, overview, regulatoryEnvironment, sam, som (+1 more)
 
 ### Community 983 - "Community 983"
 Cohesion: 0.22
-Nodes (8): 1. Configuration Loading, 2. Route to Edit Workflow, Core Principles, Critical Rules (NO EXCEPTIONS), Edit Workflow, INITIALIZATION SEQUENCE, Step Processing Rules, WORKFLOW ARCHITECTURE
+Nodes (9): successMetrics, currentValue, metric, targetValue, timeframe, decisionGates, laggingIndicators, leadingIndicators (+1 more)
 
 ### Community 984 - "Community 984"
 Cohesion: 0.22
-Nodes (8): Boundaries & Constraints, Code Map, Design Notes, I/O & Edge-Case Matrix, Intent, Spec Change Log, Tasks & Acceptance, Verification
+Nodes (9): implementationPlan, actionSteps, approach, changeManagement, communicationPlan, phases, resourcesNeeded, responsibleParties (+1 more)
 
 ### Community 985 - "Community 985"
 Cohesion: 0.22
-Nodes (9): deployment, environments, pipeline, rollback, strategy, stages, triggers, procedure (+1 more)
+Nodes (8): Architecture (Target), code:block1 (LLM Tools (7) → ArtifactService (business logic) → ArtifactD), DB Migration: JSON → SQLite (Relational), Documents, How to Start, Implementation Phases, Key Decisions, Overview
 
 ### Community 986 - "Community 986"
 Cohesion: 0.22
-Nodes (9): currentCapacity, projectedGrowth, scalingThresholds, scalability, approach, triggers, capacityPlanning, horizontalScaling (+1 more)
+Nodes (8): CIS Module — 4 Schemas, code:sql (-- 1. test_designs (test-design.schema.json, 108 lines)), code:sql (-- 1. storytelling_artifacts (storytelling.schema.json, 71 l), Complete BMAD Schema → Fully Relational DB Mapping, Design Principles, Next Steps After DB Structure Approval, Table Count Summary, TEA Module — 10 Schemas
+
+### Community 987 - "Community 987"
+Cohesion: 0.22
+Nodes (8): code:typescript (/**), code:typescript (// BEFORE (line 1442)), code:typescript (export function formatFullAgentForPrompt(persona: AgentPerso), PHASE 3 — Robust Fence Stripping & Validation (Week 2, ~2 days), **T-013** — Create `extractJson()` helper module (P1, ~1 hr), **T-014** — Replace inline regex in `chat-participant.ts` with `extractJson` (P1, ~30 min), **T-015** — Add validation loop to `executeWithDirectApi` (P1, ~4 hr), **T-016** — Inject format footer in agent personas (P2, ~1 hr)
 
 ### Community 988 - "Community 988"
 Cohesion: 0.22
-Nodes (8): Entry and Exit Criteria, Implementation Planning Handoff (Optional), Interworking & Regression, Not in Scope, OUTPUT GENERATION GUIDANCE, Project Team (Optional), Test Design and Risk Assessment, Tooling and Access (System-Level QA Document Only)
+Nodes (9): requirementsInventory, additional, functional, nonFunctional, summary, totalAdditional, totalFunctional, totalNonFunctional (+1 more)
 
 ### Community 989 - "Community 989"
 Cohesion: 0.22
-Nodes (8): Completion, Customization by Role, Progress Tracking, Quiz Scoring, Support, Teach Me Testing - Usage Instructions, Tips for Success, Who Should Use This
+Nodes (8): code:yaml (---), Graceful Degradation, Stage 4: Draft & Review, Stage Complete, Step 1: Draft the Executive Brief, Step 2: Fan Out Review Subagents, Step 3: Integrate Review Insights, Step 4: Present to User
 
 ### Community 990 - "Community 990"
 Cohesion: 0.22
-Nodes (9): custom, security, assessments, authentication, authorization, compliance, dataProtection, status (+1 more)
+Nodes (8): Coaching Approach, Coaching Notes Capture, Headless Mode, Quality Bars, Stage 2: The Press Release, Stage Complete, The Forge, Updating the Document
 
 ### Community 991 - "Community 991"
 Cohesion: 0.22
-Nodes (8): 1. Configuration Loading, 2. Route to Edit Workflow, Core Principles, Critical Rules, Edit Module, INITIALIZATION SEQUENCE, Step Processing Rules, WORKFLOW ARCHITECTURE
+Nodes (8): code:yaml (---), code:json ({), Finalize the Document, Present Completion, Produce the Distillate, Stage 5: The Verdict, Stage Complete, The Assessment
 
 ### Community 992 - "Community 992"
 Cohesion: 0.22
-Nodes (8): 1. Configuration Loading, 2. Route to Rework Workflow, Core Principles, Critical Rules (NO EXCEPTIONS), INITIALIZATION SEQUENCE, Rework Workflow, Step Processing Rules, WORKFLOW ARCHITECTURE
+Nodes (8): 1. Configuration Loading, 2. Route to Validate Workflow, Core Principles, Critical Rules, INITIALIZATION SEQUENCE, Step Processing Rules, Validate Module, WORKFLOW ARCHITECTURE
 
 ### Community 993 - "Community 993"
 Cohesion: 0.22
-Nodes (8): 1. Configuration Loading, 2. Route to Validate Max-Parallel Workflow, Core Principles, Critical Rules (NO EXCEPTIONS), INITIALIZATION SEQUENCE, Step Processing Rules, Validate Max-Parallel Workflow, WORKFLOW ARCHITECTURE
+Nodes (8): 1. Configuration Loading, 2. Route to Edit Workflow, Core Principles, Critical Rules (NO EXCEPTIONS), Edit Workflow, INITIALIZATION SEQUENCE, Step Processing Rules, WORKFLOW ARCHITECTURE
 
 ### Community 994 - "Community 994"
 Cohesion: 0.22
-Nodes (8): 1. Configuration Loading, 2. Route to Validate Workflow, Core Principles, Critical Rules, INITIALIZATION SEQUENCE, Step Processing Rules, Validate Module, WORKFLOW ARCHITECTURE
+Nodes (8): Certificate of Completion, Learning Artifacts, Next Steps, Program Details, Sessions Completed, Skills Acquired, 🏆 TEA Academy Completion Certificate, {{user_name}}
 
 ### Community 995 - "Community 995"
 Cohesion: 0.22
-Nodes (8): 1. Configuration Loading, 2. Route to Validate Workflow, Core Principles, Critical Rules (NO EXCEPTIONS), INITIALIZATION SEQUENCE, Step Processing Rules, Validate Workflow, WORKFLOW ARCHITECTURE
+Nodes (8): Boundaries & Constraints, Code Map, Design Notes, I/O & Edge-Case Matrix, Intent, Spec Change Log, Tasks & Acceptance, Verification
 
 ### Community 996 - "Community 996"
 Cohesion: 0.22
-Nodes (9): items, type, description, properties, type, type, caches, caching (+1 more)
+Nodes (9): deployment, environments, pipeline, rollback, strategy, stages, triggers, procedure (+1 more)
 
 ### Community 997 - "Community 997"
 Cohesion: 0.22
-Nodes (9): items, type, description, properties, type, directories, directoryStructure, rootDir (+1 more)
-
-### Community 998 - "Community 998"
-Cohesion: 0.22
-Nodes (8): Certificate of Completion, Learning Artifacts, Next Steps, Program Details, Sessions Completed, Skills Acquired, 🏆 TEA Academy Completion Certificate, {{user_name}}
+Nodes (9): currentCapacity, projectedGrowth, scalingThresholds, scalability, approach, triggers, capacityPlanning, horizontalScaling (+1 more)
 
 ### Community 999 - "Community 999"
 Cohesion: 0.22
-Nodes (9): format, type, last_validated, validation_errors, validation_status, items, type, properties (+1 more)
+Nodes (9): Chunking Process, code:json ({), code:block20 (Convert Epic 1, 2, and 3 from epics.md and add to epics.json), code:block21 (Continue converting Epics 4, 5, and 6 from epics.md), code:block22 (Finish converting Epics 7, 8, and 9 from epics.md), code:block23 (Validate epics.json is complete and matches the schema), Step A: Create JSON Shell First, Step B: Convert Epics in Batches (+1 more)
 
 ### Community 1000 - "Community 1000"
 Cohesion: 0.22
-Nodes (9): type, type, type, properties, architecture_type, parts_count, primary_language, repository_type (+1 more)
+Nodes (8): Entry and Exit Criteria, Implementation Planning Handoff (Optional), Interworking & Regression, Not in Scope, OUTPUT GENERATION GUIDANCE, Project Team (Optional), Test Design and Risk Assessment, Tooling and Access (System-Level QA Document Only)
 
 ### Community 1001 - "Community 1001"
 Cohesion: 0.22
-Nodes (9): content, acceptanceCriteria, implementationChecklist, requiredDataTestIds, storySummary, testScenarios, asA, iWant (+1 more)
+Nodes (8): Completion, Customization by Role, Progress Tracking, Quiz Scoring, Support, Teach Me Testing - Usage Instructions, Tips for Success, Who Should Use This
 
 ### Community 1002 - "Community 1002"
 Cohesion: 0.22
-Nodes (9): acceptanceCriteriaMapped, storiesReferenced, traceabilityUpdated, content, bmadIntegration, factoriesCreated, fixturesCreated, recommendations (+1 more)
+Nodes (9): custom, security, assessments, authentication, authorization, compliance, dataProtection, status (+1 more)
 
 ### Community 1003 - "Community 1003"
 Cohesion: 0.22
-Nodes (9): coverageAnalysis, criticalPaths, gaps, target, branch, e2e, function, line (+1 more)
+Nodes (8): 1. Configuration Loading, 2. Route to Edit Workflow, Core Principles, Critical Rules, Edit Module, INITIALIZATION SEQUENCE, Step Processing Rules, WORKFLOW ARCHITECTURE
 
 ### Community 1004 - "Community 1004"
 Cohesion: 0.22
-Nodes (9): metadata, artifactType, projectName, schemaVersion, status, timestamps, workflowName, created (+1 more)
+Nodes (8): 1. Configuration Loading, 2. Route to Rework Workflow, Core Principles, Critical Rules (NO EXCEPTIONS), INITIALIZATION SEQUENCE, Rework Workflow, Step Processing Rules, WORKFLOW ARCHITECTURE
 
 ### Community 1005 - "Community 1005"
 Cohesion: 0.22
-Nodes (9): executionOrder, overview, p0, p1, p2p3, parallelization, constraints, maxParallel (+1 more)
+Nodes (8): 1. Configuration Loading, 2. Route to Validate Max-Parallel Workflow, Core Principles, Critical Rules (NO EXCEPTIONS), INITIALIZATION SEQUENCE, Step Processing Rules, Validate Max-Parallel Workflow, WORKFLOW ARCHITECTURE
 
 ### Community 1006 - "Community 1006"
 Cohesion: 0.22
-Nodes (8): content, relatedArtifacts, signOff, comments, date, role, signature, signedBy
+Nodes (8): 1. Configuration Loading, 2. Route to Validate Workflow, Core Principles, Critical Rules (NO EXCEPTIONS), INITIALIZATION SEQUENCE, Step Processing Rules, Validate Workflow, WORKFLOW ARCHITECTURE
 
 ### Community 1007 - "Community 1007"
 Cohesion: 0.22
-Nodes (9): gateDecision, criticalIssues, decision, decisionMode, gateType, nextSteps, rationale, recommendations (+1 more)
+Nodes (9): format, type, last_validated, validation_errors, validation_status, items, type, properties (+1 more)
 
 ### Community 1008 - "Community 1008"
 Cohesion: 0.22
-Nodes (9): findings, overall, scores, summary, accuracy, completeness, consistency, maintainability (+1 more)
+Nodes (9): type, type, type, properties, architecture_type, parts_count, primary_language, repository_type (+1 more)
 
 ### Community 1009 - "Community 1009"
 Cohesion: 0.22
-Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
+Nodes (9): content, acceptanceCriteria, implementationChecklist, requiredDataTestIds, storySummary, testScenarios, asA, iWant (+1 more)
 
 ### Community 1010 - "Community 1010"
-Cohesion: 0.25
-Nodes (7): Generate API Documentation Instructions, STANDARDS, Step 1: API Discovery, Step 2: Choose Output Format, Step 3: Document Each Endpoint/Function, Step 4: Review & Finalize, WORKFLOW STEPS
+Cohesion: 0.22
+Nodes (9): acceptanceCriteriaMapped, storiesReferenced, traceabilityUpdated, content, bmadIntegration, factoriesCreated, fixturesCreated, recommendations (+1 more)
 
 ### Community 1011 - "Community 1011"
-Cohesion: 0.25
-Nodes (7): Classify, Construct Diff, INSTRUCTIONS, NEXT, Review, RULES, Step 4: Review
+Cohesion: 0.22
+Nodes (9): coverageAnalysis, criticalPaths, gaps, target, branch, e2e, function, line (+1 more)
 
 ### Community 1012 - "Community 1012"
-Cohesion: 0.25
-Nodes (7): approvalDate, approvalNotes, approvedBy, conditions, status, content, approval
+Cohesion: 0.22
+Nodes (9): metadata, artifactType, projectName, schemaVersion, status, timestamps, workflowName, created (+1 more)
 
 ### Community 1013 - "Community 1013"
-Cohesion: 0.25
-Nodes (7): additionalProperties, description, $id, required, $schema, title, type
+Cohesion: 0.22
+Nodes (9): executionOrder, overview, p0, p1, p2p3, parallelization, constraints, maxParallel (+1 more)
 
 ### Community 1014 - "Community 1014"
-Cohesion: 0.25
-Nodes (8): description, properties, type, measure, metric, target, threshold, unit
+Cohesion: 0.22
+Nodes (9): gateDecision, criticalIssues, decision, decisionMode, gateType, nextSteps, rationale, recommendations (+1 more)
 
 ### Community 1015 - "Community 1015"
-Cohesion: 0.25
-Nodes (8): epicCoverage, coveragePercent, coveredRequirements, gaps, overCoverage, status, summary, totalRequirements
+Cohesion: 0.22
+Nodes (8): content, relatedArtifacts, signOff, comments, date, role, signature, signedBy
 
 ### Community 1016 - "Community 1016"
-Cohesion: 0.25
-Nodes (8): epicReference, completionDate, durationDays, epicId, goal, startDate, title, totalStories
+Cohesion: 0.22
+Nodes (9): metadata, artifactType, author, schemaVersion, status, tags, timestamps, created (+1 more)
 
 ### Community 1017 - "Community 1017"
-Cohesion: 0.25
-Nodes (8): description, enum, type, additionalProperties, description, minProperties, type, development_status
+Cohesion: 0.22
+Nodes (9): findings, overall, scores, summary, accuracy, completeness, consistency, maintainability (+1 more)
 
 ### Community 1018 - "Community 1018"
 Cohesion: 0.25
-Nodes (7): additionalProperties, description, $id, required, $schema, title, type
+Nodes (7): Generate API Documentation Instructions, STANDARDS, Step 1: API Discovery, Step 2: Choose Output Format, Step 3: Document Each Endpoint/Function, Step 4: Review & Finalize, WORKFLOW STEPS
 
 ### Community 1019 - "Community 1019"
-Cohesion: 0.25
-Nodes (8): darkMode, description, neutral, primary, secondary, mappings, supported, colorPalette
+Cohesion: 0.36
+Nodes (6): buildOptions, copyPdfkitFontData(), __dirname, main(), production, watch
 
 ### Community 1020 - "Community 1020"
 Cohesion: 0.25
-Nodes (8): define, constraints, designPrinciples, howMightWeQuestions, povStatement, povVariations, problemInsights, synthesisProcess
+Nodes (7): Classify, Construct Diff, INSTRUCTIONS, NEXT, Review, RULES, Step 4: Review
 
 ### Community 1021 - "Community 1021"
 Cohesion: 0.25
-Nodes (8): recommendedStrategy, competitiveMoat, criticalSuccessFactors, direction, keyHypotheses, strategicOptionId, strategicPriorities, strategicThesis
+Nodes (7): approvalDate, approvalNotes, approvedBy, conditions, status, content, approval
 
 ### Community 1022 - "Community 1022"
 Cohesion: 0.25
-Nodes (8): recommendedSolution, description, expectedOutcomes, rationale, rootCausesAddressed, solutionId, title, tradeoffs
+Nodes (7): additionalProperties, description, $id, required, $schema, title, type
 
 ### Community 1023 - "Community 1023"
 Cohesion: 0.25
-Nodes (8): usageGuidelines, adaptationSuggestions, audienceConsiderations, bestChannels, deliveryTips, doNotChange, flexibleElements, toneNotes
+Nodes (8): description, properties, type, measure, metric, target, threshold, unit
 
 ### Community 1024 - "Community 1024"
 Cohesion: 0.25
-Nodes (7): additionalProperties, description, $id, required, $schema, title, type
+Nodes (8): epicCoverage, coveragePercent, coveredRequirements, gaps, overCoverage, status, summary, totalRequirements
 
 ### Community 1025 - "Community 1025"
 Cohesion: 0.25
-Nodes (8): items, description, examples, items, type, type, but, items
+Nodes (8): epicReference, completionDate, durationDays, epicId, goal, startDate, title, totalStories
 
 ### Community 1026 - "Community 1026"
 Cohesion: 0.25
-Nodes (7): additionalProperties, description, $id, required, $schema, title, type
+Nodes (8): description, enum, type, additionalProperties, description, minProperties, type, development_status
 
 ### Community 1027 - "Community 1027"
 Cohesion: 0.25
@@ -5576,1639 +5589,1667 @@ Nodes (7): additionalProperties, description, $id, required, $schema, title, typ
 
 ### Community 1028 - "Community 1028"
 Cohesion: 0.25
-Nodes (7): 7. LLM Tool Security (Fixes H-3), 8. Transaction Support (Fixes H-5), code:typescript (// Generated from DDL schema — maps artifact_type → valid co), code:typescript (// SqliteDal transaction implementation using sql.js:), Column Whitelist per Artifact Type, Implementation Plan v2: SQLite DB + LLM Tool Layer, Risk Matrix
+Nodes (8): darkMode, description, neutral, primary, secondary, mappings, supported, colorPalette
 
 ### Community 1029 - "Community 1029"
 Cohesion: 0.25
-Nodes (8): coverageSummary, arCovered, arTotal, frCovered, frTotal, nfrCovered, nfrTotal, overallCoverage
+Nodes (8): define, constraints, designPrinciples, howMightWeQuestions, povStatement, povVariations, problemInsights, synthesisProcess
 
 ### Community 1030 - "Community 1030"
 Cohesion: 0.25
-Nodes (7): code:yaml (---), code:json ({), Stage 5: Finalize, Stage Complete, Step 1: Polish and Save, Step 2: Offer the Distillate, Step 3: Present Completion
+Nodes (8): recommendedStrategy, competitiveMoat, criticalSuccessFactors, direction, keyHypotheses, strategicOptionId, strategicPriorities, strategicThesis
 
 ### Community 1031 - "Community 1031"
 Cohesion: 0.25
-Nodes (7): Coaching Notes Capture, Coaching the Answers, Headless Mode, Stage 3: Customer FAQ, Stage Complete, The Devil's Advocate, Updating the Document
+Nodes (8): recommendedSolution, description, expectedOutcomes, rationale, rootCausesAddressed, solutionId, title, tradeoffs
 
 ### Community 1032 - "Community 1032"
 Cohesion: 0.25
-Nodes (7): Coaching Notes Capture, Coaching the Answers, Headless Mode, Stage 4: Internal FAQ, Stage Complete, The Skeptical Stakeholder, Updating the Document
+Nodes (8): usageGuidelines, adaptationSuggestions, audienceConsiderations, bestChannels, deliveryTips, doNotChange, flexibleElements, toneNotes
 
 ### Community 1033 - "Community 1033"
 Cohesion: 0.25
-Nodes (8): code:json ({), Conversion Process, For Epics (epics.md → epics.json):, Step 1: Identify Artifact Type and Schema, Step 2: Read the Schema, Step 3: Parse the Markdown, Step 4: Build JSON Structure, Step 6: Save Output
+Nodes (7): additionalProperties, description, $id, required, $schema, title, type
 
 ### Community 1034 - "Community 1034"
 Cohesion: 0.25
-Nodes (8): code:block26 (bmad-to-json), code:block27 (bmad-to-json epics.md), code:block28 (bmad-to-json .agileagentcanvas-context/planning --all), code:block29 (bmad-to-json .agileagentcanvas-context/epics --type=story), code:block30 (bmad-to-json epics.md --chunked), code:block31 (bmad-to-json epics.md --resume), code:block32 (bmad-to-json custom-artifact.md --schema=_bmad/schemas/bmm/s), Invocation Examples
+Nodes (8): items, description, examples, items, type, type, but, items
 
 ### Community 1035 - "Community 1035"
 Cohesion: 0.25
-Nodes (7): 1. Performance Assessment Categories, code:json ({), EXIT CONDITION, OUTPUT FORMAT, Subprocess 4B: Performance NFR Assessment, SUBPROCESS CONTEXT, SUBPROCESS TASK
+Nodes (7): additionalProperties, description, $id, required, $schema, title, type
 
 ### Community 1036 - "Community 1036"
 Cohesion: 0.25
-Nodes (7): 1. Reliability Assessment Categories, code:json ({), EXIT CONDITION, OUTPUT FORMAT, Subprocess 4C: Reliability NFR Assessment, SUBPROCESS CONTEXT, SUBPROCESS TASK
+Nodes (7): additionalProperties, description, $id, required, $schema, title, type
 
 ### Community 1037 - "Community 1037"
 Cohesion: 0.25
-Nodes (7): 1. Scalability Assessment Categories, code:json ({), EXIT CONDITION, OUTPUT FORMAT, Subprocess 4D: Scalability NFR Assessment, SUBPROCESS CONTEXT, SUBPROCESS TASK
+Nodes (7): 7. LLM Tool Security (Fixes H-3), 8. Transaction Support (Fixes H-5), code:typescript (// Generated from DDL schema — maps artifact_type → valid co), code:typescript (// SqliteDal transaction implementation using sql.js:), Column Whitelist per Artifact Type, Implementation Plan v2: SQLite DB + LLM Tool Layer, Risk Matrix
 
 ### Community 1038 - "Community 1038"
 Cohesion: 0.25
-Nodes (7): additionalProperties, description, $id, required, $schema, title, type
+Nodes (8): 4. Task Backlog, code:markdown (# AgileAgentCanvas Tool Catalog), code:typescript (function buildBmadMethodologyContext(): string {), code:typescript (const TOOL_FEW_SHOT: Record<string, string> = {), PHASE 4 — Tool Catalog & Discovery (Week 3, ~2 days), **T-017** — Create `docs/tool-catalog.md` (P1, ~2 hr), **T-018** — Inject tool catalog reference into system prompt (P1, ~1 hr), **T-019** — Add few-shot examples for top 5 tools (P2, ~3 hr)
 
 ### Community 1039 - "Community 1039"
 Cohesion: 0.25
-Nodes (8): additionalLibraries, framework, language, rationale, stateManagement, styling, testing, frontend
+Nodes (8): coverageSummary, arCovered, arTotal, frCovered, frTotal, nfrCovered, nfrTotal, overallCoverage
 
 ### Community 1040 - "Community 1040"
 Cohesion: 0.25
-Nodes (8): cicd, containerization, hosting, logging, monitoring, orchestration, rationale, infrastructure
+Nodes (7): code:yaml (---), code:json ({), Stage 5: Finalize, Stage Complete, Step 1: Polish and Save, Step 2: Offer the Distillate, Step 3: Present Completion
 
 ### Community 1041 - "Community 1041"
 Cohesion: 0.25
-Nodes (8): content, acceptanceCriteria, dataFactoriesCreated, fixturesCreated, implementationChecklist, knowledgeBaseReferences, mockRequirements, requiredDataTestIds
+Nodes (7): Coaching Notes Capture, Coaching the Answers, Headless Mode, Stage 3: Customer FAQ, Stage Complete, The Devil's Advocate, Updating the Document
 
 ### Community 1042 - "Community 1042"
 Cohesion: 0.25
-Nodes (8): testExecutionEvidence, failed, passed, skipped, lastRun, logs, results, screenshots
+Nodes (7): Coaching Notes Capture, Coaching the Answers, Headless Mode, Stage 4: Internal FAQ, Stage Complete, The Skeptical Stakeholder, Updating the Document
 
 ### Community 1043 - "Community 1043"
 Cohesion: 0.25
-Nodes (7): Added, Changed, Changelog, Fixed, Removed, [Unreleased], [{version}] - {date}
+Nodes (7): 1. Performance Assessment Categories, code:json ({), EXIT CONDITION, OUTPUT FORMAT, Subprocess 4B: Performance NFR Assessment, SUBPROCESS CONTEXT, SUBPROCESS TASK
 
 ### Community 1044 - "Community 1044"
 Cohesion: 0.25
-Nodes (8): empathize, empathyMap, keyObservations, userInsights, does, feels, says, thinks
+Nodes (8): content, entryExitCriteria, mitigationPlans, notInScope, projectTeam, qualityGateCriteria, entry, exit
 
 ### Community 1045 - "Community 1045"
 Cohesion: 0.25
-Nodes (8): content, entryExitCriteria, mitigationPlans, notInScope, projectTeam, qualityGateCriteria, entry, exit
+Nodes (7): additionalProperties, description, $id, required, $schema, title, type
 
 ### Community 1046 - "Community 1046"
 Cohesion: 0.25
-Nodes (8): coverage, flakinessScore, nfrStatus, testExecution, evidenceSummary, failed, passed, skipped
+Nodes (8): additionalLibraries, framework, language, rationale, stateManagement, styling, testing, frontend
+
+### Community 1047 - "Community 1047"
+Cohesion: 0.25
+Nodes (8): cicd, containerization, hosting, logging, monitoring, orchestration, rationale, infrastructure
 
 ### Community 1048 - "Community 1048"
 Cohesion: 0.25
-Nodes (8): storyInfo, businessValue, epicId, primaryTestLevel, storyDescription, storyId, storyTitle, technicalContext
+Nodes (8): content, acceptanceCriteria, dataFactoriesCreated, fixturesCreated, implementationChecklist, knowledgeBaseReferences, mockRequirements, requiredDataTestIds
 
 ### Community 1049 - "Community 1049"
 Cohesion: 0.25
-Nodes (8): summary, coverageTarget, estimatedCoverageIncrease, framework, mode, scope, totalFilesCreated, totalTestsCreated
+Nodes (8): testExecutionEvidence, failed, passed, skipped, lastRun, logs, results, screenshots
 
 ### Community 1050 - "Community 1050"
 Cohesion: 0.25
-Nodes (8): responseTime, actual, notes, p50, p95, p99, status, target
+Nodes (7): 1. Reliability Assessment Categories, code:json ({), EXIT CONDITION, OUTPUT FORMAT, Subprocess 4C: Reliability NFR Assessment, SUBPROCESS CONTEXT, SUBPROCESS TASK
 
 ### Community 1051 - "Community 1051"
 Cohesion: 0.25
-Nodes (7): content, resourceEstimates, testEnvironment, breakdown, totalEffort, environments, tools
+Nodes (7): 1. Scalability Assessment Categories, code:json ({), EXIT CONDITION, OUTPUT FORMAT, Subprocess 4D: Scalability NFR Assessment, SUBPROCESS CONTEXT, SUBPROCESS TASK
 
 ### Community 1052 - "Community 1052"
 Cohesion: 0.25
-Nodes (8): coverageAnalysis, coverageByArea, overallCoverage, uncoveredAreas, branches, functions, lines, statements
+Nodes (7): Added, Changed, Changelog, Fixed, Removed, [Unreleased], [{version}] - {date}
 
 ### Community 1053 - "Community 1053"
 Cohesion: 0.25
-Nodes (8): contribution, flakyTests, nondeterministicPatterns, notes, score, weight, determinism, determinism
+Nodes (8): code:json ({), Conversion Process, For Epics (epics.md → epics.json):, Step 1: Identify Artifact Type and Schema, Step 2: Read the Schema, Step 3: Parse the Markdown, Step 4: Build JSON Structure, Step 6: Save Output
 
 ### Community 1054 - "Community 1054"
 Cohesion: 0.25
-Nodes (8): storyInfo, epicId, epicTitle, evaluationDate, evaluator, storyId, storyTitle, version
+Nodes (8): code:block26 (bmad-to-json), code:block27 (bmad-to-json epics.md), code:block28 (bmad-to-json .agileagentcanvas-context/planning --all), code:block29 (bmad-to-json .agileagentcanvas-context/epics --type=story), code:block30 (bmad-to-json epics.md --chunked), code:block31 (bmad-to-json epics.md --resume), code:block32 (bmad-to-json custom-artifact.md --schema=_bmad/schemas/bmm/s), Invocation Examples
 
 ### Community 1055 - "Community 1055"
 Cohesion: 0.25
-Nodes (7): API Routes ({{api_route_count}} endpoints found), Deep-Dive Documentation, Deep-Dive Documentation Complete! ✓, Deep-Dive Documentation Instructions, Feature Modules ({{feature_count}} features), Services/Business Logic, UI Component Areas
+Nodes (8): empathize, empathyMap, keyObservations, userInsights, does, feels, says, thinks
 
 ### Community 1056 - "Community 1056"
-Cohesion: 0.29
-Nodes (6): Generate README Instructions, STANDARDS, Step 1: Project Discovery, Step 2: Draft README, Step 3: Review & Finalize, WORKFLOW STEPS
-
-### Community 1057 - "Community 1057"
-Cohesion: 0.29
-Nodes (6): 1. Data Flow Analysis, 2. DB Architecture, 3. Edge Cases, 4. Test Coverage Gaps, 5. Output, Eng Execution Review Workflow
+Cohesion: 0.25
+Nodes (8): coverage, flakinessScore, nfrStatus, testExecution, evidenceSummary, failed, passed, skipped
 
 ### Community 1058 - "Community 1058"
-Cohesion: 0.29
-Nodes (6): 1. Initial Assessment, 2. STRIDE Threat Modeling, 3. OWASP Cross-Check, 4. Confidence Gate, 5. Output Generation, Security Audit Workflow
+Cohesion: 0.25
+Nodes (8): storyInfo, businessValue, epicId, primaryTestLevel, storyDescription, storyId, storyTitle, technicalContext
 
 ### Community 1059 - "Community 1059"
-Cohesion: 0.29
-Nodes (5): Artifact Analyzer, code:json ({), Input, Output, Process
+Cohesion: 0.25
+Nodes (8): summary, coverageTarget, estimatedCoverageIncrease, framework, mode, scope, totalFilesCreated, totalTestsCreated
 
 ### Community 1060 - "Community 1060"
-Cohesion: 0.29
-Nodes (5): code:json ({), Input, Output, Process, Web Researcher
+Cohesion: 0.25
+Nodes (8): responseTime, actual, notes, p50, p95, p99, status, target
 
 ### Community 1061 - "Community 1061"
-Cohesion: 0.29
-Nodes (7): 0.3.2, Artifact Array Migration, Bug Fixes, Bug Fixes, Documentation, Schema ID Convention Audit, Standalone Epic Files
+Cohesion: 0.25
+Nodes (7): content, entryExitCriteria, resourceEstimates, entry, exit, breakdown, totalEffort
 
 ### Community 1062 - "Community 1062"
-Cohesion: 0.29
-Nodes (7): 0.4.1, Bug Fixes, CLI Agent Integration — Full Tier Coverage, Jira Cloud Read Integration, OpenCode Full Integration, Single Source of Truth — Index Files Removed, Single Source of Truth — Status Field Consolidation
+Cohesion: 0.25
+Nodes (8): coverageAnalysis, coverageByArea, overallCoverage, uncoveredAreas, branches, functions, lines, statements
 
 ### Community 1063 - "Community 1063"
-Cohesion: 0.29
-Nodes (7): 0.2.1, Canvas Layout Refinements, Canvas Regression Fix, Logging, Quality Engineering, Refactoring, Schema Validation Fixes
+Cohesion: 0.25
+Nodes (8): contribution, flakyTests, nondeterministicPatterns, notes, score, weight, determinism, determinism
 
 ### Community 1064 - "Community 1064"
-Cohesion: 0.29
-Nodes (7): 0.3.9, Agent Honesty Guardrails, Artifact Store Refactoring, Bug Fixes, Bug Fixes, GSD Workflows Integration, Test Tracking & Status Update Fix
-
-### Community 1065 - "Community 1065"
-Cohesion: 0.36
-Nodes (6): buildOptions, copyPdfkitFontData(), __dirname, main(), production, watch
-
-### Community 1066 - "Community 1066"
-Cohesion: 0.29
-Nodes (7): dependencies, ajv, @iarna/toml, pdfkit, simple-git, @types/pdfkit, yaml
-
-### Community 1067 - "Community 1067"
-Cohesion: 0.29
-Nodes (6): Brainstorming Session Workflow, Configuration Loading, EXECUTION, INITIALIZATION, Paths, WORKFLOW ARCHITECTURE
-
-### Community 1068 - "Community 1068"
-Cohesion: 0.29
-Nodes (6): code:block1 (**{Concern name}**), code:block2 (I built a review trail for this {change_type} (no author-pro), Follow Global Step Rules in SKILL.md, Generate Review Trail, INSTRUCTIONS, PRESENT
-
-### Community 1069 - "Community 1069"
-Cohesion: 0.29
-Nodes (6): ACT ON DECISION, code:block1 (---), Follow Global Step Rules in SKILL.md, On Complete, PROMPT FOR DECISION, Step 5: Wrap-Up
-
-### Community 1070 - "Community 1070"
-Cohesion: 0.29
-Nodes (6): INSTRUCTIONS, Intent check (do this first), NEXT, RULES, Step 1: Clarify and Route, Story-key resolution
-
-### Community 1071 - "Community 1071"
-Cohesion: 0.29
-Nodes (6): Adversarial Review (General), EXECUTION, HALT CONDITIONS, Step 1: Receive Content, Step 2: Adversarial Analysis, Step 3: Present Findings
-
-### Community 1072 - "Community 1072"
-Cohesion: 0.29
-Nodes (6): code:block1 (Epic Files Contains:                Sprint Status Contains:), Complete Coverage Check, Core Validation, Final Check, Parsing Verification, Sprint Planning Validation Checklist
-
-### Community 1073 - "Community 1073"
-Cohesion: 0.29
-Nodes (7): description, items, type, properties, area, coverageTargets, target
-
-### Community 1074 - "Community 1074"
-Cohesion: 0.29
-Nodes (7): additionalProperties, type, description, $ref, properties, content, metadata
-
-### Community 1075 - "Community 1075"
-Cohesion: 0.29
-Nodes (7): framework, model, serving, training, techStack, ai, infrastructure
-
-### Community 1076 - "Community 1076"
-Cohesion: 0.29
-Nodes (7): findings, scalabilityAssessment, securityAssessment, status, summary, techStackValidation, architectureReadiness
-
-### Community 1077 - "Community 1077"
-Cohesion: 0.29
-Nodes (7): testReadiness, automationReadiness, findings, status, summary, testCaseCoverage, testPlanStatus
-
-### Community 1078 - "Community 1078"
-Cohesion: 0.29
-Nodes (7): uxAlignment, assessment, accessibilityReadiness, designSystemCoverage, findings, status, summary
-
-### Community 1079 - "Community 1079"
-Cohesion: 0.29
-Nodes (7): prdAnalysis, completeness, findings, gaps, status, strengths, summary
-
-### Community 1080 - "Community 1080"
-Cohesion: 0.20
-Nodes (10): properties, type, description, properties, type, codeMetrics, metricsSnapshot, qualityMetrics (+2 more)
-
-### Community 1081 - "Community 1081"
-Cohesion: 0.29
-Nodes (6): description, $id, required, $schema, title, type
-
-### Community 1082 - "Community 1082"
-Cohesion: 0.29
-Nodes (7): empathize, journeyMap, keyObservations, researchMethods, userInsights, userProfiles, stages
-
-### Community 1083 - "Community 1083"
-Cohesion: 0.29
-Nodes (7): test, hypothesisValidation, keyLearnings, testingPlan, testSessions, usabilityIssues, userFeedback
-
-### Community 1084 - "Community 1084"
-Cohesion: 0.29
-Nodes (7): opportunities, overview, innovationOpportunities, businessModelInnovation, innovationInitiatives, partnershipOpportunities, valueChainOpportunities
-
-### Community 1085 - "Community 1085"
-Cohesion: 0.29
-Nodes (7): assumptions, constraints, forceField, keyInsights, analysis, drivingForces, restrainingForces
-
-### Community 1086 - "Community 1086"
-Cohesion: 0.29
-Nodes (7): monitoring, adjustmentTriggers, checkpoints, escalationPath, riskMitigation, successMetrics, validationPlan
-
-### Community 1087 - "Community 1087"
-Cohesion: 0.29
-Nodes (6): content, dependencies, epics, criticalPath, epicDependencies, storyDependencies
-
-### Community 1088 - "Community 1088"
-Cohesion: 0.29
-Nodes (6): Graceful Degradation, Mode-Specific Behavior, Stage 2: Contextual Discovery, Stage Complete, Subagent Fan-Out, Synthesis
-
-### Community 1089 - "Community 1089"
-Cohesion: 0.29
-Nodes (7): Automatic Chunking Detection, Chunk Size Guidelines, Chunking for Large Files, code:block24 (I've analyzed epics.md:), code:block25 (Resume epics.json conversion from Epic 5), Resuming Failed Conversions, When to Chunk
-
-### Community 1090 - "Community 1090"
-Cohesion: 0.29
-Nodes (7): Accountability & Logistics, Entry Criteria, Exit Criteria, Interworking & Regression, Not in Scope, Project Team (Optional), Tooling & Access (System-Level Only, If Applicable)
-
-### Community 1091 - "Community 1091"
-Cohesion: 0.17
-Nodes (12): additionalLibraries, apiStyle, framework, language, rationale, runtime, techStack, linting (+4 more)
-
-### Community 1093 - "Community 1093"
-Cohesion: 0.29
-Nodes (7): maintainability, codeQuality, documentation, status, technicalDebt, testCoverage, testQuality
-
-### Community 1094 - "Community 1094"
-Cohesion: 0.29
-Nodes (7): Availability (Uptime), CI Burn-In (Stability), Disaster Recovery (if applicable), Error Rate, Fault Tolerance, MTTR (Mean Time To Recovery), Reliability Assessment
-
-### Community 1095 - "Community 1095"
-Cohesion: 0.29
-Nodes (7): diagnosis, contributingFactors, problemBoundaries, rootCauseAnalysis, systemDynamics, is, isNot
-
-### Community 1096 - "Community 1096"
-Cohesion: 0.29
-Nodes (7): nextSteps, actionItems, additionalVersionsNeeded, feedbackPlan, refinementOpportunities, refinementsNeeded, successMetrics
-
-### Community 1097 - "Community 1097"
-Cohesion: 0.29
-Nodes (7): 📊 ANALYSIS, Constraint Identification, 🎨 DEFINE: Frame the Problem, Force Field Analysis, How Might We Questions, Key Insights, Point of View Statement
-
-### Community 1098 - "Community 1098"
-Cohesion: 0.29
-Nodes (7): Key Learnings, 📝 LESSONS LEARNED, ✅ TEST: Validate with Users, Testing Plan, User Feedback, What to Avoid, What Worked
-
-### Community 1099 - "Community 1099"
-Cohesion: 0.29
-Nodes (7): runningTests, all, coverage, e2e, integration, unit, watch
-
-### Community 1100 - "Community 1100"
-Cohesion: 0.29
-Nodes (7): testExecutionEvidence, branches, functions, lines, statements, coverage, lastRun
-
-### Community 1101 - "Community 1101"
-Cohesion: 0.29
-Nodes (7): executionResults, duration, failed, failureDetails, passed, skipped, totalTests
-
-### Community 1102 - "Community 1102"
-Cohesion: 0.29
-Nodes (7): assessment, metrics, status, codeQuality, codeSmells, complexity, duplication
-
-### Community 1103 - "Community 1103"
-Cohesion: 0.29
-Nodes (7): signOff, comments, conditions, date, decision, role, signedBy
-
-### Community 1104 - "Community 1104"
-Cohesion: 0.29
-Nodes (7): summary, approach, coverageSummary, keyDecisions, objectives, scope, testLevels
-
-### Community 1105 - "Community 1105"
-Cohesion: 0.29
-Nodes (7): reviewInfo, qualityScore, reviewDate, reviewer, reviewType, scope, targetScore
-
-### Community 1106 - "Community 1106"
-Cohesion: 0.33
-Nodes (5): Installation Required, Supported Project Types, Threat Modeling Skill, Usage Modes (After Install), What You Get After Installing
-
-### Community 1107 - "Community 1107"
-Cohesion: 0.33
-Nodes (5): code:json ({), Input, Opportunity Reviewer, Output, Review Lens
-
-### Community 1108 - "Community 1108"
-Cohesion: 0.33
-Nodes (5): code:json ({), Input, Output, Review Lens, Skeptic Reviewer
-
-### Community 1109 - "Community 1109"
-Cohesion: 0.33
-Nodes (5): code:block1 (epics/), File Structure, Key Conventions, Project — Agile Agent Canvas Artifacts, Quick Reference for LLMs
-
-### Community 1110 - "Community 1110"
-Cohesion: 0.33
-Nodes (6): 0.3.1, Bug Fixes, Bug Fixes, IDE Installer Overhaul, Schema Relaxation, Schema Relaxation
-
-### Community 1111 - "Community 1111"
-Cohesion: 0.33
-Nodes (6): default, description, enum, enumDescriptions, type, agileagentcanvas.aiProvider
-
-### Community 1112 - "Community 1112"
-Cohesion: 0.33
-Nodes (6): default, description, enum, enumDescriptions, type, agileagentcanvas.caveman.intensity
-
-### Community 1113 - "Community 1113"
-Cohesion: 0.33
-Nodes (5): Output, QA Automate - Validation Checklist, Test Generation, Test Quality, Validation
-
-### Community 1114 - "Community 1114"
-Cohesion: 0.33
-Nodes (5): code:markdown (# Epic {N} Context: {Epic Title}), Compile Epic Context, Error handling, Exact Output Format, Rules
-
-### Community 1115 - "Community 1115"
-Cohesion: 0.33
-Nodes (5): CHECKPOINT 1, INSTRUCTIONS, NEXT, RULES, Step 2: Plan
-
-### Community 1116 - "Community 1116"
-Cohesion: 0.33
-Nodes (6): implementation, completedAt, implementedBy, notes, startedAt, status
-
-### Community 1117 - "Community 1117"
-Cohesion: 0.33
-Nodes (5): description, $id, $schema, title, type
-
-### Community 1118 - "Community 1118"
-Cohesion: 0.33
-Nodes (5): description, $id, $schema, title, type
-
-### Community 1119 - "Community 1119"
-Cohesion: 0.33
-Nodes (6): buildTool, framework, stateManagement, styling, testing, frontend
-
-### Community 1120 - "Community 1120"
-Cohesion: 0.33
-Nodes (6): cache, database, framework, queue, runtime, backend
-
-### Community 1121 - "Community 1121"
-Cohesion: 0.33
-Nodes (6): resourceAssessment, environmentReadiness, skillGaps, summary, teamReadiness, toolsReadiness
-
-### Community 1122 - "Community 1122"
-Cohesion: 0.40
-Nodes (5): required, risks, description, items, type
-
-### Community 1123 - "Community 1123"
-Cohesion: 0.33
-Nodes (6): type, stories, description, items, minItems, type
-
-### Community 1124 - "Community 1124"
-Cohesion: 0.33
-Nodes (6): additionalProperties, required, sprints, additionalProperties, description, type
-
-### Community 1125 - "Community 1125"
-Cohesion: 0.33
-Nodes (5): description, $id, $schema, title, type
-
-### Community 1126 - "Community 1126"
-Cohesion: 0.33
-Nodes (6): ideate, generatedIdeas, ideaClustering, selectedMethods, selectionCriteria, topConcepts
-
-### Community 1127 - "Community 1127"
-Cohesion: 0.33
-Nodes (6): nextSteps, actionItems, handoffNotes, iterationPlan, refinementsNeeded, successMetrics
-
-### Community 1128 - "Community 1128"
-Cohesion: 0.33
-Nodes (6): sessionInfo, date, duration, facilitator, location, participants
-
-### Community 1129 - "Community 1129"
-Cohesion: 0.33
-Nodes (6): empathyMap, does, feels, says, targetUser, thinks
-
-### Community 1130 - "Community 1130"
-Cohesion: 0.33
-Nodes (6): prototype, featuresToTest, limitations, prototypeApproach, prototypes, prototypeType
-
-### Community 1131 - "Community 1131"
-Cohesion: 0.33
-Nodes (6): sessionInfo, date, duration, facilitator, frameworksUsed, participants
-
-### Community 1132 - "Community 1132"
-Cohesion: 0.33
-Nodes (6): disruptionOpportunities, blueOceanOpportunities, disruptionVectors, strategicWhitespace, technologyEnablers, unmetJobs
-
-### Community 1133 - "Community 1133"
-Cohesion: 0.33
-Nodes (6): lessonsLearned, keyLearnings, knowledgeSharing, processImprovements, whatToAvoid, whatWorked
-
-### Community 1134 - "Community 1134"
-Cohesion: 0.33
-Nodes (6): sessionInfo, date, duration, facilitator, methodology, participants
-
-### Community 1135 - "Community 1135"
-Cohesion: 0.33
-Nodes (6): oneOf, stepsCompleted, description, examples, items, type
-
-### Community 1136 - "Community 1136"
-Cohesion: 0.33
-Nodes (5): 9. Additional Fixes (M-1 through M-3), code:sql (PRAGMA journal_mode=WAL;), M-1: SQLite-Compatible DDL, M-2: WAL Mode, M-3: Story Agent Tracking
-
-### Community 1137 - "Community 1137"
-Cohesion: 0.33
-Nodes (6): Implementation Phases, Phase 1: Foundation (3 files), Phase 2: SQLite DAL (3 files), Phase 3: Backward Compat (2 files), Phase 4: Wire Up (2 modified files), Phase 5: Dependencies
-
-### Community 1138 - "Community 1138"
-Cohesion: 0.33
-Nodes (6): overview, description, inputDocuments, projectName, totalEpics, totalStories
-
-### Community 1139 - "Community 1139"
-Cohesion: 0.47
-Nodes (5): fix_metadata(), get_all_templates(), main(), Find all template files., Transform metadata to match common/metadata.schema.json
-
-### Community 1140 - "Community 1140"
-Cohesion: 0.33
-Nodes (5): BMAD Artifact to JSON Conversion Workflow, code:block1 (bmad-to-json .agileagentcanvas-context/planning --all), Examples, Purpose, Trigger Commands
-
-### Community 1141 - "Community 1141"
-Cohesion: 0.33
-Nodes (6): Architecture Doc Structure (Actionable-First Principle), Cross-Document Consistency, Document Quality (Anti-Bloat Check), System-Level Mode: Two-Document Validation, test-design-architecture.md, test-design-qa.md
-
-### Community 1142 - "Community 1142"
-Cohesion: 0.33
-Nodes (6): qualityScoreBreakdown, coverage, determinism, isolation, maintainability, performance
-
-### Community 1143 - "Community 1143"
-Cohesion: 0.33
-Nodes (5): Compression Rules, Deduplication Rules, Preserve — Keep always, Strip — Remove entirely, Transform — Change form for efficiency
-
-### Community 1144 - "Community 1144"
-Cohesion: 0.33
-Nodes (6): Code Quality, Documentation Completeness, Maintainability Assessment, Technical Debt, Test Coverage, Test Quality (from test-review, if available)
-
-### Community 1145 - "Community 1145"
-Cohesion: 0.33
-Nodes (6): Authentication Strength, Authorization Controls, Compliance (if applicable), Data Protection, Security Assessment, Vulnerability Management
-
-### Community 1146 - "Community 1146"
-Cohesion: 0.33
-Nodes (5): CHECKPOINT, INSTRUCTIONS, NEXT, RULES, Step 1: Gather Context
-
-### Community 1147 - "Community 1147"
-Cohesion: 0.33
-Nodes (6): constraints, forceField, keyInsights, analysis, drivingForces, restrainingForces
-
-### Community 1148 - "Community 1148"
-Cohesion: 0.33
-Nodes (6): elements, characterVoice, conflictTension, emotionalTouchpoints, keyMessages, transformation
-
-### Community 1149 - "Community 1149"
-Cohesion: 0.33
-Nodes (6): structure, coreNarrative, emotionalArc, openingHook, resolution, storyBeats
-
-### Community 1150 - "Community 1150"
-Cohesion: 0.33
-Nodes (6): implementationPlan, actionSteps, approach, resourcesNeeded, responsibleParties, timeline
-
-### Community 1151 - "Community 1151"
-Cohesion: 0.33
-Nodes (6): Action Steps, Implementation Approach, 🚀 IMPLEMENTATION PLAN, Resource Requirements, Responsible Parties, Timeline and Milestones
-
-### Community 1152 - "Community 1152"
-Cohesion: 0.33
-Nodes (6): Core Narrative, Emotional Arc, Key Story Beats, Opening Hook, Resolution/Call to Action, Story Structure
-
-### Community 1153 - "Community 1153"
-Cohesion: 0.33
-Nodes (5): code:yaml (traceability_and_gate:), Integrated YAML Snippet (CI/CD), Related Artifacts, Sign-Off, Traceability Matrix & Gate Decision - Story {STORY_ID}
-
-### Community 1154 - "Community 1154"
-Cohesion: 0.33
-Nodes (5): description, required, $schema, title, type
-
-### Community 1155 - "Community 1155"
-Cohesion: 0.33
-Nodes (6): failed, passed, pending, skipped, totalDuration, results
-
-### Community 1156 - "Community 1156"
-Cohesion: 0.33
-Nodes (6): branch, e2e, function, line, statement, baseline
-
-### Community 1157 - "Community 1157"
-Cohesion: 0.33
-Nodes (6): encryptionAtRest, encryptionInTransit, findings, piiHandling, status, dataProtection
-
-### Community 1158 - "Community 1158"
-Cohesion: 0.33
-Nodes (6): decision, comments, conditions, followUpDate, followUpRequired, verdict
-
-### Community 1159 - "Community 1159"
-Cohesion: 0.33
-Nodes (5): Configuration Loading, Deep-Dive Documentation Sub-Workflow, EXECUTION, INITIALIZATION, Runtime Inputs
-
-### Community 1160 - "Community 1160"
-Cohesion: 0.33
-Nodes (5): Configuration Loading, EXECUTION, Full Project Scan Sub-Workflow, INITIALIZATION, Runtime Inputs
-
-### Community 1161 - "Community 1161"
-Cohesion: 0.40
-Nodes (4): 1. Scope Calibration, 2. The Challenge, 3. Recommend Amendments, CEO Scope Review Workflow
-
-### Community 1162 - "Community 1162"
-Cohesion: 0.40
-Nodes (4): 1. The 0-10 Rating, 2. Define the Target 10, 3. Path to Perfection, Design Dimension Audit Workflow
-
-### Community 1163 - "Community 1163"
-Cohesion: 0.40
-Nodes (5): 0.3.3, Bug Fixes, Bug Fixes, Schema Relaxation, UI Improvements
-
-### Community 1164 - "Community 1164"
-Cohesion: 0.40
-Nodes (5): 0.3.6, Code-Review Workflow — Post-Fix Integrity Re-Scan Gate, Epic JSON Slim-Down — Lightweight storyRefs, Single Story File Architecture — Single Source of Truth, Workflow Robustness & Status Propagation
-
-### Community 1165 - "Community 1165"
-Cohesion: 0.40
-Nodes (5): default, description, markdownDeprecationMessage, type, agileagentcanvas.jira.apiToken
-
-### Community 1166 - "Community 1166"
-Cohesion: 0.40
-Nodes (5): default, description, enum, type, agileagentcanvas.logLevel
-
-### Community 1167 - "Community 1167"
-Cohesion: 0.40
-Nodes (5): default, description, enum, type, agileagentcanvas.defaultAgent
-
-### Community 1168 - "Community 1168"
-Cohesion: 0.40
-Nodes (5): default, description, scope, type, agileagentcanvas.userCataloguePath
-
-### Community 1169 - "Community 1169"
-Cohesion: 0.40
-Nodes (5): affectedComponents, description, hasImpact, requiresArchitectureUpdate, architectureImpact
-
-### Community 1170 - "Community 1170"
-Cohesion: 0.40
-Nodes (5): projectInfo, description, name, status, type
-
-### Community 1171 - "Community 1171"
-Cohesion: 0.40
-Nodes (5): impactOnFutureWork, architectureChanges, newDiscoveries, nextEpicImpacts, suggestedBacklogChanges
-
-### Community 1172 - "Community 1172"
-Cohesion: 0.40
-Nodes (5): status, default, description, enum, type
-
-### Community 1173 - "Community 1173"
-Cohesion: 0.40
-Nodes (5): typography, description, fontFamilies, scale, textStyles
-
-### Community 1174 - "Community 1174"
-Cohesion: 0.40
-Nodes (5): executionRoadmap, capabilityBuildPlan, overview, phases, quickWins
-
-### Community 1175 - "Community 1175"
-Cohesion: 0.15
-Nodes (13): analysisDetails, competitorProfiles, dataSourcesa, content, appendix, companyName, governanceAndReview, strategicFocus (+5 more)
-
-### Community 1176 - "Community 1176"
-Cohesion: 0.40
-Nodes (5): description, items, type, $ref, acceptanceCriteria
-
-### Community 1177 - "Community 1177"
-Cohesion: 0.40
-Nodes (5): strategicContext, brandVoice, callToAction, constraints, keyMessages
-
-### Community 1178 - "Community 1178"
-Cohesion: 0.50
-Nodes (4): description, properties, type, epicQuality
-
-### Community 1179 - "Community 1179"
-Cohesion: 0.40
-Nodes (5): default, description, enum, type, automationStatus
-
-### Community 1180 - "Community 1180"
-Cohesion: 0.40
-Nodes (5): default, description, enum, type, priority
-
-### Community 1181 - "Community 1181"
-Cohesion: 0.40
-Nodes (5): schemaVersion, description, examples, pattern, type
-
-### Community 1182 - "Community 1182"
-Cohesion: 0.40
-Nodes (5): status, default, description, enum, type
-
-### Community 1183 - "Community 1183"
-Cohesion: 0.40
-Nodes (5): description, items, type, $ref, acceptanceCriteria
-
-### Community 1184 - "Community 1184"
-Cohesion: 0.40
-Nodes (5): description, examples, items, type, architectureDecisions
-
-### Community 1185 - "Community 1185"
-Cohesion: 0.40
-Nodes (5): default, description, enum, type, priority
-
-### Community 1186 - "Community 1186"
-Cohesion: 0.40
-Nodes (5): status, default, description, enum, type
-
-### Community 1187 - "Community 1187"
-Cohesion: 0.40
-Nodes (5): code:block15 (LLM → read_file("epics.json") → parse 2000-line JSON → find ), code:block16 (LLM → query_artifacts("story", {status: "blocked"}) → get li), Current Tools → New Tools, Key Benefit: LLM Can Now Query Before Writing, LLM Tool Specifications
-
-### Community 1188 - "Community 1188"
-Cohesion: 0.40
-Nodes (3): `metadata` (shared across all artifacts with `{metadata, content}` envelope), `projects`, Shared Foundation Tables
-
-### Community 1189 - "Community 1189"
-Cohesion: 0.40
-Nodes (4): Daily Gratitude, Daily Journal Entry {{yy-mm-dd}}, Daily Wrap Up, Etc...
-
-### Community 1190 - "Community 1190"
-Cohesion: 0.40
-Nodes (4): BMAD Framework — AI Development Agents, graphify, How to Use, Installed Agents
-
-### Community 1191 - "Community 1191"
-Cohesion: 0.40
-Nodes (5): For All Artifacts:, For Prose-Style Stories:, For Structured Stories (standard BMAD format):, For Use Cases (UC-*.md):, Step 5: Validate Output
-
-### Community 1192 - "Community 1192"
-Cohesion: 0.40
-Nodes (5): CONCERNS Criteria Verified, FAIL Criteria Verified, No Threshold Guessing, PASS Criteria Verified, Status Classification Validation
-
-### Community 1193 - "Community 1193"
-Cohesion: 0.40
-Nodes (5): executiveSummary, assessment, recommendation, strengths, weaknesses
-
-### Community 1194 - "Community 1194"
-Cohesion: 0.40
-Nodes (5): reviewInfo, qualityScore, reviewDate, reviewer, scope
-
-### Community 1195 - "Community 1195"
-Cohesion: 0.40
-Nodes (4): INSTRUCTIONS, NEXT, RULES, Step 3: Triage
-
-### Community 1196 - "Community 1196"
-Cohesion: 0.40
-Nodes (4): Adaptation Guidelines, code:markdown (# Product Brief: {Product Name}), Product Brief Template, Sensible Default Structure
-
-### Community 1197 - "Community 1197"
-Cohesion: 0.40
-Nodes (4): Auto-Clarity Exception, Examples, Persistence, Rules
-
-### Community 1198 - "Community 1198"
-Cohesion: 0.40
-Nodes (5): projectStructure, description, moduleOrganization, monorepo, structure
-
-### Community 1199 - "Community 1199"
-Cohesion: 0.40
-Nodes (5): runningTests, all, api, component, e2e
-
-### Community 1200 - "Community 1200"
-Cohesion: 0.40
-Nodes (5): storyInfo, epicId, primaryTestLevel, storyId, storyTitle
-
-### Community 1201 - "Community 1201"
-Cohesion: 0.40
-Nodes (5): code:bash (# From TEA module location), code:bash (bmad agent tea), Continuing Existing Progress, How to Run, Starting Fresh
-
-### Community 1202 - "Community 1202"
-Cohesion: 0.40
-Nodes (5): Alerting Thresholds, Monitoring Hooks, Performance Monitoring, Reliability Monitoring, Security Monitoring
-
-### Community 1203 - "Community 1203"
-Cohesion: 0.40
-Nodes (5): Circuit Breakers (Reliability), Fail-Fast Mechanisms, Rate Limiting (Performance), Smoke Tests (Maintainability), Validation Gates (Security)
-
-### Community 1204 - "Community 1204"
-Cohesion: 0.40
-Nodes (5): Performance Assessment, Resource Usage, Response Time (p95), Scalability, Throughput
-
-### Community 1205 - "Community 1205"
-Cohesion: 0.40
-Nodes (4): INSTRUCTIONS, NEXT, RULES, Step 2: Review
-
-### Community 1206 - "Community 1206"
-Cohesion: 0.40
-Nodes (5): currentBusinessModel, modelWeaknesses, revenueCostStructure, valueProposition, businessModelAnalysis
-
-### Community 1207 - "Community 1207"
-Cohesion: 0.40
-Nodes (5): disruptionOpportunities, disruptionVectors, strategicWhitespace, technologyEnablers, unmetJobs
-
-### Community 1208 - "Community 1208"
-Cohesion: 0.40
-Nodes (5): innovationOpportunities, businessModelInnovation, innovationInitiatives, partnershipOpportunities, valueChainOpportunities
-
-### Community 1209 - "Community 1209"
-Cohesion: 0.40
-Nodes (5): marketAnalysis, competitiveDynamics, criticalInsights, marketLandscape, marketOpportunities
-
-### Community 1210 - "Community 1210"
-Cohesion: 0.40
-Nodes (5): monitoring, adjustmentTriggers, riskMitigation, successMetrics, validationPlan
-
-### Community 1211 - "Community 1211"
-Cohesion: 0.40
-Nodes (5): problemDefinition, context, initialStatement, refinedStatement, successCriteria
-
-### Community 1212 - "Community 1212"
-Cohesion: 0.40
-Nodes (5): recommendedSolution, description, rationale, solutionId, title
-
-### Community 1213 - "Community 1213"
-Cohesion: 0.40
-Nodes (5): usageGuidelines, adaptationSuggestions, audienceConsiderations, bestChannels, toneNotes
-
-### Community 1214 - "Community 1214"
-Cohesion: 0.40
-Nodes (5): Business Model Innovation, Innovation Initiatives, 🚀 INNOVATION OPPORTUNITIES, Partnership and Ecosystem Plays, Value Chain Opportunities
-
-### Community 1215 - "Community 1215"
-Cohesion: 0.50
-Nodes (4): questions, description, items, type
-
-### Community 1216 - "Community 1216"
-Cohesion: 0.40
-Nodes (5): Evaluation Criteria, Rationale, Recommended Solution, Solution Analysis, ⚖️ SOLUTION EVALUATION
-
-### Community 1217 - "Community 1217"
-Cohesion: 0.40
-Nodes (5): approver, comments, date, status, approval
-
-### Community 1218 - "Community 1218"
-Cohesion: 0.40
-Nodes (5): coveragePlan, p0, p1, p2, p3
-
-### Community 1219 - "Community 1219"
-Cohesion: 0.40
-Nodes (5): executionOrder, p0, p1, p2p3, smoke
-
-### Community 1220 - "Community 1220"
-Cohesion: 0.40
-Nodes (5): summary, coverageSummary, riskSummary, scope, testLevels
-
-### Community 1221 - "Community 1221"
-Cohesion: 0.40
-Nodes (5): Coverage Summary (from Phase 1), Evidence Summary, Flakiness Validation, Non-Functional Requirements (NFRs), Test Execution Results
-
-### Community 1222 - "Community 1222"
-Cohesion: 0.40
-Nodes (5): api, e2e, integration, unit, coverageByTestLevel
-
-### Community 1223 - "Community 1223"
-Cohesion: 0.40
-Nodes (5): blockers, nextSteps, percentComplete, status, completionStatus
-
-### Community 1224 - "Community 1224"
-Cohesion: 0.40
-Nodes (5): approach, patternsApplied, prioritization, testLevels, automationStrategy
-
-### Community 1225 - "Community 1225"
-Cohesion: 0.40
-Nodes (5): assessment, findings, standard, status, accessibility
-
-### Community 1226 - "Community 1226"
-Cohesion: 0.40
-Nodes (5): coveragePlan, overview, p0, p1, p2
-
-### Community 1227 - "Community 1227"
-Cohesion: 0.40
-Nodes (5): riskAssessment, highPriority, lowPriority, mediumPriority, overview
-
-### Community 1228 - "Community 1228"
-Cohesion: 0.40
-Nodes (5): antiPatterns, goodPatterns, notes, score, fixturePatterns
-
-### Community 1229 - "Community 1229"
 Cohesion: 0.25
 Nodes (8): contribution, notes, orderDependencies, score, sharedStateIssues, weight, isolation, isolation
 
+### Community 1065 - "Community 1065"
+Cohesion: 0.25
+Nodes (8): storyInfo, epicId, epicTitle, evaluationDate, evaluator, storyId, storyTitle, version
+
+### Community 1066 - "Community 1066"
+Cohesion: 0.25
+Nodes (7): API Routes ({{api_route_count}} endpoints found), Deep-Dive Documentation, Deep-Dive Documentation Complete! ✓, Deep-Dive Documentation Instructions, Feature Modules ({{feature_count}} features), Services/Business Logic, UI Component Areas
+
+### Community 1067 - "Community 1067"
+Cohesion: 0.29
+Nodes (6): Generate README Instructions, STANDARDS, Step 1: Project Discovery, Step 2: Draft README, Step 3: Review & Finalize, WORKFLOW STEPS
+
+### Community 1068 - "Community 1068"
+Cohesion: 0.29
+Nodes (6): 1. Data Flow Analysis, 2. DB Architecture, 3. Edge Cases, 4. Test Coverage Gaps, 5. Output, Eng Execution Review Workflow
+
+### Community 1069 - "Community 1069"
+Cohesion: 0.29
+Nodes (6): 1. Initial Assessment, 2. STRIDE Threat Modeling, 3. OWASP Cross-Check, 4. Confidence Gate, 5. Output Generation, Security Audit Workflow
+
+### Community 1070 - "Community 1070"
+Cohesion: 0.29
+Nodes (5): Artifact Analyzer, code:json ({), Input, Output, Process
+
+### Community 1071 - "Community 1071"
+Cohesion: 0.29
+Nodes (5): code:json ({), Input, Output, Process, Web Researcher
+
+### Community 1072 - "Community 1072"
+Cohesion: 0.29
+Nodes (7): 0.1.0, Features, Features, Features, Features, Features, Features
+
+### Community 1073 - "Community 1073"
+Cohesion: 0.29
+Nodes (7): 0.2.1, Canvas Layout Refinements, Canvas Regression Fix, Logging, Quality Engineering, Refactoring, Schema Validation Fixes
+
+### Community 1074 - "Community 1074"
+Cohesion: 0.29
+Nodes (6): Brainstorming Session Workflow, Configuration Loading, EXECUTION, INITIALIZATION, Paths, WORKFLOW ARCHITECTURE
+
+### Community 1075 - "Community 1075"
+Cohesion: 0.29
+Nodes (6): code:block1 (**{Concern name}**), code:block2 (I built a review trail for this {change_type} (no author-pro), Follow Global Step Rules in SKILL.md, Generate Review Trail, INSTRUCTIONS, PRESENT
+
+### Community 1076 - "Community 1076"
+Cohesion: 0.29
+Nodes (6): ACT ON DECISION, code:block1 (---), Follow Global Step Rules in SKILL.md, On Complete, PROMPT FOR DECISION, Step 5: Wrap-Up
+
+### Community 1077 - "Community 1077"
+Cohesion: 0.29
+Nodes (6): INSTRUCTIONS, Intent check (do this first), NEXT, RULES, Step 1: Clarify and Route, Story-key resolution
+
+### Community 1078 - "Community 1078"
+Cohesion: 0.29
+Nodes (6): Adversarial Review (General), EXECUTION, HALT CONDITIONS, Step 1: Receive Content, Step 2: Adversarial Analysis, Step 3: Present Findings
+
+### Community 1079 - "Community 1079"
+Cohesion: 0.29
+Nodes (6): code:block1 (Epic Files Contains:                Sprint Status Contains:), Complete Coverage Check, Core Validation, Final Check, Parsing Verification, Sprint Planning Validation Checklist
+
+### Community 1080 - "Community 1080"
+Cohesion: 0.29
+Nodes (7): description, items, type, properties, area, coverageTargets, target
+
+### Community 1081 - "Community 1081"
+Cohesion: 0.29
+Nodes (7): additionalProperties, type, description, $ref, properties, content, metadata
+
+### Community 1082 - "Community 1082"
+Cohesion: 0.29
+Nodes (7): framework, model, serving, training, techStack, ai, infrastructure
+
+### Community 1083 - "Community 1083"
+Cohesion: 0.29
+Nodes (7): findings, scalabilityAssessment, securityAssessment, status, summary, techStackValidation, architectureReadiness
+
+### Community 1084 - "Community 1084"
+Cohesion: 0.29
+Nodes (7): testReadiness, automationReadiness, findings, status, summary, testCaseCoverage, testPlanStatus
+
+### Community 1085 - "Community 1085"
+Cohesion: 0.29
+Nodes (7): uxAlignment, assessment, accessibilityReadiness, designSystemCoverage, findings, status, summary
+
+### Community 1086 - "Community 1086"
+Cohesion: 0.29
+Nodes (7): prdAnalysis, completeness, findings, gaps, status, strengths, summary
+
+### Community 1087 - "Community 1087"
+Cohesion: 0.29
+Nodes (7): properties, type, properties, codeMetrics, qualityMetrics, properties, type
+
+### Community 1088 - "Community 1088"
+Cohesion: 0.29
+Nodes (6): description, $id, required, $schema, title, type
+
+### Community 1089 - "Community 1089"
+Cohesion: 0.29
+Nodes (7): empathize, journeyMap, keyObservations, researchMethods, userInsights, userProfiles, stages
+
+### Community 1090 - "Community 1090"
+Cohesion: 0.29
+Nodes (7): test, hypothesisValidation, keyLearnings, testingPlan, testSessions, usabilityIssues, userFeedback
+
+### Community 1091 - "Community 1091"
+Cohesion: 0.29
+Nodes (7): opportunities, overview, innovationOpportunities, businessModelInnovation, innovationInitiatives, partnershipOpportunities, valueChainOpportunities
+
+### Community 1092 - "Community 1092"
+Cohesion: 0.29
+Nodes (7): monitoring, adjustmentTriggers, checkpoints, escalationPath, riskMitigation, successMetrics, validationPlan
+
+### Community 1093 - "Community 1093"
+Cohesion: 0.29
+Nodes (7): assumptions, constraints, forceField, keyInsights, analysis, drivingForces, restrainingForces
+
+### Community 1094 - "Community 1094"
+Cohesion: 0.29
+Nodes (6): content, dependencies, epics, criticalPath, epicDependencies, storyDependencies
+
+### Community 1095 - "Community 1095"
+Cohesion: 0.29
+Nodes (6): Graceful Degradation, Mode-Specific Behavior, Stage 2: Contextual Discovery, Stage Complete, Subagent Fan-Out, Synthesis
+
+### Community 1096 - "Community 1096"
+Cohesion: 0.29
+Nodes (7): caching, orm, primary, rationale, schemaStrategy, secondary, database
+
+### Community 1097 - "Community 1097"
+Cohesion: 0.29
+Nodes (7): Accountability & Logistics, Entry Criteria, Exit Criteria, Interworking & Regression, Not in Scope, Project Team (Optional), Tooling & Access (System-Level Only, If Applicable)
+
+### Community 1098 - "Community 1098"
+Cohesion: 0.29
+Nodes (7): Automatic Chunking Detection, Chunk Size Guidelines, Chunking for Large Files, code:block24 (I've analyzed epics.md:), code:block25 (Resume epics.json conversion from Epic 5), Resuming Failed Conversions, When to Chunk
+
+### Community 1099 - "Community 1099"
+Cohesion: 0.29
+Nodes (7): maintainability, codeQuality, documentation, status, technicalDebt, testCoverage, testQuality
+
+### Community 1100 - "Community 1100"
+Cohesion: 0.29
+Nodes (7): Availability (Uptime), CI Burn-In (Stability), Disaster Recovery (if applicable), Error Rate, Fault Tolerance, MTTR (Mean Time To Recovery), Reliability Assessment
+
+### Community 1101 - "Community 1101"
+Cohesion: 0.29
+Nodes (7): diagnosis, contributingFactors, problemBoundaries, rootCauseAnalysis, systemDynamics, is, isNot
+
+### Community 1102 - "Community 1102"
+Cohesion: 0.29
+Nodes (7): nextSteps, actionItems, additionalVersionsNeeded, feedbackPlan, refinementOpportunities, refinementsNeeded, successMetrics
+
+### Community 1103 - "Community 1103"
+Cohesion: 0.29
+Nodes (7): 📊 ANALYSIS, Constraint Identification, 🎨 DEFINE: Frame the Problem, Force Field Analysis, How Might We Questions, Key Insights, Point of View Statement
+
+### Community 1104 - "Community 1104"
+Cohesion: 0.29
+Nodes (7): Key Learnings, 📝 LESSONS LEARNED, ✅ TEST: Validate with Users, Testing Plan, User Feedback, What to Avoid, What Worked
+
+### Community 1105 - "Community 1105"
+Cohesion: 0.29
+Nodes (7): runningTests, all, coverage, e2e, integration, unit, watch
+
+### Community 1106 - "Community 1106"
+Cohesion: 0.29
+Nodes (7): testExecutionEvidence, branches, functions, lines, statements, coverage, lastRun
+
+### Community 1107 - "Community 1107"
+Cohesion: 0.29
+Nodes (7): executionResults, duration, failed, failureDetails, passed, skipped, totalTests
+
+### Community 1108 - "Community 1108"
+Cohesion: 0.29
+Nodes (7): assessment, metrics, status, codeQuality, codeSmells, complexity, duplication
+
+### Community 1109 - "Community 1109"
+Cohesion: 0.29
+Nodes (7): signOff, comments, conditions, date, decision, role, signedBy
+
+### Community 1110 - "Community 1110"
+Cohesion: 0.29
+Nodes (7): summary, approach, coverageSummary, keyDecisions, objectives, scope, testLevels
+
+### Community 1111 - "Community 1111"
+Cohesion: 0.29
+Nodes (7): reviewInfo, qualityScore, reviewDate, reviewer, reviewType, scope, targetScore
+
+### Community 1112 - "Community 1112"
+Cohesion: 0.33
+Nodes (5): Installation Required, Supported Project Types, Threat Modeling Skill, Usage Modes (After Install), What You Get After Installing
+
+### Community 1113 - "Community 1113"
+Cohesion: 0.33
+Nodes (5): code:json ({), Input, Opportunity Reviewer, Output, Review Lens
+
+### Community 1114 - "Community 1114"
+Cohesion: 0.33
+Nodes (5): code:json ({), Input, Output, Review Lens, Skeptic Reviewer
+
+### Community 1115 - "Community 1115"
+Cohesion: 0.33
+Nodes (5): code:block1 (epics/), File Structure, Key Conventions, Project — Agile Agent Canvas Artifacts, Quick Reference for LLMs
+
+### Community 1116 - "Community 1116"
+Cohesion: 0.33
+Nodes (6): default, description, enum, enumDescriptions, type, agileagentcanvas.caveman.intensity
+
+### Community 1117 - "Community 1117"
+Cohesion: 0.33
+Nodes (6): default, description, enum, enumDescriptions, type, agileagentcanvas.aiProvider
+
+### Community 1118 - "Community 1118"
+Cohesion: 0.33
+Nodes (6): default, description, maximum, minimum, type, agileagentcanvas.defaultTemperature
+
+### Community 1119 - "Community 1119"
+Cohesion: 0.33
+Nodes (5): Output, QA Automate - Validation Checklist, Test Generation, Test Quality, Validation
+
+### Community 1120 - "Community 1120"
+Cohesion: 0.33
+Nodes (5): code:markdown (# Epic {N} Context: {Epic Title}), Compile Epic Context, Error handling, Exact Output Format, Rules
+
+### Community 1121 - "Community 1121"
+Cohesion: 0.33
+Nodes (5): CHECKPOINT 1, INSTRUCTIONS, NEXT, RULES, Step 2: Plan
+
+### Community 1122 - "Community 1122"
+Cohesion: 0.33
+Nodes (6): implementation, completedAt, implementedBy, notes, startedAt, status
+
+### Community 1123 - "Community 1123"
+Cohesion: 0.33
+Nodes (5): description, $id, $schema, title, type
+
+### Community 1124 - "Community 1124"
+Cohesion: 0.33
+Nodes (5): description, $id, $schema, title, type
+
+### Community 1125 - "Community 1125"
+Cohesion: 0.33
+Nodes (6): buildTool, framework, stateManagement, styling, testing, frontend
+
+### Community 1126 - "Community 1126"
+Cohesion: 0.33
+Nodes (6): cache, database, framework, queue, runtime, backend
+
+### Community 1127 - "Community 1127"
+Cohesion: 0.33
+Nodes (6): resourceAssessment, environmentReadiness, skillGaps, summary, teamReadiness, toolsReadiness
+
+### Community 1128 - "Community 1128"
+Cohesion: 0.33
+Nodes (6): type, stories, description, items, minItems, type
+
+### Community 1129 - "Community 1129"
+Cohesion: 0.33
+Nodes (6): additionalProperties, required, sprints, additionalProperties, description, type
+
+### Community 1130 - "Community 1130"
+Cohesion: 0.33
+Nodes (5): description, $id, $schema, title, type
+
+### Community 1131 - "Community 1131"
+Cohesion: 0.33
+Nodes (6): ideate, generatedIdeas, ideaClustering, selectedMethods, selectionCriteria, topConcepts
+
+### Community 1132 - "Community 1132"
+Cohesion: 0.33
+Nodes (6): nextSteps, actionItems, handoffNotes, iterationPlan, refinementsNeeded, successMetrics
+
+### Community 1133 - "Community 1133"
+Cohesion: 0.33
+Nodes (6): sessionInfo, date, duration, facilitator, location, participants
+
+### Community 1134 - "Community 1134"
+Cohesion: 0.33
+Nodes (6): empathyMap, does, feels, says, targetUser, thinks
+
+### Community 1135 - "Community 1135"
+Cohesion: 0.33
+Nodes (6): prototype, featuresToTest, limitations, prototypeApproach, prototypes, prototypeType
+
+### Community 1136 - "Community 1136"
+Cohesion: 0.33
+Nodes (6): sessionInfo, date, duration, facilitator, frameworksUsed, participants
+
+### Community 1137 - "Community 1137"
+Cohesion: 0.33
+Nodes (6): strategicContext, currentSituation, keyQuestions, strategicChallenge, strategicObjectives, visionStatement
+
+### Community 1138 - "Community 1138"
+Cohesion: 0.33
+Nodes (6): disruptionOpportunities, blueOceanOpportunities, disruptionVectors, strategicWhitespace, technologyEnablers, unmetJobs
+
+### Community 1139 - "Community 1139"
+Cohesion: 0.33
+Nodes (6): lessonsLearned, keyLearnings, knowledgeSharing, processImprovements, whatToAvoid, whatWorked
+
+### Community 1140 - "Community 1140"
+Cohesion: 0.33
+Nodes (6): sessionInfo, date, duration, facilitator, methodology, participants
+
+### Community 1141 - "Community 1141"
+Cohesion: 0.33
+Nodes (6): oneOf, stepsCompleted, description, examples, items, type
+
+### Community 1142 - "Community 1142"
+Cohesion: 0.33
+Nodes (5): 9. Additional Fixes (M-1 through M-3), code:sql (PRAGMA journal_mode=WAL;), M-1: SQLite-Compatible DDL, M-2: WAL Mode, M-3: Story Agent Tracking
+
+### Community 1143 - "Community 1143"
+Cohesion: 0.33
+Nodes (6): Implementation Phases, Phase 1: Foundation (3 files), Phase 2: SQLite DAL (3 files), Phase 3: Backward Compat (2 files), Phase 4: Wire Up (2 modified files), Phase 5: Dependencies
+
+### Community 1144 - "Community 1144"
+Cohesion: 0.33
+Nodes (6): 5.1 Unit Tests, 5.2 Integration Tests, 5.3 End-to-End Tests (Cucumber), 5.4 Token Savings Measurement, 5. Verification Plan, code:gherkin (Feature: LLM output reliability)
+
+### Community 1145 - "Community 1145"
+Cohesion: 0.33
+Nodes (6): PHASE 6 — Additional Tools (Backlog, opportunistic), **T-025** — `agileagentcanvas_artifact_query` tool (P2), **T-026** — `agileagentcanvas_workflow_resolve_vars` tool (P2), **T-027** — `agileagentcanvas_types_from_schema` tool (P3), **T-028** — `agileagentcanvas_schema_from_json` tool (P3), **T-029** — `agileagentcanvas_codebase_search` tool (P3)
+
+### Community 1146 - "Community 1146"
+Cohesion: 0.33
+Nodes (6): overview, description, inputDocuments, projectName, totalEpics, totalStories
+
+### Community 1147 - "Community 1147"
+Cohesion: 0.47
+Nodes (5): fix_metadata(), get_all_templates(), main(), Find all template files., Transform metadata to match common/metadata.schema.json
+
+### Community 1148 - "Community 1148"
+Cohesion: 0.33
+Nodes (6): qualityScoreBreakdown, coverage, determinism, isolation, maintainability, performance
+
+### Community 1149 - "Community 1149"
+Cohesion: 0.33
+Nodes (5): Compression Rules, Deduplication Rules, Preserve — Keep always, Strip — Remove entirely, Transform — Change form for efficiency
+
+### Community 1150 - "Community 1150"
+Cohesion: 0.33
+Nodes (6): Architecture Doc Structure (Actionable-First Principle), Cross-Document Consistency, Document Quality (Anti-Bloat Check), System-Level Mode: Two-Document Validation, test-design-architecture.md, test-design-qa.md
+
+### Community 1151 - "Community 1151"
+Cohesion: 0.33
+Nodes (5): BMAD Artifact to JSON Conversion Workflow, code:block1 (bmad-to-json .agileagentcanvas-context/planning --all), Examples, Purpose, Trigger Commands
+
+### Community 1152 - "Community 1152"
+Cohesion: 0.33
+Nodes (6): Code Quality, Documentation Completeness, Maintainability Assessment, Technical Debt, Test Coverage, Test Quality (from test-review, if available)
+
+### Community 1153 - "Community 1153"
+Cohesion: 0.33
+Nodes (6): Authentication Strength, Authorization Controls, Compliance (if applicable), Data Protection, Security Assessment, Vulnerability Management
+
+### Community 1154 - "Community 1154"
+Cohesion: 0.33
+Nodes (5): CHECKPOINT, INSTRUCTIONS, NEXT, RULES, Step 1: Gather Context
+
+### Community 1155 - "Community 1155"
+Cohesion: 0.33
+Nodes (6): constraints, forceField, keyInsights, analysis, drivingForces, restrainingForces
+
+### Community 1156 - "Community 1156"
+Cohesion: 0.33
+Nodes (6): elements, characterVoice, conflictTension, emotionalTouchpoints, keyMessages, transformation
+
+### Community 1157 - "Community 1157"
+Cohesion: 0.33
+Nodes (6): structure, coreNarrative, emotionalArc, openingHook, resolution, storyBeats
+
+### Community 1158 - "Community 1158"
+Cohesion: 0.33
+Nodes (6): implementationPlan, actionSteps, approach, resourcesNeeded, responsibleParties, timeline
+
+### Community 1159 - "Community 1159"
+Cohesion: 0.33
+Nodes (6): Action Steps, Implementation Approach, 🚀 IMPLEMENTATION PLAN, Resource Requirements, Responsible Parties, Timeline and Milestones
+
+### Community 1160 - "Community 1160"
+Cohesion: 0.33
+Nodes (6): Core Narrative, Emotional Arc, Key Story Beats, Opening Hook, Resolution/Call to Action, Story Structure
+
+### Community 1161 - "Community 1161"
+Cohesion: 0.33
+Nodes (5): code:yaml (traceability_and_gate:), Integrated YAML Snippet (CI/CD), Related Artifacts, Sign-Off, Traceability Matrix & Gate Decision - Story {STORY_ID}
+
+### Community 1162 - "Community 1162"
+Cohesion: 0.33
+Nodes (6): items, type, properties, type, caches, enabled
+
+### Community 1163 - "Community 1163"
+Cohesion: 0.33
+Nodes (6): items, type, properties, directories, rootDir, type
+
+### Community 1164 - "Community 1164"
+Cohesion: 0.33
+Nodes (5): description, required, $schema, title, type
+
+### Community 1165 - "Community 1165"
+Cohesion: 0.33
+Nodes (6): failed, passed, pending, skipped, totalDuration, results
+
+### Community 1166 - "Community 1166"
+Cohesion: 0.33
+Nodes (6): branch, e2e, function, line, statement, baseline
+
+### Community 1167 - "Community 1167"
+Cohesion: 0.33
+Nodes (6): encryptionAtRest, encryptionInTransit, findings, piiHandling, status, dataProtection
+
+### Community 1168 - "Community 1168"
+Cohesion: 0.33
+Nodes (6): decision, comments, conditions, followUpDate, followUpRequired, verdict
+
+### Community 1169 - "Community 1169"
+Cohesion: 0.33
+Nodes (5): Configuration Loading, Deep-Dive Documentation Sub-Workflow, EXECUTION, INITIALIZATION, Runtime Inputs
+
+### Community 1170 - "Community 1170"
+Cohesion: 0.33
+Nodes (5): Configuration Loading, EXECUTION, Full Project Scan Sub-Workflow, INITIALIZATION, Runtime Inputs
+
+### Community 1171 - "Community 1171"
+Cohesion: 0.40
+Nodes (4): 1. Scope Calibration, 2. The Challenge, 3. Recommend Amendments, CEO Scope Review Workflow
+
+### Community 1172 - "Community 1172"
+Cohesion: 0.40
+Nodes (4): 1. The 0-10 Rating, 2. Define the Target 10, 3. Path to Perfection, Design Dimension Audit Workflow
+
+### Community 1173 - "Community 1173"
+Cohesion: 0.40
+Nodes (5): default, description, enum, type, agileagentcanvas.logLevel
+
+### Community 1174 - "Community 1174"
+Cohesion: 0.40
+Nodes (5): default, description, enum, type, agileagentcanvas.defaultAgent
+
+### Community 1175 - "Community 1175"
+Cohesion: 0.40
+Nodes (5): default, description, enum, type, agileagentcanvas.graphify.backend
+
+### Community 1176 - "Community 1176"
+Cohesion: 0.40
+Nodes (5): default, description, markdownDeprecationMessage, type, agileagentcanvas.jira.apiToken
+
+### Community 1177 - "Community 1177"
+Cohesion: 0.40
+Nodes (5): affectedComponents, description, hasImpact, requiresArchitectureUpdate, architectureImpact
+
+### Community 1178 - "Community 1178"
+Cohesion: 0.40
+Nodes (5): projectInfo, description, name, status, type
+
+### Community 1179 - "Community 1179"
+Cohesion: 0.40
+Nodes (5): impactOnFutureWork, architectureChanges, newDiscoveries, nextEpicImpacts, suggestedBacklogChanges
+
+### Community 1180 - "Community 1180"
+Cohesion: 0.40
+Nodes (5): required, risks, description, items, type
+
+### Community 1181 - "Community 1181"
+Cohesion: 0.40
+Nodes (5): status, default, description, enum, type
+
+### Community 1182 - "Community 1182"
+Cohesion: 0.40
+Nodes (5): typography, description, fontFamilies, scale, textStyles
+
+### Community 1183 - "Community 1183"
+Cohesion: 0.40
+Nodes (4): Auto-Clarity Exception, Examples, Persistence, Rules
+
+### Community 1184 - "Community 1184"
+Cohesion: 0.40
+Nodes (5): executionRoadmap, capabilityBuildPlan, overview, phases, quickWins
+
+### Community 1185 - "Community 1185"
+Cohesion: 0.40
+Nodes (5): strategicContext, brandVoice, callToAction, constraints, keyMessages
+
+### Community 1186 - "Community 1186"
+Cohesion: 0.40
+Nodes (5): callToAction, lingeringEmotion, text, transformation, resolution
+
+### Community 1187 - "Community 1187"
+Cohesion: 0.40
+Nodes (5): default, description, enum, type, automationStatus
+
+### Community 1188 - "Community 1188"
+Cohesion: 0.40
+Nodes (5): default, description, enum, type, priority
+
+### Community 1189 - "Community 1189"
+Cohesion: 0.40
+Nodes (5): schemaVersion, description, examples, pattern, type
+
+### Community 1190 - "Community 1190"
+Cohesion: 0.40
+Nodes (5): status, default, description, enum, type
+
+### Community 1191 - "Community 1191"
+Cohesion: 0.40
+Nodes (5): description, items, type, $ref, acceptanceCriteria
+
+### Community 1192 - "Community 1192"
+Cohesion: 0.40
+Nodes (5): description, examples, items, type, dependencies
+
+### Community 1193 - "Community 1193"
+Cohesion: 0.40
+Nodes (5): default, description, enum, type, priority
+
+### Community 1194 - "Community 1194"
+Cohesion: 0.40
+Nodes (5): status, default, description, enum, type
+
+### Community 1195 - "Community 1195"
+Cohesion: 0.40
+Nodes (5): code:block15 (LLM → read_file("epics.json") → parse 2000-line JSON → find ), code:block16 (LLM → query_artifacts("story", {status: "blocked"}) → get li), Current Tools → New Tools, Key Benefit: LLM Can Now Query Before Writing, LLM Tool Specifications
+
+### Community 1196 - "Community 1196"
+Cohesion: 0.40
+Nodes (3): `metadata` (shared across all artifacts with `{metadata, content}` envelope), `projects`, Shared Foundation Tables
+
+### Community 1197 - "Community 1197"
+Cohesion: 0.40
+Nodes (4): Daily Gratitude, Daily Journal Entry {{yy-mm-dd}}, Daily Wrap Up, Etc...
+
+### Community 1198 - "Community 1198"
+Cohesion: 0.40
+Nodes (4): BMAD Framework — AI Development Agents, graphify, How to Use, Installed Agents
+
+### Community 1199 - "Community 1199"
+Cohesion: 0.40
+Nodes (5): approver, comments, date, status, approval
+
+### Community 1200 - "Community 1200"
+Cohesion: 0.40
+Nodes (5): coveragePlan, p0, p1, p2, p3
+
+### Community 1201 - "Community 1201"
+Cohesion: 0.40
+Nodes (5): executionOrder, p0, p1, p2p3, smoke
+
+### Community 1202 - "Community 1202"
+Cohesion: 0.40
+Nodes (5): summary, coverageSummary, riskSummary, scope, testLevels
+
+### Community 1203 - "Community 1203"
+Cohesion: 0.40
+Nodes (5): executiveSummary, assessment, recommendation, strengths, weaknesses
+
+### Community 1204 - "Community 1204"
+Cohesion: 0.40
+Nodes (5): reviewInfo, qualityScore, reviewDate, reviewer, scope
+
+### Community 1205 - "Community 1205"
+Cohesion: 0.40
+Nodes (4): INSTRUCTIONS, NEXT, RULES, Step 3: Triage
+
+### Community 1206 - "Community 1206"
+Cohesion: 0.40
+Nodes (4): Adaptation Guidelines, code:markdown (# Product Brief: {Product Name}), Product Brief Template, Sensible Default Structure
+
+### Community 1207 - "Community 1207"
+Cohesion: 0.40
+Nodes (5): projectStructure, description, moduleOrganization, monorepo, structure
+
+### Community 1208 - "Community 1208"
+Cohesion: 0.40
+Nodes (5): runningTests, all, api, component, e2e
+
+### Community 1209 - "Community 1209"
+Cohesion: 0.40
+Nodes (5): storyInfo, epicId, primaryTestLevel, storyId, storyTitle
+
+### Community 1210 - "Community 1210"
+Cohesion: 0.40
+Nodes (5): CONCERNS Criteria Verified, FAIL Criteria Verified, No Threshold Guessing, PASS Criteria Verified, Status Classification Validation
+
+### Community 1211 - "Community 1211"
+Cohesion: 0.40
+Nodes (5): For All Artifacts:, For Prose-Style Stories:, For Structured Stories (standard BMAD format):, For Use Cases (UC-*.md):, Step 5: Validate Output
+
+### Community 1212 - "Community 1212"
+Cohesion: 0.40
+Nodes (5): code:bash (# From TEA module location), code:bash (bmad agent tea), Continuing Existing Progress, How to Run, Starting Fresh
+
+### Community 1213 - "Community 1213"
+Cohesion: 0.40
+Nodes (5): Alerting Thresholds, Monitoring Hooks, Performance Monitoring, Reliability Monitoring, Security Monitoring
+
+### Community 1214 - "Community 1214"
+Cohesion: 0.40
+Nodes (5): Circuit Breakers (Reliability), Fail-Fast Mechanisms, Rate Limiting (Performance), Smoke Tests (Maintainability), Validation Gates (Security)
+
+### Community 1215 - "Community 1215"
+Cohesion: 0.40
+Nodes (5): Performance Assessment, Resource Usage, Response Time (p95), Scalability, Throughput
+
+### Community 1216 - "Community 1216"
+Cohesion: 0.40
+Nodes (4): INSTRUCTIONS, NEXT, RULES, Step 2: Review
+
+### Community 1217 - "Community 1217"
+Cohesion: 0.40
+Nodes (5): currentBusinessModel, modelWeaknesses, revenueCostStructure, valueProposition, businessModelAnalysis
+
+### Community 1218 - "Community 1218"
+Cohesion: 0.40
+Nodes (5): disruptionOpportunities, disruptionVectors, strategicWhitespace, technologyEnablers, unmetJobs
+
+### Community 1219 - "Community 1219"
+Cohesion: 0.40
+Nodes (5): innovationOpportunities, businessModelInnovation, innovationInitiatives, partnershipOpportunities, valueChainOpportunities
+
+### Community 1220 - "Community 1220"
+Cohesion: 0.40
+Nodes (5): marketAnalysis, competitiveDynamics, criticalInsights, marketLandscape, marketOpportunities
+
+### Community 1221 - "Community 1221"
+Cohesion: 0.40
+Nodes (5): monitoring, adjustmentTriggers, riskMitigation, successMetrics, validationPlan
+
+### Community 1222 - "Community 1222"
+Cohesion: 0.40
+Nodes (5): problemDefinition, context, initialStatement, refinedStatement, successCriteria
+
+### Community 1223 - "Community 1223"
+Cohesion: 0.40
+Nodes (5): recommendedSolution, description, rationale, solutionId, title
+
+### Community 1224 - "Community 1224"
+Cohesion: 0.40
+Nodes (5): usageGuidelines, adaptationSuggestions, audienceConsiderations, bestChannels, toneNotes
+
+### Community 1225 - "Community 1225"
+Cohesion: 0.40
+Nodes (5): Business Model Innovation, Innovation Initiatives, 🚀 INNOVATION OPPORTUNITIES, Partnership and Ecosystem Plays, Value Chain Opportunities
+
+### Community 1226 - "Community 1226"
+Cohesion: 0.40
+Nodes (5): Evaluation Criteria, Rationale, Recommended Solution, Solution Analysis, ⚖️ SOLUTION EVALUATION
+
+### Community 1227 - "Community 1227"
+Cohesion: 0.40
+Nodes (5): Coverage Summary (from Phase 1), Evidence Summary, Flakiness Validation, Non-Functional Requirements (NFRs), Test Execution Results
+
+### Community 1228 - "Community 1228"
+Cohesion: 0.40
+Nodes (5): api, e2e, integration, unit, coverageByTestLevel
+
+### Community 1229 - "Community 1229"
+Cohesion: 0.40
+Nodes (5): description, items, type, $ref, acceptanceCriteria
+
 ### Community 1230 - "Community 1230"
 Cohesion: 0.40
-Nodes (5): testIds, coverage, issues, notes, score
+Nodes (5): blockers, nextSteps, percentComplete, status, completionStatus
 
 ### Community 1231 - "Community 1231"
 Cohesion: 0.40
-Nodes (5): p3, covered, percentage, status, total
+Nodes (5): approach, patternsApplied, prioritization, testLevels, automationStrategy
 
 ### Community 1232 - "Community 1232"
 Cohesion: 0.40
-Nodes (5): p3, actual, notes, pass, required
+Nodes (5): assessment, findings, standard, status, accessibility
 
 ### Community 1233 - "Community 1233"
 Cohesion: 0.40
-Nodes (5): p1, covered, percentage, status, total
+Nodes (5): coveragePlan, overview, p0, p1, p2
 
 ### Community 1234 - "Community 1234"
-Cohesion: 0.50
-Nodes (3): BMB agent Builder, Conventions, Execution
+Cohesion: 0.40
+Nodes (5): riskAssessment, highPriority, lowPriority, mediumPriority, overview
 
 ### Community 1235 - "Community 1235"
-Cohesion: 0.50
-Nodes (3): BMB module Builder, Conventions, Execution
+Cohesion: 0.40
+Nodes (5): antiPatterns, goodPatterns, notes, score, fixturePatterns
 
 ### Community 1236 - "Community 1236"
-Cohesion: 0.50
-Nodes (3): BMB workflow Builder, Conventions, Execution
+Cohesion: 0.40
+Nodes (5): testIds, coverage, issues, notes, score
 
 ### Community 1237 - "Community 1237"
-Cohesion: 0.50
-Nodes (3): Conventions, design thinking Workflow, Execution
+Cohesion: 0.40
+Nodes (5): p2, covered, percentage, status, total
 
 ### Community 1238 - "Community 1238"
-Cohesion: 0.50
-Nodes (3): Conventions, Execution, innovation strategy Workflow
+Cohesion: 0.40
+Nodes (5): p1, covered, percentage, status, total
 
 ### Community 1239 - "Community 1239"
-Cohesion: 0.50
-Nodes (3): Conventions, Execution, problem solving Workflow
+Cohesion: 0.40
+Nodes (5): p1, actual, notes, pass, required
 
 ### Community 1240 - "Community 1240"
 Cohesion: 0.50
-Nodes (3): Conventions, Execution, storytelling Workflow
+Nodes (3): BMB agent Builder, Conventions, Execution
 
 ### Community 1241 - "Community 1241"
 Cohesion: 0.50
-Nodes (3): atdd.Value.ToUpper()tdd Workflow, Conventions, Execution
+Nodes (3): BMB module Builder, Conventions, Execution
 
 ### Community 1242 - "Community 1242"
 Cohesion: 0.50
-Nodes (3): automate.Value.ToUpper()utomate Workflow, Conventions, Execution
+Nodes (3): BMB workflow Builder, Conventions, Execution
 
 ### Community 1243 - "Community 1243"
 Cohesion: 0.50
-Nodes (3): CI/CD Workflow, Conventions, Execution
+Nodes (3): Conventions, design thinking Workflow, Execution
 
 ### Community 1244 - "Community 1244"
 Cohesion: 0.50
-Nodes (3): Conventions, Execution, framework.Value.ToUpper()ramework Workflow
+Nodes (3): Conventions, Execution, innovation strategy Workflow
 
 ### Community 1245 - "Community 1245"
 Cohesion: 0.50
-Nodes (3): Conventions, Execution, nfr assess.Value.ToUpper()fr nfr assess.Value.ToUpper()ssess Workflow
+Nodes (3): Conventions, Execution, problem solving Workflow
 
 ### Community 1246 - "Community 1246"
 Cohesion: 0.50
-Nodes (3): Conventions, Execution, teach me testing.Value.ToUpper()each teach me testing.Value.ToUpper()e teach me testing.Value.ToUpper()esting Workflow
+Nodes (3): Conventions, Execution, storytelling Workflow
 
 ### Community 1247 - "Community 1247"
 Cohesion: 0.50
-Nodes (3): Conventions, Execution, test design.Value.ToUpper()est test design.Value.ToUpper()esign Workflow
+Nodes (3): atdd.Value.ToUpper()tdd Workflow, Conventions, Execution
 
 ### Community 1248 - "Community 1248"
 Cohesion: 0.50
-Nodes (3): Conventions, Execution, test review.Value.ToUpper()est test review.Value.ToUpper()eview Workflow
+Nodes (3): automate.Value.ToUpper()utomate Workflow, Conventions, Execution
 
 ### Community 1249 - "Community 1249"
 Cohesion: 0.50
-Nodes (3): Conventions, Execution, trace.Value.ToUpper()race Workflow
+Nodes (3): CI/CD Workflow, Conventions, Execution
 
 ### Community 1250 - "Community 1250"
 Cohesion: 0.50
-Nodes (4): 0.4.3, Git Skill Repository Support, `/help` Smart Skill Routing, Skill Catalogue Manager
+Nodes (3): Conventions, Execution, framework.Value.ToUpper()ramework Workflow
 
 ### Community 1251 - "Community 1251"
 Cohesion: 0.50
-Nodes (4): default, description, type, agileagentcanvas.apiKey
+Nodes (3): Conventions, Execution, nfr assess.Value.ToUpper()fr nfr assess.Value.ToUpper()ssess Workflow
 
 ### Community 1252 - "Community 1252"
 Cohesion: 0.50
-Nodes (4): default, description, type, agileagentcanvas.codeburn.enabled
+Nodes (3): Conventions, Execution, teach me testing.Value.ToUpper()each teach me testing.Value.ToUpper()e teach me testing.Value.ToUpper()esting Workflow
 
 ### Community 1253 - "Community 1253"
 Cohesion: 0.50
-Nodes (4): default, description, type, agileagentcanvas.jira.email
+Nodes (3): Conventions, Execution, test design.Value.ToUpper()est test design.Value.ToUpper()esign Workflow
 
 ### Community 1254 - "Community 1254"
 Cohesion: 0.50
-Nodes (4): default, description, type, agileagentcanvas.autoSync
+Nodes (3): Conventions, Execution, test review.Value.ToUpper()est test review.Value.ToUpper()eview Workflow
 
 ### Community 1255 - "Community 1255"
 Cohesion: 0.50
-Nodes (4): default, description, type, agileagentcanvas.caveman.enabled
+Nodes (3): Conventions, Execution, trace.Value.ToUpper()race Workflow
 
 ### Community 1256 - "Community 1256"
 Cohesion: 0.50
-Nodes (4): default, description, type, agileagentcanvas.codeburn.path
+Nodes (4): 0.4.3, Git Skill Repository Support, `/help` Smart Skill Routing, Skill Catalogue Manager
 
 ### Community 1257 - "Community 1257"
 Cohesion: 0.50
-Nodes (4): default, description, type, agileagentcanvas.graphify.autoBootstrapOnNewProject
+Nodes (4): default, description, type, agileagentcanvas.codeburn.path
 
 ### Community 1258 - "Community 1258"
 Cohesion: 0.50
-Nodes (4): default, description, type, agileagentcanvas.graphify.pythonPath
+Nodes (4): default, description, type, agileagentcanvas.graphify.autoBootstrapOnNewProject
 
 ### Community 1259 - "Community 1259"
 Cohesion: 0.50
-Nodes (4): default, description, type, agileagentcanvas.graphify.showCodebaseLane
+Nodes (4): default, description, type, agileagentcanvas.graphify.autoUpdateOnSave
 
 ### Community 1260 - "Community 1260"
 Cohesion: 0.50
-Nodes (4): default, description, type, agileagentcanvas.jira.projectKey
+Nodes (4): default, description, type, agileagentcanvas.graphify.pythonPath
 
 ### Community 1261 - "Community 1261"
 Cohesion: 0.50
-Nodes (4): default, description, type, agileagentcanvas.modelId
+Nodes (4): default, description, type, agileagentcanvas.showAICursor
 
 ### Community 1262 - "Community 1262"
 Cohesion: 0.50
-Nodes (4): default, description, type, agileagentcanvas.outputFolder
+Nodes (4): default, description, type, agileagentcanvas.autoSync
 
 ### Community 1263 - "Community 1263"
 Cohesion: 0.50
-Nodes (4): default, description, type, agileagentcanvas.showAICursor
+Nodes (4): default, description, type, agileagentcanvas.baseUrl
 
 ### Community 1264 - "Community 1264"
 Cohesion: 0.50
-Nodes (3): Explain Concept, Output, Process
+Nodes (4): default, description, type, agileagentcanvas.caveman.enabled
 
 ### Community 1265 - "Community 1265"
 Cohesion: 0.50
-Nodes (3): Mermaid Generate, Output, Process
+Nodes (4): default, description, type, agileagentcanvas.jira.baseUrl
 
 ### Community 1266 - "Community 1266"
 Cohesion: 0.50
-Nodes (3): Output, Process, Validate Documentation
+Nodes (4): default, description, type, agileagentcanvas.jira.email
 
 ### Community 1267 - "Community 1267"
 Cohesion: 0.50
-Nodes (3): Output, Process, Write Document
+Nodes (4): default, description, type, agileagentcanvas.jira.projectKey
 
 ### Community 1268 - "Community 1268"
 Cohesion: 0.50
-Nodes (3): Critical Implementation Rules, Project Context for AI Agents, Technology Stack & Versions
+Nodes (4): default, description, type, agileagentcanvas.modelId
 
 ### Community 1269 - "Community 1269"
 Cohesion: 0.50
-Nodes (3): Instructions, Preconditions, Sync Sprint Status
+Nodes (4): default, description, type, agileagentcanvas.outputFolder
 
 ### Community 1270 - "Community 1270"
 Cohesion: 0.50
-Nodes (4): description, enum, type, overallImpact
+Nodes (3): Explain Concept, Output, Process
 
 ### Community 1271 - "Community 1271"
 Cohesion: 0.50
-Nodes (4): description, format, type, completedAt
+Nodes (3): Mermaid Generate, Output, Process
 
 ### Community 1272 - "Community 1272"
 Cohesion: 0.50
-Nodes (4): description, items, type, criteria
+Nodes (3): Output, Process, Validate Documentation
 
 ### Community 1273 - "Community 1273"
 Cohesion: 0.50
-Nodes (4): required, default, description, type
+Nodes (3): Output, Process, Write Document
 
 ### Community 1274 - "Community 1274"
 Cohesion: 0.50
-Nodes (4): status, default, enum, type
+Nodes (3): Critical Implementation Rules, Project Context for AI Agents, Technology Stack & Versions
 
 ### Community 1275 - "Community 1275"
 Cohesion: 0.50
-Nodes (4): verified, default, description, type
+Nodes (3): Instructions, Preconditions, Sync Sprint Status
 
 ### Community 1276 - "Community 1276"
 Cohesion: 0.50
-Nodes (4): risks, description, items, type
+Nodes (4): description, enum, type, overallImpact
 
 ### Community 1277 - "Community 1277"
 Cohesion: 0.50
-Nodes (4): environmentSetup, envVariables, prerequisites, quickStart
+Nodes (4): urgency, description, enum, type
 
 ### Community 1278 - "Community 1278"
 Cohesion: 0.50
-Nodes (4): description, items, type, keyFeatures
+Nodes (4): description, format, type, completedAt
 
 ### Community 1279 - "Community 1279"
 Cohesion: 0.50
-Nodes (4): technicalFeasibility, concerns, details, rating
+Nodes (4): description, items, type, criteria
 
 ### Community 1280 - "Community 1280"
 Cohesion: 0.50
-Nodes (4): maximum, minimum, type, overallScore
+Nodes (4): required, default, description, type
 
 ### Community 1281 - "Community 1281"
 Cohesion: 0.50
-Nodes (4): technicalFindings, description, items, type
+Nodes (4): status, default, enum, type
 
 ### Community 1282 - "Community 1282"
 Cohesion: 0.50
-Nodes (4): relatedStories, description, items, type
+Nodes (4): verified, default, description, type
 
 ### Community 1283 - "Community 1283"
 Cohesion: 0.50
-Nodes (4): teamFeedback, communicationImprovements, processImprovements, toolingImprovements
+Nodes (4): description, items, type, constraints
 
 ### Community 1284 - "Community 1284"
 Cohesion: 0.50
-Nodes (4): iconography, library, sizes, style
+Nodes (4): environmentSetup, envVariables, prerequisites, quickStart
 
 ### Community 1285 - "Community 1285"
 Cohesion: 0.50
-Nodes (4): description, enum, type, impact
+Nodes (4): description, items, type, keyFeatures
 
 ### Community 1286 - "Community 1286"
 Cohesion: 0.50
-Nodes (4): description, enum, type, probability
+Nodes (4): technicalFeasibility, concerns, details, rating
 
 ### Community 1287 - "Community 1287"
 Cohesion: 0.50
-Nodes (4): riskScore, description, enum, type
+Nodes (4): maximum, minimum, type, overallScore
 
 ### Community 1288 - "Community 1288"
 Cohesion: 0.50
-Nodes (4): residualRisk, description, enum, type
+Nodes (4): questions, description, items, type
 
 ### Community 1289 - "Community 1289"
 Cohesion: 0.50
-Nodes (4): status, description, enum, type
+Nodes (4): risks, description, items, type
 
 ### Community 1290 - "Community 1290"
 Cohesion: 0.50
-Nodes (4): description, items, type, keyFileTypes
+Nodes (4): technicalFindings, description, items, type
 
 ### Community 1291 - "Community 1291"
 Cohesion: 0.50
-Nodes (4): description, items, type, developmentNotes
+Nodes (4): teamFeedback, communicationImprovements, processImprovements, toolingImprovements
 
 ### Community 1292 - "Community 1292"
 Cohesion: 0.50
-Nodes (4): description, items, type, documentationLocations
+Nodes (4): triggers, description, items, type
 
 ### Community 1293 - "Community 1293"
 Cohesion: 0.50
-Nodes (4): description, items, type, entryPoints
+Nodes (4): description, enum, type, impact
 
 ### Community 1294 - "Community 1294"
 Cohesion: 0.50
-Nodes (4): description, items, type, namingConventions
+Nodes (4): description, enum, type, probability
 
 ### Community 1295 - "Community 1295"
 Cohesion: 0.50
-Nodes (4): recommendations, description, items, type
+Nodes (4): riskScore, description, enum, type
 
 ### Community 1296 - "Community 1296"
 Cohesion: 0.50
-Nodes (4): default, description, type, project_key
+Nodes (4): status, description, enum, type
 
 ### Community 1297 - "Community 1297"
 Cohesion: 0.50
-Nodes (4): description, items, type, componentsToCreate
+Nodes (4): description, items, type, keyFileTypes
 
 ### Community 1298 - "Community 1298"
 Cohesion: 0.50
-Nodes (4): description, items, type, architecturePatterns
+Nodes (4): description, items, type, multiPartStructure
 
 ### Community 1299 - "Community 1299"
 Cohesion: 0.50
-Nodes (4): description, items, type, dataModels
+Nodes (4): description, items, type, developmentNotes
 
 ### Community 1300 - "Community 1300"
 Cohesion: 0.50
-Nodes (4): storyFormat, default, description, type
+Nodes (4): description, items, type, entryPoints
 
 ### Community 1301 - "Community 1301"
 Cohesion: 0.50
-Nodes (4): uxReferences, description, items, type
+Nodes (4): description, items, type, namingConventions
 
 ### Community 1302 - "Community 1302"
 Cohesion: 0.50
-Nodes (4): references, description, items, type
+Nodes (4): recommendations, description, items, type
 
 ### Community 1303 - "Community 1303"
 Cohesion: 0.50
-Nodes (4): solutionDetails, description, items, type
+Nodes (4): default, description, type, project_key
 
 ### Community 1304 - "Community 1304"
 Cohesion: 0.50
-Nodes (4): description, items, type, operational
+Nodes (4): description, items, type, componentsToCreate
 
 ### Community 1305 - "Community 1305"
 Cohesion: 0.50
-Nodes (4): recommendations, description, items, type
+Nodes (4): description, items, type, architecturePatterns
 
 ### Community 1306 - "Community 1306"
 Cohesion: 0.50
-Nodes (4): targetFeatures, description, items, type
+Nodes (4): description, items, type, dataModels
 
 ### Community 1307 - "Community 1307"
 Cohesion: 0.50
-Nodes (4): wireframes, description, items, type
+Nodes (4): storyFormat, default, description, type
 
 ### Community 1308 - "Community 1308"
 Cohesion: 0.50
-Nodes (4): description, pattern, type, id
+Nodes (4): uxReferences, description, items, type
 
 ### Community 1309 - "Community 1309"
 Cohesion: 0.50
-Nodes (4): description, items, type, postconditions
+Nodes (4): references, description, items, type
 
 ### Community 1310 - "Community 1310"
 Cohesion: 0.50
-Nodes (4): description, items, type, exceptionFlows
+Nodes (4): solutionDetails, description, items, type
 
 ### Community 1311 - "Community 1311"
 Cohesion: 0.50
-Nodes (4): description, items, type, preconditions
+Nodes (4): description, items, type, operational
 
 ### Community 1312 - "Community 1312"
 Cohesion: 0.50
-Nodes (4): relatedRequirements, description, items, type
+Nodes (4): targetFeatures, description, items, type
 
 ### Community 1313 - "Community 1313"
 Cohesion: 0.50
-Nodes (4): secondaryActors, description, items, type
+Nodes (4): description, items, type, businessRules
 
 ### Community 1314 - "Community 1314"
 Cohesion: 0.50
-Nodes (4): risks, contingencyPlans, keyRisks, mitigationStrategies
+Nodes (4): description, pattern, type, id
 
 ### Community 1315 - "Community 1315"
 Cohesion: 0.50
-Nodes (4): description, items, type, errorStates
+Nodes (4): description, items, type, postconditions
 
 ### Community 1316 - "Community 1316"
 Cohesion: 0.50
-Nodes (4): testing, feedback, metrics, testingPlan
+Nodes (4): description, items, type, exceptionFlows
 
 ### Community 1317 - "Community 1317"
 Cohesion: 0.50
-Nodes (3): content, designChallenge, projectName
+Nodes (4): description, items, type, preconditions
 
 ### Community 1318 - "Community 1318"
 Cohesion: 0.50
-Nodes (4): arcPoints, climax, description, emotionalArc
+Nodes (4): relatedRequirements, description, items, type
 
 ### Community 1319 - "Community 1319"
 Cohesion: 0.50
-Nodes (4): duration, slideNotes, text, presentation
+Nodes (4): secondaryActors, description, items, type
 
 ### Community 1320 - "Community 1320"
 Cohesion: 0.50
-Nodes (4): characterCount, platform, text, short
+Nodes (4): spacing, baseUnit, description, scale
 
 ### Community 1321 - "Community 1321"
 Cohesion: 0.50
-Nodes (4): description, examples, type, and
+Nodes (4): description, items, type, errorStates
 
 ### Community 1322 - "Community 1322"
 Cohesion: 0.50
-Nodes (4): description, examples, oneOf, given
+Nodes (4): wireframes, description, items, type
 
 ### Community 1323 - "Community 1323"
 Cohesion: 0.50
-Nodes (4): description, examples, type, id
+Nodes (3): content, designChallenge, projectName
 
 ### Community 1324 - "Community 1324"
 Cohesion: 0.50
-Nodes (4): description, type, properties, notes
+Nodes (4): risks, contingencyPlans, keyRisks, mitigationStrategies
 
 ### Community 1325 - "Community 1325"
 Cohesion: 0.50
-Nodes (4): then, description, examples, oneOf
+Nodes (4): duration, slideNotes, text, presentation
 
 ### Community 1326 - "Community 1326"
 Cohesion: 0.50
-Nodes (4): title, description, examples, type
+Nodes (4): characterCount, platform, text, short
 
 ### Community 1327 - "Community 1327"
 Cohesion: 0.50
-Nodes (4): when, description, examples, oneOf
+Nodes (4): description, examples, type, and
 
 ### Community 1328 - "Community 1328"
 Cohesion: 0.50
-Nodes (4): testIds, description, examples, type
+Nodes (4): description, examples, oneOf, given
 
 ### Community 1329 - "Community 1329"
 Cohesion: 0.50
-Nodes (4): description, examples, type, artifactType
+Nodes (4): description, examples, type, id
 
 ### Community 1330 - "Community 1330"
 Cohesion: 0.50
-Nodes (4): description, format, type, lastModified
+Nodes (4): description, type, properties, notes
 
 ### Community 1331 - "Community 1331"
 Cohesion: 0.50
-Nodes (4): additionalProperties, description, type, customFields
+Nodes (4): then, description, examples, oneOf
 
 ### Community 1332 - "Community 1332"
 Cohesion: 0.50
-Nodes (4): workflowVersion, description, pattern, type
+Nodes (4): title, description, examples, type
 
 ### Community 1333 - "Community 1333"
 Cohesion: 0.50
-Nodes (4): description, examples, type, category
+Nodes (4): when, description, examples, oneOf
 
 ### Community 1334 - "Community 1334"
 Cohesion: 0.50
-Nodes (4): description, examples, type, capabilityArea
+Nodes (4): testIds, description, examples, type
 
 ### Community 1335 - "Community 1335"
 Cohesion: 0.50
-Nodes (4): description, format, type, lastUpdated
+Nodes (4): additionalProperties, description, type, customFields
 
 ### Community 1336 - "Community 1336"
 Cohesion: 0.50
-Nodes (4): source, description, examples, type
+Nodes (4): description, format, type, lastModified
 
 ### Community 1337 - "Community 1337"
 Cohesion: 0.50
-Nodes (4): type, description, examples, type
+Nodes (4): workflowName, description, examples, type
 
 ### Community 1338 - "Community 1338"
 Cohesion: 0.50
-Nodes (4): verificationMethod, default, description, type
+Nodes (4): workflowVersion, description, pattern, type
 
 ### Community 1339 - "Community 1339"
 Cohesion: 0.50
-Nodes (4): title, description, examples, type
+Nodes (4): description, examples, type, category
 
 ### Community 1340 - "Community 1340"
 Cohesion: 0.50
-Nodes (4): 4. Three-Layer Architecture (Fixes H-4), code:mermaid (graph TB), code:typescript (export class ArtifactService {), New File: `src/state/artifact-service.ts`
+Nodes (4): description, examples, type, id
 
 ### Community 1341 - "Community 1341"
 Cohesion: 0.50
-Nodes (4): 6. Schema Evolution (Fixes H-1), code:typescript (async init(projectPath: string) {), code:sql (-- Created at DAL init, tracks applied migrations), Migration System
+Nodes (4): description, examples, type, capabilityArea
 
 ### Community 1342 - "Community 1342"
 Cohesion: 0.50
-Nodes (3): 3. Referential Integrity Fix (C-3), code:sql (-- No FK enforcement possible), Nullable Typed FKs Replace Polymorphic Pattern
+Nodes (4): description, format, type, lastUpdated
 
 ### Community 1343 - "Community 1343"
 Cohesion: 0.50
-Nodes (4): Key Design Decisions, Schemas WITHOUT metadata envelope, Smart normalization decisions, Why ~121 tables instead of 3?
+Nodes (4): source, description, examples, type
 
 ### Community 1344 - "Community 1344"
 Cohesion: 0.50
-Nodes (4): coverageMap, additionalToEpic, functionalToEpic, nonFunctionalToEpic
+Nodes (4): type, description, examples, type
 
 ### Community 1345 - "Community 1345"
 Cohesion: 0.50
-Nodes (4): contextAndIntegration, environmentHandling, integrationWithCI, testDataManagement
+Nodes (4): verificationMethod, default, description, type
 
 ### Community 1346 - "Community 1346"
 Cohesion: 0.50
-Nodes (3): capabilities, module-code, replaces-skill
+Nodes (4): title, description, examples, type
 
 ### Community 1347 - "Community 1347"
 Cohesion: 0.50
-Nodes (4): description, items, type, directories
+Nodes (4): 4. Three-Layer Architecture (Fixes H-4), code:mermaid (graph TB), code:typescript (export class ArtifactService {), New File: `src/state/artifact-service.ts`
 
 ### Community 1348 - "Community 1348"
 Cohesion: 0.50
-Nodes (4): description, items, type, godNodes
+Nodes (4): 6. Schema Evolution (Fixes H-1), code:typescript (async init(projectPath: string) {), code:sql (-- Created at DAL init, tracks applied migrations), Migration System
 
 ### Community 1349 - "Community 1349"
 Cohesion: 0.50
-Nodes (4): overview, architectureStyle, projectName, summary
+Nodes (3): 3. Referential Integrity Fix (C-3), code:sql (-- No FK enforcement possible), Nullable Typed FKs Replace Polymorphic Pattern
 
 ### Community 1350 - "Community 1350"
 Cohesion: 0.50
-Nodes (4): storySummary, action, benefit, role
+Nodes (4): Key Design Decisions, Schemas WITHOUT metadata envelope, Smart normalization decisions, Why ~121 tables instead of 3?
 
 ### Community 1351 - "Community 1351"
 Cohesion: 0.50
-Nodes (4): failingTestsCreated, api, component, e2e
+Nodes (4): coverageMap, additionalToEpic, functionalToEpic, nonFunctionalToEpic
 
 ### Community 1352 - "Community 1352"
 Cohesion: 0.50
-Nodes (4): Missing TEA docs, Progress file corrupted, Session interrupted, Troubleshooting
+Nodes (4): epicInfo, epicId, epicTitle, prdReference
 
 ### Community 1353 - "Community 1353"
 Cohesion: 0.50
-Nodes (4): 7 Sessions, Non-Linear Learning, Session Flow, Workflow Structure
+Nodes (4): riskAssessment, highPriority, lowPriority, mediumPriority
 
 ### Community 1354 - "Community 1354"
 Cohesion: 0.50
-Nodes (4): featureInfo, featureName, overallStatus, storyId
+Nodes (4): contextAndIntegration, environmentHandling, integrationWithCI, testDataManagement
 
 ### Community 1355 - "Community 1355"
 Cohesion: 0.50
-Nodes (4): responseTime, actual, status, target
+Nodes (3): capabilities, module-code, replaces-skill
 
 ### Community 1356 - "Community 1356"
 Cohesion: 0.50
-Nodes (4): signOff, date, role, signedBy
+Nodes (4): description, items, type, directories
 
 ### Community 1357 - "Community 1357"
 Cohesion: 0.50
-Nodes (4): Immediate (Before Release) - CRITICAL/HIGH Priority, Long-term (Backlog) - LOW Priority, Recommended Actions, Short-term (Next Milestone) - MEDIUM Priority
+Nodes (4): description, items, type, godNodes
 
 ### Community 1358 - "Community 1358"
 Cohesion: 0.50
-Nodes (4): define, howMightWeQuestions, povStatement, problemInsights
+Nodes (4): overview, architectureStyle, projectName, summary
 
 ### Community 1359 - "Community 1359"
 Cohesion: 0.50
-Nodes (4): ideate, generatedIdeas, selectedMethods, topConcepts
+Nodes (4): storySummary, action, benefit, role
 
 ### Community 1360 - "Community 1360"
 Cohesion: 0.50
-Nodes (4): lessonsLearned, keyLearnings, whatToAvoid, whatWorked
+Nodes (4): failingTestsCreated, api, component, e2e
 
 ### Community 1361 - "Community 1361"
 Cohesion: 0.50
-Nodes (4): prototype, featuresToTest, prototypeApproach, prototypeDescription
+Nodes (4): Missing TEA docs, Progress file corrupted, Session interrupted, Troubleshooting
 
 ### Community 1362 - "Community 1362"
 Cohesion: 0.50
-Nodes (4): recommendedStrategy, criticalSuccessFactors, direction, keyHypotheses
+Nodes (4): 7 Sessions, Non-Linear Learning, Session Flow, Workflow Structure
 
 ### Community 1363 - "Community 1363"
 Cohesion: 0.50
-Nodes (4): solutionGeneration, creativeAlternatives, generatedSolutions, methodsUsed
+Nodes (4): featureInfo, featureName, overallStatus, storyId
 
 ### Community 1364 - "Community 1364"
 Cohesion: 0.50
-Nodes (4): successMetrics, decisionGates, laggingIndicators, leadingIndicators
+Nodes (4): responseTime, actual, status, target
 
 ### Community 1365 - "Community 1365"
 Cohesion: 0.50
-Nodes (4): test, keyLearnings, testingPlan, userFeedback
+Nodes (4): signOff, date, role, signedBy
 
 ### Community 1366 - "Community 1366"
 Cohesion: 0.50
-Nodes (4): variations, extended, medium, short
+Nodes (4): Immediate (Before Release) - CRITICAL/HIGH Priority, Long-term (Backlog) - LOW Priority, Recommended Actions, Short-term (Next Milestone) - MEDIUM Priority
 
 ### Community 1367 - "Community 1367"
 Cohesion: 0.50
-Nodes (4): Option A: {{option_a_name}}, Option B: {{option_b_name}}, Option C: {{option_c_name}}, 🎲 STRATEGIC OPTIONS
+Nodes (4): define, howMightWeQuestions, povStatement, problemInsights
 
 ### Community 1368 - "Community 1368"
 Cohesion: 0.50
-Nodes (4): epicInfo, epicId, epicTitle, prdReference
+Nodes (4): ideate, generatedIdeas, selectedMethods, topConcepts
 
 ### Community 1369 - "Community 1369"
 Cohesion: 0.50
-Nodes (4): riskAssessment, highPriority, lowPriority, mediumPriority
+Nodes (4): lessonsLearned, keyLearnings, whatToAvoid, whatWorked
 
 ### Community 1370 - "Community 1370"
 Cohesion: 0.50
-Nodes (4): properties, items, type, approvers
+Nodes (4): prototype, featuresToTest, prototypeApproach, prototypeDescription
 
 ### Community 1371 - "Community 1371"
 Cohesion: 0.50
-Nodes (4): description, properties, type, coverageSummary
+Nodes (4): recommendedStrategy, criticalSuccessFactors, direction, keyHypotheses
 
 ### Community 1372 - "Community 1372"
 Cohesion: 0.50
-Nodes (4): description, items, type, criticalIssues
+Nodes (4): solutionGeneration, creativeAlternatives, generatedSolutions, methodsUsed
 
 ### Community 1373 - "Community 1373"
 Cohesion: 0.50
-Nodes (4): description, items, type, detailedMapping
+Nodes (4): successMetrics, decisionGates, laggingIndicators, leadingIndicators
 
 ### Community 1374 - "Community 1374"
 Cohesion: 0.50
-Nodes (4): description, items, type, nextSteps
+Nodes (4): test, keyLearnings, testingPlan, userFeedback
 
 ### Community 1375 - "Community 1375"
 Cohesion: 0.50
-Nodes (4): qualityAssessment, description, properties, type
+Nodes (4): variations, extended, medium, short
 
 ### Community 1376 - "Community 1376"
 Cohesion: 0.50
-Nodes (4): waiverDetails, description, properties, type
+Nodes (4): 📋 EXECUTION ROADMAP, Phase 1: Immediate Impact, Phase 2: Foundation Building, Phase 3: Scale & Optimization
 
 ### Community 1377 - "Community 1377"
 Cohesion: 0.50
-Nodes (4): scan_level, description, enum, type
+Nodes (4): Critical Success Factors, Key Hypotheses to Validate, 🏆 RECOMMENDED STRATEGY, Strategic Direction
 
 ### Community 1378 - "Community 1378"
 Cohesion: 0.50
-Nodes (4): workflow_version, description, example, type
+Nodes (4): Option A: {{option_a_name}}, Option B: {{option_b_name}}, Option C: {{option_c_name}}, 🎲 STRATEGIC OPTIONS
 
 ### Community 1379 - "Community 1379"
 Cohesion: 0.50
-Nodes (4): failingTestsCreated, e2e, integration, unit
+Nodes (4): properties, items, type, approvers
 
 ### Community 1380 - "Community 1380"
 Cohesion: 0.50
-Nodes (4): redGreenRefactorWorkflow, currentIteration, currentPhase, iterations
+Nodes (4): description, properties, type, coverageSummary
 
 ### Community 1381 - "Community 1381"
 Cohesion: 0.50
-Nodes (4): epicInfo, epicId, epicTitle, storyCount
+Nodes (4): description, items, type, criticalIssues
 
 ### Community 1382 - "Community 1382"
 Cohesion: 0.50
-Nodes (4): readability, contribution, score, weight
+Nodes (4): description, items, type, detailedMapping
+
+### Community 1383 - "Community 1383"
+Cohesion: 0.50
+Nodes (4): description, items, type, nextSteps
+
+### Community 1384 - "Community 1384"
+Cohesion: 0.50
+Nodes (4): qualityAssessment, description, properties, type
+
+### Community 1385 - "Community 1385"
+Cohesion: 0.50
+Nodes (4): waiverDetails, description, properties, type
 
 ### Community 1386 - "Community 1386"
-Cohesion: 0.67
-Nodes (3): description, type, id
+Cohesion: 0.50
+Nodes (4): scan_level, description, enum, type
 
 ### Community 1387 - "Community 1387"
-Cohesion: 0.67
-Nodes (3): default, type, passed
+Cohesion: 0.50
+Nodes (4): workflow_version, description, example, type
 
 ### Community 1388 - "Community 1388"
-Cohesion: 0.67
-Nodes (3): description, type, approver
+Cohesion: 0.50
+Nodes (4): failingTestsCreated, e2e, integration, unit
 
 ### Community 1389 - "Community 1389"
-Cohesion: 0.67
-Nodes (3): description, type, category
+Cohesion: 0.50
+Nodes (4): redGreenRefactorWorkflow, currentIteration, currentPhase, iterations
 
 ### Community 1390 - "Community 1390"
-Cohesion: 0.67
-Nodes (3): description, type, epicId
+Cohesion: 0.50
+Nodes (4): epicInfo, epicId, epicTitle, storyCount
 
 ### Community 1391 - "Community 1391"
 Cohesion: 0.50
-Nodes (4): Critical Success Factors, Key Hypotheses to Validate, 🏆 RECOMMENDED STRATEGY, Strategic Direction
-
-### Community 1392 - "Community 1392"
-Cohesion: 0.67
-Nodes (3): tooling, description, type
-
-### Community 1393 - "Community 1393"
-Cohesion: 0.67
-Nodes (3): scope, description, type
-
-### Community 1394 - "Community 1394"
-Cohesion: 0.67
-Nodes (3): description, type, criterion
+Nodes (4): readability, contribution, score, weight
 
 ### Community 1395 - "Community 1395"
 Cohesion: 0.67
-Nodes (3): verificationMethod, description, type
+Nodes (3): description, type, id
 
 ### Community 1396 - "Community 1396"
 Cohesion: 0.67
-Nodes (3): relatedRequirement, description, type
+Nodes (3): default, type, passed
 
 ### Community 1397 - "Community 1397"
 Cohesion: 0.67
-Nodes (3): description, type, contingencyPlan
+Nodes (3): description, type, approver
 
 ### Community 1398 - "Community 1398"
 Cohesion: 0.67
-Nodes (3): description, type, impactDescription
+Nodes (3): description, type, category
 
 ### Community 1399 - "Community 1399"
 Cohesion: 0.67
-Nodes (3): description, type, mitigation
+Nodes (3): description, type, epicId
 
 ### Community 1400 - "Community 1400"
 Cohesion: 0.67
-Nodes (3): risk, description, type
+Nodes (3): description, type, id
 
 ### Community 1401 - "Community 1401"
 Cohesion: 0.67
-Nodes (3): validated, default, type
+Nodes (3): tooling, description, type
 
 ### Community 1402 - "Community 1402"
 Cohesion: 0.67
-Nodes (3): description, type, measurement
+Nodes (3): scope, description, type
 
 ### Community 1403 - "Community 1403"
 Cohesion: 0.67
-Nodes (3): description, type, actualValue
+Nodes (3): description, type, criterion
 
 ### Community 1404 - "Community 1404"
-Cohesion: 0.50
-Nodes (4): 📋 EXECUTION ROADMAP, Phase 1: Immediate Impact, Phase 2: Foundation Building, Phase 3: Scale & Optimization
+Cohesion: 0.67
+Nodes (3): verificationMethod, description, type
 
 ### Community 1405 - "Community 1405"
 Cohesion: 0.67
-Nodes (3): description, type, metric
+Nodes (3): relatedRequirement, description, type
+
+### Community 1406 - "Community 1406"
+Cohesion: 0.67
+Nodes (3): description, type, category
 
 ### Community 1407 - "Community 1407"
-Cohesion: 0.50
-Nodes (4): description, properties, type, evidenceSummary
+Cohesion: 0.67
+Nodes (3): description, type, contingencyPlan
 
 ### Community 1408 - "Community 1408"
 Cohesion: 0.67
-Nodes (3): Architecture Overview, code:mermaid (graph LR), What Changed from v1
+Nodes (3): description, type, impactDescription
 
 ### Community 1409 - "Community 1409"
 Cohesion: 0.67
-Nodes (3): 1. SQLite Engine: `sql.js` (WASM), code:typescript (// sql.js usage pattern:), Key Differences from `better-sqlite3`
+Nodes (3): description, type, mitigation
 
 ### Community 1410 - "Community 1410"
 Cohesion: 0.67
-Nodes (3): 5. Typed DAL Interface (Fixes H-2), code:typescript (// ── Type map: artifact type string → TypeScript type ──), New File: `src/state/artifact-dal.ts`
+Nodes (3): description, type, owner
 
 ### Community 1411 - "Community 1411"
 Cohesion: 0.67
-Nodes (3): 2. Programmatic DDL Generation (Fixes C-2), code:block3 (for each schema file:), New File: `src/state/schema-to-ddl.ts`
+Nodes (3): risk, description, type
 
 ### Community 1412 - "Community 1412"
 Cohesion: 0.67
-Nodes (3): Automated (3 scripts), Manual (3 tests), Verification Plan
+Nodes (3): type, description, type
+
+### Community 1413 - "Community 1413"
+Cohesion: 0.67
+Nodes (3): description, type, measurement
+
+### Community 1414 - "Community 1414"
+Cohesion: 0.67
+Nodes (3): description, type, actualValue
 
 ### Community 1415 - "Community 1415"
 Cohesion: 0.67
-Nodes (3): notes, score, hardWaits
+Nodes (3): description, type, id
 
 ### Community 1416 - "Community 1416"
 Cohesion: 0.67
-Nodes (3): notes, score, isolation
+Nodes (3): description, type, metric
 
 ### Community 1417 - "Community 1417"
 Cohesion: 0.67
-Nodes (3): notes, score, determinism
+Nodes (3): summary, description, type
 
 ### Community 1419 - "Community 1419"
 Cohesion: 0.67
-Nodes (3): minimum, type, degree
+Nodes (3): Architecture Overview, code:mermaid (graph LR), What Changed from v1
 
 ### Community 1420 - "Community 1420"
 Cohesion: 0.67
-Nodes (3): minimum, type, edgeCount
+Nodes (3): 1. SQLite Engine: `sql.js` (WASM), code:typescript (// sql.js usage pattern:), Key Differences from `better-sqlite3`
 
 ### Community 1421 - "Community 1421"
 Cohesion: 0.67
-Nodes (3): minimum, type, fileCount
+Nodes (3): 5. Typed DAL Interface (Fixes H-2), code:typescript (// ── Type map: artifact type string → TypeScript type ──), New File: `src/state/artifact-dal.ts`
 
 ### Community 1422 - "Community 1422"
 Cohesion: 0.67
-Nodes (3): description, type, from
+Nodes (3): 2. Programmatic DDL Generation (Fixes C-2), code:block3 (for each schema file:), New File: `src/state/schema-to-ddl.ts`
 
 ### Community 1423 - "Community 1423"
 Cohesion: 0.67
-Nodes (3): description, type, id
-
-### Community 1424 - "Community 1424"
-Cohesion: 0.67
-Nodes (3): description, type, label
-
-### Community 1425 - "Community 1425"
-Cohesion: 0.67
-Nodes (3): minimum, type, nodeCount
-
-### Community 1426 - "Community 1426"
-Cohesion: 0.67
-Nodes (3): to, description, type
-
-### Community 1427 - "Community 1427"
-Cohesion: 0.67
-Nodes (3): summary, description, type
+Nodes (3): Automated (3 scripts), Manual (3 tests), Verification Plan
 
 ### Community 1428 - "Community 1428"
 Cohesion: 0.67
-Nodes (3): redGreenRefactorWorkflow, currentPhase, iterations
+Nodes (3): assumptions, dependencies, assumptionsAndDependencies
 
 ### Community 1429 - "Community 1429"
+Cohesion: 0.67
+Nodes (3): resourceEstimates, breakdown, totalEffort
+
+### Community 1430 - "Community 1430"
 Cohesion: 0.67
 Nodes (3): timestamps, created, lastModified
 
 ### Community 1431 - "Community 1431"
 Cohesion: 0.67
-Nodes (3): Custom NFR Assessments (if applicable), {CUSTOM_NFR_NAME_1}, {CUSTOM_NFR_NAME_2}
+Nodes (3): notes, score, hardWaits
 
 ### Community 1432 - "Community 1432"
 Cohesion: 0.67
-Nodes (3): risks, keyRisks, mitigationStrategies
+Nodes (3): notes, score, isolation
 
 ### Community 1433 - "Community 1433"
 Cohesion: 0.67
-Nodes (3): assumptions, dependencies, assumptionsAndDependencies
-
-### Community 1434 - "Community 1434"
-Cohesion: 0.67
-Nodes (3): resourceEstimates, breakdown, totalEffort
+Nodes (3): notes, score, determinism
 
 ### Community 1435 - "Community 1435"
 Cohesion: 0.67
-Nodes (3): timestamps, created, lastModified
+Nodes (3): minimum, type, degree
+
+### Community 1436 - "Community 1436"
+Cohesion: 0.67
+Nodes (3): minimum, type, edgeCount
+
+### Community 1437 - "Community 1437"
+Cohesion: 0.67
+Nodes (3): minimum, type, fileCount
 
 ### Community 1438 - "Community 1438"
 Cohesion: 0.67
-Nodes (3): description, type, approach
+Nodes (3): description, type, from
 
-### Community 1493 - "Community 1493"
+### Community 1439 - "Community 1439"
 Cohesion: 0.67
-Nodes (3): status, enum, type
+Nodes (3): description, type, id
 
-### Community 1494 - "Community 1494"
+### Community 1440 - "Community 1440"
 Cohesion: 0.67
-Nodes (3): version, description, type
+Nodes (3): description, type, label
 
-### Community 1495 - "Community 1495"
+### Community 1441 - "Community 1441"
 Cohesion: 0.67
-Nodes (3): default, type, achieved
+Nodes (3): minimum, type, nodeCount
 
-### Community 1496 - "Community 1496"
+### Community 1442 - "Community 1442"
 Cohesion: 0.67
-Nodes (3): rationale, description, type
+Nodes (3): to, description, type
 
-### Community 1497 - "Community 1497"
+### Community 1443 - "Community 1443"
 Cohesion: 0.67
-Nodes (3): entryExitCriteria, entry, exit
+Nodes (3): summary, description, type
+
+### Community 1444 - "Community 1444"
+Cohesion: 0.67
+Nodes (3): redGreenRefactorWorkflow, currentPhase, iterations
+
+### Community 1445 - "Community 1445"
+Cohesion: 0.67
+Nodes (3): timestamps, created, lastModified
+
+### Community 1447 - "Community 1447"
+Cohesion: 0.67
+Nodes (3): Custom NFR Assessments (if applicable), {CUSTOM_NFR_NAME_1}, {CUSTOM_NFR_NAME_2}
+
+### Community 1448 - "Community 1448"
+Cohesion: 0.67
+Nodes (3): solutionEvaluation, evaluationCriteria, solutionAnalysis
+
+### Community 1449 - "Community 1449"
+Cohesion: 0.67
+Nodes (3): testEnvironment, environments, tools
 
 ## Knowledge Gaps
-- **14897 isolated node(s):** `all`, `src`, `include`, `exclude`, `reporter` (+14892 more)
+- **15037 isolated node(s):** `all`, `src`, `include`, `exclude`, `reporter` (+15032 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **63 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **60 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `ArtifactStore` connect `Community 16` to `Community 3`, `Community 4`, `Community 1092`, `Community 6`, `Community 616`, `Community 8`, `Community 10`, `Community 880`, `Community 473`, `Community 474`, `Community 987`, `Community 223`?**
+- **Why does `ArtifactStore` connect `Community 12` to `Community 1`, `Community 4`, `Community 69`, `Community 6`, `Community 7`, `Community 613`, `Community 998`, `Community 242`, `Community 666`, `Community 667`, `Community 221`, `Community 894`?**
   _High betweenness centrality (0.001) - this node is a cross-community bridge._
-- **Why does `AgileAgentCanvasChatParticipant` connect `Community 9` to `Community 10`, `Community 3`, `Community 6`?**
+- **Why does `AgileAgentCanvasChatParticipant` connect `Community 9` to `Community 1`, `Community 69`, `Community 6`, `Community 7`, `Community 845`?**
   _High betweenness centrality (0.001) - this node is a cross-community bridge._
-- **Why does `SchemaValidator` connect `Community 397` to `Community 8`, `Community 10`, `Community 4`, `Community 6`?**
-  _High betweenness centrality (0.001) - this node is a cross-community bridge._
+- **Why does `properties` connect `Community 236` to `Community 835`, `Community 552`, `Community 336`, `Community 659`, `Community 148`, `Community 788`, `Community 887`, `Community 511`?**
+  _High betweenness centrality (0.000) - this node is a cross-community bridge._
 - **What connects `all`, `src`, `include` to the rest of the system?**
-  _14935 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _15075 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
   _Cohesion score 0.03523238380809595 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.019604182225541448 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.03236030025020851 - nodes in this community are weakly interconnected._
 - **Should `Community 2` be split into smaller, more focused modules?**
-  _Cohesion score 0.023564064801178203 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.019604182225541448 - nodes in this community are weakly interconnected._

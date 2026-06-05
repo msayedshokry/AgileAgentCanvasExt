@@ -44,6 +44,31 @@ export async function bootstrapGraphify(workspaceRoot: string, options?: { silen
         if (confirmed !== 'Bootstrap') { return; }
     }
 
+    // Automatically detect a misconfigured backend setting before starting any work.
+    // When `agileagentcanvas.graphify.backend` is set the CLI extraction path is used,
+    // which requires the user to have a standalone API key for that provider — this is
+    // the #1 cause of "graphify asks for a key" reports.  Give the user a clear choice
+    // right here so they never have to dig through Settings.
+    const cfg = vscode.workspace.getConfiguration('agileagentcanvas');
+    const backend = cfg.get<string>('graphify.backend', '');
+    if (backend) {
+        const choice = await vscode.window.showWarningMessage(
+            `Your setting \`agileagentcanvas.graphify.backend\` is set to "${backend}".\n\n` +
+            'This makes graphify use its own CLI for extraction, which requires a separate API key for that provider — ' +
+            'the most common cause of key prompts during bootstrap.\n\n' +
+            'Recommended: clear this setting and let graphify use your active VS Code Language Model (Copilot, Claude, etc.) instead — no extra key needed.',
+            { modal: true },
+            'Clear setting & use VS Code LM',
+            'Keep backend setting & continue'
+        );
+        if (choice === undefined) { return; }   // user dismissed
+        if (choice === 'Clear setting & use VS Code LM') {
+            await cfg.update('graphify.backend', undefined, vscode.ConfigurationTarget.Global);
+            await cfg.update('graphify.backend', undefined, vscode.ConfigurationTarget.Workspace);
+        }
+        // If 'Keep backend setting & continue', fall through with the CLI path as before.
+    }
+
     await vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
@@ -180,6 +205,24 @@ export async function rebuildGraph(workspaceRoot: string): Promise<void> {
         'Rebuild'
     );
     if (confirmed !== 'Rebuild') { return; }
+
+    // Same backend guard as bootstrap — catch misconfigured API-key path before work starts.
+    const cfg = vscode.workspace.getConfiguration('agileagentcanvas');
+    const backend = cfg.get<string>('graphify.backend', '');
+    if (backend) {
+        const choice = await vscode.window.showWarningMessage(
+            `\`agileagentcanvas.graphify.backend\` is set to "${backend}", which requires a separate API key. ` +
+            'Clear it to use your active VS Code Language Model instead (no extra key needed).',
+            { modal: true },
+            'Clear setting & use VS Code LM',
+            'Keep backend setting & continue'
+        );
+        if (choice === undefined) { return; }
+        if (choice === 'Clear setting & use VS Code LM') {
+            await cfg.update('graphify.backend', undefined, vscode.ConfigurationTarget.Global);
+            await cfg.update('graphify.backend', undefined, vscode.ConfigurationTarget.Workspace);
+        }
+    }
 
     await vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: 'graphify: rebuilding graph…', cancellable: true },

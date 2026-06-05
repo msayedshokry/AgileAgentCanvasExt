@@ -61,6 +61,11 @@ export function repairDataWithSchema(
     schema: SchemaNode,
     pathPrefix = ''
 ): RepairResult {
+    // Pre-resolve JSON-pointer $refs so the rest of the engine sees a flat
+    // schema tree.  Without this, BMAD schemas that share enum definitions
+    // via `{$ref: "#/definitions/..."}` would silently bypass enum repair.
+    const resolvedSchema = resolveJsonPointers(schema) as SchemaNode;
+
     const repairs: string[] = [];
     let changed = false;
 
@@ -288,8 +293,76 @@ export function repairDataWithSchema(
         return value;
     }
 
-    const result = walk(data, schema, pathPrefix);
+    const result = walk(data, resolvedSchema, pathPrefix);
     return { data: result, changed, repairs };
+}
+
+// ─── JSON-pointer $ref resolution ──────────────────────────────────────────
+
+/**
+ * Pre-resolve JSON-pointer `$ref` strings (`#/path/to/thing`) in a schema
+ * tree.  Replaces each `{$ref: "#/..."}` object with the resolved
+ * definition.  Recurses into resolved definitions in case of nested refs.
+ * Leaves file-relative refs (e.g. `../common/status.schema.json#/...`) alone
+ * — those are already inlined by `schema-validator.ts#resolveRefsInline`.
+ *
+ * Guards against circular references via a `_seen` set.
+ * Returns a NEW schema (does not mutate the input).
+ */
+function resolveJsonPointers(
+    node: any,
+    root: any = node,
+    _seen: Set<string> = new Set()
+): any {
+    if (Array.isArray(node)) {
+        return node.map(item => resolveJsonPointers(item, root, _seen));
+    }
+    if (node === null || typeof node !== 'object') {
+        return node;
+    }
+    // Handle a pure $ref object: { "$ref": "#/path/to/thing" }
+    if (typeof node.$ref === 'string' && node.$ref.startsWith('#/')) {
+        const refPath = node.$ref;
+        if (_seen.has(refPath)) {
+            // Circular ref — return placeholder to break cycle
+            return {};
+        }
+        const resolved = resolvePointer(root, refPath);
+        if (resolved === undefined) {
+            // Unresolvable ref — leave in place
+            return node;
+        }
+        const nextSeen = new Set(_seen);
+        nextSeen.add(refPath);
+        return resolveJsonPointers(resolved, root, nextSeen);
+    }
+    // Recurse into all properties
+    const result: Record<string, any> = {};
+    for (const [key, value] of Object.entries(node)) {
+        result[key] = resolveJsonPointers(value, root, _seen);
+    }
+    return result;
+}
+
+/**
+ * Resolve a JSON pointer (e.g. `"#/definitions/taskStatus"`) against a
+ * root schema object.  Returns the referenced value, or `undefined` if
+ * the path doesn't exist.  Handles JSON pointer escapes (~0 → ~, ~1 → /).
+ */
+function resolvePointer(root: any, pointer: string): any {
+    if (!pointer.startsWith('#/')) return undefined;
+    const parts = pointer
+        .slice(2)
+        .split('/')
+        .map(p => p.replace(/~1/g, '/').replace(/~0/g, '~'));
+    let current: any = root;
+    for (const part of parts) {
+        if (current === null || current === undefined || typeof current !== 'object') {
+            return undefined;
+        }
+        current = current[part];
+    }
+    return current;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
