@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.2
+
+### Fixed: NUL Filename Packaging Error
+
+Two files literally named `NUL` (Windows reserved device names) in the project root and `webview-ui/` caused VSIX publishing to fail with "The extension contains an entry extension/NUL which is unsafe for extraction". Deleted both files; verified clean VSIX with zero NUL entries (924 total entries). Both paths were already in `.gitignore`.
+
 ## 0.5.1
 
 ### 3D Corpus Search & Filter
