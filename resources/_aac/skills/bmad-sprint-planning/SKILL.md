@@ -159,16 +159,35 @@ development_status:
   </step>
 
 <step n="4" goal="Generate sprint status file">
-<action>Create or update {status_file} with:</action>
+<action>Create or update {status_file} with EXACTLY this structure. Do NOT add, remove, or rename any top-level field.</action>
 
-**File Structure:**
+**CRITICAL — Exact Field List (top level):**
+
+The file MUST contain these fields and NO others at the top level:
+- `generated` — string, human-readable timestamp
+- `last_updated` — string, same format as generated
+- `project` — string, project name
+- `project_key` — string, always "NOKEY" for file-system tracking
+- `tracking_system` — string, always "file-system"
+- `story_location` — string, path to story files
+- `development_status` — object, flat map of all items
+- `sprints` — OPTIONAL object, only if you are grouping stories into sprints
+
+**Date format:** Use `YYYY-MM-DD HH:MM` (24-hour clock, no timezone). Example: `2026-06-05 14:30`.
+
+**Dual metadata rule:** The file header contains the SAME metadata twice:
+1. As YAML comments (`# key: value`) — for human readers
+2. As YAML key:value pairs — for machine parsing
+Both must match exactly. Do NOT skip either form.
+
+**Complete file template:**
 
 ```yaml
-# generated: {date}
-# last_updated: {date}
+# generated: 2026-06-05 14:30
+# last_updated: 2026-06-05 14:30
 # project: {project_name}
-# project_key: {project_key}
-# tracking_system: {tracking_system}
+# project_key: NOKEY
+# tracking_system: file-system
 # story_location: {story_location}
 
 # STATUS DEFINITIONS:
@@ -177,10 +196,6 @@ development_status:
 #   - backlog: Epic not yet started
 #   - in-progress: Epic actively being worked on
 #   - done: All stories in epic completed
-#
-# Epic Status Transitions:
-#   - backlog → in-progress: Automatically when first story is created (via create-story)
-#   - in-progress → done: Manually when all stories reach 'done' status
 #
 # Story Status:
 #   - backlog: Story only exists in epic file
@@ -192,28 +207,71 @@ development_status:
 # Retrospective Status:
 #   - optional: Can be completed but not required
 #   - done: Retrospective has been completed
-#
-# WORKFLOW NOTES:
-# ===============
-# - Epic transitions to 'in-progress' automatically when first story is created
-# - Stories can be worked in parallel if team capacity allows
-# - Developer typically creates next story after previous one is 'done' to incorporate learnings
-# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: { date }
-last_updated: { date }
-project: { project_name }
-project_key: { project_key }
-tracking_system: { tracking_system }
-story_location: { story_location }
+generated: 2026-06-05 14:30
+last_updated: 2026-06-05 14:30
+project: {project_name}
+project_key: NOKEY
+tracking_system: file-system
+story_location: {story_location}
 
 development_status:
-  # All epics, stories, and retrospectives in order
+  epic-1: backlog
+  1-1-user-authentication: backlog
+  1-2-account-management: backlog
+  epic-1-retrospective: optional
+  epic-2: backlog
+  2-1-personality-system: backlog
+  epic-2-retrospective: optional
 ```
 
+**Key format rules (EXACT — do not deviate):**
+
+| Item type | Pattern | Example |
+|-----------|---------|---------|
+| Epic | `epic-{N}` | `epic-1`, `epic-2` |
+| Story | `{N}-{M}-{kebab-title}` | `1-1-user-authentication`, `2-1-personality-system` |
+| Retrospective | `epic-{N}-retrospective` | `epic-1-retrospective` |
+
+Story key conversion from epic file:
+1. Take the story header: `### Story 1.1: User Authentication`
+2. Replace the period with a dash: `1-1`
+3. Convert the title to kebab-case (lowercase, spaces → hyphens, remove special chars): `user-authentication`
+4. Combine: `1-1-user-authentication`
+
+**Status rules (per item type — NEVER mix):**
+
+| Item type | Valid statuses | Default for new items |
+|-----------|---------------|----------------------|
+| Epic | `backlog`, `in-progress`, `done` | `backlog` |
+| Story | `backlog`, `ready-for-dev`, `in-progress`, `review`, `done` | `backlog` |
+| Retrospective | `optional`, `done` | `optional` |
+
+**Ordering rule:** Items MUST appear in this sequence: epic-N, all its stories in story-number order, epic-N-retrospective, then epic-(N+1), etc.
+
+**Sprints section (OPTIONAL):**
+
+Only add `sprints:` if you are explicitly grouping stories into named sprints. If unsure, omit it entirely.
+
+```yaml
+sprints:
+  sprint_1:
+    goal: "MVP core features"
+    start_date: "2026-06-01"
+    end_date: "2026-06-14"
+    stories:
+      - epic-1
+      - 1-1-user-authentication
+      - 1-2-account-management
+      - epic-1-retrospective
+```
+
+Every key in a sprint's `stories` list MUST exist in `development_status`.
+
 <action>Write the complete sprint status YAML to {status_file}</action>
-<action>CRITICAL: Metadata appears TWICE - once as comments (#) for documentation, once as YAML key:value fields for parsing</action>
-<action>Ensure all items are ordered: epic, its stories, its retrospective, next epic...</action>
+<action>CRITICAL: Do NOT add any top-level fields not listed above (no version, no notes, no summary, no health, no velocity)</action>
+<action>CRITICAL: Do NOT use camelCase field names — use exactly snake_case as shown</action>
+<action>CRITICAL: Do NOT use legacy status aliases "drafted" or "contexted" — use the canonical forms</action>
 </step>
 
 <step n="5" goal="Validate and report">

@@ -5,9 +5,10 @@ import { DependencyArrows } from './DependencyArrows';
 import { Icon } from './Icon';
 import { Minimap } from './Minimap';
 import { computeMindmapLayout } from './mindmap-layout';
+import { Corpus3DView } from './Corpus3DView';
 import html2canvas from 'html2canvas';
 
-export type LayoutMode = 'lanes' | 'mindmap';
+export type LayoutMode = 'lanes' | 'mindmap' | 'corpus3d';
 
 
 interface CanvasProps {
@@ -146,7 +147,7 @@ const FILTER_TYPE_LABELS: Record<ArtifactType, string> = {
   'design-thinking': 'Design Think',
 };
 
-export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate, onToggleExpand, expandedIds, expandedCategories, onToggleCategoryExpand, onRefineWithAI, onElicit, onExpandLane, onCollapseLane, centerOnId, onCentered, onOpenSearch, searchMatchIds, screenshotTrigger, screenshotFormat, onScreenshotReady, onScreenshotError }: CanvasProps) {
+export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpand, expandedIds, expandedCategories, onToggleCategoryExpand, onRefineWithAI, onElicit, onExpandLane, onCollapseLane, centerOnId, onCentered, onOpenSearch, searchMatchIds, screenshotTrigger, screenshotFormat, onScreenshotReady, onScreenshotError, onOpenDetail }: CanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
@@ -1314,10 +1315,14 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
       case 'l':
       case 'L':
         e.preventDefault();
-        setLayoutMode(m => m === 'lanes' ? 'mindmap' : 'lanes');
-        // When switching back to lanes, reset pan/zoom. For mindmap, the
-        // fit-to-view useEffect handles zoom/pan automatically.
-        if (layoutMode === 'mindmap') {
+        // Cycle: lanes → mindmap → corpus3d → lanes
+        setLayoutMode(m => {
+          if (m === 'lanes') return 'mindmap';
+          if (m === 'mindmap') return 'corpus3d';
+          return 'lanes';
+        });
+        // Reset pan/zoom when switching away from mindmap
+        if (layoutMode !== 'lanes') {
           setPan({ x: 0, y: 0 });
           setZoom(1);
         }
@@ -1425,17 +1430,34 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
   }, [layoutMode, displayArtifacts]);
 
   // Compute group bounding boxes for mindmap mode.
-  // For every artifact that has children in the layout, compute a bounding box
-  // that encompasses the parent and all its descendants.
+  // Instead of cycling through 8 arbitrary colors, each depth level gets its own
+  // subtle background shade. This visually communicates "how deep" a group is
+  // without the noise of cycling colors on unrelated sibling groups.
   const mindmapGroupBoxes = useMemo(() => {
     if (layoutMode !== 'mindmap' || finalArtifacts.length === 0) return [];
+
+    // Compute depth for each artifact by walking parentId chain
+    const depthOf = new Map<string, number>();
+    const computeDepth = (id: string): number => {
+      const cached = depthOf.get(id);
+      if (cached !== undefined) return cached;
+      const art = finalArtifacts.find(a => a.id === id);
+      if (!art || !art.parentId || art.parentId.startsWith('__phase_')) {
+        depthOf.set(id, 0);
+        return 0;
+      }
+      const d = computeDepth(art.parentId) + 1;
+      depthOf.set(id, d);
+      return d;
+    };
 
     // Build a parent→children lookup from positioned artifacts
     const byId = new Map<string, Artifact>();
     const childrenMap = new Map<string, string[]>();
     for (const a of finalArtifacts) {
       byId.set(a.id, a);
-      if (a.parentId && !a.id.startsWith('__phase_')) {
+      computeDepth(a.id); // ensure depth is computed
+      if (a.parentId && !a.id.startsWith('__phase_') && !a.parentId.startsWith('__phase_')) {
         let kids = childrenMap.get(a.parentId);
         if (!kids) { kids = []; childrenMap.set(a.parentId, kids); }
         kids.push(a.id);
@@ -1460,9 +1482,8 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
     }
 
     // Only create group boxes for non-virtual artifacts that have children
-    const groups: { id: string; colorIndex: number; x: number; y: number; w: number; h: number }[] = [];
+    const groups: { id: string; depth: number; x: number; y: number; w: number; h: number }[] = [];
     const PAD = 14; // padding around the group
-    let groupIdx = 0;
 
     for (const a of finalArtifacts) {
       if (a.id.startsWith('__phase_')) continue;
@@ -1477,8 +1498,8 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
         if (!node) continue;
         const nx = node.position?.x ?? 0;
         const ny = node.position?.y ?? 0;
-        const nw = node.size?.width ?? 170;
-        const nh = node.size?.height ?? 50;
+        const nw = node.size?.width ?? 200;
+        const nh = node.size?.height ?? 60;
         if (nx < minX) minX = nx;
         if (ny < minY) minY = ny;
         if (nx + nw > maxX) maxX = nx + nw;
@@ -1487,7 +1508,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
 
       groups.push({
         id: a.id,
-        colorIndex: groupIdx++,
+        depth: Math.min(depthOf.get(a.id) ?? 0, 3), // clamp to 0-3 for CSS classes
         x: minX - PAD,
         y: minY - PAD,
         w: maxX - minX + PAD * 2,
@@ -1563,6 +1584,14 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
       onDoubleClick={handleCanvasDoubleClick}
       onContextMenu={handleContextMenu}
     >
+      {layoutMode === 'corpus3d' ? (
+        <Corpus3DView
+          artifacts={finalArtifacts}
+          onSelect={onSelect}
+          onOpenDetail={onOpenDetail}
+          selectedId={selectedId}
+        />
+      ) : (
       <div
         ref={contentRef}
         className="canvas-content"
@@ -1573,11 +1602,13 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
           height: canvasContentSize.height,
         }}
       >
-        {/* Mindmap group boxes — rendered behind cards & arrows */}
+        {/* Mindmap group boxes — rendered behind cards & arrows.
+            Depth-based shading replaces the old 8-color cycling system.
+            Deeper groups get more subtle backgrounds; shallow groups are more visible. */}
         {layoutMode === 'mindmap' && mindmapGroupBoxes.map(box => (
           <div
             key={`group-${box.id}`}
-            className={`mindmap-group-box group-color-${box.colorIndex % 8}`}
+            className={`mindmap-group-box group-depth-${box.depth}`}
             style={{
               position: 'absolute',
               left: box.x,
@@ -1604,8 +1635,8 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
             isSearchMatch={effectiveSearchMatchIds.has(artifact.id)}
             compact={layoutMode === 'mindmap'}
             onSelect={onSelect}
-            onOpenDetail={onOpenDetail}
             onUpdate={onUpdate}
+            onOpenDetail={onOpenDetail}
             onToggleExpand={onToggleExpand}
             onToggleCategoryExpand={onToggleCategoryExpand}
             isStoryExpanded={expandedStoryIds.has(artifact.id)}
@@ -1802,9 +1833,11 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
         </>)}
         {/* ── End lane chrome ── */}
       </div>
+      )}
+      {/* ── End canvas content ── */}
       
       {/* Interactive minimap for spatial navigation */}
-      {showMinimap && (
+      {showMinimap && layoutMode !== 'corpus3d' && (
         <Minimap
           artifacts={layoutMode === 'mindmap' ? finalArtifacts : artifacts}
           visibleArtifacts={layoutMode === 'mindmap' ? finalArtifacts : visibleArtifacts}
@@ -1941,13 +1974,19 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
           <Icon name="search" size={14} />
         </button>
         <button
-          className={`mindmap-toggle ${layoutMode === 'mindmap' ? 'active' : ''}`}
-          title={layoutMode === 'mindmap' ? 'Switch to lane view (L)' : 'Switch to mind map (L)'}
+          className={`mindmap-toggle ${layoutMode !== 'lanes' ? 'active' : ''}`}
+          title={
+            layoutMode === 'lanes' ? 'Switch to mind map (L)' :
+            layoutMode === 'mindmap' ? 'Switch to 3D corpus (L)' :
+            'Switch to lane view (L)'
+          }
           onClick={() => {
-            const goingToLanes = layoutMode === 'mindmap';
-            setLayoutMode(m => m === 'lanes' ? 'mindmap' : 'lanes');
-            if (goingToLanes) { setPan({ x: 0, y: 0 }); setZoom(1); }
-            // For mindmap, fit-to-view useEffect handles zoom/pan
+            setLayoutMode(m => {
+              if (m === 'lanes') return 'mindmap';
+              if (m === 'mindmap') return 'corpus3d';
+              return 'lanes';
+            });
+            if (layoutMode !== 'lanes') { setPan({ x: 0, y: 0 }); setZoom(1); }
           }}
         >
           <Icon name="split" size={14} />
@@ -1977,7 +2016,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onOpenDetail, onUpdate
             <span className="canvas-hint-item"><kbd>M</kbd> Minimap</span>
             <span className="canvas-hint-item"><kbd>F</kbd> Focus</span>
             <span className="canvas-hint-item"><kbd>T</kbd> Filters</span>
-            <span className="canvas-hint-item"><kbd>L</kbd> {layoutMode === 'mindmap' ? 'Lanes' : 'Mind Map'}</span>
+            <span className="canvas-hint-item"><kbd>L</kbd> {layoutMode === 'lanes' ? 'Mind Map' : layoutMode === 'mindmap' ? '3D Corpus' : 'Lanes'}</span>
             <span className="canvas-hint-item"><kbd>/</kbd> Search</span>
             <span className="canvas-hint-item"><kbd>Esc</kbd> {focusMode ? 'Exit focus' : showFilterBar ? 'Close filters' : 'Deselect'}</span>
           </div>

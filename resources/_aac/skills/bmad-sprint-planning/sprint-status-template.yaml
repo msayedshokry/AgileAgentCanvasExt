@@ -2,10 +2,11 @@
 # This is an EXAMPLE showing the expected format
 # The actual file will be generated with all epics/stories from your epic files
 
-# generated: {date}
+# generated: 2026-06-05 14:30
+# last_updated: 2026-06-05 14:30
 # project: {project_name}
-# project_key: {project_key}
-# tracking_system: {tracking_system}
+# project_key: NOKEY
+# tracking_system: file-system
 # story_location: {story_location}
 
 # STATUS DEFINITIONS:
@@ -32,14 +33,12 @@
 # - Developer typically creates next story ONLY after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then Dev runs code-review (fresh context, ideally different LLM)
 
-# EXAMPLE STRUCTURE (your actual epics/stories will replace these):
-
-generated: 05-06-2-2025 21:30
-last_updated: 05-06-2-2025 21:30
-project: My Awesome Project
+generated: 2026-06-05 14:30
+last_updated: 2026-06-05 14:30
+project: {project_name}
 project_key: NOKEY
 tracking_system: file-system
-story_location: "{story_location}"
+story_location: {story_location}
 
 development_status:
   epic-1: backlog

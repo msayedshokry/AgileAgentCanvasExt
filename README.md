@@ -226,6 +226,7 @@ Agile Agent Canvas supports multiple AI providers. Set `agileagentcanvas.aiProvi
 | **gemini** | Requires `agileagentcanvas.apiKey`; default model: `gemini-2.0-flash` |
 | **ollama** | Requires `agileagentcanvas.baseUrl` (e.g. `http://localhost:11434`); default model: `llama3` |
 | **antigravity** | Injects prompts into the Antigravity chat panel via native command |
+| **omp** | Oh My Pi (OMP) harness — writes prompts to `.omp/inbox.md` or invokes `omp.sendPrompt` if the OMP VS Code extension is installed |
 
 ---
 

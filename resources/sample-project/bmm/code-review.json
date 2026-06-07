@@ -12,7 +12,8 @@
       "story-1.1",
       "task-crud"
     ],
-    "author": "BMAD Adversarial Code Review"
+    "author": "BMAD Adversarial Code Review",
+    "projectName": "TaskFlow Pro"
   },
   "content": {
     "storyReference": {

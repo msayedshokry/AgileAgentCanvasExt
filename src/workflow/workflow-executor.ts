@@ -2548,19 +2548,9 @@ Begin executing the workflow now.`;
 | \`{output-folder}\` | \`${outputFolder}\` |`;
 
         // ── Load workflow config for output_format awareness ─────────────────
-        // The VS Code setting `bmad.outputFormat` takes precedence over the
-        // workflow file's frontmatter `output_format` — the user's explicit
-        // toolbar selection is the canonical source of truth.
-        const userOutputFormat = vscode.workspace.getConfiguration('agileagentcanvas')
-            .get<'json' | 'markdown' | 'dual'>('outputFormat', 'dual');
-        let workflowOutputFormat: string = userOutputFormat;
-        if (workflowPath) {
-            const workflowConfig = await this.loadWorkflow(workflowPath);
-            // Only use workflow's format as fallback when user hasn't changed from default
-            if (workflowConfig?.output_format && !userOutputFormat) {
-                workflowOutputFormat = workflowConfig.output_format;
-            }
-        }
+        // LLM artifact writes are always JSON-only to prevent JSON↔MD bouncing.
+        // The user's outputFormat setting only affects human-facing bulk export.
+        const workflowOutputFormat: string = 'json';
 
         // ── Workflow entry point ─────────────────────────────────────────────
         const workflowSection = workflowPath
@@ -2581,7 +2571,7 @@ the correct workflow file for this task, then follow its steps.`;
         const artifactType = artifact?.type || '';
         const persona = getPersonaForArtifactType(bmadPath, artifactType);
         const personaSection = persona
-            ? formatFullAgentForPrompt(persona)
+            ? formatFullAgentForPrompt(persona, { toolsAvailable: true })
             : `## Your Persona\nYou are a BMAD methodology AI analyst.`;
 
         // ── Load the artifact schema for strict enforcement ────────────────
@@ -3262,7 +3252,7 @@ the workflow explicitly says to produce the output. Do NOT skip checkpoints just
         // ── Load the agent persona for inline prompt enrichment ──────────
         const directPersona = getPersonaForArtifactType(bmadPath, artifactType);
         const directPersonaSection = directPersona
-            ? formatFullAgentForPrompt(directPersona)
+            ? formatFullAgentForPrompt(directPersona, { toolsAvailable: false })
             : '';
 
         const systemPrompt = `${directPersonaSection || 'You are a BMAD methodology AI analyst. Execute the following task following BMAD quality standards.'}

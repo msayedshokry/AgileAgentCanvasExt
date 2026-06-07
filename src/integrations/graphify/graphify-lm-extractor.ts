@@ -339,14 +339,18 @@ from pathlib import Path
 
 extraction = json.loads(Path('graphify-out/.graphify_extract.json').read_text())
 analysis = json.loads(Path('graphify-out/.graphify_analysis.json').read_text())
+detection_result = json.loads(Path('graphify-out/.graphify_detect.json').read_text())
 
 G = build_from_json(extraction)
 communities = {int(k): v for k, v in analysis['communities'].items()}
 gods = god_nodes(G)
 surprises = surprising_connections(G, communities)
 
-report = generate(G, communities, {}, {}, gods, surprises, extraction)
-Path('graphify-out/GRAPH_REPORT.md').write_text(report)
+token_cost = {'input_tokens': 0, 'output_tokens': 0}
+root = str(Path('graphify-out').absolute().parent)
+
+report = generate(G, communities, {}, {}, gods, surprises, detection_result, token_cost, root)
+Path('graphify-out/GRAPH_REPORT.md').write_text(report, encoding='utf-8')
 print('GRAPH_REPORT.md written')
 
 try:

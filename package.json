@@ -2,7 +2,7 @@
   "name": "agileagentcanvas",
   "displayName": "Agile Agent Canvas",
   "description": "Visual AI-assisted product development with BMAD methodology - Design epics, stories, and requirements collaboratively with interactive AI chat workflows",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "publisher": "msayedshokry",
   "license": "MIT",
   "repository": {
@@ -155,7 +155,6 @@
         "name": "agileagentcanvas_read_jira",
         "displayName": "Agile Agent Canvas Read Jira",
         "modelDescription": "Reads epics and stories from the user's Jira Cloud project via the REST API. Use this when the user asks about their Jira board, wants to see Jira issues, or asks about epics/stories in Jira. Requires Jira to be configured in VS Code Settings (agileagentcanvas.jira.*).",
-        "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -187,7 +186,6 @@
         "name": "agileagentcanvas_codeburn_report",
         "displayName": "Agile Agent Canvas Codeburn Report",
         "modelDescription": "Reads AI coding cost and token usage from Codeburn. Use when the user asks about AI spend, token usage, costs, budget, or model pricing. Codeburn reads session data directly from disk (no API keys).",
-        "canBeReferencedInPrompt": true,
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -807,6 +805,11 @@
         "icon": "$(history)"
       },
       {
+        "command": "agileagentcanvas.cleanupStaleMarkdown",
+        "title": "Agile Agent Canvas: Clean Up Stale Markdown Files",
+        "icon": "$(trash)"
+      },
+      {
         "command": "agileagentcanvas.fetchFromJira",
         "title": "Agile Agent Canvas: Fetch from Jira",
         "icon": "$(cloud-download)"
@@ -1028,23 +1031,25 @@
             "anthropic",
             "gemini",
             "ollama",
-            "antigravity"
+            "antigravity",
+            "omp"
           ],
           "enumDescriptions": [
-            "Automatically detect the best available provider (tries VS Code LM API first, then Antigravity, then direct API key)",
+            "Automatically detect the best available provider (tries VS Code LM API first, then Antigravity, then OMP, then direct API key)",
             "GitHub Copilot via VS Code Language Model API",
             "OpenAI API (requires agileagentcanvas.apiKey and optionally agileagentcanvas.modelId)",
             "Anthropic Claude API (requires agileagentcanvas.apiKey and optionally agileagentcanvas.modelId)",
             "Google Gemini API (requires agileagentcanvas.apiKey and optionally agileagentcanvas.modelId)",
             "Ollama local models (requires agileagentcanvas.baseUrl, e.g. http://localhost:11434)",
-            "Google Antigravity IDE — injects prompts into the Antigravity chat panel via native command"
+            "Google Antigravity IDE — injects prompts into the Antigravity chat panel via native command",
+            "Oh My Pi (OMP) harness — writes the prompt to .omp/inbox.md or invokes omp.sendPrompt if the OMP VS Code extension is installed"
           ],
           "description": "AI provider for Agile Agent Canvas. Use 'auto' to detect automatically."
         },
         "agileagentcanvas.apiKey": {
           "type": "string",
           "default": "",
-          "description": "API key for the selected AI provider (OpenAI, Anthropic, or Gemini). Leave empty when using Copilot, Ollama, or Antigravity."
+          "description": "API key for the selected AI provider (OpenAI, Anthropic, or Gemini). Leave empty when using Copilot, Ollama, Antigravity, or OMP."
         },
         "agileagentcanvas.modelId": {
           "type": "string",
@@ -1055,6 +1060,45 @@
           "type": "string",
           "default": "",
           "description": "Base URL for the AI API. Only needed for Ollama (e.g. http://localhost:11434) or a custom OpenAI-compatible endpoint."
+        },
+        "agileagentcanvas.chatProviderSelected": {
+          "type": "string",
+          "default": "auto",
+          "description": "The chat provider most recently selected in the canvas dropdown. Persisted across sessions so the user doesn't need to re-pick. 'auto' = use the default from settings or auto-detect.",
+          "scope": "machine"
+        },
+        "agileagentcanvas.chatProvider": {
+          "type": "string",
+          "default": "auto",
+          "enum": [
+            "auto",
+            "copilot",
+            "claude",
+            "cursor",
+            "windsurf",
+            "antigravity",
+            "omp",
+            "codex",
+            "gemini-cli",
+            "aider",
+            "opencode",
+            "terminal"
+          ],
+          "enumDescriptions": [
+            "Auto-detect the best available provider for the current host",
+            "GitHub Copilot chat panel (workbench.action.chat.open)",
+            "Anthropic Claude Code chat panel (claude.openChat) — opens Claude Code if installed, otherwise launches `claude` CLI in the terminal",
+            "Cursor chat panel (cursor.chat.open)",
+            "Windsurf chat panel (windsurf.openChat)",
+            "Google Antigravity chat panel (antigravity.sendPromptToAgentPanel)",
+            "Oh My Pi (OMP) harness — writes to .omp/inbox.md or invokes omp.sendPrompt",
+            "OpenAI Codex CLI — always launches in the integrated terminal",
+            "Google Gemini CLI — always launches in the integrated terminal",
+            "Aider — always launches in the integrated terminal",
+            "OpenCode CLI (sst/opencode) — always launches in the integrated terminal",
+            "Generic terminal: prints the prompt and lets the user run it manually"
+          ],
+          "description": "Default AI chat provider for canvas actions (Refine, Enhance, Break Down, etc.). When set, all canvas-triggered actions route to this provider regardless of which IDE is hosting. Set per-action via the canvas header dropdown."
         },
         "agileagentcanvas.defaultTemperature": {
           "type": "number",

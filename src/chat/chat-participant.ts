@@ -202,15 +202,13 @@ export class AgileAgentCanvasChatParticipant {
               `Remember: honor any remaining checkpoint/pause instructions in the workflow.`
             : '';
 
-        // Include output format awareness so the LLM knows the user's preference
-        const outputFormat = vscode.workspace.getConfiguration('agileagentcanvas')
-            .get<string>('outputFormat', 'dual');
-        const outputFormatHint = (outputFormat === 'dual' || outputFormat === 'json')
-            ? `\n\nNote: The user's output format is set to "${outputFormat}". When generating or refining artifacts, ` +
-              `always include structured JSON output (not just Markdown). If the user asks you to create or update ` +
-              `an artifact, use a BMAD slash command (e.g. /vision, /epics, /stories) for proper JSON persistence, ` +
-              `or include a complete JSON code block in your response.`
-            : '';
+        // LLM artifact writes are always JSON-only to prevent JSON↔MD bouncing.
+        // The user's outputFormat setting only affects human-facing bulk export.
+        const outputFormatHint =
+            `\n\nNote: Artifact persistence is JSON-only. When generating or refining artifacts, ` +
+            `always include structured JSON output (not just Markdown). If the user asks you to create or update ` +
+            `an artifact, use a BMAD slash command (e.g. /vision, /epics, /stories) for proper JSON persistence, ` +
+            `or include a complete JSON code block in your response.`;
 
         // For VS Code LM (Copilot etc.) use agentic tool-calling loop so the
         // agent can load config.yaml, read workflow files, list directories, and
@@ -1359,7 +1357,7 @@ Stories: ${targetEpic.stories?.map((s: any) => s.title).join(', ') || 'None'}`;
         const bmadPath = executor.getBmadPath();
         const continuePersona = getPersonaForArtifactType(bmadPath, session.artifactType);
         const continuePersonaSection = continuePersona
-            ? formatFullAgentForPrompt(continuePersona)
+            ? formatFullAgentForPrompt(continuePersona, { toolsAvailable: true })
             : '';
 
         const continuePreamble = `${continuePersonaSection || 'You are a BMAD methodology AI analyst continuing a workflow inside VS Code.'}
@@ -3435,7 +3433,7 @@ Always end the interaction by either saving confirmed changes or acknowledging t
         // — exactly as the official BMAD-METHOD intends.  This enables the
         // interactive menu-driven conversational model.
         if (persona) {
-            return `${formatFullAgentForPrompt(persona)}${cavemanSuffix}
+            return `${formatFullAgentForPrompt(persona, { toolsAvailable: true })}${cavemanSuffix}
 
 ## VS Code Extension Context
 You are running inside the AgileAgentCanvas VS Code extension.
@@ -5133,7 +5131,7 @@ Output ONLY the JSON, no explanation.`;
                 const personaMessages: ChatMessage[] = [
                     {
                         role: 'system',
-                        content: `${formatFullAgentForPrompt(persona)}\n\n` +
+                        content: `${formatFullAgentForPrompt(persona, { toolsAvailable: false })}\n\n` +
                             `You are helping the user via /help routing. Give concise, practical next steps in your persona voice.`
                     },
                     {

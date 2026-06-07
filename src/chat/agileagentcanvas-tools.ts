@@ -13,7 +13,7 @@ import {
     formatStoriesAsMarkdown
 } from '../integrations/jira-importer';
 import { graphQuery, graphPath, loadCommunityWiki } from '../integrations/graphify/graph-query';
-import { trackToolCall } from './tool-telemetry';
+import { trackToolCall, toolTelemetry } from './tool-telemetry';
 
 /**
  * AgileAgentCanvas Language Model Tools
@@ -324,7 +324,9 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         const filePath = request.input.path;
                         const content = request.input.content;
                         const requestedFormat = request.input.format; // 'json', 'markdown', or 'dual'
-                        const allowedRoots = getAllowedRoots(ctx);
+                        // Write operations are restricted to outputPath and workspace folders.
+                        // bmadPath (resources/_aac/) is read-only framework code — never writable.
+                        const allowedRoots = getAllowedRoots(ctx).filter(r => r !== ctx.bmadPath);
 
                         if (!isPathAllowed(filePath, allowedRoots)) {
                             const msg = `Access denied: "${filePath}" is outside the allowed AgileAgentCanvas paths.`;
@@ -342,11 +344,9 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                             ]);
                         }
 
-                        // Determine the effective output format from the user's settings
-                        const configFormat = vscode.workspace
-                            .getConfiguration('agileagentcanvas')
-                            .get<'json' | 'markdown' | 'dual'>('outputFormat', 'dual');
-                        const effectiveFormat = requestedFormat || configFormat;
+                        // Artifact writes are always JSON. Markdown export is available
+                        // via the user-initiated export command only.
+                        const effectiveFormat = requestedFormat || 'json';
 
                         try {
                             const ext = path.extname(filePath).toLowerCase();
@@ -415,6 +415,18 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                                     Buffer.from(content, 'utf-8')
                                 );
                                 written.push(filePath);
+                            }
+
+                            // Telemetry: detect unexpected MD writes in the output folder
+                            const mdWrites = written.filter(p => p.endsWith('.md') && isPathAllowed(p, [ctx.outputPath]));
+                            if (mdWrites.length > 0) {
+                                toolTelemetry.record({
+                                    tool: 'agileagentcanvas_write_file_md',
+                                    status: 'ok',
+                                    latencyMs: 0,
+                                    timestamp: new Date().toISOString(),
+                                });
+                                logger.warn(`[agileagentcanvas_write_file] Unexpected MD write detected: ${mdWrites.join(', ')}`);
                             }
 
                             const msg = `File(s) written successfully: ${written.join(', ')}`;
@@ -1549,7 +1561,7 @@ export function getToolDefinitions(): vscode.LanguageModelChatTool[] {
                     format: {
                         type: 'string',
                         description: 'Optional override for output format: "json", "markdown", or "dual". ' +
-                            'If omitted, uses the user\'s agileagentcanvas.outputFormat setting (default: "dual").'
+                            'If omitted, artifact writes default to JSON. Markdown export is available via the user-initiated export command only.'
                     }
                 },
                 required: ['path', 'content']

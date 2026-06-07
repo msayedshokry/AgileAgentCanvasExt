@@ -14,7 +14,7 @@ export type IdeId =
     | 'cursor' | 'windsurf' | 'claude' | 'antigravity' | 'copilot'
     | 'cline' | 'roo' | 'codex' | 'gemini' | 'opencode'
     | 'auggie' | 'codebuddy' | 'crush' | 'iflow' | 'kiro'
-    | 'qwen' | 'trae' | 'rovo-dev' | 'pi'
+    | 'qwen' | 'trae' | 'rovo-dev' | 'pi' | 'omp'
     | 'generic';
 
 interface IdeTarget {
@@ -177,6 +177,16 @@ const IDE_TARGETS: Record<IdeId, IdeTarget> = {
         workflowsDir: '.opencode/commands',
         agentsDir: '.opencode/agents',
         agentFormat: 'opencode',
+        legacyDirs: [],
+        preferred: false,
+    },
+    omp: {
+        id: 'omp',
+        label: 'Oh My Pi (OMP)',
+        description: '.omp/skills/ + .omp/commands/',
+        detail: 'Installs Agile Agent Canvas skills and commands for the Oh My Pi (omp) harness. Rules go to .omp/rules/.',
+        skillsDir: '.omp/skills',
+        workflowsDir: '.omp/commands',
         legacyDirs: [],
         preferred: false,
     },
@@ -442,6 +452,9 @@ export async function detectIde(): Promise<IdeId> {
             cmdSet.has('windsurf.cascade.focus'))         return 'windsurf';
         if (cmdSet.has('claude.openChat') ||
             cmdSet.has('claude-code.openChat'))           return 'claude';
+        if (cmdSet.has('omp.openPanel') ||
+            cmdSet.has('omp.sendPrompt') ||
+            cmdSet.has('oh-my-pi.openChat'))              return 'omp';
     } catch {
         // getCommands can fail in some test environments
     }
@@ -453,6 +466,8 @@ export async function detectIde(): Promise<IdeId> {
     if (appName.includes('antigravity')) return 'antigravity';
     if (appName.includes('claude'))      return 'claude';
     if (appName.includes('kiro'))        return 'kiro';
+    if (appName.includes('omp') || appName.includes('oh my pi') || appName.includes('oh-my-pi'))
+        return 'omp';
 
     return 'copilot'; // plain VS Code or any unrecognised Copilot-capable host
 }

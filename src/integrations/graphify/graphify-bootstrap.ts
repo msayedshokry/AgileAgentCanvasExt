@@ -21,7 +21,7 @@ const logger = createLogger('graphify-bootstrap');
  * Each step is skipped when its precondition is already met.
  * All steps run under a VS Code progress notification.
  */
-export async function bootstrapGraphify(workspaceRoot: string, options?: { silent?: boolean }): Promise<void> {
+export async function bootstrapGraphify(workspaceRoot: string, extensionPath: string, options?: { silent?: boolean }): Promise<void> {
     if (!vscode.workspace.isTrusted) {
         vscode.window.showWarningMessage(
             'graphify bootstrap requires a trusted workspace. Please trust this workspace and try again.'
@@ -115,7 +115,7 @@ export async function bootstrapGraphify(workspaceRoot: string, options?: { silen
             const ignorePath = path.join(workspaceRoot, '.graphifyignore');
             if (!fs.existsSync(ignorePath)) {
                 step('Writing .graphifyignore…', 0);
-                const templatePath = path.join(__dirname, '..', '..', '..', 'resources', '_aac', 'graphify', 'graphifyignore.template');
+                const templatePath = path.join(extensionPath, 'resources', '_aac', 'graphify', 'graphifyignore.template');
                 try {
                     const template = fs.readFileSync(templatePath, 'utf-8');
                     fs.writeFileSync(ignorePath, template, 'utf-8');

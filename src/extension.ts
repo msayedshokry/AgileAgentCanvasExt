@@ -20,6 +20,8 @@ import {
 import { handleCommonWebviewMessage, handleCatalogueWebviewMessage } from './views/webview-message-handler';
 import { createGraphifyStatusBar, refreshGraphifyStatusBar } from './views/graphify-status-bar';
 import { createCodeburnStatusBar, refreshCodeburnStatusBar } from './views/codeburn-status-bar';
+import { createChatProviderStatusBar, registerPickChatProviderCommand, refreshChatProviderStatusBar } from './views/chat-provider-status-bar';
+import { setSelectedProvider, getSelectedProvider, type ChatProviderId } from './commands/chat-bridge';
 import { CavemanService, setCavemanService } from './chat/caveman-service.js';
 import {
     createNewProject,
@@ -270,7 +272,7 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('agileagentcanvas.graphify.bootstrap', () => {
             const root = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath ?? '';
             if (!root) { return vscode.window.showWarningMessage('No workspace open.'); }
-            return bootstrapGraphify(root).finally(() => refreshGraphifyStatusBar(root));
+            return bootstrapGraphify(root, context.extensionPath).finally(() => refreshGraphifyStatusBar(root));
         }),
         vscode.commands.registerCommand('agileagentcanvas.graphify.update', () => {
             const root = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath ?? '';
@@ -385,6 +387,19 @@ export function activate(context: vscode.ExtensionContext) {
             } else {
                 vscode.window.showErrorMessage(result.summary);
             }
+        }),
+        vscode.commands.registerCommand('agileagentcanvas.cleanupStaleMarkdown', async () => {
+            const outputUri = workspaceResolver.getActiveOutputUri();
+            if (!outputUri) {
+                vscode.window.showWarningMessage('No active project to clean up.');
+                return;
+            }
+            const result = await cleanupStaleMarkdownFiles(outputUri);
+            if (result.count > 0) {
+                vscode.window.showInformationMessage(`Renamed ${result.count} stale markdown file(s) to .md.bak.`);
+            } else {
+                vscode.window.showInformationMessage('No stale markdown files found.');
+            }
         })
     );
 
@@ -407,6 +422,16 @@ export function activate(context: vscode.ExtensionContext) {
                 await vscode.workspace.fs.stat(outputUri);
                 await artifactStore.loadFromFolder(outputUri);
                 logger.info(`Auto-loaded project from: ${outputUri.fsPath}`);
+
+                // One-time migration: rename stale markdown companions from pre-dual era
+                const MIGRATION_KEY = 'staleMarkdownMigrationV1';
+                if (!context.globalState.get(MIGRATION_KEY)) {
+                    const result = await cleanupStaleMarkdownFiles(outputUri);
+                    if (result.count > 0) {
+                        logger.info(`[Migration] Renamed ${result.count} stale markdown file(s) to .md.bak`);
+                    }
+                    await context.globalState.update(MIGRATION_KEY, true);
+                }
             } catch {
                 logger.info(`Output folder not found (new project?): ${outputUri.fsPath}`);
             }
@@ -547,12 +572,25 @@ export function activate(context: vscode.ExtensionContext) {
             }
         })
     );
-
-    // ── graphify: optional auto-bootstrap prompt ──────────────────────────────
+    // ── graphify: optional auto-bootstrap prompt ───────────────────────────────
     createGraphifyStatusBar(context);
 
-    // ── codeburn: status bar (Menu Bar equivalent) ────────────────────────────
+    // ── codeburn: status bar (Menu Bar equivalent) ──────────────────────────────
     createCodeburnStatusBar(context);
+    // ── chat provider: status bar (current selection visible at all times) ───
+    // Initialise the in-memory selection from settings so it survives reloads
+    try {
+        const cfg = vscode.workspace.getConfiguration('agileagentcanvas');
+        const persisted = cfg.get<string>('chatProviderSelected', 'auto');
+        if (persisted) {
+            setSelectedProvider(persisted as ChatProviderId);
+        }
+    } catch {
+        // ignore — fall back to 'auto'
+    }
+    registerPickChatProviderCommand(context);
+    createChatProviderStatusBar(context);
+    refreshChatProviderStatusBar();
 
     const autoBootstrap = vscode.workspace
         .getConfiguration('agileagentcanvas')
@@ -572,7 +610,7 @@ export function activate(context: vscode.ExtensionContext) {
                 ).then(choice => {
                     if (choice === 'Bootstrap') {
                         // User already confirmed via toast — skip the redundant modal inside bootstrap
-                        bootstrapGraphify(root, { silent: true });
+                        bootstrapGraphify(root, context.extensionPath, { silent: true });
                     }
                 });
             }
@@ -849,18 +887,28 @@ function getDetailTabHtml(webview: vscode.Webview, extensionUri: vscode.Uri, art
         vscode.Uri.joinPath(buildPath, 'assets', 'index.css')
     );
 
+    // Webview URI for the 3d-force-graph UMD bundle (loaded on-demand by Corpus3DView)
+    const forceGraphUri = webview.asWebviewUri(
+        vscode.Uri.joinPath(extensionUri, 'webview-ui', 'build', '3d-force-graph', '3d-force-graph.min.js')
+    );
+
+    const cspDetail = `default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} data:; worker-src ${webview.cspSource}; connect-src ${webview.cspSource};`;
+    acOutput.appendLine(`[DetailTab] CSP: ${cspDetail}`);
+
     const safeId = artifactId.replace(/['"\\<>]/g, '');
     return `<!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} data:;">
+        <meta http-equiv="Content-Security-Policy" content="${cspDetail}">
         <link rel="stylesheet" href="${styleUri}">
         <title>AgileAgentCanvas Detail</title>
     </head>
     <body>
+        <script>console.log('[webview:inline:detail] readyState='+document.readyState);window.onerror=function(m,s,l,c,e){console.error('[webview:onerror]',m,'at',s+':'+l+':'+c,e&&e.stack);var el=document.getElementById('root');if(el)el.innerHTML+='<div style="padding:8px;margin:4px;background:#400;color:#faa;font-size:11px;font-family:monospace;white-space:pre-wrap">EARLY ERROR: '+m+'<br>'+s+':'+l+'</div>';return false;};</script>
         <script>window.__AC_MODE__ = 'detail'; window.__AC_DETAIL_ID__ = '${safeId}';</script>
+        <script>window.__AC_3D_GRAPH_URL__ = '${forceGraphUri}';</script>
         <div id="root"></div>
         <script src="${scriptUri}"></script>
     </body>
@@ -884,17 +932,28 @@ function getCanvasWebviewContent(webview: vscode.Webview, extensionUri: vscode.U
         vscode.Uri.joinPath(extensionUri, 'webview-ui', 'build', 'assets', 'index.css')
     );
 
+    // Webview URI for the 3d-force-graph UMD bundle (loaded on-demand by Corpus3DView)
+    const forceGraphUri = webview.asWebviewUri(
+        vscode.Uri.joinPath(extensionUri, 'webview-ui', 'build', '3d-force-graph', '3d-force-graph.min.js')
+    );
+
+    const cspPanel = `default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource} 'unsafe-inline'; worker-src ${webview.cspSource}; connect-src ${webview.cspSource};`;
+    acOutput.appendLine(`[Panel] CSP: ${cspPanel}`);
+
     return `<!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource};">
+        <meta http-equiv="Content-Security-Policy" content="${cspPanel}">
         <link href="${styleUri}" rel="stylesheet">
         <title>AgileAgentCanvas</title>
     </head>
     <body>
         <div id="root"></div>
+        <script>console.log('[webview:inline:panel] readyState='+document.readyState+', URL='+document.URL);window.onerror=function(m,s,l,c,e){console.error('[webview:onerror]',m,'at',s+':'+l+':'+c,e&&e.stack);var el=document.getElementById('root');if(el)el.innerHTML+='<div style="padding:8px;margin:4px;background:#400;color:#faa;font-size:11px;font-family:monospace;white-space:pre-wrap">EARLY ERROR: '+m+'<br>'+s+':'+l+'</div>';return false;};</script>
+        <script>window.__AC_3D_GRAPH_URL__ = '${forceGraphUri}';</script>
+        <script defer src="${forceGraphUri}"></script>
         <script src="${scriptUri}"></script>
     </body>
     </html>`;
@@ -994,6 +1053,39 @@ function resetFileWatcher(
         fileWatcher = undefined;
     }
     setupFileWatcher(store, context, notifyExternalChange);
+}
+
+/**
+ * Rename stale markdown companion files (.md) to .md.bak under the output folder.
+ * Prevents the LLM from reading derived views as authoritative sources.
+ */
+async function cleanupStaleMarkdownFiles(folderUri: vscode.Uri): Promise<{ count: number }> {
+    let count = 0;
+    const walk = async (dir: vscode.Uri): Promise<void> => {
+        let entries: [string, vscode.FileType][];
+        try {
+            entries = await vscode.workspace.fs.readDirectory(dir);
+        } catch {
+            return;
+        }
+        for (const [name, type] of entries) {
+            const entryUri = vscode.Uri.joinPath(dir, name);
+            if ((type & vscode.FileType.Directory) !== 0) {
+                await walk(entryUri);
+            } else if (name.endsWith('.md') && !name.endsWith('.md.bak')) {
+                const bakUri = vscode.Uri.joinPath(dir, name + '.bak');
+                try {
+                    await vscode.workspace.fs.rename(entryUri, bakUri, { overwrite: true });
+                    count++;
+                    logger.info(`[Cleanup] Renamed ${name} → ${name}.bak`);
+                } catch (e) {
+                    logger.debug(`[Cleanup] Failed to rename ${name}: ${e}`);
+                }
+            }
+        }
+    };
+    await walk(folderUri);
+    return { count };
 }
 
 export function deactivate() {

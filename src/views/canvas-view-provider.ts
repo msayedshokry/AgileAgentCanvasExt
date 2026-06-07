@@ -445,6 +445,14 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
             vscode.Uri.joinPath(buildPath, 'assets', 'index.css')
         );
 
+        // Webview URI for the 3d-force-graph UMD bundle (loaded on-demand by Corpus3DView)
+        const forceGraphUri = webview.asWebviewUri(
+            vscode.Uri.joinPath(buildPath, '3d-force-graph', '3d-force-graph.min.js')
+        );
+
+        const cspDetail = `default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} data:; worker-src ${webview.cspSource}; connect-src ${webview.cspSource};`;
+        logger.info(`[CanvasProvider:DetailTab] CSP: ${cspDetail}`);
+        
         // Inject mode + id so the React app boots into detail-only mode
         const safeId = artifactId.replace(/['"\\<>]/g, '');
         return `<!DOCTYPE html>
@@ -452,12 +460,14 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} data:;">
+            <meta http-equiv="Content-Security-Policy" content="${cspDetail}">
             <link rel="stylesheet" href="${styleUri}">
 <title>AgileAgentCanvas Detail</title>
         </head>
         <body>
+            <script>console.log('[webview:inline:detail] readyState='+document.readyState);window.onerror=function(m,s,l,c,e){console.error('[webview:onerror]',m,'at',s+':'+l+':'+c,e&&e.stack);var el=document.getElementById('root');if(el)el.innerHTML+='<div style="padding:8px;margin:4px;background:#400;color:#faa;font-size:11px;font-family:monospace;white-space:pre-wrap">EARLY ERROR: '+m+'<br>'+s+':'+l+'</div>';return false;};</script>
             <script>window.__AC_MODE__ = 'detail'; window.__AC_DETAIL_ID__ = '${safeId}';</script>
+            <script>window.__AC_3D_GRAPH_URL__ = '${forceGraphUri}';</script>
             <div id="root"></div>
             <script src="${scriptUri}"></script>
         </body>
@@ -490,6 +500,14 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
             
             logger.debug(`[CanvasProvider] Script URI: ${scriptUri.toString()}`);
             logger.debug(`[CanvasProvider] Style URI: ${styleUri.toString()}`);
+
+            // Webview URI for the 3d-force-graph UMD bundle (loaded on-demand by Corpus3DView)
+            const forceGraphUri = webview.asWebviewUri(
+                vscode.Uri.joinPath(buildPath, '3d-force-graph', '3d-force-graph.min.js')
+            );
+            
+            const cspString = `default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} data: blob:; frame-src 'self' blob:; worker-src ${webview.cspSource}; child-src ${webview.cspSource} blob:; connect-src ${webview.cspSource};`;
+            logger.info(`[CanvasProvider] CSP: ${cspString}`);
             
             // Return modified HTML with correct URIs
             return `<!DOCTYPE html>
@@ -497,13 +515,16 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource}; img-src ${webview.cspSource} data: blob:; frame-src 'self' blob:;">
+                <meta http-equiv="Content-Security-Policy" content="${cspString}">
                 <link rel="stylesheet" href="${styleUri}">
                 <title>AgileAgentCanvas</title>
             </head>
             <body>
                 <div id="root"></div>
-                <script src="${scriptUri}"></script>
+                <script>console.log('[webview:inline] HTML script executing, readyState='+document.readyState+', URL='+document.URL);window.onerror=function(m,s,l,c,e){console.error('[webview:onerror]',m,'at',s+':'+l+':'+c,e&&e.stack);var el=document.getElementById('root');if(el)el.innerHTML+='<div style="padding:8px;margin:4px;background:#400;color:#faa;font-size:11px;font-family:monospace;white-space:pre-wrap">EARLY ERROR: '+m+'<br>'+s+':'+l+'</div>';return false;};</script>
+            <script>window.__AC_3D_GRAPH_URL__ = '${forceGraphUri}';</script>
+            <script defer src="${forceGraphUri}"></script>
+            <script src="${scriptUri}"></script>
             </body>
             </html>`;
         } catch (e) {

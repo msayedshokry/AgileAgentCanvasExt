@@ -14,6 +14,10 @@
       "type": "string",
       "description": "Timestamp when this status file was generated (human-readable, e.g. '2025-05-06 21:30')"
     },
+    "last_updated": {
+      "type": "string",
+      "description": "Timestamp of last manual or automated update (same format as generated)"
+    },
     "project": {
       "type": "string",
       "description": "Project name"

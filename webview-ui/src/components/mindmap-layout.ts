@@ -23,16 +23,16 @@
 import type { Artifact } from '../types';
 
 // ── Layout constants ────────────────────────────────────────────────────────
-const NODE_W = 170;       // compact card width (was 200)
-const NODE_H = 50;        // compact card height (was 60)
-const H_GAP  = 70;        // horizontal gap between depth levels
-const V_GAP  = 28;        // vertical gap between sibling nodes
+const NODE_W = 200;       // card width — larger for better readability
+const NODE_H = 60;        // card height — taller for title readability
+const H_GAP  = 80;        // horizontal gap between depth levels
+const V_GAP  = 32;        // vertical gap between sibling nodes
 const ROOT_X = 40;        // left margin for root
 const ROOT_Y = 40;        // top margin
 
 // ── Wrapping constants ──────────────────────────────────────────────────────
-const MAX_CHILDREN_PER_COL = 5;   // max children in one vertical column before wrapping
-const COL_GAP = 20;               // horizontal gap between wrapped child columns
+const MAX_CHILDREN_PER_COL = 6;   // max children in one vertical column before wrapping
+const COL_GAP = 24;               // horizontal gap between wrapped child columns
 
 // Depth ordering: discovery items first, then planning, solutioning, impl
 const DEPTH_ORDER: Record<string, number> = {

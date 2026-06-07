@@ -1,6 +1,121 @@
 # Changelog
 
+## 0.5.1
+### Fixed: Provider Selector Dropdown
+
+The "Select Provider" button was not showing installed providers and its styling didn't match the rest of the canvas header.
+
+- **Button placement** — Moved the provider selector button next to the Workflows button with matching pill-style FAB appearance (`provider-selector` now uses `position: absolute; top: 12px; right: 138px; border-radius: 999px;` and slides left when the detail panel opens)
+- **Real availability detection** — `listAvailableProviders()` in `src/commands/chat-bridge.ts` now actually probes the host for installed CLIs (`claude`, `codex`, `gemini`, `aider`, `opencode`) via `where`/`which`. Previously, several terminal-only providers were hardcoded as `available: true` even when not installed, while panel-only providers like `omp` showed as unavailable even if the standalone CLI was on PATH. Providers are now marked `available` only when the panel command is registered OR the CLI binary is on PATH
+- **OMP availability** — The `omp` provider now detects the standalone `omp` CLI when the OMP VS Code extension is not installed. Dispatch order was changed so panel providers (claude, omp) prefer the panel path when the extension is registered, and fall back to the CLI only when the panel is missing
+- **OpenCode support** — Added `opencode` as a first-class chat provider with `terminalLaunch: (q) => ['opencode', q]`, listed in `CHAT_PROVIDER_IDS` and in the `agileagentcanvas.chatProvider` enum
+- **Official brand icons** — Replaced mixed emoji/unicode icons with official brand SVGs:
+  - Copilot, Claude, Cursor, Windsurf, Gemini — simple-icons brand marks
+  - OMP — official `omp.sh/favicon.svg`
+  - Antigravity — official Google Antigravity mark
+  - OpenCode — official `opencode.ai/favicon.svg`
+  - Codex — OpenAI knot mark
+  - Aider — derived green monogram
+  - Auto/Terminal — generic SVG marks
+- **Claude invocation fix** — Removed the unsupported `--print` flag from the Claude terminal-launch command. The webview now runs `claude "<prompt>"` (TUI with pre-filled prompt) instead of `claude --print "<prompt>"`, matching what the Anthropic CLI actually supports on this host
+- **Message protocol fix** — Aligned the webview request/response types with the backend (`getChatProviders` ↔ `chatProviders`). Previously the webview sent `listChatProviders` and listened for `availableChatProviders`, which the backend never matched, leaving the dropdown permanently empty with "No providers installed on this host"
+
+### Mindmap View Redesign
+
+Major UX overhaul of the mindmap layout — card sizing, group-box styling, tree lines, and phase node visibility all improved.
+
+- **Larger cards & spacing** — `NODE_W=200`, `NODE_H=60`, `H_GAP=80`, `V_GAP=32` in `mindmap-layout.ts` for better readability and click targets
+- **Depth-based group boxes** — Replaced 8-color cycling palette (`group-color-0` through `group-color-7`) with 4 depth-level subtle backgrounds (`group-depth-0` through `group-depth-3`). Solid borders instead of dashed for a cleaner visual hierarchy. Deeper groups get progressively subtler tints so the tree structure reads naturally
+- **Stronger phase nodes** — Phase/section nodes (e.g. "Discovery", "Planning") now render with a solid purple border, background fill, subtle glow shadow, and larger label text, making them clearly distinct from artifact cards
+- **Improved tree lines** — Parent→child tree lines now use depth-based opacity and stroke-width (thicker/more opaque for shallow depths, thinner/subtler for deeper levels) with tiny arrowhead markers for direction clarity
+
+### 3D Corpus View (Force-Directed Artifact Graph)
+
+A third canvas layout mode that visualizes BMAD artifacts as an interactive 3D force-directed graph — revealing cross-phase connections hidden by the hierarchical lanes and mindmap views.
+
+- **`Corpus3DView.tsx`** — New component using `3d-force-graph` (Three.js-based). Renders artifacts as nodes connected by `parentId` hierarchy edges and `dependencies` cross-ref edges
+- **Phase color coding** — Nodes colored by BMAD phase: purple (Discovery), blue (Planning), orange (Solutioning), green (Implementation)
+- **Auto-rotation** — Gentle camera orbit on idle; stops automatically on any user interaction (drag, zoom)
+- **Click-to-select** — Clicking a node selects that artifact and opens the detail panel, maintaining cross-view consistency
+- **Animated edge particles** — Dependency edges render with directional particles showing flow direction
+- **Phase legend overlay** — Color legend in the top-right corner identifies phase colors
+- **Third layout mode** — Press `L` to cycle: Lanes → Mindmap → 3D Corpus → Lanes. Toggle button in zoom controls shows the next mode in the cycle
+- **Dependencies** — Added `3d-force-graph` to `webview-ui/package.json`
+
+### 3D Corpus Lens — Custom Shapes & Cleanup
+
+Refined the 3D Corpus view — replaced uniform spheres with distinct geometric shapes per artifact type and stripped the card overlay system for a cleaner, more performant experience.
+
+- **Custom shapes per artifact type** — `createNodeMesh()` maps each BMAD type to a distinct Three.js geometry:
+  - Vision / Product Brief → **Sphere** (rounded, foundational)
+  - Epic → **Cone** (top-down perspective)
+  - PRD / Requirement / NFR / Additional Req → **Box** (structured specification)
+  - Story → **Cylinder** (implementation pillar)
+  - Architecture → **Torus** (connected, networked)
+  - Architecture Decision → **Tetrahedron** (sharp, decisive)
+  - System Component → **Dodecahedron** (complex, multi-faceted)
+  - Risk → **Octahedron** (sharp edges)
+  - Unknown types → Sphere fallback
+- **Shape sizing** — Node size scales by `val` for importance weighting alongside count-based sizing, making high-priority artifacts visually prominent
+- **Mesh selection highlight** — Clicking a node turns it white by updating the mesh material color directly (via `__threeObj`), replacing the broken `nodeColor()` approach that only affects default sphere rendering
+- **Tree-shaken THREE import** — Replaced `import * as THREE` with specific named imports (`Mesh`, `SphereGeometry`, `BoxGeometry`, etc.), cutting the webview bundle from 2,179 kB to 1,570 kB (~28% reduction)
+- **Card overlays removed** — Stripped the `createCards`/`updateCardPositions` overlay system that rendered text labels above each node. Removed `overlayRef`, `cardsRef`, `frameRef`, RAF update loop, idle detection, hover effects, and the expensive `backdrop-filter: blur(4px)` that forced GPU compositing for 199 elements. Artifact names now accessible via native 3d-force-graph tooltip (`nodeLabel('name')`)
+- **No per-frame DOM updates** — With cards removed, no requestAnimationFrame loop runs during auto-rotation, eliminating all layout thrashing and DOM writes when no user interaction is occurring
+- **Animated link particles** — Restored directional particle animation on graph edges. Each link renders 2 slowly-flowing semi-transparent particles (`linkDirectionalParticles(2)`, speed `0.005`, width `2`, color `rgba(255,255,255,0.3)`) that show dependency flow direction alongside the existing arrow markers
+- **Phase-plane overlay** — 4 small sprite labels positioned at Z depths 60/20/-20/-60, one per BMAD phase (Discovery/Planning/Solutioning/Implementation). Sprites auto-scale to always face the camera so they never look stretched or dominate the viewport. Canvas texture 256×48 with 22px bold phase-name label at 70% opacity. Labels removed from Three.js scene on component cleanup to prevent memory leaks
+- **Phase sprites removed** — Following user feedback that floating phase-name text in 3D space was confusing and not obviously connected to nodes. Phase orientation is now conveyed purely through node colors and the 2D legend overlay
+- **All artifacts visible by default** — 3D corpus view now shows every artifact immediately with no epic collapse/expand. Clicking a node selects it (no more expand/collapse toggle)
+- **Short floating labels** — Every node has a small canvas-texture `Sprite` floating 2 units above its 3D shape, displaying the first 18 characters of the artifact title in phase color at 90% opacity. Labels auto-orient to face the camera as you orbit. Group (`shape mesh + label sprite`) is used so the label and shape move together in the force simulation
+- **Radiating link colors** — Each edge blends its source-phase color into its target-phase color (midpoint hex). A Discovery→Planning link is purple→blue at ~33% opacity. All links are much quieter: particles reduced to 1 (down from 2), slower speed, thinner width, shorter arrow. Particle itself is tinted with the target phase color to reinforce direction
+- **3D node click opens detail panel** — Clicking any node in the 3D corpus view now fires `onOpenDetail`, opening the artifact detail panel alongside the existing selection highlight — Restored directional particle animation on graph edges. Each link renders 2 slowly-flowing semi-transparent particles (`linkDirectionalParticles(2)`, speed `0.005`, width `2`, color `rgba(255,255,255,0.3)`) that show dependency flow direction alongside the existing arrow markers
+
+### Epic-Level Collapsible Groups
+
+Added epic-level collapsible grouping to reduce node count for large projects — starts collapsed showing only epic-level nodes, click an epic to expand its children.
+
+- **Collapsed by default** — On first load, only epic nodes (+ orphan artifacts without a `parentId`) are displayed. All child artifacts (stories, requirements, etc.) start hidden. Dramatically reduces initial node count
+- **Click to expand/collapse** — Clicking an epic cone toggles its children in/out of the force-directed layout. Epics that have been expanded show a clear visual hint in the tooltip ("click to collapse")
+- **Dynamic graph relayout** — When an epic is expanded or collapsed, the force simulation re-runs automatically, smoothly re-positioning visible nodes. Only links between visible nodes are rendered
+- **Auto-deselect on collapse** — If a child artifact was selected and its parent epic is collapsed, the selection is automatically cleared
+- **Distinct epic sizing** — Epic nodes are sized larger (`val: 14`) than regular artifacts (`val: 6`) to emphasize their role as collapsible containers, making the high-level project structure immediately readable
+
+### Fixed: Sprint-Status YAML First-Time-Right
+
+LLMs frequently produced `sprint-status.yaml` that failed schema validation on the first attempt due to a contract that disagreed with itself across four sources (skill prose, template, JSON Schema, hand-rolled parser). The root causes are fixed; both the template and the sample now validate cleanly against the schema.
+
+- **`last_updated` added to schema** — `sprint-status.schema.json` now declares `last_updated` in `properties`. Previously it was referenced by the template, the `sprint-status` skill, `create-story`, `dev-story`, `code-review`, and `retrospective` skills, and the reverse-sync code, but was missing from the schema — causing `additionalProperties: false` to reject any LLM output that followed the template literally
+- **SKILL.md Step 4 rewritten for first-time-right generation** — Replaced vague prose with explicit, copy-pasteable rules:
+  - Pinned top-level field list (7 required + optional `sprints`) with "DO NOT add anything else" warnings
+  - Pinned date format to `YYYY-MM-DD HH:MM` (24-hour clock, no timezone)
+  - Clarified the dual-metadata rule (comments and key:value pairs must match exactly)
+  - Key format table with conversion algorithm: `epic-{N}`, `{N}-{M}-{kebab-title}`, `epic-{N}-retrospective`
+  - Per-item-type status rules preventing illegal assignments (e.g. `ready-for-dev` on an epic)
+  - Optional `sprints:` section with cross-reference validation rule
+- **`sprint-status-template.yaml` fixed** — Replaced broken date placeholder (`05-06-2-2025`), added `last_updated` field, hardcoded `NOKEY` and `file-system` values, aligned placeholder convention with SKILL.md (`{project_name}`, `{story_location}`)
+- **Sample project fixed** — Replaced `resources/sample-project/bmm/sprint-status.json` (which had ~20 fields unknown to the schema and would fail validation) with `sprint-status.yaml` that validates against the schema
+- **Schema Compliance Check added to checklist** — 8 concrete checks the LLM must run: field whitelist, no camelCase, no extra fields, per-type status validation, date format, hardcoded `NOKEY`/`file-system`, sprint key cross-references
+- **Reverse sync now updates `last_updated`** — `ArtifactStore.syncStatusToYaml` refreshes the `last_updated` timestamp on every status write, preventing false "stale file" warnings from the `sprint-status` skill's 7-day staleness check. Preserves original indent and spacing via captured groups (matches the pattern used for `development_status` updates). Logs a debug message when the field is missing
+- **Webview parser captures `last_updated`** — `SprintPlanningView.tsx` now extracts `last_updated` into `SprintStatusLoaded.lastUpdated` and displays it in the `SprintMeta` bar as "Updated: ..." (suppressed when equal to `generated` to avoid redundancy)
+
 ## 0.5.0
+
+### Fixed: JSON↔Markdown Bouncing Eliminated
+
+A root-cause fix prevents the LLM from reading stale Markdown companions as authoritative sources and writing back to them, which caused an infinite JSON→MD→JSON sync loop.
+
+- **Artifact writes are JSON-only** — `ArtifactStore.getOutputFormat()` now hardcodes `'json'` for all LLM-initiated artifact persistence. Markdown companions are no longer auto-generated during `syncToFiles()`.
+- **Stale MD migration** — On first activation after upgrade, the extension walks `.agileagentcanvas-context/**/*.md` and renames them to `.md.bak` so the LLM never reads them as canonical. A `globalState` flag (`staleMarkdownMigrationV1`) ensures this runs once only.
+- **Cleanup command** — New command `agileagentcanvas.cleanupStaleMarkdown` lets users manually trigger the rename.
+- **LLM persona override** — `formatFullAgentForPrompt()` appends a write-contract when `toolsAvailable: true`: *"NEVER call `agileagentcanvas_write_file` on `.md` or `.yaml` files inside `.agileagentcanvas-context/`"* and *"NEVER read `.md` files inside `.agileagentcanvas-context/` as a source of truth"*.
+- **LLM-facing output format hints hardcoded to JSON** — `chat-participant.ts`, `workflow-executor.ts`, and `antigravity-orchestrator.ts` no longer read the user's `outputFormat` setting when constructing LLM system prompts. The LLM is always told to produce JSON.
+- **Tool schema updated** — `agileagentcanvas_write_file` description now says *"artifact writes default to JSON"* instead of referencing the user's `outputFormat` setting.
+- **Agent personas aligned** — Framework file `resources/_aac/skills/aac-bmb-workflow/steps/data/output-format-standards.md` already explicitly deprecated `dual` and stated *"You do not need to generate a Markdown companion file"*. The extension's persona footer is now consistent with this.
+
+### Telemetry: MD Write Detection
+
+- **`agileagentcanvas_write_file_md` telemetry event** — Emitted to `toolTelemetry` whenever the `write_file` tool writes a `.md` file into the output folder. Expected count after this fix: 0. Surfaces in the weekly waste report if non-zero.
+
+### Provider-Level Structured Outputs
 
 ### Provider-Level Structured Outputs
 

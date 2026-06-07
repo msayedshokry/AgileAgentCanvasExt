@@ -14,7 +14,8 @@
       "tdd",
       "red-green-refactor"
     ],
-    "author": "TEA Agent"
+    "author": "TEA Agent",
+    "projectName": "TaskFlow Pro"
   },
   "content": {
     "storyInfo": {

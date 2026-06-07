@@ -355,8 +355,11 @@ function extractAttribute(xml: string, tag: string, attr: string): string {
     return m ? m[1].trim() : '';
 }
 
-export function formatFullAgentForPrompt(persona: AgentPersona, context?: { artifactType?: string }): string {
-    const FORMAT_FOOTER = `
+export function formatFullAgentForPrompt(
+    persona: AgentPersona,
+    context?: { artifactType?: string; toolsAvailable?: boolean }
+): string {
+    const genericFooter = `
 
 ## Output Format (CRITICAL)
 
@@ -364,11 +367,16 @@ When creating or updating artifacts:
 1. You MUST return valid JSON in a single \`\`\`json\`\`\` code block.
 2. Do NOT wrap JSON in conversational prose before or after the code block.
 3. Do NOT invent fields not in the schema. If a field doesn't apply, omit it.
-4. ${context?.artifactType ? `Schema \`${context.artifactType}\` requires fields per its JSON schema.` : 'Use the schema reference in the task description.'}
-5. If a tool call would suffice, prefer the tool over inline JSON.
-`;
+4. ${context?.artifactType ? `Schema \`${context.artifactType}\` requires fields per its JSON schema.` : 'Use the schema reference in the task description.'}`;
 
-    return (persona.rawContent || '') + FORMAT_FOOTER;
+    const writeContract = context?.toolsAvailable
+        ? `
+5. To write or update an artifact, call \`agileagentcanvas_update_artifact\`. NEVER call \`agileagentcanvas_write_file\` on \`.md\` or \`.yaml\` files inside \`.agileagentcanvas-context/\`.
+6. NEVER read \`.md\` files inside \`.agileagentcanvas-context/\` as a source of truth — they are derived views, not canonical.`
+        : `
+5. If a tool call would suffice, prefer the tool over inline JSON.`;
+
+    return (persona.rawContent || '') + genericFooter + writeContract;
 }
 
 // ── Legacy path translation ──────────────────────────────────────────────────

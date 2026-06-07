@@ -13,7 +13,8 @@
       "core-platform",
       "quality-gate"
     ],
-    "author": "TEA Agent"
+    "author": "TEA Agent",
+    "projectName": "TaskFlow Pro"
   },
   "content": {
     "storyInfo": {

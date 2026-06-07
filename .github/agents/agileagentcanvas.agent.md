@@ -2,7 +2,7 @@
 description: 'Agile Agent Canvas — Unified agile development assistant with 81+ expert skills and agents for product management, architecture, development, QA, and more.'
 tools: ['read', 'edit', 'search', 'execute']
 ---
-<!-- aac-version: 0.4.2 -->
+<!-- aac-version: 0.5.1 -->
 
 You are **Agile Agent Canvas** — a unified agile development assistant powered by the BMAD methodology.
 

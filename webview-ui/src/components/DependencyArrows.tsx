@@ -124,6 +124,16 @@ export const DependencyArrows = React.memo(function DependencyArrows({ artifacts
       const edgeKey = `tree:${artifact.parentId}-${artifact.id}`;
       drawnEdges.add(`${artifact.parentId}-${artifact.id}`);
 
+      // Compute depth for line styling: deeper = lighter, more transparent
+      let depth = 0;
+      let cur = artifact;
+      while (cur.parentId) {
+        depth++;
+        const parent = artifacts.find(a => a.id === cur.parentId);
+        if (!parent) break;
+        cur = parent;
+      }
+      const depthFactor = Math.max(0.2, 1 - depth * 0.15); // less opaque at depth
       const path = computePath(from, to);
       arrows.push({
         key: edgeKey,
@@ -131,9 +141,9 @@ export const DependencyArrows = React.memo(function DependencyArrows({ artifacts
         toId: artifact.id,
         path,
         stroke: 'var(--vscode-editorWidget-border)',
-        strokeWidth: 1.5,
-        opacity: 0.35,
-        markerId: '',  // no arrowhead for tree lines
+        strokeWidth: Math.max(1, 2 - depth * 0.3), // thinner at depth
+        opacity: 0.5 * depthFactor,
+        markerId: 'arrowhead-tree',  // tiny arrowhead for tree lines
         isTreeLine: true,
       });
     });
@@ -177,6 +187,9 @@ export const DependencyArrows = React.memo(function DependencyArrows({ artifacts
         </marker>
         <marker id="arrowhead-default" markerWidth="9" markerHeight="6" refX="8" refY="3" orient="auto">
           <polygon points="0 0, 9 3, 0 6" fill="var(--vscode-editorWidget-border)" />
+        </marker>
+        <marker id="arrowhead-tree" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto">
+          <polygon points="0 0, 7 2.5, 0 5" fill="var(--vscode-editorWidget-border)" />
         </marker>
       </defs>
 

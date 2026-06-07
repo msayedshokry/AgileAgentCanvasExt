@@ -20,7 +20,7 @@ import {
     importArtifacts,
     exportArtifactToMarkdown
 } from '../commands/artifact-commands';
-import { openChat } from '../commands/chat-bridge';
+import { openChat, openChatWithResult, getSelectedProvider, setSelectedProvider, listAvailableProviders, type ChatProviderId } from '../commands/chat-bridge';
 import { JiraClient } from '../integrations/jira-client';
 import { detectGraphify, clearGraphifyCache } from '../integrations/graphify/graphify-detector';
 import { loadArchIndex } from '../integrations/graphify/graph-loader';
@@ -1027,6 +1027,54 @@ export async function handleCatalogueWebviewMessage(
                 postCatalogueData();
             } catch (err: any) {
                 webview.postMessage({ type: 'catalogueError', message: err?.message ?? String(err) });
+            }
+            return true;
+        }
+
+        case 'getChatProviders': {
+            // Return the list of available chat providers so the canvas can
+            // render a selector dropdown. Each entry includes the metadata the
+            // dropdown needs (label, hint) plus an availability flag.
+            const providers = await listAvailableProviders();
+            const selected = getSelectedProvider();
+            if (webview) {
+                webview.postMessage({
+                    type: 'chatProviders',
+                    providers,
+                    selected,
+                });
+            }
+            return true;
+        }
+
+        case 'selectChatProvider': {
+            // Persist the user's dropdown choice so subsequent openChat() calls
+            // route to this provider regardless of which IDE is hosting.
+            const id = String(message.provider || 'auto') as ChatProviderId;
+            setSelectedProvider(id);
+            // Echo the change back to all webviews so the dropdown stays in sync.
+            if (webview) {
+                webview.postMessage({ type: 'chatProviderChanged', provider: id });
+            }
+            return true;
+        }
+
+        case 'openChatWithProvider': {
+            // A canvas button fired an action that should go to a specific
+            // provider. The webview sends both the prompt and the desired
+            // provider id; openChatWithResult() handles routing.
+            const provider = (message.provider as ChatProviderId | undefined) ?? 'auto';
+            const query = typeof message.query === 'string' ? message.query : undefined;
+            const result = await openChatWithResult({ provider, query });
+            if (webview) {
+                webview.postMessage({
+                    type: 'chatProviderResult',
+                    provider: result.provider,
+                    ok: result.ok,
+                    usedTerminal: result.usedTerminal,
+                    fallback: result.fallback,
+                    message: result.message,
+                });
             }
             return true;
         }

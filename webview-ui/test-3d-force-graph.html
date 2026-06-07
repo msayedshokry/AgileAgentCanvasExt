@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Force Graph Isolated Test</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #1e1e1e; color: #ccc; font-family: monospace; }
+    #status {
+      position: fixed; top: 0; left: 0; right: 0;
+      padding: 12px 16px;
+      background: #2d2d2d;
+      border-bottom: 1px solid #444;
+      font-size: 13px;
+      z-index: 10;
+      display: flex; align-items: center; gap: 12px;
+    }
+    #status .dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      display: inline-block;
+    }
+    #status .dot.loading { background: #ff9800; animation: pulse 1s infinite; }
+    #status .dot.ready { background: #4caf50; }
+    #status .dot.error { background: #f44336; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+    #log {
+      margin-top: 50px;
+      padding: 16px;
+      font-size: 12px;
+      line-height: 1.6;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    #log .entry { padding: 2px 0; }
+    #log .entry.info { color: #4fc3f7; }
+    #log .entry.success { color: #4caf50; }
+    #log .entry.error { color: #f44336; }
+    #graph-container {
+      position: fixed;
+      top: 100px; left: 0; right: 0; bottom: 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="status">
+    <span class="dot loading" id="dot"></span>
+    <span id="statusText">Loading 3d-force-graph...</span>
+  </div>
+  <div id="graph-container"></div>
+  <div id="log"></div>
+
+  <script>
+    const dot = document.getElementById('dot');
+    const statusText = document.getElementById('statusText');
+    const logEl = document.getElementById('log');
+
+    function log(msg, type = 'info') {
+      const entry = document.createElement('div');
+      entry.className = `entry ${type}`;
+      entry.textContent = `[${new Date().toISOString().slice(11,19)}] ${msg}`;
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+      console.log(`[Test] ${msg}`);
+    }
+
+    function setStatus(text, state) {
+      statusText.textContent = text;
+      dot.className = `dot ${state}`;
+    }
+
+    log('Test page loaded. Checking for ForceGraph3D...');
+
+    // Step 1: Check if already loaded
+    if (typeof ForceGraph3D !== 'undefined') {
+      log('ForceGraph3D already available on window!', 'success');
+      initGraph();
+    } else {
+      log('ForceGraph3D not found. Loading script...');
+
+      // Step 2: Load the script dynamically (same pattern as Corpus3DView)
+      const script = document.createElement('script');
+      // Try node_modules path first (relative), then build output
+      const possibleUrls = [
+        './node_modules/3d-force-graph/dist/3d-force-graph.min.js',
+        '../node_modules/3d-force-graph/dist/3d-force-graph.min.js',
+        '/node_modules/3d-force-graph/dist/3d-force-graph.min.js',
+      ];
+
+      // Use the first URL that looks accessible
+      script.src = possibleUrls[0];
+      log(`Loading from: ${script.src}`);
+
+      script.onload = () => {
+        log(`Script loaded successfully! Checking ForceGraph3D...`, 'success');
+        setTimeout(() => {
+          if (typeof ForceGraph3D !== 'undefined') {
+            log(`ForceGraph3D is defined! Type: ${typeof ForceGraph3D}`, 'success');
+            log(`ForceGraph3D constructor: ${ForceGraph3D.toString().substring(0, 100)}...`, 'success');
+            initGraph();
+          } else {
+            // Check what's on window
+            const keys = Object.keys(window).filter(k => 
+              k.toLowerCase().includes('force') || k.toLowerCase().includes('graph') || k.toLowerCase().includes('three')
+            );
+            log(`ForceGraph3D NOT found on window. Related keys: ${keys.join(', ') || 'none'}`, 'error');
+            setStatus('ForceGraph3D not found on window', 'error');
+          }
+        }, 100);
+      };
+
+      script.onerror = (err) => {
+        log(`Script load failed! URL: ${script.src}`, 'error');
+        log(`Error: ${JSON.stringify(err)}`, 'error');
+        setStatus('Script load failed', 'error');
+      };
+
+      document.head.appendChild(script);
+    }
+
+    function initGraph() {
+      log('Initializing ForceGraph3D...');
+      setStatus('Creating graph...', 'loading');
+
+      try {
+        const container = document.getElementById('graph-container');
+        
+        // Sample graph data
+        const data = {
+          nodes: [
+            { id: 'vision-1', name: 'Product Vision', type: 'vision', phase: 0, color: '#ab47bc', val: 2 },
+            { id: 'prd-1', name: 'PRD', type: 'prd', phase: 1, color: '#4fc3f7', val: 1 },
+            { id: 'arch-1', name: 'Architecture', type: 'architecture', phase: 2, color: '#ff9800', val: 1 },
+            { id: 'epic-1', name: 'Epic 1', type: 'epic', phase: 3, color: '#4caf50', val: 1 },
+            { id: 'story-1', name: 'Story 1', type: 'story', phase: 3, color: '#4caf50', val: 1 },
+          ],
+          links: [
+            { source: 'prd-1', target: 'vision-1' },
+            { source: 'arch-1', target: 'prd-1' },
+            { source: 'epic-1', target: 'arch-1' },
+            { source: 'story-1', target: 'epic-1' },
+          ]
+        };
+
+        log(`Graph data: ${data.nodes.length} nodes, ${data.links.length} links`, 'success');
+
+        // Check ForceGraph3D
+        log(`ForceGraph3D type: ${typeof ForceGraph3D}`, 'info');
+        
+        // Create graph
+        const graph = ForceGraph3D()(container)
+          .graphData(data)
+          .nodeLabel(node => `${node.type}: ${node.name}`)
+          .nodeColor(node => node.color)
+          .nodeVal(node => node.val)
+          .linkColor(() => 'rgba(255, 255, 255, 0.2)')
+          .linkWidth(0.5)
+          .linkDirectionalArrowLength(4)
+          .linkDirectionalArrowRelPos(1)
+          .linkDirectionalParticles(1)
+          .linkDirectionalParticleWidth(1.5)
+          .linkDirectionalParticleSpeed(0.005)
+          .backgroundColor('#1e1e1e')
+          .d3AlphaDecay(0.02)
+          .d3VelocityDecay(0.3)
+          .warmupTicks(100)
+          .cooldownTicks(0)
+          .onNodeClick(node => {
+            log(`Clicked: ${node.name} (${node.id})`, 'success');
+          });
+
+        log('Graph created successfully!', 'success');
+        setStatus('Graph rendered! 5 nodes, 4 links', 'ready');
+
+        // Auto-rotate
+        let angle = 0;
+        let rotateInterval = setInterval(() => {
+          angle += 0.005;
+          graph.cameraPosition({
+            x: 300 * Math.sin(angle),
+            y: 100,
+            z: 300 * Math.cos(angle),
+          });
+        }, 50);
+
+        // Stop on interaction
+        container.addEventListener('mousedown', () => {
+          clearInterval(rotateInterval);
+          log('Auto-rotation stopped (user interaction)', 'info');
+        });
+
+      } catch (err) {
+        log(`Error creating graph: ${err.message}`, 'error');
+        log(`Stack: ${err.stack}`, 'error');
+        setStatus(`Error: ${err.message}`, 'error');
+      }
+    }
+
+    // Fallback: if script tag doesn't load, try different URL
+    setTimeout(() => {
+      const s = document.getElementById('status').querySelector('.dot');
+      if (s.classList.contains('loading') && typeof ForceGraph3D === 'undefined') {
+        log('First URL failed, trying build output path...', 'info');
+        const script2 = document.createElement('script');
+        script2.src = './build/3d-force-graph/3d-force-graph.min.js';
+        document.head.appendChild(script2);
+        script2.onload = () => {
+          log('Script loaded from build output!', 'success');
+          if (typeof ForceGraph3D !== 'undefined') {
+            initGraph();
+          }
+        };
+      }
+    }, 3000);
+  </script>
+</body>
+</html>

@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import * as https from 'https';
 import * as http from 'http';
+import * as fs from 'fs';
+import * as path from 'path';
 import { sendSimplePrompt } from '../antigravity/antigravity-orchestrator';
 import { schemaValidator } from '../state/schema-validator';
 
@@ -10,10 +12,11 @@ import { schemaValidator } from '../state/schema-validator';
  * Priority order (when provider = 'auto'):
  *   1. VS Code Language Model API (works with Copilot, Continue, and any registered vscode.lm provider)
  *   2. Antigravity native command (if running inside Antigravity IDE)
- *   3. Direct API key provider (OpenAI / Anthropic / Gemini / Ollama) from settings
+ *   3. Oh My Pi (OMP) harness (if running inside the OMP-aware host)
+ *   4. Direct API key provider (OpenAI / Anthropic / Gemini / Ollama) from settings
  */
 
-export type ProviderType = 'auto' | 'copilot' | 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'antigravity';
+export type ProviderType = 'auto' | 'copilot' | 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'antigravity' | 'omp';
 
 export interface ChatMessage {
     role: 'user' | 'assistant' | 'system';
@@ -102,7 +105,6 @@ function loadArtifactSchemaForContext(artifactType?: string): Record<string, unk
     }
     return {};
 }
-
 /**
  * Detect Antigravity by checking whether its commands are actually registered.
  * Checks for both the Agent Panel command (preferred) and the legacy chat command.
@@ -115,6 +117,26 @@ async function isAntigravity(): Promise<boolean> {
     } catch {
         return false;
     }
+}
+/**
+ * Detect the Oh My Pi (OMP) harness by checking for its sentinel commands
+ * or by matching the appName.
+ */
+async function isOmp(): Promise<boolean> {
+    try {
+        const all = await vscode.commands.getCommands(false);
+        if (all.includes('omp.openPanel')
+            || all.includes('omp.sendPrompt')
+            || all.includes('oh-my-pi.openChat')) {
+            return true;
+        }
+    } catch {
+        // getCommands can fail in some test environments — fall through to appName
+    }
+    const appName = (vscode.env.appName ?? '').toLowerCase();
+    return appName.includes('omp')
+        || appName.includes('oh my pi')
+        || appName.includes('oh-my-pi');
 }
 
 async function tryVsCodeLm(): Promise<vscode.LanguageModelChat | null> {
@@ -152,6 +174,10 @@ export async function selectModel(): Promise<BmadModel | null> {
         return { provider: 'antigravity', label: 'Antigravity (Gemini Agent)' };
     }
 
+    if (provider === 'omp') {
+        return { provider: 'omp', label: 'Oh My Pi (OMP)' };
+    }
+
     if (provider === 'copilot') {
         const lm = await tryVsCodeLm();
         if (lm) return { provider: 'copilot', vscodeLm: lm, label: `Copilot (${lm.name})` };
@@ -173,7 +199,12 @@ export async function selectModel(): Promise<BmadModel | null> {
         return { provider: 'antigravity', label: 'Antigravity (Gemini Agent)' };
     }
 
-    // 3. Fall back to direct API key if configured
+    // 3. Try Oh My Pi (OMP) harness
+    if (await isOmp()) {
+        return { provider: 'omp', label: 'Oh My Pi (OMP)' };
+    }
+
+    // 4. Fall back to direct API key if configured
     if (apiKey) {
         // Guess provider from key prefix, or use configured provider
         const guessed: ProviderType =
@@ -214,6 +245,8 @@ export async function streamChatResponse(
             return streamOllama(messages, stream, token, { schema, temperature, forceStructuredOutput });
         case 'antigravity':
             return sendToAntigravity(messages, stream);
+        case 'omp':
+            return sendToOmp(messages, stream);
         default:
             stream.markdown('**Error:** Unknown AI provider.\n');
             return '';
@@ -227,7 +260,6 @@ export async function streamChatResponse(
 export async function getModel(): Promise<BmadModel | null> {
     return selectModel();
 }
-
 // ─────────────────────────────────────────────────────────────────────────────
 // VS Code Language Model API (Copilot / Continue / any registered provider)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -605,6 +637,83 @@ async function sendToAntigravity(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Oh My Pi (OMP) — sends the prompt to the omp CLI over stdio
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Send a prompt to the Oh My Pi (omp) harness.
+ *
+ * Strategy:
+ *  1. Try the `omp.openPanel` / `omp.sendPrompt` VS Code commands if registered
+ *     (when OMP ships a VS Code extension that surfaces its commands).
+ *  2. Fall back to writing the prompt to `.omp/inbox.md` and instructing the
+ *     user to run `omp` in the terminal — this works with the standalone CLI.
+ */
+async function sendToOmp(
+    messages: ChatMessage[],
+    stream: vscode.ChatResponseStream
+): Promise<string> {
+    const prompt = messages
+        .filter(m => m.role !== 'assistant')
+        .map(m => m.content)
+        .join('\n\n---\n\n');
+
+    // ── Path 1: try a registered VS Code command from an OMP extension ─────
+    try {
+        const cmds = await vscode.commands.getCommands(false);
+        const cmdSet = new Set(cmds);
+        if (cmdSet.has('omp.sendPrompt')) {
+            await vscode.commands.executeCommand('omp.sendPrompt', prompt);
+            stream.markdown(
+                '> **Oh My Pi mode:** Prompt sent to the OMP harness via `omp.sendPrompt`.\n' +
+                '> The conversation will continue in the OMP panel. Output files will be auto-detected.\n\n'
+            );
+            return '';
+        }
+        if (cmdSet.has('omp.openPanel')) {
+            await vscode.env.clipboard.writeText(prompt);
+            await vscode.commands.executeCommand('omp.openPanel');
+            stream.markdown(
+                '> **Oh My Pi mode:** Prompt copied to clipboard. Run `omp` in the terminal, or paste into the OMP panel.\n\n'
+            );
+            return '';
+        }
+    } catch (e) {
+        // Fall through to file-based path
+    }
+
+    // ── Path 2: write to .omp/inbox.md for the CLI to pick up ─────────────
+    try {
+        const folders = vscode.workspace.workspaceFolders;
+        if (folders && folders.length > 0) {
+            const root = folders[0].uri.fsPath;
+            const ompDir = path.join(root, '.omp');
+            const inboxPath = path.join(ompDir, 'inbox.md');
+            fs.mkdirSync(ompDir, { recursive: true });
+            fs.writeFileSync(
+                inboxPath,
+                `# Agile Agent Canvas → OMP\n\nGenerated: ${new Date().toISOString()}\n\n${prompt}\n`,
+                'utf-8'
+            );
+            stream.markdown(
+                '> **Oh My Pi mode:** Prompt written to `.omp/inbox.md`.\n' +
+                '> Run `omp` in the terminal to process it. Output files will be auto-detected by AgileAgentCanvas.\n\n'
+            );
+            return '';
+        }
+    } catch (e) {
+        // Fall through to clipboard
+    }
+
+    // ── Path 3: clipboard fallback ─────────────────────────────────────────
+    await vscode.env.clipboard.writeText(prompt);
+    stream.markdown(
+        '**OMP fallback:** No workspace open. Prompt copied to clipboard — paste it into `omp` or the OMP panel.\n'
+    );
+    return '';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Helper: build a "no model" message tailored to configured provider
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -612,7 +721,6 @@ export function getNoModelMessage(): string {
     const cfg = getConfig();
     const provider = cfg.get<ProviderType>('aiProvider', 'auto');
     const apiKey = cfg.get<string>('apiKey', '');
-
     if (provider === 'auto' && !apiKey) {
         return `**AI not available**
 
@@ -620,8 +728,8 @@ No AI provider was found. Configure one in settings (**Ctrl+,** → search "Agil
 
 | Setting | Value |
 |---|---|
-| \`agileagentcanvas.aiProvider\` | \`openai\`, \`anthropic\`, \`gemini\`, \`ollama\`, or \`antigravity\` |
-| \`agileagentcanvas.apiKey\` | Your API key (not needed for Ollama/Antigravity) |
+| \`agileagentcanvas.aiProvider\` | \`openai\`, \`anthropic\`, \`gemini\`, \`ollama\`, \`antigravity\`, or \`omp\` |
+| \`agileagentcanvas.apiKey\` | Your API key (not needed for Ollama/Antigravity/OMP) |
 | \`agileagentcanvas.modelId\` | Optional — defaults to the provider's recommended model |
 | \`agileagentcanvas.baseUrl\` | Optional — only needed for Ollama or a custom endpoint |
 

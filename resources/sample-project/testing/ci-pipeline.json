@@ -13,6 +13,7 @@
       "pipeline",
       "quality-gates"
     ],
+    "projectName": "TaskFlow Pro",
     "author": "TEA Agent"
   },
   "content": {

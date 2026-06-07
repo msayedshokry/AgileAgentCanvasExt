@@ -26,8 +26,17 @@ Epic Files Contains:                Sprint Status Contains:
                                       ✓ epic-2-retrospective: [status]
 ```
 
-### Final Check
-
 - [ ] Total count of epics matches
 - [ ] Total count of stories matches
 - [ ] All items are in the expected order (epic, stories, retrospective)
+
+### Schema Compliance Check
+
+- [ ] Top-level fields are ONLY: `generated`, `last_updated`, `project`, `project_key`, `tracking_system`, `story_location`, `development_status`, and optionally `sprints`
+- [ ] No camelCase field names (e.g. `developmentStatus` is wrong; `development_status` is correct)
+- [ ] No extra top-level fields like `version`, `notes`, `summary`, `health`, `velocity`
+- [ ] All status values match the per-type allowed list (see Status Rules table in SKILL.md Step 4)
+- [ ] Date format is `YYYY-MM-DD HH:MM` (not ISO 8601 with timezone, not locale-specific)
+- [ ] `project_key` is "NOKEY" for file-system tracking
+- [ ] `tracking_system` is "file-system"
+- [ ] Every key in `sprints.*.stories` exists in `development_status`

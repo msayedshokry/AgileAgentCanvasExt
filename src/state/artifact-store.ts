@@ -3854,6 +3854,24 @@ export class ArtifactStore {
             }
 
             if (updated) {
+                // Update last_updated timestamp, preserving original formatting
+                const now = new Date();
+                const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                let lastUpdatedFound = false;
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trimEnd();
+                    if (line.startsWith('#')) continue;
+                    const m = line.match(/^(\s*)last_updated:(\s*)(.*)$/);
+                    if (m) {
+                        lines[i] = `${m[1]}last_updated:${m[2]}${ts}`;
+                        lastUpdatedFound = true;
+                        break;
+                    }
+                }
+                if (!lastUpdatedFound) {
+                    storeLogger.debug(`[SprintSync] last_updated field not found in ${yamlUri.fsPath}; staleness detection will fall back to generated`);
+                }
+
                 // Suppress file-watcher during write
                 this._syncingUntil = Date.now() + 2000;
                 await vscode.workspace.fs.writeFile(
@@ -4849,8 +4867,9 @@ export class ArtifactStore {
                                 Buffer.from(JSON.stringify(fixed, null, 2), 'utf-8')
                             );
                         }
-                        // Note: markdown companions are regenerated when syncToFiles
-                        // runs after the reload that follows this repair pass.
+                        // Intentionally NO markdown companion write here.
+                        // fixAndSyncToFiles repairs JSON only; syncToFiles is NOT
+                        // called afterward, so no derived MD is produced.
                         repaired++;
                         storeLogger.debug(`[ArtifactStore] fixAndSyncToFiles: repaired ${fileName}`);
                     }
@@ -5770,11 +5789,12 @@ export class ArtifactStore {
     }
     
     /**
-     * Get the configured output format from workspace settings.
-     * Returns 'dual' by default if not configured.
+     * Artifact writes are always JSON.
+     * Markdown companions are no longer auto-generated during LLM artifact writes
+     * to prevent JSON↔MD bouncing. MD export is still available via the export command.
      */
     private getOutputFormat(): 'json' | 'markdown' | 'dual' {
-        return vscode.workspace.getConfiguration('agileagentcanvas').get<'json' | 'markdown' | 'dual'>('outputFormat', 'dual');
+        return 'json';
     }
 
     /**

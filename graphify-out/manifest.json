@@ -135,13 +135,13 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\extension.ts": {
-    "mtime": 1778768087.705582,
-    "ast_hash": "5a18e07c85de4321d3e83320ac8a3b4e",
+    "mtime": 1780781583.1781874,
+    "ast_hash": "fa49a7ae06bb7e16f4accb9c235c7d8c",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\antigravity\\antigravity-orchestrator.ts": {
-    "mtime": 1774454499.9951613,
-    "ast_hash": "915669ce18e57828ec8aaaf0d9cea8da",
+    "mtime": 1780781583.1736746,
+    "ast_hash": "80af1d05c5b47222ccf289e297f5cc8b",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\canvas\\artifact-transformer.ts": {
@@ -150,18 +150,18 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\chat\\agent-personas.ts": {
-    "mtime": 1778753587.6955404,
-    "ast_hash": "6fad7f6f26d98f42366694867b16a42f",
+    "mtime": 1780781583.1736746,
+    "ast_hash": "5a6d93d7b14c3ac94f601b126d22508e",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\chat\\agileagentcanvas-tools.ts": {
-    "mtime": 1780599713.520802,
-    "ast_hash": "feab4b91e889d294c7f6d0c72a19a275",
+    "mtime": 1780781583.1746755,
+    "ast_hash": "bec5506a4f2130e12b4f688601db574e",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\chat\\ai-provider.ts": {
-    "mtime": 1780604180.162016,
-    "ast_hash": "5e9e2c438bcb4a5680f0d7ccd614fabc",
+    "mtime": 1780781583.1746755,
+    "ast_hash": "e8fcd71758910ea9b3a52e962d37193a",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\chat\\caveman-service.ts": {
@@ -170,8 +170,8 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\chat\\chat-participant.ts": {
-    "mtime": 1780604711.7782233,
-    "ast_hash": "fa2a7c08a5b204d4492a5e984a0e0660",
+    "mtime": 1780781583.176676,
+    "ast_hash": "2faa59cc8f1e56efaee9168201875c82",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\commands\\artifact-commands.ts": {
@@ -185,8 +185,8 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\commands\\chat-bridge.ts": {
-    "mtime": 1774039019.6930625,
-    "ast_hash": "8ef58de9a37963de14a4d77aa380c0f2",
+    "mtime": 1780782634.8511107,
+    "ast_hash": "a6a72a249a90669171d31a4d949d8fbc",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\commands\\codeburn-commands.ts": {
@@ -195,8 +195,8 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\commands\\ide-installer.ts": {
-    "mtime": 1778753587.6985404,
-    "ast_hash": "8f1d7bd99cae87941a0ac6d76f27cb01",
+    "mtime": 1780781583.1771815,
+    "ast_hash": "fcab65a2302eb0f47140923c78ba79df",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\commands\\jira-commands.ts": {
@@ -265,8 +265,8 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\integrations\\graphify\\graphify-bootstrap.ts": {
-    "mtime": 1780565692.1207619,
-    "ast_hash": "aff1103a79f0d3328e2a713f14c1d149",
+    "mtime": 1780781583.1781874,
+    "ast_hash": "49760aec766d2d2e45b6dd9aae0bfefa",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\integrations\\graphify\\graphify-commands.ts": {
@@ -295,8 +295,8 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\state\\artifact-store.ts": {
-    "mtime": 1778753587.7050495,
-    "ast_hash": "38015cd930ae2f0dff9319f780dd9dfc",
+    "mtime": 1780781583.1801865,
+    "ast_hash": "b8826b18c98f411ef0398bca62405328",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\state\\catalogue-service.ts": {
@@ -310,12 +310,12 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\state\\schema-repair-engine.ts": {
-    "mtime": 1780599660.548769,
+    "mtime": 1780648802.0297823,
     "ast_hash": "67b29075bf0805c76b391f8690beb8e0",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\state\\schema-validator.ts": {
-    "mtime": 1780599598.0205183,
+    "mtime": 1780648802.0297823,
     "ast_hash": "d996e2f4d0036e617cf16b9c6dc1c110",
     "semantic_hash": ""
   },
@@ -345,8 +345,8 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\views\\canvas-view-provider.ts": {
-    "mtime": 1778753587.7060502,
-    "ast_hash": "1610e39d79fce037587c51ddbbd4a229",
+    "mtime": 1780781583.1801865,
+    "ast_hash": "d97e73d5c1547e5667e6ff5ed22583be",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\views\\codeburn-status-bar.ts": {
@@ -360,8 +360,8 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\views\\webview-message-handler.ts": {
-    "mtime": 1778753587.707051,
-    "ast_hash": "cf2a26cc7b791235342621f2871f1693",
+    "mtime": 1780781583.1816907,
+    "ast_hash": "0711adf1fcecfc80917d74932b00df8c",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\views\\wizard-steps-provider.ts": {
@@ -375,8 +375,8 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\workflow\\workflow-executor.ts": {
-    "mtime": 1780604755.247061,
-    "ast_hash": "f3f50cd8845e6081382d1e8cfb001704",
+    "mtime": 1780781583.1816907,
+    "ast_hash": "b7bb8edf997c94c8251a914fb1f76b2e",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\webview-ui\\vite.config.ts": {
@@ -395,13 +395,13 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\webview-ui\\src\\App.tsx": {
-    "mtime": 1778753587.7084293,
-    "ast_hash": "8b3c923770703fbb3d4307fe2eb65828",
+    "mtime": 1780781583.1837304,
+    "ast_hash": "d1750927c16753d24d3919ec8087210b",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\webview-ui\\src\\main.tsx": {
-    "mtime": 1774039019.7132401,
-    "ast_hash": "f0bc79d3f172debfb45631b7df9d56a0",
+    "mtime": 1780781583.1857357,
+    "ast_hash": "08e7002f4a4b3081f6fa28d4360cfec7",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\webview-ui\\src\\types.ts": {
@@ -445,8 +445,8 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\webview-ui\\src\\components\\Canvas.tsx": {
-    "mtime": 1774486176.924925,
-    "ast_hash": "b91c8b6366aa0a7ce4a5fce6bc690e8d",
+    "mtime": 1780781583.1847353,
+    "ast_hash": "8d4467736304892560e3726b1b7a5920",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\webview-ui\\src\\components\\CatalogueModal.tsx": {
@@ -460,8 +460,8 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\webview-ui\\src\\components\\DependencyArrows.tsx": {
-    "mtime": 1774452195.541927,
-    "ast_hash": "4af2d1cdf39eca3a46d90a85afb684b4",
+    "mtime": 1780781583.1847353,
+    "ast_hash": "cc02522cf7e03726bcf00eeecbfadc74",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\webview-ui\\src\\components\\DetailPanel.test.tsx": {
@@ -520,8 +520,8 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\webview-ui\\src\\components\\mindmap-layout.ts": {
-    "mtime": 1774039019.707195,
-    "ast_hash": "1e3e376e3379942070aff827650aa082",
+    "mtime": 1780781583.1857357,
+    "ast_hash": "b85298a025eacbf43b4d48a1765cb477",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\webview-ui\\src\\components\\Minimap.test.tsx": {
@@ -545,8 +545,8 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\webview-ui\\src\\components\\SprintPlanningView.tsx": {
-    "mtime": 1774567566.9002771,
-    "ast_hash": "4ddb4b34d292266c973a5797db6f7ff9",
+    "mtime": 1780781583.1857357,
+    "ast_hash": "1795c7a507f70e9d1f8e7becfed5e289",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\webview-ui\\src\\components\\Toolbar.test.tsx": {
@@ -640,8 +640,8 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\CHANGELOG.md": {
-    "mtime": 1780566888.573179,
-    "ast_hash": "d6fdd21e31bc6346f996ad28fe41e63e",
+    "mtime": 1780781583.0839455,
+    "ast_hash": "61d67f5be3d7dccb6846f758e852e697",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\CLAUDE.md": {
@@ -650,8 +650,8 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\README.md": {
-    "mtime": 1778753587.5723019,
-    "ast_hash": "150691786184c28b1e6257a6be596847",
+    "mtime": 1780781583.0839455,
+    "ast_hash": "bd808008a77edae365e2b6e790d0d3e8",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\docs\\artifact-type-mapping.md": {
@@ -3815,18 +3815,18 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\_aac\\skills\\bmad-sprint-planning\\checklist.md": {
-    "mtime": 1778753587.6886823,
-    "ast_hash": "c0b094db1f42edd54aec1bd3bc3e1159",
+    "mtime": 1780781583.1636481,
+    "ast_hash": "7e595d8d2809412ae6cd8b83bac608cb",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\_aac\\skills\\bmad-sprint-planning\\SKILL.md": {
-    "mtime": 1778753587.6886823,
-    "ast_hash": "bcfa8796e5e784ddc8ef93962eb02e71",
+    "mtime": 1780781583.1636481,
+    "ast_hash": "fd4d09f6e54e1de5ec05a29ded081760",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\_aac\\skills\\bmad-sprint-planning\\sprint-status-template.yaml": {
-    "mtime": 1778753587.6900303,
-    "ast_hash": "2a0671f98d4df2f2a60ecb2aeba434b2",
+    "mtime": 1780781583.1636481,
+    "ast_hash": "dcc73b2a5dfcb37ec0ae7fac45467792",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\_aac\\skills\\bmad-sprint-status\\SKILL.md": {
@@ -4135,8 +4135,8 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\package.json": {
-    "mtime": 1780600320.2851143,
-    "ast_hash": "ca27b4d8eab091a5e62e366bc64ba616",
+    "mtime": 1780781583.1631434,
+    "ast_hash": "0fa6b78607522a4b255abe175e9a2544",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\tsconfig.json": {
@@ -4215,93 +4215,88 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\bmm\\change-proposal.json": {
-    "mtime": 1774039019.681393,
-    "ast_hash": "37055d226967e5bd2eadea567a3a426e",
+    "mtime": 1780781583.1636481,
+    "ast_hash": "3a351fdb24b9fd309d127bde9fcb810d",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\bmm\\code-review.json": {
-    "mtime": 1774039019.6819012,
-    "ast_hash": "b7fb6892dae36844630e5852dabfd0e1",
+    "mtime": 1780781583.1651597,
+    "ast_hash": "a7202e98ac086c86fde347ca3a3dfcd1",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\bmm\\definition-of-done.json": {
-    "mtime": 1774039019.6819012,
-    "ast_hash": "b7b2aa83108e53ecefe60c9798ce92dc",
+    "mtime": 1780781583.1651597,
+    "ast_hash": "2064af220c8f9dfa557783d34f40f5cc",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\bmm\\project-context.json": {
-    "mtime": 1774039019.6819012,
-    "ast_hash": "d9a926b768e78e6f9d73e43671222a7a",
+    "mtime": 1780781583.1651597,
+    "ast_hash": "778339c757e8751d786cb67f173ad1a6",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\bmm\\project-overview.json": {
-    "mtime": 1774039019.6819012,
-    "ast_hash": "ab411815ea7654c2b05b177c0350d787",
+    "mtime": 1780781583.166166,
+    "ast_hash": "5a1cc1ccdd540af27156e8b052326549",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\bmm\\readiness-report.json": {
-    "mtime": 1774039019.6819012,
-    "ast_hash": "62cb936aa5d1d16a6a0446feaa9a256f",
+    "mtime": 1780781583.166166,
+    "ast_hash": "a07cc6b96f3ce86d587def899ca1f0ce",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\bmm\\research.json": {
-    "mtime": 1774039019.6829026,
-    "ast_hash": "f248f6adede39b76678b75fcd8048433",
+    "mtime": 1780781583.166166,
+    "ast_hash": "72eb6148ff5311e829fff65c34fc15c9",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\bmm\\retrospective.json": {
-    "mtime": 1774039019.6829026,
-    "ast_hash": "807c4f6175e66892d671684e1c8d5a76",
+    "mtime": 1780781583.1671658,
+    "ast_hash": "cb934cb1839037da242b0ba03752815a",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\bmm\\risks.json": {
-    "mtime": 1774039019.6829026,
-    "ast_hash": "8fd657537bfb89210fd7e60cc51a79ba",
+    "mtime": 1780781583.1671658,
+    "ast_hash": "146a8b20c8129041a7d1b344839f60a8",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\bmm\\source-tree.json": {
-    "mtime": 1774039019.6829026,
-    "ast_hash": "b89d41fb9717a6348cdc389993ba069a",
-    "semantic_hash": ""
-  },
-  "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\bmm\\sprint-status.json": {
-    "mtime": 1774039019.6829026,
-    "ast_hash": "696ae9521db055f1132aad0fb1d50948",
+    "mtime": 1780781583.167673,
+    "ast_hash": "c526bf3043026317011932bfb75bcd77",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\bmm\\tech-spec.json": {
-    "mtime": 1774039019.6829026,
-    "ast_hash": "f8184f0ca7cfd579b67d5dff4d8da56f",
+    "mtime": 1780781583.167673,
+    "ast_hash": "b0e7c4bdde644964b291b51cbf4c23f7",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\bmm\\test-summary.json": {
-    "mtime": 1774039019.683907,
-    "ast_hash": "a60e3761ca823cdb70622e7ebd705471",
+    "mtime": 1780781583.167673,
+    "ast_hash": "4b52d420cbcb135e6c7a242253841198",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\bmm\\ux-design.json": {
-    "mtime": 1774039019.683907,
-    "ast_hash": "722b46d56bab211127e62fa60e2e2b53",
+    "mtime": 1780781583.168677,
+    "ast_hash": "8acbdf0640e31220ccf951afe4eed428",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\cis\\design-thinking.json": {
-    "mtime": 1774039019.683907,
-    "ast_hash": "21ab62b9caf683708fb8899e6b068a98",
+    "mtime": 1780781583.168677,
+    "ast_hash": "a200f1c1caedfe4a2a17bac6f28c956b",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\cis\\innovation-strategy.json": {
-    "mtime": 1774039019.684907,
-    "ast_hash": "b1724339f2c43d5fd20d384300183116",
+    "mtime": 1780781583.1696784,
+    "ast_hash": "7b3aaf8357b0983151095574de6bc072",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\cis\\problem-solving.json": {
-    "mtime": 1774039019.684907,
-    "ast_hash": "64dd1b3c6a74f3580503ff2033b18705",
+    "mtime": 1780781583.1696784,
+    "ast_hash": "56de5d23eda97f4e17b6e937da7bf24e",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\cis\\storytelling.json": {
-    "mtime": 1774039019.684907,
-    "ast_hash": "a1ee65de41b0f0fde00d88d1222764ae",
+    "mtime": 1780781583.1696784,
+    "ast_hash": "ee63aae48745a6e5709b4c21a059ea05",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\discovery\\product-brief.json": {
@@ -4325,28 +4320,28 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\testing\\atdd-checklist.json": {
-    "mtime": 1774039019.6869025,
-    "ast_hash": "f983f561506f064541d9898e666682f1",
+    "mtime": 1780781583.170675,
+    "ast_hash": "da75093629efead506a876472512a32e",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\testing\\automation-summary.json": {
-    "mtime": 1774039019.6869025,
-    "ast_hash": "ada332ba8a8c8cd0553629627c73b58c",
+    "mtime": 1780781583.170675,
+    "ast_hash": "93d1b66583816cd96c1330ad25d9959a",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\testing\\ci-pipeline.json": {
-    "mtime": 1774039019.6874993,
-    "ast_hash": "f75d295ce9c9479e4de8467bdbd7df57",
+    "mtime": 1780781583.170675,
+    "ast_hash": "4ee98791ecf432c5d4346c4bc4d363b5",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\testing\\nfr-assessment.json": {
-    "mtime": 1774039019.6874993,
-    "ast_hash": "6a9822f0ef1ced421f6435340645ece4",
+    "mtime": 1780781583.1716743,
+    "ast_hash": "8d69b8a24c6afd2641206bf6ee0c493e",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\testing\\test-cases.json": {
-    "mtime": 1774039019.6874993,
-    "ast_hash": "68349851c3a2033328c2ee19dbe73d99",
+    "mtime": 1780781583.1716743,
+    "ast_hash": "ab40d5d1fa86c6fd407bd0b32b27cc0e",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\testing\\test-design.json": {
@@ -4355,23 +4350,23 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\testing\\test-framework.json": {
-    "mtime": 1774039019.6874993,
-    "ast_hash": "04233c09c4dbecd4e29d400d668adf24",
+    "mtime": 1780781583.1716743,
+    "ast_hash": "43b18b8b931a123ff222033e34fa3c8d",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\testing\\test-review.json": {
-    "mtime": 1774039019.6890233,
-    "ast_hash": "9c46073ce4469768d8218fca69baf13b",
+    "mtime": 1780781583.172674,
+    "ast_hash": "8d9b2d6678a816fb2bbed6ef9e99cd27",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\testing\\test-strategy.json": {
-    "mtime": 1774039019.6890233,
-    "ast_hash": "3f8903eea19c8f9d6bfd63397a066ecc",
+    "mtime": 1780781583.172674,
+    "ast_hash": "282daabb718c7feab622c7419b9c6185",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\testing\\traceability-matrix.json": {
-    "mtime": 1774454225.2221186,
-    "ast_hash": "607099fb5425ce11194c999a6726d272",
+    "mtime": 1780781583.172674,
+    "ast_hash": "9033b3b4b41127931e76f5ccc4d41570",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\_aac\\graphify\\schema\\arch-index.schema.json": {
@@ -4470,8 +4465,8 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\_aac\\schemas\\bmm\\sprint-status.schema.json": {
-    "mtime": 1774052458.9100122,
-    "ast_hash": "6f0b14ce1ba27998692b59014940843d",
+    "mtime": 1780781583.1636481,
+    "ast_hash": "cfaa0ec99b7d4e1e2ceb40546e2a6d48",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\_aac\\schemas\\bmm\\story.schema.json": {
@@ -4670,8 +4665,8 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\webview-ui\\package.json": {
-    "mtime": 1774039019.7016323,
-    "ast_hash": "eeb07516247b5c8b6794b7936bcaffcc",
+    "mtime": 1780781583.1837304,
+    "ast_hash": "0599545684474d8d109aa241f982ffea",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\webview-ui\\test_report.json": {
@@ -4750,13 +4745,13 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\.github\\agents\\agileagentcanvas.agent.md": {
-    "mtime": 1780565342.8500848,
-    "ast_hash": "a8f4edf6ae5191115730ff31fba3a330",
+    "mtime": 1780782740.1918726,
+    "ast_hash": "553126ee65158e8e70aa84d31fa678eb",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\integrations\\graphify\\graphify-lm-extractor.ts": {
-    "mtime": 1780565692.1207619,
-    "ast_hash": "baea8063849f798173545b4722afdb01",
+    "mtime": 1780781583.179187,
+    "ast_hash": "5483b898f48b95621db42462165f6fab",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\_aac\\skills\\aac-threat-modeling\\SKILL.md": {
@@ -4765,18 +4760,108 @@
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\docs\\agentic-output-reliability-roadmap.md": {
-    "mtime": 1780600430.549099,
-    "ast_hash": "acebb4375ffa8ea633692920e9ddadfb",
-    "semantic_hash": ""
-  },
-  "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\ai-provider-diff.txt": {
-    "mtime": 1780603631.193175,
-    "ast_hash": "8e2b87dc6b3cb8d4267d12a70862c8e9",
+    "mtime": 1780648801.964973,
+    "ast_hash": "3933bbc2f0a43ce3b0931bcfb1f8e7ae",
     "semantic_hash": ""
   },
   "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\lib\\json-extract.ts": {
-    "mtime": 1780604623.1117282,
-    "ast_hash": "1c03a66a85977462a1240de6785400b7",
+    "mtime": 1780648802.0282686,
+    "ast_hash": "17609fe57dd32cc6a6c04e5890840420",
+    "semantic_hash": ""
+  },
+  "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\chat\\tool-examples.ts": {
+    "mtime": 1780648802.0277631,
+    "ast_hash": "c427b5b69cc34e265c333b0a6fb6883f",
+    "semantic_hash": ""
+  },
+  "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\chat\\tool-telemetry.ts": {
+    "mtime": 1780648802.0282686,
+    "ast_hash": "f260b5dd4b65d7e2d3e5f3ec8c952181",
+    "semantic_hash": ""
+  },
+  "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\commands\\suggest-tool.ts": {
+    "mtime": 1780648802.0282686,
+    "ast_hash": "d8150aaf4d51a2de2df6d25289328763",
+    "semantic_hash": ""
+  },
+  "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\learning\\anti-pattern-detector.ts": {
+    "mtime": 1780648802.0282686,
+    "ast_hash": "81ecfa41aadd5afc09c9ddb75f48870b",
+    "semantic_hash": ""
+  },
+  "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\learning\\skill-promoter.ts": {
+    "mtime": 1780648802.0282686,
+    "ast_hash": "f1bdd028c63ffae46d30ec9c85de47f5",
+    "semantic_hash": ""
+  },
+  "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\learning\\waste-report.ts": {
+    "mtime": 1780648802.0282686,
+    "ast_hash": "0736e94c5a950241876710f825a6ea28",
+    "semantic_hash": ""
+  },
+  "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\.agent\\schemas-location.md": {
+    "mtime": 1780782740.1989152,
+    "ast_hash": "4965541c4be65b6b4deb470fd634aaad",
+    "semantic_hash": ""
+  },
+  "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\.agent\\skills\\agileagentcanvas-help\\SKILL.md": {
+    "mtime": 1779180440.6336067,
+    "ast_hash": "269f730e31804270484ee4856b238ea5",
+    "semantic_hash": ""
+  },
+  "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\.agent\\workflows\\post-change-docs.md": {
+    "mtime": 1774133656.6067183,
+    "ast_hash": "62326097bdd19c211093db79de42d272",
+    "semantic_hash": ""
+  },
+  "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\.github\\skills\\agileagentcanvas-help\\SKILL.md": {
+    "mtime": 1780782740.189354,
+    "ast_hash": "f2a1bc4391b4ab2d0ed83db7474ca00c",
+    "semantic_hash": ""
+  },
+  "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\docs\\tool-catalog.md": {
+    "mtime": 1780648801.964973,
+    "ast_hash": "1d58a54311e7de1a35385ff0ec350448",
+    "semantic_hash": ""
+  },
+  "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\src\\views\\chat-provider-status-bar.ts": {
+    "mtime": 1780702869.8533967,
+    "ast_hash": "95b8887eaee497f914268d8da509c49f",
+    "semantic_hash": ""
+  },
+  "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\webview-ui\\test-server.js": {
+    "mtime": 1780782648.2595863,
+    "ast_hash": "95dd0251c9db98f4355c62436fd8f0bc",
+    "semantic_hash": ""
+  },
+  "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\webview-ui\\public\\3d-force-graph\\3d-force-graph.min.js": {
+    "mtime": 1780762910.5432568,
+    "ast_hash": "7ba6b3228e395ba771597f37fa550486",
+    "semantic_hash": ""
+  },
+  "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\webview-ui\\src\\components\\Corpus3DView.tsx": {
+    "mtime": 1780781316.3830922,
+    "ast_hash": "36f97fbffc45e0734f73447d51981e60",
+    "semantic_hash": ""
+  },
+  "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\webview-ui\\src\\components\\ProviderSelector.tsx": {
+    "mtime": 1780782684.7639363,
+    "ast_hash": "d564921a1f513f2eed37020ea4b2c00c",
+    "semantic_hash": ""
+  },
+  "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\docs\\routa-integration-implementation-plan.md": {
+    "mtime": 1780773356.1383488,
+    "ast_hash": "a9a78c311b3bc1ff31b4d7080d518e40",
+    "semantic_hash": ""
+  },
+  "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\resources\\sample-project\\bmm\\sprint-status.yaml": {
+    "mtime": 1780755065.6027915,
+    "ast_hash": "6c1f0a0bd21335e8fb6c5d08d302a80c",
+    "semantic_hash": ""
+  },
+  "D:\\PersonalDev\\AgileAgentCanvas\\AgileAgentCanvasExt\\webview-ui\\test-3d-force-graph.html": {
+    "mtime": 1780782537.719095,
+    "ast_hash": "cfa083abb5b8682424adb0f959080ea6",
     "semantic_hash": ""
   }
 }

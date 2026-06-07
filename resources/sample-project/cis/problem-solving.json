@@ -13,7 +13,8 @@
       "onboarding",
       "machine-learning"
     ],
-    "author": "BMAD Problem-Solving Workflow"
+    "author": "BMAD Problem-Solving Workflow",
+    "projectName": "TaskFlow Pro"
   },
   "content": {
     "problemTitle": "AI Model Cold-Start Problem for New TaskFlow Pro Users",

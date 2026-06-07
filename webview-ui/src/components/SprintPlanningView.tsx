@@ -23,6 +23,7 @@ export interface SprintStatusLoaded {
   projectKey?: string;
   trackingSystem?: string;
   generated?: string;
+  lastUpdated?: string;
   storyLocation?: string;
   items: SprintItem[];
   sprints?: SprintGroup[]; // undefined = no sprints section → flat mode
@@ -166,6 +167,7 @@ export function parseSprintStatusYaml(
   let projectKey: string | undefined;
   let trackingSystem: string | undefined;
   let generated: string | undefined;
+  let lastUpdated: string | undefined;
   let storyLocation: string | undefined;
   const sprints: SprintGroup[] = [];
 
@@ -223,6 +225,7 @@ export function parseSprintStatusYaml(
           else if (k === 'project_key') projectKey = v;
           else if (k === 'tracking_system') trackingSystem = v;
           else if (k === 'generated') generated = v;
+          else if (k === 'last_updated') lastUpdated = v;
           else if (k === 'story_location') storyLocation = v;
         }
       }
@@ -307,6 +310,7 @@ export function parseSprintStatusYaml(
     projectKey,
     trackingSystem,
     generated,
+    lastUpdated,
     storyLocation,
     items: items.map(item => {
       if (item.isEpic || item.isRetro || !item.epicKey) return item;
@@ -643,6 +647,9 @@ function SprintMeta({ data }: { data: SprintStatusLoaded }) {
         <span className="sprint-meta-item"><strong>Tracker:</strong> {data.trackingSystem}</span>
       )}
       {data.generated && <span className="sprint-meta-item"><strong>Generated:</strong> {data.generated}</span>}
+      {data.lastUpdated && data.lastUpdated !== data.generated && (
+        <span className="sprint-meta-item" title="Last status change"><strong>Updated:</strong> {data.lastUpdated}</span>
+      )}
       {data.storyLocation && (
         <span className="sprint-meta-item sprint-meta-path" title={data.storyLocation}>
           <strong>Stories:</strong> {data.storyLocation}

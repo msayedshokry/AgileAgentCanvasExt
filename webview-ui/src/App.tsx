@@ -14,6 +14,7 @@ import { SprintPlanningView, parseSprintStatusYaml } from './components/SprintPl
 import type { SprintData } from './components/SprintPlanningView';
 import { SearchBox } from './components/SearchBox';
 import { CatalogueModal } from './components/CatalogueModal';
+import { ProviderSelector } from './components/ProviderSelector';
 import { Icon } from './components/Icon';
 import { vscode } from './vscodeApi';
 import type { Artifact, AICursorState, ElicitationMethod, BmmWorkflow } from './types';
@@ -881,32 +882,34 @@ function App() {
 
   return (
     <div className={`app ${detailPanelOpen && selectedArtifact ? 'with-detail-panel' : ''}`}>
-      <Toolbar
-        onAddArtifact={handleAddArtifact}
-        selectedArtifact={selectedArtifact}
-        onBreakDown={handleBreakDown}
-        onEnhance={handleEnhance}
-        onElicit={handleElicit}
-        themeOverride={themeOverride}
-        onToggleTheme={handleToggleTheme}
-        onSwitchProject={handleSwitchProject}
-        activeFolderName={activeFolderName}
-        onExport={handleExport}
-        onImport={handleImport}
-        onHelp={handleOpenHelp}
-        onAsk={handleOpenAsk}
-        onSprintView={handleOpenSprintView}
-        onJira={handleOpenJira}
-        onGraphify={handleOpenGraphify}
-        graphifyReady={graphifyReady}
-        schemaIssueCount={schemaIssues.length}
-        onFixSchemas={handleFixSchemas}
-        onValidateSchemas={handleValidateSchemas}
-        schemaValidating={schemaValidating}
-        schemaFixing={schemaFixing}
-        onCatalogue={handleOpenCatalogue}
-      />
-      
+      <div className="app-topbar">
+        <Toolbar
+          onAddArtifact={handleAddArtifact}
+          selectedArtifact={selectedArtifact}
+          onBreakDown={handleBreakDown}
+          onEnhance={handleEnhance}
+          onElicit={handleElicit}
+          themeOverride={themeOverride}
+          onToggleTheme={handleToggleTheme}
+          onSwitchProject={handleSwitchProject}
+          activeFolderName={activeFolderName}
+          onExport={handleExport}
+          onImport={handleImport}
+          onHelp={handleOpenHelp}
+          onAsk={handleOpenAsk}
+          onSprintView={handleOpenSprintView}
+          onJira={handleOpenJira}
+          onGraphify={handleOpenGraphify}
+          graphifyReady={graphifyReady}
+          schemaIssueCount={schemaIssues.length}
+          onFixSchemas={handleFixSchemas}
+          onValidateSchemas={handleValidateSchemas}
+          schemaValidating={schemaValidating}
+          schemaFixing={schemaFixing}
+          onCatalogue={handleOpenCatalogue}
+        />
+      </div>
+
       <div className="main-content">
         <Canvas
           artifacts={artifacts}
@@ -1013,6 +1016,8 @@ function App() {
         <span className="workflow-fab-icon"><Icon name="workflow" size={18} /></span>
         <span className="workflow-fab-label">Workflows</span>
       </button>
+      {/* Provider Selector FAB — sits to the left of the Workflows FAB */}
+      <ProviderSelector />
       {artifacts.length === 0 && (
         <div className="empty-state">
           <div className="empty-state-icon"><Icon name="empty-canvas" size={48} /></div>
@@ -1188,6 +1193,7 @@ function App() {
     </div>
   );
 }
+
 
 export default App;
 

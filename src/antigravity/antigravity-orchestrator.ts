@@ -205,7 +205,7 @@ export function buildGuideContent(params: AntigravityWorkflowParams): string {
         artifact,
         workflowPath,
         workflowContent,
-        outputFormat = 'dual',
+        outputFormat = 'json',
         executionHints,
         projectContextNotes,
     } = params;
@@ -229,7 +229,7 @@ ${projectContextNotes.map(n => `- ${n}`).join('\n')}
     const artifactType: string = artifact?.type || '';
     const persona = getPersonaForArtifactType(bmadPath, artifactType);
     const personaSection = persona
-        ? formatFullAgentForPrompt(persona)
+        ? formatFullAgentForPrompt(persona, { toolsAvailable: false })
         : 'You are a BMAD methodology AI analyst. Execute the following task following BMAD quality standards.';
 
     // ── Schema ───────────────────────────────────────────────────────────
@@ -271,7 +271,7 @@ the workflow explicitly says to produce the output. Do NOT skip checkpoints just
 
     const outputFormatSection = `## Output Format: ${outputFormat}
 
-${outputFormat === 'dual' || outputFormat === 'json'
+${outputFormat === 'json'
         ? `### Saving the Artifact
 
 When you have produced the artifact content (or a complete section of it), write it as a JSON file
@@ -280,8 +280,7 @@ to the output folder below. The JSON file must have \`metadata\` and \`content\`
 **Output path for JSON:** \`${outputFolder}/\`
 Name the file based on the artifact type and ID (e.g. \`product-vision.json\`, \`tech-spec.json\`).
 
-Also write a companion Markdown (.md) file with the same base name that presents the artifact
-content in a human-readable format.${checkpointNote}`
+Do NOT write companion Markdown (.md) files — those are derived views, not canonical.${checkpointNote}`
         : `Output should be written as Markdown (.md) files to: \`${outputFolder}/\``}
 
 `;
@@ -311,12 +310,12 @@ ${workflowContent}
 
     // ── Output-section rules (mode-aware) ────────────────────────────────
     const outputRulesExtra = mode === 'autonomous'
-        ? `- When all steps are complete, write the final JSON and Markdown files to the output folder`
+        ? `- When all steps are complete, write the final JSON file to the output folder`
         : mode === 'interactive'
             ? `- Do NOT write output files until the user has confirmed they are satisfied with the content
 - Do NOT skip workflow checkpoints or pause instructions just to produce output files`
-            : (outputFormat === 'dual' || outputFormat === 'json')
-                ? `- When content is finalized and the user has confirmed (or YOLO mode is active), write the complete JSON and Markdown files to the output folder
+            : (outputFormat === 'json')
+                ? `- When content is finalized and the user has confirmed (or YOLO mode is active), write the complete JSON file to the output folder
 - Do NOT skip workflow checkpoints or pause instructions just to produce output files`
                 : '';
 
