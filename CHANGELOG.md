@@ -1,6 +1,11 @@
 # Changelog
 
 ## 0.5.1
+
+### 3D Corpus Search & Filter
+
+Search box (top-left) filters the 3D corpus landscape in real-time. Matching nodes stay bright; non-matching nodes dim to near-invisible (`#3c3c3c`). Edges between matched nodes stay colored; all others fade to near-transparent. When exactly one node matches, the camera auto-frames on it. Match count badge ("N found" / "No matches") appears below the search box. The × button resets the search.
+
 ### Fixed: Provider Selector Dropdown
 
 The "Select Provider" button was not showing installed providers and its styling didn't match the rest of the canvas header.

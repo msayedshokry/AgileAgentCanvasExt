@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import type { Artifact } from '../types';
 import { Color, Mesh, MeshLambertMaterial, Sprite, SpriteMaterial, SphereGeometry, BoxGeometry, ConeGeometry, CylinderGeometry, TorusGeometry, TetrahedronGeometry, DodecahedronGeometry, OctahedronGeometry, Group, CanvasTexture } from 'three';
 import type { BufferGeometry } from 'three';
@@ -107,17 +107,27 @@ function createNodeMesh(type: string, color: string, val: number, name: string):
 }
 
 export function Corpus3DView({ artifacts, onSelect, onOpenDetail, selectedId }: Corpus3DViewProps) {
+  const onSelectRef = useRef(onSelect);
+  onSelectRef.current = onSelect;
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<any>(null);
   const graphInitRef = useRef(false);
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [loadError, setLoadError] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Refs for latest values used in graph closures
-  const onSelectRef = useRef(onSelect);
-  onSelectRef.current = onSelect;
-  const artifactsRef = useRef(artifacts);
-  artifactsRef.current = artifacts;
+  // Build highlight/dim map from search query
+  const matchedSet = useCallback(() => {
+    if (!searchQuery.trim()) return null;
+    const q = searchQuery.toLowerCase();
+    return new Set(
+      artifacts
+        .filter(a => (a.title || a.id).toLowerCase().includes(q))
+        .map(a => a.id)
+    );
+  }, [searchQuery, artifacts]);
+
+
 
   // ── Graph data builder (all artifacts — no filtering) ──────────────────
 
@@ -180,11 +190,6 @@ export function Corpus3DView({ artifacts, onSelect, onOpenDetail, selectedId }: 
           .nodeColor((n: any) => n.color)
           .nodeVal((n: any) => n.val)
           .nodeThreeObject((n: any) => createNodeMesh(n.type, n.color, n.val, n.name))
-          .linkColor((link: any) => {
-            const sc = link.source.color || '#ffffff';
-            const tc = link.target.color || '#ffffff';
-            return blendHex(sc, tc) + '55'; // blended phase color at ~33% opacity
-          })
           .linkWidth(0.4)
           .linkDirectionalArrowLength(2.5)
           .linkDirectionalArrowRelPos(1)
@@ -192,6 +197,20 @@ export function Corpus3DView({ artifacts, onSelect, onOpenDetail, selectedId }: 
           .linkDirectionalParticleSpeed(0.003)
           .linkDirectionalParticleWidth(1.2)
           .linkDirectionalParticleColor((link: any) => link.target.color ? link.target.color + 'aa' : 'rgba(255,255,255,0.6)')
+          .linkColor((link: any) => {
+            const sc = link.source.color || '#ffffff';
+            const tc = link.target.color || '#ffffff';
+            const blended = blendHex(sc, tc) + '55';
+            const matches = matchedSet();
+            if (matches) {
+              const srcMatched = matches.has((link.source as any).id);
+              const tgtMatched = matches.has((link.target as any).id);
+              if (!srcMatched && !tgtMatched) return 'rgba(60,60,60,0.15)';
+              if (srcMatched && tgtMatched) return blended;
+              return blended.replace('55', '33');
+            }
+            return blended;
+          })
           .backgroundColor('rgba(30, 30, 30, 0)')
           .d3AlphaDecay(0.05)
           .d3VelocityDecay(0.45)
@@ -211,9 +230,18 @@ export function Corpus3DView({ artifacts, onSelect, onOpenDetail, selectedId }: 
             }
           });
 
-        // Auto-rotation
+        // Auto-rotation — declare before use
         let userInteracted = false;
         let angle = 0;
+
+        const stopRotation = () => {
+          if (userInteracted) return;
+          userInteracted = true;
+          if (rotateInterval) {
+            clearInterval(rotateInterval);
+            rotateInterval = undefined;
+          }
+        };
 
         const startRotation = () => {
           if (userInteracted || cancelled) return;
@@ -232,18 +260,23 @@ export function Corpus3DView({ artifacts, onSelect, onOpenDetail, selectedId }: 
           }, 50);
         };
 
-        const stopRotation = () => {
-          if (userInteracted) return;
-          userInteracted = true;
-          if (rotateInterval) {
-            clearInterval(rotateInterval);
-            rotateInterval = undefined;
-          }
-        };
-
         container.addEventListener('mousedown', stopRotation, { once: true });
         container.addEventListener('touchstart', stopRotation, { once: true });
         container.addEventListener('wheel', stopRotation, { once: true });
+
+        // Auto-frame matching node if only one match
+        const frameMatchedNode = () => {
+          const matches = matchedSet();
+          if (!matches || matches.size === 0) return;
+          const firstId = Array.from(matches)[0];
+          const node = graph.graphData().nodes.find((n: any) => n.id === firstId);
+          if (node && node.__xyz) {
+            const [x, y, z] = node.__xyz;
+            graph.cameraPosition({ x: x + 80, y: y + 60, z: z + 100 }, { x, y, z }, 1200);
+          }
+        };
+
+        setTimeout(frameMatchedNode, 600);
 
       } catch (err) {
         console.error('[Corpus3DView] Error:', err);
@@ -263,24 +296,66 @@ export function Corpus3DView({ artifacts, onSelect, onOpenDetail, selectedId }: 
     };
   }, [artifacts.length]);
 
+  // Re-apply highlight colors when search query changes (nodes may not re-render)
+  useEffect(() => {
+    if (!graphRef.current || loadState !== 'ready') return;
+    try {
+      const { nodes } = graphRef.current.graphData();
+      const matches = matchedSet();
+      nodes.forEach((n: any) => {
+        const obj = n.__threeObj;
+        if (!obj) return;
+        const group = obj as Group;
+        const mesh = group.children[0] as Mesh;
+        if (!mesh || !mesh.material) return;
+        const mat = mesh.material as MeshLambertMaterial;
+        if (matches) {
+          if (!matches.has(n.id)) mat.color.set('#3c3c3c');
+          else mat.color.set(n.color);
+        } else {
+          mat.color.set(n.color);
+        }
+      });
+      // Re-frame on new search
+      if (matches && matches.size === 1) {
+        const id = Array.from(matches)[0];
+        const node = graphRef.current.graphData().nodes.find((n: any) => n.id === id);
+        if (node && node.__xyz) {
+          const [x, y, z] = node.__xyz;
+          graphRef.current.cameraPosition({ x: x + 80, y: y + 60, z: z + 100 }, { x, y, z }, 1200);
+        }
+      }
+    } catch { /* graph not ready */ }
+  }, [searchQuery, loadState]);
+
   // Selection highlight — update custom mesh colors directly
   useEffect(() => {
     if (!graphRef.current) return;
     try {
       const selected = selectedId;
-      // Use the graph's internal reference to custom meshes
-      const { nodes } = graphRef.current.graphData();        nodes.forEach((n: any) => {
+      const { nodes } = graphRef.current.graphData();
+      const matches = matchedSet();
+      nodes.forEach((n: any) => {
         const obj = n.__threeObj;
         if (!obj) return;
-        // obj is a Group — get the first child (the shape mesh) and update its material color
         const group = obj as Group;
         const mesh = group.children[0] as Mesh;
         if (!mesh || !mesh.material) return;
         const mat = mesh.material as MeshLambertMaterial;
-        mat.color.set(selected && n.id === selected ? '#ffffff' : n.color);
+        const isDimmed = matches ? !matches.has(n.id) : false;
+        const isMatched = matches ? matches.has(n.id) : false;
+        if (isDimmed) {
+          mat.color.set('#3c3c3c');
+        } else if (selected && n.id === selected) {
+          mat.color.set('#ffffff');
+        } else if (isMatched) {
+          mat.color.set('#ffffff');
+        } else {
+          mat.color.set(n.color);
+        }
       });
     } catch { /* graph not ready */ }
-  }, [selectedId]);
+  }, [selectedId, matchedSet]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
@@ -316,19 +391,68 @@ export function Corpus3DView({ artifacts, onSelect, onOpenDetail, selectedId }: 
       )}
 
       {loadState === 'ready' && (
-        <div style={{
-          position: 'absolute', top: 12, right: 12, zIndex: 10,
-          display: 'flex', flexDirection: 'column', gap: 4,
-          background: 'rgba(0,0,0,0.5)', padding: '8px 12px', borderRadius: 6,
-          fontSize: 11, color: 'var(--vscode-foreground)',
-        }}>
-          {PHASE_NAMES.map((name, i) => (
-            <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: PHASE_COLORS[i], display: 'inline-block' }} />
-              <span>{name}</span>
+        <>
+          {/* Search box */}
+          <div style={{
+            position: 'absolute', top: 12, left: 12, zIndex: 10,
+            display: 'flex', alignItems: 'center', gap: 8,
+            background: 'rgba(30,30,30,0.85)', padding: '6px 12px',
+            borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)',
+            minWidth: 220,
+          }}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="rgba(255,255,255,0.5)" style={{ flexShrink: 0 }}>
+              <path d="M11.5 7a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0zm-.82 4.74a6 6 0 1 1 1.06-1.06l3.04 3.04a.75.75 0 1 1-1.06 1.06l-3.04-3.04z"/>
+            </svg>
+            <input
+              type="text"
+              placeholder="Search artifacts…"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{
+                background: 'transparent', border: 'none', outline: 'none',
+                color: 'var(--vscode-foreground)', fontSize: 12,
+                width: '100%', fontFamily: 'inherit',
+              }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: 'rgba(255,255,255,0.5)', fontSize: 14, padding: '0 2px', lineHeight: 1,
+                }}
+                title="Clear search"
+              >×</button>
+            )}
+          </div>
+
+          {/* Match count badge */}
+          {searchQuery && (
+            <div style={{
+              position: 'absolute', top: 52, left: 12, zIndex: 10,
+              background: 'rgba(30,30,30,0.85)', padding: '4px 10px',
+              borderRadius: 4, fontSize: 11, color: 'var(--vscode-foreground)',
+              border: '1px solid rgba(255,255,255,0.1)',
+            }}>
+              {matchedSet() ? `${matchedSet()!.size} found` : 'No matches'}
             </div>
-          ))}
-        </div>
+          )}
+
+          {/* Phase legend */}
+          <div style={{
+            position: 'absolute', top: 12, right: 12, zIndex: 10,
+            display: 'flex', flexDirection: 'column', gap: 4,
+            background: 'rgba(0,0,0,0.5)', padding: '8px 12px', borderRadius: 6,
+            fontSize: 11, color: 'var(--vscode-foreground)',
+          }}>
+            {PHASE_NAMES.map((name, i) => (
+              <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: PHASE_COLORS[i], display: 'inline-block' }} />
+                <span>{name}</span>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
