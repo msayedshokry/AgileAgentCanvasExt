@@ -34,7 +34,10 @@ function getTreeProvider(world: BmadWorld): { store: any; provider: any } {
         resolveArtifactTargetUri: async (opts: any) => world.vscode.Uri.file(`/test/${opts.fileName}`),
         writeJsonFile: async () => {},
         writeMarkdownCompanion: async (jsonUri: any, mdFilename: string) => world.vscode.Uri.file(`/test/${mdFilename}`)
-      }
+      },
+      '../harness/policy-engine': {
+        harnessEngine: { evaluate: async () => [] },
+      },
     });
 
     const treeProviderModule = proxyquire('../../src/views/artifacts-tree-provider', {
@@ -257,14 +260,14 @@ Then('item {int} command should be {string}', function(this: BmadWorld, index: n
   const item = expandedItems[index - 1];
   assert.ok(item, `Item at index ${index} not found`);
   assert.ok(item.command, `Item ${index} has no command`);
-  assert.strictEqual(item.command.command, commandId);
+  assert.strictEqual(item.command.command, commandId, `Expected item ${index} command "${commandId}", got "${item.command.command}"`);
 });
 
 Then('item {int} command arguments should be {string} and {string}', function(this: BmadWorld, index: number, arg1: string, arg2: string) {
   const item = expandedItems[index - 1];
   assert.ok(item, `Item at index ${index} not found`);
   assert.ok(item.command?.arguments, `Item ${index} has no command arguments`);
-  assert.deepStrictEqual(item.command.arguments, [arg1, arg2]);
+  assert.deepStrictEqual(item.command.arguments, [arg1, arg2], `Expected item ${index} command arguments ["${arg1}", "${arg2}"], got ${JSON.stringify(item.command?.arguments)}`);
 });
 
 Then('item {int} description should contain {string}', function(this: BmadWorld, index: number, text: string) {

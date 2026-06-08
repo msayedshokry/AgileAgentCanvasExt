@@ -12,6 +12,7 @@ import { JiraModal } from './components/JiraModal';
 import { GraphifyModal } from './components/GraphifyModal';
 import { SprintPlanningView, parseSprintStatusYaml } from './components/SprintPlanningView';
 import type { SprintData } from './components/SprintPlanningView';
+import { AgenticKanbanApp } from './agentic-kanban/AgenticKanbanApp';
 import { SearchBox } from './components/SearchBox';
 import { CatalogueModal } from './components/CatalogueModal';
 import { ProviderSelector } from './components/ProviderSelector';
@@ -107,6 +108,13 @@ function App() {
   // Skill Catalogue modal state
   const [catalogueOpen, setCatalogueOpen] = useState<boolean>(false);
   
+  // Kanban toggle: show agentic execution board in the main canvas area
+  const [showKanban, setShowKanban] = useState<boolean>(false);
+
+  const handleToggleKanban = useCallback(() => {
+    setShowKanban(prev => !prev);
+  }, []);
+
   // Canvas search state (SearchBox rendered in App, to the left of workflow FAB)
   const [searchOpen, setSearchOpen] = useState<boolean>(false);
   const [searchMatchIds, setSearchMatchIds] = useState<Set<string>>(new Set());
@@ -911,49 +919,56 @@ function App() {
       </div>
 
       <div className="main-content">
-        <Canvas
-          artifacts={artifacts}
-          selectedId={selectedId}
-          onSelect={handleArtifactSelect}
-          onOpenDetail={handleOpenDetailPanel}
-          onUpdate={handleArtifactUpdate}
-          onToggleExpand={handleToggleExpand}
-          expandedIds={expandedIds}
-          expandedCategories={expandedCategories}
-          onToggleCategoryExpand={handleToggleCategoryExpand}
-          onRefineWithAI={handleRefineWithAI}
-          onElicit={handleElicit}
-          onExpandLane={handleExpandLane}
-          onCollapseLane={handleCollapseLane}
-          centerOnId={centerOnId}
-          onCentered={() => setCenterOnId(null)}
-          onOpenSearch={handleOpenSearch}
-          searchMatchIds={searchMatchIds}
-          screenshotTrigger={screenshotTrigger}
-          screenshotFormat={screenshotFormat}
-          onScreenshotReady={handleScreenshotReady}
-          onScreenshotError={handleScreenshotError}
-        />
-        
-        {detailPanelOpen && selectedArtifact && (
-          <ErrorBoundary label="Detail Panel" key={selectedArtifact.id}>
-            <DetailPanel
-              artifact={selectedArtifact}
-              onClose={handleCloseDetailPanel}
+        {showKanban ? (
+          <ErrorBoundary label="Agentic Kanban">
+            <AgenticKanbanApp initialArtifacts={artifacts} />
+          </ErrorBoundary>
+        ) : (
+          <>
+            <Canvas
+              artifacts={artifacts}
+              selectedId={selectedId}
+              onSelect={handleArtifactSelect}
+              onOpenDetail={handleOpenDetailPanel}
               onUpdate={handleArtifactUpdate}
-              onDelete={handleArtifactDelete}
+              onToggleExpand={handleToggleExpand}
+              expandedIds={expandedIds}
+              expandedCategories={expandedCategories}
+              onToggleCategoryExpand={handleToggleCategoryExpand}
               onRefineWithAI={handleRefineWithAI}
               onElicit={handleElicit}
-              forceEditMode={forceEditMode}
-              onEditModeChange={(editing) => {
-                // When user manually exits edit mode, clear forceEditMode
-                if (!editing) setForceEditMode(false);
-              }}
-              allArtifacts={artifacts}
-              onPopOut={handlePopOut}
-              onDirtyStateChange={setDetailPanelDirty}
+              onExpandLane={handleExpandLane}
+              onCollapseLane={handleCollapseLane}
+              centerOnId={centerOnId}
+              onCentered={() => setCenterOnId(null)}
+              onOpenSearch={handleOpenSearch}
+              searchMatchIds={searchMatchIds}
+              screenshotTrigger={screenshotTrigger}
+              screenshotFormat={screenshotFormat}
+              onScreenshotReady={handleScreenshotReady}
+              onScreenshotError={handleScreenshotError}
             />
-          </ErrorBoundary>
+            
+            {detailPanelOpen && selectedArtifact && (
+              <ErrorBoundary label="Detail Panel" key={selectedArtifact.id}>
+                <DetailPanel
+                  artifact={selectedArtifact}
+                  onClose={handleCloseDetailPanel}
+                  onUpdate={handleArtifactUpdate}
+                  onDelete={handleArtifactDelete}
+                  onRefineWithAI={handleRefineWithAI}
+                  onElicit={handleElicit}
+                  forceEditMode={forceEditMode}
+                  onEditModeChange={(editing) => {
+                    if (!editing) setForceEditMode(false);
+                  }}
+                  allArtifacts={artifacts}
+                  onPopOut={handlePopOut}
+                  onDirtyStateChange={setDetailPanelDirty}
+                />
+              </ErrorBoundary>
+            )}
+          </>
         )}
       </div>
       
@@ -1015,6 +1030,16 @@ function App() {
       >
         <span className="workflow-fab-icon"><Icon name="workflow" size={18} /></span>
         <span className="workflow-fab-label">Workflows</span>
+      </button>
+      {/* Kanban toggle FAB — sits to the left of the Provider Selector */}
+      <button
+        className="kanban-toggle-fab"
+        onClick={handleToggleKanban}
+        title={showKanban ? 'Switch to Canvas view' : 'Switch to Agentic Kanban view'}
+        aria-label={showKanban ? 'Switch to Canvas' : 'Switch to Kanban'}
+      >
+        <Icon name={showKanban ? 'workflow' : 'sprint'} size={16} />
+        <span className="kanban-toggle-label">{showKanban ? 'Canvas' : 'Kanban'}</span>
       </button>
       {/* Provider Selector FAB — sits to the left of the Workflows FAB */}
       <ProviderSelector />
@@ -1321,6 +1346,9 @@ function DetailOnlyApp() {
 export function RootApp() {
   if (AC_MODE === 'detail') {
     return <DetailOnlyApp />;
+  }
+  if (AC_MODE === 'agentic-kanban') {
+    return <AgenticKanbanApp />;
   }
   return <App />;
 }

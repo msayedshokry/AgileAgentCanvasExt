@@ -13,6 +13,12 @@ const proxyquire = require('proxyquire').noCallThru();
 // Load the module with vscode mocked out (buildArtifacts only uses store.getState())
 const transformerModule = proxyquire('../../src/canvas/artifact-transformer', {
     vscode: {
+        workspace: {
+            getConfiguration: () => ({
+                get: () => false
+            }),
+            workspaceFolders: undefined
+        },
         '@noCallThru': true,
         '@global': false
     }
@@ -697,25 +703,25 @@ Then('the artifact count should be at least {int}', function (this: BmadWorld, m
 Then('artifact {string} should have type {string}', function (this: BmadWorld, id: string, type: string) {
     const ctx = getCtx(this);
     const artifact = findArtifact(ctx, id);
-    assert.strictEqual(artifact.type, type);
+    assert.strictEqual(artifact.type, type, `Expected artifact "${id}" type "${type}", got "${artifact.type}"`);
 });
 
 Then('artifact {string} should have title {string}', function (this: BmadWorld, id: string, title: string) {
     const ctx = getCtx(this);
     const artifact = findArtifact(ctx, id);
-    assert.strictEqual(artifact.title, title);
+    assert.strictEqual(artifact.title, title, `Expected artifact "${id}" title "${title}", got "${artifact.title}"`);
 });
 
 Then('artifact {string} should have status {string}', function (this: BmadWorld, id: string, status: string) {
     const ctx = getCtx(this);
     const artifact = findArtifact(ctx, id);
-    assert.strictEqual(artifact.status, status);
+    assert.strictEqual(artifact.status, status, `Expected artifact "${id}" status "${status}", got "${artifact.status}"`);
 });
 
 Then('artifact {string} position x should be {int}', function (this: BmadWorld, id: string, x: number) {
     const ctx = getCtx(this);
     const artifact = findArtifact(ctx, id);
-    assert.strictEqual(artifact.position.x, x);
+    assert.strictEqual(artifact.position.x, x, `Expected artifact "${id}" position.x ${x}, got ${artifact.position.x}`);
 });
 
 Then('artifact {string} position y should be greater than artifact {string} position y', function (
@@ -731,7 +737,7 @@ Then('artifact {string} position y should be greater than artifact {string} posi
 Then('artifact {string} should have {int} dependencies', function (this: BmadWorld, id: string, count: number) {
     const ctx = getCtx(this);
     const artifact = findArtifact(ctx, id);
-    assert.strictEqual(artifact.dependencies.length, count);
+    assert.strictEqual(artifact.dependencies.length, count, `Expected artifact "${id}" ${count} dependencies, got ${artifact.dependencies.length}`);
 });
 
 Then('artifact {string} should have no parentId', function (this: BmadWorld, id: string) {
@@ -743,13 +749,13 @@ Then('artifact {string} should have no parentId', function (this: BmadWorld, id:
 Then('artifact {string} parentId should be {string}', function (this: BmadWorld, id: string, parentId: string) {
     const ctx = getCtx(this);
     const artifact = findArtifact(ctx, id);
-    assert.strictEqual(artifact.parentId, parentId);
+    assert.strictEqual(artifact.parentId, parentId, `Expected artifact "${id}" parentId "${parentId}", got "${artifact.parentId}"`);
 });
 
 Then('artifact {string} childCount should be {int}', function (this: BmadWorld, id: string, count: number) {
     const ctx = getCtx(this);
     const artifact = findArtifact(ctx, id);
-    assert.strictEqual(artifact.childCount, count);
+    assert.strictEqual(artifact.childCount, count, `Expected artifact "${id}" childCount ${count}, got ${artifact.childCount}`);
 });
 
 Then('artifact {string} dependencies should include {string}', function (this: BmadWorld, id: string, depId: string) {
@@ -762,7 +768,7 @@ Then('artifact {string} dependencies should include {string}', function (this: B
 Then('artifact {string} width should be {int}', function (this: BmadWorld, id: string, width: number) {
     const ctx = getCtx(this);
     const artifact = findArtifact(ctx, id);
-    assert.strictEqual(artifact.size.width, width);
+    assert.strictEqual(artifact.size.width, width, `Expected artifact "${id}" width ${width}, got ${artifact.size.width}`);
 });
 
 Then('artifact {string} height should be greater than {int}', function (this: BmadWorld, id: string, minHeight: number) {
@@ -775,43 +781,43 @@ Then('artifact {string} height should be greater than {int}', function (this: Bm
 Then('artifact {string} metadata totalStoryPoints should be {int}', function (this: BmadWorld, id: string, points: number) {
     const ctx = getCtx(this);
     const artifact = findArtifact(ctx, id);
-    assert.strictEqual(artifact.metadata.totalStoryPoints, points);
+    assert.strictEqual(artifact.metadata.totalStoryPoints, points, `Expected artifact "${id}" totalStoryPoints ${points}, got ${artifact.metadata.totalStoryPoints}`);
 });
 
 Then('artifact {string} metadata doneStoryCount should be {int}', function (this: BmadWorld, id: string, count: number) {
     const ctx = getCtx(this);
     const artifact = findArtifact(ctx, id);
-    assert.strictEqual(artifact.metadata.doneStoryCount, count);
+    assert.strictEqual(artifact.metadata.doneStoryCount, count, `Expected artifact "${id}" doneStoryCount ${count}, got ${artifact.metadata.doneStoryCount}`);
 });
 
 Then('artifact {string} metadata totalStoryCount should be {int}', function (this: BmadWorld, id: string, count: number) {
     const ctx = getCtx(this);
     const artifact = findArtifact(ctx, id);
-    assert.strictEqual(artifact.metadata.totalStoryCount, count);
+    assert.strictEqual(artifact.metadata.totalStoryCount, count, `Expected artifact "${id}" totalStoryCount ${count}, got ${artifact.metadata.totalStoryCount}`);
 });
 
 Then('artifact {string} metadata totalCount should be {int}', function (this: BmadWorld, id: string, count: number) {
     const ctx = getCtx(this);
     const artifact = findArtifact(ctx, id);
-    assert.strictEqual(artifact.metadata.totalCount, count);
+    assert.strictEqual(artifact.metadata.totalCount, count, `Expected artifact "${id}" totalCount ${count}, got ${artifact.metadata.totalCount}`);
 });
 
 Then('artifact {string} metadata passCount should be {int}', function (this: BmadWorld, id: string, count: number) {
     const ctx = getCtx(this);
     const artifact = findArtifact(ctx, id);
-    assert.strictEqual(artifact.metadata.passCount, count);
+    assert.strictEqual(artifact.metadata.passCount, count, `Expected artifact "${id}" passCount ${count}, got ${artifact.metadata.passCount}`);
 });
 
 Then('artifact {string} metadata failCount should be {int}', function (this: BmadWorld, id: string, count: number) {
     const ctx = getCtx(this);
     const artifact = findArtifact(ctx, id);
-    assert.strictEqual(artifact.metadata.failCount, count);
+    assert.strictEqual(artifact.metadata.failCount, count, `Expected artifact "${id}" failCount ${count}, got ${artifact.metadata.failCount}`);
 });
 
 Then('artifact {string} metadata draftCount should be {int}', function (this: BmadWorld, id: string, count: number) {
     const ctx = getCtx(this);
     const artifact = findArtifact(ctx, id);
-    assert.strictEqual(artifact.metadata.draftCount, count);
+    assert.strictEqual(artifact.metadata.draftCount, count, `Expected artifact "${id}" draftCount ${count}, got ${artifact.metadata.draftCount}`);
 });
 
 Then('the first {string} artifact childBreakdown should contain {string} items', function (this: BmadWorld, type: string, itemType: string) {
@@ -849,7 +855,7 @@ Then('all {string} artifacts position x should be at least {int}', function (thi
 Then('the first {string} artifact parentId should be {string}', function (this: BmadWorld, type: string, parentId: string) {
     const ctx = getCtx(this);
     const artifact = findFirstOfType(ctx, type);
-    assert.strictEqual(artifact.parentId, parentId);
+    assert.strictEqual(artifact.parentId, parentId, `Expected first "${type}" parentId "${parentId}", got "${artifact.parentId}"`);
 });
 
 Then('the first {string} artifact description should contain {string}', function (this: BmadWorld, type: string, text: string) {
@@ -862,13 +868,13 @@ Then('the first {string} artifact description should contain {string}', function
 Then('the first {string} artifact should have status {string}', function (this: BmadWorld, type: string, status: string) {
     const ctx = getCtx(this);
     const artifact = findFirstOfType(ctx, type);
-    assert.strictEqual(artifact.status, status);
+    assert.strictEqual(artifact.status, status, `Expected first "${type}" status "${status}", got "${artifact.status}"`);
 });
 
 Then('the first {string} artifact width should be {int}', function (this: BmadWorld, type: string, width: number) {
     const ctx = getCtx(this);
     const artifact = findFirstOfType(ctx, type);
-    assert.strictEqual(artifact.size.width, width);
+    assert.strictEqual(artifact.size.width, width, `Expected first "${type}" width ${width}, got ${artifact.size.width}`);
 });
 
 Then('the second {string} artifact dependencies should include the first story id', function (this: BmadWorld, type: string) {

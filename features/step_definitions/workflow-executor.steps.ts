@@ -55,6 +55,20 @@ function getWorkflowExecutor(world: BmadWorld): any {
         isAntigravityAgentAvailable: async () => false,
         sendSimplePrompt: async () => false,
         buildGuideContent: () => ''
+      },
+      // Mock team-orchestrator to prevent loading session-manager (which imports vscode)
+      '../acp/team-orchestrator': {
+        AgentTeamOrchestrator: class {
+          async executeTeam() {
+            return [];
+          }
+        }
+      },
+      // Mock trace-recorder to prevent loading vscode
+      '../trace/trace-recorder': {
+        getTraceRecorder: () => ({
+          record: async () => {},
+        })
       }
     });
     
@@ -337,29 +351,29 @@ Then('the {string} module should have workflow {string}', function(this: BmadWor
 
 // Frontmatter assertions
 Then('the frontmatter name should be {string}', function(this: BmadWorld, expected: string) {
-  assert.strictEqual(parsedFrontmatter?.name, expected);
+  assert.strictEqual(parsedFrontmatter?.name, expected, `Expected frontmatter name "${expected}", got "${parsedFrontmatter?.name}"`);
 });
 
 Then('the frontmatter description should be {string}', function(this: BmadWorld, expected: string) {
-  assert.strictEqual(parsedFrontmatter?.description, expected);
+  assert.strictEqual(parsedFrontmatter?.description, expected, `Expected frontmatter description "${expected}", got "${parsedFrontmatter?.description}"`);
 });
 
 Then('the frontmatter output_format should be {string}', function(this: BmadWorld, expected: string) {
-  assert.strictEqual(parsedFrontmatter?.output_format, expected);
+  assert.strictEqual(parsedFrontmatter?.output_format, expected, `Expected frontmatter output_format "${expected}", got "${parsedFrontmatter?.output_format}"`);
 });
 
 Then('the body should be {string}', function(this: BmadWorld, expected: string) {
   // Replace escaped newlines with actual newlines for comparison
   const normalizedExpected = expected.replace(/\\n/g, '\n');
-  assert.strictEqual(parsedBody, normalizedExpected);
+  assert.strictEqual(parsedBody, normalizedExpected, `Expected body "${normalizedExpected}", got "${parsedBody}"`);
 });
 
 Then('the frontmatter should be empty', function(this: BmadWorld) {
-  assert.deepStrictEqual(parsedFrontmatter, {});
+  assert.deepStrictEqual(parsedFrontmatter, {}, 'Expected frontmatter to be empty');
 });
 
 Then('the frontmatter should be null', function(this: BmadWorld) {
-  assert.strictEqual(parsedFrontmatter, null);
+  assert.strictEqual(parsedFrontmatter, null, 'Expected frontmatter to be null');
 });
 
 Then('the frontmatter tags should contain {string} and {string}', function(this: BmadWorld, tag1: string, tag2: string) {
@@ -369,23 +383,23 @@ Then('the frontmatter tags should contain {string} and {string}', function(this:
 });
 
 Then('the frontmatter config timeout should be {int}', function(this: BmadWorld, expected: number) {
-  assert.strictEqual(parsedFrontmatter?.config?.timeout, expected);
+  assert.strictEqual(parsedFrontmatter?.config?.timeout, expected, `Expected frontmatter config timeout ${expected}, got ${parsedFrontmatter?.config?.timeout}`);
 });
 
 Then('the frontmatter config retries should be {int}', function(this: BmadWorld, expected: number) {
-  assert.strictEqual(parsedFrontmatter?.config?.retries, expected);
+  assert.strictEqual(parsedFrontmatter?.config?.retries, expected, `Expected frontmatter config retries ${expected}, got ${parsedFrontmatter?.config?.retries}`);
 });
 
 Then('the frontmatter editWorkflow should be {string}', function(this: BmadWorld, expected: string) {
-  assert.strictEqual(parsedFrontmatter?.editWorkflow, expected);
+  assert.strictEqual(parsedFrontmatter?.editWorkflow, expected, `Expected frontmatter editWorkflow "${expected}", got "${parsedFrontmatter?.editWorkflow}"`);
 });
 
 Then('the frontmatter validateWorkflow should be {string}', function(this: BmadWorld, expected: string) {
-  assert.strictEqual(parsedFrontmatter?.validateWorkflow, expected);
+  assert.strictEqual(parsedFrontmatter?.validateWorkflow, expected, `Expected frontmatter validateWorkflow "${expected}", got "${parsedFrontmatter?.validateWorkflow}"`);
 });
 
 Then('the frontmatter nextStepFile should be {string}', function(this: BmadWorld, expected: string) {
-  assert.strictEqual(parsedFrontmatter?.nextStepFile, expected);
+  assert.strictEqual(parsedFrontmatter?.nextStepFile, expected, `Expected frontmatter nextStepFile "${expected}", got "${parsedFrontmatter?.nextStepFile}"`);
 });
 
 // Session assertions
@@ -399,25 +413,25 @@ Then(/^the session ID should match pattern "([^"]*)"$/, function(this: BmadWorld
 Then('the session workflow path should be {string}', function(this: BmadWorld, expected: string) {
   const executor = getWorkflowExecutor(this);
   const session = executor.getCurrentSession();
-  assert.strictEqual(session?.workflowPath, expected);
+  assert.strictEqual(session?.workflowPath, expected, `Expected session workflowPath "${expected}", got "${session?.workflowPath}"`);
 });
 
 Then('the session workflow name should be {string}', function(this: BmadWorld, expected: string) {
   const executor = getWorkflowExecutor(this);
   const session = executor.getCurrentSession();
-  assert.strictEqual(session?.workflowName, expected);
+  assert.strictEqual(session?.workflowName, expected, `Expected session workflowName "${expected}", got "${session?.workflowName}"`);
 });
 
 Then('the session artifact type should be {string}', function(this: BmadWorld, expected: string) {
   const executor = getWorkflowExecutor(this);
   const session = executor.getCurrentSession();
-  assert.strictEqual(session?.artifactType, expected);
+  assert.strictEqual(session?.artifactType, expected, `Expected session artifactType "${expected}", got "${session?.artifactType}"`);
 });
 
 Then('the session artifact ID should be {string}', function(this: BmadWorld, expected: string) {
   const executor = getWorkflowExecutor(this);
   const session = executor.getCurrentSession();
-  assert.strictEqual(session?.artifactId, expected);
+  assert.strictEqual(session?.artifactId, expected, `Expected session artifactId "${expected}", got "${session?.artifactId}"`);
 });
 
 Then('the session status should be {string}', function(this: BmadWorld, expected: string) {
@@ -425,25 +439,25 @@ Then('the session status should be {string}', function(this: BmadWorld, expected
   // Get session from all sessions, not just current (completed sessions are no longer current)
   const sessions = Array.from((executor as any).sessions?.values() || []);
   const session = sessions[sessions.length - 1] || executor.getCurrentSession();
-  assert.strictEqual(session?.status, expected);
+  assert.strictEqual(session?.status, expected, `Expected session status "${expected}", got "${session?.status}"`);
 });
 
 Then('the session current step number should be {int}', function(this: BmadWorld, expected: number) {
   const executor = getWorkflowExecutor(this);
   const session = executor.getCurrentSession();
-  assert.strictEqual(session?.currentStepNumber, expected);
+  assert.strictEqual(session?.currentStepNumber, expected, `Expected session currentStepNumber ${expected}, got ${session?.currentStepNumber}`);
 });
 
 Then('the session steps completed should be empty', function(this: BmadWorld) {
   const executor = getWorkflowExecutor(this);
   const session = executor.getCurrentSession();
-  assert.deepStrictEqual(session?.stepsCompleted, []);
+  assert.deepStrictEqual(session?.stepsCompleted, [], 'Expected stepsCompleted to be empty');
 });
 
 Then('the session user inputs should be empty', function(this: BmadWorld) {
   const executor = getWorkflowExecutor(this);
   const session = executor.getCurrentSession();
-  assert.deepStrictEqual(session?.userInputs, []);
+  assert.deepStrictEqual(session?.userInputs, [], 'Expected userInputs to be empty');
 });
 
 Then('the current session should be the created session', function(this: BmadWorld) {
@@ -461,13 +475,13 @@ Then('session ID {string} should be different from {string}', function(this: Bma
 Then('the session workflow ID should be {string}', function(this: BmadWorld, expected: string) {
   const executor = getWorkflowExecutor(this);
   const session = executor.getCurrentSession();
-  assert.strictEqual(session?.workflowId, expected);
+  assert.strictEqual(session?.workflowId, expected, `Expected session workflowId "${expected}", got "${session?.workflowId}"`);
 });
 
 Then('the current session should be null', function(this: BmadWorld) {
   const executor = getWorkflowExecutor(this);
   const session = executor.getCurrentSession();
-  assert.strictEqual(session, null);
+  assert.strictEqual(session, null, 'Expected current session to be null');
 });
 
 Then('the current session should not be null', function(this: BmadWorld) {
@@ -479,42 +493,42 @@ Then('the current session should not be null', function(this: BmadWorld) {
 Then('the current session workflow name should be {string}', function(this: BmadWorld, expected: string) {
   const executor = getWorkflowExecutor(this);
   const session = executor.getCurrentSession();
-  assert.strictEqual(session?.workflowName, expected);
+  assert.strictEqual(session?.workflowName, expected, `Expected current session workflowName "${expected}", got "${session?.workflowName}"`);
 });
 
 Then('getting the session by its ID should return the same session', function(this: BmadWorld) {
   const executor = getWorkflowExecutor(this);
   const current = executor.getCurrentSession();
   const retrieved = executor.getSession(current?.id);
-  assert.strictEqual(retrieved, current);
+  assert.strictEqual(retrieved, current, 'Expected retrieved session to be the same object as current session');
 });
 
 Then('the retrieved session should be null', function(this: BmadWorld) {
-  assert.strictEqual(retrievedSession, null);
+  assert.strictEqual(retrievedSession, null, 'Expected retrieved session to be null');
 });
 
 Then('the session should have {int} user input(s)', function(this: BmadWorld, count: number) {
   const executor = getWorkflowExecutor(this);
   const session = executor.getCurrentSession() || updateResult;
-  assert.strictEqual(session?.userInputs?.length, count);
+  assert.strictEqual(session?.userInputs?.length, count, `Expected ${count} user inputs, got ${session?.userInputs?.length}`);
 });
 
 Then('the session user input {int} should be {string}', function(this: BmadWorld, index: number, expected: string) {
   const executor = getWorkflowExecutor(this);
   const session = executor.getCurrentSession() || updateResult;
-  assert.strictEqual(session?.userInputs?.[index - 1]?.input, expected);
+  assert.strictEqual(session?.userInputs?.[index - 1]?.input, expected, `Expected user input ${index} "${expected}", got "${session?.userInputs?.[index - 1]?.input}"`);
 });
 
 Then('the session should have {int} completed step(s)', function(this: BmadWorld, count: number) {
   const executor = getWorkflowExecutor(this);
   const session = executor.getCurrentSession() || updateResult;
-  assert.strictEqual(session?.stepsCompleted?.length, count);
+  assert.strictEqual(session?.stepsCompleted?.length, count, `Expected ${count} completed steps, got ${session?.stepsCompleted?.length}`);
 });
 
 Then('the session current step path should be {string}', function(this: BmadWorld, expected: string) {
   const executor = getWorkflowExecutor(this);
   const session = executor.getCurrentSession() || updateResult;
-  assert.strictEqual(session?.currentStepPath, expected);
+  assert.strictEqual(session?.currentStepPath, expected, `Expected currentStepPath "${expected}", got "${session?.currentStepPath}"`);
 });
 
 Then('the session last activity time should be updated', function(this: BmadWorld) {
@@ -527,41 +541,41 @@ Then('the session last activity time should be updated', function(this: BmadWorl
 });
 
 Then('the update result should be null', function(this: BmadWorld) {
-  assert.strictEqual(updateResult, null);
+  assert.strictEqual(updateResult, null, 'Expected update result to be null');
 });
 
 Then('the switch should succeed', function(this: BmadWorld) {
-  assert.strictEqual(switchResult, true);
+  assert.strictEqual(switchResult, true, 'Expected switch to succeed');
 });
 
 Then('the switch should fail', function(this: BmadWorld) {
-  assert.strictEqual(switchResult, false);
+  assert.strictEqual(switchResult, false, 'Expected switch to fail');
 });
 
 // Step navigation assertions
 Then('the next step should be {string}', function(this: BmadWorld, expected: string) {
-  assert.strictEqual(stepNavigation?.nextStep, expected);
+  assert.strictEqual(stepNavigation?.nextStep, expected, `Expected nextStep "${expected}", got "${stepNavigation?.nextStep}"`);
 });
 
 Then('the this step should be {string}', function(this: BmadWorld, expected: string) {
-  assert.strictEqual(stepNavigation?.thisStep, expected);
+  assert.strictEqual(stepNavigation?.thisStep, expected, `Expected thisStep "${expected}", got "${stepNavigation?.thisStep}"`);
 });
 
 Then('the next step should be undefined', function(this: BmadWorld) {
-  assert.strictEqual(stepNavigation?.nextStep, undefined);
+  assert.strictEqual(stepNavigation?.nextStep, undefined, 'Expected nextStep to be undefined');
 });
 
 Then('the this step should be undefined', function(this: BmadWorld) {
-  assert.strictEqual(stepNavigation?.thisStep, undefined);
+  assert.strictEqual(stepNavigation?.thisStep, undefined, 'Expected thisStep to be undefined');
 });
 
 // Prompt detection assertions
 Then('waiting for input should be true', function(this: BmadWorld) {
-  assert.strictEqual(promptDetection?.waitingForInput, true);
+  assert.strictEqual(promptDetection?.waitingForInput, true, 'Expected waitingForInput to be true');
 });
 
 Then('waiting for input should be false', function(this: BmadWorld) {
-  assert.strictEqual(promptDetection?.waitingForInput, false);
+  assert.strictEqual(promptDetection?.waitingForInput, false, 'Expected waitingForInput to be false');
 });
 
 Then('menu options should contain {string}', function(this: BmadWorld, expected: string) {
@@ -572,7 +586,7 @@ Then('menu options should contain {string}', function(this: BmadWorld, expected:
 });
 
 Then('continue option should be true', function(this: BmadWorld) {
-  assert.strictEqual(promptDetection?.continueOption, true);
+  assert.strictEqual(promptDetection?.continueOption, true, 'Expected continueOption to be true');
 });
 
 Then(/^menu options starting with "\[A\]" should appear only once$/, function(this: BmadWorld) {
@@ -583,7 +597,7 @@ Then(/^menu options starting with "\[A\]" should appear only once$/, function(th
 // Query result assertions
 Then('the result should be the workflow registry', function(this: BmadWorld) {
   const registry = getWorkflowRegistry(this);
-  assert.strictEqual(queryResult, registry);
+  assert.strictEqual(queryResult, registry, 'Expected result to be the workflow registry');
 });
 
 Then('the result should contain more than {int} workflows', function(this: BmadWorld, count: number) {
@@ -601,7 +615,7 @@ Then('all returned workflows should have tag {string}', function(this: BmadWorld
 });
 
 Then('the result should be empty', function(this: BmadWorld) {
-  assert.deepStrictEqual(queryResult, []);
+  assert.deepStrictEqual(queryResult, [], 'Expected result to be empty');
 });
 
 Then('all returned workflows should support artifact {string}', function(this: BmadWorld, artifactType: string) {
@@ -641,23 +655,23 @@ Then(/^the menu should match pattern "([^"]*)"$/, function(this: BmadWorld, patt
 
 // Variable resolution assertions
 Then('the resolved value should be {string}', function(this: BmadWorld, expected: string) {
-  assert.strictEqual(resolvedValue, expected);
+  assert.strictEqual(resolvedValue, expected, `Expected resolved value "${expected}", got "${resolvedValue}"`);
 });
 
 // Getter assertions
 Then('the BMAD path should be empty', function(this: BmadWorld) {
   const executor = getWorkflowExecutor(this);
-  assert.strictEqual(executor.getBmadPath(), '');
+  assert.strictEqual(executor.getBmadPath(), '', 'Expected BMAD path to be empty');
 });
 
 Then('the project root should be empty', function(this: BmadWorld) {
   const executor = getWorkflowExecutor(this);
-  assert.strictEqual(executor.getProjectRoot(), '');
+  assert.strictEqual(executor.getProjectRoot(), '', 'Expected project root to be empty');
 });
 
 // Singleton assertions
 Then('both instances should be the same', function(this: BmadWorld) {
-  assert.strictEqual(singletonInstances[0], singletonInstances[1]);
+  assert.strictEqual(singletonInstances[0], singletonInstances[1], 'Expected both singleton instances to be the same');
 });
 
 // Interface/definition assertions
@@ -671,11 +685,11 @@ Then('the definition should have all required fields', function(this: BmadWorld)
 });
 
 Then('the definition phase should be {string}', function(this: BmadWorld, expected: string) {
-  assert.strictEqual(workflowDefinition.phase, expected);
+  assert.strictEqual(workflowDefinition.phase, expected, `Expected definition phase "${expected}", got "${workflowDefinition.phase}"`);
 });
 
 Then('the definition category should be {string}', function(this: BmadWorld, expected: string) {
-  assert.strictEqual(workflowDefinition.category, expected);
+  assert.strictEqual(workflowDefinition.category, expected, `Expected definition category "${expected}", got "${workflowDefinition.category}"`);
 });
 
 Then('the session should have all required fields', function(this: BmadWorld) {

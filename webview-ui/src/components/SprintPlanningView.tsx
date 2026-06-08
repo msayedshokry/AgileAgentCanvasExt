@@ -1,5 +1,13 @@
+// SprintPlanningView now uses shared Kanban components (KanbanCard, KanbanColumn, KanbanTypes)
+// from components/kanban/. Sprint-specific badges (retro, consistency) are rendered in
+// SprintCardWrapper, and sprint-* CSS classes are kept for modal/tabs/meta structure only.
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Icon } from './Icon';
+import { KanbanCard } from './kanban/KanbanCard';
+import { KanbanColumn } from './kanban/KanbanColumn';
+import { KANBAN_COLUMNS } from './kanban/KanbanTypes';
+import type { KanbanItem, KanbanColumnDef, KanbanColumnKey } from './kanban/KanbanTypes';
+import './kanban/Kanban.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -84,6 +92,66 @@ export const STATUS_COLUMNS: { key: NormalizedStatus; label: string; accent: str
 export const RETRO_COLUMN = { key: 'optional', label: 'Retrospective', accent: '#64748b' };
 
 type NormalizedStatus = 'backlog' | 'ready-for-dev' | 'in-progress' | 'review' | 'done' | 'optional';
+
+// ─── Shared Kanban column definitions (includes retro column) ────────────────
+
+const SPRINT_KANBAN_COLUMNS: KanbanColumnDef[] = [
+  ...KANBAN_COLUMNS,
+  { key: 'optional' as KanbanColumnKey, label: 'Retrospective', accent: '#64748b' },
+];
+
+// ─── SprintItem → KanbanItem mapping ─────────────────────────────────────────
+
+function sprintItemToKanbanItem(item: SprintItem): KanbanItem {
+  return {
+    id: item.key,
+    key: item.key,
+    title: item.isRetro ? 'Retrospective' : '',
+    status: item.status,
+    type: item.isEpic ? 'epic' : item.isRetro ? 'retro' : 'story',
+    epicKey: item.epicKey ?? undefined,
+    isEpic: item.isEpic,
+  };
+}
+
+// ─── SprintCardWrapper (shared KanbanCard + sprint-specific badges) ──────────
+
+function SprintCardWrapper({ item, index }: { item: SprintItem; index?: number }) {
+  const kanbanItem = sprintItemToKanbanItem(item);
+  const cardClassName = [
+    item.consistencyError ? 'sprint-card--error' : '',
+    item.consistencyWarning ? 'sprint-card--warn' : '',
+  ].filter(Boolean).join(' ') || undefined;
+
+  return (
+    <div>
+      <KanbanCard item={kanbanItem} index={index} className={cardClassName} />
+
+      {/* Sprint-specific badges: Retro type tag */}
+      {item.isRetro && (
+        <span className="kanban-card-type-tag" style={{ marginTop: '4px', display: 'inline-block' }}>Retro</span>
+      )}
+
+      {/* Sprint-specific badges: Consistency checks */}
+      {item.consistencyError && (
+        <span
+          className="sprint-card-consistency-badge sprint-card-consistency-badge--error"
+          title={`Status inconsistency: story is ${item.status} but ${item.epicKey} is backlog`}
+        >
+          ⚠ Epic not started
+        </span>
+      )}
+      {item.consistencyWarning && (
+        <span
+          className="sprint-card-consistency-badge sprint-card-consistency-badge--warn"
+          title={`${item.epicKey} is still backlog despite this story being done`}
+        >
+          ↑ Promote epic
+        </span>
+      )}
+    </div>
+  );
+}
 
 const UNSCHEDULED_ID = '__unscheduled__';
 
@@ -329,74 +397,11 @@ export function parseSprintStatusYaml(
   };
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-interface KanbanCardProps { item: SprintItem; index?: number }
-
-function KanbanCard({ item, index }: KanbanCardProps) {
-  const epicLabel = item.epicKey ?? (item.isEpic ? item.key : null);
-  return (
-    <div 
-      className={[
-        'sprint-card',
-        item.isEpic ? 'sprint-card--epic' : '',
-        item.isRetro ? 'sprint-card--retro' : '',
-        item.consistencyError ? 'sprint-card--error' : '',
-        item.consistencyWarning ? 'sprint-card--warn' : '',
-      ].filter(Boolean).join(' ')}
-      style={index !== undefined ? { '--card-index': index } as React.CSSProperties : undefined}
-    >
-      <span className="sprint-card-key">{item.key}</span>
-      {epicLabel && !item.isEpic && (
-        <span className="sprint-card-epic-tag">{epicLabel}</span>
-      )}
-      {item.isEpic && <span className="sprint-card-type-tag">Epic</span>}
-      {item.isRetro && <span className="sprint-card-type-tag">Retro</span>}
-      {item.consistencyError && (
-        <span className="sprint-card-consistency-badge sprint-card-consistency-badge--error" title={`Status inconsistency: story is ${item.status} but ${item.epicKey} is backlog`}>
-          ⚠ Epic not started
-        </span>
-      )}
-      {item.consistencyWarning && (
-        <span className="sprint-card-consistency-badge sprint-card-consistency-badge--warn" title={`${item.epicKey} is still backlog despite this story being done`}>
-          ↑ Promote epic
-        </span>
-      )}
-    </div>
-  );
-}
-
-interface KanbanColumnProps {
-  label: string;
-  accent: string;
-  items: SprintItem[];
-}
-
-function KanbanColumn({ label, accent, items }: KanbanColumnProps) {
-  return (
-    // eslint-disable-next-line react/forbid-component-props -- dynamic accent color from data
-    <div className="sprint-column" style={{ '--sprint-col-accent': accent } as React.CSSProperties}>
-      <div className="sprint-column-header">
-        <span className="sprint-column-label">{label}</span>
-        <span className="sprint-column-count">{items.length}</span>
-      </div>
-      <div className="sprint-column-cards">
-        {items.length === 0 ? (
-          <div className="sprint-column-empty">—</div>
-        ) : (
-          items.map((item, idx) => <KanbanCard key={item.key} item={item} index={idx} />)
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ─── Sprint board renderer (status columns for a given set of items) ──────────
 
 function SprintBoard({ items }: { items: SprintItem[] }) {
-  const allColumns = [...STATUS_COLUMNS, RETRO_COLUMN];
   const grouped = new Map<string, SprintItem[]>();
-  allColumns.forEach(c => grouped.set(c.key, []));
+  SPRINT_KANBAN_COLUMNS.forEach(c => grouped.set(c.key, []));
 
   for (const item of items) {
     const ns = normalizeStatus(item.status);
@@ -406,15 +411,21 @@ function SprintBoard({ items }: { items: SprintItem[] }) {
   }
 
   return (
-    <div className="sprint-board">
-      {allColumns.map(col => (
-        <KanbanColumn
-          key={col.key}
-          label={col.label}
-          accent={col.accent}
-          items={grouped.get(col.key) ?? []}
-        />
-      ))}
+    <div className="kanban-board">
+      {SPRINT_KANBAN_COLUMNS.map(col => {
+        const colItems = grouped.get(col.key) ?? [];
+        return (
+          <KanbanColumn<SprintItem>
+            key={col.key}
+            column={col}
+            items={colItems}
+            emptyText="—"
+            renderCard={(item, idx) => (
+              <SprintCardWrapper key={item.key} item={item} index={idx} />
+            )}
+          />
+        );
+      })}
     </div>
   );
 }

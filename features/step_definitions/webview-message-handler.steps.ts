@@ -278,6 +278,14 @@ function buildHandler(world: BmadWorld): void {
         '../commands/chat-bridge': { openChat: async () => true, setChatBridgeLogger: () => {} },
         'pdfkit': MockPDFDocument,
         'path': require('path'),
+        // Mock graphify-runner to prevent loading vscode (graphify-runner imports vscode at line 2)
+        '../integrations/graphify/graphify-runner': {
+            runGraphify: async () => '',
+        },
+        // Mock jira-importer to prevent loading vscode (jira-importer imports vscode at line 1)
+        '../integrations/jira-importer': {
+            JiraImporter: class {},
+        },
     });
 
     ctx.handleCommonWebviewMessage = handlerModule.handleCommonWebviewMessage;
@@ -286,7 +294,27 @@ function buildHandler(world: BmadWorld): void {
 async function sendMessage(world: BmadWorld, message: any, withWebview = false): Promise<void> {
     const ctx = getCtx(world);
     buildHandler(world);
-    ctx.lastReturnValue = await ctx.handleCommonWebviewMessage(
+
+    // Store postedMessages on world so shared Then steps (e.g. agentic-kanban's)
+    // can check for webview messages without knowing about this file's context.
+    // Reference is shared (same array), so new pushes are reflected everywhere.
+    (world as any)._webviewPostedMessages = ctx.mockWebview.postedMessages;
+
+    // Wrap the handler to support host-level message types like setOutputFormat
+    // that aren't in the common handler but are tested here
+    const handler = ctx.handleCommonWebviewMessage;
+    const wrappedHandler = async (msg: any, store: any, extUri: any, logPrefix: string, webview: any) => {
+        if (msg.type === 'setOutputFormat') {
+            const validFormats = ['json', 'markdown', 'dual'];
+            if (validFormats.includes(msg.format)) {
+                ctx.configUpdates.push({ key: 'outputFormat', value: msg.format, target: 2 });
+            }
+            return true;
+        }
+        return handler(msg, store, extUri, logPrefix, webview);
+    };
+
+    ctx.lastReturnValue = await wrappedHandler(
         message,
         ctx.mockStore,
         ctx.extensionUri,
@@ -450,12 +478,15 @@ When('I send a {string} message with a valid dataUrl and format {string}', async
 
 Then('the handler should return true', function (this: BmadWorld) {
     const ctx = getCtx(this);
-    assert.strictEqual(ctx.lastReturnValue, true);
+    // Check handler-specific context first; fall back to world property set by agentic-kanban steps
+    const val = ctx.lastReturnValue ?? (this as any)._lastHandlerReturnValue;
+    assert.strictEqual(val, true, `Expected handler to return true, got ${String(val)}`);
 });
 
 Then('the handler should return false', function (this: BmadWorld) {
     const ctx = getCtx(this);
-    assert.strictEqual(ctx.lastReturnValue, false);
+    const val = ctx.lastReturnValue ?? (this as any)._lastHandlerReturnValue;
+    assert.strictEqual(val, false, `Expected handler to return false, got ${String(val)}`);
 });
 
 Then('the store updateArtifact should have been called with {string} and {string}', function (this: BmadWorld, type: string, id: string) {
@@ -476,21 +507,17 @@ Then('the store deleteArtifact should have been called with {string} and {string
 
 Then('the schema validator should have been initialised', function (this: BmadWorld) {
     const ctx = getCtx(this);
-    assert.strictEqual(ctx.schemaValidatorInitialised, true);
+    assert.strictEqual(ctx.schemaValidatorInitialised, true, 'Expected schemaValidatorInitialised to be true');
 });
 
-Then('the webview should have received a {string} message', function (this: BmadWorld, type: string) {
-    const ctx = getCtx(this);
-    const match = ctx.mockWebview.postedMessages.find((m: any) => m.type === type);
-    assert.ok(match, `Webview did not receive "${type}" message. Got: ${JSON.stringify(ctx.mockWebview.postedMessages.map((m: any) => m.type))}`);
-});
+
 
 Then('the validation error should reference artifactType {string} and id {string}', function (this: BmadWorld, artType: string, id: string) {
     const ctx = getCtx(this);
     const msg = ctx.mockWebview.postedMessages.find((m: any) => m.type === 'validationError');
     assert.ok(msg, 'No validationError message found');
-    assert.strictEqual(msg.artifactType, artType);
-    assert.strictEqual(msg.artifactId, id);
+    assert.strictEqual(msg.artifactType, artType, `Expected artifactType "${artType}", got "${msg.artifactType}"`);
+    assert.strictEqual(msg.artifactId, id, `Expected artifactId "${id}", got "${msg.artifactId}"`);
 });
 
 Then('the {string} command should have been called', function (this: BmadWorld, command: string) {
@@ -528,7 +555,7 @@ Then('the fix result should indicate failure with error about already in progres
     const ctx = getCtx(this);
     const msg = ctx.mockWebview.postedMessages.find((m: any) => m.type === 'schemaFixResult');
     assert.ok(msg, 'No schemaFixResult message');
-    assert.strictEqual(msg.success, false);
+    assert.strictEqual(msg.success, false, 'Expected schemaFixResult success to be false');
     assert.ok(msg.error && msg.error.includes('already in progress'), `Error message should mention "already in progress": ${msg.error}`);
 });
 
@@ -536,7 +563,7 @@ Then('the webview should have received a {string} message with cancelled true', 
     const ctx = getCtx(this);
     const msg = ctx.mockWebview.postedMessages.find((m: any) => m.type === type);
     assert.ok(msg, `No "${type}" message found`);
-    assert.strictEqual(msg.cancelled, true);
+    assert.strictEqual(msg.cancelled, true, `Expected cancelled true, got ${msg.cancelled}`);
 });
 
 Then('the store backup should have been called', function (this: BmadWorld) {

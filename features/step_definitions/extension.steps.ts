@@ -177,7 +177,10 @@ function loadExtensionModule(world: BmadWorld): any {
         resolveArtifactTargetUri: async (opts: any) => vsc.Uri.file(`/test/${opts.fileName}`),
         writeJsonFile: async () => {},
         writeMarkdownCompanion: async (jsonUri: any, mdFilename: string) => vsc.Uri.file(`/test/${mdFilename}`)
-      }
+      },
+      '../harness/policy-engine': {
+        harnessEngine: { evaluate: async () => [] },
+      },
     });
 
     // Load real command modules with mocked vscode so the actual logic runs
@@ -218,7 +221,13 @@ function loadExtensionModule(world: BmadWorld): any {
       '../state/artifact-store': artifactStoreModule,
       '../extension': { acOutput: mockAcOutput },
       '../commands/artifact-commands': artifactCommandsModule,
-      '../commands/chat-bridge': mockChatBridge
+      '../commands/chat-bridge': mockChatBridge,
+      '../integrations/graphify/graphify-runner': {
+        runGraphify: async () => '',
+      },
+      '../integrations/jira-importer': {
+        JiraImporter: class {},
+      },
     });
 
     const mod = proxyquire('../../src/extension', {
@@ -247,6 +256,9 @@ function loadExtensionModule(world: BmadWorld): any {
       },
       './views/artifacts-tree-provider': {
         ArtifactsTreeProvider: class { refresh = () => {}; constructor(_s: any) {} }
+      },
+      './views/agentic-kanban-view-provider': {
+        AgenticKanbanViewProvider: class { refresh = () => {}; constructor(_s: any) {} },
       },
       './views/wizard-steps-provider': {
         WizardStepsProvider: class { refresh = () => {}; constructor(_s: any) {} }

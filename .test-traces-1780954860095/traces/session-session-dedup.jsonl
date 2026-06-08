@@ -1,0 +1,3 @@
+{"sessionId":"session-dedup","type":"tool_call","agent":"analyst","data":{"toolName":"tool_0"},"timestamp":"2026-06-08T21:41:00.102Z"}
+{"sessionId":"session-dedup","type":"tool_call","agent":"analyst","data":{"toolName":"tool_1"},"timestamp":"2026-06-08T21:41:00.102Z"}
+{"sessionId":"session-dedup","type":"tool_call","agent":"analyst","data":{"toolName":"extra_tool"},"timestamp":"2026-06-08T21:41:00.103Z"}

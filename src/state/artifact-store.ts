@@ -6,6 +6,8 @@ import { openChat } from '../commands/chat-bridge';
 import { createLogger } from '../utils/logger';
 import { resolveArtifactTargetUri, writeJsonFile, writeMarkdownCompanion, normalizeLegacyArtifact } from './artifact-file-io';
 import { schemaValidator } from './schema-validator';
+import { harnessEngine } from '../harness/policy-engine';
+import { harnessFeedback } from '../harness/harness-feedback';
 import { repairDataWithSchema } from './schema-repair-engine';
 import {
     BmadArtifacts,
@@ -206,6 +208,10 @@ export class ArtifactStore {
     // Selection change event (for workflow progress panel)
     private _onDidChangeSelection = new vscode.EventEmitter<void>();
     readonly onDidChangeSelection = this._onDidChangeSelection.event;
+    
+    // Harness governance failures event (Epic 4)
+    private _onHarnessFailures = new vscode.EventEmitter<any[]>();
+    readonly onHarnessFailures = this._onHarnessFailures.event;
 
     
     // Track source files for writing back
@@ -273,7 +279,32 @@ export class ArtifactStore {
         this._dirty = true;
         this._onDidChangeArtifacts.fire();
     }
-
+    /**
+     * Harness post-flight checks + derived state reconciliation + notification.
+     * Runs advisory post-flight policies on all in-memory artifacts, then
+     * reconciles derived state and fires change events.
+     */
+    private async _harmonizeAndNotify(): Promise<void> {
+        const harnessEnabled = vscode.workspace.getConfiguration('agileagentcanvas').get('harness.enabled', true);
+        if (harnessEnabled) {
+            for (const [, docs] of this.artifacts) {
+                if (!Array.isArray(docs)) continue;
+                for (const doc of docs) {
+                    try {
+                        const postResults = await harnessEngine.evaluate(
+                            { artifactType: doc.type || 'unknown', artifactId: doc.id, artifact: doc },
+                            'post-flight'
+                        );
+                        const advisory = postResults.filter(r => !r.passed);
+                        if (advisory.length > 0) this._onHarnessFailures.fire(advisory);
+                        // evaluate() already calls harnessFeedback.recordEvaluation() internally
+                    } catch { /* individual eval failures are non-blocking */ }
+                }
+            }
+        }
+        this.reconcileDerivedState();
+        this.notifyChange();
+    }
     // =====================================================================
     // reconcileDerivedState()  —  single source of truth for cross-artifact
     // derived data.  Called after every updateArtifact() AND at the end of
@@ -679,6 +710,24 @@ export class ArtifactStore {
         changes: Partial<any>
     ): Promise<void> {
         logDebug('updateArtifact called:', artifactType, artifactId, changes);
+        // ── Harness pre-flight checks (Epic 4) ──────────────────────────────
+        const harnessEnabled = vscode.workspace.getConfiguration('agileagentcanvas').get('harness.enabled', true);
+        if (harnessEnabled) {
+            const preResults = await harnessEngine.evaluate(
+                { artifactType, artifactId, artifact: changes },
+                'pre-flight'
+            );
+            const blocking = preResults.filter(r => !r.passed && r.severity === 'blocking');
+            if (blocking.length > 0) {
+                this._onHarnessFailures.fire(blocking);
+                throw new Error(`Blocked by policies: ${blocking.map(b => b.policyId).join(', ')}`);
+            }
+            // Apply auto-fixes from the last successful fix
+            const lastFix = [...preResults].reverse().find(r => r.fixedArtifact !== undefined);
+            if (lastFix?.fixedArtifact) {
+                changes = Object.assign(changes, lastFix.fixedArtifact);
+            }
+        }
         
         switch (artifactType) {
             case 'vision':
@@ -3578,9 +3627,8 @@ export class ArtifactStore {
                 // riskAssessment→epic.risks) from whatever is now in memory.
                 // This runs AFTER artifacts.set('epics', allEpics) so epics
                 // are available for storyId resolution and risk attachment.
-                this.reconcileDerivedState();
 
-                this.notifyChange();
+                await this._harmonizeAndNotify();
             } else {
                 storeLogger.debug('[ArtifactStore] WARNING: No artifacts found in folder');
             }
@@ -8952,6 +9000,7 @@ export class ArtifactStore {
      */
     dispose() {
         this._onDidChangeArtifacts.dispose();
+        this._onHarnessFailures.dispose();
     }
 
     /**

@@ -3093,6 +3093,9 @@ body.vscode-light .minimap-viewport {
   display: flex;
   flex: 1;
   overflow: hidden;
+  /* Top padding clears the absolute-positioned toolbar/FAB zone (~48px)
+     so content (Canvas, Mindmap, 3D Corpus, Kanban) isn't hidden behind it. */
+  padding-top: 48px;
 }
 
 .app.with-detail-panel .canvas {
@@ -9056,6 +9059,7 @@ body.vscode-light .minimap-viewport {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
   backdrop-filter: blur(8px);
   transition: background 0.15s ease, box-shadow 0.15s ease;
+  max-width: 115px;
 }
 
 .provider-selector-trigger:hover {
@@ -9165,3 +9169,714 @@ body.vscode-light .minimap-viewport {
   max-width: 80px;
 }
 
+
+
+/* --- Kanban Toggle FAB (sits to the left of Provider Selector) --- */
+.kanban-toggle-fab {
+  position: absolute;
+  top: 12px;
+  right: 260px;
+  z-index: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: none;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--vscode-font-family);
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  backdrop-filter: blur(8px);
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+  letter-spacing: 0.01em;
+  user-select: none;
+}
+
+.kanban-toggle-fab:hover {
+  background: var(--vscode-button-hoverBackground);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+}
+
+.kanban-toggle-fab:active {
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  transform: scale(0.97);
+}
+
+
+
+.kanban-toggle-label {
+  font-weight: 500;
+  font-size: 12px;
+}
+
+body.ac-force-light .kanban-toggle-fab,
+body.vscode-light .kanban-toggle-fab {
+  background: #ffffff;
+  color: var(--vscode-foreground, #1a1d23);
+  border: 1px solid #d0d4dc;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+body.ac-force-light .kanban-toggle-fab:hover,
+body.vscode-light .kanban-toggle-fab:hover {
+  background: #f5f6f8;
+}
+
+.app.with-detail-panel .kanban-toggle-fab {
+  right: 640px;
+}
+
+
+/* ─── Terminal Modal (Agentic Kanban) ──────────────────────────────────── */
+.terminal-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  animation: terminalFadeIn 0.15s ease-out;
+}
+
+@keyframes terminalFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.terminal-modal {
+  width: 80vw;
+  max-width: 960px;
+  height: 70vh;
+  max-height: 600px;
+  display: flex;
+  flex-direction: column;
+  background: var(--vscode-editor-background, #1e1e1e);
+  border: 1px solid var(--vscode-editorWidget-border, #454545);
+  border-radius: 10px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  animation: terminalSlideUp 0.2s ease-out;
+}
+
+@keyframes terminalSlideUp {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.terminal-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--vscode-titleBar-activeBackground, #252526);
+  border-bottom: 1px solid var(--vscode-editorWidget-border, #454545);
+  flex-shrink: 0;
+}
+
+.terminal-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vscode-titleBar-activeForeground, #cccccc);
+  min-width: 0;
+}
+
+.terminal-modal-icon {
+  font-size: 14px;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.terminal-modal-title span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.terminal-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.terminal-modal-btn {
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: inherit;
+  border: 1px solid var(--vscode-button-border, transparent);
+  border-radius: 4px;
+  background: var(--vscode-button-secondaryBackground, #3a3d41);
+  color: var(--vscode-button-secondaryForeground, #cccccc);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+}
+
+.terminal-modal-btn:hover {
+  background: var(--vscode-button-secondaryHoverBackground, #45494e);
+}
+
+.terminal-modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--vscode-titleBar-activeForeground, #cccccc);
+  font-size: 18px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.terminal-modal-close:hover {
+  opacity: 1;
+  background: rgba(128, 128, 128, 0.2);
+}
+
+.terminal-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
+  background: var(--vscode-terminal-background, #1e1e1e);
+  font-family: var(--vscode-editor-font-family, "Cascadia Code", "Fira Code", "JetBrains Mono", Consolas, monospace);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--vscode-terminal-foreground, #cccccc);
+  scrollbar-color: var(--vscode-scrollbarSlider-background) transparent;
+  scrollbar-width: thin;
+}
+
+.terminal-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.terminal-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.terminal-modal-body::-webkit-scrollbar-thumb {
+  background: var(--vscode-scrollbarSlider-background);
+  border-radius: 3px;
+}
+
+.terminal-modal-body::-webkit-scrollbar-thumb:hover {
+  background: var(--vscode-scrollbarSlider-hoverBackground);
+}
+
+.terminal-modal-output {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+  min-height: 100%;
+}
+
+
+/* ─── Agentic Detail Panel (enriched) ──────────────────────────────────── */
+
+.agentic-detail-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 340px;
+  max-width: 90vw;
+  height: 100vh;
+  background: var(--vscode-editor-background, #1e1e1e);
+  border-left: 1px solid var(--vscode-editorWidget-border, #454545);
+  box-shadow: -8px 0 24px rgba(0,0,0,0.25);
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  animation: agenticPanelSlideIn 0.2s ease-out;
+}
+
+@keyframes agenticPanelSlideIn {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+/* ── Header ── */
+.agentic-detail-header {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border, #454545);
+  flex-shrink: 0;
+}
+
+.agentic-detail-header-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.agentic-detail-title {
+  flex: 1;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--vscode-editor-foreground, #cccccc);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.agentic-detail-close-btn {
+  background: none;
+  border: none;
+  color: var(--vscode-foreground, #cccccc);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  opacity: 0.6;
+  flex-shrink: 0;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.agentic-detail-close-btn:hover {
+  opacity: 1;
+  background: var(--vscode-toolbar-hoverBackground, rgba(128,128,128,0.15));
+}
+
+.agentic-detail-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.agentic-detail-meta-item {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--vscode-descriptionForeground, #9d9d9d);
+}
+
+.agentic-detail-meta-divider {
+  font-size: 10px;
+  color: var(--vscode-editorWidget-border, #454545);
+  opacity: 0.5;
+}
+
+/* ── Sections (scrollable body) ── */
+.agentic-detail-panel {
+  scrollbar-color: var(--vscode-scrollbarSlider-background) transparent;
+  scrollbar-width: thin;
+}
+
+.agentic-detail-panel::-webkit-scrollbar {
+  width: 5px;
+}
+
+.agentic-detail-panel::-webkit-scrollbar-thumb {
+  background: var(--vscode-scrollbarSlider-background);
+  border-radius: 3px;
+}
+
+.agentic-detail-section {
+  padding: 12px 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--vscode-editorWidget-border) 40%, transparent);
+  flex-shrink: 0;
+}
+
+.agentic-detail-section h4 {
+  margin: 0 0 8px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--vscode-descriptionForeground, #9d9d9d);
+}
+
+.agentic-detail-section:last-child {
+  border-bottom: none;
+}
+
+/* ── Loading state ── */
+.agentic-detail-loading {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground, #9d9d9d);
+  padding: 4px 0;
+  animation: agenticPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes agenticPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* ── Persona Card ── */
+.agentic-persona-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.agentic-agent-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.agentic-persona-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.agentic-persona-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vscode-editor-foreground, #cccccc);
+  line-height: 1.3;
+}
+
+.agentic-persona-title {
+  font-size: 11px;
+  color: var(--vscode-charts-blue, #4fc3f7);
+  font-weight: 500;
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agentic-persona-role {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground, #9d9d9d);
+  margin-top: 3px;
+  line-height: 1.3;
+}
+
+.agentic-persona-style {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground, #9d9d9d);
+  font-style: italic;
+  margin-top: 2px;
+  opacity: 0.8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Execution grid ── */
+.agentic-execution-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.agentic-execution-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.agentic-execution-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--vscode-descriptionForeground, #9d9d9d);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  min-width: 56px;
+  flex-shrink: 0;
+}
+
+.agentic-execution-value {
+  font-size: 11px;
+  color: var(--vscode-editor-foreground, #cccccc);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agentic-execution-value--locked {
+  color: var(--vscode-charts-orange, #ff9800);
+  font-weight: 600;
+}
+
+.agentic-execution-link {
+  font-size: 11px;
+  color: var(--vscode-textLink-foreground, #3794ff);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.agentic-execution-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Status badges ── */
+.kanban-agent-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: capitalize;
+}
+
+.kanban-agent-status--idle {
+  background: color-mix(in srgb, var(--vscode-descriptionForeground) 12%, transparent);
+  color: var(--vscode-descriptionForeground);
+}
+
+.kanban-agent-status--queued {
+  background: color-mix(in srgb, var(--vscode-charts-blue) 15%, transparent);
+  color: var(--vscode-charts-blue);
+}
+
+.kanban-agent-status--running {
+  background: color-mix(in srgb, var(--vscode-charts-green) 15%, transparent);
+  color: var(--vscode-charts-green);
+}
+
+.kanban-agent-status--completed {
+  background: color-mix(in srgb, var(--vscode-charts-green) 20%, transparent);
+  color: var(--vscode-charts-green);
+}
+
+.kanban-agent-status--failed {
+  background: color-mix(in srgb, var(--vscode-charts-red) 15%, transparent);
+  color: var(--vscode-charts-red);
+}
+
+.kanban-agent-status--interrupted {
+  background: color-mix(in srgb, var(--vscode-charts-orange) 15%, transparent);
+  color: var(--vscode-charts-orange);
+}
+
+/* ── Trace Summary ── */
+.agentic-trace-summary {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.agentic-trace-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 56px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--vscode-textBlockQuote-background) 60%, transparent);
+  border: 1px solid color-mix(in srgb, var(--vscode-editorWidget-border) 30%, transparent);
+}
+
+.agentic-trace-stat--error {
+  border-color: color-mix(in srgb, var(--vscode-charts-red) 30%, transparent);
+  background: color-mix(in srgb, var(--vscode-charts-red) 8%, transparent);
+}
+
+.agentic-trace-stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--vscode-editor-foreground, #cccccc);
+  line-height: 1.1;
+}
+
+.agentic-trace-stat--error .agentic-trace-stat-value {
+  color: var(--vscode-charts-red, #f44336);
+}
+
+.agentic-trace-stat-label {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--vscode-descriptionForeground, #9d9d9d);
+}
+
+/* ── Action buttons ── */
+.agentic-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.agentic-detail-btn {
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  border: 1px solid var(--vscode-button-border, transparent);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.agentic-detail-btn--resume {
+  background: var(--vscode-button-background, #0e639c);
+  color: var(--vscode-button-foreground, #ffffff);
+  border-color: transparent;
+}
+
+.agentic-detail-btn--resume:hover {
+  background: var(--vscode-button-hoverBackground, #1177bb);
+}
+
+.agentic-detail-btn--abandon {
+  background: color-mix(in srgb, var(--vscode-charts-red) 15%, transparent);
+  color: var(--vscode-charts-red, #f44336);
+  border-color: color-mix(in srgb, var(--vscode-charts-red) 30%, transparent);
+}
+
+.agentic-detail-btn--abandon:hover {
+  background: color-mix(in srgb, var(--vscode-charts-red) 25%, transparent);
+}
+
+.agentic-detail-btn--terminal {
+  background: color-mix(in srgb, var(--vscode-charts-blue) 15%, transparent);
+  color: var(--vscode-charts-blue, #4fc3f7);
+  border-color: color-mix(in srgb, var(--vscode-charts-blue) 30%, transparent);
+}
+
+.agentic-detail-btn--terminal:hover {
+  background: color-mix(in srgb, var(--vscode-charts-blue) 25%, transparent);
+}
+
+/* ── Warning section ── */
+.agentic-detail-warning-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.agentic-detail-warning {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--vscode-charts-orange, #ff9800);
+  background: color-mix(in srgb, var(--vscode-charts-orange) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--vscode-charts-orange) 25%, transparent);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+/* ─── Trace Filter Chips (Activity section) ───────────────────────────── */
+.agentic-trace-filter-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+}
+
+.agentic-trace-filter-btn {
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 600;
+  border: 1px solid color-mix(in srgb, var(--vscode-editorWidget-border) 50%, transparent);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+  white-space: nowrap;
+  opacity: 0.6;
+  transition: opacity 0.12s ease, background 0.12s ease, border-color 0.12s, color 0.12s;
+}
+
+.agentic-trace-filter-btn:hover {
+  opacity: 0.9;
+  background: color-mix(in srgb, var(--vscode-list-hoverBackground) 50%, transparent);
+}
+
+.agentic-trace-filter-btn.active {
+  opacity: 1;
+  background: color-mix(in srgb, var(--vscode-charts-blue) 12%, transparent);
+  border-color: color-mix(in srgb, var(--vscode-charts-blue) 40%, transparent);
+  color: var(--vscode-charts-blue);
+}
+
+/* Dimmed stat cards when a filter is active */
+.agentic-trace-stat--dimmed {
+  opacity: 0.3;
+  filter: grayscale(0.8);
+  transition: opacity 0.2s ease, filter 0.2s ease;
+}
+
+.agentic-trace-stat--dimmed:hover {
+  opacity: 0.6;
+  filter: grayscale(0.4);
+}
+
+/* ─── Undo button (inline after Abandon) ───────────────────────────── */
+.agentic-detail-btn--undo {
+  background: color-mix(in srgb, var(--vscode-charts-blue) 12%, transparent);
+  border-color: color-mix(in srgb, var(--vscode-charts-blue) 35%, transparent);
+  color: var(--vscode-charts-blue);
+  animation: agenticUndoSlideIn 0.2s ease-out;
+}
+.agentic-detail-btn--undo:hover {
+  background: color-mix(in srgb, var(--vscode-charts-blue) 22%, transparent);
+  border-color: color-mix(in srgb, var(--vscode-charts-blue) 55%, transparent);
+}
+@keyframes agenticUndoSlideIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Resume spinner + loading state ────────────────────────────────── */
+.agentic-detail-btn--resume.is-loading {
+  opacity: 0.8;
+  pointer-events: none;
+  position: relative;
+  padding-left: 28px;
+}
+.agentic-detail-warning--resuming {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--vscode-charts-blue);
+  font-weight: 500;
+}
+.agentic-resume-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid color-mix(in srgb, var(--vscode-charts-blue) 30%, transparent);
+  border-top-color: var(--vscode-charts-blue);
+  border-radius: 50%;
+  animation: agenticSpin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes agenticSpin {
+  to { transform: rotate(360deg); }
+}

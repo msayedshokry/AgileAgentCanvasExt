@@ -1,0 +1,2 @@
+{"sessionId":"session-auto","type":"tool_call","agent":"analyst","data":{"toolName":"tool_0"},"timestamp":"2026-06-08T21:21:12.001Z"}
+{"sessionId":"session-auto","type":"tool_call","agent":"analyst","data":{"toolName":"tool_1"},"timestamp":"2026-06-08T21:21:12.001Z"}

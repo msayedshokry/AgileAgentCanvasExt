@@ -39,7 +39,10 @@ function getStoreModule(world: BmadWorld): any {
         resolveArtifactTargetUri: async (opts: any) => world.vscode.Uri.file(`/test/${opts.fileName}`),
         writeJsonFile: async () => {},
         writeMarkdownCompanion: async (jsonUri: any, mdFilename: string) => world.vscode.Uri.file(`/test/${mdFilename}`)
-      }
+      },
+      '../harness/policy-engine': {
+        harnessEngine: { evaluate: async () => [] },
+      },
     });
   }
   return dpStoreModule;
@@ -76,7 +79,13 @@ function getCanvasModule(world: BmadWorld): any {
       '../state/artifact-store': storeMod,
       '../extension': mockExtension,
       '../commands/artifact-commands': mockArtifactCommands,
-      '../commands/chat-bridge': { openChat: async () => true, setChatBridgeLogger: () => {} }
+      '../commands/chat-bridge': { openChat: async () => true, setChatBridgeLogger: () => {} },
+      '../integrations/graphify/graphify-runner': {
+        runGraphify: async () => '',
+      },
+      '../integrations/jira-importer': {
+        JiraImporter: class {},
+      },
     });
     const mockProjectCommands = {
       createNewProject: async () => {},
@@ -94,6 +103,10 @@ function getCanvasModule(world: BmadWorld): any {
       '../commands/project-commands': mockProjectCommands,
       './webview-message-handler': messageHandlerModule,
       '../commands/chat-bridge': { openChat: async () => true, setChatBridgeLogger: () => {} },
+      '../canvas/artifact-transformer': {
+        sendArtifactsToPanel: () => {},
+        buildArtifacts: () => [],
+      },
       'fs': mockFs,
       'path': require('path')
     });
@@ -592,24 +605,24 @@ When('I extract use case metadata as the webview would receive it', function(thi
 
 Then('the loaded story should have all populated fields preserved', function() {
   assert.ok(lastLoadedArtifact, 'No artifact was loaded');
-  assert.strictEqual(lastLoadedArtifact.id, 'STORY-TEST-1');
-  assert.strictEqual(lastLoadedArtifact.title, 'Full Story');
+  assert.strictEqual(lastLoadedArtifact.id, 'STORY-TEST-1', `Expected loaded story id "STORY-TEST-1", got "${lastLoadedArtifact.id}"`);
+  assert.strictEqual(lastLoadedArtifact.title, 'Full Story', `Expected loaded story title "Full Story", got "${lastLoadedArtifact.title}"`);
 });
 
 Then('the loaded story userStory should have asA {string}', function(value: string) {
-  assert.strictEqual(lastLoadedArtifact.userStory?.asA, value);
+  assert.strictEqual(lastLoadedArtifact.userStory?.asA, value, `Expected loaded story asA "${value}", got "${lastLoadedArtifact.userStory?.asA}"`);
 });
 
 Then('the loaded story userStory should have iWant {string}', function(value: string) {
-  assert.strictEqual(lastLoadedArtifact.userStory?.iWant, value);
+  assert.strictEqual(lastLoadedArtifact.userStory?.iWant, value, `Expected loaded story iWant "${value}", got "${lastLoadedArtifact.userStory?.iWant}"`);
 });
 
 Then('the loaded story userStory should have soThat {string}', function(value: string) {
-  assert.strictEqual(lastLoadedArtifact.userStory?.soThat, value);
+  assert.strictEqual(lastLoadedArtifact.userStory?.soThat, value, `Expected loaded story soThat "${value}", got "${lastLoadedArtifact.userStory?.soThat}"`);
 });
 
 Then('the loaded story should have title {string}', function(value: string) {
-  assert.strictEqual(lastLoadedArtifact.title, value);
+  assert.strictEqual(lastLoadedArtifact.title, value, `Expected loaded story title "${value}", got "${lastLoadedArtifact.title}"`);
 });
 
 // Generic field assertions for loaded artifacts
@@ -633,8 +646,8 @@ Then('the loaded story should have array field {string} with {int} items', funct
 // Epic field assertions
 Then('the loaded epic should have all populated fields preserved', function() {
   assert.ok(lastLoadedArtifact, 'No artifact was loaded');
-  assert.strictEqual(lastLoadedArtifact.id, 'EPIC-TEST-1');
-  assert.strictEqual(lastLoadedArtifact.title, 'Full Epic');
+  assert.strictEqual(lastLoadedArtifact.id, 'EPIC-TEST-1', `Expected loaded epic id "EPIC-TEST-1", got "${lastLoadedArtifact.id}"`);
+  assert.strictEqual(lastLoadedArtifact.title, 'Full Epic', `Expected loaded epic title "Full Epic", got "${lastLoadedArtifact.title}"`);
 });
 
 Then('the loaded epic should have field {string} with value {string}', function(field: string, value: string) {
@@ -672,12 +685,12 @@ Then('the loaded epic use case should have array field {string} with {int} items
 // Requirement field assertions
 Then('the loaded requirement should have all populated fields preserved', function() {
   assert.ok(lastLoadedArtifact, 'No artifact was loaded');
-  assert.strictEqual(lastLoadedArtifact.id, 'FR-TEST-1');
-  assert.strictEqual(lastLoadedArtifact.title, 'Full Requirement');
+  assert.strictEqual(lastLoadedArtifact.id, 'FR-TEST-1', `Expected loaded requirement id "FR-TEST-1", got "${lastLoadedArtifact.id}"`);
+  assert.strictEqual(lastLoadedArtifact.title, 'Full Requirement', `Expected loaded requirement title "Full Requirement", got "${lastLoadedArtifact.title}"`);
 });
 
 Then('the loaded requirement should have title {string}', function(value: string) {
-  assert.strictEqual(lastLoadedArtifact.title, value);
+  assert.strictEqual(lastLoadedArtifact.title, value, `Expected loaded requirement title "${value}", got "${lastLoadedArtifact.title}"`);
 });
 
 Then('the loaded requirement should have field {string} with value {string}', function(field: string, value: string) {

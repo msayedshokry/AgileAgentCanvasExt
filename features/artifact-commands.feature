@@ -8,7 +8,7 @@ Feature: artifact-commands BMM workflow utilities
   Scenario: Returns empty array when workflows directory does not exist
     Given no workflows directory exists
     When I call loadBmmWorkflows
-    Then the result should be an empty array
+    Then the result should be an empty artifacts array
 
   # loadBmmWorkflows — workflow.yaml parsing
   Scenario: Parses a top-level workflow.yaml file

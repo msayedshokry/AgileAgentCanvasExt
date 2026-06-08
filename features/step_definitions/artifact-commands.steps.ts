@@ -148,6 +148,9 @@ Given('a fresh artifact commands context', function (this: BmadWorld) {
   openChatCalls = [];
   lastError = null;
   vfsReset();
+  // loadBmmWorkflows checks skills/ first and returns [] early if it doesn't exist.
+  // Add an empty skills dir so it falls through to the legacy bmm/workflows/ scanner.
+  vfsDirs.add(`${WORKSPACE_ROOT}/_aac/skills`);
   buildArtifactCommandsModule(this);
 });
 
@@ -216,7 +219,7 @@ When('I call launchBmmWorkflow with trigger {string}', async function (this: Bma
 // THEN Steps
 // ─────────────────────────────────────────────────────────────────────────────
 
-Then('the result should be an empty array', function (this: BmadWorld) {
+Then('the result should be an empty artifacts array', function (this: BmadWorld) {
   assert.ok(Array.isArray(loadResult), 'Expected result to be an array');
   assert.strictEqual(loadResult.length, 0,
     `Expected empty array but got ${loadResult.length} items`);

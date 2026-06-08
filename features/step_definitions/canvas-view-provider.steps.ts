@@ -55,7 +55,10 @@ function buildModules(world: BmadWorld) {
       resolveArtifactTargetUri: async (opts: any) => vsc.Uri.file(`/test/${opts.fileName}`),
       writeJsonFile: async () => {},
       writeMarkdownCompanion: async (jsonUri: any, mdFilename: string) => vsc.Uri.file(`/test/${mdFilename}`)
-    }
+    },
+    '../harness/policy-engine': {
+      harnessEngine: { evaluate: async () => [] },
+    },
   });
 
   // Mock artifact-commands used by both canvas-view-provider and webview-message-handler
@@ -82,7 +85,13 @@ function buildModules(world: BmadWorld) {
     '../state/artifact-store': artifactStoreModule,
     '../extension': { acOutput: mockAcOutput },
     '../commands/artifact-commands': mockArtifactCommands,
-    '../commands/chat-bridge': { openChat: async () => true, setChatBridgeLogger: () => {} }
+    '../commands/chat-bridge': { openChat: async () => true, setChatBridgeLogger: () => {} },
+    '../integrations/graphify/graphify-runner': {
+      runGraphify: async () => '',
+    },
+    '../integrations/jira-importer': {
+      JiraImporter: class {},
+    },
   });
 
   // Load canvas-view-provider
@@ -104,6 +113,10 @@ function buildModules(world: BmadWorld) {
       executeCommandCalls.push('workbench.action.chat.open');
       return true;
     }, setChatBridgeLogger: () => {} },
+    '../canvas/artifact-transformer': {
+      sendArtifactsToPanel: () => {},
+      buildArtifacts: () => [],
+    },
     'fs': mockFs,
     'path': require('path')
   });

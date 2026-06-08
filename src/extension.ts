@@ -1,10 +1,23 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { AgileAgentCanvasChatParticipant } from './chat/chat-participant';
 import { ArtifactsTreeProvider } from './views/artifacts-tree-provider';
 import { WizardStepsProvider } from './views/wizard-steps-provider';
+import { AgenticKanbanViewProvider } from './views/agentic-kanban-view-provider';
 import { ArtifactStore } from './state/artifact-store';
 import { WorkspaceResolver } from './state/workspace-resolver';
 import { getWorkflowExecutor } from './workflow/workflow-executor';
+import { initializeLaneTransitionEngine, laneTransitionEngine } from './workflow/lane-transitions';
+import { concurrencyQueue } from './workflow/concurrency-queue';
+import { initializeAcpSessionManager } from './acp/session-manager';
+import { agentMessageBus } from './acp/agent-bus/message-bus';
+import { agentRegistry } from './acp/agent-bus/agent-registry';
+import { handoffNegotiation } from './acp/agent-bus/handoff-negotiation';
+import { initializeTraceRecorder, getTraceRecorder } from './trace/trace-recorder';
+import { registerTraceCommands } from './commands/trace-commands';
+import { registerA2ACommands } from './commands/a2a-commands';
+import { harnessEngine } from './harness/policy-engine';
+import { loadUserPolicies } from './harness/policy-loader';
 import { sendArtifactsToPanel, buildArtifacts } from './canvas/artifact-transformer';
 import { registerTools, sharedToolContext } from './chat/agileagentcanvas-tools';
 import {
@@ -18,6 +31,7 @@ import {
     selectArtifact
 } from './commands/artifact-commands';
 import { handleCommonWebviewMessage, handleCatalogueWebviewMessage } from './views/webview-message-handler';
+import { handleAgenticKanbanMessage } from './views/agentic-kanban-message-handler';
 import { createGraphifyStatusBar, refreshGraphifyStatusBar } from './views/graphify-status-bar';
 import { createCodeburnStatusBar, refreshCodeburnStatusBar } from './views/codeburn-status-bar';
 import { createChatProviderStatusBar, registerPickChatProviderCommand, refreshChatProviderStatusBar } from './views/chat-provider-status-bar';
@@ -131,6 +145,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Register tree views
     const artifactsTreeProvider = new ArtifactsTreeProvider(artifactStore);
     const wizardStepsProvider = new WizardStepsProvider(artifactStore);
+    const agenticKanbanProvider = new AgenticKanbanViewProvider(context.extensionUri, artifactStore);
     
     context.subscriptions.push(
         vscode.window.createTreeView('agileagentcanvas.artifactsTree', {
@@ -139,8 +154,48 @@ export function activate(context: vscode.ExtensionContext) {
         }),
         vscode.window.createTreeView('agileagentcanvas.wizardSteps', {
             treeDataProvider: wizardStepsProvider
-        })
+        }),
+        vscode.window.registerWebviewViewProvider(
+            AgenticKanbanViewProvider.viewType,
+            agenticKanbanProvider
+        )
     );
+    // ── ACP + Lane Transition initialization (Epic 2) ─────────────────────
+    const workflowExecutor = getWorkflowExecutor();
+    initializeAcpSessionManager(workflowExecutor);
+    initializeLaneTransitionEngine(artifactStore, workflowExecutor);
+
+    // ── Agent-to-Agent Message Bus initialization ──────────────────────
+    // The agent message bus, registry, and handoff negotiation service are
+    // initialized as singletons. Subscribe to system events for observability.
+    agentMessageBus.subscribe('extension', 'system.#', async (msg) => {
+      logger.debug(`[Bus] System event: ${msg.topic} from ${msg.from}`);
+    });
+    logger.info('Agent Bus, Registry, and Handoff Negotiation initialized');
+
+    // ── Trace Recorder initialization (Epic 3) ───────────────────────────
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath || '';
+    const outputFolder = vscode.workspace.getConfiguration('agileagentcanvas').get<string>('outputFolder', '.agileagentcanvas-context');
+    const tracesOutputPath = workspaceRoot ? path.join(workspaceRoot, outputFolder) : outputFolder;
+    initializeTraceRecorder(tracesOutputPath);
+    registerTraceCommands(context);
+    registerA2ACommands(context);
+    logger.info('Trace Recorder and A2A Commands initialized');
+
+    // ── Harness Policy Engine initialization (Epic 4) ─────────────────────
+    // Built-in policies are auto-registered at module level. Load user-defined
+    // policies from the workspace's .agileagentcanvas-context/policies/ directory.
+    loadUserPolicies(artifactStore).then(policies => {
+        for (const p of policies) {
+            harnessEngine.registerPolicy(p);
+        }
+        if (policies.length > 0) {
+            logger.info(`Loaded ${policies.length} user-defined harness policies`);
+        }
+    }).catch(err => {
+        logger.warn(`Failed to load user harness policies: ${err instanceof Error ? err.message : String(err)}`);
+    });
+    logger.info('Harness Policy Engine initialized');
 
     // Register commands
     context.subscriptions.push(
@@ -207,6 +262,19 @@ export function activate(context: vscode.ExtensionContext) {
             const jiraCommands = new JiraCommands(artifactStore);
             return jiraCommands.handleFetchFromJira();
         }),
+        // Release all stale concurrency locks (recover from killed terminals)
+        vscode.commands.registerCommand('agileagentcanvas.releaseLocks', async () => {
+          const locks = concurrencyQueue.listLocks();
+          if (locks.length === 0) {
+            vscode.window.showInformationMessage('No stale locks found.');
+            return;
+          }
+          concurrencyQueue.releaseAll();
+          vscode.window.showInformationMessage(
+            `Released ${locks.length} stale concurrency lock(s): ${locks.map(l => l.artifactId).join(', ')}`
+          );
+        }),
+
         // ── codeburn commands ────────────────────────────────────────────────
         vscode.commands.registerCommand('agileagentcanvas.codeburn.menu', () => {
             const cb = new CodeburnCommands();
@@ -423,17 +491,31 @@ export function activate(context: vscode.ExtensionContext) {
                 await artifactStore.loadFromFolder(outputUri);
                 logger.info(`Auto-loaded project from: ${outputUri.fsPath}`);
 
-                // One-time migration: rename stale markdown companions from pre-dual era
-                const MIGRATION_KEY = 'staleMarkdownMigrationV1';
-                if (!context.globalState.get(MIGRATION_KEY)) {
-                    const result = await cleanupStaleMarkdownFiles(outputUri);
-                    if (result.count > 0) {
-                        logger.info(`[Migration] Renamed ${result.count} stale markdown file(s) to .md.bak`);
-                    }
-                    await context.globalState.update(MIGRATION_KEY, true);
-                }
+                // ── Restore interrupted execution state from traces ──────
+                // Now that artifacts are loaded, scan traces and push agent
+                // state to the kanban so the user can see which artifacts
+                // were mid-execution and resume or abandon them.
+                restoreInterruptedSessions(agenticKanbanProvider).catch(err => {
+                  logger.warn(`Failed to restore interrupted sessions: ${err instanceof Error ? err.message : String(err)}`);
+                });
             } catch {
                 logger.info(`Output folder not found (new project?): ${outputUri.fsPath}`);
+            }
+
+            // Set context key so the Agentic Kanban view shows in the sidebar.
+            // This must fire even when the output folder doesn't exist yet
+            // (e.g., fresh install before first project creation).
+            vscode.commands.executeCommand('setContext', 'agileagentcanvas.hasProject', true);
+
+            // One-time migration: rename stale markdown companions from pre-dual era.
+            // Only runs when the output folder actually exists on disk.
+            const MIGRATION_KEY = 'staleMarkdownMigrationV1';
+            if (!context.globalState.get(MIGRATION_KEY)) {
+                const result = await cleanupStaleMarkdownFiles(outputUri);
+                if (result.count > 0) {
+                    logger.info(`[Migration] Renamed ${result.count} stale markdown file(s) to .md.bak`);
+                }
+                await context.globalState.update(MIGRATION_KEY, true);
             }
         }
 
@@ -468,6 +550,12 @@ export function activate(context: vscode.ExtensionContext) {
             } catch {
                 logger.info(`[WorkspaceResolver] New project folder doesn't exist yet: ${project.outputUri.fsPath}`);
             }
+
+            // Set context key on project switch
+            vscode.commands.executeCommand('setContext', 'agileagentcanvas.hasProject', true);
+        } else {
+            // No active project — hide the Agentic Kanban view
+            vscode.commands.executeCommand('setContext', 'agileagentcanvas.hasProject', false);
         }
 
         // Re-point file watcher
@@ -631,9 +719,13 @@ export function activate(context: vscode.ExtensionContext) {
                 new vscode.RelativePattern(rootFolder, '**/*.{ts,js,py,go,rs,java,cs,rb,md}'),
                 false, false, true  // only create/change events, not delete
             );
+            const outputFolderName = vscode.workspace.getConfiguration('agileagentcanvas').get<string>('outputFolder', '.agileagentcanvas-context');
             graphifyWatcher.onDidChange((uri) => {
                 // Ignore files written by graphify itself to avoid an infinite update loop
                 if (uri.fsPath.includes('graphify-out')) { return; }
+                // Ignore artifact store files — card drags trigger .md writes in
+                // the output folder that don't reflect source-code changes.
+                if (uri.fsPath.includes(outputFolderName)) { return; }
                 if (autoUpdateTimer) { clearTimeout(autoUpdateTimer); }
                 autoUpdateTimer = setTimeout(async () => {
                     const root = rootFolder.uri.fsPath;
@@ -646,6 +738,7 @@ export function activate(context: vscode.ExtensionContext) {
             });
             graphifyWatcher.onDidCreate((uri) => {
                 if (uri.fsPath.includes('graphify-out')) { return; }
+                if (uri.fsPath.includes(outputFolderName)) { return; }
                 if (autoUpdateTimer) { clearTimeout(autoUpdateTimer); }
                 autoUpdateTimer = setTimeout(async () => {
                     const root = rootFolder.uri.fsPath;
@@ -690,12 +783,14 @@ async function openCanvasPanel(context: vscode.ExtensionContext, store: Artifact
         async (message) => {
             logger.debug('Extension received message from webview:', message.type);
 
-            // Shared handler covers updateArtifact, deleteArtifact, refineWithAI,
-            // breakDown, enhanceWithAI, elicitWithMethod, startDevelopment, launchWorkflow.
+            // Shared handlers (catalogue, common, agentic-kanban)
             if (await handleCatalogueWebviewMessage(message, panel.webview)) {
                 return;
             }
             if (await handleCommonWebviewMessage(message, store, context.extensionUri, '[Panel]', panel.webview)) {
+                return;
+            }
+            if (await handleAgenticKanbanMessage(message, store, context.extensionUri, panel.webview)) {
                 return;
             }
 
@@ -1088,7 +1183,62 @@ async function cleanupStaleMarkdownFiles(folderUri: vscode.Uri): Promise<{ count
     return { count };
 }
 
+async function restoreInterruptedSessions(kanbanProvider: AgenticKanbanViewProvider): Promise<void> {
+  const traceRecorder = getTraceRecorder();
+  const interrupted = await traceRecorder.scanInterruptedSessions();
+
+  if (interrupted.length === 0) {
+    logger.debug('[Restore] No interrupted sessions found');
+    return;
+  }
+
+  logger.info(`[Restore] Found ${interrupted.length} interrupted session(s) — restoring agent state`);
+
+  for (const session of interrupted) {
+    if (!session.artifactId) {
+      logger.debug(`[Restore] Skipping session ${session.sessionId} — no artifact ID`);
+      continue;
+    }
+
+    // Re-acquire the concurrency lock so the artifact can't be
+    // picked up by another agent until the user resumes or abandons.
+    const lockAcquired = concurrencyQueue.tryAcquire(
+      session.artifactId,
+      `resumed-${session.agentRole}`,
+      session.sessionId
+    );
+
+    if (!lockAcquired) {
+      // Another session already has this artifact locked — skip
+      logger.debug(`[Restore] Skipping ${session.artifactId} — already locked`);
+      continue;
+    }
+
+    kanbanProvider.sendAgentState(
+      session.artifactId,
+      {
+        status: 'interrupted',
+        agentRole: session.agentRole,
+        sessionId: session.sessionId,
+        startedAt: session.startedAt,
+        workflowId: session.workflowId,
+      },
+      {
+        locked: true,
+        agentName: session.agentRole,
+        since: session.startedAt,
+      }
+    );
+
+    logger.info(`[Restore] Restored agent state for ${session.artifactId} (${session.workflowId})`);
+  }
+}
+
 export function deactivate() {
+    // Cancel A2A polling before store dispose — poll callbacks access the store
+    if (laneTransitionEngine) {
+        laneTransitionEngine.cancelAllA2APolling();
+    }
     if (folderDeleteCheckTimer) {
         clearTimeout(folderDeleteCheckTimer);
         folderDeleteCheckTimer = undefined;

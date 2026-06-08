@@ -34,6 +34,13 @@ function loadWizardProvider(world: BmadWorld): { store: any; provider: any } {
       resolveArtifactTargetUri: async (opts: any) => vsc.Uri.file(`/test/${opts.fileName}`),
       writeJsonFile: async () => {},
       writeMarkdownCompanion: async (jsonUri: any, mdFilename: string) => vsc.Uri.file(`/test/${mdFilename}`)
+    },
+    // Mock policy-engine to prevent loading vscode (policy-engine imports vscode at line 11)
+    '../harness/policy-engine': {
+      harnessEngine: {
+        registerPolicy: () => {},
+        evaluate: async () => []
+      }
     }
   });
 
@@ -51,6 +58,20 @@ function loadWizardProvider(world: BmadWorld): { store: any; provider: any } {
       isAntigravityAgentAvailable: async () => false,
       sendSimplePrompt: async () => false,
       buildGuideContent: () => ''
+    },
+    // Mock team-orchestrator to prevent loading session-manager (which imports vscode)
+    '../acp/team-orchestrator': {
+      AgentTeamOrchestrator: class {
+        async executeTeam() {
+          return [];
+        }
+      }
+    },
+    // Mock trace-recorder to prevent loading vscode
+    '../trace/trace-recorder': {
+      getTraceRecorder: () => ({
+        record: async () => {},
+      })
     }
   });
 

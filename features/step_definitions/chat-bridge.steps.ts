@@ -208,11 +208,11 @@ Then('the reason for {string} should be {string}', function (this: any, id: stri
 });
 
 Then('it should return true', function (this: any) {
-    assert.strictEqual(getCtx(this).lastResolveResult, true);
+    assert.strictEqual(getCtx(this).lastResolveResult, true, 'Expected resolveCliOnPath to return true');
 });
 
 Then('it should return false', function (this: any) {
-    assert.strictEqual(getCtx(this).lastResolveResult, false);
+    assert.strictEqual(getCtx(this).lastResolveResult, false, 'Expected resolveCliOnPath to return false');
 });
 
 Then('the codex availability probe should have been called once', function (this: any) {

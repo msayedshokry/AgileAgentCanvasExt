@@ -405,31 +405,31 @@ When('I build artifacts from an empty store with workspace root {string}', funct
 Then('the graphify cliForm should be {string}', function (this: BmadWorld, expected: string) {
     const ctx = getCtx(this);
     assert.ok(ctx.detectedStatus, 'No detection result — run "When I detect graphify for workspace" first');
-    assert.strictEqual(ctx.detectedStatus.cliForm, expected);
+    assert.strictEqual(ctx.detectedStatus.cliForm, expected, `Expected cliForm "${expected}", got "${ctx.detectedStatus.cliForm}"`);
 });
 
 Then('the graphify graphPresent should be {word}', function (this: BmadWorld, expected: string) {
     const ctx = getCtx(this);
     assert.ok(ctx.detectedStatus, 'No detection result');
-    assert.strictEqual(ctx.detectedStatus.graphPresent, expected === 'true');
+    assert.strictEqual(ctx.detectedStatus.graphPresent, expected === 'true', `Expected graphPresent ${expected}, got ${ctx.detectedStatus.graphPresent}`);
 });
 
 Then('the graphify reportPresent should be {word}', function (this: BmadWorld, expected: string) {
     const ctx = getCtx(this);
     assert.ok(ctx.detectedStatus, 'No detection result');
-    assert.strictEqual(ctx.detectedStatus.reportPresent, expected === 'true');
+    assert.strictEqual(ctx.detectedStatus.reportPresent, expected === 'true', `Expected reportPresent ${expected}, got ${ctx.detectedStatus.reportPresent}`);
 });
 
 Then('the graphify wired should be {word}', function (this: BmadWorld, expected: string) {
     const ctx = getCtx(this);
     assert.ok(ctx.detectedStatus, 'No detection result');
-    assert.strictEqual(ctx.detectedStatus.wired, expected === 'true');
+    assert.strictEqual(ctx.detectedStatus.wired, expected === 'true', `Expected wired ${expected}, got ${ctx.detectedStatus.wired}`);
 });
 
 Then('the graphify recommendation should be {string}', function (this: BmadWorld, expected: string) {
     const ctx = getCtx(this);
     assert.ok(ctx.detectedStatus, 'No detection result');
-    assert.strictEqual(ctx.detectedStatus.recommendation, expected);
+    assert.strictEqual(ctx.detectedStatus.recommendation, expected, `Expected recommendation "${expected}", got "${ctx.detectedStatus.recommendation}"`);
 });
 
 Then('the graphify detection should have been called once', function (this: BmadWorld) {
@@ -459,18 +459,18 @@ Then('the loaded graph should have {int} nodes', function (this: BmadWorld, expe
     const ctx = getCtx(this);
     const graph = ctx.graphFixture;
     assert.ok(graph, 'No graph loaded');
-    assert.strictEqual(graph.nodes?.length ?? 0, expected);
+    assert.strictEqual(graph.nodes?.length ?? 0, expected, `Expected ${expected} nodes, got ${graph.nodes?.length ?? 0}`);
 });
 
 Then('the loaded graph should have {int} edges', function (this: BmadWorld, expected: number) {
     const ctx = getCtx(this);
     const graph = ctx.graphFixture;
     assert.ok(graph, 'No graph loaded');
-    assert.strictEqual(graph.edges?.length ?? 0, expected);
+    assert.strictEqual(graph.edges?.length ?? 0, expected, `Expected ${expected} edges, got ${graph.edges?.length ?? 0}`);
 });
 
 Then('the loaded graph should be null', function (this: BmadWorld) {
-    assert.strictEqual(getCtx(this).graphFixture, null);
+    assert.strictEqual(getCtx(this).graphFixture, null, 'Expected loaded graph to be null');
 });
 
 Then('I should get {int} communities', function (this: BmadWorld, expected: number) {

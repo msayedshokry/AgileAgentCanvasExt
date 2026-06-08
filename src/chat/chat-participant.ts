@@ -16,6 +16,7 @@ import {
 } from '../integrations/jira-importer';
 import { loadReport, detectGraphify } from '../integrations/graphify';
 import { CavemanService, getCavemanService } from './caveman-service';
+import { setActiveChatSession } from './active-session';
 import { graphQuery } from '../integrations/graphify/graph-query';
 import { loadGraph, loadCommunities, loadArchIndexMarkdown } from '../integrations/graphify/graph-loader';
 
@@ -56,13 +57,24 @@ export class AgileAgentCanvasChatParticipant {
         token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
         
-        // Handle specific commands
-        if (request.command) {
-            return this.handleCommand(request.command, request.prompt, context, stream, token);
+        // ── Thread the active chat session through to the LaneTransitionEngine ──
+        // This lets kanban drags during a chat session launch real BMAD workflows
+        // instead of just logging a stub message.
+        const model = await this.getModel();
+        if (model) {
+            setActiveChatSession({ model, stream, token });
         }
+        try {
+            // Handle specific commands
+            if (request.command) {
+                return this.handleCommand(request.command, request.prompt, context, stream, token);
+            }
 
-        // General conversation with the analyst
-        return this.handleConversation(request.prompt, context, stream, token);
+            // General conversation with the analyst
+            return this.handleConversation(request.prompt, context, stream, token);
+        } finally {
+            setActiveChatSession(null);
+        }
     }
 
     /**

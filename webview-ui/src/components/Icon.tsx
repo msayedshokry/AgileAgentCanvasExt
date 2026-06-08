@@ -12,7 +12,7 @@ export type IconName =
   | 'requirement'     // was 📋
   | 'nfr'             // non-functional requirement
   | 'additional-req'  // additional requirement
-  | 'epic'            // was ⚡
+  | 'epic'            // lightning bolt
   | 'story'           // was 📝
   | 'use-case'        // was 👤
   | 'prd'             // was 📄 / 📑
@@ -43,7 +43,7 @@ export type IconName =
   | 'wrench'          // was 🛠️
   // Misc
   | 'pop-out'         // was ⤢
-  | 'workflow'        // was ⚡ (in workflow FAB — reuses epic bolt with slight distinction)
+  | 'workflow'        // lightning bolt (in workflow FAB — reuses epic with slight distinction)
   | 'rocket'          // start development
   | 'refresh'         // reload / sync indicator
   | 'docs'            // documentation / book

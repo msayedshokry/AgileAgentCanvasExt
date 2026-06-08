@@ -76,7 +76,10 @@ function getChatParticipant(world: BmadWorld): { store: any; participant: any } 
         resolveArtifactTargetUri: async (opts: any) => world.vscode.Uri.file(`/test/${opts.fileName}`),
         writeJsonFile: async () => {},
         writeMarkdownCompanion: async (jsonUri: any, mdFilename: string) => world.vscode.Uri.file(`/test/${mdFilename}`)
-      }
+      },
+      '../harness/policy-engine': {
+        harnessEngine: { evaluate: async () => [] },
+      },
     });
 
     const chatParticipantModule = proxyquire('../../src/chat/chat-participant', {
@@ -87,7 +90,32 @@ function getChatParticipant(world: BmadWorld): { store: any; participant: any } 
         getWorkflowExecutor: () => mockWorkflowExecutor
       },
       './agileagentcanvas-tools': mockAgileAgentCanvasTools,
-      './ai-provider': mockAiProvider
+      './ai-provider': mockAiProvider,
+      '../integrations/jira-importer': {
+        JiraImporter: class {},
+      },
+      '../integrations/graphify': {
+        loadReport: async () => '',
+        detectGraphify: async () => false,
+      },
+      '../integrations/graphify/graph-query': {
+        graphQuery: async () => '',
+      },
+      '../integrations/graphify/graph-loader': {
+        loadGraph: async () => ({}),
+        loadCommunities: async () => [],
+        loadArchIndexMarkdown: async () => '',
+      },
+      './caveman-service': {
+        CavemanService: class {},
+        getCavemanService: () => ({
+          isEnabled: () => false,
+          compress: (x: string) => x,
+        }),
+      },
+      './active-session': {
+        setActiveChatSession: () => {},
+      },
     });
 
     const store = new artifactStoreModule.ArtifactStore();

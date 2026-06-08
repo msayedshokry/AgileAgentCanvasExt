@@ -1,0 +1,440 @@
+/* ================================================================
+   Shared Kanban Styles — used by SprintPlanningView + AgenticKanban
+   ================================================================ */
+
+/* ── Board Layout ── */
+.kanban-board,
+.agentic-kanban-board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(240px, 1fr));
+  gap: 12px;
+  padding: 16px;
+  min-height: 60vh;
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+/* ── Column ── */
+.kanban-column {
+  background: var(--vscode-editor-lineHighlightBackground);
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  border-top: 3px solid var(--kanban-col-accent, var(--vscode-descriptionForeground));
+}
+
+.kanban-column-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.kanban-column-label {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--kanban-col-accent, var(--vscode-foreground));
+}
+
+.kanban-column-count {
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 11px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.kanban-column-cards {
+  flex: 1;
+  padding: 8px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kanban-column-empty {
+  text-align: center;
+  color: var(--vscode-descriptionForeground);
+  font-style: italic;
+  padding: 16px;
+  border: 1px dashed var(--vscode-panel-border);
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+/* ── Card ── */
+.kanban-card {
+  background: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  cursor: grab;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: cardSlideIn 0.25s ease-out calc(var(--card-index, 0) * 30ms) backwards;
+}
+
+.kanban-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+  border-color: var(--kanban-col-accent, var(--vscode-focusBorder));
+}
+
+.kanban-card:active {
+  cursor: grabbing;
+  opacity: 0.7;
+  transform: scale(0.97);
+}
+
+.kanban-card--epic {
+  border-left: 4px solid #8b5cf6;
+}
+
+.kanban-card--locked {
+  opacity: 0.6;
+  cursor: not-allowed;
+  filter: grayscale(30%);
+}
+
+.kanban-card--running {
+  border-color: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+}
+
+.kanban-card--queued {
+  border-color: #6366f1;
+  opacity: 0.75;
+}
+
+.kanban-card--interrupted {
+  border-color: #f97316;
+  box-shadow: 0 0 6px rgba(249, 115, 22, 0.25);
+  opacity: 0.85;
+}
+
+.kanban-card-key {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kanban-card-title {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.kanban-card-epic-tag {
+  font-size: 10px;
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
+  padding: 1px 6px;
+  border-radius: 3px;
+  align-self: flex-start;
+}
+
+.kanban-card-type-tag {
+  font-size: 10px;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  padding: 1px 6px;
+  border-radius: 3px;
+  align-self: flex-start;
+}
+
+/* ── Agent Badge (execution overlay) ── */
+.kanban-card-agent-badge {
+  font-size: 11px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  padding: 3px 8px;
+  border-radius: 4px;
+  animation: pulse 1.5s ease-in-out infinite;
+  align-self: flex-start;
+}
+
+.kanban-card-agent-badge--queued {
+  background: rgba(99, 102, 241, 0.15);
+  color: #6366f1;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.kanban-card-agent-badge--interrupted {
+  background: rgba(249, 115, 22, 0.15);
+  color: #f97316;
+  animation: interruptedPulse 2s ease-in-out infinite;
+}
+
+.kanban-card-agent-badge--terminal {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+}
+
+.kanban-card-agent-badge--terminal:hover {
+  background: rgba(34, 197, 94, 0.25);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes interruptedPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ── Lock Badge ── */
+.kanban-card-lock-badge {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(128, 128, 128, 0.15);
+  align-self: flex-start;
+}
+
+/* ── Harness Failure Badge ── */
+.kanban-card-harness-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
+.kanban-card-harness-badge--error {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
+/* ── Card Slide-In Animation ── */
+@keyframes cardSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Root container (fills parent when rendered inside canvas area) ── */
+.agentic-kanban {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── Agentic Kanban Header ── */
+.agentic-kanban-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.agentic-kanban-header h2 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.agentic-kanban-toolbar {
+  display: flex;
+  gap: 8px;
+}
+
+.agentic-kanban-toolbar button {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: none;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.agentic-kanban-toolbar button:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+/* ── Detail Panel ── */
+.agentic-detail-panel {
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 320px;
+  background: var(--vscode-editor-background);
+  border-left: 1px solid var(--vscode-panel-border);
+  padding: 16px;
+  overflow-y: auto;
+  z-index: 10;
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.2);
+  animation: slideInRight 0.2s ease-out;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.agentic-detail-panel header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.agentic-detail-panel h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.agentic-detail-panel button {
+  background: none;
+  border: none;
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.agentic-detail-panel dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  font-size: 12px;
+}
+
+.agentic-detail-panel dt {
+  color: var(--vscode-descriptionForeground);
+  font-weight: 500;
+}
+
+/* ── Detail Panel: Warning & Actions ── */
+.agentic-detail-warning {
+  font-size: 12px;
+  color: #f97316;
+  margin: 12px 0 8px;
+  padding: 8px;
+  background: rgba(249, 115, 22, 0.1);
+  border-radius: 4px;
+  border-left: 3px solid #f97316;
+}
+
+.agentic-detail-actions {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.agentic-detail-btn {
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  transition: opacity 0.15s ease;
+}
+
+.agentic-detail-btn:hover {
+  opacity: 0.85;
+}
+
+.agentic-detail-btn--resume {
+  background: #22c55e;
+  color: white;
+}
+
+.agentic-detail-btn--abandon {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+
+.agentic-detail-btn--terminal {
+  background: #22c55e;
+  color: white;
+}
+
+/* ── Toast Notifications ── */
+.kanban-toast {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  z-index: 100;
+  animation: toastSlideUp 0.3s ease-out;
+}
+
+.kanban-toast--error {
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+}
+
+.kanban-toast--info {
+  background: var(--vscode-notifications-background);
+  color: var(--vscode-notifications-foreground);
+  border: 1px solid var(--vscode-notifications-border);
+}
+
+@keyframes toastSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─── Resume spinner on kanban card ────────────────────────────────────── */
+.kanban-card-agent-badge--resuming {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: color-mix(in srgb, var(--vscode-charts-blue) 12%, transparent);
+  color: var(--vscode-charts-blue);
+  border: 1px solid color-mix(in srgb, var(--vscode-charts-blue) 30%, transparent);
+}
+.kanban-card-resume-spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid color-mix(in srgb, var(--vscode-charts-blue) 40%, transparent);
+  border-top-color: var(--vscode-charts-blue);
+  border-radius: 50%;
+  animation: cardResumeSpin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes cardResumeSpin {
+  to { transform: rotate(360deg); }
+}

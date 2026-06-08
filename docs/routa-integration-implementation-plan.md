@@ -247,10 +247,8 @@ The current build system (`webview-ui/vite.config.ts` and `esbuild.mjs`) produce
 
 **File:** `webview-ui/src/App.tsx` — add a branch for `'agentic-kanban'` mode:
 ```typescript
-// Inside the App component's render switch:
-if (window.__AC_MODE__ === 'agentic-kanban') {
-  return <AgenticKanbanApp />;
-}
+// In RootApp() at the bottom of webview-ui/src/App.tsx (the single entry point rendered by main.tsx):
+  if (AC_MODE === 'agentic-kanban') return <AgenticKanbanApp />;
 ```
 
 ##### Step 1.1: Reusable Kanban Components
@@ -467,6 +465,336 @@ export function KanbanColumn({ column, items, draggable, onDragStart, onDrop, on
   );
 }
 ```
+
+
+##### Step 1.1a: Kanban CSS Styles
+
+Shared CSS for Kanban components used by both `SprintPlanningView` and `AgenticKanbanApp`. These styles cover the 5-column board layout, cards with drag affordance, agent execution badges, lock overlays, and harness failure indicators.
+
+**File:** `webview-ui/src/components/kanban/Kanban.css` (NEW — imported by both views)
+
+```css
+/* ================================================================
+   Shared Kanban Styles — used by SprintPlanningView + AgenticKanban
+   ================================================================ */
+
+/* ── Board Layout ── */
+.kanban-board, .agentic-kanban-board {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  padding: 16px;
+  min-height: 60vh;
+  overflow-x: auto;
+}
+
+/* ── Column ── */
+.kanban-column {
+  background: var(--vscode-editor-lineHighlightBackground);
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  border-top: 3px solid var(--kanban-col-accent, var(--vscode-descriptionForeground));
+}
+
+.kanban-column-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.kanban-column-label {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--kanban-col-accent, var(--vscode-foreground));
+}
+
+.kanban-column-count {
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 11px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.kanban-column-cards {
+  flex: 1;
+  padding: 8px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kanban-column-empty {
+  text-align: center;
+  color: var(--vscode-descriptionForeground);
+  font-style: italic;
+  padding: 16px;
+  border: 1px dashed var(--vscode-panel-border);
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+/* ── Card ── */
+.kanban-card {
+  background: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  cursor: grab;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: cardSlideIn 0.25s ease-out calc(var(--card-index, 0) * 30ms) backwards;
+}
+
+.kanban-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+  border-color: var(--kanban-col-accent, var(--vscode-focusBorder));
+}
+
+.kanban-card:active {
+  cursor: grabbing;
+  opacity: 0.7;
+  transform: scale(0.97);
+}
+
+.kanban-card--epic {
+  border-left: 4px solid #8b5cf6;
+}
+
+.kanban-card--locked {
+  opacity: 0.6;
+  cursor: not-allowed;
+  filter: grayscale(30%);
+}
+
+.kanban-card--running {
+  border-color: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+}
+
+.kanban-card-key {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kanban-card-title {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.kanban-card-epic-tag {
+  font-size: 10px;
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
+  padding: 1px 6px;
+  border-radius: 3px;
+  align-self: flex-start;
+}
+
+.kanban-card-type-tag {
+  font-size: 10px;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  padding: 1px 6px;
+  border-radius: 3px;
+  align-self: flex-start;
+}
+
+/* ── Agent Badge (execution overlay) ── */
+.kanban-card-agent-badge {
+  font-size: 11px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  padding: 3px 8px;
+  border-radius: 4px;
+  animation: pulse 1.5s ease-in-out infinite;
+  align-self: flex-start;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* ── Lock Badge ── */
+.kanban-card-lock-badge {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(128, 128, 128, 0.15);
+  align-self: flex-start;
+}
+
+/* ── Harness Failure Badge ── */
+.kanban-card-harness-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
+.kanban-card-harness-badge--error {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
+/* ── Card Slide-In Animation ── */
+@keyframes cardSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Agentic Kanban Header ── */
+.agentic-kanban-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.agentic-kanban-header h2 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.agentic-kanban-toolbar {
+  display: flex;
+  gap: 8px;
+}
+
+.agentic-kanban-toolbar button {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: none;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.agentic-kanban-toolbar button:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+/* ── Detail Panel ── */
+.agentic-detail-panel {
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 320px;
+  background: var(--vscode-editor-background);
+  border-left: 1px solid var(--vscode-panel-border);
+  padding: 16px;
+  overflow-y: auto;
+  z-index: 10;
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.2);
+  animation: slideInRight 0.2s ease-out;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.agentic-detail-panel header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.agentic-detail-panel h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.agentic-detail-panel button {
+  background: none;
+  border: none;
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.agentic-detail-panel dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  font-size: 12px;
+}
+
+.agentic-detail-panel dt {
+  color: var(--vscode-descriptionForeground);
+  font-weight: 500;
+}
+
+/* ── Toast Notifications ── */
+.kanban-toast {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  z-index: 100;
+  animation: toastSlideUp 0.3s ease-out;
+}
+
+.kanban-toast--error {
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+}
+
+.kanban-toast--info {
+  background: var(--vscode-notifications-background);
+  color: var(--vscode-notifications-foreground);
+  border: 1px solid var(--vscode-notifications-border);
+}
+
+@keyframes toastSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+```
+
+> **Integration Note:** Both `SprintPlanningView` and `AgenticKanbanApp` import `Kanban.css`. The Vite config handles CSS bundling; no changes needed. Since both views share the same entry point, CSS classes are globally available — prefix all classes with `.kanban-` and `.agentic-` to avoid conflicts with canvas styles.
 
 ##### Step 1.2: Agentic Kanban View Component
 
@@ -832,9 +1160,12 @@ import * as vscode from 'vscode';
 import { ArtifactStore } from '../state/artifact-store';
 import { WorkflowExecutor } from './workflow-executor';
 import { concurrencyQueue } from './concurrency-queue';
-import { harnessEngine } from '../harness/policy-engine';
-import { traceRecorder } from '../trace/trace-recorder';
-import { getModel, BmadModel } from '../chat/ai-provider';
+// TODO(E4): Uncomment when harness engine is built in Epic 4
+// import { harnessEngine } from '../harness/policy-engine';
+// TODO(E3): Uncomment when trace recorder is built in Epic 3
+// import { traceRecorder } from '../trace/trace-recorder';
+// NOTE(E1): Workflow launch is stubbed in Epic 1. In Epic 2, import { getWorkflowExecutor } from './workflow-executor'
+// and use getWorkflowExecutor() instead of getModel().
 
 // Project-standard error-to-string pattern (no standalone getErrorMessage utility exists)
 function errMsg(err: unknown): string {
@@ -858,11 +1189,13 @@ export const TRANSITION_RULES: TransitionRule[] = [
   { artifactType: 'prd',    fromStatus: 'draft',         toStatus: 'ready',         workflowId: 'create-prd', confirmWithUser: true },
 
   // Ready for Dev → In Progress
-  { artifactType: 'story',  fromStatus: 'ready-for-dev', toStatus: 'in-progress',   workflowId: 'dev-story', confirmWithUser: true, preFlightValidation: true },
+  // TODO(E4): enable preFlightValidation when harness engine is built
+  { artifactType: 'story',  fromStatus: 'ready-for-dev', toStatus: 'in-progress',   workflowId: 'dev-story', confirmWithUser: true /*, preFlightValidation: true */ },  // E4: preFlightValidation deferred
   { artifactType: 'epic',   fromStatus: 'ready-for-dev', toStatus: 'in-progress',   workflowId: 'sprint-planning', confirmWithUser: true },
 
   // In Progress → Review
-  { artifactType: 'story',  fromStatus: 'in-progress',   toStatus: 'review',        workflowId: 'code-review', confirmWithUser: true, preFlightValidation: true },
+  // TODO(E4): enable preFlightValidation when harness engine is built
+  { artifactType: 'story',  fromStatus: 'in-progress',   toStatus: 'review',        workflowId: 'code-review', confirmWithUser: true /*, preFlightValidation: true */ },  // E4: preFlightValidation deferred
 
   // Review → Done
   { artifactType: 'story',  fromStatus: 'review',        toStatus: 'done',          workflowId: null, confirmWithUser: false },
@@ -974,11 +1307,11 @@ export class LaneTransitionEngine {
     stream?: vscode.ChatResponseStream,
     token?: vscode.CancellationToken
   ): Promise<void> {
-    // Uses the existing executeWithTools() which loads the workflow by ID from WORKFLOW_REGISTRY.
-    // The model is obtained from the global AI provider configuration (see ai-provider.ts).
-    const model = await getModel();
-    if (!model) throw new Error('No AI model available');
-    await this.executor.executeLaneTransition(model, workflowId, artifact, this.store, stream, token);
+    // E1 STUB — workflow launch is deferred to Epic 2.
+    // In Epic 2, replace with:
+    //   const executor = getWorkflowExecutor();
+    //   await executor.executeLaneTransition(workflowId, artifact, this.store, stream, token);
+    logger.info(`[E1-STUB] Workflow "${workflowId}" would launch for "${artifact?.id || 'unknown'}" (deferred to Epic 2)`);
   }
 }
 
@@ -2399,6 +2732,13 @@ Add to `package.json` `contributes.views` — **under the existing `agileagentca
 }
 ```
 
+**⚠️ hasProject Context Key:** The `agileagentcanvas.hasProject` context key is NOT set automatically. Extension activation must call:
+```typescript
+// In extension.ts, after successful project initialization:
+vscode.commands.executeCommand('setContext', 'agileagentcanvas.hasProject', true);
+```
+If `hasProject` is never set, the Agentic Kanban view will never appear in the sidebar, even when `agenticKanban.enabled` is `true`.
+
 Alternatively, if the Agentic Kanban should be a full panel (not sidebar), register it as a `WebviewPanel` command instead — similar to how `openCanvasPanel` works in `extension.ts`.
 
 ### Feature Flags Summary
@@ -2535,3 +2875,25 @@ The `executeWithTools()` function is a method on `WorkflowExecutor`, not a stand
 > 4. Create `AgenticKanbanViewProvider` and register in `extension.ts`
 > 5. Implement `lane-transitions.ts` with `TRANSITION_RULES` (using existing workflow IDs)
 > 6. Run `npm run test` for existing Cucumber suites; write `features/agentic-kanban.feature`
+
+---
+
+## Appendix: Evaluation Fixes Applied (2026-06-07)
+
+The following issues were identified during plan evaluation and resolved in this revision:
+
+| # | Issue | Resolution |
+|---|---|---|
+| 1 | **E1 LaneTransitionEngine can't launch workflows without E2** | `launchWorkflow()` stubbed with `logger.info()` and `TODO(E2)` comment. Status updates work in E1; workflow execution deferred to E2. |
+| 2 | **`hasProject` context key is undefined** | Documented in Section 8: `extension.ts` must call `setContext('agileagentcanvas.hasProject', true)` after project init. |
+| 3 | **Mode routing goes in `App` render, not `RootApp()`** | Corrected to `RootApp()` — the single entry point rendered by `main.tsx`. |
+| 4 | **No CSS plan for shared Kanban components** | Added Step 1.1a with full Kanban.css covering board layout, cards, animations, badges, detail panel, and toasts. |
+| 5 | **`getModel()` import instead of using existing executor pattern** | Replaced with `getWorkflowExecutor()` pattern. Import stub in E1; full integration in E2. |
+
+### Review Fixups (2026-06-07)
+
+1. **CSS `.kanban-board` vs `.agentic-kanban-board` mismatch:** The `AgenticKanbanApp.tsx` JSX uses `className="agentic-kanban-board"` but the CSS only defined `.kanban-board` for the grid layout. Fixed: `.kanban-board, .agentic-kanban-board { ... }` alias added to CSS.
+
+2. **E1 LaneTransitionEngine depends on E3/E4 components:** `handleTransition()` calls `harnessEngine.evaluate()` (Epic 4) and the import references `traceRecorder` (Epic 3). Fix: Rules with `preFlightValidation: true` in `TRANSITION_RULES` should be commented out with `// TODO(E4): enable when harness engine is built`. The `traceRecorder` import should be guarded with a try/catch or deferred to E3.
+
+3. **`executor` parameter unused in E1 stub:** The constructor accepts `WorkflowExecutor` but the stub doesn't use it until E2. Not a bug — just dead weight. No fix needed; the parameter is retained for E2 integration.

@@ -12,6 +12,10 @@ import { extractJson } from '../lib/json-extract';
 import { getPersonaForArtifactType, formatFullAgentForPrompt } from '../chat/agent-personas';
 import { orchestrateAntigravityWorkflow, ExecutionHints } from '../antigravity/antigravity-orchestrator';
 import { parseFrontmatter } from './frontmatter';
+import { AgentTeamOrchestrator } from '../acp/team-orchestrator';
+import { AcpSessionResult } from '../acp/types';
+import { getTraceRecorder } from '../trace/trace-recorder';
+import { harnessFeedback } from '../harness/harness-feedback';
 
 /**
  * BMAD Workflow Executor
@@ -392,6 +396,62 @@ export const WORKFLOW_REGISTRY: WorkflowDefinition[] = [
         path: 'bmm/workflows/4-implementation/correct-course/workflow.yaml',
         format: 'yaml',
         tags: ['implementation', 'correction', 'adjustment']
+    },
+
+    // ============================================
+    // AAC KANBAN - Lane Agents (2 workflows)
+    // ============================================
+    {
+        id: 'aac-kanban-dev-executor',
+        name: 'Dev Executor',
+        description: 'Autonomous Dev lane agent with entry/exit gate validation',
+        module: 'bmm',
+        phase: '4-implementation',
+        category: 'kanban',
+        path: 'skills/aac-kanban-dev-executor/SKILL.md',
+        format: 'md',
+        artifactTypes: ['story'],
+        tags: ['kanban', 'dev', 'implementation', 'autonomous']
+    },
+    {
+        id: 'aac-kanban-review-guard',
+        name: 'Review Guard',
+        description: 'Autonomous Review lane guard with AC verification and commit authorship check',
+        module: 'bmm',
+        phase: '4-review',
+        category: 'kanban',
+        path: 'skills/aac-kanban-review-guard/SKILL.md',
+        format: 'md',
+        artifactTypes: ['story'],
+        tags: ['kanban', 'review', 'verification', 'autonomous']
+    },
+
+    // ============================================
+    // AAC KANBAN - Review Specialists (2 workflows)
+    // ============================================
+    {
+        id: 'aac-review-desk-check',
+        name: 'Desk Check',
+        description: 'Quick pre-implementation desk-check verification of artifact readiness',
+        module: 'bmm',
+        phase: '4-review',
+        category: 'review',
+        path: 'skills/aac-review-desk-check/SKILL.md',
+        format: 'md',
+        artifactTypes: ['story', 'epic'],
+        tags: ['review', 'desk-check', 'readiness', 'autonomous']
+    },
+    {
+        id: 'aac-review-pr-analyzer',
+        name: 'PR Analyzer',
+        description: 'Multi-phase PR analysis: context gathering, diff analysis, structured findings',
+        module: 'bmm',
+        phase: '4-review',
+        category: 'review',
+        path: 'skills/aac-review-pr-analyzer/SKILL.md',
+        format: 'md',
+        artifactTypes: ['story', 'code'],
+        tags: ['review', 'pr', 'analysis', 'autonomous']
     },
 
     // ============================================
@@ -1026,9 +1086,9 @@ const LEGACY_WORKFLOW_PATH_TO_SKILL: Record<string, string> = {
  * If no mapping exists, returns the original path (backward compat).
  */
 function resolveWorkflowPath(bmadPath: string, legacyPath: string): string {
-    // Already a skills/ path
-    if (legacyPath.includes('/skills/')) {
-        return legacyPath;
+    // Already a skills/ path — make it absolute by prepending bmadPath
+    if (legacyPath.startsWith('skills/') || legacyPath.includes('/skills/')) {
+        return `${bmadPath}/${legacyPath}`;
     }
     // Strip bmadPath prefix to get the relative portion
     const relative = legacyPath.startsWith(bmadPath)
@@ -2439,6 +2499,17 @@ ${schemaSection}
 3. Provide your output in JSON format when generating refinements, conforming to the schema above if provided
 4. After completing refinements, the user can use \`@agileagentcanvas /apply\` to save changes
 
+
+## Harness Governance Feedback
+${(function() {
+  const aType = artifactContext?.type || artifactContext?.artifactType || '';
+  const aId = artifactContext?.id || artifactContext?.artifactId || '';
+  if (!aType || !aId) return 'No active governance issues.';
+  const fb = harnessFeedback.getFeedbackForArtifact(aId, aType);
+  if (!fb || fb.activeFailureCount === 0) return 'No active governance issues.';
+  return fb.summary;
+})()}
+
 ## CRITICAL — BMAD Grounding Rule
 - BMAD installation path: \`${this.context.bmadPath || 'unknown'}\`
 - Never invent workflow steps, agent personas, or schema fields — only reference actual artefacts that exist under the BMAD installation path above
@@ -3388,6 +3459,137 @@ Instructions: Return ONLY a \`\`\`json code block containing the artifact JSON. 
     /**
      * Get project root
      */
+    // ── ACP Integration (Epic 2) ─────────────────────────────────────────
+
+    /**
+     * Execute a BMAD workflow triggered by a Kanban lane transition.
+     * Resolves the workflow ID from WORKFLOW_REGISTRY and runs it via
+     * the existing executeWithTools() pipeline.
+     */
+    async executeLaneTransition(
+        workflowId: string,
+        artifact: any,
+        store: any,
+        model?: BmadModel,
+        stream?: vscode.ChatResponseStream,
+        token?: vscode.CancellationToken
+    ): Promise<void> {
+        const definition = WORKFLOW_REGISTRY.find(w => w.id === workflowId);
+        if (!definition) {
+            throw new Error(`Workflow "${workflowId}" not found in WORKFLOW_REGISTRY`);
+        }
+        const bmadPath = this.context.bmadPath;
+        const workflowPath = resolveWorkflowPath(bmadPath, definition.path);
+        const traceSessionId = `lane-${workflowId}-${artifact?.id || 'unknown'}-${Date.now()}`;
+
+        logger.info(`[E2] executeLaneTransition: workflow=${workflowId}, artifact=${artifact?.id || 'unknown'}`);
+
+        // Record trace: transition started
+        try {
+            getTraceRecorder().record({
+                sessionId: traceSessionId,
+                type: 'decision',
+                agent: 'lane-transition',
+                data: {
+                    decision: `Started ${workflowId} for ${artifact?.id || 'unknown'}`,
+                    rationale: `Workflow "${workflowId}" triggered by lane transition`,
+                    artifactId: artifact?.id,
+                    artifactType: artifact?.type,
+                },
+            });
+        } catch {
+            // Trace recorder may not be initialized — silently skip
+        }
+
+        if (model && stream && token) {
+            try {
+                await this.executeWithTools(
+                    model,
+                    `Execute ${workflowId} workflow on this artifact`,
+                    artifact,
+                    stream,
+                    token,
+                    store,
+                    workflowPath
+                );
+
+                // Record trace: transition completed
+                try {
+                    getTraceRecorder().record({
+                        sessionId: traceSessionId,
+                        type: 'decision',
+                        agent: 'lane-transition',
+                        data: {
+                            decision: `Completed ${workflowId} for ${artifact?.id || 'unknown'}`,
+                            rationale: `Workflow "${workflowId}" executed successfully`,
+                            artifactId: artifact?.id,
+                            artifactType: artifact?.type,
+                        },
+                    });
+                } catch {
+                    // Silently skip trace recording failures
+                }
+            } catch (err) {
+                // Record trace: transition failed
+                try {
+                    getTraceRecorder().record({
+                        sessionId: traceSessionId,
+                        type: 'error',
+                        agent: 'lane-transition',
+                        data: {
+                            error: `Workflow "${workflowId}" failed: ${err instanceof Error ? err.message : String(err)}`,
+                            artifactId: artifact?.id,
+                            artifactType: artifact?.type,
+                        },
+                    });
+                } catch {
+                    // Silently skip trace recording failures
+                }
+                throw err;
+            }
+        } else {
+            logger.info(`[E2-STUB] Workflow "${workflowId}" would execute for "${artifact?.id || 'unknown'}" (no model/stream/token provided — deferred execution)`);
+        }
+    }
+
+    /**
+     * Execute a multi-agent team (Coordinator → Crafter → Gate) for a given
+     * workflow. Uses the AgentTeamOrchestrator from the ACP module.
+     */
+    async executeWithTeam(
+        model: BmadModel,
+        teamId: string,
+        task: string,
+        artifact: any,
+        store: any,
+        bmadPath: string,
+        stream: vscode.ChatResponseStream,
+        token: vscode.CancellationToken
+    ): Promise<AcpSessionResult[]> {
+        const orchestrator = new AgentTeamOrchestrator();
+        const results = await orchestrator.executeTeam(teamId, task, artifact, model, store, bmadPath, stream, token);
+
+        const finalResult = results[results.length - 1];
+        if (finalResult?.output && artifact?.type) {
+            await store.updateArtifact(artifact.type, artifact.id, { ...finalResult.output });
+        }
+
+        // Record team trace entries (deferred to full E3 implementation)
+        for (const result of results) {
+            getTraceRecorder().record({
+                sessionId: result.sessionId,
+                type: 'decision',
+                agent: result.role,
+                data: {
+                    decision: `Team execution ${result.status}`,
+                    rationale: `Tool calls: ${result.toolCalls}, output: ${JSON.stringify(result.output).slice(0, 500)}`,
+                },
+            });
+        }
+
+        return results;
+    }
+
     getProjectRoot(): string {
         return this.context.projectRoot;
     }

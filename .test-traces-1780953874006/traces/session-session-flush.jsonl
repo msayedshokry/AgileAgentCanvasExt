@@ -1,0 +1,3 @@
+{"sessionId":"session-flush","type":"tool_call","agent":"analyst","data":{"toolName":"tool_0"},"timestamp":"2026-06-08T21:24:34.015Z"}
+{"sessionId":"session-flush","type":"tool_call","agent":"analyst","data":{"toolName":"tool_1"},"timestamp":"2026-06-08T21:24:34.015Z"}
+{"sessionId":"session-flush","type":"tool_call","agent":"analyst","data":{"toolName":"tool_2"},"timestamp":"2026-06-08T21:24:34.015Z"}

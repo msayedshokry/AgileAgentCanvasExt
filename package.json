@@ -2,7 +2,7 @@
   "name": "agileagentcanvas",
   "displayName": "Agile Agent Canvas",
   "description": "Visual AI-assisted product development with BMAD methodology - Design epics, stories, and requirements collaboratively with interactive AI chat workflows",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "publisher": "msayedshokry",
   "license": "MIT",
   "repository": {
@@ -382,12 +382,19 @@
             },
             "format": {
               "type": "string",
-              "enum": ["patch", "unified", "summary"],
+              "enum": [
+                "patch",
+                "unified",
+                "summary"
+              ],
               "description": "Output format. \"summary\" is fastest; \"unified\" mimics git diff.",
               "default": "summary"
             }
           },
-          "required": ["left", "right"]
+          "required": [
+            "left",
+            "right"
+          ]
         }
       },
       {
@@ -407,11 +414,19 @@
             },
             "strategy": {
               "type": "string",
-              "enum": ["deep", "shallow", "right-authoritative", "array-replace"],
+              "enum": [
+                "deep",
+                "shallow",
+                "right-authoritative",
+                "array-replace"
+              ],
               "default": "deep"
             }
           },
-          "required": ["left", "right"]
+          "required": [
+            "left",
+            "right"
+          ]
         }
       },
       {
@@ -461,7 +476,9 @@
               "description": "Variable values keyed by name (e.g. {'epic_id': 'E-001', 'story_id': 'S-001-1'})"
             }
           },
-          "required": ["template"]
+          "required": [
+            "template"
+          ]
         }
       },
       {
@@ -480,7 +497,9 @@
               "description": "Name of the root interface (default: 'Root')"
             }
           },
-          "required": ["schema"]
+          "required": [
+            "schema"
+          ]
         }
       },
       {
@@ -502,7 +521,9 @@
               "description": "Name for the root schema (default: 'Root')"
             }
           },
-          "required": ["samples"]
+          "required": [
+            "samples"
+          ]
         }
       },
       {
@@ -518,7 +539,11 @@
             },
             "kind": {
               "type": "string",
-              "enum": ["definition", "reference", "text"],
+              "enum": [
+                "definition",
+                "reference",
+                "text"
+              ],
               "description": "Search kind. 'definition' finds where symbols are defined (e.g. `function foo`, `class Bar`); 'reference' finds all uses; 'text' is plain ripgrep text search. Default: 'text'."
             },
             "filePattern": {
@@ -530,7 +555,9 @@
               "description": "Max results to return (default 30, max 200)"
             }
           },
-          "required": ["query"]
+          "required": [
+            "query"
+          ]
         }
       }
     ],
@@ -810,6 +837,16 @@
         "icon": "$(trash)"
       },
       {
+        "command": "agileagentcanvas.cleanupTraces",
+        "title": "Agile Agent Canvas: Clean Up Old Trace Files",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "agileagentcanvas.releaseLocks",
+        "title": "Agile Agent Canvas: Release Stale Concurrency Locks",
+        "icon": "$(unlock)"
+      },
+      {
         "command": "agileagentcanvas.fetchFromJira",
         "title": "Agile Agent Canvas: Fetch from Jira",
         "icon": "$(cloud-download)"
@@ -942,6 +979,12 @@
           "id": "agileagentcanvas.wizardSteps",
           "name": "Workflow Progress",
           "type": "tree"
+        },
+        {
+          "id": "agileagentcanvas.agenticKanban",
+          "name": "Agentic Kanban",
+          "type": "webview",
+          "when": "false"
         }
       ]
     },
@@ -970,242 +1013,353 @@
         "contents": "Open the visual canvas to get started.\n[$(preview) Open Visual Canvas](command:agileagentcanvas.openCanvas)\nOr create a new project.\n[$(add) New Project](command:agileagentcanvas.newProject)\n[$(folder-opened) Load Existing Project](command:agileagentcanvas.loadProject)\n[$(folder) Switch / Browse Project Folder](command:agileagentcanvas.switchProject)"
       }
     ],
-    "configuration": {
-      "title": "Agile Agent Canvas",
-      "properties": {
-        "agileagentcanvas.userCataloguePath": {
-          "type": "string",
-          "default": "",
-          "description": "Absolute path to a folder containing user-managed skills and agents. Skills placed here are merged with the built-in catalogue; a skill with the same folder name overrides the built-in. Leave empty to use built-ins only. This is a global (user-level) setting shared across all workspaces.",
-          "scope": "machine"
-        },
-        "agileagentcanvas.skillRepos": {
-          "type": "array",
-          "default": [],
-          "description": "List of git repository URLs that contain skill folders to clone into your user catalogue. Each repo is cloned under <userCataloguePath>/_repos/<slug>/. Use the Skill Catalogue UI to manage repos.",
-          "scope": "machine",
-          "items": {
-            "type": "object",
-            "properties": {
-              "url": {
-                "type": "string"
-              },
-              "name": {
-                "type": "string"
+    "configuration": [
+      {
+        "title": "Agile Agent Canvas",
+        "order": 0,
+        "properties": {
+          "agileagentcanvas.outputFolder": {
+            "type": "string",
+            "default": ".agileagentcanvas-context",
+            "description": "Name of the subfolder (inside your workspace) where Agile Agent Canvas stores artifacts. Change this to use a custom folder name instead of the default. You can also use the folder button in the canvas toolbar to browse for any folder or create a new one."
+          },
+          "agileagentcanvas.autoSync": {
+            "type": "boolean",
+            "default": true,
+            "description": "Automatically save canvas changes (drag, rename, status update, etc.) to the artifact files on disk. When disabled, changes remain in-memory until you use the Sync command. Useful if you want to batch edits before writing."
+          },
+          "agileagentcanvas.showAICursor": {
+            "type": "boolean",
+            "default": true,
+            "description": "Show a visual indicator on the canvas when the AI chat participant is working on an artifact. The AI cursor highlights the card being edited and shows a status label. Disable this if you find the cursor distracting."
+          },
+          "agileagentcanvas.logLevel": {
+            "type": "string",
+            "default": "info",
+            "enum": [
+              "debug",
+              "info",
+              "warn",
+              "error"
+            ],
+            "description": "Controls extension logging verbosity. Use info/warn/error for normal use; debug for troubleshooting."
+          }
+        }
+      },
+      {
+        "title": "AI Provider",
+        "order": 1,
+        "properties": {
+          "agileagentcanvas.aiProvider": {
+            "type": "string",
+            "default": "auto",
+            "enum": [
+              "auto",
+              "copilot",
+              "openai",
+              "anthropic",
+              "gemini",
+              "ollama",
+              "antigravity",
+              "omp"
+            ],
+            "enumDescriptions": [
+              "Automatically detect the best available provider (tries VS Code LM API first, then Antigravity, then OMP, then direct API key)",
+              "GitHub Copilot via VS Code Language Model API",
+              "OpenAI API (requires agileagentcanvas.apiKey and optionally agileagentcanvas.modelId)",
+              "Anthropic Claude API (requires agileagentcanvas.apiKey and optionally agileagentcanvas.modelId)",
+              "Google Gemini API (requires agileagentcanvas.apiKey and optionally agileagentcanvas.modelId)",
+              "Ollama local models (requires agileagentcanvas.baseUrl, e.g. http://localhost:11434)",
+              "Google Antigravity IDE — injects prompts into the Antigravity chat panel via native command",
+              "Oh My Pi (OMP) harness — writes the prompt to .omp/inbox.md or invokes omp.sendPrompt if the OMP VS Code extension is installed"
+            ],
+            "description": "AI provider for Agile Agent Canvas. Use 'auto' to detect automatically."
+          },
+          "agileagentcanvas.apiKey": {
+            "type": "string",
+            "default": "",
+            "description": "API key for the selected AI provider (OpenAI, Anthropic, or Gemini). Leave empty when using Copilot, Ollama, Antigravity, or OMP."
+          },
+          "agileagentcanvas.modelId": {
+            "type": "string",
+            "default": "",
+            "description": "Model ID to use. Defaults: OpenAI=gpt-4o, Anthropic=claude-sonnet-4-5, Gemini=gemini-2.0-flash, Ollama=llama3. Leave empty to use the default for your provider."
+          },
+          "agileagentcanvas.baseUrl": {
+            "type": "string",
+            "default": "",
+            "description": "Base URL for the AI API. Only needed for Ollama (e.g. http://localhost:11434) or a custom OpenAI-compatible endpoint."
+          },
+          "agileagentcanvas.defaultTemperature": {
+            "type": "number",
+            "default": 0.2,
+            "minimum": 0,
+            "maximum": 2,
+            "description": "Default sampling temperature for LLM calls. 0 = deterministic, 2 = creative. Lower values improve structured output reliability. Used by OpenAI, Anthropic, Gemini, and Ollama providers."
+          },
+          "agileagentcanvas.defaultAgent": {
+            "type": "string",
+            "default": "analyst",
+            "enum": [
+              "analyst",
+              "pm",
+              "architect"
+            ],
+            "description": "Default BMAD persona assigned when starting a new chat session. 'analyst' focuses on requirements and stories, 'pm' on strategic planning and roadmaps, 'architect' on technical design. You can switch agents per-session via /workflows."
+          }
+        }
+      },
+      {
+        "title": "Chat Provider",
+        "order": 2,
+        "properties": {
+          "agileagentcanvas.chatProvider": {
+            "type": "string",
+            "default": "auto",
+            "enum": [
+              "auto",
+              "copilot",
+              "claude",
+              "cursor",
+              "windsurf",
+              "antigravity",
+              "omp",
+              "codex",
+              "gemini-cli",
+              "aider",
+              "opencode",
+              "terminal"
+            ],
+            "enumDescriptions": [
+              "Auto-detect the best available provider for the current host",
+              "GitHub Copilot chat panel (workbench.action.chat.open)",
+              "Anthropic Claude Code chat panel (claude.openChat) — opens Claude Code if installed, otherwise launches `claude` CLI in the terminal",
+              "Cursor chat panel (cursor.chat.open)",
+              "Windsurf chat panel (windsurf.openChat)",
+              "Google Antigravity chat panel (antigravity.sendPromptToAgentPanel)",
+              "Oh My Pi (OMP) harness — writes to .omp/inbox.md or invokes omp.sendPrompt",
+              "OpenAI Codex CLI — always launches in the integrated terminal",
+              "Google Gemini CLI — always launches in the integrated terminal",
+              "Aider — always launches in the integrated terminal",
+              "OpenCode CLI (sst/opencode) — always launches in the integrated terminal",
+              "Generic terminal: prints the prompt and lets the user run it manually"
+            ],
+            "description": "Default AI chat provider for canvas actions (Refine, Enhance, Break Down, etc.). When set, all canvas-triggered actions route to this provider regardless of which IDE is hosting. Set per-action via the canvas header dropdown."
+          },
+          "agileagentcanvas.chatProviderSelected": {
+            "type": "string",
+            "default": "auto",
+            "description": "The chat provider most recently selected in the canvas dropdown. Persisted across sessions so the user doesn't need to re-pick. 'auto' = use the default from settings or auto-detect.",
+            "scope": "machine"
+          }
+        }
+      },
+      {
+        "title": "Jira",
+        "order": 3,
+        "properties": {
+          "agileagentcanvas.jira.baseUrl": {
+            "type": "string",
+            "default": "",
+            "description": "Your Jira Cloud base URL, e.g. https://mycompany.atlassian.net (no trailing slash). Required for Jira integration."
+          },
+          "agileagentcanvas.jira.email": {
+            "type": "string",
+            "default": "",
+            "description": "Your Atlassian account email address. Used for Jira API authentication."
+          },
+          "agileagentcanvas.jira.apiToken": {
+            "type": "string",
+            "default": "",
+            "markdownDeprecationMessage": "**Deprecated:** Storing the API token in plain-text settings is insecure. Use the command **Agile Agent Canvas: Set Jira API Token** (`agileagentcanvas.setJiraToken`) instead — it stores the token in the OS keychain. If a value is present here it will be migrated automatically on next use.",
+            "description": "[Deprecated — use setJiraToken command] Your Atlassian API token. Tokens expire after 1 year."
+          },
+          "agileagentcanvas.jira.projectKey": {
+            "type": "string",
+            "default": "",
+            "description": "Default Jira project key to use when none is specified (e.g. PROJ). You can override this per command."
+          }
+        }
+      },
+      {
+        "title": "graphify",
+        "order": 4,
+        "properties": {
+          "agileagentcanvas.graphify.pythonPath": {
+            "type": "string",
+            "default": "python",
+            "description": "Path to the Python executable used to run graphify (python -m graphify). Change this if Python is not on your PATH, e.g. C:/Python311/python.exe or python3."
+          },
+          "agileagentcanvas.graphify.backend": {
+            "type": "string",
+            "default": "",
+            "enum": [
+              "",
+              "gemini",
+              "kimi",
+              "claude",
+              "openai",
+              "ollama"
+            ],
+            "description": "AI backend for graphify semantic extraction. Leave empty to use graphify's default. Passed as --backend flag to 'graphify extract'."
+          },
+          "agileagentcanvas.graphify.autoBootstrapOnNewProject": {
+            "type": "boolean",
+            "default": true,
+            "description": "Prompt to bootstrap graphify when a workspace with BMAD artifacts but no knowledge graph is opened."
+          },
+          "agileagentcanvas.graphify.autoUpdateOnSave": {
+            "type": "boolean",
+            "default": true,
+            "description": "Automatically run 'graphify update' when source files change (debounced 5 s). Code-only — no LLM calls. Requires a graph to already exist."
+          },
+          "agileagentcanvas.graphify.showCodebaseLane": {
+            "type": "boolean",
+            "default": false,
+            "description": "Show the Codebase lane on the canvas when a graphify knowledge graph is present."
+          }
+        }
+      },
+      {
+        "title": "Codeburn",
+        "order": 5,
+        "properties": {
+          "agileagentcanvas.codeburn.enabled": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable Codeburn cost observability integration. When enabled, the extension can query codeburn for AI coding spend data."
+          },
+          "agileagentcanvas.codeburn.path": {
+            "type": "string",
+            "default": "",
+            "description": "Optional absolute path to the codeburn executable. Leave empty to auto-detect (global npm, local node_modules, or npx)."
+          }
+        }
+      },
+      {
+        "title": "Caveman",
+        "order": 6,
+        "properties": {
+          "agileagentcanvas.caveman.enabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable caveman communication mode. When enabled, the AI responds in ultra-terse style that cuts token usage ~75%."
+          },
+          "agileagentcanvas.caveman.intensity": {
+            "type": "string",
+            "default": "full",
+            "enum": [
+              "lite",
+              "full",
+              "ultra",
+              "wenyan"
+            ],
+            "enumDescriptions": [
+              "Lite — drops filler and hedging, keeps basic grammar",
+              "Full — drops articles, filler, pleasantries; fragments OK (default)",
+              "Ultra — maximum compression; abbreviate everything, arrows for causality",
+              "Wenyan — classical Chinese literary terse (ultra-minimal poetic form)"
+            ],
+            "description": "Intensity level for caveman communication mode. Only applies when caveman is enabled."
+          }
+        }
+      },
+      {
+        "title": "Agentic Execution",
+        "order": 7,
+        "properties": {
+          "agileagentcanvas.agenticKanban.enabled": {
+            "type": "boolean",
+            "default": true,
+            "description": "Show the Agentic Kanban board — a Kanban-style workflow orchestration panel in the sidebar that lets you drag epics and stories across Backlog → Ready → In Progress → Review → Done columns. Each card shows execution state (queued, running, interrupted, terminal active) and concurrency locks. Disable to hide the board if you don't use agentic execution."
+          },
+          "agileagentcanvas.agenticKanban.terminalProvider": {
+            "type": "string",
+            "default": "auto",
+            "enum": [
+              "auto",
+              "claude",
+              "codex",
+              "gemini-cli",
+              "aider",
+              "opencode"
+            ],
+            "enumDescriptions": [
+              "Auto-detect the best available terminal CLI for agentic execution",
+              "Anthropic Claude Code CLI — `claude` on PATH",
+              "OpenAI Codex CLI — `codex` on PATH",
+              "Google Gemini CLI — `gemini` on PATH",
+              "Aider — `aider` on PATH",
+              "OpenCode CLI (sst/opencode) — `opencode` on PATH"
+            ],
+            "description": "Terminal CLI provider for agentic (headless) workflow execution. Used when a card is dragged in the Agentic Kanban without an active Copilot Chat session. 'auto' selects the first available CLI on PATH."
+          },
+          "agileagentcanvas.trace.enabled": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable execution tracing. When enabled, all agent tool calls and decisions are recorded to trace session files."
+          },
+          "agileagentcanvas.trace.retentionDays": {
+            "type": "number",
+            "default": 30,
+            "minimum": 1,
+            "maximum": 365,
+            "description": "Number of days to retain trace session files. Older traces are automatically cleaned up."
+          },
+          "agileagentcanvas.harness.enabled": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable harness governance policies. Pre-flight checks block invalid artifact mutations; post-flight checks warn on advisory issues like placeholders or budget overruns."
+          },
+          "agileagentcanvas.harness.sprintCapacity": {
+            "type": "number",
+            "default": 20,
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Default sprint story-point capacity used by the token-budget harness policy to warn when an epic exceeds the team's capacity."
+          },
+          "agileagentcanvas.agentTeam.enabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable multi-agent teams via the Agent Coordination Protocol (ACP). When enabled, lane transitions can spawn coordinator+crafter+gate agent sessions instead of single-agent execution."
+          },
+          "agileagentcanvas.yoloMode": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable YOLO (autonomous) mode. When enabled, the AI may skip interactive checkpoints and proceed autonomously through workflow steps without waiting for user confirmation at each prompt."
+          }
+        }
+      },
+      {
+        "title": "Catalogue",
+        "order": 8,
+        "properties": {
+          "agileagentcanvas.userCataloguePath": {
+            "type": "string",
+            "default": "",
+            "description": "Absolute path to a folder containing user-managed skills and agents. Skills placed here are merged with the built-in catalogue; a skill with the same folder name overrides the built-in. Leave empty to use built-ins only. This is a global (user-level) setting shared across all workspaces.",
+            "scope": "machine"
+          },
+          "agileagentcanvas.skillRepos": {
+            "type": "array",
+            "default": [],
+            "description": "List of git repository URLs that contain skill folders to clone into your user catalogue. Each repo is cloned under <userCataloguePath>/_repos/<slug>/. Use the Skill Catalogue UI to manage repos.",
+            "scope": "machine",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
               }
             }
           }
-        },
-        "agileagentcanvas.outputFolder": {
-          "type": "string",
-          "default": ".agileagentcanvas-context",
-          "description": "Name of the subfolder (inside your workspace) where Agile Agent Canvas stores artifacts. Change this to use a custom folder name instead of the default. You can also use the folder button in the canvas toolbar to browse for any folder or create a new one."
-        },
-        "agileagentcanvas.autoSync": {
-          "type": "boolean",
-          "default": true,
-          "description": "Automatically sync visual changes to files"
-        },
-        "agileagentcanvas.showAICursor": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show AI cursor position in canvas"
-        },
-        "agileagentcanvas.defaultAgent": {
-          "type": "string",
-          "default": "analyst",
-          "enum": [
-            "analyst",
-            "pm",
-            "architect"
-          ],
-          "description": "Default BMAD agent for chat interactions"
-        },
-        "agileagentcanvas.aiProvider": {
-          "type": "string",
-          "default": "auto",
-          "enum": [
-            "auto",
-            "copilot",
-            "openai",
-            "anthropic",
-            "gemini",
-            "ollama",
-            "antigravity",
-            "omp"
-          ],
-          "enumDescriptions": [
-            "Automatically detect the best available provider (tries VS Code LM API first, then Antigravity, then OMP, then direct API key)",
-            "GitHub Copilot via VS Code Language Model API",
-            "OpenAI API (requires agileagentcanvas.apiKey and optionally agileagentcanvas.modelId)",
-            "Anthropic Claude API (requires agileagentcanvas.apiKey and optionally agileagentcanvas.modelId)",
-            "Google Gemini API (requires agileagentcanvas.apiKey and optionally agileagentcanvas.modelId)",
-            "Ollama local models (requires agileagentcanvas.baseUrl, e.g. http://localhost:11434)",
-            "Google Antigravity IDE — injects prompts into the Antigravity chat panel via native command",
-            "Oh My Pi (OMP) harness — writes the prompt to .omp/inbox.md or invokes omp.sendPrompt if the OMP VS Code extension is installed"
-          ],
-          "description": "AI provider for Agile Agent Canvas. Use 'auto' to detect automatically."
-        },
-        "agileagentcanvas.apiKey": {
-          "type": "string",
-          "default": "",
-          "description": "API key for the selected AI provider (OpenAI, Anthropic, or Gemini). Leave empty when using Copilot, Ollama, Antigravity, or OMP."
-        },
-        "agileagentcanvas.modelId": {
-          "type": "string",
-          "default": "",
-          "description": "Model ID to use. Defaults: OpenAI=gpt-4o, Anthropic=claude-sonnet-4-5, Gemini=gemini-2.0-flash, Ollama=llama3. Leave empty to use the default for your provider."
-        },
-        "agileagentcanvas.baseUrl": {
-          "type": "string",
-          "default": "",
-          "description": "Base URL for the AI API. Only needed for Ollama (e.g. http://localhost:11434) or a custom OpenAI-compatible endpoint."
-        },
-        "agileagentcanvas.chatProviderSelected": {
-          "type": "string",
-          "default": "auto",
-          "description": "The chat provider most recently selected in the canvas dropdown. Persisted across sessions so the user doesn't need to re-pick. 'auto' = use the default from settings or auto-detect.",
-          "scope": "machine"
-        },
-        "agileagentcanvas.chatProvider": {
-          "type": "string",
-          "default": "auto",
-          "enum": [
-            "auto",
-            "copilot",
-            "claude",
-            "cursor",
-            "windsurf",
-            "antigravity",
-            "omp",
-            "codex",
-            "gemini-cli",
-            "aider",
-            "opencode",
-            "terminal"
-          ],
-          "enumDescriptions": [
-            "Auto-detect the best available provider for the current host",
-            "GitHub Copilot chat panel (workbench.action.chat.open)",
-            "Anthropic Claude Code chat panel (claude.openChat) — opens Claude Code if installed, otherwise launches `claude` CLI in the terminal",
-            "Cursor chat panel (cursor.chat.open)",
-            "Windsurf chat panel (windsurf.openChat)",
-            "Google Antigravity chat panel (antigravity.sendPromptToAgentPanel)",
-            "Oh My Pi (OMP) harness — writes to .omp/inbox.md or invokes omp.sendPrompt",
-            "OpenAI Codex CLI — always launches in the integrated terminal",
-            "Google Gemini CLI — always launches in the integrated terminal",
-            "Aider — always launches in the integrated terminal",
-            "OpenCode CLI (sst/opencode) — always launches in the integrated terminal",
-            "Generic terminal: prints the prompt and lets the user run it manually"
-          ],
-          "description": "Default AI chat provider for canvas actions (Refine, Enhance, Break Down, etc.). When set, all canvas-triggered actions route to this provider regardless of which IDE is hosting. Set per-action via the canvas header dropdown."
-        },
-        "agileagentcanvas.defaultTemperature": {
-          "type": "number",
-          "default": 0.2,
-          "minimum": 0,
-          "maximum": 2,
-          "description": "Default sampling temperature for LLM calls. 0 = deterministic, 2 = creative. Lower values improve structured output reliability. Used by OpenAI, Anthropic, Gemini, and Ollama providers."
-        },
-        "agileagentcanvas.logLevel": {
-          "type": "string",
-          "default": "info",
-          "enum": [
-            "debug",
-            "info",
-            "warn",
-            "error"
-          ],
-          "description": "Controls extension logging verbosity. Use info/warn/error for normal use; debug for troubleshooting."
-        },
-        "agileagentcanvas.jira.baseUrl": {
-          "type": "string",
-          "default": "",
-          "description": "Your Jira Cloud base URL, e.g. https://mycompany.atlassian.net (no trailing slash). Required for Jira integration."
-        },
-        "agileagentcanvas.jira.email": {
-          "type": "string",
-          "default": "",
-          "description": "Your Atlassian account email address. Used for Jira API authentication."
-        },
-        "agileagentcanvas.jira.apiToken": {
-          "type": "string",
-          "default": "",
-          "markdownDeprecationMessage": "**Deprecated:** Storing the API token in plain-text settings is insecure. Use the command **Agile Agent Canvas: Set Jira API Token** (`agileagentcanvas.setJiraToken`) instead — it stores the token in the OS keychain. If a value is present here it will be migrated automatically on next use.",
-          "description": "[Deprecated — use setJiraToken command] Your Atlassian API token. Tokens expire after 1 year."
-        },
-        "agileagentcanvas.jira.projectKey": {
-          "type": "string",
-          "default": "",
-          "description": "Default Jira project key to use when none is specified (e.g. PROJ). You can override this per command."
-        },
-        "agileagentcanvas.graphify.pythonPath": {
-          "type": "string",
-          "default": "python",
-          "description": "Path to the Python executable used to run graphify (python -m graphify). Change this if Python is not on your PATH, e.g. C:/Python311/python.exe or python3."
-        },
-        "agileagentcanvas.graphify.backend": {
-          "type": "string",
-          "default": "",
-          "enum": [
-            "",
-            "gemini",
-            "kimi",
-            "claude",
-            "openai",
-            "ollama"
-          ],
-          "description": "AI backend for graphify semantic extraction. Leave empty to use graphify's default. Passed as --backend flag to 'graphify extract'."
-        },
-        "agileagentcanvas.graphify.autoBootstrapOnNewProject": {
-          "type": "boolean",
-          "default": true,
-          "description": "Prompt to bootstrap graphify when a workspace with BMAD artifacts but no knowledge graph is opened."
-        },
-        "agileagentcanvas.graphify.autoUpdateOnSave": {
-          "type": "boolean",
-          "default": true,
-          "description": "Automatically run 'graphify update' when source files change (debounced 5 s). Code-only — no LLM calls. Requires a graph to already exist."
-        },
-        "agileagentcanvas.graphify.showCodebaseLane": {
-          "type": "boolean",
-          "default": false,
-          "description": "Show the Codebase lane on the canvas when a graphify knowledge graph is present."
-        },
-        "agileagentcanvas.codeburn.enabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable Codeburn cost observability integration. When enabled, the extension can query codeburn for AI coding spend data."
-        },
-        "agileagentcanvas.codeburn.path": {
-          "type": "string",
-          "default": "",
-          "description": "Optional absolute path to the codeburn executable. Leave empty to auto-detect (global npm, local node_modules, or npx)."
-        },
-        "agileagentcanvas.caveman.enabled": {
-          "type": "boolean",
-          "default": false,
-          "description": "Enable caveman communication mode. When enabled, the AI responds in ultra-terse style that cuts token usage ~75%."
-        },
-        "agileagentcanvas.caveman.intensity": {
-          "type": "string",
-          "default": "full",
-          "enum": [
-            "lite",
-            "full",
-            "ultra",
-            "wenyan"
-          ],
-          "enumDescriptions": [
-            "Lite — drops filler and hedging, keeps basic grammar",
-            "Full — drops articles, filler, pleasantries; fragments OK (default)",
-            "Ultra — maximum compression; abbreviate everything, arrows for causality",
-            "Wenyan — classical Chinese literary terse (ultra-minimal poetic form)"
-          ],
-          "description": "Intensity level for caveman communication mode. Only applies when caveman is enabled."
         }
       }
-    },
+    ],
     "walkthroughs": [
       {
         "id": "agileagentcanvas.getStarted",
@@ -1260,7 +1414,7 @@
     "bundle:dev": "node esbuild.mjs",
     "compile-webview": "cd webview-ui && npm run build",
     "watch": "node esbuild.mjs --watch",
-    "lint": "eslint src --ext ts",
+    "lint": "eslint src features --ext ts --rulesdir eslint-rules",
     "test": "cucumber-js",
     "test:cucumber": "cucumber-js",
     "test:cucumber:ci": "cucumber-js --profile ci",

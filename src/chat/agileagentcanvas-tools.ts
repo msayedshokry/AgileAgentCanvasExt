@@ -14,6 +14,7 @@ import {
 } from '../integrations/jira-importer';
 import { graphQuery, graphPath, loadCommunityWiki } from '../integrations/graphify/graph-query';
 import { trackToolCall, toolTelemetry } from './tool-telemetry';
+import { getTraceRecorder } from '../trace/trace-recorder';
 
 /**
  * AgileAgentCanvas Language Model Tools
@@ -84,6 +85,10 @@ export interface AgileAgentCanvasToolContext {
     outputPath: string;
     /** The artifact store instance for agileagentcanvas_update_artifact */
     store: ArtifactStore;
+    /** Set by the chat participant before tool invocations to enable trace recording. */
+    currentSessionId?: string;
+    /** Set by the chat participant before tool invocations to identify the agent. */
+    currentAgentName?: string;
 }
 
 /**
@@ -151,6 +156,60 @@ function jsonToMarkdown(title: string, obj: any, depth: number = 1): string {
     return lines.join('\n');
 }
 
+// ─── Project-standard error-to-string ────────────────────────────────────────
+function errMsg(err: unknown): string {
+    return err instanceof Error ? err.message : String(err);
+}
+
+// ─── Dynamic tracing wrapper ──────────────────────────────────────────────────
+/**
+ * Wraps a tool with trace recording using the session/agent context from
+ * `sharedToolContext` at invocation time.  This is needed because tools are
+ * registered globally via `vscode.lm.registerTool()`, but sessionId and
+ * agentName are dynamic (set per chat session).
+ *
+ * If `sharedToolContext.currentSessionId` or `currentAgentName` is not set,
+ * the tool runs without tracing (no-op guard).
+ */
+function wrapToolWithDynamicTracing(
+    tool: vscode.LanguageModelTool<any>,
+    toolName: string
+): vscode.LanguageModelTool<any> {
+    return {
+        ...tool,
+        invoke: async (inputs: any, token: vscode.CancellationToken) => {
+            const { currentSessionId, currentAgentName } = sharedToolContext;
+            if (!currentSessionId || !currentAgentName) {
+                return tool.invoke(inputs, token);
+            }
+            const startTime = Date.now();
+            try {
+                const result = await tool.invoke(inputs, token);
+                try {
+                    getTraceRecorder().record({
+                        sessionId: currentSessionId,
+                        type: 'tool_call',
+                        agent: currentAgentName,
+                        data: { toolName, toolInput: inputs, toolResult: result },
+                        durationMs: Date.now() - startTime,
+                    });
+                } catch { /* trace recording failures are non-fatal */ }
+                return result;
+            } catch (err) {
+                try {
+                    getTraceRecorder().record({
+                        sessionId: currentSessionId,
+                        type: 'error',
+                        agent: currentAgentName,
+                        data: { toolName, toolInput: inputs, error: errMsg(err) },
+                        durationMs: Date.now() - startTime,
+                    });
+                } catch { /* trace recording failures are non-fatal */ }
+                throw err;
+            }
+        }
+    };
+}
 // ─── Tool registration ───────────────────────────────────────────────────────
 
 /**
@@ -172,7 +231,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
 
     // ── agileagentcanvas_read_file ──────────────────────────────────────────────────────
     disposables.push(
-        vscode.lm.registerTool<{ path: string }>('agileagentcanvas_read_file', {
+        vscode.lm.registerTool<{ path: string }>('agileagentcanvas_read_file', wrapToolWithDynamicTracing({
             async invoke(request, _token) {
                 return trackToolCall('agileagentcanvas_read_file', async () => {
                     const filePath = request.input.path;
@@ -203,12 +262,12 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                     }
                 });
             }
-        })
+        }, 'agileagentcanvas_read_file'))
     );
 
     // ── agileagentcanvas_list_directory ─────────────────────────────────────────────────
     disposables.push(
-        vscode.lm.registerTool<{ path: string }>('agileagentcanvas_list_directory', {
+        vscode.lm.registerTool<{ path: string }>('agileagentcanvas_list_directory', wrapToolWithDynamicTracing({
             async invoke(request, _token) {
                 return trackToolCall('agileagentcanvas_list_directory', async () => {
                     const dirPath = request.input.path;
@@ -244,14 +303,14 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                     }
                 });
             }
-        })
+        }, 'agileagentcanvas_list_directory'))
     );
 
     // ── agileagentcanvas_update_artifact ────────────────────────────────────────────────
     disposables.push(
         vscode.lm.registerTool<{ type: string; id: string; changes: Record<string, any> }>(
             'agileagentcanvas_update_artifact',
-            {
+            wrapToolWithDynamicTracing({
                 async invoke(request, _token) {
                     return trackToolCall('agileagentcanvas_update_artifact', async () => {
                         const { type, id, changes } = request.input;
@@ -310,7 +369,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         }
                     });
                 }
-            }
+            }, 'agileagentcanvas_update_artifact')
         )
     );
 
@@ -318,7 +377,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
     disposables.push(
         vscode.lm.registerTool<{ path: string; content: string; format?: string }>(
             'agileagentcanvas_write_file',
-            {
+            wrapToolWithDynamicTracing({
                 async invoke(request, _token) {
                     return trackToolCall('agileagentcanvas_write_file', async () => {
                         const filePath = request.input.path;
@@ -443,7 +502,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         }
                     });
                 }
-            }
+            }, 'agileagentcanvas_write_file')
         )
     );
 
@@ -451,7 +510,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
     disposables.push(
         vscode.lm.registerTool<{ storyId: string; epicId: string; status: string }>(
             'agileagentcanvas_sync_story_status',
-            {
+            wrapToolWithDynamicTracing({
                 async invoke(request, _token) {
                     return trackToolCall('agileagentcanvas_sync_story_status', async () => {
                         const { storyId, epicId, status } = request.input;
@@ -490,7 +549,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         }
                     });
                 }
-            }
+            }, 'agileagentcanvas_sync_story_status')
         )
     );
 
@@ -498,7 +557,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
     disposables.push(
         vscode.lm.registerTool<{ epicId: string; status: string }>(
             'agileagentcanvas_sync_epic_status',
-            {
+            wrapToolWithDynamicTracing({
                 async invoke(request, _token) {
                     return trackToolCall('agileagentcanvas_sync_epic_status', async () => {
                         const { epicId, status } = request.input;
@@ -529,7 +588,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         }
                     });
                 }
-            }
+            }, 'agileagentcanvas_sync_epic_status')
         )
     );
 
@@ -537,7 +596,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
     disposables.push(
         vscode.lm.registerTool<{ action: string; projectKey?: string; epicKey?: string }>(
             'agileagentcanvas_read_jira',
-            {
+            wrapToolWithDynamicTracing({
                 async invoke(request, _token) {
                     return trackToolCall('agileagentcanvas_read_jira', async () => {
                         const { action, projectKey, epicKey } = request.input;
@@ -646,7 +705,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         }
                     });
                 }
-            }
+            }, 'agileagentcanvas_read_jira')
         )
     );
 
@@ -654,7 +713,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
     disposables.push(
         vscode.lm.registerTool<{ question: string; budget?: number }>(
             'agileagentcanvas_graph_query',
-            {
+            wrapToolWithDynamicTracing({
                 async invoke(request, _token) {
                     return trackToolCall('agileagentcanvas_graph_query', async () => {
                         const question = request.input.question;
@@ -683,7 +742,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         }
                     });
                 }
-            }
+            }, 'agileagentcanvas_graph_query')
         )
     );
 
@@ -691,7 +750,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
     disposables.push(
         vscode.lm.registerTool<{ nodeA: string; nodeB: string }>(
             'agileagentcanvas_graph_path',
-            {
+            wrapToolWithDynamicTracing({
                 async invoke(request, _token) {
                     return trackToolCall('agileagentcanvas_graph_path', async () => {
                         const { nodeA, nodeB } = request.input;
@@ -719,7 +778,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         }
                     });
                 }
-            }
+            }, 'agileagentcanvas_graph_path')
         )
     );
 
@@ -727,7 +786,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
     disposables.push(
         vscode.lm.registerTool<{ community: string }>(
             'agileagentcanvas_graph_community',
-            {
+            wrapToolWithDynamicTracing({
                 async invoke(request, _token) {
                     return trackToolCall('agileagentcanvas_graph_community', async () => {
                         const { community } = request.input;
@@ -758,7 +817,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         }
                     });
                 }
-            }
+            }, 'agileagentcanvas_graph_community')
         )
     );
 
@@ -766,7 +825,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
     disposables.push(
         vscode.lm.registerTool<{ period?: string; action?: string }>(
             'agileagentcanvas_codeburn_report',
-            {
+            wrapToolWithDynamicTracing({
                 async invoke(request, token) {
                     return trackToolCall('agileagentcanvas_codeburn_report', async () => {
                         const { period, action } = request.input;
@@ -786,7 +845,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         ]);
                     });
                 }
-            }
+            }, 'agileagentcanvas_codeburn_report')
         )
     );
 
@@ -797,7 +856,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
     disposables.push(
         vscode.lm.registerTool<{ data: any; schemaName: string; strict?: boolean }>(
             'agileagentcanvas_repair_json',
-            {
+            wrapToolWithDynamicTracing({
                 async invoke(request, _token) {
                     return trackToolCall('agileagentcanvas_repair_json', async () => {
                         const { data, schemaName, strict } = request.input;
@@ -928,13 +987,13 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         }
                     });
                 }
-            }
+            }, 'agileagentcanvas_repair_json')
         )
     );
 
     // ── agileagentcanvas_frontmatter_extract ─────────────────────────────────────────
     disposables.push(
-        vscode.lm.registerTool<{ path: string }>('agileagentcanvas_frontmatter_extract', {
+        vscode.lm.registerTool<{ path: string }>('agileagentcanvas_frontmatter_extract', wrapToolWithDynamicTracing({
             async invoke(request, _token) {
                 return trackToolCall('agileagentcanvas_frontmatter_extract', async () => {
                     const filePath = request.input.path;
@@ -979,12 +1038,12 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                     }
                 });
             }
-        })
+        }, 'agileagentcanvas_frontmatter_extract'))
     );
 
     // ── agileagentcanvas_yaml_to_json ───────────────────────────────────────────────
     disposables.push(
-        vscode.lm.registerTool<{ yaml: string }>('agileagentcanvas_yaml_to_json', {
+        vscode.lm.registerTool<{ yaml: string }>('agileagentcanvas_yaml_to_json', wrapToolWithDynamicTracing({
             async invoke(request, _token) {
                 return trackToolCall('agileagentcanvas_yaml_to_json', async () => {
                     try {
@@ -1003,14 +1062,14 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                     }
                 });
             }
-        })
+        }, 'agileagentcanvas_yaml_to_json'))
     );
 
     // ── agileagentcanvas_json_diff ─────────────────────────────────────────────────
     disposables.push(
         vscode.lm.registerTool<{ left: object; right: object; format?: string }>(
             'agileagentcanvas_json_diff',
-            {
+            wrapToolWithDynamicTracing({
                 async invoke(request, _token) {
                     return trackToolCall('agileagentcanvas_json_diff', async () => {
                         try {
@@ -1037,7 +1096,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         }
                     });
                 }
-            }
+            }, 'agileagentcanvas_json_diff')
         )
     );
 
@@ -1045,7 +1104,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
     disposables.push(
         vscode.lm.registerTool<{ left: object; right: object; strategy?: string }>(
             'agileagentcanvas_json_merge',
-            {
+            wrapToolWithDynamicTracing({
                 async invoke(request, _token) {
                     return trackToolCall('agileagentcanvas_json_merge', async () => {
                         try {
@@ -1084,7 +1143,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         }
                     });
                 }
-            }
+            }, 'agileagentcanvas_json_merge')
         )
     );
 
@@ -1092,7 +1151,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
     disposables.push(
         vscode.lm.registerTool<{ type?: string; status?: string; epicId?: string; priority?: string; limit?: number }>(
             'agileagentcanvas_artifact_query',
-            {
+            wrapToolWithDynamicTracing({
                 async invoke(request, _token) {
                     return trackToolCall('agileagentcanvas_artifact_query', async () => {
                         const { type, status, epicId, priority, limit } = request.input;
@@ -1144,7 +1203,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         ]);
                     });
                 }
-            }
+            }, 'agileagentcanvas_artifact_query')
         )
     );
 
@@ -1152,7 +1211,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
     disposables.push(
         vscode.lm.registerTool<{ template: string; vars?: Record<string, string> }>(
             'agileagentcanvas_workflow_resolve_vars',
-            {
+            wrapToolWithDynamicTracing({
                 async invoke(request, _token) {
                     return trackToolCall('agileagentcanvas_workflow_resolve_vars', async () => {
                         const { template, vars = {} } = request.input;
@@ -1175,7 +1234,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         ]);
                     });
                 }
-            }
+            }, 'agileagentcanvas_workflow_resolve_vars')
         )
     );
 
@@ -1183,7 +1242,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
     disposables.push(
         vscode.lm.registerTool<{ schema: object; rootName?: string }>(
             'agileagentcanvas_types_from_schema',
-            {
+            wrapToolWithDynamicTracing({
                 async invoke(request, _token) {
                     return trackToolCall('agileagentcanvas_types_from_schema', async () => {
                         const { schema, rootName = 'Root' } = request.input;
@@ -1246,7 +1305,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         ]);
                     });
                 }
-            }
+            }, 'agileagentcanvas_types_from_schema')
         )
     );
 
@@ -1254,7 +1313,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
     disposables.push(
         vscode.lm.registerTool<{ samples: object[]; rootName?: string }>(
             'agileagentcanvas_schema_from_json',
-            {
+            wrapToolWithDynamicTracing({
                 async invoke(request, _token) {
                     return trackToolCall('agileagentcanvas_schema_from_json', async () => {
                         const { samples, rootName = 'Root' } = request.input;
@@ -1338,7 +1397,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         ]);
                     });
                 }
-            }
+            }, 'agileagentcanvas_schema_from_json')
         )
     );
 
@@ -1346,7 +1405,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
     disposables.push(
         vscode.lm.registerTool<{ query: string; kind?: string; filePattern?: string; maxResults?: number }>(
             'agileagentcanvas_codebase_search',
-            {
+            wrapToolWithDynamicTracing({
                 async invoke(request, _token) {
                     return trackToolCall('agileagentcanvas_codebase_search', async () => {
                         const { query, kind = 'text', filePattern, maxResults = 30 } = request.input;
@@ -1442,7 +1501,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         ]);
                     });
                 }
-            }
+            }, 'agileagentcanvas_codebase_search')
         )
     );
 
