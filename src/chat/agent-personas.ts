@@ -42,12 +42,12 @@ export type ArtifactAgentKey =
     | 'tech-writer'
     | 'tea'
     | 'canvas-integrator'
-    | 'brainstorming'
-    | 'design-thinking'
-    | 'innovation'
-    | 'problem-solver'
-    | 'presentation'
-    | 'storyteller';
+    | 'cis-brainstorming-coach'
+    | 'cis-creative-problem-solver'
+    | 'cis-design-thinking-coach'
+    | 'cis-innovation-strategist'
+    | 'cis-presentation-master'
+    | 'cis-storyteller';
 
 // ── Artifact-type → skill mapping ────────────────────────────────────────────
 
@@ -72,10 +72,17 @@ const ARTIFACT_TYPE_TO_AGENT: Record<string, { skillName: string; key: ArtifactA
     'ci-pipeline':         { skillName: 'aac-agent-tea',             key: 'tea' },
     'quick-spec':          { skillName: 'bmad-agent-dev',            key: 'dev' },
     'quick-dev':           { skillName: 'bmad-agent-dev',            key: 'dev' },
-    'design-thinking':     { skillName: 'aac-cis-agent-design-thinking',   key: 'design-thinking' },
-    'innovation-strategy': { skillName: 'aac-cis-agent-innovation',        key: 'innovation' },
-    'problem-solving':     { skillName: 'aac-cis-agent-problem-solver',    key: 'problem-solver' },
-    'storytelling':        { skillName: 'aac-cis-agent-storyteller',        key: 'storyteller' },
+    'design-thinking':     { skillName: 'aac-cis-agent-design-thinking',   key: 'cis-design-thinking-coach' },
+    'innovation-strategy': { skillName: 'aac-cis-agent-innovation',        key: 'cis-innovation-strategist' },
+    'problem-solving':     { skillName: 'aac-cis-agent-problem-solver',    key: 'cis-creative-problem-solver' },
+    'storytelling':        { skillName: 'aac-cis-agent-storyteller',       key: 'cis-storyteller' },
+    // CIS v0.1.9 agent personas (direct chat invocation)
+    'cis-brainstorming':     { skillName: 'aac-cis-agent-brainstorming',           key: 'cis-brainstorming-coach' },
+    'cis-problem-solving':   { skillName: 'aac-cis-agent-problem-solver',          key: 'cis-creative-problem-solver' },
+    'cis-design-thinking':   { skillName: 'aac-cis-agent-design-thinking',         key: 'cis-design-thinking-coach' },
+    'cis-innovation':        { skillName: 'aac-cis-agent-innovation',              key: 'cis-innovation-strategist' },
+    'cis-presentation':      { skillName: 'aac-cis-agent-presentation',            key: 'cis-presentation-master' },
+    'cis-storytelling':      { skillName: 'aac-cis-agent-storyteller',              key: 'cis-storyteller' },
     'canvas-convert':      { skillName: 'aac-agent-canvas-integrator',     key: 'canvas-integrator' },
 };
 

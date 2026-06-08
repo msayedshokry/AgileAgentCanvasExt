@@ -23,10 +23,10 @@ import { harnessFeedback } from '../harness/harness-feedback';
  * Executes BMAD methodology workflows from markdown/yaml files.
  * Follows the workflow.xml execution engine specification.
  * 
- * Supports 56 BMAD workflows across modules:
+ * Supports 62 BMAD workflows across modules:
  * - Core: 4 workflows (brainstorming, convert-to-json, party-mode, advanced-elicitation)
- * - BMM: 26 workflows (analysis, planning, solutioning, implementation, quick-flow, supporting, utility)
- * - BMB: 12 workflows (agent builder, module builder, workflow builder) — not shown in /workflows display
+ * - BMM: 30 workflows (analysis, planning, solutioning, implementation, quick-flow, supporting, utility)
+ * - BMB: 14 workflows (agent builder, module builder, workflow builder, quality scans) — not shown in /workflows display
  * - TEA: 9 workflows (testing architecture)
  * - CIS: 4 workflows (innovation strategy)
  */
@@ -256,7 +256,39 @@ export const WORKFLOW_REGISTRY: WorkflowDefinition[] = [
         artifactTypes: ['ux', 'design'],
         tags: ['planning', 'ux', 'design']
     },
-
+    {
+        id: 'bmad-spec',
+        name: 'Create Spec (V6)',
+        description: 'Canonical transformer to distill input into machine-contract SPEC.md',
+        module: 'bmm',
+        phase: '2-planning',
+        path: 'bmm/workflows/2-plan-workflows/bmad-spec/workflow.md',
+        format: 'md',
+        artifactTypes: ['prd', 'brief', 'idea'],
+        tags: ['planning', 'spec', 'distillation']
+    },
+    {
+        id: 'bmad-prd',
+        name: 'PRD Facilitator (V6)',
+        description: 'Master PRD coach with structured discovery, stakes calibration, reviewer gates, decision logging',
+        module: 'bmm',
+        phase: '2-planning',
+        path: 'bmm/workflows/2-plan-workflows/bmad-prd/workflow.md',
+        format: 'md',
+        artifactTypes: ['prd', 'brief'],
+        tags: ['planning', 'prd', 'coaching']
+    },
+    {
+        id: 'bmad-ux',
+        name: 'UX Design (V6)',
+        description: 'Master UX facilitation producing DESIGN.md and EXPERIENCE.md peer contracts',
+        module: 'bmm',
+        phase: '2-planning',
+        path: 'bmm/workflows/2-plan-workflows/bmad-ux/workflow.md',
+        format: 'md',
+        artifactTypes: ['ux', 'design', 'prd'],
+        tags: ['planning', 'ux', 'design', 'experience']
+    },
     // ============================================
     // BMM MODULE - Phase 3: Solutioning (3 workflows + enhancements)
     // ============================================
@@ -377,6 +409,16 @@ export const WORKFLOW_REGISTRY: WorkflowDefinition[] = [
         tags: ['implementation', 'review', 'quality']
     },
     {
+        id: 'bmad-investigate',
+        name: 'Investigate (V6)',
+        description: 'Forensic case investigation with evidence-graded findings (Confirmed/Deduced/Hypothesized)',
+        module: 'bmm',
+        phase: '4-implementation',
+        path: 'bmm/workflows/4-implementation/bmad-investigate/workflow.md',
+        format: 'md',
+        artifactTypes: ['story', 'bug'],
+        tags: ['implementation', 'investigation', 'forensic', 'debugging']
+    },    {
         id: 'retrospective',
         name: 'Retrospective',
         description: 'Sprint retrospective for continuous improvement',
@@ -400,6 +442,8 @@ export const WORKFLOW_REGISTRY: WorkflowDefinition[] = [
 
     // ============================================
     // AAC KANBAN - Lane Agents (2 workflows)
+    // NOTE: AAC-custom skills use skills/ paths directly (not routed through
+    // LEGACY_WORKFLOW_PATH_TO_SKILL), since they're extension-native, not stock BMAD.
     // ============================================
     {
         id: 'aac-kanban-dev-executor',
@@ -983,6 +1027,34 @@ export const WORKFLOW_REGISTRY: WorkflowDefinition[] = [
         format: 'md',
         artifactTypes: ['workflow'],
         tags: ['bmb', 'workflow', 'rework']
+    },
+
+    // ============================================
+    // BMB MODULE - Quality Scan / Builder Skills (2 workflows, V1.1.0)
+    // These are SKILL.md-based quality-scanning workflows that analyse
+    // and improve existing agents/workflows via structured quality dimensions.
+    // ============================================
+    {
+        id: 'bmad-agent-builder',
+        name: 'Agent Builder (BMB)',
+        description: 'Build and quality-scan BMAD agents — cohesion analysis, enhancement opportunities, script detection',
+        module: 'bmb',
+        category: 'quality-scan',
+        path: 'bmb/workflows/bmb-agent-builder/workflow.md',
+        format: 'md',
+        artifactTypes: ['agent'],
+        tags: ['bmb', 'agent', 'quality', 'scan', 'builder']
+    },
+    {
+        id: 'bmad-workflow-builder',
+        name: 'Workflow Builder (BMB)',
+        description: 'Build and quality-scan BMAD workflows — integrity checks, enhancement opportunities, script analysis',
+        module: 'bmb',
+        category: 'quality-scan',
+        path: 'bmb/workflows/bmb-workflow-builder/workflow.md',
+        format: 'md',
+        artifactTypes: ['workflow'],
+        tags: ['bmb', 'workflow', 'quality', 'scan', 'builder']
     }
 ];
 
@@ -1001,7 +1073,10 @@ const LEGACY_WORKFLOW_PATH_TO_SKILL: Record<string, string> = {
     'bmm/workflows/2-plan-workflows/create-prd/workflow-create-prd.md': 'bmad-create-prd',
     'bmm/workflows/2-plan-workflows/create-prd/workflow-edit-prd.md': 'bmad-edit-prd',
     'bmm/workflows/2-plan-workflows/create-prd/workflow-validate-prd.md': 'bmad-validate-prd',
-    'bmm/workflows/2-plan-workflows/create-ux-design/workflow.md': 'bmad-create-ux-design',
+'bmm/workflows/2-plan-workflows/create-ux-design/workflow.md': 'bmad-create-ux-design',
+    'bmm/workflows/2-plan-workflows/bmad-spec/workflow.md': 'bmad-spec',
+    'bmm/workflows/2-plan-workflows/bmad-prd/workflow.md': 'bmad-prd',
+    'bmm/workflows/2-plan-workflows/bmad-ux/workflow.md': 'bmad-ux',
     // BMM Solutioning
     'bmm/workflows/3-solutioning/create-architecture/workflow.md': 'bmad-create-architecture',
     'bmm/workflows/3-solutioning/create-epics-and-stories/workflow.md': 'bmad-create-epics-and-stories',
@@ -1015,6 +1090,7 @@ const LEGACY_WORKFLOW_PATH_TO_SKILL: Record<string, string> = {
     'bmm/workflows/4-implementation/create-story/checklist.md': 'bmad-create-story',
     'bmm/workflows/4-implementation/dev-story/workflow.yaml': 'bmad-dev-story',
     'bmm/workflows/4-implementation/dev-story/checklist.md': 'bmad-dev-story',
+'bmm/workflows/4-implementation/bmad-investigate/workflow.md': 'bmad-investigate',
     'bmm/workflows/4-implementation/code-review/workflow.yaml': 'bmad-review-adversarial-general',
     'bmm/workflows/4-implementation/retrospective/workflow.yaml': 'bmad-retrospective',
     'bmm/workflows/4-implementation/correct-course/workflow.yaml': 'bmad-retrospective',
@@ -1078,6 +1154,9 @@ const LEGACY_WORKFLOW_PATH_TO_SKILL: Record<string, string> = {
     'bmb/workflows/workflow/workflow-validate-workflow.md': 'aac-bmb-workflow',
     'bmb/workflows/workflow/workflow-validate-max-parallel-workflow.md': 'aac-bmb-workflow',
     'bmb/workflows/workflow/workflow-rework-workflow.md': 'aac-bmb-workflow',
+    // BMB V1.1.0 quality-scan skills
+    'bmb/workflows/bmb-agent-builder/workflow.md': 'bmad-agent-builder',
+    'bmb/workflows/bmb-workflow-builder/workflow.md': 'bmad-workflow-builder',
 };
 
 /**
@@ -1699,6 +1778,16 @@ ${stepContent}
             case 'prd':
                 return [
                     {
+                        path: `${bmadPath}/bmm/workflows/2-plan-workflows/bmad-prd/workflow.md`,
+                        name: 'PRD Facilitator (V6)',
+                        description: 'Master PRD coach: structured discovery, stakes calibration, reviewer gates, decision logging'
+                    },
+                    {
+                        path: `${bmadPath}/bmm/workflows/2-plan-workflows/bmad-spec/workflow.md`,
+                        name: 'Create Spec (V6)',
+                        description: 'Distill this PRD into a machine-contract SPEC.md kernel'
+                    },
+                    {
                         path: `${bmadPath}/bmm/workflows/2-plan-workflows/create-prd/workflow-validate-prd.md`,
                         name: 'Validate PRD',
                         description: 'Validate against BMAD standards'
@@ -1761,6 +1850,11 @@ ${stepContent}
                         description: 'Add technical details, tests, edge cases, dependencies, risks, DoD'
                     },
                     {
+                        path: `${bmadPath}/bmm/workflows/4-implementation/bmad-investigate/workflow.md`,
+                        name: 'Investigate (V6)',
+                        description: 'Forensic case investigation with evidence-graded findings'
+                    },
+                    {
                         path: `${bmadPath}/bmm/workflows/4-implementation/create-story/checklist.md`,
                         name: 'Story Quality Review',
                         description: 'Validate story context for dev agent'
@@ -1793,6 +1887,11 @@ ${stepContent}
 
             case 'product-brief':
                 return [
+                    {
+                        path: `${bmadPath}/bmm/workflows/2-plan-workflows/bmad-spec/workflow.md`,
+                        name: 'Create Spec (V6)',
+                        description: 'Distill this brief into a machine-contract SPEC.md kernel'
+                    },
                     {
                         path: `${bmadPath}/bmm/workflows/1-analysis/create-product-brief/workflow.md`,
                         name: 'Refine Product Brief',
@@ -2174,6 +2273,11 @@ ${stepContent}
             case 'ux-design':
                 return [
                     {
+                        path: `${bmadPath}/bmm/workflows/2-plan-workflows/bmad-ux/workflow.md`,
+                        name: 'UX Design (V6)',
+                        description: 'Master UX facilitation: DESIGN.md + EXPERIENCE.md peer contracts, named-protagonist journeys'
+                    },
+                    {
                         path: `${bmadPath}/bmm/workflows/2-plan-workflows/create-ux-design/workflow.md`,
                         name: 'Refine UX Design',
                         description: 'Improve UX design, flows, and interaction patterns'
@@ -2307,6 +2411,24 @@ ${stepContent}
                         path: `${bmadPath}/cis/workflows/design-thinking/workflow.yaml`,
                         name: 'Design Thinking',
                         description: 'Iterate on design thinking process and outputs'
+                    }
+                ];
+
+            case 'agent':
+                return [
+                    {
+                        path: `${bmadPath}/bmb/workflows/bmb-agent-builder/workflow.md`,
+                        name: 'Agent Builder (BMB)',
+                        description: 'Build and quality-scan BMAD agents — cohesion analysis, enhancement opportunities, script detection'
+                    }
+                ];
+
+            case 'workflow':
+                return [
+                    {
+                        path: `${bmadPath}/bmb/workflows/bmb-workflow-builder/workflow.md`,
+                        name: 'Workflow Builder (BMB)',
+                        description: 'Build and quality-scan BMAD workflows — integrity checks, enhancement opportunities, script analysis'
                     }
                 ];
 

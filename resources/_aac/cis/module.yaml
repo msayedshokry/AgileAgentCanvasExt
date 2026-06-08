@@ -1,0 +1,27 @@
+code: cis
+name: "CIS: Creative Innovation Suite"
+header: "BMad Creative Innovation Suite (CIS) Module"
+subheader: "Unleash your creativity with the BMad CIS!"
+description: ""
+default_selected: false # This module will not be selected by default for new installations
+
+visual_tools:
+  prompt:
+    - "What type of image generation would you like available?"
+  default: "intermediate"
+  result: "{value}"
+  multi-select:
+    - value: "mermaid"
+      label: "MERMAID: Diagram with mermaid, a markdown standard with no final layout control, easily understood by LLMs"
+    - value: "excalidraw"
+      label: "EXCALIDRAW: A format that can be easily modified after the fact, and can still be converted to a png if needed. Great for flowcharts, diagrams, or simple presentations"
+    - value: "gemini-nano"
+      label: "Nana-Banana: Pipe requests to and get image results back from Google Nano Banana"
+    - value: "other-image"
+      label: "None/Other: Will configure or use prompts manually with another image generator as needed"
+
+# Variables from Core Config inserted:
+## user_name
+## communication_language
+## document_output_language
+## output_folder
