@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { sendSimplePrompt } from '../antigravity/antigravity-orchestrator';
 import { schemaValidator } from '../state/schema-validator';
+import { compressMessages } from '../integrations/headroom';
 
 /**
  * Unified AI provider abstraction for AgileAgentCanvas.
@@ -231,6 +232,15 @@ export async function streamChatResponse(
     const { activeArtifactType, forceStructuredOutput = false } = options;
     const schema = forceStructuredOutput ? loadArtifactSchemaForContext(activeArtifactType) : {};
     const temperature = getDefaultTemperature();
+
+    // ── Headroom compression ────────────────────────────────────────────
+    // Transparently compress messages before reaching the LLM.
+    // Silently no-ops when Headroom isn't available (compressMessages handles all errors internally).
+    const compressed = await compressMessages(messages, model.label);
+    if (compressed.saved > 0) {
+        messages = compressed.messages as ChatMessage[];
+    }
+    // ─────────────────────────────────────────────────────────────────────
 
     switch (model.provider) {
         case 'copilot':

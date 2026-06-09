@@ -58,6 +58,7 @@ import {
     loadReport
 } from './integrations/graphify';
 import { detectCodeburn } from './integrations/codeburn';
+import { detectHeadroom } from './integrations/headroom';
 import { JiraSecrets } from './integrations/jira-secrets';
 import { createLogger, setLoggerOutputSink } from './utils/logger';
 import { initialiseCatalogueService } from './state/catalogue-service';
@@ -662,6 +663,9 @@ export function activate(context: vscode.ExtensionContext) {
     );
     // ── graphify: optional auto-bootstrap prompt ───────────────────────────────
     createGraphifyStatusBar(context);
+
+    // ── headroom: proactive detection (runs async so status bar reflects availability) ─
+    detectHeadroom().then(() => refreshCodeburnStatusBar()).catch(() => {});
 
     // ── codeburn: status bar (Menu Bar equivalent) ──────────────────────────────
     createCodeburnStatusBar(context);
