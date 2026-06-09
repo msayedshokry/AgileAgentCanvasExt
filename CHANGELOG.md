@@ -83,7 +83,7 @@ Self-correcting quality system validating artifacts pre/post-flight and accumula
 - **Policy Engine** — Synchronous `evaluate()` with pre-flight, post-flight, and continuous policies:
   - **trace-anomaly** — Detects repeated errors (>=3), stuck tool-call loops (>=4), frequent status changes (>=4)
   - **feedback-accumulation** — Surfaces cumulative policy findings
-- **Harness Feedback Service** — Severity escalation: advisory -> warning -> blocking (6+). Active failures injected into agent prompts.
+- **Harness Feedback Service** — Severity escalation: advisory -> warning -> blocking (6+). Active failures injected into agent prompts. (`src/harness/harness-feedback.ts`)
 - **Pre-flight validation** — `ArtifactStore.updateArtifact()` blocks on blocking failures.
 - **Settings** — `agileagentcanvas.harness.enabled` and `agileagentcanvas.harness.sprintCapacity`.
 
