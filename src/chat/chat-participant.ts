@@ -15,7 +15,6 @@ import {
     mergeJiraIntoArtifacts
 } from '../integrations/jira-importer';
 import { loadReport, detectGraphify } from '../integrations/graphify';
-import { CavemanService, getCavemanService } from './caveman-service';
 import { setActiveChatSession } from './active-session';
 import { graphQuery } from '../integrations/graphify/graph-query';
 import { loadGraph, loadCommunities, loadArchIndexMarkdown } from '../integrations/graphify/graph-loader';
@@ -128,7 +127,7 @@ export class AgileAgentCanvasChatParticipant {
             'codeburn': () => this.handleCodeburnCommand(prompt, stream),
             'cost': () => this.handleCodeburnCommand(`report ${prompt}`, stream),
             'tokens': () => this.handleCodeburnCommand(`models ${prompt}`, stream),
-            'caveman': () => this.handleCavemanCommand(prompt, stream),
+
             'help': () => this.handleHelpCommand(prompt, stream, token)
         };
 
@@ -190,7 +189,6 @@ export class AgileAgentCanvasChatParticipant {
         }
 
         const systemPrompt = this.getDefaultChatPersona();
-        const cavemanSuffix = getCavemanService()?.getSystemPromptSuffix() ?? '';
         const artifactContext = this.buildArtifactContext();
         const history = this.buildHistory(context);
         const bmadContext = this.buildBmadMethodologyContext();
@@ -228,7 +226,7 @@ export class AgileAgentCanvasChatParticipant {
         if (model.vscodeLm) {
             try {
                 const vsMessages: vscode.LanguageModelChatMessage[] = [
-                    vscode.LanguageModelChatMessage.User(systemPrompt + cavemanSuffix + outputFormatHint + workflowResumeHint),
+                    vscode.LanguageModelChatMessage.User(systemPrompt + outputFormatHint + workflowResumeHint),
                     vscode.LanguageModelChatMessage.User(`BMAD methodology context:\n${bmadContext}`),
                     vscode.LanguageModelChatMessage.User(`Current project state:\n${artifactContext}`),
                     ...(graphContext ? [vscode.LanguageModelChatMessage.User(`Codebase knowledge graph:\n${graphContext}`)] : []),
@@ -297,7 +295,7 @@ export class AgileAgentCanvasChatParticipant {
             // Direct API providers — text-only streaming (no tool support yet)
             try {
                 const messages: ChatMessage[] = [
-                    { role: 'system', content: systemPrompt + cavemanSuffix + outputFormatHint + workflowResumeHint },
+                    { role: 'system', content: systemPrompt + outputFormatHint + workflowResumeHint },
                     { role: 'user', content: `BMAD methodology context:\n${bmadContext}` },
                     { role: 'user', content: `Current project state:\n${artifactContext}` },
                     ...(graphContext ? [{ role: 'user' as const, content: `Codebase knowledge graph:\n${graphContext}` }] : []),
@@ -3437,7 +3435,6 @@ Always end the interaction by either saving confirmed changes or acknowledging t
         // Load configured default persona from disk; fall back to a minimal inline version
         const persona = bmadPath ? loadAgentPersona(bmadPath, selected.agentId) : undefined;
 
-        const cavemanSuffix = getCavemanService()?.getSystemPromptSuffix() ?? '';
 
         // ── Full-activation mode ─────────────────────────────────────────────
         // When we have the full agent file, inject it verbatim so the AI gets
@@ -3445,7 +3442,7 @@ Always end the interaction by either saving confirmed changes or acknowledging t
         // — exactly as the official BMAD-METHOD intends.  This enables the
         // interactive menu-driven conversational model.
         if (persona) {
-            return `${formatFullAgentForPrompt(persona, { toolsAvailable: true })}${cavemanSuffix}
+            return `${formatFullAgentForPrompt(persona, { toolsAvailable: true })}
 
 ## VS Code Extension Context
 You are running inside the AgileAgentCanvas VS Code extension.
@@ -3480,7 +3477,7 @@ You MUST always ground your responses in the actual BMAD methodology files on di
 
 Be professional, thorough, and focus on actionable outputs.
 When generating artifacts, always use the exact JSON format from the BMAD schemas.
-Engage the user in collaborative discussion — ask clarifying questions when useful, present options, and confirm understanding before producing final outputs.${cavemanSuffix}`;
+Engage the user in collaborative discussion — ask clarifying questions when useful, present options, and confirm understanding before producing final outputs.`;
     }
 
     private buildArtifactContext(): string {
@@ -4923,81 +4920,6 @@ Output ONLY the JSON, no explanation.`;
             return { metadata: { command: 'codeburn', status: 'error' } };
         }
     }
-
-    /**
-     * /caveman command — Toggle caveman communication mode.
-     */
-    private async handleCavemanCommand(
-        prompt: string,
-        stream: vscode.ChatResponseStream
-    ): Promise<vscode.ChatResult> {
-        const svc = getCavemanService();
-        if (!svc) {
-            stream.markdown('Caveman service not initialized.\n');
-            return { metadata: { command: 'caveman', status: 'error' } };
-        }
-
-        const args = prompt.trim().toLowerCase();
-
-        // Show status when no args
-        if (!args) {
-            stream.markdown(svc.getStatusMarkdown());
-            return { metadata: { command: 'caveman', status: 'status' } };
-        }
-
-        // Parse subcommand
-        const firstWord = args.split(/\s+/)[0];
-
-        if (firstWord === 'on' || firstWord === 'start' || firstWord === 'enable') {
-            await svc.setEnabled(true);
-            stream.markdown(svc.getStatusMarkdown());
-            return { metadata: { command: 'caveman', status: 'enabled' } };
-        }
-
-        if (firstWord === 'off' || firstWord === 'stop' || firstWord === 'disable' || firstWord === 'normal') {
-            await svc.setEnabled(false);
-            stream.markdown(svc.getStatusMarkdown());
-            return { metadata: { command: 'caveman', status: 'disabled' } };
-        }
-
-        if (firstWord === 'toggle') {
-            const next = await svc.toggle();
-            stream.markdown(svc.getStatusMarkdown());
-            return { metadata: { command: 'caveman', status: next ? 'enabled' : 'disabled' } };
-        }
-
-        if (firstWord === 'status') {
-            stream.markdown(svc.getStatusMarkdown());
-            return { metadata: { command: 'caveman', status: 'status' } };
-        }
-
-        // Intensity levels
-        const intensityArgs = ['lite', 'full', 'ultra', 'wenyan'];
-        if (intensityArgs.includes(firstWord)) {
-            const ok = await svc.setIntensity(firstWord);
-            if (!ok) {
-                stream.markdown(`Unknown intensity: ${firstWord}. Use: lite, full, ultra, wenyan.\n`);
-                return { metadata: { command: 'caveman', status: 'error' } };
-            }
-            // Enable if setting an intensity
-            await svc.setEnabled(true);
-            stream.markdown(svc.getStatusMarkdown());
-            return { metadata: { command: 'caveman', status: 'enabled' } };
-        }
-
-        // Unknown — show help
-        stream.markdown(`## 🗿 Caveman Mode\n\nUnknown command: "${args}"\n\nUsage:\n`);
-        stream.markdown('- \`/caveman\` — show status\n');
-        stream.markdown('- \`/caveman on\` — enable caveman mode\n');
-        stream.markdown('- \`/caveman off\` — disable caveman mode\n');
-        stream.markdown('- \`/caveman toggle\` — toggle on/off\n');
-        stream.markdown('- \`/caveman lite\` — lite intensity\n');
-        stream.markdown('- \`/caveman full\` — full intensity (default)\n');
-        stream.markdown('- \`/caveman ultra\` — ultra compression\n');
-        stream.markdown('- \`/caveman wenyan\` — classical terse\n');
-        return { metadata: { command: 'caveman', status: 'help' } };
-    }
-
     /**
      * Smart help router — matches the user's intent to the best skills/agents from the live catalogue.
      *

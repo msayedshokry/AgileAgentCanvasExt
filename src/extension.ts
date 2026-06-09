@@ -36,7 +36,6 @@ import { createGraphifyStatusBar, refreshGraphifyStatusBar } from './views/graph
 import { createCodeburnStatusBar, refreshCodeburnStatusBar } from './views/codeburn-status-bar';
 import { createChatProviderStatusBar, registerPickChatProviderCommand, refreshChatProviderStatusBar } from './views/chat-provider-status-bar';
 import { setSelectedProvider, getSelectedProvider, type ChatProviderId } from './commands/chat-bridge';
-import { CavemanService, setCavemanService } from './chat/caveman-service.js';
 import {
     createNewProject,
     loadExistingProject,
@@ -598,57 +597,6 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Auto-install BMAD agents for the detected IDE (silent, only on first activation)
     autoInstallIfNeeded(context.extensionPath);
-
-    // ── caveman service ───────────────────────────────────────────────────────
-    const cavemanService = new CavemanService(context);
-    setCavemanService(cavemanService);
-
-    // Sync caveman settings from workspace configuration to global state on startup,
-    // but ONLY if the user has explicitly set them (inspect() tells us if it's default).
-    const cavemanConfig = vscode.workspace.getConfiguration('agileagentcanvas.caveman');
-    const enabledInspect = cavemanConfig.inspect<boolean>('enabled');
-    const intensityInspect = cavemanConfig.inspect<string>('intensity');
-    // Use workspaceValue if explicitly set, otherwise globalValue, otherwise leave globalState alone
-    const configEnabled = enabledInspect?.workspaceValue ?? enabledInspect?.globalValue;
-    const configIntensity = intensityInspect?.workspaceValue ?? intensityInspect?.globalValue;
-    if (configEnabled !== undefined) {
-        cavemanService.setEnabled(configEnabled);
-    }
-    if (configIntensity && ['lite', 'full', 'ultra', 'wenyan'].includes(configIntensity)) {
-        cavemanService.setIntensity(configIntensity);
-    }
-
-    // Listen for setting changes and update globalState live
-    context.subscriptions.push(
-        vscode.workspace.onDidChangeConfiguration(e => {
-            if (e.affectsConfiguration('agileagentcanvas.caveman.enabled')) {
-                const next = vscode.workspace.getConfiguration('agileagentcanvas.caveman').get<boolean>('enabled', false);
-                cavemanService.setEnabled(next);
-            }
-            if (e.affectsConfiguration('agileagentcanvas.caveman.intensity')) {
-                const next = vscode.workspace.getConfiguration('agileagentcanvas.caveman').get<string>('intensity', 'full');
-                if (['lite', 'full', 'ultra', 'wenyan'].includes(next)) {
-                    cavemanService.setIntensity(next);
-                }
-            }
-        })
-    );
-
-    // ── caveman commands ──────────────────────────────────────────────────────
-    context.subscriptions.push(
-        vscode.commands.registerCommand('agileagentcanvas.caveman.toggle', async () => {
-            const next = await cavemanService.toggle();
-            vscode.window.showInformationMessage(`🗿 Caveman mode ${next ? 'ON' : 'OFF'} (${cavemanService.getIntensity()})`);
-        }),
-        vscode.commands.registerCommand('agileagentcanvas.caveman.setIntensity', async () => {
-            const picked = await cavemanService.pickIntensity();
-            if (picked) {
-                await cavemanService.setIntensity(picked);
-                await cavemanService.setEnabled(true);
-                vscode.window.showInformationMessage(`🗿 Caveman intensity set to ${picked}`);
-            }
-        })
-    );
 
     // Listen for codeburn.path changes and invalidate the detector cache
     context.subscriptions.push(

@@ -729,10 +729,7 @@
             "name": "tokens",
             "description": "Alias for /codeburn models — show per-model token usage"
           },
-          {
-            "name": "caveman",
-            "description": "Toggle caveman communication mode. Subcommands: on, off, toggle, lite, full, ultra, wenyan, status"
-          },
+
           {
             "name": "help",
             "description": "Describe what you want to do and the extension will recommend the best skills and agents for your task"
@@ -936,16 +933,7 @@
         "title": "Agile Agent Canvas: Codeburn Export JSON",
         "icon": "$(export)"
       },
-      {
-        "command": "agileagentcanvas.caveman.toggle",
-        "title": "Agile Agent Canvas: Toggle Caveman Mode",
-        "icon": "$(megaphone)"
-      },
-      {
-        "command": "agileagentcanvas.caveman.setIntensity",
-        "title": "Agile Agent Canvas: Set Caveman Intensity",
-        "icon": "$(settings-gear)"
-      },
+
       {
         "command": "agileagentcanvas.suggestTool",
         "title": "Suggest New Tool",
@@ -1247,34 +1235,7 @@
           }
         }
       },
-      {
-        "title": "Caveman",
-        "order": 7,
-        "properties": {
-          "agileagentcanvas.caveman.enabled": {
-            "type": "boolean",
-            "default": false,
-            "description": "Enable caveman communication mode. When enabled, the AI responds in ultra-terse style that cuts token usage ~75%."
-          },
-          "agileagentcanvas.caveman.intensity": {
-            "type": "string",
-            "default": "full",
-            "enum": [
-              "lite",
-              "full",
-              "ultra",
-              "wenyan"
-            ],
-            "enumDescriptions": [
-              "Lite — drops filler and hedging, keeps basic grammar",
-              "Full — drops articles, filler, pleasantries; fragments OK (default)",
-              "Ultra — maximum compression; abbreviate everything, arrows for causality",
-              "Wenyan — classical Chinese literary terse (ultra-minimal poetic form)"
-            ],
-            "description": "Intensity level for caveman communication mode. Only applies when caveman is enabled."
-          }
-        }
-      },
+
       {
         "title": "Agentic Execution",
         "order": 8,
