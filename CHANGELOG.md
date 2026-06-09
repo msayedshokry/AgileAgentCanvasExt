@@ -9,7 +9,7 @@ Headroom automatically compresses chat messages before they reach the AI provide
 - **`src/integrations/headroom/headroom-compressor.ts`** — Auto-detects the Headroom proxy (`npx headroom-ai proxy`), lazy-loads the SDK on first chat call, and transparently compresses all LLM-bound messages. Tracks cumulative stats (tokens saved, compression ratio). Silently no-ops when Headroom isn't installed or the proxy isn't running.
 - **Injected into AI provider pipeline** — `streamChatResponse()` in `ai-provider.ts` compresses messages before the provider dispatch. Best-effort — never blocks the real AI call.
 - **Proactive detection on startup** — `detectHeadroom()` runs on extension activate so the status bar reflects availability immediately, not just after the first chat.
-- **Status bar integration** — Codeburn status bar now shows 🚀XX% savings percentage alongside cost (`$X.XX`) when Headroom is active and has compressed at least one call.
+- **Status bar integration** — Codeburn status bar now shows ^XX% savings percentage alongside cost (`$X.XX`) when Headroom is active and has compressed at least one call.
 - **Opt-out setting** — New `agileagentcanvas.headroom.enabled` setting (boolean, default `true`) under **Settings → Headroom**. Disabling skips compression entirely with zero overhead (no lazy-load, no health check). Changes take effect immediately.
 - **Dependency** — Added `headroom-ai` ^0.22.4.
 
