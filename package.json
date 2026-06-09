@@ -1237,8 +1237,19 @@
         }
       },
       {
-        "title": "Caveman",
+        "title": "Headroom",
         "order": 6,
+        "properties": {
+          "agileagentcanvas.headroom.enabled": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable Headroom context compression. When enabled, chat messages are transparently compressed before reaching the AI provider, saving tokens. Requires the Headroom proxy to be running (npx headroom-ai proxy). Disable to opt out of compression."
+          }
+        }
+      },
+      {
+        "title": "Caveman",
+        "order": 7,
         "properties": {
           "agileagentcanvas.caveman.enabled": {
             "type": "boolean",
@@ -1266,7 +1277,7 @@
       },
       {
         "title": "Agentic Execution",
-        "order": 7,
+        "order": 8,
         "properties": {
           "agileagentcanvas.agenticKanban.enabled": {
             "type": "boolean",
@@ -1332,7 +1343,7 @@
       },
       {
         "title": "Catalogue",
-        "order": 8,
+        "order": 9,
         "properties": {
           "agileagentcanvas.userCataloguePath": {
             "type": "string",

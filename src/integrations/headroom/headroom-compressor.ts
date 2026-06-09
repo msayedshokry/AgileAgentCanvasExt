@@ -7,9 +7,23 @@
  *
  * Tracks cumulative compression stats for the Codeburn status bar.
  */
+import * as vscode from 'vscode';
 import { createLogger } from '../../utils/logger';
 
 const logger = createLogger('headroom-compressor');
+
+// ── Settings ─────────────────────────────────────────────────────────────────
+
+/** Check whether Headroom compression is enabled in VS Code settings. */
+function isHeadroomEnabled(): boolean {
+    try {
+        return vscode.workspace
+            .getConfiguration('agileagentcanvas')
+            .get<boolean>('headroom.enabled', true);
+    } catch {
+        return true; // default to enabled if settings unavailable
+    }
+}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -115,6 +129,11 @@ export async function compressMessages(
     messages: any[],
     model?: string,
 ): Promise<{ messages: any[]; saved: number; ratio: number }> {
+    // Fast path: disabled by user setting
+    if (!isHeadroomEnabled()) {
+        return { messages, saved: 0, ratio: 0 };
+    }
+
     // Fast path: if we know Headroom isn't available, skip
     if (!_available.proxyRunning && _loadAttempted) {
         return { messages, saved: 0, ratio: 0 };
