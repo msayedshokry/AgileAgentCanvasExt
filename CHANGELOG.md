@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.5.4
+
+### Headroom — Transparent Context Compression
+
+Headroom automatically compresses chat messages before they reach the AI provider, saving tokens with zero user configuration.
+
+- **`src/integrations/headroom/headroom-compressor.ts`** — Auto-detects the Headroom proxy (`npx headroom-ai proxy`), lazy-loads the SDK on first chat call, and transparently compresses all LLM-bound messages. Tracks cumulative stats (tokens saved, compression ratio). Silently no-ops when Headroom isn't installed or the proxy isn't running.
+- **Injected into AI provider pipeline** — `streamChatResponse()` in `ai-provider.ts` compresses messages before the provider dispatch. Best-effort — never blocks the real AI call.
+- **Proactive detection on startup** — `detectHeadroom()` runs on extension activate so the status bar reflects availability immediately, not just after the first chat.
+- **Status bar integration** — Codeburn status bar now shows 🚀XX% savings percentage alongside cost (`$X.XX`) when Headroom is active and has compressed at least one call.
+- **Opt-out setting** — New `agileagentcanvas.headroom.enabled` setting (boolean, default `true`) under **Settings → Headroom**. Disabling skips compression entirely with zero overhead (no lazy-load, no health check). Changes take effect immediately.
+- **Dependency** — Added `headroom-ai` ^0.22.4.
+
+### BMAD v6.8.0 Full Module Update
+
+All four BMAD modules updated with upstream resources — core+BMM, BMB, TEA, and CIS.
+
+- **Core + BMM (6.0.3 → 6.8.0)** — 4 new V6 skills (`bmad-spec`, `bmad-investigate`, `bmad-prd`, `bmad-ux`), WORKFLOW_REGISTRY 56→60 workflows, BMM 26→30. Wired into `getAvailableWorkflows()` for prd, story, ux-design, and product-brief. Legacy path mappings for all new V6 skills.
+- **BMB (0.1.6 → 1.1.0)** — Imported `bmad-agent-builder` (33 files) and `bmad-workflow-builder` (31 files). WORKFLOW_REGISTRY +2 quality-scan entries. Wired into `getAvailableWorkflows()` for 'agent' and 'workflow' types. Added `module.yaml`, `module-help.csv`, and LEGACY path mappings.
+- **TEA (1.3.1 → 1.19.0)** — Updated agent `bmad-tea` and all 9 workflow directories. Replaced all 9 `aac-tea-*` SKILL.md files with adapted upstream content.
+- **CIS (0.1.8 → 0.1.9)** — 6 new agent personas registered under AAC naming convention (`aac-cis-agent-*`): Carson (Brainstorming), Dr. Quinn (Problem Solver), Maya (Design Thinking), Victor (Innovation), Caravaggio (Presentation), Sophia (Storyteller). Each has `SKILL.md` + `customize.toml` with persona data from upstream.
+- **Artifact agent routing** — 6 new `ArtifactAgentKey` entries, `ARTIFACT_TYPE_TO_AGENT` mapping, and `LEGACY_PATH_MAP` updates for CIS agents. `loadAllAgentPersonas()` detects `aac-cis-agent` prefix for CIS module classification.
+- **Methodology dirs merged** — 4 `bmad-cis-*` methodology directories merged into existing `aac-cis-*` equivalents; stale `bmad-cis` references cleaned from all 3 CSVs.
+
+
 ## 0.5.3
 
 ### Added: Custom ESLint Rule — `no-bare-assert`
