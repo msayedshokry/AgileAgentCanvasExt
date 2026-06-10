@@ -73,6 +73,8 @@ console.log*
 # Personal / local files
 opencode.json
 _index_test.py
+.claude/settings.local.json
+wrap-tools-*.js
 
 # Generated files (created by IDE installer at runtime)
 .agent/
