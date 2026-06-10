@@ -1,3 +1,0 @@
-{"sessionId":"valid-session","type":"tool_call","agent":"analyst","data":{"toolName":"read_file"},"timestamp":"2026-06-08T21:31:49.123Z"}
-{"sessionId":"valid-session","type":"llm_response","agent":"analyst","data":{"llmPrompt":"Test","llmResponse":"Response"},"timestamp":"2026-06-08T21:31:49.123Z"}
-corrupt-json-line

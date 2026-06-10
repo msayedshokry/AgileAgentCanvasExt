@@ -1,6 +1,6 @@
 # DB Migration Impact Analysis
 
-Cross-referencing the [8 schema analysis findings](file:///d:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/docs/schema-analysis.md) against the [db-migration docs](file:///d:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/docs/db-migration/README.md).
+Cross-referencing the [8 schema analysis findings](../../.agileagentcanvas-context/planning/schema-analysis.md) against the [db-migration docs](./README.md).
 
 ---
 

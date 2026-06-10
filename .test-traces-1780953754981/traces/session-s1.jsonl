@@ -1,1 +1,0 @@
-{"sessionId":"s1","type":"error","agent":"analyst","data":{"toolName":"my_tool","toolInput":{"key":"value"},"error":"Mock tool error"},"durationMs":0,"timestamp":"2026-06-08T21:22:35.003Z"}

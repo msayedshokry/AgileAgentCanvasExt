@@ -46,6 +46,23 @@ NUL
 Thumbs.db
 .DS_Store
 
+# Botched shell / redirect fragments (LLM leftovers)
+# Created when a command like `node -e "..." > fs.renameSync(path.join(p` is run
+# at the repo root with a truncated or mis-quoted redirect — the literal text
+# after `>` becomes a filename. Same risk for any node/fs/path/console method
+# that ends up accidentally redirected to the project root. The explicit prefix
+# rules below are robust against the multiple-paren case (git's pattern
+# matcher can be flaky when a filename contains >1 paren), and the broader
+# /fs.*, /path.*, /console.* rules catch any other method-call leftovers.
+fs.renameSync*
+path.join*
+console.log*
+/fs.*
+/path.*
+/console.*
+*.tmp
+*.bak
+
 # Editor / IDE
 .vscode/settings.json
 .vscode/launch.json

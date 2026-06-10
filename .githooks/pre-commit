@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# Pre-commit guard for scratch artifacts.
+# Last line of defense alongside .gitignore + `npm run pretest` + the
+# BeforeAll/AfterAll sweeps in features/support/hooks.ts.
+#
+# Refuses the commit if any of the following are staged:
+#   - .test-traces-<digits>           (per-scenario cucumber trace dirs)
+#   - cucumber-output.txt / .json
+#   - cucumber-full-output.txt
+#   - cucumber-remaining.json
+#   - full-output.txt / full-output-2.txt
+#   - remaining-failures.txt
+#   - graphify-out/.graphify_*.json   (regenerated each run)
+#
+# Bypass with `git commit --no-verify` only when you really mean it.
+
+set -euo pipefail
+
+# Patterns. Anchored so a path like 'foo/.test-traces-123/x' is matched
+# but 'src/test-traces-123.ts' is not.
+SCRATCH_PATTERN='(^|/)(\.test-traces-[0-9]+(/.*)?|cucumber-output\.(txt|json)|cucumber-full-output\.txt|cucumber-remaining\.json|full-output\.txt|full-output-2\.txt|remaining-failures\.txt|graphify-out/\.graphify_[^/]+\.json)$'
+
+# List staged files (added / copied / modified / renamed). Renames show the
+# post-rename path, which is what we want.
+staged="$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)"
+
+if [ -z "$staged" ]; then
+  exit 0
+fi
+
+violations="$(printf '%s\n' "$staged" | grep -E "$SCRATCH_PATTERN" || true)"
+
+if [ -n "$violations" ]; then
+  cat >&2 <<'HEADER'
+❌ Refusing to commit: scratch artifacts are staged.
+
+The following paths should not be committed (they are either runtime
+scratch or already covered by .gitignore):
+HEADER
+  printf '  • %s\n' $violations >&2
+  cat >&2 <<'FOOTER'
+
+Fix with one of:
+  git reset HEAD <path>            # unstage a specific path
+  git restore --staged <path>      # same, newer syntax
+  npm run clean:scratch            # wipe .test-traces-* dirs and logs
+
+Bypass (use only when you really mean it):
+  git commit --no-verify
+FOOTER
+  exit 1
+fi
+
+exit 0
