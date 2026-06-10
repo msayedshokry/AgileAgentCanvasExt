@@ -1,0 +1,474 @@
+=== CHUNK 0 STRUCTURAL SUMMARY ===
+Files: 22
+
+--- cucumber.js ---
+  NOTE: * Cucumber.js configuration for BMAD Studio VS Code Extension
+  NOTE: /
+
+--- wrap-tools-all.js ---
+  DECL: fs
+  DECL: path
+  DECL: EOL
+  DECL: content
+  DECL: insertAfter
+  DECL: replaceAll
+  DECL: helperFn
+  DECL: toolNames
+  DECL: wrapCount
+  DECL: wrapperCalls
+  NOTE: Helper: add a chunk after a target string
+  NOTE: Helper: replace all occurrences of a string
+  NOTE: === PHASE 1: Non-tool changes ===
+
+--- wrap-tools-final.js ---
+  DECL: fs
+  DECL: EOL
+  DECL: path
+  DECL: content
+  DECL: findAll
+  DECL: toolNames
+  DECL: registerPositions
+  DECL: wrapCount
+  DECL: wrapperCalls
+  NOTE: Helper: find all positions of a substring
+  NOTE: ─────────────────────────────────────────────────────────────────────────────
+  NOTE: PHASE 1: Non-tool changes
+
+--- docs\_fix-launch.ps1 ---
+
+--- eslint-rules\no-bare-assert.js ---
+  NOTE: * @fileoverview Custom ESLint rule: no-bare-assert
+  NOTE: * Enforces that `assert.strictEqual(actual, expected)` and `assert.ok(expr)`
+  NOTE: calls always include a descriptive message (third argument for strictEqual,
+
+--- features\step_definitions\a2a-outbound-client.steps.ts ---
+  IMP: import { Given, When, Then, Before, After } from '@cucumber/cucumber';
+  IMP: import * as assert from 'assert';
+  IMP: import { BmadWorld } from '../support/world';
+  DECL: proxyquire
+  DECL: MockResponse
+  DECL: A2ATestContext
+  DECL: contexts
+  DECL: getCtx
+  DECL: buildFetchStub
+  DECL: buildClient
+  STEP: Given a fresh A2A outbound client with allowed hosts:
+  STEP: Given a mock fetch that returns:
+  STEP: Given a mock fetch that returns the same response {int} times:
+  STEP: Given a mock fetch that rejects with {string}
+  STEP: Given the client has poll interval {int}ms
+  STEP: Given the client has poll interval {int}ms and maxWaitTime {int}ms
+  STEP: When I call fetchAgentCard with {string}
+  STEP: When I call sendMessage to {string} with text {string}
+  NOTE: * A2A Outbound Client Step Definitions
+  NOTE: * C4: covers all behavior of A2AOutboundClient — previously had zero
+  NOTE: direct test coverage. Uses a fetch-injection shim so no real network
+
+--- features\step_definitions\acp-protocol.steps.ts ---
+  IMP: import { Given, When, Then } from '@cucumber/cucumber';
+  IMP: import * as assert from 'assert';
+  IMP: import { BmadWorld } from '../support/world';
+  DECL: proxyquire
+  DECL: AcpTestContext
+  DECL: contexts
+  DECL: getCtx
+  DECL: createSessionManager
+  STEP: Given a fresh ACP session manager
+  STEP: Given I spawn an ACP session with spec:
+  STEP: Given the session is running
+  STEP: Given I spawn 3 ACP sessions
+  STEP: Given I spawn and execute an ACP session successfully
+  STEP: Given an ACP session spec with role {string}
+  STEP: Given an ACP session spec with:
+  STEP: Given an ACP handoff from session {string} to session {string}
+  NOTE: * ACP Protocol Step Definitions
+  NOTE: Cucumber step definitions for testing AcpSessionManager and ACP protocol lifecycle
+  NOTE: /
+
+--- features\step_definitions\agent-message-bus.steps.ts ---
+  IMP: import { Given, When, Then, Before } from '@cucumber/cucumber';
+  IMP: import * as assert from 'assert';
+  IMP: import { BmadWorld } from '../support/world';
+  DECL: proxyquire
+  DECL: AgentEntry
+  DECL: BusTestContext
+  DECL: contexts
+  DECL: getCtx
+  DECL: makeBus
+  DECL: ensureAgent
+  STEP: Given a fresh agent message bus
+  STEP: Given agent {string} subscribes to {string}
+  STEP: Given agent {string} subscribes to {string} with a handler that always throws
+  STEP: Given agent {string} subscribes to {string} with a handler that fails then succeeds
+  STEP: When I publish {string} with payload {string}
+  STEP: When I publish {string} with payload {string} and priority {string}
+  STEP: When I publish {string} with payload {string} and ttl {int}
+  STEP: When I send from {string} to {string} topic {string} payload {string}
+  NOTE: * Agent Message Bus Step Definitions
+  NOTE: * C5: covers all behavior of AgentMessageBus. Previously had no
+  NOTE: dedicated feature file — now exercises wildcards, TTL, priority,
+
+--- features\step_definitions\agent-team.steps.ts ---
+  IMP: import { Given, When, Then } from '@cucumber/cucumber';
+  IMP: import * as assert from 'assert';
+  IMP: import { BmadWorld } from '../support/world';
+  DECL: proxyquire
+  DECL: TeamTestContext
+  DECL: contexts
+  DECL: getCtx
+  DECL: TEAM_REGISTRY_MOCK
+  DECL: createOrchestrator
+  STEP: Given a fresh agent team orchestrator
+  STEP: Given an initial artifact with title {string}
+  STEP: Given a team definition with:
+  STEP: Given a team member with:
+  STEP: When I inspect team {string} members
+  STEP: When I execute team {string} with task {string} and mock model
+  STEP: When I execute team {string} with task {string} and mock model and a stream
+  STEP: When I execute team {string} with task {string} and mock model where crafter fails
+  NOTE: * Agent Team Step Definitions
+  NOTE: Cucumber step definitions for testing AgentTeamOrchestrator and team registry
+  NOTE: /
+
+--- features\step_definitions\agentic-kanban.steps.ts ---
+  IMP: import { Given, When, Then } from '@cucumber/cucumber';
+  IMP: import * as assert from 'assert';
+  IMP: import { BmadWorld } from '../support/world';
+  DECL: proxyquire
+  DECL: KanbanHandlerContext
+  DECL: KanbanWebviewContext
+  DECL: handlerContexts
+  DECL: webviewContexts
+  DECL: getHandlerCtx
+  DECL: getWebviewCtx
+  DECL: handlerStubOverrides
+  DECL: columnForStatus
+  STEP: Given a fresh agentic kanban message handler context
+  STEP: Given the artifact store has artifact {string} with type {string} and status {string}
+  STEP: Given the artifact store does not have {string}
+  STEP: Given the kanban store updateArtifact will throw
+  STEP: Given the artifact store has {int} artifacts
+  STEP: When I send a {string} message with:
+  STEP: When I send a {string} message providing a webview with:
+  STEP: When I send an {string} message providing a webview
+  NOTE: * Agentic Kanban Step Definitions
+  NOTE: Cucumber step definitions for testing agentic-kanban-message-handler.ts
+  NOTE: and AgenticKanbanApp webview behavior
+
+--- features\step_definitions\artifact-commands.steps.ts ---
+  IMP: import { Given, When, Then } from '@cucumber/cucumber';
+  IMP: import * as assert from 'assert';
+  IMP: import { BmadWorld } from '../support/world';
+  DECL: proxyquire
+  DECL: artifactCommandsModule
+  DECL: vfsFiles
+  DECL: vfsDirs
+  DECL: loadResult
+  DECL: openChatCalls
+  DECL: lastError
+  DECL: WORKSPACE_ROOT
+  DECL: vfsReset
+  DECL: vfsAddFile
+  DECL: makeDirent
+  DECL: mockFs
+  DECL: buildArtifactCommandsModule
+  STEP: Given a fresh artifact commands context
+  STEP: Given no workflows directory exists
+  STEP: Given a workflow.yaml file at {string} with name {string} and description {string}
+  STEP: Given a workflow.md file at {string} with name {string} and description {string}
+  STEP: When I call loadBmmWorkflows
+  STEP: When I call launchBmmWorkflow with trigger {string}
+  STEP: Then the result should be an empty artifacts array
+  STEP: Then the result should contain {int} workflow
+  NOTE: * Artifact Commands Step Definitions
+  NOTE: Tests for loadBmmWorkflows and launchBmmWorkflow
+  NOTE: /
+
+--- features\step_definitions\artifact-store.steps.ts ---
+  IMP: import { Given, When, Then } from "@cucumber/cucumber";
+  IMP: import * as assert from "assert";
+  IMP: import { BmadWorld } from "../support/world";
+  DECL: proxyquire
+  DECL: getArtifactStore
+  STEP: Given a fresh artifact store
+  STEP: Given I initialize a project named {string}
+  STEP: Given I create a vision artifact
+  STEP: Given I add an epic with title {string}
+  STEP: Given I create a story in epic {string}
+  STEP: Given I create a requirement with title {string}
+  STEP: Given I select the epic {string}
+  STEP: Given I subscribe to state changes
+  NOTE: * Artifact Store Step Definitions
+  NOTE: Cucumber step definitions for testing ArtifactStore functionality
+  NOTE: /
+
+--- features\step_definitions\artifact-transformer.steps.ts ---
+  IMP: import { Given, When, Then } from '@cucumber/cucumber';
+  IMP: import * as assert from 'assert';
+  IMP: import { BmadWorld } from '../support/world';
+  DECL: proxyquire
+  DECL: transformerModule
+  DECL: TransformerTestContext
+  DECL: contexts
+  DECL: getCtx
+  DECL: mockStore
+  DECL: findArtifact
+  DECL: findFirstOfType
+  DECL: findSecondOfType
+  STEP: Given a fresh artifact transformer
+  STEP: Given the store state has null productBrief and null vision
+  STEP: Given the store has a product brief with name {string} and tagline {string}
+  STEP: Given the store has a product brief with id {string} and name {string}
+  STEP: Given the store has a vision with productName {string} and problemStatement {string}
+  STEP: Given the store has a vision with productName {string} and a very long problemStatemen
+  STEP: Given the store has {int} functional requirements
+  STEP: Given the store has {int} non-functional requirements
+  NOTE: * Artifact Transformer Step Definitions
+  NOTE: Cucumber step definitions for testing buildArtifacts() layout logic
+  NOTE: /
+
+--- features\step_definitions\artifacts-tree-provider.steps.ts ---
+  IMP: import { Given, When, Then } from '@cucumber/cucumber';
+  IMP: import * as assert from 'assert';
+  IMP: import { BmadWorld } from '../support/world';
+  DECL: proxyquire
+  DECL: rootItems
+  DECL: expandedItems
+  DECL: lastItem
+  DECL: treeDataEventFired
+  DECL: getTreeProvider
+  STEP: Given a fresh artifacts tree provider
+  STEP: Given the store has project {string}
+  STEP: Given the store has {int} requirements
+  STEP: Given the store has {int} requirement with id {string}
+  STEP: Given the store has {int} epic with title {string}
+  STEP: Given the store has an epic with id {string} and title {string}
+  STEP: Given the store has an epic with id {string} title {string} and status {string}
+  STEP: Given the epic {string} has {int} stories
+  NOTE: * Artifacts Tree Provider Step Definitions
+  NOTE: Cucumber step definitions for testing ArtifactsTreeProvider functionality
+  NOTE: /
+
+--- features\step_definitions\canvas-view-provider.steps.ts ---
+  IMP: import { Given, When, Then } from '@cucumber/cucumber';
+  IMP: import * as assert from 'assert';
+  IMP: import { BmadWorld } from '../support/world';
+  DECL: proxyquire
+  DECL: canvasStore
+  DECL: canvasProvider
+  DECL: canvasModule
+  DECL: artifactStoreModule
+  DECL: mockWebviewView
+  DECL: postMessageCalls
+  DECL: onDidReceiveMessageHandler
+  DECL: executeCommandCalls
+  DECL: elicitArtifactWithMethodCalls
+  DECL: launchBmmWorkflowCalls
+  DECL: updateArtifactCalls
+  DECL: buildExists
+  DECL: lastError
+  DECL: extensionUriMock
+  DECL: buildModules
+  DECL: buildProvider
+  DECL: buildMockWebviewView
+  STEP: Given a fresh canvas view provider
+  STEP: Given the build does not exist
+  STEP: Given the build exists
+  STEP: Given the vision {string} exists in canvas store
+  STEP: Given a requirement exists in canvas store
+  STEP: Given an epic exists in canvas store
+  STEP: Given an epic with a story exists in canvas store
+  STEP: Given two epics exist in canvas store
+  NOTE: * AgileAgentCanvasViewProvider Step Definitions
+  NOTE: /
+  NOTE: Module-level state
+
+--- features\step_definitions\chat-bridge.steps.ts ---
+  IMP: import { Given, When, Then, Before } from '@cucumber/cucumber';
+  IMP: import * as assert from 'assert';
+  DECL: proxyquire
+  DECL: ChatBridgeCtx
+  DECL: ctxMap
+  DECL: getCtx
+  DECL: _module
+  DECL: loadModule
+  STEP: Given a fresh chat-bridge module context
+  STEP: Given the panel command {string} is registered
+  STEP: Given the panel command {string} probe throws {string}
+  STEP: Given no panel commands are registered
+  STEP: Given the CLI binary {string} is on PATH
+  STEP: Given no CLI binaries are on PATH
+  STEP: When I list available providers
+  STEP: When I list available providers again
+  NOTE: * Chat-bridge availability detection step definitions
+  NOTE: * Loads `src/commands/chat-bridge.ts` via proxyquire with a fully mocked
+  NOTE: `child_process` and `vscode`, then exercises `listAvailableProviders()` to
+
+--- features\step_definitions\chat-participant.steps.ts ---
+  IMP: import { Given, When, Then } from '@cucumber/cucumber';
+  IMP: import * as assert from 'assert';
+  IMP: import { BmadWorld } from '../support/world';
+  DECL: proxyquire
+  DECL: chatResult
+  DECL: markdownCalls
+  DECL: buttonCalls
+  DECL: mockCurrentSession
+  DECL: mockBuildContinuePromptResult
+  DECL: mockInitializeResult
+  DECL: mockGetWorkflowsByModuleResult
+  DECL: mockGetWorkflowsByTagResult
+  DECL: mockGetAvailableWorkflowsResult
+  DECL: mockWorkflowExecutor
+  DECL: mockAgileAgentCanvasTools
+  DECL: mockAiProvider
+  DECL: getChatParticipant
+  DECL: buildMockStream
+  DECL: buildMockContext
+  DECL: buildMockToken
+  STEP: Given a fresh chat participant
+  STEP: Given the chat store has project {string}
+  STEP: Given the chat store has a requirement with id {string} and title {string}
+  STEP: Given the chat store has an epic with id {string} and title {string}
+  STEP: Given the chat store has refine context with id {string} and title {string}
+  STEP: Given the chat store has refine context for {string} with refinements
+  STEP: Given the chat store has complete artifacts
+  STEP: When I send a chat request with command {string} and prompt {string}
+  NOTE: * Chat Participant Step Definitions
+  NOTE: Cucumber step definitions for testing AgileAgentCanvasChatParticipant functionality
+  NOTE: /
+
+--- features\step_definitions\data-pipeline.steps.ts ---
+  IMP: import { Given, When, Then } from '@cucumber/cucumber';
+  IMP: import * as assert from 'assert';
+  IMP: import { BmadWorld } from '../support/world';
+  DECL: proxyquire
+  DECL: dpStore
+  DECL: dpStoreModule
+  DECL: dpCanvasModule
+  DECL: lastLoadedArtifact
+  DECL: lastWebviewMetadata
+  DECL: lastRoundTrippedArtifact
+  DECL: getStoreModule
+  DECL: getStore
+  DECL: getCanvasModule
+  DECL: fullStoryData
+  DECL: fullStoryDataForRoundTrip
+  DECL: fullEpicData
+  DECL: fullRequirementData
+  STEP: Given a fresh data pipeline test store
+  STEP: Given I load a story with all schema fields populated
+  STEP: Given I load a story with only required fields
+  STEP: Given I load an epic with all schema fields populated
+  STEP: Given I load an epic with a fully populated inline use case
+  STEP: Given I load a requirement with all schema fields populated
+  STEP: Given I load a requirement with only required fields
+  STEP: Given I have an epic with a fully populated story in the store
+  NOTE: * Data Pipeline Step Definitions
+  NOTE: Tests for the 3-layer data pipeline:
+  NOTE: Layer 1: mapSchema* disk loading preserves all fields
+
+--- features\step_definitions\extension.steps.ts ---
+  IMP: import { Given, When, Then } from '@cucumber/cucumber';
+  IMP: import * as assert from 'assert';
+  IMP: import { BmadWorld } from '../support/world';
+  DECL: proxyquire
+  DECL: registeredCommands
+  DECL: executeCommandCalls
+  DECL: showInfoCalls
+  DECL: showWarnCalls
+  DECL: showInputBoxCalls
+  DECL: showQuickPickCalls
+  DECL: showOpenDialogCalls
+  DECL: showSaveDialogCalls
+  DECL: createWebviewPanelCalls
+  DECL: createTreeViewCalls
+  DECL: registerWebviewViewProviderCalls
+  DECL: createChatParticipantCalls
+  DECL: createFileSystemWatcherCalls
+  DECL: extensionModule
+  DECL: mockInputBoxReturn
+  DECL: mockQuickPickReturn
+  DECL: mockOpenDialogReturn
+  DECL: mockSaveDialogReturn
+  DECL: mockWarnReturn
+  STEP: Given a fresh extension activation
+  STEP: When I activate the extension
+  STEP: When I execute the command {string}
+  STEP: When I execute the command {string} with arg {string}
+  STEP: When I execute the command {string} with args {string} and {string}
+  STEP: When I execute the workflow step command for {string} {string} action {string}
+  STEP: When I execute the workflow step command with unmet dependencies for {string}
+  STEP: When the user enters {string} in input box
+  NOTE: * Extension Step Definitions
+  NOTE: Cucumber step definitions for testing extension activation and commands
+  NOTE: /
+
+--- features\step_definitions\graphify-integration.steps.ts ---
+  IMP: import { Given, When, Then, Before } from '@cucumber/cucumber';
+  IMP: import * as assert from 'assert';
+  IMP: import * as path from 'path';
+  IMP: import * as os from 'os';
+  IMP: import * as fs from 'fs';
+  IMP: import { BmadWorld } from '../support/world';
+  DECL: proxyquire
+  DECL: GraphifyTestContext
+  DECL: ctxMap
+  DECL: getCtx
+  DECL: makeDetectorModule
+  DECL: makeLoaderModule
+  DECL: makeRunnerModule
+  DECL: makeTransformerModule
+  DECL: buildCommunitiesFromFixture
+  STEP: Given a fresh graphify detector context
+  STEP: Given the graphify CLI is unavailable
+  STEP: Given the graphify CLI is available as {string}
+  STEP: Given no graph.json exists in the workspace
+  STEP: Given a graph.json with {int} nodes exists in the workspace
+  STEP: Given no copilot-instructions.md contains graphify reference
+  STEP: Given copilot-instructions.md contains a graphify reference
+  STEP: Given a graph.json fixture with {int} nodes and {int} edges
+  NOTE: * Graphify Integration Step Definitions
+  NOTE: * Tests the graphify detection, CLI argv builder, graph loader,
+  NOTE: and canvas Codebase lane using fully in-process mocks — no real
+
+--- features\step_definitions\harness-policies.steps.ts ---
+  IMP: import { Given, When, Then } from '@cucumber/cucumber';
+  IMP: import * as assert from 'assert';
+  IMP: import { BmadWorld } from '../support/world';
+  DECL: proxyquire
+  DECL: HarnessTestContext
+  DECL: contexts
+  DECL: getCtx
+  DECL: createEngine
+  STEP: Given a fresh harness engine
+  STEP: Given the harness engine has built-in policies registered
+  STEP: Given the repair engine can fix the artifact
+  STEP: Given the harness trace recorder is initialized
+  STEP: Given the harness feedback service has recorded a failure for artifact {string}
+  STEP: Given the artifact store has a source folder without a policies directory
+  STEP: Given a policies directory with a yaml file containing:
+  STEP: Given a user policy with regex {string}
+  NOTE: * Harness Policies Step Definitions
+  NOTE: Cucumber step definitions for testing HarnessEngine and policy evaluation
+  NOTE: /
+
+--- features\step_definitions\lane-transitions.steps.ts ---
+  IMP: import { Given, When, Then } from '@cucumber/cucumber';
+  IMP: import * as assert from 'assert';
+  IMP: import { BmadWorld } from '../support/world';
+  DECL: proxyquire
+  DECL: LaneTestContext
+  DECL: contexts
+  DECL: getCtx
+  DECL: createEngine
+  STEP: Given the user will decline the workflow prompt
+  STEP: Given a fresh lane transition engine
+  STEP: Given the store has a story with id {string} and status {string}
+  STEP: Given the user will confirm the workflow prompt
+  STEP: Given the user will decline the workflow prompt
+  STEP: Given a lock is held on {string}
+  STEP: Given the store updateArtifact will throw
+  STEP: Given the workflow executor will throw during transition
+  NOTE: * Lane Transitions Step Definitions
+  NOTE: Cucumber step definitions for testing LaneTransitionEngine and transition rules
+  NOTE: /

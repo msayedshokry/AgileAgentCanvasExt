@@ -13,6 +13,22 @@ reports/
 webview-ui/coverage/
 webview-ui/coverage-*.txt
 *test_errors*
+cucumber-output.txt
+cucumber-output.json
+cucumber-full-output.txt
+cucumber-remaining.json
+full-output.txt
+full-output-2.txt
+remaining-failures.txt
+
+# Cucumber trace-recorder scratch dirs (per-scenario temp dirs)
+.test-traces-*/
+.test-traces-*
+
+# graphify intermediate cache (regenerated on every /graphify run)
+graphify-out/.graphify_*.json
+graphify-out/cache/
+graphify-out/cache/stat-index.json
 
 # Python artifacts
 __pycache__/
@@ -43,6 +59,7 @@ _index_test.py
 
 # Generated files (created by IDE installer at runtime)
 .agent/
+.agileagentcanvas-context/
 .github/skills/*/SKILL.md
 
 # Misc generated

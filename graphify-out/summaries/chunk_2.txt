@@ -1,0 +1,1719 @@
+--- resources\_aac\skills\aac-workflow-builder\scripts\prepass-workflow-integrity.py --- (16989 bytes)
+#!/usr/bin/env python3
+"""Deterministic pre-pass for workflow integrity scanner.
+
+Extracts structural metadata from a BMad skill that the LLM scanner
+can use instead of reading all files itself. Covers:
+- Frontmatter parsing and validation
+- Section inventory (H2/H3 headers)
+- Template artifact detection
+- Stage file cross-referencing
+- Stage numbering validation
+- Config header detection in prompts
+- Language/directness pattern grep
+- On Exit / Exiting section detection (invalid)
+"""
+
+# /// script
+# requires-python = ">=3.9"
+# ///
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+
+# Template artifacts that should NOT appear in finalized skills
+TEMPLATE_ARTIFACTS = [
+    r'\{if-complex-workflow\}', r'\{/if-complex-workflow\}',
+    r'\{if-simple-workflow\}', r'\{/if-simple-workflow\}',
+    r'\{if-simple-utility\}', r'\{/if-simple-utility\}',
+    r'\{if-module\}', r'\{/if-module\}',
+    r'\{if-headless\}', r'\{/if-headless\}',
+    r'\{displayName\}', r'\{skillName\}',
+]
+# Runtime variables that ARE expected (not artifacts)
+RUNTIME_VARS = {
+    '{user_name}', '{communication_language}', '{document_output_language}',
+    '{project-root}', '{output_folder}', '{planning_artifacts}',
+}
+
+# Directness anti-patterns
+DIRECTNESS_PATTERNS = [
+    (r'\byou should\b', 'Suggestive "you should" — use direct imperative'),
+    (r'\bplease\b(?! note)', 'Polite "please" — use direct imperative'),
+    (r'\bhandle appropriately\b', 'Ambiguous "handle appropriately" — specify how'),
+    (r'\bwhen ready\b', 'Vague "when ready" — specify testable condition'),
+]
+
+# Invalid sections
+INVALID_SECTIONS = [
+    (r'^##\s+On\s+Exit\b', 'On Exit section found — no exit hooks exist in the system, this will never run'),
+    (r'^##\s+Exiting\b', 'Exiting section found — no exit hooks exist in the system, this will never run'),
+]
+
+
+def parse_frontmatter(content: str) -> tuple[dict | None, list[dict]]:
+    """Parse YAML frontmatter and validate."""
+    findings = []
+    fm_match = re.match(r'^---\s*\n(.*?)\n---\s*\n', content, re.DOTALL)
+    if not fm_match:
+        findings.append({
+            'file': 'SKILL.md', 'line': 1,
+            'severity': 'critical', 'category': 'frontmatter',
+            'issue': 'No YAML frontmatter found',
+        })
+        return None, findings
+
+    try:
+        # Frontmatter is YAML-like key: value pairs — parse manually
+        fm = {}
+        for line in fm_match.group(1).strip().split('\n'):
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            if ':' in line:
+                key, _, value = line.partition(':')
+                fm[key.strip()] = value.strip().strip('"').strip("'")
+    except Exception as e:
+        findings.append({
+            'file': 'SKILL.md', 'line': 1,
+            'severity': 'critical', 'category': 'frontmatter',
+            'issue': f'Invalid frontmatter: {e}',
+ ... [TRUNCATED]
+
+--- resources\_aac\skills\aac-workflow-builder\scripts\scan-path-standards.py --- (7277 bytes)
+#!/usr/bin/env python3
+"""Deterministic path standards scanner for BMad skills.
+
+Validates all .md files against BMad path conventions:
+1. {project-root} only valid before /_bmad
+2. Bare _bmad references must have {project-root} prefix
+3. Config variables used directly (no double-prefix)
+4. No ./ or ../ relative prefixes
+5. No absolute paths
+"""
+
+# /// script
+# requires-python = ">=3.9"
+# ///
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+
+# Patterns to detect
+# {project-root} NOT followed by /_bmad
+PROJECT_ROOT_NOT_BMAD_RE = re.compile(r'\{project-root\}/(?!_bmad)')
+# Bare _bmad without {project-root} prefix — match _bmad at word boundary
+# but not when preceded by {project-root}/
+BARE_BMAD_RE = re.compile(r'(?<!\{project-root\}/)_bmad[/\s]')
+# Absolute paths
+ABSOLUTE_PATH_RE = re.compile(r'(?:^|[\s"`\'(])(/(?:Users|home|opt|var|tmp|etc|usr)/\S+)', re.MULTILINE)
+HOME_PATH_RE = re.compile(r'(?:^|[\s"`\'(])(~/\S+)', re.MULTILINE)
+# Relative prefixes
+RELATIVE_DOT_RE = re.compile(r'(?:^|[\s"`\'(])(\.\./\S+)', re.MULTILINE)
+RELATIVE_DOTSLASH_RE = re.compile(r'(?:^|[\s"`\'(])(\./\S+)', re.MULTILINE)
+
+# Fenced code block detection (to skip examples showing wrong patterns)
+FENCE_RE = re.compile(r'^```', re.MULTILINE)
+
+
+def is_in_fenced_block(content: str, pos: int) -> bool:
+    """Check if a position is inside a fenced code block."""
+    fences = [m.start() for m in FENCE_RE.finditer(content[:pos])]
+    # Odd number of fences before pos means we're inside a block
+    return len(fences) % 2 == 1
+
+
+def get_line_number(content: str, pos: int) -> int:
+    """Get 1-based line number for a position in content."""
+    return content[:pos].count('\n') + 1
+
+
+def scan_file(filepath: Path, skip_fenced: bool = True) -> list[dict]:
+    """Scan a single file for path standard violations."""
+    findings = []
+    content = filepath.read_text(encoding='utf-8')
+    rel_path = filepath.name
+
+    checks = [
+        (PROJECT_ROOT_NOT_BMAD_RE, 'project-root-not-bmad', 'critical',
+         '{project-root} used for non-_bmad path — only valid use is {project-root}/_bmad/...'),
+        (ABSOLUTE_PATH_RE, 'absolute-path', 'high',
+         'Absolute path found — not portable across machines'),
+        (HOME_PATH_RE, 'absolute-path', 'high',
+         'Home directory path (~/) found — environment-specific'),
+        (RELATIVE_DOT_RE, 'relative-prefix', 'medium',
+         'Parent directory reference (../) found — fragile, breaks with reorganization'),
+        (RELATIVE_DOTSLASH_RE, 'relative-prefix', 'medium',
+         'Relative prefix (./) found — breaks when execution directory changes'),
+    ]
+
+    for pattern, category, severity, message in checks:
+        for match in pattern.finditer(content):
+            pos = match.start()
+            if skip_fenced and is_in_fenced_block(content, pos):
+                continue
+            line_num = get_line_number(content, pos)
+       ... [TRUNCATED]
+
+--- resources\_aac\skills\aac-workflow-builder\scripts\scan-scripts.py --- (26785 bytes)
+#!/usr/bin/env python3
+"""Deterministic scripts scanner for BMad skills.
+
+Validates scripts in a skill's scripts/ folder for:
+- PEP 723 inline dependencies (Python)
+- Shebang, set -e, portability (Shell)
+- Version pinning for npx/uvx
+- Agentic design: no input(), has argparse/--help, JSON output, exit codes
+- Unit test existence
+- Over-engineering signals (line count, simple-op imports)
+- External lint: ruff (Python), shellcheck (Bash), biome (JS/TS)
+"""
+
+# /// script
+# requires-python = ">=3.9"
+# ///
+
+from __future__ import annotations
+
+import argparse
+import ast
+import json
+import re
+import shutil
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+
+# =============================================================================
+# External Linter Integration
+# =============================================================================
+
+def _run_command(cmd: list[str], timeout: int = 30) -> tuple[int, str, str]:
+    """Run a command and return (returncode, stdout, stderr)."""
+    try:
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=timeout,
+        )
+        return result.returncode, result.stdout, result.stderr
+    except FileNotFoundError:
+        return -1, '', f'Command not found: {cmd[0]}'
+    except subprocess.TimeoutExpired:
+        return -2, '', f'Command timed out after {timeout}s: {" ".join(cmd)}'
+
+
+def _find_uv() -> str | None:
+    """Find uv binary on PATH."""
+    return shutil.which('uv')
+
+
+def _find_npx() -> str | None:
+    """Find npx binary on PATH."""
+    return shutil.which('npx')
+
+
+def lint_python_ruff(filepath: Path, rel_path: str) -> list[dict]:
+    """Run ruff on a Python file via uv. Returns lint findings."""
+    uv = _find_uv()
+    if not uv:
+        return [{
+            'file': rel_path, 'line': 0,
+            'severity': 'high', 'category': 'lint-setup',
+            'title': 'uv not found on PATH — cannot run ruff for Python linting',
+            'detail': '',
+            'action': 'Install uv: https://docs.astral.sh/uv/getting-started/installation/',
+        }]
+
+    rc, stdout, stderr = _run_command([
+        uv, 'run', 'ruff', 'check', '--output-format', 'json', str(filepath),
+    ])
+
+    if rc == -1:
+        return [{
+            'file': rel_path, 'line': 0,
+            'severity': 'high', 'category': 'lint-setup',
+            'title': f'Failed to run ruff via uv: {stderr.strip()}',
+            'detail': '',
+            'action': 'Ensure uv can install and run ruff: uv run ruff --version',
+        }]
+
+    if rc == -2:
+        return [{
+            'file': rel_path, 'line': 0,
+            'severity': 'medium', 'category': 'lint',
+            'title': f'ruff timed out on {rel_path}',
+            'detail': '',
+            'action': '',
+        }]
+
+    # ruff outputs JSON array on stdout (even on rc=1 when issues found)
+    findings = []
+    try:
+        issues = json.loads(stdout) if stdout.strip() else []
+    except json.JSONDecodeE... [TRUNCATED]
+
+--- scripts\categorize-failures.js --- (6526 bytes)
+/**
+ * Categorize all Cucumber test failures by root cause.
+ * Usage: node scripts/categorize-failures.js [report-path]
+ */
+const fs = require('fs');
+
+const reportPath = process.argv[2] || 'reports/full-suite-report.json';
+const data = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+
+const cats = {
+  vscode: { label: 'Missing vscode mock', byFeature: {}, total: 0 },
+  undef:  { label: 'Undefined steps', byFeature: {}, total: 0 },
+  ambig:  { label: 'Ambiguous steps', byFeature: {}, total: 0 },
+  assert: { label: 'Assertion failures', byFeature: {}, total: 0 },
+  runerr: { label: 'Runtime errors', byFeature: {}, total: 0 },
+};
+
+function fname(uri) { return uri.split(/[\\/]/).pop().replace('.feature', ''); }
+
+function classify(msg) {
+  if (!msg) return 'runerr';
+  var m = String(msg);
+  if (m.indexOf("Cannot find module 'vscode'") >= 0) return 'vscode';
+  if (m.indexOf('AssertionError') >= 0) return 'assert';
+  if (m.indexOf('Expected values') >= 0) return 'assert';
+  if (m.indexOf('should exist') >= 0) return 'assert';
+  if (m.indexOf('should be defined') >= 0) return 'assert';
+  return 'runerr';
+}
+
+function add(cat, feat, scenario, detail) {
+  if (!cats[cat].byFeature[feat]) cats[cat].byFeature[feat] = [];
+  cats[cat].byFeature[feat].push({ s: scenario, d: detail });
+  cats[cat].total++;
+}
+
+for (var i = 0; i < data.length; i++) {
+  var feat = data[i];
+  var fn = fname(feat.uri);
+  for (var j = 0; j < feat.elements.length; j++) {
+    var el = feat.elements[j];
+    if (el.type !== 'scenario') continue;
+    var steps = el.steps || [];
+
+    var ambig = steps.filter(function(s) { return s.result && s.result.status === 'ambiguous'; });
+    if (ambig.length > 0) {
+      add('ambig', fn, el.name, ambig.map(function(s) { return s.name || (s.keyword + '...'); }).join('; '));
+      continue;
+    }
+
+    var undef = steps.filter(function(s) { return s.result && s.result.status === 'undefined'; });
+    if (undef.length > 0) {
+      add('undef', fn, el.name, undef.map(function(s) { return s.name || (s.keyword + (s.text || '')); }).join('; '));
+      continue;
+    }
+
+    var failed = steps.filter(function(s) { return s.result && s.result.status === 'failed'; });
+    if (failed.length > 0) {
+      var firstErr = failed[0].result.error_message || '';
+      var c = classify(firstErr);
+      var details = failed.map(function(s) {
+        var err = (s.result.error_message || '').substring(0, 150);
+        return (s.name || s.keyword) + ' -> ' + err;
+      }).join('\n       ');
+      add(c, fn, el.name, details);
+    }
+  }
+}
+
+var total = 0, passed = 0;
+for (var i = 0; i < data.length; i++) {
+  var feat = data[i];
+  for (var j = 0; j < feat.elements.length; j++) {
+    var el = feat.elements[j];
+    if (el.type !== 'scenario') continue;
+    total++;
+    if (el.steps && el.steps.every(function(s) { return s.result && s.result.status === 'passed'; })) passed++;
+  }
+}
+
+console.log('='.repeat(70));
+console.log('  TEST FAILURE CATEGORIZATION REPORT');
+console.log('='.repeat... [TRUNCATED]
+
+--- scripts\check-errors.js --- (918 bytes)
+var r = require('../reports/post-fix-v2.json');
+var seen = {};
+r.forEach(function(f) {
+  var fn = f.uri.replace(/.*[\\/]/, '').replace('.feature', '');
+  f.elements.filter(function(e) { return e.type === 'scenario'; }).forEach(function(e) {
+    e.steps.filter(function(s) {
+      return s.result && s.result.status === 'failed' && (s.result.error_message || '').indexOf('Cannot find module') >= 0;
+    }).forEach(function(s) {
+      if (!seen[fn]) {
+        seen[fn] = s.result.error_message;
+        console.log('=== ' + fn + ' ===');
+        var lines = s.result.error_message.split('\n');
+        lines.forEach(function(l) {
+          if (l.indexOf('Require stack') >= 0 || l.indexOf('- D:') >= 0 || l.indexOf('Error:') >= 0) {
+            console.log(l.trim());
+          }
+        });
+        console.log('');
+      }
+    });
+  });
+});
+if (Object.keys(seen).length === 0) console.log('NO VSCODE ERRORS REMAIN!');
+
+
+--- scripts\extract-vscode-errors.js --- (654 bytes)
+var r = require('../reports/post-fix-report.json');
+var seen = {};
+r.forEach(function(f) {
+  var fn = f.uri.replace(/.*[\\/]/, '').replace('.feature', '');
+  f.elements.filter(function(e) { return e.type === 'scenario'; }).forEach(function(e) {
+    e.steps.filter(function(s) {
+      return s.result && s.result.status === 'failed' && (s.result.error_message || '').indexOf('Cannot find module') >= 0;
+    }).forEach(function(s) {
+      if (!seen[fn]) {
+        seen[fn] = s.result.error_message;
+        console.log('=== ' + fn + ' ===');
+        console.log(s.result.error_message.substring(0, 600));
+        console.log('');
+      }
+    });
+  });
+});
+
+
+--- scripts\fix-bloat.js --- (7516 bytes)
+const fs = require('fs');
+const path = require('path');
+
+// ── 1. Add cleanupOldFiles + optimize searchTraces + fix dispose ──────────────
+const tracePath = path.join(__dirname, '..', 'src', 'trace', 'trace-recorder.ts');
+let trace = fs.readFileSync(tracePath, 'utf8');
+
+// Add cleanupOldFiles method before getOutputFolder
+const cleanupMethod = `  /**
+   * Delete trace files older than the configured retention period.
+   * Respects the agileagentcanvas.trace.retentionDays setting (default 30).
+   */
+  async cleanupOldFiles(): Promise<number> {
+    try {
+      await fs.mkdir(this.outputFolder, { recursive: true });
+    } catch {
+      return 0;
+    }
+
+    let files: string[];
+    try {
+      files = await fs.readdir(this.outputFolder);
+    } catch {
+      return 0;
+    }
+
+    const config = vscode.workspace.getConfiguration('agileagentcanvas');
+    const retentionDays = config.get('trace.retentionDays', 30);
+    const cutoffMs = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
+    let deleted = 0;
+
+    for (const file of files) {
+      if (!file.endsWith('.jsonl')) continue;
+      try {
+        const filePath = path.join(this.outputFolder, file);
+        const stat = await fs.stat(filePath);
+        if (stat.mtimeMs < cutoffMs) {
+          await fs.unlink(filePath);
+          deleted++;
+        }
+      } catch {
+        // Skip files that can't be read or deleted
+      }
+    }
+
+    if (deleted > 0) {
+      logger.info(\`[TraceRecorder] Cleaned up \${deleted} old trace file(s) (\${retentionDays}d retention)\`);
+    }
+    return deleted;
+  }
+
+  /** Returns the traces output directory (for cleanup / inspection commands). */
+  getOutputFolder(): string {
+    return this.outputFolder;
+  }`;
+
+// Replace getOutputFolder with the version that includes cleanupOldFiles before it
+trace = trace.replace(
+  '/** Returns the traces output directory (for cleanup / inspection commands). */\n  getOutputFolder(): string {\n    return this.outputFolder;\n  }',
+  cleanupMethod
+);
+
+// Optimize searchTraces to be more memory-efficient
+const oldSearch = `async searchTraces(query: {
+    artifactId?: string;
+    agent?: string;
+    type?: string;
+    since?: Date;
+    limit?: number;
+  }): Promise<TraceEntry[]> {
+    let files: string[];
+    try {
+      files = await fs.readdir(this.outputFolder);
+    } catch {
+      return [];
+    }
+
+    const results: TraceEntry[] = [];
+
+    for (const file of files) {
+      if (!file.endsWith('.jsonl')) continue;
+      try {
+        const content = await fs.readFile(path.join(this.outputFolder, file), 'utf-8');
+        const entries: TraceEntry[] = content.split('\\n').filter(Boolean).map(line => JSON.parse(line));
+        results.push(...entries);
+      } catch {
+        // Skip corrupt or unreadable files
+      }
+    }
+
+    return results
+      .filter(e => !query.artifactId || e.data?.artifactId === query.artifactId)
+      .filter(e => !query.agent || e.agent === query.agent)
+      .filter(e => !query.type || e.type === query.type)
+ ... [TRUNCATED]
+
+--- scripts\fix-bus-issues.js --- (5216 bytes)
+/**
+ * Fixes:
+ * 1. subscribe() calls — pass agentId (3 args required)
+ * 2. Wire registerTeamOnBus() / deregisterTeamFromBus() into executeTeam()
+ * 3. Fix 'context' possibly undefined in handoff-negotiation.ts
+ */
+var fs = require('fs');
+
+// ================================================
+// 1. Fix handoff-negotiation.ts
+// ================================================
+var hn = fs.readFileSync('src/acp/agent-bus/handoff-negotiation.ts', 'utf-8');
+
+hn = hn.replace(
+  "agentMessageBus.subscribe('system.handoff.request', async (msg) =>",
+  "agentMessageBus.subscribe('handoff-negotiation', 'system.handoff.request', async (msg) =>"
+);
+
+hn = hn.replace(
+  "agentMessageBus.subscribe('system.handoff.response', async (msg) =>",
+  "agentMessageBus.subscribe('handoff-negotiation', 'system.handoff.response', async (msg) =>"
+);
+
+// Fix 'context' possibly undefined on HandoffSession
+hn = hn.replace(
+  "var keys = Object.keys(context.intermediateArtifacts).length;",
+  "var keys = Object.keys(context?.intermediateArtifacts || {}).length;"
+);
+
+fs.writeFileSync('src/acp/agent-bus/handoff-negotiation.ts', hn);
+console.log('1. Fixed handoff-negotiation.ts');
+
+// ================================================
+// 2. Fix team-orchestrator.ts
+// ================================================
+var to = fs.readFileSync('src/acp/team-orchestrator.ts', 'utf-8');
+
+// Fix subscribe call
+to = to.replace(
+  "agentMessageBus.subscribe('handoff.' + agentId + '.#', async (msg) => {",
+  "agentMessageBus.subscribe(agentId, 'handoff.' + agentId + '.#', async (msg) => {"
+);
+
+// Actually the original used template literals with backticks. Let me try a different approach.
+// The pattern is: agentMessageBus.subscribe(`handoff.${agentId}.#`, async (msg) => {
+// Let me use a simple string search
+var subscribeCall = 'agentMessageBus.subscribe(';
+var handoffPattern = 'handoff.';
+// Find the specific subscribe call
+var idx = to.indexOf("handoff." + agentId);
+// This won't work in a script since agentId is runtime. Let me use a different approach.
+
+// Actually the code in team-orchestrator.ts has the subscribe call INSIDE registerTeamOnBus()
+// as: agentMessageBus.subscribe(`handoff.${agentId}.#`, async (msg) => {
+// This needs agentId as first param.
+
+// Let me search for the exact string including the template literal
+var searchFor = 'agentMessageBus.subscribe(';
+searchFor += '`';
+searchFor += 'handoff.';
+
+// Just replace all subscribe calls in the file that have 2 args
+// The current subscribe calls are:
+// 1. In registerTeamOnBus() - backtick template
+// 2. Before wiring there were no others in team-orchestrator.ts
+
+// After the wire script, the code might look like:
+// agentMessageBus.subscribe(`handoff.${agentId}.#`, async (msg) => {
+
+// Let me use a regex approach
+// Match: agentMessageBus.subscribe(something, async (msg) => {
+// Where something doesn't start with a quote (not a string literal)
+var re1 = /agentMessageBus\.subscribe\(`([^`]+)`,\s*async\s*\(msg\)\s*=>\s*\{/;
+to =... [TRUNCATED]
+
+--- scripts\fix-harness-issues.js --- (5671 bytes)
+/**
+ * Fixes:
+ * 1. Type errors in policy-engine.ts (wrong property names on TraceEntry, wrong method name)
+ * 2. Double-recording: remove external recordEvaluation() calls from lane-transitions.ts and artifact-store.ts
+ * 3. Circular dependency: use import type in harness-feedback.ts
+ */
+const fs = require('fs');
+
+// ============================================================
+// 1. Fix policy-engine.ts type errors
+// ============================================================
+let pe = fs.readFileSync('src/harness/policy-engine.ts', 'utf-8');
+
+// Fix 1a: TraceEntry data doesn't have .message — use .error only
+// Old: e.data?.message || e.data?.error || ''
+// New: e.data?.error || ''
+pe = pe.replace(
+  "const errorMessages = lastFew.map(e => e.data?.message || e.data?.error || '').filter(Boolean);",
+  "const errorMessages = lastFew.map(e => e.data?.error || '').filter(Boolean);"
+);
+
+// Fix 1b: TraceRecorder doesn't have .search() — use .searchTraces()
+// Old: traceEntries = getTraceRecorder().search({ sessionId });
+// New: traceEntries = await getTraceRecorder().searchTraces({ sessionId: sessionId, limit: 100 });
+pe = pe.replace(
+  "traceEntries = getTraceRecorder().search({ sessionId });",
+  "traceEntries = await getTraceRecorder().searchTraces({ sessionId, limit: 100 });"
+);
+
+// Fix 1c: evaluateContinuous is not async in the searchTraces context
+// Actually the evaluateContinuous method already uses await, but searchTraces returns a Promise too
+// Let me check if evaluateContinuous is already async... yes it's: async evaluateContinuous(...)
+
+fs.writeFileSync('src/harness/policy-engine.ts', pe);
+console.log('1. Fixed policy-engine.ts type errors.');
+
+// ============================================================
+// 2. Fix double-recording — remove external recordEvaluation calls
+// ============================================================
+
+// 2a: lane-transitions.ts — remove the outer harnessFeedback.recordEvaluation()
+let lt = fs.readFileSync('src/workflow/lane-transitions.ts', 'utf-8');
+const doubleRecordLt = `      // ── Continuous governance evaluation ───────────────────────────────\n      // After workflow execution, run continuous policies to detect patterns\n      // (repeated errors, stuck loops) that need correction.\n      if (rule?.workflowId) {\n        try {\n          const sessionId = found?.artifact?.sessionId || \`harness-\${Date.now()}-\${Math.random().toString(36).substr(2, 6)}\`;\n          harnessFeedback.recordEvaluation(\n            artifactId,\n            artifactType,\n            await harnessEngine.evaluate(\n              { artifactType, artifactId, artifact: found.artifact, sessionId },\n              'continuous'\n            )\n          );`;
+const fixedLt = `      // ── Continuous governance evaluation ───────────────────────────────\n      // After workflow execution, run continuous policies to detect patterns\n      // (repeated errors, stuck loops) that need correction.\n      if (rule?.workflowId) {\n ... [TRUNCATED]
+
+--- scripts\fix-harness-wiring.js --- (3571 bytes)
+/**
+ * Fixes remaining harnessFeedback wiring:
+ * 1. Add harnessFeedback import + recordEvaluation to artifact-store.ts
+ * 2. Inject governance feedback section into workflow-executor.ts buildWorkflowPrompt()
+ */
+const fs = require('fs');
+
+// ============================================================
+// 1. Fix artifact-store.ts
+// ============================================================
+let as = fs.readFileSync('src/state/artifact-store.ts', 'utf-8');
+
+// Add import after existing harnessEngine import
+const importTarget = "import { harnessEngine } from '../harness/policy-engine';";
+const importReplace = importTarget + "\nimport { harnessFeedback } from '../harness/harness-feedback';";
+
+if (as.includes('harnessFeedback')) {
+  console.log('artifact-store.ts already has harnessFeedback import, skipping.');
+} else {
+  as = as.replace(importTarget, importReplace);
+}
+
+// Add recordEvaluation call after post-flight results
+const recordTarget = "const advisory = postResults.filter(r => !r.passed);\n                        if (advisory.length > 0) this._onHarnessFailures.fire(advisory);";
+const recordReplace = recordTarget + "\n                        // Feed post-flight results into the governance feedback loop\n                        harnessFeedback.recordEvaluation(doc.id, doc.type || 'unknown', postResults);";
+
+if (as.includes('harnessFeedback.recordEvaluation')) {
+  console.log('artifact-store.ts already has harnessFeedback.recordEvaluation, skipping.');
+} else {
+  as = as.replace(recordTarget, recordReplace);
+}
+
+fs.writeFileSync('src/state/artifact-store.ts', as);
+console.log('artifact-store.ts updated successfully.');
+
+// ============================================================
+// 2. Inject governance feedback into workflow-executor.ts prompt
+// ============================================================
+let wf = fs.readFileSync('src/workflow/workflow-executor.ts', 'utf-8');
+
+// The template literal in the prompt already uses ${...} syntax for vars.get(...).
+// We need to inject a similar template expression that calls harnessFeedback.
+// The prompt is already a template literal, so we can inject:
+//
+// ## Harness Governance Feedback
+// ${(function() {
+//   const aType = artifactContext?.type || artifactContext?.artifactType || '';
+//   const aId = artifactContext?.id || artifactContext?.artifactId || '';
+//   if (!aType || !aId) return 'No active governance issues.';
+//   const fb = harnessFeedback.getFeedbackForArtifact(aId, aType);
+//   if (!fb || fb.activeFailureCount === 0) return 'No active governance issues.';
+//   return fb.summary;
+// })()}
+
+if (wf.includes('Harness Governance Feedback')) {
+  console.log('workflow-executor.ts already has feedback section, skipping.');
+} else {
+  // Insert the feedback section before "## CRITICAL - BMAD Grounding Rule"
+  const injectPoint = "## CRITICAL \u2014 BMAD Grounding Rule";
+  const feedbackSection = `
+## Harness Governance Feedback
+\${(function() {
+  const aType = artifactContext?.type |... [TRUNCATED]
+
+--- scripts\fix-parens.js --- (2497 bytes)
+const fs = require('fs');
+let f = fs.readFileSync('features/step_definitions/harness-policies.steps.ts', 'utf8');
+
+// Fix 1: results should include {string} (artifactType: {string})
+f = f.replace(
+  "Then('the results should include {string} \\(artifactType: {string}\\)', function (this: BmadWorld, expected: string, artifactType: string) {",
+  "Then(/^the results should include \"([^\"]+)\" \\(artifactType: ([^)]+)\\)$/, function (this: BmadWorld, expected: string, artifactType: string) {"
+);
+
+// Fix 2: results should not include {string} (no artifactType filter)
+f = f.replace(
+  "Then('the results should not include {string} \\(no artifactType filter\\)', function (this: BmadWorld, expected: string) {",
+  "Then(/^the results should not include \"([^\"]+)\" \\(no artifactType filter\\)$/, function (this: BmadWorld, expected: string) {"
+);
+
+// Fix 3: results should not include {string} (artifactType: {string})
+f = f.replace(
+  "Then('the results should not include {string} \\(artifactType: {string}\\)', function (this: BmadWorld, expected: string, artifactType: string) {",
+  "Then(/^the results should not include \"([^\"]+)\" \\(artifactType: ([^)]+)\\)$/, function (this: BmadWorld, expected: string, artifactType: string) {"
+);
+
+// Fix 4: engine should have {int} policies (from builtInPolicies)
+f = f.replace(
+  "Then('the engine should have {int} policies \\(from builtInPolicies\\)', function (this: BmadWorld, count: number) {",
+  "Then(/^the engine should have (\\d+) policies \\(from builtInPolicies\\)$/, function (this: BmadWorld, count: string) {"
+);
+// Fix the count parameter type
+f = f.replace(
+  "Then(/^the engine should have (\\d+) policies \\(from builtInPolicies\\)$/, function (this: BmadWorld, count: string) {",
+  "Then(/^the engine should have (\\d+) policies \\(from builtInPolicies\\)$/, function (this: BmadWorld, count: string) {\n  const ctx = getCtx(this);\n  assert.strictEqual(ctx.engine.policies.length, parseInt(count, 10));\n});\n\n// placeholder",
+);
+
+// Fix 5: policy evaluation should return null (LLM not supported)
+f = f.replace(
+  "Then('the policy evaluation should return null \\(LLM not supported\\)', function (this: BmadWorld) {",
+  "Then(/^the policy evaluation should return null \\(LLM not supported\\)$/, function (this: BmadWorld) {"
+);
+
+// Clean up placeholder
+f = f.replace("// placeholder\n", "");
+
+fs.writeFileSync('features/step_definitions/harness-policies.steps.ts', f);
+console.log('Fixed all paren patterns with regex');
+
+
+--- scripts\inject-harness-feedback.js --- (5752 bytes)
+/**
+ * Injects harness feedback into buildWorkflowPrompt() in workflow-executor.ts
+ * and adds continuous evaluation trigger to lane-transitions.ts.
+ * Also wires harnessFeedback recording into artifact-store.ts _harmonizeAndNotify().
+ */
+const fs = require('fs');
+const wfPath = 'src/workflow/workflow-executor.ts';
+const ltPath = 'src/workflow/lane-transitions.ts';
+const asPath = 'src/state/artifact-store.ts';
+
+// =====================================================
+// 1. Inject harness feedback into buildWorkflowPrompt
+// =====================================================
+let wf = fs.readFileSync(wfPath, 'utf-8');
+
+const injectPoint = '## CRITICAL \u2014 BMAD Grounding Rule';
+const feedbackSection = 
+'\n## Harness Governance Feedback\n' +
+'${(() => {\n' +
+'  const aType = artifactContext?.type || artifactContext?.artifactType || \'\';\n' +
+'  const aId = artifactContext?.id || artifactContext?.artifactId || \'\';\n' +
+'  if (!aType || !aId) return \'No active governance issues.\';\n' +
+'  const fb = harnessFeedback.getFeedbackForArtifact(aId, aType);\n' +
+'  if (!fb || fb.activeFailureCount === 0) return \'No active governance issues.\';\n' +
+'  return fb.summary;\n' +
+'})()}\n\n';
+
+if (wf.includes('Harness Governance Feedback')) {
+  console.log('Feedback section already injected. Skipping.');
+} else {
+  wf = wf.replace(injectPoint, feedbackSection + injectPoint);
+  fs.writeFileSync(wfPath, wf);
+  console.log('1. Injected harness feedback into buildWorkflowPrompt');
+}
+
+// =====================================================
+// 2. Add continuous evaluation import to lane-transitions
+// =====================================================
+let lt = fs.readFileSync(ltPath, 'utf-8');
+
+const ltHarnessImport = "import { harnessEngine } from '../harness/policy-engine';";
+const ltFeedbackImport = "import { harnessEngine } from '../harness/policy-engine';\nimport { harnessFeedback } from '../harness/harness-feedback';";
+
+if (lt.includes('harnessFeedback')) {
+  console.log('2. lane-transitions.ts already has harnessFeedback import. Skipping.');
+} else {
+  lt = lt.replace(ltHarnessImport, ltFeedbackImport);
+  fs.writeFileSync(ltPath, lt);
+  console.log('2. Added harnessFeedback import to lane-transitions.ts');
+}
+
+// =====================================================
+// 3. Add continuous evaluation after workflow completion
+//    in handleTransition()
+// =====================================================
+const evalTrigger = 
+'\n      // \u2500\u2500 Continuous governance evaluation \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n' +
+'      // After workflow execution (or terminal launch), run continuous policies\n' +
+'      // to detect patterns (repeated errors, stuck loops) that need correction.\n' +
+'      if (rule?.workflowId) {\n' +
+... [TRUNCATED]
+
+--- scripts\reorg-config.js --- (3261 bytes)
+const fs = require('fs');
+const path = require('path');
+
+const pkgPath = path.join(__dirname, '..', 'package.json');
+const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+
+const props = pkg.contributes.configuration.properties;
+const originalTitle = pkg.contributes.configuration.title || 'Agile Agent Canvas';
+
+// Define logical groups with their property keys
+const groups = [
+  {
+    title: originalTitle,
+    order: 0,
+    properties: [
+      'outputFolder',
+      'autoSync',
+      'showAICursor',
+      'logLevel',
+    ],
+  },
+  {
+    title: 'AI Provider',
+    order: 1,
+    properties: [
+      'aiProvider',
+      'apiKey',
+      'modelId',
+      'baseUrl',
+      'defaultTemperature',
+      'defaultAgent',
+    ],
+  },
+  {
+    title: 'Chat Provider',
+    order: 2,
+    properties: [
+      'chatProvider',
+      'chatProviderSelected',
+    ],
+  },
+  {
+    title: 'Jira',
+    order: 3,
+    properties: [
+      'jira.baseUrl',
+      'jira.email',
+      'jira.apiToken',
+      'jira.projectKey',
+    ],
+  },
+  {
+    title: 'graphify',
+    order: 4,
+    properties: [
+      'graphify.pythonPath',
+      'graphify.backend',
+      'graphify.autoBootstrapOnNewProject',
+      'graphify.autoUpdateOnSave',
+      'graphify.showCodebaseLane',
+    ],
+  },
+  {
+    title: 'Codeburn',
+    order: 5,
+    properties: [
+      'codeburn.enabled',
+      'codeburn.path',
+    ],
+  },
+  {
+    title: 'Caveman',
+    order: 6,
+    properties: [
+      'caveman.enabled',
+      'caveman.intensity',
+    ],
+  },
+  {
+    title: 'Agentic Execution',
+    order: 7,
+    properties: [
+      'agenticKanban.enabled',
+      'agenticKanban.terminalProvider',
+      'trace.enabled',
+      'trace.retentionDays',
+      'harness.enabled',
+      'harness.sprintCapacity',
+      'agentTeam.enabled',
+      'yoloMode',
+    ],
+  },
+  {
+    title: 'Catalogue',
+    order: 8,
+    properties: [
+      'userCataloguePath',
+      'skillRepos',
+    ],
+  },
+];
+
+// Build the configuration array
+const configuration = groups.map(group => {
+  const groupProps = {};
+  for (const key of group.properties) {
+    const fullKey = `agileagentcanvas.${key}`;
+    if (props[fullKey]) {
+      groupProps[fullKey] = props[fullKey];
+    } else {
+      console.warn(`WARNING: Property not found: ${fullKey}`);
+    }
+  }
+  // Add markdownDescription as section header
+  return {
+    title: group.title,
+    order: group.order,
+    properties: groupProps,
+  };
+});
+
+// Validate all properties were assigned
+const assigned = new Set();
+for (const group of configuration) {
+  for (const key of Object.keys(group.properties)) {
+    assigned.add(key);
+  }
+}
+
+const originalKeys = Object.keys(props);
+const unassigned = originalKeys.filter(k => !assigned.has(k));
+if (unassigned.length > 0) {
+  console.warn('WARNING: Unassigned properties:', unassigned);
+  // Add them as a fallback group
+  const fallbackProps = {};
+  for (const key of unassigned) {
+    fallbackProps[key] = props[key];
+  }
+  configuration.push({
+    title: 'Other',
+    order: 99,
+    p... [TRUNCATED]
+
+--- scripts\update-changelog.js --- (4956 bytes)
+const fs = require('fs');
+const path = require('path');
+
+const changelogPath = path.join(__dirname, '..', 'CHANGELOG.md');
+let content = fs.readFileSync(changelogPath, 'utf8');
+
+// CRLF line endings
+const marker = "truncation surfaced during testing.\r\n\r\n## 0.5.2";
+const insertion = `truncation surfaced during testing.
+
+### Agent-to-Agent Message Bus — Dynamic Discovery & Handoff Negotiation
+
+New \`src/acp/agent-bus/\` module adds a peer-to-peer message bus for agents to dynamically discover each other and negotiate handoffs during team execution.
+
+- **Agent Registry** — Dynamic register/unregister with capability-based \`discover()\`. \`findOptimalAgent()\` prefers idle agents. Heartbeat tracking with automatic stale-pruning.
+- **Message Bus** — Pub/sub with wildcard topic patterns (\`*\` single-segment, \`#\` multi-segment). Supports priority queuing, TTL expiry, correlation IDs, direct \`send()\`, delivery tracing, and system event topics.
+- **Handoff Negotiation** — \`requestHandoff()\` with 30s timeout and auto-accept for idle agents. \`respondToHandoff()\`, \`transferContext()\`, \`completeHandoff()\`/\`failHandoff()\`. Max 20 concurrent sessions.
+- **Wired into team execution** — \`executeTeam()\` registers agents on the bus, deregisters in \`finally\`. Bus initialized in \`extension.ts\`.
+
+### Agentic Kanban View — Workflow Orchestration UI
+
+A new Kanban-style view for agentic workflow orchestration, toggleable from the canvas.
+
+- **\`AgenticKanbanViewProvider\`** — New webview registered as \`agileagentcanvas.agenticKanban\`.
+- **Kanban toggle FAB** — Canvas toolbar toggles between standard Canvas and Agentic Kanban modes.
+- **Shared kanban components** — \`SprintPlanningView.tsx\` refactored to use modular \`KanbanCard\`/\`KanbanColumn\`.
+- **Lane Transition Engine** — New \`src/workflow/lane-transitions.ts\` bridges Kanban actions to BMAD workflows.
+- **Session restoration** — Extension activation restores interrupted ACP sessions from trace logs.
+- **Settings** — \`agileagentcanvas.agenticKanban.enabled\` and \`agileagentcanvas.agenticKanban.terminalProvider\`.
+
+### Multi-Agent Team Execution (ACP)
+
+Full Agent Coordination Protocol for multi-agent teams with coordinator/crafter/gate roles.
+
+- **ACP Types** — \`AcpSessionSpec\`, \`AcpSessionEvent\`, \`AcpSessionResult\`, \`AcpHandoff\`, \`AgentRole\`.
+- **Session Manager** — \`AcpSession\` with lifecycle events and tool call/duration tracking.
+- **Team Orchestrator** — \`AgentTeamOrchestrator\` with TEAM_REGISTRY (dev-story, refactor, generate-code, review-code teams).
+- **\`agileagentcanvas.agentTeam.enabled\` setting** — Feature gate (default \`false\`).
+
+### Team Trace Recording — Per-Agent Observability
+
+Execution tracing added to \`executeTeam()\` for full agent lifecycle observability.
+
+- **Lifecycle events** — team started, agent started (role/session ID), agent completed (tool calls/duration), agent failed (error details), team completed/failed (aggregate stats).
+- **All tra... [TRUNCATED]
+
+--- scripts\wire-agent-bus.js --- (5849 bytes)
+/**
+ * Wires the agent-to-agent message bus into team-orchestrator.ts and extension.ts
+ */
+const fs = require('fs');
+
+// ============================================================
+// 1. team-orchestrator.ts — add bus imports + AgentTeamOrchestrator
+//    registers agents on the bus during executeTeam, uses handoffs
+// ============================================================
+let to = fs.readFileSync('src/acp/team-orchestrator.ts', 'utf-8');
+
+// Add bus imports after existing ACP imports
+const importTarget = "import { BmadModel } from '../chat/ai-provider';";
+const busImports = importTarget +
+  "\nimport { agentRegistry } from './agent-bus/agent-registry';" +
+  "\nimport { agentMessageBus } from './agent-bus/message-bus';" +
+  "\nimport { handoffNegotiation } from './agent-bus/handoff-negotiation';" +
+  "\nimport type { AgentCapability } from './agent-bus/types';";
+
+if (to.includes('agent-bus/agent-registry')) {
+  console.log('team-orchestrator.ts already has bus imports, skipping.');
+} else {
+  to = to.replace(importTarget, busImports);
+}
+
+// Extend the executeTeam method to register agents on the bus and use handoffs
+// between team members. Replace the existing executeTeam method.
+const executeTeamStart = "export class AgentTeamOrchestrator {\n  async executeTeam(";
+const executeTeamEnhanced = `export class AgentTeamOrchestrator {
+  /**
+   * Register all team members on the agent bus and return the list of agent IDs.
+   * This allows agents to be discovered and receive handoffs dynamically.
+   */
+  private registerTeamOnBus(teamId: string): string[] {
+    const team = this.getTeam(teamId);
+    if (!team) return [];
+
+    const agentIds: string[] = [];
+    for (const member of team.members) {
+      const agentId = \`\${teamId}-\${member.role}-\${member.personaId}\`;
+      const capabilities: AgentCapability[] = [
+        {
+          id: teamId,
+          description: \`Execute \${teamId} workflow\`,
+          confidence: 1.0,
+          artifactTypes: [],
+        },
+        {
+          id: \`role-\${member.role}\`,
+          description: \`Act as \${member.role}\`,
+          confidence: 0.9,
+        },
+      ];
+
+      agentRegistry.register(
+        agentId,
+        \`\${member.personaId} (\${member.role})\`,
+        member.role,
+        member.personaId,
+        capabilities
+      );
+
+      // Subscribe to handoff requests for this agent role
+      agentMessageBus.subscribe(\`handoff.\${agentId}.#\`, async (msg) => {
+        agentRegistry.updateStatus(agentId, 'busy');
+        // Processing occurs via the existing ACP session pipeline
+      });
+
+      agentIds.push(agentId);
+      logger.debug(\`[Bus] Registered \${agentId} for team \${teamId}\`);
+    }
+
+    // Notify the bus
+    agentMessageBus.publish(\`team.\${teamId}.registered\`, {
+      teamId,
+      agentIds,
+      memberCount: team.members.length,
+    }).catch(() => {});
+
+    return agentIds;
+  }
+
+  /**
+   * Deregister team members from the bus after execution completes.
+   */
+  priv... [TRUNCATED]
+
+--- src\extension.ts --- (57539 bytes)
+import * as vscode from 'vscode';
+import * as path from 'path';
+import { AgileAgentCanvasChatParticipant } from './chat/chat-participant';
+import { ArtifactsTreeProvider } from './views/artifacts-tree-provider';
+import { WizardStepsProvider } from './views/wizard-steps-provider';
+import { AgenticKanbanViewProvider } from './views/agentic-kanban-view-provider';
+import { ArtifactStore } from './state/artifact-store';
+import { WorkspaceResolver } from './state/workspace-resolver';
+import { getWorkflowExecutor } from './workflow/workflow-executor';
+import { initializeLaneTransitionEngine, laneTransitionEngine } from './workflow/lane-transitions';
+import { concurrencyQueue } from './workflow/concurrency-queue';
+import { initializeAcpSessionManager } from './acp/session-manager';
+import { agentMessageBus } from './acp/agent-bus/message-bus';
+import { agentRegistry } from './acp/agent-bus/agent-registry';
+import { handoffNegotiation } from './acp/agent-bus/handoff-negotiation';
+import { initializeTraceRecorder, getTraceRecorder } from './trace/trace-recorder';
+import { registerTraceCommands } from './commands/trace-commands';
+import { registerA2ACommands } from './commands/a2a-commands';
+import { harnessEngine } from './harness/policy-engine';
+import { loadUserPolicies } from './harness/policy-loader';
+import { sendArtifactsToPanel, buildArtifacts } from './canvas/artifact-transformer';
+import { registerTools, sharedToolContext } from './chat/agileagentcanvas-tools';
+import {
+    handleAddArtifact,
+    loadElicitationMethods,
+    loadBmmWorkflows,
+    exportArtifacts,
+    importArtifacts,
+    syncToFiles,
+    goToStep,
+    selectArtifact
+} from './commands/artifact-commands';
+import { handleCommonWebviewMessage, handleCatalogueWebviewMessage } from './views/webview-message-handler';
+import { handleAgenticKanbanMessage } from './views/agentic-kanban-message-handler';
+import { createGraphifyStatusBar, refreshGraphifyStatusBar } from './views/graphify-status-bar';
+import { createCodeburnStatusBar, refreshCodeburnStatusBar } from './views/codeburn-status-bar';
+import { createChatProviderStatusBar, registerPickChatProviderCommand, refreshChatProviderStatusBar } from './views/chat-provider-status-bar';
+import { setSelectedProvider, getSelectedProvider, type ChatProviderId } from './commands/chat-bridge';
+import {
+    createNewProject,
+    loadExistingProject,
+    loadDemoData,
+    loadSampleProject
+} from './commands/project-commands';
+import { executeWorkflowStep } from './commands/workflow-commands';
+import { installToIde, autoInstallIfNeeded } from './commands/ide-installer';
+import { openChat, setChatBridgeLogger } from './commands/chat-bridge';
+import { JiraCommands } from './commands/jira-commands';
+import { CodeburnCommands } from './commands/codeburn-commands';
+import {
+    bootstrapGraphify,
+    updateGraph,
+    rebuildGraph,
+    installGraphifyHook,
+    detectGraphify,
+    clearGraphifyCache,
+    loadReport
+} from './integrations/graphify';
+import {... [TRUNCATED]
+
+--- src\acp\session-manager.ts --- (7895 bytes)
+import { createLogger } from '../utils/logger';
+import { errMsg } from '../utils/error';
+const logger = createLogger('acp-session-manager');
+import * as vscode from 'vscode';
+import { getPersonaForArtifactType, formatFullAgentForPrompt, AgentPersona } from '../chat/agent-personas';
+import { WorkflowExecutor } from '../workflow/workflow-executor';
+import { BmadModel } from '../chat/ai-provider';
+import { AcpSessionSpec, AcpSessionEvent, AcpSessionResult } from './types';
+
+
+// ─── AcpSession ──────────────────────────────────────────────────────────────
+
+export class AcpSession implements vscode.Disposable {
+  public readonly id: string;
+  public readonly createdAt: Date;
+  public persona?: AgentPersona;
+  private _status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled' = 'pending';
+  private _events: AcpSessionEvent[] = [];
+
+  constructor(public readonly spec: AcpSessionSpec) {
+    this.id = `acp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    this.createdAt = new Date();
+  }
+
+  get status() { return this._status; }
+  get events() { return [...this._events]; }
+
+  addEvent(event: AcpSessionEvent): void {
+    this._events.push(event);
+  }
+
+  setStatus(status: typeof this._status): void {
+    this._status = status;
+  }
+
+  dispose(): void {
+    if (this._status === 'running') {
+      this._status = 'cancelled';
+    }
+  }
+}
+
+// ─── AcpSessionManager ───────────────────────────────────────────────────────
+
+/**
+ * Manages ACP session lifecycles.
+ * Requires a WorkflowExecutor instance for executeWithTools() — ACP
+ * delegates actual LLM execution to the existing BMAD workflow engine.
+ */
+export class AcpSessionManager implements vscode.Disposable {
+  private sessions = new Map<string, AcpSession>();
+  private eventStreams = new Map<string, vscode.EventEmitter<AcpSessionEvent>>();
+  private disposables: vscode.Disposable[] = [];
+
+  constructor(private executor: WorkflowExecutor) {}
+
+  async spawn(spec: AcpSessionSpec, bmadPath: string): Promise<AcpSession> {
+    const session = new AcpSession(spec);
+    this.sessions.set(session.id, session);
+
+    const emitter = new vscode.EventEmitter<AcpSessionEvent>();
+    this.eventStreams.set(session.id, emitter);
+    this.disposables.push(emitter);
+
+    this.emit(session.id, {
+      sessionId: session.id,
+      type: 'spawned',
+      timestamp: new Date().toISOString(),
+    });
+
+    // Load persona using the existing agent-personas module
+    const persona = getPersonaForArtifactType(bmadPath, spec.personaId);
+    session.persona = persona ?? undefined;
+
+    logger.info('Session spawned', { sessionId: session.id, role: spec.role, personaId: spec.personaId });
+    return session;
+  }
+
+  async execute(
+    sessionId: string,
+    model: BmadModel,
+    store: any, // ArtifactStore — passed through to executeWithTools
+    stream: vscode.ChatResponseStream,
+    token: vscode.CancellationToken
+  ): Promise<AcpSessionResult> {
+    const session = this.sessions.get(sessionId);
+    if (!session) th... [TRUNCATED]
+
+--- src\acp\team-orchestrator.ts --- (10898 bytes)
+import { createLogger } from '../utils/logger';
+import { errMsg } from '../utils/error';
+const logger = createLogger('team-orchestrator');
+import * as vscode from 'vscode';
+import { AcpSessionSpec, AcpSessionResult, AgentRole } from './types';
+import { acpSessionManager } from './session-manager';
+import { BmadModel } from '../chat/ai-provider';
+import { agentRegistry } from './agent-bus/agent-registry';
+import { agentMessageBus } from './agent-bus/message-bus';
+import { handoffNegotiation } from './agent-bus/handoff-negotiation';
+import { getTraceRecorder } from '../trace/trace-recorder';
+import type { AgentCapability } from './agent-bus/types';
+import { AgentTeam, TEAM_REGISTRY } from './team-orchestrator/team-registry';
+
+// Re-export for backwards compatibility
+export type { AgentTeam };
+
+// ─── AgentTeamOrchestrator ───────────────────────────────────────────────────
+
+export class AgentTeamOrchestrator {
+  /**
+   * Register all team members on the agent bus and return the list of agent IDs.
+   * This allows agents to be discovered and receive handoffs dynamically.
+   */
+  private registerTeamOnBus(teamId: string): string[] {
+    const team = this.getTeam(teamId);
+    if (!team) return [];
+
+    const agentIds: string[] = [];
+    for (const member of team.members) {
+      const agentId = `${teamId}-${member.role}-${member.personaId}`;
+      const capabilities: AgentCapability[] = [
+        {
+          id: teamId,
+          description: `Execute ${teamId} workflow`,
+          confidence: 1.0,
+          artifactTypes: [],
+        },
+        {
+          id: `role-${member.role}`,
+          description: `Act as ${member.role}`,
+          confidence: 0.9,
+        },
+      ];
+
+      agentRegistry.register(
+        agentId,
+        `${member.personaId} (${member.role})`,
+        member.role,
+        member.personaId,
+        capabilities
+      );
+
+      // Subscribe to handoff requests for this agent role
+      agentMessageBus.subscribe(agentId, `handoff.${agentId}.#`, async (msg) => {
+        agentRegistry.updateStatus(agentId, 'busy');
+        // Processing occurs via the existing ACP session pipeline
+      });
+
+      agentIds.push(agentId);
+      logger.debug(`[Bus] Registered ${agentId} for team ${teamId}`);
+    }
+
+    // Notify the bus
+    agentMessageBus.publish(`team.${teamId}.registered`, {
+      teamId,
+      agentIds,
+      memberCount: team.members.length,
+    }).catch(() => {});
+
+    return agentIds;
+  }
+
+  /**
+   * Deregister team members from the bus after execution completes.
+   */
+  private deregisterTeamFromBus(agentIds: string[]): void {
+    for (const agentId of agentIds) {
+      agentRegistry.updateStatus(agentId, 'offline');
+      agentRegistry.unregister(agentId);
+      agentMessageBus.unsubscribeAgent(agentId);
+    }
+  }
+
+  /**
+   * Get a team by ID from the registry.
+   */
+  private getTeam(teamId: string): typeof TEAM_REGISTRY[string] | undefined {
+    return TEAM_REGISTRY[teamId];
+  }
+
+  async executeTeam(
+    teamId: string,... [TRUNCATED]
+
+--- src\acp\types.ts --- (1737 bytes)
+// ─── ACP Protocol Types ───────────────────────────────────────────────────────
+// Agent Coordination Protocol (ACP) — defines the lifecycle types for
+// spawning, prompting, executing, streaming, and completing multi-agent sessions.
+// Used by AcpSessionManager and AgentTeamOrchestrator.
+
+export type AgentRole = 'coordinator' | 'crafter' | 'gate' | 'researcher';
+
+export interface AcpSessionSpec {
+  role: AgentRole;
+  /** Reference to an existing BMAD agent persona ID / skillName */
+  personaId: string;
+  context: {
+    task: string;
+    artifact?: Readonly<any>;
+    inputArtifacts?: string[];
+    outputArtifactType?: string;
+    constraints?: string[];
+    parentSessionId?: string;
+  };
+  config?: {
+    model?: string;
+    temperature?: number;
+    maxTokens?: number;
+    executionMode?: 'interactive' | 'autonomous' | 'default';
+    allowedTools?: string[];
+  };
+}
+
+export interface AcpSessionEvent {
+  sessionId: string;
+  type: 'spawned' | 'prompting' | 'executing' | 'streaming' | 'tool_call' | 'completed' | 'failed' | 'cancelled' | 'handoff';
+  timestamp: string;
+  data?: any;
+  metadata?: Record<string, unknown>;
+}
+
+export interface AcpSessionResult {
+  sessionId: string;
+  role: AgentRole;
+  status: 'completed' | 'failed' | 'cancelled';
+  output: any;
+  toolCalls: number;
+  startedAt: string;
+  completedAt: string;
+  events: AcpSessionEvent[];
+  error?: string;
+}
+
+export interface AcpHandoff {
+  fromSessionId: string;
+  toSessionId: string;
+  context: {
+    task: string;
+    intermediateArtifacts: Record<string, any>;
+    pendingDecisions?: string[];
+    evaluationResults?: any;
+  };
+}
+
+
+--- src\acp\agent-bus\a2a-agent-card.ts --- (11563 bytes)
+// ─── A2A Agent Card ──────────────────────────────────────────────────────────
+// Generates A2A-standard Agent Cards from AgentRegistration records.
+//
+// Maps AAC's internal agent representation to the A2A protocol Agent Card
+// format (compatible with A2A spec v0.3). Agent Cards enable external A2A
+// clients to discover AAC agent capabilities, skills, and RPC endpoints.
+//
+// The generated card includes:
+//   - name, description, version, protocolVersion
+//   - url (RPC endpoint for JSON-RPC calls)
+//   - skills derived from AgentCapability[]
+//   - capabilities (streaming, pushNotifications)
+//   - defaultInputModes / defaultOutputModes
+//
+// Usage:
+//   import { generateAgentCard, generateAllAgentCards } from './a2a-agent-card';
+//   const card = generateAgentCard(agentRegistry.getAgent('my-agent')!);
+
+import { createLogger } from '../../utils/logger';
+const logger = createLogger('a2a-agent-card');
+
+import { agentRegistry } from './agent-registry';
+import type { AgentRegistration, AgentCapability } from './types';
+
+// ─── A2A Agent Card Types ────────────────────────────────────────────────────
+
+/** A2A Agent Skill — derived from AgentCapability */
+export interface A2AAgentSkill {
+  id: string;
+  name: string;
+  description: string;
+  tags?: string[];
+  examples?: string[];
+  inputModes?: string[];
+  outputModes?: string[];
+}
+
+/** A2A Agent Card — matches A2A protocol spec v0.3 */
+export interface A2AAgentCard {
+  /** Human-readable name */
+  name: string;
+  /** Description of the agent's purpose */
+  description: string;
+  /** A2A protocol version (e.g. "0.3.0") */
+  protocolVersion: string;
+  /** Agent implementation version */
+  version: string;
+  /** RPC endpoint URL for JSON-RPC calls */
+  url: string;
+  /** Skills the agent supports */
+  skills: A2AAgentSkill[];
+  /** Capability flags */
+  capabilities?: {
+    streaming?: boolean;
+    pushNotifications?: boolean;
+  };
+  /** Default input content types */
+  defaultInputModes?: string[];
+  /** Default output content types */
+  defaultOutputModes?: string[];
+  /** Optional provider info */
+  provider?: {
+    name: string;
+    url?: string;
+  };
+  /** Additional interfaces (e.g. event streams) */
+  additionalInterfaces?: Array<{
+    url: string;
+    transport: 'JSONRPC' | 'HTTP' | 'SSE';
+  }>;
+  /** Link to documentation */
+  documentationUrl?: string;
+}
+
+// ─── Configuration ───────────────────────────────────────────────────────────
+
+const CONFIG = {
+  /** Default protocol version */
+  PROTOCOL_VERSION: '0.3.0',
+  /** Default agent version */
+  VERSION: '0.2.0',
+  /** Default RPC endpoint path (relative to base URL) */
+  RPC_PATH: '/api/a2a/rpc',
+  /** Default input modes */
+  DEFAULT_INPUT_MODES: ['text/plain'],
+  /** Default output modes */
+  DEFAULT_OUTPUT_MODES: ['text/plain', 'application/json'],
+};
+
+// ─── Capability → Skill Mapping ──────────────────────────────────────────────
+
+/**
+ * Role-based tags that augment the skill's tag list.
+ * These help A2A clients filter agents by ... [TRUNCATED]
+
+--- src\acp\agent-bus\a2a-outbound-client.ts --- (25396 bytes)
+// ─── A2A Outbound Client ─────────────────────────────────────────────────────
+// Client for calling remote A2A agents via JSON-RPC 2.0 over HTTP.
+//
+// Enables kanban transitions and other AAC components to delegate work to
+// remote A2A-compatible agents by:
+//   1. Fetching the Agent Card from a well-known URL
+//   2. Sending SendMessage requests via JSON-RPC 2.0
+//   3. Polling GetTask until completion (or timeout)
+//
+// Follows A2A protocol spec v0.3 for JSON-RPC communication.
+//
+// Usage:
+//   const client = getA2AOutboundClient();
+//   const task = await client.sendMessageAndWait(
+//     'https://remote-agent.example.com/agent-card.json',
+//     'Implement user authentication'
+//   );
+
+import { createLogger } from '../../utils/logger';
+const logger = createLogger('a2a-outbound-client');
+
+import {
+  getRpcEndpoint,
+  validateAgentCard,
+  type A2AAgentCard,
+} from './a2a-agent-card';
+
+// ─── JSON-RPC 2.0 Types ─────────────────────────────────────────────────────
+
+export interface JsonRpcRequest {
+  jsonrpc: '2.0';
+  id: string | number;
+  method: string;
+  params?: unknown;
+}
+
+export interface JsonRpcResponse {
+  jsonrpc: '2.0';
+  id?: string | number;
+  result?: unknown;
+  error?: {
+    code: number;
+    message: string;
+    data?: unknown;
+  };
+}
+
+// ─── A2A Outbound Types ──────────────────────────────────────────────────────
+
+export type A2ATaskState =
+  | 'submitted'
+  | 'working'
+  | 'input-required'
+  | 'completed'
+  | 'failed'
+  | 'canceled'
+  | 'rejected'
+  | 'auth-required';
+
+export interface A2AMessagePart {
+  text?: string;
+  data?: unknown;
+  mediaType?: string;
+}
+
+export interface A2AMessage {
+  messageId: string;
+  role: 'user' | 'agent';
+  parts: A2AMessagePart[];
+  contextId?: string;
+  taskId?: string;
+}
+
+export interface A2AArtifact {
+  artifactId: string;
+  name: string;
+  description?: string;
+  parts: A2AMessagePart[];
+}
+
+export interface A2ATask {
+  id: string;
+  contextId: string;
+  status: {
+    state: A2ATaskState;
+    timestamp: string;
+    message?: A2AMessage;
+  };
+  history: A2AMessage[];
+  artifacts?: A2AArtifact[];
+  metadata?: Record<string, unknown>;
+}
+
+export interface SendMessageParams {
+  message: {
+    messageId?: string;
+    role: 'user' | 'agent';
+    parts: A2AMessagePart[];
+    contextId?: string;
+  };
+  metadata?: Record<string, unknown>;
+}
+
+export interface GetTaskParams {
+  id: string;
+}
+
+// ─── Error Types ─────────────────────────────────────────────────────────────
+
+export class A2AOutboundError extends Error {
+  constructor(
+    message: string,
+    public code?: number,
+    public data?: unknown
+  ) {
+    super(message);
+    this.name = 'A2AOutboundError';
+  }
+}
+
+export class A2ANetworkError extends A2AOutboundError {
+  constructor(
+    message: string,
+    public cause?: Error
+  ) {
+    super(message, -32003);
+    this.name = 'A2ANetworkError';
+  }
+}
+
+export class A2ATimeoutError extends A2AOutboundError {
+  constructor(
+    message: string,
+    public elapsedMs: number
+  ) {
+    super(m... [TRUNCATED]
+
+--- src\acp\agent-bus\a2a-session-bridge.ts --- (8971 bytes)
+// ─── A2A Session Bridge ──────────────────────────────────────────────────────
+// Bridges AAC's HandoffSession state machine to the A2A protocol task model.
+//
+// Enables external A2A clients to discover and monitor AAC handoff sessions
+// as A2A tasks. Maps:
+//   - HandoffSession.status → A2ATaskState
+//   - HandoffSession.traceEntries → A2AMessage history
+//   - HandoffSession.context → A2A artifacts
+//
+// Usage:
+//   const bridge = getA2ASessionBridge();
+//   const task = bridge.getA2ATask('handoff-abc123');
+//   const allTasks = bridge.listA2ATasks();
+
+import { createLogger } from '../../utils/logger';
+const logger = createLogger('a2a-session-bridge');
+
+import { handoffNegotiation } from './handoff-negotiation';
+import type { HandoffSession, HandoffStatus } from './types';
+import type {
+  A2ATask,
+  A2ATaskState,
+  A2AMessage,
+  A2AArtifact,
+} from './a2a-outbound-client';
+
+// ─── Status Mapping ──────────────────────────────────────────────────────────
+
+/**
+ * Map AAC HandoffStatus to A2A TaskState.
+ */
+export function mapHandoffStatusToA2AState(status: HandoffStatus): A2ATaskState {
+  switch (status) {
+    case 'pending':
+      return 'submitted';
+    case 'accepted':
+    case 'negotiating':
+      return 'working';
+    case 'in_progress':
+      return 'working';
+    case 'completed':
+      return 'completed';
+    case 'failed':
+      return 'failed';
+    case 'declined':
+      return 'rejected';
+    default:
+      return 'submitted';
+  }
+}
+
+// ─── Message Conversion ──────────────────────────────────────────────────────
+
+/**
+ * Convert a HandoffSession's trace entries into A2A message history.
+ */
+function traceEntriesToMessages(session: HandoffSession): A2AMessage[] {
+  const messages: A2AMessage[] = [];
+
+  // Initial request message
+  messages.push({
+    messageId: `req-${session.id}`,
+    role: 'user',
+    parts: [{ text: session.request.task }],
+    contextId: session.id,
+    taskId: session.id,
+  });
+
+  // Trace entries as agent messages (with index to prevent ID collisions)
+  session.traceEntries.forEach((entry, idx) => {
+    const role = entry.type === 'request_sent' ? 'user' : 'agent';
+    const detail = entry.detail || entry.type;
+    messages.push({
+      messageId: `trace-${session.id}-${idx}`,
+      role,
+      parts: [{ text: `[${entry.type}] ${detail}` }],
+      contextId: session.id,
+      taskId: session.id,
+    });
+  });
+
+  // Response message (if available)
+  if (session.response) {
+    const status = session.response.status;
+    const reason = session.response.reason || '';
+    messages.push({
+      messageId: `resp-${session.id}`,
+      role: 'agent',
+      parts: [
+        {
+          text:
+            status === 'accepted'
+              ? `Handoff accepted. Estimated completion: ${session.response.estimatedCompletion || 'unknown'}`
+              : `Handoff declined: ${reason || 'No reason given'}`,
+        },
+      ],
+      contextId: session.id,
+      taskId: session.id,
+    });
+  }
+
+  return messages;
+}
+
+/**
+ * Con... [TRUNCATED]

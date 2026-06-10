@@ -1,0 +1,1959 @@
+--- cucumber.js --- (1444 bytes)
+/**
+ * Cucumber.js configuration for BMAD Studio VS Code Extension
+ */
+module.exports = {
+  default: {
+    requireModule: ['ts-node/register'],
+    require: [
+      'features/support/**/*.ts',
+      'features/step_definitions/**/*.ts'
+    ],
+    paths: ['features/**/*.feature'],
+    tags: 'not @integration',
+    format: [
+      'progress-bar',
+      'html:reports/cucumber-report.html',
+      'json:reports/cucumber-report.json'
+    ],
+    formatOptions: {
+      snippetInterface: 'async-await'
+    },
+    publishQuiet: true
+  },
+  ci: {
+    requireModule: ['ts-node/register'],
+    require: [
+      'features/support/**/*.ts',
+      'features/step_definitions/**/*.ts'
+    ],
+    paths: ['features/**/*.feature'],
+    tags: 'not @integration',
+    format: [
+      'progress',
+      'json:reports/cucumber-report.json'
+    ],
+    formatOptions: {
+      snippetInterface: 'async-await'
+    },
+    publishQuiet: true
+  },
+  integration: {
+    requireModule: ['ts-node/register'],
+    require: [
+      'features/support/**/*.ts',
+      'features/step_definitions/**/*.ts'
+    ],
+    paths: ['features/**/*.feature'],
+    tags: '@integration',
+    format: [
+      'progress',
+      'html:reports/cucumber-integration-report.html',
+      'json:reports/cucumber-integration-report.json'
+    ],
+    formatOptions: {
+      snippetInterface: 'async-await'
+    },
+    publishQuiet: true
+  }
+};
+
+
+--- wrap-tools-all.js --- (11439 bytes)
+const fs = require('fs');
+const path = 'src/chat/agileagentcanvas-tools.ts';
+const EOL = '\r\n';
+
+let content = fs.readFileSync(path, 'utf8');
+
+// Helper: add a chunk after a target string
+function insertAfter(target, chunk) {
+  const idx = content.indexOf(target);
+  if (idx === -1) throw new Error(`Target not found: ${target.substring(0, 40)}`);
+  content = content.substring(0, idx + target.length) + chunk + content.substring(idx + target.length);
+}
+
+// Helper: replace all occurrences of a string
+function replaceAll(find, replace) {
+  while (content.includes(find)) {
+    content = content.replace(find, replace);
+  }
+}
+
+// === PHASE 1: Non-tool changes ===
+
+// 1. Add import
+insertAfter(
+  "import { trackToolCall, toolTelemetry } from './tool-telemetry';" + EOL,
+  "import { getTraceRecorder } from '../trace/trace-recorder';" + EOL
+);
+console.log('1. Added getTraceRecorder import');
+
+// 2. Add interface fields
+replaceAll(
+  "    /** The artifact store instance for agileagentcanvas_update_artifact */" + EOL +
+  "    store: ArtifactStore;" + EOL +
+  "}",
+  "    /** The artifact store instance for agileagentcanvas_update_artifact */" + EOL +
+  "    store: ArtifactStore;" + EOL +
+  "    /** Set by the chat participant before tool invocations to enable trace recording. */" + EOL +
+  "    currentSessionId?: string;" + EOL +
+  "    /** Set by the chat participant before tool invocations to identify the agent. */" + EOL +
+  "    currentAgentName?: string;" + EOL +
+  "}"
+);
+console.log('2. Added currentSessionId/currentAgentName to interface');
+
+// 3. Add helper function
+const helperFn = 
+  "// \u2500\u2500\u2500 Project-standard error-to-string \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500" + EOL +
+  "function errMsg(err: unknown): string {" + EOL +
+  "    return err instanceof Error ? err.message : String(err);" + EOL +
+  "}" + EOL +
+  "" + EOL +
+  "// \u2500\u2500\u2500 Dynamic tracing wrapper \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500" + EOL +
+  "/**" + EOL +
+  " * Wraps a tool with trace recording using the session/agent context from" + EOL +
+  " * `sharedToolContext` at invocation time.  This is needed because tools are" + EOL +
+  " * registered globally via `vscode.lm.registerTool()`, but sessionId and" + EOL +
+  " * agentName are dynamic (set per chat session)." + EOL +
+  " *" + EOL +
+  " * If `sharedToolContext.currentSessionId` or `currentAgentName` is not set," + EOL +
+  " * the tool runs without tracing (no-op guard)." + EOL +
+  " */" + EOL +
+  "function wrapToolWithDynamicTracing(" + EOL +
+  "    tool: vscode.LanguageModelTool<any>," + EOL +... [TRUNCATED]
+
+--- wrap-tools-final.js --- (10978 bytes)
+const fs = require('fs');
+const EOL = '\r\n';
+
+const path = 'src/chat/agileagentcanvas-tools.ts';
+let content = fs.readFileSync(path, 'utf8');
+
+// Helper: find all positions of a substring
+function findAll(str, pattern) {
+  const positions = [];
+  let idx = 0;
+  while ((idx = str.indexOf(pattern, idx)) !== -1) {
+    positions.push(idx);
+    idx++;
+  }
+  return positions;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PHASE 1: Non-tool changes
+// ─────────────────────────────────────────────────────────────────────────────
+
+// 1. Add import
+if (!content.includes('getTraceRecorder')) {
+  content = content.replace(
+    "import { trackToolCall, toolTelemetry } from './tool-telemetry';",
+    "import { trackToolCall, toolTelemetry } from './tool-telemetry';\r\nimport { getTraceRecorder } from '../trace/trace-recorder';"
+  );
+  console.log('1. Added getTraceRecorder import');
+}
+
+// 2. Add interface fields
+if (!content.includes('currentSessionId')) {
+  content = content.replace(
+    "    /** The artifact store instance for agileagentcanvas_update_artifact */\r\n    store: ArtifactStore;\r\n}",
+    "    /** The artifact store instance for agileagentcanvas_update_artifact */\r\n    store: ArtifactStore;\r\n    /** Set by the chat participant before tool invocations to enable trace recording. */\r\n    currentSessionId?: string;\r\n    /** Set by the chat participant before tool invocations to identify the agent. */\r\n    currentAgentName?: string;\r\n}"
+  );
+  console.log('2. Added currentSessionId/currentAgentName');
+}
+
+// 3. Add helper function
+if (!content.includes('wrapToolWithDynamicTracing')) {
+  const helperFn = [
+    "// ─── Project-standard error-to-string ────────────────────────────────────────",
+    "function errMsg(err: unknown): string {",
+    "    return err instanceof Error ? err.message : String(err);",
+    "}",
+    "",
+    "// ─── Dynamic tracing wrapper ──────────────────────────────────────────────────",
+    "/**",
+    " * Wraps a tool with trace recording using the session/agent context from",
+    " * `sharedToolContext` at invocation time.  This is needed because tools are",
+    " * registered globally via `vscode.lm.registerTool()`, but sessionId and",
+    " * agentName are dynamic (set per chat session).",
+    " *",
+    " * If `sharedToolContext.currentSessionId` or `currentAgentName` is not set,",
+    " * the tool runs without tracing (no-op guard).",
+    " */",
+    "function wrapToolWithDynamicTracing(",
+    "    tool: vscode.LanguageModelTool<any>,",
+    "    toolName: string",
+    "): vscode.LanguageModelTool<any> {",
+    "    return {",
+    "        ...tool,",
+    "        invoke: async (inputs: any, token: vscode.CancellationToken) => {",
+    "            const { currentSessionId, currentAgentName } = sharedToolContext;",
+    "            if (!currentSessionId || !currentAgentName) {",
+    "                return tool.invoke(inputs, token);",
+    "            }",
+    "            const ... [TRUNCATED]
+
+--- docs\_fix-launch.ps1 --- (1859 bytes)
+$file = 'docs/routa-integration-implementation-plan.md'
+$content = Get-Content $file -Raw
+
+# Fix #1: Replace the launchWorkflow body (line 1300-1310 area)
+# The issue was the regex was too complex. Use a simpler marker-based approach.
+$oldLaunchBody = "    const model = await getModel();"
+$newLaunchBody = "    // E1 STUB: logger.info(`[E1-STUB] Workflow ` + '`' + '${workflowId}`' + ` + '`' + ` would launch for artifact ` + '`' + '${artifact?.id || `' + "'" + 'unknown' + "'" + '}`' + ` + '`' + ` (deferred to Epic 2)` + '`' + `);"
+
+# Actually, let me use a different approach - find and replace specific lines
+$lines = $content -split "`r?`n"
+
+for ($i = 0; $i -lt $lines.Count; $i++) {
+    # Fix: replace the comment before getModel
+    if ($lines[$i] -match "// Uses the existing executeWithTools") {
+        $lines[$i] = '    // E1 STUB — workflow launch is deferred to Epic 2.'
+        $lines[$i+1] = '    // const model = await getModel();'
+        $lines[$i+2] = '    // if (!model) throw new Error(''No AI model available'');'
+        $lines[$i+3] = '    // await this.executor.executeLaneTransition(model, workflowId, artifact, this.store, stream, token);'
+        $lines[$i+4] = '    logger.info(`[E1-STUB] Workflow "${workflowId}" would launch for "${artifact?.id || ''unknown''}" (deferred to Epic 2)`);'
+    }
+    # Fix: update comment in the launchWorkflow doc
+    if ($lines[$i] -match "The model is obtained from the global AI") {
+        $lines[$i] = '    // E1 STUB — workflow launch is deferred to Epic 2. In Epic 2:'
+        $lines[$i+1] = '    // const executor = getWorkflowExecutor();'
+        $lines[$i+2] = '    // await executor.executeLaneTransition(workflowId, artifact, this.store, stream, token);'
+    }
+}
+
+$content = $lines -join "`r`n"
+Set-Content -Path $file -Value $content -NoNewline
+Write-Output "LAUNCH_FIX_APPLIED"
+
+
+--- eslint-rules\no-bare-assert.js --- (4170 bytes)
+/**
+ * @fileoverview Custom ESLint rule: no-bare-assert
+ *
+ * Enforces that `assert.strictEqual(actual, expected)` and `assert.ok(expr)`
+ * calls always include a descriptive message (third argument for strictEqual,
+ * second argument for ok).
+ *
+ * Exceptions (no message required):
+ *   - assert.ok(true)   — used as a no-op pass marker in test steps
+ *   - assert.ok(false)  — used as an intentional always-fail marker
+ *
+ * Good:   assert.strictEqual(x, y, `Expected "${y}", got "${x}"`);
+ * Bad:    assert.strictEqual(x, y);
+ *
+ * Good:   assert.ok(expr, 'Something should be truthy');
+ * Bad:    assert.ok(expr);
+ * Allowed: assert.ok(true);
+ * Allowed: assert.ok(false);
+ */
+
+'use strict';
+
+/** @type {import('eslint').Rule.RuleModule} */
+module.exports = {
+  meta: {
+    type: 'suggestion',
+    docs: {
+      description:
+        'Require assert.strictEqual and assert.ok calls to include a descriptive message argument',
+      recommended: false,
+    },
+    fixable: false,
+    schema: [],
+    messages: {
+      missingMessage:
+        "{{method}}() call without a descriptive message. Add a message argument showing actual value, e.g. `Expected \"${expected}\", got \"${actual}\"`",
+    },
+  },
+
+  create(context) {
+    /**
+     * Check whether the call is from the `assert` module.
+     * Handles: `assert.strictEqual(...)`, `assert.ok(...)`
+     */
+    function isAssertCall(node) {
+      const callee = node.callee;
+      if (!callee || callee.type !== 'MemberExpression') return false;
+      if (callee.object.type !== 'Identifier' || callee.object.name !== 'assert') return false;
+      return true;
+    }
+
+    /**
+     * Determine whether the call is one of the targeted assert methods.
+     */
+    function getAssertMethod(node) {
+      if (!isAssertCall(node)) return null;
+      const prop = node.callee.property;
+      if (!prop || prop.type !== 'Identifier') return null;
+      const method = prop.name;
+      if (method === 'strictEqual' || method === 'deepStrictEqual') return method;
+      if (method === 'ok') return method;
+      return null;
+    }
+
+    /**
+     * Check if an argument is a literal `true` or `false`.
+     * Used for the assert.ok(true) / assert.ok(false) exception.
+     */
+    function isLiteralBoolean(arg, value) {
+      return arg && arg.type === 'Literal' && arg.value === value;
+    }
+
+    return {
+      CallExpression(node) {
+        const method = getAssertMethod(node);
+        if (!method) return;
+
+        const args = node.arguments;
+
+        if (method === 'strictEqual' || method === 'deepStrictEqual') {
+          // Need at least 3 args: actual, expected, message
+          if (args.length < 3) {
+            context.report({
+              node,
+              messageId: 'missingMessage',
+              data: { method: `assert.${method}` },
+            });
+            return;
+          }
+          // If the third arg is an empty string, that's also useless
+          const msgArg = args[2];
+          if (msgArg && msgArg.type === 'Liter... [TRUNCATED]
+
+--- features\step_definitions\a2a-outbound-client.steps.ts --- (12747 bytes)
+/**
+ * A2A Outbound Client Step Definitions
+ *
+ * C4: covers all behavior of A2AOutboundClient — previously had zero
+ * direct test coverage. Uses a fetch-injection shim so no real network
+ * IO is performed; the test owns the mocked fetch response and the
+ * client under test is wired to call it.
+ */
+
+import { Given, When, Then, Before, After } from '@cucumber/cucumber';
+import * as assert from 'assert';
+import { BmadWorld } from '../support/world';
+
+const proxyquire = require('proxyquire').noCallThru();
+
+interface MockResponse {
+  status: number;
+  statusText?: string;
+  body: string;
+  contentLength?: number;
+}
+
+interface A2ATestContext {
+  client: any;
+  /** Cached responses keyed by call index. Each fetch() pops the next one. */
+  responses: MockResponse[];
+  /** If set, fetch() throws this error instead of returning a response. */
+  rejectWith: string | null;
+  /** Result of the most recent operation. */
+  lastResult: any;
+  /** Error of the most recent operation (or null). */
+  lastError: Error | null;
+  /** Captures all URLs the mocked fetch was called with (for assertions). */
+  callUrls: string[];
+}
+
+const contexts = new WeakMap<BmadWorld, A2ATestContext>();
+
+function getCtx(world: BmadWorld): A2ATestContext {
+  let ctx = contexts.get(world);
+  if (!ctx) {
+    ctx = {
+      client: null,
+      responses: [],
+      rejectWith: null,
+      lastResult: null,
+      lastError: null,
+      callUrls: [],
+    };
+    contexts.set(world, ctx);
+  }
+  return ctx;
+}
+
+function buildFetchStub(ctx: A2ATestContext): (url: string, init?: any) => Promise<any> {
+  return async (url: string, _init?: any) => {
+    ctx.callUrls.push(url);
+    if (ctx.rejectWith) {
+      throw new Error(ctx.rejectWith);
+    }
+    const next = ctx.responses.shift();
+    if (!next) {
+      throw new Error('A2A test exhausted mocked responses; no response queued for this call');
+    }
+    const headers = new Map<string, string>();
+    if (next.contentLength !== undefined) {
+      headers.set('content-length', String(next.contentLength));
+    }
+    return {
+      ok: next.status >= 200 && next.status < 300,
+      status: next.status,
+      statusText: next.statusText ?? '',
+      headers: { get: (k: string) => headers.get(k.toLowerCase()) ?? null },
+      json: async () => JSON.parse(next.body),
+      text: async () => next.body,
+    };
+  };
+}
+
+function buildClient(world: BmadWorld, allowedHosts: string[]): any {
+  const ctx = getCtx(world);
+  const module = proxyquire('../../src/acp/agent-bus/a2a-outbound-client', {
+    '../../utils/logger': {
+      createLogger: () => ({
+        info: () => {},
+        error: () => {},
+        debug: () => {},
+        warn: () => {},
+      }),
+    },
+  });
+  return new module.A2AOutboundClient({
+    allowedHosts,
+    // Disable retries to keep tests deterministic.
+    maxRetries: 1,
+    retryDelay: 0,
+    pollInterval: 100,
+    maxWaitTime: 1000,
+  });
+}
+
+// ─── GIVEN ──────────────────────────────────────────────────────────────────
+
+Before(fun... [TRUNCATED]
+
+--- features\step_definitions\acp-protocol.steps.ts --- (24099 bytes)
+/**
+ * ACP Protocol Step Definitions
+ * Cucumber step definitions for testing AcpSessionManager and ACP protocol lifecycle
+ */
+
+import { Given, When, Then } from '@cucumber/cucumber';
+import * as assert from 'assert';
+import { BmadWorld } from '../support/world';
+
+const proxyquire = require('proxyquire').noCallThru();
+
+interface AcpTestContext {
+  sessionManager: any;
+  spawnedSessions: any[];
+  subscribedEvents: any[];
+  lastSession: any;
+  lastResult: any;
+  lastError: Error | null;
+  disposables: { dispose: () => void }[];
+  sessionIds: string[];
+  singletonRef1: any;
+  singletonRef2: any;
+  mockModule: any;
+}
+
+const contexts = new WeakMap<BmadWorld, AcpTestContext>();
+
+function getCtx(world: BmadWorld): AcpTestContext {
+  let ctx = contexts.get(world);
+  if (!ctx) {
+    ctx = {
+      sessionManager: null,
+      spawnedSessions: [],
+      subscribedEvents: [],
+      lastSession: null,
+      lastResult: null,
+      lastError: null,
+      disposables: [],
+      sessionIds: [],
+      singletonRef1: null,
+      singletonRef2: null,
+      mockModule: null,
+    };
+    contexts.set(world, ctx);
+  }
+  return ctx;
+}
+
+function createSessionManager(world: BmadWorld): any {
+  const module = proxyquire('../../src/acp/session-manager', {
+    vscode: world.vscode,
+    '../utils/logger': {
+      createLogger: () => ({
+        info: () => {},
+        error: () => {},
+        debug: () => {},
+        warn: () => {},
+      }),
+    },
+    // Mock agent-personas so spawn() can load persona (without vscode)
+    '../chat/agent-personas': {
+      getPersonaForArtifactType: (_bmadPath: string, personaId: string) => ({
+        id: personaId,
+        name: personaId,
+        role: personaId,
+        systemPrompt: `You are ${personaId}`,
+        toolsAvailable: true,
+      }),
+      formatFullAgentForPrompt: (persona: any) => persona ? `# Persona: ${persona.name}\n${persona.systemPrompt}` : '',
+    },
+    '../workflow/workflow-executor':
+      class {
+        executeWithTools = async () => ({ toolCalls: 3, output: { status: 'done' } });
+        getCurrentSession = () => null;
+        getSession = () => null;
+      },
+  });
+
+  const mockExecutor = {
+    executeWithTools: async () => ({ toolCalls: 3, output: { status: 'done' } }),
+    getCurrentSession: () => null,
+    getSession: () => null,
+  };
+
+  return new module.AcpSessionManager(mockExecutor);
+}
+
+// ─── GIVEN ──────────────────────────────────────────────────────────────────
+
+Given('a fresh ACP session manager', function (this: BmadWorld) {
+  const ctx = getCtx(this);
+  ctx.sessionManager = createSessionManager(this);
+  ctx.spawnedSessions = [];
+  ctx.subscribedEvents = [];
+  ctx.lastSession = null;
+  ctx.lastResult = null;
+  ctx.lastError = null;
+  ctx.sessionIds = [];
+});
+
+Given('I spawn an ACP session with spec:', async function (this: BmadWorld, dataTable: any) {
+  const ctx = getCtx(this);
+  // Use rowsHash() for vertical key|value tables (not hashes() which treats first row as header)
+  const row = dataTable.r... [TRUNCATED]
+
+--- features\step_definitions\agent-message-bus.steps.ts --- (10013 bytes)
+/**
+ * Agent Message Bus Step Definitions
+ *
+ * C5: covers all behavior of AgentMessageBus. Previously had no
+ * dedicated feature file — now exercises wildcards, TTL, priority,
+ * dead-letter, system events, history, and the new failure counter.
+ */
+
+import { Given, When, Then, Before } from '@cucumber/cucumber';
+import * as assert from 'assert';
+import { BmadWorld } from '../support/world';
+
+const proxyquire = require('proxyquire').noCallThru();
+
+interface AgentEntry {
+  agentId: string;
+  received: any[];
+  /** id → first subscription id for this agent (for unsubscribe) */
+  subscriptionIds: string[];
+}
+
+interface BusTestContext {
+  bus: any;
+  agents: Map<string, AgentEntry>;
+  /** Counters for the "fail N times then succeed" handler. */
+  failCounter: Map<string, number>;
+  lastEnvelopes: any[];
+}
+
+const contexts = new WeakMap<BmadWorld, BusTestContext>();
+
+function getCtx(world: BmadWorld): BusTestContext {
+  let ctx = contexts.get(world);
+  if (!ctx) {
+    ctx = {
+      bus: null,
+      agents: new Map(),
+      failCounter: new Map(),
+      lastEnvelopes: [],
+    };
+    contexts.set(world, ctx);
+  }
+  return ctx;
+}
+
+function makeBus(): any {
+  const module = proxyquire('../../src/acp/agent-bus/message-bus', {
+    '../../utils/logger': {
+      createLogger: () => ({
+        info: () => {}, error: () => {}, debug: () => {}, warn: () => {},
+      }),
+    },
+    '../../trace/trace-recorder': {
+      getTraceRecorder: () => ({ record: () => {} }),
+    },
+  });
+  return new module.AgentMessageBus();
+}
+
+function ensureAgent(ctx: BusTestContext, agentId: string): AgentEntry {
+  let entry = ctx.agents.get(agentId);
+  if (!entry) {
+    entry = { agentId, received: [], subscriptionIds: [] };
+    ctx.agents.set(agentId, entry);
+  }
+  return entry;
+}
+
+// ─── GIVEN ──────────────────────────────────────────────────────────────────
+
+Before(function (this: BmadWorld) {
+  const ctx = getCtx(this);
+  ctx.bus = makeBus();
+  ctx.agents.clear();
+  ctx.failCounter.clear();
+  ctx.lastEnvelopes = [];
+});
+
+Given('a fresh agent message bus', function (this: BmadWorld) {
+  // Before hook already set it up.
+});
+
+Given('agent {string} subscribes to {string}', function (this: BmadWorld, agentId: string, topicPattern: string) {
+  const ctx = getCtx(this);
+  const entry = ensureAgent(ctx, agentId);
+  const subId = ctx.bus.subscribe(agentId, topicPattern, async (msg: any) => {
+    entry.received.push(msg);
+  });
+  entry.subscriptionIds.push(subId);
+});
+
+Given('agent {string} subscribes to {string} with a handler that always throws', function (this: BmadWorld, agentId: string, topicPattern: string) {
+  const ctx = getCtx(this);
+  const entry = ensureAgent(ctx, agentId);
+  const subId = ctx.bus.subscribe(agentId, topicPattern, async (_msg: any) => {
+    throw new Error('always-fail');
+  });
+  entry.subscriptionIds.push(subId);
+});
+
+Given('agent {string} subscribes to {string} with a handler that fails then succeeds', function (this: BmadWorld, agentId: string, topicPattern:... [TRUNCATED]
+
+--- features\step_definitions\agent-team.steps.ts --- (27167 bytes)
+/**
+ * Agent Team Step Definitions
+ * Cucumber step definitions for testing AgentTeamOrchestrator and team registry
+ */
+
+import { Given, When, Then } from '@cucumber/cucumber';
+import * as assert from 'assert';
+import { BmadWorld } from '../support/world';
+
+const proxyquire = require('proxyquire').noCallThru();
+
+interface TeamTestContext {
+  orchestrator: any;
+  teamRegistry: Record<string, any>;
+  lastTeamMembers: any[];
+  lastResults: any[];
+  lastRoleTask: string;
+  lastError: Error | null;
+  streamMessages: string[];
+  spawnedSessionIds: string[];
+}
+
+const contexts = new WeakMap<BmadWorld, TeamTestContext>();
+
+function getCtx(world: BmadWorld): TeamTestContext {
+  let ctx = contexts.get(world);
+  if (!ctx) {
+    ctx = {
+      orchestrator: null,
+      teamRegistry: {},
+      lastTeamMembers: [],
+      lastResults: [],
+      lastRoleTask: '',
+      lastError: null,
+      streamMessages: [],
+      spawnedSessionIds: [],
+    };
+    contexts.set(world, ctx);
+  }
+  return ctx;
+}
+
+const TEAM_REGISTRY_MOCK = {
+  'dev-story': {
+    id: 'dev-story',
+    members: [
+      { role: 'coordinator', personaId: 'aac-agent-pm', order: 1 },
+      { role: 'crafter', personaId: 'aac-agent-dev', order: 2 },
+      { role: 'gate', personaId: 'aac-agent-tea', order: 3 },
+    ],
+    workflow: 'bmm/workflows/4-implementation/dev-story/workflow.yaml',
+  },
+  'create-prd': {
+    id: 'create-prd',
+    members: [
+      { role: 'researcher', personaId: 'aac-agent-analyst', order: 1 },
+      { role: 'coordinator', personaId: 'aac-agent-pm', order: 2 },
+      { role: 'gate', personaId: 'aac-agent-architect', order: 3 },
+    ],
+    workflow: 'bmm/workflows/2-plan-workflows/create-prd/workflow-create-prd.md',
+  },
+};
+
+function createOrchestrator(world: BmadWorld): any {
+  // Shared session store so spawn and execute can coordinate roles
+  const spawnedSessions = new Map<string, any>();
+
+  const module = proxyquire('../../src/acp/team-orchestrator', {
+    vscode: world.vscode,
+    '../utils/logger': {
+      createLogger: () => ({
+        info: () => {},
+        error: () => {},
+        debug: () => {},
+        warn: () => {},
+      }),
+    },
+    './session-manager': {
+      acpSessionManager: {
+        spawn: async (spec: any, bmadPath: string) => {
+          const id = `acp-test-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+          const session = {
+            id,
+            spec,
+            status: 'pending',
+            persona: { name: spec.personaId },
+            createdAt: new Date(),
+            events: [],
+            addEvent: (e: any) => {},
+            setStatus: (s: string) => {},
+            dispose: () => {},
+          };
+          spawnedSessions.set(id, session);
+          return session;
+        },
+        execute: async (sessionId: string, model: any, store: any, stream: any, token: any) => {
+          // Look up the session to determine the correct role
+          const session = spawnedSessions.get(sessionId);
+          const role = session?... [TRUNCATED]
+
+--- features\step_definitions\agentic-kanban.steps.ts --- (34350 bytes)
+/**
+ * Agentic Kanban Step Definitions
+ * Cucumber step definitions for testing agentic-kanban-message-handler.ts
+ * and AgenticKanbanApp webview behavior
+ */
+
+import { Given, When, Then } from '@cucumber/cucumber';
+import * as assert from 'assert';
+import { BmadWorld } from '../support/world';
+
+const proxyquire = require('proxyquire').noCallThru();
+
+// ============================================================================
+// SECTION 1: Message Handler Test Context
+// ============================================================================
+
+interface KanbanHandlerContext {
+  store: any;
+  handlerResult: boolean | null;
+  lastMessage: any;
+  webviewMessages: any[];
+  infoMessages: string[];
+  storeUpdates: Map<string, Map<string, any>>;
+}
+
+interface KanbanWebviewContext {
+  artifacts: any[];
+  columns: Record<string, string[]>;
+  cards: Map<string, any>;
+  detailPanelOpen: boolean;
+  detailPanelArtifactId: string | null;
+  lastPostMessage: any;
+  postMessageHistory: any[];
+  toastMessage: string | null;
+  pendingTransitions: Map<string, any>;
+}
+
+const handlerContexts = new WeakMap<BmadWorld, KanbanHandlerContext>();
+const webviewContexts = new WeakMap<BmadWorld, KanbanWebviewContext>();
+
+function getHandlerCtx(world: BmadWorld): KanbanHandlerContext {
+  let ctx = handlerContexts.get(world);
+  if (!ctx) {
+    ctx = {
+      store: null,
+      handlerResult: null,
+      lastMessage: null,
+      webviewMessages: [],
+      infoMessages: [],
+      storeUpdates: new Map(),
+    };
+    handlerContexts.set(world, ctx);
+  }
+  return ctx;
+}
+
+function getWebviewCtx(world: BmadWorld): KanbanWebviewContext {
+  let ctx = webviewContexts.get(world);
+  if (!ctx) {
+    ctx = {
+      artifacts: [],
+      columns: {
+        'Backlog': [],
+        'Ready for Dev': [],
+        'In Progress': [],
+        'Review': [],
+        'Done': [],
+      },
+      cards: new Map(),
+      detailPanelOpen: false,
+      detailPanelArtifactId: null,
+      lastPostMessage: null,
+      postMessageHistory: [],
+      toastMessage: null,
+      pendingTransitions: new Map(),
+    };
+    webviewContexts.set(world, ctx);
+  }
+  return ctx;
+}
+
+// ============================================================================
+// SECTION 1: Message Handler Step Definitions
+// ============================================================================
+
+function handlerStubOverrides(ctx: KanbanHandlerContext, world: BmadWorld) {
+  return {
+    '../utils/logger': { createLogger: () => ({ info: () => {}, error: () => {}, debug: () => {}, warn: () => {} }) },
+    '../state/artifact-store': { ArtifactStore: class {} },
+    '../canvas/artifact-transformer': {
+      buildArtifacts: (store: any) => {
+        const storyMap = store.artifacts?.get('story');
+        return storyMap ? Array.from(storyMap.values()) : [];
+      },
+      sendArtifactsToPanel: () => {},
+    },
+    '../workflow/lane-transitions': {
+      laneTransitionEngine: {
+        handleTransition: async (artifactId: string, fromStatus: ... [TRUNCATED]
+
+--- features\step_definitions\artifact-commands.steps.ts --- (12296 bytes)
+/**
+ * Artifact Commands Step Definitions
+ * Tests for loadBmmWorkflows and launchBmmWorkflow
+ */
+
+import { Given, When, Then } from '@cucumber/cucumber';
+import * as assert from 'assert';
+import { BmadWorld } from '../support/world';
+
+const proxyquire = require('proxyquire').noCallThru();
+
+// Module-level state
+let artifactCommandsModule: any = null;
+
+// In-memory virtual filesystem
+// Maps absolute path strings to either:
+//   - string: file content
+//   - 'DIR': indicates a directory
+const vfsFiles: Map<string, string> = new Map();
+const vfsDirs: Set<string> = new Set();
+
+let loadResult: any[] = [];
+let openChatCalls: string[] = [];
+let lastError: Error | null = null;
+
+const WORKSPACE_ROOT = '/test/extension/resources';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Virtual filesystem helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+function vfsReset() {
+  vfsFiles.clear();
+  vfsDirs.clear();
+  // Always register the base resources directory
+  vfsDirs.add(WORKSPACE_ROOT);
+}
+
+/**
+ * Register a file and all its parent directories in the VFS.
+ */
+function vfsAddFile(filePath: string, content: string) {
+  vfsFiles.set(filePath, content);
+  // Ensure all parent dirs exist
+  let dir = filePath.replace(/[/\\][^/\\]+$/, '');
+  while (dir && dir !== '.' && !vfsDirs.has(dir)) {
+    vfsDirs.add(dir);
+    dir = dir.replace(/[/\\][^/\\]+$/, '');
+  }
+}
+
+/**
+ * Build a Dirent-like object for readdirSync.
+ */
+function makeDirent(name: string, isDir: boolean): any {
+  return {
+    name,
+    isDirectory: () => isDir,
+    isFile: () => !isDir,
+    isSymbolicLink: () => false,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Mock fs module
+// ─────────────────────────────────────────────────────────────────────────────
+
+const mockFs = {
+  existsSync: (p: string) => vfsFiles.has(p) || vfsDirs.has(p),
+  readFileSync: (p: string, _enc: string) => {
+    if (vfsFiles.has(p)) return vfsFiles.get(p)!;
+    throw new Error(`ENOENT: no such file: ${p}`);
+  },
+  readdirSync: (p: string, opts?: any): any[] => {
+    if (!vfsDirs.has(p)) throw new Error(`ENOENT: no such dir: ${p}`);
+
+    const useWithFileTypes = opts && opts.withFileTypes;
+    // Collect immediate children of p
+    const sep = '/';
+    const prefix = p.endsWith(sep) ? p : p + sep;
+    const children = new Set<string>();
+
+    for (const filePath of vfsFiles.keys()) {
+      if (filePath.startsWith(prefix)) {
+        const rest = filePath.slice(prefix.length);
+        const child = rest.split('/')[0];
+        if (child) children.add(child);
+      }
+    }
+    for (const dirPath of vfsDirs) {
+      if (dirPath.startsWith(prefix)) {
+        const rest = dirPath.slice(prefix.length);
+        const child = rest.split('/')[0];
+        if (child) children.add(child);
+      }
+    }
+
+    if (useWithFileTypes) {
+      return Array.from(children).map(child => {
+        const childPath = prefix + child;
+ ... [TRUNCATED]
+
+--- features\step_definitions\artifact-store.steps.ts --- (44360 bytes)
+/**
+ * Artifact Store Step Definitions
+ * Cucumber step definitions for testing ArtifactStore functionality
+ */
+
+import { Given, When, Then } from "@cucumber/cucumber";
+import * as assert from "assert";
+import { BmadWorld } from "../support/world";
+
+// We need to use proxyquire to load the module with mocks
+const proxyquire = require("proxyquire").noCallThru();
+
+// Helper to get or create ArtifactStore
+function getArtifactStore(world: BmadWorld): any {
+  if (!world.artifactStore) {
+    // Mock the extension module
+    const mockExtension = {
+      acOutput: {
+        appendLine: () => {},
+        append: () => {},
+        clear: () => {},
+        show: () => {},
+      },
+    };
+
+    // Load artifact-store with mocked dependencies
+    const artifactStoreModule = proxyquire("../../src/state/artifact-store", {
+      vscode: world.vscode,
+      "../extension": mockExtension,
+      "../commands/chat-bridge": {
+        openChat: async () => true,
+        setChatBridgeLogger: () => {},
+      },
+      "./artifact-file-io": {
+        resolveArtifactTargetUri: async (opts: any) =>
+          world.vscode.Uri.file(`/test/${opts.fileName}`),
+        writeJsonFile: async () => {},
+        writeMarkdownCompanion: async (jsonUri: any, mdFilename: string) =>
+          world.vscode.Uri.file(`/test/${mdFilename}`),
+      },
+      "../harness/policy-engine": {
+        harnessEngine: { evaluate: async () => [] },
+      },
+    });
+
+    world.artifactStore = new artifactStoreModule.ArtifactStore(
+      world.context as any,
+    );
+  }
+  return world.artifactStore;
+}
+
+// ============================================================================
+// GIVEN Steps
+// ============================================================================
+
+Given("a fresh artifact store", function (this: BmadWorld) {
+  // Force re-creation of artifact store
+  this.artifactStore = null as any;
+  getArtifactStore(this);
+});
+
+Given(
+  "I initialize a project named {string}",
+  function (this: BmadWorld, projectName: string) {
+    const store = getArtifactStore(this);
+    store.initializeProject(projectName);
+  },
+);
+
+Given("I create a vision artifact", function (this: BmadWorld) {
+  const store = getArtifactStore(this);
+  store.createOrUpdateVision();
+});
+
+Given(
+  "I add an epic with title {string}",
+  function (this: BmadWorld, title: string) {
+    const store = getArtifactStore(this);
+    const epics = store.getEpics();
+    const nextId = epics.length + 1;
+
+    store.addEpic({
+      id: `EPIC-${nextId}`,
+      title: title,
+      goal: "",
+      functionalRequirements: [],
+      status: "draft",
+      stories: [],
+    });
+
+    // Track the created artifact
+    this.createdArtifacts.set(title, `EPIC-${nextId}`);
+  },
+);
+
+Given(
+  "I create a story in epic {string}",
+  function (this: BmadWorld, epicTitleOrId: string) {
+    const store = getArtifactStore(this);
+    const epics = store.getEpics();
+    const epic = epics.find(
+      (e: any) => e.id === epicTitleOrId || e.title === epicTitl... [TRUNCATED]
+
+--- features\step_definitions\artifact-transformer.steps.ts --- (35293 bytes)
+/**
+ * Artifact Transformer Step Definitions
+ * Cucumber step definitions for testing buildArtifacts() layout logic
+ */
+
+import { Given, When, Then } from '@cucumber/cucumber';
+import * as assert from 'assert';
+import { BmadWorld } from '../support/world';
+
+// We use proxyquire to load the module with mocked vscode dependency
+const proxyquire = require('proxyquire').noCallThru();
+
+// Load the module with vscode mocked out (buildArtifacts only uses store.getState())
+const transformerModule = proxyquire('../../src/canvas/artifact-transformer', {
+    vscode: {
+        workspace: {
+            getConfiguration: () => ({
+                get: () => false
+            }),
+            workspaceFolders: undefined
+        },
+        '@noCallThru': true,
+        '@global': false
+    }
+});
+const { buildArtifacts } = transformerModule;
+
+// Per-world test context
+interface TransformerTestContext {
+    storeState: Record<string, any>;
+    artifacts: any[];
+}
+
+const contexts = new WeakMap<BmadWorld, TransformerTestContext>();
+
+function getCtx(world: BmadWorld): TransformerTestContext {
+    let ctx = contexts.get(world);
+    if (!ctx) {
+        ctx = {
+            storeState: {},
+            artifacts: []
+        };
+        contexts.set(world, ctx);
+    }
+    return ctx;
+}
+
+/** Create a mock store from current state */
+function mockStore(ctx: TransformerTestContext): any {
+    return { getState: () => ctx.storeState } as any;
+}
+
+/** Find artifact by ID */
+function findArtifact(ctx: TransformerTestContext, id: string): any {
+    const artifact = ctx.artifacts.find(a => a.id === id);
+    assert.ok(artifact, `No artifact found with id "${id}". Available: ${ctx.artifacts.map(a => a.id).join(', ')}`);
+    return artifact;
+}
+
+/** Find first artifact of given type */
+function findFirstOfType(ctx: TransformerTestContext, type: string): any {
+    const artifact = ctx.artifacts.find(a => a.type === type);
+    assert.ok(artifact, `No artifact found with type "${type}". Available types: ${[...new Set(ctx.artifacts.map(a => a.type))].join(', ')}`);
+    return artifact;
+}
+
+/** Find second artifact of given type */
+function findSecondOfType(ctx: TransformerTestContext, type: string): any {
+    const all = ctx.artifacts.filter(a => a.type === type);
+    assert.ok(all.length >= 2, `Expected at least 2 artifacts of type "${type}", found ${all.length}`);
+    return all[1];
+}
+
+// ============================================================================
+// GIVEN Steps
+// ============================================================================
+
+Given('a fresh artifact transformer', function (this: BmadWorld) {
+    const ctx = getCtx(this);
+    ctx.storeState = {};
+    ctx.artifacts = [];
+});
+
+Given('the store state has null productBrief and null vision', function (this: BmadWorld) {
+    const ctx = getCtx(this);
+    ctx.storeState.productBrief = null;
+    ctx.storeState.vision = null;
+});
+
+Given('the store has a product brief with name {string} and tagline {string}', function (
+... [TRUNCATED]
+
+--- features\step_definitions\artifacts-tree-provider.steps.ts --- (12695 bytes)
+/**
+ * Artifacts Tree Provider Step Definitions
+ * Cucumber step definitions for testing ArtifactsTreeProvider functionality
+ */
+
+import { Given, When, Then } from '@cucumber/cucumber';
+import * as assert from 'assert';
+import { BmadWorld } from '../support/world';
+
+const proxyquire = require('proxyquire').noCallThru();
+
+// Module-level state for test results
+let rootItems: any[] = [];
+let expandedItems: any[] = [];
+let lastItem: any = null;
+let treeDataEventFired = false;
+
+function getTreeProvider(world: BmadWorld): { store: any; provider: any } {
+  if (!(world as any)._treeStore) {
+    const mockExtension = {
+      acOutput: {
+        appendLine: () => {},
+        append: () => {},
+        clear: () => {},
+        show: () => {},
+      }
+    };
+
+    const artifactStoreModule = proxyquire('../../src/state/artifact-store', {
+      'vscode': world.vscode,
+      '../extension': mockExtension,
+      '../commands/chat-bridge': { openChat: async () => true, setChatBridgeLogger: () => {} },
+      './artifact-file-io': {
+        resolveArtifactTargetUri: async (opts: any) => world.vscode.Uri.file(`/test/${opts.fileName}`),
+        writeJsonFile: async () => {},
+        writeMarkdownCompanion: async (jsonUri: any, mdFilename: string) => world.vscode.Uri.file(`/test/${mdFilename}`)
+      },
+      '../harness/policy-engine': {
+        harnessEngine: { evaluate: async () => [] },
+      },
+    });
+
+    const treeProviderModule = proxyquire('../../src/views/artifacts-tree-provider', {
+      'vscode': world.vscode,
+      '../state/artifact-store': artifactStoreModule,
+      '../extension': mockExtension
+    });
+
+    const store = new artifactStoreModule.ArtifactStore();
+    const provider = new treeProviderModule.ArtifactsTreeProvider(store);
+
+    (world as any)._treeStore = store;
+    (world as any)._treeProvider = provider;
+  }
+  return { store: (world as any)._treeStore, provider: (world as any)._treeProvider };
+}
+
+// ============================================================================
+// GIVEN Steps
+// ============================================================================
+
+Given('a fresh artifacts tree provider', function(this: BmadWorld) {
+  // Reset module-level state
+  rootItems = [];
+  expandedItems = [];
+  lastItem = null;
+  treeDataEventFired = false;
+
+  // Force re-creation
+  (this as any)._treeStore = null;
+  (this as any)._treeProvider = null;
+  getTreeProvider(this);
+});
+
+Given('the store has project {string}', function(this: BmadWorld, projectName: string) {
+  const { store } = getTreeProvider(this);
+  store.initializeProject(projectName);
+});
+
+Given('the store has {int} requirements', function(this: BmadWorld, count: number) {
+  const { store } = getTreeProvider(this);
+  for (let i = 1; i <= count; i++) {
+    store.addRequirement({ id: `FR-${i}`, title: `Req ${i}`, description: '' });
+  }
+});
+
+Given('the store has {int} requirement with id {string}', function(this: BmadWorld, _count: number, id: string) {
+  const { store } = getTr... [TRUNCATED]
+
+--- features\step_definitions\canvas-view-provider.steps.ts --- (30720 bytes)
+/**
+ * AgileAgentCanvasViewProvider Step Definitions
+ */
+
+import { Given, When, Then } from '@cucumber/cucumber';
+import * as assert from 'assert';
+import { BmadWorld } from '../support/world';
+
+const proxyquire = require('proxyquire').noCallThru();
+
+// Module-level state
+let canvasStore: any = null;
+let canvasProvider: any = null;
+let canvasModule: any = null;
+let artifactStoreModule: any = null;
+let mockWebviewView: any = null;
+let postMessageCalls: any[] = [];
+let onDidReceiveMessageHandler: ((msg: any) => void) | null = null;
+let executeCommandCalls: string[] = [];
+let elicitArtifactWithMethodCalls: number = 0;
+let launchBmmWorkflowCalls: number = 0;
+let updateArtifactCalls: number = 0;
+let buildExists = false;
+let lastError: Error | null = null;
+let extensionUriMock: any = null;
+
+function buildModules(world: BmadWorld) {
+  if (canvasModule) return;
+
+  const vsc = { ...world.vscode };
+
+  // Mock acOutput for extension circular dep
+  const mockAcOutput = { appendLine: () => {}, append: () => {}, clear: () => {}, show: () => {} };
+
+  // Mock fs module
+  const mockFs = {
+    existsSync: () => buildExists
+  };
+
+  // Instrument executeCommand
+  vsc.commands = {
+    ...world.vscode.commands,
+    executeCommand: (cmd: string, ...args: any[]) => {
+      executeCommandCalls.push(cmd);
+      return Promise.resolve();
+    }
+  };
+
+  // Load artifact-store
+  artifactStoreModule = proxyquire('../../src/state/artifact-store', {
+    'vscode': vsc,
+    '../extension': { acOutput: mockAcOutput },
+    '../commands/chat-bridge': { openChat: async () => true, setChatBridgeLogger: () => {} },
+    './artifact-file-io': {
+      resolveArtifactTargetUri: async (opts: any) => vsc.Uri.file(`/test/${opts.fileName}`),
+      writeJsonFile: async () => {},
+      writeMarkdownCompanion: async (jsonUri: any, mdFilename: string) => vsc.Uri.file(`/test/${mdFilename}`)
+    },
+    '../harness/policy-engine': {
+      harnessEngine: { evaluate: async () => [] },
+    },
+  });
+
+  // Mock artifact-commands used by both canvas-view-provider and webview-message-handler
+  const mockArtifactCommands = {
+    refineArtifactWithAI: async (_artifact: any, _store: any) => {
+      executeCommandCalls.push('workbench.action.chat.open');
+    },
+    breakDownArtifact: async () => {},
+    enhanceArtifactWithAI: async () => {},
+    elicitArtifactWithMethod: async (_artifact: any, _store: any, _uri: any) => {
+      elicitArtifactWithMethodCalls++;
+    },
+    startDevelopment: async () => {},
+    loadElicitationMethods: (_extensionUri: any) => [],
+    loadBmmWorkflows: (_workspaceRoot: string) => [],
+    launchBmmWorkflow: async (_trigger: string) => {
+      launchBmmWorkflowCalls++;
+    }
+  };
+
+  // Load webview-message-handler (transitive dep of canvas-view-provider)
+  const messageHandlerModule = proxyquire('../../src/views/webview-message-handler', {
+    'vscode': vsc,
+    '../state/artifact-store': artifactStoreModule,
+    '../extension': { acOutput: mockAcOutput },
+    '../commands/artifact-com... [TRUNCATED]
+
+--- features\step_definitions\chat-bridge.steps.ts --- (9985 bytes)
+/**
+ * Chat-bridge availability detection step definitions
+ *
+ * Loads `src/commands/chat-bridge.ts` via proxyquire with a fully mocked
+ * `child_process` and `vscode`, then exercises `listAvailableProviders()` to
+ * confirm that:
+ *   - always-available providers ('auto', 'copilot', 'terminal') never probe
+ *   - panel providers fall through to CLI detection when the panel is missing
+ *   - CLI-only providers (codex, gemini-cli, aider) are available iff on PATH
+ *   - the 30s in-memory cache deduplicates repeated calls
+ *
+ * No real filesystem or subprocess calls are made.
+ */
+
+import { Given, When, Then, Before } from '@cucumber/cucumber';
+import * as assert from 'assert';
+
+const proxyquire = require('proxyquire').noCallThru();
+
+interface ChatBridgeCtx {
+    // Mocked environment
+    panelCommands: Set<string>;
+    panelProbes: Map<string, () => boolean | Promise<boolean>>; // command → override behaviour
+    installedBinaries: Set<string>;
+    pathProbes: string[];     // log of every `where`/`which` invocation
+    panelCalls: string[];     // log of every panel command probe
+
+    // Output
+    providers: any[] | null;
+    lastResolveResult: boolean | null;
+}
+
+const ctxMap = new WeakMap<object, ChatBridgeCtx>();
+
+function getCtx(world: object): ChatBridgeCtx {
+    let ctx = ctxMap.get(world);
+    if (!ctx) {
+        ctx = {
+            panelCommands: new Set<string>(),
+            panelProbes: new Map<string, () => boolean | Promise<boolean>>(),
+            installedBinaries: new Set<string>(),
+            pathProbes: [],
+            panelCalls: [],
+            providers: null,
+            lastResolveResult: null,
+        };
+        ctxMap.set(world, ctx);
+    }
+    return ctx;
+}
+
+let _module: any = null;
+
+function loadModule(ctx: ChatBridgeCtx): any {
+    // Mock child_process: spawnSync drives both the "is this on PATH?" probe
+    // (where/which) and the fallback "run --version" probe.
+    const cpMock: any = {
+        spawnSync: (cmd: string, args: string[]) => {
+            const target = args[0] ?? cmd;
+            if (cmd === 'where' || cmd === 'which') {
+                ctx.pathProbes.push(target);
+                if (ctx.installedBinaries.has(target)) {
+                    // Linux `which` returns a single path; Windows `where` may return
+                    // multiple lines.  Return one or two lines for realism.
+                    return {
+                        status: 0,
+                        stdout: process.platform === 'win32'
+                            ? `C:\\bin\\${target}.cmd\r\nC:\\bin\\${target}.exe`
+                            : `/usr/local/bin/${target}`,
+                    };
+                }
+                return { status: 1, stdout: '' };
+            }
+            // Anything else (a `--version` probe) — just say "ok" for installed
+            // binaries.  Production code only uses this as a last-resort fallback.
+            if (ctx.installedBinaries.has(cmd)) {
+                return { status: 0, stdout: 'moc... [TRUNCATED]
+
+--- features\step_definitions\chat-participant.steps.ts --- (19318 bytes)
+/**
+ * Chat Participant Step Definitions
+ * Cucumber step definitions for testing AgileAgentCanvasChatParticipant functionality
+ */
+
+import { Given, When, Then } from '@cucumber/cucumber';
+import * as assert from 'assert';
+import { BmadWorld } from '../support/world';
+
+const proxyquire = require('proxyquire').noCallThru();
+
+// Module-level state
+let chatResult: any = null;
+let markdownCalls: string[] = [];
+let buttonCalls: { command: string; args: any; title: string }[] = [];
+
+// Configurable mock return values (changed per-scenario via Given steps)
+let mockCurrentSession: any = null;
+let mockBuildContinuePromptResult: string | null = null;
+let mockInitializeResult: boolean = true;
+let mockGetWorkflowsByModuleResult: any[] = [
+  { path: '/path/workflow.md', name: 'Test Workflow', description: 'Test description' }
+];
+let mockGetWorkflowsByTagResult: any[] = [];
+let mockGetAvailableWorkflowsResult: any[] = [
+  { path: '/path/workflow.md', name: 'Test Workflow', description: 'Test description' }
+];
+
+// Mock workflow executor - returns null session by default
+const mockWorkflowExecutor = {
+  initialize: async () => mockInitializeResult,
+  getAvailableWorkflows: () => mockGetAvailableWorkflowsResult,
+  getWorkflowsByModule: () => mockGetWorkflowsByModuleResult,
+  getWorkflowsByTag: () => mockGetWorkflowsByTagResult,
+  buildWorkflowPrompt: async () => 'Test prompt',
+  createSession: () => ({ id: 'ws-123', workflowName: 'Test Workflow', currentStepNumber: 0 }),
+  detectUserPrompt: () => ({ waitingForInput: false }),
+  getCurrentSession: () => mockCurrentSession,
+  buildContinuePrompt: async () => mockBuildContinuePromptResult,
+  getBmadPath: () => '/test/extension/resources/_aac',
+  executeWithTools: async () => {}
+};
+
+// Mock agileagentcanvas-tools module
+const mockAgileAgentCanvasTools = {
+  sharedToolContext: { bmadPath: '', outputPath: '', store: null },
+  registerTools: () => [{ dispose: () => {} }],
+  getToolDefinitions: () => []
+};
+
+// Mock ai-provider module — no vscode dependency in test runner
+const mockAiProvider = {
+  selectModel: async () => null,
+  getModel: async () => null,
+  streamChatResponse: async () => '',
+  getNoModelMessage: () => '**AI not available** (test mode)',
+  vsMessagesToChatMessages: (msgs: any[]) => msgs.map((m: any) => ({ role: 'user', content: '' }))
+};
+
+function getChatParticipant(world: BmadWorld): { store: any; participant: any } {
+  if (!(world as any)._chatStore) {
+    const mockExtension = {
+      acOutput: {
+        appendLine: () => {},
+        append: () => {},
+        clear: () => {},
+        show: () => {},
+      }
+    };
+
+    const artifactStoreModule = proxyquire('../../src/state/artifact-store', {
+      'vscode': world.vscode,
+      '../extension': mockExtension,
+      '../commands/chat-bridge': { openChat: async () => true, setChatBridgeLogger: () => {} },
+      './artifact-file-io': {
+        resolveArtifactTargetUri: async (opts: any) => world.vscode.Uri.file(`/test/${opts.fileName}`),
+        writeJs... [TRUNCATED]
+
+--- features\step_definitions\data-pipeline.steps.ts --- (42006 bytes)
+/**
+ * Data Pipeline Step Definitions
+ * Tests for the 3-layer data pipeline:
+ *   Layer 1: mapSchema* disk loading preserves all fields
+ *   Layer 2: stateToArtifacts sends correct metadata to webview
+ *   Layer 3: updateArtifact save handlers preserve all fields
+ *   Round-trip: load → webview → save → verify
+ */
+
+import { Given, When, Then } from '@cucumber/cucumber';
+import * as assert from 'assert';
+import { BmadWorld } from '../support/world';
+
+const proxyquire = require('proxyquire').noCallThru();
+
+// Module-level state
+let dpStore: any = null;
+let dpStoreModule: any = null;
+let dpCanvasModule: any = null;
+let lastLoadedArtifact: any = null;
+let lastWebviewMetadata: any = null;
+let lastRoundTrippedArtifact: any = null;
+
+function getStoreModule(world: BmadWorld): any {
+  if (!dpStoreModule) {
+    const mockExtension = {
+      acOutput: {
+        appendLine: () => {},
+        append: () => {},
+        clear: () => {},
+        show: () => {},
+      }
+    };
+    dpStoreModule = proxyquire('../../src/state/artifact-store', {
+      'vscode': world.vscode,
+      '../extension': mockExtension,
+      '../commands/chat-bridge': { openChat: async () => true, setChatBridgeLogger: () => {} },
+      './artifact-file-io': {
+        resolveArtifactTargetUri: async (opts: any) => world.vscode.Uri.file(`/test/${opts.fileName}`),
+        writeJsonFile: async () => {},
+        writeMarkdownCompanion: async (jsonUri: any, mdFilename: string) => world.vscode.Uri.file(`/test/${mdFilename}`)
+      },
+      '../harness/policy-engine': {
+        harnessEngine: { evaluate: async () => [] },
+      },
+    });
+  }
+  return dpStoreModule;
+}
+
+function getStore(world: BmadWorld): any {
+  if (!dpStore) {
+    const mod = getStoreModule(world);
+    dpStore = new mod.ArtifactStore(world.context as any);
+    dpStore.initializeProject('Data Pipeline Test');
+  }
+  return dpStore;
+}
+
+function getCanvasModule(world: BmadWorld): any {
+  if (!dpCanvasModule) {
+    const mockExtension = {
+      acOutput: { appendLine: () => {}, append: () => {}, clear: () => {}, show: () => {} }
+    };
+    const mockFs = { existsSync: () => false };
+    const storeMod = getStoreModule(world);
+    const mockArtifactCommands = {
+      refineArtifactWithAI: async () => {},
+      breakDownArtifact: async () => {},
+      enhanceArtifactWithAI: async () => {},
+      elicitArtifactWithMethod: async () => {},
+      startDevelopment: async () => {},
+      loadElicitationMethods: () => [],
+      loadBmmWorkflows: () => [],
+      launchBmmWorkflow: async () => {}
+    };
+    const messageHandlerModule = proxyquire('../../src/views/webview-message-handler', {
+      'vscode': world.vscode,
+      '../state/artifact-store': storeMod,
+      '../extension': mockExtension,
+      '../commands/artifact-commands': mockArtifactCommands,
+      '../commands/chat-bridge': { openChat: async () => true, setChatBridgeLogger: () => {} },
+      '../integrations/graphify/graphify-runner': {
+        runGraphify: async () => '',
+    ... [TRUNCATED]
+
+--- features\step_definitions\extension.steps.ts --- (20699 bytes)
+/**
+ * Extension Step Definitions
+ * Cucumber step definitions for testing extension activation and commands
+ */
+
+import { Given, When, Then } from '@cucumber/cucumber';
+import * as assert from 'assert';
+import { BmadWorld } from '../support/world';
+
+const proxyquire = require('proxyquire').noCallThru();
+
+// Module-level state
+let registeredCommands: Map<string, Function> = new Map();
+let executeCommandCalls: Array<{ cmd: string; options?: any }> = [];
+let showInfoCalls: string[] = [];
+let showWarnCalls: string[] = [];
+let showInputBoxCalls: Array<{ prompt?: string }> = [];
+let showQuickPickCalls: Array<{ items?: any[]; options?: any }> = [];
+let showOpenDialogCalls: Array<any> = [];
+let showSaveDialogCalls: Array<any> = [];
+let createWebviewPanelCalls: Array<any> = [];
+let createTreeViewCalls: Array<string> = [];
+let registerWebviewViewProviderCalls: Array<string> = [];
+let createChatParticipantCalls: Array<string> = [];
+let createFileSystemWatcherCalls: Array<any> = [];
+let extensionModule: any = null;
+let mockInputBoxReturn: string | undefined = undefined;
+let mockQuickPickReturn: any = undefined;
+let mockOpenDialogReturn: any = undefined;
+let mockSaveDialogReturn: any = undefined;
+let mockWarnReturn: any = undefined;
+
+function getExtensionSetup(world: BmadWorld): { context: any; vscode: any } {
+  if (!(world as any)._extSetup) {
+    // Reset tracking
+    registeredCommands = new Map();
+    executeCommandCalls = [];
+    showInfoCalls = [];
+    showWarnCalls = [];
+    showInputBoxCalls = [];
+    showQuickPickCalls = [];
+    showOpenDialogCalls = [];
+    showSaveDialogCalls = [];
+    createWebviewPanelCalls = [];
+    createTreeViewCalls = [];
+    registerWebviewViewProviderCalls = [];
+    createChatParticipantCalls = [];
+    createFileSystemWatcherCalls = [];
+    mockInputBoxReturn = undefined;
+    mockQuickPickReturn = undefined;
+    mockOpenDialogReturn = undefined;
+    mockSaveDialogReturn = undefined;
+    mockWarnReturn = undefined;
+
+    // Build instrumented vscode mock
+    const vsc = { ...world.vscode };
+    vsc.commands = {
+      registerCommand: (name: string, handler: Function) => {
+        registeredCommands.set(name, handler);
+        return { dispose: () => {} };
+      },
+      executeCommand: (cmd: string, options?: any) => {
+        executeCommandCalls.push({ cmd, options });
+        return Promise.resolve();
+      },
+      getCommands: async () => []
+    };
+    vsc.window = {
+      ...world.vscode.window,
+      showInformationMessage: (msg: string, ...buttons: any[]) => {
+        showInfoCalls.push(msg);
+        return Promise.resolve(undefined);
+      },
+      showWarningMessage: (msg: string, ...args: any[]) => {
+        showWarnCalls.push(msg);
+        return Promise.resolve(mockWarnReturn);
+      },
+      showInputBox: (opts: any) => {
+        showInputBoxCalls.push(opts || {});
+        return Promise.resolve(mockInputBoxReturn);
+      },
+      showQuickPick: (items: any, opts?: any) => {
+        showQuickPickCalls.push({ ite... [TRUNCATED]
+
+--- features\step_definitions\graphify-integration.steps.ts --- (22400 bytes)
+/**
+ * Graphify Integration Step Definitions
+ *
+ * Tests the graphify detection, CLI argv builder, graph loader,
+ * and canvas Codebase lane using fully in-process mocks — no real
+ * filesystem or subprocess calls.
+ */
+
+import { Given, When, Then, Before } from '@cucumber/cucumber';
+import * as assert from 'assert';
+import * as path from 'path';
+import * as os from 'os';
+import * as fs from 'fs';
+import { BmadWorld } from '../support/world';
+
+const proxyquire = require('proxyquire').noCallThru();
+
+// ─── Per-world context ────────────────────────────────────────────────────────
+
+interface GraphifyTestContext {
+    // Detection mocking state
+    cliAvailable: boolean;
+    cliForm: 'cli' | 'module' | 'unavailable';
+    graphPresent: boolean;
+    reportPresent: boolean;
+    wired: boolean;
+    detectionCallCount: number;  // how many times the When step ran (= detectGraphify() calls)
+    cliProbeCount: number;       // how many times execSync was attempted (CLI probe count)
+
+    // The detected status result
+    detectedStatus: any | null;
+
+    // Graph loader mocking state
+    graphFixture: any | null;
+    fileReadCount: number;
+    workspaceRoot: string;
+
+    // Canvas lane mocking state
+    showCodebaseLane: boolean;
+    artifacts: any[];
+
+    // argv builder result
+    builtArgv: string[];
+}
+
+const ctxMap = new WeakMap<BmadWorld, GraphifyTestContext>();
+
+function getCtx(world: BmadWorld): GraphifyTestContext {
+    let ctx = ctxMap.get(world);
+    if (!ctx) {
+        ctx = {
+            cliAvailable: false,
+            cliForm: 'unavailable',
+            graphPresent: false,
+            reportPresent: false,
+            wired: false,
+            detectionCallCount: 0,
+            cliProbeCount: 0,
+            detectedStatus: null,
+            graphFixture: null,
+            fileReadCount: 0,
+            workspaceRoot: '/tmp/test-project',
+            showCodebaseLane: false,
+            artifacts: [],
+            builtArgv: []
+        };
+        ctxMap.set(world, ctx);
+    }
+    return ctx;
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/**
+ * Build a proxyquire-loaded graphify-detector with fs + child_process mocked
+ * according to the test context. Returns the module exports.
+ */
+function makeDetectorModule(ctx: GraphifyTestContext): any {
+    const fsMock = {
+        existsSync: (p: string) => {
+            if (p.endsWith('graph.json')) return ctx.graphPresent;
+            if (p.endsWith('GRAPH_REPORT.md')) return ctx.reportPresent;
+            if (p.includes('copilot-instructions.md')) return ctx.wired;
+            return false;
+        },
+        readFileSync: (p: string, _enc: string) => {
+            if (p.includes('copilot-instructions.md') && ctx.wired) {
+                return '# Copilot Instructions\nBefore answering read graphify-out/GRAPH_REPORT.md';
+            }
+            return '';
+        }
+    };
+
+    const cpMock = {
+        // Production code now uses spawnSync (shell:false) to prevent i... [TRUNCATED]
+
+--- features\step_definitions\harness-policies.steps.ts --- (32280 bytes)
+/**
+ * Harness Policies Step Definitions
+ * Cucumber step definitions for testing HarnessEngine and policy evaluation
+ */
+
+import { Given, When, Then } from '@cucumber/cucumber';
+import * as assert from 'assert';
+import { BmadWorld } from '../support/world';
+
+const proxyquire = require('proxyquire').noCallThru();
+
+interface HarnessTestContext {
+  engine: any;
+  schemaValidator: any;
+  policies: any[];
+  lastEvalResults: any[];
+  lastPolicy: any;
+  lastError: Error | null;
+  loadedPolicies: any[];
+  traceRecorded: boolean;
+  traceAgent: string;
+  autoFixAttempted: boolean;
+}
+
+const contexts = new WeakMap<BmadWorld, HarnessTestContext>();
+
+function getCtx(world: BmadWorld): HarnessTestContext {
+  let ctx = contexts.get(world);
+  if (!ctx) {
+    ctx = {
+      engine: null,
+      schemaValidator: null,
+      policies: [],
+      lastEvalResults: [],
+      lastPolicy: null,
+      lastError: null,
+      loadedPolicies: [],
+      traceRecorded: false,
+      traceAgent: '',
+      autoFixAttempted: false,
+    };
+    contexts.set(world, ctx);
+  }
+  return ctx;
+}
+
+function createEngine(world: BmadWorld): any {
+  const module = proxyquire('../../src/harness/policy-engine', {
+    vscode: world.vscode,
+    '../utils/logger': {
+      createLogger: () => ({
+        info: () => {},
+        error: () => {},
+        debug: () => {},
+        warn: () => {},
+      }),
+    },
+    '../state/schema-validator': {
+      schemaValidator: {
+        validateChanges: (type: string, data: any) => {
+          if (data && data.title && data.status === 'totally-invalid') {
+            return { valid: false, errors: ['Invalid status value'] };
+          }
+          // Make 'repairable' artifact fail schema so auto-fix is triggered
+          // After auto-fix, the artifact has title: 'Fixed' and should pass
+          if (data && data.id === 'repairable' && !data.title) {
+            return { valid: false, errors: ['Missing title'] };
+          }
+          return { valid: true, errors: [] };
+        },
+        getSchemaContent: (type: string) => {
+          if (type === 'story') {
+            return JSON.stringify({
+              type: 'object',
+              properties: {
+                title: { type: 'string' },
+                status: { type: 'string', enum: ['backlog', 'ready-for-dev', 'in-progress', 'review', 'done'] },
+              },
+            });
+          }
+          return undefined;
+        },
+        isInitialized: () => true,
+        getSupportedTypes: () => ['story', 'epic'],
+        validate: (type: string, data: any) => {
+          if (data && data.id === 'repairable') {
+            return { valid: false, errors: ['Missing title'] };
+          }
+          return { valid: true, errors: [] };
+        },
+      },
+    },
+    '../state/schema-repair-engine': {
+      repairDataWithSchema: (data: any, schema: any) => {
+        if (data && data.id === 'repairable') {
+          return { changed: true, data: { ...data, status: 'in-progress', title: 'Fixed' } };
+        }
+  ... [TRUNCATED]
+
+--- features\step_definitions\lane-transitions.steps.ts --- (27675 bytes)
+/**
+ * Lane Transitions Step Definitions
+ * Cucumber step definitions for testing LaneTransitionEngine and transition rules
+ */
+
+import { Given, When, Then } from '@cucumber/cucumber';
+import * as assert from 'assert';
+import { BmadWorld } from '../support/world';
+
+const proxyquire = require('proxyquire').noCallThru();
+
+interface LaneTestContext {
+  engine: any;
+  store: any;
+  executor: any;
+  transitionRules: any[];
+  allTransitionRules: any[];
+  lastTransitionResult: any;
+  lastFoundRule: any;
+  lastError: Error | null;
+  _concurrencyQueue: any;
+}
+
+const contexts = new WeakMap<BmadWorld, LaneTestContext>();
+
+function getCtx(world: BmadWorld): LaneTestContext {
+  let ctx = contexts.get(world);
+  if (!ctx) {
+    ctx = {
+      engine: null,
+      store: null,
+      executor: null,
+      transitionRules: [],
+      allTransitionRules: [],
+      lastTransitionResult: null,
+      lastFoundRule: null,
+      lastError: null,
+      _concurrencyQueue: null,
+    };
+    contexts.set(world, ctx);
+  }
+  return ctx;
+}
+
+function createEngine(world: BmadWorld): any {
+  const ctx = getCtx(world);
+
+  // Create a shared concurrency queue so Given steps can access the same instance
+  const mockConcurrencyQueue = {
+    locks: new Map(),
+    queue: new Map(),
+    tryAcquire(artifactId: string, agentName: string, requestId: string) {
+      if (this.locks.has(artifactId)) return null;
+      const entry = { artifactId, agentName, lockedAt: new Date(), acquiredBy: requestId };
+      this.locks.set(artifactId, entry);
+      return entry;
+    },
+    release(artifactId: string) {
+      this.locks.delete(artifactId);
+      this.queue.delete(artifactId);
+    },
+    isLocked(artifactId: string) {
+      return this.locks.has(artifactId);
+    },
+  };
+  // Expose for Given steps that need to set up locks
+  ctx._concurrencyQueue = mockConcurrencyQueue;
+
+  const module = proxyquire('../../src/workflow/lane-transitions', {
+    vscode: world.vscode,
+    '../utils/logger': {
+      createLogger: () => ({
+        info: () => {},
+        error: () => {},
+        debug: () => {},
+        warn: () => {},
+      }),
+    },
+    './workflow-executor': {
+      WorkflowExecutor: class {
+        executeLaneTransition = async () => {};
+        getCurrentSession = () => null;
+        getSession = () => null;
+      },
+      getWorkflowExecutor: () => ({
+        executeLaneTransition: async () => {},
+        cancelSession: () => {},
+        initialize: async () => true,
+      }),
+    },
+    '../harness/policy-engine': {
+      harnessEngine: {
+        evaluate: async () => [],
+      },
+    },
+    '../harness/harness-feedback': {
+      harnessFeedback: {
+        recordEvaluation: async () => {},
+      },
+    },
+    '../chat/ai-provider': {
+      BmadModel: class {},
+    },
+    './terminal-executor': {
+      terminalExecutor: {
+        getTerminalSession: () => null,
+        executeTerminalWorkflow: async () => {
+          // If the test set up the executor to throw, propagate the error
+          // so ... [TRUNCATED]
