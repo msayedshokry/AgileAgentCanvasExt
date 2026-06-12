@@ -114,7 +114,15 @@ export class TraceRecorder implements vscode.Disposable {
     this.flushTimeouts.set(sessionId, timeout);
   }
 
-  private async flush(sessionId: string): Promise<void> {
+  /**
+   * Flush a session's buffered entries to disk immediately.
+   *
+   * Public so tests and tools that need read-after-write semantics can force
+   * the buffer to disk without waiting for the 2-second debounce timer.
+   * Production code does not need to call this — `record()` schedules its
+   * own flush.
+   */
+  public async flush(sessionId: string): Promise<void> {
     this.flushTimeouts.delete(sessionId);
     const entries = this.buffers.get(sessionId);
     if (!entries || entries.length === 0) return;
@@ -136,7 +144,15 @@ export class TraceRecorder implements vscode.Disposable {
     const filePath = path.join(this.outputFolder, `session-${sessionId}.jsonl`);
     try {
       const content = await fs.readFile(filePath, 'utf-8');
-      return content.split('\n').filter(Boolean).map(line => JSON.parse(line));
+      const results: TraceEntry[] = [];
+      for (const line of content.split('\n').filter(Boolean)) {
+        try {
+          results.push(JSON.parse(line));
+        } catch {
+          // Skip corrupt lines — the caller still gets all valid entries
+        }
+      }
+      return results;
     } catch {
       return [];
     }

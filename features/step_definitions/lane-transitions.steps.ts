@@ -23,7 +23,9 @@ interface LaneTestContext {
 
 const contexts = new WeakMap<BmadWorld, LaneTestContext>();
 
-function getCtx(world: BmadWorld): LaneTestContext {
+// Exported so shared step definitions in features/support/ can resolve the
+// lane context (e.g. shared-store-steps.ts auto-detects lane vs kanban).
+export function getCtx(world: BmadWorld): LaneTestContext {
   let ctx = contexts.get(world);
   if (!ctx) {
     ctx = {
@@ -75,6 +77,28 @@ function createEngine(world: BmadWorld): any {
         debug: () => {},
         warn: () => {},
       }),
+    },
+    // Stub transitive kanban modules so proxyquire doesn't load the real
+    // kanban-orchestrator → terminalExecutor → chat-bridge chain (which hangs).
+    './kanban-settings': {
+      isKanbanAutoAdvanceEnabled: () => false,
+      setKanbanAutoAdvance: async () => {},
+      getKanbanMaxIterations: () => 3,
+    },
+    './kanban-orchestrator': {
+      kanbanOrchestrator: undefined,
+      KanbanOrchestrator: class {},
+      initializeKanbanOrchestrator: () => {},
+      kanbanProgress: { event: () => ({ dispose: () => {} }), fire: () => {}, dispose: () => {} },
+    },
+    './terminal-executor': {
+      terminalExecutor: {
+        executeTerminalWorkflow: async () => undefined,
+        getTerminalSession: () => undefined,
+        getTerminalOutput: () => '',
+        jumpToTerminal: () => false,
+        attachWebviewStream: () => ({ dispose: () => {} }),
+      },
     },
     './concurrency-queue': {
       ConcurrencyQueue: class {
@@ -180,12 +204,9 @@ Given('a lock is held on {string}', function (this: BmadWorld, artifactId: strin
   }
 });
 
-Given('the store updateArtifact will throw', function (this: BmadWorld) {
-  const ctx = getCtx(this);
-  ctx.store.updateArtifact = async () => {
-    throw new Error('Store update error');
-  };
-});
+// Shared step "the store updateArtifact will throw" lives in
+// features/support/shared-store-steps.ts — it auto-detects whether the
+// active context is lane-transitions or agentic-kanban.
 
 Given('the workflow executor will throw during transition', function (this: BmadWorld) {
   const ctx = getCtx(this);
@@ -302,8 +323,14 @@ When('I find the rule for prd draft → ready', function (this: BmadWorld) {
 When('I handle transition for {string} from {string} to {string} with type {string}',
   async function (this: BmadWorld, artifactId: string, fromStatus: string, toStatus: string, artifactType: string) {
     const ctx = getCtx(this);
+    // Pass model + stream so handleTransition takes the in-chat path,
+    // which calls ctx.executor.executeLaneTransition (the mock that Given
+    // steps override). Without these, handleTransition takes the terminal
+    // path which bypasses the executor mock entirely.
+    const model: any = { vendor: 'test', family: 'test-model' };
+    const stream: any = { markdown: () => {}, button: () => {}, filetree: () => {}, anchor: () => {} };
     ctx.lastTransitionResult = await ctx.engine.handleTransition(
-      artifactId, fromStatus, toStatus, artifactType
+      artifactId, fromStatus, toStatus, artifactType, model, stream
     );
   }
 );
@@ -444,13 +471,9 @@ Then('the story {string} status should be {string}', function (this: BmadWorld, 
   assert.ok(story, `Story ${id} should exist in store`);    assert.strictEqual(story.status, expectedStatus, `Expected story "${id}" status "${expectedStatus}", got "${story.status}"`);
 });
 
-Then('the transition result blockedBy should contain {string}', function (this: BmadWorld, expected: string) {
-  const ctx = getCtx(this);
-  assert.ok(ctx.lastTransitionResult?.blockedBy, 'Expected blockedBy to be defined');
-  const blockedByStr = ctx.lastTransitionResult.blockedBy.join(' ');
-  assert.ok(blockedByStr.includes(expected),
-    `Expected blockedBy to contain "${expected}"`);
-});
+// Shared step "the transition result blockedBy should contain {string}" lives
+// in features/support/shared-store-steps.ts — it auto-detects whether the
+// active context is lane-transitions or agentic-kanban.
 
 Then('the workflow executor executeLaneTransition should have been called', function (this: BmadWorld) {
   // This is asserted implicitly by workflowLaunched being true

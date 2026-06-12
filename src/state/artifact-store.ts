@@ -713,8 +713,22 @@ export class ArtifactStore {
         // ── Harness pre-flight checks (Epic 4) ──────────────────────────────
         const harnessEnabled = vscode.workspace.getConfiguration('agileagentcanvas').get('harness.enabled', true);
         if (harnessEnabled) {
+            // Evaluate against the MERGED candidate (existing artifact + incoming
+            // changes), NOT the bare delta. Evaluating the delta alone makes
+            // required-field policies see real fields as "missing" — so a
+            // status-only update (e.g. a Kanban drag sending `{ status }`) would
+            // trigger auto-fix and overwrite the real title/userStory/AC with
+            // generic placeholders. That was a silent data-loss bug.
+            const existingArtifact = this.findArtifactById(artifactId)?.artifact ?? {};
+            const { metadata: _changesMeta, ...changeTopFields } = changes ?? {};
+            const candidate = {
+                ...existingArtifact,
+                ...(changes?.metadata && typeof changes.metadata === 'object' ? changes.metadata : {}),
+                ...changeTopFields,
+            };
+
             const preResults = await harnessEngine.evaluate(
-                { artifactType, artifactId, artifact: changes },
+                { artifactType, artifactId, artifact: candidate },
                 'pre-flight'
             );
             const blocking = preResults.filter(r => !r.passed && r.severity === 'blocking');
@@ -722,10 +736,19 @@ export class ArtifactStore {
                 this._onHarnessFailures.fire(blocking);
                 throw new Error(`Blocked by policies: ${blocking.map(b => b.policyId).join(', ')}`);
             }
-            // Apply auto-fixes from the last successful fix
+            // Apply auto-fixes, but ONLY for fields genuinely absent from the
+            // merged candidate. Never clobber values the existing artifact or
+            // the incoming changes already provide.
             const lastFix = [...preResults].reverse().find(r => r.fixedArtifact !== undefined);
             if (lastFix?.fixedArtifact) {
-                changes = Object.assign(changes, lastFix.fixedArtifact);
+                const isEmpty = (v: any) =>
+                    v === undefined || v === null || v === '' ||
+                    (Array.isArray(v) && v.length === 0);
+                for (const [key, value] of Object.entries(lastFix.fixedArtifact)) {
+                    if (isEmpty((candidate as any)[key])) {
+                        (changes as any)[key] = value;
+                    }
+                }
             }
         }
         

@@ -7,6 +7,7 @@ import { Given, When, Then } from '@cucumber/cucumber';
 import * as assert from 'assert';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as os from 'os';
 import { BmadWorld } from '../support/world';
 
 const proxyquire = require('proxyquire').noCallThru();
@@ -56,30 +57,20 @@ function getCtx(world: BmadWorld): TraceTestContext {
 
 // For real file-based testing, use the actual TraceRecorder with a temp dir
 function createRealRecorder(tmpDir: string): any {
-  const module = proxyquire('../../src/trace/trace-recorder', {
-    vscode: {
-      Disposable: class {
-        dispose() {}
-      },
-    },
-    '../utils/logger': {
-      createLogger: () => ({
-        info: () => {},
-        error: () => {},
-        debug: () => {},
-        warn: () => {},
-      }),
-    },
-  });
-
-  return new module.TraceRecorder(tmpDir);
+  // Use the real TraceRecorder module directly — the vscode-shim's
+  // global Module._load hook already intercepts require('vscode'), so
+  // we don't need proxyquire at all. Node.js built-ins (fs/promises,
+  // path) load natively, avoiding the silent flush failures caused by
+  // proxyquire.noCallThru() blocking them.
+  const mod = require('../../src/trace/trace-recorder');
+  return new mod.TraceRecorder(tmpDir);
 }
 
 // ─── GIVEN ──────────────────────────────────────────────────────────────────
 
 Given('a fresh trace recorder with a temp output folder', function (this: BmadWorld) {
   const ctx = getCtx(this);
-  const tmpDir = path.join(__dirname, '../../.test-traces-' + Date.now());
+  const tmpDir = path.join(os.tmpdir(), 'aac-test-traces-' + Date.now());
   ctx.outputFolder = tmpDir;
   ctx.recorder = createRealRecorder(tmpDir);
   ctx.lastEntry = null;
@@ -107,6 +98,7 @@ Given('3 trace entries have been recorded for session {string}', function (this:
     });
     ctx.recordCount++;
   }
+  return ctx.recorder.flush(sessionId);
 });
 
 Given('a valid session with 2 entries exists', async function (this: BmadWorld) {
@@ -125,7 +117,7 @@ Given('a valid session with 2 entries exists', async function (this: BmadWorld) 
   });
   ctx.recordCount += 2;
   // Write a corrupt line to the file via the flush mechanism
-  await (ctx.recorder as any).flush('valid-session');
+  await ctx.recorder.flush('valid-session');
   // Manually append corrupt line
   const filePath = path.join(ctx.recorder.getOutputFolder(), `session-valid-session.jsonl`);
   try {
@@ -158,7 +150,7 @@ Given('trace entries of types {string}, {string}, and {string}',
   }
 );
 
-Given('trace entries from 3 days ago and today', function (this: BmadWorld) {
+Given('trace entries from 3 days ago and today', async function (this: BmadWorld) {
   const ctx = getCtx(this);
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
   ctx.recorder.record({
@@ -176,6 +168,8 @@ Given('trace entries from 3 days ago and today', function (this: BmadWorld) {
     timestamp: new Date().toISOString(),
   });
   ctx.recordCount += 2;
+  // Flush so searchTraces can read from files
+  await ctx.recorder.flushAll();
 });
 
 Given('10 trace entries exist', function (this: BmadWorld) {
@@ -252,7 +246,7 @@ Given('a mock language model tool that throws', function (this: BmadWorld) {
 Given('the trace recorder is initialized', function (this: BmadWorld) {
   const ctx = getCtx(this);
   if (!ctx.recorder) {
-    const tmpDir = path.join(__dirname, '../../.test-traces-' + Date.now());
+    const tmpDir = path.join(os.tmpdir(), 'aac-test-traces-' + Date.now());
     ctx.outputFolder = tmpDir;
     ctx.recorder = createRealRecorder(tmpDir);
   }
@@ -262,9 +256,7 @@ Given('the trace recorder is initialized', function (this: BmadWorld) {
 
 When('I record a trace entry with:', function (this: BmadWorld, dataTable: any) {
   const ctx = getCtx(this);
-  const rows = dataTable.hashes();
-  const row = rows[0];
-
+  const row = dataTable.rowsHash();
   const entry: any = {
     sessionId: row.sessionId,
     type: row.type,
@@ -322,8 +314,7 @@ When('I record a trace entry with type {string} and durationMs {int}',
 
 When('I record a trace entry with type {string} and:', function (this: BmadWorld, type: string, dataTable: any) {
   const ctx = getCtx(this);
-  const rows = dataTable.hashes();
-  const row = rows[0];
+  const row = dataTable.rowsHash();
 
   const entry: any = {
     sessionId: row.sessionId,
@@ -379,7 +370,7 @@ When('I record 1 more trace entry for session {string}', function (this: BmadWor
 
 When('I flush the trace for session {string}', async function (this: BmadWorld, sessionId: string) {
   const ctx = getCtx(this);
-  await (ctx.recorder as any).flush(sessionId);
+  await ctx.recorder.flush(sessionId);
 });
 
 When('I wait for the flush timer', async function (this: BmadWorld) {
@@ -693,6 +684,11 @@ Then('valid entries should still be returned', function (this: BmadWorld) {
   assert.ok(ctx.lastEntries.length > 0, 'Should return valid entries');
 });
 
+Then('a tool error should have been thrown', function (this: BmadWorld) {
+  const ctx = getCtx(this);
+  assert.ok(ctx.toolError, 'Expected an error to have been thrown by the tool tracer');
+});
+
 Then('an error should not be thrown', function (this: BmadWorld) {
   assert.strictEqual(this.lastError, null, 'No error should have been thrown');
 });
@@ -780,7 +776,12 @@ Then('the trace recorder should be defined', function (this: BmadWorld) {
 
 Then('the output folder should be {string}', function (this: BmadWorld, expected: string) {
   const ctx = getCtx(this);
-  assert.strictEqual(ctx.recorder.getOutputFolder(), expected, `Expected output folder "${expected}", got "${ctx.recorder.getOutputFolder()}"`);
+  const pathMod = require('path');
+  assert.strictEqual(
+    pathMod.normalize(ctx.recorder.getOutputFolder()),
+    pathMod.normalize(expected),
+    `Expected output folder "${expected}", got "${ctx.recorder.getOutputFolder()}"`
+  );
 });
 
 Then('the first instance should have been disposed', function (this: BmadWorld) {

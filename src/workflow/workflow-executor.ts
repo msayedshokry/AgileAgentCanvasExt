@@ -2,6 +2,7 @@ import { createLogger } from '../utils/logger';
 const logger = createLogger('workflow-executor');
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs';
 import * as yaml from 'yaml';
 
 import { BMAD_RESOURCE_DIR } from '../state/constants';
@@ -16,6 +17,12 @@ import { AgentTeamOrchestrator } from '../acp/team-orchestrator';
 import { AcpSessionResult } from '../acp/types';
 import { getTraceRecorder } from '../trace/trace-recorder';
 import { harnessFeedback } from '../harness/harness-feedback';
+import {
+    resultFilePath,
+    readVerdictFile,
+    getOutputFolder,
+    type KanbanVerdict,
+} from './kanban-verdict';
 
 /**
  * BMAD Workflow Executor
@@ -3595,7 +3602,7 @@ Instructions: Return ONLY a \`\`\`json code block containing the artifact JSON. 
         model?: BmadModel,
         stream?: vscode.ChatResponseStream,
         token?: vscode.CancellationToken
-    ): Promise<void> {
+    ): Promise<KanbanVerdict> {
         const definition = WORKFLOW_REGISTRY.find(w => w.id === workflowId);
         if (!definition) {
             throw new Error(`Workflow "${workflowId}" not found in WORKFLOW_REGISTRY`);
@@ -3605,6 +3612,17 @@ Instructions: Return ONLY a \`\`\`json code block containing the artifact JSON. 
         const traceSessionId = `lane-${workflowId}-${artifact?.id || 'unknown'}-${Date.now()}`;
 
         logger.info(`[E2] executeLaneTransition: workflow=${workflowId}, artifact=${artifact?.id || 'unknown'}`);
+
+        // Verdict result file — the in-chat agent is asked to write its
+        // structured verdict here so the KanbanOrchestrator can decide whether
+        // to auto-advance the card. Clear any stale file from a previous run.
+        const outputFolder = getOutputFolder();
+        const resultPath = resultFilePath(outputFolder, artifact?.id || 'unknown', workflowId);
+        try {
+            if (fs.existsSync(resultPath)) fs.unlinkSync(resultPath);
+        } catch {
+            // best effort — stale file cleanup
+        }
 
         // Record trace: transition started
         try {
@@ -3625,9 +3643,24 @@ Instructions: Return ONLY a \`\`\`json code block containing the artifact JSON. 
 
         if (model && stream && token) {
             try {
+                // Inject the authoritative SKILL definition so the in-chat agent
+                // enforces the same entry/exit gates as the terminal path.
+                const skillContent = this.getWorkflowSkillContent(workflowId);
+                const skillSection = skillContent
+                    ? `\n\n## Workflow Definition (authoritative — follow exactly)\n\`\`\`markdown\n${skillContent}\n\`\`\``
+                    : '';
+                const task =
+                    `Execute the "${workflowId}" workflow on this artifact, honoring its entry/exit gates.` +
+                    ` If the artifact metadata contains fixRequests, address every one before reporting completion.` +
+                    ` When finished, call the agileagentcanvas_write_file tool to write your structured verdict JSON` +
+                    ` — it MUST include a top-level "verdict" (one of COMPLETED, APPROVED, NEEDS_FIXES, BLOCKED)` +
+                    ` and a "fix_requests" array when the verdict is NEEDS_FIXES —` +
+                    ` to EXACTLY this path: ${resultPath}` +
+                    skillSection;
+
                 await this.executeWithTools(
                     model,
-                    `Execute ${workflowId} workflow on this artifact`,
+                    task,
                     artifact,
                     stream,
                     token,
@@ -3651,6 +3684,11 @@ Instructions: Return ONLY a \`\`\`json code block containing the artifact JSON. 
                 } catch {
                     // Silently skip trace recording failures
                 }
+
+                // Read the verdict the agent produced. UNKNOWN if absent — the
+                // orchestrator treats UNKNOWN as "stop, ask the human".
+                return readVerdictFile(resultPath)
+                    ?? { verdict: 'UNKNOWN', summary: 'No verdict file produced by the in-chat workflow' };
             } catch (err) {
                 // Record trace: transition failed
                 try {
@@ -3671,6 +3709,24 @@ Instructions: Return ONLY a \`\`\`json code block containing the artifact JSON. 
             }
         } else {
             logger.info(`[E2-STUB] Workflow "${workflowId}" would execute for "${artifact?.id || 'unknown'}" (no model/stream/token provided — deferred execution)`);
+            return { verdict: 'UNKNOWN', summary: 'No model/stream/token — workflow not executed in-chat' };
+        }
+    }
+
+    /**
+     * Read a workflow's SKILL / definition file content from the BMAD resources,
+     * if present. Used to inject authoritative gate definitions into agent
+     * prompts (both in-chat and terminal paths).
+     */
+    getWorkflowSkillContent(workflowId: string): string | undefined {
+        try {
+            const def = WORKFLOW_REGISTRY.find(w => w.id === workflowId);
+            if (!def) return undefined;
+            const p = resolveWorkflowPath(this.context.bmadPath, def.path);
+            if (!fs.existsSync(p)) return undefined;
+            return fs.readFileSync(p, 'utf-8');
+        } catch {
+            return undefined;
         }
     }
 

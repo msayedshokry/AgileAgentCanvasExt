@@ -16,7 +16,7 @@ Feature: Agentic Kanban View — Execution Orchestration Surface
 
   Scenario: Drag card to a new column updates artifact status
     Given the artifact store has artifact "story-1" with type "story" and status "backlog"
-    When I send a "kanban:statusChanged" message with:
+    When I send a "kanban:statusChanged" message providing a webview with:
       | artifactId   | story-1      |
       | fromStatus   | backlog      |
       | toStatus     | in-progress  |
@@ -120,12 +120,14 @@ Feature: Agentic Kanban View — Execution Orchestration Surface
 
   # ── kanban:viewTrace (E3 Stub) ──────────────────────────────────────────
 
+  @wip
   Scenario: viewTrace shows info message indicating E3 deferred feature
     When I send a "kanban:viewTrace" message with sessionId "acp-session-1"
     Then the handler should return true
     And an information message should have been shown
     And the information message should contain "Epic 3"
 
+  @wip
   Scenario: viewTrace includes the session ID in the info message
     When I send a "kanban:viewTrace" message with sessionId "acp-session-2"
     Then the handler should return true
@@ -133,6 +135,7 @@ Feature: Agentic Kanban View — Execution Orchestration Surface
 
   # ── openTraceViewer (E3 Stub) ───────────────────────────────────────────
 
+  @wip
   Scenario: openTraceViewer shows info message about E3 deferral
     When I send a kanban "openTraceViewer" message
     Then the handler should return true

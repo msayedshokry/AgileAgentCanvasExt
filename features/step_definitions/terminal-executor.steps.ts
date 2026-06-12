@@ -153,6 +153,16 @@ function loadModule(world: BmadWorld): any {
         record: async () => {},
       }),
     },
+    // Stub kanban-verdict to prevent loading vscode-dependent getOutputFolder()
+    './kanban-verdict': {
+      sanitizeId: (id: string) => id.replace(/[^A-Za-z0-9._\-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, ''),
+      resultFilePath: (folder: string, artifactId: string, workflowId: string) =>
+        `${folder}/_terminal-output/${artifactId}-${workflowId}-result.json`,
+      readVerdictFile: () => undefined,
+      getOutputFolder: () => '.agileagentcanvas-context',
+      normalizeVerdict: (parsed: any) => ({ verdict: 'UNKNOWN', raw: parsed }),
+      extractVerdictFromText: () => undefined,
+    },
     './concurrency-queue': {
       concurrencyQueue: {
         release: () => {},

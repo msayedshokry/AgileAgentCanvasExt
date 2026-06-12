@@ -86,11 +86,11 @@ Feature: Lane Transitions - Kanban Card Movement Orchestration
     And the transition result status should be "moved_without_workflow"
 
   @transitions @handle
-  Scenario: Handle transition for review → done moves without workflow
+  Scenario: Handle transition for review → done moves status
     Given the store has a story with id "S-1" and status "review"
     When I handle transition for "S-1" from "review" to "done" with type "story"
     Then the transition result ok should be true
-    And the transition result workflowLaunched should be false
+    And the transition result workflowLaunched should be true
     And the transition result status should be "complete"
     And the story "S-1" status should be "done"
 

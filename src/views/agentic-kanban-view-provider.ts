@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import { ArtifactStore } from '../state/artifact-store';
 import { buildArtifacts } from '../canvas/artifact-transformer';
 import { handleAgenticKanbanMessage } from './agentic-kanban-message-handler';
+import { kanbanProgress } from '../workflow/kanban-orchestrator';
 
 /**
  * Webview provider for the Agentic Kanban — execution orchestration surface.
@@ -31,6 +32,12 @@ export class AgenticKanbanViewProvider implements vscode.WebviewViewProvider {
     // No explicit dispose needed — ArtifactStore cleans up listeners on deactivation.
     this.store.onDidChangeArtifacts(() => {
       this.sendArtifacts();
+    });
+
+    // Forward orchestrator progress (running/completed/interrupted) so cards
+    // show live agent badges during an autonomous auto-advance run.
+    kanbanProgress.event((evt) => {
+      this.sendAgentState(evt.artifactId, evt.agentState);
     });
   }
 

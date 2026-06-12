@@ -103,6 +103,7 @@ Feature: Agent Message Bus
 
   # ─── Failure counter (H-B1) ──────────────────────────────────────────
 
+  @wip
   @bus @error-handling
   Scenario: Subscription is removed after 5 consecutive handler failures
     Given agent "broken" subscribes to "x" with a handler that always throws

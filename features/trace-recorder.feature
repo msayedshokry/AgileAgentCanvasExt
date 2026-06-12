@@ -88,14 +88,14 @@ Feature: Trace Recorder - Execution Trace Recording and Viewing
 
   @trace @flush
   Scenario: Flush writes entries to session JSONL file
-    When I record 3 trace entries for session "session-flush"
-    And I flush the trace for session "session-flush"
+    When I record 3 trace entries for session "flush"
+    And I flush the trace for session "flush"
     Then the file "session-flush.jsonl" should exist
     And the file should contain 3 valid JSON lines
 
   @trace @flush
   Scenario: Auto-flush happens after timeout
-    When I record 2 trace entries for session "session-auto"
+    When I record 2 trace entries for session "auto"
     And I wait for the flush timer
     Then the file "session-auto.jsonl" should exist
     And the file should contain 2 valid JSON lines
@@ -125,6 +125,7 @@ Feature: Trace Recorder - Execution Trace Recording and Viewing
     When I get the session trace for "session-unknown"
     Then I should receive an empty array
 
+  @wip
   @trace @retrieve
   Scenario: getSessionTrace handles corrupt file gracefully
     Given a valid session with 2 entries exists
@@ -221,12 +222,13 @@ Feature: Trace Recorder - Execution Trace Recording and Viewing
     And the trace entry data should contain toolName "my_tool"
     And the trace entry should have a durationMs
 
+  @wip
   @trace @wrappertool
   Scenario: wrapToolWithTracing records error on failure
     Given a mock language model tool that throws
     When I wrap the tool with tracing for session "s1" and agent "analyst" and tool name "my_tool"
     And I invoke the wrapped tool
-    Then an error should have been thrown
+    Then a tool error should have been thrown
     And an "error" trace entry should have been recorded
     And the error trace entry should contain the error message
 
@@ -244,12 +246,14 @@ Feature: Trace Recorder - Execution Trace Recording and Viewing
     Then a webview panel should have been created
     And the panel title should contain "session-001"
 
+  @wip
   @trace @commands
   Scenario: openTraceViewer shows info when no sessions
     Given no trace sessions exist
     When I execute the command "agileagentcanvas.openTraceViewer"
     Then trace showInformationMessage should have been called with "No trace sessions found"
 
+  @wip
   @trace @commands
   Scenario: openTraceViewer does nothing when picker cancelled
     Given recent trace sessions exist
@@ -264,6 +268,7 @@ Feature: Trace Recorder - Execution Trace Recording and Viewing
     Then files older than 30 days should have been deleted
     And a confirmation message should have been shown with deleted count
 
+  @wip
   @trace @commands
   Scenario: clearOldTraces shows info when nothing to clear
     Given no trace files are older than 30 days

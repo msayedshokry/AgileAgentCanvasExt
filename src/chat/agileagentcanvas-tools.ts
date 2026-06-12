@@ -1021,7 +1021,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                             ]);
                         }
 
-                        const { parse: parseYaml } = await import('yaml');
+                        const { parse: parseYaml } = require('yaml');
                         const frontmatter = parseYaml(match[1]);
                         const body = content.slice(match[0].length).trim();
 
@@ -1047,7 +1047,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
             async invoke(request, _token) {
                 return trackToolCall('agileagentcanvas_yaml_to_json', async () => {
                     try {
-                        const { parse: parseYaml } = await import('yaml');
+                        const { parse: parseYaml } = require('yaml');
                         const data = parseYaml(request.input.yaml);
                         logger.debug(`[agileagentcanvas_yaml_to_json] Converted YAML successfully`);
                         return new vscode.LanguageModelToolResult([
@@ -1073,7 +1073,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                 async invoke(request, _token) {
                     return trackToolCall('agileagentcanvas_json_diff', async () => {
                         try {
-                            const { default: diff } = await import('microdiff');
+                            const diff = require('microdiff').default;
                             const { left, right } = request.input;
                             const changes = diff(left, right);
                             const summary = {
@@ -1108,7 +1108,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                 async invoke(request, _token) {
                     return trackToolCall('agileagentcanvas_json_merge', async () => {
                         try {
-                            const { default: deepmerge } = await import('deepmerge');
+                            const deepmerge = require('deepmerge').default;
                             const { left, right, strategy } = request.input;
                             let merged: object;
                             switch (strategy) {

@@ -105,7 +105,158 @@ function getCanvasModule(world: BmadWorld): any {
       '../commands/chat-bridge': { openChat: async () => true, setChatBridgeLogger: () => {} },
       '../canvas/artifact-transformer': {
         sendArtifactsToPanel: () => {},
-        buildArtifacts: () => [],
+        // Minimal state->artifacts transform that mirrors the real buildArtifacts
+        // metadata structure so round-trip tests can check artifact.metadata fields.
+        // See src/canvas/artifact-transformer.ts for the canonical implementation.
+        buildArtifacts: (store: any) => {
+          const state = store.getState();
+          const out: any[] = [];
+
+          // ── Requirements (Planning lane) ────────────────────────────
+          // Handle both { functional: [...], nonFunctional: [...], additional: [...] }
+          // and plain arrays for backward compatibility.
+          const reqs: any[] = [];
+          if (state.requirements) {
+            if (Array.isArray(state.requirements)) {
+              reqs.push(...state.requirements);
+            } else {
+              if (state.requirements.functional) reqs.push(...state.requirements.functional);
+              if (state.requirements.nonFunctional) reqs.push(...state.requirements.nonFunctional);
+              if (state.requirements.additional) reqs.push(...state.requirements.additional);
+            }
+          }
+          for (const req of reqs) {
+            out.push({
+              type: req.type === 'non-functional' ? 'nfr' : 'requirement',
+              id: req.id,
+              title: req.title,
+              description: req.description || '',
+              status: req.status || 'draft',
+              position: { x: 0, y: 0 },
+              size: { width: 240, height: 80 },
+              dependencies: req.dependencies || [],
+              metadata: {
+                capabilityArea: req.capabilityArea,
+                relatedEpics: req.relatedEpics,
+                relatedStories: req.relatedStories,
+                priority: req.priority,
+                requirementStatus: req.status,
+                // Round-trip preservation fields (Layer 3 save handlers):
+                type: req.type,
+                rationale: req.rationale,
+                source: req.source,
+                implementationNotes: req.implementationNotes,
+                notes: req.notes,
+                verificationMethod: req.verificationMethod,
+                verificationNotes: req.verificationNotes,
+                dependencies: req.dependencies,
+              },
+            });
+          }
+
+          // ── Epics + children (Implementation lane) ─────────────────
+          for (const epic of state.epics || []) {
+            const epicId = epic.id || 'epic-unknown';
+            out.push({
+              type: 'epic',
+              id: epicId,
+              title: epic.title || 'Untitled Epic',
+              description: epic.goal || epic.description || '',
+              status: epic.status || 'draft',
+              position: { x: 0, y: 0 },
+              size: { width: 260, height: 82 },
+              dependencies: epic.functionalRequirements || [],
+              metadata: {
+                goal: epic.goal,
+                valueDelivered: epic.valueDelivered,
+                priority: epic.priority,
+                acceptanceSummary: epic.acceptanceSummary,
+                effortEstimate: epic.effortEstimate,
+                epicDependencies: epic.epicDependencies,
+                implementationNotes: epic.implementationNotes,
+                technicalSummary: epic.technicalSummary,
+                functionalRequirements: epic.functionalRequirements,
+                nonFunctionalRequirements: epic.nonFunctionalRequirements,
+                additionalRequirements: epic.additionalRequirements,
+                useCases: epic.useCases,
+                fitCriteria: epic.fitCriteria,
+                successMetrics: epic.successMetrics,
+                risks: epic.risks,
+                definitionOfDone: epic.definitionOfDone,
+              },
+            });
+
+            for (const story of epic.stories || []) {
+              const storyId = story.id || 'story-unknown';
+              out.push({
+                type: 'story',
+                id: storyId,
+                title: story.title || 'Untitled Story',
+                description: story.userStory
+                  ? `As a ${story.userStory.asA}, I want ${story.userStory.iWant}, so that ${story.userStory.soThat}`
+                  : '',
+                status: story.status || 'draft',
+                position: { x: 0, y: 0 },
+                size: { width: 250, height: 78 },
+                dependencies: [],
+                parentId: epicId,
+                metadata: {
+                  userStory: story.userStory,
+                  acceptanceCriteria: story.acceptanceCriteria,
+                  technicalNotes: story.technicalNotes,
+                  storyPoints: story.storyPoints,
+                  epicId,
+                  epicTitle: epic.title,
+                  dependencies: story.dependencies,
+                  devNotes: story.devNotes,
+                  tasks: story.tasks,
+                  labels: story.labels,
+                  estimatedEffort: story.estimatedEffort,
+                  priority: story.priority,
+                  assignee: story.assignee,
+                  implementationDetails: story.implementationDetails,
+                },
+              });
+            }
+
+            for (const uc of epic.useCases || []) {
+              const ucId = uc.id || 'uc-unknown';
+              out.push({
+                type: 'use-case',
+                id: ucId,
+                title: uc.title || uc.name || 'Untitled Use Case',
+                description: uc.scenario?.context || uc.description || '',
+                status: uc.status || 'draft',
+                position: { x: 0, y: 0 },
+                size: { width: 250, height: 78 },
+                dependencies: [],
+                parentId: epicId,
+                metadata: {
+                  scenario: uc.scenario,
+                  actors: uc.actors,
+                  preconditions: uc.preconditions,
+                  postconditions: uc.postconditions,
+                  mainFlow: uc.mainFlow,
+                  alternativeFlows: uc.alternativeFlows,
+                  exceptionFlows: uc.exceptionFlows,
+                  epicId,
+                  summary: uc.summary || uc.scenario?.context,
+                  primaryActor: uc.primaryActor,
+                  secondaryActors: uc.secondaryActors,
+                  trigger: uc.trigger,
+                  businessRules: uc.businessRules,
+                  relatedRequirements: uc.relatedRequirements,
+                  relatedEpic: uc.relatedEpic || epicId,
+                  relatedStories: uc.relatedStories,
+                  sourceDocument: uc.sourceDocument,
+                  notes: uc.notes,
+                  priority: uc.priority,
+                },
+              });
+            }
+          }
+          return out;
+        },
       },
       'fs': mockFs,
       'path': require('path')

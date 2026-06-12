@@ -20,6 +20,13 @@ import {
   CHAT_COMMANDS,
   type ChatProviderId,
 } from '../commands/chat-bridge';
+import {
+  sanitizeId as sanitizeResultId,
+  resultFilePath,
+  readVerdictFile,
+  getOutputFolder,
+  type KanbanVerdict,
+} from './kanban-verdict';
 
 // Project-standard error-to-string
 function errMsg(err: unknown): string {
@@ -93,11 +100,19 @@ async function resolveAgenticProvider(): Promise<ChatProviderId> {
 function buildTerminalPrompt(
   workflowId: string,
   artifact: any,
-  outputFolder: string
+  outputFolder: string,
+  skillContent?: string
 ): string {
   const artifactType = artifact?.type || 'unknown';
   const artifactId = artifact?.id || 'unknown';
   const artifactJson = JSON.stringify(artifact, null, 2);
+  const resultPath = resultFilePath(outputFolder, artifactId, workflowId);
+
+  // Inject the actual SKILL definition (entry/exit gates, output schema) so the
+  // agent enforces the gates instead of having to discover the file itself.
+  const skillSection = skillContent
+    ? `## Workflow Definition (authoritative — follow exactly)\n\`\`\`markdown\n${skillContent}\n\`\`\`\n\n`
+    : '';
 
   return `You are executing a BMAD methodology workflow as a headless terminal agent.
 
@@ -106,22 +121,26 @@ function buildTerminalPrompt(
 - **Artifact Type:** ${artifactType}
 - **Artifact ID:** ${artifactId}
 
-## Artifact Context
+${skillSection}## Artifact Context
 \`\`\`json
 ${artifactJson}
 \`\`\`
 
 ## Instructions
-1. Execute the "${workflowId}" BMAD workflow on this artifact.
-2. Read the project's BMAD framework files from resources/_aac/ for workflow steps and agent personas.
+1. Execute the "${workflowId}" BMAD workflow on this artifact, honoring its entry/exit gates.
+2. If a "Workflow Definition" section is provided above, it is authoritative — follow its gates and output schema exactly. Otherwise read resources/_aac/ for the workflow steps.
 3. Read the artifact store at ${outputFolder} for related artifacts and context.
-4. When you have completed the workflow, write the updated artifact as JSON.
-5. Save the result to: ${outputFolder}/_terminal-output/${sanitizeId(artifactId)}-${sanitizeId(workflowId)}-result.json
+4. If the artifact metadata contains \`fixRequests\`, address EVERY one before reporting completion.
+5. When finished, write your structured verdict JSON (the schema in the Output Format / Workflow Definition) to EXACTLY this path:
+   ${resultPath}
 
-## Important
-- This is a non-interactive terminal session — complete the workflow fully and save results.
-- Output the final updated artifact as valid JSON.
-- When finished, save to the specified path above.`;
+## Important — verdict contract
+- This is a non-interactive terminal session — complete the workflow fully.
+- The result file MUST be valid JSON and MUST include a top-level "verdict" field
+  (one of: COMPLETED, APPROVED, NEEDS_FIXES, BLOCKED).
+- The orchestrator reads this file to decide whether to advance the card. If the
+  file is missing or has no verdict, the card will NOT advance.
+- For NEEDS_FIXES, include a "fix_requests" array describing each failing criterion.`;
 }
 
 // ─── CLI-specific command building ───────────────────────────────────────────
@@ -154,12 +173,7 @@ export function isPowerShell(): boolean {
  * Preserves alphanumeric, hyphen, underscore, and dot — everything else
  * becomes a hyphen. Consecutive hyphens are collapsed to one.
  */
-export function sanitizeId(id: string): string {
-  return id
-    .replace(/[^A-Za-z0-9._\-]/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
-}
+export const sanitizeId = sanitizeResultId;
 
 // ─── Shell quoting ───────────────────────────────────────────────────────────
 
@@ -197,7 +211,8 @@ export class TerminalExecutor implements vscode.Disposable {
   async executeTerminalWorkflow(
     workflowId: string,
     artifact: any,
-    store: any
+    store: any,
+    options?: { skillContent?: string }
   ): Promise<string | undefined> {
     const artifactId = artifact?.id;
     if (!artifactId) {
@@ -237,7 +252,7 @@ export class TerminalExecutor implements vscode.Disposable {
         )
       : '.agileagentcanvas-context';
 
-    const prompt = buildTerminalPrompt(workflowId, artifact, outputFolder);
+    const prompt = buildTerminalPrompt(workflowId, artifact, outputFolder, options?.skillContent);
 
     // Create the terminal with a descriptive name
     const termName = `AAC: ${workflowId} ${artifactId}`;
@@ -336,6 +351,76 @@ export class TerminalExecutor implements vscode.Disposable {
     );
 
     return sessionId;
+  }
+
+  /**
+   * Launch a terminal workflow and await its structured verdict.
+   *
+   * Deletes any stale result file first, launches the CLI agent, then polls for
+   * the result file to appear (or the terminal to close). Returns UNKNOWN if no
+   * parseable verdict is produced within the timeout — callers MUST treat
+   * UNKNOWN as "stop and ask the human", never as success.
+   */
+  async executeAndAwaitVerdict(
+    workflowId: string,
+    artifact: any,
+    store: any,
+    options?: { skillContent?: string; timeoutMs?: number; pollIntervalMs?: number }
+  ): Promise<KanbanVerdict> {
+    const artifactId = artifact?.id;
+    if (!artifactId) {
+      return { verdict: 'UNKNOWN', summary: 'No artifact id' };
+    }
+
+    const outputFolder = getOutputFolder();
+    const resultPath = resultFilePath(outputFolder, artifactId, workflowId);
+
+    // Remove any stale result so we only react to THIS run's output.
+    try {
+      if (fs.existsSync(resultPath)) fs.unlinkSync(resultPath);
+    } catch {
+      // best effort
+    }
+
+    const sessionId = await this.executeTerminalWorkflow(workflowId, artifact, store, {
+      skillContent: options?.skillContent,
+    });
+    if (!sessionId) {
+      return { verdict: 'UNKNOWN', summary: 'Terminal failed to launch' };
+    }
+
+    const timeoutMs = options?.timeoutMs ?? 20 * 60 * 1000; // 20 minutes
+    const pollIntervalMs = options?.pollIntervalMs ?? 3000;
+    const startedAt = Date.now();
+
+    return await new Promise<KanbanVerdict>((resolve) => {
+      const finish = (v: KanbanVerdict) => {
+        clearInterval(timer);
+        resolve(v);
+      };
+
+      const timer = setInterval(() => {
+        // 1. Result file present → parse and finish.
+        const verdict = readVerdictFile(resultPath);
+        if (verdict) {
+          finish(verdict);
+          return;
+        }
+
+        // 2. Terminal closed without producing a file → one last read, else UNKNOWN.
+        const stillRunning = this.activeTerminals.has(artifactId);
+        if (!stillRunning) {
+          const late = readVerdictFile(resultPath);
+          finish(late ?? { verdict: 'UNKNOWN', summary: 'Terminal closed without a verdict file' });
+          return;
+        }
+
+        // 3. Timeout.
+        if (Date.now() - startedAt >= timeoutMs) {
+          finish({ verdict: 'UNKNOWN', summary: `No verdict within ${Math.round(timeoutMs / 60000)}m` });
+        }
+      }, pollIntervalMs);
+    });
   }
 
   /**

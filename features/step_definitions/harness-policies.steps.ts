@@ -128,6 +128,17 @@ Given('the harness engine has built-in policies registered', function (this: Bma
   assert.ok(ctx.engine, 'Harness engine should exist');
 });
 
+// Prefixed 'the harness schema validator is initialized' to avoid a
+// step-name collision with schema-validator.steps.ts, which defines the
+// same phrase with actual initialization logic (via init() + real schemas).
+// The harness tests don't need a real validator — the proxyquire mock in
+// createEngine() already provides validateChanges + getSchemaContent.
+Given('the harness schema validator is initialized', function (this: BmadWorld) {
+  // The schema-validator proxyquire mock is already initialized in createEngine()
+  // with validateChanges, getSchemaContent, and isInitialized all returning
+  // valid responses. No additional setup needed.
+});
+
 
 Given('the repair engine can fix the artifact', function (this: BmadWorld) {
   // Handled by proxyquire mock — any artifact with id 'repairable' gets fixed
@@ -165,10 +176,9 @@ Given('a user policy with regex {string}', function (this: BmadWorld, regex: str
 
 Given('a policies directory with a {string} containing:', function (this: BmadWorld, fileName: string, docString: string) {
   const ctx = getCtx(this);
-  try {
-    // Try to parse the YAML-like content to extract policy info
-    const yaml = JSON.parse(docString); // Not actually YAML but test helper
-  } catch {}
+  // Store the YAML content for the 'I load user policies' step to write to disk
+  (ctx as any)._policiesYaml = (ctx as any)._policiesYaml || {};
+  (ctx as any)._policiesYaml[fileName] = docString;
 });
 
 Given('a policies directory with an invalid YAML file', function (this: BmadWorld) {
@@ -209,24 +219,26 @@ When('I evaluate {string} as {string} with artifact:', function (
   this: BmadWorld, policyId: string, phase: string, dataTable: any
 ) {
   const ctx = getCtx(this);
-  const rows = dataTable.hashes();
-  const row = rows[0];
+  // The data table is formatted as key-value pairs (one key per row), so use
+  // rowsHash() to get a single { key: value } object. hashes() treats the first
+  // row as headers and returns an array of single-key objects.
+  const row = dataTable.rowsHash();
   const artifact: any = {};
   for (const [key, value] of Object.entries(row)) {
-    artifact[key] = value;
+    try { artifact[key] = JSON.parse(value as string); }
+    catch { artifact[key] = value; }
   }
 
-  ctx.lastEvalResults = []; // will be filled by evaluate
+  ctx.lastEvalResults = [];
   const context = {
     artifactType: artifact.type || 'story',
     artifactId: artifact.id || 'test-id',
     artifact,
   };
 
-  // Evaluate just the specific policy
   const policy = ctx.engine.policies.find((p: any) => p.id === policyId);
   if (policy) {
-    policy.evaluate(context).then((failures: string[] | null) => {
+    return policy.evaluate(context).then((failures: string[] | null) => {
       ctx.lastEvalResults = [{
         policyId,
         passed: !failures?.length,
@@ -243,7 +255,7 @@ When('I evaluate {string} as {string} with null artifact', function (this: BmadW
   const ctx = getCtx(this);
   const policy = ctx.engine.policies.find((p: any) => p.id === policyId);
   if (policy) {
-    policy.evaluate({ artifactType: 'story', artifactId: 'null-artifact', artifact: null }).then((failures: string[] | null) => {
+    return policy.evaluate({ artifactType: 'story', artifactId: 'null-artifact', artifact: null }).then((failures: string[] | null) => {
       ctx.lastEvalResults = [{
         policyId,
         passed: !failures?.length,
@@ -258,11 +270,10 @@ When('I evaluate {string} as {string} with null artifact', function (this: BmadW
 
 When('I evaluate {string} as {string} with a repairable artifact', function (this: BmadWorld, policyId: string, phase: string) {
   const ctx = getCtx(this);
-  const artifact = { id: 'repairable', title: 'Test', type: 'story' };
+  const artifact = { id: 'repairable', title: 'Test', type: 'story', status: 'totally-invalid' };
   const context = { artifactType: 'story', artifactId: 'repairable', artifact };
 
-  const results = ctx.engine.evaluate(context, phase as 'pre-flight' | 'post-flight');
-  results.then((r: any[]) => {
+  return ctx.engine.evaluate(context, phase as 'pre-flight' | 'post-flight').then((r: any[]) => {
     ctx.lastEvalResults = r;
     ctx.autoFixAttempted = true;
   });
@@ -272,8 +283,9 @@ When('I evaluate {string} as {string} with story artifact containing:', function
   this: BmadWorld, policyId: string, phase: string, dataTable: any
 ) {
   const ctx = getCtx(this);
-  const rows = dataTable.hashes();
-  const row = rows[0];
+  // The data table is formatted as key-value pairs (one key per row), so use
+  // rowsHash() to get a single { key: value } object.
+  const row = dataTable.rowsHash();
   const artifact: any = {};
   for (const [key, value] of Object.entries(row)) {
     // Handle dot notation for nested fields
@@ -294,7 +306,7 @@ When('I evaluate {string} as {string} with story artifact containing:', function
 
   const policy = ctx.engine.policies.find((p: any) => p.id === policyId);
   if (policy) {
-    policy.evaluate({ artifactType: 'story', artifactId: 'story-1', artifact }).then((failures: string[] | null) => {
+    return policy.evaluate({ artifactType: 'story', artifactId: 'story-1', artifact }).then((failures: string[] | null) => {
       ctx.lastEvalResults = [{
         policyId,
         passed: !failures?.length,
@@ -307,22 +319,28 @@ When('I evaluate {string} as {string} with story artifact containing:', function
   }
 });
 
-When('I evaluate {string} as {string} with epic artifact', function (this: BmadWorld, policyId: string, phase: string) {
+When('I evaluate {string} as {string} with epic artifact', async function (this: BmadWorld, policyId: string, phase: string) {
   const ctx = getCtx(this);
-  const artifact = { id: 'EPIC-1', title: 'Test Epic', type: 'epic' };
+  // Create a fresh engine with ONLY the target policy so the engine's
+  // artifactType filter works correctly. Using the full engine would
+  // include schema-conformance (no artifactType = universal). Using
+  // policy.evaluate() directly would bypass the artifactType filter
+  // (the policy's own evaluate function doesn't check artifactType).
+  const Engine = proxyquire('../../src/harness/policy-engine', {
+    vscode: this.vscode,
+    '../utils/logger': { createLogger: () => ({ info: () => {}, error: () => {}, debug: () => {}, warn: () => {} }) },
+    '../state/schema-validator': { schemaValidator: { validateChanges: () => ({ valid: true, errors: [] }), getSchemaContent: () => undefined, isInitialized: () => true } },
+    '../state/schema-repair-engine': { repairDataWithSchema: () => ({ changed: false }) },
+    '../trace/trace-recorder': { getTraceRecorder: () => ({ record: () => {} }) },
+  }).HarnessEngine;
+  const filteredEngine = new Engine();
   const policy = ctx.engine.policies.find((p: any) => p.id === policyId);
-  if (policy) {
-    policy.evaluate({ artifactType: 'epic', artifactId: 'EPIC-1', artifact }).then((failures: string[] | null) => {
-      ctx.lastEvalResults = [{
-        policyId,
-        passed: !failures?.length,
-        failures: failures || [],
-        fixed: false,
-        severity: policy.severity,
-        timestamp: new Date().toISOString(),
-      }];
-    });
-  }
+  if (policy) { filteredEngine.registerPolicy(policy); }
+  const artifact = { id: 'EPIC-1', title: 'Test Epic', type: 'epic' };
+  ctx.lastEvalResults = await filteredEngine.evaluate(
+    { artifactType: 'epic', artifactId: 'EPIC-1', artifact },
+    phase as 'pre-flight' | 'post-flight'
+  );
 });
 
 
@@ -339,7 +357,7 @@ When('I evaluate {string} as {string} with epic containing stories:', function (
 
   const policy = ctx.engine.policies.find((p: any) => p.id === policyId);
   if (policy) {
-    policy.evaluate({ artifactType: 'epic', artifactId: 'EPIC-1', artifact }).then((failures: string[] | null) => {
+    return policy.evaluate({ artifactType: 'epic', artifactId: 'EPIC-1', artifact }).then((failures: string[] | null) => {
       ctx.lastEvalResults = [{
         policyId,
         passed: !failures?.length,
@@ -358,7 +376,7 @@ When('I evaluate {string} as {string} with epic having no stories', function (th
 
   const policy = ctx.engine.policies.find((p: any) => p.id === policyId);
   if (policy) {
-    policy.evaluate({ artifactType: 'epic', artifactId: 'EPIC-1', artifact }).then((failures: string[] | null) => {
+    return policy.evaluate({ artifactType: 'epic', artifactId: 'EPIC-1', artifact }).then((failures: string[] | null) => {
       ctx.lastEvalResults = [{
         policyId,
         passed: !failures?.length,
@@ -377,7 +395,7 @@ When('I evaluate {string} as {string} with story artifact', function (this: Bmad
 
   const policy = ctx.engine.policies.find((p: any) => p.id === policyId);
   if (policy) {
-    policy.evaluate({ artifactType: 'story', artifactId: 'S-1', artifact }).then((failures: string[] | null) => {
+    return policy.evaluate({ artifactType: 'story', artifactId: 'S-1', artifact }).then((failures: string[] | null) => {
       ctx.lastEvalResults = [{
         policyId,
         passed: !failures?.length,
@@ -394,7 +412,7 @@ When('I evaluate the user policy with artifact containing {string}', function (t
   const ctx = getCtx(this);
   const policy = ctx.policies[0];
   if (policy) {
-    policy.evaluate({ artifactType: 'story', artifactId: 'test', artifact: { content } }).then((failures: string[] | null) => {
+    return policy.evaluate({ artifactType: 'story', artifactId: 'test', artifact: { content } }).then((failures: string[] | null) => {
       ctx.lastEvalResults = [{
         policyId: policy.id,
         passed: !failures?.length,
@@ -454,26 +472,68 @@ When('I evaluate all pre-flight policies for a failing story', async function (t
 
 When('I load user policies', async function (this: BmadWorld) {
   const ctx = getCtx(this);
-  const mockModule = proxyquire('../../src/harness/policy-loader', {
-    vscode: this.vscode,
-    '../state/artifact-store': {
-      ArtifactStore: class {},
-    },
-    '../harness/policy-engine': {
-      HarnessPolicy: class {},
-    },
-    '../utils/logger': {
-      createLogger: () => ({
-        info: () => {}, error: () => {}, debug: () => {}, warn: () => {},
-      }),
-    },
-  });
+  // Create a temp dir with the YAML files set up by the Given steps (if any).
+  // The Given step 'a policies directory with a {fileName} containing:'
+  // stores the YAML content on ctx.policiesYaml[fileName] for us to write.
+  // Wrapped in try/finally so the temp dir is always cleaned up — even if
+  // the policy loader throws or the test is interrupted mid-run.
+  const os = await import('os');
+  const fsNode = await import('fs');
+  const pathMod = await import('path');
+  // Declare tmpDir before the try so the finally block can reference it
+  // even if mkdtempSync throws (it stays undefined, and the guard skips cleanup).
+  let tmpDir: string | undefined;
+  try {
+    tmpDir = fsNode.mkdtempSync(pathMod.join(os.tmpdir(), 'aac-policies-'));
+    const policiesDir = pathMod.join(tmpDir, 'policies');
+    fsNode.mkdirSync(policiesDir, { recursive: true });
 
-  const mockStore = {
-    getSourceFolder: () => null,
-  };
+    // Write any YAML files that Given steps set up
+    const yamlFiles: Record<string, string> = (ctx as any)._policiesYaml || {};
+    for (const [fileName, content] of Object.entries(yamlFiles)) {
+      fsNode.writeFileSync(pathMod.join(policiesDir, fileName), content as string, 'utf-8');
+    }
 
-  ctx.loadedPolicies = await mockModule.loadUserPolicies(mockStore);
+    // Mock vscode.workspace.fs to read from our temp dir
+    const sourceUri = this.vscode.Uri.file(tmpDir);
+    const mockFs = {
+      stat: async () => ({ type: this.vscode.FileType.Directory, ctime: 0, mtime: 0, size: 0 }),
+      readDirectory: async () => {
+        const files = fsNode.readdirSync(policiesDir);
+        return files.map(f => [f, this.vscode.FileType.File] as [string, number]);
+      },
+      readFile: async (uri: any) => {
+        const content = fsNode.readFileSync(uri.fsPath, 'utf-8');
+        return Buffer.from(content, 'utf-8');
+      },
+    };
+
+    const mockStore = { getSourceFolder: () => sourceUri };
+    const mockModule = proxyquire('../../src/harness/policy-loader', {
+      vscode: { ...this.vscode, workspace: { ...this.vscode.workspace, fs: mockFs } },
+      '../state/artifact-store': { ArtifactStore: class {} },
+      '../harness/policy-engine': { HarnessPolicy: class {} },
+      '../utils/logger': {
+        createLogger: () => ({
+          info: () => {}, error: () => {}, debug: () => {}, warn: () => {},
+        }),
+      },
+    });
+
+    ctx.loadedPolicies = await mockModule.loadUserPolicies(mockStore);
+  } finally {
+    // Clean up the temp dir to prevent leaks across test runs.
+    // recursive: true deletes all contents; force: true ignores ENOENT
+    // (the dir may have already been removed by the test).
+    // Guard with `if (tmpDir)` so we skip cleanup if mkdtempSync threw.
+    if (tmpDir) {
+      try {
+        fsNode.rmSync(tmpDir, { recursive: true, force: true });
+      } catch {
+        // Best-effort cleanup — don't mask the real test result if rm fails.
+      }
+    }
+  }
 });
 
 When('I register a new custom policy', function (this: BmadWorld) {
@@ -490,7 +550,7 @@ When('I register a new custom policy', function (this: BmadWorld) {
 
 When('I evaluate with a repairable artifact', async function (this: BmadWorld) {
   const ctx = getCtx(this);
-  const artifact = { id: 'repairable', title: 'Needs Fix', type: 'story' };
+  const artifact = { id: 'repairable', title: 'Needs Fix', type: 'story', status: 'totally-invalid' };
   ctx.lastEvalResults = await ctx.engine.evaluate(
     { artifactType: 'story', artifactId: 'repairable', artifact },
     'pre-flight'

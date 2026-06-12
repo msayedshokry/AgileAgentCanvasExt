@@ -547,10 +547,17 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
   const agentInfoCache = useRef<Map<string, AgentInfo>>(new Map());
   // Track which artifact has a Resume in progress (shows spinner on card + disables button)
   const [resumingArtifactId, setResumingArtifactId] = useState<string | null>(null);
+  // Auto-advance toggle: when ON, dropping a story into In-Progress triggers the
+  // autonomous implement → review → done loop. When OFF, the card stays put and
+  // the user moves it between columns manually.
+  const [autoAdvance, setAutoAdvance] = useState<boolean>(false);
 
   // Ref to avoid stale closure in handleDrop (reviewer feedback)
   const itemsRef = useRef(items);
   itemsRef.current = items;
+  // Remembers each card's column before an optimistic drop so a failed
+  // transition can be rolled back instead of leaving the card desynced.
+  const preDropStatus = useRef<Map<string, string>>(new Map());
 
   // ── Listen for messages from extension ────────────────────────────────────
   useEffect(() => {
@@ -577,6 +584,9 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
               });
           });
           break;
+        case 'autoAdvanceState':
+          setAutoAdvance(!!message.enabled);
+          break;
         case 'agentStateUpdated':
           // Clear cached info for this artifact since state changed
           agentInfoCache.current.delete(message.artifactId);
@@ -595,8 +605,17 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
             return next;
           });
           if (!message.ok) {
+            // Roll the card back to the column it came from — the optimistic
+            // drop was rejected by the backend, so the board must not lie.
+            const original = preDropStatus.current.get(message.artifactId);
+            if (original !== undefined) {
+              setItems(prev => prev.map(i =>
+                i.id === message.artifactId ? { ...i, status: original } : i
+              ));
+            }
             setToast({ message: `Transition failed: ${(message.blockedBy as string[])?.join(', ') ?? 'unknown reason'}`, type: 'error' });
           }
+          preDropStatus.current.delete(message.artifactId);
           break;
       }
     };
@@ -610,6 +629,9 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
     if (!initialArtifacts) {
       vscode.postMessage({ type: 'agenticKanbanReady' });
     }
+
+    // Sync the auto-advance toggle with the persisted backend setting.
+    vscode.postMessage({ type: 'kanban:getAutoAdvance' });
 
     return () => {
       window.removeEventListener('message', handler);
@@ -652,6 +674,9 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
 
     const targetStatus = kanbanColumnToStatus(targetColumn);
     if (item.status === targetStatus) return;
+
+    // Remember the origin column so a rejected transition can be rolled back.
+    preDropStatus.current.set(itemId, item.status);
 
     // Optimistic UI update
     setItems(prev => prev.map(i =>
@@ -698,6 +723,22 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
       <header className="agentic-kanban-header">
         <h2>Agentic Execution Board</h2>
         <div className="agentic-kanban-toolbar">
+          <label
+            className="agentic-kanban-autoadvance"
+            title="When ON, dropping a story into In-Progress runs the autonomous implement → review → done loop. When OFF, you move cards between columns manually."
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px' }}
+          >
+            <input
+              type="checkbox"
+              checked={autoAdvance}
+              onChange={(e) => {
+                const next = e.target.checked;
+                setAutoAdvance(next);
+                vscode.postMessage({ type: 'kanban:setAutoAdvance', enabled: next });
+              }}
+            />
+            Auto-advance
+          </label>
           <button onClick={() => vscode.postMessage({ type: 'openTraceViewer' })}>
             View Traces
           </button>

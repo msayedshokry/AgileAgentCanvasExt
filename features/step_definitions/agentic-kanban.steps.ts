@@ -38,7 +38,9 @@ interface KanbanWebviewContext {
 const handlerContexts = new WeakMap<BmadWorld, KanbanHandlerContext>();
 const webviewContexts = new WeakMap<BmadWorld, KanbanWebviewContext>();
 
-function getHandlerCtx(world: BmadWorld): KanbanHandlerContext {
+// Exported so shared step definitions in features/support/ can resolve the
+// kanban context (e.g. shared-store-steps.ts auto-detects lane vs kanban).
+export function getHandlerCtx(world: BmadWorld): KanbanHandlerContext {
   let ctx = handlerContexts.get(world);
   if (!ctx) {
     ctx = {
@@ -106,6 +108,12 @@ function handlerStubOverrides(ctx: KanbanHandlerContext, world: BmadWorld) {
         },
       },
     },
+    // Stub kanban-settings to prevent loading the real vscode-dependent module
+    '../workflow/kanban-settings': {
+      isKanbanAutoAdvanceEnabled: () => false,
+      setKanbanAutoAdvance: async () => {},
+      getKanbanMaxIterations: () => 3,
+    },
     '../chat/active-session': { getActiveChatSession: () => null },
     vscode: {
       ...world.vscode,
@@ -162,11 +170,18 @@ Given('the artifact store has {int} artifacts', function (this: BmadWorld, count
 
 // ─── WHEN ───────────────────────────────────────────────────────────────────
 
+// Shared steps "the store updateArtifact will throw" and "the transition
+// result blockedBy should contain {string}" live in
+// features/support/shared-store-steps.ts — they auto-detect whether the
+// active context is lane-transitions or agentic-kanban.
+
 When('I send a {string} message with:', async function (this: BmadWorld, messageType: string, dataTable: any) {
   const ctx = getHandlerCtx(this);
-  const rows = dataTable.hashes();
-  const message: any = { type: messageType };
-  for (const row of rows) { message[row[0] || Object.keys(row)[0]] = row[1] || Object.values(row)[1]; }
+  // The data table is formatted as key-value pairs (one key per row), so use
+  // rowsHash() to get a single { key: value } object — hashes() would treat
+  // each row as a header and return an array of single-key objects.
+  const row = dataTable.rowsHash();
+  const message: any = { type: messageType, ...row };
 
   const handlerModule = proxyquire('../../src/views/agentic-kanban-message-handler', handlerStubOverrides(ctx, this));
   ctx.handlerResult = await handlerModule.handleAgenticKanbanMessage(message, ctx.store, {} as any);
@@ -176,9 +191,9 @@ When('I send a {string} message with:', async function (this: BmadWorld, message
 
 When('I send a {string} message providing a webview with:', async function (this: BmadWorld, messageType: string, dataTable: any) {
   const ctx = getHandlerCtx(this);
-  const rows = dataTable.hashes();
-  const message: any = { type: messageType };
-  for (const row of rows) { message[row[0] || Object.keys(row)[0]] = row[1] || Object.values(row)[1]; }
+  // See comment in 'I send a {string} message with:' — key-value table needs rowsHash()
+  const row = dataTable.rowsHash();
+  const message: any = { type: messageType, ...row };
 
   const mockWebview = { postMessage: (msg: any) => { ctx.webviewMessages.push(msg); } };
   const handlerModule = proxyquire('../../src/views/agentic-kanban-message-handler', handlerStubOverrides(ctx, this));

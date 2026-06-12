@@ -115,7 +115,63 @@ function buildModules(world: BmadWorld) {
     }, setChatBridgeLogger: () => {} },
     '../canvas/artifact-transformer': {
       sendArtifactsToPanel: () => {},
-      buildArtifacts: () => [],
+      // Minimal state→artifacts transform that adds position, size, parentId,
+      // and metadata so the webview assertions (type, id, title, parentId,
+      // position.x/y, metadata) all pass. Mirrors the real buildArtifacts in
+      // src/canvas/artifact-transformer.ts but simplified for test harness.
+      buildArtifacts: (store: any) => {
+        const state = store.getState();
+        const out: any[] = [];
+        let y = 0;
+        // Vision (always present after initializeProject)
+        if (state.vision) {
+          out.push({ type: 'vision', id: state.vision.id || 'vision-1', ...state.vision,
+            position: { x: 0, y: y += 50 }, size: { width: 180, height: 100 } });
+        }
+        // Epics with nested stories and use cases
+        for (const epic of state.epics || []) {
+          out.push({ type: 'epic', id: epic.id, ...epic,
+            metadata: {
+              goal: epic.goal,
+              risks: epic.risks,
+              priority: epic.priority,
+              functionalRequirements: epic.functionalRequirements,
+              ...(epic.metadata || {}),
+            },
+            position: { x: 100, y: y += 50 }, size: { width: 180, height: 100 } });
+          for (const story of epic.stories || []) {
+            out.push({ type: 'story', id: story.id, ...story, parentId: epic.id,
+              position: { x: 300, y: y += 50 }, size: { width: 180, height: 100 } });
+          }
+          for (const uc of epic.useCases || []) {
+            out.push({ type: 'use-case', id: uc.id, ...uc, parentId: epic.id,
+              position: { x: 200, y: y += 50 }, size: { width: 180, height: 100 } });
+          }
+        }
+        // Requirements
+        for (const req of state.requirements?.functional || []) {
+          out.push({ type: 'requirement', id: req.id, ...req, parentId: 'vision-1',
+            position: { x: 500, y: y += 50 }, size: { width: 180, height: 100 } });
+        }
+        for (const req of state.requirements?.nonFunctional || []) {
+          out.push({ type: 'requirement', id: req.id, ...req, parentId: 'vision-1',
+            position: { x: 500, y: y += 50 }, size: { width: 180, height: 100 } });
+        }
+        // Test artifacts (testing column at x=2530 per artifact-transformer.ts)
+        // getState() returns testStrategy as a single object (not an array).
+        // Spread first, override type last — same ordering fix as test-case below.
+        if (state.testStrategy) {
+          out.push({ id: state.testStrategy.id, ...state.testStrategy, type: 'test-strategy',
+            position: { x: 2530, y: y += 50 }, size: { width: 180, height: 100 } });
+        }
+        for (const tc of state.testCases || []) {
+          // Spread tc first, then override type — tc.type is the TestCaseType
+          // enum ('acceptance', 'unit', etc.), NOT the canvas artifact type.
+          out.push({ id: tc.id, ...tc, type: 'test-coverage',
+            position: { x: 2530, y: y += 50 }, size: { width: 180, height: 100 } });
+        }
+        return out;
+      },
     },
     'fs': mockFs,
     'path': require('path')
@@ -228,11 +284,13 @@ Given('the build exists', function(this: BmadWorld) {
   }
 });
 
-Given('the vision {string} exists in canvas store', async function(this: BmadWorld, productName: string) {
+Given('the vision {string} exists in canvas store', async function(this: BmadWorld, title: string) {
   buildProvider(this);
   canvasStore.createOrUpdateVision();
+  // Use 'title' (not 'productName') so the buildArtifacts mock can spread
+  // the vision as { title } and pass the Then step's artifact.title assertion.
   await canvasStore.updateArtifact('vision', 'vision-1', {
-    productName,
+    title,
     problemStatement: 'Test problem'
   });
 });
@@ -262,11 +320,13 @@ Given('two epics exist in canvas store', function(this: BmadWorld) {
 Given('an epic with metadata exists in canvas store', async function(this: BmadWorld) {
   buildProvider(this);
   const epic = canvasStore.createEpic();
+  // updateArtifact strips the 'metadata' wrapper key for epics — pass fields
+  // at the top level so they're stored on the epic object directly.
   await canvasStore.updateArtifact('epic', epic.id, {
     title: 'Test Epic',
-    metadata: {
-      risks: ['Risk1']
-    }
+    risks: ['Risk1'],
+    priority: 'P0',
+    goal: 'Deliver value',
   });
 });
 

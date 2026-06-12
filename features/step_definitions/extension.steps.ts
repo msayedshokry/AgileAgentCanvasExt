@@ -269,6 +269,12 @@ function loadExtensionModule(world: BmadWorld): any {
           cancelSession: () => {}
         })
       },
+      // Stub kanban-orchestrator to prevent loading terminalExecutor → chat-bridge chain
+      './workflow/kanban-orchestrator': {
+        initializeKanbanOrchestrator: () => {},
+        kanbanOrchestrator: undefined,
+        kanbanProgress: { event: () => ({ dispose: () => {} }), fire: () => {}, dispose: () => {} },
+      },
       './canvas/artifact-transformer': {
         sendArtifactsToPanel: () => {}
       },

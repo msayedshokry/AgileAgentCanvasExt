@@ -11,6 +11,7 @@ import { getWorkflowExecutor } from '../workflow/workflow-executor';
 import { getTraceRecorder } from '../trace/trace-recorder';
 import { terminalExecutor } from '../workflow/terminal-executor';
 import { getPersonaForArtifactType } from '../chat/agent-personas';
+import { setKanbanAutoAdvance, isKanbanAutoAdvanceEnabled } from '../workflow/kanban-settings';
 
 // Project-standard error-to-string pattern
 function errMsg(err: unknown): string {
@@ -77,6 +78,27 @@ export async function handleAgenticKanbanMessage(
             blockedBy: [errMsg(error)],
           });
         }
+      }
+      return true;
+    }
+
+    case 'kanban:setAutoAdvance': {
+      await setKanbanAutoAdvance(!!message.enabled);
+      if (webview) {
+        webview.postMessage({
+          type: 'autoAdvanceState',
+          enabled: isKanbanAutoAdvanceEnabled(),
+        });
+      }
+      return true;
+    }
+
+    case 'kanban:getAutoAdvance': {
+      if (webview) {
+        webview.postMessage({
+          type: 'autoAdvanceState',
+          enabled: isKanbanAutoAdvanceEnabled(),
+        });
       }
       return true;
     }

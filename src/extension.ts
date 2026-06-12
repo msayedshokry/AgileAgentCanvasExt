@@ -8,6 +8,7 @@ import { ArtifactStore } from './state/artifact-store';
 import { WorkspaceResolver } from './state/workspace-resolver';
 import { getWorkflowExecutor } from './workflow/workflow-executor';
 import { initializeLaneTransitionEngine, laneTransitionEngine } from './workflow/lane-transitions';
+import { initializeKanbanOrchestrator } from './workflow/kanban-orchestrator';
 import { concurrencyQueue } from './workflow/concurrency-queue';
 import { initializeAcpSessionManager } from './acp/session-manager';
 import { agentMessageBus } from './acp/agent-bus/message-bus';
@@ -164,6 +165,7 @@ export function activate(context: vscode.ExtensionContext) {
     const workflowExecutor = getWorkflowExecutor();
     initializeAcpSessionManager(workflowExecutor);
     initializeLaneTransitionEngine(artifactStore, workflowExecutor);
+    initializeKanbanOrchestrator(artifactStore, workflowExecutor);
 
     // ── Agent-to-Agent Message Bus initialization ──────────────────────
     // The agent message bus, registry, and handoff negotiation service are

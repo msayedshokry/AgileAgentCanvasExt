@@ -8,7 +8,7 @@ import * as assert from "assert";
 import { BmadWorld } from "../support/world";
 
 // We need to use proxyquire to load the module with mocks
-const proxyquire = require("proxyquire").noCallThru();
+const proxyquire = require('proxyquire').noCallThru();
 
 // Helper to get or create ArtifactStore
 function getArtifactStore(world: BmadWorld): any {

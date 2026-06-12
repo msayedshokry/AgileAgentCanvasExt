@@ -52,6 +52,9 @@ export class AgentMessageBus {
   private priorityQueue: Array<{ message: BusMessage; resolve: (env: BusMessageEnvelope) => void }> = [];
   private processing = false;
   private readonly maxHistory = 1000;
+  /** Tracks consecutive delivery failures per subscription. Reset on success. */
+  private failureCounters = new Map<string, number>();
+  private static readonly MAX_CONSECUTIVE_FAILURES = 5;
 
   // ── Subscription Management ────────────────────────────────────────────
 
@@ -169,9 +172,19 @@ export class AgentMessageBus {
         await sub.handler(message);
         envelope.delivered = true;
         envelope.deliveredAt = new Date().toISOString();
+        // Reset failure counter on success
+        this.failureCounters.delete(sub.id);
       } catch (err) {
         envelope.delivered = false;
-        logger.warn(`[Bus] Delivery failed for sub ${sub.id}: ${err instanceof Error ? err.message : String(err)}`);
+        const current = (this.failureCounters.get(sub.id) || 0) + 1;
+        this.failureCounters.set(sub.id, current);
+        logger.warn(`[Bus] Delivery failed for sub ${sub.id} (${current}/${AgentMessageBus.MAX_CONSECUTIVE_FAILURES}): ${err instanceof Error ? err.message : String(err)}`);
+        // Auto-unsubscribe after consecutive failures to prevent flooding
+        if (current >= AgentMessageBus.MAX_CONSECUTIVE_FAILURES) {
+          this.subscriptions.delete(sub.id);
+          this.failureCounters.delete(sub.id);
+          logger.warn(`[Bus] Removed subscription ${sub.id} for agent ${sub.agentId} after ${current} consecutive delivery failures`);
+        }
       }
       envelopes.push(envelope);
     }
@@ -298,6 +311,7 @@ export class AgentMessageBus {
     this.messageHistory = [];
     this.priorityQueue = [];
     this.processing = false;
+    this.failureCounters.clear();
     logger.info('Message bus reset');
   }
 

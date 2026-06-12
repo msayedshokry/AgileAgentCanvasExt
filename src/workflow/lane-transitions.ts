@@ -22,6 +22,8 @@ import { harnessEngine } from '../harness/policy-engine';
 import { harnessFeedback } from '../harness/harness-feedback';
 import { terminalExecutor } from './terminal-executor';
 import { getA2AOutboundClient } from '../acp/agent-bus/a2a-outbound-client';
+import { isKanbanAutoAdvanceEnabled } from './kanban-settings';
+import { kanbanOrchestrator } from './kanban-orchestrator';
 
 // Project-standard error-to-string pattern
 function errMsg(err: unknown): string {
@@ -110,6 +112,21 @@ export class LaneTransitionEngine {
       }
     }
 
+    // ── Autonomous auto-advance ───────────────────────────────────────────
+    // When auto-advance is enabled and a story enters In-Progress, hand off to
+    // the orchestrator, which drives implement → review → done (re-implementing
+    // on NEEDS_FIXES) and manages its own concurrency lock for the whole loop.
+    // When auto-advance is OFF this is skipped and the single-shot path below
+    // runs — the user then moves the card to the next column manually.
+    if (
+      isKanbanAutoAdvanceEnabled() &&
+      artifactType === 'story' &&
+      toStatus === 'in-progress' &&
+      kanbanOrchestrator
+    ) {
+      return await kanbanOrchestrator.runAutonomous(found.artifact, { model, stream, token });
+    }
+
     // Check concurrency
     if (concurrencyQueue.isLocked(artifactId)) {
       return { ok: false, status: 'blocked', blockedBy: ['Artifact is currently being processed by another agent'] };
@@ -127,12 +144,12 @@ export class LaneTransitionEngine {
 
       // Auto-launch workflow if rule specifies one.
       // A2A remote delegation takes priority over local workflows.
-      if (rule?.workflowId || rule?.a2aRemoteUrl) {
+      if (rule?.workflowId || rule?.terminalWorkflowId || rule?.a2aRemoteUrl) {
         const shouldConfirm = rule.confirmWithUser && !this.isYoloMode();
         if (shouldConfirm) {
           const label = rule.a2aRemoteUrl
             ? `Remote agent at ${rule.a2aRemoteUrl}`
-            : rule.workflowId!;
+            : (rule.workflowId || rule.terminalWorkflowId)!;
           const confirmed = await this.promptUser(found.artifact, label);
           if (!confirmed) {
             return { ok: true, workflowLaunched: false, status: 'moved_without_workflow' };
@@ -151,15 +168,17 @@ export class LaneTransitionEngine {
         // ── Local Workflow Path ────────────────────────────────────────
         // E2: Launch workflow via executeLaneTransition (chat session) or
         // TerminalExecutor (headless CLI agent) depending on availability.
-        // Uses terminalWorkflowId for autonomous mode when different from workflowId.
-        // At this point workflowId is guaranteed non-null (we checked
-        // `rule?.workflowId || rule?.a2aRemoteUrl` and the A2A path returned early).
-        const wfId = rule.workflowId!;
-        const effectiveWorkflowId = rule.terminalWorkflowId || wfId;
+        //
+        // Some transitions only define a terminalWorkflowId (e.g. review→done
+        // runs review-guard with no interactive workflowId). Resolve a single
+        // id for each path so those autonomous-only rules still fire — the
+        // previous `rule.workflowId!` assumption silently dropped them.
+        const chatWorkflowId = (rule.workflowId || rule.terminalWorkflowId)!;
+        const terminalWorkflowId = (rule.terminalWorkflowId || rule.workflowId)!;
         if (model && stream) {
           // Active Copilot Chat session — execute in-chat with streaming
           await this.executor.executeLaneTransition(
-            wfId,
+            chatWorkflowId,
             found.artifact,
             this.store,
             model,
@@ -170,18 +189,18 @@ export class LaneTransitionEngine {
           // No chat session — execute via terminal CLI provider.
           // Lock is released when the terminal closes via callback, NOT here.
           const sessionId = await terminalExecutor.executeTerminalWorkflow(
-            effectiveWorkflowId,
+            terminalWorkflowId,
             found.artifact,
             this.store
           );
           if (sessionId) {
             logger.info(
-              `[E2] Launched terminal execution for ${wfId} on ${artifactId} (session: ${sessionId})`
+              `[E2] Launched terminal execution for ${terminalWorkflowId} on ${artifactId} (session: ${sessionId})`
             );
             return { ok: true, workflowLaunched: true, status: 'terminal_launched', terminalSessionId: sessionId };
           } else {
             logger.warn(
-              `[E2] Failed to launch terminal execution for ${rule.workflowId} on ${artifactId}`
+              `[E2] Failed to launch terminal execution for ${terminalWorkflowId} on ${artifactId}`
             );
           }
         }
@@ -204,7 +223,7 @@ export class LaneTransitionEngine {
         }
       }
 
-      return { ok: true, workflowLaunched: !!(rule?.workflowId || rule?.a2aRemoteUrl), status: 'complete' };
+      return { ok: true, workflowLaunched: !!(rule?.workflowId || rule?.terminalWorkflowId || rule?.a2aRemoteUrl), status: 'complete' };
     } catch (error) {
       logger.error('Transition execution failed', { artifactId, error: errMsg(error) });
       return { ok: false, status: 'blocked', blockedBy: [errMsg(error)] };
