@@ -27,7 +27,7 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - run: npm ci
+      - run: npm install
 
       - name: TypeCheck
         run: npm run check-types
@@ -55,7 +55,7 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - run: npm ci
+      - run: npm install
 
       - name: Run Cucumber BDD Tests
         run: npm run test -- --profile ci
@@ -97,7 +97,7 @@ jobs:
           cache: 'npm'
           cache-dependency-path: webview-ui/package-lock.json
 
-      - run: npm ci
+      - run: npm install
 
       - name: TypeCheck
         run: npx tsc --noEmit
@@ -135,8 +135,8 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - run: npm ci
-      - run: cd webview-ui && npm ci
+      - run: npm install
+      - run: cd webview-ui && npm install
 
       - name: Full Compile
         run: npm run compile
