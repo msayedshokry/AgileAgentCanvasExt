@@ -33,6 +33,8 @@ export interface KanbanItem {
   };
   /** Harness evaluation results (AgenticKanban only) */
   harnessResults?: Array<{ policyId: string; passed: boolean; severity: string }>;
+  /** Feature 1: this is a child story shown indented under its parent epic */
+  isChild?: boolean;
 }
 
 export interface KanbanColumnDef {
@@ -41,12 +43,14 @@ export interface KanbanColumnDef {
   accent: string;
 }
 
+// Quick Win 7: theme-aware column accents using VS Code chart color variables
+// with hardcoded fallbacks for custom themes that may not define chart vars.
 export const KANBAN_COLUMNS: KanbanColumnDef[] = [
   { key: 'backlog',       label: 'Backlog',       accent: 'var(--vscode-descriptionForeground)' },
-  { key: 'ready-for-dev', label: 'Ready for Dev', accent: '#6366f1' },
-  { key: 'in-progress',   label: 'In Progress',   accent: '#f59e0b' },
-  { key: 'review',        label: 'Review',        accent: '#8b5cf6' },
-  { key: 'done',          label: 'Done',          accent: '#22c55e' },
+  { key: 'ready-for-dev', label: 'Ready for Dev', accent: 'var(--vscode-charts-blue, #6366f1)' },
+  { key: 'in-progress',   label: 'In Progress',   accent: 'var(--vscode-charts-orange, #f59e0b)' },
+  { key: 'review',        label: 'Review',        accent: 'var(--vscode-charts-purple, #8b5cf6)' },
+  { key: 'done',          label: 'Done',          accent: 'var(--vscode-charts-green, #22c55e)' },
 ];
 
 /**

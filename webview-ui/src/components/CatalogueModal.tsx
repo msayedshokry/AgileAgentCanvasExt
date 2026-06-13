@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { vscode } from '../vscodeApi';
 import { Icon } from './Icon';
+import { useEvent } from '../agentic-kanban/useEvent';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -161,6 +162,27 @@ export function CatalogueModal({ onClose }: CatalogueModalProps) {
     setConfirmRemoveRepo(null);
   }, [confirmRemoveRepo]);
 
+  // ── Inline handler useEvents (stable identity, latest closure)
+  // Hoisted from JSX inline arrows. The in-map handlers (tab, sync, remove)
+  // take its iteration variable as a parameter so the JSX just binds it
+  // with a 1-line arrow — the body of the handler stays stable.
+
+  const handleClearSearch = useEvent(() => setSearch(''));
+  const handleShowCreateSkill = useEvent(() => setShowCreateSkill(true));
+  const handleCancelCreateSkill = useEvent(() => {
+    setShowCreateSkill(false);
+    setNewSkillName('');
+  });
+
+  const handleSetActiveTab = useEvent((tab: Tab) => setActiveTab(tab));
+
+  // Featured-repos list: add by URL (parameter is the iteration variable).
+  const handleAddFeaturedRepo = useEvent((url: string) => {
+    vscode.postMessage({ type: 'addSkillRepo', url });
+  });
+
+  // Tracked-repos list: sync / remove by slug.
+
   // ── Filtering ──────────────────────────────────────────────────────────────
 
   const filteredEntries = entries.filter(e => {
@@ -207,7 +229,7 @@ export function CatalogueModal({ onClose }: CatalogueModalProps) {
             onChange={e => setSearch(e.target.value)}
           />
           {search && (
-            <button className="wfl-search-clear" onClick={() => setSearch('')} title="Clear search"><Icon name="close" size={12} /></button>
+            <button className="wfl-search-clear" onClick={handleClearSearch} title="Clear search"><Icon name="close" size={12} /></button>
           )}
         </div>
 
@@ -225,7 +247,7 @@ export function CatalogueModal({ onClose }: CatalogueModalProps) {
               role="tab"
               aria-selected={activeTab === tab}
               className={`wfl-tab${activeTab === tab ? ' active' : ''}`}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => handleSetActiveTab(tab)}
             >
               {label}
               <span className="wfl-tab-count">{count}</span>
@@ -248,7 +270,7 @@ export function CatalogueModal({ onClose }: CatalogueModalProps) {
               {/* Create new skill CTA */}
               <div className="cat-actions-bar">
                 {!showCreateSkill ? (
-                  <button className="cat-create-btn" onClick={() => setShowCreateSkill(true)}>
+                  <button className="cat-create-btn" onClick={handleShowCreateSkill}>
                     <Icon name="plus" size={14} /> Create New Skill
                   </button>
                 ) : (
@@ -263,7 +285,7 @@ export function CatalogueModal({ onClose }: CatalogueModalProps) {
                       autoFocus
                     />
                     <button className="cat-btn cat-btn--primary" onClick={handleCreateSkill} disabled={!newSkillName.trim()}>Create</button>
-                    <button className="cat-btn" onClick={() => { setShowCreateSkill(false); setNewSkillName(''); }}>Cancel</button>
+                    <button className="cat-btn" onClick={handleCancelCreateSkill}>Cancel</button>
                   </div>
                 )}
               </div>
@@ -296,7 +318,7 @@ export function CatalogueModal({ onClose }: CatalogueModalProps) {
               newRepoUrl={newRepoUrl}
               onNewRepoUrlChange={setNewRepoUrl}
               onAddRepo={handleAddRepo}
-              onAddRepoByUrl={(url: string) => vscode.postMessage({ type: 'addSkillRepo', url })}
+              onAddRepoByUrl={handleAddFeaturedRepo}
               onSyncRepo={handleSyncRepo}
               onRemoveRepo={handleRemoveRepo}
               repoUrlRef={repoUrlRef}

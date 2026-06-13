@@ -11,11 +11,29 @@ import { getWorkflowExecutor } from '../workflow/workflow-executor';
 import { getTraceRecorder } from '../trace/trace-recorder';
 import { terminalExecutor } from '../workflow/terminal-executor';
 import { getPersonaForArtifactType } from '../chat/agent-personas';
-import { setKanbanAutoAdvance, isKanbanAutoAdvanceEnabled } from '../workflow/kanban-settings';
+import { setKanbanAutoAdvance, isKanbanAutoAdvanceEnabled, getKanbanWipLimits } from '../workflow/kanban-settings';
 
 // Project-standard error-to-string pattern
 function errMsg(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
+}
+
+// P0 #1 fix: Track active webview stream disposables per artifact so repeated
+// `kanban:jumpToTerminal` clicks don't stack listeners and duplicate output.
+const terminalStreamDisposables = new Map<string, vscode.Disposable>();
+function disposeTerminalStream(artifactId: string): void {
+  const d = terminalStreamDisposables.get(artifactId);
+  if (d) {
+    try { d.dispose(); } catch (err) { logger.debug(`[AgenticKanban] stream dispose failed: ${errMsg(err)}`); }
+    terminalStreamDisposables.delete(artifactId);
+  }
+}
+
+/** Dispose every active terminal stream listener. Called when the view is torn down. */
+export function disposeAllTerminalStreams(): void {
+  for (const [artifactId] of terminalStreamDisposables) {
+    disposeTerminalStream(artifactId);
+  }
 }
 
 /**
@@ -36,6 +54,18 @@ export async function handleAgenticKanbanMessage(
 
       try {
         const activeSession = getActiveChatSession();
+        // P1 #12: push fresh chat session state on every card drag so the
+        // Resume button stays in sync when the user opens/closes a chat
+        // without otherwise triggering a message.
+        if (webview) {
+          const hasSession = !!(activeSession?.model && activeSession?.stream);
+          webview.postMessage({
+            type: 'chatSessionState',
+            active: hasSession,
+            model: hasSession ? activeSession?.model?.label : undefined,
+          });
+        }
+
         const result = await laneTransitionEngine.handleTransition(
           artifactId,
           fromStatus,
@@ -127,19 +157,43 @@ export async function handleAgenticKanbanMessage(
       const { artifactId: resumeId, workflowId, sessionId: resumeSessionId } = message;
 
       try {
+        // P1 #12: if the handler was invoked without a webview (e.g., CLI/test),
+        // proceed with the VSCode notification fallback path.
         const activeSession = getActiveChatSession();
-        if (!activeSession?.model || !activeSession?.stream) {
-          vscode.window.showWarningMessage(
-            'Resume requires an active AI chat session. Open the @agileagentcanvas chat participant first.'
-          );
+        const hasActiveSession = !!(activeSession?.model && activeSession?.stream);
+        if (!hasActiveSession) {
           if (webview) {
+            webview.postMessage({
+              type: 'chatSessionState',
+              active: false,
+            });
+            webview.postMessage({
+              type: 'transitionResult',
+              artifactId: resumeId,
+              ok: false,
+              blockedBy: ['Resume requires an active @agileagentcanvas chat session'],
+            });
             webview.postMessage({
               type: 'agentStateUpdated',
               artifactId: resumeId,
               agentState: { status: 'interrupted', interruptionReason: 'no-session' },
             });
+          } else {
+            vscode.window.showWarningMessage(
+              'Resume requires an active AI chat session. Open the @agileagentcanvas chat participant first.'
+            );
           }
           return true;
+        }
+
+        // Inform webview that a chat session IS active (so the Resume
+        // button is enabled and the tooltip shows the model name).
+        if (webview) {
+          webview.postMessage({
+            type: 'chatSessionState',
+            active: true,
+            model: activeSession?.model?.label,
+          });
         }
 
         const found = store.findArtifactById(resumeId);
@@ -149,7 +203,26 @@ export async function handleAgenticKanbanMessage(
         }
 
         if (!workflowId) {
-          vscode.window.showErrorMessage('No workflow ID provided for resume');
+          // P1 #10: post a transitionResult so the webview drops the card
+          // out of pendingTransitions and shows a toast — the error
+          // notification alone leaves the card stuck in 'queued' forever.
+          // `showErrorMessage` is a fallback for the rare case the handler
+          // is invoked without a webview (e.g. direct CLI/test invocation).
+          webview?.postMessage({
+            type: 'transitionResult',
+            artifactId: resumeId,
+            ok: false,
+            blockedBy: ['No workflow ID provided for resume'],
+          });
+          webview?.postMessage({
+            type: 'agentStateUpdated',
+            artifactId: resumeId,
+            agentState: { status: 'failed' },
+            lockInfo: { locked: false },
+          });
+          if (!webview) {
+            vscode.window.showErrorMessage('No workflow ID provided for resume');
+          }
           return true;
         }
 
@@ -183,19 +256,26 @@ export async function handleAgenticKanbanMessage(
             },
             lockInfo: { locked: false },
           });
-        }
-      } catch (error) {
-        logger.error(`[AgenticKanban] Resume execution failed: ${resumeId}`, { error });
-        if (webview) {
-          webview.postMessage({
-            type: 'transitionResult',
-            artifactId: resumeId,
-            ok: false,
-            blockedBy: [errMsg(error)],
-          });
-        }
+        }    } catch (error) {
+      logger.error(`[AgenticKanban] Resume execution failed: ${resumeId}`, { error });
+      if (webview) {
+        // P0 #2 fix: clear the lock indicator on resume failure so the card
+        // doesn't keep showing "Locked by …" after a failed resume.
+        webview.postMessage({
+          type: 'agentStateUpdated',
+          artifactId: resumeId,
+          agentState: { status: 'failed' },
+          lockInfo: { locked: false },
+        });
+        webview.postMessage({
+          type: 'transitionResult',
+          artifactId: resumeId,
+          ok: false,
+          blockedBy: [errMsg(error)],
+        });
       }
-      return true;
+    }
+    return true;
     }
 
     case 'kanban:abandonExecution': {
@@ -243,12 +323,26 @@ export async function handleAgenticKanbanMessage(
     }
 
     case 'kanban:undoAbandonExecution': {
-      const { artifactId: undoId } = message;
+      const { artifactId: undoId, sessionId: undoSessionId } = message;
       try {
-        // Re-acquire the concurrency lock (use a generic agent name since
-        // we can't guarantee the original agent role is available here).
+        // Reviewer feedback: acquire the lock FIRST. If acquire throws, we
+        // bail out without having touched the trace file. Re-acquire the
+        // concurrency lock (use a generic agent name since we can't
+        // guarantee the original agent role is available here).
         const requestId = `undo-${undoId}-${Date.now()}`;
         concurrencyQueue.acquire(undoId, 'undo-revert', requestId);
+
+        // P0 #3 fix: actually undo the abandon by removing the
+        // `decision: 'abandoned'` trace entry, so scanInterruptedSessions
+        // will surface this artifact as interrupted again on the next
+        // restart (instead of silently keeping the lock gone).
+        if (undoSessionId) {
+          try {
+            await getTraceRecorder().removeDecision(undoSessionId, 'abandoned');
+          } catch (traceErr) {
+            logger.warn(`[AgenticKanban] Could not remove abandoned trace entry: ${errMsg(traceErr)}`);
+          }
+        }
 
         if (webview) {
           webview.postMessage({
@@ -274,8 +368,20 @@ export async function handleAgenticKanbanMessage(
       return true;
     }
 
+    case 'kanban:closeTerminal': {
+      // Bug fix #2: webview closed the terminal modal — dispose the stream
+      // listener so IPC doesn't keep spamming a hidden webview.
+      const { artifactId: closeId } = message;
+      disposeTerminalStream(closeId);
+      return true;
+    }
+
     case 'kanban:jumpToTerminal': {
       const { artifactId: jumpId } = message;
+
+      // P0 #1 fix: dispose any prior stream listener for this artifact so
+      // repeated clicks don't stack listeners and duplicate output.
+      disposeTerminalStream(jumpId);
 
       // Send accumulated terminal output to the webview for modal display
       const output = terminalExecutor.getTerminalOutput(jumpId);
@@ -297,12 +403,13 @@ export async function handleAgenticKanbanMessage(
               data: chunk,
             });
           } catch {
-            streamDisposable.dispose();
+            disposeTerminalStream(jumpId);
           }
         } else {
-          streamDisposable.dispose();
+          disposeTerminalStream(jumpId);
         }
       });
+      terminalStreamDisposables.set(jumpId, streamDisposable);
 
       // Always show terminal in VS Code panel as well (backup)
       const found = terminalExecutor.jumpToTerminal(jumpId);
@@ -310,6 +417,37 @@ export async function handleAgenticKanbanMessage(
         vscode.window.showInformationMessage(
           `No active terminal found for ${jumpId}. The terminal session may have ended.`
         );
+      }
+      return true;
+    }
+
+    case 'kanban:updateArtifactTitle': {
+      const { artifactId, title } = message;
+      try {
+        const found = store.findArtifactById(artifactId);
+        if (!found) {
+          logger.warn(`[AgenticKanban] updateArtifactTitle: ${artifactId} not found`);
+          return true;
+        }
+        await store.updateArtifact(found.type, artifactId, { title });
+        logger.info(`[AgenticKanban] Updated title for ${artifactId} to "${title}"`);
+        // Push updated artifacts to webview so the title persists visually
+        if (webview) {
+          const artifacts = buildArtifacts(store, vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath);
+          webview.postMessage({ type: 'updateArtifacts', artifacts });
+        }
+      } catch (error) {
+        logger.error(`[AgenticKanban] updateArtifactTitle failed: ${artifactId}`, { error });
+      }
+      return true;
+    }
+
+    case 'kanban:getWipLimits': {
+      if (webview) {
+        webview.postMessage({
+          type: 'kanban:wipLimits',
+          limits: getKanbanWipLimits(),
+        });
       }
       return true;
     }

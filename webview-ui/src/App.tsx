@@ -1,4 +1,5 @@
-import { Component, useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Component, useState, useEffect, useMemo, useRef } from 'react';
+import { useEvent } from './agentic-kanban/useEvent';
 import type { ErrorInfo, ReactNode } from 'react';
 import { Canvas } from './components/Canvas';
 import { AICursor } from './components/AICursor';
@@ -111,9 +112,9 @@ function App() {
   // Kanban toggle: show agentic execution board in the main canvas area
   const [showKanban, setShowKanban] = useState<boolean>(false);
 
-  const handleToggleKanban = useCallback(() => {
+  const handleToggleKanban = useEvent(() => {
     setShowKanban(prev => !prev);
-  }, []);
+  });
 
   // Canvas search state (SearchBox rendered in App, to the left of workflow FAB)
   const [searchOpen, setSearchOpen] = useState<boolean>(false);
@@ -145,22 +146,16 @@ function App() {
 
   // Sprint status mismatches state removed — statuses now come directly from epic/story JSON files.
 
-  // Ref so the message handler (which has stale closures) can read current schemaFixing state
-  const schemaFixingRef = useRef(false);
-  useEffect(() => { schemaFixingRef.current = schemaFixing; }, [schemaFixing]);
-
-  // Ref for schema-related toast timeouts so they can be cleaned up on unmount
+  // Ref for schema-related toast timeouts so they can be cleaned up on unmount.
+  // This is genuine timer-management (not a stale-closure workaround): the
+  // setTimeout ID persists across renders so the unmount cleanup and the
+  // successive setSchemaFixMessage calls can cancel any in-flight timer.
   const schemaToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Unsaved changes protection: track whether the detail panel has dirty edits
   const [detailPanelDirty, setDetailPanelDirty] = useState<boolean>(false);
   // When user tries to navigate away from a dirty panel, store the pending action
   const [pendingNavigation, setPendingNavigation] = useState<{ type: 'select' | 'open' | 'selectAndEdit'; id: string } | null>(null);
-  // Ref so the message handler (which has stale closures) can read current dirty state
-  const detailPanelDirtyRef = useRef(false);
-  const detailPanelOpenRef = useRef(false);
-  useEffect(() => { detailPanelDirtyRef.current = detailPanelDirty; }, [detailPanelDirty]);
-  useEffect(() => { detailPanelOpenRef.current = detailPanelOpen; }, [detailPanelOpen]);
 
   // Theme override: null = follow VS Code, 'light' or 'dark' = forced
   const [themeOverride, setThemeOverride] = useState<'light' | 'dark' | null>(() => {
@@ -183,7 +178,7 @@ function App() {
     } catch (_) { /* ignore */ }
   }, [themeOverride]);
 
-  const handleToggleTheme = useCallback(() => {
+  const handleToggleTheme = useEvent(() => {
     setThemeOverride(prev => {
       // Cycle: null → detect current VS Code theme to decide which to force
       if (prev === null) {
@@ -193,7 +188,7 @@ function App() {
       if (prev === 'light') return 'dark';
       return null; // dark → back to auto
     });
-  }, []);
+  });
 
   // Track artifact IDs to detect when a new project is loaded
   const [previousArtifactIds, setPreviousArtifactIds] = useState<string>('');
@@ -268,197 +263,201 @@ function App() {
     console.log('[App] detailPanelOpen changed to:', detailPanelOpen);
   }, [detailPanelOpen]);
 
-  useEffect(() => {
-    // Listen for messages from extension
-    const handleMessage = (event: MessageEvent) => {
-      const message = event.data;
-      console.log('Canvas received message:', message.type);
-      
-      switch (message.type) {
-        case 'updateArtifacts':
-          console.log('Updating artifacts, count:', message.artifacts?.length);
-          if (message.artifacts) {
-            // Log breakdown by type for debugging
-            const byType: Record<string, number> = {};
-            message.artifacts.forEach((a: Artifact) => {
-              byType[a.type] = (byType[a.type] || 0) + 1;
-            });
-            console.log('Artifacts by type:', byType);
-            setArtifacts(message.artifacts);
-          }
-          if (message.activeFolderName !== undefined) {
-            setActiveFolderName(message.activeFolderName);
-          }
-          // Use functional updater to read current reloadRequested (avoids stale closure)
-          setReloadRequested(prev => {
-            if (prev) {
-              setExternalChange(null);
-              setNeedsReload(false);
-            }
-            return false;
+  // Hoisted message handler (useEvent: stable identity, latest closure).
+  // With useEvent, this reads `detailPanelOpen` / `detailPanelDirty` /
+  // `schemaFixing` from the latest closure at every message-arrival,
+  // so the three deleted useRef workarounds (detailPanelOpenRef,
+  // detailPanelDirtyRef, schemaFixingRef) are no longer needed.
+  const handleMessage = useEvent((event: MessageEvent) => {
+    const message = event.data;
+    console.log('Canvas received message:', message.type);
+
+    switch (message.type) {
+      case 'updateArtifacts':
+        console.log('Updating artifacts, count:', message.artifacts?.length);
+        if (message.artifacts) {
+          // Log breakdown by type for debugging
+          const byType: Record<string, number> = {};
+          message.artifacts.forEach((a: Artifact) => {
+            byType[a.type] = (byType[a.type] || 0) + 1;
           });
-          break;
-        case 'aiCursorMove':
-          setAiCursor(message.cursor);
-          break;
-        case 'aiCursorHide':
-          setAiCursor(null);
-          break;
-        case 'selectArtifact':
-          console.log('[App] MESSAGE: selectArtifact received', message.id);
-          if (detailPanelOpenRef.current && detailPanelDirtyRef.current) {
-            setPendingNavigation({ type: 'select', id: message.id });
-          } else {
-            setSelectedId(message.id);
-            setForceEditMode(false); // Normal selection, not edit mode
+          console.log('Artifacts by type:', byType);
+          setArtifacts(message.artifacts);
+        }
+        if (message.activeFolderName !== undefined) {
+          setActiveFolderName(message.activeFolderName);
+        }
+        // Use functional updater to read current reloadRequested (avoids stale closure)
+        setReloadRequested(prev => {
+          if (prev) {
+            setExternalChange(null);
+            setNeedsReload(false);
           }
-          // Don't auto-open panel on external selection
-          break;
-        case 'selectAndEdit':
-          // New artifact created - select it and open in edit mode
-          console.log('[App] MESSAGE: selectAndEdit received - THIS OPENS THE PANEL', message.id);
-          if (detailPanelOpenRef.current && detailPanelDirtyRef.current) {
-            setPendingNavigation({ type: 'selectAndEdit', id: message.id });
-          } else {
-            setSelectedId(message.id);
-            setDetailPanelOpen(true); // Open panel for new artifacts
-            setForceEditMode(true); // Force the detail panel to open in edit mode
-          }
-          break;
-        case 'externalArtifactsChanged':
-          setExternalChange(prev => ({
-            filePath: message.filePath || prev?.filePath || '',
-            count: (prev?.count || 0) + 1
-          }));
-          setReloadRequested(false);
-          setNeedsReload(true);
-          break;
-        case 'elicitationMethods':
-          console.log('Received elicitation methods, count:', message.methods?.length);
-          if (message.methods) {
-            setElicitationMethods(message.methods);
-          }
-          break;
-        case 'bmmWorkflows':
-          console.log('Received BMM workflows, count:', message.workflows?.length);
-          if (message.workflows) {
-            setBmmWorkflows(message.workflows);
-          }
-          break;
-        case 'revealArtifact':
-          console.log('[App] revealArtifact received:', message.id);
-          if (message.id) {
-            setSelectedId(message.id);
-            setCenterOnId(message.id);
-          }
-          break;
-        case 'detectedProjectCount':
-          setDetectedProjectCount(message.count ?? 0);
-          break;
-        case 'validationError':
-          setValidationErrors({
-            artifactType: message.artifactType || '',
-            artifactId: message.artifactId || '',
-            errors: message.errors || [],
-          });
-          break;
-        case 'schemaIssues':
-          // Ignore schema issues arriving while a fix is in progress —
-          // the fix flow sends its own schemaFixResult with remaining issues.
-          if (!schemaFixingRef.current) {
-            setSchemaIssues(message.issues || []);
-          }
-          break;
-        case 'schemaFixResult':
-          setSchemaFixing(false);
-          if (message.cancelled) {
-            // User cancelled — keep current issues visible, do nothing
-          } else if (message.success) {
-            setSchemaIssues([]);
-            const fixed = message.fixedCount ?? 0;
-            setSchemaFixMessage(fixed > 0 ? `Fixed ${fixed} issue(s) — all schemas valid` : 'All schemas valid');
-            if (schemaToastTimerRef.current) clearTimeout(schemaToastTimerRef.current);
-            schemaToastTimerRef.current = setTimeout(() => setSchemaFixMessage(null), 4000);
-          } else if (message.remainingIssues?.length > 0) {
-            setSchemaIssues(message.remainingIssues);
-            if (message.noProgress) {
-              setSchemaFixMessage(
-                `Could not auto-fix ${message.remainingIssues.length} issue(s). Manual editing may be required.`
-              );
-              if (schemaToastTimerRef.current) clearTimeout(schemaToastTimerRef.current);
-              schemaToastTimerRef.current = setTimeout(() => setSchemaFixMessage(null), 6000);
-            } else {
-              const fixed = message.fixedCount ?? 0;
-              if (fixed > 0) {
-                setSchemaFixMessage(
-                  `Fixed ${fixed} issue(s), ${message.remainingIssues.length} remaining`
-                );
-                if (schemaToastTimerRef.current) clearTimeout(schemaToastTimerRef.current);
-                schemaToastTimerRef.current = setTimeout(() => setSchemaFixMessage(null), 5000);
-              }
-            }
-          } else {
-            // Error-only variant (success: false, no remainingIssues)
-            const errMsg = message.error || 'Schema fix failed unexpectedly.';
-            setSchemaFixMessage(errMsg);
+          return false;
+        });
+        break;
+      case 'aiCursorMove':
+        setAiCursor(message.cursor);
+        break;
+      case 'aiCursorHide':
+        setAiCursor(null);
+        break;
+      case 'selectArtifact':
+        console.log('[App] MESSAGE: selectArtifact received', message.id);
+        if (detailPanelOpen && detailPanelDirty) {
+          setPendingNavigation({ type: 'select', id: message.id });
+        } else {
+          setSelectedId(message.id);
+          setForceEditMode(false); // Normal selection, not edit mode
+        }
+        // Don't auto-open panel on external selection
+        break;
+      case 'selectAndEdit':
+        // New artifact created - select it and open in edit mode
+        console.log('[App] MESSAGE: selectAndEdit received - THIS OPENS THE PANEL', message.id);
+        if (detailPanelOpen && detailPanelDirty) {
+          setPendingNavigation({ type: 'selectAndEdit', id: message.id });
+        } else {
+          setSelectedId(message.id);
+          setDetailPanelOpen(true); // Open panel for new artifacts
+          setForceEditMode(true); // Force the detail panel to open in edit mode
+        }
+        break;
+      case 'externalArtifactsChanged':
+        setExternalChange(prev => ({
+          filePath: message.filePath || prev?.filePath || '',
+          count: (prev?.count || 0) + 1
+        }));
+        setReloadRequested(false);
+        setNeedsReload(true);
+        break;
+      case 'elicitationMethods':
+        console.log('Received elicitation methods, count:', message.methods?.length);
+        if (message.methods) {
+          setElicitationMethods(message.methods);
+        }
+        break;
+      case 'bmmWorkflows':
+        console.log('Received BMM workflows, count:', message.workflows?.length);
+        if (message.workflows) {
+          setBmmWorkflows(message.workflows);
+        }
+        break;
+      case 'revealArtifact':
+        console.log('[App] revealArtifact received:', message.id);
+        if (message.id) {
+          setSelectedId(message.id);
+          setCenterOnId(message.id);
+        }
+        break;
+      case 'detectedProjectCount':
+        setDetectedProjectCount(message.count ?? 0);
+        break;
+      case 'validationError':
+        setValidationErrors({
+          artifactType: message.artifactType || '',
+          artifactId: message.artifactId || '',
+          errors: message.errors || [],
+        });
+        break;
+      case 'schemaIssues':
+        // Ignore schema issues arriving while a fix is in progress —
+        // the fix flow sends its own schemaFixResult with remaining issues.
+        if (!schemaFixing) {
+          setSchemaIssues(message.issues || []);
+        }
+        break;
+      case 'schemaFixResult':
+        setSchemaFixing(false);
+        if (message.cancelled) {
+          // User cancelled — keep current issues visible, do nothing
+        } else if (message.success) {
+          setSchemaIssues([]);
+          const fixed = message.fixedCount ?? 0;
+          setSchemaFixMessage(fixed > 0 ? `Fixed ${fixed} issue(s) — all schemas valid` : 'All schemas valid');
+          if (schemaToastTimerRef.current) clearTimeout(schemaToastTimerRef.current);
+          schemaToastTimerRef.current = setTimeout(() => setSchemaFixMessage(null), 4000);
+        } else if (message.remainingIssues?.length > 0) {
+          setSchemaIssues(message.remainingIssues);
+          if (message.noProgress) {
+            setSchemaFixMessage(
+              `Could not auto-fix ${message.remainingIssues.length} issue(s). Manual editing may be required.`
+            );
             if (schemaToastTimerRef.current) clearTimeout(schemaToastTimerRef.current);
             schemaToastTimerRef.current = setTimeout(() => setSchemaFixMessage(null), 6000);
-          }
-          break;
-        case 'schemaValidateResult':
-          setSchemaValidating(false);
-          if (message.issues?.length > 0) {
-            setSchemaIssues(message.issues);
-            setSchemaValidateSuccess(false);
           } else {
-            setSchemaIssues([]);
-            setSchemaValidateSuccess(true);
-            // Auto-dismiss the success toast after 3 seconds
-            if (schemaToastTimerRef.current) clearTimeout(schemaToastTimerRef.current);
-            schemaToastTimerRef.current = setTimeout(() => setSchemaValidateSuccess(null), 3000);
+            const fixed = message.fixedCount ?? 0;
+            if (fixed > 0) {
+              setSchemaFixMessage(
+                `Fixed ${fixed} issue(s), ${message.remainingIssues.length} remaining`
+              );
+              if (schemaToastTimerRef.current) clearTimeout(schemaToastTimerRef.current);
+              schemaToastTimerRef.current = setTimeout(() => setSchemaFixMessage(null), 5000);
+            }
           }
-          break;
-        case 'captureCanvas':
-          // Extension requests a canvas screenshot — set format and bump trigger
-          if (message.format === 'png' || message.format === 'pdf') {
-            setScreenshotFormat(message.format);
-          }
-          setScreenshotTrigger(prev => prev + 1);
-          break;
-        case 'openAskModal':
-          // Extension command (e.g. Ctrl+Shift+A) requests the Ask modal
-          setAskOpen(true);
-          break;
-        case 'showGraphifyModal':
-          setGraphifyModalOpen(true);
-          break;
-        case 'openCatalogueModal':
-          setCatalogueOpen(true);
-          break;
-        case 'graphifyStatusResponse':
-          if (message.status) {
-            setGraphifyReady(message.status.recommendation === 'ready' || message.status.recommendation === 'update');
-          }
-          break;
-        case 'sprintStatusResult':
-          if (message.found) {
-            // Build sprint items from live epics (single source of truth)
-            // YAML content (if present) provides sprint groupings only
-            const parsed = parseSprintStatusYaml(
-              message.content as string | null | undefined,
-              (message.epics as any[]) ?? []
-            );
-            setSprintData({ found: true, ...parsed });
-          } else {
-            setSprintData({ found: false });
-          }
-          break;
-        // sprintStatusMismatches removed — statuses come from JSON files directly
-      }
-    };
+        } else {
+          // Error-only variant (success: false, no remainingIssues)
+          const errMsg = message.error || 'Schema fix failed unexpectedly.';
+          setSchemaFixMessage(errMsg);
+          if (schemaToastTimerRef.current) clearTimeout(schemaToastTimerRef.current);
+          schemaToastTimerRef.current = setTimeout(() => setSchemaFixMessage(null), 6000);
+        }
+        break;
+      case 'schemaValidateResult':
+        setSchemaValidating(false);
+        if (message.issues?.length > 0) {
+          setSchemaIssues(message.issues);
+          setSchemaValidateSuccess(false);
+        } else {
+          setSchemaIssues([]);
+          setSchemaValidateSuccess(true);
+          // Auto-dismiss the success toast after 3 seconds
+          if (schemaToastTimerRef.current) clearTimeout(schemaToastTimerRef.current);
+          schemaToastTimerRef.current = setTimeout(() => setSchemaValidateSuccess(null), 3000);
+        }
+        break;
+      case 'captureCanvas':
+        // Extension requests a canvas screenshot — set format and bump trigger
+        if (message.format === 'png' || message.format === 'pdf') {
+          setScreenshotFormat(message.format);
+        }
+        setScreenshotTrigger(prev => prev + 1);
+        break;
+      case 'openAskModal':
+        // Extension command (e.g. Ctrl+Shift+A) requests the Ask modal
+        setAskOpen(true);
+        break;
+      case 'showGraphifyModal':
+        setGraphifyModalOpen(true);
+        break;
+      case 'openCatalogueModal':
+        setCatalogueOpen(true);
+        break;
+      case 'graphifyStatusResponse':
+        if (message.status) {
+          setGraphifyReady(message.status.recommendation === 'ready' || message.status.recommendation === 'update');
+        }
+        break;
+      case 'sprintStatusResult':
+        if (message.found) {
+          // Build sprint items from live epics (single source of truth)
+          // YAML content (if present) provides sprint groupings only
+          const parsed = parseSprintStatusYaml(
+            message.content as string | null | undefined,
+            (message.epics as any[]) ?? []
+          );
+          setSprintData({ found: true, ...parsed });
+        } else {
+          setSprintData({ found: false });
+        }
+        break;
+      // sprintStatusMismatches removed — statuses come from JSON files directly
+    }
+  });
 
+  useEffect(() => {
     window.addEventListener('message', handleMessage);
-    
+
     // Request initial data from extension
     console.log('Canvas sending ready message');
     vscode.postMessage({ type: 'ready' });
@@ -467,63 +466,63 @@ function App() {
       window.removeEventListener('message', handleMessage);
       if (schemaToastTimerRef.current) clearTimeout(schemaToastTimerRef.current);
     };
-  }, []);
+  }, [handleMessage]);
 
-  const handleReloadArtifacts = useCallback(() => {
+  const handleReloadArtifacts = useEvent(() => {
     if (reloadRequested) return;
     setReloadRequested(true);
     vscode.postMessage({ type: 'reloadArtifacts' });
-  }, [reloadRequested]);
+  });
 
-  const handleSwitchProject = useCallback(() => {
+  const handleSwitchProject = useEvent(() => {
     vscode.postMessage({ type: 'switchProject' });
-  }, []);
+  });
 
-  const handleExport = useCallback(() => {
+  const handleExport = useEvent(() => {
     vscode.postMessage({ type: 'exportArtifacts' });
-  }, []);
+  });
 
-  const handleScreenshotReady = useCallback((dataUrl: string, format: 'png' | 'pdf') => {
+  const handleScreenshotReady = useEvent((dataUrl: string, format: 'png' | 'pdf') => {
     // Send the captured screenshot data back to the extension for saving
     vscode.postMessage({ type: 'canvasScreenshot', dataUrl, format });
-  }, []);
+  });
 
-  const handleScreenshotError = useCallback((message: string) => {
+  const handleScreenshotError = useEvent((message: string) => {
     // Send the error to the extension so it can show a VS Code notification
     vscode.postMessage({ type: 'canvasScreenshotError', message });
-  }, []);
+  });
 
-  const handleImport = useCallback(() => {
+  const handleImport = useEvent(() => {
     vscode.postMessage({ type: 'importArtifacts' });
-  }, []);
+  });
 
-  const handleOpenHelp = useCallback(() => {
+  const handleOpenHelp = useEvent(() => {
     setHelpOpen(true);
-  }, []);
+  });
 
-  const handleCloseHelp = useCallback(() => {
+  const handleCloseHelp = useEvent(() => {
     setHelpOpen(false);
-  }, []);
+  });
 
-  const handleOpenAsk = useCallback(() => {
+  const handleOpenAsk = useEvent(() => {
     setAskOpen(true);
-  }, []);
+  });
 
-  const handleCloseAsk = useCallback(() => {
+  const handleCloseAsk = useEvent(() => {
     setAskOpen(false);
-  }, []);
+  });
 
-  const handleOpenSprintView = useCallback(() => {
+  const handleOpenSprintView = useEvent(() => {
     setSprintData({ found: false, loading: true });
     setShowSprintView(true);
     vscode.postMessage({ type: 'getSprintStatus' });
-  }, []);
+  });
 
-  const handleCloseSprintView = useCallback(() => {
+  const handleCloseSprintView = useEvent(() => {
     setShowSprintView(false);
-  }, []);
+  });
 
-  const handleRunSprintPlanning = useCallback(() => {
+  const handleRunSprintPlanning = useEvent(() => {
     setShowSprintView(false);
     vscode.postMessage({
       type: 'launchWorkflow',
@@ -531,43 +530,43 @@ function App() {
         triggerPhrase: 'sprint planning',
       }
     });
-  }, []);
+  });
 
-  const handleAskSubmit = useCallback((text: string) => {
+  const handleAskSubmit = useEvent((text: string) => {
     setAskOpen(false);
     vscode.postMessage({ type: 'askAgent', text });
-  }, []);
+  });
 
-  const handleDismissExternalChange = useCallback(() => {
+  const handleDismissExternalChange = useEvent(() => {
     setExternalChange(null);
     setReloadRequested(false);
-  }, []);
+  });
 
   const getChangedFileLabel = (filePath: string) => {
     const parts = filePath.split(/[/\\]/);
     return parts[parts.length - 1] || filePath;
   };
 
-  const handleArtifactUpdate = useCallback((id: string, updates: Partial<Artifact>) => {
+  const handleArtifactUpdate = useEvent((id: string, updates: Partial<Artifact>) => {
     // Find the artifact to get its type
     const artifact = artifacts.find(a => a.id === id);
     const artifactType = artifact?.type || 'epic';
-    
+
     console.log('Sending update for', artifactType, id, updates);
-    vscode.postMessage({ 
-      type: 'updateArtifact', 
+    vscode.postMessage({
+      type: 'updateArtifact',
       artifactType,
-      id, 
-      updates 
+      id,
+      updates
     });
-    
+
     // Optimistically update local state for immediate feedback
-    setArtifacts(prev => prev.map(a => 
+    setArtifacts(prev => prev.map(a =>
       a.id === id ? { ...a, ...updates } : a
     ));
-  }, [artifacts]);
+  });
 
-  const handleArtifactDelete = useCallback((artifact: Artifact) => {
+  const handleArtifactDelete = useEvent((artifact: Artifact) => {
     console.log('Sending delete for', artifact.type, artifact.id);
     vscode.postMessage({
       type: 'deleteArtifact',
@@ -584,9 +583,9 @@ function App() {
       }
       return prev.filter(a => a.id !== artifact.id);
     });
-  }, []);
+  });
 
-  const handleArtifactSelect = (id: string | null) => {
+  const handleArtifactSelect = useEvent((id: string | null) => {
     console.log('[App] handleArtifactSelect called', { id, currentDetailPanelOpen: detailPanelOpen });
     // Guard: if detail panel has unsaved changes and we're switching to a different artifact, confirm first
     if (detailPanelOpen && detailPanelDirty && id !== selectedId) {
@@ -598,10 +597,10 @@ function App() {
     // Don't open panel on single-click selection
     console.log('[App] handleArtifactSelect - NOT opening panel, just selecting');
     vscode.postMessage({ type: 'selectArtifact', id });
-  };
+  });
 
   // Open the detail panel for an artifact (double-click or info button)
-  const handleOpenDetailPanel = useCallback((id: string) => {
+  const handleOpenDetailPanel = useEvent((id: string) => {
     console.log('[App] handleOpenDetailPanel called', { id, previousDetailPanelOpen: detailPanelOpen });
     // Guard: if detail panel has unsaved changes and we're switching to a different artifact, confirm first
     if (detailPanelOpen && detailPanelDirty && id !== selectedId) {
@@ -613,17 +612,17 @@ function App() {
     setDetailPanelOpen(true);
     setForceEditMode(false);
     vscode.postMessage({ type: 'selectArtifact', id });
-  }, [detailPanelOpen, detailPanelDirty, selectedId]);
+  });
 
-  const handleCloseDetailPanel = () => {
+  const handleCloseDetailPanel = useEvent(() => {
     console.log('[App] handleCloseDetailPanel called - CLOSING PANEL');
     setDetailPanelOpen(false);
     setForceEditMode(false);
     // Keep selectedId so card stays highlighted
-  };
+  });
 
   // --- Unsaved changes navigation guard handlers ---
-  const handleDiscardAndNavigate = useCallback(() => {
+  const handleDiscardAndNavigate = useEvent(() => {
     if (!pendingNavigation) return;
     const nav = pendingNavigation;
     setPendingNavigation(null);
@@ -643,13 +642,13 @@ function App() {
       setDetailPanelOpen(true);
       setForceEditMode(true);
     }
-  }, [pendingNavigation]);
+  });
 
-  const handleCancelNavigation = useCallback(() => {
+  const handleCancelNavigation = useEvent(() => {
     setPendingNavigation(null);
-  }, []);
+  });
 
-  const handleToggleExpand = useCallback((id: string) => {
+  const handleToggleExpand = useEvent((id: string) => {
     console.log('handleToggleExpand called for:', id);
     setExpandedIds(prev => {
       const next = new Set(prev);
@@ -662,10 +661,10 @@ function App() {
       console.log('Toggled', id, 'from', wasExpanded, 'to', !wasExpanded, 'expandedIds now:', Array.from(next));
       return next;
     });
-  }, []);
+  });
 
   // Per-category toggle: expand/collapse a single badge label within a parent
-  const handleToggleCategoryExpand = useCallback((parentId: string, label: string) => {
+  const handleToggleCategoryExpand = useEvent((parentId: string, label: string) => {
     console.log('handleToggleCategoryExpand called for:', parentId, 'label:', label);
     setExpandedCategories(prev => {
       const next = new Map(prev);
@@ -690,9 +689,9 @@ function App() {
 
       return next;
     });
-  }, []);
+  });
 
-  const handleExpandLane = useCallback((ids: string[]) => {
+  const handleExpandLane = useEvent((ids: string[]) => {
     setExpandedIds(prev => {
       const next = new Set(prev);
       ids.forEach(id => next.add(id));
@@ -709,9 +708,9 @@ function App() {
       });
       return next;
     });
-  }, [artifacts]);
+  });
 
-  const handleCollapseLane = useCallback((ids: string[]) => {
+  const handleCollapseLane = useEvent((ids: string[]) => {
     setExpandedIds(prev => {
       const next = new Set(prev);
       ids.forEach(id => next.delete(id));
@@ -725,7 +724,7 @@ function App() {
       });
       return next;
     });
-  }, []);
+  });
 
   // Find the selected artifact
   const selectedArtifact = useMemo(() => {
@@ -733,15 +732,15 @@ function App() {
     return artifacts.find(a => a.id === selectedId) || null;
   }, [selectedId, artifacts]);
 
-  const handleAddArtifact = (type: Artifact['type']) => {
+  const handleAddArtifact = useEvent((type: Artifact['type']) => {
     vscode.postMessage({ type: 'addArtifact', artifactType: type });
-  };
+  });
 
   // Handle AI refinement request - sends artifact context to Copilot chat
-  const handleRefineWithAI = useCallback((artifact: Artifact) => {
+  const handleRefineWithAI = useEvent((artifact: Artifact) => {
     console.log('Refine with AI requested for:', artifact.type, artifact.id);
-    vscode.postMessage({ 
-      type: 'refineWithAI', 
+    vscode.postMessage({
+      type: 'refineWithAI',
       artifact: {
         id: artifact.id,
         type: artifact.type,
@@ -751,13 +750,13 @@ function App() {
         metadata: artifact.metadata
       }
     });
-  }, []);
+  });
 
   // Handle Break Down request - breaks epic/requirement into stories
-  const handleBreakDown = useCallback((artifact: Artifact) => {
+  const handleBreakDown = useEvent((artifact: Artifact) => {
     console.log('Break Down requested for:', artifact.type, artifact.id);
-    vscode.postMessage({ 
-      type: 'breakDown', 
+    vscode.postMessage({
+      type: 'breakDown',
       artifact: {
         id: artifact.id,
         type: artifact.type,
@@ -767,13 +766,13 @@ function App() {
         metadata: artifact.metadata
       }
     });
-  }, []);
+  });
 
   // Handle Enhance request - enhances selected artifact with AI
-  const handleEnhance = useCallback((artifact: Artifact) => {
+  const handleEnhance = useEvent((artifact: Artifact) => {
     console.log('Enhance with AI requested for:', artifact.type, artifact.id);
-    vscode.postMessage({ 
-      type: 'enhanceWithAI', 
+    vscode.postMessage({
+      type: 'enhanceWithAI',
       artifact: {
         id: artifact.id,
         type: artifact.type,
@@ -783,17 +782,17 @@ function App() {
         metadata: artifact.metadata
       }
     });
-  }, []);
+  });
 
   // Handle Elicit request - opens in-webview method picker
-  const handleElicit = useCallback((artifact: Artifact) => {
+  const handleElicit = useEvent((artifact: Artifact) => {
     console.log('Elicit requested for:', artifact.type, artifact.id);
     setElicitTarget(artifact);
     setElicitPickerOpen(true);
-  }, []);
+  });
 
   // Called when user picks a method in the ElicitationPicker
-  const handleElicitConfirm = useCallback((artifact: Artifact, method: ElicitationMethod) => {
+  const handleElicitConfirm = useEvent((artifact: Artifact, method: ElicitationMethod) => {
     setElicitPickerOpen(false);
     setElicitTarget(null);
     console.log('Elicit confirmed with method:', method.method_name);
@@ -809,43 +808,43 @@ function App() {
       },
       method
     });
-  }, []);
+  });
 
   // Open the workflow launcher FAB
-  const handleOpenWorkflowLauncher = useCallback(() => {
+  const handleOpenWorkflowLauncher = useEvent(() => {
     setWorkflowLauncherOpen(true);
-  }, []);
+  });
 
   // Open the Jira modal
-  const handleOpenJira = useCallback(() => {
+  const handleOpenJira = useEvent(() => {
     setJiraModalOpen(true);
-  }, []);
+  });
 
   // Open the graphify modal
-  const handleOpenGraphify = useCallback(() => {
+  const handleOpenGraphify = useEvent(() => {
     setGraphifyModalOpen(true);
-  }, []);
+  });
 
   // Open the skill catalogue modal
-  const handleOpenCatalogue = useCallback(() => {
+  const handleOpenCatalogue = useEvent(() => {
     setCatalogueOpen(true);
-  }, []);
+  });
 
   // Search box: open from Canvas `/` key
-  const handleOpenSearch = useCallback(() => {
+  const handleOpenSearch = useEvent(() => {
     setSearchOpen(true);
-  }, []);
+  });
 
   // Search box: result selected — center canvas on it and select
-  const handleSearchSelect = useCallback((id: string) => {
+  const handleSearchSelect = useEvent((id: string) => {
     setSearchOpen(false);
     setSelectedId(id);
     setCenterOnId(id);
     vscode.postMessage({ type: 'selectArtifact', id });
-  }, []);
+  });
 
   // Called when user picks a workflow in the WorkflowLauncher
-  const handleWorkflowSelect = useCallback((workflow: BmmWorkflow) => {
+  const handleWorkflowSelect = useEvent((workflow: BmmWorkflow) => {
     setWorkflowLauncherOpen(false);
     console.log('Workflow selected:', workflow.name, 'trigger:', workflow.triggerPhrase);
     vscode.postMessage({
@@ -857,27 +856,70 @@ function App() {
         workflowFilePath: workflow.workflowFilePath,
       }
     });
-  }, []);
+  });
 
-  const handlePopOut = useCallback((artifactId: string) => {
+  const handlePopOut = useEvent((artifactId: string) => {
     vscode.postMessage({ type: 'openDetailTab', artifactId });
-  }, []);
+  });
 
-  const handleFixSchemas = useCallback(() => {
-    if (schemaFixingRef.current) return; // debounce: prevent double-click race
+  const handleFixSchemas = useEvent(() => {
+    if (schemaFixing) return; // debounce: prevent double-click race (reads live state via useEvent)
     setSchemaFixing(true);
     vscode.postMessage({ type: 'fixSchemas' });
-  }, []);
+  });
 
-  const handleValidateSchemas = useCallback(() => {
+  const handleValidateSchemas = useEvent(() => {
     setSchemaValidating(true);
     setSchemaValidateSuccess(null);
     vscode.postMessage({ type: 'validateSchemas' });
-  }, []);
+  });
 
-  const handleSendSchemaFixToChat = useCallback((issues: { file: string; type: string; errors: string[] }[]) => {
+  const handleSendSchemaFixToChat = useEvent((issues: { file: string; type: string; errors: string[] }[]) => {
     vscode.postMessage({ type: 'sendSchemaFixToChat', issues });
-  }, []);
+  });
+
+  // ── JSX inline handler useEvents (stable identity, latest closure)
+  // Hoisted from multi-line inline arrows in the JSX below. The 1-liner
+  // modal-close setters and `() => vscode.postMessage(...)` calls are left
+  // inline — they don't benefit from the indirection.
+
+  // ElicitationPicker close — clears both the open flag and the target.
+  const handleCloseElicitPicker = useEvent(() => {
+    setElicitPickerOpen(false);
+    setElicitTarget(null);
+  });
+
+  // DetailPanel's onEditModeChange: only react to *exiting* edit mode.
+  const handleEditModeChange = useEvent((editing: boolean) => {
+    if (!editing) setForceEditMode(false);
+  });
+
+  // Validation toast "Send to Chat": convert the single-artifact validation
+  // error into the issues array shape, then dismiss the toast. The button
+  // is only rendered when `validationErrors` is truthy (see JSX), so the
+  // non-null assertion is safe.
+  const handleSendValidationToChat = useEvent(() => {
+    const errs = validationErrors!;
+    handleSendSchemaFixToChat([{
+      file: errs.artifactId,
+      type: errs.artifactType,
+      errors: errs.errors,
+    }]);
+    setValidationErrors(null);
+  });
+
+  // Schema-issues toast "Send to Chat" (dismiss + send).
+  const handleSendSchemaIssuesToChat = useEvent(() => {
+    handleSendSchemaFixToChat(schemaIssues);
+    setSchemaIssues([]);
+  });
+
+  // Schema-fix-message toast "Send to Chat" (dismiss both + send).
+  const handleSendRemainingSchemaIssuesToChat = useEvent(() => {
+    handleSendSchemaFixToChat(schemaIssues);
+    setSchemaFixMessage(null);
+    setSchemaIssues([]);
+  });
 
   if (error) {
     return (
@@ -959,9 +1001,7 @@ function App() {
                   onRefineWithAI={handleRefineWithAI}
                   onElicit={handleElicit}
                   forceEditMode={forceEditMode}
-                  onEditModeChange={(editing) => {
-                    if (!editing) setForceEditMode(false);
-                  }}
+                  onEditModeChange={handleEditModeChange}
                   allArtifacts={artifacts}
                   onPopOut={handlePopOut}
                   onDirtyStateChange={setDetailPanelDirty}
@@ -978,7 +1018,7 @@ function App() {
           artifact={elicitTarget}
           methods={elicitationMethods}
           onSelect={(method) => handleElicitConfirm(elicitTarget, method)}
-          onClose={() => { setElicitPickerOpen(false); setElicitTarget(null); }}
+          onClose={handleCloseElicitPicker}
         />
       )}
       {workflowLauncherOpen && (
@@ -1114,16 +1154,7 @@ function App() {
             </div>
             <div className="toast-actions">
               <button className="btn btn-secondary" onClick={() => setValidationErrors(null)}>Dismiss</button>
-              <button className="btn btn-primary" onClick={() => {
-                if (validationErrors) {
-                  handleSendSchemaFixToChat([{
-                    file: validationErrors.artifactId,
-                    type: validationErrors.artifactType,
-                    errors: validationErrors.errors
-                  }]);
-                  setValidationErrors(null);
-                }
-              }}>Send to Chat</button>
+              <button className="btn btn-primary" onClick={handleSendValidationToChat}>Send to Chat</button>
             </div>
           </div>
         </div>
@@ -1149,7 +1180,7 @@ function App() {
             <div className="toast-actions">
               <button className="btn btn-secondary" onClick={() => setSchemaIssues([])}>Dismiss</button>
               <button className="btn btn-primary" onClick={handleFixSchemas}>Fix Schemas</button>
-              <button className="btn btn-primary" onClick={() => { handleSendSchemaFixToChat(schemaIssues); setSchemaIssues([]); }}>Send to Chat</button>
+              <button className="btn btn-primary" onClick={handleSendSchemaIssuesToChat}>Send to Chat</button>
             </div>
           </div>
         </div>
@@ -1175,7 +1206,7 @@ function App() {
             <div className="toast-actions">
               <button className="btn btn-secondary" onClick={() => setSchemaFixMessage(null)}>Dismiss</button>
               {schemaIssues.length > 0 && (
-                <button className="btn btn-primary" onClick={() => { handleSendSchemaFixToChat(schemaIssues); setSchemaFixMessage(null); setSchemaIssues([]); }}>Send to Chat</button>
+                <button className="btn btn-primary" onClick={handleSendRemainingSchemaIssuesToChat}>Send to Chat</button>
               )}
             </div>
           </div>
@@ -1264,9 +1295,9 @@ function DetailOnlyApp() {
     window.addEventListener('message', handleMessage);
     vscode.postMessage({ type: 'ready' });
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  });
 
-  const handleArtifactUpdate = useCallback((id: string, updates: Partial<Artifact>) => {
+  const handleArtifactUpdate = useEvent((id: string, updates: Partial<Artifact>) => {
     const art = allArtifacts.find(a => a.id === id) || artifact;
     vscode.postMessage({
       type: 'updateArtifact',
@@ -1278,20 +1309,20 @@ function DetailOnlyApp() {
     if (artifact && artifact.id === id) {
       setArtifact(prev => prev ? { ...prev, ...updates } : prev);
     }
-  }, [artifact, allArtifacts]);
+  });
 
-  const handleArtifactDelete = useCallback((art: Artifact) => {
+  const handleArtifactDelete = useEvent((art: Artifact) => {
     vscode.postMessage({ type: 'deleteArtifact', artifactType: art.type, id: art.id });
     vscode.postMessage({ type: 'closeDetailTab', artifactId: art.id });
-  }, []);
+  });
 
-  const handleRefineWithAI = useCallback((art: Artifact) => {
+  const handleRefineWithAI = useEvent((art: Artifact) => {
     vscode.postMessage({ type: 'refineWithAI', artifact: { id: art.id, type: art.type, title: art.title, description: art.description, status: art.status, metadata: art.metadata } });
-  }, []);
+  });
 
-  const handleElicit = useCallback((art: Artifact) => {
+  const handleElicit = useEvent((art: Artifact) => {
     vscode.postMessage({ type: 'elicitWithMethod', artifact: { id: art.id, type: art.type, title: art.title, description: art.description, status: art.status, metadata: art.metadata } });
-  }, []);
+  });
 
   if (!artifact) {
     return (

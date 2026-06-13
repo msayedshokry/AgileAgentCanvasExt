@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { vscode } from '../vscodeApi';
+import { useEvent } from '../agentic-kanban/useEvent';
 
 export interface AvailableProvider {
     id: string;
@@ -242,6 +243,14 @@ export function ProviderSelector({ compact = false, onChange }: ProviderSelector
         onChange?.(id);
     };
 
+    // Dropdown trigger: re-fetch providers so the list reflects the current
+    // host state, then toggle the menu open/closed. useEvent gives stable
+    // identity so the trigger button's onClick doesn't churn.
+    const handleToggleDropdown = useEvent(() => {
+        refresh();
+        setOpen(o => !o);
+    });
+
     const current = providers.find(p => p.id === selected);
     const displayLabel = current?.label ?? ID_LABELS[selected] ?? selected;
     const displayIcon = iconFor(selected);
@@ -261,7 +270,7 @@ export function ProviderSelector({ compact = false, onChange }: ProviderSelector
             <button
                 type="button"
                 className="provider-selector-trigger"
-                onClick={() => { refresh(); setOpen(o => !o); }}
+                onClick={handleToggleDropdown}
                 aria-haspopup="listbox"
                 aria-expanded={open}
             >

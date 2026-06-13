@@ -3,8 +3,10 @@ const logger = createLogger('agentic-kanban-view-provider');
 import * as vscode from 'vscode';
 import { ArtifactStore } from '../state/artifact-store';
 import { buildArtifacts } from '../canvas/artifact-transformer';
-import { handleAgenticKanbanMessage } from './agentic-kanban-message-handler';
+import { handleAgenticKanbanMessage, disposeAllTerminalStreams } from './agentic-kanban-message-handler';
+import { getActiveChatSession } from '../chat/active-session';
 import { kanbanProgress } from '../workflow/kanban-orchestrator';
+import { getKanbanWipLimits } from '../workflow/kanban-settings';
 
 /**
  * Webview provider for the Agentic Kanban — execution orchestration surface.
@@ -94,6 +96,22 @@ export class AgenticKanbanViewProvider implements vscode.WebviewViewProvider {
           // display their badges even if the states were pushed before
           // the webview was open (e.g., on startup restore).
           this.flushPendingAgentStates();
+          // P1 #12: surface chat session availability so the Resume
+          // button is disabled on initial load when no session exists.
+          {
+            const session = getActiveChatSession();
+            this._view?.webview.postMessage({
+              type: 'chatSessionState',
+              active: !!(session?.model && session?.stream),
+              model: session?.model?.label,
+            });
+          }
+          // Send WIP limits from VS Code settings so the webview
+          // replaces its hardcoded defaults.
+          this._view?.webview.postMessage({
+            type: 'kanban:wipLimits',
+            limits: getKanbanWipLimits(),
+          });
           break;
       }
     });
@@ -107,6 +125,13 @@ export class AgenticKanbanViewProvider implements vscode.WebviewViewProvider {
         this.sendArtifacts();
         this.flushPendingAgentStates();
       }
+    });
+
+    // P0 #1 follow-up: when the webview is disposed, free every active
+    // terminal stream listener so the module-level map doesn't leak
+    // across webview reopens.
+    webviewView.onDidDispose(() => {
+      disposeAllTerminalStreams();
     });
   }
 
@@ -130,15 +155,33 @@ export class AgenticKanbanViewProvider implements vscode.WebviewViewProvider {
       });
     }
 
-    // Prune terminal states so the buffer doesn't grow unboundedly. After
-    // a flush, entries for artifacts that reached 'completed', 'idle', or
-    // 'failed' are safe to remove — the webview has the latest state and
-    // those don't need to survive future reloads.
+    // P1 #14: prune terminal + cap non-terminal entries so the buffer
+    // doesn't grow unboundedly across long sessions. Terminal states
+    // (completed/idle/failed) are removed after flush. Non-terminal
+    // entries (running/queued/interrupted) are capped at 100 — when the
+    // cap is exceeded, the oldest non-terminal entry is evicted.
     const terminalStates = new Set(['completed', 'idle', 'failed']);
+    const MAX_PENDING = 100;
+
+    // First pass: remove terminal states
     for (const [artifactId, { agentState }] of this.pendingAgentStates) {
       if (agentState.status && terminalStates.has(agentState.status)) {
         this.pendingAgentStates.delete(artifactId);
       }
+    }
+
+    // Second pass: if still over cap, evict the oldest non-terminal
+    // entries. We iterate insertion order (Map preserves it) and remove
+    // entries until we're at or below the cap.
+    if (this.pendingAgentStates.size > MAX_PENDING) {
+      const toEvict = this.pendingAgentStates.size - MAX_PENDING;
+      let evicted = 0;
+      for (const [artifactId] of this.pendingAgentStates) {
+        if (evicted >= toEvict) break;
+        this.pendingAgentStates.delete(artifactId);
+        evicted++;
+      }
+      logger.debug(`[AgenticKanbanProvider] Evicted ${evicted} oldest pending agent state(s) to cap at ${MAX_PENDING}`);
     }
   }
 

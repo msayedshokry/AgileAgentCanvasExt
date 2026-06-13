@@ -48,6 +48,16 @@ Trace recorder step definitions created their output folders under a path that l
 - The Cucumber `vscode-shim` is now listed FIRST in both the default and ci profiles, so its global `Module._load` hook is installed before any step file imports `vscode`.
 - New `wip` profile: `cucumber-js --profile wip` runs the 19 `@wip`-tagged product-gap scenarios with `transpile-only` for fast iteration. The default profile continues to skip `@wip`.
 
+### Refactored: Webview handlers migrated to useEvent for stable identity
+
+The entire webview UI now uses `useEvent` (the same pattern introduced in the Agentic Kanban view) instead of `useCallback` or inline arrow handlers. `useEvent` gives every handler a stable identity across renders — no more per-render listener re-attachment and no more stale-closure workarounds.
+
+- **App.tsx (40+ handlers)** — All `useCallback(fn, [deps])` blocks converted to `useEvent(fn)` (deps arrays deleted). The 150-line `handleMessage` was hoisted from inside `useEffect(..., [])` to a top-level `useEvent`; 5 missed JSX inline arrows (ElicitationPicker close, DetailPanel onEditModeChange, the 3 schema-fix toast buttons) caught by the reviewer and converted in a second pass
+- **3 useRef workarounds deleted** — `detailPanelDirtyRef`, `detailPanelOpenRef`, and `schemaFixingRef` plus their sync `useEffect` lines. They existed solely to defeat the stale closures that `useCallback` deps arrays created; with `useEvent` the closure always reads the latest value, so they are now dead code. `schemaToastTimerRef` kept (genuine timer management, not a stale-closure workaround)
+- **6 component files updated + 1 reverted** — `ArtifactCard` (7 handlers), `Canvas` (9), `DetailPanel` (9), `CatalogueModal` (7), `ProviderSelector` (1), and `JiraModal` (1) had their multi-line and parameterised JSX inline arrows hoisted to named `useEvent` consts. `GraphifyModal` was touched but reverted to its original state when review caught a scope bug (a useEvent was added in the outer component but called from a nested sub-component where it was not in scope); no net changes
+- **Net effect** — `App.tsx` and the 6 updated child components now pass stable function references to `Toolbar`, `Canvas`, `DetailPanel`, `SprintPlanningView`, and the other modals, eliminating the re-render / re-attach churn that `useCallback`'s deps arrays caused. Child components no longer see new function identities whenever `artifacts`, `detailPanelOpen`, `detailPanelDirty`, `selectedId`, etc. change
+- **Internal change** — no user-visible behavior change. All ~74 new useEvent handlers across App.tsx and the 6 component files preserve the original logic verbatim. Typecheck ✅, 7/7 useEvent unit tests ✅, code review ✅
+
 
 ## 0.5.4
 

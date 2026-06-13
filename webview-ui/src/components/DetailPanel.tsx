@@ -3,6 +3,7 @@ import type { Artifact, ArtifactStatus } from '../types';
 import { ARTIFACT_STATUS_OPTIONS } from '../types';
 import { Icon, ARTIFACT_TYPE_ICON } from './Icon';
 import { vscode } from '../vscodeApi';
+import { useEvent } from '../agentic-kanban/useEvent';
 import type { RendererProps } from './renderers/shared';
 import { Md } from './renderers/shared';
 import { convertArtifactToMarkdown } from '../utils/artifact-md-exporter';
@@ -539,6 +540,47 @@ export function DetailPanel({ artifact, onClose, onUpdate, onDelete, onRefineWit
   // MAIN RENDER
   // ==========================================================================
 
+  // ── Inline handler useEvents (stable identity, latest closure)
+  // Hoisted from JSX inline arrows so the listener functions don't recreate
+  // on every parent re-render. The 1-liners (popout, view-mode tabs, edit,
+  // refine, elicit) are extracted for consistency with the rest of the
+  // webview; the multi-liners (Start Dev, Export MD, Exit-Edit-with-guard)
+  // also benefit from the named-reference indirection.
+
+  const handlePopOut = useEvent(() => onPopOut?.(artifact.id));
+
+  const handleViewModeFields = useEvent(() => setViewMode('fields'));
+  const handleViewModePreview = useEvent(() => setViewMode('preview'));
+
+  const handleEnterEdit = useEvent(() => setEditMode(true));
+
+  const handleRefineClick = useEvent(() => onRefineWithAI?.(artifact));
+  const handleElicitClick = useEvent(() => onElicit?.(artifact));
+
+  // Helper: post a per-artifact message that includes the full snapshot.
+  // Used by both Start Dev and Export MD — they share the same payload shape.
+  const postArtifactMessage = (type: 'startDevelopment' | 'exportToMarkdown') => {
+    vscode.postMessage({
+      type,
+      artifact: {
+        id: artifact.id,
+        type: artifact.type,
+        title: artifact.title,
+        description: artifact.description,
+        status: artifact.status,
+        metadata: artifact.metadata,
+      },
+    });
+  };
+  const handleStartDev = useEvent(() => postArtifactMessage('startDevelopment'));
+  const handleExportMd = useEvent(() => postArtifactMessage('exportToMarkdown'));
+
+  // Edit-mode legend's Exit-Edit with the unsaved-changes guard.
+  const handleExitEditWithGuard = useEvent(() => {
+    if (hasChanges) setShowDiscardConfirm(true);
+    else handleCancel();
+  });
+
   return (
     <div ref={panelRef} className={`detail-panel type-${artifact.type}${standalone ? ' detail-panel-standalone' : ''}${editMode ? ' edit-mode' : ''}`} style={{ width: panelWidth }}>
       {/* Resize handle on left edge */}
@@ -550,7 +592,7 @@ export function DetailPanel({ artifact, onClose, onUpdate, onDelete, onRefineWit
           <span className="detail-type-icon"><Icon name={ARTIFACT_TYPE_ICON[artifact.type] || 'prd'} size={16} /></span>
           <span className="detail-type">{artifact.type}</span>
           {onPopOut && (
-            <button className="popout-btn" onClick={() => onPopOut(artifact.id)} title="Open in tab">
+            <button className="popout-btn" onClick={handlePopOut} title="Open in tab">
               <Icon name="pop-out" size={14} />
             </button>
           )}
@@ -601,14 +643,14 @@ export function DetailPanel({ artifact, onClose, onUpdate, onDelete, onRefineWit
               role="tab"
               aria-selected={viewMode === 'fields'}
               className={viewMode === 'fields' ? 'active' : ''}
-              onClick={() => setViewMode('fields')}
+              onClick={handleViewModeFields}
               title="View artifact fields"
             >Fields</button>
             <button
               role="tab"
               aria-selected={viewMode === 'preview'}
               className={viewMode === 'preview' ? 'active' : ''}
-              onClick={() => setViewMode('preview')}
+              onClick={handleViewModePreview}
               title="Preview as Markdown document"
             >Preview</button>
           </div>
@@ -647,21 +689,21 @@ export function DetailPanel({ artifact, onClose, onUpdate, onDelete, onRefineWit
               )}
             </button>
             <button className="btn btn-secondary" onClick={handleCancel} title="Cancel editing (Escape)">Cancel</button>
-            <ShortcutLegend mode="edit" onSave={hasChanges ? handleSave : undefined} onExitEdit={() => { if (hasChanges) { setShowDiscardConfirm(true); } else { handleCancel(); } }} onCancel={handleCancel} />
+            <ShortcutLegend mode="edit" onSave={hasChanges ? handleSave : undefined} onExitEdit={handleExitEditWithGuard} onCancel={handleCancel} />
           </>
         ) : (
           <>
-            <button className="btn btn-primary" onClick={() => setEditMode(true)} title="Edit this artifact (Ctrl+E)">Edit</button>
-            <button 
-              className="btn btn-ai" 
-              onClick={() => onRefineWithAI?.(artifact)}
+            <button className="btn btn-primary" onClick={handleEnterEdit} title="Edit this artifact (Ctrl+E)">Edit</button>
+            <button
+              className="btn btn-ai"
+              onClick={handleRefineClick}
               title="Refine this artifact with AI assistance"
             >
               <span className="ai-icon"><Icon name="sparkle" size={14} /></span> Refine with AI
             </button>
             <button
               className="btn btn-elicit"
-              onClick={() => onElicit?.(artifact)}
+              onClick={handleElicitClick}
               title="Elicit deeper insights using advanced methods"
             >
               <span className="elicit-icon"><Icon name="crystal-ball" size={14} /></span> Elicit
@@ -669,19 +711,7 @@ export function DetailPanel({ artifact, onClose, onUpdate, onDelete, onRefineWit
             {['epic', 'story', 'test-case'].includes(artifact.type) && (
               <button
                 className="btn btn-dev"
-                onClick={() => {
-                   vscode.postMessage({
-                    type: 'startDevelopment',
-                    artifact: {
-                      id: artifact.id,
-                      type: artifact.type,
-                      title: artifact.title,
-                      description: artifact.description,
-                      status: artifact.status,
-                      metadata: artifact.metadata
-                    }
-                  });
-                }}
+                onClick={handleStartDev}
                 title="Start development using BMAD workflows"
               >
                 <span className="dev-icon"><Icon name="rocket" size={14} /></span> Start Dev
@@ -689,19 +719,7 @@ export function DetailPanel({ artifact, onClose, onUpdate, onDelete, onRefineWit
             )}
             <button
               className="btn btn-export-md"
-              onClick={() => {
-                vscode.postMessage({
-                  type: 'exportToMarkdown',
-                  artifact: {
-                    id: artifact.id,
-                    type: artifact.type,
-                    title: artifact.title,
-                    description: artifact.description,
-                    status: artifact.status,
-                    metadata: artifact.metadata
-                  }
-                });
-              }}
+              onClick={handleExportMd}
               title="Export this artifact to a Markdown file"
             >
               <Icon name="download" size={14} /> Export MD
@@ -717,7 +735,7 @@ export function DetailPanel({ artifact, onClose, onUpdate, onDelete, onRefineWit
                 <button className="btn btn-danger" onClick={handleDeleteConfirm}>Confirm</button>
               </div>
             )}
-            <ShortcutLegend mode="view" onEdit={() => setEditMode(true)} onClose={handleClose} />
+            <ShortcutLegend mode="view" onEdit={handleEnterEdit} onClose={handleClose} />
           </>
         )}
       </div>

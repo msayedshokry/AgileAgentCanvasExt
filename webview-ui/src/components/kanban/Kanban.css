@@ -25,6 +25,28 @@
   border-top: 3px solid var(--kanban-col-accent, var(--vscode-descriptionForeground));
 }
 
+/* Feature 2: WIP limit exceeded — red border + warning text */
+.kanban-column--wip-exceeded {
+  border-color: var(--vscode-charts-red, #ef4444);
+  border-top-color: var(--vscode-charts-red, #ef4444);
+}
+
+.kanban-column--wip-exceeded .kanban-column-header {
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.kanban-column--wip-exceeded .kanban-column-count {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--vscode-charts-red, #ef4444);
+}
+
+.kanban-column-wip-warning {
+  font-size: 10px;
+  color: var(--vscode-charts-red, #ef4444);
+  font-weight: 500;
+  margin-left: 4px;
+}
+
 .kanban-column-header {
   display: flex;
   justify-content: space-between;
@@ -47,6 +69,36 @@
   font-size: 11px;
   min-width: 20px;
   text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Feature 6: agent status sub-counts inside column header badge */
+.kanban-column-status-dots {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 2px;
+}
+
+.kanban-column-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.kanban-column-status-dot--running {
+  background: #f59e0b;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.kanban-column-status-dot--queued {
+  background: #6366f1;
+}
+
+.kanban-column-status-dot--interrupted {
+  background: #f97316;
 }
 
 .kanban-column-cards {
@@ -75,12 +127,32 @@
   border-radius: 6px;
   padding: 10px 12px;
   cursor: grab;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s ease, border-color 0.15s ease, background 0.15s ease;
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 4px;
   animation: cardSlideIn 0.25s ease-out calc(var(--card-index, 0) * 30ms) backwards;
+  user-select: none;
+}
+
+/* Multi-select: selected card highlight */
+.kanban-card--selected {
+  border-color: var(--vscode-focusBorder, #007acc);
+  box-shadow: 0 0 0 1px var(--vscode-focusBorder, #007acc), 0 2px 8px rgba(0, 122, 204, 0.2);
+  background: var(--vscode-list-activeSelectionBackground, rgba(0, 122, 204, 0.08));
+}
+
+/* Feature 1: child story card — indented + smaller */
+.kanban-card--child {
+  margin-left: 16px;
+  border-left: 2px solid var(--kanban-col-accent, #8b5cf6);
+  font-size: 12px;
+  padding: 8px 10px;
+}
+
+.kanban-card--child .kanban-card-title {
+  font-size: 12px;
 }
 
 .kanban-card:hover {
@@ -153,14 +225,25 @@
 }
 
 /* ── Agent Badge (execution overlay) ── */
+/* P1 #16 reviewer polish: the base class is now a NEUTRAL container
+   (no animation, grey text). Each per-status class owns its own visual
+   treatment explicitly. Future enum additions (e.g. "pending") will
+   render as a plain grey chip instead of silently inheriting an amber
+   pulse, which previously made "completed" cards look still-running. */
 .kanban-card-agent-badge {
   font-size: 11px;
-  background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
   padding: 3px 8px;
   border-radius: 4px;
-  animation: pulse 1.5s ease-in-out infinite;
   align-self: flex-start;
+  background: rgba(128, 128, 128, 0.15);
+  color: var(--vscode-descriptionForeground);
+  animation: none;
+}
+
+.kanban-card-agent-badge--running {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  animation: pulse 1.5s ease-in-out infinite;
 }
 
 .kanban-card-agent-badge--queued {
@@ -186,6 +269,22 @@
 
 .kanban-card-agent-badge--terminal:hover {
   background: rgba(34, 197, 94, 0.25);
+}
+
+.kanban-card-agent-badge--completed {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.kanban-card-agent-badge--failed {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  animation: shake 0.4s ease-in-out;
+}
+
+.kanban-card-agent-badge--idle {
+  background: rgba(128, 128, 128, 0.15);
+  color: var(--vscode-descriptionForeground);
 }
 
 @keyframes pulse {
@@ -322,18 +421,6 @@
   font-size: 16px;
 }
 
-.agentic-detail-panel dl {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 6px 12px;
-  font-size: 12px;
-}
-
-.agentic-detail-panel dt {
-  color: var(--vscode-descriptionForeground);
-  font-weight: 500;
-}
-
 /* ── Detail Panel: Warning & Actions ── */
 .agentic-detail-warning {
   font-size: 12px;
@@ -392,6 +479,9 @@
   font-size: 12px;
   z-index: 100;
   animation: toastSlideUp 0.3s ease-out;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .kanban-toast--error {
@@ -405,6 +495,30 @@
   border: 1px solid var(--vscode-notifications-border);
 }
 
+/* Quick Win 2: success toast (green) */
+.kanban-toast--success {
+  background: rgba(34, 197, 94, 0.9);
+  color: white;
+}
+
+/* Quick Win 6: undo button inside toast */
+.kanban-toast-undo-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.9;
+  white-space: nowrap;
+}
+
+.kanban-toast-undo-btn:hover {
+  opacity: 1;
+}
+
 @keyframes toastSlideUp {
   from {
     opacity: 0;
@@ -416,7 +530,243 @@
   }
 }
 
-/* ─── Resume spinner on kanban card ────────────────────────────────────── */
+/* ── Detail Panel: Status Badge (execution section) ───────────────────── */
+/* Pre-existing gap: the StatusBadge component in the detail panel used
+   `kanban-agent-status` with no CSS rule, rendering as an unstyled span.
+   Match the same neutral + per-status pattern as the card badges. */
+.kanban-agent-status {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(128, 128, 128, 0.15);
+  color: var(--vscode-descriptionForeground);
+}
+
+.kanban-agent-status--running {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.kanban-agent-status--queued {
+  background: rgba(99, 102, 241, 0.15);
+  color: #6366f1;
+}
+
+.kanban-agent-status--interrupted {
+  background: rgba(249, 115, 22, 0.15);
+  color: #f97316;
+}
+
+.kanban-agent-status--completed {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.kanban-agent-status--failed {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.kanban-agent-status--idle {
+  background: rgba(128, 128, 128, 0.15);
+  color: var(--vscode-descriptionForeground);
+}
+
+/* ── Loading Skeleton (Feature 5) ── */
+.kanban-skeleton-board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(240px, 1fr));
+  gap: 12px;
+  padding: 16px;
+  min-height: 60vh;
+}
+
+.kanban-skeleton-column {
+  background: var(--vscode-editor-lineHighlightBackground);
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 3px solid var(--kanban-col-accent, var(--vscode-descriptionForeground));
+}
+
+.kanban-skeleton-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.kanban-skeleton-label {
+  width: 80px;
+  height: 16px;
+  background: var(--vscode-editor-lineHighlightBackground);
+  border-radius: 4px;
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+.kanban-skeleton-count {
+  width: 24px;
+  height: 16px;
+  background: var(--vscode-badge-background);
+  border-radius: 8px;
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+.kanban-skeleton-card {
+  background: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kanban-skeleton-line {
+  height: 10px;
+  background: var(--vscode-editor-lineHighlightBackground);
+  border-radius: 3px;
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+.kanban-skeleton-line--short {
+  width: 40%;
+}
+
+.kanban-skeleton-line--long {
+  width: 85%;
+}
+
+.kanban-skeleton-line--medium {
+  width: 60%;
+}
+
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+/* ── Sort Controls (Feature 4) ── */
+.agentic-kanban-sort {
+  font-size: 11px;
+  padding: 3px 6px;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.agentic-kanban-sort:focus {
+  outline: 1px solid var(--vscode-focusBorder);
+}
+
+/* ── Context Menu (Feature 3) ── */
+.kanban-context-menu {
+  position: fixed;
+  z-index: 200;
+  background: var(--vscode-menu-background);
+  border: 1px solid var(--vscode-menu-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  min-width: 160px;
+  padding: 4px 0;
+  animation: contextFadeIn 0.12s ease-out;
+}
+
+.kanban-context-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 14px;
+  font-size: 12px;
+  background: none;
+  border: none;
+  color: var(--vscode-menu-foreground);
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.kanban-context-menu-item:hover {
+  background: var(--vscode-menu-selectionBackground);
+}
+
+.kanban-context-menu-item--danger {
+  color: var(--vscode-charts-red, #ef4444);
+}
+
+.kanban-context-menu-divider {
+  height: 1px;
+  background: var(--vscode-menu-separatorBackground);
+  margin: 4px 8px;
+}
+
+@keyframes contextFadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ── Epic chevron (Feature 1) ── */
+.kanban-card-epic-chevron {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  background: none;
+  border: none;
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  transition: transform 0.2s ease, background 0.15s ease;
+  line-height: 1;
+}
+
+.kanban-card-epic-chevron:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+
+.kanban-card-epic-chevron--expanded {
+  transform: rotate(90deg);
+}
+
+/* ── Inline Edit (Advanced Feature 2) ── */
+.kanban-card-edit-input {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-focusBorder, #007acc);
+  border-radius: 3px;
+  padding: 2px 6px;
+  width: 100%;
+  outline: none;
+  font-family: var(--vscode-font-family);
+}
+
+/* ── Drag ghost count badge (multi-select batch move indicator) ── */
+.kanban-drag-ghost-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: var(--vscode-focusBorder, #007acc);
+  color: white;
+  border-radius: 10px;
+  min-width: 20px;
+  height: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  z-index: 5;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
 .kanban-card-agent-badge--resuming {
   display: inline-flex;
   align-items: center;

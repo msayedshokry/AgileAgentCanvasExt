@@ -15,6 +15,8 @@ import {
 import { graphQuery, graphPath, loadCommunityWiki } from '../integrations/graphify/graph-query';
 import { trackToolCall, toolTelemetry } from './tool-telemetry';
 import { getTraceRecorder } from '../trace/trace-recorder';
+import microdiff, { type Difference } from 'microdiff';
+import deepmerge, { type Options as DeepmergeOptions } from 'deepmerge';
 
 /**
  * AgileAgentCanvas Language Model Tools
@@ -1073,9 +1075,8 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                 async invoke(request, _token) {
                     return trackToolCall('agileagentcanvas_json_diff', async () => {
                         try {
-                            const diff = require('microdiff').default;
                             const { left, right } = request.input;
-                            const changes = diff(left, right);
+                            const changes: Difference[] = microdiff(left, right);
                             const summary = {
                                 added: changes.filter((c: any) => c.type === 'CREATE').length,
                                 removed: changes.filter((c: any) => c.type === 'REMOVE').length,
@@ -1108,7 +1109,6 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                 async invoke(request, _token) {
                     return trackToolCall('agileagentcanvas_json_merge', async () => {
                         try {
-                            const deepmerge = require('deepmerge').default;
                             const { left, right, strategy } = request.input;
                             let merged: object;
                             switch (strategy) {
@@ -1120,8 +1120,8 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                                     break;
                                 case 'array-replace':
                                     merged = deepmerge(left, right, {
-                                        arrayMerge: (_target: any[], source: any[]) => source
-                                    });
+                                        arrayMerge: (_target, source) => source
+                                    } satisfies DeepmergeOptions);
                                     break;
                                 case 'deep':
                                 default:

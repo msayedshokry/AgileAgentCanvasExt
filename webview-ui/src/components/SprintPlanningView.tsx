@@ -39,12 +39,15 @@ export interface SprintStatusLoaded {
 
 export type SprintData = SprintStatusData | SprintStatusLoaded;
 
-export interface SprintItem {
+export interface SprintItem extends KanbanItem {
   key: string;
   status: SprintStatus;
-  epicKey: string | null; // null = it IS an epic or retro
   isEpic: boolean;
   isRetro: boolean;
+  /** Sprint grouping label (e.g. "Sprint 1") if this item belongs to one.
+   *  Independent of `title` so the UI can render a sprint badge separately
+   *  without re-parsing the title. undefined when not grouped. */
+  sprintLabel?: string;
   /** story status is active but parent epic is backlog → CONSISTENCY ERROR */
   consistencyError?: boolean;
   /** story is done but parent epic is still backlog → CONSISTENCY WARNING */
@@ -100,24 +103,9 @@ const SPRINT_KANBAN_COLUMNS: KanbanColumnDef[] = [
   { key: 'optional' as KanbanColumnKey, label: 'Retrospective', accent: '#64748b' },
 ];
 
-// ─── SprintItem → KanbanItem mapping ─────────────────────────────────────────
-
-function sprintItemToKanbanItem(item: SprintItem): KanbanItem {
-  return {
-    id: item.key,
-    key: item.key,
-    title: item.isRetro ? 'Retrospective' : '',
-    status: item.status,
-    type: item.isEpic ? 'epic' : item.isRetro ? 'retro' : 'story',
-    epicKey: item.epicKey ?? undefined,
-    isEpic: item.isEpic,
-  };
-}
-
 // ─── SprintCardWrapper (shared KanbanCard + sprint-specific badges) ──────────
 
 function SprintCardWrapper({ item, index }: { item: SprintItem; index?: number }) {
-  const kanbanItem = sprintItemToKanbanItem(item);
   const cardClassName = [
     item.consistencyError ? 'sprint-card--error' : '',
     item.consistencyWarning ? 'sprint-card--warn' : '',
@@ -125,7 +113,7 @@ function SprintCardWrapper({ item, index }: { item: SprintItem; index?: number }
 
   return (
     <div>
-      <KanbanCard item={kanbanItem} index={index} className={cardClassName} />
+      <KanbanCard item={item} index={index} className={cardClassName} />
 
       {/* Sprint-specific badges: Retro type tag */}
       {item.isRetro && (
@@ -217,7 +205,73 @@ function prettifySprintId(id: string): string {
     .replace(/\bApi\b/i, 'API');
 }
 
+/**
+ * Extract the prefix from a sprint item key.
+ *   "epic-1"          → "epic-1"   (epic keys stay whole)
+ *   "3-1-dark-mode"   → "3-1"      (story keys: first two segments)
+ *   "epic-1-retro"    → "epic-1"   (retro keys: treat as their parent epic)
+ *
+ * Used by both `parseSprintStatusYaml` (sprint label lookup) and the UI's
+ * `renderContent` (sprint tab grouping). Single source of truth.
+ */
+function extractPrefix(k: string): string {
+  return k.startsWith('epic-') ? k : k.split('-').slice(0, 2).join('-');
+}
+
 // ─── YAML parser ──────────────────────────────────────────────────────────────
+
+/**
+ * Centralized title extraction for sprint items.
+ *
+ * Single source of truth for how epic / story / retro titles are computed
+ * inside `parseSprintStatusYaml`. Replaces the previous pattern of
+ * `title: epic.title ?? ''` / `title: story.title ?? ''` / `title: 'Retrospective'`
+ * scattered across 3 push sites.
+ *
+ * Title rules:
+ *   - retro   → hardcoded 'Retrospective' label (or '{sprintLabel} Retrospective')
+ *   - epic    → `epic.title` (artifact title from live data, '' if missing)
+ *   - story   → `story.title` (artifact title from live data, '' if missing)
+ *
+ * When `sprintLabel` is provided (looked up from the parsed sprint grouping YAML),
+ * the title is prefixed with it so cards in a multi-sprint project show their
+ * sprint context: 'Sprint 1: Dark Mode Launch' or 'Sprint 1 Retrospective'.
+ */
+function extractTitle(args: {
+  isRetro: boolean;
+  isEpic: boolean;
+  epic: any;
+  story?: any;
+  sprintLabel?: string;
+}): string {
+  if (args.isRetro) {
+    return args.sprintLabel ? `${args.sprintLabel} Retrospective` : 'Retrospective';
+  }
+  const base = args.isEpic ? (args.epic.title ?? '') : (args.story?.title ?? '');
+  return args.sprintLabel ? `${args.sprintLabel}: ${base}` : base;
+}
+
+/**
+ * Build a lookup map from item key prefix → sprint label.
+ * Used by `parseSprintStatusYaml` to enrich item titles with sprint context.
+ * If a key appears in multiple sprints, the first one wins (stable order).
+ */
+function buildSprintLabelMap(sprints: SprintGroup[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const sprint of sprints) {
+    for (const key of sprint.storyKeys) {
+      const prefix = extractPrefix(key);
+      if (!map.has(prefix)) map.set(prefix, sprint.label);
+    }
+  }
+  return map;
+}
+
+/** Look up the sprint label for a given item key. Returns undefined if the
+ *  item is not grouped under any sprint. */
+function lookupSprintLabel(map: Map<string, string>, key: string): string | undefined {
+  return map.get(extractPrefix(key));
+}
 
 /**
  * Build the sprint Kanban data.
@@ -310,16 +364,25 @@ export function parseSprintStatusYaml(
   //   retrospective  → "epic-{N}-retrospective"
   const items: SprintItem[] = [];
 
+  // Build sprint label lookup once (empty if no YAML groupings) so each item
+  // can be enriched with its sprint context: 'Sprint 1: <title>'.
+  const sprintLabelMap = buildSprintLabelMap(sprints);
+
   for (const epic of epics) {
     const epicNum = String(epic.id ?? '').replace(/^epic-/i, '');
     const epicKey = `epic-${epicNum}`;
+    // Hoisted so the retro push can reuse it (retro inherits the parent epic's sprint)
+    const epicSprintLabel = lookupSprintLabel(sprintLabelMap, epicKey);
 
     // Epic row
     const epicStatus = (epic.status ?? 'backlog') as SprintStatus;
     items.push({
       key: epicKey,
+      id: epicKey,
       status: epicStatus,
-      epicKey: null,
+      title: extractTitle({ isEpic: true, isRetro: false, epic, sprintLabel: epicSprintLabel }),
+      sprintLabel: epicSprintLabel,
+      type: 'epic',
       isEpic: true,
       isRetro: false,
     });
@@ -339,7 +402,11 @@ export function parseSprintStatusYaml(
 
       items.push({
         key: storyKey,
+        id: storyKey,
+        title: extractTitle({ isEpic: false, isRetro: false, epic, story, sprintLabel: lookupSprintLabel(sprintLabelMap, storyKey) }),
+        sprintLabel: lookupSprintLabel(sprintLabelMap, storyKey),
         status: storyStatus,
+        type: 'story',
         epicKey,
         isEpic: false,
         isRetro: false,
@@ -356,8 +423,11 @@ export function parseSprintStatusYaml(
       if ((epic.stories ?? []).length > 0) {
         items.push({
           key: `${epicKey}-retrospective`,
+          id: `${epicKey}-retrospective`,
+          title: extractTitle({ isEpic: false, isRetro: true, epic, sprintLabel: epicSprintLabel }),
+          sprintLabel: epicSprintLabel,
           status: 'optional' as SprintStatus,
-          epicKey: null,
+          type: 'retro',
           isEpic: false,
           isRetro: true,
         });
@@ -534,10 +604,6 @@ export function SprintPlanningView({ data, onClose, onRunSprintPlanning }: Sprin
     }
 
     // ── Sprint tab mode ───────────────────────────────────────────────────────
-
-    // Helper to safely extract the prefix from a key for mapping
-    // e.g., "4-8-dark-mode" -> "4-8", but "epic-1" -> "epic-1"
-    const extractPrefix = (k: string) => k.startsWith('epic-') ? k : k.split('-').slice(0, 2).join('-');
 
     // Build a set of all scheduled keys by their prefix
     const scheduledKeys = new Set(sprints.flatMap(s => s.storyKeys.map(extractPrefix)));

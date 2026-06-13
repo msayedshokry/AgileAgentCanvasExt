@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import type { Artifact, ArtifactStatus, StoryMetadata, EpicMetadata, TestCoverageMetadata, AcceptanceCriterion } from '../types';
 import { Icon, ARTIFACT_TYPE_ICON } from './Icon';
 import { vscode } from '../vscodeApi';
+import { useEvent } from '../agentic-kanban/useEvent';
 
 interface ArtifactCardProps {
   artifact: Artifact;
@@ -229,6 +230,50 @@ export const ArtifactCard = React.memo(
       }
     });
   }, [artifact]);
+
+  // ── Story-tab inline handlers (useEvent: stable identity, latest closure)
+  // These are 1–2 line closures on React's synthetic events. useEvent gives
+  // them stable identity so the underlying DOM nodes don't get new listener
+  // functions on every parent re-render. The 3-line chip body conditionally
+  // expands the story before switching the active tab; the 1-line tab body
+  // just stops propagation and switches the tab.
+
+  // Summary title — toggles story expansion from the row's title bar.
+  const handleSummaryTitleClick = useEvent((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggleStoryExpand?.(artifact.id);
+  });
+
+  // Three hard-coded chip handlers (one per story tab). 3-line body.
+  const handleTasksChipClick = useEvent((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!storyExpanded) onToggleStoryExpand?.(artifact.id);
+    setActiveStoryTab('tasks');
+  });
+  const handleTestsChipClick = useEvent((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!storyExpanded) onToggleStoryExpand?.(artifact.id);
+    setActiveStoryTab('tests');
+  });
+  const handleAcsChipClick = useEvent((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!storyExpanded) onToggleStoryExpand?.(artifact.id);
+    setActiveStoryTab('acs');
+  });
+
+  // Three hard-coded tab buttons (shown only when storyExpanded). 1-liner.
+  const handleTasksTabClick = useEvent((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActiveStoryTab('tasks');
+  });
+  const handleTestsTabClick = useEvent((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActiveStoryTab('tests');
+  });
+  const handleAcsTabClick = useEvent((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActiveStoryTab('acs');
+  });
 
   // Safely get status info with fallback
   const statusInfo = STATUS_BADGES[artifact.status] || { label: artifact.status || 'Unknown', className: 'status-draft' };
@@ -502,7 +547,7 @@ export const ArtifactCard = React.memo(
             {summaryText && (
               <div 
                 className="story-inline-summary-title"
-                onClick={(e) => { e.stopPropagation(); onToggleStoryExpand?.(artifact.id); }}
+                onClick={handleSummaryTitleClick}
                 title={storyExpanded ? 'Click to collapse' : 'Click to expand tasks, tests & ACs'}
               >
                 {summaryText}
@@ -516,7 +561,7 @@ export const ArtifactCard = React.memo(
             >
               {tasks.length > 0 && (
                 <span className={`story-summary-chip tasks${doneTasks === tasks.length ? ' all-done' : ''}`}
-                      onClick={(e) => { e.stopPropagation(); if (!storyExpanded) onToggleStoryExpand?.(artifact.id); setActiveStoryTab('tasks'); }}
+                      onClick={handleTasksChipClick}
                       title="Click to view tasks">
                   <span className="chip-icon">✓</span>
                   <span className="chip-label">{doneTasks}/{tasks.length}</span>
@@ -527,7 +572,7 @@ export const ArtifactCard = React.memo(
               )}
               {testCases.length > 0 && (
                 <span className={`story-summary-chip tests${failTests > 0 ? ' has-fails' : passTests === testCases.length ? ' all-pass' : ''}`}
-                      onClick={(e) => { e.stopPropagation(); if (!storyExpanded) onToggleStoryExpand?.(artifact.id); setActiveStoryTab('tests'); }}
+                      onClick={handleTestsChipClick}
                       title="Click to view tests">
                   <span className="chip-icon">🧪</span>
                   <span className="chip-label">{passTests}/{testCases.length}</span>
@@ -538,7 +583,7 @@ export const ArtifactCard = React.memo(
               )}
               {acs.length > 0 && (
                 <span className={`story-summary-chip acs${failedACs > 0 ? ' has-fails' : verifiedACs === acs.length ? ' all-pass' : ''}`}
-                      onClick={(e) => { e.stopPropagation(); if (!storyExpanded) onToggleStoryExpand?.(artifact.id); setActiveStoryTab('acs'); }}
+                      onClick={handleAcsChipClick}
                       title="Click to view ACs">
                   <span className="chip-icon">📋</span>
                   <span className="chip-label">{verifiedACs}/{acs.length}</span>
@@ -552,17 +597,17 @@ export const ArtifactCard = React.memo(
               <div className="story-expanded-rows">
                 <div className="story-tabs-header">
                   {tasks.length > 0 && (
-                    <button className={`story-tab ${currentTab === 'tasks' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); setActiveStoryTab('tasks'); }}>
+                    <button className={`story-tab ${currentTab === 'tasks' ? 'active' : ''}`} onClick={handleTasksTabClick}>
                       ✓ Tasks ({tasks.length})
                     </button>
                   )}
                   {testCases.length > 0 && (
-                    <button className={`story-tab ${currentTab === 'tests' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); setActiveStoryTab('tests'); }}>
+                    <button className={`story-tab ${currentTab === 'tests' ? 'active' : ''}`} onClick={handleTestsTabClick}>
                       🧪 Tests ({testCases.length})
                     </button>
                   )}
                   {acs.length > 0 && (
-                    <button className={`story-tab ${currentTab === 'acs' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); setActiveStoryTab('acs'); }}>
+                    <button className={`story-tab ${currentTab === 'acs' ? 'active' : ''}`} onClick={handleAcsTabClick}>
                       📋 ACs ({acs.length})
                     </button>
                   )}

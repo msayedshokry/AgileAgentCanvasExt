@@ -194,6 +194,10 @@ export class TerminalExecutor implements vscode.Disposable {
   private disposables: vscode.Disposable[] = [];
   /** Webview streaming callbacks keyed by artifactId */
   private webviewStreams = new Map<string, (data: string) => void>();
+  /** P1 #11: lock-release timeouts keyed by artifactId (cleared on terminal close) */
+  private lockTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+  /** Default max lock duration for terminal-run workflows (20 minutes) */
+  private static readonly LOCK_TIMEOUT_MS = 20 * 60 * 1000;
 
   constructor() {
     // Listen for terminal close events to clean up tracking
@@ -274,6 +278,13 @@ export class TerminalExecutor implements vscode.Disposable {
       dataListener = (terminal as any).onDidWriteData((data: string) => {
         accumulatedData += data;
 
+        // P1 #11 heartbeat: every chunk of terminal output refreshes the
+        // lock-release timeout so long-running workflows don't have their
+        // locks expired prematurely. Without this, any BMAD workflow that
+        // legitimately runs > 20 minutes would be force-unlocked even
+        // though it's actively producing output.
+        this.scheduleLockTimeout(artifactId);
+
         // Stream new data to any attached webview callback
         const cb = this.webviewStreams.get(artifactId);
         if (cb) {
@@ -345,6 +356,12 @@ export class TerminalExecutor implements vscode.Disposable {
       dataListener,
     };
     this.activeTerminals.set(artifactId, session);
+
+    // P1 #11: schedule a lock-release timeout so a forgotten/hung terminal
+    // doesn't keep the artifact locked forever. The timeout is cleared when
+    // the terminal closes naturally. Uses the same 20-minute window as
+    // executeAndAwaitVerdict.
+    this.scheduleLockTimeout(artifactId);
 
     logger.info(
       `[TerminalExecutor] Launched terminal "${termName}" (${provider}) for ${artifactId}`
@@ -485,6 +502,10 @@ export class TerminalExecutor implements vscode.Disposable {
         );
         this.activeTerminals.delete(artifactId);
 
+        // P1 #11: clear the lock-release timeout since the terminal
+        // closed naturally — no need to force-release.
+        this.clearLockTimeout(artifactId);
+
         // Release the concurrency lock so the artifact can be moved again
         concurrencyQueue.release(artifactId);
 
@@ -508,8 +529,32 @@ export class TerminalExecutor implements vscode.Disposable {
     }
   }
 
+  /**
+   * P1 #11: schedule a timeout that force-releases the concurrency lock if
+   * the terminal hasn't closed within LOCK_TIMEOUT_MS (20 minutes).
+   */
+  private scheduleLockTimeout(artifactId: string): void {
+    this.clearLockTimeout(artifactId);
+    const timeout = setTimeout(() => {
+      logger.warn(`[TerminalExecutor] Lock timeout reached for ${artifactId} — force-releasing lock`);
+      concurrencyQueue.release(artifactId);
+      this.lockTimeouts.delete(artifactId);
+    }, TerminalExecutor.LOCK_TIMEOUT_MS);
+    this.lockTimeouts.set(artifactId, timeout);
+  }
+
+  private clearLockTimeout(artifactId: string): void {
+    const existing = this.lockTimeouts.get(artifactId);
+    if (existing) {
+      clearTimeout(existing);
+      this.lockTimeouts.delete(artifactId);
+    }
+  }
+
   dispose(): void {
     this.activeTerminals.clear();
+    for (const t of this.lockTimeouts.values()) { clearTimeout(t); }
+    this.lockTimeouts.clear();
     this.disposables.forEach((d) => d.dispose());
     this.disposables = [];
   }

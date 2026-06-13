@@ -513,7 +513,7 @@ export function renderStoryDetails(props: RendererProps) {
                   <label>
                     <input
                       type="checkbox"
-                      checked={task.status === 'done' || task.status === 'verified'}
+                      checked={task.completed === true || task.status === 'done' || task.status === 'verified'}
                       onChange={(e) => updateArrayItem('tasks', i, { ...task, status: e.target.checked ? 'done' : 'in-progress' })}
                     /> Done
                   </label>
@@ -537,7 +537,7 @@ export function renderStoryDetails(props: RendererProps) {
           tasks.length > 0 ? (
             <ul className="task-list">
               {tasks.map((task: any, i: number) => {
-                const taskDone = task.status === 'done' || task.status === 'verified';
+                const taskDone = task.completed === true || task.status === 'done' || task.status === 'verified';
                 return (
                 <li key={i} className={`task-item${taskDone ? ' completed' : ''}`}>
                   <span className="task-check">{taskDone ? '☑' : '☐'}</span>
@@ -549,7 +549,7 @@ export function renderStoryDetails(props: RendererProps) {
                   {task.subtasks?.length > 0 && (
                     <ul className="subtask-list">
                       {task.subtasks.map((st: any, si: number) => {
-                        const subDone = st.status === 'done' || st.status === 'verified';
+                        const subDone = st.completed === true || st.status === 'done' || st.status === 'verified';
                         return (
                         <li key={si} className={subDone ? 'completed' : ''}>
                           {subDone ? '☑' : '☐'} {st.id && <span className="ac-id-badge">{st.id}</span>} {st.description}
@@ -3452,7 +3452,7 @@ export function renderTaskDetails(props: RendererProps) {
         {subtasks.length > 0 ? (
           <ul className="criteria-list">
             {subtasks.map((st: any, i: number) => {
-              const subDone = st.status === 'done' || st.status === 'verified';
+              const subDone = st.completed === true || st.status === 'done' || st.status === 'verified';
               return (
               <li key={i} style={{ opacity: subDone ? 0.6 : 1 }}>
                 <span style={{ textDecoration: subDone ? 'line-through' : 'none' }}>

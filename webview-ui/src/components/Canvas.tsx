@@ -7,6 +7,7 @@ import { Minimap } from './Minimap';
 import { computeMindmapLayout } from './mindmap-layout';
 import { Corpus3DView } from './Corpus3DView';
 import html2canvas from 'html2canvas';
+import { useEvent } from '../agentic-kanban/useEvent';
 
 export type LayoutMode = 'lanes' | 'mindmap' | 'corpus3d';
 
@@ -1349,6 +1350,69 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
     e.preventDefault();
   }, []);
 
+  // ── Multi-line inline handler useEvents (stable identity, latest closure)
+  // Hoisted from JSX where the closures were 2–3 lines and would otherwise
+  // recreate on every render. The 1-liner zoom/minimap/hint/layout toggles
+  // (setZoom/setShowMinimap/setShowHint/setLayoutMode with single-state
+  // setters) are kept inline — they don't benefit from the indirection.
+
+  // Lane expand/collapse: stopPropagation so canvas-deselect-on-doubleclick
+  // doesn't fire, then expand-or-collapse the lane's cards.
+  const handleToggleLane = useEvent((e: React.MouseEvent, allExpanded: boolean, ids: string[]) => {
+    e.stopPropagation();
+    if (allExpanded) onCollapseLane(ids);
+    else onExpandLane(ids);
+  });
+
+  // Hidden-lane show tab: re-add the lane to the visible set.
+  const handleShowHiddenLane = useEvent((laneKey: string) => {
+    setHiddenLanes(prev => { const next = new Set(prev); next.delete(laneKey); return next; });
+  });
+
+  // Hidden-lane hide button: stopPropagation + add lane to hidden set.
+  const handleHideLane = useEvent((e: React.MouseEvent, laneKey: string) => {
+    e.stopPropagation();
+    setHiddenLanes(prev => { const next = new Set(prev); next.add(laneKey); return next; });
+  });
+
+  // Exit mindmap mode: reset layout to lanes and re-center the viewport.
+  const handleExitMindmapMode = useEvent(() => {
+    setLayoutMode('lanes');
+    setPan({ x: 0, y: 0 });
+    setZoom(1);
+  });
+
+  // Filter-bar: type / status / line-category toggles. Each adds or removes
+  // a single key from the corresponding Set state.
+  const handleToggleHiddenType = useEvent((t: ArtifactType) => {
+    setHiddenTypes(prev => {
+      const next = new Set(prev);
+      if (next.has(t)) next.delete(t); else next.add(t);
+      return next;
+    });
+  });
+  const handleToggleHiddenStatus = useEvent((idx: number) => {
+    setHiddenStatusBuckets(prev => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx); else next.add(idx);
+      return next;
+    });
+  });
+  const handleToggleHiddenLineCategory = useEvent((key: string) => {
+    setHiddenLineCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  });
+
+  // Clear all active filters: reset all three Sets to empty.
+  const handleClearAllFilters = useEvent(() => {
+    setHiddenTypes(new Set());
+    setHiddenStatusBuckets(new Set());
+    setHiddenLineCategories(new Set());
+  });
+
   // Renders a single expand/collapse toggle button for a lane header.
   // Shows "v" (expand all) unless every expandable card is already expanded,
   // in which case shows ">" (collapse all).
@@ -1361,7 +1425,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
         <button
           className="lane-btn"
           title={allExpanded ? 'Collapse all in lane' : 'Expand all in lane'}
-          onClick={(e) => { e.stopPropagation(); allExpanded ? onCollapseLane(ids) : onExpandLane(ids); }}
+          onClick={(e) => handleToggleLane(e, allExpanded, ids)}
         >{allExpanded ? <Icon name="chevron-right" size={12} /> : <Icon name="chevron-down" size={12} />}</button>
       </span>
     );
@@ -1661,7 +1725,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
                   className={`lane-hidden-tab ${lane.key}`}
                   style={{ left: pos.left }}
                   title={`Show ${lane.key} lane`}
-                  onClick={() => setHiddenLanes(prev => { const next = new Set(prev); next.delete(lane.key); return next; })}
+                  onClick={() => handleShowHiddenLane(lane.key)}
                 >
                   <Icon name="chevron-right" size={10} />
                   <span className="lane-hidden-tab-label">{lane.key.charAt(0).toUpperCase() + lane.key.slice(1)}</span>
@@ -1675,7 +1739,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
                 <button
                   className="lane-hide-btn"
                   title={`Hide ${lane.key} lane`}
-                  onClick={(e) => { e.stopPropagation(); setHiddenLanes(prev => { const next = new Set(prev); next.add(lane.key); return next; }); }}
+                  onClick={(e) => handleHideLane(e, lane.key)}
                 >
                   <span style={{ display: 'inline-flex', transform: 'rotate(180deg)' }}><Icon name="chevron-right" size={10} /></span>
                 </button>
@@ -1866,7 +1930,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
         <div className="mindmap-mode-indicator">
           <span className="mindmap-mode-label">Mind Map</span>
           <span className="mindmap-mode-count">{finalArtifacts.length} nodes</span>
-          <button className="mindmap-mode-exit" onClick={() => { setLayoutMode('lanes'); setPan({ x: 0, y: 0 }); setZoom(1); }}>
+          <button className="mindmap-mode-exit" onClick={handleExitMindmapMode}>
             <kbd>L</kbd> Exit
           </button>
         </div>
@@ -1887,11 +1951,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
                         key={t}
                         className={`filter-btn type-filter ${t} ${active ? 'active' : 'inactive'}`}
                         title={`${active ? 'Hide' : 'Show'} ${FILTER_TYPE_LABELS[t]}`}
-                        onClick={() => setHiddenTypes(prev => {
-                          const next = new Set(prev);
-                          if (next.has(t)) next.delete(t); else next.add(t);
-                          return next;
-                        })}
+                        onClick={() => handleToggleHiddenType(t)}
                       >
                         {FILTER_TYPE_LABELS[t]}
                       </button>
@@ -1911,11 +1971,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
                     key={bucket.label}
                     className={`filter-btn status-filter ${active ? 'active' : 'inactive'}`}
                     title={`${active ? 'Hide' : 'Show'} ${bucket.label} (${bucket.statuses.join(', ')})`}
-                    onClick={() => setHiddenStatusBuckets(prev => {
-                      const next = new Set(prev);
-                      if (next.has(idx)) next.delete(idx); else next.add(idx);
-                      return next;
-                    })}
+                    onClick={() => handleToggleHiddenStatus(idx)}
                   >
                     {bucket.label}
                   </button>
@@ -1933,11 +1989,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
                     key={cat.key}
                     className={`filter-btn line-filter ${cat.key} ${active ? 'active' : 'inactive'}`}
                     title={`${active ? 'Hide' : 'Show'} ${cat.label} lines`}
-                    onClick={() => setHiddenLineCategories(prev => {
-                      const next = new Set(prev);
-                      if (next.has(cat.key)) next.delete(cat.key); else next.add(cat.key);
-                      return next;
-                    })}
+                    onClick={() => handleToggleHiddenLineCategory(cat.key)}
                   >
                     <span className={`line-swatch ${cat.key}`} />
                     {cat.label}
@@ -1949,7 +2001,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
           {hasActiveFilters && (
             <button
               className="filter-bar-clear"
-              onClick={() => { setHiddenTypes(new Set()); setHiddenStatusBuckets(new Set()); setHiddenLineCategories(new Set()); }}
+              onClick={handleClearAllFilters}
             >
               Clear all
             </button>

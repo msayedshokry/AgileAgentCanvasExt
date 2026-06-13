@@ -100,6 +100,21 @@ export class LaneTransitionEngine {
       return { ok: false, status: 'blocked', blockedBy: ['Artifact not found'] };
     }
 
+    // P1 #13: reject drops where the client's `fromStatus` doesn't match the
+    // artifact's actual `status` in the store. A stale or malicious client
+    // that passes an old fromStatus would otherwise write a column update
+    // that the user didn't intend, because the card has been moved by an
+    // agent workflow or another webview since the UI rendered.
+    // Use explicit undefined check (not truthiness) so an empty-string or
+    // falsy status still validates correctly.
+    if ('status' in (found.artifact ?? {}) && found.artifact?.status !== fromStatus) {
+      return {
+        ok: false,
+        status: 'blocked',
+        blockedBy: [`Status mismatch: artifact is currently "${found.artifact?.status}", not "${fromStatus}"`],
+      };
+    }
+
     const rule = this.findRule(artifactType, fromStatus, toStatus);
 
     // Pre-flight validation — runs harness policies before allowing the transition
@@ -145,7 +160,10 @@ export class LaneTransitionEngine {
       // Auto-launch workflow if rule specifies one.
       // A2A remote delegation takes priority over local workflows.
       if (rule?.workflowId || rule?.terminalWorkflowId || rule?.a2aRemoteUrl) {
-        const shouldConfirm = rule.confirmWithUser && !this.isYoloMode();
+        // P1 #8: one-time preference — when `agileagentcanvas.kanbanSkipConfirm`
+        // is true OR YOLO mode is on, skip the per-drop confirm modal entirely.
+        // The user sets this once and never sees a Run/Skip prompt again.
+        const shouldConfirm = rule.confirmWithUser && !this.isYoloMode() && !this.isKanbanSkipConfirm();
         if (shouldConfirm) {
           const label = rule.a2aRemoteUrl
             ? `Remote agent at ${rule.a2aRemoteUrl}`
@@ -465,6 +483,11 @@ export class LaneTransitionEngine {
 
   private isYoloMode(): boolean {
     return vscode.workspace.getConfiguration('agileagentcanvas').get('yoloMode', false);
+  }
+
+  /** P1 #8: check whether kanban confirm modals should be skipped globally. */
+  private isKanbanSkipConfirm(): boolean {
+    return vscode.workspace.getConfiguration('agileagentcanvas').get('kanbanSkipConfirm', false);
   }
 
   private findRule(type: string, from: string, to: string): TransitionRule | undefined {

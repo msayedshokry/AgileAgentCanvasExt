@@ -729,7 +729,6 @@
             "name": "tokens",
             "description": "Alias for /codeburn models — show per-model token usage"
           },
-
           {
             "name": "help",
             "description": "Describe what you want to do and the extension will recommend the best skills and agents for your task"
@@ -933,7 +932,6 @@
         "title": "Agile Agent Canvas: Codeburn Export JSON",
         "icon": "$(export)"
       },
-
       {
         "command": "agileagentcanvas.suggestTool",
         "title": "Suggest New Tool",
@@ -1031,6 +1029,11 @@
               "error"
             ],
             "description": "Controls extension logging verbosity. Use info/warn/error for normal use; debug for troubleshooting."
+          },
+          "agileagentcanvas.kanbanSkipConfirm": {
+            "type": "boolean",
+            "default": false,
+            "description": "Skip per-drop confirmation modals on the Agentic Kanban board. When enabled, dragging a card between columns launches the workflow immediately instead of showing a Run/Skip prompt."
           }
         }
       },
@@ -1235,7 +1238,6 @@
           }
         }
       },
-
       {
         "title": "Agentic Execution",
         "order": 8,
@@ -1310,6 +1312,17 @@
             "default": 3,
             "minimum": 1,
             "description": "Maximum number of implement → review cycles the Agentic Kanban auto-advance loop will attempt before stopping a story without approval."
+          },
+          "agileagentcanvas.kanban.wipLimits": {
+            "type": "object",
+            "default": {},
+            "description": "Per-column work-in-progress (WIP) limits for the Agentic Kanban board. Set a max card count per column key (e.g. { \"in-progress\": 3, \"review\": 2 }). When exceeded, the column header turns red as a warning. Leave empty or omit columns for no limit.",
+            "patternProperties": {
+              "^(backlog|ready-for-dev|in-progress|review|done|optional)$": {
+                "type": "number",
+                "minimum": 1
+              }
+            }
           }
         }
       },

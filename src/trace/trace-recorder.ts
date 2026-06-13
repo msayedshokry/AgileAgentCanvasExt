@@ -158,6 +158,48 @@ export class TraceRecorder implements vscode.Disposable {
     }
   }
 
+  /**
+   * Rewrite a session's trace file with all entries whose `data.decision`
+   * matches `decisionValue` removed. Used by Undo-Abandon to restore the
+   * session to a state where scanInterruptedSessions will resurface it.
+   * Returns the number of entries removed. No-op if the file does not exist.
+   * Uses an atomic temp-file + rename so a process kill mid-write cannot
+   * corrupt the trace.
+   */
+  async removeDecision(sessionId: string, decisionValue: string): Promise<number> {
+    const filePath = path.join(this.outputFolder, `session-${sessionId}.jsonl`);
+    let existing: TraceEntry[];
+    try {
+      const content = await fs.readFile(filePath, 'utf-8');
+      existing = content
+        .split('\n')
+        .filter(Boolean)
+        .map(line => JSON.parse(line) as TraceEntry);
+    } catch {
+      return 0;
+    }
+    const filtered = existing.filter(e => e.data?.decision !== decisionValue);
+    const removed = existing.length - filtered.length;
+    if (removed === 0) return 0;
+
+    try {
+      if (filtered.length === 0) {
+        // Nothing left → unlink so scanInterruptedSessions treats this the
+        // same as "no trace file" (mirrors the pre-undo state).
+        await fs.unlink(filePath);
+      } else {
+        const tmpPath = `${filePath}.tmp`;
+        const lines = filtered.map(e => JSON.stringify(e)).join('\n') + '\n';
+        await fs.writeFile(tmpPath, lines, 'utf-8');
+        await fs.rename(tmpPath, filePath);
+      }
+      logger.info(`[TraceRecorder] Removed ${removed} decision(s) matching '${decisionValue}' from session ${sessionId}`);
+    } catch (err) {
+      logger.error(`[TraceRecorder] Failed to rewrite trace file for ${sessionId}`, { error: errMsg(err) });
+    }
+    return removed;
+  }
+
   async searchTraces(query: {
     artifactId?: string;
     agent?: string;

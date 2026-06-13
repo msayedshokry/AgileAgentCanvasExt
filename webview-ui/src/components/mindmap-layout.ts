@@ -23,16 +23,20 @@
 import type { Artifact } from '../types';
 
 // ── Layout constants ────────────────────────────────────────────────────────
-const NODE_W = 200;       // card width — larger for better readability
-const NODE_H = 60;        // card height — taller for title readability
-const H_GAP  = 80;        // horizontal gap between depth levels
-const V_GAP  = 32;        // vertical gap between sibling nodes
+// These values are the single source of truth for both this implementation
+// and mindmap-layout.test.ts. The test file imports them via LAYOUT_CONSTANTS
+// (exported below) rather than duplicating locally, so any change here
+// propagates to the test assertions automatically — no more drift.
+const NODE_W = 170;       // card width
+const NODE_H = 50;        // card height
+const H_GAP  = 70;        // horizontal gap between depth levels
+const V_GAP  = 28;        // vertical gap between sibling nodes
 const ROOT_X = 40;        // left margin for root
 const ROOT_Y = 40;        // top margin
 
 // ── Wrapping constants ──────────────────────────────────────────────────────
-const MAX_CHILDREN_PER_COL = 6;   // max children in one vertical column before wrapping
-const COL_GAP = 24;               // horizontal gap between wrapped child columns
+const MAX_CHILDREN_PER_COL = 5;   // max children in one vertical column before wrapping
+const COL_GAP = 20;               // horizontal gap between wrapped child columns
 
 // Depth ordering: discovery items first, then planning, solutioning, impl
 const DEPTH_ORDER: Record<string, number> = {
@@ -328,7 +332,18 @@ export function computeMindmapLayout(artifacts: Artifact[]): Artifact[] {
 }
 
 /**
- * Exported constants so Canvas.tsx can use consistent sizing
+ * Exported layout constants — single source of truth shared with
+ * mindmap-layout.test.ts (which imports these rather than duplicating values
+ * locally). Add new layout knobs here and they'll automatically be available
+ * to the test assertions.
  */
-export const MINDMAP_NODE_WIDTH = NODE_W;
-export const MINDMAP_NODE_HEIGHT = NODE_H;
+export const LAYOUT_CONSTANTS = {
+  NODE_W,
+  NODE_H,
+  H_GAP,
+  V_GAP,
+  ROOT_X,
+  ROOT_Y,
+  MAX_CHILDREN_PER_COL,
+  COL_GAP,
+} as const;

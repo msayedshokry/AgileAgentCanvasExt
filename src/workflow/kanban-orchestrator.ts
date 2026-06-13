@@ -150,6 +150,15 @@ export class KanbanOrchestrator {
   }
 
   private async setStatus(type: string, id: string, status: string): Promise<void> {
+    // P0 #4 note: this setStatus call is the authoritative column update.
+    // It mutates the store, which fires `onDidChangeArtifacts` in the
+    // AgenticKanbanViewProvider, which posts `updateArtifacts` to the
+    // webview. The webview's `updateArtifacts` handler preserves
+    // `agentState` and `lockInfo` from the previous items, so the card
+    // moves to the new column WITHOUT losing its running/queued/interrupted
+    // badge. The subsequent `kanbanProgress` emit then arrives as
+    // `agentStateUpdated` and is a no-op for `status`. There is no race in
+    // practice — the store update and the progress event are sequential.
     await this.store.updateArtifact(type, id, { status });
   }
 

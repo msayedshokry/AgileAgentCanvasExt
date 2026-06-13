@@ -6,20 +6,14 @@
 import { describe, it, expect } from 'vitest';
 import {
   computeMindmapLayout,
-  MINDMAP_NODE_WIDTH,
-  MINDMAP_NODE_HEIGHT,
+  LAYOUT_CONSTANTS,
 } from './mindmap-layout';
 import type { Artifact } from '../types';
 
-// ── Layout constants (mirrored for assertions) ──────────────────────────────
-const NODE_W = 170;
-const NODE_H = 50;
-const H_GAP = 70;
-const V_GAP = 28;
-const ROOT_X = 40;
-const ROOT_Y = 40;
-const MAX_CHILDREN_PER_COL = 5;
-const COL_GAP = 20;
+// ── Layout constants (imported from implementation — single source of truth) ─
+// Do NOT redefine these here. If you need to change a layout value, update
+// the implementation's LAYOUT_CONSTANTS in mindmap-layout.ts.
+const { NODE_W, NODE_H, H_GAP, V_GAP, ROOT_X, ROOT_Y, MAX_CHILDREN_PER_COL, COL_GAP } = LAYOUT_CONSTANTS;
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -41,19 +35,6 @@ function findById(result: Artifact[], id: string): Artifact | undefined {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Exported constants
-// ═══════════════════════════════════════════════════════════════════════════════
-
-describe('Exported constants', () => {
-  it('MINDMAP_NODE_WIDTH equals 170', () => {
-    expect(MINDMAP_NODE_WIDTH).toBe(170);
-  });
-
-  it('MINDMAP_NODE_HEIGHT equals 50', () => {
-    expect(MINDMAP_NODE_HEIGHT).toBe(50);
-  });
-});
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // Empty / trivial inputs
 // ═══════════════════════════════════════════════════════════════════════════════

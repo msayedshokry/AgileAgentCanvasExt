@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Icon } from './Icon';
 import { vscode } from '../vscodeApi';
 import { JiraConflictPicker, type EpicConflict } from './JiraConflictPicker';
+import { useEvent } from '../agentic-kanban/useEvent';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -107,6 +108,14 @@ export function JiraModal({ onClose }: JiraModalProps) {
     if (e.key === 'Enter' && !loading) handleRun();
   }, [handleRun, loading]);
 
+  // Tab switch: change the active action and clear any prior result/conflicts
+  // so the user sees a clean state for the new tab.
+  const handleTabSelect = useEvent((action: JiraAction) => {
+    setActiveAction(action);
+    setResult(null);
+    setConflicts(null);
+  });
+
   // Tab config
   const tabs: { id: JiraAction; label: string; description: string }[] = [
     { id: 'epics',   label: 'Fetch Epics',   description: 'List all epics in a Jira project' },
@@ -162,7 +171,7 @@ export function JiraModal({ onClose }: JiraModalProps) {
               className={`wfl-tab ${activeAction === tab.id ? 'active' : ''}`}
               role="tab"
               aria-selected={activeAction === tab.id}
-              onClick={() => { setActiveAction(tab.id); setResult(null); setConflicts(null); }}
+              onClick={() => handleTabSelect(tab.id)}
             >
               {tab.label}
             </button>
