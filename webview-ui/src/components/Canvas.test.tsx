@@ -8,9 +8,14 @@ import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import { Canvas } from './Canvas';
 import type { Artifact } from '../types';
 
-// Mock html2canvas for screenshot tests
+// Mock html2canvas for screenshot tests.
+// Must include width/height so the Canvas component can set finalCanvas dimensions.
+// toDataURL is not called on the mock directly — the component creates a second
+// canvas (finalCanvas) whose toDataURL() is stubbed in test/setup.ts.
 vi.mock('html2canvas', () => ({
   default: vi.fn().mockResolvedValue({
+    width: 800,
+    height: 600,
     toDataURL: vi.fn().mockReturnValue('data:image/png;base64,abc'),
   }),
 }));
@@ -1248,7 +1253,9 @@ describe('Canvas', () => {
       });
 
       await waitFor(() => {
-        expect(onScreenshotReady).toHaveBeenCalledWith('data:image/png;base64,abc', 'png');
+        // The actual data URL comes from the final canvas's toDataURL(), which
+        // is stubbed in test/setup.ts (jsdom has no real CanvasRenderingContext2D).
+        expect(onScreenshotReady).toHaveBeenCalledWith('data:image/png;base64,iVBORw0KGgo=', 'png');
       });
     });
 
