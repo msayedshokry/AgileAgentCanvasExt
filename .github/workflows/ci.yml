@@ -25,9 +25,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
-      - run: npm install
+      # Delete lock file so npm install resolves fresh from package.json
+      # (lock files generated on Windows npm 11.x have incompatible integrity
+      #  hashes for Linux npm 10.x on the GitHub Actions runner)
+      - run: rm -f package-lock.json && npm install
 
       - name: TypeCheck
         run: npm run check-types
@@ -53,9 +55,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
-      - run: npm install
+      - run: rm -f package-lock.json && npm install
 
       - name: Run Cucumber BDD Tests
         run: npm run test -- --profile ci
@@ -94,10 +95,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: webview-ui/package-lock.json
 
-      - run: npm install
+      - run: rm -f package-lock.json && npm install
 
       - name: TypeCheck
         run: npx tsc --noEmit
@@ -133,10 +132,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
-      - run: npm install
-      - run: cd webview-ui && npm install
+      - run: rm -f package-lock.json && npm install
+      - run: cd webview-ui && rm -f package-lock.json && npm install
 
       - name: Full Compile
         run: npm run compile
