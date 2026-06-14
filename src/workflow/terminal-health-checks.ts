@@ -58,18 +58,11 @@ export function processLivenessCheck(terminal: TerminalLike): HealthCheck {
 export function outputProgressCheck(terminal: TerminalLike, timeoutMs: number = DEFAULT_PROGRESS_TIMEOUT_MS): HealthCheck {
   return {
     label: 'output-progress',
-    async check() {
-      try {
-        const lastOutput = await terminal.getLastOutputTime();
-        const elapsed = Date.now() - lastOutput;
-        if (elapsed > timeoutMs * 3) return 'dead';
-        if (elapsed > timeoutMs) return 'degraded';
-        return 'healthy';
-      } catch (err) {
-        logger.warn('Output progress check threw', { error: String(err) });
-        return 'degraded';
-      }
-    },
+    check: () => safeCheck(async () => {
+      const lastOutput = await terminal.getLastOutputTime();
+      const elapsed = Date.now() - lastOutput;
+      return elapsed > timeoutMs ? 'degraded' : 'healthy';
+    }, 'output-progress'),
   };
 }
 
@@ -77,18 +70,11 @@ export function outputProgressCheck(terminal: TerminalLike, timeoutMs: number = 
 export function artifactChangeCheck(artifact: ArtifactLikeForHealth, timeoutMs: number = DEFAULT_ARTIFACT_STALE_MS): HealthCheck {
   return {
     label: 'artifact-change',
-    async check() {
-      try {
-        const lastModified = await artifact.getLastModifiedTime();
-        const elapsed = Date.now() - lastModified;
-        if (elapsed > timeoutMs * 3) return 'dead';
-        if (elapsed > timeoutMs) return 'degraded';
-        return 'healthy';
-      } catch (err) {
-        logger.warn('Artifact change check threw', { error: String(err) });
-        return 'degraded';
-      }
-    },
+    check: () => safeCheck(async () => {
+      const lastModified = await artifact.getLastModifiedTime();
+      const elapsed = Date.now() - lastModified;
+      return elapsed > timeoutMs ? 'degraded' : 'healthy';
+    }, 'artifact-change'),
   };
 }
 
@@ -103,4 +89,14 @@ export function createTerminalHealthChecks(
     outputProgressCheck(terminal, options.progressTimeoutMs),
     artifactChangeCheck(artifact, options.artifactStaleMs),
   ];
+}
+
+/** Shared try/catch wrapper — returns 'degraded' on error. */
+async function safeCheck(fn: () => Promise<'healthy' | 'degraded'>, label: string): Promise<'healthy' | 'degraded'> {
+  try {
+    return await fn();
+  } catch (err) {
+    logger.warn(`${label} check threw`, { error: String(err) });
+    return 'degraded';
+  }
 }
