@@ -268,6 +268,21 @@ export function KanbanCard({ item, index, draggable, onDragStart, onClick, class
           Policy failed
         </span>
       )}
+
+      {/* Issue #22: Dependency badge (Blocked by N) */}
+      {(item.blockedBy ?? 0) > 0 && (
+        <span
+          className={`kanban-card-dep-badge${item.hasCycle ? ' kanban-card-dep-badge--cycle' : ''}`}
+          title={
+            item.hasCycle
+              ? `⚠ Circular dependency: blocked by ${item.blockedBy} story(ies) including ${(item.blockerTitles ?? []).slice(0, 3).join(', ')}`
+              : `Blocked by: ${(item.blockerTitles ?? []).slice(0, 3).join(', ')}${(item.blockerTitles?.length ?? 0) > 3 ? '…' : ''}`
+          }
+          aria-label={`Blocked by ${item.blockedBy} ${item.hasCycle ? 'in a circular dependency' : 'stories'}`}
+        >
+          {item.hasCycle ? '⛔' : '🔗'} Blocked by {item.blockedBy}
+        </span>
+      )}
     </div>
   );
 }

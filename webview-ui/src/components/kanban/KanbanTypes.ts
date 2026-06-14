@@ -37,6 +37,12 @@ export interface KanbanItem {
   priority?: string;
   /** Feature 1: this is a child story shown indented under its parent epic */
   isChild?: boolean;
+  /** Issue #22: number of stories blocking this one (open blockers only) */
+  blockedBy?: number;
+  /** Issue #22: whether this story is in a circular dependency */
+  hasCycle?: boolean;
+  /** Issue #22: titles of stories blocking this one (for badge tooltip) */
+  blockerTitles?: string[];
 }
 
 export interface KanbanColumnDef {

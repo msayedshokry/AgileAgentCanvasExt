@@ -9,6 +9,9 @@ import { TerminalModal } from './TerminalModal';
 import { AgenticDetailPanel } from './AgenticDetailPanel';
 import { ContextMenu } from './ContextMenu';
 import { useEvent } from './useEvent';
+import { AutonomyBar, type SchedulerStateMessage, type BudgetStatus, type ProposedGoal } from './AutonomyBar';
+import { GoalDecomposerModal } from './GoalDecomposerModal';
+import './Autonomy.css';
 import {
   ArtifactLike,
   AgentInfo,
@@ -89,6 +92,11 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; item: KanbanItem; focusIndex: number } | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [wipLimits, setWipLimits] = useState<Record<string, number>>(DEFAULT_WIP_LIMITS);
+  // ── Autonomy UI state (issue #22) ──────────────────────────────────────
+  const [schedulerState, setSchedulerState] = useState<SchedulerStateMessage | null>(null);
+  const [budgetStatus, setBudgetStatus] = useState<BudgetStatus | null>(null);
+  const [pendingGoal, setPendingGoal] = useState<ProposedGoal | null>(null);
+  const [goalReviewOpen, setGoalReviewOpen] = useState<boolean>(false);
 
   // ── Imperative refs (NOT state mirrors) ──────────────────────────────────
   // These track backend IPC bookkeeping, not React state. They survive
@@ -164,6 +172,54 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
         setChatSessionActive(!!message.active);
         setChatSessionModel(message.model ?? undefined);
         break;
+      case 'schedulerState': {
+        setSchedulerState(message as SchedulerStateMessage);
+        break;
+      }
+      case 'budgetStatus': {
+        setBudgetStatus(message as BudgetStatus);
+        break;
+      }
+      case 'goalSubmitted': {
+        if (message.goalId) {
+          setToast({ message: 'Goal submitted (decomposing…)', type: 'info' });
+        }
+        break;
+      }
+      case 'goalSubmitError': {
+        setToast({ message: `Goal submit failed: ${message.error ?? 'unknown'}`, type: 'error' });
+        break;
+      }
+      case 'goalReadyForReview': {
+        setPendingGoal(message.goal as ProposedGoal);
+        setGoalReviewOpen(true);
+        setToast({ message: 'Goal decomposed — review the proposed stories', type: 'info' });
+        break;
+      }
+      case 'circuitStatus': {
+        if (message.status?.state === 'open') {
+          setToast({ message: `Circuit breaker open for ${message.workflowId}`, type: 'error' });
+        }
+        break;
+      }
+      case 'goalReviewed': {
+        // Decomposer finished approving stories (either auto-approved or all
+        // rejected). Close the modal and refresh so new stories appear.
+        setGoalReviewOpen(false);
+        setPendingGoal(null);
+        if (message.goal?.status === 'approved') {
+          setToast({ message: `Goal approved — ${message.goal.approvedStories?.length ?? 0} story(ies) dispatched`, type: 'success' });
+        } else {
+          setToast({ message: 'Goal review complete (no stories approved)', type: 'info' });
+        }
+        break;
+      }
+      case 'goalDispatched': {
+        // Stories were persisted + scheduler notified. Refresh board to show
+        // the new artifacts in the ready-for-dev column.
+        vscode.postMessage({ type: 'agenticKanban:refresh' });
+        break;
+      }
       case 'kanban:wipLimits':
         // An empty object `{}` from settings means "no limits" — replace
         // defaults entirely. A falsy/missing payload preserves existing state.
@@ -271,6 +327,9 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
       vscode.postMessage({ type: 'agenticKanbanReady' });
     }
     vscode.postMessage({ type: 'kanban:getAutoAdvance' });
+    // Issue #22: pull autonomy state on mount so the bar isn't empty
+    vscode.postMessage({ type: 'getSchedulerState' });
+    vscode.postMessage({ type: 'getBudgetStatus' });
 
     return () => {
       window.removeEventListener('message', handler);
@@ -709,6 +768,13 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
         </div>
       </header>
 
+      <AutonomyBar
+        schedulerState={schedulerState}
+        budgetStatus={budgetStatus}
+        pendingGoal={pendingGoal}
+        onOpenGoalReview={() => setGoalReviewOpen(true)}
+      />
+
       <div className="agentic-kanban-board">
         {KANBAN_COLUMNS.map(col => (
           <KanbanColumn
@@ -774,6 +840,16 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
           onClose={() => {
             vscode.postMessage({ type: 'kanban:closeTerminal', artifactId: terminalModal.artifactId });
             setTerminalModal(null);
+          }}
+        />
+      )}
+
+      {goalReviewOpen && pendingGoal && (
+        <GoalDecomposerModal
+          goal={pendingGoal}
+          onClose={() => {
+            setGoalReviewOpen(false);
+            setPendingGoal(null);
           }}
         />
       )}
