@@ -62,6 +62,8 @@ module.exports = {
   },
 
   // ── CI category profiles (run in parallel to isolate failures) ──
+  // ci-artifacts is used by CI; the other categories are split into
+  // individual feature-file jobs in .github/workflows/ci.yml
 
   'ci-artifacts': {
     requireModule: ['ts-node/register/transpile-only'],

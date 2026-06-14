@@ -10,7 +10,6 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# Cancel in-progress runs when a new commit is pushed to the same PR/branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -24,111 +23,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      # Delete lock file so npm install resolves fresh from package.json
-      # (lock files generated on Windows npm 11.x have incompatible integrity
-      #  hashes for Linux npm 10.x on the GitHub Actions runner)
       - run: rm -f package-lock.json && npm install
-
       - name: TypeCheck
         run: npm run check-types
-
       - name: Lint
         run: npm run lint || true
-
       - name: Lint Changelog
         run: npm run lint:changelog || true
-
       - name: Bundle Extension
         run: npm run bundle
-
-  # ═══════════════════════════════════════════════════════════════════════
-  # Cucumber BDD Tests — 4 categories running in parallel
-  # ═══════════════════════════════════════════════════════════════════════
-
-  cucumber-artifacts:
-    name: Cucumber (Artifacts)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: rm -f package-lock.json && npm install
-      - name: Run Artifacts Tests
-        run: npx cucumber-js --profile ci-artifacts
-        continue-on-error: true
-      - name: Upload JSON Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cucumber-report-artifacts
-          path: reports/cucumber-report-artifacts.json
-          retention-days: 7
-
-  cucumber-workflow:
-    name: Cucumber (Workflow)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: rm -f package-lock.json && npm install
-      - name: Run Workflow Tests
-        run: npx cucumber-js --profile ci-workflow
-        continue-on-error: true
-      - name: Upload JSON Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cucumber-report-workflow
-          path: reports/cucumber-report-workflow.json
-          retention-days: 7
-
-  cucumber-views:
-    name: Cucumber (Views)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: rm -f package-lock.json && npm install
-      - name: Run Views Tests
-        run: npx cucumber-js --profile ci-views
-        continue-on-error: true
-      - name: Upload JSON Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cucumber-report-views
-          path: reports/cucumber-report-views.json
-          retention-days: 7
-
-  cucumber-agents:
-    name: Cucumber (Agents)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: rm -f package-lock.json && npm install
-      - name: Run Agents Tests
-        run: npx cucumber-js --profile ci-agents
-        continue-on-error: true
-      - name: Upload JSON Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cucumber-report-agents
-          path: reports/cucumber-report-agents.json
-          retention-days: 7
 
   # ═══════════════════════════════════════════════════════════════════════
   # Webview — Typecheck, Lint, Build, Vitest
@@ -141,26 +47,19 @@ jobs:
         working-directory: webview-ui
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-
       - run: rm -f package-lock.json && npm install
-
       - name: TypeCheck
         run: npx tsc --noEmit
-
       - name: Lint
         run: npx eslint src --ext .ts,.tsx 2>/dev/null || true
-
       - name: Vitest Tests
-        run: npm run test:coverage
+        run: npm test
         continue-on-error: true
-
       - name: Build Webview
         run: npm run build
-
       - name: Upload Vitest Results
         if: always()
         uses: actions/upload-artifact@v4
@@ -170,22 +69,295 @@ jobs:
           retention-days: 7
 
   # ═══════════════════════════════════════════════════════════════════════
+  # Cucumber — Artifacts (already passing, kept grouped)
+  # ═══════════════════════════════════════════════════════════════════════
+  cucumber-artifacts:
+    name: Cucumber / Artifacts (185)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: rm -f package-lock.json && npm install
+      - name: Run
+        run: npx cucumber-js --profile ci-artifacts
+        continue-on-error: true
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Cucumber — Workflow (split into 5 individual feature jobs)
+  # ═══════════════════════════════════════════════════════════════════════
+  cucumber-workflow-executor:
+    name: Cucumber / workflow-executor (71)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: rm -f package-lock.json && npm install
+      - run: npx cucumber-js features/workflow-executor.feature --tags "not @wip" -f progress --publish-quiet
+        continue-on-error: true
+
+  cucumber-agentic-kanban:
+    name: Cucumber / agentic-kanban (37)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: rm -f package-lock.json && npm install
+      - run: npx cucumber-js features/agentic-kanban.feature --tags "not @wip" -f progress --publish-quiet
+        continue-on-error: true
+
+  cucumber-lane-transitions:
+    name: Cucumber / lane-transitions (23)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: rm -f package-lock.json && npm install
+      - run: npx cucumber-js features/lane-transitions.feature --tags "not @wip" -f progress --publish-quiet
+        continue-on-error: true
+
+  cucumber-terminal-executor:
+    name: Cucumber / terminal-executor (22)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: rm -f package-lock.json && npm install
+      - run: npx cucumber-js features/terminal-executor.feature --tags "not @wip" -f progress --publish-quiet
+        continue-on-error: true
+
+  cucumber-kanban-other:
+    name: Cucumber / kanban-other (6)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: rm -f package-lock.json && npm install
+      - run: npx cucumber-js features/kanban-orchestrator.feature features/kanban-data-integrity.feature --tags "not @wip" -f progress --publish-quiet
+        continue-on-error: true
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Cucumber — Views (split into 5 individual feature jobs)
+  # ═══════════════════════════════════════════════════════════════════════
+  cucumber-chat-participant:
+    name: Cucumber / chat-participant (54)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: rm -f package-lock.json && npm install
+      - run: npx cucumber-js features/chat-participant.feature --tags "not @wip" -f progress --publish-quiet
+        continue-on-error: true
+
+  cucumber-wizard-steps:
+    name: Cucumber / wizard-steps (57)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: rm -f package-lock.json && npm install
+      - run: npx cucumber-js features/wizard-steps-provider.feature --tags "not @wip" -f progress --publish-quiet
+        continue-on-error: true
+
+  cucumber-canvas-view:
+    name: Cucumber / canvas-view (40)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: rm -f package-lock.json && npm install
+      - run: npx cucumber-js features/canvas-view-provider.feature --tags "not @wip" -f progress --publish-quiet
+        continue-on-error: true
+
+  cucumber-webview-handler:
+    name: Cucumber / webview-handler (39)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: rm -f package-lock.json && npm install
+      - run: npx cucumber-js features/webview-message-handler.feature --tags "not @wip" -f progress --publish-quiet
+        continue-on-error: true
+
+  cucumber-extension-feature:
+    name: Cucumber / extension (37)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: rm -f package-lock.json && npm install
+      - run: npx cucumber-js features/extension.feature --tags "not @wip" -f progress --publish-quiet
+        continue-on-error: true
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Cucumber — Agents (split into 9 individual feature jobs)
+  # ═══════════════════════════════════════════════════════════════════════
+  cucumber-harness-policies:
+    name: Cucumber / harness-policies (38)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: rm -f package-lock.json && npm install
+      - run: npx cucumber-js features/harness-policies.feature --tags "not @wip" -f progress --publish-quiet
+        continue-on-error: true
+
+  cucumber-trace-recorder:
+    name: Cucumber / trace-recorder (34)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: rm -f package-lock.json && npm install
+      - run: npx cucumber-js features/trace-recorder.feature --tags "not @wip" -f progress --publish-quiet
+        continue-on-error: true
+
+  cucumber-a2a-client:
+    name: Cucumber / a2a-outbound (25)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: rm -f package-lock.json && npm install
+      - run: npx cucumber-js features/a2a-outbound-client.feature --tags "not @wip" -f progress --publish-quiet
+        continue-on-error: true
+
+  cucumber-acp-protocol:
+    name: Cucumber / acp-protocol (21)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: rm -f package-lock.json && npm install
+      - run: npx cucumber-js features/acp-protocol.feature --tags "not @wip" -f progress --publish-quiet
+        continue-on-error: true
+
+  cucumber-chat-bridge:
+    name: Cucumber / chat-bridge (21)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: rm -f package-lock.json && npm install
+      - run: npx cucumber-js features/chat-bridge.feature --tags "not @wip" -f progress --publish-quiet
+        continue-on-error: true
+
+  cucumber-graphify:
+    name: Cucumber / graphify (20)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: rm -f package-lock.json && npm install
+      - run: npx cucumber-js features/graphify-integration.feature --tags "not @wip" -f progress --publish-quiet
+        continue-on-error: true
+
+  cucumber-agent-team:
+    name: Cucumber / agent-team (19)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: rm -f package-lock.json && npm install
+      - run: npx cucumber-js features/agent-team.feature --tags "not @wip" -f progress --publish-quiet
+        continue-on-error: true
+
+  cucumber-agent-bus:
+    name: Cucumber / agent-bus (16)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: rm -f package-lock.json && npm install
+      - run: npx cucumber-js features/agent-message-bus.feature --tags "not @wip" -f progress --publish-quiet
+        continue-on-error: true
+
+  cucumber-data-pipeline:
+    name: Cucumber / data-pipeline (16)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: rm -f package-lock.json && npm install
+      - run: npx cucumber-js features/data-pipeline.feature --tags "not @wip" -f progress --publish-quiet
+        continue-on-error: true
+
+  # ═══════════════════════════════════════════════════════════════════════
   # Full Compile (end-to-end integration check)
   # ═══════════════════════════════════════════════════════════════════════
   full-compile:
     name: Full Compile (Extension + Webview)
     runs-on: ubuntu-latest
-    needs: [extension-build, cucumber-artifacts, cucumber-workflow, cucumber-views, cucumber-agents, webview]
+    needs:
+      - extension-build
+      - webview
+      - cucumber-artifacts
+      - cucumber-workflow-executor
+      - cucumber-agentic-kanban
+      - cucumber-lane-transitions
+      - cucumber-terminal-executor
+      - cucumber-kanban-other
+      - cucumber-chat-participant
+      - cucumber-wizard-steps
+      - cucumber-canvas-view
+      - cucumber-webview-handler
+      - cucumber-extension-feature
+      - cucumber-harness-policies
+      - cucumber-trace-recorder
+      - cucumber-a2a-client
+      - cucumber-acp-protocol
+      - cucumber-chat-bridge
+      - cucumber-graphify
+      - cucumber-agent-team
+      - cucumber-agent-bus
+      - cucumber-data-pipeline
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-
       - run: rm -f package-lock.json && npm install
       - run: cd webview-ui && rm -f package-lock.json && npm install
-
       - name: Full Compile
         run: npm run compile
 
@@ -195,7 +367,29 @@ jobs:
   test-summary:
     name: Test Summary
     runs-on: ubuntu-latest
-    needs: [extension-build, cucumber-artifacts, cucumber-workflow, cucumber-views, cucumber-agents, webview]
+    needs:
+      - extension-build
+      - webview
+      - cucumber-artifacts
+      - cucumber-workflow-executor
+      - cucumber-agentic-kanban
+      - cucumber-lane-transitions
+      - cucumber-terminal-executor
+      - cucumber-kanban-other
+      - cucumber-chat-participant
+      - cucumber-wizard-steps
+      - cucumber-canvas-view
+      - cucumber-webview-handler
+      - cucumber-extension-feature
+      - cucumber-harness-policies
+      - cucumber-trace-recorder
+      - cucumber-a2a-client
+      - cucumber-acp-protocol
+      - cucumber-chat-bridge
+      - cucumber-graphify
+      - cucumber-agent-team
+      - cucumber-agent-bus
+      - cucumber-data-pipeline
     if: always()
     steps:
       - name: Check Results
@@ -204,8 +398,26 @@ jobs:
           echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Extension Build | ${{ needs.extension-build.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Cucumber (Artifacts) | ${{ needs.cucumber-artifacts.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Cucumber (Workflow) | ${{ needs.cucumber-workflow.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Cucumber (Views) | ${{ needs.cucumber-views.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Cucumber (Agents) | ${{ needs.cucumber-agents.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Webview Build+Test | ${{ needs.webview.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Cucumber artifacts (185) | ${{ needs.cucumber-artifacts.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| └─ workflow-executor (71) | ${{ needs.cucumber-workflow-executor.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| └─ agentic-kanban (37) | ${{ needs.cucumber-agentic-kanban.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| └─ lane-transitions (23) | ${{ needs.cucumber-lane-transitions.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| └─ terminal-executor (22) | ${{ needs.cucumber-terminal-executor.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| └─ kanban-other (6) | ${{ needs.cucumber-kanban-other.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| └─ chat-participant (54) | ${{ needs.cucumber-chat-participant.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| └─ wizard-steps (57) | ${{ needs.cucumber-wizard-steps.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| └─ canvas-view (40) | ${{ needs.cucumber-canvas-view.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| └─ webview-handler (39) | ${{ needs.cucumber-webview-handler.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| └─ extension (37) | ${{ needs.cucumber-extension-feature.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| └─ harness-policies (38) | ${{ needs.cucumber-harness-policies.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| └─ trace-recorder (34) | ${{ needs.cucumber-trace-recorder.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| └─ a2a-outbound (25) | ${{ needs.cucumber-a2a-client.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| └─ acp-protocol (21) | ${{ needs.cucumber-acp-protocol.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| └─ chat-bridge (21) | ${{ needs.cucumber-chat-bridge.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| └─ graphify (20) | ${{ needs.cucumber-graphify.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| └─ agent-team (19) | ${{ needs.cucumber-agent-team.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| └─ agent-bus (16) | ${{ needs.cucumber-agent-bus.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| └─ data-pipeline (16) | ${{ needs.cucumber-data-pipeline.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ = success  ❌ = failure  ⏭ = skipped  ⌛ = cancelled" >> $GITHUB_STEP_SUMMARY
