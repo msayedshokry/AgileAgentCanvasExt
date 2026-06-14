@@ -83,7 +83,6 @@ jobs:
       - run: rm -f package-lock.json && npm install
       - name: Run
         run: npx cucumber-js --profile ci-artifacts
-        continue-on-error: true
 
   # ═══════════════════════════════════════════════════════════════════════
   # Cucumber — Workflow (split into 5 individual feature jobs)
@@ -98,7 +97,6 @@ jobs:
         with: { node-version: '20' }
       - run: rm -f package-lock.json && npm install
       - run: npx cucumber-js features/workflow-executor.feature --tags "not @wip" -f progress --publish-quiet
-        continue-on-error: true
 
   cucumber-agentic-kanban:
     name: Cucumber / agentic-kanban (37)
@@ -110,7 +108,6 @@ jobs:
         with: { node-version: '20' }
       - run: rm -f package-lock.json && npm install
       - run: npx cucumber-js features/agentic-kanban.feature --tags "not @wip" -f progress --publish-quiet
-        continue-on-error: true
 
   cucumber-lane-transitions:
     name: Cucumber / lane-transitions (23)
@@ -122,7 +119,6 @@ jobs:
         with: { node-version: '20' }
       - run: rm -f package-lock.json && npm install
       - run: npx cucumber-js features/lane-transitions.feature --tags "not @wip" -f progress --publish-quiet
-        continue-on-error: true
 
   cucumber-terminal-executor:
     name: Cucumber / terminal-executor (22)
@@ -134,7 +130,6 @@ jobs:
         with: { node-version: '20' }
       - run: rm -f package-lock.json && npm install
       - run: npx cucumber-js features/terminal-executor.feature --tags "not @wip" -f progress --publish-quiet
-        continue-on-error: true
 
   cucumber-kanban-other:
     name: Cucumber / kanban-other (6)
@@ -146,7 +141,6 @@ jobs:
         with: { node-version: '20' }
       - run: rm -f package-lock.json && npm install
       - run: npx cucumber-js features/kanban-orchestrator.feature features/kanban-data-integrity.feature --tags "not @wip" -f progress --publish-quiet
-        continue-on-error: true
 
   # ═══════════════════════════════════════════════════════════════════════
   # Cucumber — Views (split into 5 individual feature jobs)
@@ -161,7 +155,6 @@ jobs:
         with: { node-version: '20' }
       - run: rm -f package-lock.json && npm install
       - run: npx cucumber-js features/chat-participant.feature --tags "not @wip" -f progress --publish-quiet
-        continue-on-error: true
 
   cucumber-wizard-steps:
     name: Cucumber / wizard-steps (57)
@@ -173,7 +166,6 @@ jobs:
         with: { node-version: '20' }
       - run: rm -f package-lock.json && npm install
       - run: npx cucumber-js features/wizard-steps-provider.feature --tags "not @wip" -f progress --publish-quiet
-        continue-on-error: true
 
   cucumber-canvas-view:
     name: Cucumber / canvas-view (40)
@@ -185,7 +177,6 @@ jobs:
         with: { node-version: '20' }
       - run: rm -f package-lock.json && npm install
       - run: npx cucumber-js features/canvas-view-provider.feature --tags "not @wip" -f progress --publish-quiet
-        continue-on-error: true
 
   cucumber-webview-handler:
     name: Cucumber / webview-handler (39)
@@ -197,7 +188,6 @@ jobs:
         with: { node-version: '20' }
       - run: rm -f package-lock.json && npm install
       - run: npx cucumber-js features/webview-message-handler.feature --tags "not @wip" -f progress --publish-quiet
-        continue-on-error: true
 
   cucumber-extension-feature:
     name: Cucumber / extension (37)
@@ -209,7 +199,6 @@ jobs:
         with: { node-version: '20' }
       - run: rm -f package-lock.json && npm install
       - run: npx cucumber-js features/extension.feature --tags "not @wip" -f progress --publish-quiet
-        continue-on-error: true
 
   # ═══════════════════════════════════════════════════════════════════════
   # Cucumber — Agents (split into 9 individual feature jobs)
@@ -224,7 +213,6 @@ jobs:
         with: { node-version: '20' }
       - run: rm -f package-lock.json && npm install
       - run: npx cucumber-js features/harness-policies.feature --tags "not @wip" -f progress --publish-quiet
-        continue-on-error: true
 
   cucumber-trace-recorder:
     name: Cucumber / trace-recorder (34)
@@ -236,7 +224,6 @@ jobs:
         with: { node-version: '20' }
       - run: rm -f package-lock.json && npm install
       - run: npx cucumber-js features/trace-recorder.feature --tags "not @wip" -f progress --publish-quiet
-        continue-on-error: true
 
   cucumber-a2a-client:
     name: Cucumber / a2a-outbound (25)
@@ -248,7 +235,6 @@ jobs:
         with: { node-version: '20' }
       - run: rm -f package-lock.json && npm install
       - run: npx cucumber-js features/a2a-outbound-client.feature --tags "not @wip" -f progress --publish-quiet
-        continue-on-error: true
 
   cucumber-acp-protocol:
     name: Cucumber / acp-protocol (21)
@@ -260,7 +246,6 @@ jobs:
         with: { node-version: '20' }
       - run: rm -f package-lock.json && npm install
       - run: npx cucumber-js features/acp-protocol.feature --tags "not @wip" -f progress --publish-quiet
-        continue-on-error: true
 
   cucumber-chat-bridge:
     name: Cucumber / chat-bridge (21)
@@ -272,7 +257,6 @@ jobs:
         with: { node-version: '20' }
       - run: rm -f package-lock.json && npm install
       - run: npx cucumber-js features/chat-bridge.feature --tags "not @wip" -f progress --publish-quiet
-        continue-on-error: true
 
   cucumber-graphify:
     name: Cucumber / graphify (20)
@@ -284,7 +268,6 @@ jobs:
         with: { node-version: '20' }
       - run: rm -f package-lock.json && npm install
       - run: npx cucumber-js features/graphify-integration.feature --tags "not @wip" -f progress --publish-quiet
-        continue-on-error: true
 
   cucumber-agent-team:
     name: Cucumber / agent-team (19)
@@ -296,7 +279,6 @@ jobs:
         with: { node-version: '20' }
       - run: rm -f package-lock.json && npm install
       - run: npx cucumber-js features/agent-team.feature --tags "not @wip" -f progress --publish-quiet
-        continue-on-error: true
 
   cucumber-agent-bus:
     name: Cucumber / agent-bus (16)
@@ -308,7 +290,6 @@ jobs:
         with: { node-version: '20' }
       - run: rm -f package-lock.json && npm install
       - run: npx cucumber-js features/agent-message-bus.feature --tags "not @wip" -f progress --publish-quiet
-        continue-on-error: true
 
   cucumber-data-pipeline:
     name: Cucumber / data-pipeline (16)
@@ -320,7 +301,6 @@ jobs:
         with: { node-version: '20' }
       - run: rm -f package-lock.json && npm install
       - run: npx cucumber-js features/data-pipeline.feature --tags "not @wip" -f progress --publish-quiet
-        continue-on-error: true
 
   # ═══════════════════════════════════════════════════════════════════════
   # Full Compile (end-to-end integration check)
