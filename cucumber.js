@@ -23,7 +23,8 @@ module.exports = {
     formatOptions: {
       snippetInterface: 'async-await'
     },
-    publishQuiet: true
+    publishQuiet: true,
+    forceExit: true
   },
   wip: {
     requireModule: ['ts-node/register/transpile-only'],
@@ -38,7 +39,8 @@ module.exports = {
     formatOptions: {
       snippetInterface: 'async-await'
     },
-    publishQuiet: true
+    publishQuiet: true,
+    forceExit: true
   },
   // ── CI category profile (still used by cucumber-artifacts job) ──
   'ci-artifacts': {
@@ -61,7 +63,8 @@ module.exports = {
       'json:reports/cucumber-report-artifacts.json'
     ],
     formatOptions: { snippetInterface: 'async-await' },
-    publishQuiet: true
+    publishQuiet: true,
+    forceExit: true
   },
 
 };
