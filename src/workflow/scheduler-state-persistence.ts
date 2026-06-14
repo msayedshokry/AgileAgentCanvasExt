@@ -45,7 +45,7 @@ export class SchedulerStatePersistence {
         .map((s: SchedulerStory) => s.id),
       inProgress: autoScheduler.getInProgressIds(),
       wipLimit: autoScheduler.getWipLimit(),
-      pollIntervalMs: 5_000,
+      pollIntervalMs: autoScheduler.getPollIntervalMs(),
     };
     try {
       fs.mkdirSync(path.dirname(this.filePath), { recursive: true });

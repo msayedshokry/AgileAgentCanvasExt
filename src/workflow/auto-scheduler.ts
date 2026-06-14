@@ -134,6 +134,11 @@ export class AutoScheduler extends EventEmitter {
     return this.wipLimit;
   }
 
+  /** Get the current polling interval (ms). */
+  getPollIntervalMs(): number {
+    return this.pollIntervalMs;
+  }
+
   /** Pick the highest-priority ready-for-dev story that isn't in progress. */
   pickNext(): SchedulerStory | null {
     const ready = this.stories
