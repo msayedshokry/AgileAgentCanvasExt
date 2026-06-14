@@ -58,7 +58,6 @@ export class AutoRetryEngine {
     const attempts: RetryAttempt[] = [];
     let delay = this.config.initialDelayMs;
     let lastCategory: FailureCategory = 'unknown';
-    let lastError: unknown;
 
     for (let i = 0; i <= this.config.maxRetries; i++) {
       const attempt: RetryAttempt = { attemptNumber: i + 1, startedAt: Date.now() };
@@ -67,13 +66,13 @@ export class AutoRetryEngine {
         await work();
         attempt.finishedAt = Date.now();
         attempt.succeeded = true;
-        attempt.category = 'transient'; // success path
+        // No category on success — only failures get classified.
         logger.info('Retry succeeded', { storyId, attempt: i + 1 });
         return {
           storyId,
           totalAttempts: i + 1,
           attempts,
-          finalCategory: 'transient',
+          finalCategory: 'unknown', // success — no failure category
           succeeded: true,
         };
       } catch (err) {
@@ -82,7 +81,6 @@ export class AutoRetryEngine {
         const classification = failureClassifier.classify(err);
         attempt.category = classification.category;
         lastCategory = classification.category;
-        lastError = err;
 
         if (classification.category === 'permanent') {
           logger.warn('Permanent failure — skipping retries', { storyId, attempt: i + 1 });
