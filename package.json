@@ -1417,12 +1417,12 @@
     "clean:scratch": "node -e \"const fs=require('fs'),path=require('path');const RE=/^\\.test-traces-\\d+$/;const SCRATCH=['cucumber-output.txt','cucumber-output.json','cucumber-full-output.txt','cucumber-remaining.json','full-output.txt','full-output-2.txt','remaining-failures.txt'];const root=process.cwd();let n=0;for(const e of fs.readdirSync(root)){if(RE.test(e)||SCRATCH.includes(e)){try{fs.rmSync(path.join(root,e),{recursive:true,force:true});n++;}catch{}}}console.log('cleaned',n,'scratch entries');\"",
     "test": "cucumber-js",
     "test:cucumber": "cucumber-js",
-    "test:cucumber:ci": "cucumber-js --profile ci",
+    "test:cucumber:ci": "cucumber-js --tags \"not @wip\" -f progress",
     "test:bdd": "cucumber-js --format progress-bar",
     "test:coverage": "c8 cucumber-js",
     "test:coverage:gate": "npm run test:coverage && node check-coverage-thresholds.js",
     "test:coverage:report": "c8 report --reporter=html --reporter=text",
-    "test:coverage:ci": "c8 --reporter=lcov --reporter=text cucumber-js --profile ci && node check-coverage-thresholds.js"
+    "test:coverage:ci": "c8 --reporter=lcov --reporter=text cucumber-js --tags \"not @wip\" -f progress -f json:reports/cucumber-report.json && node check-coverage-thresholds.js"
   },
   "devDependencies": {
     "@cucumber/cucumber": "^12.6.0",
