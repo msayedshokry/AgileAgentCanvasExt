@@ -91,10 +91,10 @@ export class BudgetEnforcer {
 
   /** Format a budget gauge string for display: "$0.42 / $5.00 (8%)". */
   formatGauge(): string {
-    const { daily, cap } = this.getStatus();
-    if (cap === 0) return 'No budget set';
-    const pct = (daily.used / cap) * 100;
-    return `$${daily.used.toFixed(4)} / $${cap.toFixed(2)} (${pct.toFixed(0)}%)`;
+    const { daily } = this.getStatus();
+    if (daily.cap === 0) return 'No budget set';
+    const pct = (daily.used / daily.cap) * 100;
+    return `$${daily.used.toFixed(4)} / $${daily.cap.toFixed(2)} (${pct.toFixed(0)}%)`;
   }
 }
 
