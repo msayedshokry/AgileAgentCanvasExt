@@ -19,6 +19,7 @@ export interface ArtifactLike {
   title?: string;
   name?: string;
   status?: string;
+  priority?: string;
   parentId?: string;
   epicKey?: string;
 }
@@ -37,6 +38,7 @@ export function artifactToKanbanItem(a: ArtifactLike): KanbanItem {
     title: a.title || a.name || a.id,
     status: a.status || 'backlog',
     type: a.type || 'unknown',
+    priority: a.priority,
     epicKey: a.parentId || a.epicKey,
     isEpic: a.type === 'epic',
   };

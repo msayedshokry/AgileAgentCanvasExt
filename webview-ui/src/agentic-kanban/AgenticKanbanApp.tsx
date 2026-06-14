@@ -29,6 +29,12 @@ const KANBAN_ORDER: KanbanColumnKey[] = [
   'backlog', 'ready-for-dev', 'in-progress', 'review', 'done',
 ];
 
+/** Priority sort order: P0 (highest) → P3 → MoSCoW → no priority (lowest). */
+const PRIORITY_ORDER: Record<string, number> = {
+  'P0': 0, 'P1': 1, 'P2': 2, 'P3': 3,
+  'must-have': 4, 'should-have': 5, 'could-have': 6, "won't-have": 7,
+};
+
 /** WIP limits applied when no `agileagentcanvas.kanban.wipLimits` setting is sent. */
 const DEFAULT_WIP_LIMITS: Record<string, number> = { 'in-progress': 5, 'review': 4 };
 
@@ -79,7 +85,7 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
   const [chatSessionActive, setChatSessionActive] = useState<boolean>(false);
   const [chatSessionModel, setChatSessionModel] = useState<string | undefined>();
   const [expandedEpics, setExpandedEpics] = useState<Set<string>>(new Set());
-  const [sortBy, setSortBy] = useState<'title' | 'status' | 'type'>('title');
+  const [sortBy, setSortBy] = useState<'title' | 'status' | 'type' | 'priority'>('title');
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; item: KanbanItem; focusIndex: number } | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [wipLimits, setWipLimits] = useState<Record<string, number>>(DEFAULT_WIP_LIMITS);
@@ -342,6 +348,13 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
       if (sortBy === 'title') return a.title.localeCompare(b.title);
       if (sortBy === 'status') return a.status.localeCompare(b.status);
       if (sortBy === 'type') return a.type.localeCompare(b.type);
+      if (sortBy === 'priority') {
+        const pa = PRIORITY_ORDER[a.priority ?? ''] ?? 99;
+        const pb = PRIORITY_ORDER[b.priority ?? ''] ?? 99;
+        if (pa !== pb) return pa - pb;
+        // Same priority → fall back to title
+        return a.title.localeCompare(b.title);
+      }
       return 0;
     });
 
@@ -662,13 +675,14 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
           <select
             className="agentic-kanban-sort"
             value={sortBy}
-            onChange={e => setSortBy(e.target.value as 'title' | 'status' | 'type')}
+            onChange={e => setSortBy(e.target.value as 'title' | 'status' | 'type' | 'priority')}
             title="Sort cards within columns"
             aria-label="Sort cards"
           >
             <option value="title">By Title</option>
             <option value="status">By Status</option>
             <option value="type">By Type</option>
+            <option value="priority">By Priority</option>
           </select>
           <label
             className="agentic-kanban-autoadvance"

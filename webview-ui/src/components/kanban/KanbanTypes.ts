@@ -33,6 +33,8 @@ export interface KanbanItem {
   };
   /** Harness evaluation results (AgenticKanban only) */
   harnessResults?: Array<{ policyId: string; passed: boolean; severity: string }>;
+  /** Story priority level (P0-P3, must-have, should-have, could-have, won't-have) */
+  priority?: string;
   /** Feature 1: this is a child story shown indented under its parent epic */
   isChild?: boolean;
 }
