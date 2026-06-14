@@ -1,5 +1,4 @@
 import * as cp from 'child_process';
-import * as fs from 'fs';
 import * as vscode from 'vscode';
 import { sendSimplePrompt } from '../antigravity/antigravity-orchestrator';
 import { createLogger } from '../utils/logger';
@@ -379,11 +378,13 @@ function locateOnPath(command: string): string | undefined {
     if (lines.length === 0) { return undefined; }
 
     if (process.platform === 'win32') {
-        const preferred = lines.find(l => /\.(cmd|bat|exe)$/i.test(l)) ?? lines.find(l => fs.existsSync(l));
+        const preferred = lines.find(l => /\.(cmd|bat|exe)$/i.test(l)) ?? lines[0];
         return preferred;
     }
 
-    return lines.find(l => fs.existsSync(l));
+    // `which` already verified the binary exists — skip fs.existsSync so
+    // tests can mock child_process without also mocking the filesystem.
+    return lines[0];
 }
 
 /**

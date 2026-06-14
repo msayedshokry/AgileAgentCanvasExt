@@ -48,6 +48,9 @@ module.exports = {
       'features/step_definitions/**/*.ts'
     ],
     paths: ['features/**/*.feature'],
+    // Skip @wip scenarios — same as default profile. Product-gap and
+    // deferred-feature tests run only via --profile wip.
+    tags: 'not @wip',
     format: [
       'progress',
       'json:reports/cucumber-report.json'
