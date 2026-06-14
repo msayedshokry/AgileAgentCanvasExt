@@ -124,6 +124,16 @@ export class AutoScheduler extends EventEmitter {
     return Array.from(this.inProgressIds);
   }
 
+  /** Get all known stories (for persistence layers). */
+  getStories(): SchedulerStory[] {
+    return [...this.stories];
+  }
+
+  /** Get the current WIP limit. */
+  getWipLimit(): number {
+    return this.wipLimit;
+  }
+
   /** Pick the highest-priority ready-for-dev story that isn't in progress. */
   pickNext(): SchedulerStory | null {
     const ready = this.stories

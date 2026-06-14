@@ -40,12 +40,12 @@ export class SchedulerStatePersistence {
       savedAt: Date.now(),
       enabled: autoScheduler.isRunning(),
       paused: autoScheduler.getState() === 'paused',
-      queue: (autoScheduler as any).stories
-        ?.filter((s: SchedulerStory) => s.status === 'ready-for-dev')
-        ?.map((s: SchedulerStory) => s.id) ?? [],
+      queue: autoScheduler.getStories()
+        .filter((s: SchedulerStory) => s.status === 'ready-for-dev')
+        .map((s: SchedulerStory) => s.id),
       inProgress: autoScheduler.getInProgressIds(),
-      wipLimit: (autoScheduler as any).wipLimit ?? 3,
-      pollIntervalMs: (autoScheduler as any).pollIntervalMs ?? 5000,
+      wipLimit: autoScheduler.getWipLimit(),
+      pollIntervalMs: 5_000,
     };
     try {
       fs.mkdirSync(path.dirname(this.filePath), { recursive: true });
