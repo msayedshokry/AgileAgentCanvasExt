@@ -61,6 +61,8 @@ import { detectCodeburn } from './integrations/codeburn';
 import { detectHeadroom } from './integrations/headroom';
 import { JiraSecrets } from './integrations/jira-secrets';
 import { createLogger, setLoggerOutputSink } from './utils/logger';
+import { autonomyLifecycle } from './workflow/autonomy-lifecycle';
+import { autoScheduler } from './workflow/auto-scheduler';
 import { initialiseCatalogueService } from './state/catalogue-service';
 import { initialiseSkillRepoManager } from './state/skill-repo-manager';
 import { USER_CATALOGUE_SETTING } from './state/constants';
@@ -477,6 +479,13 @@ export function activate(context: vscode.ExtensionContext) {
     artifactStore.onDidChangeArtifacts(() => {
         artifactsTreeProvider.refresh();
         wizardStepsProvider.refresh();
+        // Issue #21: re-seed the scheduler with the fresh story universe so a
+        // card drag into ready-for-dev is picked up by the next tick (and a
+        // drag out of ready-for-dev removes it from consideration).
+        const fresh = buildArtifacts(artifactStore, workspaceRoot)
+            .filter((a: any) => a.type === 'story')
+            .map((a: any) => ({ id: a.id, status: a.status, priority: a.priority }));
+        autoScheduler.setStories(fresh as any);
     });
 
     // ── Workspace resolver: centralized active-project management ───────
@@ -488,6 +497,47 @@ export function activate(context: vscode.ExtensionContext) {
     workspaceResolver.initialize().then(async () => {
         const outputUri = workspaceResolver.getActiveOutputUri();
         if (outputUri) {
+            try {
+                await vscode.workspace.fs.stat(outputUri);
+                await artifactStore.loadFromFolder(outputUri);
+                logger.info(`Auto-loaded project from: ${outputUri.fsPath}`);
+
+                // ── Restore interrupted execution state from traces ──────
+                // Now that artifacts are loaded, scan traces and push agent
+                // state to the kanban so the user can see which artifacts
+                // were mid-execution and resume or abandon them.
+                restoreInterruptedSessions(agenticKanbanProvider).catch(err => {
+                  logger.warn(`Failed to restore interrupted sessions: ${err instanceof Error ? err.message : String(err)}`);
+                });
+
+                // ── Start the Autonomy lifecycle (#21) ─────────────────
+                // After artifacts are loaded we know the story universe, so
+                // we can seed the scheduler and start the autonomy stack.
+                const stories = buildArtifacts(artifactStore, workspaceRoot)
+                    .filter((a: any) => a.type === 'story')
+                    .map((a: any) => ({ id: a.id, status: a.status, priority: a.priority }));
+
+                autonomyLifecycle.configure(
+                    {
+                        broadcast: (msg) => {
+                            for (const panel of openCanvasPanels) {
+                                try { panel.webview.postMessage(msg); } catch { /* panel disposed */ }
+                            }
+                            try { agenticKanbanProvider.broadcast(msg); } catch { /* view not visible */ }
+                        },
+                        outputFolder: tracesOutputPath,
+                    },
+                    artifactStore
+                );
+                // Seed the scheduler with current stories
+                autoScheduler.setStories(stories as any);
+                autonomyLifecycle.refreshSchedulerStories(stories);
+                autonomyLifecycle.start();
+                logger.info('Autonomy lifecycle started');
+
+            } catch {
+                logger.info(`Output folder not found (new project?): ${outputUri.fsPath}`);
+            }
             try {
                 await vscode.workspace.fs.stat(outputUri);
                 await artifactStore.loadFromFolder(outputUri);
@@ -1189,6 +1239,10 @@ async function restoreInterruptedSessions(kanbanProvider: AgenticKanbanViewProvi
 }
 
 export function deactivate() {
+    // Stop the Autonomy lifecycle (issue #21) so the health monitor, auto-
+    // recovery listener, and scheduler webview controls all wind down.
+    autonomyLifecycle.stop();
+
     // Cancel A2A polling before store dispose — poll callbacks access the store
     if (laneTransitionEngine) {
         laneTransitionEngine.cancelAllA2APolling();

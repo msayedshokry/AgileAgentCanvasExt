@@ -12,6 +12,10 @@ import { getTraceRecorder } from '../trace/trace-recorder';
 import { terminalExecutor } from '../workflow/terminal-executor';
 import { getPersonaForArtifactType } from '../chat/agent-personas';
 import { setKanbanAutoAdvance, isKanbanAutoAdvanceEnabled, getKanbanWipLimits } from '../workflow/kanban-settings';
+import { schedulerWebviewControls, MSG_SCHEDULER_STATE } from '../workflow/scheduler-webview-controls';
+import { goalDecomposer } from '../workflow/goal-decomposer';
+import { budgetEnforcer } from '../workflow/budget-enforcer';
+import { circuitBreaker } from '../workflow/circuit-breaker';
 
 // Project-standard error-to-string pattern
 function errMsg(err: unknown): string {
@@ -448,6 +452,60 @@ export async function handleAgenticKanbanMessage(
           type: 'kanban:wipLimits',
           limits: getKanbanWipLimits(),
         });
+      }
+      return true;
+    }
+
+    case 'setSchedulerState': {
+      schedulerWebviewControls.handleSetState(message.state ?? {});
+      // Echo current state back so the webview can re-render immediately
+      if (webview) {
+        webview.postMessage({ type: MSG_SCHEDULER_STATE, ...schedulerWebviewControls.buildStateMessage() });
+      }
+      return true;
+    }
+
+    case 'getSchedulerState': {
+      if (webview) {
+        webview.postMessage({ type: MSG_SCHEDULER_STATE, ...schedulerWebviewControls.buildStateMessage() });
+      }
+      return true;
+    }
+
+    case 'getBudgetStatus': {
+      if (webview) {
+        webview.postMessage({ type: 'budgetStatus', ...budgetEnforcer.getStatus(message.artifactId) });
+      }
+      return true;
+    }
+
+    case 'getCircuitStatus': {
+      if (webview) {
+        const workflowId = (message.workflowId as string) ?? '';
+        webview.postMessage({ type: 'circuitStatus', workflowId, status: circuitBreaker.getStatus(workflowId) ?? null });
+      }
+      return true;
+    }
+
+    case 'submitGoal': {
+      try {
+        const id = await goalDecomposer.submit(message.text ?? '');
+        if (webview) {
+          webview.postMessage({ type: 'goalSubmitted', goalId: id, text: message.text });
+        }
+      } catch (error) {
+        if (webview) {
+          webview.postMessage({ type: 'goalSubmitError', error: errMsg(error) });
+        }
+      }
+      return true;
+    }
+
+    case 'approveGoalStories': {
+      try {
+        await goalDecomposer.approveStories(message.goalId, message.storyIds);
+      } catch (error) {
+        logger.warn(`[AgenticKanban] approveGoalStories failed: ${errMsg(error)}`);
       }
       return true;
     }

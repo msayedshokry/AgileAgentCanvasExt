@@ -14,6 +14,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { getTraceRecorder } from '../trace/trace-recorder';
 import { concurrencyQueue } from './concurrency-queue';
+import { agentHealthMonitor } from './agent-health-monitor';
+import { createTerminalHealthChecks } from './terminal-health-checks';
 import {
   getSelectedProvider,
   listAvailableProviders,
@@ -48,6 +50,10 @@ export interface TerminalSession {
   accumulatedData: string;
   /** Disposable for the onDidWriteData listener */
   dataListener: vscode.Disposable;
+  /** Issue #21: sessionId used to register per-terminal health checks. */
+  healthSessionId?: string;
+  /** Issue #21: last update time (ms epoch) for the output-progress health check. */
+  lastOutputAt?: number;
 }
 
 // ─── Provider resolution ─────────────────────────────────────────────────────
@@ -270,6 +276,7 @@ export class TerminalExecutor implements vscode.Disposable {
 
     // Start accumulating terminal output for webview modal display
     let accumulatedData = '';
+    let lastOutputAt = Date.now();
     // onDidWriteData is not available in all VS Code versions (added in 1.72,
     // but may not be present in the @types/vscode version or the runtime).
     // Check it exists before trying to subscribe.
@@ -277,6 +284,8 @@ export class TerminalExecutor implements vscode.Disposable {
     if (typeof (terminal as any).onDidWriteData === 'function') {
       dataListener = (terminal as any).onDidWriteData((data: string) => {
         accumulatedData += data;
+        // Issue #21: keep the health-check output-progress timer fresh.
+        lastOutputAt = Date.now();
 
         // P1 #11 heartbeat: every chunk of terminal output refreshes the
         // lock-release timeout so long-running workflows don't have their
@@ -362,6 +371,26 @@ export class TerminalExecutor implements vscode.Disposable {
     // the terminal closes naturally. Uses the same 20-minute window as
     // executeAndAwaitVerdict.
     this.scheduleLockTimeout(artifactId);
+
+    // Issue #21: register per-terminal health checks with AgentHealthMonitor.
+    // These run on the monitor's polling loop and emit 'dead' transitions
+    // when the terminal process is gone, output has stalled, or the artifact
+    // hasn't changed — AutoRecovery listens for those and kills + releases.
+    const terminalAdapter = {
+      isAlive: () => true, // process liveness is tracked via onDidCloseTerminal
+      getLastOutputTime: () => lastOutputAt,
+    };
+    const artifactAdapter = {
+      lastModified: lastOutputAt,
+      getLastModifiedTime: () => lastOutputAt,
+    };
+    for (const check of createTerminalHealthChecks(terminalAdapter, artifactAdapter)) {
+      agentHealthMonitor.registerCheck(sessionId, check);
+    }
+    // Store the health session id on the session so the close-handler
+    // can deregister without a side-channel map.
+    (session as TerminalSession).healthSessionId = sessionId;
+    (session as TerminalSession).lastOutputAt = lastOutputAt;
 
     logger.info(
       `[TerminalExecutor] Launched terminal "${termName}" (${provider}) for ${artifactId}`
@@ -492,6 +521,52 @@ export class TerminalExecutor implements vscode.Disposable {
   }
 
   /**
+   * Force-kill the terminal for an artifact. Used by the auto-recovery
+   * flow when a 'dead' health transition is observed. Idempotent — if no
+   * terminal is active, this is a no-op.
+   */
+  async killTerminal(artifactId: string): Promise<void> {
+    const session = this.activeTerminals.get(artifactId);
+    if (!session) return;
+    try {
+      session.terminal.dispose();
+      logger.info(`[TerminalExecutor] Killed terminal for ${artifactId}`);
+    } catch (err) {
+      logger.warn(`[TerminalExecutor] Failed to kill terminal for ${artifactId}: ${errMsg(err)}`);
+    }
+  }
+
+  /**
+   * Find AAC-named terminal sessions that are still active. Used by the
+   * terminal-recovery module on activation to detect orphans from a
+   * previous run.
+   */
+  findOrphanedSessions(): Array<{ sessionId: string; artifactId: string; pid?: number; name: string; startedAt: number }> {
+    return Array.from(this.activeTerminals.values()).map(s => ({
+      sessionId: s.sessionId,
+      artifactId: s.artifactId,
+      // processId is a Thenable<number|undefined> in newer @types/vscode —
+      // the recovery flow tolerates a missing pid (treats as 'terminal-lost'),
+      // so leaving it undefined here is correct.
+      name: s.terminal.name,
+      startedAt: Date.parse(s.startedAt),
+    }));
+  }
+
+  /** Look up the artifact ID for a given session ID (for auto-recovery). */
+  getArtifactIdForSession(sessionId: string): string | undefined {
+    for (const session of this.activeTerminals.values()) {
+      if (session.sessionId === sessionId) return session.artifactId;
+    }
+    return undefined;
+  }
+
+  /** Look up the artifact ID for a given terminal ID (for auto-recovery). */
+  getTerminalIdForSession(sessionId: string): string | undefined {
+    return this.getArtifactIdForSession(sessionId);
+  }
+
+  /**
    * Clean up tracking when a terminal is closed.
    */
   private onDidCloseTerminal(closed: vscode.Terminal): void {
@@ -505,6 +580,13 @@ export class TerminalExecutor implements vscode.Disposable {
         // P1 #11: clear the lock-release timeout since the terminal
         // closed naturally — no need to force-release.
         this.clearLockTimeout(artifactId);
+
+        // Issue #21: deregister per-terminal health checks so the monitor
+        // stops polling a dead session.
+        if (session.healthSessionId) {
+          try { agentHealthMonitor.deregisterCheck(session.healthSessionId); }
+          catch (err) { logger.debug(`[TerminalExecutor] deregisterCheck failed: ${errMsg(err)}`); }
+        }
 
         // Release the concurrency lock so the artifact can be moved again
         concurrencyQueue.release(artifactId);

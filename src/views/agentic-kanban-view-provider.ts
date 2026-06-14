@@ -8,6 +8,11 @@ import { getActiveChatSession } from '../chat/active-session';
 import { kanbanProgress } from '../workflow/kanban-orchestrator';
 import { getKanbanWipLimits } from '../workflow/kanban-settings';
 
+// Project-standard error-to-string pattern
+function errMsg(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
 /**
  * Webview provider for the Agentic Kanban — execution orchestration surface.
  *
@@ -62,6 +67,21 @@ export class AgenticKanbanViewProvider implements vscode.WebviewViewProvider {
       agentState,
       lockInfo,
     });
+  }
+
+  /**
+   * Generic broadcast — sends an arbitrary message to the Agentic Kanban
+   * webview (if visible). Used by the autonomy lifecycle to push state
+   * updates (scheduler state, budget gauge, circuit-breaker status) that
+   * don't have a dedicated method. Silently no-ops if the view is not open.
+   */
+  broadcast(message: any): void {
+    if (!this._view) return;
+    try {
+      this._view.webview.postMessage(message);
+    } catch (err) {
+      logger.debug(`[AgenticKanbanProvider] broadcast failed: ${errMsg(err)}`);
+    }
   }
 
   resolveWebviewView(

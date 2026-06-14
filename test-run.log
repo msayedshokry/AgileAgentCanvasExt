@@ -1,0 +1,1817 @@
+Cannot use 'progress-bar' formatter for output to 'stdout' as not a TTY. Switching to 'progress' formatter.
+......................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................F-----.......F--.......F----........F----.......F--.......F--.......F--.......F--.......F---.......F---......F-....................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................F..........F..........F..........F..........F..........F...................................................................................F..........F...........F............................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................F-------........F----........F----......F-......F-......F--......F-......F-......F-......F-......F-......F-......F-......F-......F-......F---......F-......F--......F--......F--......F---......F---......F---......F----......F--......F-......F-......F---......F----......F---......F----......F--......F--......F--......F--......F--......F--......F--......F---......F---.......................................................................................................................................................................................................................................................................................A---.......A---.......A-----...............................................................................................................................................[harness-feedback] [HarnessFeedback] Recorded 1 results for S-1 (1 active entries)
+[harness-feedback] [HarnessFeedback] Recorded 1 results for S-1 (2 active entries)
+...........[harness-feedback] [HarnessFeedback] Recorded 1 results for S-1 (2 active entries)
+[harness-feedback] [HarnessFeedback] Recorded 1 results for S-1 (2 active entries)
+..[harness-feedback] [HarnessFeedback] Recorded 1 results for S-1 (3 active entries)
+..........[harness-feedback] [HarnessFeedback] Recorded 1 results for S-1 (3 active entries)
+[harness-feedback] [HarnessFeedback] Recorded 1 results for S-1 (3 active entries)
+........................F.............................................................[harness-feedback] [HarnessFeedback] Recorded 1 results for repairable (1 active entries)
+[harness-feedback] [HarnessFeedback] Recorded 1 results for repairable (2 active entries)
+...........[harness-feedback] [HarnessFeedback] Recorded 1 results for failing (1 active entries)
+[harness-feedback] [HarnessFeedback] Recorded 1 results for failing (2 active entries)
+.......................................................................................................................................................................[harness-feedback] [HarnessFeedback] Recorded 1 results for S-1 (4 active entries)
+[harness-feedback] [HarnessFeedback] Recorded 1 results for S-1 (5 active entries)
+............[harness-feedback] [HarnessFeedback] Recorded 1 results for S-1 (5 active entries)
+[harness-feedback] [HarnessFeedback] Recorded 1 results for S-1 (5 active entries)
+........................................................[harness-feedback] [HarnessFeedback] Recorded 1 results for S-1 (5 active entries)
+[harness-feedback] [HarnessFeedback] Recorded 1 results for S-1 (5 active entries)
+.........[harness-feedback] [HarnessFeedback] Recorded 1 results for S-1 (5 active entries)
+[harness-feedback] [HarnessFeedback] Recorded 1 results for S-1 (5 active entries)
+..........[harness-feedback] [HarnessFeedback] Recorded 1 results for S-1 (5 active entries)
+[harness-feedback] [HarnessFeedback] Recorded 1 results for S-1 (5 active entries)
+..F........[harness-feedback] [HarnessFeedback] Recorded 1 results for S-1 (4 active entries)
+[harness-feedback] [HarnessFeedback] Recorded 1 results for S-1 (4 active entries)
+..........[harness-feedback] [HarnessFeedback] Recorded 1 results for S-1 (4 active entries)
+[harness-feedback] [HarnessFeedback] Recorded 1 results for S-1 (4 active entries)
+[harness-feedback] [HarnessFeedback] Recorded 1 results for S-1 (5 active entries)
+[harness-feedback] [HarnessFeedback] Recorded 1 results for S-1 (5 active entries)
+........................................................................................A---..............A--......A--......A--......A--......A--......A--......A---......A---......A--......A--......A--......A--......A--................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+
+Failures:
+
+1) Scenario: Drag card to a new column updates artifact status # features\agentic-kanban.feature:17
+   √ Before # features\support\hooks.ts:55
+   √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+   √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+   √ Given a fresh agentic kanban message handler context # features\step_definitions\agentic-kanban.steps.ts:128
+   √ Given the artifact store has artifact "story-1" with type "story" and status "backlog" # features\step_definitions\agentic-kanban.steps.ts:151
+   × When I send a "kanban:statusChanged" message with: # features\step_definitions\agentic-kanban.steps.ts:178
+       | artifactId   | story-1     |
+       | fromStatus   | backlog     |
+       | toStatus     | in-progress |
+       | artifactType | story       |
+       TSError: ⨯ Unable to compile TypeScript:
+       src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+         Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+           at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+           at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+           at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+           at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+           at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+           at node:internal/modules/cjs/loader:1893:10
+           at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+           at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+           at Module.load (node:internal/modules/cjs/loader:1481:32)
+           at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+   - Then the handler should return true # features\step_definitions\webview-message-handler.steps.ts:479
+   - And the store should have updated "story" "story-1" with status "in-progress" # features\step_definitions\agentic-kanban.steps.ts:228
+   - And the webview should have received a "transitionResult" message # features\step_definitions\agentic-kanban.steps.ts:236
+   - And the transition result should have ok true # features\step_definitions\agentic-kanban.steps.ts:277
+   - And the transition result should have status "complete" # features\step_definitions\agentic-kanban.steps.ts:291
+   √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+   √ After # features\support\hooks.ts:60
+
+2) Scenario: Drag card to Done column succeeds # features\agentic-kanban.feature:30
+   √ Before # features\support\hooks.ts:55
+   √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+   √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+   √ Given a fresh agentic kanban message handler context # features\step_definitions\agentic-kanban.steps.ts:128
+   √ Given the artifact store has artifact "story-3" with type "story" and status "review" # features\step_definitions\agentic-kanban.steps.ts:151
+   × When I send a "kanban:statusChanged" message with: # features\step_definitions\agentic-kanban.steps.ts:178
+       | artifactId   | story-3 |
+       | fromStatus   | review  |
+       | toStatus     | done    |
+       | artifactType | story   |
+       TSError: ⨯ Unable to compile TypeScript:
+       src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+         Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+           at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+           at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+           at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+           at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+           at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+           at node:internal/modules/cjs/loader:1893:10
+           at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+           at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+           at Module.load (node:internal/modules/cjs/loader:1481:32)
+           at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+   - Then the handler should return true # features\step_definitions\webview-message-handler.steps.ts:479
+   - And the store should have updated "story" "story-3" with status "done" # features\step_definitions\agentic-kanban.steps.ts:228
+   √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+   √ After # features\support\hooks.ts:60
+
+3) Scenario: Artifact not found returns error to webview # features\agentic-kanban.feature:40
+   √ Before # features\support\hooks.ts:55
+   √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+   √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+   √ Given a fresh agentic kanban message handler context # features\step_definitions\agentic-kanban.steps.ts:128
+   √ Given the artifact store does not have "missing-artifact" # features\step_definitions\agentic-kanban.steps.ts:158
+   × When I send a "kanban:statusChanged" message providing a webview with: # features\step_definitions\agentic-kanban.steps.ts:192
+       | artifactId   | missing-artifact |
+       | fromStatus   | backlog          |
+       | toStatus     | ready-for-dev    |
+       | artifactType | story            |
+       TSError: ⨯ Unable to compile TypeScript:
+       src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+         Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+           at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+           at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+           at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+           at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+           at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+           at node:internal/modules/cjs/loader:1893:10
+           at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+           at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+           at Module.load (node:internal/modules/cjs/loader:1481:32)
+           at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+   - Then the handler should return true # features\step_definitions\webview-message-handler.steps.ts:479
+   - And the webview should have received a "transitionResult" message # features\step_definitions\agentic-kanban.steps.ts:236
+   - And the transition result should have ok false # features\step_definitions\agentic-kanban.steps.ts:284
+   - And the transition result blockedBy should contain "Artifact not found" # features\support\shared-store-steps.ts:116
+   √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+   √ After # features\support\hooks.ts:60
+
+4) Scenario: Transition error sends error back to webview # features\agentic-kanban.feature:52
+   √ Before # features\support\hooks.ts:55
+   √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+   √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+   √ Given a fresh agentic kanban message handler context # features\step_definitions\agentic-kanban.steps.ts:128
+   √ Given the artifact store has artifact "story-4" with type "story" and status "backlog" # features\step_definitions\agentic-kanban.steps.ts:151
+   √ And the store updateArtifact will throw # features\support\shared-store-steps.ts:102
+   × When I send a "kanban:statusChanged" message providing a webview with: # features\step_definitions\agentic-kanban.steps.ts:192
+       | artifactId   | story-4       |
+       | fromStatus   | backlog       |
+       | toStatus     | ready-for-dev |
+       | artifactType | story         |
+       TSError: ⨯ Unable to compile TypeScript:
+       src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+         Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+           at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+           at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+           at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+           at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+           at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+           at node:internal/modules/cjs/loader:1893:10
+           at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+           at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+           at Module.load (node:internal/modules/cjs/loader:1481:32)
+           at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+   - Then the handler should return true # features\step_definitions\webview-message-handler.steps.ts:479
+   - And the webview should have received a "transitionResult" message # features\step_definitions\agentic-kanban.steps.ts:236
+   - And the transition result should have ok false # features\step_definitions\agentic-kanban.steps.ts:284
+   - And the transition result blockedBy should have at least 1 item # features\step_definitions\agentic-kanban.steps.ts:298
+   √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+   √ After # features\support\hooks.ts:60
+
+5) Scenario: Status change defaults artifactType from store when not provided # features\agentic-kanban.feature:65
+   √ Before # features\support\hooks.ts:55
+   √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+   √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+   √ Given a fresh agentic kanban message handler context # features\step_definitions\agentic-kanban.steps.ts:128
+   √ Given the artifact store has artifact "story-5" with type "story" and status "ready-for-dev" # features\step_definitions\agentic-kanban.steps.ts:151
+   × When I send a "kanban:statusChanged" message with: # features\step_definitions\agentic-kanban.steps.ts:178
+       | artifactId   | story-5       |
+       | fromStatus   | ready-for-dev |
+       | toStatus     | in-progress   |
+       | artifactType |               |
+       TSError: ⨯ Unable to compile TypeScript:
+       src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+         Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+           at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+           at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+           at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+           at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+           at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+           at node:internal/modules/cjs/loader:1893:10
+           at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+           at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+           at Module.load (node:internal/modules/cjs/loader:1481:32)
+           at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+   - Then the handler should return true # features\step_definitions\webview-message-handler.steps.ts:479
+   - And the store should have updated "story" "story-5" with status "in-progress" # features\step_definitions\agentic-kanban.steps.ts:228
+   √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+   √ After # features\support\hooks.ts:60
+
+6) Scenario: Drag epic card changes epic status # features\agentic-kanban.feature:75
+   √ Before # features\support\hooks.ts:55
+   √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+   √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+   √ Given a fresh agentic kanban message handler context # features\step_definitions\agentic-kanban.steps.ts:128
+   √ Given the artifact store has artifact "epic-1" with type "epic" and status "backlog" # features\step_definitions\agentic-kanban.steps.ts:151
+   × When I send a "kanban:statusChanged" message with: # features\step_definitions\agentic-kanban.steps.ts:178
+       | artifactId   | epic-1        |
+       | fromStatus   | backlog       |
+       | toStatus     | ready-for-dev |
+       | artifactType | epic          |
+       TSError: ⨯ Unable to compile TypeScript:
+       src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+         Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+           at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+           at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+           at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+           at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+           at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+           at node:internal/modules/cjs/loader:1893:10
+           at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+           at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+           at Module.load (node:internal/modules/cjs/loader:1481:32)
+           at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+   - Then the handler should return true # features\step_definitions\webview-message-handler.steps.ts:479
+   - And the store should have updated "epic" "epic-1" with status "ready-for-dev" # features\step_definitions\agentic-kanban.steps.ts:228
+   √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+   √ After # features\support\hooks.ts:60
+
+7) Scenario: Drag from backlog to ready-for-dev succeeds # features\agentic-kanban.feature:85
+   √ Before # features\support\hooks.ts:55
+   √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+   √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+   √ Given a fresh agentic kanban message handler context # features\step_definitions\agentic-kanban.steps.ts:128
+   √ Given the artifact store has artifact "story-backlog" with type "story" and status "backlog" # features\step_definitions\agentic-kanban.steps.ts:151
+   × When I send a "kanban:statusChanged" message with: # features\step_definitions\agentic-kanban.steps.ts:178
+       | artifactId   | story-backlog |
+       | fromStatus   | backlog       |
+       | toStatus     | ready-for-dev |
+       | artifactType | story         |
+       TSError: ⨯ Unable to compile TypeScript:
+       src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+         Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+           at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+           at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+           at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+           at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+           at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+           at node:internal/modules/cjs/loader:1893:10
+           at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+           at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+           at Module.load (node:internal/modules/cjs/loader:1481:32)
+           at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+   - Then the handler should return true # features\step_definitions\webview-message-handler.steps.ts:479
+   - And the store should have updated "story" "story-backlog" with status "ready-for-dev" # features\step_definitions\agentic-kanban.steps.ts:228
+   √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+   √ After # features\support\hooks.ts:60
+
+8) Scenario: Drag from in-progress to review succeeds # features\agentic-kanban.feature:95
+   √ Before # features\support\hooks.ts:55
+   √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+   √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+   √ Given a fresh agentic kanban message handler context # features\step_definitions\agentic-kanban.steps.ts:128
+   √ Given the artifact store has artifact "story-wip" with type "story" and status "in-progress" # features\step_definitions\agentic-kanban.steps.ts:151
+   × When I send a "kanban:statusChanged" message with: # features\step_definitions\agentic-kanban.steps.ts:178
+       | artifactId   | story-wip   |
+       | fromStatus   | in-progress |
+       | toStatus     | review      |
+       | artifactType | story       |
+       TSError: ⨯ Unable to compile TypeScript:
+       src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+         Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+           at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+           at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+           at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+           at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+           at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+           at node:internal/modules/cjs/loader:1893:10
+           at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+           at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+           at Module.load (node:internal/modules/cjs/loader:1481:32)
+           at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+   - Then the handler should return true # features\step_definitions\webview-message-handler.steps.ts:479
+   - And the store should have updated "story" "story-wip" with status "review" # features\step_definitions\agentic-kanban.steps.ts:228
+   √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+   √ After # features\support\hooks.ts:60
+
+9) Scenario: Refresh sends updated artifacts to webview # features\agentic-kanban.feature:107
+   √ Before # features\support\hooks.ts:55
+   √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+   √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+   √ Given a fresh agentic kanban message handler context # features\step_definitions\agentic-kanban.steps.ts:128
+   √ Given the artifact store has 3 artifacts # features\step_definitions\agentic-kanban.steps.ts:163
+   × When I send an "agenticKanban:refresh" message providing a webview # features\step_definitions\agentic-kanban.steps.ts:204
+       TSError: ⨯ Unable to compile TypeScript:
+       src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+         Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+           at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+           at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+           at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+           at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+           at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+           at node:internal/modules/cjs/loader:1893:10
+           at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+           at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+           at Module.load (node:internal/modules/cjs/loader:1481:32)
+           at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+   - Then the handler should return true # features\step_definitions\webview-message-handler.steps.ts:479
+   - And the webview should have received an "updateArtifacts" message # features\step_definitions\agentic-kanban.steps.ts:264
+   - And the updateArtifacts message should contain 3 artifacts # features\step_definitions\agentic-kanban.steps.ts:270
+   √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+   √ After # features\support\hooks.ts:60
+
+10) Scenario: Refresh handles empty artifact store # features\agentic-kanban.feature:114
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh agentic kanban message handler context # features\step_definitions\agentic-kanban.steps.ts:128
+    √ Given the artifact store has 0 artifacts # features\step_definitions\agentic-kanban.steps.ts:163
+    × When I send an "agenticKanban:refresh" message providing a webview # features\step_definitions\agentic-kanban.steps.ts:204
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - Then the handler should return true # features\step_definitions\webview-message-handler.steps.ts:479
+    - And the webview should have received an "updateArtifacts" message # features\step_definitions\agentic-kanban.steps.ts:264
+    - And the updateArtifacts message should contain 0 artifacts # features\step_definitions\agentic-kanban.steps.ts:270
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+11) Scenario: Unknown message type returns false for caller to handle # features\agentic-kanban.feature:147
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh agentic kanban message handler context # features\step_definitions\agentic-kanban.steps.ts:128
+    × When I send a kanban "unknownKanbanMessage" message # features\step_definitions\agentic-kanban.steps.ts:219
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - Then the handler should return false # features\step_definitions\webview-message-handler.steps.ts:486
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+12) Scenario: Transforms vision to artifact # features\canvas-view-provider.feature:91
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh canvas view provider # features\step_definitions\canvas-view-provider.steps.ts:193
+    √ Given the build does not exist # features\step_definitions\canvas-view-provider.steps.ts:211
+    √ And the vision "Test Product" exists in canvas store # features\step_definitions\canvas-view-provider.steps.ts:231
+    √ When I resolve the webview view # features\step_definitions\canvas-view-provider.steps.ts:292
+    √ And I send message type "ready" # features\step_definitions\canvas-view-provider.steps.ts:303
+    × Then the updateArtifacts message should include a "vision" artifact with id "vision-1" and title "Test Product" # features\step_definitions\canvas-view-provider.steps.ts:486
+        AssertionError [ERR_ASSERTION]: Expected "vision" artifact. Got types: []
+            at BmadWorld.<anonymous> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\features\step_definitions\canvas-view-provider.steps.ts:490:10)
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+13) Scenario: Transforms requirements to artifacts # features\canvas-view-provider.feature:98
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh canvas view provider # features\step_definitions\canvas-view-provider.steps.ts:193
+    √ Given the build does not exist # features\step_definitions\canvas-view-provider.steps.ts:211
+    √ And a requirement exists in canvas store # features\step_definitions\canvas-view-provider.steps.ts:240
+    √ When I resolve the webview view # features\step_definitions\canvas-view-provider.steps.ts:292
+    √ And I send message type "ready" # features\step_definitions\canvas-view-provider.steps.ts:303
+    × Then the updateArtifacts message should include a "requirement" artifact with parentId "vision-1" # features\step_definitions\canvas-view-provider.steps.ts:504
+        AssertionError [ERR_ASSERTION]: Expected "requirement" artifact
+            at BmadWorld.<anonymous> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\features\step_definitions\canvas-view-provider.steps.ts:508:10)
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+14) Scenario: Transforms epics to artifacts # features\canvas-view-provider.feature:105
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh canvas view provider # features\step_definitions\canvas-view-provider.steps.ts:193
+    √ Given the build does not exist # features\step_definitions\canvas-view-provider.steps.ts:211
+    √ And an epic exists in canvas store # features\step_definitions\canvas-view-provider.steps.ts:245
+    √ When I resolve the webview view # features\step_definitions\canvas-view-provider.steps.ts:292
+    √ And I send message type "ready" # features\step_definitions\canvas-view-provider.steps.ts:303
+    × Then the updateArtifacts message should include a "epic" artifact # features\step_definitions\canvas-view-provider.steps.ts:513
+        AssertionError [ERR_ASSERTION]: Expected "epic" artifact. Got types: []
+            at BmadWorld.<anonymous> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\features\step_definitions\canvas-view-provider.steps.ts:517:10)
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+15) Scenario: Transforms stories to artifacts with parentId # features\canvas-view-provider.feature:112
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh canvas view provider # features\step_definitions\canvas-view-provider.steps.ts:193
+    √ Given the build does not exist # features\step_definitions\canvas-view-provider.steps.ts:211
+    √ And an epic with a story exists in canvas store # features\step_definitions\canvas-view-provider.steps.ts:250
+    √ When I resolve the webview view # features\step_definitions\canvas-view-provider.steps.ts:292
+    √ And I send message type "ready" # features\step_definitions\canvas-view-provider.steps.ts:303
+    × Then the updateArtifacts message should include a "story" artifact # features\step_definitions\canvas-view-provider.steps.ts:513
+        AssertionError [ERR_ASSERTION]: Expected "story" artifact. Got types: []
+            at BmadWorld.<anonymous> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\features\step_definitions\canvas-view-provider.steps.ts:517:10)
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+16) Scenario: Calculates different Y positions for multiple epics # features\canvas-view-provider.feature:119
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh canvas view provider # features\step_definitions\canvas-view-provider.steps.ts:193
+    √ Given the build does not exist # features\step_definitions\canvas-view-provider.steps.ts:211
+    √ And two epics exist in canvas store # features\step_definitions\canvas-view-provider.steps.ts:256
+    √ When I resolve the webview view # features\step_definitions\canvas-view-provider.steps.ts:292
+    √ And I send message type "ready" # features\step_definitions\canvas-view-provider.steps.ts:303
+    × Then the two epic artifacts should have different Y positions # features\step_definitions\canvas-view-provider.steps.ts:520
+        AssertionError [ERR_ASSERTION]: Expected at least 2 epics, got 0
+            + expected - actual
+
+            -false
+            +true
+
+            at BmadWorld.<anonymous> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\features\step_definitions\canvas-view-provider.steps.ts:524:10)
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+17) Scenario: Includes metadata in transformed epic artifact # features\canvas-view-provider.feature:126
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh canvas view provider # features\step_definitions\canvas-view-provider.steps.ts:193
+    √ Given the build does not exist # features\step_definitions\canvas-view-provider.steps.ts:211
+    √ And an epic with metadata exists in canvas store # features\step_definitions\canvas-view-provider.steps.ts:262
+    √ When I resolve the webview view # features\step_definitions\canvas-view-provider.steps.ts:292
+    √ And I send message type "ready" # features\step_definitions\canvas-view-provider.steps.ts:303
+    × Then the epic artifact should have metadata defined # features\step_definitions\canvas-view-provider.steps.ts:529
+        AssertionError [ERR_ASSERTION]: Expected epic artifact
+            at BmadWorld.<anonymous> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\features\step_definitions\canvas-view-provider.steps.ts:533:10)
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+18) Scenario: Transforms test strategy to artifact # features\canvas-view-provider.feature:183
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh canvas view provider # features\step_definitions\canvas-view-provider.steps.ts:193
+    √ Given the build does not exist # features\step_definitions\canvas-view-provider.steps.ts:211
+    √ And a test strategy exists in canvas store # features\step_definitions\canvas-view-provider.steps.ts:278
+    √ When I resolve the webview view # features\step_definitions\canvas-view-provider.steps.ts:292
+    √ And I send message type "ready" # features\step_definitions\canvas-view-provider.steps.ts:303
+    × Then the updateArtifacts message should include a "test-strategy" artifact # features\step_definitions\canvas-view-provider.steps.ts:513
+        AssertionError [ERR_ASSERTION]: Expected "test-strategy" artifact. Got types: []
+            at BmadWorld.<anonymous> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\features\step_definitions\canvas-view-provider.steps.ts:517:10)
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+19) Scenario: Transforms test case to test-coverage artifact # features\canvas-view-provider.feature:190
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh canvas view provider # features\step_definitions\canvas-view-provider.steps.ts:193
+    √ Given the build does not exist # features\step_definitions\canvas-view-provider.steps.ts:211
+    √ And a test case exists in canvas store # features\step_definitions\canvas-view-provider.steps.ts:283
+    √ When I resolve the webview view # features\step_definitions\canvas-view-provider.steps.ts:292
+    √ And I send message type "ready" # features\step_definitions\canvas-view-provider.steps.ts:303
+    × Then the updateArtifacts message should include a "test-coverage" artifact # features\step_definitions\canvas-view-provider.steps.ts:513
+        AssertionError [ERR_ASSERTION]: Expected "test-coverage" artifact. Got types: []
+            at BmadWorld.<anonymous> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\features\step_definitions\canvas-view-provider.steps.ts:517:10)
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+20) Scenario: Test strategy and test case artifacts have testing column X position # features\canvas-view-provider.feature:197
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh canvas view provider # features\step_definitions\canvas-view-provider.steps.ts:193
+    √ Given the build does not exist # features\step_definitions\canvas-view-provider.steps.ts:211
+    √ And a test strategy exists in canvas store # features\step_definitions\canvas-view-provider.steps.ts:278
+    √ And a test case exists in canvas store # features\step_definitions\canvas-view-provider.steps.ts:283
+    √ When I resolve the webview view # features\step_definitions\canvas-view-provider.steps.ts:292
+    √ And I send message type "ready" # features\step_definitions\canvas-view-provider.steps.ts:303
+    × Then the test strategy artifact should be in the testing column # features\step_definitions\canvas-view-provider.steps.ts:548
+        AssertionError [ERR_ASSERTION]: Expected "test-strategy" artifact. Got types: []
+            at BmadWorld.<anonymous> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\features\step_definitions\canvas-view-provider.steps.ts:552:10)
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+21) Scenario: Requirement data survives full round-trip through all 3 layers # features\data-pipeline.feature:181
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh data pipeline test store # features\step_definitions\data-pipeline.steps.ts:313
+    √ Given I have a requirement with all fields in the store # features\step_definitions\data-pipeline.steps.ts:388
+    × When I extract requirement metadata as the webview would receive it # features\step_definitions\data-pipeline.steps.ts:567
+        AssertionError [ERR_ASSERTION]: Requirement artifact not found in stateToArtifacts output
+            at BmadWorld.<anonymous> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\features\step_definitions\data-pipeline.steps.ts:575:10)
+    - And I save the requirement back using the webview metadata format # features\step_definitions\data-pipeline.steps.ts:579
+    - Then the round-tripped requirement should have field "type" with value "functional" # features\step_definitions\data-pipeline.steps.ts:877
+    - And the round-tripped requirement should have field "rationale" with value "Business need" # features\step_definitions\data-pipeline.steps.ts:877
+    - And the round-tripped requirement should have field "source" with value "PRD.md" # features\step_definitions\data-pipeline.steps.ts:877
+    - And the round-tripped requirement should have field "implementationNotes" with value "Use OAuth2" # features\step_definitions\data-pipeline.steps.ts:877
+    - And the round-tripped requirement should have field "notes" with value "Review with security team" # features\step_definitions\data-pipeline.steps.ts:877
+    - And the round-tripped requirement should have array field "dependencies" with 2 items # features\step_definitions\data-pipeline.steps.ts:882
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+22) Scenario: Epic metadata survives round-trip through store and webview # features\data-pipeline.feature:193
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh data pipeline test store # features\step_definitions\data-pipeline.steps.ts:313
+    √ Given I load an epic with all schema fields populated # features\step_definitions\data-pipeline.steps.ts:340
+    √ When I extract epic metadata as the webview would receive it # features\step_definitions\data-pipeline.steps.ts:590
+    × Then the epic metadata should contain field "priority" with value "high" # features\step_definitions\data-pipeline.steps.ts:889
+        AssertionError [ERR_ASSERTION]: No webview metadata extracted
+            at BmadWorld.<anonymous> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\features\step_definitions\data-pipeline.steps.ts:890:10)
+    - And the epic metadata should contain field "acceptanceSummary" with value "All criteria met" # features\step_definitions\data-pipeline.steps.ts:889
+    - And the epic metadata should contain array field "implementationNotes" with 2 items # features\step_definitions\data-pipeline.steps.ts:894
+    - And the epic metadata should contain object field "epicDependencies" with key "upstream" # features\step_definitions\data-pipeline.steps.ts:900
+    - And the epic metadata should contain object field "effortEstimate" with key "totalSprints" # features\step_definitions\data-pipeline.steps.ts:900
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+23) Scenario: Use-case metadata survives round-trip through store and webview # features\data-pipeline.feature:203
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh data pipeline test store # features\step_definitions\data-pipeline.steps.ts:313
+    √ Given I have an epic with a fully populated use case in the store # features\step_definitions\data-pipeline.steps.ts:425
+    √ When I extract use case metadata as the webview would receive it # features\step_definitions\data-pipeline.steps.ts:608
+    × Then the use case metadata should contain field "primaryActor" with value "end-user" # features\step_definitions\data-pipeline.steps.ts:907
+        AssertionError [ERR_ASSERTION]: No webview metadata extracted
+            at BmadWorld.<anonymous> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\features\step_definitions\data-pipeline.steps.ts:908:10)
+    - And the use case metadata should contain field "trigger" with value "User clicks button" # features\step_definitions\data-pipeline.steps.ts:907
+    - And the use case metadata should contain array field "preconditions" with 2 items # features\step_definitions\data-pipeline.steps.ts:912
+    - And the use case metadata should contain array field "mainFlow" with 2 items # features\step_definitions\data-pipeline.steps.ts:912
+    - And the use case metadata should contain field "notes" with value "Important note" # features\step_definitions\data-pipeline.steps.ts:907
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+24) Scenario: Shows activation message # features\extension.feature:10
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - Then window showInformationMessage should have been called with "Agile Agent Canvas activated!" # features\step_definitions\extension.steps.ts:394
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+25) Scenario: Registers chat participant # features\extension.feature:14
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - Then chat createChatParticipant should have been called with "agileagentcanvas.analyst" # features\step_definitions\extension.steps.ts:413
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+26) Scenario: Creates tree views for artifacts and wizard steps # features\extension.feature:18
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - Then window createTreeView should have been called with "agileagentcanvas.artifactsTree" # features\step_definitions\extension.steps.ts:421
+    - And window createTreeView should have been called with "agileagentcanvas.wizardSteps" # features\step_definitions\extension.steps.ts:421
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+27) Scenario: Adds subscriptions to context # features\extension.feature:23
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - Then context subscriptions should not be empty # features\step_definitions\extension.steps.ts:425
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+28) Scenario: Registers agileagentcanvas.openCanvas command # features\extension.feature:28
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - Then command "agileagentcanvas.openCanvas" should be registered # features\step_definitions\extension.steps.ts:430
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+29) Scenario: Registers agileagentcanvas.newProject command # features\extension.feature:32
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - Then command "agileagentcanvas.newProject" should be registered # features\step_definitions\extension.steps.ts:430
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+30) Scenario: Registers agileagentcanvas.loadProject command # features\extension.feature:36
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - Then command "agileagentcanvas.loadProject" should be registered # features\step_definitions\extension.steps.ts:430
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+31) Scenario: Registers agileagentcanvas.exportArtifacts command # features\extension.feature:40
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - Then command "agileagentcanvas.exportArtifacts" should be registered # features\step_definitions\extension.steps.ts:430
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+32) Scenario: Registers agileagentcanvas.syncToFiles command # features\extension.feature:44
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - Then command "agileagentcanvas.syncToFiles" should be registered # features\step_definitions\extension.steps.ts:430
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+33) Scenario: Registers agileagentcanvas.goToStep command # features\extension.feature:48
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - Then command "agileagentcanvas.goToStep" should be registered # features\step_definitions\extension.steps.ts:430
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+34) Scenario: Registers agileagentcanvas.selectArtifact command # features\extension.feature:52
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - Then command "agileagentcanvas.selectArtifact" should be registered # features\step_definitions\extension.steps.ts:430
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+35) Scenario: Registers agileagentcanvas.loadDemoData command # features\extension.feature:56
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - Then command "agileagentcanvas.loadDemoData" should be registered # features\step_definitions\extension.steps.ts:430
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+36) Scenario: Registers workflow session commands # features\extension.feature:60
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - Then command "agileagentcanvas.continueWorkflow" should be registered # features\step_definitions\extension.steps.ts:430
+    - And command "agileagentcanvas.workflowStatus" should be registered # features\step_definitions\extension.steps.ts:430
+    - And command "agileagentcanvas.cancelWorkflow" should be registered # features\step_definitions\extension.steps.ts:430
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+37) Scenario: Registers agileagentcanvas.executeWorkflowStep command # features\extension.feature:66
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - Then command "agileagentcanvas.executeWorkflowStep" should be registered # features\step_definitions\extension.steps.ts:430
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+38) Scenario: agileagentcanvas.continueWorkflow opens chat with continue command # features\extension.feature:71
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - And I execute the command "agileagentcanvas.continueWorkflow" # features\step_definitions\extension.steps.ts:328
+    - Then executeCommand should have been called with "workbench.action.chat.open" and query "@agileagentcanvas /continue" # features\step_definitions\extension.steps.ts:434
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+39) Scenario: agileagentcanvas.workflowStatus opens chat with status command # features\extension.feature:76
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - And I execute the command "agileagentcanvas.workflowStatus" # features\step_definitions\extension.steps.ts:328
+    - Then executeCommand should have been called with "workbench.action.chat.open" and query "@agileagentcanvas /status" # features\step_definitions\extension.steps.ts:434
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+40) Scenario: agileagentcanvas.cancelWorkflow cancels session and shows message # features\extension.feature:81
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - And I execute the command "agileagentcanvas.cancelWorkflow" # features\step_definitions\extension.steps.ts:328
+    - Then window showInformationMessage should have been called with "Workflow session cancelled." # features\step_definitions\extension.steps.ts:394
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+41) Scenario: agileagentcanvas.newProject prompts for project name # features\extension.feature:86
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - And the user enters "My New Project" in input box # features\step_definitions\extension.steps.ts:358
+    - And I execute the command "agileagentcanvas.newProject" # features\step_definitions\extension.steps.ts:328
+    - Then window showInputBox should have been called with prompt containing "project name" # features\step_definitions\extension.steps.ts:449
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+42) Scenario: agileagentcanvas.newProject does not create project if user cancels # features\extension.feature:92
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - And the user cancels the input box # features\step_definitions\extension.steps.ts:362
+    - And I execute the command "agileagentcanvas.newProject" # features\step_definitions\extension.steps.ts:328
+    - Then window showInformationMessage should not contain "created" # features\step_definitions\extension.steps.ts:403
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+43) Scenario: agileagentcanvas.loadProject shows quick pick to choose load location # features\extension.feature:98
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - And the user cancels the quick pick # features\step_definitions\extension.steps.ts:366
+    - And I execute the command "agileagentcanvas.loadProject" # features\step_definitions\extension.steps.ts:328
+    - Then window showQuickPick should have been called # features\step_definitions\extension.steps.ts:454
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+44) Scenario: agileagentcanvas.loadProject shows folder picker when Browse is selected # features\extension.feature:104
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - And the user selects "Browse" in quick pick # features\step_definitions\extension.steps.ts:370
+    - And the user cancels the open dialog # features\step_definitions\extension.steps.ts:374
+    - And I execute the command "agileagentcanvas.loadProject" # features\step_definitions\extension.steps.ts:328
+    - Then window showOpenDialog should have been called with folder selection # features\step_definitions\extension.steps.ts:466
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+45) Scenario: agileagentcanvas.openCanvas creates webview panel # features\extension.feature:111
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - And I execute the command "agileagentcanvas.openCanvas" # features\step_definitions\extension.steps.ts:328
+    - Then window createWebviewPanel should have been called with "agileagentcanvasCanvas" # features\step_definitions\extension.steps.ts:471
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+46) Scenario: Creates file system watcher # features\extension.feature:117
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - Then workspace createFileSystemWatcher should have been called # features\step_definitions\extension.steps.ts:476
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+47) Scenario: Exports acOutput # features\extension.feature:122
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - Then acOutput should be defined # features\step_definitions\extension.steps.ts:480
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+48) Scenario: agileagentcanvas.exportArtifacts shows format quick pick # features\extension.feature:127
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - And the user cancels the quick pick # features\step_definitions\extension.steps.ts:366
+    - And I execute the command "agileagentcanvas.exportArtifacts" # features\step_definitions\extension.steps.ts:328
+    - Then window showQuickPick should have been called with "Markdown" format options # features\step_definitions\extension.steps.ts:458
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+49) Scenario: agileagentcanvas.exportArtifacts exports with selected format # features\extension.feature:133
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - And the user selects "JSON" in quick pick # features\step_definitions\extension.steps.ts:370
+    - And the user selects a save location # features\step_definitions\extension.steps.ts:378
+    - And I execute the command "agileagentcanvas.exportArtifacts" # features\step_definitions\extension.steps.ts:328
+    - Then window showInformationMessage should contain "Artifacts exported as JSON" # features\step_definitions\extension.steps.ts:398
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+50) Scenario: agileagentcanvas.exportArtifacts does nothing if user cancels # features\extension.feature:140
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - And the user cancels the quick pick # features\step_definitions\extension.steps.ts:366
+    - And I execute the command "agileagentcanvas.exportArtifacts" # features\step_definitions\extension.steps.ts:328
+    - Then window showInformationMessage should not contain "exported" # features\step_definitions\extension.steps.ts:403
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+51) Scenario: agileagentcanvas.exportArtifacts does nothing if user cancels save dialog # features\extension.feature:146
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - And the user selects "JSON" in quick pick # features\step_definitions\extension.steps.ts:370
+    - And the user cancels the save dialog # features\step_definitions\extension.steps.ts:382
+    - And I execute the command "agileagentcanvas.exportArtifacts" # features\step_definitions\extension.steps.ts:328
+    - Then window showInformationMessage should not contain "exported" # features\step_definitions\extension.steps.ts:403
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+52) Scenario: agileagentcanvas.syncToFiles syncs and shows confirmation # features\extension.feature:154
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - And I execute the command "agileagentcanvas.syncToFiles" # features\step_definitions\extension.steps.ts:328
+    - Then window showInformationMessage should have been called with "Artifacts synced to .agileagentcanvas-context" # features\step_definitions\extension.steps.ts:394
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+53) Scenario: agileagentcanvas.goToStep opens chat for vision step # features\extension.feature:160
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - And I execute the command "agileagentcanvas.goToStep" with arg "vision" # features\step_definitions\extension.steps.ts:334
+    - Then executeCommand should have been called with "workbench.action.chat.open" # features\step_definitions\extension.steps.ts:444
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+54) Scenario: agileagentcanvas.goToStep opens chat for requirements step # features\extension.feature:165
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - And I execute the command "agileagentcanvas.goToStep" with arg "requirements" # features\step_definitions\extension.steps.ts:334
+    - Then executeCommand should have been called with "workbench.action.chat.open" # features\step_definitions\extension.steps.ts:444
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+55) Scenario: agileagentcanvas.selectArtifact is callable for epic # features\extension.feature:171
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - And I execute the command "agileagentcanvas.selectArtifact" with args "epic" and "EPIC-1" # features\step_definitions\extension.steps.ts:340
+    - Then command "agileagentcanvas.selectArtifact" should be registered # features\step_definitions\extension.steps.ts:430
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+56) Scenario: agileagentcanvas.loadDemoData shows success message with Open Canvas option # features\extension.feature:177
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - And I execute the command "agileagentcanvas.loadDemoData" # features\step_definitions\extension.steps.ts:328
+    - Then window showInformationMessage should contain "Demo data loaded" # features\step_definitions\extension.steps.ts:398
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+57) Scenario: agileagentcanvas.executeWorkflowStep opens chat with refine command # features\extension.feature:183
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - And I execute the workflow step command for "epic" "EPIC-1" action "validate" # features\step_definitions\extension.steps.ts:346
+    - Then executeCommand should have been called with "workbench.action.chat.open" and query containing "@agileagentcanvas /refine EPIC-1" # features\step_definitions\extension.steps.ts:439
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+58) Scenario: agileagentcanvas.executeWorkflowStep shows warning when dependencies not met # features\extension.feature:188
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - And I execute the workflow step command with unmet dependencies for "EPIC-1" # features\step_definitions\extension.steps.ts:352
+    - Then window showWarningMessage should have been called with "requires completing" # features\step_definitions\extension.steps.ts:408
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+59) Scenario: agileagentcanvas.executeWorkflowStep shows info when user clicks Run First Step # features\extension.feature:193
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - And the user clicks "Run First Step" on warning # features\step_definitions\extension.steps.ts:386
+    - And I execute the workflow step command with unmet dependencies for "EPIC-1" # features\step_definitions\extension.steps.ts:352
+    - Then window showInformationMessage should contain "Please complete" # features\step_definitions\extension.steps.ts:398
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+60) Scenario: agileagentcanvas.executeWorkflowStep continues when user clicks Continue Anyway # features\extension.feature:199
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh extension activation # features\step_definitions\extension.steps.ts:301
+    × When I activate the extension # features\step_definitions\extension.steps.ts:317
+        TSError: ⨯ Unable to compile TypeScript:
+        src/chat/agileagentcanvas-tools.ts(1078,45): error TS2349: This expression is not callable.
+          Type 'typeof import("D:/PersonalDev/AgileAgentCanvas/AgileAgentCanvasExt/node_modules/microdiff/dist/index")' has no call signatures.
+
+            at createTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:859:12)
+            at reportTSError (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:863:19)
+            at getOutput (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1077:36)
+            at Object.compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1433:41)
+            at Module.m._compile (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1617:30)
+            at node:internal/modules/cjs/loader:1893:10
+            at Object.require.extensions.<computed> [as .ts] (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\ts-node\src\index.ts:1621:12)
+            at Object.require.extensions.<computed> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\node_modules\proxyquire\lib\proxyquire.js:311:43)
+            at Module.load (node:internal/modules/cjs/loader:1481:32)
+            at Module.<anonymous> (node:internal/modules/cjs/loader:1300:12)
+    - And the user clicks "Continue Anyway" on warning # features\step_definitions\extension.steps.ts:386
+    - And I execute the workflow step command with unmet dependencies for "EPIC-1" # features\step_definitions\extension.steps.ts:352
+    - Then executeCommand should have been called with "workbench.action.chat.open" # features\step_definitions\extension.steps.ts:444
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+61) Scenario: schema-conformance passes for valid artifact # features\harness-policies.feature:51
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh harness engine # features\step_definitions\harness-policies.steps.ts:112
+    √ And the harness engine has built-in policies registered # features\step_definitions\harness-policies.steps.ts:125
+    × Given the schema validator is initialized
+        Multiple step definitions match:
+          the schema validator is initialized - features\step_definitions\harness-policies.steps.ts:131
+          the schema validator is initialized - features\step_definitions\schema-validator.steps.ts:80 
+    - When I evaluate "schema-conformance" as "pre-flight" with artifact: # features\step_definitions\harness-policies.steps.ts:213
+        | type  | story       |
+        | title | Valid Story |
+        | id    | S-1         |
+    - Then the policy should pass # features\step_definitions\harness-policies.steps.ts:584
+    - And the evaluation result failures should be empty # features\step_definitions\harness-policies.steps.ts:596
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+62) Scenario: schema-conformance fails for invalid artifact # features\harness-policies.feature:61
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh harness engine # features\step_definitions\harness-policies.steps.ts:112
+    √ And the harness engine has built-in policies registered # features\step_definitions\harness-policies.steps.ts:125
+    × Given the schema validator is initialized
+        Multiple step definitions match:
+          the schema validator is initialized - features\step_definitions\harness-policies.steps.ts:131
+          the schema validator is initialized - features\step_definitions\schema-validator.steps.ts:80 
+    - When I evaluate "schema-conformance" as "pre-flight" with artifact: # features\step_definitions\harness-policies.steps.ts:213
+        | type   | story           |
+        | title  | Bad Story       |
+        | id     | S-2             |
+        | status | totally-invalid |
+    - Then the policy should fail # features\step_definitions\harness-policies.steps.ts:590
+    - And the evaluation result failures should not be empty # features\step_definitions\harness-policies.steps.ts:602
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+63) Scenario: schema-conformance auto-fixes on failure # features\harness-policies.feature:72
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh harness engine # features\step_definitions\harness-policies.steps.ts:112
+    √ And the harness engine has built-in policies registered # features\step_definitions\harness-policies.steps.ts:125
+    × Given the schema validator is initialized
+        Multiple step definitions match:
+          the schema validator is initialized - features\step_definitions\harness-policies.steps.ts:131
+          the schema validator is initialized - features\step_definitions\schema-validator.steps.ts:80 
+    - And the repair engine can fix the artifact # features\step_definitions\harness-policies.steps.ts:138
+    - When I evaluate "schema-conformance" as "pre-flight" with a repairable artifact # features\step_definitions\harness-policies.steps.ts:266
+    - Then the evaluation result fixed should be true # features\step_definitions\harness-policies.steps.ts:609
+    - And the evaluation result fixedArtifact should be defined # features\step_definitions\harness-policies.steps.ts:616
+    - And the re-evaluated artifact should pass # features\step_definitions\harness-policies.steps.ts:622
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+64) Scenario: loadUserPolicies loads regex-based policies from YAML # features\harness-policies.feature:236
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh harness engine # features\step_definitions\harness-policies.steps.ts:112
+    √ And the harness engine has built-in policies registered # features\step_definitions\harness-policies.steps.ts:125
+    √ Given a policies directory with a "secret-check.yaml" containing: # features\step_definitions\harness-policies.steps.ts:172
+        """
+        policies:
+          - id: no-secrets
+            name: No Secrets in Content
+            description: Content must not contain API keys
+            type: post-flight
+            severity: blocking
+            artifactType: story
+            regex:
+              - sk-[a-zA-Z0-9]{20,}
+              - AKIA[A-Z0-9]{16}
+        """
+    √ When I load user policies # features\step_definitions\harness-policies.steps.ts:456
+    √ Then 1 policy should be loaded # features\step_definitions\harness-policies.steps.ts:736
+    √ And the policy id should be "no-secrets" # features\step_definitions\harness-policies.steps.ts:741
+    × And the policy type should be "post-flight" # features\step_definitions\harness-policies.steps.ts:570
+        AssertionError [ERR_ASSERTION]: Expected policy type "post-flight", got "undefined"
+        + actual - expected
+
+        + undefined
+        - 'post-flight'
+
+            at BmadWorld.<anonymous> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\features\step_definitions\harness-policies.steps.ts:571:39)
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+65) Scenario: Concurrency lock is released even when workflow fails # features\lane-transitions.feature:130
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh lane transition engine # features\step_definitions\lane-transitions.steps.ts:162
+    √ Given the store has a story with id "S-1" and status "backlog" # features\step_definitions\lane-transitions.steps.ts:174
+    √ And the workflow executor will throw during transition # features\step_definitions\lane-transitions.steps.ts:211
+    √ When I handle transition for "S-1" from "backlog" to "ready-for-dev" with type "story" # features\step_definitions\lane-transitions.steps.ts:323
+    √ Then the concurrency lock for "S-1" should have been released # features\step_definitions\lane-transitions.steps.ts:488
+    × And the transition result ok should be false # features\step_definitions\lane-transitions.steps.ts:444
+        AssertionError [ERR_ASSERTION]: Expected transition result ok to be false, got true
+
+        true !== false
+
+            + expected - actual
+
+            -true
+            +false
+
+            at BmadWorld.<anonymous> (D:\PersonalDev\AgileAgentCanvas\AgileAgentCanvasExt\features\step_definitions\lane-transitions.steps.ts:445:39)
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+66) Scenario: validateChanges returns valid for unknown artifact type # features\schema-validator.feature:46
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh schema validator # features\step_definitions\schema-validator.steps.ts:71
+    × Given the schema validator is initialized
+        Multiple step definitions match:
+          the schema validator is initialized - features\step_definitions\harness-policies.steps.ts:131
+          the schema validator is initialized - features\step_definitions\schema-validator.steps.ts:80 
+    - When I validate changes for type "unknown-type" with: # features\step_definitions\schema-validator.steps.ts:119
+        | field | value |
+        | foo   | bar   |
+    - Then the validation result should be valid # features\step_definitions\schema-validator.steps.ts:273
+    - And the validation errors should be empty # features\step_definitions\schema-validator.steps.ts:286
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+67) Scenario: validateChanges accepts valid story title change # features\schema-validator.feature:64
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh schema validator # features\step_definitions\schema-validator.steps.ts:71
+    × Given the schema validator is initialized
+        Multiple step definitions match:
+          the schema validator is initialized - features\step_definitions\harness-policies.steps.ts:131
+          the schema validator is initialized - features\step_definitions\schema-validator.steps.ts:80 
+    - When I validate changes for type "story" with: # features\step_definitions\schema-validator.steps.ts:119
+        | field | value    |
+        | title | My Story |
+    - Then the validation result should be valid # features\step_definitions\schema-validator.steps.ts:273
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+68) Scenario: validateChanges accepts valid story status enum # features\schema-validator.feature:72
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh schema validator # features\step_definitions\schema-validator.steps.ts:71
+    × Given the schema validator is initialized
+        Multiple step definitions match:
+          the schema validator is initialized - features\step_definitions\harness-policies.steps.ts:131
+          the schema validator is initialized - features\step_definitions\schema-validator.steps.ts:80 
+    - When I validate changes for type "story" with: # features\step_definitions\schema-validator.steps.ts:119
+        | field  | value |
+        | status | draft |
+    - Then the validation result should be valid # features\step_definitions\schema-validator.steps.ts:273
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+69) Scenario: validateChanges accepts valid product-brief fields # features\schema-validator.feature:80
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh schema validator # features\step_definitions\schema-validator.steps.ts:71
+    × Given the schema validator is initialized
+        Multiple step definitions match:
+          the schema validator is initialized - features\step_definitions\harness-policies.steps.ts:131
+          the schema validator is initialized - features\step_definitions\schema-validator.steps.ts:80 
+    - When I validate changes for type "product-brief" with: # features\step_definitions\schema-validator.steps.ts:119
+        | field       | value      |
+        | productName | My Product |
+        | status      | draft      |
+    - Then the validation result should be valid # features\step_definitions\schema-validator.steps.ts:273
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+70) Scenario: validateChanges accepts alias type "vision" # features\schema-validator.feature:89
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh schema validator # features\step_definitions\schema-validator.steps.ts:71
+    × Given the schema validator is initialized
+        Multiple step definitions match:
+          the schema validator is initialized - features\step_definitions\harness-policies.steps.ts:131
+          the schema validator is initialized - features\step_definitions\schema-validator.steps.ts:80 
+    - When I validate changes for type "vision" with: # features\step_definitions\schema-validator.steps.ts:119
+        | field       | value             |
+        | productName | My Vision Product |
+    - Then the validation result should be valid # features\step_definitions\schema-validator.steps.ts:273
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+71) Scenario: validateChanges allows partial data (no required fields enforced) # features\schema-validator.feature:97
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh schema validator # features\step_definitions\schema-validator.steps.ts:71
+    × Given the schema validator is initialized
+        Multiple step definitions match:
+          the schema validator is initialized - features\step_definitions\harness-policies.steps.ts:131
+          the schema validator is initialized - features\step_definitions\schema-validator.steps.ts:80 
+    - When I validate changes for type "story" with: # features\step_definitions\schema-validator.steps.ts:119
+        | field          | value      |
+        | technicalNotes | Some notes |
+    - Then the validation result should be valid # features\step_definitions\schema-validator.steps.ts:273
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+72) Scenario: validateChanges accepts integer storyPoints # features\schema-validator.feature:105
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh schema validator # features\step_definitions\schema-validator.steps.ts:71
+    × Given the schema validator is initialized
+        Multiple step definitions match:
+          the schema validator is initialized - features\step_definitions\harness-policies.steps.ts:131
+          the schema validator is initialized - features\step_definitions\schema-validator.steps.ts:80 
+    - When I validate changes for type "story" with integer field "storyPoints" value 5 # features\step_definitions\schema-validator.steps.ts:129
+    - Then the validation result should be valid # features\step_definitions\schema-validator.steps.ts:273
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+73) Scenario: validateChanges catches invalid status enum value # features\schema-validator.feature:113
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh schema validator # features\step_definitions\schema-validator.steps.ts:71
+    × Given the schema validator is initialized
+        Multiple step definitions match:
+          the schema validator is initialized - features\step_definitions\harness-policies.steps.ts:131
+          the schema validator is initialized - features\step_definitions\schema-validator.steps.ts:80 
+    - When I validate changes for type "story" with: # features\step_definitions\schema-validator.steps.ts:119
+        | field  | value             |
+        | status | totally-not-valid |
+    - Then the validation result should be invalid # features\step_definitions\schema-validator.steps.ts:280
+    - And the validation errors should not be empty # features\step_definitions\schema-validator.steps.ts:293
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+74) Scenario: validateChanges catches wrong type for storyPoints # features\schema-validator.feature:122
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh schema validator # features\step_definitions\schema-validator.steps.ts:71
+    × Given the schema validator is initialized
+        Multiple step definitions match:
+          the schema validator is initialized - features\step_definitions\harness-policies.steps.ts:131
+          the schema validator is initialized - features\step_definitions\schema-validator.steps.ts:80 
+    - When I validate changes for type "story" with: # features\step_definitions\schema-validator.steps.ts:119
+        | field       | value        |
+        | storyPoints | not-a-number |
+    - Then the validation result should be invalid # features\step_definitions\schema-validator.steps.ts:280
+    - And the validation errors should mention "storyPoints" # features\step_definitions\schema-validator.steps.ts:299
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+75) Scenario: validateChanges catches invalid product-brief status enum # features\schema-validator.feature:131
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh schema validator # features\step_definitions\schema-validator.steps.ts:71
+    × Given the schema validator is initialized
+        Multiple step definitions match:
+          the schema validator is initialized - features\step_definitions\harness-policies.steps.ts:131
+          the schema validator is initialized - features\step_definitions\schema-validator.steps.ts:80 
+    - When I validate changes for type "product-brief" with: # features\step_definitions\schema-validator.steps.ts:119
+        | field  | value   |
+        | status | invalid |
+    - Then the validation result should be invalid # features\step_definitions\schema-validator.steps.ts:280
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+76) Scenario: validateChanges flattens metadata into top-level # features\schema-validator.feature:141
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh schema validator # features\step_definitions\schema-validator.steps.ts:71
+    × Given the schema validator is initialized
+        Multiple step definitions match:
+          the schema validator is initialized - features\step_definitions\harness-policies.steps.ts:131
+          the schema validator is initialized - features\step_definitions\schema-validator.steps.ts:80 
+    - When I validate changes for type "story" with nested metadata: # features\step_definitions\schema-validator.steps.ts:138
+        | metadataField | metadataValue | contentField | contentValue |
+        | version       | 1.0.0         | title        | Test Story   |
+    - Then the validation result should be valid # features\step_definitions\schema-validator.steps.ts:273
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+77) Scenario: validate strict mode rejects incomplete data # features\schema-validator.feature:151
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh schema validator # features\step_definitions\schema-validator.steps.ts:71
+    × Given the schema validator is initialized
+        Multiple step definitions match:
+          the schema validator is initialized - features\step_definitions\harness-policies.steps.ts:131
+          the schema validator is initialized - features\step_definitions\schema-validator.steps.ts:80 
+    - When I strictly validate type "product-brief" with: # features\step_definitions\schema-validator.steps.ts:155
+        | field       | value |
+        | productName | Test  |
+    - Then the strict validation result should be invalid # features\step_definitions\schema-validator.steps.ts:309
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+78) Scenario: validate returns valid for unknown type # features\schema-validator.feature:159
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh schema validator # features\step_definitions\schema-validator.steps.ts:71
+    × Given the schema validator is initialized
+        Multiple step definitions match:
+          the schema validator is initialized - features\step_definitions\harness-policies.steps.ts:131
+          the schema validator is initialized - features\step_definitions\schema-validator.steps.ts:80 
+    - When I strictly validate type "unknown-type" with: # features\step_definitions\schema-validator.steps.ts:155
+        | field | value |
+        | foo   | bar   |
+    - Then the strict validation result should be valid # features\step_definitions\schema-validator.steps.ts:315
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+79) Scenario: Error count is capped at 10 # features\schema-validator.feature:169
+    √ Before # features\support\hooks.ts:55
+    √ Before # features\step_definitions\a2a-outbound-client.steps.ts:104
+    √ Before # features\step_definitions\agent-message-bus.steps.ts:71
+    √ Given a fresh schema validator # features\step_definitions\schema-validator.steps.ts:71
+    × Given the schema validator is initialized
+        Multiple step definitions match:
+          the schema validator is initialized - features\step_definitions\harness-policies.steps.ts:131
+          the schema validator is initialized - features\step_definitions\schema-validator.steps.ts:80 
+    - When I validate changes with many type errors for "story" # features\step_definitions\schema-validator.steps.ts:165
+    - Then the validation errors should have at most 11 entries # features\step_definitions\schema-validator.steps.ts:322
+    √ After # features\step_definitions\a2a-outbound-client.steps.ts:355
+    √ After # features\support\hooks.ts:60
+
+777 scenarios (62 failed, 17 ambiguous, 698 passed)
+3821 steps (62 failed, 17 ambiguous, 161 skipped, 3581 passed)
+1m25.427s (executing steps: 1m22.968s)
