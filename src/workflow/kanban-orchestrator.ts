@@ -203,6 +203,8 @@ export class KanbanOrchestrator {
       }
 
       // Only call recordSuccess when the workflow actually ran successfully
+      // Pass artifactId through the model's label so streamChatResponse can
+      // record cost against the correct story for budget enforcement.
       const verdict = await this.executor.executeLaneTransition(
         workflowId, artifact, this.store, ctx.model, ctx.stream, ctx.token
       );

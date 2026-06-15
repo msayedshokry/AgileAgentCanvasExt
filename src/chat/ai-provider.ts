@@ -6,6 +6,7 @@ import * as path from 'path';
 import { sendSimplePrompt } from '../antigravity/antigravity-orchestrator';
 import { schemaValidator } from '../state/schema-validator';
 import { compressMessages } from '../integrations/headroom';
+import { costTracker, estimateTokens } from './cost-tracker';
 
 /**
  * Unified AI provider abstraction for AgileAgentCanvas.
@@ -43,6 +44,11 @@ export interface StreamOptions {
      *  Anthropic, response_format on OpenAI, responseSchema on Gemini, format
      *  on Ollama, responseFormat on VS Code LM). Default false. */
     forceStructuredOutput?: boolean;
+    /** Artifact ID for cost tracking. When set, costTracker.record() is
+     *  called after each LLM completion so BudgetEnforcer can enforce caps. */
+    artifactId?: string;
+    /** Session ID for cost tracking (defaults to 'chat-session'). */
+    sessionId?: string;
 }
 
 /** Shared options passed to each per-provider streaming function. */
@@ -242,25 +248,49 @@ export async function streamChatResponse(
     }
     // ─────────────────────────────────────────────────────────────────────
 
+    let full = '';
     switch (model.provider) {
         case 'copilot':
-            return streamVsCodeLm(model.vscodeLm!, messages, stream, token, forceStructuredOutput);
+            full = await streamVsCodeLm(model.vscodeLm!, messages, stream, token, forceStructuredOutput);
+            break;
         case 'openai':
-            return streamOpenAI(messages, stream, token, { schema, temperature, forceStructuredOutput });
+            full = await streamOpenAI(messages, stream, token, { schema, temperature, forceStructuredOutput });
+            break;
         case 'anthropic':
-            return streamAnthropic(messages, stream, token, { schema, temperature, forceStructuredOutput });
+            full = await streamAnthropic(messages, stream, token, { schema, temperature, forceStructuredOutput });
+            break;
         case 'gemini':
-            return streamGemini(messages, stream, token, { schema, temperature, forceStructuredOutput });
+            full = await streamGemini(messages, stream, token, { schema, temperature, forceStructuredOutput });
+            break;
         case 'ollama':
-            return streamOllama(messages, stream, token, { schema, temperature, forceStructuredOutput });
+            full = await streamOllama(messages, stream, token, { schema, temperature, forceStructuredOutput });
+            break;
         case 'antigravity':
-            return sendToAntigravity(messages, stream);
+            full = await sendToAntigravity(messages, stream);
+            break;
         case 'omp':
-            return sendToOmp(messages, stream);
+            full = await sendToOmp(messages, stream);
+            break;
         default:
             stream.markdown('**Error:** Unknown AI provider.\n');
-            return '';
+            break;
     }
+
+    // ── Cost tracking ────────────────────────────────────────────────────
+    // Record estimated token usage after every LLM call so BudgetEnforcer
+    // can enforce daily and per-story caps.
+    if (full) {
+        try {
+            const inputTokens = messages.reduce((sum, m) => sum + estimateTokens(m.content ?? ''), 0);
+            const outputTokens = estimateTokens(full, true);
+            const sessionId = options.sessionId ?? 'chat-session';
+            costTracker.record(sessionId, model.label, { inputTokens, outputTokens }, options.artifactId);
+        } catch {
+            // Best-effort — never block the response on tracking failures
+        }
+    }
+
+    return full;
 }
 
 /**

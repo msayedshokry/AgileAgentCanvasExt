@@ -4,7 +4,7 @@
 //
 // Issue: #11 — Budget Enforcement & Webview Display
 
-import { costTracker } from '../chat/cost-tracker';
+import { costTracker, estimateTokens } from '../chat/cost-tracker';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('budget-enforcer');
@@ -87,6 +87,30 @@ export class BudgetEnforcer {
   unpause(): void {
     this.paused = false;
     logger.info('Budget enforcer unpaused');
+  }
+
+  /**
+   * Record a spend against the budget. This is the primary way to track costs
+   * for autonomous workflow execution. It records the cost in the costTracker
+   * so that getStatus() and canStart() reflect the new spend.
+   *
+   * @param artifactId The artifact being worked on (for per-story tracking)
+   * @param sessionId  The workflow/session ID (for grouping)
+   * @param model      The model label (e.g. 'gpt-4o', 'Copilot (GPT-4o)')
+   * @param inputTokens  Estimated input token count
+   * @param outputTokens Estimated output token count
+   */
+  recordSpend(
+    artifactId: string,
+    sessionId: string,
+    model: string,
+    inputTokens: number,
+    outputTokens: number
+  ): void {
+    costTracker.record(sessionId, model, { inputTokens, outputTokens }, artifactId);
+    logger.debug('Budget spend recorded', {
+      artifactId, model, inputTokens, outputTokens,
+    });
   }
 
   /** Format a budget gauge string for display: "$0.42 / $5.00 (8%)". */
