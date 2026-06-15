@@ -25,10 +25,7 @@ import { getA2AOutboundClient } from '../acp/agent-bus/a2a-outbound-client';
 import { isKanbanAutoAdvanceEnabled } from './kanban-settings';
 import { kanbanOrchestrator } from './kanban-orchestrator';
 
-// Project-standard error-to-string pattern
-function errMsg(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}
+import { errMsg } from '../utils/error';
 
 export interface TransitionRule {
   artifactType: string;

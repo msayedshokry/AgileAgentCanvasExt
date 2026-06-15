@@ -8,10 +8,7 @@ import { getActiveChatSession } from '../chat/active-session';
 import { kanbanProgress } from '../workflow/kanban-orchestrator';
 import { getKanbanWipLimits } from '../workflow/kanban-settings';
 
-// Project-standard error-to-string pattern
-function errMsg(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}
+import { errMsg } from '../utils/error';
 
 /**
  * Webview provider for the Agentic Kanban — execution orchestration surface.

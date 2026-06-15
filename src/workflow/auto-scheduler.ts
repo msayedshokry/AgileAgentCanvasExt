@@ -63,6 +63,11 @@ export class AutoScheduler extends EventEmitter {
     this.stories = stories;
   }
 
+  /** Restore in-progress IDs (for state persistence). */
+  setInProgressIds(ids: string[]): void {
+    this.inProgressIds = new Set(ids);
+  }
+
   setRunner(fn: StoryRunner): void {
     this.runStory = fn;
   }

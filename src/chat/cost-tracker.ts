@@ -8,6 +8,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { createLogger } from '../utils/logger';
+import { encode as encodeGpt4 } from 'gpt-tokenizer/model/gpt-4';
+import { encode as encodeGpt35 } from 'gpt-tokenizer/model/gpt-3.5-turbo';
 
 const logger = createLogger('cost-tracker');
 
@@ -54,18 +56,43 @@ export interface CostEntry {
 
 // ── Token Counting ───────────────────────────────────────────────────────────
 
-/** Rough token estimate: ~4 chars per token for English, ~2 for code. */
-export function estimateTokens(text: string, isCode: boolean = false): number {
+/** Map model names to their closest available tokenizer.
+ *  gpt-tokenizer provides per-model encoders; for non-OpenAI models
+ *  we fall back to the GPT-4 encoder (cl100k_base) which is the most
+ *  widely-used tokenizer and a reasonable approximation (±5-10%). */
+function getEncoder(model?: string): (text: string) => number[] {
+  if (!model) return encodeGpt4 as (text: string) => number[];
+  const lower = model.toLowerCase();
+  // GPT-4 family: cl100k_base
+  if (lower.includes('gpt-4') || lower.includes('gpt-4o')) return encodeGpt4 as (text: string) => number[];
+  // GPT-3.5 family: cl100k_base (same as GPT-4 in practice)
+  if (lower.includes('gpt-3.5')) return encodeGpt35 as (text: string) => number[];
+  // Anthropic / Gemini / Ollama / local models: cl100k_base is a
+  // reasonable universal estimate until we add provider-specific encoders.
+  return encodeGpt4 as (text: string) => number[];
+}
+
+/**
+ * Count tokens in a string using an actual tokenizer (gpt-tokenizer),
+ * replacing the old character-based heuristic (±50% error) with tiktoken-
+ * compatible encoding (±5-10% at worst for non-OpenAI models).
+ *
+ * @param text    The text to count tokens for.
+ * @param _isCode Ignored — kept for backward compatibility; the tokenizer
+ *                handles code and prose equally well.
+ * @param model   Optional model name for provider-specific encoding.
+ */
+export function estimateTokens(text: string, _isCode: boolean = false, model?: string): number {
   if (!text) return 0;
-  const charsPerToken = isCode ? 2.5 : 4;
-  return Math.ceil(text.length / charsPerToken);
+  const encode = getEncoder(model);
+  return encode(text).length;
 }
 
 /** Count tokens for a chat-style message array. */
-export function countMessagesTokens(messages: Array<{ content?: string }>): TokenUsage {
+export function countMessagesTokens(messages: Array<{ content?: string }>, model?: string): TokenUsage {
   let inputTokens = 0;
   for (const m of messages) {
-    inputTokens += estimateTokens(m.content ?? '');
+    inputTokens += estimateTokens(m.content ?? '', false, model);
   }
   return { inputTokens, outputTokens: 0 };
 }

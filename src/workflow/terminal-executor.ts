@@ -30,10 +30,7 @@ import {
   type KanbanVerdict,
 } from './kanban-verdict';
 
-// Project-standard error-to-string
-function errMsg(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}
+import { errMsg } from '../utils/error';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -680,7 +677,7 @@ export const terminalExecutor = new TerminalExecutor();
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Infer a display-friendly agent role name from a workflow ID. */
-function inferRoleFromWorkflow(workflowId: string): string {
+export function inferRoleFromWorkflow(workflowId: string): string {
   const roleMap: Record<string, string> = {
     'dev-story': 'Crafter',
     'code-review': 'Reviewer',

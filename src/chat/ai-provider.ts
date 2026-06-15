@@ -281,8 +281,8 @@ export async function streamChatResponse(
     // can enforce daily and per-story caps.
     if (full) {
         try {
-            const inputTokens = messages.reduce((sum, m) => sum + estimateTokens(m.content ?? ''), 0);
-            const outputTokens = estimateTokens(full, true);
+            const inputTokens = messages.reduce((sum, m) => sum + estimateTokens(m.content ?? '', false, model.label), 0);
+            const outputTokens = estimateTokens(full, true, model.label);
             const sessionId = options.sessionId ?? 'chat-session';
             costTracker.record(sessionId, model.label, { inputTokens, outputTokens }, options.artifactId);
         } catch {

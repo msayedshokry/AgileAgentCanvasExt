@@ -30,9 +30,7 @@ import { TerminalExecutor } from './terminal-executor';
 import { agentHealthMonitor } from './agent-health-monitor';
 import { createChatHealthChecks } from './terminal-health-checks';
 
-function errMsg(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}
+import { errMsg } from '../utils/error';
 
 export interface OrchestratorContext {
   model?: BmadModel;

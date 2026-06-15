@@ -32,7 +32,7 @@ describe('SchedulerStatePersistence', () => {
     expect(fs.existsSync(filePath)).toBe(true);
     const onDisk = JSON.parse(fs.readFileSync(filePath, 'utf8'));
     expect(onDisk.version).toBe(1);
-    expect(onDisk.queue).toEqual(['S-1']);
+    expect(onDisk.queue).toEqual([{ id: 'S-1', status: 'ready-for-dev' }]);
     expect(typeof onDisk.savedAt).toBe('number');
   });
 

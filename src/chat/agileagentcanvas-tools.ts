@@ -158,10 +158,7 @@ function jsonToMarkdown(title: string, obj: any, depth: number = 1): string {
     return lines.join('\n');
 }
 
-// ─── Project-standard error-to-string ────────────────────────────────────────
-function errMsg(err: unknown): string {
-    return err instanceof Error ? err.message : String(err);
-}
+import { errMsg } from '../utils/error';
 
 // ─── Dynamic tracing wrapper ──────────────────────────────────────────────────
 /**

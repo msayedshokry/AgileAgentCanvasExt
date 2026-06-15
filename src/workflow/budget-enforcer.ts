@@ -4,7 +4,7 @@
 //
 // Issue: #11 — Budget Enforcement & Webview Display
 
-import { costTracker, estimateTokens } from '../chat/cost-tracker';
+import { costTracker } from '../chat/cost-tracker';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('budget-enforcer');

@@ -29,10 +29,7 @@ import { harnessFeedback } from './harness-feedback';
 
 const logger = createLogger('harness-policy-engine');
 
-// Project-standard error-to-string
-function errMsg(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}
+import { errMsg } from '../utils/error';
 
 export interface HarnessPolicy {
   id: string;

@@ -6,10 +6,7 @@ import { WorkflowExecutor } from '../workflow/workflow-executor';
 import { BmadModel } from '../chat/ai-provider';
 import { AcpSessionSpec, AcpSessionEvent, AcpSessionResult } from './types';
 
-// Project-standard error-to-string
-function errMsg(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}
+import { errMsg } from '../utils/error';
 
 // ─── AcpSession ──────────────────────────────────────────────────────────────
 

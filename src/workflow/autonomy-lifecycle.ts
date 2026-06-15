@@ -38,10 +38,7 @@ import { isKanbanAutoAdvanceEnabled } from './kanban-settings';
 
 const logger = createLogger('autonomy-lifecycle');
 
-// Project-standard error-to-string
-function errMsg(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}
+import { errMsg } from '../utils/error';
 
 /** File name for persisted terminal session metadata. */
 const TERMINAL_SESSIONS_FILE = 'terminal-sessions.json';
@@ -128,7 +125,9 @@ export class AutonomyLifecycle extends EventEmitter {
     budgetEnforcer.setOnPaused(() => autoScheduler.pause());
     budgetEnforcer.setOnUnpaused(() => autoScheduler.resume());
 
-    // 6) Circuit breaker — broadcast on state transitions
+    // 6) Circuit breaker — broadcast on state transitions. Also push the
+    //    current status of ALL circuits on startup so the webview knows about
+    //    any circuits that were already open from a previous session (#36).
     circuitBreaker.on('opened', (status: any) => {
       this.broadcast({ type: 'circuitStatus', ...status });
     });
@@ -138,6 +137,9 @@ export class AutonomyLifecycle extends EventEmitter {
     circuitBreaker.on('halfOpen', (status: any) => {
       this.broadcast({ type: 'circuitStatus', ...status });
     });
+    for (const status of circuitBreaker.listAll()) {
+      this.broadcast({ type: 'circuitStatus', ...status });
+    }
 
     // 7) Goal decomposer — broadcast on events
     goalDecomposer.on('submitted', (g) => this.broadcast({ type: 'goalSubmitted', goal: g }));
@@ -456,7 +458,7 @@ export class AutonomyLifecycle extends EventEmitter {
    * Used by dependency auto-resume to detect blocker completions.
    */
   private extractDependencyData(): {
-    changes: Array<{ artifactId: string; fromStatus?: string; toStatus?: string }>;
+    changes: Array<{ artifactId: string; toStatus?: string }>;
     stories: StoryRef[];
   } {
     if (!this.store) return { changes: [], stories: [] };
@@ -464,7 +466,7 @@ export class AutonomyLifecycle extends EventEmitter {
       const state = this.store.getState();
       const epics = (state?.epics ?? []) as Array<any>;
       const stories: StoryRef[] = [];
-      const changes: Array<{ artifactId: string; fromStatus?: string; toStatus?: string }> = [];
+      const changes: Array<{ artifactId: string; toStatus?: string }> = [];
 
       for (const epic of epics) {
         for (const story of (epic.stories ?? [])) {

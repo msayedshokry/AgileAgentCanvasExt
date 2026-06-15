@@ -53,6 +53,7 @@ const mockCircuitBreaker = vi.hoisted(() => ({
   recordFailure: vi.fn(),
   on: vi.fn(),
   off: vi.fn(),
+  listAll: vi.fn(() => [] as any[]),
 }));
 
 const mockBudgetEnforcer = vi.hoisted(() => ({

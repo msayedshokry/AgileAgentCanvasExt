@@ -16,7 +16,8 @@ export interface PersistedSchedulerState {
   savedAt: number;
   enabled: boolean;
   paused: boolean;
-  queue: string[];
+  /** Full story objects (id/status/priority) so the queue can be restored. */
+  queue: SchedulerStory[];
   inProgress: string[];
   wipLimit: number;
   pollIntervalMs: number;
@@ -41,8 +42,7 @@ export class SchedulerStatePersistence {
       enabled: autoScheduler.isRunning(),
       paused: autoScheduler.getState() === 'paused',
       queue: autoScheduler.getStories()
-        .filter((s: SchedulerStory) => s.status === 'ready-for-dev')
-        .map((s: SchedulerStory) => s.id),
+        .filter((s: SchedulerStory) => s.status === 'ready-for-dev'),
       inProgress: autoScheduler.getInProgressIds(),
       wipLimit: autoScheduler.getWipLimit(),
       pollIntervalMs: autoScheduler.getPollIntervalMs(),
@@ -74,6 +74,14 @@ export class SchedulerStatePersistence {
     }
 
     try {
+      // Normalize queue items that may be old-format strings (pre-#35 migration).
+      state.queue = state.queue.map((item: any) =>
+        typeof item === 'string' ? { id: item, status: 'ready-for-dev' } as SchedulerStory : item,
+      );
+      // Restore the story queue so pickNext() finds stories after restart.
+      autoScheduler.setStories(state.queue);
+      // Restore in-progress IDs so WIP capacity is correctly tracked.
+      autoScheduler.setInProgressIds(state.inProgress);
       autoScheduler.setWipLimit(state.wipLimit);
       autoScheduler.setPollIntervalMs(state.pollIntervalMs);
       if (state.paused && state.enabled) {
@@ -84,7 +92,7 @@ export class SchedulerStatePersistence {
       } else {
         autoScheduler.stop();
       }
-      logger.info('Scheduler state restored', { enabled: state.enabled, paused: state.paused, queueLen: state.queue.length });
+      logger.info('Scheduler state restored', { enabled: state.enabled, paused: state.paused, queueLen: state.queue.length, inProgressLen: state.inProgress.length });
       return { restored: true, state };
     } catch (err) {
       logger.warn('Failed to apply scheduler state', { error: String(err) });

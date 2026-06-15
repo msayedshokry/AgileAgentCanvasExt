@@ -9,7 +9,7 @@ import { getActiveChatSession } from '../chat/active-session';
 import { concurrencyQueue } from '../workflow/concurrency-queue';
 import { getWorkflowExecutor } from '../workflow/workflow-executor';
 import { getTraceRecorder } from '../trace/trace-recorder';
-import { terminalExecutor } from '../workflow/terminal-executor';
+import { terminalExecutor, inferRoleFromWorkflow } from '../workflow/terminal-executor';
 import { getPersonaForArtifactType } from '../chat/agent-personas';
 import { setKanbanAutoAdvance, isKanbanAutoAdvanceEnabled, getKanbanWipLimits } from '../workflow/kanban-settings';
 import { schedulerWebviewControls, MSG_SCHEDULER_STATE } from '../workflow/scheduler-webview-controls';
@@ -17,10 +17,7 @@ import { goalDecomposer } from '../workflow/goal-decomposer';
 import { budgetEnforcer } from '../workflow/budget-enforcer';
 import { circuitBreaker } from '../workflow/circuit-breaker';
 
-// Project-standard error-to-string pattern
-function errMsg(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}
+import { errMsg } from '../utils/error';
 
 // P0 #1 fix: Track active webview stream disposables per artifact so repeated
 // `kanban:jumpToTerminal` clicks don't stack listeners and duplicate output.
@@ -572,17 +569,4 @@ export async function handleAgenticKanbanMessage(
     default:
       return false;
   }
-}
-
-/** Infer a display-friendly agent role name from a workflow ID. */
-function inferRoleFromWorkflow(workflowId: string): string {
-  const roleMap: Record<string, string> = {
-    'dev-story': 'Crafter',
-    'code-review': 'Reviewer',
-    'sprint-planning': 'Planner',
-    'story-enhancement': 'Analyst',
-    'epic-enhancement': 'Analyst',
-    'create-prd': 'Strategist',
-  };
-  return roleMap[workflowId] || 'Agent';
 }

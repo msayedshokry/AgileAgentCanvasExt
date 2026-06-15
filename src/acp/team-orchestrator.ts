@@ -10,10 +10,7 @@ import { handoffNegotiation } from './agent-bus/handoff-negotiation';
 import { getTraceRecorder } from '../trace/trace-recorder';
 import type { AgentCapability } from './agent-bus/types';
 
-// Project-standard error-to-string
-function errMsg(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}
+import { errMsg } from '../utils/error';
 
 // ─── Agent Team Registry ─────────────────────────────────────────────────────
 

@@ -4,10 +4,7 @@ import * as fs from 'fs/promises';
 import { createLogger } from '../utils/logger';
 const logger = createLogger('trace-recorder');
 
-// Project-standard error-to-string
-function errMsg(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}
+import { errMsg } from '../utils/error';
 
 export interface TraceEntry {
   sessionId: string;
