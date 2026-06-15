@@ -201,3 +201,22 @@ Feature: Extension - VS Code Extension Activation
     And the user clicks "Continue Anyway" on warning
     And I execute the workflow step command with unmet dependencies for "EPIC-1"
     Then executeCommand should have been called with "workbench.action.chat.open"
+
+  # Regression: artifactStore.onDidChangeArtifacts → buildArtifacts wiring
+  # (extension.ts:479 registers a listener that calls buildArtifacts every
+  # time the store fires. If that wiring silently breaks — e.g. someone
+  # removes the listener during a refactor, or replaces buildArtifacts with
+  # a no-op — the scheduler will silently stop re-seeding on card drags.
+  # This test exercises the live listener so the regression is caught.)
+  Scenario: an artifact update triggers the buildArtifacts pipeline
+    When I activate the extension
+    And an artifact is updated on the artifact store with id "regression-test-story"
+    Then buildArtifacts should have been called
+    And the last buildArtifacts call should have been passed the artifact store
+
+  Scenario: an artifact update and delete in sequence trigger the buildArtifacts pipeline
+    When I activate the extension
+    And an artifact is updated on the artifact store with id "regression-test-story"
+    And an artifact is deleted from the artifact store with id "regression-test-story"
+    Then buildArtifacts should have been called at least 2 times
+    And the last buildArtifacts call should have been passed the artifact store

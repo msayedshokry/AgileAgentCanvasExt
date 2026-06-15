@@ -29,6 +29,11 @@ let mockQuickPickReturn: any = undefined;
 let mockOpenDialogReturn: any = undefined;
 let mockSaveDialogReturn: any = undefined;
 let mockWarnReturn: any = undefined;
+// Regression tracking: proves the artifactStore.onDidChangeArtifacts →
+// buildArtifacts wiring in extension.ts:479 is alive. Every time the
+// listener fires, the spy records the call so the test can assert
+// downstream side effects.
+let buildArtifactsCalls: Array<{ store: any; workspaceRoot?: string }> = [];
 
 function getExtensionSetup(world: BmadWorld): { context: any; vscode: any } {
   if (!(world as any)._extSetup) {
@@ -51,6 +56,7 @@ function getExtensionSetup(world: BmadWorld): { context: any; vscode: any } {
     mockOpenDialogReturn = undefined;
     mockSaveDialogReturn = undefined;
     mockWarnReturn = undefined;
+    buildArtifactsCalls = [];
 
     // Build instrumented vscode mock
     const vsc = { ...world.vscode };
@@ -258,7 +264,21 @@ function loadExtensionModule(world: BmadWorld): any {
         ArtifactsTreeProvider: class { refresh = () => {}; constructor(_s: any) {} }
       },
       './views/agentic-kanban-view-provider': {
-        AgenticKanbanViewProvider: class { refresh = () => {}; constructor(_s: any) {} },
+        // CapturingProvider records the artifact store passed at construction
+        // time so the regression step can trigger an onDidChangeArtifacts
+        // event on the SAME store instance the extension registered the
+        // buildArtifacts listener against. Without this, the test would
+        // either fail to find the store or fire the event on a stub
+        // instance that the extension never wired up.
+        AgenticKanbanViewProvider: class {
+          _store: any;
+          constructor(_uri: any, store: any) {
+            this._store = store;
+            (world as any)._capturedStore = store;
+          }
+          refresh = () => {};
+          broadcast = () => {};
+        },
       },
       './views/wizard-steps-provider': {
         WizardStepsProvider: class { refresh = () => {}; constructor(_s: any) {} }
@@ -276,7 +296,15 @@ function loadExtensionModule(world: BmadWorld): any {
         kanbanProgress: { event: () => ({ dispose: () => {} }), fire: () => {}, dispose: () => {} },
       },
       './canvas/artifact-transformer': {
-        sendArtifactsToPanel: () => {}
+        sendArtifactsToPanel: () => {},
+        // Spy on buildArtifacts: every call is recorded so the regression
+        // test can prove the artifactStore.onDidChangeArtifacts listener
+        // (registered in extension.ts:479) actually invokes buildArtifacts
+        // when the store fires.
+        buildArtifacts: (store: any, workspaceRoot?: string) => {
+          buildArtifactsCalls.push({ store, workspaceRoot });
+          return [];
+        }
       },
       './views/webview-message-handler': messageHandlerModule,
       './commands/artifact-commands': artifactCommandsModule,
@@ -480,4 +508,48 @@ Then('workspace createFileSystemWatcher should have been called', function(this:
 Then('acOutput should be defined', function(this: BmadWorld) {
   const mod = loadExtensionModule(this);
   assert.ok(mod.acOutput !== undefined, 'Expected acOutput to be defined');
+});
+
+// ── Regression: artifactStore.onDidChangeArtifacts → buildArtifacts wiring ──
+
+When('an artifact is updated on the artifact store with id {string}', async function(this: BmadWorld, id: string) {
+  // The AgenticKanbanViewProvider stub captured the live store during
+  // activate(). Mutating it fires _onDidChangeArtifacts internally, which
+  // invokes the listener registered in extension.ts:479 — the listener
+  // calls buildArtifacts, and the spy records the call.
+  const store = (this as any)._capturedStore;
+  assert.ok(store, 'Artifact store not captured during activation. AgenticKanbanViewProvider was not constructed.');
+  await store.updateArtifact('story', id, { title: `Updated ${id}` });
+});
+
+When('an artifact is deleted from the artifact store with id {string}', async function(this: BmadWorld, id: string) {
+  // Exercises a different write path than updateArtifact (DELETE instead
+  // of UPDATE) to prove the listener fires for both code paths. If a
+  // future refactor accidentally drops the fire() from deleteArtifact
+  // (e.g. moves it to updateArtifact only), this test catches it.
+  const store = (this as any)._capturedStore;
+  assert.ok(store, 'Artifact store not captured during activation. AgenticKanbanViewProvider was not constructed.');
+  await store.deleteArtifact('story', id);
+});
+
+Then('buildArtifacts should have been called', function(this: BmadWorld) {
+  assert.ok(
+    buildArtifactsCalls.length > 0,
+    `Expected buildArtifacts to be called at least once via the artifactStore.onDidChangeArtifacts listener. Got ${buildArtifactsCalls.length} call(s).`
+  );
+});
+
+Then('buildArtifacts should have been called at least {int} times', function(this: BmadWorld, minCalls: number) {
+  assert.ok(
+    buildArtifactsCalls.length >= minCalls,
+    `Expected buildArtifacts to be called at least ${minCalls} times. Got ${buildArtifactsCalls.length} call(s).`
+  );
+});
+
+Then('the last buildArtifacts call should have been passed the artifact store', function(this: BmadWorld) {
+  assert.ok(buildArtifactsCalls.length > 0, 'Expected at least one buildArtifacts call');
+  const last = buildArtifactsCalls[buildArtifactsCalls.length - 1];
+  assert.ok(last.store, 'Expected the last buildArtifacts call to receive the artifact store as the first argument');
+  const captured = (this as any)._capturedStore;
+  assert.strictEqual(last.store, captured, 'Expected buildArtifacts to receive the same artifact store instance the extension registered the listener on');
 });

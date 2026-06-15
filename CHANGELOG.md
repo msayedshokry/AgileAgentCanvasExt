@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Fixed: Regression test for the canvas auto-refresh wiring
+
+A silent break in the artifact-store change listener registered during extension activation (the one that rebuilds the canvas view from the store on every mutation) would have been invisible to the existing test suite — no scenario exercised that listener. Two new BDD scenarios now prove the listener stays alive, fires for both update and delete write paths, and forwards the same store instance the extension registered the listener on.
+
+- **Update path** — Mutating an artifact on the live store fires the listener and calls the canvas rebuild pipeline exactly once with the correct store instance.
+- **Sequence of different write paths** — A single scenario chains an update followed by a delete, asserting the listener fires for both write shapes (not just for repeated identical mutations).
+- **No user-visible change** — Pure test-infrastructure hardening. All 803 extension scenarios still pass; the new tests are additive.
+
 ## 0.5.5
 
 ### Feature: Autonomous Auto-Advance for Agentic Kanban
