@@ -17,6 +17,8 @@ import { goalDecomposer } from '../workflow/goal-decomposer';
 import { budgetEnforcer } from '../workflow/budget-enforcer';
 import { circuitBreaker } from '../workflow/circuit-breaker';
 
+import { kanbanOrchestrator } from '../workflow/kanban-orchestrator';
+
 import { errMsg } from '../utils/error';
 
 // P0 #1 fix: Track active webview stream disposables per artifact so repeated
@@ -283,8 +285,14 @@ export async function handleAgenticKanbanMessage(
       const { artifactId: abandonId, sessionId: abandonSessionId } = message;
 
       try {
-        // Release the concurrency lock
-        concurrencyQueue.release(abandonId);
+        // #26: Signal the orchestrator to abort any running autonomous loop
+        // BEFORE releasing the lock. If abort() returns true, the orchestrator's
+        // finally block will handle lock release. If false, no active run exists
+        // so we release the lock directly (interrupted session).
+        const wasRunning = kanbanOrchestrator?.abort(abandonId) ?? false;
+        if (!wasRunning) {
+          concurrencyQueue.release(abandonId);
+        }
 
         // Write a trace entry so this session is no longer identified as
         // interrupted on the next restart. The entry has type 'decision'

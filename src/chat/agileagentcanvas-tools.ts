@@ -101,7 +101,7 @@ export interface AgileAgentCanvasToolContext {
 export const sharedToolContext: AgileAgentCanvasToolContext = {
     bmadPath: '',
     outputPath: '',
-    store: null as any
+    store: undefined as unknown as ArtifactStore
 };
 
 // ─── Markdown helper ─────────────────────────────────────────────────────────

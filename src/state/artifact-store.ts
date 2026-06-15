@@ -3334,7 +3334,7 @@ export class ArtifactStore {
                     // Skip if already present (by ID or title)
                     if (allExistingIds.has(story.id) || allExistingTitles.has(story.title.toLowerCase().trim())) {
                         // Merge enrichment fields into existing inline story
-                        const sourceEpicId = (story as any)._sourceEpicId;
+                        const sourceEpicId = story._sourceEpicId;
                         let existingStory: Story | undefined;
                         for (const epic of allEpics) {
                             existingStory = epic.stories.find((s: Story) =>
@@ -3345,13 +3345,13 @@ export class ArtifactStore {
                         if (existingStory) {
                             // Standalone wins for richer fields (tasks, devNotes, devAgentRecord)
                             if (story.tasks && (!existingStory.tasks || existingStory.tasks.length === 0)) {
-                                (existingStory as any).tasks = story.tasks;
+                                existingStory.tasks = story.tasks;
                             }
-                            if (story.devNotes && !(existingStory as any).devNotes) {
-                                (existingStory as any).devNotes = story.devNotes;
+                            if (story.devNotes && !existingStory.devNotes) {
+                                existingStory.devNotes = story.devNotes;
                             }
-                            if (story.devAgentRecord && !(existingStory as any).devAgentRecord) {
-                                (existingStory as any).devAgentRecord = story.devAgentRecord;
+                            if (story.devAgentRecord && !existingStory.devAgentRecord) {
+                                existingStory.devAgentRecord = story.devAgentRecord;
                             }
                             if (story.technicalNotes && !existingStory.technicalNotes) {
                                 existingStory.technicalNotes = story.technicalNotes;
@@ -3371,7 +3371,7 @@ export class ArtifactStore {
                     }
 
                     // Route to correct epic using _sourceEpicId
-                    const sourceEpicId = (story as any)._sourceEpicId;
+                    const sourceEpicId = story._sourceEpicId;
                     if (sourceEpicId) {
                         const normalizedSourceId = normalizeEpicId(sourceEpicId);
                         const parentEpic = allEpics.find((e: any) =>
@@ -6740,7 +6740,7 @@ export class ArtifactStore {
         const orphans: any[] = [];
 
         for (const tc of allCases) {
-            const eid = (tc as any).epicId || (tc as any).epicInfo?.epicId || '';
+            const eid = tc.epicId || tc.epicInfo?.epicId || '';
             if (eid) {
                 if (!groupedByEpic.has(eid)) groupedByEpic.set(eid, []);
                 groupedByEpic.get(eid)!.push({ ...tc });

@@ -460,7 +460,7 @@ export class HarnessEngine extends EventEmitter {
     const context: EvaluationContext = {
       artifactType,
       artifactId,
-      artifact: { id: artifactId } as any,
+      artifact: { id: artifactId } as Record<string, unknown>,
       sessionId,
       traceEntries,
     };

@@ -106,6 +106,8 @@ export class AutoScheduler extends EventEmitter {
     this.setState('active');
     this.timer = setInterval(() => this.tick(), this.pollIntervalMs);
     this.timer.unref?.();
+    // Run an immediate tick to pick up work without waiting (#34)
+    this.tick();
     logger.info('AutoScheduler resumed');
   }
 

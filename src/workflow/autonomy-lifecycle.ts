@@ -187,15 +187,20 @@ export class AutonomyLifecycle extends EventEmitter {
     // 10) Auto-resume on dependency completion. The ArtifactStore change
     //    event now passes actual change deltas and story data so blocked
     //    stories auto-transition to ready-for-dev when their blockers complete.
+    //    #44: debounced at 300ms to avoid O(n) rebuilds on rapid changes.
     if (this.store) {
+      let depDebounceTimer: ReturnType<typeof setTimeout> | null = null;
       this.artifactChangeUnsub = this.store.onDidChangeArtifacts(() => {
-        // Rebuild the story universe from the live store for auto-resume.
-        const { changes, stories } = this.extractDependencyData();
-        dependencyAutoResume.onArtifactChanges(changes, stories).catch(err => {
-          logger.debug('Auto-resume failed', { error: errMsg(err) });
-        });
-        // Recompute Blocked-by-N badges and push to the webview.
-        this.pushDependencyBadges();
+        if (depDebounceTimer) clearTimeout(depDebounceTimer);
+        depDebounceTimer = setTimeout(() => {
+          depDebounceTimer = null;
+          const { changes, stories } = this.extractDependencyData();
+          dependencyAutoResume.onArtifactChanges(changes, stories).catch(err => {
+            logger.debug('Auto-resume failed', { error: errMsg(err) });
+          });
+          // Recompute Blocked-by-N badges and push to the webview.
+          this.pushDependencyBadges();
+        }, 300);
       });
     }
 
@@ -297,8 +302,9 @@ export class AutonomyLifecycle extends EventEmitter {
     // 16) Cross-artifact harness pattern detector — subscribe to harness
     //     engine findings, accumulate them (capped sliding window), and
     //     broadcast systemic patterns to the webview when the same policy
-    //     fails on ≥3 artifacts.
+    //     fails on ≥3 artifacts. #43: Restore persisted findings on startup.
     crossArtifactHarnessDetector.setThreshold(3);
+    this.restoreHarnessFindings();
     this.harnessFindingsListener = (event: HarnessFindingsEvent) => {
       this.accumulatedFindings.push(...event.findings);
       // Sliding window cap: keep only the most recent MAX entries
@@ -348,6 +354,8 @@ export class AutonomyLifecycle extends EventEmitter {
       harnessEngine.off('findings', this.harnessFindingsListener);
       this.harnessFindingsListener = null;
     }
+    // #43: Persist accumulated harness findings before clearing.
+    this.persistHarnessFindings();
     this.accumulatedFindings = [];
     this.lastSystemicFingerprint = null;
     this.started = false;
@@ -385,6 +393,10 @@ export class AutonomyLifecycle extends EventEmitter {
           const available = models?.length ? models : await vscode.lm.selectChatModels({});
           if (!available?.length) {
             logger.warn('[Autonomy] No LM available for goal decomposition');
+            this.broadcast({
+              type: 'goalSubmitError',
+              error: 'No language model available. Goal decomposed into a single story — review and refine manually.',
+            });
             return [{
               id: `proposed-${Date.now()}-1`,
               title: goal.slice(0, 80),
@@ -417,7 +429,11 @@ export class AutonomyLifecycle extends EventEmitter {
         } catch (err) {
           logger.warn(`[Autonomy] Goal decomposition failed: ${errMsg(err)}`);
         }
-        // Fallback: single story with the goal as title
+        // Fallback: single story with the goal as title (#25)
+        this.broadcast({
+          type: 'goalSubmitError',
+          error: 'Goal decomposition failed — returning a single story placeholder. Review and refine manually.',
+        });
         return [{
           id: `proposed-${Date.now()}-1`,
           title: goal.slice(0, 80),
@@ -619,6 +635,35 @@ export class AutonomyLifecycle extends EventEmitter {
       schedulerStatePersistence.restore();
     } catch (err) {
       logger.warn('Failed to load scheduler state', { error: String(err) });
+    }
+  }
+
+  // #43: Persist/restore harness findings across restarts.
+  private static readonly HARNESS_FINDINGS_FILE = 'harness-findings.json';
+
+  private persistHarnessFindings(): void {
+    if (!this.hooks?.outputFolder) return;
+    try {
+      const filePath = path.join(this.hooks.outputFolder, AutonomyLifecycle.HARNESS_FINDINGS_FILE);
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, JSON.stringify(this.accumulatedFindings, null, 2), 'utf-8');
+    } catch (err) {
+      logger.debug(`Failed to persist harness findings: ${errMsg(err)}`);
+    }
+  }
+
+  private restoreHarnessFindings(): void {
+    if (!this.hooks?.outputFolder) return;
+    try {
+      const filePath = path.join(this.hooks.outputFolder, AutonomyLifecycle.HARNESS_FINDINGS_FILE);
+      if (!fs.existsSync(filePath)) return;
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      if (Array.isArray(data)) {
+        this.accumulatedFindings = data;
+        logger.info('Restored harness findings', { count: data.length });
+      }
+    } catch (err) {
+      logger.debug(`Failed to restore harness findings: ${errMsg(err)}`);
     }
   }
 

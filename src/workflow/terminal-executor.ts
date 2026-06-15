@@ -53,6 +53,11 @@ export interface TerminalSession {
   lastOutputAt?: number;
 }
 
+/** vscode.Terminal has onDidWriteData at runtime but it's not in the type defs. */
+interface WritableTerminal extends vscode.Terminal {
+  onDidWriteData: (callback: (data: string) => void) => vscode.Disposable;
+}
+
 // ─── Provider resolution ─────────────────────────────────────────────────────
 
 /** CLI-only providers suitable for agentic (non-interactive) execution. */
@@ -278,8 +283,8 @@ export class TerminalExecutor implements vscode.Disposable {
     // but may not be present in the @types/vscode version or the runtime).
     // Check it exists before trying to subscribe.
     let dataListener: vscode.Disposable = { dispose: () => {} };
-    if (typeof (terminal as any).onDidWriteData === 'function') {
-      dataListener = (terminal as any).onDidWriteData((data: string) => {
+    if (typeof (terminal as WritableTerminal).onDidWriteData === 'function') {
+      dataListener = (terminal as WritableTerminal).onDidWriteData((data: string) => {
         accumulatedData += data;
         // Issue #21: keep the health-check output-progress timer fresh.
         lastOutputAt = Date.now();

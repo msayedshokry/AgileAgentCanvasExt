@@ -257,7 +257,7 @@ export function formatAgentRoster(agents: { persona: AgentPersona; module: strin
 // ── Skill parsing ────────────────────────────────────────────────────────────
 
 function parseSkillPersona(skillName: string, skillMdContent: string, tomlData: Record<string, unknown>): AgentPersona | undefined {
-    const agent = (tomlData as any)?.agent;
+    const agent = tomlData.agent as Record<string, unknown> | undefined;
 
     if (agent && agent.name) {
         const menu: AgentMenuItem[] = [];
@@ -277,13 +277,13 @@ function parseSkillPersona(skillName: string, skillMdContent: string, tomlData: 
             : (agent.principles ?? '');
 
         return {
-            name: agent.name,
-            title: agent.title ?? '',
-            icon: agent.icon ?? '',
+            name: String(agent?.name ?? ''),
+            title: String(agent?.title ?? ''),
+            icon: String(agent?.icon ?? ''),
             capabilities: '',
-            role: agent.role ?? '',
-            identity: agent.identity ?? '',
-            communicationStyle: agent.communication_style ?? '',
+            role: String(agent?.role ?? ''),
+            identity: String(agent?.identity ?? ''),
+            communicationStyle: String(agent?.communication_style ?? ''),
             principles: principles ? `- ${principles}` : '',
             skillName,
             rawContent: skillMdContent,

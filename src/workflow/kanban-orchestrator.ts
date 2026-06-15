@@ -57,11 +57,27 @@ const DEV_WORKFLOW = 'aac-kanban-dev-executor';
 const REVIEW_WORKFLOW = 'aac-kanban-review-guard';
 
 export class KanbanOrchestrator {
+  // #26: Per-artifact abort controllers for cancel/abort.
+  private abortControllers = new Map<string, AbortController>();
+
   constructor(
     private store: ArtifactStore,
     private executor: WorkflowExecutor,
     private terminalExecutor: TerminalExecutor
   ) {}
+
+  /** Signal the autonomous loop to stop for a given artifact. Idempotent.
+   *  Returns true if an active run was signalled, false if no run was found. */
+  abort(artifactId: string): boolean {
+    const ctrl = this.abortControllers.get(artifactId);
+    if (ctrl) {
+      ctrl.abort();
+      this.abortControllers.delete(artifactId);
+      logger.info(`[Orchestrator] Abort signalled for ${artifactId}`);
+      return true;
+    }
+    return false;
+  }
 
   /**
    * Drive a story autonomously: implement → review → done, re-implementing on
@@ -85,6 +101,10 @@ export class KanbanOrchestrator {
 
     const maxIter = getKanbanMaxIterations();
 
+    // #26: Create an abort controller so kanban:abandonExecution can stop the loop.
+    const ac = new AbortController();
+    this.abortControllers.set(id, ac);
+
     try {
       // ── Pre-flight guardrails ──────────────────────────────────────────
       // Check circuit breaker before starting — don't waste cycles on a
@@ -104,6 +124,11 @@ export class KanbanOrchestrator {
       await autonomousGit.maybeBranch(id, cwd);
 
       for (let iter = 1; iter <= maxIter; iter++) {
+        // #26: Check abort signal before each iteration.
+        if (ac.signal.aborted) {
+          return await this.stop(id, 'Aborted by user');
+        }
+
         logger.info(`[Orchestrator] ${id} iteration ${iter}/${maxIter}`);
 
         // ── Guard: re-check circuit before each dev attempt ───────────
@@ -171,6 +196,8 @@ export class KanbanOrchestrator {
       this.emit(id, 'failed');
       return { ok: false, status: 'blocked', blockedBy: [errMsg(err)] };
     } finally {
+      // #26: Clean up the abort controller.
+      this.abortControllers.delete(id);
       concurrencyQueue.release(id);
     }
   }
@@ -231,7 +258,7 @@ export class KanbanOrchestrator {
 
         try {
           const verdict = await this.executor.executeLaneTransition(
-            workflowId, artifact, this.store, ctx.model, ctx.stream, ctx.token
+            workflowId, artifact, this.store, ctx.model, ctx.stream, ctx.token, chatSessionId
           );
           captured = verdict;
         } finally {

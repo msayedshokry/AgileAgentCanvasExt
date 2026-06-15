@@ -2712,12 +2712,13 @@ Begin executing the workflow now.`;
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken,
         store: any,
-        workflowPath?: string
+        workflowPath?: string,
+        sessionId?: string
     ): Promise<void> {
         // ── For direct-API / Antigravity providers: use a simple single-shot prompt
         // instead of the VS Code LM agentic tool-calling loop (which requires vscode.LanguageModelChat).
         if (!model.vscodeLm) {
-            await this.executeWithDirectApi(model, task, artifact, stream, token, workflowPath);
+            await this.executeWithDirectApi(model, task, artifact, stream, token, workflowPath, sessionId);
             return;
         }
 
@@ -3321,7 +3322,8 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
         artifact: any,
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken,
-        workflowPath?: string
+        workflowPath?: string,
+        sessionId?: string
     ): Promise<void> {
         const bmadPath = this.context.bmadPath;
         const projectRoot = this.context.projectRoot;
@@ -3525,7 +3527,8 @@ Instructions: Return ONLY a \`\`\`json code block containing the artifact JSON. 
 
             const fullResponse = await streamChatResponse(model, messages, stream, token, {
                 forceStructuredOutput: true,
-                activeArtifactType: artifactType
+                activeArtifactType: artifactType,
+                sessionId
             });
 
             // ── Extract JSON ──────────────────────────────────────────────
@@ -3601,7 +3604,8 @@ Instructions: Return ONLY a \`\`\`json code block containing the artifact JSON. 
         store: any,
         model?: BmadModel,
         stream?: vscode.ChatResponseStream,
-        token?: vscode.CancellationToken
+        token?: vscode.CancellationToken,
+        sessionId?: string
     ): Promise<KanbanVerdict> {
         const definition = WORKFLOW_REGISTRY.find(w => w.id === workflowId);
         if (!definition) {
@@ -3665,7 +3669,8 @@ Instructions: Return ONLY a \`\`\`json code block containing the artifact JSON. 
                     stream,
                     token,
                     store,
-                    workflowPath
+                    workflowPath,
+                    sessionId
                 );
 
                 // Record trace: transition completed

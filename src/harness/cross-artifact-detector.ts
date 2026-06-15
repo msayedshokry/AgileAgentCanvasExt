@@ -39,10 +39,11 @@ export interface CorrelationResult {
 }
 
 export class CrossArtifactHarnessDetector {
-  private threshold!: number;
+  private threshold: number;
 
   constructor(threshold: number = DEFAULT_CORRELATION_THRESHOLD) {
-    this.setThreshold(threshold);
+    if (threshold < 1) throw new Error('Threshold must be ≥ 1');
+    this.threshold = threshold;
   }
 
   /**

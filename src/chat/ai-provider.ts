@@ -800,8 +800,8 @@ Or install **GitHub Copilot** to use it automatically via the VS Code LM API.`;
 export function vsMessagesToChatMessages(vsMessages: vscode.LanguageModelChatMessage[]): ChatMessage[] {
     return vsMessages.map(m => ({
         role: m.role === vscode.LanguageModelChatMessageRole.Assistant ? 'assistant' : 'user',
-        content: (m.content as any[])
-            .map((p: any) => typeof p === 'string' ? p : p.value ?? '')
+        content: (Array.isArray(m.content) ? m.content : [m.content])
+            .map((p) => typeof p === 'string' ? p : (p as { value?: string }).value ?? '')
             .join('')
     }));
 }

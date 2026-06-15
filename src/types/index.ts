@@ -288,6 +288,7 @@ export interface Story {
     tasks?: StoryTask[];
     devNotes?: StoryDevNotes;
     devAgentRecord?: StoryDevAgentRecord;
+    _sourceEpicId?: string;
     history?: StoryHistoryEntry[];
     labels?: string[];
     assignee?: string;
@@ -423,6 +424,7 @@ export interface TestCase {
     priority?: PriorityLevel;
     storyId?: string;
     epicId?: string;
+    epicInfo?: { epicId?: string };
     relatedRequirements?: string[];
     steps?: TestStep[];
     expectedResult?: string;

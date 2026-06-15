@@ -944,7 +944,7 @@ Requirements covered: ${targetEpic.functionalRequirements?.join(', ') || 'None'}
 
             const task = `Enhance the epic "${targetEpic.title}" (${targetEpic.id}) with ${enhanceType}.
 Epic goal: ${targetEpic.goal || 'Not set'}
-Value delivered: ${(targetEpic as any).valueDelivered || 'Not set'}
+Value delivered: ${targetEpic.valueDelivered || 'Not set'}
 Stories: ${targetEpic.stories?.map((s: any) => s.title).join(', ') || 'None'}`;
 
             await executor.executeWithTools(
@@ -3760,7 +3760,7 @@ Output ONLY the JSON, no explanation.`;
                 stream.markdown(`⚠️ Expected array, got ${typeof parsedResult.data}\n\n`);
                 return { metadata: { command: 'convert-to-json', status: 'parse-error', error: 'not an array' } };
             }
-            const parsedJson = parsedResult.data as any;
+            const parsedJson = parsedResult.data as { content?: { epics?: Array<{ id?: string; title?: string; goal?: string; stories?: Array<string | { id?: string; title?: string; status?: string }> }>; requirementsInventory?: { functional?: unknown[] } } };
 
             // Show summary
             const epicCount = parsedJson.content?.epics?.length || 0;

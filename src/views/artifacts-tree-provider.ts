@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ArtifactStore, Epic, Story, UseCase, TestCase, TestStrategy, Architecture } from '../state/artifact-store';
+import { ArtifactStore, Epic, Story, UseCase, TestCase, TestStrategy, Architecture, Risk } from '../state/artifact-store';
 
 /**
  * Tree view provider for BMAD artifacts
@@ -457,7 +457,7 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
         const epics = this.store.getEpics();
         const epic = epics.find(e => e.id === epicId);
         if (!epic) { return []; }
-        const epicRisks = epic.risks as any;
+        const epicRisks = epic.risks as Risk[] | { risks: Risk[] } | undefined;
         if (Array.isArray(epicRisks)) { return epicRisks; }
         if (epicRisks?.risks && Array.isArray(epicRisks.risks)) { return epicRisks.risks; }
         return [];
@@ -608,7 +608,7 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
                 `UC ${uc.id}: ${uc.title || uc.id}`,
                 vscode.TreeItemCollapsibleState.None,
                 'use-case',
-                this.getStatusIcon((uc as any).status),
+                this.getStatusIcon(uc.status),
                 uc.summary ? uc.summary.substring(0, 40) + (uc.summary.length > 40 ? '…' : '') : ''
             );
             item.id = uc.id;

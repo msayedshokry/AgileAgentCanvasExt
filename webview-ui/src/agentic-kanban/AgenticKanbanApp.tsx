@@ -227,6 +227,31 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
         vscode.postMessage({ type: 'agenticKanban:refresh' });
         break;
       }
+      case 'goalStoryPersisted': {
+        // A single story was persisted (e.g. from goal decomposer).
+        // Refresh the board so the new card appears.
+        vscode.postMessage({ type: 'agenticKanban:refresh' });
+        break;
+      }
+      // #24: Autonomous git events — show as informational toasts.
+      case 'gitBranch': {
+        if (message.branchName) {
+          setToast({ message: `Branch created: ${message.branchName}`, type: 'info' });
+        }
+        break;
+      }
+      case 'gitCommit': {
+        if (message.sha) {
+          setToast({ message: `Committed: ${String(message.sha).slice(0, 7)}`, type: 'info' });
+        }
+        break;
+      }
+      case 'gitPR': {
+        if (message.url) {
+          setToast({ message: `PR created: ${message.url}`, type: 'success' });
+        }
+        break;
+      }
       case 'systemicIssue': {
         // Cross-artifact harness pattern detected — display as a dismissable
         // banner in the AutonomyBar (issue #4).

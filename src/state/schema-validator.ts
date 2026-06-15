@@ -935,7 +935,7 @@ export class SchemaValidator {
         const result: string[] = [];
 
         for (const err of errors) {
-            const errAny = err as any;
+            const errAny = err as unknown as { instancePath?: string; dataPath?: string; message?: string; params?: Record<string, unknown> }; // AJV ErrorObject has a complex union type
             const dataPath = errAny.instancePath || err.dataPath || '';
             const message = err.message || 'unknown error';
 
@@ -943,7 +943,7 @@ export class SchemaValidator {
             let suggestion = '';
             const params = errAny.params || {};
             if (err.keyword === 'enum' && params.allowedValues) {
-                suggestion = ` (Correction Suggestion: Use one of -> ${params.allowedValues.join(', ')})`;
+                suggestion = ` (Correction Suggestion: Use one of -> ${(params.allowedValues as string[]).join(', ')})`;
             } else if (err.keyword === 'required' && params.missingProperty) {
                 suggestion = ` (Correction Suggestion: Missing required property -> '${params.missingProperty}')`;
             } else if (err.keyword === 'additionalProperties' && params.additionalProperty) {
