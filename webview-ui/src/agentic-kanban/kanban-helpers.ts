@@ -6,6 +6,21 @@
  */
 import type { KanbanItem } from "../components/kanban/KanbanTypes";
 
+// ── Dependency badge IPC payload (Issue: wire dependency data flow) ─────────
+
+/**
+ * Per-story badge data pushed by the extension's autonomy lifecycle.
+ * Maps to the same field names as the corresponding KanbanItem fields
+ * (blockedBy / hasCycle / blockerTitles) so they can be merged in
+ * directly without translation.
+ */
+export interface DependencyBadge {
+  id: string;
+  blockedBy: number;
+  hasCycle: boolean;
+  blockerTitles: string[];
+}
+
 // ── Artifact conversion ─────────────────────────────────────────────────────
 
 /**
