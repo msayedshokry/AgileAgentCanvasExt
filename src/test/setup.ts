@@ -58,6 +58,21 @@ vi.mock('vscode', () => {
       fire = (e: any) => { for (const l of this.listeners) l(e); };
       dispose = () => { this.listeners = []; };
     },
+    // VS Code Language Model API — used by autonomy-lifecycle's goal
+    // decomposer hook to call selectChatModels().
+    lm: {
+      selectChatModels: vi.fn(async () => []),
+    },
+    LanguageModelChatMessage: {
+      User: (content: string) => ({ role: 'user', content }),
+      Assistant: (content: string) => ({ role: 'assistant', content }),
+    },
+    LanguageModelChatMessageRole: { User: 1, Assistant: 2 },
+    CancellationTokenSource: class {
+      token = { isCancellationRequested: false, onCancellationRequested: vi.fn() };
+      cancel() {}
+      dispose() {}
+    },
     ConfigurationTarget,
   };
 });
