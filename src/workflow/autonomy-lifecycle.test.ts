@@ -59,6 +59,8 @@ const mockBudgetEnforcer = vi.hoisted(() => ({
   canStart: vi.fn(() => true),
   getStatus: vi.fn(() => ({ bannerMessage: null, anyExceeded: false })),
   setConfig: vi.fn(),
+  setOnPaused: vi.fn(),
+  setOnUnpaused: vi.fn(),
 }));
 
 const mockKanbanOrchestrator = vi.hoisted(() => ({
@@ -75,7 +77,7 @@ const mockSchedulerWebviewControls = vi.hoisted(() => ({
 const mockSchedulerStatePersistence = vi.hoisted(() => ({
   setFilePath: vi.fn(), restore: vi.fn(), save: vi.fn(),
 }));
-const mockCostTracker = vi.hoisted(() => ({ setLogPath: vi.fn() }));
+const mockCostTracker = vi.hoisted(() => ({ setLogPath: vi.fn(), setOnCostRecorded: vi.fn() }));
 const mockConcurrencyPersistence = vi.hoisted(() => ({ restore: vi.fn(), save: vi.fn(), dispose: vi.fn() }));
 const mockHarnessEngine = vi.hoisted(() => ({ on: vi.fn(), off: vi.fn() }));
 const mockCrossArtifactDetector = vi.hoisted(() => ({

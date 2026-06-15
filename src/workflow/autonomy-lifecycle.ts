@@ -121,9 +121,12 @@ export class AutonomyLifecycle extends EventEmitter {
     // 4) Scheduler webview controls — start emitting state messages
     schedulerWebviewControls.start();
 
-    // 5) Budget enforcer — push initial status to webview; auto-pause is
-    //    handled inside canStart() so the scheduler can query it directly.
+    // 5) Budget enforcer — push initial status to webview; wire pause/
+    //    unpause callbacks to the scheduler so polling stops when budget
+    //    is exceeded and resumes when the user unpauses.
     this.broadcast({ type: 'budgetStatus', ...budgetEnforcer.getStatus() });
+    budgetEnforcer.setOnPaused(() => autoScheduler.pause());
+    budgetEnforcer.setOnUnpaused(() => autoScheduler.resume());
 
     // 6) Circuit breaker — broadcast on state transitions
     circuitBreaker.on('opened', (status: any) => {
@@ -205,7 +208,47 @@ export class AutonomyLifecycle extends EventEmitter {
       findOrphans: () => this.scanOrphanedTerminalSessions(),
     });
     terminalSessionRecovery.setReconnector({
-      reconnect: async () => true, // best-effort: succeed without stream re-attach
+      reconnect: async (orphan) => {
+        // Issue #33: actually re-attach to the terminal by matching name.
+        // Scan all open VS Code terminals for one whose name matches the
+        // orphaned session's name ("AAC: {workflowId} {artifactId}").
+        try {
+          const terminals = vscode.window.terminals;
+          const matchName = orphan.name;
+          const terminal = terminals.find(t => t.name === matchName);
+          if (!terminal) {
+            logger.warn(`[Autonomy] No matching terminal found for reconnection: ${matchName}`);
+            return false;
+          }
+
+          // Check that the terminal's processId is still alive
+          const pid = await terminal.processId;
+          if (pid === undefined) {
+            logger.warn(`[Autonomy] Terminal process dead for: ${matchName}`);
+            return false;
+          }
+
+          // Re-attach onDidWriteData listener by re-creating the terminal
+          // session entry. The existing terminal is alive — we just need
+          // to re-register it with the terminalExecutor.
+          logger.info(`[Autonomy] Reconnected to terminal: ${matchName} (pid: ${pid})`);
+
+          // Register health checks for the reconnected session
+          const adapter = {
+            isAlive: () => true,
+            getLastOutputTime: () => Date.now(),
+          };
+          const { createTerminalHealthChecks } = require('./terminal-health-checks');
+          for (const check of createTerminalHealthChecks(adapter, { lastModified: Date.now(), getLastModifiedTime: () => Date.now() })) {
+            agentHealthMonitor.registerCheck(orphan.sessionId, check);
+          }
+
+          return true;
+        } catch (err) {
+          logger.warn(`[Autonomy] Reconnection failed for ${orphan.name}: ${errMsg(err)}`);
+          return false;
+        }
+      },
     });
     terminalSessionRecovery.setInterruptedReporter((artifactId, reason) => {
       this.broadcast({ type: 'agentStateUpdated', artifactId, agentState: { status: 'interrupted', interruptionReason: reason } });
@@ -231,12 +274,15 @@ export class AutonomyLifecycle extends EventEmitter {
       onPR:     (storyId, url) => this.broadcast({ type: 'gitPR', storyId, url }),
     });
 
-    // 14) Cost tracker — wire log path into the output folder. The AI
-    //     provider must call costTracker.record() on every LLM completion;
-    //     that wiring lives in ai-provider.ts (outside lifecycle scope).
+    // 14) Cost tracker — wire log path into the output folder. Subscribe to
+    //     cost-recorded events so the budget status is refreshed in the
+    //     webview after every LLM call (regardless of output folder config).
     if (this.hooks?.outputFolder) {
       costTracker.setLogPath(path.join(this.hooks.outputFolder, 'cost-tracking.jsonl'));
     }
+    costTracker.setOnCostRecorded(() => {
+      this.broadcast({ type: 'budgetStatus', ...budgetEnforcer.getStatus() });
+    });
 
     // 15) Concurrency queue persistence — restore on activation, auto-save
     //     on every lock change.

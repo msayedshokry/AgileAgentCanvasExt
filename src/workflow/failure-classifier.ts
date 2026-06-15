@@ -59,6 +59,9 @@ const PERMANENT_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
   { pattern: /content.*filter|content.*policy|safety.*filter|content.*blocked/i, label: 'ai-content-filter' },
   { pattern: /billing.*required|payment.*required|insufficient.*quota|account.*suspended/i, label: 'ai-billing' },
   { pattern: /unsupported.*parameter|invalid.*model|bad.*request.*model/i, label: 'ai-invalid-request' },
+  // Guard-rail permanent errors (circuit breaker, budget)
+  { pattern: /circuit breaker open/i, label: 'circuit-breaker-open' },
+  { pattern: /budget exceeded/i, label: 'budget-exceeded' },
 ];
 
 // ── Classifier ───────────────────────────────────────────────────────────────

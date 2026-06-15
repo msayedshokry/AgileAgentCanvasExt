@@ -91,6 +91,52 @@ export function createTerminalHealthChecks(
   ];
 }
 
+// ─── Chat Agent Health Checks ───────────────────────────────────────────────
+
+/** Options for chat health checks. */
+export interface ChatHealthCheckOptions {
+  /** Timeout for session elapsed time threshold (default 300 s for chat). */
+  sessionTimeoutMs?: number;
+}
+
+/**
+ * Create health checks for an in-chat (Copilot) agent session.
+ *
+ * Chat sessions are harder to monitor than terminals since we don't
+ * have direct process access or streaming feedback. These checks
+ * measure total elapsed time since session creation (no output-progress
+ * feedback available). They act as a hang-detection timeout:
+ *   - Within sessionTimeoutMs: healthy
+ *   - Between sessionTimeoutMs and 3× sessionTimeoutMs: degraded
+ *   - After 3× sessionTimeoutMs: dead
+ *
+ * Unlike terminal checks, there's no process-liveness check since VS Code
+ * manages the Copilot process lifecycle. If the session exceeds the timeout
+ * without completing, it's flagged as degraded and eventually dead.
+ *
+ * Note: lastOutputAt is set once at creation and never updated because the
+ * current architecture doesn't stream output progress back to health checks.
+ */
+export function createChatHealthChecks(
+  _artifact: any,
+  options: ChatHealthCheckOptions = {},
+): HealthCheck[] {
+  const sessionTimeoutMs = options.sessionTimeoutMs ?? 300_000; // 5 min for chat
+  const startedAt = Date.now();
+
+  return [
+    {
+      label: 'chat-session-elapsed',
+      check: async () => {
+        const elapsed = Date.now() - startedAt;
+        if (elapsed > sessionTimeoutMs * 3) return 'dead';
+        if (elapsed > sessionTimeoutMs) return 'degraded';
+        return 'healthy';
+      },
+    },
+  ];
+}
+
 /** Shared try/catch wrapper — returns 'degraded' on error. */
 async function safeCheck(fn: () => Promise<'healthy' | 'degraded'>, label: string): Promise<'healthy' | 'degraded'> {
   try {

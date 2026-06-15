@@ -45,6 +45,22 @@ vi.mock('./autonomous-git', () => ({
   },
 }));
 
+vi.mock('./terminal-health-checks', () => ({
+  createChatHealthChecks: () => [
+    { label: 'chat-output-progress', check: async () => 'healthy' as const },
+    { label: 'chat-artifact-change', check: async () => 'healthy' as const },
+  ],
+}));
+
+vi.mock('./agent-health-monitor', () => ({
+  agentHealthMonitor: {
+    registerCheck: vi.fn(),
+    deregisterCheck: vi.fn(),
+  },
+}));
+
+
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function fakeStore() {
@@ -61,20 +77,28 @@ function fakeExecutor() {
   } as any;
 }
 
+function fakeTerminalExecutor() {
+  return {
+    executeAndAwaitVerdict: vi.fn(),
+  } as any;
+}
+
 describe('KanbanOrchestrator', () => {
   beforeEach(() => {
     concurrencyQueue.releaseAll();
   });
 
-  it('happy: dev COMPLETED + review APPROVED → returns ok and reaches done', async () => {
+  it('happy: dev COMPLETED + review APPROVED → returns ok and reaches done (chat path)', async () => {
     const executor = fakeExecutor();
     vi.mocked(executor.executeLaneTransition)
       .mockResolvedValueOnce({ verdict: 'COMPLETED' })
       .mockResolvedValueOnce({ verdict: 'APPROVED' });
     const store = fakeStore();
-    const orch = new KanbanOrchestrator(store, executor);
+    const orch = new KanbanOrchestrator(store, executor, fakeTerminalExecutor());
 
-    const result = await orch.runAutonomous({ id: 'S-1', type: 'story' }, {});
+    // Pass model + stream context to trigger the chat path
+    const ctx = { model: { name: 'gpt-4o' } as any, stream: { markdown: vi.fn() } as any };
+    const result = await orch.runAutonomous({ id: 'S-1', type: 'story' }, ctx);
     expect(result.ok).toBe(true);
     expect(result.status).toBe('complete');
     // The store was updated to in-progress, then review, then done
@@ -82,14 +106,49 @@ describe('KanbanOrchestrator', () => {
     expect(updates).toEqual(['in-progress', 'review', 'done']);
   });
 
+  it('happy: uses executeAndAwaitVerdict for terminal path (no chat context)', async () => {
+    const executor = fakeExecutor();
+    const terminalExec = fakeTerminalExecutor();
+    vi.mocked(terminalExec.executeAndAwaitVerdict)
+      .mockResolvedValueOnce({ verdict: 'COMPLETED' })
+      .mockResolvedValueOnce({ verdict: 'APPROVED' });
+    const store = fakeStore();
+    const orch = new KanbanOrchestrator(store, executor, terminalExec);
+
+    // Pass empty context (no model/stream) — triggers terminal path
+    const result = await orch.runAutonomous({ id: 'S-1', type: 'story' }, {});
+    expect(result.ok).toBe(true);
+    expect(result.status).toBe('complete');
+    // Should have called terminal path, not chat path
+    expect(terminalExec.executeAndAwaitVerdict).toHaveBeenCalledTimes(2);
+    expect(executor.executeLaneTransition).not.toHaveBeenCalled();
+  });
+
+  it('happy: uses executeLaneTransition for chat path (with model + stream)', async () => {
+    const executor = fakeExecutor();
+    vi.mocked(executor.executeLaneTransition)
+      .mockResolvedValueOnce({ verdict: 'COMPLETED' })
+      .mockResolvedValueOnce({ verdict: 'APPROVED' });
+    const store = fakeStore();
+    const orch = new KanbanOrchestrator(store, executor, fakeTerminalExecutor());
+
+    // Pass chat context — triggers chat path
+    const ctx = { model: { name: 'gpt-4o' } as any, stream: { markdown: vi.fn() } as any };
+    const result = await orch.runAutonomous({ id: 'S-1', type: 'story' }, ctx);
+    expect(result.ok).toBe(true);
+    expect(executor.executeLaneTransition).toHaveBeenCalled();
+  });
+
   it('error: dev gate returning BLOCKED stops the loop with ok:false', async () => {
     const executor = fakeExecutor();
     vi.mocked(executor.executeLaneTransition)
       .mockResolvedValueOnce({ verdict: 'BLOCKED', summary: 'entry gate failed' });
     const store = fakeStore();
-    const orch = new KanbanOrchestrator(store, executor);
+    const orch = new KanbanOrchestrator(store, executor, fakeTerminalExecutor());
 
-    const result = await orch.runAutonomous({ id: 'S-2', type: 'story' }, {});
+    // Pass model + stream context to trigger the chat path
+    const ctx = { model: { name: 'gpt-4o' } as any, stream: { markdown: vi.fn() } as any };
+    const result = await orch.runAutonomous({ id: 'S-2', type: 'story' }, ctx);
     expect(result.ok).toBe(false);
     expect(result.status).toBe('blocked');
     expect(result.blockedBy?.[0]).toMatch(/BLOCKED/);

@@ -176,6 +176,16 @@ export class AutoScheduler extends EventEmitter {
     if (this.inProgressIds.size >= this.wipLimit) return;
     if (!this.runStory) return;
 
+    // ── Budget pause check ─────────────────────────────────────────────
+    // If the budget enforcer is paused (cap hit), pause the scheduler's
+    // timer so it stops polling. The scheduler is resumed when the user
+    // calls budgetEnforcer.unpause() (wired in autonomy-lifecycle.ts).
+    if (budgetEnforcer.isPaused()) {
+      logger.info('Budget enforcer is paused — scheduler tick bailing out');
+      this.pause();
+      return;
+    }
+
     const next = this.pickNext();
     if (!next) {
       this.emit('queueEmpty');

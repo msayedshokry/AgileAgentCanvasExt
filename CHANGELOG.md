@@ -2,6 +2,41 @@
 
 ## Unreleased
 
+### Fixed: 4 Critical Kanban Agentic OS Issues (#30–#33)
+
+Four critical issues from the Kanban Agentic OS deep audit have been fixed to make the autonomous loop robust for both chat (in-Copilot) and terminal (headless CLI) execution paths.
+
+#### Issue #30 — `runStepGuarded` now dispatches to the correct execution path
+
+`runStepGuarded` previously always called `executeLaneTransition` (the in-chat streaming API), even when running autonomously without a chat session. This meant terminal-based autonomous runs would try to stream to a non-existent chat session and never produce structured verdicts.
+
+- **Dual-path dispatch** — `runStepGuarded` checks `ctx.model && ctx.stream`. When both are present, it uses the chat path (`executeLaneTransition`). When absent (headless autonomous mode), it uses the terminal path (`terminalExecutor.executeAndAwaitVerdict`), which polls the verdict file on disk.
+- **`KanbanOrchestrator` constructor** now accepts a `TerminalExecutor` (3rd parameter). `initializeKanbanOrchestrator` in extension.ts passes the singleton `terminalExecutor`.
+- **Chat health checks** — When executing via the chat path, health checks are registered for the session duration so the health monitor can detect stalled LLM responses.
+
+#### Issue #31 — Circuit breaker and budget errors: never retried, early exit
+
+Circuit breaker open and budget exceeded errors were thrown inside the retry work function, classified as `'unknown'` (since no matching pattern existed), and skipped by the retry engine. This wasted backoff delays on conditions that won't self-resolve.
+
+- **Permanent patterns added** — `failure-classifier.ts` now matches `circuit breaker open` and `budget exceeded` as permanent failures.
+- **Early exit before retry loop** — `runStepGuarded` checks circuit breaker and budget BEFORE entering `autoRetryEngine.run()`. If either guard fails, it returns `BLOCKED` immediately — no retry delay wasted.
+- **Safety re-checks retained** — The same guards inside the retry work function remain for safety during backoff delays.
+
+#### Issue #32 — In-chat agent sessions now have health monitoring
+
+Health monitoring only covered terminal-based agents (`terminal-executor.ts` registers 3 checks per terminal). In-chat (Copilot) agent sessions had zero monitoring — a stalled LLM would hang the autonomous loop indefinitely.
+
+- **`createChatHealthChecks()`** — New function in `terminal-health-checks.ts` returns output-progress and artifact-change checks for in-Copilot sessions. Checks measure elapsed time since session start and transition through healthy → degraded → dead.
+- **Registration in chat path** — When `runStepGuarded` takes the chat path, health checks are registered before the LLM call and deregistered in `finally`. The health monitor's 30s poll interval detects stalled sessions.
+
+#### Issue #33 — Terminal reconnection actually finds the terminal
+
+The terminal reconnector was a permanent no-op (`async () => true`), meaning every orphaned terminal session was "reconnected" but the stream was never re-attached — ghost agents in the UI.
+
+- **Real terminal matching** — `setReconnector` now scans `vscode.window.terminals` for a terminal whose name matches the orphaned session (`"AAC: {workflowId} {artifactId}"`). Confirms the process is alive via `terminal.processId`.
+- **Health checks registered** — On successful reconnection, terminal health checks are registered with `agentHealthMonitor` so the monitoring loop picks them up.
+- **Graceful fallback** — If no matching terminal is found or the process is dead, returns `false` so the recovery flow marks the session as interrupted.
+
 ### Feature: Cross-Artifact Systemic Issue Detection (#4)
 
 The harness engine now feeds policy evaluation failures into a cross-artifact pattern detector that surfaces systemic issues as a color-coded, dismissable banner in the Agentic Kanban webview.

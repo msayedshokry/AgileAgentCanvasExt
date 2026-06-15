@@ -103,10 +103,18 @@ function roundUSD(n: number): number {
 export class CostTracker {
   private logPath: string;
   private entries: CostEntry[] = [];
+  /** Callback invoked after each cost record so the autonomy lifecycle can
+   *  broadcast updated budget status to the webview. */
+  private onCostRecorded: ((entry: CostEntry) => void) | null = null;
 
   constructor(logPath?: string) {
     this.logPath = logPath ?? path.join(os.tmpdir(), 'cost-tracking.jsonl');
     this.entries = this.loadExisting();
+  }
+
+  /** Register a callback fired after every cost record. Pass null to clear. */
+  setOnCostRecorded(fn: ((entry: CostEntry) => void) | null): void {
+    this.onCostRecorded = fn;
   }
 
   /** Override the log file path (e.g., for the extension's output folder). */
@@ -130,6 +138,7 @@ export class CostTracker {
     };
     this.entries.push(entry);
     this.persist(entry);
+    this.onCostRecorded?.(entry);
     return entry;
   }
 

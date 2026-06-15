@@ -26,6 +26,9 @@ import { circuitBreaker } from './circuit-breaker';
 import { budgetEnforcer } from './budget-enforcer';
 import { autoRetryEngine } from './auto-retry-engine';
 import { autonomousGit } from './autonomous-git';
+import { TerminalExecutor } from './terminal-executor';
+import { agentHealthMonitor } from './agent-health-monitor';
+import { createChatHealthChecks } from './terminal-health-checks';
 
 function errMsg(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
@@ -58,7 +61,8 @@ const REVIEW_WORKFLOW = 'aac-kanban-review-guard';
 export class KanbanOrchestrator {
   constructor(
     private store: ArtifactStore,
-    private executor: WorkflowExecutor
+    private executor: WorkflowExecutor,
+    private terminalExecutor: TerminalExecutor
   ) {}
 
   /**
@@ -178,6 +182,12 @@ export class KanbanOrchestrator {
    * Wraps the inner execution in autoRetryEngine so transient failures are
    * retried with exponential backoff. Permanent failures and unknown failures
    * skip retries.
+   *
+   * Chooses the execution path based on context:
+   *   - Chat path (ctx.model + ctx.stream present): uses executeLaneTransition
+   *     for in-Copilot execution, registers health checks for the session.
+   *   - Terminal path (no chat context): uses terminalExecutor.executeAndAwaitVerdict
+   *     for headless CLI execution.
    */
   private async runStepGuarded(
     workflowId: string,
@@ -185,11 +195,21 @@ export class KanbanOrchestrator {
     id: string,
     ctx: OrchestratorContext
   ): Promise<KanbanVerdict> {
-    // Resolve artifact from store for executeLaneTransition
     const artifact = this.store.findArtifactById(id)?.artifact ?? { id, type };
 
-    // Closure-captured so autoRetryEngine (WorkFn returns void) can pass
-    // the real verdict back out.
+    // ── Early exit: if circuit is open or budget exceeded, don't enter the
+    //    retry loop at all. These conditions won't resolve during backoff.
+    if (!circuitBreaker.canRun(workflowId)) {
+      return { verdict: 'BLOCKED', summary: `Circuit breaker open for ${workflowId}` };
+    }
+    if (!budgetEnforcer.canStart(id)) {
+      const status = budgetEnforcer.getStatus(id);
+      return { verdict: 'BLOCKED', summary: status.bannerMessage ?? `Budget exceeded for ${id}` };
+    }
+
+    // Determine execution path: chat (in-Copilot) vs terminal (headless CLI)
+    const useChatPath = !!ctx.model && !!ctx.stream;
+
     let captured: KanbanVerdict | undefined;
 
     const retryResult = await autoRetryEngine.run(id, async () => {
@@ -202,16 +222,33 @@ export class KanbanOrchestrator {
         throw new Error(`Budget exceeded for ${id}`);
       }
 
-      // Only call recordSuccess when the workflow actually ran successfully
-      // Pass artifactId through the model's label so streamChatResponse can
-      // record cost against the correct story for budget enforcement.
-      const verdict = await this.executor.executeLaneTransition(
-        workflowId, artifact, this.store, ctx.model, ctx.stream, ctx.token
-      );
-      captured = verdict;
+      if (useChatPath) {
+        // ── Chat path (in-Copilot) ────────────────────────────────────────
+        const chatSessionId = `chat-${workflowId}-${id}-${Date.now()}`;
+        // Register health checks for in-chat agent session
+        const chatChecks = createChatHealthChecks(artifact);
+        for (const check of chatChecks) {
+          agentHealthMonitor.registerCheck(chatSessionId, check);
+        }
+
+        try {
+          const verdict = await this.executor.executeLaneTransition(
+            workflowId, artifact, this.store, ctx.model, ctx.stream, ctx.token
+          );
+          captured = verdict;
+        } finally {
+          agentHealthMonitor.deregisterCheck(chatSessionId);
+        }
+      } else {
+        // ── Terminal path (headless CLI) ──────────────────────────────────
+        const verdict = await this.terminalExecutor.executeAndAwaitVerdict(
+          workflowId, artifact, this.store,
+        );
+        captured = verdict;
+      }
 
       // Record success only for clearly successful verdicts
-      if (verdict.verdict === 'COMPLETED' || verdict.verdict === 'APPROVED') {
+      if (captured && (captured.verdict === 'COMPLETED' || captured.verdict === 'APPROVED')) {
         circuitBreaker.recordSuccess(workflowId);
       }
     });
@@ -297,7 +334,14 @@ export let kanbanOrchestrator: KanbanOrchestrator;
 
 export function initializeKanbanOrchestrator(
   store: ArtifactStore,
-  executor: WorkflowExecutor
+  executor: WorkflowExecutor,
+  terminalExecutor?: TerminalExecutor
 ): void {
-  kanbanOrchestrator = new KanbanOrchestrator(store, executor);
+  // Import terminalExecutor lazily if not provided (backward compat for tests)
+  if (!terminalExecutor) {
+    const { terminalExecutor: te } = require('./terminal-executor');
+    kanbanOrchestrator = new KanbanOrchestrator(store, executor, te);
+  } else {
+    kanbanOrchestrator = new KanbanOrchestrator(store, executor, terminalExecutor);
+  }
 }

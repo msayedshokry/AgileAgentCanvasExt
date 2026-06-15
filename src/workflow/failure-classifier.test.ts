@@ -19,4 +19,18 @@ describe('FailureClassifier', () => {
     expect(r.category).toBe('permanent');
     expect(r.matchedPattern).toBe('schema-validation');
   });
+
+  it('permanent: circuit breaker open error is classified as permanent', () => {
+    const c = new FailureClassifier();
+    const r = c.classify(new Error('Circuit breaker open for aac-kanban-dev-executor'));
+    expect(r.category).toBe('permanent');
+    expect(r.matchedPattern).toBe('circuit-breaker-open');
+  });
+
+  it('permanent: budget exceeded error is classified as permanent', () => {
+    const c = new FailureClassifier();
+    const r = c.classify(new Error('Budget exceeded for S-1'));
+    expect(r.category).toBe('permanent');
+    expect(r.matchedPattern).toBe('budget-exceeded');
+  });
 });

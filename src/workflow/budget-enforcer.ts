@@ -27,6 +27,16 @@ export interface BudgetStatus {
 export class BudgetEnforcer {
   private config: BudgetConfig = { budgetPerStory: 0, budgetDaily: 0 };
   private paused = false;
+  /** Callback when the budget exceeds a cap and auto-pauses. */
+  private onPaused: (() => void) | null = null;
+  /** Callback when unpause() is called manually. */
+  private onUnpaused: (() => void) | null = null;
+
+  /** Register a callback fired when the budget enforcer auto-pauses. Pass null to clear. */
+  setOnPaused(fn: (() => void) | null): void { this.onPaused = fn; }
+
+  /** Register a callback fired when unpause() is called. Pass null to clear. */
+  setOnUnpaused(fn: (() => void) | null): void { this.onUnpaused = fn; }
 
   setConfig(config: Partial<BudgetConfig>): void {
     if (config.budgetPerStory !== undefined) this.config.budgetPerStory = Math.max(0, config.budgetPerStory);
@@ -78,6 +88,7 @@ export class BudgetEnforcer {
     if (status.anyExceeded) {
       this.paused = true;
       logger.warn('Budget cap hit — auto-paused', { status });
+      this.onPaused?.();
       return false;
     }
     return true;
@@ -87,6 +98,7 @@ export class BudgetEnforcer {
   unpause(): void {
     this.paused = false;
     logger.info('Budget enforcer unpaused');
+    this.onUnpaused?.();
   }
 
   /**
