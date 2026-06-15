@@ -220,3 +220,38 @@ Feature: Extension - VS Code Extension Activation
     And an artifact is deleted from the artifact store with id "regression-test-story"
     Then buildArtifacts should have been called at least 2 times
     And the last buildArtifacts call should have been passed the artifact store
+
+  # Regression: autonomy lifecycle wires all 6 previously-unwired modules
+  # (#4 cross-artifact detector, #5 cost tracker, #6 concurrency persistence,
+  #  #14 failure classifier, #17 autonomous git, #18 auto-retry engine).
+  # After activate(), each module's singleton should be configured with
+  # defaults and/or hooks. If a module file exists but its import was
+  # dropped from autonomy-lifecycle.ts, this test catches it.
+  Scenario: activating the extension wires all 6 autonomy modules
+    When I activate the extension
+    Then the auto-retry engine should be configured with maxRetries 3
+    And the autonomous git config should have autoBranch true
+    And the autonomous git hooks should be set
+    And the cost tracker log path should be set
+    And the cross-artifact harness detector threshold should be 3
+    And the failure classifier should be importable
+    And the harness engine should have a findings listener for cross-artifact detection
+
+  # Regression: harness findings flow through cross-artifact detector to
+  # the webview. When the harness engine emits findings with the same policy
+  # failing on ≥3 artifacts, a systemicIssue broadcast is sent.
+  Scenario: harness findings trigger systemicIssue broadcast for repeated policy failures
+    When I activate the extension
+    And the harness engine emits findings for policy "schema-conformance" on 3 different artifacts
+    Then the systemicIssue webview broadcast should have been sent with pattern count 1
+
+  # Regression: deduplication prevents re-broadcasting the same set of
+  # systemic patterns. After the first detection, subsequent harness
+  # evaluations with the same policy failing on the same artifacts must
+  # NOT trigger another systemicIssue broadcast.
+  Scenario: duplicate systemicIssue patterns are not re-broadcast
+    When I activate the extension
+    And the harness engine emits findings for policy "required-fields" on 4 different artifacts
+    Then the systemicIssue webview broadcast should have been sent with pattern count 1
+    When the harness engine emits findings for policy "required-fields" on 2 different artifacts
+    Then no additional systemicIssue broadcast should have been sent

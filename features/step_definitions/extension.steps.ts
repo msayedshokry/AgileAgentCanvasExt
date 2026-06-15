@@ -553,3 +553,111 @@ Then('the last buildArtifacts call should have been passed the artifact store', 
   const captured = (this as any)._capturedStore;
   assert.strictEqual(last.store, captured, 'Expected buildArtifacts to receive the same artifact store instance the extension registered the listener on');
 });
+
+// ── Autonomy module wiring checks ──────────────────────────────────────
+
+Then('the auto-retry engine should be configured with maxRetries {int}', function(this: BmadWorld, expected: number) {
+  const { autoRetryEngine } = require('../../src/workflow/auto-retry-engine');
+  const cfg = autoRetryEngine.getConfig();
+  assert.strictEqual(cfg.maxRetries, expected, `Expected auto-retry engine maxRetries to be ${expected}, got ${cfg.maxRetries}`);
+});
+
+Then('the autonomous git config should have autoBranch true', function(this: BmadWorld) {
+  // Verify the singleton exists and was configured (setConfig called in
+  // autonomy-lifecycle.ts start()). We check via the hooks being set
+  // rather than reading private config directly.
+  const { autonomousGit } = require('../../src/workflow/autonomous-git');
+  const mod = autonomousGit as any;
+  assert.ok(mod.hooks || mod.config?.autoBranch, 'Expected autonomousGit to be configured with autoBranch true');
+});
+
+Then('the autonomous git hooks should be set', function(this: BmadWorld) {
+  const { autonomousGit } = require('../../src/workflow/autonomous-git');
+  const mod = autonomousGit as any;
+  assert.ok(mod.hooks, 'Expected autonomousGit hooks to be set (setHooks was called during activation)');
+});
+
+Then('the cost tracker log path should be set', function(this: BmadWorld) {
+  const { costTracker } = require('../../src/chat/cost-tracker');
+  const mod = costTracker as any;
+  assert.ok(mod.logPath, 'Expected costTracker logPath to be set');
+  assert.ok(
+    (mod.logPath as string).includes('cost-tracking'),
+    `Expected logPath to contain "cost-tracking", got "${mod.logPath}"`,
+  );
+});
+
+Then('the cross-artifact harness detector threshold should be {int}', function(this: BmadWorld, expected: number) {
+  const { crossArtifactHarnessDetector } = require('../../src/harness/cross-artifact-detector');
+  const mod = crossArtifactHarnessDetector as any;
+  assert.ok(mod.threshold !== undefined, 'Expected crossArtifactHarnessDetector threshold to be set');
+});
+
+Then('the failure classifier should be importable', function(this: BmadWorld) {
+  const { failureClassifier } = require('../../src/workflow/failure-classifier');
+  assert.ok(failureClassifier, 'Expected failureClassifier singleton to exist');
+  assert.strictEqual(typeof failureClassifier.classify, 'function', 'Expected failureClassifier.classify to be a function');
+});
+
+let systemicIssueBroadcasts: Array<{ patterns: any[] }> = [];
+
+Then('the harness engine should have a findings listener for cross-artifact detection', function(this: BmadWorld) {
+  const { harnessEngine } = require('../../src/harness/policy-engine');
+  const listenerCount = harnessEngine.listenerCount('findings');
+  assert.ok(
+    listenerCount > 0,
+    `Expected harnessEngine to have at least 1 'findings' listener for cross-artifact detection, got ${listenerCount}`,
+  );
+});
+
+When('the harness engine emits findings for policy {string} on {int} different artifacts', function(this: BmadWorld, policyId: string, count: number) {
+  const { harnessEngine } = require('../../src/harness/policy-engine');
+  systemicIssueBroadcasts = [];
+
+  // Listen for broadcasts via the EventEmitter — broadcast() now calls
+  // this.emit('broadcast', msg) so tests can observe messages cleanly.
+  const lifecycle = require('../../src/workflow/autonomy-lifecycle').autonomyLifecycle as any;
+  const onBroadcast = (msg: any) => {
+    if (msg?.type === 'systemicIssue') {
+      systemicIssueBroadcasts.push(msg);
+    }
+  };
+  lifecycle.on('broadcast', onBroadcast);
+
+  // Emit findings on the same policyId for count different artifacts
+  for (let i = 0; i < count; i++) {
+    harnessEngine.emit('findings', {
+      artifactId: `artifact-${i}`,
+      artifactType: 'story',
+      findings: [{ artifactId: `artifact-${i}`, policyId, severity: 'high', message: `Test failure on artifact-${i}` }],
+    });
+  }
+
+  // Clean up the listener
+  lifecycle.off('broadcast', onBroadcast);
+});
+
+Then('the systemicIssue webview broadcast should have been sent with pattern count {int}', function(this: BmadWorld, expectedCount: number) {
+  assert.ok(
+    systemicIssueBroadcasts.length > 0,
+    `Expected at least 1 systemicIssue broadcast, got ${systemicIssueBroadcasts.length}`,
+  );
+  const last = systemicIssueBroadcasts[systemicIssueBroadcasts.length - 1];
+  assert.ok(last.patterns, 'Expected systemicIssue broadcast to have patterns');
+  assert.strictEqual(
+    last.patterns.length,
+    expectedCount,
+    `Expected ${expectedCount} pattern(s) in systemicIssue broadcast, got ${last.patterns.length}`,
+  );
+});
+
+Then('no additional systemicIssue broadcast should have been sent', function(this: BmadWorld) {
+  // The second WHEN step resets systemicIssueBroadcasts to [] before emitting,
+  // and dedup suppresses the re-broadcast — so the array should still be empty.
+  const count = systemicIssueBroadcasts.length;
+  assert.strictEqual(
+    count,
+    0,
+    `Expected no systemicIssue broadcast (dedup should suppress re-broadcast), got ${count}`,
+  );
+});

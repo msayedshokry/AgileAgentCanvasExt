@@ -30,11 +30,36 @@ export interface ProposedGoal {
   approvedStories: Array<{ id: string; title: string }>;
 }
 
+/** A single cross-artifact pattern detected by the harness engine. */
+export interface SystemicPattern {
+  policyId: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  affectedArtifactIds: string[];
+  count: number;
+  sampleMessage?: string;
+}
+
+/** Payload pushed by the autonomy lifecycle when cross-artifact issues are found. */
+export interface SystemicIssue {
+  artifactId: string;
+  artifactType: string;
+  patterns: SystemicPattern[];
+}
+
 interface AutonomyBarProps {
   schedulerState: SchedulerStateMessage | null;
   budgetStatus: BudgetStatus | null;
   pendingGoal: ProposedGoal | null;
   onOpenGoalReview: (goal: ProposedGoal) => void;
+  /** Cross-artifact systemic issues from the harness engine (issue #4). */
+  systemicIssue: SystemicIssue | null;
+  /** Dismiss the current systemic-issue banner. */
+  onDismissSystemicIssue: () => void;
+}
+
+/** Map severity to a rank for finding the max-severity across patterns. */
+function severityRank(s: SystemicPattern['severity']): number {
+  return { low: 1, medium: 2, high: 3, critical: 4 }[s];
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -44,9 +69,12 @@ export function AutonomyBar({
   budgetStatus,
   pendingGoal,
   onOpenGoalReview,
+  systemicIssue,
+  onDismissSystemicIssue,
 }: AutonomyBarProps) {
   const [goalDraft, setGoalDraft] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [showPatterns, setShowPatterns] = useState(false);
 
   // ── Scheduler controls ──────────────────────────────────────────────────
   const handlePause = useEvent(() => {
@@ -96,6 +124,15 @@ export function AutonomyBar({
   const dailyCap = budgetStatus?.daily.cap ?? 0;
   const budgetExceeded = budgetStatus?.anyExceeded ?? false;
   const budgetPct = dailyCap > 0 ? Math.min(100, Math.round((dailyUsed / dailyCap) * 100)) : 0;
+
+  // ── Max severity across patterns for the banner color ─────────────────
+  const maxSeverity: SystemicPattern['severity'] = (() => {
+    if (!systemicIssue?.patterns.length) return 'low';
+    return systemicIssue.patterns.reduce<SystemicPattern['severity']>(
+      (max, p) => severityRank(p.severity) > severityRank(max) ? p.severity : max,
+      'low',
+    );
+  })();
 
   return (
     <div className="autonomy-bar">
@@ -198,6 +235,58 @@ export function AutonomyBar({
           </button>
         )}
       </div>
+
+      {/* ── Systemic-issue banner (issue #4) ───────────────────────────── */}
+      {systemicIssue && systemicIssue.patterns.length > 0 && (
+        <div
+          className={`autonomy-bar-group autonomy-bar-group--systemic autonomy-bar-systemic--${maxSeverity}`}
+        >
+          <button
+            className="autonomy-bar-systemic-toggle"
+            onClick={() => setShowPatterns(p => !p)}
+            aria-expanded={showPatterns}
+            title="Toggle pattern details"
+          >
+            <span className="autonomy-bar-systemic-icon">
+              {maxSeverity === 'critical' ? '🚨' : maxSeverity === 'high' ? '⚠' : 'ℹ'}
+            </span>
+            <span className="autonomy-bar-systemic-summary" role="alert">
+              {systemicIssue.patterns.length} systemic issue{systemicIssue.patterns.length !== 1 ? 's' : ''} detected
+            </span>
+            <span className="autonomy-bar-systemic-chevron">
+              {showPatterns ? '▾' : '▸'}
+            </span>
+          </button>
+          <button
+            className="autonomy-bar-systemic-dismiss"
+            onClick={onDismissSystemicIssue}
+            title="Dismiss"
+            aria-label="Dismiss systemic issue banner"
+          >
+            ✕
+          </button>
+          {showPatterns && (
+            <div className="autonomy-bar-systemic-patterns">
+              {systemicIssue.patterns.map((p, i) => (
+                <div key={i} className={`autonomy-bar-systemic-pattern autonomy-bar-systemic-pattern--${p.severity}`}>
+                  <span className={`autonomy-bar-systemic-severity autonomy-bar-systemic-severity--${p.severity}`}>
+                    {p.severity.toUpperCase()}
+                  </span>
+                  <span className="autonomy-bar-systemic-policy">{p.policyId}</span>
+                  <span className="autonomy-bar-systemic-count">
+                    on {p.count} artifact{p.count !== 1 ? 's' : ''}
+                  </span>
+                  {p.sampleMessage && (
+                    <span className="autonomy-bar-systemic-msg" title={p.sampleMessage}>
+                      “{p.sampleMessage.length > 80 ? p.sampleMessage.slice(0, 80) + '…' : p.sampleMessage}”
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

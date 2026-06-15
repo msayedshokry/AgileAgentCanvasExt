@@ -109,6 +109,11 @@ export class CostTracker {
     this.entries = this.loadExisting();
   }
 
+  /** Override the log file path (e.g., for the extension's output folder). */
+  setLogPath(logPath: string): void {
+    this.logPath = logPath;
+  }
+
   /** Record a single LLM call's token usage and cost. */
   record(sessionId: string, model: string, usage: TokenUsage, artifactId?: string): CostEntry {
     const { inputCost, outputCost, totalCost } = estimateCost(model, usage);

@@ -332,3 +332,157 @@
   0%, 100% { opacity: 1; }
   50% { opacity: 0.65; }
 }
+
+/* ─── Systemic-issue banner (issue #4) ──────────────────────────────────── */
+
+.autonomy-bar-group--systemic {
+  width: 100%;
+  flex-basis: 100%;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  margin-top: 4px;
+  border-radius: 4px;
+  border-left: 4px solid;
+  animation: systemic-slide-in 0.25s ease-out;
+}
+.autonomy-bar-systemic--low {
+  background: var(--vscode-editorInfo-background, rgba(100, 100, 255, 0.08));
+  border-left-color: var(--vscode-charts-blue, #6366f1);
+}
+.autonomy-bar-systemic--medium {
+  background: var(--vscode-editorWarning-background, rgba(255, 200, 0, 0.08));
+  border-left-color: var(--vscode-charts-yellow, #eab308);
+}
+.autonomy-bar-systemic--high {
+  background: var(--vscode-inputValidation-warningBackground, rgba(255, 150, 0, 0.1));
+  border-left-color: var(--vscode-charts-orange, #f59e0b);
+}
+.autonomy-bar-systemic--critical {
+  background: var(--vscode-inputValidation-errorBackground, rgba(255, 0, 0, 0.1));
+  border-left-color: var(--vscode-errorForeground);
+  animation: systemic-slide-in 0.25s ease-out, systemic-pulse 2s ease-in-out infinite;
+}
+
+@keyframes systemic-slide-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes systemic-pulse {
+  0%, 100% { border-left-color: var(--vscode-errorForeground); }
+  50% { border-left-color: var(--vscode-errorForeground, rgba(255, 0, 0, 0.4)); }
+}
+
+.autonomy-bar-systemic-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: var(--vscode-foreground);
+  cursor: pointer;
+  padding: 0;
+  font-size: 12px;
+  font-family: inherit;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+.autonomy-bar-systemic-toggle:hover {
+  color: var(--vscode-textLink-foreground);
+}
+
+.autonomy-bar-systemic-icon { font-size: 14px; flex-shrink: 0; }
+
+.autonomy-bar-systemic-summary {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.autonomy-bar-systemic-chevron {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+  flex-shrink: 0;
+}
+
+.autonomy-bar-systemic-dismiss {
+  background: transparent;
+  border: none;
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+  padding: 0 6px;
+  font-size: 14px;
+  line-height: 1;
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: opacity 0.15s, color 0.15s;
+}
+.autonomy-bar-systemic-dismiss:hover {
+  opacity: 1;
+  color: var(--vscode-errorForeground);
+}
+
+.autonomy-bar-systemic-patterns {
+  width: 100%;
+  flex-basis: 100%;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.15));
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: systemic-patterns-in 0.2s ease-out;
+}
+@keyframes systemic-patterns-in {
+  from { opacity: 0; max-height: 0; }
+  to { opacity: 1; max-height: 300px; }
+}
+
+.autonomy-bar-systemic-pattern {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  background: var(--vscode-badge-background, rgba(127, 127, 127, 0.15));
+}
+.autonomy-bar-systemic-pattern--low { border-left: 2px solid var(--vscode-charts-blue, #6366f1); }
+.autonomy-bar-systemic-pattern--medium { border-left: 2px solid var(--vscode-charts-yellow, #eab308); }
+.autonomy-bar-systemic-pattern--high { border-left: 2px solid var(--vscode-charts-orange, #f59e0b); }
+.autonomy-bar-systemic-pattern--critical { border-left: 2px solid var(--vscode-errorForeground); }
+
+.autonomy-bar-systemic-severity {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 2px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: white;
+  flex-shrink: 0;
+}
+.autonomy-bar-systemic-severity--low { background: var(--vscode-charts-blue, #6366f1); }
+.autonomy-bar-systemic-severity--medium { background: var(--vscode-charts-yellow, #eab308); color: #1a1a1a; }
+.autonomy-bar-systemic-severity--high { background: var(--vscode-charts-orange, #f59e0b); }
+.autonomy-bar-systemic-severity--critical { background: var(--vscode-errorForeground); }
+
+.autonomy-bar-systemic-policy {
+  font-weight: 600;
+  font-family: var(--vscode-editor-font-family, monospace);
+  white-space: nowrap;
+}
+.autonomy-bar-systemic-count {
+  color: var(--vscode-descriptionForeground);
+  white-space: nowrap;
+}
+.autonomy-bar-systemic-msg {
+  color: var(--vscode-descriptionForeground);
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}

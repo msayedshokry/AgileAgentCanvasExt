@@ -9,9 +9,10 @@ import { TerminalModal } from './TerminalModal';
 import { AgenticDetailPanel } from './AgenticDetailPanel';
 import { ContextMenu } from './ContextMenu';
 import { useEvent } from './useEvent';
-import { AutonomyBar, type SchedulerStateMessage, type BudgetStatus, type ProposedGoal } from './AutonomyBar';
+import { AutonomyBar, type SchedulerStateMessage, type BudgetStatus, type ProposedGoal, type SystemicIssue } from './AutonomyBar';
 import { GoalDecomposerModal } from './GoalDecomposerModal';
 import './Autonomy.css';
+import type { DependencyBadge } from './kanban-helpers';
 import {
   ArtifactLike,
   AgentInfo,
@@ -97,6 +98,12 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
   const [budgetStatus, setBudgetStatus] = useState<BudgetStatus | null>(null);
   const [pendingGoal, setPendingGoal] = useState<ProposedGoal | null>(null);
   const [goalReviewOpen, setGoalReviewOpen] = useState<boolean>(false);
+  // Cross-artifact systemic issues from the harness engine (issue #4).
+  const [systemicIssue, setSystemicIssue] = useState<SystemicIssue | null>(null);
+  // Dependency badges pushed by the extension's autonomy lifecycle.
+  // Keyed by story id; merged into displayItems so the KanbanCard badge
+  // (🔗/⛔ Blocked by N) stays in sync with the live dependency graph.
+  const [depBadges, setDepBadges] = useState<Map<string, DependencyBadge>>(() => new Map());
 
   // ── Imperative refs (NOT state mirrors) ──────────────────────────────────
   // These track backend IPC bookkeeping, not React state. They survive
@@ -220,6 +227,12 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
         vscode.postMessage({ type: 'agenticKanban:refresh' });
         break;
       }
+      case 'systemicIssue': {
+        // Cross-artifact harness pattern detected — display as a dismissable
+        // banner in the AutonomyBar (issue #4).
+        setSystemicIssue(message as SystemicIssue);
+        break;
+      }
       case 'kanban:wipLimits':
         // An empty object `{}` from settings means "no limits" — replace
         // defaults entirely. A falsy/missing payload preserves existing state.
@@ -227,6 +240,15 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
           setWipLimits(message.limits as Record<string, number>);
         }
         break;
+      case 'updateDependencyBadges': {
+        // Replace the badge map with the latest snapshot from the extension.
+        // An empty badges array means "no stories are currently blocked", so
+        // we clear the map (rather than leave stale entries on cards that
+        // were unblocked by a status change).
+        const incoming: DependencyBadge[] = Array.isArray(message.badges) ? message.badges : [];
+        setDepBadges(new Map(incoming.map(b => [b.id, b])));
+        break;
+      }
       case 'agentStateUpdated': {
         const incomingStatus = message.agentState?.status;
         if (incomingStatus === 'completed' || incomingStatus === 'failed' || incomingStatus === 'interrupted') {
@@ -366,11 +388,22 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
 
   // ── Derived: enriched items + search dimming ──────────────────────────────
   const { displayItems, dimmedIds } = useMemo<{ displayItems: KanbanItem[]; dimmedIds: Set<string> }>(() => {
-    const enriched: KanbanItem[] = items.map(item =>
-      pendingTransitions.has(item.id)
+    const enriched: KanbanItem[] = items.map(item => {
+      const queued = pendingTransitions.has(item.id)
         ? { ...item, agentState: { ...item.agentState, status: 'queued' as const, agentRole: item.agentState?.agentRole } }
-        : item
-    );
+        : item;
+      // Merge dep badges from the extension's autonomy lifecycle into the
+      // card so the KanbanCard "Blocked by N" badge stays in sync with the
+      // live dependency graph. Cards without a badge entry show no badge.
+      const badge = depBadges.get(item.id);
+      if (!badge) return queued;
+      return {
+        ...queued,
+        blockedBy: badge.blockedBy,
+        hasCycle: badge.hasCycle,
+        blockerTitles: badge.blockerTitles,
+      };
+    });
     const dimmed = new Set<string>();
     const q = searchQuery.trim().toLowerCase();
     if (q) {
@@ -382,7 +415,7 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
       }
     }
     return { displayItems: enriched, dimmedIds: dimmed };
-  }, [items, pendingTransitions, searchQuery]);
+  }, [items, pendingTransitions, searchQuery, depBadges]);
 
   const epicIdsWithChildren = useMemo(() => {
     const ids = new Set<string>();
@@ -773,6 +806,8 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
         budgetStatus={budgetStatus}
         pendingGoal={pendingGoal}
         onOpenGoalReview={() => setGoalReviewOpen(true)}
+        systemicIssue={systemicIssue}
+        onDismissSystemicIssue={() => setSystemicIssue(null)}
       />
 
       <div className="agentic-kanban-board">

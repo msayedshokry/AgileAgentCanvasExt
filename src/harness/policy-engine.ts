@@ -19,6 +19,7 @@
 //   5. trace-anomaly      — detects repeated errors or stuck loops from trace entries (continuous)
 //   6. feedback-accumulation — aggregates results across all phases into the feedback service
 
+import { EventEmitter } from 'events';
 import * as vscode from 'vscode';
 import { createLogger } from '../utils/logger';
 import { schemaValidator } from '../state/schema-validator';
@@ -63,7 +64,20 @@ export interface EvaluationResult {
   timestamp: string;
 }
 
-export class HarnessEngine {
+/** Payload emitted on the 'findings' event after each evaluation. */
+export interface HarnessFindingsEvent {
+  artifactId: string;
+  artifactType: string;
+  /** Only failed evaluations are emitted (passed policies are skipped). */
+  findings: Array<{
+    artifactId: string;
+    policyId: string;
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    message?: string;
+  }>;
+}
+
+export class HarnessEngine extends EventEmitter {
   private policies: HarnessPolicy[] = [];
 
   registerPolicy(policy: HarnessPolicy): void {
@@ -115,6 +129,23 @@ export class HarnessEngine {
       // Feed result into the continuous feedback accumulator so repeated
       // failures are tracked, escalated, and injected into agent prompts.
       harnessFeedback.recordEvaluation(context.artifactId, context.artifactType, [result]);
+
+      // Emit findings for detectors (cross-artifact, etc.) to consume.
+      // Only emit failed policies — passing ones are noise.
+      if (!result.passed) {
+        const severity: 'low' | 'medium' | 'high' | 'critical' =
+          result.severity === 'blocking' ? 'high' : 'low';
+        this.emit('findings', {
+          artifactId: context.artifactId,
+          artifactType: context.artifactType,
+          findings: [{
+            artifactId: context.artifactId,
+            policyId: result.policyId,
+            severity,
+            message: result.failures?.join('; ') || undefined,
+          }],
+        } satisfies HarnessFindingsEvent);
+      }
 
       // Record to trace (E3 integration)
       try {

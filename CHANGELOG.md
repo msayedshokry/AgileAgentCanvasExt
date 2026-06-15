@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Feature: Cross-Artifact Systemic Issue Detection (#4)
+
+The harness engine now feeds policy evaluation failures into a cross-artifact pattern detector that surfaces systemic issues as a color-coded, dismissable banner in the Agentic Kanban webview.
+
+- **HarnessEngine EventEmitter** — emits `findings` after each failed policy evaluation; AutonomyLifecycle subscribes, accumulates (capped at 200), feeds into `CrossArtifactHarnessDetector.correlate()`, and broadcasts `systemicIssue` to the webview when the same policy fails on >=3 artifacts
+- **Deduplication** — fingerprint-based dedup prevents re-broadcasting the same set of patterns on every subsequent harness evaluation
+- **Webview banner** — new `SystemicIssue`/`SystemicPattern` types in AutonomyBar, color-coded by max severity (blue->yellow->orange->red+pulse), expandable pattern details (policy, artifact count, sample message), dismiss (X) button, accessible (role=alert, aria-expanded)
+- **6 previously-unwired modules now wired** — auto-retry-engine (#18), autonomous-git (#17), failure-classifier (#14), cost-tracker (#5), concurrency-queue-persistence (#6), cross-artifact-detector (#4)
+- **BDD coverage** — 4 new scenarios across extension.feature and autonomy-webview.feature: autonomy module wiring verification, harness findings -> systemicIssue broadcast, dedup suppression, and banner render + dismiss
+
 ### Fixed: Regression test for the canvas auto-refresh wiring
 
 A silent break in the artifact-store change listener registered during extension activation (the one that rebuilds the canvas view from the store on every mutation) would have been invisible to the existing test suite — no scenario exercised that listener. Two new BDD scenarios now prove the listener stays alive, fires for both update and delete write paths, and forwards the same store instance the extension registered the listener on.
