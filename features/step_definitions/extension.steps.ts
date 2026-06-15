@@ -57,6 +57,7 @@ function getExtensionSetup(world: BmadWorld): { context: any; vscode: any } {
     mockSaveDialogReturn = undefined;
     mockWarnReturn = undefined;
     buildArtifactsCalls = [];
+    systemicIssueBroadcasts = [];
 
     // Build instrumented vscode mock
     const vsc = { ...world.vscode };
@@ -651,6 +652,34 @@ Then('the systemicIssue webview broadcast should have been sent with pattern cou
   );
 });
 
+Then('the first systemicIssue pattern should have policyId {string}', function(this: BmadWorld, expected: string) {
+  assert.ok(
+    systemicIssueBroadcasts.length > 0,
+    'Expected at least 1 systemicIssue broadcast',
+  );
+  const patterns = systemicIssueBroadcasts[systemicIssueBroadcasts.length - 1].patterns;
+  assert.ok(patterns.length > 0, 'Expected at least 1 pattern in systemicIssue broadcast');
+  assert.strictEqual(
+    patterns[0].policyId,
+    expected,
+    `Expected first pattern policyId "${expected}", got "${patterns[0].policyId}"`,
+  );
+});
+
+Then('the first systemicIssue pattern should have count {int}', function(this: BmadWorld, expected: number) {
+  assert.ok(
+    systemicIssueBroadcasts.length > 0,
+    'Expected at least 1 systemicIssue broadcast',
+  );
+  const patterns = systemicIssueBroadcasts[systemicIssueBroadcasts.length - 1].patterns;
+  assert.ok(patterns.length > 0, 'Expected at least 1 pattern in systemicIssue broadcast');
+  assert.strictEqual(
+    patterns[0].count,
+    expected,
+    `Expected first pattern count ${expected}, got ${patterns[0].count}`,
+  );
+});
+
 Then('no additional systemicIssue broadcast should have been sent', function(this: BmadWorld) {
   // The second WHEN step resets systemicIssueBroadcasts to [] before emitting,
   // and dedup suppresses the re-broadcast — so the array should still be empty.
@@ -660,4 +689,38 @@ Then('no additional systemicIssue broadcast should have been sent', function(thi
     0,
     `Expected no systemicIssue broadcast (dedup should suppress re-broadcast), got ${count}`,
   );
+});
+
+// ── E2E: harnessEngine.evaluate() triggers real policies → findings →
+//      correlate → systemicIssue broadcast (issue #4 full pipeline) ───
+
+When('the harness engine evaluates {int} stories with the same placeholder violation', async function(this: BmadWorld, count: number) {
+  const { harnessEngine } = require('../../src/harness/policy-engine');
+  systemicIssueBroadcasts = [];
+
+  // Listen for broadcasts via the autonomyLifecycle EventEmitter.
+  // harnessEngine.evaluate() runs the real no-placeholders policy, which
+  // emits 'findings' → autonomy-lifecycle correlates → broadecast() calls
+  // this.emit('broadcast', msg) → captured here.
+  const lifecycle = require('../../src/workflow/autonomy-lifecycle').autonomyLifecycle as any;
+  const onBroadcast = (msg: any) => {
+    if (msg?.type === 'systemicIssue') {
+      systemicIssueBroadcasts.push(msg);
+    }
+  };
+  lifecycle.on('broadcast', onBroadcast);
+
+  // Evaluate stories with placeholder content — the no-placeholders policy
+  // (post-flight, advisory, no autoFix) catches 'TODO' in the title and
+  // emits a findings event. After 3+ distinct artifact IDs with the same
+  // policy failing, correlate() detects a systemic pattern and broadcasts.
+  for (let i = 0; i < count; i++) {
+    await harnessEngine.evaluate({
+      artifactId: `e2e-story-${i}`,
+      artifactType: 'story',
+      artifact: { title: `TODO: implement story ${i}` },
+    }, 'post-flight');
+  }
+
+  lifecycle.off('broadcast', onBroadcast);
 });

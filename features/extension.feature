@@ -255,3 +255,16 @@ Feature: Extension - VS Code Extension Activation
     Then the systemicIssue webview broadcast should have been sent with pattern count 1
     When the harness engine emits findings for policy "required-fields" on 2 different artifacts
     Then no additional systemicIssue broadcast should have been sent
+
+  # Regression: end-to-end systemicIssue pipeline — harness engine evaluates
+  # real artifacts (with actual policies running), findings flow through
+  # EventEmitter to autonomy-lifecycle, correlate() detects the cross-
+  # artifact pattern, and the systemicIssue broadcast fires. This validates
+  # the complete #4 cross-artifact detector feature without manually
+  # emitting findings.
+  Scenario: harness engine evaluates 3 stories with placeholder violations and triggers systemicIssue broadcast
+    When I activate the extension
+    And the harness engine evaluates 3 stories with the same placeholder violation
+    Then the systemicIssue webview broadcast should have been sent with pattern count 1
+    And the first systemicIssue pattern should have policyId "no-placeholders"
+    And the first systemicIssue pattern should have count 3
