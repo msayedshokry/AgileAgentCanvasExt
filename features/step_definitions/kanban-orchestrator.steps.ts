@@ -55,6 +55,10 @@ function buildOrchestrator(world: BmadWorld): OrchCtx {
     executeLaneTransition: async () => nextVerdict(),
   };
 
+  const terminalExecutor = {
+    executeAndAwaitVerdict: async () => nextVerdict(),
+  };
+
   const mod = proxyquire('../../src/workflow/kanban-orchestrator', {
     vscode: {
       EventEmitter: class {
@@ -78,9 +82,7 @@ function buildOrchestrator(world: BmadWorld): OrchCtx {
       },
     },
     './terminal-executor': {
-      terminalExecutor: {
-        executeAndAwaitVerdict: async () => nextVerdict(),
-      },
+      terminalExecutor,
     },
     './kanban-settings': {
       getKanbanMaxIterations: () => ctx.maxIter,
@@ -119,7 +121,7 @@ function buildOrchestrator(world: BmadWorld): OrchCtx {
     },
   });
 
-  ctx.orch = new mod.KanbanOrchestrator(store, executor);
+  ctx.orch = new mod.KanbanOrchestrator(store, executor, terminalExecutor);
   return ctx;
 }
 
