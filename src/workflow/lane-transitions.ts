@@ -63,6 +63,29 @@ export const TRANSITION_RULES: TransitionRule[] = [
 
   // Review → Done (review-guard for autonomous terminal only; interactive skips)
   { artifactType: 'story',  fromStatus: 'review',        toStatus: 'done',          workflowId: null, terminalWorkflowId: 'aac-kanban-review-guard', confirmWithUser: false },
+
+  // ── Blocked status transitions ─────────────────────────────────────────
+  // Blocked → In Progress (unblock and resume)
+  { artifactType: 'story',  fromStatus: 'blocked',       toStatus: 'in-progress',   workflowId: null, confirmWithUser: true },
+  { artifactType: 'epic',   fromStatus: 'blocked',       toStatus: 'in-progress',   workflowId: null, confirmWithUser: true },
+
+  // In Progress → Blocked (mark as blocked)
+  { artifactType: 'story',  fromStatus: 'in-progress',   toStatus: 'blocked',       workflowId: null, confirmWithUser: true },
+  { artifactType: 'epic',   fromStatus: 'in-progress',   toStatus: 'blocked',       workflowId: null, confirmWithUser: true },
+
+  // Ready-for-Dev → Blocked (mark as blocked before starting)
+  { artifactType: 'story',  fromStatus: 'ready-for-dev', toStatus: 'blocked',       workflowId: null, confirmWithUser: true },
+
+  // ── Reopen transitions ─────────────────────────────────────────────────
+  // Done → Backlog (reopen a completed story)
+  { artifactType: 'story',  fromStatus: 'done',          toStatus: 'backlog',       workflowId: null, confirmWithUser: true },
+  // Done → In Progress (reopen into active development)
+  { artifactType: 'story',  fromStatus: 'done',          toStatus: 'in-progress',   workflowId: null, confirmWithUser: true },
+
+  // Review → Backlog (move back from review without completing)
+  { artifactType: 'story',  fromStatus: 'review',        toStatus: 'backlog',       workflowId: null, confirmWithUser: true },
+  // Review → In Progress (revert from review to dev)
+  { artifactType: 'story',  fromStatus: 'review',        toStatus: 'in-progress',   workflowId: null, confirmWithUser: true },
 ];
 
 export interface TransitionResult {

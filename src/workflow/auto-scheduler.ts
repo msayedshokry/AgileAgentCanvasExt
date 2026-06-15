@@ -6,6 +6,8 @@
 
 import { EventEmitter } from 'events';
 import { createLogger } from '../utils/logger';
+import { circuitBreaker } from './circuit-breaker';
+import { budgetEnforcer } from './budget-enforcer';
 
 const logger = createLogger('auto-scheduler');
 
@@ -181,6 +183,23 @@ export class AutoScheduler extends EventEmitter {
     }
 
     this.inProgressIds.add(next.id);
+
+    // ── Pre-flight guardrails ────────────────────────────────────────────
+    // Circuit breaker: skip stories whose workflow type is currently open.
+    const devWf = 'aac-kanban-dev-executor';
+    if (!circuitBreaker.canRun(devWf)) {
+      logger.debug('Scheduler: circuit open — skipping tick', { wf: devWf });
+      this.inProgressIds.delete(next.id);
+      return;
+    }
+
+    // Budget: skip if the daily or per-story cap is exceeded.
+    if (!budgetEnforcer.canStart(next.id)) {
+      logger.debug('Scheduler: budget exceeded — skipping story', { storyId: next.id });
+      this.inProgressIds.delete(next.id);
+      return;
+    }
+
     this.emit('started', { storyId: next.id });
     logger.debug('Scheduler starting story', { storyId: next.id, inProgress: this.inProgressIds.size });
 

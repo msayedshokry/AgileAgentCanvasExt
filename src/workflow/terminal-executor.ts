@@ -392,6 +392,10 @@ export class TerminalExecutor implements vscode.Disposable {
     (session as TerminalSession).healthSessionId = sessionId;
     (session as TerminalSession).lastOutputAt = lastOutputAt;
 
+    // Persist session metadata so the terminal-recovery scanner can find
+    // orphaned sessions after a VS Code restart.
+    this.persistSessionMetadata();
+
     logger.info(
       `[TerminalExecutor] Launched terminal "${termName}" (${provider}) for ${artifactId}`
     );
@@ -567,6 +571,30 @@ export class TerminalExecutor implements vscode.Disposable {
   }
 
   /**
+   * Persist terminal session metadata to disk so orphan detection survives
+   * VS Code restarts. Uses a simple JSON file in the output folder.
+   */
+  private persistSessionMetadata(): void {
+    try {
+      const outputFolder = path.join(
+        (vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath ?? process.cwd()),
+        vscode.workspace.getConfiguration('agileagentcanvas').get<string>('outputFolder', '.agileagentcanvas-context'),
+      );
+      const filePath = path.join(outputFolder, 'terminal-sessions.json');
+      const sessions = Array.from(this.activeTerminals.values()).map(s => ({
+        sessionId: s.sessionId,
+        artifactId: s.artifactId,
+        name: s.terminal.name,
+        startedAt: Date.parse(s.startedAt),
+      }));
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, JSON.stringify(sessions, null, 2), 'utf-8');
+    } catch {
+      // Best effort — terminal recovery already has a fallback path.
+    }
+  }
+
+  /**
    * Clean up tracking when a terminal is closed.
    */
   private onDidCloseTerminal(closed: vscode.Terminal): void {
@@ -576,6 +604,9 @@ export class TerminalExecutor implements vscode.Disposable {
           `[TerminalExecutor] Terminal closed for ${artifactId} — cleaning up tracking`
         );
         this.activeTerminals.delete(artifactId);
+
+        // Update persisted metadata after terminal close.
+        this.persistSessionMetadata();
 
         // P1 #11: clear the lock-release timeout since the terminal
         // closed naturally — no need to force-release.

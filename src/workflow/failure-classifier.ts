@@ -34,6 +34,13 @@ const TRANSIENT_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
   { pattern: /service unavailable|api unavailable|temporarily unavailable/i, label: 'service-unavailable' },
   { pattern: /connection.*refused|connection.*reset/i, label: 'connection-failed' },
   { pattern: /socket hang up/i, label: 'socket-hangup' },
+  // AI/LLM-specific transient errors
+  { pattern: /overloaded|server.*overloaded|try again/i, label: 'ai-overloaded' },
+  { pattern: /rate_limit_exceeded|quota.*exceeded|usage limit/i, label: 'ai-quota' },
+  { pattern: /model.*overloaded|model.*at capacity|high demand/i, label: 'ai-model-busy' },
+  { pattern: /internal server error.*model|provider error.*5\d\d/i, label: 'ai-provider-5xx' },
+  { pattern: /stream.*interrupted|connection.*dropped|unexpected EOF/i, label: 'ai-stream-interrupted' },
+  { pattern: /request timed out|operation timed out|call timed out/i, label: 'ai-timeout' },
 ];
 
 const PERMANENT_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
@@ -45,6 +52,13 @@ const PERMANENT_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
   { pattern: /syntax error|parse error|unexpected token/i, label: 'syntax-error' },
   { pattern: /type error|cannot read prop|cannot read property/i, label: 'type-error' },
   { pattern: /unsupported operation|not implemented/i, label: 'unsupported' },
+  // AI/LLM-specific permanent errors
+  { pattern: /invalid.*api.?key|api.?key.*invalid|authentication.*failed|incorrect.*api.?key/i, label: 'ai-auth-error' },
+  { pattern: /context.*length.*exceed|context.*window.*exceed|token.*limit.*exceed|max.*tokens.*exceed/i, label: 'ai-context-exceeded' },
+  { pattern: /model.*not.?found|model.*unavailable|model.*deprecated|does not exist/i, label: 'ai-model-unavailable' },
+  { pattern: /content.*filter|content.*policy|safety.*filter|content.*blocked/i, label: 'ai-content-filter' },
+  { pattern: /billing.*required|payment.*required|insufficient.*quota|account.*suspended/i, label: 'ai-billing' },
+  { pattern: /unsupported.*parameter|invalid.*model|bad.*request.*model/i, label: 'ai-invalid-request' },
 ];
 
 // ── Classifier ───────────────────────────────────────────────────────────────

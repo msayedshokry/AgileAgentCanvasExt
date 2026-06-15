@@ -20,9 +20,12 @@ import type { WorkflowExecutor } from './workflow-executor';
 import type { BmadModel } from '../chat/ai-provider';
 import type { TransitionResult } from './lane-transitions';
 import { concurrencyQueue } from './concurrency-queue';
-import { terminalExecutor } from './terminal-executor';
 import { getKanbanMaxIterations } from './kanban-settings';
 import type { KanbanVerdict, KanbanFixRequest } from './kanban-verdict';
+import { circuitBreaker } from './circuit-breaker';
+import { budgetEnforcer } from './budget-enforcer';
+import { autoRetryEngine } from './auto-retry-engine';
+import { autonomousGit } from './autonomous-git';
 
 function errMsg(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
@@ -81,27 +84,70 @@ export class KanbanOrchestrator {
     const maxIter = getKanbanMaxIterations();
 
     try {
+      // ── Pre-flight guardrails ──────────────────────────────────────────
+      // Check circuit breaker before starting — don't waste cycles on a
+      // workflow type that's repeatedly failing.
+      if (!circuitBreaker.canRun(DEV_WORKFLOW)) {
+        return await this.stop(id, `Circuit breaker open for ${DEV_WORKFLOW} — manual reset required`);
+      }
+
+      // Check budget before starting — don't start if caps are exceeded.
+      if (!budgetEnforcer.canStart(id)) {
+        const status = budgetEnforcer.getStatus(id);
+        return await this.stop(id, `Budget exceeded: ${status.bannerMessage ?? 'cap hit'}`);
+      }
+
+      // ── Auto-git: create a branch before dev work ───────────────────────
+      const cwd = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath ?? process.cwd();
+      await autonomousGit.maybeBranch(id, cwd);
+
       for (let iter = 1; iter <= maxIter; iter++) {
         logger.info(`[Orchestrator] ${id} iteration ${iter}/${maxIter}`);
 
-        // ── 1. DEV: implement + test ──────────────────────────────────────
+        // ── Guard: re-check circuit before each dev attempt ───────────
+        if (!circuitBreaker.canRun(DEV_WORKFLOW)) {
+          return await this.stop(id, `Circuit breaker opened during run for ${DEV_WORKFLOW}`);
+        }
+        if (!budgetEnforcer.canStart(id)) {
+          return await this.stop(id, 'Budget exceeded during run');
+        }
+
+        // ── 1. DEV: implement + test ──────────────────────────────────
         await this.setStatus(type, id, 'in-progress');
         this.emit(id, 'running', 'Crafter', DEV_WORKFLOW);
-        const dev = await this.runStep(DEV_WORKFLOW, type, id, ctx);
+        const dev = await this.runStepGuarded(DEV_WORKFLOW, type, id, ctx);
 
         if (dev.verdict !== 'COMPLETED') {
           return await this.stop(id, `Dev gate returned ${dev.verdict}`, dev);
         }
 
-        // ── 2. REVIEW: verify against acceptance criteria ─────────────────
+        // ── Auto-git: commit after successful dev ────────────────────
+        await autonomousGit.maybeCommit(id, DEV_WORKFLOW, cwd);
+
+        // ── Guard: re-check circuit before review ────────────────────
+        if (!circuitBreaker.canRun(REVIEW_WORKFLOW)) {
+          return await this.stop(id, `Circuit breaker open for ${REVIEW_WORKFLOW}`);
+        }
+        if (!budgetEnforcer.canStart(id)) {
+          return await this.stop(id, 'Budget exceeded before review');
+        }
+
+        // ── 2. REVIEW: verify against acceptance criteria ─────────────
         await this.setStatus(type, id, 'review');
         this.emit(id, 'running', 'Reviewer', REVIEW_WORKFLOW);
-        const review = await this.runStep(REVIEW_WORKFLOW, type, id, ctx);
+        const review = await this.runStepGuarded(REVIEW_WORKFLOW, type, id, ctx);
 
         if (review.verdict === 'APPROVED') {
           await this.setStatus(type, id, 'done');
           this.emit(id, 'completed', 'Reviewer', REVIEW_WORKFLOW);
           logger.info(`[Orchestrator] ${id} APPROVED → done (iteration ${iter})`);
+
+          // ── Auto-git: create PR after approval (maybePR internally
+          //     checks config.autoPR and returns null if disabled).
+          const title = (artifact?.title as string) || id;
+          const body = `Autonomous run completed: ${DEV_WORKFLOW} → ${REVIEW_WORKFLOW} (${iter} iteration(s))`;
+          await autonomousGit.maybePR(id, title, body, cwd);
+
           return { ok: true, workflowLaunched: true, status: 'complete' };
         }
 
@@ -118,6 +164,8 @@ export class KanbanOrchestrator {
       return await this.stop(id, `Reached max iterations (${maxIter}) without approval`);
     } catch (err) {
       logger.error(`[Orchestrator] ${id} failed: ${errMsg(err)}`);
+      // Record the failure with circuit breaker so repeated failures open the circuit
+      circuitBreaker.recordFailure(DEV_WORKFLOW, errMsg(err));
       this.emit(id, 'failed');
       return { ok: false, status: 'blocked', blockedBy: [errMsg(err)] };
     } finally {
@@ -126,27 +174,56 @@ export class KanbanOrchestrator {
   }
 
   /**
-   * Run one workflow step, choosing in-chat (if a Copilot session is available)
-   * or the terminal CLI path. Both return a normalized verdict.
+   * Run one workflow step with retry, circuit breaker, and budget guards.
+   * Wraps the inner execution in autoRetryEngine so transient failures are
+   * retried with exponential backoff. Permanent failures and unknown failures
+   * skip retries.
    */
-  private async runStep(
+  private async runStepGuarded(
     workflowId: string,
     type: string,
     id: string,
     ctx: OrchestratorContext
   ): Promise<KanbanVerdict> {
+    // Resolve artifact from store for executeLaneTransition
     const artifact = this.store.findArtifactById(id)?.artifact ?? { id, type };
 
-    if (ctx.model && ctx.stream && ctx.token) {
-      return await this.executor.executeLaneTransition(
+    // Closure-captured so autoRetryEngine (WorkFn returns void) can pass
+    // the real verdict back out.
+    let captured: KanbanVerdict | undefined;
+
+    const retryResult = await autoRetryEngine.run(id, async () => {
+      // Re-check circuit + budget inside each retry attempt, since
+      // backoff delays can be long enough for state to change.
+      if (!circuitBreaker.canRun(workflowId)) {
+        throw new Error(`Circuit breaker open for ${workflowId}`);
+      }
+      if (!budgetEnforcer.canStart(id)) {
+        throw new Error(`Budget exceeded for ${id}`);
+      }
+
+      // Only call recordSuccess when the workflow actually ran successfully
+      const verdict = await this.executor.executeLaneTransition(
         workflowId, artifact, this.store, ctx.model, ctx.stream, ctx.token
       );
+      captured = verdict;
+
+      // Record success only for clearly successful verdicts
+      if (verdict.verdict === 'COMPLETED' || verdict.verdict === 'APPROVED') {
+        circuitBreaker.recordSuccess(workflowId);
+      }
+    });
+
+    if (retryResult.succeeded && captured) {
+      return captured;
     }
 
-    const skillContent = this.executor.getWorkflowSkillContent(workflowId);
-    return await terminalExecutor.executeAndAwaitVerdict(
-      workflowId, artifact, this.store, { skillContent }
-    );
+    const lastErr = retryResult.attempts.at(-1)?.error;
+    circuitBreaker.recordFailure(workflowId, errMsg(lastErr));
+    return {
+      verdict: 'UNKNOWN',
+      summary: `Retries exhausted: ${errMsg(lastErr)}`,
+    } as unknown as KanbanVerdict;
   }
 
   private async setStatus(type: string, id: string, status: string): Promise<void> {
@@ -183,10 +260,16 @@ export class KanbanOrchestrator {
     verdict?: KanbanVerdict
   ): Promise<TransitionResult> {
     const detail = verdict?.summary ? `${reason} — ${verdict.summary}` : reason;
-    logger.warn(`[Orchestrator] ${id} stopped: ${detail}`);
+    // Surface diagnostic info for UNKNOWN verdicts so the user can act on them.
+    const diagnosticHint = verdict?.verdict === 'UNKNOWN'
+      ? ' (No structured verdict was produced. Check the terminal output or trace for details.)'
+      : '';
+    logger.warn(`[Orchestrator] ${id} stopped: ${detail}${diagnosticHint}`);
     this.emit(id, 'interrupted');
     try {
-      vscode.window.showWarningMessage(`Autonomous run stopped for ${id}: ${detail}`);
+      vscode.window.showWarningMessage(
+        `Autonomous run stopped for ${id}: ${detail}${diagnosticHint}`
+      );
     } catch {
       // window API may be unavailable (e.g. in tests)
     }

@@ -134,7 +134,9 @@ function buildArtifactCommandsModule(world: BmadWorld) {
       setChatBridgeLogger: () => {},
     },
     '../state/artifact-store': {},
-    '../canvas/artifact-transformer': { sendArtifactsToPanel: () => {} },
+    // buildArtifacts stub for any future scenario that mutates the store and triggers
+    // extension.ts's artifactStore.onDidChangeArtifacts callback (latent path).
+    '../canvas/artifact-transformer': { sendArtifactsToPanel: () => {}, buildArtifacts: () => [] },
   });
 }
 

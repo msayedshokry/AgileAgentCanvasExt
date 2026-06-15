@@ -7,24 +7,25 @@
 
 import { EventEmitter } from 'events';
 import * as path from 'path';
+import * as fs from 'fs';
 import * as vscode from 'vscode';
 import { createLogger } from '../utils/logger';
 import { ArtifactStore } from '../state/artifact-store';
 
 import { agentHealthMonitor } from './agent-health-monitor';
 import { autoRecovery } from './auto-recovery';
-import { autoScheduler } from './auto-scheduler';
+import { autoScheduler, type SchedulerStory } from './auto-scheduler';
 import { schedulerWebviewControls, MSG_SCHEDULER_STATE } from './scheduler-webview-controls';
 import { schedulerStatePersistence } from './scheduler-state-persistence';
 import { budgetEnforcer } from './budget-enforcer';
 import { circuitBreaker } from './circuit-breaker';
 import { terminalExecutor } from './terminal-executor';
 import { concurrencyQueue } from './concurrency-queue';
-import { goalDecomposer } from './goal-decomposer';
+import { goalDecomposer, type ProposedStory } from './goal-decomposer';
 import { dependencyAutoResume } from './dependency-auto-resume';
 import { terminalSessionRecovery } from './terminal-recovery';
 import { kanbanDependencyVisualizer, StoryWithTitle } from './kanban-dep-visualizer';
-import { dependencyGraph } from './dependency-graph';
+import { dependencyGraph, type StoryRef } from './dependency-graph';
 import { autoRetryEngine } from './auto-retry-engine';
 import { autonomousGit, type GitRunner } from './autonomous-git';
 import { failureClassifier } from './failure-classifier';
@@ -32,8 +33,18 @@ import { costTracker } from '../chat/cost-tracker';
 import { ConcurrencyQueuePersistence, setupAutoSave as setupConcurrencyAutoSave } from './concurrency-queue-persistence';
 import { crossArtifactHarnessDetector } from '../harness/cross-artifact-detector';
 import { harnessEngine, type HarnessFindingsEvent } from '../harness/policy-engine';
+import { kanbanOrchestrator, type OrchestratorContext } from './kanban-orchestrator';
+import { isKanbanAutoAdvanceEnabled } from './kanban-settings';
 
 const logger = createLogger('autonomy-lifecycle');
+
+// Project-standard error-to-string
+function errMsg(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
+/** File name for persisted terminal session metadata. */
+const TERMINAL_SESSIONS_FILE = 'terminal-sessions.json';
 
 /**
  * Compute a stable fingerprint for a set of correlated patterns so we can
@@ -131,24 +142,54 @@ export class AutonomyLifecycle extends EventEmitter {
     goalDecomposer.on('reviewed', (g) => this.broadcast({ type: 'goalReviewed', goal: g }));
     goalDecomposer.on('dispatched', (payload) => this.broadcast({ type: 'goalDispatched', ...payload }));
 
-    // 8) Scheduler → webview state changes are owned by
-    //    schedulerWebviewControls.start() (above). It binds the same events
-    //    and emits MSG_SCHEDULER_STATE, so we don't double-broadcast here.
+    // 8) Wire the AutoScheduler story runner to actually execute stories.
+    //    When auto-advance is enabled, each ready-for-dev story picked up
+    //    by the scheduler is handed to the KanbanOrchestrator for the full
+    //    implement→review→done loop. When auto-advance is off, stories are
+    //    skipped (the user moves cards manually).
+    autoScheduler.setRunner(async (storyId: string): Promise<boolean> => {
+      if (!this.store) return false;
+      const found = this.store.findArtifactById(storyId);
+      if (!found || !isKanbanAutoAdvanceEnabled()) return false;
 
-    // 9) Auto-resume on dependency completion. The ArtifactStore change
-    //    event doesn't carry deltas yet, so we trigger a full graph
-    //    reconciliation after every store change. The auto-resume check
-    //    itself is cheap (cached cycle detection).
+      // Guard: circuit breaker must allow this workflow type
+      const devWf = 'aac-kanban-dev-executor';
+      if (!circuitBreaker.canRun(devWf)) {
+        logger.warn(`[Autonomy] Circuit open for ${devWf} — skipping ${storyId}`);
+        return false;
+      }
+
+      // Guard: budget must not be exceeded
+      if (!budgetEnforcer.canStart(storyId)) {
+        logger.warn(`[Autonomy] Budget exceeded — skipping ${storyId}`);
+        return false;
+      }
+
+      try {
+        const ctx: OrchestratorContext = {};
+        const result = await kanbanOrchestrator.runAutonomous(found.artifact, ctx);
+        return result.ok;
+      } catch (err) {
+        logger.error(`[Autonomy] Scheduler runner failed for ${storyId}: ${errMsg(err)}`);
+        return false;
+      }
+    });
+
+    // 9) Wire Goal Decomposer hooks so the toolbar "Submit Goal" flow
+    //    actually works end-to-end.
+    this.wireGoalDecomposerHooks();
+
+    // 10) Auto-resume on dependency completion. The ArtifactStore change
+    //    event now passes actual change deltas and story data so blocked
+    //    stories auto-transition to ready-for-dev when their blockers complete.
     if (this.store) {
       this.artifactChangeUnsub = this.store.onDidChangeArtifacts(() => {
-        // dependencyAutoResume expects (changes, stories); pass empty changes
-        // to trigger a full re-evaluation. It's safe to call repeatedly.
-        dependencyAutoResume.onArtifactChanges([], []).catch(err => {
-          logger.debug('Auto-resume failed', { error: String(err) });
+        // Rebuild the story universe from the live store for auto-resume.
+        const { changes, stories } = this.extractDependencyData();
+        dependencyAutoResume.onArtifactChanges(changes, stories).catch(err => {
+          logger.debug('Auto-resume failed', { error: errMsg(err) });
         });
-        // Issue: Wire dependency data flow — recompute blockedBy/hasCycle/
-        // blockerTitles and push to the webview so the KanbanCard badge stays
-        // in sync with the latest dependency graph.
+        // Recompute Blocked-by-N badges and push to the webview.
         this.pushDependencyBadges();
       });
     }
@@ -157,9 +198,11 @@ export class AutonomyLifecycle extends EventEmitter {
     // "Blocked by N" badges right after activation.
     this.pushDependencyBadges();
 
-    // 10) Recover orphaned terminal sessions
+    // 11) Recover orphaned terminal sessions. The scanner now checks both
+    //     in-memory terminals AND persisted session metadata so sessions
+    //     survive VS Code restarts.
     terminalSessionRecovery.setScanner({
-      findOrphans: () => Promise.resolve(terminalExecutor.findOrphanedSessions()),
+      findOrphans: () => this.scanOrphanedTerminalSessions(),
     });
     terminalSessionRecovery.setReconnector({
       reconnect: async () => true, // best-effort: succeed without stream re-attach
@@ -171,15 +214,15 @@ export class AutonomyLifecycle extends EventEmitter {
       logger.warn('Terminal recovery failed', { error: String(err) });
     });
 
-    // 11) Auto-retry engine — configure defaults. The scheduler calls
-    //     engine.run() when executing workflows; circuit breaker (#20)
-    //     queries failureClassifier internally before retrying.
-    //     failureClassifier (#14) is used transitively — no separate wiring.
+    // 12) Auto-retry engine — configure defaults. The KanbanOrchestrator's
+    //     runStep now wraps workflow execution in autoRetryEngine.run() so
+    //     transient failures are retried with exponential backoff.
     autoRetryEngine.setConfig({ maxRetries: 3, initialDelayMs: 1_000, backoffMultiplier: 2 });
 
-    // 12) Autonomous Git — configure hooks that broadcast branch/commit/PR
+    // 13) Autonomous Git — configure hooks that broadcast branch/commit/PR
     //     events to the webview. The git runner is injected by extension.ts
-    //     via hooks.gitRunner.
+    //     via hooks.gitRunner. The KanbanOrchestrator now calls maybeBranch(),
+    //     maybeCommit(), and maybePR() during autonomous runs.
     autonomousGit.setConfig({ autoBranch: true, autoCommit: true, autoPR: false });
     if (this.hooks.gitRunner) autonomousGit.setRunner(this.hooks.gitRunner);
     autonomousGit.setHooks({
@@ -188,14 +231,14 @@ export class AutonomyLifecycle extends EventEmitter {
       onPR:     (storyId, url) => this.broadcast({ type: 'gitPR', storyId, url }),
     });
 
-    // 13) Cost tracker — wire log path into the output folder. The AI
+    // 14) Cost tracker — wire log path into the output folder. The AI
     //     provider must call costTracker.record() on every LLM completion;
     //     that wiring lives in ai-provider.ts (outside lifecycle scope).
     if (this.hooks?.outputFolder) {
       costTracker.setLogPath(path.join(this.hooks.outputFolder, 'cost-tracking.jsonl'));
     }
 
-    // 14) Concurrency queue persistence — restore on activation, auto-save
+    // 15) Concurrency queue persistence — restore on activation, auto-save
     //     on every lock change.
     this.concurrencyPersistence = new ConcurrencyQueuePersistence(
       path.join(this.hooks.outputFolder, 'concurrency-queue-state.json'),
@@ -203,7 +246,7 @@ export class AutonomyLifecycle extends EventEmitter {
     this.concurrencyPersistence.restore();
     setupConcurrencyAutoSave(this.concurrencyPersistence);
 
-    // 15) Cross-artifact harness pattern detector — subscribe to harness
+    // 16) Cross-artifact harness pattern detector — subscribe to harness
     //     engine findings, accumulate them (capped sliding window), and
     //     broadcast systemic patterns to the webview when the same policy
     //     fails on ≥3 artifacts.
@@ -274,6 +317,190 @@ export class AutonomyLifecycle extends EventEmitter {
   /** Set the current stories on the scheduler. Call when artifacts change. */
   refreshSchedulerStories(stories: Array<{ id: string; status: string; priority?: string }>): void {
     autoScheduler.setStories(stories as any);
+  }
+
+  /**
+   * Wire the goal decomposer hooks so the toolbar "Submit Goal" flow works.
+   * decompose: uses VS Code LM API to break the goal into proposed stories.
+   * persistStory: creates a story in the artifact store.
+   * notifyScheduler: adds the story ID to the scheduler's story list.
+   */
+  private wireGoalDecomposerHooks(): void {
+    if (!this.store) return;
+    const store = this.store;
+
+    goalDecomposer.setHooks({
+      decompose: async (goal: string): Promise<ProposedStory[]> => {
+        try {
+          const models = await vscode.lm.selectChatModels({ vendor: 'copilot' });
+          // Fallback: accept any available model
+          const available = models?.length ? models : await vscode.lm.selectChatModels({});
+          if (!available?.length) {
+            logger.warn('[Autonomy] No LM available for goal decomposition');
+            return [{
+              id: `proposed-${Date.now()}-1`,
+              title: goal.slice(0, 80),
+              description: 'LLM not available — please refine manually.',
+            }];
+          }
+
+          const lm = available[0];
+          const messages = [
+            vscode.LanguageModelChatMessage.User(
+              `Break this high-level goal into 2-5 concrete, actionable user stories. ` +
+              `Return ONLY a JSON array of objects with keys: id, title, description, priority. ` +
+              `No explanation, no markdown, no code fences.\n\nGoal: ${goal}`
+            ),
+          ];
+          const response = await lm.sendRequest(messages, {}, new vscode.CancellationTokenSource().token);
+          let text = '';
+          for await (const chunk of response.text) { text += chunk; }
+
+          const match = text.match(/\[[\s\S]*\]/);
+          if (match) {
+            const parsed = JSON.parse(match[0]) as ProposedStory[];
+            return parsed.slice(0, 5).map((s, i) => ({
+              id: s.id || `proposed-${Date.now()}-${i + 1}`,
+              title: s.title || `Story ${i + 1}`,
+              description: s.description,
+              priority: s.priority,
+            }));
+          }
+        } catch (err) {
+          logger.warn(`[Autonomy] Goal decomposition failed: ${errMsg(err)}`);
+        }
+        // Fallback: single story with the goal as title
+        return [{
+          id: `proposed-${Date.now()}-1`,
+          title: goal.slice(0, 80),
+          description: 'Auto-generated from goal. Refine as needed.',
+        }];
+      },
+
+      persistStory: async (story: ProposedStory): Promise<string> => {
+        const created = store.createStory(undefined);
+        await store.updateArtifact('story', created.id, {
+          title: story.title,
+          description: story.description || '',
+          metadata: { priority: story.priority },
+        });
+        return created.id;
+      },
+
+      notifyScheduler: (storyId: string) => {
+        // Re-seed the scheduler with the fresh story universe
+        const stories = autoScheduler.getStories();
+        stories.push({
+          id: storyId,
+          status: 'ready-for-dev',
+          priority: 'should-have',
+        } as SchedulerStory);
+        autoScheduler.setStories(stories);
+        this.broadcast({
+          type: 'goalStoryPersisted',
+          storyId,
+          status: 'ready-for-dev',
+        });
+      },
+    });
+  }
+
+  /**
+   * Extract artifact changes and story references from the live store.
+   * Used by dependency auto-resume to detect blocker completions.
+   */
+  private extractDependencyData(): {
+    changes: Array<{ artifactId: string; fromStatus?: string; toStatus?: string }>;
+    stories: StoryRef[];
+  } {
+    if (!this.store) return { changes: [], stories: [] };
+    try {
+      const state = this.store.getState();
+      const epics = (state?.epics ?? []) as Array<any>;
+      const stories: StoryRef[] = [];
+      const changes: Array<{ artifactId: string; fromStatus?: string; toStatus?: string }> = [];
+
+      for (const epic of epics) {
+        for (const story of (epic.stories ?? [])) {
+          stories.push({
+            id: story.id,
+            dependencies: story.dependencies,
+          });
+          changes.push({
+            artifactId: story.id,
+            toStatus: story.status,
+          });
+        }
+      }
+      return { changes, stories };
+    } catch {
+      return { changes: [], stories: [] };
+    }
+  }
+
+  /**
+   * Scan for orphaned terminal sessions from both in-memory terminals and
+   * persisted metadata. Sessions survive VS Code restarts via the persisted
+   * file so recovery can mark them as interrupted.
+   */
+  private async scanOrphanedTerminalSessions(): Promise<Array<{
+    sessionId: string;
+    artifactId: string;
+    pid?: number;
+    name: string;
+    startedAt: number;
+  }>> {
+    // 1) In-memory terminals (still active in this session)
+    const live = terminalExecutor.findOrphanedSessions();
+
+    // 2) Persisted sessions from disk (from a prior VS Code session)
+    const persisted = this.loadPersistedTerminalSessions();
+
+    // Merge: live sessions take priority; persisted sessions only added if
+    // they aren't already in the live list.
+    const liveIds = new Set(live.map(s => s.sessionId));
+    for (const s of persisted) {
+      if (!liveIds.has(s.sessionId)) {
+        live.push(s);
+      }
+    }
+
+    return live;
+  }
+
+  /** Persist terminal session metadata to the output folder. */
+  private persistTerminalSessions(
+    sessions: Array<{ sessionId: string; artifactId: string; pid?: number; name: string; startedAt: number }>,
+  ): void {
+    if (!this.hooks?.outputFolder) return;
+    try {
+      const filePath = path.join(this.hooks.outputFolder, TERMINAL_SESSIONS_FILE);
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, JSON.stringify(sessions, null, 2), 'utf-8');
+    } catch (err) {
+      logger.debug(`Failed to persist terminal sessions: ${errMsg(err)}`);
+    }
+  }
+
+  /** Load persisted terminal session metadata from the output folder. */
+  private loadPersistedTerminalSessions(): Array<{
+    sessionId: string;
+    artifactId: string;
+    pid?: number;
+    name: string;
+    startedAt: number;
+  }> {
+    if (!this.hooks?.outputFolder) return [];
+    try {
+      const filePath = path.join(this.hooks.outputFolder, TERMINAL_SESSIONS_FILE);
+      if (!fs.existsSync(filePath)) return [];
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      if (!Array.isArray(data)) return [];
+      return data;
+    } catch (err) {
+      logger.debug(`Failed to load persisted terminal sessions: ${errMsg(err)}`);
+      return [];
+    }
   }
 
   /**

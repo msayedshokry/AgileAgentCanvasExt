@@ -63,6 +63,9 @@ function buildOrchestrator(world: BmadWorld): OrchCtx {
         dispose() {}
       },
       window: { showWarningMessage: () => {} },
+      workspace: {
+        workspaceFolders: [{ uri: { fsPath: '/fake/project' } }],
+      },
     },
     '../utils/logger': {
       createLogger: () => ({ info: () => {}, warn: () => {}, error: () => {}, debug: () => {} }),
@@ -81,6 +84,38 @@ function buildOrchestrator(world: BmadWorld): OrchCtx {
     },
     './kanban-settings': {
       getKanbanMaxIterations: () => ctx.maxIter,
+    },
+    './circuit-breaker': {
+      circuitBreaker: {
+        canRun: () => true,
+        recordSuccess: () => {},
+        recordFailure: () => {},
+      },
+    },
+    './budget-enforcer': {
+      budgetEnforcer: {
+        canStart: () => true,
+        getStatus: () => ({}),
+      },
+    },
+    './auto-retry-engine': {
+      autoRetryEngine: {
+        run: async (_id: string, work: () => Promise<void>) => {
+          try {
+            await work();
+            return { succeeded: true, attempts: [], finalCategory: 'unknown', totalAttempts: 1, storyId: _id };
+          } catch (err) {
+            return { succeeded: false, attempts: [{ error: err, attemptNumber: 1, startedAt: Date.now() }], finalCategory: 'transient', totalAttempts: 1, storyId: _id };
+          }
+        },
+      },
+    },
+    './autonomous-git': {
+      autonomousGit: {
+        maybeBranch: async () => {},
+        maybeCommit: async () => {},
+        maybePR: async () => {},
+      },
     },
   });
 
