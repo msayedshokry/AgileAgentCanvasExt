@@ -115,15 +115,11 @@ function createEngine(world: BmadWorld): any {
         }
       },
       concurrencyQueue: mockConcurrencyQueue,
-      TRANSITION_RULES: [
-        { artifactType: 'story', fromStatus: 'backlog', toStatus: 'ready-for-dev', workflowId: 'story-enhancement', confirmWithUser: true },
-        { artifactType: 'story', fromStatus: 'ready-for-dev', toStatus: 'in-progress', workflowId: 'dev-story', confirmWithUser: true },
-        { artifactType: 'story', fromStatus: 'in-progress', toStatus: 'review', workflowId: 'code-review', confirmWithUser: true },
-        { artifactType: 'story', fromStatus: 'review', toStatus: 'done', workflowId: null, confirmWithUser: false },
-        { artifactType: 'epic', fromStatus: 'backlog', toStatus: 'ready-for-dev', workflowId: 'epic-enhancement', confirmWithUser: true },
-        { artifactType: 'epic', fromStatus: 'ready-for-dev', toStatus: 'in-progress', workflowId: 'sprint-planning', confirmWithUser: true },
-        { artifactType: 'prd', fromStatus: 'draft', toStatus: 'ready', workflowId: 'create-prd', confirmWithUser: true },
-      ],
+      // TRANSITION_RULES is exported locally by lane-transitions.ts (not from
+      // this module), so the proxyquire stub below is a no-op for rules.
+      // `when … I find the rule …` steps read TRANSITION_RULES from the real
+      // module via ctx.allTransitionRules = module.TRANSITION_RULES, so the
+      // stub here would have been dead code had we left it in.
     },
   });
 

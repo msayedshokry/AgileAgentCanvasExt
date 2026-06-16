@@ -29,7 +29,9 @@ Feature: Lane Transitions - Kanban Card Movement Orchestration
   Scenario: Story ready-for-dev → in-progress rule has dev-story workflow
     When I find the rule for story ready-for-dev → in-progress
     Then the rule workflowId should be "dev-story"
-    And the rule confirmWithUser should be true
+    # fb918a6 dropped the dev-story confirm modal — drag-to-in-progress launches
+    # the workflow directly, no Run/Skip prompt.
+    And the rule confirmWithUser should be false
 
   @transitions @rules
   Scenario: Story in-progress → review rule has code-review workflow
