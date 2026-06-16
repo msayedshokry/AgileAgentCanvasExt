@@ -2001,7 +2001,7 @@ ${stepContent}
                     }
                 ];
 
-            case 'nfr':
+            case 'nfr':  // @deprecated alias for 'nfr-assessment'
                 return [
                     {
                         path: `${bmadPath}/tea/workflows/testarch/nfr-assess/workflow.md`,

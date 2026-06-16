@@ -2044,35 +2044,64 @@ export interface BmadArtifactTypeMap {
  * New code should use the kebab-case canonical forms in `BmadArtifactTypeMap`.
  */
 export interface DeprecatedCamelCaseArtifactTypes {
+    /** @deprecated Use \`product-brief\` in \`BmadArtifactTypeMap\` instead. */
     productBrief: ProductBrief;
+    /** @deprecated Use \`test-case\` in \`BmadArtifactTypeMap\` instead. */
     testCase: TestCase;
+    /** @deprecated Use \`test-strategy\` in \`BmadArtifactTypeMap\` instead. */
     testStrategy: TestStrategy;
+    /** @deprecated Use \`use-case\` in \`BmadArtifactTypeMap\` instead. */
     useCase: UseCase;
+    /** @deprecated Use \`test-design\` in \`BmadArtifactTypeMap\` instead. */
     testDesign: TestDesign;
+    /** @deprecated Use \`traceability-matrix\` in \`BmadArtifactTypeMap\` instead. */
     traceabilityMatrix: TraceabilityMatrix;
+    /** @deprecated Use \`test-review\` in \`BmadArtifactTypeMap\` instead. */
     testReview: TestReview;
+    /** @deprecated Use \`nfr-assessment\` in \`BmadArtifactTypeMap\` instead. */
     nfrAssessment: NfrAssessment;
+    /** @deprecated Use \`test-framework\` in \`BmadArtifactTypeMap\` instead. */
     testFramework: TestFramework;
+    /** @deprecated Use \`ci-pipeline\` in \`BmadArtifactTypeMap\` instead. */
     ciPipeline: CiPipeline;
+    /** @deprecated Use \`automation-summary\` in \`BmadArtifactTypeMap\` instead. */
     automationSummary: AutomationSummary;
+    /** @deprecated Use \`atdd-checklist\` in \`BmadArtifactTypeMap\` instead. */
     atddChecklist: AtddChecklist;
+    /** @deprecated Use \`ux-design\` in \`BmadArtifactTypeMap\` instead. */
     uxDesign: UxDesign;
+    /** @deprecated Use \`readiness-report\` in \`BmadArtifactTypeMap\` instead. */
     readinessReport: ReadinessReport;
+    /** @deprecated Use \`sprint-status\` in \`BmadArtifactTypeMap\` instead. */
     sprintStatus: SprintStatus;
+    /** @deprecated Use \`change-proposal\` in \`BmadArtifactTypeMap\` instead. */
     changeProposal: ChangeProposal;
+    /** @deprecated Use \`code-review\` in \`BmadArtifactTypeMap\` instead. */
     codeReview: CodeReview;
+    /** @deprecated Use \`definition-of-done\` in \`BmadArtifactTypeMap\` instead. */
     definitionOfDone: DefinitionOfDone;
+    /** @deprecated Use \`project-overview\` in \`BmadArtifactTypeMap\` instead. */
     projectOverview: ProjectOverview;
+    /** @deprecated Use \`project-context\` in \`BmadArtifactTypeMap\` instead. */
     projectContext: ProjectContext;
+    /** @deprecated Use \`tech-spec\` in \`BmadArtifactTypeMap\` instead. */
     techSpec: TechSpec;
+    /** @deprecated Use \`problem-solving\` in \`BmadArtifactTypeMap\` instead. */
     problemSolving: ProblemSolving;
+    /** @deprecated Use \`innovation-strategy\` in \`BmadArtifactTypeMap\` instead. */
     innovationStrategy: InnovationStrategy;
+    /** @deprecated Use \`design-thinking\` in \`BmadArtifactTypeMap\` instead. */
     designThinking: DesignThinking;
+    /** @deprecated Use \`source-tree\` in \`BmadArtifactTypeMap\` instead. */
     sourceTree: SourceTree;
+    /** @deprecated Use \`test-summary\` in \`BmadArtifactTypeMap\` instead. */
     testSummary: TestSummary;
     // Short aliases (publish surface trimmed from canonical map)
+    /** @deprecated Use \`nfr-assessment\` in \`BmadArtifactTypeMap\` instead. */
     nfr: NfrAssessment;
+    /** @deprecated Use \`readiness-report\` in \`BmadArtifactTypeMap\` instead. */
     readiness: ReadinessReport;
+    /** @deprecated Use \`sprint-status\` in \`BmadArtifactTypeMap\` instead. */
     sprint: SprintStatus;
 }
 /**

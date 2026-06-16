@@ -558,19 +558,53 @@ export class ArtifactStore {
     /**
      * Get the on-disk URI for a given artifact store key (e.g. 'vision', 'prd',
      * 'epics', 'risks', 'testDesign', etc.).
-     * Returns null if no file has been loaded/written for that key.
+     *
+     * Lookup contract (two distinct modes):
+     *   - With explicit `artifactId`: case (a) is tried; if it misses,
+      lookup is **strict** and returns `null`. We do not silently substitute
+      a prefix-iter match — passing an id means the caller asked for a
+      specific file and a miss is a miss.
+     *   - Without `artifactId`: case (a) is tried; on miss, falls back to
+      prefix-iter for `${storeKey}:` entries and returns the first match.
+      This is best-effort and intended for callers that work from `artType`
+      alone (e.g. the post-save schema validation path in
+      workflow-executor.ts) where no specific id is available.
+     *
+     * Cases:
+     *   (a) Direct `sourceFiles.get(storeKey)` — singletons like 'vision',
+      'prd', 'epics' which map to a single aggregated file.
+     *   (b) `sourceFiles.get(`${storeKey}:${artifactId}`)` — per-id files
+      for array types like `readinessReport:RR-1` where each entry is a
+      separate file.
+     *
+     * Returns null if no file has been loaded/written.
      */
-    getArtifactFileUri(storeKey: string): vscode.Uri | null {
-        return this.sourceFiles.get(storeKey) ?? null;
+    getArtifactFileUri(storeKey: string, artifactId?: string): vscode.Uri | null {
+        const direct = this.sourceFiles.get(storeKey);
+        if (direct) return direct;
+        if (artifactId !== undefined) {
+            // Explicit id: require an exact `${storeKey}:${artifactId}` match.
+            // Don't fall back to prefix-iter, which would return arbitrary data.
+            return this.sourceFiles.get(`${storeKey}:${artifactId}`) ?? null;
+        }
+        // No id supplied: fall back to first prefix-iter match.
+        // Useful for the post-save schema validation path in workflow-executor.ts,
+        // which works from artType alone and has no artifactId available.
+        const prefix = `${storeKey}:`;
+        for (const [k, v] of this.sourceFiles) {
+            if (k.startsWith(prefix)) return v;
+        }
+        return null;
     }
 
     /**
      * Read the full on-disk JSON for a given artifact store key.
+     * See `getArtifactFileUri` for the resolution order.
      * Returns the parsed object (typically `{ metadata, content }` envelope)
      * or null if the file doesn't exist or can't be read.
      */
-    async readArtifactFile(storeKey: string): Promise<any | null> {
-        const fileUri = this.sourceFiles.get(storeKey);
+    async readArtifactFile(storeKey: string, artifactId?: string): Promise<any | null> {
+        const fileUri = this.getArtifactFileUri(storeKey, artifactId);
         if (!fileUri) return null;
         try {
             const raw = await vscode.workspace.fs.readFile(fileUri);
@@ -615,7 +649,13 @@ export class ArtifactStore {
     }
 
     /**
-     * Get the current state
+     * Get the current state.
+     *
+     * NOTE: The camelCase store keys below (`productBrief`, `testCases`,
+     * `definitionOfDone`, etc.) are the legacy internal store keys used by
+     * `this.artifacts.get/set()`.  New code receiving an artifactType string
+     * from the LM tool boundary should use the canonical kebab-case forms from
+     * `BmadArtifactTypeMap` (e.g. `'product-brief'`, `'test-case'`).
      */
     getState(): BmadArtifacts {
         return {
@@ -1236,6 +1276,11 @@ export class ArtifactStore {
 
             // =================================================================
             // TEA module artifact types
+            // NOTE: The camelCase store key literals used below
+            // (e.g. 'traceabilityMatrix', 'testFramework', 'ciPipeline')
+            // are legacy internal keys.  New callers should use the canonical
+            // kebab-case forms from BmadArtifactTypeMap when passing an
+            // artifactType string to updateArtifact / deleteArtifact.
             // =================================================================
 
             case 'traceability-matrix': {
@@ -1270,7 +1315,7 @@ export class ArtifactStore {
             }
 
             case 'nfr-assessment':
-            case 'nfr': {
+            case 'nfr': { // @deprecated alias for 'nfr-assessment'
                 const cur: any = this.artifacts.get('nfrAssessment') || {};
                 const upd = { ...cur };
                 if (!upd.id) upd.id = artifactId || 'nfr-assessment-1';
@@ -1342,6 +1387,9 @@ export class ArtifactStore {
 
             // =================================================================
             // BMM module artifact types
+            // NOTE: The camelCase store key literals used below
+            // (e.g. 'uxDesigns', 'changeProposals', 'definitionOfDone')
+            // are legacy internal keys.  See getState() JSDoc for guidance.
             // =================================================================
 
             case 'research': {
@@ -1379,8 +1427,10 @@ export class ArtifactStore {
             }
 
             case 'readiness-report':
-            case 'readiness': {
-                const cur: any = this.artifacts.get('readinessReport') || {};
+            case 'readiness': { // @deprecated alias for 'readiness-report' (plural array)
+                const arr: any[] = this.artifacts.get('readinessReports') || [];
+                const idx = arr.findIndex((a: any) => a.id === artifactId || a.metadata?.id === artifactId);
+                const cur: any = idx >= 0 ? arr[idx] : {};
                 const upd = { ...cur };
                 if (!upd.id) upd.id = artifactId || 'readiness-report-1';
                 if (changes.status) upd.status = changes.status;
@@ -1388,14 +1438,17 @@ export class ArtifactStore {
                 for (const f of ['summary', 'assessment', 'blockers', 'risks', 'recommendations', 'dependencyAnalysis', 'resourceAssessment', 'nextSteps', 'appendices']) {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
-                this.artifacts.set('readinessReport', upd);
+                if (idx >= 0) arr[idx] = upd; else arr.push(upd);
+                this.artifacts.set('readinessReports', arr);
                 logDebug('Updated readiness report:', upd.id);
                 break;
             }
 
             case 'sprint-status':
-            case 'sprint': {
-                const cur: any = this.artifacts.get('sprintStatus') || {};
+            case 'sprint': { // @deprecated alias for 'sprint-status' (plural array)
+                const arr: any[] = this.artifacts.get('sprintStatuses') || [];
+                const idx = arr.findIndex((a: any) => a.id === artifactId || a.metadata?.id === artifactId);
+                const cur: any = idx >= 0 ? arr[idx] : {};
                 const upd = { ...cur };
                 if (!upd.id) upd.id = artifactId || 'sprint-status-1';
                 if (changes.status) upd.status = changes.status;
@@ -1403,7 +1456,8 @@ export class ArtifactStore {
                 for (const f of ['generated', 'project', 'projectKey', 'trackingSystem', 'storyLocation', 'summary', 'epics', 'developmentStatus', 'statusDefinitions']) {
                     if (changes[f] !== undefined) upd[f] = changes[f];
                 }
-                this.artifacts.set('sprintStatus', upd);
+                if (idx >= 0) arr[idx] = upd; else arr.push(upd);
+                this.artifacts.set('sprintStatuses', arr);
                 logDebug('Updated sprint status:', upd.id);
                 break;
             }
@@ -1825,6 +1879,7 @@ export class ArtifactStore {
                 break;
             }
             case 'nfr-assessment':
+            case 'nfr':  // @deprecated alias for 'nfr-assessment'
                 this.artifacts.set('nfrAssessment', undefined);
                 break;
             case 'atdd-checklist':
@@ -1851,12 +1906,14 @@ export class ArtifactStore {
                 this.artifacts.set('uxDesigns', arr.filter((a: any) => a.id !== artifactId && a.metadata?.id !== artifactId));
                 break;
             }
-            case 'readiness-report': {
+            case 'readiness-report':
+            case 'readiness': { // @deprecated alias for 'readiness-report'
                 const arr = this.artifacts.get('readinessReports') || [];
                 this.artifacts.set('readinessReports', arr.filter((a: any) => a.id !== artifactId && a.metadata?.id !== artifactId));
                 break;
             }
-            case 'sprint-status': {
+            case 'sprint-status':
+            case 'sprint': { // @deprecated alias for 'sprint-status'
                 const arr = this.artifacts.get('sprintStatuses') || [];
                 this.artifacts.set('sprintStatuses', arr.filter((a: any) => a.id !== artifactId && a.metadata?.id !== artifactId));
                 break;
@@ -9165,6 +9222,22 @@ export class ArtifactStore {
             return { type: 'test-strategy', artifact: state.testStrategy };
         }
         
+        // Check readiness reports (plural array — search by id or metadata.id).
+        // Without this, harness pre-flight at updateArtifact's top saw
+        // existingArtifact = {} for these types and auto-fix policies could
+        // clobber real content with placeholders (the same data-loss pattern
+        // that previously bit epic updates).
+        const readiness = state.readinessReports?.find((a: any) => a.id === id || a.metadata?.id === id);
+        if (readiness) {
+            return { type: 'readiness-report', artifact: readiness };
+        }
+
+        // Check sprint statuses (plural array — search by id or metadata.id)
+        const sprint = state.sprintStatuses?.find((a: any) => a.id === id || a.metadata?.id === id);
+        if (sprint) {
+            return { type: 'sprint-status', artifact: sprint };
+        }
+
         return null;
     }
 

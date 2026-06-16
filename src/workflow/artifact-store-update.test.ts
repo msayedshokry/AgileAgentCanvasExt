@@ -115,6 +115,10 @@ describe('updateArtifact — bad payloads rejected at runtime', () => {
         await expect(
             store.updateArtifact('epic', 'EPIC-1', { status: 'invalid-lane' })
         ).rejects.toThrow('Blocked by policies: epic-status-valid-lane');
+
+        // Verify state was NOT mutated before harness rejection
+        const epics = store.getEpics();
+        expect(epics[0].status).toBe('draft');
     });
 
     it('accepts a valid epic update when harness passes', async () => {
