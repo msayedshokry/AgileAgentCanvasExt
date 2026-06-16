@@ -177,7 +177,7 @@ export class HarnessEngine extends EventEmitter {
         severity: 'blocking',
         evaluate: async (ctx) => {
           if (!ctx.artifact) return ['No artifact data provided'];
-          const validation = schemaValidator.validateChanges(ctx.artifactType, ctx.artifact as any);
+          const validation = schemaValidator.validateChanges(ctx.artifactType, ctx.artifact as Record<string, unknown>);
           return validation.valid ? null : validation.errors;
         },
         autoFix: async (ctx) => {
@@ -186,7 +186,7 @@ export class HarnessEngine extends EventEmitter {
             const schemaContent = schemaValidator.getSchemaContent(ctx.artifactType);
             if (schemaContent) {
               const schema = JSON.parse(schemaContent);
-              const fixed = repairDataWithSchema(ctx.artifact as any, schema as any);
+              const fixed = repairDataWithSchema(ctx.artifact as Record<string, unknown>, schema as Record<string, unknown>);
               if (fixed.changed && fixed.data) {
                 return { ok: true, data: fixed.data };
               }

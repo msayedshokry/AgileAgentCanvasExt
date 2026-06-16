@@ -371,6 +371,7 @@ export interface SuccessMetrics {
 }
 
 export interface Risk {
+    id?: string;
     risk: string;
     impact: 'low' | 'medium' | 'high' | 'critical';
     mitigation: string;

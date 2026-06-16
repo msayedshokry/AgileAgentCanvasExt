@@ -318,7 +318,7 @@ export class LaneTransitionEngine {
             a2aRemoteUrl,
             a2aDelegatedAt: new Date().toISOString(),
           },
-        } as any);
+        } as Record<string, unknown>);
       } catch (metaErr) {
         logger.debug(
           `[A2A] Could not write A2A metadata to artifact ${artifactId}: ${errMsg(metaErr)}`

@@ -372,7 +372,7 @@ export class AutonomyLifecycle extends EventEmitter {
 
   /** Set the current stories on the scheduler. Call when artifacts change. */
   refreshSchedulerStories(stories: Array<{ id: string; status: string; priority?: string }>): void {
-    autoScheduler.setStories(stories as any);
+    autoScheduler.setStories(stories as SchedulerStory[]);
   }
 
   /**

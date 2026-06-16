@@ -225,7 +225,7 @@ export class WizardStepsProvider implements vscode.TreeDataProvider<WorkflowTree
             
             // Determine icon based on status and blocked state
             let icon: vscode.ThemeIcon;
-            let effectiveStatus: 'completed' | 'current' | 'pending' | 'blocked' = status as any;
+            let effectiveStatus: 'completed' | 'current' | 'pending' | 'blocked' = status;
             
             if (isBlocked) {
                 icon = new vscode.ThemeIcon('lock', new vscode.ThemeColor('disabledForeground'));
@@ -259,7 +259,7 @@ export class WizardStepsProvider implements vscode.TreeDataProvider<WorkflowTree
                 step.id,
                 step.label,
                 description,
-                effectiveStatus as any,
+                effectiveStatus,
                 icon,
                 command
             ));

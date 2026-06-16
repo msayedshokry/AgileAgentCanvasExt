@@ -136,7 +136,7 @@ export class AcpSessionManager implements vscode.Disposable {
         data: result,
       });
 
-      return this.buildResult(session, 'completed', result, startTime, (result as any)?.toolCalls ?? 0);
+      return this.buildResult(session, 'completed', result, startTime, (result as unknown as Record<string, unknown>)?.toolCalls as number ?? 0);
     } catch (error) {
       if (session.status === 'cancelled') {
         return this.buildResult(session, 'cancelled', null, startTime);

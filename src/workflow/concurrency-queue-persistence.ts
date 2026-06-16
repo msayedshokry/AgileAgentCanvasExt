@@ -128,7 +128,7 @@ export function setupAutoSave(persistence: ConcurrencyQueuePersistence, debounce
     timer = setTimeout(() => persistence.save(), debounceMs);
   };
   // Patch tryAcquire/release to trigger save
-  const queue = concurrencyQueue as any;
+  const queue = concurrencyQueue as unknown as { tryAcquire: (id: string, agent: string, req: string) => unknown; release: (id: string) => void };
   const origTry = queue.tryAcquire;
   const origRelease = queue.release;
   queue.tryAcquire = function (id: string, agent: string, req: string) {

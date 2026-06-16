@@ -486,7 +486,7 @@ export function activate(context: vscode.ExtensionContext) {
         const fresh = buildArtifacts(artifactStore, workspaceRoot)
             .filter((a: any) => a.type === 'story')
             .map((a: any) => ({ id: a.id, status: a.status, priority: a.priority }));
-        autoScheduler.setStories(fresh as any);
+        autoScheduler.setStories(fresh as Array<{ id: string; status: string; priority?: string }>);
     });
 
     // ── Workspace resolver: centralized active-project management ───────
@@ -531,7 +531,7 @@ export function activate(context: vscode.ExtensionContext) {
                     artifactStore
                 );
                 // Seed the scheduler with current stories
-                autoScheduler.setStories(stories as any);
+                autoScheduler.setStories(stories as Array<{ id: string; status: string; priority?: string }>);
                 autonomyLifecycle.refreshSchedulerStories(stories);
                 autonomyLifecycle.start();
                 logger.info('Autonomy lifecycle started');

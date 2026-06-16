@@ -95,7 +95,7 @@ async function _refresh(): Promise<void> {
     try {
         const result = await runCodeburn(CB.status(), { cwd: root, timeoutMs: 8000, showChannel: false });
         if (result.success && result.json) {
-            const j = result.json as any;
+            const j = result.json as { cost?: { total?: number }; today?: { cost?: number; tokens?: number; sessions?: number }; tokens?: { total?: number }; sessions?: number };
             const cost = j?.cost?.total ?? j?.today?.cost ?? j?.cost ?? 0;
             const tokens = j?.tokens?.total ?? j?.today?.tokens ?? j?.tokens ?? 0;
             const sessions = j?.sessions ?? j?.today?.sessions ?? 0;

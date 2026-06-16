@@ -48,7 +48,7 @@ export class DependencyAutoResume {
     for (const s of stories) {
       const id = s.id;
       if (!statusById.has(id)) {
-        const deps = (s as any).dependencies;
+        const deps = s.dependencies as { status?: string } | undefined;
         statusById.set(id, deps?.status ?? 'backlog');
       }
     }

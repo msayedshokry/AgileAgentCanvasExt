@@ -312,7 +312,7 @@ export class KanbanOrchestrator {
     try {
       // Stored under metadata; the story update path lifts metadata fields to
       // the top level, so the next dev run sees `fixRequests` in the artifact.
-      await this.store.updateArtifact(type, id, { metadata: { fixRequests } } as any);
+      await this.store.updateArtifact(type, id, { metadata: { fixRequests } } as Record<string, unknown>);
     } catch (err) {
       logger.debug(`[Orchestrator] Could not attach fixRequests to ${id}: ${errMsg(err)}`);
     }

@@ -745,8 +745,8 @@ export class ArtifactStore {
                     v === undefined || v === null || v === '' ||
                     (Array.isArray(v) && v.length === 0);
                 for (const [key, value] of Object.entries(lastFix.fixedArtifact)) {
-                    if (isEmpty((candidate as any)[key])) {
-                        (changes as any)[key] = value;
+                    if (isEmpty(                    (candidate as Record<string, unknown>)[key])) {
+                        changes[key] = value;
                     }
                 }
             }
@@ -4600,17 +4600,17 @@ export class ArtifactStore {
             'technicalSummary'
         ];
         for (const key of verboseKeys) {
-            const existingVal = existing[key];
+            const existingVal = (existing as unknown as Record<string, unknown>)[key];
             const incomingVal = incoming[key];
             if (incomingVal !== undefined && incomingVal !== null) {
                 const existingEmpty = existingVal === undefined || existingVal === null
                     || (Array.isArray(existingVal) && existingVal.length === 0);
                 if (existingEmpty) {
-                    (existing as any)[key] = incomingVal;
+                    (existing as unknown as Record<string, unknown>)[key] = incomingVal;
                 } else if (Array.isArray(existingVal) && Array.isArray(incomingVal)
-                           && incomingVal.length > (existingVal as any[]).length) {
+                           && incomingVal.length > (existingVal as unknown[]).length) {
                     // Incoming has MORE items — prefer it (covers manually added UCs)
-                    (existing as any)[key] = incomingVal;
+                    (existing as unknown as Record<string, unknown>)[key] = incomingVal;
                 }
             }
         }
@@ -6354,7 +6354,7 @@ export class ArtifactStore {
     private getOutputChannel(): vscode.OutputChannel {
         // Use the shared output channel from the extension, which allows for testing mocks
         
-        return (globalThis as any).__acOutputChannel || vscode.window.createOutputChannel('Agile Agent Canvas');
+        return (globalThis as unknown as { __acOutputChannel?: any }).__acOutputChannel || vscode.window.createOutputChannel('Agile Agent Canvas');
     }
 
     private async saveStoriesToFile(state: BmadArtifacts, baseUri: vscode.Uri): Promise<void> {
@@ -6437,12 +6437,12 @@ export class ArtifactStore {
             // Write slim storyRefs instead of full story objects to epic.json.
             // Full story data lives in standalone files: stories/{id}.json
             if (Array.isArray(epicFields.stories)) {
-                (epicFields as any).storyRefs = epicFields.stories.map((story: any) => ({
+                (epicFields as Record<string, unknown>).storyRefs = epicFields.stories.map((story: any) => ({
                     id: story.id,
                     title: story.title || 'Untitled',
                     file: `stories/${String(story.id).replace(/[^a-zA-Z0-9.-]/g, '-')}.json`
                 }));
-                delete (epicFields as any).stories;
+                delete (epicFields as Record<string, unknown>).stories;
             }
 
             // Derive a filesystem-safe ID slug
@@ -6826,7 +6826,7 @@ export class ArtifactStore {
             },
             content: (() => {
                 if (state.testStrategy) {
-                    const { id, status, ...contentFields } = state.testStrategy as any;
+                    const { id, status, ...contentFields } = state.testStrategy as unknown as { id?: string; status?: string; [key: string]: unknown };
                     return contentFields;
                 }
                 return state.testStrategy;

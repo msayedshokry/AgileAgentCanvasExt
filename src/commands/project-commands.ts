@@ -329,7 +329,7 @@ export function loadDemoData(store: ArtifactStore): Thenable<void> {
     ];
 
     sampleEpics.forEach(epic => {
-        store.addEpic(epic as any);
+        store.addEpic(epic as import('../types').Epic);
     });
 
     store.setCurrentStep('epics');

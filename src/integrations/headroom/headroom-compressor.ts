@@ -92,7 +92,7 @@ export async function detectHeadroom(): Promise<HeadroomAvailability> {
             clearTimeout(timeout);
 
             if (resp.ok) {
-                const body = await resp.json() as any;
+                const body = await resp.json() as { status?: string; version?: string };
                 proxyRunning = body?.status === 'healthy';
                 version = body?.version;
             }

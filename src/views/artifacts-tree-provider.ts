@@ -413,7 +413,7 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
         const risks: any[] = [];
 
         // Dedicated risks artifact (state.risks)
-        const standaloneRisks = state.risks as any;
+        const standaloneRisks = (state.risks as unknown) as Risk[] | { risks: Risk[] } | undefined;
         if (Array.isArray(standaloneRisks)) {
             risks.push(...standaloneRisks);
         } else if (standaloneRisks?.risks && Array.isArray(standaloneRisks.risks)) {
@@ -421,7 +421,7 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
         }
 
         // PRD-level risks (state.prd.risks) — these appear as standalone cards on the canvas
-        const prd = state.prd as any;
+        const prd = state.prd as unknown as { risks?: Risk[] } | undefined;
         if (prd?.risks && Array.isArray(prd.risks)) {
             const existingIds = new Set(risks.map(r => r.id).filter(Boolean));
             for (const r of prd.risks) {
@@ -505,7 +505,7 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
 
     private getIndividualRequirements(category: 'functional' | 'nonFunctional' | 'additional'): ArtifactTreeItem[] {
         const reqs = this.store.getRequirements();
-        const reqList: any[] = (reqs as any)[category] || [];
+        const reqList = (reqs as Record<string, Array<{ id?: string; title?: string; description?: string; priority?: string; status?: string }>>)[category] || [];
 
         return reqList.map((req, i) => {
             const item = new ArtifactTreeItem(

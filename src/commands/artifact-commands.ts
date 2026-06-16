@@ -465,7 +465,7 @@ const DEV_WORKFLOWS: Record<string, { label: string; description: string }[]> = 
  * Shows a dev-workflow picker, then sends @agileagentcanvas /dev <id> <workflow-name>.
  */
 export async function startDevelopment(artifact: any, store: ArtifactStore): Promise<void> {
-    acOutput.appendLine(`[StartDev] ENTERED — artifact.id=${artifact?.id}, artifact.type=${artifact?.type}, source=${(artifact as any)?.source || 'n/a'}`);
+    acOutput.appendLine(`[StartDev] ENTERED — artifact.id=${artifact?.id}, artifact.type=${artifact?.type}, source=${(artifact as { source?: string })?.source || 'n/a'}`);
 
     try {
         store.setRefineContext(artifact);
@@ -960,7 +960,7 @@ export async function syncToFiles(store: ArtifactStore): Promise<void> {
 }
 
 export async function goToStep(stepId: string, store: ArtifactStore): Promise<void> {
-    store.setCurrentStep(stepId as any);
+    store.setCurrentStep(stepId as import('../state/artifact-store').WizardStep);
 
     const chatCommands: Record<string, string> = {
         'vision': '@agileagentcanvas /vision',

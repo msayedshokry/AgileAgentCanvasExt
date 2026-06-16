@@ -69,10 +69,10 @@ export async function writeJsonFile(targetUri: vscode.Uri, payload: Record<strin
                 finalPayload.metadata = { ...foreignMeta, ...payloadMeta };
 
                 // Always preserve original creation timestamp
-                if ((existingMeta.timestamps as any)?.created) {
-                    (finalPayload.metadata as any).timestamps = {
-                        ...((finalPayload.metadata as any).timestamps || {}),
-                        created: (existingMeta.timestamps as any).created,
+                if ((existingMeta.timestamps as Record<string, unknown>)?.created) {
+                    (finalPayload.metadata as Record<string, unknown>).timestamps = {
+                        ...((finalPayload.metadata as Record<string, unknown>).timestamps || {}),
+                        created: (existingMeta.timestamps as Record<string, unknown>).created,
                     };
                 }
             }
@@ -116,7 +116,7 @@ export function normalizeLegacyArtifact(artifact: Record<string, unknown>): Reco
 
     // Normalize BMAD envelope
     if (result.content && typeof result.content === 'object') {
-        (result as any).content = normalizeContent((result as any).content);
+        (result as Record<string, unknown>).content = normalizeContent((result as Record<string, unknown>).content as Record<string, unknown>);
     }
 
     return result;
@@ -131,22 +131,21 @@ function normalizeContent(content: Record<string, unknown>): Record<string, unkn
 
     // Normalize acceptance criteria (story schema)
     if (Array.isArray(result.acceptanceCriteria)) {
-        (result as any).acceptanceCriteria = result.acceptanceCriteria.map((ac: any) => normalizeAc(ac));
+        (result as Record<string, unknown>).acceptanceCriteria = result.acceptanceCriteria.map((ac: Record<string, unknown>) => normalizeAc(ac));
     }
 
     // Normalize tasks (story schema)
     if (Array.isArray(result.tasks)) {
-        (result as any).tasks = result.tasks.map((task: any) => normalizeTask(task));
+        (result as Record<string, unknown>).tasks = result.tasks.map((task: Record<string, unknown>) => normalizeTask(task));
     }
 
     // Normalize inline stories (epics schema — epics[].stories[] or top-level stories[])
     if (Array.isArray(result.stories)) {
-        (result as any).stories = result.stories.map((s: any) => normalizeInlineStory(s));
+        (result as Record<string, unknown>).stories = (result.stories as unknown[]).map((s) => normalizeInlineStory(s as Record<string, unknown>));
     }
     if (Array.isArray(result.epics)) {
-        (result as any).epics = result.epics.map((epic: any) => {
-            if (Array.isArray(epic.stories)) {
-                return { ...epic, stories: epic.stories.map((s: any) => normalizeInlineStory(s)) };
+        (result as Record<string, unknown>).epics = result.epics.map((epic: Record<string, unknown>) => {              if (Array.isArray(epic.stories)) {
+                return { ...epic, stories: (epic.stories as unknown[]).map((s: unknown) => normalizeInlineStory(s as Record<string, unknown>)) };
             }
             return epic;
         });

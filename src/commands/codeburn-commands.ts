@@ -225,21 +225,21 @@ export class CodeburnCommands {
                 this.printSection('Codeburn Cost Report');
 
                 if (today.success && today.json) {
-                    const j = today.json as any;
+                    const j = today.json as Record<string, unknown>;
                     this.print(`Today:    $${pick(j, 'cost.total', 0)}  |  ${pick(j, 'tokens.total', 0)} tokens  |  ${pick(j, 'sessions', 0)} sessions`);
                 } else {
                     this.print('Today:    (no data)');
                 }
 
                 if (week.success && week.json) {
-                    const j = week.json as any;
+                    const j = week.json as Record<string, unknown>;
                     this.print(`7 Days:   $${pick(j, 'cost.total', 0)}  |  ${pick(j, 'tokens.total', 0)} tokens  |  ${pick(j, 'sessions', 0)} sessions`);
                 } else {
                     this.print('7 Days:   (no data)');
                 }
 
                 if (month.success && month.json) {
-                    const j = month.json as any;
+                    const j = month.json as Record<string, unknown>;
                     this.print(`30 Days:  $${pick(j, 'cost.total', 0)}  |  ${pick(j, 'tokens.total', 0)} tokens  |  ${pick(j, 'sessions', 0)} sessions`);
                 } else {
                     this.print('30 Days:  (no data)');
@@ -270,7 +270,7 @@ export class CodeburnCommands {
                     return;
                 }
 
-                const rows = Array.isArray(result.json) ? result.json : (result.json as any).models ?? [];
+                const rows = Array.isArray(result.json) ? result.json : ((result.json as Record<string, unknown>).models ?? []) as unknown[];
                 if (rows.length === 0) {
                     this.print('No model data found.');
                     return;
@@ -381,7 +381,7 @@ export class CodeburnCommands {
             }
 
             if (result.json) {
-                const j = result.json as any;
+                const j = result.json as Record<string, unknown>;
                 const cost = pick(j, 'cost.total', pick(j, 'today.cost', pick(j, 'cost', 0)));
                 const tokens = pick(j, 'tokens.total', pick(j, 'today.tokens', pick(j, 'tokens', 0)));
                 const sessions = pick(j, 'sessions', pick(j, 'today.sessions', 0));
@@ -433,7 +433,7 @@ export class CodeburnCommands {
                 return `**Codeburn error:** ${result.stderr || 'No data'}`;
             }
 
-            const rows = Array.isArray(result.json) ? result.json : (result.json as any).models ?? [];
+            const rows = Array.isArray(result.json) ? result.json : ((result.json as Record<string, unknown>).models ?? []) as unknown[];
             if (rows.length === 0) { return `No model usage data found${provider ? ` for ${provider}` : ''}.`; }
 
             const heading = provider
@@ -477,20 +477,20 @@ export class CodeburnCommands {
                         .then(res => ({ p, res }))
                         .catch(err => {
                             logger.warn(`[CodeburnCommands] compare fetch for ${p} failed:`, err);
-                            return { p, res: { success: false, json: undefined } as any };
+                            return { p, res: { success: false, json: undefined } as { success: boolean; json?: unknown } };
                         })
                 )
             );
 
             for (const { p, res } of settled) {
                 if (res.success && res.json && Array.isArray(res.json) && res.json.length > 0) {
-                    const agg = (res.json as any[]).reduce(
+                    const agg = (res.json as Array<{ cost?: number; totalCost?: number; tokens?: number; totalTokens?: number; calls?: number }>).reduce(
                         (acc, row) => ({
-                            cost: acc.cost + (row.cost ?? row.totalCost ?? 0),
-                            tokens: acc.tokens + (row.tokens ?? row.totalTokens ?? 0),
-                            calls: acc.calls + (row.calls ?? 0)
+                            cost: acc.cost + Number(row.cost ?? row.totalCost ?? 0),
+                            tokens: acc.tokens + Number(row.tokens ?? row.totalTokens ?? 0),
+                            calls: acc.calls + Number(row.calls ?? 0)
                         }),
-                        { cost: 0, tokens: 0, calls: 0 }
+                        { cost: 0, tokens: 0, calls: 0 } as { cost: number; tokens: number; calls: number }
                     );
                     results.push({ name: p, ...agg });
                 } else {
