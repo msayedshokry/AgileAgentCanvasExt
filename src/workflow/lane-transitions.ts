@@ -52,7 +52,9 @@ export const TRANSITION_RULES: TransitionRule[] = [
   { artifactType: 'prd',    fromStatus: 'draft',         toStatus: 'ready',         workflowId: 'create-prd', confirmWithUser: true },
 
   // Ready for Dev → In Progress (dev-story for interactive, dev-executor for autonomous terminal)
-  { artifactType: 'story',  fromStatus: 'ready-for-dev', toStatus: 'in-progress',   workflowId: 'dev-story', terminalWorkflowId: 'aac-kanban-dev-executor', confirmWithUser: true, preFlightValidation: true },
+  // confirmWithUser: false — the user already committed by dragging the card; an extra
+  // Run/Skip modal is redundant friction. Other transitions keep confirmWithUser: true.
+  { artifactType: 'story',  fromStatus: 'ready-for-dev', toStatus: 'in-progress',   workflowId: 'dev-story', terminalWorkflowId: 'aac-kanban-dev-executor', confirmWithUser: false, preFlightValidation: true },
   { artifactType: 'epic',   fromStatus: 'ready-for-dev', toStatus: 'in-progress',   workflowId: 'sprint-planning', confirmWithUser: true, preFlightValidation: true },
 
   // In Progress → Review

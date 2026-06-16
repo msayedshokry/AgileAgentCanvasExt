@@ -2899,7 +2899,48 @@ output format setting and will generate both .json and .md files when the format
 ${workflowSection}
 
 ## Current Artifact
-${artifact ? JSON.stringify(artifact, null, 2) : '(none — this is a new artifact creation task)'}
+${(() => {
+    if (!artifact) return '(none — this is a new artifact creation task)';
+    // Resolve file paths via the store so we reference the artifact on disk
+    // instead of dumping its full JSON. The agent has agileagentcanvas_read_file
+    // and can pull the content it needs; this keeps the prompt small and avoids
+    // the "wall of text" the user saw when epic content was embedded.
+    const candidateTypes = ['story', 'epic', 'requirement', 'use-case', 'prd', 'architecture', 'productBrief', 'test-case', 'test-strategy'];
+    let artifactFilePath: string | null = null;
+    let resolvedType: string | null = null;
+    if (store?.getArtifactFileUri && artifact.id !== undefined && artifact.id !== null) {
+        for (const t of candidateTypes) {
+            const uri = store.getArtifactFileUri(t, String(artifact.id));
+            if (uri) { artifactFilePath = uri.fsPath; resolvedType = t; break; }
+        }
+    }
+    let epicFilePath: string | null = null;
+    if (store?.getArtifactFileUri && artifact.epicId !== undefined && artifact.epicId !== null) {
+        const epicUri = store.getArtifactFileUri('epic', String(artifact.epicId));
+        if (epicUri) epicFilePath = epicUri.fsPath;
+    }
+    if (artifactFilePath) {
+        const lines = [
+            `- ID: ${artifact.id}`,
+            artifact.title ? `- Title: ${artifact.title}` : '',
+            resolvedType ? `- Type: ${resolvedType}` : '',
+            artifact.status ? `- Status: ${artifact.status}` : '',
+            artifact.epicId ? `- Epic: ${artifact.epicId}${artifact.epicTitle ? ` (${artifact.epicTitle})` : ''}` : '',
+            `- File: \`${artifactFilePath}\``,
+            epicFilePath ? `- Parent Epic File: \`${epicFilePath}\`` : '',
+            '',
+            'Use the `agileagentcanvas_read_file` tool to read this file when you need its full contents.',
+        ].filter(Boolean);
+        return lines.join('\n');
+    }
+    // Fallback: minimal summary (no full JSON).
+    return [
+        `- ID: ${artifact.id}`,
+        artifact.title ? `- Title: ${artifact.title}` : '',
+        artifact.status ? `- Status: ${artifact.status}` : '',
+        '(Artifact file path not found in store — read access only via the BMAD framework or workspace tools.)',
+    ].filter(Boolean).join('\n');
+})()}
 
 ## Task
 ${task}
