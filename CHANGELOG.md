@@ -62,6 +62,14 @@ A structural cast workaround was hiding a type-modeling gap: the BMAD `Vision` i
 - **Vision now matches every other artifact's shape** — `Vision` exposes the same `id`, `title`, `status` triple every other BMAD artifact already provides top-level. Old documents continue to load unchanged (the new fields are optional, so legacy entries render the same empty-state placeholder as before). Queries read the typed Vision shape directly; the local view-type alias and structural cast are gone.
 - **Zero `as any` casts in production source** — A final cast audit across the source tree (test files and mock fixtures excluded) returned no hits.
 
+### Fixed: Lane-transition test aligned with dev-story confirm-modal drop
+
+A previous change dropped the dev-story confirm modal — drag-to-in-progress launches the dev-story workflow directly, with no Run/Skip prompt — but the lane-transitions Cucumber scenario still expected the old `confirmWithUser: true`. CI was failing on the stale expectation until the test was aligned with production, and a guard scenario was added so future contributors can't accidentally re-enable the modal.
+
+- **Test now matches production** — The `Story ready-for-dev → in-progress` scenario asserts `confirmWithUser: false`, matching the direct-launch behavior the rest of the app already relies on.
+- **Regression guard added** — A new scenario locks the contract: every rule with workflow `dev-story` must skip the user-confirm prompt AND explicitly set the confirm attribute to `false`. Catches attempts to re-enable the modal (flipping the flag, dropping it to `undefined`, or introducing a duplicate rule under the same workflow id).
+- **No user-visible behavior change** — Test-infrastructure hardening only. All 810 lane-transitions scenarios pass; typecheck clean.
+
 ## 0.5.5
 
 ### Feature: Autonomous Auto-Advance for Agentic Kanban
