@@ -29,6 +29,10 @@ remaining-failures.txt
 graphify-out/.graphify_*.json
 graphify-out/cache/
 graphify-out/cache/stat-index.json
+# graphify root marker — per-machine absolute path written by /graphify.
+# Intentionally gitignored (not committed) so each contributor's path stays
+# out of history.
+graphify-out/.graphify_root
 
 # Python artifacts
 __pycache__/
