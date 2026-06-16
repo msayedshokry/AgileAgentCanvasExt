@@ -679,4 +679,249 @@ describe('Autonomous loop: AutoScheduler + orchestrator wiring', () => {
       autoScheduler.off('queueEmpty', onQueueEmpty);
     }
   });
+
+  it('budget-enforced pause: scheduler auto-pauses when budgetEnforcer.isPaused() returns true', async () => {
+    // Simulate budget cap hit — the enforcer reports paused state.
+    mockBudgetEnforcer.isPaused.mockReturnValue(true);
+
+    const { epics } = makeStories();
+    const store = createTestStore(epics);
+    const terminalExecutor = { executeAndAwaitVerdict: vi.fn() } as any;
+    const executor = { executeLaneTransition: vi.fn() } as any;
+    const orch = new KanbanOrchestrator(store, executor, terminalExecutor);
+
+    autoScheduler.setRunner((storyId: string): Promise<boolean> => {
+      const found = store.findArtifactById(storyId);
+      if (!found) return Promise.resolve(false);
+      return orch.runAutonomous(found.artifact, {}).then(r => r.ok);
+    });
+
+    autoScheduler.setStories([{ id: 'S-1', status: 'ready-for-dev', priority: 'P1' }]);
+
+    // Capture state changes
+    const stateChanges: Array<{ from: string; to: string }> = [];
+    const onStateChange = (e: any) => stateChanges.push(e);
+    autoScheduler.on('stateChange', onStateChange);
+
+    try {
+      autoScheduler.setPollIntervalMs(100);
+      autoScheduler.setWipLimit(3);
+      autoScheduler.start();
+
+      // The scheduler's tick() checks isPaused() and calls pause() immediately.
+      await vi.waitFor(
+        () => expect(autoScheduler.getState()).toBe('paused'),
+        { timeout: 5000, interval: 50 },
+      );
+
+      // State transitioned: active → paused
+      expect(stateChanges).toContainEqual({ from: 'active', to: 'paused' });
+
+      // No story was started (orchestrator never called)
+      expect(terminalExecutor.executeAndAwaitVerdict).not.toHaveBeenCalled();
+      expect(executor.executeLaneTransition).not.toHaveBeenCalled();
+    } finally {
+      autoScheduler.off('stateChange', onStateChange);
+    }
+  });
+
+  it('scheduler resume() picks work immediately without waiting for poll interval (#34)', async () => {
+    // Pause the scheduler, seed a story, then resume — the immediate tick()
+    // should pick the story without waiting for the poll timer.
+    mockBudgetEnforcer.isPaused.mockReturnValue(true);
+
+    const { epics, story } = makeStories();
+    const store = createTestStore(epics);
+    const terminalExecutor = {
+      executeAndAwaitVerdict: vi.fn()
+        .mockResolvedValueOnce({ verdict: 'COMPLETED', summary: 'Dev done' })
+        .mockResolvedValueOnce({ verdict: 'APPROVED', summary: 'Review passed' }),
+    } as any;
+    const executor = { executeLaneTransition: vi.fn() } as any;
+    const orch = new KanbanOrchestrator(store, executor, terminalExecutor);
+
+    // Runner marks story as done after completion
+    autoScheduler.setRunner(async (storyId: string): Promise<boolean> => {
+      const found = store.findArtifactById(storyId);
+      if (!found) return false;
+      const result = await orch.runAutonomous(found.artifact, {});
+      if (result.status === 'complete') {
+        const stories = autoScheduler.getStories().map(s =>
+          s.id === storyId ? { ...s, status: 'done' } : s,
+        );
+        autoScheduler.setStories(stories);
+      }
+      return result.ok;
+    });
+
+    autoScheduler.setStories([{ id: 'S-1', status: 'ready-for-dev', priority: 'P1' }]);
+
+    const startedEvents: string[] = [];
+    const completedEvents: string[] = [];
+    const onStartedEvt = (e: any) => startedEvents.push(e.storyId);
+    const onCompletedEvt = (e: any) => completedEvents.push(e.storyId);
+    autoScheduler.on('started', onStartedEvt);
+    autoScheduler.on('completed', onCompletedEvt);
+
+    try {
+      autoScheduler.setPollIntervalMs(60_000); // 1 minute — way longer than the test
+      autoScheduler.setWipLimit(1);
+      autoScheduler.start();
+
+      // Scheduler auto-pauses because isPaused() is true
+      await vi.waitFor(() => expect(autoScheduler.getState()).toBe('paused'), { timeout: 2000, interval: 50 });
+
+      // Now unpause the budget — the scheduler should resume via
+      // budgetEnforcer.setOnUnpaused callback, but here we test resume() directly.
+      mockBudgetEnforcer.isPaused.mockReturnValue(false);
+      autoScheduler.resume();
+
+      // resume() calls tick() immediately — story should be picked and run to done
+      // without waiting 60 seconds for the poll timer.
+      await vi.waitFor(
+        () => expect(completedEvents).toContain('S-1'),
+        { timeout: 10000, interval: 100 },
+      );
+
+      expect(startedEvents).toContain('S-1');
+      expect(terminalExecutor.executeAndAwaitVerdict).toHaveBeenCalled();
+
+      // Story reached done status in the store
+      const updates = vi.mocked(store.updateArtifact).mock.calls.map((c: any[]) => c[2].status);
+      expect(updates).toEqual(['in-progress', 'review', 'done']);
+    } finally {
+      autoScheduler.off('started', onStartedEvt);
+      autoScheduler.off('completed', onCompletedEvt);
+    }
+  });
+});
+
+describe('Autonomous loop: AbortController mid-run cancellation (#26)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    capturedProgressEvents.events = [];
+    concurrencyQueue.releaseAll();
+    mockCircuitBreaker.canRun.mockReturnValue(true);
+    mockBudgetEnforcer.canStart.mockReturnValue(true);
+    mockBudgetEnforcer.getStatus.mockReturnValue({
+      perStory: { used: 0, cap: 0, exceeded: false },
+      daily: { used: 0, cap: 0, exceeded: false },
+      anyExceeded: false,
+      bannerMessage: null,
+      remaining: -1,
+    });
+  });
+
+  afterEach(() => {
+    concurrencyQueue.releaseAll();
+  });
+
+  it('abort() returns false when no run is active', () => {
+    const store = createTestStore([]);
+    const orch = new KanbanOrchestrator(store, {} as any, {} as any);
+
+    const aborted = orch.abort('nonexistent');
+    expect(aborted).toBe(false);
+  });
+
+  it('abort signal detected between iterations when review returns NEEDS_FIXES', async () => {
+    const { epics, story } = makeStories();
+    const store = createTestStore(epics);
+
+    // Create a controllable promise for the review verdict so we can time the abort.
+    let resolveReview!: (v: any) => void;
+    const reviewPromise = new Promise<any>(resolve => { resolveReview = resolve; });
+
+    const terminalExecutor = {
+      executeAndAwaitVerdict: vi.fn()
+        // Dev step: COMPLETED immediately
+        .mockResolvedValueOnce({ verdict: 'COMPLETED', summary: 'Dev done' })
+        // Review step: hangs until we resolve it
+        .mockReturnValueOnce(reviewPromise),
+    } as any;
+
+    const executor = { executeLaneTransition: vi.fn() } as any;
+    const orch = new KanbanOrchestrator(store, executor, terminalExecutor);
+
+    // Start the autonomous run (don't await it yet — we'll abort mid-run)
+    const runPromise = orch.runAutonomous(story, {});
+
+    // Wait for dev to complete and status to reach 'review'
+    await vi.waitFor(
+      () => {
+        const reviewCall = vi.mocked(store.updateArtifact).mock.calls.find(
+          (c: any[]) => c[2]?.status === 'review',
+        );
+        expect(reviewCall).toBeDefined();
+      },
+      { timeout: 5000, interval: 50 },
+    );
+
+    // Now the orchestrator is hung on the review verdict — call abort().
+    const aborted = orch.abort(story.id);
+    expect(aborted).toBe(true);
+
+    // Resolve review as NEEDS_FIXES so the loop advances to the next iteration.
+    resolveReview({ verdict: 'NEEDS_FIXES', summary: 'Needs work', fixRequests: [{ failing_criterion: 'Add more tests' }] });
+
+    // The orchestrator should check ac.signal.aborted at the top of iteration 2
+    // and return blocked.
+    const result = await runPromise;
+
+    expect(result.ok).toBe(false);
+    expect(result.status).toBe('blocked');
+    expect(result.blockedBy?.[0]).toMatch(/Aborted by user/i);
+
+    // Only dev + review called (2 total), no further iterations
+    expect(terminalExecutor.executeAndAwaitVerdict).toHaveBeenCalledTimes(2);
+
+    // Fix requests were attached during the NEEDS_FIXES handling
+    const metadataCalls = vi.mocked(store.updateArtifact).mock.calls.filter((c: any[]) => c[2]?.metadata);
+    expect(metadataCalls.length).toBeGreaterThanOrEqual(1);
+
+    // Abort controller cleaned up
+    const secondAbort = orch.abort(story.id);
+    expect(secondAbort).toBe(false);
+
+    // Concurrency lock released
+    expect(concurrencyQueue.isLocked(story.id)).toBe(false);
+  });
+
+  it('abort() is idempotent — second call returns false', async () => {
+    const { epics, story } = makeStories();
+    const store = createTestStore(epics);
+
+    // Review verdict never resolves — we'll abort and then check idempotency
+    const reviewPromise = new Promise<any>(() => {}); // never resolves
+
+    const terminalExecutor = {
+      executeAndAwaitVerdict: vi.fn()
+        .mockResolvedValueOnce({ verdict: 'COMPLETED', summary: 'Dev done' })
+        .mockReturnValueOnce(reviewPromise),
+    } as any;
+
+    const orch = new KanbanOrchestrator(store, {} as any, terminalExecutor);
+
+    // Start the run
+    const runPromise = orch.runAutonomous(story, {});
+
+    // Wait for dev to finish
+    await vi.waitFor(
+      () => expect(terminalExecutor.executeAndAwaitVerdict).toHaveBeenCalledTimes(2),
+      { timeout: 5000, interval: 50 },
+    );
+
+    // First abort should succeed
+    expect(orch.abort(story.id)).toBe(true);
+    // Second abort on same id: controller already deleted → false
+    expect(orch.abort(story.id)).toBe(false);
+    // Different id that never had a run → false
+    expect(orch.abort('never-started')).toBe(false);
+
+    // Clean up: release the lock so afterEach doesn't warn
+    concurrencyQueue.release(story.id);
+    // The runPromise will never resolve (reviewPromise never resolves), but
+    // the test doesn't need to await it — the finally block in runAutonomous
+    // handles cleanup.
+  });
 });
