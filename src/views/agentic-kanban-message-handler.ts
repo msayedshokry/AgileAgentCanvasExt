@@ -1,4 +1,5 @@
 import { createLogger } from '../utils/logger';
+import type { ArtifactChanges } from '../types';
 const logger = createLogger('agentic-kanban-message-handler');
 import * as vscode from 'vscode';
 import * as path from 'path';
@@ -438,7 +439,8 @@ export async function handleAgenticKanbanMessage(
           logger.warn(`[AgenticKanban] updateArtifactTitle: ${artifactId} not found`);
           return true;
         }
-        await store.updateArtifact(found.type, artifactId, { title });
+        // Typed: for an epic we accept a Partial<Epic>-shaped title patch.
+        await store.updateArtifact(found.type, artifactId, { title } as Partial<import('../types').Epic> & { metadata?: import('../types').BmadMetadata });
         logger.info(`[AgenticKanban] Updated title for ${artifactId} to "${title}"`);
         // Push updated artifacts to webview so the title persists visually
         if (webview) {

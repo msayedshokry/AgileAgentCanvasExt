@@ -446,7 +446,7 @@ export class LaneTransitionEngine {
           a2aStatus: a2aState,
           a2aLastPolledAt: new Date().toISOString(),
         },
-      } as any);
+      });
     } catch (err) {
       logger.debug(
         `[A2A] Could not update A2A status for ${artifactId}: ${errMsg(err)}`

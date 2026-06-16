@@ -11,6 +11,9 @@ import { harnessFeedback } from '../harness/harness-feedback';
 import { repairDataWithSchema } from './schema-repair-engine';
 import {
     BmadArtifacts,
+    BmadMetadata,
+    BmadArtifactChange,
+    BmadArtifactTypeMap,
     RequirementStatus,
     VerificationMethod,
     FunctionalRequirement,
@@ -86,11 +89,12 @@ import {
     ProblemSolving,
     InnovationStrategy,
     DesignThinking
-} from '../types';
-
-// Re-export all types so existing imports of these from artifact-store still work
+} from '../types';    // Re-export all types so existing imports of these from artifact-store still work
 export {
     BmadArtifacts,
+    BmadMetadata,
+    BmadArtifactChange,
+    BmadArtifactTypeMap,
     RequirementStatus,
     VerificationMethod,
     FunctionalRequirement,
@@ -702,7 +706,31 @@ export class ArtifactStore {
     }
 
     /**
-     * Update a specific artifact
+     * Update a specific artifact.
+     *
+     * Runtime signature is intentionally `Partial<any>` because the body
+     * does key-by-key string access across ~30 artifact-type switch arms
+     * (`changes.stories`, `Object.assign(epic, changes.metadata)`,
+     * spread of `changes` into a target object, ...). Per-case body
+     * narrowing would require restructuring every case branch.
+     *
+     * The TYPED CONTRACT is documented separately and exported as
+     * `BmadArtifactChange` from `types/index.ts`. Callers that want
+     * compile-time safety use the per-type shape:
+     *
+     *     `Partial<BmadArtifactTypeMap[T]> & { metadata?: BmadMetadata }`
+     *
+     * All 18 internal callers are now typed via `BmadArtifactChange`
+     * / `Partial<BmadArtifactTypeMap[T]> & { metadata?: BmadMetadata }`
+     * shapes (chat-participant.ts x11, webview-message-handler.ts,
+     * agentic-kanban-message-handler.ts, kanban-orchestrator.ts x2,
+     * autonomy-lifecycle.ts, project-commands.ts x2). The body's
+     * `Partial<any>` remains only to absorb the structural spread form
+     * of the LM tool wire at runtime.
+     *
+     * Schema validation upstream at the LM tool boundary is the
+     * enforcement layer for typed shapes; the in-memory store accepts
+     * arbitrary keys and treats anything schema-valid as legitimate.
      */
     async updateArtifact(
         artifactType: string,

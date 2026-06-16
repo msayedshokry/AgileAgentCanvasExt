@@ -3,26 +3,43 @@
  * Extracted from artifact-store.ts for shared use across the extension and webview.
  */
 
+/**
+ * Vision is the top-level "why are we building this?" artifact.
+ * Was previously inlined inside `BmadArtifacts`; extracted so it can be
+ * referenced in `BmadArtifactChange` for typed updateArtifact boundaries.
+ *
+ * `id` and `title` are top-level optional fields so callers using
+ * `state.vision.id` (artifact queries) don't need a structural cast —
+ * the runtime envelope already carries these keys (it's a flat id/title/status
+ * + content shape, populated by the extension-side normalisation).
+ * `status` is required and uses the canonical Vision enum.
+ */
+export interface Vision {
+    /** ID of the vision artifact (e.g. "vision-1"); required at runtime for queries */
+    id?: string;
+    /** Display title of the vision; populated by `initializeProject()` */
+    title?: string;
+    status: 'draft' | 'approved';
+    productName?: string;
+    problemStatement: string;
+    /** Nested vision sub-object from standard BMAD schema (content.vision.*) */
+    vision?: {
+        statement?: string;
+        problemStatement?: string;
+        proposedSolution?: string;
+    };
+    targetUsers: any[];
+    valueProposition: string;
+    /** Rich success metrics objects from the JSON file */
+    successMetrics?: any[];
+    /** Flattened success criteria strings for backward compat */
+    successCriteria: string[];
+}
+
 export interface BmadArtifacts {
     projectName: string;
     currentStep: WizardStep;
-    vision?: {
-        productName?: string;
-        problemStatement: string;
-        /** Nested vision sub-object from standard BMAD schema (content.vision.*) */
-        vision?: {
-            statement?: string;
-            problemStatement?: string;
-            proposedSolution?: string;
-        };
-        targetUsers: any[];
-        valueProposition: string;
-        /** Rich success metrics objects from the JSON file */
-        successMetrics?: any[];
-        /** Flattened success criteria strings for backward compat */
-        successCriteria: string[];
-        status: 'draft' | 'approved';
-    };
+    vision?: Vision;
     requirements?: {
         functional: FunctionalRequirement[];
         nonFunctional: NonFunctionalRequirement[];
@@ -974,6 +991,8 @@ export interface Research {
     [key: string]: unknown;
     id: string;
     status?: string;
+    /** Top-level display title; falls back to topic when absent */
+    title?: string;
     researchType?: string;
     topic?: string;
     scope?: { description?: string; inScope?: string[]; outOfScope?: string[]; timeframe?: string };
@@ -997,6 +1016,8 @@ export interface UxDesign {
     [key: string]: unknown;
     id: string;
     status?: string;
+    /** Top-level display title; falls back to overview.productName when absent */
+    title?: string;
     overview?: { productName?: string; version?: string; designPhilosophy?: string; targetExperience?: string; designPrinciples?: Record<string, unknown>[]; designGoals?: Record<string, unknown>[] };
     coreExperience?: { primaryValue?: string; keyInteractions?: Record<string, unknown>[]; emotionalGoals?: Record<string, unknown>[]; userFlowSummary?: string };
     designInspiration?: Record<string, unknown>[];
@@ -1060,6 +1081,8 @@ export interface SprintStatus {
     [key: string]: unknown;
     id: string;
     status?: string;
+    /** Top-level display title; falls back to project when absent */
+    title?: string;
     generated?: string;
     project?: string;
     projectKey?: string;
@@ -1544,6 +1567,8 @@ export interface PrdRisk {
 export interface PRD {
     id: string;
     status: 'draft' | 'review' | 'approved' | 'archived';
+    /** Top-level display title; falls back to productOverview.productName when absent */
+    title?: string;
     productOverview: {
         productName: string;
         version?: string;
@@ -1731,6 +1756,8 @@ export interface SecurityArchitecture {
 export interface Architecture {
     id: string;
     status: 'draft' | 'review' | 'approved' | 'archived';
+    /** Top-level display title; falls back to overview.projectName when absent */
+    title?: string;
     overview: {
         projectName: string;
         architectureStyle?: string;
@@ -1839,6 +1866,8 @@ export interface ProductBriefFeature {
 
 export interface ProductBrief {
     id: string;
+    /** Top-level display title; falls back to productName when absent */
+    title?: string;
     productName: string;
     tagline?: string;
     version?: string;
@@ -1897,3 +1926,160 @@ export interface ProductBrief {
         references?: { title: string; location?: string; description?: string }[];
     };
 }
+
+// =============================================================================
+// Typed boundary for `ArtifactStore.updateArtifact(changes)` — replaces the
+// legacy `Partial<any>` signature.  Schema validation at the LM tool
+// boundary is the upstream enforcement layer; this type documents the
+// contract for compile-time safety on both sides.
+// =============================================================================
+
+export interface BmadMetadata {
+    schemaVersion?: string;
+    artifactType?: string;
+    status?: string;
+    timestamps?: { created?: string; lastModified?: string };
+    /** Allow ad-hoc metadata fields that some sub-systems read (e.g. A2A status) */
+    [key: string]: unknown;
+}
+
+/** Union of every BMAD artifact type that `updateArtifact` can persist. */
+export type BmadArtifact =
+    | Vision | ProductBrief | PRD | Architecture | Epic | Story
+    | FunctionalRequirement | NonFunctionalRequirement | AdditionalRequirement
+    | TestCase | TestStrategy | TestDesign | UseCase | AcceptanceCriterion
+    | TraceabilityMatrix | TestReview | NfrAssessment | TestFramework
+    | CiPipeline | AutomationSummary | AtddChecklist
+    | Research | UxDesign | ReadinessReport | SprintStatus
+    | Retrospective | ChangeProposal | CodeReview | Risks
+    | DefinitionOfDone | ProjectOverview | ProjectContext | TechSpec
+    | SourceTree | TestSummary
+    | Storytelling | ProblemSolving | InnovationStrategy | DesignThinking;
+
+/**
+ * Shape accepted by `ArtifactStore.updateArtifact`.
+ *
+ * Defined as the partial of the full BMAD artifact union intersected with
+ * the optional `metadata` envelope that every artifact type accepts.
+ * `Partial<BmadArtifact>` distributes the union, so each BMAD field
+ * remains typed at the call site (loose, optional).  `AICursor` is
+ * included so callers can pass a verbatim cursor update.
+ *
+ * Where callers need dynamic keys not present on any BMAD type (e.g.
+ * subsystem fields like `a2aStatus`), the in-memory store accepts the
+ * arbitrary keys — schema validation upstream at the LM tool boundary
+ * is the enforcement layer for typed shapes.
+ */
+export type BmadArtifactChange =
+    | (Partial<BmadArtifact> & { metadata?: BmadMetadata })
+    | AICursor
+    | ({ metadata: BmadMetadata } & Partial<BmadArtifact>);
+
+/**
+ * Maps every artifactType string accepted by `ArtifactStore.updateArtifact`
+ * to its underlying BMAD artifact type.  Both kebab-case (the wire form
+ * used in LM-tool schemas) and camelCase (the in-memory store key) forms
+ * are present so callers don't need to translate.
+ *
+ * `updateArtifact` is generic over the keys of this map, so passing
+ * `updateArtifact('vision', 'main', partial)` requires `partial` to be
+ * assignable to `Partial<Vision> & { metadata? }` — the same shape
+ * callers already use, just enforced at the call site.
+ */
+/**
+ * Canonical kebab-case wire-form map. Runtime `updateArtifact` dispatches on the
+ * kebab-case literal (see the `switch` arms in src/state/artifact-store.ts).
+ * The LM tool input schema at src/chat/agileagentcanvas-tools.ts publishes
+ * ONLY these forms to the model — the legacy camelCase duplicates live in
+ * `DeprecatedCamelCaseArtifactTypes` so internal callers can still pass them
+ * during incremental migration.
+ */
+export interface BmadArtifactTypeMap {
+    vision: Vision;
+    prd: PRD;
+    architecture: Architecture;
+    aiCursor: AICursor;
+    'product-brief': ProductBrief;
+    'test-case': TestCase;
+    'test-strategy': TestStrategy;
+    'use-case': UseCase;
+    'test-design': TestDesign;
+    'traceability-matrix': TraceabilityMatrix;
+    'test-review': TestReview;
+    'nfr-assessment': NfrAssessment;
+    'test-framework': TestFramework;
+    'ci-pipeline': CiPipeline;
+    'automation-summary': AutomationSummary;
+    'atdd-checklist': AtddChecklist;
+    'ux-design': UxDesign;
+    'readiness-report': ReadinessReport;
+    'sprint-status': SprintStatus;
+    'change-proposal': ChangeProposal;
+    'code-review': CodeReview;
+    'definition-of-done': DefinitionOfDone;
+    'project-overview': ProjectOverview;
+    'project-context': ProjectContext;
+    'tech-spec': TechSpec;
+    'problem-solving': ProblemSolving;
+    'innovation-strategy': InnovationStrategy;
+    'design-thinking': DesignThinking;
+    'source-tree': SourceTree;
+    'test-summary': TestSummary;
+    // Collections (interior element type is the BMAD artifact) — camelCase
+    // canonical because the in-memory keys are camelCase.
+    epic: Epic;
+    story: Story;
+    requirement: FunctionalRequirement;
+    requirements: { functional: FunctionalRequirement[]; nonFunctional: NonFunctionalRequirement[]; additional: AdditionalRequirement[] };
+    research: Research;
+    retrospective: Retrospective;
+    risks: Risks;
+    storytelling: Storytelling;
+}
+
+/**
+ * Deprecated camelCase alias map. Mirrors the kebab-case forms in
+ * `BmadArtifactTypeMap` for the camelCase spellings only. Use this ONLY when
+ * reading from legacy in-memory state references that still pass camelCase.
+ * New code should use the kebab-case canonical forms in `BmadArtifactTypeMap`.
+ */
+export interface DeprecatedCamelCaseArtifactTypes {
+    productBrief: ProductBrief;
+    testCase: TestCase;
+    testStrategy: TestStrategy;
+    useCase: UseCase;
+    testDesign: TestDesign;
+    traceabilityMatrix: TraceabilityMatrix;
+    testReview: TestReview;
+    nfrAssessment: NfrAssessment;
+    testFramework: TestFramework;
+    ciPipeline: CiPipeline;
+    automationSummary: AutomationSummary;
+    atddChecklist: AtddChecklist;
+    uxDesign: UxDesign;
+    readinessReport: ReadinessReport;
+    sprintStatus: SprintStatus;
+    changeProposal: ChangeProposal;
+    codeReview: CodeReview;
+    definitionOfDone: DefinitionOfDone;
+    projectOverview: ProjectOverview;
+    projectContext: ProjectContext;
+    techSpec: TechSpec;
+    problemSolving: ProblemSolving;
+    innovationStrategy: InnovationStrategy;
+    designThinking: DesignThinking;
+    sourceTree: SourceTree;
+    testSummary: TestSummary;
+    // Short aliases (publish surface trimmed from canonical map)
+    nfr: NfrAssessment;
+    readiness: ReadinessReport;
+    sprint: SprintStatus;
+}
+/**
+ * Typed per-artifact changes shape: Partial<T> plus the optional
+ * `metadata` envelope. Callers cast `updateArtifact` changes via
+ * `ArtifactChanges<Vision>` etc.; the default `T` is the distributive
+ * `BmadArtifact` union (used when `artifactType` is a dynamic string).
+ */
+export type ArtifactChanges<T = BmadArtifact> = Partial<T> & { metadata?: BmadMetadata };
+

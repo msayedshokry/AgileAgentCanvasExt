@@ -13,6 +13,7 @@
 // it never advances a card on a verdict it cannot read.
 
 import { createLogger } from '../utils/logger';
+import type { ArtifactChanges } from '../types';
 const logger = createLogger('kanban-orchestrator');
 import * as vscode from 'vscode';
 import type { ArtifactStore } from '../state/artifact-store';
@@ -300,7 +301,9 @@ export class KanbanOrchestrator {
     // badge. The subsequent `kanbanProgress` emit then arrives as
     // `agentStateUpdated` and is a no-op for `status`. There is no race in
     // practice — the store update and the progress event are sequential.
-    await this.store.updateArtifact(type, id, { status });
+    // Typed: status-only patch on the artifact at runtime (Epic via auto-advance,
+    // but `type` is a dynamic string, so widen to the distributive Partial<BmadArtifact>).
+    await this.store.updateArtifact(type, id, { status } as ArtifactChanges);
   }
 
   private async attachFixRequests(
@@ -312,7 +315,10 @@ export class KanbanOrchestrator {
     try {
       // Stored under metadata; the story update path lifts metadata fields to
       // the top level, so the next dev run sees `fixRequests` in the artifact.
-      await this.store.updateArtifact(type, id, { metadata: { fixRequests } } as Record<string, unknown>);
+      // Typed: metadata-only path of BmadArtifactChange (fixRequests envelope).
+      // Replaces the prior Record<string, unknown> structural cast with the
+      // typed metadata envelope from types/index.ts.
+      await this.store.updateArtifact(type, id, { metadata: { fixRequests } } as ArtifactChanges);
     } catch (err) {
       logger.debug(`[Orchestrator] Could not attach fixRequests to ${id}: ${errMsg(err)}`);
     }

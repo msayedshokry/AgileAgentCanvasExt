@@ -3,6 +3,29 @@ import { createLogger } from '../utils/logger';
 
 const ioLogger = createLogger('artifact-file-io');
 
+/**
+ * Typed boundary for legacy migration data.
+ *
+ * These helpers used to take `any` and return `any` because the artifacts
+ * were authored under older schemas with mixed-shape fields.  We still want
+ * to accept any JSON-parsed object, but using `Record<string, unknown>`
+ * (instead of `any`) keeps named property access (where present) sharply
+ * typed and forces consumer code to narrow before using values.
+ */
+type LegacyRecord = Record<string, unknown>;
+type LegacyAc = LegacyRecord & {
+    status?: string;
+    verified?: undefined;
+};
+type LegacyTask = LegacyRecord & {
+    status?: string;
+    completed?: undefined;
+};
+type LegacyStory = LegacyRecord & {
+    status?: string;
+    completed?: undefined;
+};
+
 interface ResolveTargetUriOptions {
     baseUri: vscode.Uri;
     folderName?: string;
@@ -154,59 +177,55 @@ function normalizeContent(content: Record<string, unknown>): Record<string, unkn
     return result;
 }
 
-function normalizeAc(ac: any): any {
-    if (!ac || typeof ac !== 'object') {
-        return ac;
-    }
-
+function normalizeAc(ac: LegacyAc): LegacyAc {
     // If only boolean exists (orphaned), infer status
     if ('verified' in ac && !('status' in ac)) {
-        return { ...ac, status: ac.verified ? 'verified' : 'draft', verified: undefined };
+        const verified = ac.verified as boolean | undefined;
+        return { ...ac, status: verified ? 'verified' : 'draft', verified: undefined };
     }
 
     // Both fields present — drop verified, preserve status
     if ('verified' in ac) {
         const { verified: _v, ...rest } = ac;
-        return rest;
+        return rest as LegacyAc;
     }
 
     return ac;
 }
 
-function normalizeTask(task: any): any {
-    if (!task || typeof task !== 'object') {
-        return task;
-    }
-
+function normalizeTask(task: LegacyTask): LegacyTask {
     // If only completed exists (orphaned), infer status
     if ('completed' in task && !('status' in task)) {
-        return { ...task, status: task.completed ? 'implemented' : 'pending', completed: undefined };
+        const completed = task.completed as boolean | undefined;
+        return { ...task, status: completed ? 'implemented' : 'pending', completed: undefined };
     }
 
     // Both fields present — drop completed, preserve status
     if ('completed' in task) {
         const { completed: _c, ...rest } = task;
-        return rest;
+        return rest as LegacyTask;
     }
 
     // Normalize subtasks recursively
     if (Array.isArray(task.subtasks)) {
-        return { ...task, subtasks: task.subtasks.map((st: any) => normalizeSubtask(st)) };
+        return {
+            ...task,
+            subtasks: (task.subtasks as unknown[]).map((st) =>
+                normalizeSubtask(st as LegacyRecord as LegacyTask)
+            ),
+        };
     }
 
     return task;
 }
 
-function normalizeSubtask(subtask: any): any {
-    if (!subtask || typeof subtask !== 'object') {
-        return subtask;
-    }
-
+function normalizeSubtask(subtask: LegacyTask): LegacyTask {
     // Subtasks have no status field in the schema, so we add one
     // based on the completed boolean for consistency
     if ('completed' in subtask) {
         const { completed, ...rest } = subtask;
-        return { ...rest, status: completed ? 'done' : 'pending', completed: undefined };
+        const done = typeof completed === 'boolean' && completed;
+        return { ...rest, status: done ? 'done' : 'pending', completed: undefined };
     }
 
     return subtask;
@@ -216,21 +235,18 @@ function normalizeSubtask(subtask: any): any {
  * Normalize an inline story object (found within epics.json content.epics[].stories[]
  * or content.stories[]). These have a dual-field completed+status pattern.
  */
-function normalizeInlineStory(story: any): any {
-    if (!story || typeof story !== 'object') {
-        return story;
-    }
-
+function normalizeInlineStory(story: LegacyStory): LegacyStory {
     // Both fields present — drop completed, preserve status
     if ('completed' in story && 'status' in story) {
         const { completed: _c, ...rest } = story;
-        return rest;
+        return rest as LegacyStory;
     }
 
     // Orphaned completed (no status) — infer status then drop completed
     if ('completed' in story) {
         const { completed, ...rest } = story;
-        return { ...rest, status: completed ? 'done' : 'draft', completed: undefined };
+        const done = typeof completed === 'boolean' && completed;
+        return { ...rest, status: done ? 'done' : 'draft', completed: undefined };
     }
 
     return story;

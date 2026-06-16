@@ -1,4 +1,5 @@
 import { createLogger } from '../utils/logger';
+import type { ArtifactChanges, BmadArtifactTypeMap, Vision } from '../types';
 const logger = createLogger('project-commands');
 import * as vscode from 'vscode';
 import { ArtifactStore } from '../state/artifact-store';
@@ -192,7 +193,7 @@ export async function autoLoadProject(store: ArtifactStore): Promise<void> {
 export function loadDemoData(store: ArtifactStore): Thenable<void> {
     store.initializeProject('BMAD Demo Project');
 
-    store.updateArtifact('vision', 'main', {
+            store.updateArtifact('vision', 'main', {
         productName: 'BMAD Demo Project',
         problemStatement: 'Development teams struggle to translate business requirements into well-structured epics and stories.',
         targetUsers: ['Product Managers', 'Business Analysts', 'Development Teams'],
@@ -203,9 +204,9 @@ export function loadDemoData(store: ArtifactStore): Thenable<void> {
             'Better alignment between business and technical teams'
         ],
         status: 'approved'
-    });
+        } as ArtifactChanges<Vision>);
 
-    store.updateArtifact('requirements', 'main', {
+            store.updateArtifact('requirements', 'main', {
         functional: [
             { id: 'FR-1', title: 'Visual Canvas', description: 'Display epics and stories on a visual canvas', capabilityArea: 'UI' },
             { id: 'FR-2', title: 'AI Chat Integration', description: 'Interact with AI analyst via chat', capabilityArea: 'AI' },
@@ -218,7 +219,7 @@ export function loadDemoData(store: ArtifactStore): Thenable<void> {
             { id: 'NFR-2', title: 'Usability', description: 'Intuitive drag-drop interface', category: 'Usability' }
         ],
         additional: []
-    });
+        } as ArtifactChanges<BmadArtifactTypeMap["requirements"]>);
 
     const sampleEpics = [
         {

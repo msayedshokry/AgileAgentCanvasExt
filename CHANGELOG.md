@@ -55,6 +55,13 @@ A silent break in the artifact-store change listener registered during extension
 - **Sequence of different write paths** — A single scenario chains an update followed by a delete, asserting the listener fires for both write shapes (not just for repeated identical mutations).
 - **No user-visible change** — Pure test-infrastructure hardening. All 803 extension scenarios still pass; the new tests are additive.
 
+### Fixed: Vision type boundary — structural cast removed
+
+A structural cast workaround was hiding a type-modeling gap: the BMAD `Vision` interface didn't expose `id`, `title`, or `status` at the top level, so every consumer that needed the shape the Canvas already uses to render the artifact had to bridge through a local view type and an `as` cast. Adding those fields to `Vision` itself removed the indirection and the cast, and closes the door on the same pattern reappearing on other artifact types.
+
+- **Vision now matches every other artifact's shape** — `Vision` exposes the same `id`, `title`, `status` triple every other BMAD artifact already provides top-level. Old documents continue to load unchanged (the new fields are optional, so legacy entries render the same empty-state placeholder as before). Queries read the typed Vision shape directly; the local view-type alias and structural cast are gone.
+- **Zero `as any` casts in production source** — A final cast audit across the source tree (test files and mock fixtures excluded) returned no hits.
+
 ## 0.5.5
 
 ### Feature: Autonomous Auto-Advance for Agentic Kanban

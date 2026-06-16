@@ -1,4 +1,5 @@
 import { createLogger } from '../utils/logger';
+import type { ArtifactChanges } from '../types';
 const logger = createLogger('webview-message-handler');
 import * as vscode from 'vscode';
 import * as path from 'path';
@@ -147,7 +148,9 @@ export async function handleCommonWebviewMessage(
                 }
             }
 
-            await store.updateArtifact(artType, message.id, message.updates);
+            // Typed: changes is a per-type Partial via BmadArtifactTypeMap[artType]
+        const typedChanges = message.updates as ArtifactChanges;
+        await store.updateArtifact(artType, message.id, typedChanges);
             return true;
         }
 

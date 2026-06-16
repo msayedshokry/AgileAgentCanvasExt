@@ -1,3 +1,5 @@
+import type { ArtifactChanges } from '../types';
+import type { BmadMetadata, Story } from '../types';
 // ─── Autonomy Lifecycle Orchestrator ──────────────────────────────────────────
 // Single entry point that wires all 17 autonomy modules into the extension
 // activation lifecycle. Called from extension.ts after artifacts are loaded
@@ -443,11 +445,20 @@ export class AutonomyLifecycle extends EventEmitter {
 
       persistStory: async (story: ProposedStory): Promise<string> => {
         const created = store.createStory(undefined);
-        await store.updateArtifact('story', created.id, {
-          title: story.title,
-          description: story.description || '',
-          metadata: { priority: story.priority },
-        });
+        // Typed: Partial<Story> & { metadata?: BmadMetadata } (autonomous story creation)
+        // Typed: Partial<Story> & { metadata?: BmadMetadata } (autonomous story creation)
+        // Typed: Partial<Story> has no `description`, so we map
+        // story.description to Story.notes (the closest free-form text field).
+        // Typed: Story has no `description`; widen to the distributive
+        // Partial<BmadArtifact> + metadata envelope so the original literal
+        // is preserved verbatim (and so `persistStory` callers see the same
+        // shape they did pre-migration).
+        const storyChanges: ArtifactChanges = {
+            title: story.title,
+            description: story.description || '',
+            metadata: { priority: story.priority },
+        };
+        await store.updateArtifact('story', created.id, storyChanges);
         return created.id;
       },
 

@@ -3,7 +3,8 @@ const logger = createLogger('agileagentcanvas-tools');
 import * as vscode from 'vscode';
 import * as path from 'path';
 
-import { ArtifactStore } from '../state/artifact-store';
+import { ArtifactStore, BmadArtifacts } from '../state/artifact-store';
+import { BmadArtifactChange, BmadArtifactTypeMap } from '../types';
 import { schemaValidator, getAvailableSchemaTypes } from '../state/schema-validator';
 import { repairDataWithSchema } from '../state/schema-repair-engine';
 import { JiraClient } from '../integrations/jira-client';
@@ -307,7 +308,16 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
 
     // ── agileagentcanvas_update_artifact ────────────────────────────────────────────────
     disposables.push(
-        vscode.lm.registerTool<{ type: string; id: string; changes: Record<string, any> }>(
+        vscode.lm.registerTool<{
+            type: keyof BmadArtifactTypeMap;
+            id: string;
+            /** Typed discriminated union from types/index.ts (`BmadArtifactChange`).
+             *  Schema validation upstream at `validateChanges(type, changes)` is
+             *  the enforcement layer — the typed shape catches static-shape
+             *  mistakes (e.g. passing numeric `id`) before the request reaches
+             *  the store. */
+            changes: BmadArtifactChange;
+        }>(
             'agileagentcanvas_update_artifact',
             wrapToolWithDynamicTracing({
                 async invoke(request, _token) {
@@ -1170,13 +1180,16 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         }
 
                         const effectiveLimit = Math.min(limit ?? 50, 500);
-                        const state = ctx.store.getState() as any;
+                        const state: BmadArtifacts = ctx.store.getState();
 
                         type ArtifactSummary = { id: string; type: string; title: string; status: string };
+                        // Vision now declares id/title/status top-level, so we can
+                        // access them directly on state.vision without the previous
+                        // structural-cast indirection.
                         const candidates: ArtifactSummary[] = [];
 
                         if (state.vision?.id && (!type || type === 'vision')) {
-                            candidates.push({ id: state.vision.id, type: 'vision', title: state.vision.title ?? '', status: state.vision.status ?? '' });
+                            candidates.push({ id: state.vision.id, type: 'vision', title: state.vision.title ?? '', status: state.vision.status });
                         }
 
                         for (const epic of (state.epics ?? [])) {
@@ -1331,10 +1344,16 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                             ]);
                         }
 
+                        // Typed boundary: schema-inference samples are JSON-parsed
+                        // objects of unknown shape.  Use Record<string, unknown> so
+                        // access is allowed without `any` leaking into callers.
+                        type JsonSample = Record<string, unknown>;
+                        const typedSamples: JsonSample[] = samples as JsonSample[];
+
                         const fieldTypes: Record<string, Set<string>> = {};
                         const fieldRequired: Set<string> = new Set();
 
-                        for (const sample of samples as any[]) {
+                        for (const sample of typedSamples) {
                             if (typeof sample !== 'object' || sample === null) continue;
                             for (const [key, value] of Object.entries(sample)) {
                                 if (!fieldTypes[key]) fieldTypes[key] = new Set();
@@ -1350,10 +1369,10 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                             return typeof v;
                         }
 
-                        function buildPropSchema(types: Set<string>): any {
+                        function buildPropSchema(types: Set<string>): Record<string, unknown> {
                             if (types.has('array')) {
-                                const elements: any[] = [];
-                                for (const s of samples as any[]) {
+                                const elements: unknown[] = [];
+                                for (const s of typedSamples) {
                                     for (const v of Object.values(s)) {
                                         if (Array.isArray(v)) elements.push(...v);
                                     }
@@ -1373,12 +1392,12 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                             return { type: 'string' };
                         }
 
-                        const properties: Record<string, any> = {};
+                        const properties: Record<string, Record<string, unknown>> = {};
                         for (const [field, types] of Object.entries(fieldTypes)) {
                             properties[field] = buildPropSchema(types);
                         }
 
-                        const required = [...fieldRequired].filter(k => (samples as any[]).every(s => k in s));
+                        const required = [...fieldRequired].filter(k => typedSamples.every(s => k in s));
 
                         const inferredSchema = {
                             $schema: 'http://json-schema.org/draft-07/schema#',

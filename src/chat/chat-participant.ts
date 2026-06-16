@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import type { ArtifactChanges } from '../types';
 import * as path from 'path';
 import { ArtifactStore, Epic } from '../state/artifact-store';
 import { getWorkflowExecutor, WorkflowExecutor } from '../workflow/workflow-executor';
@@ -8,6 +9,18 @@ import { BmadModel, selectModel, streamChatResponse, getNoModelMessage as provid
 import { extractJson } from '../lib/json-extract';
 import { getPersonaForArtifactType, formatFullAgentForPrompt, loadAgentPersona, clearPersonaCache, AgentPersona, loadAllAgentPersonas, formatAgentRoster } from './agent-personas';
 import { JiraClient } from '../integrations/jira-client';
+import type {
+    BmadMetadata,
+    Vision,
+    Story,
+    FunctionalRequirement,
+    TestCase,
+    TestStrategy,
+    ProductBrief,
+    PRD,
+    Architecture,
+    UseCase,
+} from '../types';
 import {
     getJiraConfig,
     formatEpicsAsMarkdown,
@@ -565,7 +578,8 @@ export class AgileAgentCanvasChatParticipant {
                 successCriteria: ['Criterion 1', 'Criterion 2'],
                 status: 'draft' as const
             };
-            await this.store.updateArtifact('vision', 'main', vision);
+            // Typed: ArtifactChanges<Vision>
+        await this.store.updateArtifact('vision', 'main', vision as Partial<Vision> & { metadata?: BmadMetadata });
             stream.markdown(`**Problem:** ${vision.problemStatement}\n\n`);
             stream.markdown('Edit the vision in the Artifacts panel or describe your product for AI assistance.\n');
             return { metadata: { command: 'vision' } };
@@ -1638,7 +1652,8 @@ The complete BMAD framework is at: \`${bmadPath}\`
                     Object.keys(changes).forEach(key => {
                         if (changes[key] === undefined) delete changes[key];
                     });
-                    await this.store.updateArtifact('vision', 'main', changes);
+                    // Typed: Partial<Vision> & { metadata?: BmadMetadata } (line 1641 — uses literal 'main', not id)
+        await this.store.updateArtifact('vision', 'main', changes as Partial<Vision> & { metadata?: BmadMetadata });
                     break;
 
                 case 'epic':
@@ -1656,7 +1671,8 @@ The complete BMAD framework is at: \`${bmadPath}\`
                     // Remove undefined values
                     if (!refinements.title) delete changes.title;
                     if (!refinements.goal) delete changes.description;
-                    await this.store.updateArtifact('epic', id, changes);
+                    // Typed: ArtifactChanges<Epic>
+        await this.store.updateArtifact('epic', id, changes as Partial<Epic> & { metadata?: BmadMetadata });
                     break;
 
                 case 'story':
@@ -1670,7 +1686,8 @@ The complete BMAD framework is at: \`${bmadPath}\`
                         }
                     };
                     if (!refinements.title) delete changes.title;
-                    await this.store.updateArtifact('story', id, changes);
+                    // Typed: ArtifactChanges<Story>
+        await this.store.updateArtifact('story', id, changes as Partial<Story> & { metadata?: BmadMetadata });
                     break;
 
                 case 'requirement':
@@ -1683,7 +1700,8 @@ The complete BMAD framework is at: \`${bmadPath}\`
                     };
                     if (!refinements.title) delete changes.title;
                     if (!refinements.description) delete changes.description;
-                    await this.store.updateArtifact('requirement', id, changes);
+                    // Typed: ArtifactChanges<FunctionalRequirement>
+        await this.store.updateArtifact('requirement', id, changes as Partial<FunctionalRequirement> & { metadata?: BmadMetadata });
                     break;
 
                 case 'test-case':
@@ -1706,7 +1724,8 @@ The complete BMAD framework is at: \`${bmadPath}\`
                             if (changes.metadata[key] === undefined) delete changes.metadata[key];
                         });
                     }
-                    await this.store.updateArtifact('test-case', id, changes);
+                    // Typed: ArtifactChanges<TestCase>
+        await this.store.updateArtifact('test-case', id, changes as Partial<TestCase> & { metadata?: BmadMetadata });
                     break;
 
                 case 'test-strategy':
@@ -1728,26 +1747,30 @@ The complete BMAD framework is at: \`${bmadPath}\`
                             if (changes.metadata[key] === undefined) delete changes.metadata[key];
                         });
                     }
-                    await this.store.updateArtifact('test-strategy', id, changes);
+                    // Typed: ArtifactChanges<TestStrategy>
+        await this.store.updateArtifact('test-strategy', id, changes as Partial<TestStrategy> & { metadata?: BmadMetadata });
                     break;
 
                 case 'product-brief':
                     changes = { ...refinements };
                     // Remove suggestions from persisted data
                     delete changes.suggestions;
-                    await this.store.updateArtifact('product-brief', id, changes);
+                    // Typed: ArtifactChanges<ProductBrief>
+        await this.store.updateArtifact('product-brief', id, changes as Partial<ProductBrief> & { metadata?: BmadMetadata });
                     break;
 
                 case 'prd':
                     changes = { ...refinements };
                     delete changes.suggestions;
-                    await this.store.updateArtifact('prd', id, changes);
+                    // Typed: ArtifactChanges<PRD>
+        await this.store.updateArtifact('prd', id, changes as Partial<PRD> & { metadata?: BmadMetadata });
                     break;
 
                 case 'architecture':
                     changes = { ...refinements };
                     delete changes.suggestions;
-                    await this.store.updateArtifact('architecture', id, changes);
+                    // Typed: ArtifactChanges<Architecture>
+        await this.store.updateArtifact('architecture', id, changes as Partial<Architecture> & { metadata?: BmadMetadata });
                     break;
 
                 case 'use-case':
@@ -1764,7 +1787,8 @@ The complete BMAD framework is at: \`${bmadPath}\`
                             if (changes.metadata[key] === undefined) delete changes.metadata[key];
                         });
                     }
-                    await this.store.updateArtifact('use-case', id, changes);
+                    // Typed: ArtifactChanges<UseCase>
+        await this.store.updateArtifact('use-case', id, changes as Partial<UseCase> & { metadata?: BmadMetadata });
                     break;
 
                 default:
