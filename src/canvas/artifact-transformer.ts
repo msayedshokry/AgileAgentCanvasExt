@@ -972,7 +972,7 @@ export function buildArtifacts(store: ArtifactStore, workspaceRoot?: string): an
             // --- Place stories + their linked TCs below each story card ---
             if (epic.stories) {
                 let currentRowMaxH = 0;
-                let gridRowY = storiesRowY + labelOffset;
+                const gridRowY = storiesRowY + labelOffset;
                 epic.stories.forEach((story: any, storyIndex: number) => {
                     // Stories always in a single horizontal row (no wrapping)
                     const col = storyIndex;
@@ -1075,7 +1075,7 @@ export function buildArtifacts(store: ArtifactStore, workspaceRoot?: string): an
             if (epic.useCases) {
                 const ucStartY = ucRowY + labelOffset;
                 let currentRowMaxH = 0;
-                let gridRowY = ucStartY;
+                const gridRowY = ucStartY;
 
                 epic.useCases.forEach((useCase: any, ucIndex: number) => {
                     // Use-cases always in a single horizontal row (no wrapping)

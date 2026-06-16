@@ -42,6 +42,32 @@ const logger = createLogger('autonomy-lifecycle');
 
 import { errMsg } from '../utils/error';
 
+/**
+ * Bind an onDidWriteData listener to a vscode.Terminal. The onDidWriteData
+ * event is not part of the official VS Code terminal API but is available
+ * at runtime in stable builds and is used by terminal-executor.ts (the
+ * active terminal pipeline uses the same access pattern). Returns the
+ * disposable so callers can dispose it on stop / project switch.
+ *
+ * Returns null if the event is not present on this VS Code build, letting
+ * the caller fall back to the "marked interrupted" path instead of
+ * silently returning success.
+ *
+ * Issue: #33 — Terminal reconnector real re-attach.
+ */
+function attachOnDidWriteData(
+  terminal: vscode.Terminal,
+  listener: (data: string) => void,
+): vscode.Disposable | null {
+  const candidate = (terminal as unknown as { onDidWriteData?: (cb: (data: string) => void) => vscode.Disposable }).onDidWriteData;
+  if (typeof candidate !== 'function') return null;
+  try {
+    return candidate.call(terminal, listener);
+  } catch {
+    return null;
+  }
+}
+
 /** File name for persisted terminal session metadata. */
 const TERMINAL_SESSIONS_FILE = 'terminal-sessions.json';
 
@@ -83,6 +109,9 @@ export class AutonomyLifecycle extends EventEmitter {
   private harnessFindingsListener: ((event: HarnessFindingsEvent) => void) | null = null;
   /** Fingerprint of the last broadcast systemic patterns to skip duplicate broadcasts. */
   private lastSystemicFingerprint: string | null = null;
+  /** Active onDidWriteData listeners (#33) keyed by sessionId so stop()
+   *  and project switches can dispose them without leaking handlers. */
+  private terminalOutputListeners: Map<string, vscode.Disposable> = new Map();
 
   /** Configure hooks and store. Call before start(). */
   configure(hooks: AutonomyLifecycleHooks, store: ArtifactStore): void {
@@ -220,7 +249,13 @@ export class AutonomyLifecycle extends EventEmitter {
       reconnect: async (orphan) => {
         // Issue #33: actually re-attach to the terminal by matching name.
         // Scan all open VS Code terminals for one whose name matches the
-        // orphaned session's name ("AAC: {workflowId} {artifactId}").
+        // orphaned session's name ("AAC: {workflowId} {artifactId}"). We
+        // then bind an onDidWriteData listener that forwards any new
+        // output chunks to the webview (so the agent stops being a "ghost"
+        // — the UI sees live updates once the terminal resumes producing).
+        // If the listener cannot be attached, return false so the
+        // session is correctly marked interrupted instead of falsely
+        // reconnected.
         try {
           const terminals = vscode.window.terminals;
           const matchName = orphan.name;
@@ -237,9 +272,32 @@ export class AutonomyLifecycle extends EventEmitter {
             return false;
           }
 
-          // Re-attach onDidWriteData listener by re-creating the terminal
-          // session entry. The existing terminal is alive — we just need
-          // to re-register it with the terminalExecutor.
+          // Issue #33 real re-attach: bind onDidWriteData via the
+          // unofficial runtime API (same approach terminal-executor.ts
+          // uses at lines 287-288). If unavailable on this VS Code build,
+          // fall back to logging so users know why the session was
+          // marked interrupted instead of silently reconnecting.
+          const liveDisposable = attachOnDidWriteData(terminal, (data) => {
+            try {
+              this.broadcast({
+                type: 'terminalOutput',
+                sessionId: orphan.sessionId,
+                artifactId: orphan.artifactId,
+                data,
+              });
+            } catch (err) {
+              logger.debug(`[Autonomy] terminalOutput broadcast failed: ${errMsg(err)}`);
+            }
+          });
+          if (!liveDisposable) {
+            logger.warn(
+              `[Autonomy] Terminal alive but onDidWriteData unavailable on build — ` +
+              `marking ${matchName} as interrupted instead of falsely reconnecting`,
+            );
+            return false;
+          }
+          this.terminalOutputListeners.set(orphan.sessionId, liveDisposable);
+
           logger.info(`[Autonomy] Reconnected to terminal: ${matchName} (pid: ${pid})`);
 
           // Register health checks for the reconnected session
@@ -261,6 +319,28 @@ export class AutonomyLifecycle extends EventEmitter {
     });
     terminalSessionRecovery.setInterruptedReporter((artifactId, reason) => {
       this.broadcast({ type: 'agentStateUpdated', artifactId, agentState: { status: 'interrupted', interruptionReason: reason } });
+    });
+    // Issue #35: Emit an OUTBOUND `terminalReconnected` event with buffered
+    // chunks so the webview can show a "reconnected" toast and (optionally)
+    // auto-open the TerminalModal with the accumulated output. The hook fires
+    // AFTER the reconnector returns ok=true, so it intentionally runs in the
+    // same tick as the first `terminalOutput` broadcast from the re-attach.
+    terminalSessionRecovery.setOnReconnected((orphan) => {
+      // Issue #35: Prefer the in-memory accumulator (live session still alive);
+      // fall back to the persisted buffer (survives VS Code restart).
+      // Hook-throws are absorbed by terminal-recovery itself so we don't
+      // double-wrap.
+      const bufferedData =
+        terminalExecutor.getTerminalOutput(orphan.artifactId) ||
+        terminalExecutor.getPersistedOutput(orphan.artifactId);
+      this.broadcast({
+        type: 'terminalReconnected',
+        sessionId: orphan.sessionId,
+        artifactId: orphan.artifactId,
+        terminalName: orphan.name,
+        bufferedData,
+        reconnectedAt: new Date().toISOString(),
+      });
     });
     terminalSessionRecovery.recoverOnActivation().catch(err => {
       logger.warn('Terminal recovery failed', { error: String(err) });
@@ -356,6 +436,16 @@ export class AutonomyLifecycle extends EventEmitter {
       harnessEngine.off('findings', this.harnessFindingsListener);
       this.harnessFindingsListener = null;
     }
+    // #33: Dispose any onDidWriteData listeners bound during reconnector
+    // runs so we don't leak handlers if the extension is reactivated.
+    for (const [sessionId, disposable] of this.terminalOutputListeners) {
+      try {
+        disposable.dispose();
+      } catch (err) {
+        logger.debug(`[Autonomy] Failed to dispose terminalOutput listener for ${sessionId}: ${errMsg(err)}`);
+      }
+    }
+    this.terminalOutputListeners.clear();
     // #43: Persist accumulated harness findings before clearing.
     this.persistHarnessFindings();
     this.accumulatedFindings = [];

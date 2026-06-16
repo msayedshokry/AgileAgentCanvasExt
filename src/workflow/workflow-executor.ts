@@ -3059,10 +3059,16 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                             let validationType = artType;
                             let usedDiskFile = false;
                             const storeKey = TYPE_TO_STORE_KEY[artType];
+                            // Pull `changes.id` as `artifactId` (guarded by `typeof` so
+                            // it narrows to `string`) so per-id sourceFiles entries
+                            // (e.g. `epics:E-1`, `readinessReport:RR-1`) resolve
+                            // deterministically instead of falling back to prefix-iter.
+                            const artifactId: string | undefined =
+                                typeof changes?.id === 'string' ? changes.id : undefined;
 
                             if (storeKey && typeof store?.readArtifactFile === 'function') {
                                 try {
-                                    const diskData = await store.readArtifactFile(storeKey);
+                                    const diskData = await store.readArtifactFile(storeKey, artifactId);
                                     if (diskData && typeof diskData === 'object') {
                                         envelope = diskData;
                                         usedDiskFile = true;
@@ -3080,7 +3086,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                             // For 'epic' type: read the full epics file and validate against 'epics' schema
                             if (!envelope && artType === 'epic' && typeof store?.readArtifactFile === 'function') {
                                 try {
-                                    const diskData = await store.readArtifactFile('epics');
+                                    const diskData = await store.readArtifactFile('epics', artifactId);
                                     if (diskData && typeof diskData === 'object') {
                                         envelope = diskData;
                                         validationType = 'epics';

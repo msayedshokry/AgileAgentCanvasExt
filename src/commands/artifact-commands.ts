@@ -20,7 +20,7 @@ export async function handleAddArtifact(
     acOutput.appendLine(`[Extension] handleAddArtifact called for type: ${artifactType}`);
 
     let newArtifactId: string;
-    let newArtifactType: string = artifactType;
+    const newArtifactType: string = artifactType;
 
     try {
         switch (artifactType) {

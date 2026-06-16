@@ -97,7 +97,7 @@ export class CircuitBreaker extends EventEmitter {
 
   /** Check if a workflow is allowed to run. False when circuit is open. */
   canRun(workflowId: string): boolean {
-    let status = this.states.get(workflowId);
+    const status = this.states.get(workflowId);
     if (!status) return true;
 
     // Auto-transition open → half-open after cooldown

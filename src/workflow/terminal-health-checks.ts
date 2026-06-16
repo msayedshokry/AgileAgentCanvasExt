@@ -6,7 +6,9 @@
 //
 // Issue: #9 — Terminal Agent Health Checks
 
+import type * as vscode from 'vscode';
 import { HealthCheck } from './agent-health-monitor';
+import type { BmadModel } from '../chat/ai-provider';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('terminal-health-checks');
@@ -93,10 +95,105 @@ export function createTerminalHealthChecks(
 
 // ─── Chat Agent Health Checks ───────────────────────────────────────────────
 
+/**
+ * Strongly typed context bundle for a chat-path execution step. Whenever
+ * the orchestrator sees `ctx.stream` and `ctx.model` it must also supply a
+ * tracker — without one, the chat-stream-progress check has no real signal
+ * and would silently revert to the legacy elapsed-only shape. We type
+ * this as a single unit so future maintainers cannot accidentally omit
+ * the tracker when constructing a chat context.
+ *
+ * Issue: #32 reviewer followup — tighten `Supplier<ChatProgressTracker>`
+ * so `tracker` is required whenever `stream` is set.
+ */
+export interface ChatPathContext {
+  model: BmadModel;
+  stream: vscode.ChatResponseStream;
+  token?: vscode.CancellationToken;
+  tracker: ChatProgressTracker;
+}
+
+/**
+ * Runtime narrowing helper for the OrchestratorContext that
+ * `KanbanOrchestrator.runStepGuarded` consumes. Returns `null` for the
+ * terminal path (no model/stream). Returns a fully typed `ChatPathContext`
+ * for the chat path, OR THROWS if `stream` is set but `tracker` is missing
+ * — preserving the #32 invariant that real chat execution has real
+ * activity timestamps.
+ *
+ * A future maintainer who writes `ctx = { model, stream }` without a
+ * tracker will hit this error at runtime; the compile-time signal comes
+ * from `ChatPathContext` being a single typed unit rather than four
+ * loose optional fields.
+ */
+export function requireChatPathContext(
+  ctx: { model?: unknown; stream?: unknown; token?: unknown; tracker?: unknown },
+): ChatPathContext | null {
+  if (!ctx.model || !ctx.stream) {
+    return null; // terminal path
+  }
+  if (
+    !ctx.tracker ||
+    typeof (ctx.tracker as { markActivity?: unknown }).markActivity !== 'function'
+  ) {
+    throw new Error(
+      'Chat path requires `tracker: ChatProgressTracker` in OrchestratorContext ' +
+      'when `model` and `stream` are set. Provide a `ChatProgressTracker` instance ' +
+      'so the chat-stream-progress health check has real activity timestamps.',
+    );
+  }
+  return {
+    model: ctx.model as ChatPathContext['model'],
+    stream: ctx.stream as ChatPathContext['stream'],
+    token: ctx.token as ChatPathContext['token'],
+    tracker: ctx.tracker as ChatPathContext['tracker'],
+  };
+}
+
+/**
+ * Stateful tracker for in-chat (Copilot) agent activity. The orchestrator
+ * (or any other owner of the chat session lifecycle) calls
+ * `markActivity()` whenever a chunk of streaming output arrives; the
+ * health check reads `getLastActivity()` to detect stalls.
+ *
+ * Issue: #32 — In-chat session health monitoring (stream stall detection).
+ *
+ * Without this tracker the only signal available to a chat health check
+ * is `Date.now() - startedAt`, which can't distinguish "slow" from "stalled".
+ */
+export class ChatProgressTracker {
+  private lastActivityAt: number = Date.now();
+  private activityCount = 0;
+
+  /** Call on every chunk of streaming output from the chat session. */
+  markActivity(): void {
+    this.lastActivityAt = Date.now();
+    this.activityCount++;
+  }
+
+  /** Time of the most recent activity (ms epoch). Defaults to construction
+   *  time so a brand-new tracker is already considered "active" until the
+   *  first stall window elapses without any marks. */
+  getLastActivity(): number {
+    return this.lastActivityAt;
+  }
+
+  /** Total activity marks since construction (debug/observability). */
+  getActivityCount(): number {
+    return this.activityCount;
+  }
+}
+
 /** Options for chat health checks. */
 export interface ChatHealthCheckOptions {
   /** Timeout for session elapsed time threshold (default 300 s for chat). */
   sessionTimeoutMs?: number;
+  /**
+   * Maximum gap allowed between streaming activity marks before the
+   * session is considered stalled. Default 60_000 (one minute) per #32.
+   * Only used when `tracker` is provided.
+   */
+  outputStallMs?: number;
 }
 
 /**
@@ -120,11 +217,13 @@ export interface ChatHealthCheckOptions {
 export function createChatHealthChecks(
   _artifact: any,
   options: ChatHealthCheckOptions = {},
+  tracker?: ChatProgressTracker,
 ): HealthCheck[] {
   const sessionTimeoutMs = options.sessionTimeoutMs ?? 300_000; // 5 min for chat
+  const outputStallMs = options.outputStallMs ?? 60_000;        // 1 min for stalls (#32)
   const startedAt = Date.now();
 
-  return [
+  const checks: HealthCheck[] = [
     {
       label: 'chat-session-elapsed',
       check: async () => {
@@ -135,6 +234,31 @@ export function createChatHealthChecks(
       },
     },
   ];
+
+  if (tracker) {
+    checks.push({
+      label: 'chat-stream-progress',
+      // Local try/catch (instead of safeCheck) so we can keep the 'dead'
+      // transition for the 3× stall boundary — safeCheck's signature only
+      // allows 'healthy'|'degraded'. Errors degrade to 'degraded' just
+      // like the wrapped checks do, so a disposed tracker still fails
+      // soft without throwing into the monitor poll loop.
+      check: async () => {
+        try {
+          const lastActivity = tracker.getLastActivity();
+          const stallMs = Date.now() - lastActivity;
+          if (stallMs > outputStallMs * 3) return 'dead';
+          if (stallMs > outputStallMs) return 'degraded';
+          return 'healthy';
+        } catch (err) {
+          logger.warn('chat-stream-progress check threw', { error: String(err) });
+          return 'degraded';
+        }
+      },
+    });
+  }
+
+  return checks;
 }
 
 /** Shared try/catch wrapper — returns 'degraded' on error. */

@@ -39,6 +39,7 @@ const mockTerminalRecovery = vi.hoisted(() => ({
   setScanner: vi.fn(),
   setReconnector: vi.fn(),
   setInterruptedReporter: vi.fn(),
+  setOnReconnected: vi.fn(),
   recoverOnActivation: vi.fn(async () => [] as any[]),
 }));
 

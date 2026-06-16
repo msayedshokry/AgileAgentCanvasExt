@@ -31,6 +31,7 @@ import {
 } from './kanban-verdict';
 
 import { errMsg } from '../utils/error';
+import { inferRoleFromWorkflow } from '../harness/role-inference';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -206,6 +207,10 @@ export class TerminalExecutor implements vscode.Disposable {
   private lockTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
   /** Default max lock duration for terminal-run workflows (20 minutes) */
   private static readonly LOCK_TIMEOUT_MS = 20 * 60 * 1000;
+  /** Issue #35: cap on per-session persisted buffer in terminal-sessions.json.
+   *  Live chat/agent output rarely exceeds 100KB; 200KB gives a safety margin
+   *  while keeping the meta file small enough for fast reads. */
+  private static readonly MAX_PERSISTED_BUFFER = 200 * 1024;
 
   constructor() {
     // Listen for terminal close events to clean up tracking
@@ -574,7 +579,11 @@ export class TerminalExecutor implements vscode.Disposable {
 
   /**
    * Persist terminal session metadata to disk so orphan detection survives
-   * VS Code restarts. Uses a simple JSON file in the output folder.
+   * VS Code restarts. Each session entry also carries a truncated
+   * `accumulatedData` ("buffer") snapshot capped at MAX_PERSISTED_BUFFER so
+   * the autonomy lifecycle can replay the most recent chunks on reconnect
+   * (#35). We persist on every workflow start AND on terminal close so the
+   * latest output is always recoverable after a crash.
    */
   private persistSessionMetadata(): void {
     try {
@@ -588,11 +597,45 @@ export class TerminalExecutor implements vscode.Disposable {
         artifactId: s.artifactId,
         name: s.terminal.name,
         startedAt: Date.parse(s.startedAt),
+        // Issue #35: truncate to keep terminal-sessions.json bounded. Live
+        // output typically runs to <100KB; cap at 200KB as a safety margin.
+        buffer: s.accumulatedData.length > TerminalExecutor.MAX_PERSISTED_BUFFER
+          ? s.accumulatedData.slice(-TerminalExecutor.MAX_PERSISTED_BUFFER)
+          : s.accumulatedData,
       }));
       fs.mkdirSync(path.dirname(filePath), { recursive: true });
       fs.writeFileSync(filePath, JSON.stringify(sessions, null, 2), 'utf-8');
     } catch {
       // Best effort — terminal recovery already has a fallback path.
+    }
+  }
+
+  /**
+   * Read the persisted output buffer for an artifactId from
+   * terminal-sessions.json. Returns the empty string if the artifact isn't
+   * persisted (e.g. never started after a fresh install) or the file is
+   * corrupt. Used by the autonomy lifecycle's `terminalReconnected`
+   * broadcast to provide `bufferedData` when the in-memory accumulator is
+   * empty (the common case after a VS Code restart).
+   *
+   * Issue: #35 — terminalReconnected outbound broadcast.
+   */
+  getPersistedOutput(artifactId: string): string {
+    try {
+      const outputFolder = path.join(
+        (vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath ?? process.cwd()),
+        vscode.workspace.getConfiguration('agileagentcanvas').get<string>('outputFolder', '.agileagentcanvas-context'),
+      );
+      const filePath = path.join(outputFolder, 'terminal-sessions.json');
+      if (!fs.existsSync(filePath)) return '';
+      const raw = fs.readFileSync(filePath, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return '';
+      const match = parsed.find((entry: any) => entry && entry.artifactId === artifactId);
+      return typeof match?.buffer === 'string' ? match.buffer : '';
+    } catch {
+      // Corrupt file or transient read failure — best effort, return empty.
+      return '';
     }
   }
 
@@ -682,14 +725,3 @@ export const terminalExecutor = new TerminalExecutor();
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Infer a display-friendly agent role name from a workflow ID. */
-export function inferRoleFromWorkflow(workflowId: string): string {
-  const roleMap: Record<string, string> = {
-    'dev-story': 'Crafter',
-    'code-review': 'Reviewer',
-    'sprint-planning': 'Planner',
-    'story-enhancement': 'Analyst',
-    'epic-enhancement': 'Analyst',
-    'create-prd': 'Strategist',
-  };
-  return roleMap[workflowId] || 'Agent';
-}

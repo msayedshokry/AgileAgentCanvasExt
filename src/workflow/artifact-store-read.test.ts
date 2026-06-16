@@ -202,4 +202,5 @@ describe('readArtifactFile + getArtifactFileUri lookup behaviour', () => {
             expect(uri?.fsPath).toBe('/readiness-report-1.json');
         });
     });
+
 });

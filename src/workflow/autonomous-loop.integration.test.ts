@@ -74,6 +74,25 @@ vi.mock('./terminal-health-checks', () => ({
   createChatHealthChecks: () => [
     { label: 'chat-session-elapsed', check: async () => 'healthy' as const },
   ],
+  // Issue #32 reviewer followup: real impl also exports ChatProgressTracker
+  // and requireChatPathContext. The mock must expose the same surface so
+  // the chat branch compiles; the integration test below provides a
+  // tracker per call to satisfy the required-tracker invariant.
+  ChatProgressTracker: class ChatProgressTracker {
+    private lastAt = Date.now();
+    markActivity() { this.lastAt = Date.now(); }
+    getLastActivity() { return this.lastAt; }
+    getActivityCount() { return 0; }
+  },
+  requireChatPathContext: (ctx: any) => {
+    // Pass-through narrowing: return ctx as ChatPathContext-like object if
+    // model + stream + tracker are all present, else null (terminal path).
+    if (!ctx.model || !ctx.stream) return null;
+    if (!ctx.tracker) {
+      throw new Error('Chat path requires tracker');
+    }
+    return ctx;
+  },
 }));
 
 vi.mock('./agent-health-monitor', () => ({
@@ -219,7 +238,14 @@ describe('Autonomous loop: KanbanOrchestrator + terminal executor integration', 
 
     const orch = new KanbanOrchestrator(store, executor, terminalExecutor);
 
-    const ctx = { model: { name: 'gpt-4o' } as any, stream: { markdown: vi.fn() } as any };
+    const ctx = {
+      model: { name: 'gpt-4o' } as any,
+      stream: { markdown: vi.fn() } as any,
+      // Issue #32 reviewer followup: tracker is now required when stream
+      // is supplied (instance is a no-op stub since the proxy never
+      // actually fires markdown in this test).
+      tracker: { markActivity: vi.fn(), getLastActivity: () => Date.now(), getActivityCount: () => 0 } as any,
+    };
     const result = await orch.runAutonomous(story, ctx);
 
     expect(result.ok).toBe(true);

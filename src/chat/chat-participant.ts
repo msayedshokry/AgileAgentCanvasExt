@@ -3642,7 +3642,7 @@ Engage the user in collaborative discussion — ask clarifying questions when us
             }
             
             // Search multiple locations for markdown files
-            let allMdFiles: {path: string, uri: vscode.Uri}[] = [];
+            const allMdFiles: {path: string, uri: vscode.Uri}[] = [];
             
             // Check planning (backward compat old projects)
             const planningUri = vscode.Uri.joinPath(folderUri, 'planning');

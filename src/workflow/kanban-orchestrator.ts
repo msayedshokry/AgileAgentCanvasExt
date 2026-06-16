@@ -29,9 +29,64 @@ import { autoRetryEngine } from './auto-retry-engine';
 import { autonomousGit } from './autonomous-git';
 import { TerminalExecutor } from './terminal-executor';
 import { agentHealthMonitor } from './agent-health-monitor';
-import { createChatHealthChecks } from './terminal-health-checks';
+import {
+  ChatProgressTracker,
+  createChatHealthChecks,
+  requireChatPathContext,
+} from './terminal-health-checks';
 
 import { errMsg } from '../utils/error';
+
+/**
+ * Wrap a `vscode.ChatResponseStream` so that every chunk-emitter also
+ * ticks a {@link ChatProgressTracker}. We only proxy the streaming
+ * methods that indicate real progress; one-shot config / metadata calls
+ * (e.g. `push`, `reference`) don't count as "activity" for stall
+ * detection.
+ *
+ * Exported (not just module-local) so the focused Proxy unit test in
+ * `chat-stream-proxy.test.ts` can import the helper directly without
+ * touching the full KanbanOrchestrator wiring.
+ *
+ * Issue: #32 — chat stream stall detection.
+ */
+export function wrapStreamForProgress(
+  stream: vscode.ChatResponseStream,
+  tracker: ChatProgressTracker,
+): vscode.ChatResponseStream {
+  return new Proxy(stream, {
+    get(target, prop, receiver) {
+      const original = Reflect.get(target, prop, receiver);
+      if (typeof original !== 'function') return original;
+      // Methods we treat as "activity" — every chunk they emit means the
+      // model is still producing output. Anything else (push, reference,
+      // button, etc.) we leave untouched so it doesn't tick falsely.
+      // `markdownWithVulnerabilities` is the security-warning variant of
+      // `markdown` and counts as real model output (#32 stall review).
+      const STREAMING_METHODS: Record<string, true> = {
+        markdown: true,
+        markdownWithVulnerabilities: true,
+        anchor: true,
+        filetree: true,
+        progress: true,
+      };
+      if (!STREAMING_METHODS[prop as string]) {
+        // Non-streaming pass-through — `original` is already bound to
+        // target through Reflect.get, so no extra `.bind(target)` hop.
+        // (Reviewer nit: previously returned `original.bind(target)`,
+        // which was redundant and added one allocation per call.)
+        return original;
+      }
+      // Streaming method — tick the tracker, then forward. We still
+      // forcibly re-bind `target` here in case the underlying method
+      // is a getter that re-resolves on access (defensive).
+      return (...args: unknown[]) => {
+        tracker.markActivity();
+        return original.apply(target, args);
+      };
+    },
+  });
+}
 
 export interface OrchestratorContext {
   model?: BmadModel;
@@ -250,16 +305,31 @@ export class KanbanOrchestrator {
 
       if (useChatPath) {
         // ── Chat path (in-Copilot) ────────────────────────────────────────
+        // Issue #32 reviewer followup: tighten the supplier so `tracker`
+        // is required when `model` + `stream` are present. requireChatPathContext
+        // throws synchronously if `tracker` is missing; autoRetryEngine.run
+        // catches that error and converts it into a UNKNOWN verdict so the
+        // orchestrator surfaces it cleanly to the user.
+        //
+        // Invariant: useChatPath guarantees ctx.model && ctx.stream are
+        // both truthy. requireChatPathContext only returns `null` for the
+        // terminal-path case (model || stream falsy), which we're not in,
+        // so the call either returns a ChatPathContext or throws. The
+        // non-null assertion narrows the union for the call sites below.
+        const chatInputs = requireChatPathContext(ctx)!;
         const chatSessionId = `chat-${workflowId}-${id}-${Date.now()}`;
-        // Register health checks for in-chat agent session
-        const chatChecks = createChatHealthChecks(artifact);
+        const tracker = chatInputs.tracker;
+        const proxiedStream = wrapStreamForProgress(chatInputs.stream, tracker);
+        // Register health checks for in-chat agent session (now includes
+        // `chat-stream-progress` because a tracker was supplied).
+        const chatChecks = createChatHealthChecks(artifact, {}, tracker);
         for (const check of chatChecks) {
           agentHealthMonitor.registerCheck(chatSessionId, check);
         }
 
         try {
           const verdict = await this.executor.executeLaneTransition(
-            workflowId, artifact, this.store, ctx.model, ctx.stream, ctx.token, chatSessionId
+            workflowId, artifact, this.store, chatInputs.model, proxiedStream, chatInputs.token, chatSessionId
           );
           captured = verdict;
         } finally {

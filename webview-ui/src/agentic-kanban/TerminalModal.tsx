@@ -47,6 +47,15 @@ export function TerminalModal({ artifactId, artifactTitle, onClose }: TerminalMo
           }
           return newLines;
         });
+      } else if (msg.type === 'terminalReconnected' && msg.artifactId === artifactId) {
+        // Issue #35: the autonomy lifecycle restored the stream for an
+        // orphaned terminal. Replace the visible lines with the buffered
+        // payload so the modal reflects what the agent produced while
+        // the webview was disconnected. Live `terminalOutputAppend` chunks
+        // arrive immediately after via the reattached onDidWriteData
+        // listener on the extension side.
+        const data = typeof msg.bufferedData === 'string' ? msg.bufferedData : '';
+        setLines(data.length > 0 ? data.split(/\r?\n/) : []);
       }
     };
 

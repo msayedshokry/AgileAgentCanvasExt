@@ -121,7 +121,7 @@ export class HarnessFeedbackService {
     existing.lastChecked = now;
 
     for (const result of results) {
-      let entry = existing.entries.find(e => e.policyId === result.policyId);
+      const entry = existing.entries.find(e => e.policyId === result.policyId);
 
       if (entry) {
         // Update existing entry

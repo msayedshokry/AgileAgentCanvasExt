@@ -252,6 +252,23 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
         }
         break;
       }
+      case 'terminalReconnected': {
+        // Issue #35: the autonomy lifecycle restored the stream for an
+        // orphaned terminal after VS Code restart / network blip. Show a
+        // toast so the user knows the agent is back online, and auto-open
+        // the TerminalModal so the buffered chunks become visible
+        // immediately. If a modal is already open (for this artifact or
+        // another), skip the auto-open so the modal's own `terminalReconnected`
+        // listener handles the state — we don't want to throwaway whatever
+        // the user is currently looking at.
+        const name = message.terminalName ?? message.sessionId ?? 'terminal';
+        const chunks = typeof message.bufferedData === 'string' ? message.bufferedData : '';
+        if (!terminalModal && message.artifactId && chunks.length > 0) {
+          setTerminalModal({ artifactId: message.artifactId, artifactTitle: name });
+        }
+        setToast({ message: `Terminal reconnected: ${name}`, type: 'success' });
+        break;
+      }
       case 'systemicIssue': {
         // Cross-artifact harness pattern detected — display as a dismissable
         // banner in the AutonomyBar (issue #4).

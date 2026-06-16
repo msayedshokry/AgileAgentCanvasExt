@@ -35,16 +35,32 @@ export interface StreamReconnector {
   reconnect(terminal: OrphanedTerminal): Promise<boolean>;
 }
 
+/**
+ * Optional hook fired immediately after a successful reconnection.
+ * Receives the orphan metadata so the autonomy layer can look up buffered
+ * chunks from terminal-executor and broadcast a reconnect notification to
+ * the webview. Called once per successful reconnect; not called on the
+ * 'interrupted' path.
+ *
+ * Issue: #35 — terminalReconnected outbound broadcast (closes the gap
+ * between the existing OUTBOUND `terminalOutput` reconnector stream and the
+ * user-visible "reconnected" toast/notification).
+ */
+export type OnReconnectedFn = (orphan: OrphanedTerminal) => void;
+
 // ── Recovery ─────────────────────────────────────────────────────────────────
 
 export class TerminalSessionRecovery {
   private scanner: ProcessScanner | null = null;
   private reconnector: StreamReconnector | null = null;
   private interruptedReporter: ((artifactId: string, reason: string) => void) | null = null;
+  private onReconnected: OnReconnectedFn | null = null;
 
   setScanner(scanner: ProcessScanner): void { this.scanner = scanner; }
   setReconnector(reconnector: StreamReconnector): void { this.reconnector = reconnector; }
   setInterruptedReporter(fn: (artifactId: string, reason: string) => void): void { this.interruptedReporter = fn; }
+  /** Register a callback fired after every successful reconnection. */
+  setOnReconnected(fn: OnReconnectedFn): void { this.onReconnected = fn; }
 
   /** Scan for orphaned terminals and attempt reconnection. */
   async recoverOnActivation(): Promise<RecoveryResult[]> {
@@ -72,15 +88,24 @@ export class TerminalSessionRecovery {
       return this.markInterrupted(orphan, 'terminal-lost');
     }
 
-    try {
-      if (this.reconnector) {
-        const ok = await this.reconnector.reconnect(orphan);
-        if (ok) {
-          logger.info('Reconnected orphaned terminal', { sessionId: orphan.sessionId });
-          return { sessionId: orphan.sessionId, artifactId: orphan.artifactId, status: 'reconnected' };
+    try {        if (this.reconnector) {
+          const ok = await this.reconnector.reconnect(orphan);
+          if (ok) {
+            logger.info('Reconnected orphaned terminal', { sessionId: orphan.sessionId });
+            // Fire the optional reconnect hook so the autonomy layer can
+            // broadcast a `terminalReconnected` event with buffered chunks
+            // back to the webview. Hook failures are logged but do not
+            // change the recovery result — reconnection itself succeeded.
+            if (this.onReconnected) {
+              try { this.onReconnected(orphan); }
+              catch (err) {
+                logger.warn('onReconnected hook threw', { error: String(err) });
+              }
+            }
+            return { sessionId: orphan.sessionId, artifactId: orphan.artifactId, status: 'reconnected' };
+          }
+          return this.markInterrupted(orphan, 'stream-failed');
         }
-        return this.markInterrupted(orphan, 'stream-failed');
-      }
     } catch (err) {
       logger.warn('Reconnect threw', { sessionId: orphan.sessionId, error: String(err) });
       return this.markInterrupted(orphan, 'stream-failed');

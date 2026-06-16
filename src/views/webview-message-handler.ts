@@ -218,6 +218,26 @@ export async function handleCommonWebviewMessage(
             await importArtifacts(store);
             return true;
 
+        case 'terminalOutput': {
+            // Inbound round-trip fetch hook. The terminal-executor pipeline
+            // normally pushes `terminalOutput` outbound (extension → webview)
+            // for the Agentic Kanban TerminalModal to render live chunks.
+            // Issue #33 added an OUTBOUND reconnector broadcast for orphaned
+            // sessions that re-attach after a VS Code restart, which fires
+            // on every active canvas panel + the kanban provider. The webview
+            // is the canonical consumer.
+            //
+            // This case exists for the inverse case: if a webview re-broadcasts
+            // a buffered chunk back to us (e.g. after a refresh), we
+            // re-distribute it to any other open webviews. Currently a
+            // no-op fallback so the case is registered and unknown inbound
+            // messages don't fall through to the default branch.
+            if (webview) {
+                logger.debug(`${logPrefix} terminalOutput round-trip received (no-op)`);
+            }
+            return true;
+        }
+
 
         case 'closeDetailTab':
             // The caller must handle disposal of the actual panel reference.

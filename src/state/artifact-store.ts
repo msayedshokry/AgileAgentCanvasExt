@@ -221,6 +221,22 @@ export class ArtifactStore {
     // Track source files for writing back
     private sourceFolder: vscode.Uri | null = null;
     private sourceFiles: Map<string, vscode.Uri> = new Map();
+    /**
+     * Canonical key for a per-id entry stored in {@link sourceFiles}.
+     *
+     * Format: `${prefix}:${id}`. Producers (sync functions, see
+     * {@link syncArrayArtifacts}) `set` per-id files with this helper;
+     * consumers (`{@link getArtifactFileUri}`, `{@link readArtifactFile}`)
+     * use the same shape for the strict per-id lookup branch + the
+     * prefix-iter fallback. Centralizing the format ensures a future
+     * per-id type added by a plugin cannot drift the key shape (for
+     * example, by using `|` or `.` separators) and silently miss the
+     * downstream lookup.
+     */
+    private static perIdKey(prefix: string, id: string): string {
+        return `${prefix}:${id}`;
+    }
+
     
     // Track selected artifact for context-aware workflow progress
     private _selectedArtifact: { type: string; id: string; artifact: any } | null = null;
@@ -573,7 +589,7 @@ export class ArtifactStore {
      * Cases:
      *   (a) Direct `sourceFiles.get(storeKey)` — singletons like 'vision',
       'prd', 'epics' which map to a single aggregated file.
-     *   (b) `sourceFiles.get(`${storeKey}:${artifactId}`)` — per-id files
+     *   (b) `sourceFiles.get(ArtifactStore.perIdKey(storeKey, artifactId))` — per-id files
       for array types like `readinessReport:RR-1` where each entry is a
       separate file.
      *
@@ -585,7 +601,7 @@ export class ArtifactStore {
         if (artifactId !== undefined) {
             // Explicit id: require an exact `${storeKey}:${artifactId}` match.
             // Don't fall back to prefix-iter, which would return arbitrary data.
-            return this.sourceFiles.get(`${storeKey}:${artifactId}`) ?? null;
+            return this.sourceFiles.get(ArtifactStore.perIdKey(storeKey, artifactId)) ?? null;
         }
         // No id supplied: fall back to first prefix-iter match.
         // Useful for the post-save schema validation path in workflow-executor.ts,
@@ -2531,7 +2547,7 @@ export class ArtifactStore {
                 return `EPIC-${match[1]}`;
             };
             let projectName = '';
-            let requirements: BmadArtifacts['requirements'] = {
+            const requirements: BmadArtifacts['requirements'] = {
                 functional: [],
                 nonFunctional: [],
                 additional: []
@@ -2649,7 +2665,7 @@ export class ArtifactStore {
                                             } else {
                                                 allEpics.push(epic);
                                             }
-                                            this.sourceFiles.set(`epic:${epic.id}`, epicFileUri);
+                                            this.sourceFiles.set(ArtifactStore.perIdKey('epic', epic.id), epicFileUri);
                                         }
                                     } catch (refErr: any) {
                                         storeLogger.debug(`[ArtifactStore] Failed to load epic ref '${refPath}': ${refErr?.message ?? refErr}`);
@@ -2720,7 +2736,7 @@ export class ArtifactStore {
                                 } else {
                                     allEpics.push(epic);
                                 }
-                                this.sourceFiles.set(`epic:${epic.id}`, fileUri);
+                                this.sourceFiles.set(ArtifactStore.perIdKey('epic', epic.id), fileUri);
                             }
                             break;
                         }
@@ -2737,7 +2753,7 @@ export class ArtifactStore {
                             if (story) {
                                 storeLogger.debug(`[ArtifactStore] Loaded standalone story: ${story.title}`);
                                 standaloneStories.push(story);
-                                this.sourceFiles.set(`story:${story.id}`, fileUri);
+                                this.sourceFiles.set(ArtifactStore.perIdKey('story', story.id), fileUri);
                             }
                             break;
                             
@@ -3122,7 +3138,7 @@ export class ArtifactStore {
                         case 'test-design-architecture': {
                             const tdContent = data.content || data;
                             const tdId = tdContent.id || `test-design-${fileName}`;
-                            this.sourceFiles.set(`testDesign:${tdId}`, fileUri);
+                            this.sourceFiles.set(ArtifactStore.perIdKey('testDesign', tdId), fileUri);
                             const existingTDs = this.artifacts.get('testDesigns') || [];
                             existingTDs.push(tdContent);
                             this.artifacts.set('testDesigns', existingTDs);
@@ -3144,7 +3160,7 @@ export class ArtifactStore {
                         case 'test-review': {
                             const trData = data.content || data;
                             const trId = data.metadata?.id || trData.id || `test-review-${fileName}`;
-                            this.sourceFiles.set(`testReview:${trId}`, fileUri);
+                            this.sourceFiles.set(ArtifactStore.perIdKey('testReview', trId), fileUri);
                             const existing = this.artifacts.get('testReviews') || [];
                             existing.push(trData);
                             this.artifacts.set('testReviews', existing);
@@ -3196,7 +3212,7 @@ export class ArtifactStore {
                         case 'research': {
                             const resData = data.content || data;
                             const resId = data.metadata?.id || resData.id || `research-${fileName}`;
-                            this.sourceFiles.set(`research:${resId}`, fileUri);
+                            this.sourceFiles.set(ArtifactStore.perIdKey('research', resId), fileUri);
                             const existing = this.artifacts.get('researches') || [];
                             existing.push(resData);
                             this.artifacts.set('researches', existing);
@@ -3207,7 +3223,7 @@ export class ArtifactStore {
                         case 'ux-design': {
                             const uxData = data.content || data;
                             const uxId = data.metadata?.id || uxData.id || `ux-design-${fileName}`;
-                            this.sourceFiles.set(`uxDesign:${uxId}`, fileUri);
+                            this.sourceFiles.set(ArtifactStore.perIdKey('uxDesign', uxId), fileUri);
                             const existing = this.artifacts.get('uxDesigns') || [];
                             existing.push(uxData);
                             this.artifacts.set('uxDesigns', existing);
@@ -3218,7 +3234,7 @@ export class ArtifactStore {
                         case 'readiness-report': {
                             const rrData = data.content || data;
                             const rrId = data.metadata?.id || rrData.id || `readiness-report-${fileName}`;
-                            this.sourceFiles.set(`readinessReport:${rrId}`, fileUri);
+                            this.sourceFiles.set(ArtifactStore.perIdKey('readinessReport', rrId), fileUri);
                             const existing = this.artifacts.get('readinessReports') || [];
                             existing.push(rrData);
                             this.artifacts.set('readinessReports', existing);
@@ -3229,7 +3245,7 @@ export class ArtifactStore {
                         case 'sprint-status': {
                             const ssData = data.content || data;
                             const ssId = data.metadata?.id || ssData.id || `sprint-status-${fileName}`;
-                            this.sourceFiles.set(`sprintStatus:${ssId}`, fileUri);
+                            this.sourceFiles.set(ArtifactStore.perIdKey('sprintStatus', ssId), fileUri);
                             const existing = this.artifacts.get('sprintStatuses') || [];
                             existing.push(ssData);
                             this.artifacts.set('sprintStatuses', existing);
@@ -3240,7 +3256,7 @@ export class ArtifactStore {
                         case 'retrospective': {
                             const retroData = data.content || data;
                             const retroId = data.metadata?.id || retroData.id || `retrospective-${fileName}`;
-                            this.sourceFiles.set(`retrospective:${retroId}`, fileUri);
+                            this.sourceFiles.set(ArtifactStore.perIdKey('retrospective', retroId), fileUri);
                             const existing = this.artifacts.get('retrospectives') || [];
                             existing.push(retroData);
                             this.artifacts.set('retrospectives', existing);
@@ -3251,7 +3267,7 @@ export class ArtifactStore {
                         case 'change-proposal': {
                             const cpData = data.content || data;
                             const cpId = data.metadata?.id || cpData.id || `change-proposal-${fileName}`;
-                            this.sourceFiles.set(`changeProposal:${cpId}`, fileUri);
+                            this.sourceFiles.set(ArtifactStore.perIdKey('changeProposal', cpId), fileUri);
                             const existing = this.artifacts.get('changeProposals') || [];
                             existing.push(cpData);
                             this.artifacts.set('changeProposals', existing);
@@ -3262,7 +3278,7 @@ export class ArtifactStore {
                         case 'code-review': {
                             const crData = data.content || data;
                             const crId = data.metadata?.id || crData.id || `code-review-${fileName}`;
-                            this.sourceFiles.set(`codeReview:${crId}`, fileUri);
+                            this.sourceFiles.set(ArtifactStore.perIdKey('codeReview', crId), fileUri);
                             const existing = this.artifacts.get('codeReviews') || [];
                             existing.push(crData);
                             this.artifacts.set('codeReviews', existing);
@@ -3289,7 +3305,7 @@ export class ArtifactStore {
                         case 'tech-spec': {
                             const tspcData = data.content || data;
                             const tspcId = data.metadata?.id || tspcData.id || `tech-spec-${fileName}`;
-                            this.sourceFiles.set(`techSpec:${tspcId}`, fileUri);
+                            this.sourceFiles.set(ArtifactStore.perIdKey('techSpec', tspcId), fileUri);
                             const existing = this.artifacts.get('techSpecs') || [];
                             existing.push(tspcData);
                             this.artifacts.set('techSpecs', existing);
@@ -3388,7 +3404,7 @@ export class ArtifactStore {
                                 const story = this.mapSchemaStoryToInternal(storyMerged);
                                 if (story) {
                                     standaloneStories.push(story);
-                                    this.sourceFiles.set(`story:${story.id}`, fileUri);
+                                    this.sourceFiles.set(ArtifactStore.perIdKey('story', story.id), fileUri);
                                 }
                             }
                             break;
@@ -4094,7 +4110,7 @@ export class ArtifactStore {
      */
     private async patchEpicStatusOnDisk(epicId: string, newStatus: string, skipYamlSync = false): Promise<boolean> {
         const acOutput = this.getOutputChannel();
-        const fileUri = this.sourceFiles.get(`epic:${epicId}`);
+        const fileUri = this.sourceFiles.get(ArtifactStore.perIdKey('epic', epicId));
         if (!fileUri) {
             storeLogger.debug(`[SprintSync] No source file found for epic:${epicId} — skipping`);
             return false;
@@ -4492,7 +4508,7 @@ export class ArtifactStore {
 
         for (const ref of epicData.storyRefs) {
             const refId = typeof ref === 'string' ? ref : ref.id;
-            let refPath = typeof ref === 'string' ? ref : ref.file;
+            const refPath = typeof ref === 'string' ? ref : ref.file;
             
             let storyUri: vscode.Uri | null = null;
             let finalRefPath = refPath || String(refId);
@@ -6483,7 +6499,7 @@ export class ArtifactStore {
                     logDebug(`Saved standalone story file: ${storyFileName}`);
                 }
 
-                this.sourceFiles.set(`story:${story.id}`, storyFileUri);
+                this.sourceFiles.set(ArtifactStore.perIdKey('story', story.id), storyFileUri);
             }
 
             // CR-7: delete orphaned story files that are no longer in state
@@ -6634,7 +6650,7 @@ export class ArtifactStore {
             }
 
             // Track each epic file for reload awareness
-            this.sourceFiles.set(`epic:${epic.id}`, epicFileUri);
+            this.sourceFiles.set(ArtifactStore.perIdKey('epic', epic.id), epicFileUri);
 
             epicRefs.push({
                 id: epic.id,

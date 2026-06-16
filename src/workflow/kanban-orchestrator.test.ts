@@ -2,6 +2,10 @@
 // Covers: runAutonomous with a successful dev+review verdict chain returns
 // {ok:true, status:'complete'} (happy path) and returns blocked when the
 // dev gate is not COMPLETED (most common error path).
+//
+// Issue #32 reviewer followup: chat-path ctx must include a tracker now
+// (requireChatPathContext throws if `model`/`stream` are set without one).
+// We supply a no-op tracker stub in every chat-path test fixture.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { KanbanOrchestrator } from './kanban-orchestrator';
@@ -45,12 +49,40 @@ vi.mock('./autonomous-git', () => ({
   },
 }));
 
-vi.mock('./terminal-health-checks', () => ({
-  createChatHealthChecks: () => [
-    { label: 'chat-output-progress', check: async () => 'healthy' as const },
-    { label: 'chat-artifact-change', check: async () => 'healthy' as const },
-  ],
-}));
+vi.mock('./terminal-health-checks', () => {
+  // Tiny internal tracker stub mirrors the ChatProgressTracker contract
+  // (markActivity / getLastActivity / getActivityCount) so the
+  // requireChatPathContext pass-through mock below can satisfy its
+  // \"is a tracker\" check.
+  class TrackerStub {
+    private lastAt = Date.now();
+    private count = 0;
+    markActivity() { this.lastAt = Date.now(); this.count++; }
+    getLastActivity() { return this.lastAt; }
+    getActivityCount() { return this.count; }
+  }
+
+  return {
+    createChatHealthChecks: () => [
+      { label: 'chat-output-progress', check: async () => 'healthy' as const },
+      { label: 'chat-artifact-change', check: async () => 'healthy' as const },
+    ],
+    // Issue #32: real impl exports ChatProgressTracker for the chat-path
+    // Proxy wrapper; the mock must expose the same surface or the chat
+    // branch will throw at module-load time when the orchestrator imports it.
+    ChatProgressTracker: TrackerStub,
+    // Issue #32 reviewer followup: requireChatPathContext narrows ctx into
+    // a ChatPathContext-like object. Real impl throws if model+stream are
+    // set without tracker. Pass-through mock mirrors that contract.
+    requireChatPathContext: (ctx: any) => {
+      if (!ctx?.model || !ctx?.stream) return null;
+      if (!ctx?.tracker || typeof ctx.tracker.markActivity !== 'function') {
+        throw new Error('Chat path requires tracker');
+      }
+      return ctx;
+    },
+  };
+});
 
 vi.mock('./agent-health-monitor', () => ({
   agentHealthMonitor: {
@@ -83,6 +115,15 @@ function fakeTerminalExecutor() {
   } as any;
 }
 
+/** Build a no-op ChatProgressTracker stub for chat-path ctx fixtures. */
+function noopTrackerStub() {
+  return {
+    markActivity: vi.fn(),
+    getLastActivity: vi.fn(() => Date.now()),
+    getActivityCount: vi.fn(() => 0),
+  } as any;
+}
+
 describe('KanbanOrchestrator', () => {
   beforeEach(() => {
     concurrencyQueue.releaseAll();
@@ -96,8 +137,12 @@ describe('KanbanOrchestrator', () => {
     const store = fakeStore();
     const orch = new KanbanOrchestrator(store, executor, fakeTerminalExecutor());
 
-    // Pass model + stream context to trigger the chat path
-    const ctx = { model: { name: 'gpt-4o' } as any, stream: { markdown: vi.fn() } as any };
+    // Pass model + stream + tracker (#32 supplier contract): trigger the chat path
+    const ctx = {
+      model: { name: 'gpt-4o' } as any,
+      stream: { markdown: vi.fn() } as any,
+      tracker: noopTrackerStub(),
+    };
     const result = await orch.runAutonomous({ id: 'S-1', type: 'story' }, ctx);
     expect(result.ok).toBe(true);
     expect(result.status).toBe('complete');
@@ -124,7 +169,7 @@ describe('KanbanOrchestrator', () => {
     expect(executor.executeLaneTransition).not.toHaveBeenCalled();
   });
 
-  it('happy: uses executeLaneTransition for chat path (with model + stream)', async () => {
+  it('happy: uses executeLaneTransition for chat path (with model + stream + tracker)', async () => {
     const executor = fakeExecutor();
     vi.mocked(executor.executeLaneTransition)
       .mockResolvedValueOnce({ verdict: 'COMPLETED' })
@@ -132,8 +177,13 @@ describe('KanbanOrchestrator', () => {
     const store = fakeStore();
     const orch = new KanbanOrchestrator(store, executor, fakeTerminalExecutor());
 
-    // Pass chat context — triggers chat path
-    const ctx = { model: { name: 'gpt-4o' } as any, stream: { markdown: vi.fn() } as any };
+    // Pass chat context — triggers chat path. #32 supplier contract:
+    // tracker required when model+stream are present.
+    const ctx = {
+      model: { name: 'gpt-4o' } as any,
+      stream: { markdown: vi.fn() } as any,
+      tracker: noopTrackerStub(),
+    };
     const result = await orch.runAutonomous({ id: 'S-1', type: 'story' }, ctx);
     expect(result.ok).toBe(true);
     expect(executor.executeLaneTransition).toHaveBeenCalled();
@@ -146,11 +196,44 @@ describe('KanbanOrchestrator', () => {
     const store = fakeStore();
     const orch = new KanbanOrchestrator(store, executor, fakeTerminalExecutor());
 
-    // Pass model + stream context to trigger the chat path
-    const ctx = { model: { name: 'gpt-4o' } as any, stream: { markdown: vi.fn() } as any };
+    // Pass model + stream + tracker: trigger the chat path
+    const ctx = {
+      model: { name: 'gpt-4o' } as any,
+      stream: { markdown: vi.fn() } as any,
+      tracker: noopTrackerStub(),
+    };
     const result = await orch.runAutonomous({ id: 'S-2', type: 'story' }, ctx);
     expect(result.ok).toBe(false);
     expect(result.status).toBe('blocked');
     expect(result.blockedBy?.[0]).toMatch(/BLOCKED/);
+  });
+
+  it('#32 supplier contract: chat path with missing tracker → UNKNOWN verdict (autoRetryEngine absorbs the synchronous throw)', async () => {
+    // NOTE on shape: the orchestrator wraps the chat-step in autoRetryEngine.run,
+    // which catches the synchronous throw from requireChatPathContext and converts
+    // it into a { succeeded:false, attempts:[{error}] } result. The orchestrator
+    // then surfaces this as a UNKNOWN verdict + circuit-breaker record. So we
+    // assert the verdict, not a literal rejection.
+    const executor = fakeExecutor();
+    const store = fakeStore();
+    const orch = new KanbanOrchestrator(store, executor, fakeTerminalExecutor());
+
+    const ctx = {
+      model: { name: 'gpt-4o' } as any,
+      stream: { markdown: vi.fn() } as any,
+      // tracker deliberately omitted — must surface as a non-ok verdict
+    };
+
+    // Note: TS fully accepts ctx without `tracker` here because the
+    // orchestrator uses `chatInputs!` (non-null assertion) so no narrowing
+    // error fires. The runtime still throws via requireChatPathContext,
+    // which autoRetryEngine absorbs and surfaces as the verdict below.
+    const result = await orch.runAutonomous({ id: 'S-3', type: 'story' }, ctx);
+    expect(result.ok).toBe(false);
+    expect(result.status).toBe('blocked');
+    // blockedBy[0] is the retry-engine's `'Retries exhausted: <err>'` summary;
+    // it should reference the tracker-requirement error somewhere.
+    const diagnostic = JSON.stringify(result.blockedBy);
+    expect(diagnostic.toLowerCase()).toMatch(/tracker/i);
   });
 });
