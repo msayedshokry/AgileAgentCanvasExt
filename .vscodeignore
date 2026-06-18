@@ -1,6 +1,14 @@
 # Source files (compiled output in dist/ is included)
 src/**
 webview-ui/src/**
+# webview-ui/public/ is Vite's static-serve folder for dev only; the same
+# assets are emitted to webview-ui/build/ by vite build, which is what the
+# extension actually loads at runtime. Including both duplicated the 1.3 MB
+# 3d-force-graph.min.js into the VSIX.
+webview-ui/public/**
+# Standalone webview dev/scratch files (manual 3d-force-graph harness, ad-hoc
+# test pages, raw gitify output samples). Not referenced at runtime.
+webview-ui/test*
 webview-ui/node_modules/**
 webview-ui/index.html
 webview-ui/tsconfig.json

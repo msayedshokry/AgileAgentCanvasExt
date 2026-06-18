@@ -971,6 +971,11 @@
           "name": "Agentic Kanban",
           "type": "webview",
           "when": "false"
+        },
+        {
+          "id": "agileagentcanvas.agentSessions",
+          "name": "Agent Sessions",
+          "type": "webview"
         }
       ]
     },
@@ -1405,6 +1410,7 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "npm run check-types && npm run bundle && npm run compile-webview",
+    "vsce:package": "vsce package --no-git-tag-version",
     "check-types": "tsc -p ./ --noEmit",
     "bundle": "node esbuild.mjs --production",
     "bundle:dev": "node esbuild.mjs",
@@ -1434,6 +1440,7 @@
     "@typescript-eslint/eslint-plugin": "^7.x",
     "@typescript-eslint/parser": "^7.x",
     "@vitest/coverage-v8": "^4.1.9",
+    "@vscode/vsce": "^3.9.2",
     "assert": "^2.1.0",
     "c8": "^11.0.0",
     "chai": "^6.2.2",
