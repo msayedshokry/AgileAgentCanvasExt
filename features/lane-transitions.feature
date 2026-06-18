@@ -33,6 +33,15 @@ Feature: Lane Transitions - Kanban Card Movement Orchestration
     # the workflow directly, no Run/Skip prompt.
     And the rule confirmWithUser should be false
 
+  # ─── Regression Guard (fb918a6 — dev-story Run/Skip modal dropped) ──────────
+  # Locks the contract that the dev-story transition never prompts the user.
+  # Update this scenario only if the product decision is deliberately reversed,
+  # and update the comment in src/workflow/lane-transitions.ts alongside it.
+  @transitions @rules @guard @regression-fb918a6
+  Scenario: Guard — every dev-story rule must skip user confirmation (fb918a6)
+    Then every rule for dev-story workflow should skip user confirmation
+    And every dev-story rule should explicitly set confirmWithUser to false
+
   @transitions @rules
   Scenario: Story in-progress → review rule has code-review workflow
     When I find the rule for story in-progress → review

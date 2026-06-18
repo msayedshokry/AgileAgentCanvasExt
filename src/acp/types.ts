@@ -16,6 +16,12 @@ export interface AcpSessionSpec {
     outputArtifactType?: string;
     constraints?: string[];
     parentSessionId?: string;
+    /**
+     * Optional workflow ID that originated this session — surfaced by the
+     * Agent Sessions sidebar so users can see which BMAD workflow a team
+     * run is executing (e.g. `dev-story`, `code-review`).
+     */
+    workflowId?: string;
   };
   config?: {
     model?: string;

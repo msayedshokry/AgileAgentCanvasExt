@@ -875,6 +875,11 @@ export class AgentTeamOrchestrator {
             task: roleTask,
             artifact: currentArtifact,
             parentSessionId: previousSessionId,
+            // Surface the originating BMAD workflow on the spec so the
+            // Agent Sessions sidebar (AgentSessionsViewProvider) can show
+            // which workflow a team run belongs to. Without this the row
+            // falls back to role-only identification.
+            workflowId: teamId,
           },
           config: { executionMode: 'autonomous' },
         };

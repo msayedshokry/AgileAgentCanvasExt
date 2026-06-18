@@ -438,6 +438,50 @@ Then('the rule should be undefined', function (this: BmadWorld) {
   assert.strictEqual(ctx.lastFoundRule, undefined, 'Expected rule to be undefined');
 });
 
+// ─── Regression Guard Step Definitions (fb918a6) ─────────────────────────────
+// These lock the production-invariant "dev-story rule does not prompt the user".
+// A failure here means someone tried to re-enable the Run/Skip modal — either
+// by flipping confirmWithUser on the existing rule or by adding a duplicate
+// rule that adds the prompt back. Update the scenario only if the product
+// decision is deliberately reversed (the comment in lane-transitions.ts must be
+// updated alongside it).
+
+Then('every rule for dev-story workflow should skip user confirmation', function (this: BmadWorld) {
+  const ctx = getCtx(this);
+  const rules = ctx.allTransitionRules || [];
+  const devStoryRules = rules.filter((r: any) => r.workflowId === 'dev-story');
+  assert.ok(
+    devStoryRules.length >= 1,
+    `Expected at least one rule with workflowId 'dev-story', found ${devStoryRules.length}`
+  );
+  // Production invariant: rule.confirmWithUser must be falsy so that
+  // LaneTransitionEngine.handleTransition computes shouldConfirm = false
+  // (see src/workflow/lane-transitions.ts handleTransition body).
+  const violators = devStoryRules.filter((r: any) => !!r.confirmWithUser);
+  assert.strictEqual(
+    violators.length,
+    0,
+    `Dev-story rules must skip user confirmation (fb918a6), but ${violators.length} `
+      + `rule(s) would re-enable the modal: ${JSON.stringify(violators)}`
+  );
+});
+
+Then('every dev-story rule should explicitly set confirmWithUser to false', function (this: BmadWorld) {
+  const ctx = getCtx(this);
+  const rules = ctx.allTransitionRules || [];
+  const devStoryRules = rules.filter((r: any) => r.workflowId === 'dev-story');
+  // Iterate every match (not just the first) so a duplicate dev-story rule
+  // cannot sneak a truthy confirmWithUser past the explicit-contract check.
+  const vague = devStoryRules.filter((r: any) => r.confirmWithUser !== false);
+  assert.strictEqual(
+    vague.length,
+    0,
+    `Every dev-story rule must explicitly set confirmWithUser = false (fb918a6), `
+      + `but ${vague.length} rule(s) lacked the explicit contract: `
+      + `${JSON.stringify(vague.map(r => ({ workflowId: r.workflowId, confirmWithUser: r.confirmWithUser })))}`
+  );
+});
+
 Then('the transition result ok should be true', function (this: BmadWorld) {
   const ctx = getCtx(this);
   assert.ok(ctx.lastTransitionResult?.ok, 'Expected transition result ok to be true');

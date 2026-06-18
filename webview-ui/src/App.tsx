@@ -14,6 +14,7 @@ import { GraphifyModal } from './components/GraphifyModal';
 import { SprintPlanningView, parseSprintStatusYaml } from './components/SprintPlanningView';
 import type { SprintData } from './components/SprintPlanningView';
 import { AgenticKanbanApp } from './agentic-kanban/AgenticKanbanApp';
+import { AgentSessionsPanel } from './components/AgentSessionsPanel';
 import { SearchBox } from './components/SearchBox';
 import { CatalogueModal } from './components/CatalogueModal';
 import { ProviderSelector } from './components/ProviderSelector';
@@ -1380,6 +1381,16 @@ export function RootApp() {
   }
   if (AC_MODE === 'agentic-kanban') {
     return <AgenticKanbanApp />;
+  }
+  if (AC_MODE === 'agent-sessions') {
+    // Full-window webview surface for the new Agent Sessions sidebar.
+    // The sidebar host uses a tall+thin column, but we render the same
+    // component at full size so pop-out flows work too.
+    return (
+      <ErrorBoundary label="Agent Sessions">
+        <AgentSessionsPanel />
+      </ErrorBoundary>
+    );
   }
   return <App />;
 }

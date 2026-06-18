@@ -169,6 +169,15 @@ export class AcpSessionManager implements vscode.Disposable {
     return this.sessions.get(sessionId);
   }
 
+  /**
+   * Return all currently-tracked ACP sessions. Used by the Agent Sessions
+   * sidebar view to enumerate live multi-agent team sessions. Returns a
+   * shallow copy so callers can't mutate the internal map.
+   */
+  listSessions(): AcpSession[] {
+    return Array.from(this.sessions.values());
+  }
+
   private emit(sessionId: string, event: AcpSessionEvent): void {
     const session = this.sessions.get(sessionId);
     session?.addEvent(event);

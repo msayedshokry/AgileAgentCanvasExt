@@ -4,6 +4,7 @@ import { AgileAgentCanvasChatParticipant } from './chat/chat-participant';
 import { ArtifactsTreeProvider } from './views/artifacts-tree-provider';
 import { WizardStepsProvider } from './views/wizard-steps-provider';
 import { AgenticKanbanViewProvider } from './views/agentic-kanban-view-provider';
+import { AgentSessionsViewProvider } from './views/agent-sessions-view-provider';
 import { ArtifactStore } from './state/artifact-store';
 import { WorkspaceResolver } from './state/workspace-resolver';
 import { getWorkflowExecutor } from './workflow/workflow-executor';
@@ -150,7 +151,12 @@ export function activate(context: vscode.ExtensionContext) {
     const artifactsTreeProvider = new ArtifactsTreeProvider(artifactStore);
     const wizardStepsProvider = new WizardStepsProvider(artifactStore);
     const agenticKanbanProvider = new AgenticKanbanViewProvider(context.extensionUri, artifactStore);
-    
+    const agentSessionsProvider = new AgentSessionsViewProvider(context.extensionUri);
+    // Push the provider itself so its timer + singleton listeners are
+    // cleared on extension deactivation (otherwise the 30 s heartbeat can
+    // keep firing after the sidebar view is torn down).
+    context.subscriptions.push(agentSessionsProvider);
+
     context.subscriptions.push(
         vscode.window.createTreeView('agileagentcanvas.artifactsTree', {
             treeDataProvider: artifactsTreeProvider,
@@ -162,6 +168,10 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.registerWebviewViewProvider(
             AgenticKanbanViewProvider.viewType,
             agenticKanbanProvider
+        ),
+        vscode.window.registerWebviewViewProvider(
+            AgentSessionsViewProvider.viewType,
+            agentSessionsProvider
         )
     );
     // ── ACP + Lane Transition initialization (Epic 2) ─────────────────────
