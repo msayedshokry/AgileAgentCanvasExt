@@ -18,6 +18,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import * as http from 'node:http';
+import { countTokens } from 'gpt-tokenizer';
 import {
     startInProcessProxy,
     getManagedProxyStats,
@@ -222,6 +223,33 @@ describe('in-process proxy — endpoint surface', () => {
     expect(payload.totalCalls).toBe(1);
     expect(payload.totalTokensBefore).toBeGreaterThan(0);
     expect(payload.version).toMatch(/^0\.5\.5-managed$/);
+  });
+
+  it('POST /v1/compress uses real BPE token counts (gpt-tokenizer.cl100k_base) instead of the ceil(len/4) heuristic', async () => {
+    // The Phase 3.1 swap replaced the legacy `ceil(content.length/4)`
+    // heuristic with `gpt-tokenizer.countTokens`. We lock the count to
+    // whatever the library returns at test-time (resilient to library
+    // version bumps that re-tune the BPE merges) AND assert the count is
+    // NOT the legacy heuristic value — so a future regression that
+    // re-introduces the heuristic fails this test loudly.
+    //
+    // Fixture selection: `'hello world test message'` has 23 chars. In
+    // cl100k_base BPE encodes this as 4 tokens (["hello", " world", " test",
+    // " message"]) while the legacy heuristic returns ceil(23/4) = 6. The
+    // 4 ≠ 6 delta is what makes the regression-guard assertion meaningful.
+    const fixture = 'hello world test message';
+    const r = await httpRequest('POST', '/v1/compress', JSON.stringify({
+      messages: [{ role: 'user', content: fixture }],
+    }));
+    expect(r.status).toBe(200);
+    const payload = JSON.parse(r.body);
+    expect(payload.tokens_before).toBe(countTokens(fixture));
+    expect(payload.tokens_before).not.toBe(Math.ceil(fixture.length / 4));
+    // After the swap the savings token count is identically equal
+    // (single-message request — nothing is deduped/truncated), so the
+    // round-trip is well-defined: tokens_before == tokens_after.
+    expect(payload.tokens_after).toBe(payload.tokens_before);
+    expect(payload.compression_ratio).toBeCloseTo(1, 5);
   });
 
   it('404 for unknown routes, with the SDK-friendly error envelope', async () => {

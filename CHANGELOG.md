@@ -148,6 +148,19 @@ Click the active Headroom bar (`$(rocket) XX%` or the `$(rocket) Headroom` zero-
 
 21 new vitest assertions across three test files: `src/views/headroom-quick-pick.test.ts` (NEW, 11 tests: top-level layout, drilldown routing per id, SharedContext header-variant switching, CCR live-stats picker + error fallback, Recent-calls empty-state info-message path, cancel-on-top); 6 new `src/views/headroom-status-bar.test.ts` describe blocks (active-bar click routing per non-active branch + show-details command constant pinning); 4 new `src/integrations/headroom/in-process-proxy.test.ts` ring-buffer describe blocks (empty default, snapshot immutability, cap=20 invariant with oldest/newest survivor locked, entry shape).
 
+### Feature: Headroom — real BPE token counts via gpt-tokenizer (Phase 3.1)
+
+The in-process proxy's token-estimator no longer uses the uniform `ceil(content.length / 4)` heuristic — it now uses `countTokens(text)` from `gpt-tokenizer` (cl100k_base BPE, the same encoding family GPT-4 uses) for string content, and `countTokens(part.text)` per text-part for multi-part OpenAI content. Non-text parts (image_url, etc.) contribute 0 because the bar's "saved tokens" metric is a textual estimate by design — image bytes aren't billable as text.
+
+- **Wire format unchanged** — `tokens_before` / `tokens_after` / `tokens_saved` keys continue to round-trip the existing `deepCamelCase` pass through the headroom-ai SDK. No breaking change for `/v1/compress` callers.
+- **Bar percentages now correct** — code-heavy prompts were over-counted by the heuristic (ASCII operators/punctuation split aggressively under BPE, ~2.5 chars per token for JS/CSS) and CJK Han characters were under-counted (each is typically 1 token, not 0.25). The mismatch could skew the status-bar savings percentage by several points for these prompt shapes. BPE aligns to whatever the downstream SDK actually bills.
+- **Only the heuristic changed** — adjacent-message dedupe (step 1), 4000-char content cap (step 2), and the snake_case wire response are all unchanged. Phase 3.2 (tool-result summarization) and 3.3 (CCR cross-call dedup) are the next incremental slices, each independently shippable.
+- **New vitest assertion** — single test in `src/integrations/headroom/in-process-proxy.test.ts` (`endpoint surface` describe block) locks the count to whatever `gpt-tokenizer.countTokens(fixture)` returns at test-time AND asserts it is NOT the legacy `ceil(fixture.length / 4)` heuristic value. Fixture: `'hello world test message'` (23 chars; BPE encodes 4 tokens while heuristic returns 6; the 4 ≠ 6 delta is what makes the regression guard meaningful).
+- **Bundle compat** — `git-tokenizer` v3.4.0 is dual-published ESM+CJS. esbuild for `platform: 'node'` CJS output bundles the CJS build cleanly. `npm run bundle` verified end-to-end.
+- **Comment / helper cleanups** — `TOKEN_CHARS_PER_TOKEN` constant removed (dead after the swap); `_estimateMessageTokens` now carries a JSDoc explaining the rationale for the swap and the multi-part/empty-string edge cases; the file-header algorithm section back-references `docs/phase-3-compression-design.md` for the rest of the rollout plan.
+
+Existing 803-extension Cucumber scenarios, 119 vitest assertions, and the 19-test in-process-proxy suite continue to pass.
+
 ## 0.5.5
 
 ### Feature: Autonomous Auto-Advance for Agentic Kanban

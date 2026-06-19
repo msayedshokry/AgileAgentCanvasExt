@@ -20,18 +20,22 @@
  * If port 8787 is already in use (the real headroom-ai engine is
  * running), this extension silently steps aside and uses the external
  * proxy. State transitions are surfaced through `./proxy-state`.
- *
- * Compression algorithm (MVP):
+ * * Compression algorithm (Phase 3.1+; see docs/phase-3-compression-design.md
+ * for the full rollout plan and open questions):
  *   1. Dedupe identical adjacent messages
  *   2. Cap any single `content` string at MAX_CONTENT_LEN characters
- *   3. Token estimate = `ceil(content.length / 4)` (matches the SDK's
- *      fallback heuristic when its real engine errors out)
+ *   3. Token estimate via `countTokens(text)` from `gpt-tokenizer`
+ *      (cl100k_base BPE — the same encoding family GPT-4 uses).
+ *      Replaces the uniform `ceil(len/4)` heuristic with BPE-tuned
+ *      per-token merges; corrects the bar's savings percentage for
+ *      code-heavy and CJK content.
  *
  * These are honest transforms — they save tokens and the bar shows
  * realistic percentages — but NOT semantic compression. Real engine-
  * quality savings require the standalone `headroom-ai` binary.
  */
 import * as http from 'node:http';
+import { countTokens } from 'gpt-tokenizer';
 import { createLogger } from '../../utils/logger';
 import { setLocalProxyState, getLocalProxyState } from './proxy-state';
 
@@ -41,7 +45,6 @@ const PROXY_HOST = '127.0.0.1';
 const PROXY_PORT = 8787;
 const PROXY_VERSION = '0.5.5-managed';
 const MAX_CONTENT_LEN = 4000;          // chars per message after compression
-const TOKEN_CHARS_PER_TOKEN = 4;       // matches SDK fallback heuristic
 const REQUEST_TIMEOUT_MS = 5000;
 
 /** Public-facing aggregate stats from the in-process proxy. */
@@ -406,12 +409,31 @@ function _contentOf(msg: any): any {
     return null;
 }
 
+/**
+ * Internal helper — real BPE token estimate via `gpt-tokenizer.countTokens`,
+ * defaulting to cl100k_base (the GPT-4 / GPT-4o encoding family).
+ *
+ * Replaces the legacy uniform `ceil(len/4)` heuristic with BPE-tuned
+ * per-token merges. The old heuristic compressed every character class to
+ * the same density; real BPE instead adapts per-character (CJK Han chars
+ * are typically 1 token; repeated ASCII runs compress heavily; JS/CSS
+ * operators split aggressively). The mismatch skewed the status-bar
+ * savings percentage by several points for code-heavy and CJK prompts.
+ *
+ * Multi-part array content (OpenAI shape) sums `countTokens(part.text)`
+ * for each text part; non-text parts (image_url, etc.) contribute 0
+ * because the bar's "saved tokens" metric is a textual estimate by
+ * design — image bytes aren't billable as text.
+ *
+ * Returns 0 for messages whose content we cannot parse (no string, no
+ * array of text parts). No callbacks to `_naiveCompress` re-throw paths.
+ */
 function _estimateMessageTokens(msg: any): number {
     const c = _contentOf(msg);
-    if (typeof c === 'string') { return Math.ceil(c.length / TOKEN_CHARS_PER_TOKEN); }
+    if (typeof c === 'string') { return countTokens(c); }
     if (Array.isArray(c)) {
         return c.reduce((sum: number, part: any) => {
-            if (typeof part?.text === 'string') { return sum + Math.ceil(part.text.length / TOKEN_CHARS_PER_TOKEN); }
+            if (typeof part?.text === 'string') { return sum + countTokens(part.text); }
             return sum;
         }, 0);
     }
