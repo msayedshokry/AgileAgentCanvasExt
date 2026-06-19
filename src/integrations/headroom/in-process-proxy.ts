@@ -23,8 +23,12 @@
  * * Compression algorithm (Phase 3.1+; see docs/phase-3-compression-design.md
  * for the full rollout plan and open questions):
  *   1. Dedupe identical adjacent messages
- *   2. Cap any single `content` string at MAX_CONTENT_LEN characters
- *   3. Token estimate via `countTokens(text)` from `gpt-tokenizer`
+ *   2. Summarise role:'tool' JSON outputs (Phase 3.2). For multi-part
+ *      role:'user' messages carrying `type:'tool_result'` parts (OpenAI /
+ *      Anthropic structured outputs), each tool_result's inner content
+ *      is summarised independently; non-tool parts go through untouched.
+ *   3. Cap any single `content` string at MAX_CONTENT_LEN characters
+ *   4. Token estimate via `countTokens(text)` from `gpt-tokenizer`
  *      (cl100k_base BPE — the same encoding family GPT-4 uses).
  *      Replaces the uniform `ceil(len/4)` heuristic with BPE-tuned
  *      per-token merges; corrects the bar's savings percentage for
@@ -45,6 +49,9 @@ const PROXY_HOST = '127.0.0.1';
 const PROXY_PORT = 8787;
 const PROXY_VERSION = '0.5.5-managed';
 const MAX_CONTENT_LEN = 4000;          // chars per message after compression
+const MAX_TOOL_OBJ_STR_LEN = 500;      // string-truncation threshold for role:tool JSON object values
+const SUMMARISE_ARRAY_KEEP_HEAD = 2;   // tool-result array slice: first N items kept verbatim
+const SUMMARISE_ARRAY_KEEP_TAIL = 1;   // tool-result array slice: last M items kept verbatim
 const REQUEST_TIMEOUT_MS = 5000;
 
 /** Public-facing aggregate stats from the in-process proxy. */
@@ -368,9 +375,51 @@ function _naiveCompress(messages: any[]): NaiveCompressResult {
         deduped.push(m);
     }
 
-    // 2) Cap single-message content length (don't compress tool results;
+    // 2) Summarise role:tool JSON content (Phase 3.2). Runs AFTER dedupe
+    //    so big tool outputs are not deduplicated against their own
+    //    summaries; runs BEFORE the length cap so the cap can still catch
+    //    a summarised payload that — for whatever reason — still exceeds
+    //    MAX_CONTENT_LEN.
+    //
+    //    Two branches:
+    //      - String content — summarise the string directly. Covers
+    //        Anthropic `role:'tool'` and legacy OpenAI `role:'function'`.
+    //      - Multi-part `role:'user'` content carrying `type:'tool_result'`
+    //        parts (typical for OpenAI structured outputs / Anthropic VL) —
+    //        walk each part, summarise the inner content of any tool_result
+    //        whose inner `content` is a summarisable string. Non-tool
+    //        parts and unparseable inner content pass through untouched.
+    const summarised = deduped.map(m => {
+        if (!_isToolish(m)) { return m; }
+        const c = _contentOf(m);
+        if (typeof c === 'string') {
+            const next = _summariseToolResult(c);
+            if (next === null) { return m; }
+            return { ...m, content: next, _headroomSummarised: true };
+        }
+        if (Array.isArray(c) && m.role === 'user') {
+            let anyChanged = false;
+            const newParts = c.map((part: any) => {
+                if (typeof part?.type === 'string'
+                    && part.type.startsWith('tool_result')
+                    && typeof part?.content === 'string') {
+                    const next = _summariseToolResult(part.content);
+                    if (next === null) { return part; }
+                    anyChanged = true;
+                    return { ...part, content: next };
+                }
+                return part;
+            });
+            if (anyChanged) {
+                return { ...m, content: newParts, _headroomSummarised: true };
+            }
+        }
+        return m;
+    });
+
+    // 3) Cap single-message content length (don't compress tool results;
     //    the LLM often needs the literal structured output)
-    const capped = deduped.map(m => {
+    const capped = summarised.map(m => {
         const c = _contentOf(m);
         if (typeof c === 'string' && c.length > MAX_CONTENT_LEN) {
             return {
@@ -387,6 +436,7 @@ function _naiveCompress(messages: any[]): NaiveCompressResult {
     const tokensSaved = Math.max(0, tokensBefore - tokensAfter);
     const transformsApplied: string[] = [];
     if (capped.length < messages.length) { transformsApplied.push('dedupe'); }
+    if (capped.some((m: any) => m._headroomSummarised)) { transformsApplied.push('compress_tool_call'); }
     if (capped.some((m: any) => m._headroomTruncated)) { transformsApplied.push('truncate'); }
     if (transformsApplied.length === 0) { transformsApplied.push('identity'); }
 
@@ -410,6 +460,87 @@ function _contentOf(msg: any): any {
 }
 
 /**
+ * Tool-message detection — covers Anthropic `role: 'tool'`, legacy OpenAI
+ * `role: 'function'`, and Anthropic-Claude-VL / OpenAI-Codex `role: 'user'`
+ * content arrays that carry `type: 'tool_result'` parts. Detecting by
+ * type-prefix is more robust than role-only, but we still anchor on the
+ * explicit roles the design enumerates so we never accidentally compress
+ * arbitrary model prose or non-tool user messages.
+ */
+function _isToolish(msg: any): boolean {
+    if (!msg) { return false; }
+    if (msg.role === 'tool' || msg.role === 'function') { return true; }
+    if (msg.role === 'user' && Array.isArray(msg.content)) {
+        return msg.content.some((p: any) =>
+            typeof p?.type === 'string' && p.type.startsWith('tool_result'));
+    }
+    return false;
+}
+
+/**
+ * Tool-content summarisation (Phase 3.2). Returns the new content string
+ * if summarisation succeeded AND the round-trip re-parses cleanly;
+ * returns `null` if the caller should leave the message untouched.
+ *
+ *   JSON array root   — keep first 2 + last 1 items; splice in a
+ *                       truncation-marker string between them when the
+ *                       array was longer than that head+tail window.
+ *   Object root       — walk values; truncate any string > 500 chars to
+ *                       a 500-char prefix + suffix marker noting the
+ *                       number of characters removed.
+ *   Non-JSON / scalar — return null (LM-bound prose must not be broken).
+ *   Re-stringify fail — return null and let the upstream callee revert.
+ */
+function _summariseToolResult(content: string): string | null {
+    let parsed: any;
+    try {
+        parsed = JSON.parse(content);
+    } catch {
+        // Not strict JSON — leave alone. Don't break LM-bound prose or
+        // tool responses that include non-JSON text the agent expects.
+        return null;
+    }
+    let reStringified: string;
+    if (Array.isArray(parsed)) {
+        const totalKeep = SUMMARISE_ARRAY_KEEP_HEAD + SUMMARISE_ARRAY_KEEP_TAIL;
+        if (parsed.length <= totalKeep) { return null; }
+        reStringified = JSON.stringify([
+            ...parsed.slice(0, SUMMARISE_ARRAY_KEEP_HEAD),
+            `...[${parsed.length - totalKeep} items truncated]...`,
+            ...parsed.slice(-SUMMARISE_ARRAY_KEEP_TAIL),
+        ]);
+    } else if (parsed && typeof parsed === 'object') {
+        let anyChanged = false;
+        const truncated: Record<string, any> = {};
+        for (const [key, value] of Object.entries(parsed)) {
+            if (typeof value === 'string' && value.length > MAX_TOOL_OBJ_STR_LEN) {
+                const removed = value.length - MAX_TOOL_OBJ_STR_LEN;
+                truncated[key] = value.slice(0, MAX_TOOL_OBJ_STR_LEN) + `…[truncated ${removed} chars]…`;
+                anyChanged = true;
+            } else {
+                truncated[key] = value;
+            }
+        }
+        if (!anyChanged) { return null; }
+        reStringified = JSON.stringify(truncated);
+    } else {
+        // String/number/boolean/null root — no structural compression possible.
+        return null;
+    }
+    // Re-stringify + parse-verify guard. If the round-trip fails (e.g. due
+    // to NaN/Infinity, sparse arrays, BigInt-like strings, or unicode
+    // surrogates that strict JSON cannot reparse), revert — the failure
+    // mode is "uncompressed original" which is strictly safer than a
+    // malformed payload the LM would have to debug.
+    try {
+        JSON.parse(reStringified);
+    } catch {
+        return null;
+    }
+    return reStringified;
+}
+
+/**
  * Internal helper — real BPE token estimate via `gpt-tokenizer.countTokens`,
  * defaulting to cl100k_base (the GPT-4 / GPT-4o encoding family).
  *
@@ -420,10 +551,13 @@ function _contentOf(msg: any): any {
  * operators split aggressively). The mismatch skewed the status-bar
  * savings percentage by several points for code-heavy and CJK prompts.
  *
- * Multi-part array content (OpenAI shape) sums `countTokens(part.text)`
- * for each text part; non-text parts (image_url, etc.) contribute 0
- * because the bar's "saved tokens" metric is a textual estimate by
- * design — image bytes aren't billable as text.
+ * Multi-part array content (OpenAI / Anthropic shape) sums
+ * `countTokens(part.text)` for each text part AND `countTokens(part.content)`
+ * for any `type` starting with `'tool_result'` (Phase 3.2 added this so the
+ * summarise-vs-after BPE delta correctly reflects multi-part tool-result
+ * savings). Image-bearing parts (`type:'image_url'`, etc.) still
+ * contribute 0 because media bytes aren't billable as text — the proxy's
+ * "saved tokens" metric is a textual estimate by design.
  *
  * Returns 0 for messages whose content we cannot parse (no string, no
  * array of text parts). No callbacks to `_naiveCompress` re-throw paths.
@@ -433,7 +567,21 @@ function _estimateMessageTokens(msg: any): number {
     if (typeof c === 'string') { return countTokens(c); }
     if (Array.isArray(c)) {
         return c.reduce((sum: number, part: any) => {
-            if (typeof part?.text === 'string') { return sum + countTokens(part.text); }
+            // OpenAI / Anthropic text-bearing parts — original heuristic.
+            if (typeof part?.text === 'string') {
+                return sum + countTokens(part.text);
+            }
+            // Anthropic / OpenAI tool_result parts — their inner `content`
+            // is typically a JSON-stringified structured response. Count it
+            // as text so the bar's savings percentage reflects multi-part
+            // tool-result tokens. Skipping these would make `_naiveCompress`'s
+            // summarise-vs-after BPE delta read as zero and hide real
+            // savings — see Phase 3.2 multi-part test for the round-trip.
+            if (typeof part?.type === 'string'
+                && part.type.startsWith('tool_result')
+                && typeof part?.content === 'string') {
+                return sum + countTokens(part.content);
+            }
             return sum;
         }, 0);
     }

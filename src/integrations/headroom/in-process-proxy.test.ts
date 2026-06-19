@@ -252,6 +252,140 @@ describe('in-process proxy — endpoint surface', () => {
     expect(payload.compression_ratio).toBeCloseTo(1, 5);
   });
 
+  // ─── Phase 3.2: tool-result summarisation (5 assertions) ─────────────────
+
+  it('POST /v1/compress summarises role:tool JSON arrays while keeping the JSON parsable', async () => {
+    // 1000-item array root — Phase 3.2 keeps first 2 + last 1 and splices
+    // in a "...[N items truncated]..." marker. The downstream SDK must be
+    // able to JSON.parse the result; the re-stringify + parse-verify guard
+    // is the contract that prevents malformed payloads from reaching the LM.
+    const items = Array.from({ length: 1000 }, (_, i) => ({ i }));
+    const r = await httpRequest('POST', '/v1/compress', JSON.stringify({
+      messages: [{ role: 'tool', content: JSON.stringify(items) }],
+    }));
+    expect(r.status).toBe(200);
+    const payload = JSON.parse(r.body);
+    expect(payload.messages).toHaveLength(1);
+    const summarisedContent: string = payload.messages[0].content;
+    expect(typeof summarisedContent).toBe('string');
+    // Round-trip contract: the summarised string must re-parse cleanly.
+    expect(() => JSON.parse(summarisedContent)).not.toThrow();
+    const parsed = JSON.parse(summarisedContent);
+    // 4 elements: items[0], items[1], truncation marker, items[999].
+    expect(parsed.length).toBe(4);
+    expect(parsed[0]).toEqual({ i: 0 });
+    expect(parsed[1]).toEqual({ i: 1 });
+    expect(typeof parsed[2]).toBe('string');
+    expect(parsed[2]).toMatch(/\[\d+ items truncated\]/);
+    expect(parsed[3]).toEqual({ i: 999 });
+    expect(payload.transforms_applied).toContain('compress_tool_call');
+    // Real savings — BPE counts the 4-element summary as far fewer tokens
+    // than the original 1000-element array.
+    expect(payload.tokens_saved).toBeGreaterThan(0);
+  });
+
+  it('POST /v1/compress leaves non-JSON tool content untouched (no compress_tool_call)', async () => {
+    // Markdown prose / non-strict-JSON tool responses must NOT be touched —
+    // the LM expects the literal text. The `compress_tool_call` transform
+    // must remain absent so the drilldown UI shows it as never-transformed.
+    const prose = '## Tool output\nLore ipsum. The fixture has multiple lines of prose the agent needs verbatim.';
+    const r = await httpRequest('POST', '/v1/compress', JSON.stringify({
+      messages: [{ role: 'tool', content: prose }],
+    }));
+    expect(r.status).toBe(200);
+    const payload = JSON.parse(r.body);
+    expect(payload.messages[0].content).toBe(prose);
+    expect(payload.transforms_applied).not.toContain('compress_tool_call');
+  });
+
+  it('POST /v1/compress truncates long string values inside role:tool JSON objects', async () => {
+    // Object root: walk every key, truncate string values > 500 chars to a
+    // 500-char prefix + suffix marker noting the number of characters
+    // removed. Short keys untouched. The 500 here mirrors the production
+    // MAX_TOOL_OBJ_STR_LEN constant — if that knob changes, both must move.
+    const fixture = {
+      shortKey: 'tiny',
+      longKey: 'A'.repeat(8000),
+      veryLongKey: 'B'.repeat(20000),
+    };
+    const r = await httpRequest('POST', '/v1/compress', JSON.stringify({
+      messages: [{ role: 'tool', content: JSON.stringify(fixture) }],
+    }));
+    expect(r.status).toBe(200);
+    const payload = JSON.parse(r.body);
+    expect(payload.messages).toHaveLength(1);
+    // Round-trip contract — re-parse cleanly.
+    const parsed = JSON.parse(payload.messages[0].content);
+    expect(parsed.shortKey).toBe('tiny');
+    expect(parsed.longKey.startsWith('A'.repeat(500))).toBe(true);
+    // Suffix marker — Unicode U+2026 (horizontal ellipsis) + removed count.
+    expect(parsed.longKey).toMatch(/…\[truncated \d+ chars\]…/);
+    expect(parsed.veryLongKey.length).toBeLessThan(20000);
+    expect(payload.transforms_applied).toContain('compress_tool_call');
+    expect(payload.tokens_saved).toBeGreaterThan(0);
+  });
+
+  it('POST /v1/compress reverts tool-summarisation on JSON parse failure (no compress_tool_call)', async () => {
+    // Fail-open safety: garbage that LOOKS like a tool response but fails
+    // strict JSON.parse must NOT be mangled. The summarise step returns
+    // null and the original content goes through untouched; the
+    // `compress_tool_call` transform is never added to keep the drilldown
+    // honest about what actually happened.
+    const garbage = '{this is not JSON, even though it has braces}';
+    const r = await httpRequest('POST', '/v1/compress', JSON.stringify({
+      messages: [{ role: 'tool', content: garbage }],
+    }));
+    expect(r.status).toBe(200);
+    const payload = JSON.parse(r.body);
+    expect(payload.messages[0].content).toBe(garbage);
+    expect(payload.transforms_applied).not.toContain('compress_tool_call');
+  });
+
+  it('POST /v1/compress summarises inner content inside role:user tool_result multi-part messages', async () => {
+    // OpenAI / Anthropic structured outputs arrive as role:'user' messages
+    // whose content is an array of {type:'tool_result', ...} parts. The
+    // summariser walks each tool_result part and shrinks its inner content;
+    // non-tool-result parts (text, image_url, etc) pass through untouched.
+    const items = Array.from({ length: 800 }, (_, i) => ({ i, name: `item-${i}` }));
+    const toolUseId = 'X-42';
+    const toolResultPart = {
+      type: 'tool_result',
+      tool_use_id: toolUseId,
+      // Top-level array — triggers the array-root summarise branch.
+      // The 3.2 summarise step is TOP-LEVEL only (the design's "walk keys"
+      // explicitly does not recurse below the parsed-JSON root), so the
+      // fixture puts the truncation candidate at the root, not nested
+      // under an object key. Each element carries a simple shape so we
+      // can assert on the full first/last slice values.
+      content: JSON.stringify(items),
+    };
+    const r = await httpRequest('POST', '/v1/compress', JSON.stringify({
+      messages: [{ role: 'user', content: [toolResultPart] }],
+    }));
+    expect(r.status).toBe(200);
+    const payload = JSON.parse(r.body);
+    expect(payload.messages).toHaveLength(1);
+    const newContent = payload.messages[0].content;
+    // Multi-part shape preserved — still an array with one tool_result part.
+    expect(Array.isArray(newContent)).toBe(true);
+    expect(newContent).toHaveLength(1);
+    expect(newContent[0].type).toBe('tool_result');
+    // tool_use_id preserved — summarisation must NOT lose it.
+    expect(newContent[0].tool_use_id).toBe(toolUseId);
+    // Inner content was summarised: array-root branch kept first 2 + last 1
+    // and spliced the 797-item truncation marker between them.
+    const inner = JSON.parse(newContent[0].content);
+    expect(Array.isArray(inner)).toBe(true);
+    expect(inner.length).toBe(4);
+    expect(inner[0]).toEqual({ i: 0, name: 'item-0' });
+    expect(inner[1]).toEqual({ i: 1, name: 'item-1' });
+    expect(typeof inner[2]).toBe('string');
+    expect(inner[2]).toMatch(/\[\d+ items truncated\]/);
+    expect(inner[3]).toEqual({ i: 799, name: 'item-799' });
+    expect(payload.transforms_applied).toContain('compress_tool_call');
+    expect(payload.tokens_saved).toBeGreaterThan(0);
+  });
+
   it('404 for unknown routes, with the SDK-friendly error envelope', async () => {
     const r = await httpRequest('GET', '/does-not-exist');
     expect(r.status).toBe(404);
