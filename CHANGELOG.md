@@ -101,6 +101,17 @@ The hierarchy now extends to three more prompt paths.
 
 ### Feature: Headroom — dry-run simulation, retrieval, and inter-agent observability
 
+### Feature: Headroom status bar — always visible with descriptive state text
+
+The status bar is now permanently visible so users always know Headroomʹs state, even before the proxy is ready. Each state has distinct text, tooltip, and click action.
+
+- **Disabled** —  Headroom: disabled with tooltip pointing at Headroom settings; click opens workbench.action.openSettings filtered to agileagentcanvas.headroom.
+- **SDK missing** —  Headroom with tooltip explaining the bundled headroom-ai package wasnʹt detected.
+- **Proxy offline** —  Headroom: proxy offline with tooltip pointing at the proxy start command and port (Phase 2 will auto-spawn the in-process proxy — currently a manual step).
+- **Proxy running, no calls** —  Headroom with tooltip noting "No compression calls yet — savings appear after the first LLM call."
+- **Active with stats** —  XX% with detailed tooltip including tokens saved (locale-formatted), compression ratio, call count, and full SharedContext (A2A handoff) + CCR store metrics when available.
+- **Refresh contract** — refreshHeadroomStatusBar() immediately re-renders; periodic re-check every 60s for state changes.
+
 Budget-aware compression: agents can preview savings before committing, retrieve compressed content by hash, and see handoff compression statistics on the status bar.
 
 - **Headroom Simulate** — New LM tool that estimates token savings, transforms, and waste signals for a message set without performing the real compression. Useful for cost forecasting before long sessions.

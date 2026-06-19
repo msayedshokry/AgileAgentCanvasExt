@@ -2,12 +2,17 @@
  * Regression guard for the Headroom status bar item.
  *
  * Contract being locked:
- *  - disabled (headroom.enabled: false) → status bar is hidden
- *  - npm package not installed → status bar is hidden
- *  - proxy not running → shows "offline" hint with tooltip about starting the proxy
- *  - proxy running, zero compression calls → shows "Headroom" label with no savings %
- *  - active with cumulative stats → shows "XX%" with detailed tooltip
- *  - refreshHeadroomStatusBar() triggers a zero-delay re-render
+ *  - The bar is ALWAYS SHOWING (never hides after activation) so users
+ *    always know Headroom's state.
+ *  - disabled (headroom.enabled: false) → "Headroom: disabled" with a
+ *    click-action that opens Headroom settings.
+ *  - npm package not installed → "Headroom" with a warning icon and a
+ *    tooltip explaining the SDK is missing.
+ *  - proxy not running → "Headroom: proxy offline" with a tooltip
+ *    pointing at the proxy start one-liner.
+ *  - proxy running, zero compression calls → "Headroom" label (no %).
+ *  - active with cumulative stats → "XX%" with detailed tooltip.
+ *  - refreshHeadroomStatusBar() triggers a zero-delay re-render.
  */
 
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
@@ -152,32 +157,63 @@ afterEach(() => {
 // ─── State 1: DISABLED (headroom.enabled = false) ─────────────────────────
 
 describe('headroom status bar — disabled', () => {
-  it('hides the status bar when headroom.enabled is false', () => {
-    setEnabled(false);
-    create();
-    expect(mockItem.hide).toHaveBeenCalled();
+  beforeEach(() => {
+    // Explicitly set up an "otherwise-running" state to confirm that the
+    // disabled-short-circuit fires before any availability branch is reached.
+    setAvailability({ installed: true, proxyRunning: true });
   });
 
-  it('shows nothing (empty text) when disabled', () => {
+  it('shows the bar (never hides) when headroom.enabled is false', () => {
     setEnabled(false);
     create();
-    expect(mockItem.text).toBe('');
+    expect(mockItem.show).toHaveBeenCalled();
+    expect(mockItem.hide).not.toHaveBeenCalled();
+  });
+
+  it('shows "Headroom: disabled" with the circle-slash icon', () => {
+    setEnabled(false);
+    create();
+    expect(mockItem.text).toBe('$(circle-slash) Headroom: disabled');
+  });
+
+  it('tooltip points at the Headroom settings page', () => {
+    setEnabled(false);
+    create();
+    expect(mockItem.tooltip).toContain('Click to open Headroom settings');
+  });
+
+  it('command opens the workbench settings (filtered to agileagentcanvas.headroom)', () => {
+    setEnabled(false);
+    create();
+    expect(mockItem.command).toEqual({
+      command: 'workbench.action.openSettings',
+      arguments: ['agileagentcanvas.headroom'],
+      title: 'Open Headroom Settings',
+    });
   });
 });
 
 // ─── State 2: NOT INSTALLED ────────────────────────────────────────────────
 
 describe('headroom status bar — not installed', () => {
-  it('hides the status bar when npm package is not resolvable', () => {
+  it('shows the bar (never hides) when npm package is not resolvable', () => {
     setAvailability({ installed: false, proxyRunning: false });
     create();
-    expect(mockItem.hide).toHaveBeenCalled();
+    expect(mockItem.show).toHaveBeenCalled();
+    expect(mockItem.hide).not.toHaveBeenCalled();
   });
 
-  it('shows nothing (empty text) when not installed', () => {
+  it('shows "Headroom" with the warning icon', () => {
     setAvailability({ installed: false, proxyRunning: false });
     create();
-    expect(mockItem.text).toBe('');
+    expect(mockItem.text).toBe('$(warning) Headroom');
+  });
+
+  it('tooltip explains the SDK is missing', () => {
+    setAvailability({ installed: false, proxyRunning: false });
+    create();
+    expect(mockItem.tooltip).toContain('Headroom SDK not detected');
+    expect(mockItem.tooltip).toContain('headroom-ai');
   });
 });
 
@@ -187,7 +223,7 @@ describe('headroom status bar — proxy offline', () => {
   it('shows the offline hint when the proxy is not running', () => {
     setAvailability({ installed: true, proxyRunning: false, version: '0.22.4' });
     create();
-    expect(mockItem.text).toContain('Headroom: offline');
+    expect(mockItem.text).toContain('Headroom: proxy offline');
   });
 
   it('shows the rocket icon in the offline hint', () => {
@@ -196,7 +232,7 @@ describe('headroom status bar — proxy offline', () => {
     expect(mockItem.text).toContain('$(rocket)');
   });
 
-  it('shows a tooltip referencing the proxy start command', () => {
+  it('shows a tooltip referencing the proxy start command and port', () => {
     setAvailability({ installed: true, proxyRunning: false });
     create();
     expect(mockItem.tooltip).toContain('localhost:8787');
@@ -208,6 +244,12 @@ describe('headroom status bar — proxy offline', () => {
     setAvailability({ installed: true, proxyRunning: false });
     create();
     expect(mockItem.text).not.toContain('%');
+  });
+
+  it('bar stays visible (never hides) when offline', () => {
+    setAvailability({ installed: true, proxyRunning: false });
+    create();
+    expect(mockItem.show).toHaveBeenCalled();
   });
 });
 
@@ -316,7 +358,7 @@ describe('refreshHeadroomStatusBar', () => {
     setEnabled(false);
     setAvailability({ installed: false, proxyRunning: false });
     create();
-    expect(mockItem.text).toBe('');
+    expect(mockItem.text).toBe('$(circle-slash) Headroom: disabled');
 
     // Toggle enabled and simulate a proxy now running
     setEnabled(true);
@@ -487,8 +529,12 @@ describe('headroom status bar — combined sections', () => {
     // CCR section
     expect(mockItem.tooltip).toContain('CCR Store');
     expect(mockItem.tooltip).toContain('totalCompressions');
-    // Footer
-    expect(mockItem.tooltip).toContain('Click to open');
+    // Click command wires up Headroom settings
+    expect(mockItem.command).toEqual({
+      command: 'workbench.action.openSettings',
+      arguments: ['agileagentcanvas.headroom'],
+      title: 'Open Headroom Settings',
+    });
   });
 
   it('bar text still shows compression percentage when sections are present', async () => {
