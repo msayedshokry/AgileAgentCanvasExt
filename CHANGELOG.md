@@ -98,6 +98,15 @@ The hierarchy now extends to three more prompt paths.
 - **Antigravity orchestrator** — A mode-not-interactive guard inside buildGuideContent injects autonomous + default; interactive untouched.
 - **Goal decomposer** — 12-token carve-out ("If the goal fits in a single story, return one") preserves the narrow JSON-shape prompt.
 - **Regression guards** — 36 vitest assertions lock both.
+
+### Feature: Headroom — dry-run simulation, retrieval, and inter-agent observability
+
+Budget-aware compression: agents can preview savings before committing, retrieve compressed content by hash, and see handoff compression statistics on the status bar.
+
+- **Headroom Simulate** — New LM tool that estimates token savings, transforms, and waste signals for a message set without performing the real compression. Useful for cost forecasting before long sessions.
+- **Headroom Retrieve** — New LM tool that resolves a content hash from a previous compression back into the original text, avoiding redundant re-compression when the AI re-asks about cached content.
+- **A2A handoff compression** — When one agent hands off work to another via the agent bus, intermediate artifacts are compressed through SharedContext before transmission. Receiving agents decompress on demand, dropping per-handoff token overhead substantially (savings scale with the configured compression tier).
+- **Status bar observability** — The Headroom status bar tooltip now surfaces inter-agent SharedContext stats (compressed entries, tokens saved, savings %) alongside the CCR store metrics (entries, retrieval rate). Sections appear silently only when the corresponding data is available, so the bar stays quiet when nothing is happening.
 ## 0.5.5
 
 ### Feature: Autonomous Auto-Advance for Agentic Kanban

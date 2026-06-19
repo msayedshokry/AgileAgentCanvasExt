@@ -9,6 +9,8 @@ export interface ToolCall {
     latencyMs: number;
     timestamp: string;
     errorMessage?: string;
+    /** Optional metadata payload — e.g. telemetry stats, compression details. */
+    metadata?: Record<string, any>;
 }
 
 export class ToolTelemetry {

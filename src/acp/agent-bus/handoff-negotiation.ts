@@ -39,12 +39,23 @@ const CONFIG = {
 
 import { errMsg } from '../../utils/error';
 
+// ── SharedContext facade (lazy-loaded, silent-by-default) ──────────────────
+
+interface SharedContextFacade {
+    put(key: string, content: string, opts?: { agent?: string }): Promise<{ originalTokens: number; compressedTokens: number; savingsPercent: number }>;
+    get(key: string, opts?: { full?: boolean }): string | null;
+    stats(): { entries: number; totalOriginalTokens: number; totalCompressedTokens: number; totalTokensSaved: number; savingsPercent: number };
+    clear(): void;
+}
+
 // ─── Handoff Negotiation Service ────────────────────────────────────────────
 
 export class HandoffNegotiationService {
   private sessions = new Map<string, HandoffSession>();
   private timeouts = new Map<string, NodeJS.Timeout>();
   private busSubscriptions: string[] = [];
+  private _shareCtx: SharedContextFacade | null = null;
+  private _shareCtxAttempted = false;
 
   constructor() {
     // Subscribe to handoff response events
@@ -177,6 +188,9 @@ export class HandoffNegotiationService {
   /**
    * Transfer context from the source agent to the target agent.
    * Called after a handoff is accepted.
+   *
+   * When Headroom is available, the context is compressed via SharedContext
+   * before transfer to reduce token overhead for the receiving agent.
    */
   async transferContext(
     sessionId: string,
@@ -188,27 +202,90 @@ export class HandoffNegotiationService {
       return false;
     }
 
-    session.context = context;
+    // ── SharedContext compression ────────────────────────────────────────
+    // Lazy-initialise SharedContext on first transfer attempt.
+    let shareCtxKey: string | undefined;
+    if (!this._shareCtxAttempted) {
+      this._shareCtxAttempted = true;
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { SharedContext } = require('headroom-ai');
+        this._shareCtx = new SharedContext({ ttl: 300_000, maxEntries: 50 });
+        logger.debug('[Handoff] SharedContext initialised for inter-agent compression');
+      } catch {
+        logger.debug('[Handoff] headroom-ai not available — SharedContext disabled');
+      }
+    }
+
+    if (this._shareCtx && context) {
+      try {
+        const serialised = JSON.stringify(context);
+        const entry = await this._shareCtx.put(sessionId, serialised);
+        shareCtxKey = sessionId;
+        logger.debug(
+          `[Handoff] SharedContext compressed: ${entry.originalTokens} → ${entry.compressedTokens} tokens ` +
+          `(${entry.savingsPercent}% saved)`
+        );
+      } catch (err: any) {
+        logger.debug(`[Handoff] SharedContext compression failed: ${err?.message ?? err}`);
+      }
+    }
+
+    // Store either the SharedContext key or the full context
+    session.context = shareCtxKey
+      ? { task: context?.task ?? '', intermediateArtifacts: { _shareCtxKey: shareCtxKey }, _compressedViaSharedContext: true }
+      : context;
     session.status = 'in_progress';
     session.updatedAt = new Date().toISOString();
     session.traceEntries.push({
       type: 'context_transferred',
       timestamp: new Date().toISOString(),
-      detail: `Context transferred: ${Object.keys(context?.intermediateArtifacts || {}).length} artifacts`,
+      detail: shareCtxKey
+        ? `Context compressed via SharedContext (key: ${shareCtxKey})`
+        : `Context transferred: ${Object.keys(context?.intermediateArtifacts || {}).length} artifacts`,
     });
 
-    // Notify via bus
+    // Notify via bus — pass only the key if compressed
+    const busPayload = shareCtxKey
+      ? { _shareCtxKey: shareCtxKey, task: context?.task }
+      : context;
     await agentMessageBus.publish(
       `handoff.${sessionId}.context_transferred`,
-      context,
+      busPayload,
       { from: session.request.fromAgentId, to: session.request.toAgentId, priority: 'high' }
     );
 
     // Clear the response timeout since we're in progress now
     this.clearTimeout(sessionId);
 
-    logger.info(`[Handoff] Context transferred for session ${sessionId}`);
+    logger.info(`[Handoff] Context transferred for session ${sessionId}${shareCtxKey ? ' (compressed via SharedContext)' : ''}`);
     return true;
+  }
+
+  /**
+   * Decompress handoff context from SharedContext if it was compressed.
+   * Call this on the receiving agent side before processing the handoff.
+   */
+  getDecompressedContext(sessionId: string): HandoffSession['context'] | null {
+    if (!this._shareCtx) { return null; }
+    try {
+      const serialised = this._shareCtx.get(sessionId, { full: true });
+      if (!serialised) { return null; }
+      return JSON.parse(serialised);
+    } catch (err: any) {
+      logger.debug(`[Handoff] SharedContext decompress failed: ${err?.message ?? err}`);
+      return null;
+    }
+  }
+
+  /** Get SharedContext compression statistics. */
+  getSharedContextStats(): Record<string, any> | null {
+    if (!this._shareCtx) { return null; }
+    try {
+      return this._shareCtx.stats();
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -309,6 +386,20 @@ export class HandoffNegotiationService {
   }
 
   /**
+   * Prime the SharedContext instance for testing.
+   *
+   * Injects a mock SharedContext facade so tests can bypass the lazy
+   * `require('headroom-ai')` call, which is unreliable in vitest fork-pool
+   * mode. Call this before the first `transferContext()` in a test.
+   *
+   * @internal
+   */
+  _primeShareCtxForTest(facade: SharedContextFacade): void {
+    this._shareCtx = facade;
+    this._shareCtxAttempted = true;
+  }
+
+  /**
    * Reset the negotiation service (for testing).
    */
   reset(): void {
@@ -318,6 +409,11 @@ export class HandoffNegotiationService {
     for (const subId of this.busSubscriptions) {
       agentMessageBus.unsubscribe(subId);
     }
+    if (this._shareCtx) {
+      try { this._shareCtx.clear(); } catch { /* ignore */ }
+      this._shareCtx = null;
+    }
+    this._shareCtxAttempted = false;
     this.sessions.clear();
     this.timeouts.clear();
     this.busSubscriptions = [];

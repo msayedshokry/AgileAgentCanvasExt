@@ -1240,6 +1240,13 @@
             "type": "boolean",
             "default": true,
             "description": "Enable Headroom context compression. When enabled, chat messages are transparently compressed before reaching the AI provider, saving tokens. Requires the Headroom proxy to be running (npx headroom-ai proxy). Disable to opt out of compression."
+          },
+          "agileagentcanvas.headroom.compressionLevel": {
+            "type": "number",
+            "default": 3,
+            "minimum": 1,
+            "maximum": 5,
+            "description": "Compression aggressiveness level (1-5). 1 = light compression (preserve more context), 3 = balanced (default), 5 = aggressive (max token savings). Maps to the bias parameter in Headroom's CompressionProfile."
           }
         }
       },

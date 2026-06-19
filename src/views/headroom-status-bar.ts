@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
-import { getCompressionStats, getAvailability } from '../integrations/headroom';
+import { getCompressionStats, getAvailability, getCCRStats } from '../integrations/headroom';
+import { handoffNegotiation } from '../acp/agent-bus/handoff-negotiation';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('headroom-status-bar');
@@ -82,21 +83,52 @@ async function _refresh(): Promise<void> {
     // Proxy is running — show cumulative compression stats
     const hs = getCompressionStats();
 
+    // ── Build tooltip with Compressor + SharedContext + CCR sections ──────
+    let tooltip = `Headroom Compression\n\n`;
+
     if (hs.totalCalls === 0) {
         _item.text = '$(rocket) Headroom';
-        _item.tooltip = `Headroom proxy active (v${avail.version ?? '?'})\nNo compression calls yet — savings appear after the first LLM call.`;
-        _item.show();
-        _isVisible = true;
-        _scheduleRefresh(60_000);
-        return;
+        tooltip += `Headroom proxy active (v${avail.version ?? '?'})\nNo compression calls yet — savings appear after the first LLM call.`;
+    } else {
+        const pct = hs.totalTokensBefore > 0
+            ? ((hs.totalTokensSaved / hs.totalTokensBefore) * 100).toFixed(0)
+            : '0';
+
+        _item.text = `$(rocket) ${pct}%`;
+        tooltip +=
+            `Proxy v${avail.version ?? '?'}  ·  Tokens saved: ${hs.totalTokensSaved.toLocaleString()} / ${hs.totalTokensBefore.toLocaleString()}\n` +
+            `Ratio: ${pct}%  ·  Calls: ${hs.totalCalls}`;
     }
 
-    const pct = hs.totalTokensBefore > 0
-        ? ((hs.totalTokensSaved / hs.totalTokensBefore) * 100).toFixed(0)
-        : '0';
+    // ── SharedContext (A2A handoff compression) ──────────────────────────
+    const shareCtxStats = handoffNegotiation.getSharedContextStats();
+    if (shareCtxStats && shareCtxStats.entries > 0) {
+        const s = shareCtxStats;
+        tooltip +=
+            `\n\nSharedContext (A2A handoffs)\n` +
+            `Compressed entries: ${s.entries}\n` +
+            `Tokens saved: ${(s.totalTokensSaved ?? 0).toLocaleString()} ` +
+            `(${s.savingsPercent ?? 0}% avg)`;
+    }
 
-    _item.text = `$(rocket) ${pct}%`;
-    _item.tooltip = `Headroom Compression\nTokens saved: ${hs.totalTokensSaved.toLocaleString()} / ${hs.totalTokensBefore.toLocaleString()}\nRatio: ${pct}% | Calls: ${hs.totalCalls}\n\nClick to open Headroom proxy health check.`;
+    // ── CCR store metrics ────────────────────────────────────────────────
+    try {
+        const ccrStats = await getCCRStats();
+        if (ccrStats) {
+            tooltip += `\n\nCCR Store`;
+            for (const [key, value] of Object.entries(ccrStats)) {
+                const displayValue = typeof value === 'number'
+                    ? value.toLocaleString()
+                    : String(value);
+                tooltip += `\n${key}: ${displayValue}`;
+            }
+        }
+    } catch {
+        // CCR stats fetch is best-effort; ignore failures
+    }
+
+    tooltip += `\n\nClick to open Headroom proxy health check.`;
+    _item.tooltip = tooltip;
     _item.show();
     _isVisible = true;
 

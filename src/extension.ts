@@ -61,7 +61,7 @@ import {
     loadReport
 } from './integrations/graphify';
 import { detectCodeburn } from './integrations/codeburn';
-import { detectHeadroom } from './integrations/headroom';
+import { detectHeadroom, disposeHeadroomClient } from './integrations/headroom';
 import { JiraSecrets } from './integrations/jira-secrets';
 import { createLogger, setLoggerOutputSink } from './utils/logger';
 import { autonomyLifecycle } from './workflow/autonomy-lifecycle';
@@ -1263,6 +1263,9 @@ export function deactivate() {
     // Stop the Autonomy lifecycle (issue #21) so the health monitor, auto-
     // recovery listener, and scheduler webview controls all wind down.
     autonomyLifecycle.stop();
+
+    // Clean up HeadroomClient singleton (closes HTTP keep-alive)
+    disposeHeadroomClient();
 
     // Cancel A2A polling before store dispose — poll callbacks access the store
     if (laneTransitionEngine) {

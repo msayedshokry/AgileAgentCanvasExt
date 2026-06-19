@@ -30,6 +30,15 @@ vi.mock('../integrations/headroom', () => ({
     installed: false,
     proxyRunning: false,
   })),
+  getCCRStats: vi.fn().mockResolvedValue(null),
+}));
+
+// ─── Mock handoff-negotiation ─────────────────────────────────────────────
+
+vi.mock('../acp/agent-bus/handoff-negotiation', () => ({
+  handoffNegotiation: {
+    getSharedContextStats: vi.fn().mockReturnValue(null),
+  },
 }));
 
 // ─── vscode mock ──────────────────────────────────────────────────────────
@@ -77,7 +86,8 @@ import {
   createHeadroomStatusBar,
   refreshHeadroomStatusBar,
 } from './headroom-status-bar';
-import { getCompressionStats, getAvailability } from '../integrations/headroom';
+import { getCompressionStats, getAvailability, getCCRStats } from '../integrations/headroom';
+import { handoffNegotiation } from '../acp/agent-bus/handoff-negotiation';
 
 // fake context — only needs subscriptions.push
 const fakeContext: any = {
@@ -109,6 +119,14 @@ function setStats(overrides: Partial<ReturnType<typeof getCompressionStats>>) {
 
 function setEnabled(enabled: boolean) {
   mockHeadroomEnabled = enabled;
+}
+
+function setSharedContextStats(stats: Record<string, any> | null) {
+  vi.mocked(handoffNegotiation.getSharedContextStats).mockReturnValue(stats);
+}
+
+function setCCRStats(stats: Record<string, any> | null) {
+  vi.mocked(getCCRStats).mockResolvedValue(stats);
 }
 
 // Create the status bar (resets module-level _item so state doesn't leak).
@@ -203,24 +221,27 @@ describe('headroom status bar — zero calls', () => {
     expect(mockItem.text).toBe('$(rocket) Headroom');
   });
 
-  it('shows a tooltip indicating no calls have happened yet', () => {
+  it('shows a tooltip indicating no calls have happened yet', async () => {
     setAvailability({ installed: true, proxyRunning: true, version: '0.22.4' });
     setStats({ totalCalls: 0 });
     create();
+    await vi.advanceTimersByTimeAsync(0);
     expect(mockItem.tooltip).toContain('No compression calls yet');
   });
 
-  it('shows the version in the tooltip', () => {
+  it('shows the version in the tooltip', async () => {
     setAvailability({ installed: true, proxyRunning: true, version: '0.25.1' });
     setStats({ totalCalls: 0 });
     create();
+    await vi.advanceTimersByTimeAsync(0);
     expect(mockItem.tooltip).toContain('0.25.1');
   });
 
-  it('falls back to ? when version is undefined', () => {
+  it('falls back to ? when version is undefined', async () => {
     setAvailability({ installed: true, proxyRunning: true /* no version */ });
     setStats({ totalCalls: 0 });
     create();
+    await vi.advanceTimersByTimeAsync(0);
     expect(mockItem.tooltip).toContain('v?');
   });
 });
@@ -262,7 +283,7 @@ describe('headroom status bar — active with stats', () => {
     expect(mockItem.text).toBe('$(rocket) 0%');
   });
 
-  it('shows a detailed tooltip with tokens and calls', () => {
+  it('shows a detailed tooltip with tokens and calls', async () => {
     setAvailability({ installed: true, proxyRunning: true });
     setStats({
       totalCalls: 12,
@@ -271,6 +292,7 @@ describe('headroom status bar — active with stats', () => {
       totalTokensSaved: 20000,
     });
     create();
+    await vi.advanceTimersByTimeAsync(0);
     expect(mockItem.tooltip).toContain('Tokens saved');
     // toLocaleString is locale-dependent — check for the numeric substring
     const savedPart = (20000).toLocaleString();
@@ -309,5 +331,181 @@ describe('refreshHeadroomStatusBar', () => {
     await vi.advanceTimersByTimeAsync(0);
 
     expect(mockItem.text).toBe('$(rocket) 50%');
+  });
+});
+
+// ─── SharedContext tooltip section ──────────────────────────────────────────
+
+describe('headroom status bar — SharedContext tooltip', () => {
+  beforeEach(() => {
+    setAvailability({ installed: true, proxyRunning: true });
+    setStats({ totalCalls: 1, totalTokensBefore: 10000, totalTokensSaved: 4000 });
+    setCCRStats(null);
+  });
+
+  it('shows SharedContext section when entries > 0', async () => {
+    setSharedContextStats({
+      entries: 3,
+      totalOriginalTokens: 4500,
+      totalCompressedTokens: 2000,
+      totalTokensSaved: 2500,
+      savingsPercent: 55,
+    });
+    create();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockItem.tooltip).toContain('SharedContext (A2A handoffs)');
+    expect(mockItem.tooltip).toContain('Compressed entries: 3');
+    expect(mockItem.tooltip).toContain('Tokens saved');
+    expect(mockItem.tooltip).toContain('55% avg');
+  });
+
+  it('hides SharedContext section when stats return null', async () => {
+    setSharedContextStats(null);
+    create();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockItem.tooltip).not.toContain('SharedContext');
+    expect(mockItem.tooltip).not.toContain('A2A handoffs');
+  });
+
+  it('hides SharedContext section when entries is 0', async () => {
+    setSharedContextStats({
+      entries: 0,
+      totalOriginalTokens: 0,
+      totalCompressedTokens: 0,
+      totalTokensSaved: 0,
+      savingsPercent: 0,
+    });
+    create();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockItem.tooltip).not.toContain('SharedContext');
+  });
+
+  it('includes token savings with locale formatting', async () => {
+    setSharedContextStats({
+      entries: 1,
+      totalOriginalTokens: 10000,
+      totalCompressedTokens: 3500,
+      totalTokensSaved: 6500,
+      savingsPercent: 65,
+    });
+    create();
+    await vi.advanceTimersByTimeAsync(0);
+
+    const savedPart = (6500).toLocaleString();
+    expect(mockItem.tooltip).toContain(savedPart);
+    expect(mockItem.tooltip).toContain('65% avg');
+  });
+});
+
+// ─── CCR store tooltip section ──────────────────────────────────────────────
+
+describe('headroom status bar — CCR tooltip', () => {
+  beforeEach(() => {
+    setAvailability({ installed: true, proxyRunning: true });
+    setStats({ totalCalls: 1, totalTokensBefore: 10000, totalTokensSaved: 4000 });
+    setSharedContextStats(null);
+  });
+
+  it('shows CCR Store section when getCCRStats returns data', async () => {
+    setCCRStats({
+      enabled: true,
+      totalCompressions: 42,
+      totalRetrievals: 7,
+      globalRetrievalRate: 0.15,
+      toolSignaturesTracked: 12,
+      avgCompressionRatio: 0.45,
+      avgTokenReduction: 350,
+    });
+    create();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockItem.tooltip).toContain('CCR Store');
+    expect(mockItem.tooltip).toContain('totalCompressions');
+    expect(mockItem.tooltip).toContain('42');
+    expect(mockItem.tooltip).toContain('globalRetrievalRate');
+    // toLocaleString() is locale-dependent — check the key exists, not the exact value
+    expect(mockItem.tooltip).toMatch(/globalRetrievalRate: [\d,.]+/);
+  });
+
+  it('hides CCR Store section when getCCRStats returns null', async () => {
+    setCCRStats(null);
+    create();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockItem.tooltip).not.toContain('CCR Store');
+  });
+
+  it('hides CCR Store section when getCCRStats rejects', async () => {
+    vi.mocked(getCCRStats).mockRejectedValue(new Error('fetch failed'));
+    create();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockItem.tooltip).not.toContain('CCR Store');
+  });
+
+  it('formats numeric values with locale', async () => {
+    setCCRStats({
+      totalEntries: 1234,
+      totalSize: 567890,
+    });
+    create();
+    await vi.advanceTimersByTimeAsync(0);
+
+    const entriesPart = (1234).toLocaleString();
+    const sizePart = (567890).toLocaleString();
+    expect(mockItem.tooltip).toContain(entriesPart);
+    expect(mockItem.tooltip).toContain(sizePart);
+  });
+});
+
+// ─── Combined SharedContext + CCR sections ──────────────────────────────────
+
+describe('headroom status bar — combined sections', () => {
+  it('shows both SharedContext and CCR sections when both return data', async () => {
+    setAvailability({ installed: true, proxyRunning: true });
+    setStats({ totalCalls: 3, totalTokensBefore: 20000, totalTokensSaved: 8000 });
+    setSharedContextStats({
+      entries: 2,
+      totalOriginalTokens: 3000,
+      totalCompressedTokens: 1200,
+      totalTokensSaved: 1800,
+      savingsPercent: 60,
+    });
+    setCCRStats({ totalCompressions: 10, totalRetrievals: 3 });
+
+    create();
+    await vi.advanceTimersByTimeAsync(0);
+
+    // Compressor section
+    expect(mockItem.tooltip).toContain('Headroom Compression');
+    // SharedContext section
+    expect(mockItem.tooltip).toContain('SharedContext (A2A handoffs)');
+    expect(mockItem.tooltip).toContain('Compressed entries: 2');
+    // CCR section
+    expect(mockItem.tooltip).toContain('CCR Store');
+    expect(mockItem.tooltip).toContain('totalCompressions');
+    // Footer
+    expect(mockItem.tooltip).toContain('Click to open');
+  });
+
+  it('bar text still shows compression percentage when sections are present', async () => {
+    setAvailability({ installed: true, proxyRunning: true });
+    setStats({ totalCalls: 1, totalTokensBefore: 10000, totalTokensSaved: 3000 });
+    setSharedContextStats({
+      entries: 1,
+      totalOriginalTokens: 1000,
+      totalCompressedTokens: 500,
+      totalTokensSaved: 500,
+      savingsPercent: 50,
+    });
+    setCCRStats({ flag: true });
+
+    create();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockItem.text).toBe('$(rocket) 30%');
   });
 });
