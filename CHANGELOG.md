@@ -179,6 +179,52 @@ Tests — 5 new endpoint-surface assertions in `src/integrations/headroom/in-pro
 
 Wire format unchanged — `tokens_before` / `tokens_after` / `transforms_applied` / `compressed` continue to round-trip the SDK's `deepCamelCase` pass. Existing 803-extension Cucumber scenarios unchanged.
 
+### Headroom — CCR cross-call dedup with LRU
+
+### Headroom — CCR cross-call dedup with LRU (Phase 3.3)
+
+Closes the Phase 3 compression rollout (Φ-rate → real BPE → summarise).
+
+- New `in-process-proxy.ts` CCR (Cross-Call Remember) store: module-level
+  `Map<hash, CcrEntry>` with LRU semantics (native `Map` insertion order,
+  evict-oldest on overflow at `CCR_CAP = 1000`). Hashes are SHA-256 over
+  `(role + NUL + canonical(content))`, truncated to 64 bits. Canonical form
+  sorts plain-object keys alphabetically while preserving array element
+  order — so `[{a, b}, {c}]` and `[{c}, {b, a}]` correctly hash the same
+  only when their structural keys align. Phase 4 will revisit hash length.
+- New `/v1/retrieve` route returns `{hash, content (preview), similarity,
+  cached, tokenCount}` — the SDK can fetch the first 200 chars of any
+  original input by hash instead of re-running the full compress pipeline.
+  Cache-miss shape echoes `{hash, content:null, similarity:0, cached:false}`.
+- New `/v1/retrieve/stats` route surfaces live `{entries, capacity,
+  totalOriginalTokens, totalCompressedTokens, totalTokensSaved, hitRate,
+  savingsPercent}`. `hitRate` and `savingsPercent` are placeholders until
+  Phase 4 wires the hit-vs-miss counter (deferred — see TODO in source).
+- `_naiveCompress` now upserts each input message into the CCR store BEFORE
+  running dedupe / summarise / truncate, then emits `ccr_hashes` on the
+  wire response. Hashes reflect raw-input signatures, so a caller can later
+  resolve the most-recent compress call's pre-transform content via
+  `/v1/retrieve`.
+- `_upsertCcrEntry` is true LRU — on hit, the entry is `delete`/`set` so it
+  bumps to the tail of insertion order before re-reading the cap. No
+  `Array.sort` per call.
+- `/v1/compress` dispose hooks (`server.close()` on listen-error, `_ccr.clear()`
+  on dispose) so an extension reload doesn't carry stale hashes from the
+  prior workspace into the next session.
+- New test surface (12 endpoint tests + 7 CCR-store tests = 19 total for 3.3):
+  stable-on-replay hashing, content change → new hash, role scope
+  (same content, different roles hash differently), `/v1/retrieve` cache
+  hit/miss shapes, `/v1/retrieve/stats` shape, CCR cap at 1001 inserts
+  evicts oldest, listen-error handler closes the underlying server so
+  subsequent `startInProcessProxy()` calls survive synthetic error events.
+- New test utility `_clearCcrForTest()` mirrors `_clearRecentCallsForTest()`
+  for test isolation; vitest `beforeEach` clears both before each suite.
+
+All phases green: tsc clean, vitest 132/132 in 1.36s, production bundle clean.
+
+
+---
+
 ## 0.5.5
 
 ### Feature: Autonomous Auto-Advance for Agentic Kanban

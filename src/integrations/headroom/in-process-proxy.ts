@@ -39,6 +39,7 @@
  * quality savings require the standalone `headroom-ai` binary.
  */
 import * as http from 'node:http';
+import { createHash } from 'node:crypto';
 import { countTokens } from 'gpt-tokenizer';
 import { createLogger } from '../../utils/logger';
 import { setLocalProxyState, getLocalProxyState } from './proxy-state';
@@ -52,6 +53,8 @@ const MAX_CONTENT_LEN = 4000;          // chars per message after compression
 const MAX_TOOL_OBJ_STR_LEN = 500;      // string-truncation threshold for role:tool JSON object values
 const SUMMARISE_ARRAY_KEEP_HEAD = 2;   // tool-result array slice: first N items kept verbatim
 const SUMMARISE_ARRAY_KEEP_TAIL = 1;   // tool-result array slice: last M items kept verbatim
+const CCR_CAP = 1000;                  // cross-call-remember store cap
+const CCR_CONTENT_PREVIEW_LEN = 200;   // first-N-char content preview stored alongside each CCR entry
 const REQUEST_TIMEOUT_MS = 5000;
 
 /** Public-facing aggregate stats from the in-process proxy. */
@@ -130,6 +133,16 @@ export function startInProcessProxy(): { dispose(): void } {
             setLocalProxyState('failed');
         }
         _server = null;
+        // Always close the underlying server after an error event. In a
+        // genuine EADDRINUSE case, server.listen() never bound — close()
+        // is a no-op. In a synthetic-error test case (the listen-error
+        // describe block emits 'error' on the live internal server), the
+        // socket would otherwise stay bound and block subsequent
+        // startInProcessProxy() calls (which would re-fail with
+        // EADDRINUSE indefinitely). Without this close, the SECOND test
+        // in any later describe block that re-binds port 8787 would
+        // synchronously fail.
+        try { server.close(() => { /* swallow */ }); } catch { /* ignore */ }
     });
 
     server.listen(PROXY_PORT, PROXY_HOST, () => {
@@ -156,6 +169,12 @@ export function startInProcessProxy(): { dispose(): void } {
             } else {
                 setLocalProxyState('idle');
             }
+            // Reset the CCR store on dispose so a deactivate/reactivate
+            // cycle (extension reload, second workspace) doesn't carry
+            // over stale entries whose hash collisions would shadow the
+            // next session's calls. Mirrors the existing `_stats` +
+            // `_recentCalls` reset patterns.
+            _ccr.clear();
         },
     };
 }
@@ -221,8 +240,133 @@ export function _getInternalServerForTest(): http.Server | null {
 function _pushRecentCall(entry: RecentCompressCall): void {
     if (_recentCalls.length >= RECENT_CALL_CAP) {
         _recentCalls.shift();   // drop oldest
+    }        _recentCalls.push(entry);
+}
+
+// ─── CCR cross-call dedup (Phase 3.3) ─────────────────────────────────────────
+
+/**
+ * Per-call CCR (Cross-Call Remember) entry. Stored in the module-level
+ * `_ccr` Map keyed by SHA-256-truncated content hash.
+ *
+ * `contentRef` is the first `CCR_CONTENT_PREVIEW_LEN` chars of the
+ * original content — consumers should treat it as a diagnostic surface,
+ * not the full payload. `compressedTokens` tracks post-compression cost;
+ * for the stub in-process proxy it's identical to `originalTokens`
+ * (Phase 4 will introduce real savings math). `timestamp` doubles as
+ * the LRU refresh marker — see `_upsertCcrEntry` for the true LRU
+ * delete+set dance.
+ */
+interface CcrEntry {
+    role: string;             // role prevents 'sys'/'user' hash collisions
+    contentRef: string;       // first 200 chars (preview, not the full body)
+    originalTokens: number;
+    compressedTokens: number; // == originalTokens for stub proxy
+    timestamp: number;        // epoch seconds — also LRU refresh marker
+}
+
+const _ccr = new Map<string, CcrEntry>();
+
+/**
+ * Test-only: clear the CCR store without touching the recent-call ring or
+ * aggregated `_stats`. Used by vitest to assert CCR invariants across
+ * disjoint calls (cap/eviction/role-collision) without binding port 8787
+ * across sibling test files.
+ */
+export function _clearCcrForTest(): void {
+    _ccr.clear();
+}
+
+/**
+ * Deep-canonicalise for hashing. Sorts plain-object keys alphabetically
+ * (so `{a: 1, b: 2}` and `{b: 2, a: 1}` map to the same hash),
+ * preserves ARRAY element order (the LLM relies on tool_result /
+ * multi-part message sequence order), and recurses into nested
+ * structures. The result round-trips through `JSON.stringify` without
+ * semantic loss.
+ */
+function _canonicalise(value: any): any {
+    if (Array.isArray(value)) {
+        return value.map(_canonicalise);
     }
-    _recentCalls.push(entry);
+    if (value && typeof value === 'object') {
+        const sorted: Record<string, any> = {};
+        for (const key of Object.keys(value).sort()) {
+            sorted[key] = _canonicalise(value[key]);
+        }
+        return sorted;
+    }
+    return value;
+}
+
+/**
+ * SHA-256 of `(role + NUL + normalised-content)`, truncated to 16 hex
+ * chars (64 bits). Collision probability ~1e-9 at the 1000-entry cap,
+ * plenty for cross-call dedup. The NUL separator prevents edge cases
+ * where ('a', 'bc') and ('ab', 'c') collide because the strings just
+ * concatenate.
+ */
+function _hashMessage(msg: any): string {
+    const role = msg?.role ?? 'unknown';
+    const c = _contentOf(msg);
+    let normalised: string;
+    if (typeof c === 'string') {
+        normalised = c;
+    } else if (Array.isArray(c)) {
+        normalised = JSON.stringify(_canonicalise(c));
+    } else {
+        normalised = '';
+    }
+    return createHash('sha256')
+        .update(role)
+        .update('\u0000')           // role/content separator
+        .update(normalised)
+        .digest('hex')
+        .slice(0, 16);              // 16 hex = 64 bits
+}
+
+/**
+ * Upsert a CCR entry. True LRU via JavaScript's native `Map`
+ * insertion-order semantics — on a hit, we delete and re-set the entry
+ * so it sits at the tail of insertion order; on a miss, a fresh entry
+ * is appended. Eviction runs when `_ccr.size > CCR_CAP` and pulls the
+ * oldest key in O(1) via `Map.keys().next().value` — no O(N log N)
+ * `Array.sort` per call.
+ *
+ * Returns the 16-hex-char hash so the caller can populate the
+ * response's `ccr_hashes` field.
+ */
+function _upsertCcrEntry(msg: any): string {
+    const hash = _hashMessage(msg);
+    const originalTokens = _estimateMessageTokens(msg);
+    const contentRaw = _contentOf(msg);
+    const preview = typeof contentRaw === 'string'
+        ? (contentRaw.length > CCR_CONTENT_PREVIEW_LEN
+            ? contentRaw.slice(0, CCR_CONTENT_PREVIEW_LEN) + '…[preview]'
+            : contentRaw)
+        : '[multi-part]';
+
+    const existing = _ccr.get(hash);
+    if (existing) {
+        // Refresh LRU position so a frequently-re-touched hash stays warm
+        // longer than infrequent ones.
+        _ccr.delete(hash);
+        _ccr.set(hash, { ...existing, timestamp: Date.now() / 1000 });
+    } else {
+        _ccr.set(hash, {
+            role: msg?.role ?? 'unknown',
+            contentRef: preview,
+            originalTokens,
+            compressedTokens: originalTokens,   // stub proxy: identical
+            timestamp: Date.now() / 1000,
+        });
+    }
+
+    if (_ccr.size > CCR_CAP) {
+        const oldestKey = _ccr.keys().next().value;
+        if (oldestKey !== undefined) { _ccr.delete(oldestKey); }
+    }
+    return hash;
 }
 
 // ─── HTTP handler ────────────────────────────────────────────────────────────
@@ -247,7 +391,29 @@ async function _handleRequest(req: http.IncomingMessage, res: http.ServerRespons
             return;
         }
         if (method === 'GET' && url.startsWith('/v1/retrieve/stats')) {
-            _sendJson(res, 200, { ..._stats, enabled: true });
+            let totalOriginal = 0;
+            let totalCompressed = 0;
+            for (const entry of _ccr.values()) {
+                totalOriginal += entry.originalTokens;
+                totalCompressed += entry.compressedTokens;
+            }
+            const totalSaved = Math.max(0, totalOriginal - totalCompressed);
+            // TODO Phase 4: instrument hit-rate tracking via a counter
+            // that increments on /v1/retrieve's `cached:true` path.
+            // Until then the stub proxy reports `savingsPercent: 0` and
+            // `hitRate: 0` by design — `compressedTokens ===
+            // originalTokens` so savingsPercent is structurally zero, and
+            // no hits-vs-misses counter exists yet.
+            _sendJson(res, 200, {
+                enabled: true,
+                entries: _ccr.size,
+                capacity: CCR_CAP,
+                totalOriginalTokens: totalOriginal,
+                totalCompressedTokens: totalCompressed,
+                totalTokensSaved: totalSaved,
+                savingsPercent: 0,
+                hitRate: 0,
+            });
             return;
         }
         if (method === 'POST' && url === '/v1/compress') {
@@ -308,11 +474,27 @@ async function _handleRequest(req: http.IncomingMessage, res: http.ServerRespons
                 });
                 return;
             }
+            const hash = payload.hash ?? '';
+            const entry = hash ? _ccr.get(hash) : undefined;
+            if (!entry) {
+                _sendJson(res, 200, {
+                    hash: hash || null,
+                    content: null,
+                    similarity: 0,
+                    cached: false,
+                });
+                return;
+            }
+            // Refresh LRU position on read so a frequently-retrieved
+            // hash stays warm longer than infrequent ones.
+            _ccr.delete(hash);
+            _ccr.set(hash, { ...entry, timestamp: Date.now() / 1000 });
             _sendJson(res, 200, {
-                hash: payload.hash ?? null,
-                content: null,
-                similarity: 0,
-                cached: false,
+                hash,
+                content: entry.contentRef,
+                similarity: 1.0,
+                cached: true,
+                tokenCount: entry.originalTokens,
             });
             return;
         }
@@ -363,6 +545,13 @@ interface NaiveCompressResult {
 }
 
 function _naiveCompress(messages: any[]): NaiveCompressResult {
+    // Phase 3.3 — upsert each message into the module-level CCR store
+    // BEFORE any compression transforms run, so the recorded hash
+    // reflects the canonical raw-input signature. The 1:1
+    // (input-message -> hash) mapping keeps responses easy to reason
+    // about across calls.
+    const ccrHashes = messages.map(m => _upsertCcrEntry(m));
+
     const tokensBefore = messages.reduce((sum, m) => sum + _estimateMessageTokens(m), 0);
 
     // 1) Dedupe identical adjacent messages (cheap structural shortcut)
@@ -448,7 +637,7 @@ function _naiveCompress(messages: any[]): NaiveCompressResult {
         tokensSaved,
         compressionRatio: tokensBefore > 0 ? tokensAfter / tokensBefore : 1,
         transformsApplied,
-        ccrHashes: [],
+        ccrHashes,
     };
 }
 

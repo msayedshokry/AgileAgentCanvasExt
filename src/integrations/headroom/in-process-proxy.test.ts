@@ -25,6 +25,7 @@ import {
     resetManagedProxyStats,
     _getInternalServerForTest,
     getRecentCalls,
+    _clearCcrForTest,
     _clearRecentCallsForTest,
     _pushRecentCallForTest,
     type RecentCompressCall,
@@ -144,6 +145,10 @@ describe('in-process proxy — endpoint surface', () => {
   beforeEach(async () => {
     firstDisposable = startInProcessProxy();
     await waitFor(() => getLocalProxyState() === 'running');
+    // Clear the CCR store so each test in this describe block starts
+    // from a deterministic empty state. The recent-call ring is already
+    // cleared by the file-level beforeEach.
+    _clearCcrForTest();
   });
 
   it('GET /health → 200 { status: healthy, version }', async () => {
@@ -462,7 +467,165 @@ describe('in-process proxy — managed stats accessor', () => {
   });
 });
 
-// ─── Recent-compress-calls ring buffer (status-bar drilldown source) ───────
+// ─── CCR cross-call dedup (Phase 3.3 — module-level Map + LRU) ────────────────
+
+describe('in-process proxy — CCR cross-call dedup', () => {
+  beforeEach(() => {
+    _clearCcrForTest();
+  });
+
+  it('POST /v1/compress populates ccr_hashes with one 16-hex-char hash per input message', async () => {
+    // Wire-format invariant: regardless of transforms applied, the
+    // `ccr_hashes` array length must equal the input `messages` length,
+    // and every element must be a 64-bit (16 hex chars) SHA-256 prefix.
+    firstDisposable = startInProcessProxy();
+    await waitFor(() => getLocalProxyState() === 'running');
+    const r = await httpRequest('POST', '/v1/compress', JSON.stringify({
+      messages: [
+        { role: 'user', content: 'alpha' },
+        { role: 'user', content: 'beta' },
+        { role: 'assistant', content: 'ack' },
+      ],
+    }));
+    expect(r.status).toBe(200);
+    const payload = JSON.parse(r.body);
+    expect(Array.isArray(payload.ccr_hashes)).toBe(true);
+    expect(payload.ccr_hashes).toHaveLength(3);
+    for (const hash of payload.ccr_hashes) {
+      expect(typeof hash).toBe('string');
+      expect(hash).toMatch(/^[0-9a-f]{16}$/);
+    }
+  });
+
+  it('cross-call ccr_hashes match for identical messages across disjoint compress calls', async () => {
+    // Two /v1/compress calls with the same input message produce the
+    // same hash — that's the dedup contract. The 16-hex hash is
+    // deterministic across the 100ms gap between calls.
+    firstDisposable = startInProcessProxy();
+    await waitFor(() => getLocalProxyState() === 'running');
+    const sharedMessage = { role: 'user', content: 'canonical fixture across calls' };
+
+    const r1 = await httpRequest('POST', '/v1/compress', JSON.stringify({ messages: [sharedMessage] }));
+    const p1 = JSON.parse(r1.body);
+    expect(p1.ccr_hashes).toHaveLength(1);
+    const first = p1.ccr_hashes[0];
+
+    const r2 = await httpRequest('POST', '/v1/compress', JSON.stringify({ messages: [sharedMessage] }));
+    const p2 = JSON.parse(r2.body);
+    expect(p2.ccr_hashes).toHaveLength(1);
+    // Same canonical payload → same hash. Dedup hit, returned the
+    // pre-existing entry (LRU refresh on touch).
+    expect(p2.ccr_hashes[0]).toBe(first);
+  });
+
+  it("role:'user' and role:'system' with identical text hash to different values", async () => {
+    // The role prefix on the hash input gates collisions across roles.
+    // Fixing the role-blending bug here would silently break the
+    // cross-canvas CCR contract — guard against future regressions.
+    firstDisposable = startInProcessProxy();
+    await waitFor(() => getLocalProxyState() === 'running');
+    const text = 'hello world';
+    const r1 = await httpRequest('POST', '/v1/compress', JSON.stringify({
+      messages: [{ role: 'user', content: text }],
+    }));
+    const r2 = await httpRequest('POST', '/v1/compress', JSON.stringify({
+      messages: [{ role: 'system', content: text }],
+    }));
+    const p1 = JSON.parse(r1.body);
+    const p2 = JSON.parse(r2.body);
+    expect(p1.ccr_hashes[0]).not.toBe(p2.ccr_hashes[0]);
+  });
+
+  it('CCR cap=1000 invariant — pushing 1001 unique messages drops the oldest entry', async () => {
+    // Bind port 8787 + fire 1001 real compress calls. Each call carries
+    // one unique message whose content includes a Math.random() suffix
+    // so no two calls can collide on hash. After the burst, GET
+    // /v1/retrieve/stats should report `entries <= 1000`.
+    firstDisposable = startInProcessProxy();
+    await waitFor(() => getLocalProxyState() === 'running');
+    for (let i = 0; i < 1001; i++) {
+      await httpRequest('POST', '/v1/compress', JSON.stringify({
+        messages: [{
+          role: 'user',
+          content: `unique fixture #${i} rand=${Math.random()}`,
+        }],
+      }));
+    }
+    const stats = await httpRequest('GET', '/v1/retrieve/stats');
+    const payload = JSON.parse(stats.body);
+    expect(payload.entries).toBeLessThanOrEqual(1000);
+    // We expect the absolute cap (1000) — leave a tiny slack for
+    // recentCall stats unrelated to CCR.
+    expect(payload.entries).toBe(1000);
+  });
+
+  it('POST /v1/retrieve stores first 200 chars of content + returns cached:true + tokenCount for the stored hash', async () => {
+    // Populate CCR via /v1/compress, then retrieve via /v1/retrieve.
+    // The preview must be the first 200 chars of the original content
+    // (NOT the summarised/truncated form — CCR records raw input).
+    firstDisposable = startInProcessProxy();
+    await waitFor(() => getLocalProxyState() === 'running');
+    const originalContent = 'X'.repeat(300);
+
+    const r1 = await httpRequest('POST', '/v1/compress', JSON.stringify({
+      messages: [{ role: 'user', content: originalContent }],
+    }));
+    const p1 = JSON.parse(r1.body);
+    const storedHash = p1.ccr_hashes[0];
+    expect(storedHash).toMatch(/^[0-9a-f]{16}$/);
+
+    const r2 = await httpRequest('POST', '/v1/retrieve', JSON.stringify({ hash: storedHash }));
+    const p2 = JSON.parse(r2.body);
+    expect(p2.hash).toBe(storedHash);
+    expect(p2.cached).toBe(true);
+    expect(p2.similarity).toBe(1.0);
+    expect(typeof p2.tokenCount).toBe('number');
+    expect(p2.tokenCount).toBeGreaterThan(0);
+    // Preview is the FIRST 200 chars of the input content with a
+    // truncation marker since the input was 300 chars.
+    expect(p2.content.startsWith('X'.repeat(200))).toBe(true);
+    expect(p2.content).toMatch(/…\[preview\]/);
+    expect(p2.content.length).toBeLessThanOrEqual(212);  // 200 + suffix bytes
+  });
+
+  it('POST /v1/retrieve returns null content + cached:false on cache miss', async () => {
+    // Negate of the hit path — unknown hash returns the SDK-fallback
+    // shape so consumers can disambiguate.
+    firstDisposable = startInProcessProxy();
+    await waitFor(() => getLocalProxyState() === 'running');
+    const r = await httpRequest('POST', '/v1/retrieve', JSON.stringify({ hash: 'nonexistent-hash-0123' }));
+    expect(r.status).toBe(200);
+    const p = JSON.parse(r.body);
+    expect(p.cached).toBe(false);
+    expect(p.similarity).toBe(0);
+    expect(p.content).toBeNull();
+  });
+
+  it('GET /v1/retrieve/stats reports entries count + totalOriginalTokens + zero savings (stub proxy)', async () => {
+    // Wire-format invariant: /v1/retrieve/stats now exposes the
+    // aggregated CCR shape (entries + token totals). Stub proxy has
+    // compressedTokens === originalTokens so savingsPercent stays 0
+    // by design; Phase 4 introduces hit-rate tracking.
+    firstDisposable = startInProcessProxy();
+    await waitFor(() => getLocalProxyState() === 'running');
+    await httpRequest('POST', '/v1/compress', JSON.stringify({
+      messages: [
+        { role: 'user', content: 'first' },
+        { role: 'user', content: 'second' },
+      ],
+    }));
+    const r = await httpRequest('GET', '/v1/retrieve/stats');
+    expect(r.status).toBe(200);
+    const payload = JSON.parse(r.body);
+    expect(payload.enabled).toBe(true);
+    expect(payload.entries).toBe(2);
+    expect(payload.totalOriginalTokens).toBeGreaterThan(0);
+    // Stub proxy identity → savings metrics are 0 by design.
+    expect(payload.totalCompressedTokens).toBe(payload.totalOriginalTokens);
+    expect(payload.totalTokensSaved).toBe(0);
+    expect(payload.savingsPercent).toBe(0);    expect(payload.hitRate).toBe(0);
+  });
+});
 
 describe('in-process proxy — recent-calls ring buffer', () => {
   beforeEach(() => {
