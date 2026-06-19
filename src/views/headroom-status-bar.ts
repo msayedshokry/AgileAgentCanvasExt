@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { getCompressionStats, getAvailability, getCCRStats } from '../integrations/headroom';
+import { getLocalProxyState, setLocalProxyState, onLocalProxyStateChange, type LocalProxyState } from '../integrations/headroom/proxy-state';
 import { handoffNegotiation } from '../acp/agent-bus/handoff-negotiation';
 import { createLogger } from '../utils/logger';
 
@@ -33,6 +34,15 @@ export function createHeadroomStatusBar(context: vscode.ExtensionContext): vscod
     _item.name = 'Headroom Compression';
     context.subscriptions.push(_item);
 
+    // Phase 2 — react to in-process proxy lifecycle changes without polling.
+    // The proxy-state callback fires immediately with the current state,
+    // so the bar renders once on attach without a second refresh tick.
+    context.subscriptions.push({
+        dispose: onLocalProxyStateChange(() => {
+            _scheduleRefresh(0);
+        }),
+    });
+
     _refresh();
     _scheduleRefresh(60_000);
 
@@ -48,9 +58,16 @@ export function refreshHeadroomStatusBar(): void {
 
 /**
  * Notify the bar that the in-process proxy is starting up.
- * Phase 2 hook (currently a no-op since no proxy manager yet).
+ *
+ * Phase 2: this explicitly flips the shared proxy state to `starting`
+ * so the bar shows `Headroom: starting…` immediately, even if the
+ * underlying `http` `listen()` callback hasn't fired yet. The proxy
+ * module will subsequently move the state to `running`, `fallback`,
+ * or `failed`, at which point the state's subscriber (registered in
+ * `createHeadroomStatusBar`) refreshes the bar again.
  */
 export function notifyHeadroomProxyStarting(): void {
+    setLocalProxyState('starting');
     _scheduleRefresh(0);
 }
 
@@ -99,14 +116,44 @@ async function _refresh(): Promise<void> {
         return;
     }
 
-    // State 3: Proxy not reachable on localhost:8787
-    // (Either an external proxy is missing OR the extension's in-process proxy isn't running yet.)
+    // State 3: In-process proxy booting. Always show — beats showing
+    // (and stuttering between) the offline state during cold start.
+    const proxyState: LocalProxyState = getLocalProxyState();
+    if (proxyState === 'starting') {
+        _item.text = '$(rocket) Headroom: starting\u2026';
+        _item.tooltip =
+            'Extension is starting the in-process Headroom proxy on http://127.0.0.1:8787.\n' +
+            'No manual setup required \u2014 this usually finishes in under a second.';
+        _item.command = {
+            command: 'workbench.action.openSettings',
+            arguments: ['agileagentcanvas.headroom'],
+            title: 'Open Headroom Settings',
+        };
+        _item.show();
+        _scheduleRefresh(2_000);   // poll faster while booting
+        return;
+    }
+
+    // State 4: Proxy not reachable on localhost:8787
+    // Differentiates the copy by who was supposed to bring the proxy up.
     if (!avail.proxyRunning) {
         _item.text = '$(rocket) Headroom: proxy offline';
-        _item.tooltip =
-            'Headroom SDK present, but the proxy is not running on http://localhost:8787.\n\n' +
-            'Extension-owned proxy will be started automatically in a future release (Phase 2).\n' +
-            'For now, run `npx headroom-ai proxy` in a terminal to start one manually.';
+        let tooltip =
+            'Headroom SDK present, but no proxy is reachable on http://localhost:8787.\n\n';
+        if (proxyState === 'fallback') {
+            tooltip +=
+                'Another process is already listening on port 8787 \u2014 the extension ' +
+                'is using that external proxy. If it stops responding, restart VS Code.';
+        } else if (proxyState === 'failed') {
+            tooltip +=
+                'The extension-owned proxy failed to start. ' +
+                'See the Agile Agent Canvas output channel for details.';
+        } else {
+            tooltip +=
+                'The extension will auto-spawn the proxy on activation. ' +
+                'If you see this persistently, open the output channel.';
+        }
+        _item.tooltip = tooltip;
         _item.command = {
             command: 'workbench.action.openSettings',
             arguments: ['agileagentcanvas.headroom'],

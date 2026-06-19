@@ -38,6 +38,15 @@ vi.mock('../integrations/headroom', () => ({
   getCCRStats: vi.fn().mockResolvedValue(null),
 }));
 
+// ─── Proxy-state mock (Phase 2) ─────────────────────────────────────────────
+// Tests drive `setLocalProxyState` directly to validate status-bar reactions
+// to each lifecycle transition. The proxy-state module is NOT mocked —
+// importing the real module keeps the test contract honest.
+
+// ─── Proxy-state mock (Phase 2) ─────────────────────────────────────────────
+// Tests import the state hooks directly so they can drive transitions and
+// verify that the bar reacts to setLocalProxyState.
+
 // ─── Mock handoff-negotiation ─────────────────────────────────────────────
 
 vi.mock('../acp/agent-bus/handoff-negotiation', () => ({
@@ -93,6 +102,7 @@ import {
 } from './headroom-status-bar';
 import { getCompressionStats, getAvailability, getCCRStats } from '../integrations/headroom';
 import { handoffNegotiation } from '../acp/agent-bus/handoff-negotiation';
+import { setLocalProxyState, getLocalProxyState, resetLocalProxyStateForTest, type LocalProxyState } from '../integrations/headroom/proxy-state';
 
 // fake context — only needs subscriptions.push
 const fakeContext: any = {
@@ -148,6 +158,10 @@ beforeEach(() => {
   setEnabled(true);
   setAvailability({ installed: false, proxyRunning: false });
   setStats({ totalCalls: 0 });
+  // Drop any listeners registered by a prior test's createHeadroomStatusBar
+  // call. Without this, the proxy-state module-level Set piles up and
+  // triggers refreshes for un-related state transitions in later tests.
+  resetLocalProxyStateForTest();
 });
 
 afterEach(() => {
@@ -232,11 +246,14 @@ describe('headroom status bar — proxy offline', () => {
     expect(mockItem.text).toContain('$(rocket)');
   });
 
-  it('shows a tooltip referencing the proxy start command and port', () => {
+  it('shows a tooltip referencing the port and the extension auto-spawn message (idle state)', () => {
+    // Phase 2 contract: when the proxy hasn't started yet (state='idle'),
+    // the bar tells the user the extension auto-spawns it — no manual
+    // `npx headroom-ai proxy` step needed.
     setAvailability({ installed: true, proxyRunning: false });
     create();
     expect(mockItem.tooltip).toContain('localhost:8787');
-    expect(mockItem.tooltip).toContain('headroom-ai proxy');
+    expect(mockItem.tooltip).toContain('auto-spawn');
   });
 
   it('does NOT show compression stats when offline', () => {
@@ -250,6 +267,122 @@ describe('headroom status bar — proxy offline', () => {
     setAvailability({ installed: true, proxyRunning: false });
     create();
     expect(mockItem.show).toHaveBeenCalled();
+  });
+});
+
+// ─── State 3a (Phase 2): in-process proxy starting up ──────────────────────
+
+describe('headroom status bar — proxy starting (Phase 2)', () => {
+  beforeEach(() => {
+    setAvailability({ installed: true, proxyRunning: false, version: '0.5.5-managed' });
+    setLocalProxyState('starting');
+  });
+
+  it('shows the bar (never hides) while the proxy is booting', () => {
+    create();
+    expect(mockItem.show).toHaveBeenCalled();
+    expect(mockItem.hide).not.toHaveBeenCalled();
+  });
+
+  it('shows "Headroom: starting…" with the rocket icon', () => {
+    create();
+    expect(mockItem.text).toBe('$(rocket) Headroom: starting\u2026');
+  });
+
+  it('tooltip tells the user the extension is starting the proxy', () => {
+    create();
+    expect(mockItem.tooltip).toContain('in-process');
+    expect(mockItem.tooltip).toContain('127.0.0.1:8787');
+    expect(mockItem.tooltip).toContain('No manual setup');
+  });
+
+  it('command opens Headroom settings', () => {
+    create();
+    expect(mockItem.command).toEqual({
+      command: 'workbench.action.openSettings',
+      arguments: ['agileagentcanvas.headroom'],
+      title: 'Open Headroom Settings',
+    });
+  });
+
+  it('takes precedence over the offline branch (proxyRunning=false but state != idle)', () => {
+    create();
+    expect(mockItem.text).not.toContain('proxy offline');
+  });
+});
+
+// ─── State 3b (Phase 2): proxy offline – fallback (port 8787 already in use) ─
+
+describe('headroom status bar — proxy offline (fallback: external proxy present)', () => {
+  beforeEach(() => {
+    setAvailability({ installed: true, proxyRunning: false });
+    setLocalProxyState('fallback');
+  });
+
+  it('still shows the offline hint', () => {
+    create();
+    expect(mockItem.text).toBe('$(rocket) Headroom: proxy offline');
+  });
+
+  it('tooltip explains an external process is using port 8787', () => {
+    create();
+    expect(mockItem.tooltip).toContain('Another process is already listening on port 8787');
+    expect(mockItem.tooltip).toContain('localhost:8787');
+    // Does NOT mention manual proxy start — extension would have hosted its own.
+    expect(mockItem.tooltip).not.toContain('`npx headroom-ai proxy`');
+  });
+});
+
+// ─── State 3c (Phase 2): proxy offline – failed (other listen error) ─────────
+
+describe('headroom status bar — proxy offline (failed)', () => {
+  beforeEach(() => {
+    setAvailability({ installed: true, proxyRunning: false });
+    setLocalProxyState('failed');
+  });
+
+  it('still shows the offline hint', () => {
+    create();
+    expect(mockItem.text).toBe('$(rocket) Headroom: proxy offline');
+  });
+
+  it('tooltip tells the user to check the output channel', () => {
+    create();
+    expect(mockItem.tooltip).toContain('extension-owned proxy failed');
+    expect(mockItem.tooltip).toContain('output channel');
+  });
+});
+
+// ─── Subscriber-driven refresh (Phase 2) ───────────────────────────────────
+
+describe('headroom status bar — proxy-state subscription', () => {
+  it('re-renders when LocalProxyState transitions without calling refreshHeadroomStatusBar', async () => {
+    // First paint: 'starting' with proxyRunning=false → '$(rocket) Headroom: starting…'
+    setAvailability({ installed: true, proxyRunning: false });
+    setLocalProxyState('starting');
+    create();
+    expect(mockItem.text).toBe('$(rocket) Headroom: starting\u2026');
+
+    // Now model the real transition: state flips to 'running' AND the
+    // downstream health check confirms proxyRunning=true. The bar should
+    // drop the 'starting…' affordance and surface the active state.
+    setLocalProxyState('running');
+    setAvailability({ installed: true, proxyRunning: true, version: '0.5.5-managed' });
+    setStats({ totalCalls: 0 });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mockItem.text).not.toContain('starting');
+    expect(mockItem.text).toBe('$(rocket) Headroom');   // active, zero calls
+  });
+
+  it('does not fire duplicate refreshes when state is set to the same value', () => {
+    setAvailability({ installed: true, proxyRunning: true });
+    setLocalProxyState('running');
+    create();
+    const initialShowCount = vi.mocked(mockItem.show).mock.calls.length;
+
+    setLocalProxyState('running');
+    setLocalProxyState('running');
+    expect(vi.mocked(mockItem.show).mock.calls.length).toBe(initialShowCount);
   });
 });
 

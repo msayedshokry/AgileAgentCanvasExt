@@ -61,7 +61,7 @@ import {
     loadReport
 } from './integrations/graphify';
 import { detectCodeburn } from './integrations/codeburn';
-import { detectHeadroom, disposeHeadroomClient } from './integrations/headroom';
+import { detectHeadroom, disposeHeadroomClient, startInProcessProxy } from './integrations/headroom';
 import { JiraSecrets } from './integrations/jira-secrets';
 import { createLogger, setLoggerOutputSink } from './utils/logger';
 import { autonomyLifecycle } from './workflow/autonomy-lifecycle';
@@ -683,6 +683,12 @@ export function activate(context: vscode.ExtensionContext) {
     createGraphifyStatusBar(context);
 
     // ── headroom: status bar (compression savings) ──────────────────────────
+    // Start the in-process proxy BEFORE creating the status bar so the
+    // first render reflects the real lifecycle state (starting / running)
+    // instead of a misleading 'idle → offline' flicker.
+    const inProcessProxyDisposable = startInProcessProxy();
+    context.subscriptions.push(inProcessProxyDisposable);
+
     createHeadroomStatusBar(context);
 
     // ── headroom: proactive detection (runs async so status bar reflects availability) ─
