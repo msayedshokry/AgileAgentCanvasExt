@@ -504,6 +504,7 @@ export class AutonomyLifecycle extends EventEmitter {
           const messages = [
             vscode.LanguageModelChatMessage.User(
               `Break this high-level goal into 2-5 concrete, actionable user stories. ` +
+              `If the goal fits in a single story, return one. ` +
               `Return ONLY a JSON array of objects with keys: id, title, description, priority. ` +
               `No explanation, no markdown, no code fences.\n\nGoal: ${goal}`
             ),

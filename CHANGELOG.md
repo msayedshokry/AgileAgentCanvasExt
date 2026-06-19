@@ -90,13 +90,14 @@ A new slash command audits an existing artifact or codebase for reinvented stdli
 - Routes through the same adversarial review workflow as `/review-code`.
 
 
-### Feature: Ponytail minimalist heuristics on the headless terminal execution path
+### Feature: Ponytail extends to terminal, antigravity, and goal-decomposer
 
-The minimalist hierarchy now also reaches headless CLI agents running BMAD workflows. Their prompts open with the same necessity-first, stdlib-first, one-liner, then-implement discipline shared by the chat, workflow, and ACP paths.
+The hierarchy now extends to three more prompt paths.
 
-- Terminal-run prompts now open with the full hierarchy plus a contextual "apply before adding code" callout alongside the verdict contract.
-- Skill-content and partial-artifact fallbacks also receive the heuristic, so it always reaches the agent.
-- Regression guard — 13 assertions lock the verbatim constant, the hierarchy, all NOT-lazy-about boundaries, the verification rule, and both fallback paths.
+- **Terminal agents** — full hierarchy + "apply before adding code" callout alongside the verdict contract; skill + artifact fallbacks also receive it.
+- **Antigravity orchestrator** — A mode-not-interactive guard inside buildGuideContent injects autonomous + default; interactive untouched.
+- **Goal decomposer** — 12-token carve-out ("If the goal fits in a single story, return one") preserves the narrow JSON-shape prompt.
+- **Regression guards** — 36 vitest assertions lock both.
 ## 0.5.5
 
 ### Feature: Autonomous Auto-Advance for Agentic Kanban

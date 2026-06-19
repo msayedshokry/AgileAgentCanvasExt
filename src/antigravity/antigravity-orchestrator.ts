@@ -5,6 +5,7 @@ import * as path from 'path';
 
 import { schemaValidator } from '../state/schema-validator';
 import { getPersonaForArtifactType, formatFullAgentForPrompt } from '../chat/agent-personas';
+import { PONYTAIL_HEURISTICS } from '../chat/ponytail-heuristics';
 
 /**
  * AntiGravity Orchestrator
@@ -196,6 +197,33 @@ Follow the workflow files exactly, including checkpoint and pause instructions:
  * (persona-first, STOP/WAIT emphasis, task de-emphasized), while autonomous
  * workflows get task-forward framing with minimal checkpoints.
  */
+/**
+ * Minimalist Engineering Principles (Ponytail) block — injected into the
+ * guide for autonomous + default modes ONLY. Interactive mode is deliberately
+ * untouched because the explicit task is to halt at every checkpoint and not
+ * produce complete artifacts; injecting "is this necessary?" framing there
+ * would push the agent toward completing rather than iterating.
+ */
+const PONYTAIL_SECTION = `## Minimalist Engineering Principles (apply before adding code)
+
+Before writing or modifying code in this workflow session, work through this mandatory hierarchy in order. Skip a step once an earlier step rules it out. Every step must leave a brief justification in your reasoning:
+
+1. Necessity — Does it need to exist at all? YAGNI is the default.
+2. Standard Library — Can the language or platform standard library do it already?
+3. Native Platform — Can the host platform do it natively?
+4. Existing Dependencies — Can a dependency already in package.json or requirements.txt do it?
+5. Simplicity (one-liner) — Can this be a single line of obvious code?
+6. Implementation — Only now write it. Prefer the most boring correct form.
+
+Not lazy about: input validation at trust boundaries; error handling that surfaces real failures; security and accessibility fundamentals; calibration required by real hardware; anything explicitly requested by the user.
+
+Verification: any non-trivial logic must leave behind a runnable check (a small test file or an assert-based demo — no heavy framework needed). Trivial one-liners need no test. Mark intentional simplifications with the // ponytail: comment convention so reviewers can spot ponytail-driven decisions at review time.
+
+For reference, here is the authoritative Ponytail hierarchy block (verbatim):
+
+${PONYTAIL_HEURISTICS}
+`;
+
 export function buildGuideContent(params: AntigravityWorkflowParams): string {
     const {
         bmadPath,
@@ -211,6 +239,12 @@ export function buildGuideContent(params: AntigravityWorkflowParams): string {
     } = params;
 
     const mode = resolveExecutionMode(executionHints);
+
+    // Inject the minimalist engineering hierarchy for autonomous + default modes.
+    // Interactive mode is deliberately skipped per the audit (halt + iterate is
+    // the explicit task there; injecting "is this necessary?" framing would push
+    // the agent toward completing rather than iterating).
+    const ponytailSection = mode !== 'interactive' ? PONYTAIL_SECTION : '';
 
     // ── Project-context interaction rules ─────────────────────────────────
     // If the user's project-context.json has additionalNotes (typically BMAD
@@ -390,6 +424,8 @@ ${outputRulesExtra}
 - When suggesting follow-on workflows, cite the exact file path
 - All JSON output must conform to the schemas found in \`${bmadPath}/schemas/\`
 
+${ponytailSection}
+
 ## REMINDER
 
 You are in **interactive facilitator mode**. Work collaboratively. **HALT** at every checkpoint.
@@ -456,6 +492,8 @@ ${outputRulesExtra}
 - Only reference actual artifacts that exist under the BMAD installation path: \`${bmadPath}\`
 - When suggesting follow-on workflows, cite the exact file path
 - All JSON output must conform to the schemas found in \`${bmadPath}/schemas/\`
+
+${ponytailSection}
 `;
     }
 
@@ -523,6 +561,8 @@ ${outputRulesExtra}
 - Only reference actual artifacts that exist under the BMAD installation path: \`${bmadPath}\`
 - When suggesting follow-on workflows, cite the exact file path
 - All JSON output must conform to the schemas found in \`${bmadPath}/schemas/\`
+
+${ponytailSection}
 `;
 }
 
