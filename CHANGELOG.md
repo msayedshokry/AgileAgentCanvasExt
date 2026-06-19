@@ -70,6 +70,25 @@ A previous change dropped the dev-story confirm modal — drag-to-in-progress la
 - **Regression guard added** — A new scenario locks the contract: every rule with workflow `dev-story` must skip the user-confirm prompt AND explicitly set the confirm attribute to `false`. Catches attempts to re-enable the modal (flipping the flag, dropping it to `undefined`, or introducing a duplicate rule under the same workflow id).
 - **No user-visible behavior change** — Test-infrastructure hardening only. All 810 lane-transitions scenarios pass; typecheck clean.
 
+### Feature: Ponytail minimalist heuristics in every AI prompt
+
+A minimalist engineering hierarchy — necessity first, then standard library, then native platform, then existing dependencies, then one-liner simplicity, and only then implementation — is now baked into every system prompt sent to the AI.
+
+- Chat conversation: every reply defaults to asking whether the work is necessary before writing code. The default persona and the workflow-continue preamble both carry the heuristic block.
+- Workflow execution: every slash command (44+ BMAD workflows) inherits the same discipline via direct injection into both the Copilot and direct-API code paths.
+- Multi-agent handoffs: coordinator → crafter → gate agent chains across all 44 registered teams now carry the same YAGNI-anchored prompt contract.
+- Explicit NOT-lazy-about exceptions (input validation, error handling, security, accessibility, calibration, and explicit user requests) remain non-negotiable.
+- A comment convention marks intentional simplifications with a known ceiling and the upgrade path so future readers know when a shortcut is intentional.
+- New unit tests verify the constant exports correctly.
+
+### Feature: /ponytail-review audit command
+
+A new slash command audits an existing artifact or codebase for reinvented stdlib, unneeded dependencies, speculative abstractions, complexity bloat, and unnecessary boilerplate. Each finding carries a severity and a concrete simpler alternative, and the full review is persisted as a code-review artifact.
+
+- Optional artifact target: `/ponytail-review EPIC-3` audits a single artifact by ID; bare `/ponytail-review` audits the entire project (epics + stories) for over-reach.
+- Residual instructions after the artifact ID are forwarded as user instructions rather than silently dropped.
+- Routes through the same adversarial review workflow as `/review-code`.
+
 ## 0.5.5
 
 ### Feature: Autonomous Auto-Advance for Agentic Kanban

@@ -2,6 +2,7 @@ import { createLogger } from '../utils/logger';
 const logger = createLogger('acp-session-manager');
 import * as vscode from 'vscode';
 import { getPersonaForArtifactType, formatFullAgentForPrompt, AgentPersona } from '../chat/agent-personas';
+import { PONYTAIL_HEURISTICS } from '../chat/ponytail-heuristics';
 import { WorkflowExecutor } from '../workflow/workflow-executor';
 import { BmadModel } from '../chat/ai-provider';
 import { AcpSessionSpec, AcpSessionEvent, AcpSessionResult } from './types';
@@ -192,6 +193,8 @@ export class AcpSessionManager implements vscode.Disposable {
     if (persona) {
       parts.push(formatFullAgentForPrompt(persona, { toolsAvailable: true }));
     }
+
+    parts.push(PONYTAIL_HEURISTICS);
 
     parts.push(`# Task\n${spec.context.task}`);
 

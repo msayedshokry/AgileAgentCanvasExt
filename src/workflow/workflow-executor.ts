@@ -11,6 +11,7 @@ import { schemaValidator } from '../state/schema-validator';
 import { BmadModel, streamChatResponse, ChatMessage } from '../chat/ai-provider';
 import { extractJson } from '../lib/json-extract';
 import { getPersonaForArtifactType, formatFullAgentForPrompt } from '../chat/agent-personas';
+import { PONYTAIL_HEURISTICS } from '../chat/ponytail-heuristics';
 import { orchestrateAntigravityWorkflow, ExecutionHints } from '../antigravity/antigravity-orchestrator';
 import { parseFrontmatter } from './frontmatter';
 import { AgentTeamOrchestrator } from '../acp/team-orchestrator';
@@ -2859,7 +2860,7 @@ Your changes MUST conform exactly to the schema — non-conforming fields will b
             ? '' // Full agent content already includes the preamble
             : `You are a BMAD methodology AI analyst executing a task inside VS Code.\nAlways respond in English.\n`;
 
-        const systemPrompt = `${agentIntro}${personaSection}
+        const systemPrompt = `${agentIntro}${personaSection}${PONYTAIL_HEURISTICS}
 
 ## VS Code Workflow Execution Context
 You are executing a specific workflow task inside the AgileAgentCanvas VS Code extension.
@@ -3559,7 +3560,7 @@ the workflow explicitly says to produce the output. Do NOT skip checkpoints just
             ? formatFullAgentForPrompt(directPersona, { toolsAvailable: false })
             : '';
 
-        const systemPrompt = `${directPersonaSection || 'You are a BMAD methodology AI analyst. Execute the following task following BMAD quality standards.'}
+        const systemPrompt = `${directPersonaSection || 'You are a BMAD methodology AI analyst. Execute the following task following BMAD quality standards.'}${PONYTAIL_HEURISTICS}
 Always respond in English.
 
 ## VS Code Workflow Execution Context

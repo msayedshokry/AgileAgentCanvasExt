@@ -8,6 +8,7 @@ import { TOOL_FEW_SHOT } from './tool-examples';
 import { BmadModel, selectModel, streamChatResponse, getNoModelMessage as providerNoModelMessage, ChatMessage } from './ai-provider';
 import { extractJson } from '../lib/json-extract';
 import { getPersonaForArtifactType, formatFullAgentForPrompt, loadAgentPersona, clearPersonaCache, AgentPersona, loadAllAgentPersonas, formatAgentRoster } from './agent-personas';
+import { PONYTAIL_HEURISTICS } from './ponytail-heuristics';
 import { JiraClient } from '../integrations/jira-client';
 import type {
     BmadMetadata,
@@ -141,12 +142,13 @@ export class AgileAgentCanvasChatParticipant {
             'cost': () => this.handleCodeburnCommand(`report ${prompt}`, stream),
             'tokens': () => this.handleCodeburnCommand(`models ${prompt}`, stream),
 
+            'ponytail-review': () => this.handlePonytailReviewCommand(prompt, context, stream, token),
             'help': () => this.handleHelpCommand(prompt, stream, token)
         };
 
         const handler = handlers[command];
         if (!handler) {
-            stream.markdown(`Unknown command: ${command}. Available commands: vision, requirements, epics, stories, enhance, refine, dev, elicit, apply, review, sprint, ux, readiness, party, document, context, write-doc, mermaid, readme, changelog, api-docs, review-code, ci, quick, design-thinking, innovate, solve, story-craft, convert-to-json, workflows, continue, status`);
+            stream.markdown(`Unknown command: ${command}. Available commands: vision, requirements, epics, stories, enhance, refine, dev, elicit, apply, review, sprint, ux, readiness, party, document, context, write-doc, mermaid, readme, changelog, api-docs, review-code, ci, quick, design-thinking, innovate, solve, story-craft, convert-to-json, workflows, continue, status, ponytail-review`);
             return { metadata: { command: 'error' } };
         }
 
@@ -1411,6 +1413,7 @@ The complete BMAD framework is at: \`${bmadPath}\`
 
 ---
 
+${PONYTAIL_HEURISTICS}
 `;
 
         try {
@@ -3466,7 +3469,7 @@ Always end the interaction by either saving confirmed changes or acknowledging t
         // — exactly as the official BMAD-METHOD intends.  This enables the
         // interactive menu-driven conversational model.
         if (persona) {
-            return `${formatFullAgentForPrompt(persona, { toolsAvailable: true })}
+            return `${formatFullAgentForPrompt(persona, { toolsAvailable: true })}${PONYTAIL_HEURISTICS}
 
 ## VS Code Extension Context
 You are running inside the AgileAgentCanvas VS Code extension.
@@ -3484,7 +3487,7 @@ Use these tools to load config.yaml, workflow files, data files, etc. as instruc
         }
 
         // Fallback when BMAD path is not yet resolved
-        return `${selected.fallback}
+        return `${selected.fallback}${PONYTAIL_HEURISTICS}
 
 ## Your Capabilities:
 - Create and refine product visions, requirements, epics, and user stories
@@ -5120,4 +5123,130 @@ Output ONLY the JSON, no explanation.`;
 
         return { metadata: { command: 'help' } };
     }
+
+    /**
+     * /ponytail-review command — Audit artifacts or code for over-engineering.
+     * Identifies: reinvented stdlib, unneeded dependencies, speculative abstractions,
+     * and code that could be simpler. Uses the ponytail minimalist engineering hierarchy.
+     */
+    private async handlePonytailReviewCommand(
+        prompt: string,
+        context: vscode.ChatContext,
+        stream: vscode.ChatResponseStream,
+        token: vscode.CancellationToken
+    ): Promise<vscode.ChatResult> {
+
+        stream.markdown('## 🪮 Ponytail Review — Over-Engineering Audit\n\n');
+        stream.markdown('Auditing for: reinvented stdlib, unneeded dependencies, speculative abstractions, complexity bloat.\n\n');
+
+        const model = await this.getModel();
+        if (!model) {
+            stream.markdown('*AI not available — the /ponytail-review command requires an AI model.*\n\n');
+            stream.markdown('Please enable GitHub Copilot or configure an API provider in settings.\n');
+            return { metadata: { command: 'ponytail-review', status: 'no-model' } };
+        }
+
+        const executor = getWorkflowExecutor();
+        const projectRoot = this.store.getProjectRoot() || undefined;
+        const extensionPath = this.extensionContext?.extensionPath;
+        const initialized = await executor.initialize(projectRoot, extensionPath);
+
+        if (!initialized) {
+            stream.markdown('**Error:** Could not locate a BMAD framework folder.\n');
+            return { metadata: { command: 'ponytail-review', status: 'no-bmad' } };
+        }
+
+        if (this.extensionContext) {
+            const outputUri = this.store.getSourceFolder();
+            sharedToolContext.bmadPath = executor.getBmadPath();
+            sharedToolContext.outputPath = outputUri?.fsPath ?? '';
+            sharedToolContext.store = this.store;
+        }
+
+        // Parse artifact ID from prompt (shared pattern with /refine and /dev)
+        let targetArtifact: any = null;
+        let targetType = '';
+        let targetId = '';
+        const idMatch = prompt.match(/((?:EPIC|STORY|UC|FR|REQ|TC|TS|NFR|TASK|RISK|ADR|SC|TD|TF|CI|AS|ATD|TM|TR|RR|CR|CP|RET|SS|DOD|PO|PC|TECH)[-\d]+|(?:vision|prd|architecture|product-brief|ux-design|tech-spec|research|test-design|test-coverage|test-summary|test-review|test-framework|nfr-assessment|traceability-matrix|ci-pipeline|automation-summary|atdd-checklist|definition-of-done|readiness-report|sprint-status|retrospective|change-proposal|code-review|project-overview|project-context|storytelling|problem-solving|innovation-strategy|design-thinking)-[\w-]+)/i);
+        if (idMatch) {
+            targetId = idMatch[1];
+            if (/^(vision|prd|architecture|product-brief|ux-design|tech-spec|research|test-design|test-coverage|test-summary|test-review|test-framework|nfr-assessment|traceability-matrix|ci-pipeline|automation-summary|atdd-checklist|definition-of-done|readiness-report|sprint-status|retrospective|change-proposal|code-review|project-overview|project-context|storytelling|problem-solving|innovation-strategy|design-thinking)-/i.test(targetId)) {
+                targetId = targetId.toLowerCase();
+            } else {
+                targetId = targetId.toUpperCase();
+            }
+            const found = this.store.findArtifactById(targetId);
+            if (found) {
+                targetArtifact = found.artifact;
+                targetType = found.type;
+            }
+        }
+
+        const bmadPath = executor.getBmadPath();
+        const workflowPath = path.join(bmadPath, 'skills', 'bmad-review-adversarial-general', 'SKILL.md');
+
+        const contextParts: string[] = [
+            '## Ponytail Review — Over-Engineering Audit',
+            '',
+            'You are a ponytail code reviewer. Find over-engineering using the ponytail minimalist hierarchy:',
+            '',
+            '1. **Necessity** — Does this need to exist at all? (YAGNI)',
+            '2. **Standard Library** — Could the standard library do this instead?',
+            '3. **Native Platform** — Is there a native platform feature that covers this?',
+            '4. **Existing Dependencies** — Already covered by an installed dependency?',
+            '5. **Simplicity** — Could this be a one-liner? Or dramatically simpler?',
+            '',
+            'For each finding, identify:',
+            '- **What** — the over-engineered code/pattern',
+            '- **Category** — reinvented-stdlib | unneeded-dependency | speculative-abstraction | complexity-bloat | unnecessary-boilerplate',
+            '- **Simpler alternative** — exactly what should replace it',
+            '- **Severity** — critical | major | minor | suggestion',
+            '',
+            'Rules: Prefer deletion. Prefer boring over clever. Mark simplifications with a "ponytail:" comment.',
+            'Never compromise: input validation, error handling, security, accessibility.',
+            '',
+            '## Output — MUST persist findings',
+            'Call agileagentcanvas_update_artifact with type "code-review" and all findings organized by category.',
+            'Categories: reinvented-stdlib, unneeded-dependency, speculative-abstraction, complexity-bloat, unnecessary-boilerplate.',
+            'Severities: critical, major, minor, suggestion.',
+        ];
+
+        if (targetArtifact) {
+            stream.markdown(`**Target:** ${targetType} \`${targetId}\` — ${targetArtifact.title || targetArtifact.productName}\n\n`);
+            contextParts.push(
+                `\n## Target Artifact`,
+                `Type: ${targetType}`,
+                `ID: ${targetId}`,
+                `Content: ${JSON.stringify(targetArtifact, null, 2).substring(0, 8000)}`
+            );
+        } else {
+            stream.markdown('**Target:** Entire project codebase\n\n');
+            const state = this.store.getState();
+            const epics = this.store.getEpics();
+            if (epics.length > 0) {
+                const storyCount = epics.reduce((sum, e) => sum + (e.stories?.length || 0), 0);
+                contextParts.push(`\nProject: ${state.projectName || 'unnamed'} — ${epics.length} epics, ${storyCount} stories.`);
+            }
+        }
+
+        const userInstructions = idMatch ? prompt.replace(idMatch[0], '').trim() : prompt;
+        if (userInstructions) {
+            contextParts.push(`\nUser instructions: "${userInstructions}"`);
+        }
+
+        const task = contextParts.join('\n');
+        const reviewArtifact = targetArtifact
+            ? { type: targetType, id: targetId, ...targetArtifact }
+            : { type: 'code-review', id: 'ponytail-review' };
+
+        try {
+            await executor.executeWithTools(model, task, reviewArtifact, stream, token, this.store, workflowPath);
+        } catch (error) {
+            stream.markdown(`\n\n**Error during ponytail review:** ${error}\n`);
+            return { metadata: { command: 'ponytail-review', status: 'error' } };
+        }
+
+        return { metadata: { command: 'ponytail-review', status: 'completed' } };
+    }
+
 }
