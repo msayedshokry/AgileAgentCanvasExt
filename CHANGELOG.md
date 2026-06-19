@@ -89,6 +89,14 @@ A new slash command audits an existing artifact or codebase for reinvented stdli
 - Residual instructions after the artifact ID are forwarded as user instructions rather than silently dropped.
 - Routes through the same adversarial review workflow as `/review-code`.
 
+
+### Feature: Ponytail minimalist heuristics on the headless terminal execution path
+
+The minimalist hierarchy now also reaches headless CLI agents running BMAD workflows. Their prompts open with the same necessity-first, stdlib-first, one-liner, then-implement discipline shared by the chat, workflow, and ACP paths.
+
+- Terminal-run prompts now open with the full hierarchy plus a contextual "apply before adding code" callout alongside the verdict contract.
+- Skill-content and partial-artifact fallbacks also receive the heuristic, so it always reaches the agent.
+- Regression guard — 13 assertions lock the verbatim constant, the hierarchy, all NOT-lazy-about boundaries, the verification rule, and both fallback paths.
 ## 0.5.5
 
 ### Feature: Autonomous Auto-Advance for Agentic Kanban

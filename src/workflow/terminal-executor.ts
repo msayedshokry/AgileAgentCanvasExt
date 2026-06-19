@@ -38,6 +38,7 @@ import {
 
 import { errMsg } from '../utils/error';
 import { inferRoleFromWorkflow } from '../harness/role-inference';
+import { PONYTAIL_HEURISTICS } from '../chat/ponytail-heuristics';
 import { budgetEnforcer } from './budget-enforcer';
 
 const execAsync = promisify(cp.exec);
@@ -155,7 +156,7 @@ async function resolveAgenticProvider(): Promise<ChatProviderId> {
  * Includes BMAD workflow context, artifact data, and instructions to
  * update the artifact store when finished.
  */
-function buildTerminalPrompt(
+export function buildTerminalPrompt(
   workflowId: string,
   artifact: any,
   outputFolder: string,
@@ -198,7 +199,29 @@ ${artifactJson}
   (one of: COMPLETED, APPROVED, NEEDS_FIXES, BLOCKED).
 - The orchestrator reads this file to decide whether to advance the card. If the
   file is missing or has no verdict, the card will NOT advance.
-- For NEEDS_FIXES, include a "fix_requests" array describing each failing criterion.`;
+- For NEEDS_FIXES, include a "fix_requests" array describing each failing criterion.
+
+---
+
+## Minimalist Engineering Principles (apply before adding code)
+
+Before writing or modifying code in this terminal session, work through this mandatory hierarchy in order. Skip a step once an earlier step rules it out. Every step must leave a brief justification in your reasoning:
+
+1. Necessity — Does it need to exist at all? YAGNI is the default.
+2. Standard Library — Can the language or platform standard library do it already?
+3. Native Platform — Can the host platform (VS Code, Node, the OS) do it natively?
+4. Existing Dependencies — Can a dependency already in package.json or requirements.txt do it?
+5. Simplicity (one-liner) — Can this be a single line of obvious code?
+6. Implementation — Only now write it. Prefer the most boring correct form.
+
+Not lazy about: input validation at trust boundaries; error handling that surfaces real failures; security and accessibility fundamentals; calibration required by real hardware; anything explicitly requested by the user.
+
+Verification: any non-trivial logic must leave behind a runnable check (a small test file or an assert-based demo — no heavy framework needed). Trivial one-liners need no test. Mark intentional simplifications with the // ponytail: comment convention so reviewers can spot ponytail-driven decisions at review time.
+
+For reference, here is the authoritative Ponytail hierarchy block (verbatim):
+
+${PONYTAIL_HEURISTICS}
+`;
 }
 
 // ─── CLI-specific command building ───────────────────────────────────────────
