@@ -23,6 +23,10 @@ import {
     getManagedProxyStats,
     resetManagedProxyStats,
     _getInternalServerForTest,
+    getRecentCalls,
+    _clearRecentCallsForTest,
+    _pushRecentCallForTest,
+    type RecentCompressCall,
 } from './in-process-proxy';
 import {
     setLocalProxyState,
@@ -295,3 +299,101 @@ describe('in-process proxy — managed stats accessor', () => {
     expect(getManagedProxyStats().totalCalls).toBe(0);
   });
 });
+
+// ─── Recent-compress-calls ring buffer (status-bar drilldown source) ───────
+
+describe('in-process proxy — recent-calls ring buffer', () => {
+  beforeEach(() => {
+    _clearRecentCallsForTest();
+  });
+
+  it('returns an empty array when no compress calls have been recorded', () => {
+    const calls = getRecentCalls();
+    expect(Array.isArray(calls)).toBe(true);
+    expect(calls).toEqual([]);
+  });
+
+  it('returns a fresh array each call — caller reads see a stable snapshot across calls', () => {
+    _pushRecentCallForTest(_makeCallEntry(0, 100, 25));
+    const baseline = getRecentCalls();
+    const snapshot = getRecentCalls();
+    // Fresh array reference each call.
+    expect(snapshot).not.toBe(baseline);
+    // But same content.
+    expect(snapshot).toEqual(baseline);
+    expect(snapshot).toHaveLength(baseline.length);
+
+    // Caller-side mutation is type-forbidden at compile-time
+    // (ReadonlyArray). The runtime proxy contract: re-reading yields
+    // internals unaltered by caller action. Seeding a new entry must
+    // grow the ring deterministically.
+    _pushRecentCallForTest(_makeCallEntry(1, 100, 25));
+    expect(getRecentCalls()).toHaveLength(baseline.length + 1);
+  });
+
+  it('cap=20 invariant — pushing past the cap evicts the oldest entries', () => {
+    // Seed 25 entries directly via the test push accessor so the cap
+    // invariant is asserted without binding port 8787 (avoids the
+    // TIME_WAIT race that flaked the 25-roundtrip variant).
+    for (let i = 0; i < 25; i++) {
+      _pushRecentCallForTest(_makeCallEntry(i, 100, 25));
+    }
+
+    const calls = getRecentCalls();
+    expect(calls.length).toBe(20);
+    // Ring is FIFO-evict + append, so oldest surviving is at index 0
+    // and newest at index 19. After 25 pushes of idx 0..24, the surviving
+    // entries are indices 5..24 (idx 0..4 evicted).
+    expect(calls[0].messageCountIn).toBe(6);    // idx=5 → idx+1=6 (oldest survivor)
+    expect(calls[19].messageCountIn).toBe(25);  // idx=24 → idx+1=25 (newest)
+    // Second snapshot has the same set (stable order, not re-ordered).
+    const callsAgain = getRecentCalls();
+    expect(callsAgain).toEqual(calls);
+  });
+
+  it('each entry carries the public-locked fields used by the quick-pick', () => {
+    const entry: RecentCompressCall = _makeCallEntry(7, 8000, 2000);
+    _pushRecentCallForTest(entry);
+
+    const calls = getRecentCalls();
+    expect(calls).toHaveLength(1);
+    const stored = calls[0];
+    // Field presence — quick-pick UI consumes these verbatim.
+    expect(stored).toHaveProperty('timestamp');
+    expect(stored).toHaveProperty('tokensBefore');
+    expect(stored).toHaveProperty('tokensAfter');
+    expect(stored).toHaveProperty('tokensSaved');
+    expect(stored).toHaveProperty('compressionRatio');
+    expect(stored).toHaveProperty('transformsApplied');
+    expect(stored).toHaveProperty('messageCountIn');
+    expect(stored).toHaveProperty('messageCountOut');
+    // Numeric invariants
+    expect(typeof stored.timestamp).toBe('number');
+    expect(stored.tokensSaved).toBe(2000);
+    expect(stored.tokensBefore).toBe(8000);
+    expect(stored.tokensAfter).toBe(6000);
+    expect(stored.tokensSaved).toBe(stored.tokensBefore - stored.tokensAfter);
+    expect(stored.compressionRatio).toBeCloseTo(6000 / 8000);
+    expect(stored.messageCountIn).toBe(8);   // _makeCallEntry idx 7 → +1
+    expect(stored.transformsApplied).toEqual(['dedupe', 'truncate']);
+  });
+});
+
+/**
+ * Helper for the ring-buffer tests — produces a RecentCompressCall
+ * with predictable values derived from `idx`. Avoids relying on a
+ * live HTTP roundtrip (port 8787 TIME_WAIT across siblings).
+ */
+function _makeCallEntry(idx: number, tokensBefore: number, tokensSaved: number): RecentCompressCall {
+    const tokensAfter = tokensBefore - tokensSaved;
+    return {
+        timestamp: 1_700_000_000_000 + idx,
+        tokensBefore,
+        tokensAfter,
+        tokensSaved,
+        compressionRatio: tokensBefore > 0 ? tokensAfter / tokensBefore : 1,
+        transformsApplied: ['dedupe', 'truncate'],
+        messageCountIn: idx + 1,
+        messageCountOut: Math.max(0, idx),
+    };
+}

@@ -99,6 +99,7 @@ vi.mock('vscode', () => ({
 import {
   createHeadroomStatusBar,
   refreshHeadroomStatusBar,
+  HEADROOM_SHOW_DETAILS_COMMAND,
 } from './headroom-status-bar';
 import { getCompressionStats, getAvailability, getCCRStats } from '../integrations/headroom';
 import { handoffNegotiation } from '../acp/agent-bus/handoff-negotiation';
@@ -396,12 +397,41 @@ describe('headroom status bar — zero calls', () => {
     expect(mockItem.text).toBe('$(rocket) Headroom');
   });
 
+  it('routes the click into the show-details quick-pick command (not settings)', () => {
+    setAvailability({ installed: true, proxyRunning: true, version: '0.22.4' });
+    setStats({ totalCalls: 0 });
+    create();
+    expect(mockItem.command).toEqual({
+      command: 'agileagentcanvas.headroom.showDetails',
+      title: 'Show Headroom Details',
+    });
+  });
+
   it('shows a tooltip indicating no calls have happened yet', async () => {
     setAvailability({ installed: true, proxyRunning: true, version: '0.22.4' });
     setStats({ totalCalls: 0 });
     create();
     await vi.advanceTimersByTimeAsync(0);
     expect(mockItem.tooltip).toContain('No compression calls yet');
+  });
+
+  it('click command remains show-details even when user has toggled the setting after first paint', async () => {
+    setAvailability({ installed: true, proxyRunning: true, version: '0.22.4' });
+    setStats({ totalCalls: 0 });
+    create();
+    await vi.advanceTimersByTimeAsync(0);
+
+    // Mutate command then re-render — the active branch must overwrite it
+    // back to show-details (NOT a leftover reference to settings from a
+    // prior state).
+    mockItem.command = { command: 'workbench.action.openSettings', arguments: [], title: 'old' };
+    refreshHeadroomStatusBar();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockItem.command).toEqual({
+      command: 'agileagentcanvas.headroom.showDetails',
+      title: 'Show Headroom Details',
+    });
   });
 
   it('shows the version in the tooltip', async () => {
@@ -445,6 +475,20 @@ describe('headroom status bar — active with stats', () => {
     });
     create();
     expect(mockItem.text).toBe('$(rocket) 40%');
+  });
+
+  it('routes the click into the show-details quick-pick command (not settings)', () => {
+    setAvailability({ installed: true, proxyRunning: true });
+    setStats({
+      totalCalls: 5,
+      totalTokensBefore: 10000,
+      totalTokensSaved: 4000,
+    });
+    create();
+    expect(mockItem.command).toEqual({
+      command: 'agileagentcanvas.headroom.showDetails',
+      title: 'Show Headroom Details',
+    });
   });
 
   it('shows zero percent when tokensBefore is zero', () => {
@@ -510,6 +554,64 @@ describe('refreshHeadroomStatusBar', () => {
 });
 
 // ─── SharedContext tooltip section ──────────────────────────────────────────
+
+// ─── Show-details command routing contract ─────────────────────────────────
+
+describe('headroom status bar — show-details click routing', () => {
+  // Every branch below should keep its existing click behaviour except
+  // the two ACTIVE branches (zero calls / with stats), which now route
+  // to the new quick-pick command. Lock the contract per branch.
+
+  it('disabled branch keeps opening settings', () => {
+    setEnabled(false);
+    setAvailability({ installed: true, proxyRunning: true });
+    create();
+    expect(mockItem.command?.command).toBe('workbench.action.openSettings');
+    expect(mockItem.command?.arguments).toEqual(['agileagentcanvas.headroom']);
+  });
+
+  it('not-installed branch clears the click command (no action)', () => {
+    setAvailability({ installed: false });
+    create();
+    expect(mockItem.command).toBeUndefined();
+  });
+
+  it('starting branch keeps opening settings', () => {
+    setAvailability({ installed: true, proxyRunning: false });
+    setLocalProxyState('starting');
+    create();
+    expect(mockItem.command?.command).toBe('workbench.action.openSettings');
+  });
+
+  it('offline branch keeps opening settings', () => {
+    setAvailability({ installed: true, proxyRunning: false });
+    setLocalProxyState('idle');
+    create();
+    expect(mockItem.command?.command).toBe('workbench.action.openSettings');
+  });
+
+  it('offline fallback branch keeps opening settings', () => {
+    setAvailability({ installed: true, proxyRunning: false });
+    setLocalProxyState('fallback');
+    create();
+    expect(mockItem.command?.command).toBe('workbench.action.openSettings');
+  });
+
+  it('offline failed branch keeps opening settings', () => {
+    setAvailability({ installed: true, proxyRunning: false });
+    setLocalProxyState('failed');
+    create();
+    expect(mockItem.command?.command).toBe('workbench.action.openSettings');
+  });
+});
+
+// ─── Show-details command registered extension-side ────────────────────────
+
+describe('HEADROOM_SHOW_DETAILS_COMMAND constant', () => {
+  it('matches the registered command id', () => {
+    expect(HEADROOM_SHOW_DETAILS_COMMAND).toBe('agileagentcanvas.headroom.showDetails');
+  });
+});
 
 describe('headroom status bar — SharedContext tooltip', () => {
   beforeEach(() => {
@@ -662,11 +764,11 @@ describe('headroom status bar — combined sections', () => {
     // CCR section
     expect(mockItem.tooltip).toContain('CCR Store');
     expect(mockItem.tooltip).toContain('totalCompressions');
-    // Click command wires up Headroom settings
+    // Active state with stats — click routes into the show-details quick-pick,
+    // not settings (settings is still reachable from the quick-pick terminal item).
     expect(mockItem.command).toEqual({
-      command: 'workbench.action.openSettings',
-      arguments: ['agileagentcanvas.headroom'],
-      title: 'Open Headroom Settings',
+      command: HEADROOM_SHOW_DETAILS_COMMAND,
+      title: 'Show Headroom Details',
     });
   });
 

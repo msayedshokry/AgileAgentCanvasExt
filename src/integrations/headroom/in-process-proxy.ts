@@ -52,6 +52,25 @@ interface ManagedProxyStats {
     totalTokensSaved: number;
 }
 
+/**
+ * Per-call record kept for the status-bar Recent Compress Calls drilldown.
+ * The ring buffer is bounded — once `_recentCalls.length >= RECENT_CALL_CAP`
+ * the oldest entry is dropped on each new push, giving O(1) amortised
+ * memory and a stable "last 20" snapshot per request.
+ */
+export interface RecentCompressCall {
+    timestamp: number;          // epoch ms
+    tokensBefore: number;
+    tokensAfter: number;
+    tokensSaved: number;
+    compressionRatio: number;
+    transformsApplied: string[];
+    messageCountIn: number;
+    messageCountOut: number;
+}
+
+const RECENT_CALL_CAP = 20;
+
 let _server: http.Server | null = null;
 let _stats: ManagedProxyStats = {
     totalCalls: 0,
@@ -59,6 +78,7 @@ let _stats: ManagedProxyStats = {
     totalTokensAfter: 0,
     totalTokensSaved: 0,
 };
+const _recentCalls: RecentCompressCall[] = [];
 
 /**
  * Start the in-process proxy.
@@ -135,9 +155,40 @@ export function getManagedProxyStats(): Readonly<ManagedProxyStats> {
     return { ..._stats };
 }
 
-/** Reset aggregated stats. */
+/**
+ * Snapshot of the most recent compress calls (newest first).
+ * Bounded at `RECENT_CALL_CAP` entries via the in-process ring buffer.
+ *
+ * Returned arrays are fresh copies — mutating caller-side never affects
+ * the proxy's internal state.
+ */
+export function getRecentCalls(): ReadonlyArray<Readonly<RecentCompressCall>> {
+    return _recentCalls.slice();
+}
+
+/** Reset aggregated stats AND recent-call ring. */
 export function resetManagedProxyStats(): void {
     _stats = { totalCalls: 0, totalTokensBefore: 0, totalTokensAfter: 0, totalTokensSaved: 0 };
+    _recentCalls.length = 0;
+}
+
+/**
+ * Test-only: clear the recent-call ring without touching cumulative
+ * stats. Useful when a test wants to isolate per-call assertions.
+ */
+export function _clearRecentCallsForTest(): void {
+    _recentCalls.length = 0;
+}
+
+/**
+ * Test-only: append an entry directly to the ring, sidestepping the
+ * real HTTP `POST /v1/compress` path. Used by vitest to assert the
+ * cap/shape invariants without binding port 8787 (the port-binding
+ * describe block routinely contends with TIME_WAIT across siblings and
+ * would flake on a 25-call loop).
+ */
+export function _pushRecentCallForTest(entry: RecentCompressCall): void {
+    _pushRecentCall(entry);
 }
 
 /**
@@ -149,6 +200,19 @@ export function resetManagedProxyStats(): void {
  */
 export function _getInternalServerForTest(): http.Server | null {
     return _server;
+}
+
+/**
+ * Append a new entry to the recent-call ring, evicting the oldest when
+ * the cap is reached.
+ *
+ * Internal — not exported. Caller-side consumers should use `getRecentCalls()`.
+ */
+function _pushRecentCall(entry: RecentCompressCall): void {
+    if (_recentCalls.length >= RECENT_CALL_CAP) {
+        _recentCalls.shift();   // drop oldest
+    }
+    _recentCalls.push(entry);
 }
 
 // ─── HTTP handler ────────────────────────────────────────────────────────────
@@ -188,11 +252,22 @@ async function _handleRequest(req: http.IncomingMessage, res: http.ServerRespons
                 });
                 return;
             }
-            const result = _naiveCompress(payload.messages ?? []);
+            const inputMessages = payload.messages ?? [];
+            const result = _naiveCompress(inputMessages);
             _stats.totalCalls++;
             _stats.totalTokensBefore += result.tokensBefore;
             _stats.totalTokensAfter += result.tokensAfter;
             _stats.totalTokensSaved += result.tokensSaved;
+            _pushRecentCall({
+                timestamp: Date.now(),
+                tokensBefore: result.tokensBefore,
+                tokensAfter: result.tokensAfter,
+                tokensSaved: result.tokensSaved,
+                compressionRatio: result.compressionRatio,
+                transformsApplied: result.transformsApplied,
+                messageCountIn: inputMessages.length,
+                messageCountOut: result.messages.length,
+            });
             // Send snake_case keys — matches the upstream headroom-ai engine's
             // wire format. The SDK's deepCamelCase() pass at the consumer
             // (HeadroomClient.compress, SharedContext.put) converts back to

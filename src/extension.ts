@@ -38,6 +38,7 @@ import { handleAgenticKanbanMessage } from './views/agentic-kanban-message-handl
 import { createGraphifyStatusBar, refreshGraphifyStatusBar } from './views/graphify-status-bar';
 import { createCodeburnStatusBar, refreshCodeburnStatusBar } from './views/codeburn-status-bar';
 import { createHeadroomStatusBar, refreshHeadroomStatusBar } from './views/headroom-status-bar';
+import { showHeadroomDetails } from './views/headroom-quick-pick';
 import { createChatProviderStatusBar, registerPickChatProviderCommand, refreshChatProviderStatusBar } from './views/chat-provider-status-bar';
 import { setSelectedProvider, getSelectedProvider, type ChatProviderId } from './commands/chat-bridge';
 import {
@@ -690,6 +691,17 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(inProcessProxyDisposable);
 
     createHeadroomStatusBar(context);
+
+    // ── headroom: show-details quick-pick (click on the active bar) ───────
+    // The status bar routes the active-with-stats and active-with-zero-calls
+    // branches into this command instead of opening settings. Settings is
+    // still reachable from the quick-pick's terminal "Open Headroom settings"
+    // row, so we don't lose that flow.
+    context.subscriptions.push(
+        vscode.commands.registerCommand('agileagentcanvas.headroom.showDetails', () => {
+            return showHeadroomDetails();
+        })
+    );
 
     // ── headroom: proactive detection (runs async so status bar reflects availability) ─
     detectHeadroom().then(() => refreshHeadroomStatusBar()).catch(() => {});

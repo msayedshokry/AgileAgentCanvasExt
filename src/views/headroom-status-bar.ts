@@ -4,6 +4,13 @@ import { getLocalProxyState, setLocalProxyState, onLocalProxyStateChange, type L
 import { handoffNegotiation } from '../acp/agent-bus/handoff-negotiation';
 import { createLogger } from '../utils/logger';
 
+/**
+ * Command ID registered in `extension.ts` that opens the quick-pick
+ * details menu (SharedContext + CCR + Recent Compress Calls).
+ * Kept as a constant here so the test file can pin both ends.
+ */
+export const HEADROOM_SHOW_DETAILS_COMMAND = 'agileagentcanvas.headroom.showDetails';
+
 const logger = createLogger('headroom-status-bar');
 
 let _item: vscode.StatusBarItem | undefined;
@@ -172,6 +179,12 @@ async function _refresh(): Promise<void> {
         _item.tooltip =
             `Headroom proxy active (v${avail.version ?? '?'})\n` +
             'No compression calls yet — savings appear after the first LLM call.';
+        // Active state — click opens the quick-pick details menu
+        // (SharedContext + CCR + Recent Compress Calls drilldown).
+        _item.command = {
+            command: HEADROOM_SHOW_DETAILS_COMMAND,
+            title: 'Show Headroom Details',
+        };
         _item.show();
         _scheduleRefresh(60_000);
         return;
@@ -181,9 +194,15 @@ async function _refresh(): Promise<void> {
         ? ((hs.totalTokensSaved / hs.totalTokensBefore) * 100).toFixed(0)
         : '0';
 
-    // Set bar text + show synchronously so it's visible immediately,
-    // even if the slower CCR / SharedContext fetches are still pending.
+    // Wire the click command SYNCHRONOUSLY before the await let other code
+    // (tests, callers) read a stable command. The tooltip gets enriched
+    // by the SharedContext/CCR fetches below, but the click target doesn't
+    // depend on those.
     _item.text = `$(rocket) ${pct}%`;
+    _item.command = {
+        command: HEADROOM_SHOW_DETAILS_COMMAND,
+        title: 'Show Headroom Details',
+    };
     _item.show();
 
     let tooltip =
@@ -219,10 +238,10 @@ async function _refresh(): Promise<void> {
     }
 
     _item.tooltip = tooltip;
-    _item.command = {
-        command: 'workbench.action.openSettings',
-        arguments: ['agileagentcanvas.headroom'],
-        title: 'Open Headroom Settings',
-    };
+    // Active state with stats — clicking already opens the quick-pick
+    // details menu (SharedContext + CCR + Recent Compress Calls drilldown);
+    // the command was wired synchronously above so it stays stable for the
+    // full paint of this refresh. Settings remains reachable from the
+    // quick-pick's terminal row inside `headroom-quick-pick.ts`.
     _scheduleRefresh(60_000);
 }

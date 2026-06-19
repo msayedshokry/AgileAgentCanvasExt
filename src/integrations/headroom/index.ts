@@ -16,8 +16,12 @@ export type {
 export {
     startInProcessProxy,
     getManagedProxyStats,
+    getRecentCalls,
     resetManagedProxyStats,
+    _clearRecentCallsForTest,
+    _pushRecentCallForTest,
 } from './in-process-proxy';
+export type { RecentCompressCall } from './in-process-proxy';
 export {
     getLocalProxyState,
     setLocalProxyState,
