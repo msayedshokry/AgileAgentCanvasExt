@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { detectCodeburn, runCodeburn, CB, clearCodeburnCache } from '../integrations/codeburn';
 import { createLogger } from '../utils/logger';
-import { getCompressionStats } from '../integrations/headroom';
 
 const logger = createLogger('codeburn-status-bar');
 
@@ -101,14 +100,6 @@ async function _refresh(): Promise<void> {
             const sessions = j?.sessions ?? j?.today?.sessions ?? 0;
             _lastCost = `$${cost}`;
             _item.text = `$(flame) ${_lastCost}`;
-            // Show Headroom compression savings alongside Codeburn cost
-            const hs = getCompressionStats();
-            if (hs.available && hs.totalCalls > 0) {
-                const pct = hs.totalTokensBefore > 0
-                    ? ((hs.totalTokensSaved / hs.totalTokensBefore) * 100).toFixed(0)
-                    : '0';
-                _item.text += ` $(rocket)${pct}%`;
-            }
             _item.tooltip = `Codeburn — Today's AI Spend\nCost: $${cost}\nTokens: ${tokens.toLocaleString()}\nSessions: ${sessions}\n\nClick for menu (Dashboard · Report · Optimize · Compare)`;
         } else if (!result.success) {
             const errHint = result.stderr ? result.stderr.slice(0, 200) : 'non-zero exit';

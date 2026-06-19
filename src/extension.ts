@@ -37,6 +37,7 @@ import { handleCommonWebviewMessage, handleCatalogueWebviewMessage } from './vie
 import { handleAgenticKanbanMessage } from './views/agentic-kanban-message-handler';
 import { createGraphifyStatusBar, refreshGraphifyStatusBar } from './views/graphify-status-bar';
 import { createCodeburnStatusBar, refreshCodeburnStatusBar } from './views/codeburn-status-bar';
+import { createHeadroomStatusBar, refreshHeadroomStatusBar } from './views/headroom-status-bar';
 import { createChatProviderStatusBar, registerPickChatProviderCommand, refreshChatProviderStatusBar } from './views/chat-provider-status-bar';
 import { setSelectedProvider, getSelectedProvider, type ChatProviderId } from './commands/chat-bridge';
 import {
@@ -670,13 +671,22 @@ export function activate(context: vscode.ExtensionContext) {
                 if (root) { clearCodeburnCache(root); }
                 refreshCodeburnStatusBar();
             }
+            if (e.affectsConfiguration('agileagentcanvas.codeburn.enabled')) {
+                refreshCodeburnStatusBar();
+            }
+            if (e.affectsConfiguration('agileagentcanvas.headroom.enabled')) {
+                refreshHeadroomStatusBar();
+            }
         })
     );
     // ── graphify: optional auto-bootstrap prompt ───────────────────────────────
     createGraphifyStatusBar(context);
 
+    // ── headroom: status bar (compression savings) ──────────────────────────
+    createHeadroomStatusBar(context);
+
     // ── headroom: proactive detection (runs async so status bar reflects availability) ─
-    detectHeadroom().then(() => refreshCodeburnStatusBar()).catch(() => {});
+    detectHeadroom().then(() => refreshHeadroomStatusBar()).catch(() => {});
 
     // ── codeburn: status bar (Menu Bar equivalent) ──────────────────────────────
     createCodeburnStatusBar(context);
