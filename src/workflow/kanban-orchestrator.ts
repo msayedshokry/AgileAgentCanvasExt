@@ -115,6 +115,11 @@ const REVIEW_WORKFLOW = 'aac-kanban-review-guard';
 export class KanbanOrchestrator {
   // #26: Per-artifact abort controllers for cancel/abort.
   private abortControllers = new Map<string, AbortController>();
+  // Audit gap #50 — per-story pause resolvers. When pauseStory() is called
+  // for a story that's currently mid-flight, the loop awaits the resolve
+  // function at the next iteration boundary (does NOT abort, does NOT kill
+  // terminal — preserves the in-progress state for resume).
+  private pausedResolvers: Map<string, () => void> = new Map();
 
   constructor(
     private store: ArtifactStore,
@@ -123,16 +128,67 @@ export class KanbanOrchestrator {
   ) {}
 
   /** Signal the autonomous loop to stop for a given artifact. Idempotent.
-   *  Returns true if an active run was signalled, false if no run was found. */
+   *  Kills the running terminal (if any), signals the AbortController, and
+   *  releases the concurrency lock. Returns true if an active run was
+   *  signalled, false if no run was found.
+   *
+   *  Gap #46: previously only signalled the AbortController — the terminal
+   *  kept running, the lock stayed held, and the verdict file could be
+   *  written orphaned. Now we kill the terminal first, then signal. */
   abort(artifactId: string): boolean {
+    // Kill the running terminal so the CLI agent stops immediately.
+    // Idempotent — killTerminal is a no-op if no terminal is active.
+    this.terminalExecutor.killTerminal(artifactId);
     const ctrl = this.abortControllers.get(artifactId);
     if (ctrl) {
       ctrl.abort();
       this.abortControllers.delete(artifactId);
-      logger.info(`[Orchestrator] Abort signalled for ${artifactId}`);
+      logger.info(`[Orchestrator] Abort signalled + terminal killed for ${artifactId}`);
       return true;
     }
     return false;
+  }
+
+  // ── Per-story pause/resume (audit gap #50) ───────────────────────────────
+
+  /** Mark a story as paused. If a runAutonomous() loop is currently executing
+   *  this artifactId, it will block at the next iteration boundary (terminal
+   *  stays alive, lock stays held) until `resumeStory()` is called. */
+  pauseStory(artifactId: string, reason?: string): void {
+    if (this.pausedResolvers.has(artifactId)) return; // already paused
+    // Store a placeholder resolver — replaced with a real Promise.resolve()
+    // when the loop reaches the iteration boundary.
+    this.pausedResolvers.set(artifactId, () => {
+      logger.debug(`[Orchestrator] Pause released for ${artifactId} (placeholder)`);
+    });
+    logger.info(`[Orchestrator] Pause requested for ${artifactId}`, { reason });
+  }
+
+  /** Unpause a story. Resolves the pending loop await (no-op if not paused). */
+  resumeStory(artifactId: string): void {
+    const resolver = this.pausedResolvers.get(artifactId);
+    if (!resolver) return;
+    resolver();
+    this.pausedResolvers.delete(artifactId);
+    logger.info(`[Orchestrator] Resume called for ${artifactId}`);
+  }
+
+  /** Per-story query. */
+  isStoryPaused(artifactId: string): boolean {
+    return this.pausedResolvers.has(artifactId);
+  }
+
+  /** Block at the iteration boundary if the story is paused.
+   *  Resolves immediately if not paused. The placeholder resolver is replaced
+   *  with the real Promise resolver on first entry, so resumeStory() always
+   *  unblocks the actual loop await (not a stale placeholder). */
+  private async checkPause(artifactId: string): Promise<void> {
+    if (!this.pausedResolvers.has(artifactId)) return;
+    await new Promise<void>(resolve => {
+      // Always store the LATEST resolve so resumeStory() unblocks the
+      // loop that's actually awaiting right now.
+      this.pausedResolvers.set(artifactId, resolve);
+    });
   }
 
   /**
@@ -184,6 +240,11 @@ export class KanbanOrchestrator {
         if (ac.signal.aborted) {
           return await this.stop(id, 'Aborted by user');
         }
+
+        // Audit gap #50 — pause checkpoint at iteration boundary. The loop
+        // blocks here if pauseStory() was called, preserving terminal + lock
+        // so resumeStory() picks up exactly where we left off.
+        await this.checkPause(id);
 
         logger.info(`[Orchestrator] ${id} iteration ${iter}/${maxIter}`);
 
@@ -254,6 +315,9 @@ export class KanbanOrchestrator {
     } finally {
       // #26: Clean up the abort controller.
       this.abortControllers.delete(id);
+      // Audit gap #50 — clean up any outstanding pause resolver so a future
+      // runAutonomous() for the same artifactId doesn't inherit stale state.
+      this.pausedResolvers.delete(id);
       concurrencyQueue.release(id);
     }
   }
@@ -349,7 +413,51 @@ export class KanbanOrchestrator {
       }
     });
 
+    // ── Gap #47: UNKNOWN verdict retry ────────────────────────────────────
+    // Placed INSIDE the `retryResult.succeeded` branch so it fires BEFORE
+    // `return captured` (the previous placement after the return was dead
+    // code — a non-throwing work function with a UNKNOWN result hit the
+    // early return and never reached the retry).
+    //
+    // When the terminal closes without a verdict file (network blip, CLI
+    // crash, disk-flush race), executeAndAwaitVerdict returns UNKNOWN.
+    // The autoRetryEngine doesn't retry UNKNOWN because the work function
+    // didn't throw — the verdict IS the result. We give it ONE more
+    // attempt with a fresh terminal before surfacing to the orchestrator.
     if (retryResult.succeeded && captured) {
+      if (captured.verdict === 'UNKNOWN') {
+        logger.warn(`[Orchestrator] ${id}: UNKNOWN verdict on first attempt — retrying once`);
+        try {
+          if (useChatPath) {
+            const chatInputs = requireChatPathContext(ctx)!;
+            const retrySessionId = `chat-retry-${workflowId}-${id}-${Date.now()}`;
+            const tracker = chatInputs.tracker;
+            const proxiedStream = wrapStreamForProgress(chatInputs.stream, tracker);
+            const chatChecks = createChatHealthChecks(artifact, {}, tracker);
+            for (const check of chatChecks) {
+              agentHealthMonitor.registerCheck(retrySessionId, check);
+            }
+            try {
+              captured = await this.executor.executeLaneTransition(
+                workflowId, artifact, this.store, chatInputs.model, proxiedStream, chatInputs.token, retrySessionId
+              );
+            } finally {
+              agentHealthMonitor.deregisterCheck(retrySessionId);
+            }
+          } else {
+            captured = await this.terminalExecutor.executeAndAwaitVerdict(
+              workflowId, artifact, this.store,
+            );
+          }
+          if (captured && (captured.verdict === 'COMPLETED' || captured.verdict === 'APPROVED')) {
+            circuitBreaker.recordSuccess(workflowId);
+            logger.info(`[Orchestrator] ${id}: UNKNOWN retry succeeded → ${captured.verdict}`);
+            return captured;
+          }
+        } catch (retryErr) {
+          logger.warn(`[Orchestrator] ${id}: UNKNOWN retry threw: ${errMsg(retryErr)}`);
+        }
+      }
       return captured;
     }
 

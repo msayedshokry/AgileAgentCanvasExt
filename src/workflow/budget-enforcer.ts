@@ -16,12 +16,29 @@ export interface BudgetConfig {
   budgetDaily: number;
 }
 
+/** Per-workflow cost breakdown row — audit gap #20/#42 surfaced to UI.
+ *
+ *  One row per workflow name with cumulative spend for that workflow's LLM
+ *  calls (entries tagged with `sessionId === "workflow:<name>"`). The
+ *  fallback bucket `'chat-session'` (plain chat turns not bound to a named
+ *  workflow) is also surfaced so the user can see residual spend. */
+export interface WorkflowCostRow {
+  workflow: string;
+  cost: number;
+  inputTokens: number;
+  outputTokens: number;
+  calls: number;
+}
+
 export interface BudgetStatus {
   perStory: { used: number; cap: number; exceeded: boolean };
   daily: { used: number; cap: number; exceeded: boolean };
   anyExceeded: boolean;
   bannerMessage: string | null;
   remaining: number;
+  /** Per-workflow subtotals (audit gap #20/#42, surfaced audit #EXT-folowup).
+   *  Sorted by cost DESC; rows with `cost === 0` are omitted. */
+  workflowBreakdown: WorkflowCostRow[];
 }
 
 export class BudgetEnforcer {
@@ -70,12 +87,38 @@ export class BudgetEnforcer {
 
     const remaining = this.config.budgetDaily > 0 ? Math.max(0, this.config.budgetDaily - dailyUsed) : Infinity;
 
+    // Per-workflow breakdown (audit gap #20/#42, surfaced follow-up):
+    // queried against the SAME `since` window as the daily cap so the two
+    // totals are guaranteed to reconcile. Rows with `cost === 0` are filtered
+    // out so the webview can render an empty chip row without a "—".
+    // Capped at 12 rows to keep the gauge compact; overflow workflows are
+    // summed into an "Other" row that reconciles back to `daily.used`, then
+    // the final list is re-sorted DESC so "Other" settles at its correct
+    // visual rank (its cost can exceed a top-12 row when many cheap workflows
+    // stack up — re-sort prevents the row from appearing cheaper than it is).
+    const CAP = 12;
+    const raw = costTracker.perWorkflowBreakdown({ since }).filter(r => r.cost > 0);
+    const assembled: WorkflowCostRow[] = raw.length > CAP
+      ? [
+          ...raw.slice(0, CAP),
+          {
+            workflow: 'Other',
+            cost: raw.slice(CAP).reduce((s, r) => s + r.cost, 0),
+            inputTokens: raw.slice(CAP).reduce((s, r) => s + r.inputTokens, 0),
+            outputTokens: raw.slice(CAP).reduce((s, r) => s + r.outputTokens, 0),
+            calls: raw.slice(CAP).reduce((s, r) => s + r.calls, 0),
+          },
+        ]
+      : raw;
+    const workflowBreakdown: WorkflowCostRow[] = assembled.sort((a, b) => b.cost - a.cost);
+
     return {
       perStory: { used: perStoryUsed, cap: this.config.budgetPerStory, exceeded: perStoryExceeded },
       daily: { used: dailyUsed, cap: this.config.budgetDaily, exceeded: dailyExceeded },
       anyExceeded,
       bannerMessage,
       remaining: remaining === Infinity ? -1 : remaining,
+      workflowBreakdown,
     };
   }
 

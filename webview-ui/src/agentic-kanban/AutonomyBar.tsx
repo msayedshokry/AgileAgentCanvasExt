@@ -14,12 +14,23 @@ export interface SchedulerStateMessage {
   enabled: boolean;
 }
 
+/** Per-workflow cost breakdown row (mirrored from src/workflow/budget-enforcer.ts). */
+export interface WorkflowCostRow {
+  workflow: string;
+  cost: number;
+  inputTokens: number;
+  outputTokens: number;
+  calls: number;
+}
+
 export interface BudgetStatus {
   perStory: { used: number; cap: number; exceeded: boolean };
   daily: { used: number; cap: number; exceeded: boolean };
   anyExceeded: boolean;
   bannerMessage: string | null;
   remaining: number;
+  /** Per-workflow subtotals since midnight UTC, sorted by cost DESC. */
+  workflowBreakdown: WorkflowCostRow[];
 }
 
 export interface ProposedGoal {
@@ -124,6 +135,9 @@ export function AutonomyBar({
   const dailyCap = budgetStatus?.daily.cap ?? 0;
   const budgetExceeded = budgetStatus?.anyExceeded ?? false;
   const budgetPct = dailyCap > 0 ? Math.min(100, Math.round((dailyUsed / dailyCap) * 100)) : 0;
+  // Per-workflow subtotals since midnight UTC (follow-up to audit gap #20/#42).
+  // Each chip is one workflow column showing its own $. Empty list → hide the row.
+  const workflowBreakdown = budgetStatus?.workflowBreakdown ?? [];
 
   // ── Max severity across patterns for the banner color ─────────────────
   const maxSeverity: SystemicPattern['severity'] = (() => {
@@ -203,6 +217,22 @@ export function AutonomyBar({
         <button className="autonomy-bar-btn-icon" onClick={handleRefreshBudget} title="Refresh budget status">
           ↻
         </button>
+        {/* ── Per-workflow cost columns (follow-up to audit gap #20/#42) ── */}
+        {workflowBreakdown.length > 0 && (
+          <div className="autonomy-bar-workflow-costs" aria-label="Per-workflow cost breakdown">
+            {workflowBreakdown.map(row => (
+              <span
+                key={row.workflow}
+                className="autonomy-bar-workflow-chip"
+                title={`${row.workflow}: $${row.cost.toFixed(4)} across ${row.calls} call${row.calls !== 1 ? 's' : ''} (${row.inputTokens.toLocaleString()} input + ${row.outputTokens.toLocaleString()} output tokens)`}
+              >
+                <span className="autonomy-bar-workflow-chip-name">{row.workflow}</span>
+                <span className="autonomy-bar-workflow-chip-cost">${row.cost.toFixed(4)}</span>
+                <span className="autonomy-bar-workflow-chip-calls">{row.calls}</span>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ── Goal submission ────────────────────────────────────────────── */}

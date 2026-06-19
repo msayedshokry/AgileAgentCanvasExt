@@ -3622,6 +3622,7 @@ Engage the user in collaborative discussion — ask clarifying questions when us
             const folderUri = vscode.Uri.file(folderPath);
             
             // Helper to recursively find all .md files in a directory
+            // eslint-disable-next-line no-inner-declarations -- Inner recursive helper scoped to handleConvertToJsonCommand's invocation lifecycle; module-scope hoist would lose locality, and function-declaration preserves hoisting across the enclosing block
             async function findMdFilesRecursive(uri: vscode.Uri, basePath: string = ''): Promise<{path: string, uri: vscode.Uri}[]> {
                 const result: {path: string, uri: vscode.Uri}[] = [];
                 try {

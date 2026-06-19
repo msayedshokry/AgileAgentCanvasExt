@@ -72,7 +72,7 @@ function getWorkflowExecutor(world: BmadWorld): any {
       },
       // Stub kanban-verdict so the real vscode-dependent getOutputFolder() is not loaded
       './kanban-verdict': {
-        sanitizeId: (id: string) => id.replace(/[^A-Za-z0-9._\-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, ''),
+        sanitizeId: (id: string) => id.replace(/[^A-Za-z0-9._-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, ''),
         resultFilePath: (folder: string, artifactId: string, workflowId: string) =>
           `${folder}/_terminal-output/${artifactId}-${workflowId}-result.json`,
         readVerdictFile: () => undefined,

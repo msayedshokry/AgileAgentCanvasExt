@@ -37,18 +37,47 @@ const DEFAULT_PRICING: ModelPricing = { inputPer1K: 0.001, outputPer1K: 0.002 };
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
+/**
+ * Token usage reported by an LLM API (when available) or estimated locally.
+ *
+ * Cache tokens are tracked as TWO separate fields because they price
+ * differently:
+ *   - `cacheReadTokens`  — cheap, ~10% of fresh input cost (Anthropic cache reads,
+ *                          Gemini cached content reads, typically free with TTL).
+ *   - `cacheCreationTokens` — MORE EXPENSIVE than fresh input on Anthropic
+ *                          (1.25–2× S4.5 input cost) — bundling with reads
+ *                          would understate future cost. Unused by Gemini.
+ * Providers that don't report cache info simply leave both undefinined.
+ */
 export interface TokenUsage {
   inputTokens: number;
   outputTokens: number;
+  /** Cheaper cached reads from provider prompt cache. */
+  cacheReadTokens?: number;
+  /** More-expensive cache writes (Anthropic only — pricing differs). */
+  cacheCreationTokens?: number;
 }
 
 export interface CostEntry {
   timestamp: number;
   sessionId: string;
+  /**
+   * Optional workflow name (audit gap #20/#42). When a `streamChatResponse`
+   * call threads a `workflow` option, the cost-tracker stores it here AND
+   * sets sessionId to `workflow:<name>` so the budget gauge can group spend
+   * per-workflow instead of bucketing every chat call as 'chat-session'.
+   */
+  workflow?: string;
   artifactId?: string;
   model: string;
   inputTokens: number;
   outputTokens: number;
+  /** Cached tokens read from provider cache (tracked separately for future per-cache pricing). */
+  cacheReadTokens?: number;
+  /** Cached tokens written to provider cache (Anthropic only). */
+  cacheCreationTokens?: number;
+  /** SOURCE of the token counts — `api` if reported by the model, `estimate` if computed by tiktoken. */
+  source: 'api' | 'estimate';
   inputCost: number;
   outputCost: number;
   totalCost: number;
@@ -149,16 +178,30 @@ export class CostTracker {
     this.logPath = logPath;
   }
 
-  /** Record a single LLM call's token usage and cost. */
-  record(sessionId: string, model: string, usage: TokenUsage, artifactId?: string): CostEntry {
+  /**
+   * Record a single LLM call's token usage and cost.
+   * @param usage    Token counts — prefer real API-reported values; fall back to `estimateTokens()`.
+   * @param source   `api` when the provider reported its own usage,
+   *                 `estimate` when we computed it locally (audit gap #5/#23).
+   * @param workflow Optional workflow name (audit gap #20/#42) — when set,
+   *                 the call site already used `workflow:<name>` as sessionId,
+   *                 but the raw name is also persisted on the entry so
+   *                 downstream analytics can filter without string-prefix
+   *                 matching.
+   */
+  record(sessionId: string, model: string, usage: TokenUsage, artifactId?: string, source: 'api' | 'estimate' = 'estimate', workflow?: string): CostEntry {
     const { inputCost, outputCost, totalCost } = estimateCost(model, usage);
     const entry: CostEntry = {
       timestamp: Date.now(),
       sessionId,
+      workflow,
       artifactId,
       model,
       inputTokens: usage.inputTokens,
       outputTokens: usage.outputTokens,
+      cacheReadTokens: usage.cacheReadTokens,
+      cacheCreationTokens: usage.cacheCreationTokens,
+      source,
       inputCost,
       outputCost,
       totalCost,
@@ -191,6 +234,52 @@ export class CostTracker {
   /** Cost for a specific session. */
   costForSession(sessionId: string): number {
     return this.totalCost({ sessionId });
+  }
+
+  /**
+   * Cost for a specific workflow (audit gap #20/#42). Reads entries tagged
+   * with `sessionId === "workflow:<name>"`. Faster than scanning the entries
+   * table for the prefix because the index is just a hash lookup on
+   * sessionId.
+   */
+  costForWorkflow(name: string): number {
+    return this.totalCost({ sessionId: `workflow:${name}` });
+  }
+
+  /**
+   * Per-workflow cost + token breakdown for surfacing in the budget gauge
+   * (follow-up to audit gap #20/#42). Groups entries by workflow name — either
+   * from the persisted `workflow` field OR derived from the `workflow:<name>`
+   * sessionId prefix when the field is missing (older logs). Includes the
+   * fallback `'chat-session'` bucket so residual non-workflow spend is visible.
+   *
+   * Default ordering is by cost DESC; configurable via `sort: 'name'`.
+   * Optional `since` window matches the `totalCost()` time filter — used to
+   * align the breakdown with the daily cap.
+   */
+  perWorkflowBreakdown(opts?: { since?: number; sort?: 'cost' | 'name' }): Array<{
+    workflow: string;
+    cost: number;
+    inputTokens: number;
+    outputTokens: number;
+    calls: number;
+  }> {
+    const since = opts?.since;
+    const workflowTotals = new Map<string, { cost: number; inputTokens: number; outputTokens: number; calls: number }>();
+    for (const e of this.entries) {
+      if (since !== undefined && e.timestamp < since) continue;
+      // Prefer the persisted workflow field; fall back to the sessionId prefix.
+      const name = e.workflow ?? (e.sessionId.startsWith('workflow:') ? e.sessionId.slice('workflow:'.length) : 'chat-session');
+      const row = workflowTotals.get(name) ?? { cost: 0, inputTokens: 0, outputTokens: 0, calls: 0 };
+      row.cost += e.totalCost;
+      row.inputTokens += e.inputTokens;
+      row.outputTokens += e.outputTokens;
+      row.calls += 1;
+      workflowTotals.set(name, row);
+    }
+    const rows = Array.from(workflowTotals, ([workflow, v]) => ({ workflow, ...v }));
+    rows.sort((a, b) => (opts?.sort === 'name' ? a.workflow.localeCompare(b.workflow) : b.cost - a.cost));
+    return rows;
   }
 
   /** Clear in-memory entries (does not delete the log file). */

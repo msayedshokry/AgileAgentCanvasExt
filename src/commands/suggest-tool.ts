@@ -77,7 +77,10 @@ Output JSON in this exact shape (no extra keys):
     ];
 
     // Stream the LLM response
-    const response = await streamChatResponse(model, messages, stream, token);
+    // Audit gap #20/#42 — tag the `/suggest-tool` LLM call so it shows up as its own
+    // spend bucket in the budget gauge instead of grouping under the fallback
+    // `'chat-session'` bucket.
+    const response = await streamChatResponse(model, messages, stream, token, { workflow: 'suggest-tool' });
     const extracted = extractJson(response);
 
     if (!extracted.ok) {

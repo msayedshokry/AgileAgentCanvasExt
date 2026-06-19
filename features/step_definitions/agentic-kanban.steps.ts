@@ -525,7 +525,7 @@ Then('each column should show its empty state placeholder', function (this: Bmad
 Then('vscode.postMessage should have been called with:', function (this: BmadWorld, dataTable: any) {
   const ctx = getWebviewCtx(this);
   assert.ok(ctx.lastPostMessage, 'Expected postMessage to have been called');
-  assert.strictEqual(ctx.lastPostMessage.type, 'kanban:statusChanged');
+  assert.strictEqual(ctx.lastPostMessage.type, 'kanban:statusChanged', 'Expected postMessage type to be kanban:statusChanged');
 });
 
 Then('vscode.postMessage should not have been called with type {string}', function (this: BmadWorld, msgType: string) {

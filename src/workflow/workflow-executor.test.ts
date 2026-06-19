@@ -1,10 +1,36 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// ── Mock ai-provider ────────────────────────────────────────────────────────
+// ── Helper: typed escape hatch for testing PRIVATE methods without `as any` ──
+// All three methods are private but need direct invocation / spying in tests
+// (issue #42 sessionId-threading regression suite). Using `as any` would lose
+// argument-shape IntelliSense in the test bodies; this helper narrows the cast
+// to a known private-API surface so each method signature gets structural type-checking
+// without losing the dynamic flexibility needed for vi.spyOn / direct calls.
+
+type PrivateAPI = {
+    executeWithDirectApi(...args: unknown[]): Promise<unknown>;
+    executeWithTools(...args: unknown[]): Promise<unknown>;
+    executeLaneTransition(...args: unknown[]): Promise<unknown>;
+};
+// `Omit<T, keyof PrivateAPI>` strips the (private) duplicate methods from T
+// before intersecting with PrivateAPI — without this, TypeScript reduces
+// `T & PrivateAPI` to `never` because the same method names exist in both
+// constituents with conflicting (private vs. public) visibility.
+function withPrivateAPI<T extends object>(
+    target: T,
+): Omit<T, keyof PrivateAPI> & PrivateAPI {
+    return target as unknown as Omit<T, keyof PrivateAPI> & PrivateAPI;
+}
+
+// ─── Mock ai-provider ──────────────────────────────────────────────────────
 vi.mock('../chat/ai-provider', () => ({
   streamChatResponse: vi.fn(async () => ''),
-  ChatMessage: null as any,
-  BmadModel: null as any,
+  ChatMessage: vi.fn().mockName('ChatMessage').mockImplementation(() => {
+    throw new TypeError('Mock ChatMessage — not constructible in test sandbox');
+  }),
+  BmadModel: vi.fn().mockName('BmadModel').mockImplementation(() => {
+    throw new TypeError('Mock BmadModel — not constructible in test sandbox');
+  }),
   selectModel: vi.fn(),
   getNoModelMessage: vi.fn(),
 }));
@@ -68,17 +94,17 @@ describe('WorkflowExecutor sessionId threading (issue #42)', () => {
     executor = new WorkflowExecutor();
   });
 
-  // ── direct-API path: sessionId forwarded to executeWithDirectApi ──────────
+  // ── direct-API path: sessionId forwarded to executeWithDirectApi ──────
 
   it('forwards sessionId to executeWithDirectApi when no vscodeLm (direct-API path)', async () => {
     // Spy on the private executeWithDirectApi to capture its arguments
     const directApiSpy = vi
-      .spyOn(WorkflowExecutor.prototype as any, 'executeWithDirectApi')
+      .spyOn(withPrivateAPI(WorkflowExecutor.prototype), 'executeWithDirectApi')
       .mockResolvedValue(undefined);
 
     const sessionId = 'chat-dev-S-2.2-9876543210';
 
-    await (executor as any).executeWithTools(
+    await withPrivateAPI(executor).executeWithTools(
       { name: 'gpt-4o', provider: 'openai' }, // no vscodeLm → direct-API path
       'test task',
       { id: 'S-1.1', type: 'story', title: 'Test Story' },
@@ -91,21 +117,21 @@ describe('WorkflowExecutor sessionId threading (issue #42)', () => {
 
     expect(directApiSpy).toHaveBeenCalledTimes(1);
     // Args: model, task, artifact, stream, token, workflowPath, sessionId
-    const callArgs = directApiSpy.mock.calls[0] as any[];
-    expect(callArgs[0].name).toBe('gpt-4o');
-    expect(callArgs[6]).toBe(sessionId); // 7th arg = sessionId
+    const args = directApiSpy.mock.calls[0];
+    expect(args[0]).toMatchObject({ name: 'gpt-4o' });
+    expect(args[6]).toBe(sessionId); // 7th arg = sessionId
 
     directApiSpy.mockRestore();
   });
 
-  // ── direct-API path: no sessionId → undefined ────────────────────────────
+  // ── direct-API path: no sessionId → undefined ──────────────────────────
 
   it('forwards undefined when no sessionId provided (direct-API path)', async () => {
     const directApiSpy = vi
-      .spyOn(WorkflowExecutor.prototype as any, 'executeWithDirectApi')
+      .spyOn(withPrivateAPI(WorkflowExecutor.prototype), 'executeWithDirectApi')
       .mockResolvedValue(undefined);
 
-    await (executor as any).executeWithTools(
+    await withPrivateAPI(executor).executeWithTools(
       { name: 'gpt-4o', provider: 'openai' }, // no vscodeLm
       'test task',
       { id: 'S-2.2', type: 'story' },
@@ -122,15 +148,15 @@ describe('WorkflowExecutor sessionId threading (issue #42)', () => {
     directApiSpy.mockRestore();
   });
 
-  // ── distinct sessionIds forwarded correctly ──────────────────────────────
+  // ── distinct sessionIds forwarded correctly ──────────────────────────
 
   it('forwards distinct sessionIds to executeWithDirectApi', async () => {
     const directApiSpy = vi
-      .spyOn(WorkflowExecutor.prototype as any, 'executeWithDirectApi')
+      .spyOn(withPrivateAPI(WorkflowExecutor.prototype), 'executeWithDirectApi')
       .mockResolvedValue(undefined);
 
     const devId = 'chat-dev-S-1.1-111111';
-    await (executor as any).executeWithTools(
+    await withPrivateAPI(executor).executeWithTools(
       { name: 'gpt-4o', provider: 'openai' },
       'dev task', { id: 'S-1.1', type: 'story' },
       { markdown: vi.fn() },
@@ -142,7 +168,7 @@ describe('WorkflowExecutor sessionId threading (issue #42)', () => {
     expect(directApiSpy.mock.calls[0][6]).toBe(devId);
 
     const reviewId = 'chat-review-S-2.2-222222';
-    await (executor as any).executeWithTools(
+    await withPrivateAPI(executor).executeWithTools(
       { name: 'gpt-4o', provider: 'openai' },
       'review task', { id: 'S-2.2', type: 'story' },
       { markdown: vi.fn() },
@@ -156,7 +182,7 @@ describe('WorkflowExecutor sessionId threading (issue #42)', () => {
     directApiSpy.mockRestore();
   });
 
-  // ── backward compatibility: executeLaneTransition without sessionId ────
+  // ── backward compatibility: executeLaneTransition without sessionId ──────
 
   it('executeLaneTransition works without sessionId (backward compat)', async () => {
     // Existing callers (lane-transitions.ts, agentic-kanban-message-handler.ts)
@@ -164,7 +190,7 @@ describe('WorkflowExecutor sessionId threading (issue #42)', () => {
     // throw on the missing optional parameter.
     // We use a model without vscodeLm so it hits the direct-API path which we mock.
     try {
-      await (executor as any).executeLaneTransition(
+      await withPrivateAPI(executor).executeLaneTransition(
         'dev',
         { id: 'S-1.1', type: 'story' },
         { getState: vi.fn(() => ({})), updateArtifact: vi.fn(async () => {}) },
@@ -181,24 +207,24 @@ describe('WorkflowExecutor sessionId threading (issue #42)', () => {
     expect(true).toBe(true); // explicit pass — the call didn't throw on arity
   });
 
-  // ── Signature correctness ────────────────────────────────────────────────
+  // ── Signature correctness ────────────────────────────────────────────
 
   it('executeLaneTransition signature includes optional sessionId', () => {
     // JavaScript Function.length counts only required params before the first
     // optional. executeLaneTransition has 3 required (workflowId, artifact, store)
     // then model?, stream?, token?, sessionId?. So .length is 3.
     // We verify sessionId appears in the function's string representation.
-    const src = (WorkflowExecutor.prototype.executeLaneTransition as Function).toString();
+    const src = (withPrivateAPI(WorkflowExecutor.prototype).executeLaneTransition as (...args: unknown[]) => unknown).toString();
     expect(src).toContain('sessionId');
   });
 
   it('executeWithTools signature includes optional sessionId', () => {
-    const src = ((WorkflowExecutor.prototype as any).executeWithTools as Function).toString();
+    const src = (withPrivateAPI(WorkflowExecutor.prototype).executeWithTools as (...args: unknown[]) => unknown).toString();
     expect(src).toContain('sessionId');
   });
 
   it('executeWithDirectApi signature includes optional sessionId', () => {
-    const src = ((WorkflowExecutor.prototype as any).executeWithDirectApi as Function).toString();
+    const src = (withPrivateAPI(WorkflowExecutor.prototype).executeWithDirectApi as (...args: unknown[]) => unknown).toString();
     expect(src).toContain('sessionId');
   });
 });

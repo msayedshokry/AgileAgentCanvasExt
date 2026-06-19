@@ -552,7 +552,7 @@ Then('the agent team error should contain {string}', function (this: BmadWorld, 
 Then('the stream messages should contain {string}', function (this: BmadWorld, expected: string) {
   const ctx = getCtx(this);
   // Strip markdown formatting (**bold**, emoji) to allow natural-language assertions
-  const stripFormatting = (s: string) => s.replace(/\*\*/g, '').replace(/[🤖✅❌]/g, '').trim();
+  const stripFormatting = (s: string) => s.replace(/\*\*/g, '').replace(/[🤖✅❌]/gu, '').trim();
   const allMessages = ctx.streamMessages.map(stripFormatting).join(' ');
   assert.ok(allMessages.includes(expected), `Expected stream to contain "${expected}" in:\n${allMessages}`);
 });

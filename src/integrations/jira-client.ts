@@ -226,6 +226,7 @@ export class JiraClient {
         const all: JiraIssueRaw[] = [];
         let nextPageToken: string | null = null;
 
+        // eslint-disable-next-line no-constant-condition -- Intentional Jira cursor-based pagination loop; the nextPageToken check inside terminates via break
         while (true) {
             const params: Record<string, string | number> = {
                 jql,

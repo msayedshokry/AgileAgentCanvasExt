@@ -10,7 +10,9 @@ import { AgenticDetailPanel } from './AgenticDetailPanel';
 import { ContextMenu } from './ContextMenu';
 import { useEvent } from './useEvent';
 import { AutonomyBar, type SchedulerStateMessage, type BudgetStatus, type ProposedGoal, type SystemicIssue } from './AutonomyBar';
+import { TracePanel } from './TracePanel';
 import { GoalDecomposerModal } from './GoalDecomposerModal';
+import type { TraceBreakdownMessage } from '../types';
 import './Autonomy.css';
 import type { DependencyBadge } from './kanban-helpers';
 import {
@@ -100,6 +102,9 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
   const [goalReviewOpen, setGoalReviewOpen] = useState<boolean>(false);
   // Cross-artifact systemic issues from the harness engine (issue #4).
   const [systemicIssue, setSystemicIssue] = useState<SystemicIssue | null>(null);
+  // Trace breakdown for the most recent Kanban autonomous-loop run window
+  // (audit follow-up to gap #20/#42). Pulled on mount and refreshable.
+  const [traceBreakdown, setTraceBreakdown] = useState<TraceBreakdownMessage | null>(null);
   // Dependency badges pushed by the extension's autonomy lifecycle.
   // Keyed by story id; merged into displayItems so the KanbanCard badge
   // (🔗/⛔ Blocked by N) stays in sync with the live dependency graph.
@@ -275,6 +280,13 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
         setSystemicIssue(message as SystemicIssue);
         break;
       }
+      case 'traceBreakdownResponse': {
+        // Audit follow-up to gap #20/#42 — per-workflow tool-call aggregation
+        // for the most recent Kanban autonomous-loop run window. Drives the
+        // Trace panel below AutonomyBar.
+        setTraceBreakdown(message as TraceBreakdownMessage);
+        break;
+      }
       case 'kanban:wipLimits':
         // An empty object `{}` from settings means "no limits" — replace
         // defaults entirely. A falsy/missing payload preserves existing state.
@@ -394,12 +406,36 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
     // Issue #22: pull autonomy state on mount so the bar isn't empty
     vscode.postMessage({ type: 'getSchedulerState' });
     vscode.postMessage({ type: 'getBudgetStatus' });
+    // Audit follow-up to gap #20/#42: pull the per-workflow trace breakdown
+    // for the most recent Kanban run so the Trace panel isn't empty on load.
+    vscode.postMessage({ type: 'getTraceBreakdown' });
 
     return () => {
       window.removeEventListener('message', handler);
       clearTimeout(timeout);
     };
   }, [initialArtifacts, onMessage]);
+
+  // ── Auto-refresh Trace breakdown on scheduler state boundaries ───────────
+  // When the scheduler transitions into 'running' or 'idle' (start-of-loop and
+  // end-of-loop boundaries respectively), re-pull the trace breakdown so the
+  // panel reflects the new run window without manual refresh.
+  // Pause/resume don't trigger because the trace window is unchanged (the
+  // loop keeps accumulating entries while paused). The very first state update
+  // (null → first state) is skipped because the mount-pull already requested
+  // `getTraceBreakdown` for the initial render — posting it again would be a
+  // wasted round-trip to the extension.
+  const prevSchedulerStateRef = useRef<'idle' | 'paused' | 'running' | null>(null);
+  useEffect(() => {
+    const currentState = schedulerState?.state ?? null;
+    const prevState = prevSchedulerStateRef.current;
+    prevSchedulerStateRef.current = currentState;
+    if (prevState === null) return;            // skip initial-mount transition
+    if (currentState === prevState) return;    // skip no-op re-renders
+    if (currentState === 'running' || currentState === 'idle') {
+      vscode.postMessage({ type: 'getTraceBreakdown' });
+    }
+  }, [schedulerState?.state]);
 
   // ── `/` focuses the search input (avoids VS Code's Ctrl+F conflict) ──────
   // Ctrl+F is owned by VS Code (Find in Files). Using `/` matches the
@@ -851,6 +887,8 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
         systemicIssue={systemicIssue}
         onDismissSystemicIssue={() => setSystemicIssue(null)}
       />
+
+      <TracePanel breakdown={traceBreakdown} />
 
       <div className="agentic-kanban-board">
         {KANBAN_COLUMNS.map(col => (

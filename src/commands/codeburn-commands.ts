@@ -192,13 +192,14 @@ export class CodeburnCommands {
             case 'optimize': await this.runOptimize(); break;
             case 'compare': await this.openCompare(); break;
             case 'export': await this.exportJson(); break;
-            case 'refresh':
+            case 'refresh': {
                 clearCodeburnCache(this.getRoot());
                 const st = detectCodeburn(this.getRoot());
                 vscode.window.showInformationMessage(
                     st.available ? `codeburn detected (${st.cliForm})` : 'codeburn still not found.'
                 );
                 break;
+            }
         }
     }
 

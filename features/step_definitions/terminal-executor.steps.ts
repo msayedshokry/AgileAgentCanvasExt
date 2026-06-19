@@ -32,6 +32,8 @@ interface TerminalTestContext {
   // Config overrides
   promptLength: 'long' | 'short';
   cliArgs: string[] | null;
+  /** Override the provider returned by getSelectedProvider(). Default: 'claude'. */
+  selectedProvider: string;
 
   // Sanitization test state
   lastSanitizeResult: string;
@@ -58,6 +60,7 @@ function getCtx(world: BmadWorld): TerminalTestContext {
       sendTextCalls: [],
       promptLength: 'long',
       cliArgs: null,
+      selectedProvider: 'claude',
       lastSanitizeResult: '',
       hasCustomArtifactId: false,
       customArtifactId: '',
@@ -155,7 +158,7 @@ function loadModule(world: BmadWorld): any {
     },
     // Stub kanban-verdict to prevent loading vscode-dependent getOutputFolder()
     './kanban-verdict': {
-      sanitizeId: (id: string) => id.replace(/[^A-Za-z0-9._\-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, ''),
+      sanitizeId: (id: string) => id.replace(/[^A-Za-z0-9._-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, ''),
       resultFilePath: (folder: string, artifactId: string, workflowId: string) =>
         `${folder}/_terminal-output/${artifactId}-${workflowId}-result.json`,
       readVerdictFile: () => undefined,
@@ -172,17 +175,54 @@ function loadModule(world: BmadWorld): any {
       },
     },
     '../commands/chat-bridge': {
-      getSelectedProvider: () => 'claude',
+      getSelectedProvider: () => ctx.selectedProvider,
       listAvailableProviders: async () => [{ id: 'claude', available: true, name: 'Claude' }],
+      // Test mock mirrors the production headless invocations (see
+      // src/commands/chat-bridge.ts CHAT_COMMANDS). Headless CLIs require
+      // the prompt as a positional arg value, not via stdin.
       CHAT_COMMANDS: {
         claude: {
-          terminalLaunch: (prompt: string) => ctx.cliArgs || ['claude', '--model', 'sonnet', prompt],
+          // Mirrors production: claude --permission-mode acceptEdits
+          //                     --output-format json -p <prompt>
+          // Note: production shape (no --bare) preserves project CLAUDE.md /
+          // hooks / MCP — see src/commands/chat-bridge.ts note block.
+          terminalLaunch: (prompt: string) =>
+            ctx.cliArgs || [
+              'claude',
+              '--permission-mode', 'acceptEdits',
+              '--output-format', 'json',
+              '-p', prompt,
+            ],
         },
         codex: {
-          terminalLaunch: (prompt: string) => ['codex', prompt],
+          // Mirrors production: codex exec --ask-for-approval never
+          //                     --sandbox workspace-write <prompt>
+          terminalLaunch: (prompt: string) => [
+            'codex',
+            'exec',
+            '--ask-for-approval', 'never',
+            '--sandbox', 'workspace-write',
+            prompt,
+          ],
         },
         'gemini-cli': {
-          terminalLaunch: (prompt: string) => ['gemini', '--prompt', prompt],
+          // Mirrors production: gemini --yolo --output-format json -p <prompt>
+          terminalLaunch: (prompt: string) => [
+            'gemini',
+            '--yolo',
+            '--output-format', 'json',
+            '-p', prompt,
+          ],
+        },
+        opencode: {
+          // Mirrors production: opencode run --model auto --format json <prompt>
+          terminalLaunch: (prompt: string) => [
+            'opencode',
+            'run',
+            '--model', 'auto',
+            '--format', 'json',
+            prompt,
+          ],
         },
       },
     },
@@ -205,6 +245,7 @@ Given('a fresh terminal executor context', function (this: BmadWorld) {
   ctx.sendTextCalls = [];
   ctx.promptLength = 'long';
   ctx.cliArgs = null;
+  ctx.selectedProvider = 'claude';
   ctx.module = null;
   ctx.isPowerShell = null;
   ctx.shellQuote = null;
@@ -220,7 +261,14 @@ Given('the VS Code shell is {string}', function (this: BmadWorld, shell: string)
 
 Given('the chat-bridge returns CLI args for claude', function (this: BmadWorld) {
   const ctx = getCtx(this);
-  ctx.cliArgs = ['claude', '--model', 'sonnet', '--print'];
+  // Mirrors the production claude headless shape (besides the prompt,
+  // which the mock appends). Spec:
+  //   code.claude.com/docs/en/headless
+  ctx.cliArgs = [
+    'claude',
+    '--permission-mode', 'acceptEdits',
+    '--output-format', 'json',
+  ];
   // Reload module with the new args
   const mod = loadModule(this);
   ctx.module = mod;
@@ -232,6 +280,13 @@ Given('the artifact ID contains a space', function (this: BmadWorld) {
   ctx.customArtifactId = 'Epic 2';
 });
 
+Given('the terminal provider is {string}', function (this: BmadWorld, provider: string) {
+  const ctx = getCtx(this);
+  ctx.selectedProvider = provider;
+  // Reload module with the new provider selection
+  const mod = loadModule(this);
+  ctx.module = mod;
+});
 
 
 Given('the prompt length is short \\(< 8192 chars\\)', function (this: BmadWorld) {

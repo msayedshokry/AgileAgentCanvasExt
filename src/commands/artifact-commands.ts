@@ -6,6 +6,7 @@ import { BMAD_RESOURCE_DIR } from '../state/constants';
 import { sendArtifactsToPanel } from '../canvas/artifact-transformer';
 import { acOutput } from '../extension';
 import { openChat } from './chat-bridge';
+import { errMsg } from '../utils/error';
 
 /**
  * Handle adding a new artifact from the canvas toolbar.
@@ -819,9 +820,8 @@ export async function exportArtifacts(store: ArtifactStore, webview?: vscode.Web
                 } else {
                     vscode.window.showWarningMessage('Export failed — could not write file.');
                 }
-            } catch (err: unknown) {
-                const errMsg = err instanceof Error ? err.message : String(err);
-                vscode.window.showErrorMessage(`Export failed: ${errMsg}`);
+            } catch (err: unknown) {const msg = errMsg(err);
+                                vscode.window.showErrorMessage(`Export failed: ${msg}`);
             }
         }
     );
@@ -863,8 +863,8 @@ export async function exportArtifactToMarkdown(artifact: any): Promise<void> {
             await vscode.commands.executeCommand('vscode.open', targetUri);
         }
     } catch (err: unknown) {
-        const errMsg = err instanceof Error ? err.message : String(err);
-        vscode.window.showErrorMessage(`Export failed: ${errMsg}`);
+        const msg = errMsg(err);
+        vscode.window.showErrorMessage(`Export failed: ${msg}`);
     }
 }
 

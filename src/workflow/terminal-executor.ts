@@ -9,9 +9,15 @@
 import { createLogger } from '../utils/logger';
 const logger = createLogger('terminal-executor');
 import * as vscode from 'vscode';
-import * as os from 'os';
+// `os` import dropped: temp-file+stdin branch was removed (claude `-p`,
+// codex `exec`, gemini `-p`, opencode `run` all require the prompt as a
+// positional arg value and do NOT read it from stdin). The rationale for
+// dropping the long-prompt stdin-redirect path is documented at the
+// `terminal.sendText` call site in `executeTerminalWorkflow`.
 import * as path from 'path';
 import * as fs from 'fs';
+import * as cp from 'child_process';
+import { promisify } from 'util';
 import { getTraceRecorder } from '../trace/trace-recorder';
 import { concurrencyQueue } from './concurrency-queue';
 import { agentHealthMonitor } from './agent-health-monitor';
@@ -32,6 +38,47 @@ import {
 
 import { errMsg } from '../utils/error';
 import { inferRoleFromWorkflow } from '../harness/role-inference';
+import { budgetEnforcer } from './budget-enforcer';
+
+const execAsync = promisify(cp.exec);
+
+// ─── Process liveness ────────────────────────────────────────────────────────
+
+/**
+ * Check whether a process with the given PID is still alive.
+ * Uses `tasklist` on Windows, `/proc/<pid>/stat` on Linux/Mac.
+ * Never throws — returns false on any error.
+ *
+ * Issue: #15 — Replace hardcoded isAlive() with actual process liveness check.
+ */
+export async function checkProcessAlive(pid: number): Promise<boolean> {
+  try {
+    if (process.platform === 'win32') {
+      const { stdout } = await execAsync(`tasklist /FI "PID eq ${pid}" /NH`, {
+        timeout: 3000,
+        windowsHide: true,
+      });
+      // If the process exists, stdout contains a line like:
+      //   Code.exe  12345  Console  1  1,234,567 K
+      // If not, stdout contains: "INFO: No tasks are running..."
+      return stdout.includes(`${pid}`);
+    }
+    // Linux / macOS — try /proc first (Linux), fall back to kill(pid, 0)
+    // (signal 0 = existence check, works on macOS and Linux).
+    try {
+      await fs.promises.access(`/proc/${pid}/stat`, fs.constants.R_OK);
+      return true;
+    } catch {
+      // /proc not available (macOS) — fall through to kill(0) check
+    }
+    // Signal 0 is a null signal that checks if the caller has permission
+    // to signal the process. On the same user account it returns true iff
+    // the process exists; ESRCH (no such process) throws.
+    return process.kill(pid, 0);
+  } catch {
+    return false;
+  }
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -52,6 +99,8 @@ export interface TerminalSession {
   healthSessionId?: string;
   /** Issue #21: last update time (ms epoch) for the output-progress health check. */
   lastOutputAt?: number;
+  /** Gap #23: prompt length in characters for terminal cost estimation. */
+  promptLength?: number;
 }
 
 /** vscode.Terminal has onDidWriteData at runtime but it's not in the type defs. */
@@ -238,6 +287,32 @@ export class TerminalExecutor implements vscode.Disposable {
     }
 
     const provider = await resolveAgenticProvider();
+
+    // ── Gap #48: pre-flight CLI-availability check ─────────────────────────
+    // resolveAgenticProvider() falls back to 'claude' even when no CLI is
+    // on PATH. Without this check, the terminal launches and immediately
+    // fails with "command not found" → closes → executeAndAwaitVerdict
+    // returns UNKNOWN after the 3s poll interval. The user sees a
+    // misleading toast: "Terminal closed without a verdict file."
+    //
+    // We now verify that the resolved CLI binary is actually available
+    // (listAvailableProviders does a `which`/`where` PATH scan) and
+    // return undefined immediately if not — the caller surfaces a clear
+    // BLOCKED verdict with actionable instructions.
+    try {
+      const available = await listAvailableProviders();
+      const entry = available.find(a => a.id === provider);
+      if (entry && !entry.available) {
+        logger.warn(
+          `[TerminalExecutor] ${provider} not found on PATH — cannot launch terminal`,
+        );
+        return undefined;
+      }
+    } catch {
+      // PATH scan itself failed — proceed optimistically (the terminal
+      // will surface the error if the binary really is missing).
+    }
+
     const agentRole = inferRoleFromWorkflow(workflowId);
     const sessionId = `term-${workflowId}-${artifactId}-${Date.now()}`;
 
@@ -318,36 +393,30 @@ export class TerminalExecutor implements vscode.Disposable {
 
     terminal.show(true);
 
-    // Send the command to the terminal
+    // Send the command to the terminal.
+    //
+    // Headless CLIs (claude -p, codex exec, gemini -p, opencode run) all
+    // REQUIRE the prompt as a positional arg value — they do NOT read it
+    // from stdin. The previous long-prompt branch wrote the prompt to a
+    // temp file and fed it via `< file` (bash) / `Get-Content | & cmd`
+    // (PowerShell), which only worked because the old `terminalLaunch`
+    // returned plain `[claude, q]` — Claude at that point still accepted
+    // `claude < /tmp/prompt.md` as "run a fresh interactive session with
+    // whatever comes from stdin". With the new headless invocations
+    // (`claude -p`, `codex exec`, …) stdin piped to `-p` would be ignored
+    // because `-p` has no positional value, leaving the CLI to fail with
+    // a usage error. The fix: always include `q` in args via shellQuote.
+    //
+    // Trade-off: prompts > ~32 KB may exceed Windows cmd.exe ARG_MAX. The
+    // BMAD workflow prompts generated by `buildTerminalPrompt` are bounded
+    // by the artifact JSON + skill content (typically 5–15 KB); well under
+    // the limit. Revisit only if we start shipping flows with ≥32 KB
+    // prompts — at that point we can plumb a separate `terminalLaunchLong`
+    // hook per provider instead of dropping-in the stdin path inline.
     try {
-      if (prompt.length > 8192) {
-        // Long prompt — write to temp file and have CLI read it
-        const tmpDir = os.tmpdir();
-        const promptFile = path.join(
-          tmpDir,
-          `aac-agentic-${sanitizeId(artifactId)}-${Date.now()}.md`
-        );
-        fs.mkdirSync(path.dirname(promptFile), { recursive: true });
-        fs.writeFileSync(promptFile, prompt, 'utf-8');
-
-        const args = buildCliCommand(provider, prompt);
-        const cmd = args[0];
-        const rest = args.slice(1).filter((a) => a !== prompt);
-
-        const cliArgs = rest.length > 0 ? ` ${rest.map(a => shellQuote(a)).join(' ')}` : '';
-        const quotedFile = shellQuote(promptFile);
-
-        const terminalLine = isPowerShell()
-          // PowerShell: Get-Content pipes file content as stdin to the command
-          ? `Get-Content ${quotedFile} | & ${cmd}${cliArgs}`
-          // bash/zsh/cmd.exe: stdin redirect
-          : `${cmd}${cliArgs} < ${quotedFile}`;
-        terminal.sendText(terminalLine, true);
-      } else {
-        const args = buildCliCommand(provider, prompt);
-        const cmdLine = args.map((a) => shellQuote(a)).join(' ');
-        terminal.sendText(cmdLine, true);
-      }
+      const args = buildCliCommand(provider, prompt);
+      const cmdLine = args.map((a) => shellQuote(a)).join(' ');
+      terminal.sendText(cmdLine, true);
     } catch (err) {
       logger.error(
         `[TerminalExecutor] Failed to send command: ${errMsg(err)}`
@@ -370,8 +439,16 @@ export class TerminalExecutor implements vscode.Disposable {
       startedAt: new Date().toISOString(),
       accumulatedData,
       dataListener,
+      promptLength: prompt.length,
     };
     this.activeTerminals.set(artifactId, session);
+
+    // Issue #15: capture the process PID so the health monitor's
+    // process-liveness check can verify the actual shell process
+    // instead of always returning true. If processId is unavailable
+    // (older VS Code builds), fall back to the legacy always-alive
+    // behavior so health checks still function.
+    const pid = await terminal.processId;
 
     // P1 #11: schedule a lock-release timeout so a forgotten/hung terminal
     // doesn't keep the artifact locked forever. The timeout is cleared when
@@ -384,7 +461,9 @@ export class TerminalExecutor implements vscode.Disposable {
     // when the terminal process is gone, output has stalled, or the artifact
     // hasn't changed — AutoRecovery listens for those and kills + releases.
     const terminalAdapter = {
-      isAlive: () => true, // process liveness is tracked via onDidCloseTerminal
+      isAlive: pid !== undefined
+        ? () => checkProcessAlive(pid)
+        : () => true, // fallback: can't determine PID, assume alive
       getLastOutputTime: () => lastOutputAt,
     };
     const artifactAdapter = {
@@ -443,8 +522,33 @@ export class TerminalExecutor implements vscode.Disposable {
       skillContent: options?.skillContent,
     });
     if (!sessionId) {
+      // Gap #48: distinguish "no CLI on PATH" from other launch failures.
+      // When the pre-flight check caught a missing binary, the message
+      // tells the user exactly what to install instead of the generic
+      // "Terminal failed to launch".
+      const provider = await resolveAgenticProvider();
+      try {
+        const available = await listAvailableProviders();
+        const entry = available.find(a => a.id === provider);
+        if (entry && !entry.available) {
+          return {
+            verdict: 'BLOCKED',
+            summary: `No headless CLI available on PATH. Install ${provider === 'claude' ? 'Claude Code (docs.claude.com)' : provider === 'codex' ? 'OpenAI Codex CLI (developers.openai.com/codex)' : provider === 'gemini-cli' ? 'Gemini CLI (github.com/google-gemini/gemini-cli)' : provider === 'aider' ? 'Aider (aider.chat)' : provider === 'opencode' ? 'OpenCode (opencode.ai)' : provider} or configure another in VS Code settings → agileagentcanvas.chatProvider.`,
+          };
+        }
+      } catch {
+        // PATH scan itself failed — use the generic message.
+      }
       return { verdict: 'UNKNOWN', summary: 'Terminal failed to launch' };
     }
+
+    // Gap #23: capture the prompt length now while the session is
+    // guaranteed to still be alive. The session may be cleaned up by
+    // onDidCloseTerminal before the verdict poll resolves (the common
+    // path: CLI writes verdict file, then the terminal closes, then
+    // the next poll tick finds the file). We stash the prompt length
+    // so cost can still be estimated even when the session is gone.
+    const capturedPromptLength = this.activeTerminals.get(artifactId)?.promptLength ?? 0;
 
     const timeoutMs = options?.timeoutMs ?? 20 * 60 * 1000; // 20 minutes
     const pollIntervalMs = options?.pollIntervalMs ?? 3000;
@@ -453,6 +557,10 @@ export class TerminalExecutor implements vscode.Disposable {
     return await new Promise<KanbanVerdict>((resolve) => {
       const finish = (v: KanbanVerdict) => {
         clearInterval(timer);
+        // Gap #23: record terminal CLI costs so the budget gauge reflects
+        // Claude Code / Codex / Gemini / Aider / OpenCode spend. Uses the
+        // captured prompt length (safe even if the session was cleaned up).
+        this.recordTerminalCost(artifactId, sessionId, v, capturedPromptLength);
         resolve(v);
       };
 
@@ -706,6 +814,44 @@ export class TerminalExecutor implements vscode.Disposable {
     if (existing) {
       clearTimeout(existing);
       this.lockTimeouts.delete(artifactId);
+    }
+  }
+
+  /**
+   * Gap #23: estimate and record the cost of a terminal CLI execution.
+   * Uses the same chars/4 heuristic as `estimateTokens()` in cost-tracker
+   * for consistency with chat-based cost tracking. Input tokens are
+   * estimated from the captured prompt length (safe from session-cleanup
+   * races); output tokens from the accumulated terminal output (best-effort
+   * — may be 0 if the session was already cleaned up).
+   */
+  private recordTerminalCost(
+    artifactId: string,
+    sessionId: string,
+    verdict: KanbanVerdict,
+    capturedPromptLength: number,
+  ): void {
+    // Only record meaningful spend — skip UNKNOWN/launch-failure verdicts
+    if (!verdict || verdict.verdict === 'UNKNOWN') return;
+    try {
+      // Best-effort: lookup session for accumulated output (may be cleaned up).
+      // The captured prompt length is always available — the session was alive
+      // when we captured it right after executeTerminalWorkflow returned.
+      const session = this.activeTerminals.get(artifactId);
+      const outputLen = session?.accumulatedData?.length ?? 0;
+      const inputTokens = Math.ceil(capturedPromptLength / 4);
+      const outputTokens = Math.ceil(outputLen / 4);
+      // Always record at minimum the input cost — the prompt was sent regardless
+      // of whether the terminal output is still available.
+      if (inputTokens <= 0 && outputTokens <= 0) return;
+      const model = `terminal-${session?.provider ?? 'unknown'}`;
+      budgetEnforcer.recordSpend(artifactId, sessionId, model, inputTokens, outputTokens);
+      logger.debug(
+        `[TerminalExecutor] Recorded terminal cost for ${artifactId}: ${inputTokens}+${outputTokens} tokens (${model})`,
+      );
+    } catch (err) {
+      // Best effort — don't fail the verdict for cost tracking errors
+      logger.debug(`[TerminalExecutor] Failed to record terminal cost: ${errMsg(err)}`);
     }
   }
 

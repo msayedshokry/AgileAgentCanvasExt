@@ -46,7 +46,7 @@ export interface KanbanVerdict {
  */
 export function sanitizeId(id: string): string {
   return id
-    .replace(/[^A-Za-z0-9._\-]/g, '-')
+    .replace(/[^A-Za-z0-9._-]/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
 }

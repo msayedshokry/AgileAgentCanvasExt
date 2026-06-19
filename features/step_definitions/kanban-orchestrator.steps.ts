@@ -152,13 +152,13 @@ When('the orchestrator runs autonomously', async function (this: BmadWorld) {
 Then('the run succeeds', function (this: BmadWorld) {
   const ctx = getCtx(this);
   assert.strictEqual(ctx.result.ok, true, `expected ok=true, got ${JSON.stringify(ctx.result)}`);
-  assert.strictEqual(ctx.result.status, 'complete');
+  assert.strictEqual(ctx.result.status, 'complete', `Expected status 'complete', got '${ctx.result.status}'`);
 });
 
 Then('the run is blocked', function (this: BmadWorld) {
   const ctx = getCtx(this);
   assert.strictEqual(ctx.result.ok, false, `expected ok=false, got ${JSON.stringify(ctx.result)}`);
-  assert.strictEqual(ctx.result.status, 'blocked');
+  assert.strictEqual(ctx.result.status, 'blocked', `Expected status 'blocked', got '${ctx.result.status}'`);
 });
 
 Then('the card reaches {string}', function (this: BmadWorld, status: string) {

@@ -177,6 +177,7 @@ describe('Autonomous loop: KanbanOrchestrator + terminal executor integration', 
     const store = createTestStore(epics);
 
     const terminalExecutor = {
+      killTerminal: vi.fn().mockResolvedValue(undefined),
       executeAndAwaitVerdict: vi.fn()
         .mockResolvedValueOnce({ verdict: 'COMPLETED', summary: 'Implementation done' })
         .mockResolvedValueOnce({ verdict: 'APPROVED', summary: 'Review passed' }),
@@ -229,7 +230,7 @@ describe('Autonomous loop: KanbanOrchestrator + terminal executor integration', 
     const { epics, story } = makeStories();
     const store = createTestStore(epics);
 
-    const terminalExecutor = { executeAndAwaitVerdict: vi.fn() } as any;
+    const terminalExecutor = { killTerminal: vi.fn().mockResolvedValue(undefined), executeAndAwaitVerdict: vi.fn() } as any;
     const executor = {
       executeLaneTransition: vi.fn()
         .mockResolvedValueOnce({ verdict: 'COMPLETED' })
@@ -258,6 +259,7 @@ describe('Autonomous loop: KanbanOrchestrator + terminal executor integration', 
     const store = createTestStore(epics);
 
     const terminalExecutor = {
+      killTerminal: vi.fn().mockResolvedValue(undefined),
       executeAndAwaitVerdict: vi.fn()
         .mockResolvedValueOnce({ verdict: 'BLOCKED', summary: 'Entry gate failed' }),
     } as any;
@@ -279,6 +281,7 @@ describe('Autonomous loop: KanbanOrchestrator + terminal executor integration', 
 
     // dev → COMPLETED, review → NEEDS_FIXES, dev → COMPLETED, review → APPROVED
     const terminalExecutor = {
+      killTerminal: vi.fn().mockResolvedValue(undefined),
       executeAndAwaitVerdict: vi.fn()
         .mockResolvedValueOnce({ verdict: 'COMPLETED', summary: 'Dev done' })
         .mockResolvedValueOnce({ verdict: 'NEEDS_FIXES', summary: 'Test coverage insufficient', fixRequests: [{ failing_criterion: 'Add unit tests' }] })
@@ -320,7 +323,7 @@ describe('Autonomous loop: KanbanOrchestrator + terminal executor integration', 
 
     const { epics, story } = makeStories();
     const store = createTestStore(epics);
-    const terminalExecutor = { executeAndAwaitVerdict: vi.fn() } as any;
+    const terminalExecutor = { killTerminal: vi.fn().mockResolvedValue(undefined), executeAndAwaitVerdict: vi.fn() } as any;
     const executor = { executeLaneTransition: vi.fn() } as any;
 
     const orch = new KanbanOrchestrator(store, executor, terminalExecutor);
@@ -345,7 +348,7 @@ describe('Autonomous loop: KanbanOrchestrator + terminal executor integration', 
 
     const { epics, story } = makeStories();
     const store = createTestStore(epics);
-    const terminalExecutor = { executeAndAwaitVerdict: vi.fn() } as any;
+    const terminalExecutor = { killTerminal: vi.fn().mockResolvedValue(undefined), executeAndAwaitVerdict: vi.fn() } as any;
     const executor = { executeLaneTransition: vi.fn() } as any;
 
     const orch = new KanbanOrchestrator(store, executor, terminalExecutor);
@@ -380,6 +383,7 @@ describe('Autonomous loop: AutoScheduler + orchestrator wiring', () => {
 
     // Script terminal verdicts: COMPLETED → APPROVED
     const terminalExecutor = {
+      killTerminal: vi.fn().mockResolvedValue(undefined),
       executeAndAwaitVerdict: vi.fn()
         // First run of S-1: dev → COMPLETED, review → APPROVED
         .mockResolvedValueOnce({ verdict: 'COMPLETED', summary: 'Dev done' })
@@ -460,7 +464,7 @@ describe('Autonomous loop: AutoScheduler + orchestrator wiring', () => {
 
     const { epics } = makeStories();
     const store = createTestStore(epics);
-    const terminalExecutor = { executeAndAwaitVerdict: vi.fn() } as any;
+    const terminalExecutor = { killTerminal: vi.fn().mockResolvedValue(undefined), executeAndAwaitVerdict: vi.fn() } as any;
     const executor = { executeLaneTransition: vi.fn() } as any;
     const orch = new KanbanOrchestrator(store, executor, terminalExecutor);
 
@@ -504,6 +508,7 @@ describe('Autonomous loop: AutoScheduler + orchestrator wiring', () => {
     vi.mocked(autonomousGit.maybePR).mockResolvedValue('https://github.com/org/repo/pull/1');
 
     const terminalExecutor = {
+      killTerminal: vi.fn().mockResolvedValue(undefined),
       executeAndAwaitVerdict: vi.fn()
         .mockResolvedValueOnce({ verdict: 'COMPLETED', summary: 'Dev done' })
         .mockResolvedValueOnce({ verdict: 'APPROVED', summary: 'Review passed' }),
@@ -607,6 +612,7 @@ describe('Autonomous loop: AutoScheduler + orchestrator wiring', () => {
 
     // Independent mock verdicts for each story
     const terminalExecutor = {
+      killTerminal: vi.fn().mockResolvedValue(undefined),
       executeAndAwaitVerdict: vi.fn()
         // S-1: dev → COMPLETED, review → APPROVED
         .mockResolvedValueOnce({ verdict: 'COMPLETED', summary: 'S-1 dev done' })
@@ -712,7 +718,7 @@ describe('Autonomous loop: AutoScheduler + orchestrator wiring', () => {
 
     const { epics } = makeStories();
     const store = createTestStore(epics);
-    const terminalExecutor = { executeAndAwaitVerdict: vi.fn() } as any;
+    const terminalExecutor = { killTerminal: vi.fn().mockResolvedValue(undefined), executeAndAwaitVerdict: vi.fn() } as any;
     const executor = { executeLaneTransition: vi.fn() } as any;
     const orch = new KanbanOrchestrator(store, executor, terminalExecutor);
 
@@ -759,6 +765,7 @@ describe('Autonomous loop: AutoScheduler + orchestrator wiring', () => {
     const { epics, story } = makeStories();
     const store = createTestStore(epics);
     const terminalExecutor = {
+      killTerminal: vi.fn().mockResolvedValue(undefined),
       executeAndAwaitVerdict: vi.fn()
         .mockResolvedValueOnce({ verdict: 'COMPLETED', summary: 'Dev done' })
         .mockResolvedValueOnce({ verdict: 'APPROVED', summary: 'Review passed' }),
@@ -844,7 +851,10 @@ describe('Autonomous loop: AbortController mid-run cancellation (#26)', () => {
 
   it('abort() returns false when no run is active', () => {
     const store = createTestStore([]);
-    const orch = new KanbanOrchestrator(store, {} as any, {} as any);
+    // abort() invokes terminalExecutor.killTerminal unconditionally; provide
+    // a stub so the no-op path doesn't throw TypeError.
+    const terminalExecutor = { killTerminal: vi.fn().mockResolvedValue(undefined) } as any;
+    const orch = new KanbanOrchestrator(store, {} as any, terminalExecutor);
 
     const aborted = orch.abort('nonexistent');
     expect(aborted).toBe(false);
@@ -859,6 +869,7 @@ describe('Autonomous loop: AbortController mid-run cancellation (#26)', () => {
     const reviewPromise = new Promise<any>(resolve => { resolveReview = resolve; });
 
     const terminalExecutor = {
+      killTerminal: vi.fn().mockResolvedValue(undefined),
       executeAndAwaitVerdict: vi.fn()
         // Dev step: COMPLETED immediately
         .mockResolvedValueOnce({ verdict: 'COMPLETED', summary: 'Dev done' })
@@ -921,6 +932,7 @@ describe('Autonomous loop: AbortController mid-run cancellation (#26)', () => {
     const reviewPromise = new Promise<any>(() => {}); // never resolves
 
     const terminalExecutor = {
+      killTerminal: vi.fn().mockResolvedValue(undefined),
       executeAndAwaitVerdict: vi.fn()
         .mockResolvedValueOnce({ verdict: 'COMPLETED', summary: 'Dev done' })
         .mockReturnValueOnce(reviewPromise),

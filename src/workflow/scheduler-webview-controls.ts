@@ -16,6 +16,8 @@ export interface SchedulerStateMessage {
   nextUp: string | null;
   inProgress: string[];
   enabled: boolean;
+  /** Audit gap #50 — stories paused at the user's request (not by budget/circuit). */
+  pausedStories: Array<{ id: string; reason?: string; pausedAt: number }>;
 }
 
 // ── Message types ────────────────────────────────────────────────────────────
@@ -25,7 +27,11 @@ export const MSG_SET_SCHEDULER_STATE = 'setSchedulerState';
 
 export type SetSchedulerStatePayload = {
   type: typeof MSG_SET_SCHEDULER_STATE;
-  action: 'pause' | 'resume' | 'toggle' | 'stop';
+  action: 'pause' | 'resume' | 'toggle' | 'stop' | 'pauseStory' | 'resumeStory';
+  /** Required when action is `pauseStory` / `resumeStory`. */
+  artifactId?: string;
+  /** Optional reason recorded on the scheduler's pausedStoryIds entry. */
+  reason?: string;
 };
 
 // ── Controls ─────────────────────────────────────────────────────────────────
@@ -40,6 +46,10 @@ export class SchedulerWebviewControls extends EventEmitter {
     autoScheduler.on('started', this.rebuildAndEmit);
     autoScheduler.on('completed', this.rebuildAndEmit);
     autoScheduler.on('queueEmpty', this.rebuildAndEmit);
+    // Audit gap #50 — the existing `stateChange` listener already re-broadcasts
+    // after every pauseStory/resumeStory (those emit `stateChange` with same
+    // from/to), so the webview re-renders ⏸ badges / resume buttons without
+    // polling. No extra listener needed.
     this.bound = true;
     logger.info('Scheduler webview controls started');
   }
@@ -68,6 +78,23 @@ export class SchedulerWebviewControls extends EventEmitter {
         else autoScheduler.resume();
         break;
       case 'stop':   autoScheduler.stop(); break;
+      // Audit gap #50 — per-story pause/resume.
+      case 'pauseStory': {
+        if (!payload.artifactId) {
+          logger.warn('[scheduler-webview-controls] pauseStory missing artifactId');
+          break;
+        }
+        autoScheduler.pauseStory(payload.artifactId, payload.reason);
+        break;
+      }
+      case 'resumeStory': {
+        if (!payload.artifactId) {
+          logger.warn('[scheduler-webview-controls] resumeStory missing artifactId');
+          break;
+        }
+        autoScheduler.resumeStory(payload.artifactId);
+        break;
+      }
     }
   }
 
@@ -80,6 +107,7 @@ export class SchedulerWebviewControls extends EventEmitter {
       nextUp: next?.id ?? null,
       inProgress: autoScheduler.getInProgressIds(),
       enabled: state !== 'idle',
+      pausedStories: autoScheduler.getPausedStories(),
     };
   }
 

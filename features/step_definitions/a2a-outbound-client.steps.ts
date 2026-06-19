@@ -295,7 +295,7 @@ Then('the result should be a valid A2A agent card', function (this: BmadWorld) {
 Then('the result should have id {string}', function (this: BmadWorld, id: string) {
   const ctx = getCtx(this);
   assert.ok(ctx.lastResult, 'Expected a result, got null');
-  assert.strictEqual(ctx.lastResult.id, id);
+  assert.strictEqual(ctx.lastResult.id, id, `Expected result.id to be '${id}'`);
 });
 
 Then('the result should have state {string}', function (this: BmadWorld, state: string) {
@@ -304,19 +304,19 @@ Then('the result should have state {string}', function (this: BmadWorld, state: 
     ctx.lastResult,
     `Expected a result, got null. Error was: ${ctx.lastError?.name ?? 'none'}: ${ctx.lastError?.message ?? 'n/a'}`
   );
-  assert.strictEqual(ctx.lastResult.status?.state, state);
+  assert.strictEqual(ctx.lastResult.status?.state, state, `Expected result.status.state to be '${state}'`);
 });
 
 Then('the result should have {int} history message(s)', function (this: BmadWorld, n: number) {
   const ctx = getCtx(this);
   assert.ok(ctx.lastResult, 'Expected a result, got null');
-  assert.strictEqual(ctx.lastResult.history?.length ?? 0, n);
+  assert.strictEqual(ctx.lastResult.history?.length ?? 0, n, `Expected history to have ${n} entries, got ${ctx.lastResult.history?.length ?? 0}`);
 });
 
 Then('the result should have {int} artifact(s)', function (this: BmadWorld, n: number) {
   const ctx = getCtx(this);
   assert.ok(ctx.lastResult, 'Expected a result, got null');
-  assert.strictEqual(ctx.lastResult.artifacts?.length ?? 0, n);
+  assert.strictEqual(ctx.lastResult.artifacts?.length ?? 0, n, `Expected artifacts to have ${n} entries, got ${ctx.lastResult.artifacts?.length ?? 0}`);
 });
 
 Then('an A2ANetworkError should be thrown', function (this: BmadWorld) {

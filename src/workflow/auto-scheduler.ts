@@ -50,6 +50,8 @@ export class AutoScheduler extends EventEmitter {
   private runStory: StoryRunner | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
   private inProgressIds = new Set<string>();
+  /** Audit gap #50 — per-story pause map. Stories here are skipped by pickNext() and persist across restarts. */
+  private pausedStoryIds: Map<string, { reason?: string; pausedAt: number }> = new Map();
 
   constructor(pollIntervalMs: number = DEFAULT_POLL_INTERVAL_MS, wipLimit: number = DEFAULT_WIP_LIMIT) {
     super();
@@ -66,6 +68,37 @@ export class AutoScheduler extends EventEmitter {
   /** Restore in-progress IDs (for state persistence). */
   setInProgressIds(ids: string[]): void {
     this.inProgressIds = new Set(ids);
+  }
+
+  // ── Per-story pause/resume (audit gap #50) ───────────────────────────────
+
+  /** Mark a story as paused. The scheduler will skip it during pickNext() until
+   *  `resumeStory()` is called. Idempotent. */
+  pauseStory(artifactId: string, reason?: string): void {
+    this.pausedStoryIds.set(artifactId, { reason, pausedAt: Date.now() });
+    logger.info(`AutoScheduler paused story ${artifactId}`, { reason });
+    this.emit('stateChange', { from: this.state, to: this.state });
+  }
+
+  /** Unpause a story so the scheduler picks it up again on the next tick. Idempotent. */
+  resumeStory(artifactId: string): void {
+    if (!this.pausedStoryIds.delete(artifactId)) return;
+    logger.info(`AutoScheduler resumed story ${artifactId}`);
+    this.emit('stateChange', { from: this.state, to: this.state });
+    // Tick immediately so the story doesn't wait for the next interval (#50 follow-through).
+    if (this.state === 'active') {
+      setImmediate(() => this.tick());
+    }
+  }
+
+  /** Per-story query. */
+  isStoryPaused(artifactId: string): boolean {
+    return this.pausedStoryIds.has(artifactId);
+  }
+
+  /** Snapshot of paused stories with their reason + pausedAt timestamp. */
+  getPausedStories(): Array<{ id: string; reason?: string; pausedAt: number }> {
+    return Array.from(this.pausedStoryIds, ([id, meta]) => ({ id, ...meta }));
   }
 
   setRunner(fn: StoryRunner): void {
@@ -148,10 +181,15 @@ export class AutoScheduler extends EventEmitter {
     return this.pollIntervalMs;
   }
 
-  /** Pick the highest-priority ready-for-dev story that isn't in progress. */
+  /** Pick the highest-priority ready-for-dev story that isn't in progress or paused. */
   pickNext(): SchedulerStory | null {
     const ready = this.stories
-      .filter(s => s.status === 'ready-for-dev' && !this.inProgressIds.has(s.id))
+      .filter(s =>
+        s.status === 'ready-for-dev'
+        && !this.inProgressIds.has(s.id)
+        // Audit gap #50 — exclude per-story paused stories.
+        && !this.pausedStoryIds.has(s.id)
+      )
       .sort((a, b) => {
         const pa = PRIORITY_ORDER[a.priority ?? ''] ?? 99;
         const pb = PRIORITY_ORDER[b.priority ?? ''] ?? 99;
@@ -200,6 +238,14 @@ export class AutoScheduler extends EventEmitter {
     }
 
     this.inProgressIds.add(next.id);
+    // Audit gap #50 — defensive re-check: race-condition guard in case pauseStory was
+    // called between pickNext() (above) and the runner dispatch (below). If paused
+    // mid-tick, we drop the story so it isn't picked up by the runner this cycle.
+    if (this.pausedStoryIds.has(next.id)) {
+      logger.debug(`Scheduler: story ${next.id} paused mid-tick — skipping`);
+      this.inProgressIds.delete(next.id);
+      return;
+    }
 
     // ── Pre-flight guardrails ────────────────────────────────────────────
     // Circuit breaker: skip stories whose workflow type is currently open.

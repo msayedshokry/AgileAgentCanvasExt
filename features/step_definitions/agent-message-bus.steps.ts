@@ -181,7 +181,7 @@ Then('the message should have payload {string}', function (this: BmadWorld, payl
   try { expected = JSON.parse(payloadJson); } catch { /* string */ }
   for (const entry of ctx.agents.values()) {
     if (entry.received.length > 0) {
-      assert.deepStrictEqual(entry.received[0].payload, expected);
+      assert.deepStrictEqual(entry.received[0].payload, expected, 'Expected same agent first payload to match');
       return;
     }
   }
@@ -210,17 +210,17 @@ Then('the most recent message should have priority {string}', function (this: Bm
     }
   }
   assert.ok(latest, 'No messages were received');
-  assert.strictEqual(latest.priority, priority);
+  assert.strictEqual(latest.priority, priority, `Expected latest.priority to be '${priority}'`);
 });
 
 Then('the publish should return {int} envelopes', function (this: BmadWorld, count: number) {
   const ctx = getCtx(this);
-  assert.strictEqual(ctx.lastEnvelopes.length, count);
+  assert.strictEqual(ctx.lastEnvelopes.length, count, `Expected ${count} envelope(s), got ${ctx.lastEnvelopes.length}`);
 });
 
 Then('the publish should return {int} envelope with delivered false', function (this: BmadWorld, count: number) {
   const ctx = getCtx(this);
-  assert.strictEqual(ctx.lastEnvelopes.length, count);
+  assert.strictEqual(ctx.lastEnvelopes.length, count, `Expected ${count} envelope(s), got ${ctx.lastEnvelopes.length}`);
   for (const env of ctx.lastEnvelopes) {
     assert.strictEqual(env.delivered, false, 'Expected envelope.delivered to be false');
   }
@@ -236,7 +236,7 @@ Then('the message topic should be {string}', function (this: BmadWorld, topic: s
   const ctx = getCtx(this);
   for (const entry of ctx.agents.values()) {
     if (entry.received.length > 0) {
-      assert.strictEqual(entry.received[0].topic, topic);
+      assert.strictEqual(entry.received[0].topic, topic, `Expected first received topic to be '${topic}'`);
       return;
     }
   }
@@ -246,7 +246,7 @@ Then('the message topic should be {string}', function (this: BmadWorld, topic: s
 Then('the history should have {int} entries', function (this: BmadWorld, count: number) {
   const ctx = getCtx(this);
   const history = ctx.bus.getHistory();
-  assert.strictEqual(history.length, count);
+  assert.strictEqual(history.length, count, `Expected history to have ${count} entries, got ${history.length}`);
 });
 
 Then('the most recent history entry should have payload {string}', function (this: BmadWorld, payloadJson: string) {
@@ -255,5 +255,5 @@ Then('the most recent history entry should have payload {string}', function (thi
   try { expected = JSON.parse(payloadJson); } catch { /* string */ }
   const history = ctx.bus.getHistory();
   assert.ok(history.length > 0, 'History is empty');
-  assert.deepStrictEqual(history[history.length - 1].message.payload, expected);
+  assert.deepStrictEqual(history[history.length - 1].message.payload, expected, 'Expected most recent history entry payload to match');
 });

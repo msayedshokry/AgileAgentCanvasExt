@@ -1529,3 +1529,35 @@ export interface GraphifyActionMessage {
 export interface ShowGraphifyModalMessage {
     type: 'showGraphifyModal';
 }
+
+// =============================================================================
+// Trace Breakdown (Audit follow-up to gap #20/#42)
+// =============================================================================
+
+/**
+ * TraceBreakdownRow / TraceBreakdownMessage (+ the `UNTAGGED_BUCKET` constant)
+ * are **re-exported** from the shared helper at
+ * `src/types/trace-breakdown.ts` so the extension producer
+ * (`src/views/agentic-kanban-message-handler.ts`) AND this webview consumer
+ * barrel both reference the canonical source of truth. The producer +
+ * consumer test files also import directly from the helper, so any drift in
+ * the row or message shape now surfaces as a compile error in
+ *
+ *   - the producer test (`src/views/agentic-kanban-message-handler.test.ts`)
+ *   - the consumer test (`webview-ui/src/agentic-kanban/TracePanel.test.tsx`)
+ *   - the producer source (`src/views/agentic-kanban-message-handler.ts`)
+ *   - this very file (webview consumer barrel)
+ *   - the consumer source (`webview-ui/src/agentic-kanban/TracePanel.tsx`
+ *     uses `UNTAGGED_BUCKET` for chip styling)
+ *
+ * — all at the same time. Type-only imports are erased at runtime, so the
+ * helper content (incl. the small `isBreakdown*` type guards) is never
+ * bundled into either the extension or the webview production output.
+ *
+ * Audit follow-up to gap #20/#42.
+ */
+export {
+    UNTAGGED_BUCKET,
+    type TraceBreakdownRow,
+    type TraceBreakdownMessage,
+} from '../../src/types/trace-breakdown';

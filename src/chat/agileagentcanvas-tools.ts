@@ -92,6 +92,15 @@ export interface AgileAgentCanvasToolContext {
     currentSessionId?: string;
     /** Set by the chat participant before tool invocations to identify the agent. */
     currentAgentName?: string;
+    /**
+     * Set by the chat participant (or `WorkflowExecutor.executeWithTools`)
+     * before tool invocations so every emitted trace entry carries the
+     * workflow name (e.g. `bmad-create-prd`, `dev-story`, `help`) for
+     * per-workflow attribution (audit follow-up to gap #20/#42). Undefined
+     * ⇒ the tool runs without a workflow tag — the resulting trace entry
+     * simply omits the `workflowName` field, letting downstream filters
+     * distinguish workflow-scoped entries from bare conversational ones. */
+    currentWorkflowName?: string;
 }
 
 /**
@@ -163,13 +172,17 @@ import { errMsg } from '../utils/error';
 
 // ─── Dynamic tracing wrapper ──────────────────────────────────────────────────
 /**
- * Wraps a tool with trace recording using the session/agent context from
- * `sharedToolContext` at invocation time.  This is needed because tools are
- * registered globally via `vscode.lm.registerTool()`, but sessionId and
- * agentName are dynamic (set per chat session).
+ * Wraps a tool with trace recording using the session/agent/workflow context
+ * from `sharedToolContext` at invocation time.  This is needed because tools
+ * are registered globally via `vscode.lm.registerTool()`, but sessionId,
+ * agentName, and workflowName are dynamic (set per chat session / per
+ * workflow invocation).
  *
  * If `sharedToolContext.currentSessionId` or `currentAgentName` is not set,
- * the tool runs without tracing (no-op guard).
+ * the tool runs without tracing (no-op guard). `currentWorkflowName` is
+ * optional — when set, every emitted trace entry is tagged with that
+ * workflow name (audit follow-up to gap #20/#42) so trace consumers can
+ * answer "what workflow was running when this tool fired?".
  */
 function wrapToolWithDynamicTracing(
     tool: vscode.LanguageModelTool<any>,
@@ -178,7 +191,7 @@ function wrapToolWithDynamicTracing(
     return {
         ...tool,
         invoke: async (inputs: any, token: vscode.CancellationToken) => {
-            const { currentSessionId, currentAgentName } = sharedToolContext;
+            const { currentSessionId, currentAgentName, currentWorkflowName } = sharedToolContext;
             if (!currentSessionId || !currentAgentName) {
                 return tool.invoke(inputs, token);
             }
@@ -190,6 +203,7 @@ function wrapToolWithDynamicTracing(
                         sessionId: currentSessionId,
                         type: 'tool_call',
                         agent: currentAgentName,
+                        workflowName: currentWorkflowName,
                         data: { toolName, toolInput: inputs, toolResult: result },
                         durationMs: Date.now() - startTime,
                     });
@@ -201,6 +215,7 @@ function wrapToolWithDynamicTracing(
                         sessionId: currentSessionId,
                         type: 'error',
                         agent: currentAgentName,
+                        workflowName: currentWorkflowName,
                         data: { toolName, toolInput: inputs, error: errMsg(err) },
                         durationMs: Date.now() - startTime,
                     });

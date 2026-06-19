@@ -1,4 +1,5 @@
 import { createLogger } from '../utils/logger';
+import { errMsg } from '../utils/error';
 import type { ArtifactChanges } from '../types';
 const logger = createLogger('webview-message-handler');
 import * as vscode from 'vscode';
@@ -498,9 +499,9 @@ export async function handleCommonWebviewMessage(
                     await vscode.commands.executeCommand('vscode.open', targetUri);
                 }
             } catch (err: unknown) {
-                const errMsg = err instanceof Error ? err.message : String(err);
-                logger.debug(`${logPrefix} canvasScreenshot error: ${errMsg}`);
-                vscode.window.showErrorMessage(`Failed to save canvas screenshot: ${errMsg}`);
+                const msg = errMsg(err);
+                logger.debug(`${logPrefix} canvasScreenshot error: ${msg}`);
+                vscode.window.showErrorMessage(`Failed to save canvas screenshot: ${msg}`);
             }
             return true;
         }

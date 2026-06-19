@@ -6,7 +6,7 @@ import * as path from 'path';
 import { sendSimplePrompt } from '../antigravity/antigravity-orchestrator';
 import { schemaValidator } from '../state/schema-validator';
 import { compressMessages } from '../integrations/headroom';
-import { costTracker, estimateTokens } from './cost-tracker';
+import { costTracker, estimateTokens, TokenUsage } from './cost-tracker';
 
 /**
  * Unified AI provider abstraction for AgileAgentCanvas.
@@ -49,13 +49,32 @@ export interface StreamOptions {
     artifactId?: string;
     /** Session ID for cost tracking (defaults to 'chat-session'). */
     sessionId?: string;
+    /**
+     * Workflow name (or ID) for cost tracking — audit gap #20/#42. When set,
+     * the entry is tagged with `workflow:<name>` as the sessionId AND a
+     * `workflow` field on the CostEntry, so the budget gauge and analytics
+     * scripts can break spend down per-workflow instead of grouping every
+     * call under the default 'chat-session' bucket. Use the human-readable
+     * workflow name (e.g. "dev-story", "create-prd"), not a UUID.
+     */
+    workflow?: string;
+}/** Shared options passed to each per-provider streaming function. */
+interface ProviderStructuredOptions {
+  schema: Record<string, unknown>;
+  temperature: number;
+  forceStructuredOutput: boolean;
 }
 
-/** Shared options passed to each per-provider streaming function. */
-interface ProviderStructuredOptions {
-    schema: Record<string, unknown>;
-    temperature: number;
-    forceStructuredOutput: boolean;
+/**
+ * What an SSE parser may extract from a single line. Carries either text
+ * to forward to the chat stream, or usage info from the LM API (audit
+ * gap #5/#23), or both. The `usage` field uses `Partial<TokenUsage>` so
+ * every provider (including Anthropic's separate `cacheCreationTokens`)
+ * can populate the fields it actually reports.
+ */
+interface StreamExtraction {
+  text?: string;
+  usage?: Partial<TokenUsage>;
 }
 
 /**
@@ -249,42 +268,97 @@ export async function streamChatResponse(
     // ─────────────────────────────────────────────────────────────────────
 
     let full = '';
+    // Audit gap #5/#23 — capture API-reported token usage from each provider.
+    // When non-null and non-zero, prefer it over the local `estimateTokens()` heuristic.
+    // Uses `Partial<TokenUsage>` so Anthropic's `cacheCreationTokens` flows through cleanly.
+    let apiUsage: Partial<TokenUsage> | undefined;
     switch (model.provider) {
-        case 'copilot':
-            full = await streamVsCodeLm(model.vscodeLm!, messages, stream, token, forceStructuredOutput);
+        case 'copilot': {
+            const r = await streamVsCodeLm(model.vscodeLm!, messages, stream, token, forceStructuredOutput);
+            full = r.text;
+            apiUsage = r.usage;
             break;
-        case 'openai':
-            full = await streamOpenAI(messages, stream, token, { schema, temperature, forceStructuredOutput });
+        }
+        case 'openai': {
+            const r = await streamOpenAI(messages, stream, token, { schema, temperature, forceStructuredOutput });
+            full = r.text;
+            apiUsage = r.usage;
             break;
-        case 'anthropic':
-            full = await streamAnthropic(messages, stream, token, { schema, temperature, forceStructuredOutput });
+        }
+        case 'anthropic': {
+            const r = await streamAnthropic(messages, stream, token, { schema, temperature, forceStructuredOutput });
+            full = r.text;
+            apiUsage = r.usage;
             break;
-        case 'gemini':
-            full = await streamGemini(messages, stream, token, { schema, temperature, forceStructuredOutput });
+        }
+        case 'gemini': {
+            const r = await streamGemini(messages, stream, token, { schema, temperature, forceStructuredOutput });
+            full = r.text;
+            apiUsage = r.usage;
             break;
-        case 'ollama':
-            full = await streamOllama(messages, stream, token, { schema, temperature, forceStructuredOutput });
+        }
+        case 'ollama': {
+            const r = await streamOllama(messages, stream, token, { schema, temperature, forceStructuredOutput });
+            full = r.text;
+            apiUsage = r.usage;
             break;
-        case 'antigravity':
-            full = await sendToAntigravity(messages, stream);
+        }
+        case 'antigravity': {
+            const r = await sendToAntigravity(messages, stream);
+            full = r.text;
+            // apiUsage stays undefined — work runs inside the Agent panel
             break;
-        case 'omp':
-            full = await sendToOmp(messages, stream);
+        }
+        case 'omp': {
+            const r = await sendToOmp(messages, stream);
+            full = r.text;
+            // apiUsage stays undefined — work runs in the OMP harness
             break;
+        }
         default:
             stream.markdown('**Error:** Unknown AI provider.\n');
             break;
     }
 
     // ── Cost tracking ────────────────────────────────────────────────────
-    // Record estimated token usage after every LLM call so BudgetEnforcer
-    // can enforce daily and per-story caps.
-    if (full) {
+    // Prefer API-reported usage (audit gap #5/#23). Fall back to the local
+    // `estimateTokens()` heuristic only when the provider didn't report
+    // (VS Code LM vendor without usage, network failure, or cross-process
+    // providers like Antigravity / OMP that delegate to a separate host).
+    // The `source` flag lets downstream analytics distinguish real vs
+    // estimated costs in the budget gauge & cost-tracking.jsonl log.
+    const safeInput = apiUsage?.inputTokens ?? 0;
+    const safeOutput = apiUsage?.outputTokens ?? 0;
+    const haveApiUsage = safeInput > 0 || safeOutput > 0;
+    if (full || haveApiUsage) {
         try {
-            const inputTokens = messages.reduce((sum, m) => sum + estimateTokens(m.content ?? '', false, model.label), 0);
-            const outputTokens = estimateTokens(full, true, model.label);
-            const sessionId = options.sessionId ?? 'chat-session';
-            costTracker.record(sessionId, model.label, { inputTokens, outputTokens }, options.artifactId);
+            const inputTokens = haveApiUsage
+                ? safeInput
+                : messages.reduce((sum, m) => sum + estimateTokens(m.content ?? '', false, model.label), 0);
+            const outputTokens = haveApiUsage
+                ? safeOutput
+                : estimateTokens(full, true, model.label);
+            // Audit gap #20/#42 — per-workflow cost breakdown. When the call site
+            // names a workflow, use `workflow:<name>` as the sessionId so the
+            // budget gauge and cost-tracking.jsonl logs can group spend by
+            // workflow. The raw name is also persisted on the CostEntry for
+            // downstream analytics.
+            const sessionId = options.workflow
+                ? `workflow:${options.workflow}`
+                : (options.sessionId ?? 'chat-session');
+            costTracker.record(
+                sessionId,
+                model.label,
+                {
+                    inputTokens,
+                    outputTokens,
+                    cacheReadTokens: apiUsage?.cacheReadTokens,
+                    cacheCreationTokens: apiUsage?.cacheCreationTokens,
+                },
+                options.artifactId,
+                haveApiUsage ? 'api' : 'estimate',
+                options.workflow,
+            );
         } catch {
             // Best-effort — never block the response on tracking failures
         }
@@ -310,7 +384,7 @@ async function streamVsCodeLm(
     stream: vscode.ChatResponseStream,
     token: vscode.CancellationToken,
     forceStructuredOutput: boolean
-): Promise<string> {
+): Promise<{ text: string; usage?: { inputTokens?: number; outputTokens?: number } }> {
     const vsMessages = messages.map(m =>
         m.role === 'assistant'
             ? vscode.LanguageModelChatMessage.Assistant(m.content)
@@ -342,7 +416,28 @@ async function streamVsCodeLm(
         stream.markdown(chunk);
         full += chunk;
     }
-    return full;
+    // ── Capture API-reported token usage (audit gap #5/#23) ─────────────
+    // VS Code LM `LanguageModelChatResponse` does NOT expose `.usage` in the
+    // public TS API — some vendors (Copilot, newer Continue) DO attach it at
+    // runtime. Duck-type through `unknown` to read it when present; if the
+    // vendor doesn't implement it, gracefully fall back to local estimation.
+    let usage: { inputTokens?: number; outputTokens?: number } | undefined;
+    try {
+        const duckResponse = response as unknown as {
+            usage?: { promptTokens?: number; completionTokens?: number }
+                  | Promise<{ promptTokens?: number; completionTokens?: number }>;
+        };
+        if (duckResponse.usage) {
+            const u = await Promise.resolve(duckResponse.usage);
+            usage = {
+                inputTokens: u.promptTokens ?? 0,
+                outputTokens: u.completionTokens ?? 0,
+            };
+        }
+    } catch {
+        // Vendor doesn't implement usage reporting — fallback covers this
+    }
+    return { text: full, usage };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -371,42 +466,58 @@ function httpsPost(url: string, headers: Record<string, string>, body: string): 
         req.write(body);
         req.end();
     });
-}
+}/**
+ * Stream SSE / newline-delimited JSON and yield text + usage deltas.
+ *
+ * Returns `{ text: string; usage?: Partial<TokenUsage> }` so callers can
+ * hand the API-reported usage to `costTracker.record()` directly,
+ * skipping the local `estimateTokens()` heuristic. Callers populate
+ * `usage` via closure in their `extractDelta` function.
+ */
+async function httpsPostStream(
+  url: string,
+  headers: Record<string, string>,
+  body: string,
+  onChunk: (text: string) => void,
+  extractDelta: (line: string) => StreamExtraction | null
+): Promise<{ text: string; usage?: Partial<TokenUsage> }> {
+  return new Promise((resolve, reject) => {
+    const parsed = new URL(url);
+    const isHttps = parsed.protocol === 'https:';
+    const lib = isHttps ? https : http;
 
-/** Stream SSE / newline-delimited JSON and yield text deltas. */
-function httpsPostStream(
-    url: string,
-    headers: Record<string, string>,
-    body: string,
-    onChunk: (text: string) => void,
-    extractDelta: (line: string) => string | null
-): Promise<void> {
-    return new Promise((resolve, reject) => {
-        const parsed = new URL(url);
-        const isHttps = parsed.protocol === 'https:';
-        const lib = isHttps ? https : http;
+    let accumulatedText = '';
+    let accumulatedUsage: Partial<TokenUsage> | undefined;
 
-        const req = lib.request({
-            hostname: parsed.hostname,
-            port: parsed.port || (isHttps ? 443 : 80),
-            path: parsed.pathname + parsed.search,
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), ...headers }
-        }, res => {
-            res.on('data', (chunk: Buffer) => {
-                const lines = chunk.toString().split('\n');
-                for (const line of lines) {
-                    const delta = extractDelta(line.trim());
-                    if (delta) onChunk(delta);
-                }
-            });
-            res.on('end', resolve);
-        });
-
-        req.on('error', reject);
-        req.write(body);
-        req.end();
+    const req = lib.request({
+      hostname: parsed.hostname,
+      port: parsed.port || (isHttps ? 443 : 80),
+      path: parsed.pathname + parsed.search,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), ...headers }
+    }, res => {
+      res.on('data', (chunk: Buffer) => {
+        const lines = chunk.toString().split('\n');
+        for (const line of lines) {
+          const delta = extractDelta(line.trim());
+          if (!delta) continue;
+          if (delta.text) {
+            accumulatedText += delta.text;
+            onChunk(delta.text);
+          }
+          if (delta.usage) {
+            // Providers report cumulative counts, so the LAST seen value wins.
+            accumulatedUsage = { ...accumulatedUsage, ...delta.usage };
+          }
+        }
+      });
+      res.on('end', () => resolve({ text: accumulatedText, usage: accumulatedUsage }));
     });
+
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -418,7 +529,7 @@ async function streamOpenAI(
     stream: vscode.ChatResponseStream,
     token: vscode.CancellationToken,
     opts: ProviderStructuredOptions
-): Promise<string> {
+): Promise<{ text: string; usage?: { inputTokens?: number; outputTokens?: number } }> {
     const cfg = getConfig();
     const apiKey = cfg.get<string>('apiKey', '');
     const modelId = cfg.get<string>('modelId', '') || 'gpt-4o';
@@ -445,6 +556,11 @@ async function streamOpenAI(
         model: modelId,
         messages: messagesWithHint,
         stream: true,
+        // Audit gap #5/#23: ask the API to include token usage in the final
+        // stream chunk (`{usage: {prompt_tokens, completion_tokens}}`).
+        // OpenAI / OpenAI-compatible endpoints (Together, Groq, OpenRouter)
+        // honor this when supported.
+        stream_options: { include_usage: true },
         temperature: opts.temperature
     };
     if (opts.forceStructuredOutput) {
@@ -453,22 +569,33 @@ async function streamOpenAI(
 
     const headers = { Authorization: `Bearer ${apiKey}` };
 
+    let apiUsage: { inputTokens?: number; outputTokens?: number } | undefined;
     let full = '';
     try {
-        await httpsPostStream(url, headers, JSON.stringify(body),
+        const result = await httpsPostStream(url, headers, JSON.stringify(body),
             text => { if (!token.isCancellationRequested) { stream.markdown(text); full += text; } },
             line => {
                 if (!line.startsWith('data: ') || line === 'data: [DONE]') return null;
                 try {
                     const json = JSON.parse(line.slice(6));
-                    return json.choices?.[0]?.delta?.content ?? null;
+                    // Final usage chunk: empty choices + non-empty usage
+                    // (some providers send it on penultimate chunk; later chunks
+                    // might overwrite, but they all agree on totals).
+                    if (json.usage && typeof json.usage === 'object') {
+                        apiUsage = {
+                            inputTokens: json.usage.prompt_tokens ?? json.usage.input_tokens ?? apiUsage?.inputTokens,
+                            outputTokens: json.usage.completion_tokens ?? json.usage.output_tokens ?? apiUsage?.outputTokens,
+                        };
+                    }
+                    return { text: json.choices?.[0]?.delta?.content ?? undefined };
                 } catch { return null; }
             }
         );
+        if (result.usage) apiUsage = { ...apiUsage, ...result.usage };
     } catch (e) {
         stream.markdown(`\n**OpenAI error:** ${e}\n`);
     }
-    return full;
+    return { text: full, usage: apiUsage };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -480,7 +607,7 @@ async function streamAnthropic(
     stream: vscode.ChatResponseStream,
     token: vscode.CancellationToken,
     opts: ProviderStructuredOptions
-): Promise<string> {
+): Promise<{ text: string; usage?: { inputTokens?: number; outputTokens?: number; cacheReadTokens?: number } }> {
     const cfg = getConfig();
     const apiKey = cfg.get<string>('apiKey', '');
     const modelId = cfg.get<string>('modelId', '') || 'claude-sonnet-4-5';
@@ -515,16 +642,39 @@ async function streamAnthropic(
 
     let full = '';
     let parseErrorCount = 0;
+    // Audit gap #5/#23: Anthropic SSE events carry usage in:
+    //   - message_start   → message.usage.{input_tokens, cache_read_input_tokens, cache_creation_input_tokens, output_tokens=1}
+    //   - message_delta   → usage.output_tokens (CUMULATIVE — last seen value wins for total)
+    // Cache tokens are tracked as TWO separate fields (read vs creation)
+    // because Anthropic prices them VERY differently: cache reads are
+    // ~10% of fresh input cost, but cache CREATION is 1.25–2× input on
+    // Sonnet 4.5 — bundling them would mislead future per-cache pricing.
+    let apiUsage: { inputTokens?: number; outputTokens?: number; cacheReadTokens?: number; cacheCreationTokens?: number } | undefined;
     try {
-        await httpsPostStream('https://api.anthropic.com/v1/messages', headers, JSON.stringify(body),
+        const result = await httpsPostStream('https://api.anthropic.com/v1/messages', headers, JSON.stringify(body),
             text => { if (!token.isCancellationRequested) { stream.markdown(text); full += text; } },
             line => {
                 if (!line.startsWith('data: ')) return null;
                 try {
                     const json = JSON.parse(line.slice(6));
                     parseErrorCount = 0;
+                    if (json.type === 'message_start' && json.message?.usage) {
+                        const u = json.message.usage;
+                        apiUsage = {
+                            inputTokens: u.input_tokens,
+                            outputTokens: u.output_tokens,
+                            cacheReadTokens: u.cache_read_input_tokens,
+                            cacheCreationTokens: u.cache_creation_input_tokens,
+                        };
+                        return null;
+                    }
+                    if (json.type === 'message_delta' && json.usage?.output_tokens != null) {
+                        // Cumulative — overwrite output, preserve cache splits via spread.
+                        apiUsage = { ...(apiUsage ?? {}), outputTokens: json.usage.output_tokens };
+                        return null;
+                    }
                     if (json.type === 'content_block_delta' && json.delta?.type === 'text_delta') {
-                        return json.delta.text ?? null;
+                        return { text: json.delta.text };
                     }
                 } catch (e) {
                     parseErrorCount++;
@@ -535,10 +685,11 @@ async function streamAnthropic(
                 return null;
             }
         );
+        if (result.usage) apiUsage = { ...(apiUsage ?? {}), ...result.usage };
     } catch (e) {
         stream.markdown(`\n**Anthropic error:** ${e}\n`);
     }
-    return full;
+    return { text: full, usage: apiUsage };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -550,7 +701,7 @@ async function streamGemini(
     stream: vscode.ChatResponseStream,
     token: vscode.CancellationToken,
     opts: ProviderStructuredOptions
-): Promise<string> {
+): Promise<{ text: string; usage?: { inputTokens?: number; outputTokens?: number; cacheReadTokens?: number } }> {
     const cfg = getConfig();
     const apiKey = cfg.get<string>('apiKey', '');
     const modelId = cfg.get<string>('modelId', '') || 'gemini-2.0-flash';
@@ -584,21 +735,35 @@ async function streamGemini(
     }
 
     let full = '';
+    // Audit gap #5/#23: Gemini sends `usageMetadata` on the final SSE chunk with:
+    //   promptTokenCount, candidatesTokenCount, cachedContentTokenCount, thoughtsTokenCount.
+    // `thoughtsTokenCount` (reasoning budget) is billed as OUTPUT — add to outputTokens.
+    let apiUsage: { inputTokens?: number; outputTokens?: number; cacheReadTokens?: number } | undefined;
     try {
-        await httpsPostStream(url, {}, JSON.stringify(body),
+        const result = await httpsPostStream(url, {}, JSON.stringify(body),
             text => { if (!token.isCancellationRequested) { stream.markdown(text); full += text; } },
             line => {
                 if (!line.startsWith('data: ')) return null;
                 try {
                     const json = JSON.parse(line.slice(6));
-                    return json.candidates?.[0]?.content?.parts?.[0]?.text ?? null;
+                    const textDelta = json.candidates?.[0]?.content?.parts?.[0]?.text ?? undefined;
+                    const meta = json.usageMetadata;
+                    if (meta && typeof meta === 'object') {
+                        apiUsage = {
+                            inputTokens: meta.promptTokenCount,
+                            outputTokens: (meta.candidatesTokenCount ?? 0) + (meta.thoughtsTokenCount ?? 0),
+                            cacheReadTokens: meta.cachedContentTokenCount,
+                        };
+                    }
+                    return textDelta !== undefined ? { text: textDelta } : null;
                 } catch { return null; }
             }
         );
+        if (result.usage) apiUsage = { ...apiUsage, ...result.usage };
     } catch (e) {
         stream.markdown(`\n**Gemini error:** ${e}\n`);
     }
-    return full;
+    return { text: full, usage: apiUsage };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -610,7 +775,7 @@ async function streamOllama(
     stream: vscode.ChatResponseStream,
     token: vscode.CancellationToken,
     opts: ProviderStructuredOptions
-): Promise<string> {
+): Promise<{ text: string; usage?: { inputTokens?: number; outputTokens?: number } }> {
     const cfg = getConfig();
     const modelId = cfg.get<string>('modelId', '') || 'llama3';
     const baseUrl = cfg.get<string>('baseUrl', '') || 'http://localhost:11434';
@@ -627,21 +792,29 @@ async function streamOllama(
     }
 
     let full = '';
+    // Audit gap #5/#23: Ollama reports `prompt_eval_count` (input) +
+    // `eval_count` (output) on the final chunk where `"done": true`. Counts
+    // are CUMULATIVE — last seen value wins (matches Anthropic pattern).
+    let apiUsage: { inputTokens?: number; outputTokens?: number } | undefined;
     try {
-        await httpsPostStream(url, {}, JSON.stringify(body),
+        const result = await httpsPostStream(url, {}, JSON.stringify(body),
             text => { if (!token.isCancellationRequested) { stream.markdown(text); full += text; } },
             line => {
                 if (!line) return null;
                 try {
                     const json = JSON.parse(line);
-                    return json.message?.content ?? null;
+                    if (typeof json.prompt_eval_count === 'number' && typeof json.eval_count === 'number') {
+                        apiUsage = { inputTokens: json.prompt_eval_count, outputTokens: json.eval_count };
+                    }
+                    return { text: json.message?.content ?? undefined };
                 } catch { return null; }
             }
         );
+        if (result.usage) apiUsage = { ...apiUsage, ...result.usage };
     } catch (e) {
         stream.markdown(`\n**Ollama error:** ${e}\n`);
     }
-    return full;
+    return { text: full, usage: apiUsage };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -651,7 +824,7 @@ async function streamOllama(
 async function sendToAntigravity(
     messages: ChatMessage[],
     stream: vscode.ChatResponseStream
-): Promise<string> {
+): Promise<{ text: string; usage?: undefined }> {
     // Build a combined prompt from all user/system messages
     const prompt = messages
         .filter(m => m.role !== 'assistant')
@@ -673,7 +846,8 @@ async function sendToAntigravity(
     }
 
     // We cannot stream the response back — the user interacts in the Agent panel.
-    return '';
+    // Provider is opaque from this extension's perspective — usage remains unavailable.
+    return { text: '', usage: undefined };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -692,7 +866,7 @@ async function sendToAntigravity(
 async function sendToOmp(
     messages: ChatMessage[],
     stream: vscode.ChatResponseStream
-): Promise<string> {
+): Promise<{ text: string; usage?: undefined }> {
     const prompt = messages
         .filter(m => m.role !== 'assistant')
         .map(m => m.content)
@@ -708,7 +882,7 @@ async function sendToOmp(
                 '> **Oh My Pi mode:** Prompt sent to the OMP harness via `omp.sendPrompt`.\n' +
                 '> The conversation will continue in the OMP panel. Output files will be auto-detected.\n\n'
             );
-            return '';
+            return { text: '', usage: undefined };
         }
         if (cmdSet.has('omp.openPanel')) {
             await vscode.env.clipboard.writeText(prompt);
@@ -716,7 +890,7 @@ async function sendToOmp(
             stream.markdown(
                 '> **Oh My Pi mode:** Prompt copied to clipboard. Run `omp` in the terminal, or paste into the OMP panel.\n\n'
             );
-            return '';
+            return { text: '', usage: undefined };
         }
     } catch (e) {
         // Fall through to file-based path
@@ -739,7 +913,7 @@ async function sendToOmp(
                 '> **Oh My Pi mode:** Prompt written to `.omp/inbox.md`.\n' +
                 '> Run `omp` in the terminal to process it. Output files will be auto-detected by AgileAgentCanvas.\n\n'
             );
-            return '';
+            return { text: '', usage: undefined };
         }
     } catch (e) {
         // Fall through to clipboard
@@ -750,7 +924,7 @@ async function sendToOmp(
     stream.markdown(
         '**OMP fallback:** No workspace open. Prompt copied to clipboard — paste it into `omp` or the OMP panel.\n'
     );
-    return '';
+    return { text: '', usage: undefined };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

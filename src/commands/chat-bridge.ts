@@ -36,12 +36,18 @@ export type ChatProviderId =
  * command that opens the panel without a query, OR a terminal-based
  * strategy that shells out to a CLI.
  *
- * CLI invocation forms (verified against each tool's published docs):
- *   - claude     → `claude "<prompt>"`            (docs.claude.com/cli-reference: TUI with initial prompt)
- *   - codex      → `codex "<prompt>"`             (developers.openai.com/codex/cli/reference: TUI, accepts PROMPT as global flag)
- *   - gemini     → `gemini "<prompt>"`            (geminicli.com/docs/cli/cli-reference: query and continue interactively)
- *   - aider      → `aider --message "<prompt>"`   (aider.chat/docs/scripting: one-shot, exit after reply)
- *   - opencode   → `opencode "<prompt>"`          (opencode.ai docs: TUI accepts a positional prompt; non-interactive via `opencode run --model <p/m> "<p>"`)
+ * Headless CLI invocations (verified against each tool's published docs;
+ * these are the canonical flag reference for agentic / terminal-based
+ * workflow execution — see CHAT_COMMANDS[provider].terminalLaunch):
+ *   - claude     → `claude --permission-mode acceptEdits --output-format json -p <prompt>`
+ *                  (https://code.claude.com/docs/en/headless)
+ *   - codex      → `codex exec --ask-for-approval never --sandbox workspace-write <prompt>`
+ *                  (https://developers.openai.com/codex/cli/reference)
+ *   - gemini     → `gemini --yolo --output-format json -p <prompt>`
+ *                  (https://github.com/google-gemini/gemini-cli/blob/main/docs/get-started/index.md)
+ *   - aider      → `aider --message <prompt>`   (https://aider.chat/docs/scripting: one-shot, exit after reply)
+ *   - opencode   → `opencode run --model auto --format json <prompt>`
+ *                  (https://opencode.ai/docs/cli/)
  *   - terminal   → sentinel `echo`; handled in sendToTerminal
  */
 interface ChatCommand {
@@ -97,7 +103,30 @@ export const CHAT_COMMANDS: Record<ChatProviderId | 'copilot-fallback', ChatComm
         label: 'Claude Code',
         hint: 'claude.openChat, else `claude` in terminal',
         openOnly: () => ['claude.openChat'],
-        terminalLaunch: (q) => ['claude', q],
+        // Anthropic Claude Code v2.1.x headless invocation:
+        //   -p / --print       → suppress the interactive TUI (banner + `>` prompt).
+        //                         Without this, the TUI runs in the user's terminal
+        //                         and dumps the prompt into stdin; Claude waits on
+        //                         input instead of returning a verdict.
+        //   --permission-mode  → `acceptEdits` auto-approves Write/Edit tool calls
+        //                         so the agent can persist the verdict JSON file at
+        //                         <outputFolder>/_terminal-output/<id>-<wf>-result.json
+        //                         without any "Allow edit?" modal.
+        //   --output-format    → `json` emits a parseable assistant envelope; the
+        //                         verdict file is still written by the agent via the
+        //                         Write tool, not by the CLI.
+        // Note: we deliberately do NOT pass `--bare`. CLI is documented to
+        // disable CLAUDE.md / hooks / plugins / MCP auto-discovery under
+        // --bare, which would silently strip project-specific agentic rules
+        // from the agent's context. Predictability wins on a single host;
+        // project context wins here.
+        // Spec: https://code.claude.com/docs/en/headless
+        terminalLaunch: (q) => [
+            'claude',
+            '--permission-mode', 'acceptEdits',
+            '--output-format', 'json',
+            '-p', q,
+        ],
         hasPanel: async () => {
             const cmds = await Promise.resolve(vscode.commands.getCommands(false)).catch(() => [] as string[])
             return cmds.includes('claude.openChat') || cmds.includes('claude-code.openChat');
@@ -155,13 +184,48 @@ export const CHAT_COMMANDS: Record<ChatProviderId | 'copilot-fallback', ChatComm
         ide: 'codex',
         label: 'Codex (CLI)',
         hint: 'launches `codex` in the terminal',
-        terminalLaunch: (q) => ['codex', q],
+        // OpenAI Codex CLI headless invocation:
+        //   exec                  → non-interactive one-shot subcommand (without
+        //                           `exec`, `codex` launches its full TUI).
+        //   --ask-for-approval    → `never` skips manual approval prompts so the
+        //                           agent can run end-to-end without user input.
+        //   --sandbox             → `workspace-write` allows file writes inside the
+        //                           cwd (the verdict file lives under
+        //                           `.agileagentcanvas-context/_terminal-output/`).
+        //                           NOTE: `workspace-write` restricts writes to the
+        //                           workspace root. If a user configures
+        //                           `agileagentcanvas.outputFolder` to an absolute
+        //                           path outside the workspace, codex will reject the
+        //                           verdict-file write. The default output folder
+        //                           (`.agileagentcanvas-context`) is always workspace-
+        //                           relative, so the bound is safe in practice.
+        // Spec: https://developers.openai.com/codex/cli/reference
+        terminalLaunch: (q) => [
+            'codex',
+            'exec',
+            '--ask-for-approval', 'never',
+            '--sandbox', 'workspace-write',
+            q,
+        ],
     },
     'gemini-cli': {
         ide: 'gemini-cli',
         label: 'Gemini (CLI)',
         hint: 'launches `gemini` in the terminal',
-        terminalLaunch: (q) => ['gemini', q],
+        // Google Gemini CLI headless invocation:
+        //   -p                    → positional one-shot prompt (no `> ` prompt,
+        //                            no TUI).
+        //   --yolo                → auto-approve all tool calls (Bash/Edit/Write)
+        //                            so the agent writes the verdict JSON file
+        //                            without any UI confirmation.
+        //   --output-format json  → parseable assistant envelope.
+        // Spec: https://github.com/google-gemini/gemini-cli/blob/main/docs/get-started/index.md
+        terminalLaunch: (q) => [
+            'gemini',
+            '--yolo',
+            '--output-format', 'json',
+            '-p', q,
+        ],
     },
     'aider': {
         ide: 'aider',
@@ -173,11 +237,21 @@ export const CHAT_COMMANDS: Record<ChatProviderId | 'copilot-fallback', ChatComm
         ide: 'opencode',
         label: 'OpenCode',
         hint: 'launches `opencode` in the terminal',
-        // OpenCode TUI accepts a positional prompt. The non-interactive form
-        // is `opencode run --model <provider/model> "<p>"` but for the
-        // canvas's "fire-and-watch" UX the interactive TUI matches what
-        // claude/codex/gemini do — launch with the prompt pre-filled.
-        terminalLaunch: (q) => ['opencode', q],
+        // SST OpenCode headless invocation:
+        //   run                   → non-interactive one-shot subcommand (without
+        //                           `run`, `opencode` launches its full TUI).
+        //   --model auto          → use the configured default model; overridable
+        //                           per-run via --model provider/model.
+        //   --format json         → parseable event stream; verdict is still
+        //                           written by the agent via the Write tool.
+        // Spec: https://opencode.ai/docs/cli/
+        terminalLaunch: (q) => [
+            'opencode',
+            'run',
+            '--model', 'auto',
+            '--format', 'json',
+            q,
+        ],
     },
     'terminal': {
         ide: 'terminal',

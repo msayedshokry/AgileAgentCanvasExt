@@ -1,7 +1,11 @@
-Feature: Terminal Executor - Windows Shell Compatibility
+Feature: Terminal Executor - Windows Shell Compatibility and Headless CLI Flags
   As a Windows user
   I want the terminal executor to generate correct shell commands for PowerShell vs bash/zsh
   So that workflows execute without syntax errors on Windows
+
+  As a kanban orchestrator
+  I want CLI providers (claude, codex, gemini-cli, opencode) to launch in headless mode
+  So that the agent writes a verdict JSON file instead of opening an interactive TUI in the user's terminal
 
   Background:
     Given a fresh terminal executor context
@@ -76,47 +80,94 @@ Feature: Terminal Executor - Windows Shell Compatibility
     When I quote the path ""
     Then the quoted result should be "''"
 
-  # ─── Terminal Command Building (PowerShell) ───────────────────────────────
+  # ─── Headless Flags (Long Prompt) ─────────────────────────────────────────
+  # Headless CLIs (claude -p, codex exec, gemini -p, opencode run) require the
+  # prompt as a positional arg value and DO NOT read it from stdin. The prompt
+  # is therefore always sent inline via shellQuote, regardless of length.
 
-  @windows @command
-  Scenario: PowerShell terminal command uses Get-Content pipe for long prompts
+  @windows @command @headless
+  Scenario: PowerShell terminal command emits headless flags inline (long prompt)
     Given the VS Code shell is "powershell.exe"
     When I execute a terminal workflow with a long prompt
     Then sendText should have been called
-    And the sent command should contain "Get-Content"
-    And the sent command should contain "| & claude"
+    And the sent command should start with "claude"
+    And the sent command should contain "--permission-mode"
+    And the sent command should contain "acceptEdits"
+    And the sent command should contain "--output-format"
     And the sent command should not contain "<"
+    And the sent command should not contain "Get-Content"
+    And the sent command should not contain "--bare"
 
-  @windows @command
-  Scenario: PowerShell terminal command with CLI args
+  @windows @command @headless
+  Scenario: PowerShell terminal command keeps headless shape with custom CLI args
     Given the VS Code shell is "powershell.exe"
     And the chat-bridge returns CLI args for claude
     When I execute a terminal workflow with a long prompt
-    Then the sent command should contain "Get-Content"
-    And the sent command should contain "--model"
-    And the sent command should contain "| & claude"
+    Then the sent command should contain "--permission-mode"
+    And the sent command should not contain "<"
+    And the sent command should not contain "Get-Content"
 
-  # ─── Terminal Command Building (Bash) ─────────────────────────────────────
-
-  @windows @command
-  Scenario: Bash terminal command uses stdin redirect for long prompts
+  @windows @command @headless
+  Scenario: Bash terminal command emits headless flags inline (long prompt)
     Given the VS Code shell is "/bin/bash"
     When I execute a terminal workflow with a long prompt
     Then sendText should have been called
-    And the sent command should contain "<"
     And the sent command should start with "claude"
+    And the sent command should contain "--permission-mode"
+    And the sent command should not contain "<"
     And the sent command should not contain "Get-Content"
+    And the sent command should not contain "--bare"
 
-  @windows @command
-  Scenario: Bash terminal command with CLI args
+  @windows @command @headless
+  Scenario: Bash terminal command keeps headless shape with custom CLI args
     Given the VS Code shell is "/bin/bash"
     And the chat-bridge returns CLI args for claude
     When I execute a terminal workflow with a long prompt
     Then the sent command should start with "claude"
-    And the sent command should contain "--model"
-    And the sent command should contain "<"
+    And the sent command should not contain "<"
 
-  # ─── Short Prompt (no temp file) ──────────────────────────────────────────
+  # ─── Headless Flags (Other Providers) ─────────────────────────────────────
+
+  @windows @command @headless @codex
+  Scenario: Codex exec launches with headless flags inline
+    Given the VS Code shell is "/bin/bash"
+    And the terminal provider is "codex"
+    When I execute a terminal workflow with a long prompt
+    Then sendText should have been called
+    And the sent command should start with "codex"
+    And the sent command should contain "exec"
+    And the sent command should contain "--ask-for-approval"
+    And the sent command should contain "never"
+    And the sent command should contain "--sandbox"
+    And the sent command should not contain "<"
+    And the sent command should not contain "Get-Content"
+
+  @windows @command @headless @gemini
+  Scenario: Gemini CLI launches with headless flags inline
+    Given the VS Code shell is "/bin/bash"
+    And the terminal provider is "gemini-cli"
+    When I execute a terminal workflow with a long prompt
+    Then sendText should have been called
+    And the sent command should start with "gemini"
+    And the sent command should contain "--yolo"
+    And the sent command should contain "--output-format"
+    And the sent command should not contain "<"
+    And the sent command should not contain "Get-Content"
+
+  @windows @command @headless @opencode
+  Scenario: OpenCode run launches with headless flags inline
+    Given the VS Code shell is "/bin/bash"
+    And the terminal provider is "opencode"
+    When I execute a terminal workflow with a long prompt
+    Then sendText should have been called
+    And the sent command should start with "opencode"
+    And the sent command should contain "run"
+    And the sent command should contain "--model"
+    And the sent command should contain "--format"
+    And the sent command should not contain "<"
+    And the sent command should not contain "Get-Content"
+
+  # ─── Short Prompt ────────────────────────────────────────────────────────
 
   @windows @command
   Scenario: Short prompt passes command directly (PowerShell)
@@ -125,8 +176,8 @@ Feature: Terminal Executor - Windows Shell Compatibility
     When I execute a terminal workflow with a short prompt
     Then sendText should have been called
     And the sent command should start with "claude"
-    And the sent command should not contain "Get-Content"
     And the sent command should not contain "<"
+    And the sent command should not contain "Get-Content"
 
   @windows @command
   Scenario: Short prompt passes command directly (Bash)
@@ -157,11 +208,3 @@ Feature: Terminal Executor - Windows Shell Compatibility
   Scenario: Sanitize collapses consecutive hyphens
     When I sanitize the ID "Epic  2  !!!"
     Then the sanitized result should be "Epic-2"
-
-  @windows @sanitize
-  Scenario: Sanitize used in temp filename (long prompt)
-    Given the VS Code shell is "/bin/bash"
-    And the artifact ID contains a space
-    When I execute a terminal workflow with a long prompt
-    Then the temp filename should contain "Epic-2"
-    And the temp filename should not contain "Epic 2"

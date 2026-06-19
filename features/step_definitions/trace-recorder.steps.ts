@@ -122,7 +122,7 @@ Given('a valid session with 2 entries exists', async function (this: BmadWorld) 
   const filePath = path.join(ctx.recorder.getOutputFolder(), `session-valid-session.jsonl`);
   try {
     await (await import('fs/promises')).appendFile(filePath, 'corrupt-json-line\n', 'utf-8');
-  } catch {}
+  } catch { /* noop: missing dir is acceptable during test setup */ }
 });
 
 Given('trace entries exist across sessions', function (this: BmadWorld) {
@@ -190,7 +190,7 @@ Given('the traces directory does not exist', function (this: BmadWorld) {
   // Remove the output folder
   try {
     fs.rmSync(ctx.recorder.getOutputFolder(), { recursive: true, force: true });
-  } catch {}
+  } catch { /* noop: dir may already be missing during teardown */ }
 });
 
 Given('recent trace sessions exist', function (this: BmadWorld) {

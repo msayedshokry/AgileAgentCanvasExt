@@ -11,6 +11,21 @@ export interface TraceEntry {
   timestamp: string;
   type: 'tool_call' | 'llm_response' | 'artifact_change' | 'decision' | 'error' | 'handoff';
   agent: string;
+  /**
+   * Optional human-readable workflow name (e.g. `bmad-create-prd`, `dev-story`,
+   * `chat`) that the entry was emitted under. Lets trace consumers answer
+   * "what workflow was running when this happened?" the same way the
+   * cost-tracker already answers "what workflow was the LLM spending for?".
+   * Populated by:
+   *   - `WorkflowExecutor.executeWithTools()` from `workflowPath`
+   *     (`path.basename(path.dirname(workflowPath))`)
+   *   - `ChatParticipant.handleCommand()` for ad-hoc /command-triggered workflows
+   *   - `wrapToolWithDynamicTracing` reads it from `sharedToolContext`
+   * Top-level (not inside `data`) so downstream indexers can group-by-workflow
+   * without JSON-path digging, mirroring the pattern already established by
+   * `InterruptedSession.workflowId`.
+   */
+  workflowName?: string;
   data: {
     toolName?: string;
     toolInput?: any;
@@ -201,6 +216,16 @@ export class TraceRecorder implements vscode.Disposable {
     artifactId?: string;
     agent?: string;
     type?: string;
+    /**
+     * Optional workflow name filter (audit follow-up to gap #20/#42).
+     * Matches against the top-level `workflowName` field that chat-side and
+     * workflow-executor entries now tag themselves with (e.g. `bmad-create-prd`,
+     * `dev-story`). Use this to scope a trace view to one workflow's
+     * invocations — answers "what tools fired while workflow X was running?"
+     * without paging through every entry. Comparison is strict string equality
+     * (no regex) to keep the filter cheap and deterministic.
+     */
+    workflowName?: string;
     since?: Date;
     limit?: number;
   }): Promise<TraceEntry[]> {
@@ -231,6 +256,14 @@ export class TraceRecorder implements vscode.Disposable {
             if (query.artifactId && entry.data?.artifactId !== query.artifactId) continue;
             if (query.agent && entry.agent !== query.agent) continue;
             if (query.type && entry.type !== query.type) continue;
+            // Audit follow-up to gap #20/#42: filter by top-level workflowName
+            // (e.g. `bmad-create-prd`). String-equality only — cheap and
+            // deterministic. Older entries from before this audit (no
+            // `workflowName` field) are correctly excluded when the filter is
+            // set, because `undefined !== 'bmad-create-prd'` evaluates to true
+            // → skip. This matches the semantics callers expect: "entries
+            // with no workflow attribution do not belong to a named workflow".
+            if (query.workflowName && entry.workflowName !== query.workflowName) continue;
             if (sinceTime && new Date(entry.timestamp).getTime() < sinceTime) continue;
             results.push(entry);
           } catch {

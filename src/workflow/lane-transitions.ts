@@ -58,15 +58,21 @@ export const TRANSITION_RULES: TransitionRule[] = [
   { artifactType: 'epic',   fromStatus: 'ready-for-dev', toStatus: 'in-progress',   workflowId: 'sprint-planning', confirmWithUser: true, preFlightValidation: true },
 
   // In Progress → Review
-  { artifactType: 'story',  fromStatus: 'in-progress',   toStatus: 'review',        workflowId: 'code-review', confirmWithUser: true, preFlightValidation: true },
+  // confirmWithUser: false — if auto-advance is ON, the orchestrator handles
+  // review internally (runStepGuarded → REVIEW_WORKFLOW). If auto-advance is
+  // OFF and the user dragged to review, they've already committed — no need
+  // for a redundant Run/Skip modal. Gap #49.
+  { artifactType: 'story',  fromStatus: 'in-progress',   toStatus: 'review',        workflowId: 'code-review', confirmWithUser: false, preFlightValidation: true },
 
   // Review → Done (review-guard for autonomous terminal only; interactive skips)
   { artifactType: 'story',  fromStatus: 'review',        toStatus: 'done',          workflowId: null, terminalWorkflowId: 'aac-kanban-review-guard', confirmWithUser: false },
 
   // ── Blocked status transitions ─────────────────────────────────────────
   // Blocked → In Progress (unblock and resume)
-  { artifactType: 'story',  fromStatus: 'blocked',       toStatus: 'in-progress',   workflowId: null, confirmWithUser: true },
-  { artifactType: 'epic',   fromStatus: 'blocked',       toStatus: 'in-progress',   workflowId: null, confirmWithUser: true },
+  // confirmWithUser: false — unblocking a card is always a deliberate action
+  // in itself; the Run/Skip modal adds no value. Gap #49.
+  { artifactType: 'story',  fromStatus: 'blocked',       toStatus: 'in-progress',   workflowId: null, confirmWithUser: false },
+  { artifactType: 'epic',   fromStatus: 'blocked',       toStatus: 'in-progress',   workflowId: null, confirmWithUser: false },
 
   // In Progress → Blocked (mark as blocked)
   { artifactType: 'story',  fromStatus: 'in-progress',   toStatus: 'blocked',       workflowId: null, confirmWithUser: true },

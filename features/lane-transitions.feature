@@ -46,7 +46,10 @@ Feature: Lane Transitions - Kanban Card Movement Orchestration
   Scenario: Story in-progress → review rule has code-review workflow
     When I find the rule for story in-progress → review
     Then the rule workflowId should be "code-review"
-    And the rule confirmWithUser should be true
+    # Gap #49: confirmWithUser flipped to false — if auto-advance is ON, the
+    # orchestrator handles review internally; if OFF and the user dragged, they've
+    # already committed. No redundant Run/Skip modal.
+    And the rule confirmWithUser should be false
 
   @transitions @rules
   Scenario: Story review → done rule has no workflow

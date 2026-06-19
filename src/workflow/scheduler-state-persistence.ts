@@ -21,6 +21,9 @@ export interface PersistedSchedulerState {
   inProgress: string[];
   wipLimit: number;
   pollIntervalMs: number;
+  /** Audit gap #50 — story IDs that the user manually paused (not be confused
+   *  with the global `paused` field which pauses the whole scheduler). */
+  pausedStoryIds: Array<{ id: string; reason?: string; pausedAt: number }>;
 }
 
 export class SchedulerStatePersistence {
@@ -46,6 +49,7 @@ export class SchedulerStatePersistence {
       inProgress: autoScheduler.getInProgressIds(),
       wipLimit: autoScheduler.getWipLimit(),
       pollIntervalMs: autoScheduler.getPollIntervalMs(),
+      pausedStoryIds: autoScheduler.getPausedStories(),
     };
     try {
       fs.mkdirSync(path.dirname(this.filePath), { recursive: true });
@@ -84,6 +88,11 @@ export class SchedulerStatePersistence {
       autoScheduler.setInProgressIds(state.inProgress);
       autoScheduler.setWipLimit(state.wipLimit);
       autoScheduler.setPollIntervalMs(state.pollIntervalMs);
+      // Audit gap #50 — restore per-story pause flags so users don't lose
+      // they had S-3 manually paused when VS Code restarts.
+      for (const entry of state.pausedStoryIds ?? []) {
+        autoScheduler.pauseStory(entry.id, entry.reason);
+      }
       if (state.paused && state.enabled) {
         autoScheduler.start();
         autoScheduler.pause();
@@ -92,7 +101,7 @@ export class SchedulerStatePersistence {
       } else {
         autoScheduler.stop();
       }
-      logger.info('Scheduler state restored', { enabled: state.enabled, paused: state.paused, queueLen: state.queue.length, inProgressLen: state.inProgress.length });
+      logger.info('Scheduler state restored', { enabled: state.enabled, paused: state.paused, queueLen: state.queue.length, inProgressLen: state.inProgress.length, pausedLen: state.pausedStoryIds?.length ?? 0 });
       return { restored: true, state };
     } catch (err) {
       logger.warn('Failed to apply scheduler state', { error: String(err) });

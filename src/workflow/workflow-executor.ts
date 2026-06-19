@@ -16,6 +16,8 @@ import { parseFrontmatter } from './frontmatter';
 import { AgentTeamOrchestrator } from '../acp/team-orchestrator';
 import { AcpSessionResult } from '../acp/types';
 import { getTraceRecorder } from '../trace/trace-recorder';
+// Audit follow-up to gap #20/#42 (chat-side workflow attribution in trace metadata).
+import { sharedToolContext } from '../chat/agileagentcanvas-tools';
 import { harnessFeedback } from '../harness/harness-feedback';
 import {
     resultFilePath,
@@ -64,6 +66,7 @@ export interface WorkflowConfig {
     editWorkflow?: string;
     validateWorkflow?: string;
     // Variables from frontmatter
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic YAML/MD front-matter key-value capture; interface intentionally extensible for user-authored workflows
     [key: string]: any;
 }
 
@@ -71,6 +74,7 @@ export interface WorkflowState {
     currentStep: number;
     stepsCompleted: string[];
     variables: Map<string, string>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic artifact output container; discriminated-union narrowing across 38 BMAD artifact types is post-lint-debt scope
     outputContent: any;
     yoloMode: boolean;
 }
@@ -98,6 +102,7 @@ export interface WorkflowSession {
     /** Artifact being refined */
     artifactType: string;
     artifactId: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic artifact container; discriminated-union narrowing is post-lint-debt scope
     artifact: any;
     /** User responses/inputs collected during workflow */
     userInputs: { step: string; input: string }[];
@@ -113,6 +118,7 @@ export interface WorkflowContext {
     projectRoot: string;
     bmadPath: string;
     configPath: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic config blob; loadConfig returns untyped YAML
     config: any;
 }
 
@@ -1231,6 +1237,7 @@ export class WorkflowExecutor {
         workflowName: string,
         artifactType: string,
         artifactId: string,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic artifact parameter; discriminator narrows downstream in session lifecycle
         artifact: any
     ): WorkflowSession {
         const sessionId = `ws-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -1572,6 +1579,7 @@ ${stepContent}
             // Try the resolver first for multi-root awareness
             let resolved = false;
             try {
+                // eslint-disable-next-line @typescript-eslint/no-var-requires -- Cyclic dynamic workspace-resolver load; require breaks circular import between workflow-executor <-> extension
                 const { getWorkspaceResolver } = require('../extension');
                 const resolver = getWorkspaceResolver();
                 const wsFolder = resolver?.getActiveWorkspaceFolder();
@@ -1721,6 +1729,7 @@ ${stepContent}
     /**
      * Load a step file
      */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- `frontmatter` is parsed YAML; shape is dynamic per workflow file
     async loadStep(stepPath: string): Promise<{ frontmatter: any; body: string } | null> {
         try {
             const resolvedPath = this.resolveVariable(stepPath);
@@ -2521,7 +2530,6 @@ ${stepContent}
      * Get all available workflows organized by category for display
      */
     getAllAvailableWorkflowsMenu(): string {
-        const bmadPath = this.context.bmadPath;
         let menu = '## All BMAD Workflows\n\n';
 
         // Group by module
@@ -2558,6 +2566,7 @@ ${stepContent}
     /**
      * Build a prompt that instructs Copilot to follow a BMAD workflow
      */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic Copilot chat artifact context; runtime type-narrowing deferred to discriminated-union refactor
     async buildWorkflowPrompt(workflowPath: string, artifactContext: any): Promise<string> {
         const workflow = await this.loadWorkflow(workflowPath);
         if (!workflow) {
@@ -2591,6 +2600,7 @@ ${stepContent}
         if (bmadPath && !schemaValidator.isInitialized()) {
             try {
                 schemaValidator.init(bmadPath);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Schema validator init failure (buildWorkflowPrompt); err shape varies across implementations; debug-log-only
             } catch (err: any) {
                 logger.debug(
                     `[buildWorkflowPrompt] Schema validator init failed: ${err?.message ?? err}`
@@ -2655,6 +2665,7 @@ Begin executing the workflow now.`;
      */
     async executeInChat(
         workflowPath: string,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic Copilot chat artifact context; runtime type-narrowing deferred
         artifactContext: any,
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
@@ -2708,14 +2719,38 @@ Begin executing the workflow now.`;
     async executeWithTools(
         model: BmadModel,
         task: string,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic artifact parameter; discriminator narrows downstream
         artifact: any,
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic artifact-store interface; load/save union of 38 artifact types
         store: any,
         workflowPath?: string,
         sessionId?: string
     ): Promise<void> {
+        // Capture the prior workflow-name tag (matching chat-participant.ts
+        // dispatch-site pattern) so the matching finally below can restore
+        // it without leaking an inner executeWithTools's basename back to an
+        // outer scope. Without this capture the finally references an
+        // undeclared `prevWorkflowName` (TS2304 + runtime ReferenceError
+        // when executeWithTools exits via early-return, exception, or normal
+        // completion).
+        const prevWorkflowName = sharedToolContext.currentWorkflowName;
+        // Audit follow-up to gap #20/#42 — thread the workflow name into
+        // `sharedToolContext` so every trace entry emitted by LM tools
+        // fired during this workflow execution is tagged with the
+        // workflow's basename (e.g. `bmad-create-prd`, `dev-story`) and
+        // reconciles with the cost-tracker's `workflow:<basename>` bucket.
+        // The chat-participant dispatch site's outer try/finally restores
+        // `currentWorkflowName` on exit, so this is a single non-invasive
+        // SET (no explicit restore needed). When `workflowPath` is absent
+        // (ad-hoc prompt building), the outer dispatch-site tag is preserved.
+        if (workflowPath) {
+            sharedToolContext.currentWorkflowName = this.extractWorkflowId(workflowPath);
+        }
         // ── For direct-API / Antigravity providers: use a simple single-shot prompt
+        try {
+
         // instead of the VS Code LM agentic tool-calling loop (which requires vscode.LanguageModelChat).
         if (!model.vscodeLm) {
             await this.executeWithDirectApi(model, task, artifact, stream, token, workflowPath, sessionId);
@@ -2781,6 +2816,7 @@ the correct workflow file for this task, then follow its steps.`;
         if (bmadPath && !schemaValidator.isInitialized()) {
             try {
                 schemaValidator.init(bmadPath);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Schema validator init failure (executeWithTools variant); debug-log-only
             } catch (err: any) {
                 logger.debug(
                     `[executeWithTools] Schema validator init failed: ${err?.message ?? err}`
@@ -2978,6 +3014,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
             let response: vscode.LanguageModelChatResponse;
             try {
                 response = await model.vscodeLm!.sendRequest(messages, { tools }, token);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- vscodeLm.sendRequest rejection; error type is opaque from VS Code LM API
             } catch (err: any) {
                 stream.markdown(`\n\n**Error calling model:** ${err?.message ?? err}\n`);
                 return;
@@ -3025,6 +3062,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                 let result: vscode.LanguageModelToolResult;
                 try {
                     result = await vscode.lm.invokeTool(tc.name, { input: tc.input, toolInvocationToken: undefined }, token);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- vscode.lm.invokeTool rejection; error is opaque from VS Code LM API
                 } catch (err: any) {
                     const errText = `Tool "${tc.name}" failed: ${err?.message ?? err}`;
                     logger.debug(`[executeWithTools] ${errText}`);
@@ -3050,6 +3088,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                         artifactSaved = true;
 
                         // Run strict full-artifact validation
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Tool-call `input` shape is dynamic per agent mode; validator downstream narrows
                         const input = tc.input as { type?: string; changes?: Record<string, any> };
                         const artType = input.type || '';
                         const changes = input.changes || {};
@@ -3096,6 +3135,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                             // Try to read the actual merged file from disk (preferred).
                             // The store has already merged changes + written the file by
                             // the time we get here (updateArtifact → syncToFiles).
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Envelope shape decided by TS-narrowed branches downstream
                             let envelope: any = null;
                             let validationType = artType;
                             let usedDiskFile = false;
@@ -3117,6 +3157,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                                             `[executeWithTools] Read on-disk artifact for ${artType} (key: ${storeKey}) — validating merged state`
                                         );
                                     }
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Read-on-disk error (executeWithTools validation fallback); debug-log-only path
                                 } catch (readErr: any) {
                                     logger.debug(
                                         `[executeWithTools] Failed to read on-disk artifact for ${artType}: ${readErr?.message ?? readErr}`
@@ -3143,6 +3184,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                             // Used for embedded types (story, use-case, test-case) or
                             // when on-disk read fails.
                             if (!envelope) {
+                                // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Intentionally destructuring `id` as `_id` to EXCLUDE it from `contentFields` rest pattern; removing the `_id` slot would silently bundle `id` into contentFields
                                 const { status, id: _id, ...contentFields } = changes;
                                 envelope = {
                                     metadata: {
@@ -3314,6 +3356,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                         let result: vscode.LanguageModelToolResult;
                         try {
                             result = await vscode.lm.invokeTool(tc.name, { input: tc.input, toolInvocationToken: undefined }, token);
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- vscode.lm.invokeTool rejection (recurring path); error opaque from VS Code LM API
                         } catch (err: any) {
                             result = new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(`Tool "${tc.name}" failed: ${err?.message ?? err}`)
@@ -3339,6 +3382,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                     // Feed tool results back for next nudge round
                     messages.push(vscode.LanguageModelChatMessage.User(nudgeToolResults));
                 }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Nudge loop error (executeWithTools); debug-log-only path
             } catch (err: any) {
                 logger.debug(`[executeWithTools] Nudge loop failed: ${err?.message ?? err}`);
             }
@@ -3356,6 +3400,14 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
         if (rounds >= MAX_ROUNDS) {
             stream.markdown('\n\n*Maximum tool-call rounds reached. Workflow halted.*\n');
         }
+        } finally {
+            // Restore the previous currentWorkflowName so nested executeWithTools
+            // calls don't leak an inner workflow's basename back out to the
+            // outer scope. Outer dispatch-site finally restores to its own prev
+            // on chat-session exit.
+            sharedToolContext.currentWorkflowName = prevWorkflowName;
+        }
+
     }
 
     /**
@@ -3366,6 +3418,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
     private async executeWithDirectApi(
         model: BmadModel,
         task: string,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic artifact parameter; discriminator narrows downstream
         artifact: any,
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken,
@@ -3381,6 +3434,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
         const directUserFormat = vscode.workspace.getConfiguration('agileagentcanvas')
             .get<'json' | 'markdown' | 'dual'>('outputFormat', 'dual');
         let directOutputFormat: string = directUserFormat;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Workflow runtime config; dynamic blob from user-authored workflow (not typeable at compile time)
         let wfConfig: any = null;
         if (workflowPath) {
             try {
@@ -3455,6 +3509,7 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
         if (bmadPath && !schemaValidator.isInitialized()) {
             try {
                 schemaValidator.init(bmadPath);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Schema validator init failure (executeWithDirectApi); debug-log-only
             } catch (err: any) {
                 logger.debug(
                     `[executeWithDirectApi] Schema validator init failed: ${err?.message ?? err}`
@@ -3575,7 +3630,11 @@ Instructions: Return ONLY a \`\`\`json code block containing the artifact JSON. 
             const fullResponse = await streamChatResponse(model, messages, stream, token, {
                 forceStructuredOutput: true,
                 activeArtifactType: artifactType,
-                sessionId
+                sessionId,
+                // Audit gap #20/#42 — surface a human-readable workflow name alongside
+                // the sessionId UUID so the budget gauge can break down spend per-workflow.
+                // Falls back to undefined (→ `'chat-session'`) when no session is active.
+                workflow: this.getCurrentSession()?.workflowName,
             });
 
             // ── Extract JSON ──────────────────────────────────────────────
@@ -3647,7 +3706,9 @@ Instructions: Return ONLY a \`\`\`json code block containing the artifact JSON. 
      */
     async executeLaneTransition(
         workflowId: string,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic artifact parameter; discriminator narrows downstream
         artifact: any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic artifact-store interface (lane transitions reuse the same store contract as executeWithTools)
         store: any,
         model?: BmadModel,
         stream?: vscode.ChatResponseStream,
@@ -3679,6 +3740,7 @@ Instructions: Return ONLY a \`\`\`json code block containing the artifact JSON. 
         try {
             getTraceRecorder().record({
                 sessionId: traceSessionId,
+                workflowName: workflowId, // audit gap #20/#42 — top-level workflow tag
                 type: 'decision',
                 agent: 'lane-transition',
                 data: {
@@ -3724,6 +3786,7 @@ Instructions: Return ONLY a \`\`\`json code block containing the artifact JSON. 
                 try {
                     getTraceRecorder().record({
                         sessionId: traceSessionId,
+                        workflowName: workflowId, // audit gap #20/#42 — top-level workflow tag
                         type: 'decision',
                         agent: 'lane-transition',
                         data: {
@@ -3746,6 +3809,7 @@ Instructions: Return ONLY a \`\`\`json code block containing the artifact JSON. 
                 try {
                     getTraceRecorder().record({
                         sessionId: traceSessionId,
+                        workflowName: workflowId, // audit gap #20/#42 — top-level workflow tag
                         type: 'error',
                         agent: 'lane-transition',
                         data: {
@@ -3790,7 +3854,9 @@ Instructions: Return ONLY a \`\`\`json code block containing the artifact JSON. 
         model: BmadModel,
         teamId: string,
         task: string,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic artifact parameter (team workflow); discriminator narrows downstream
         artifact: any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic artifact-store interface (team workflow)
         store: any,
         bmadPath: string,
         stream: vscode.ChatResponseStream,

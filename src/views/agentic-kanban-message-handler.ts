@@ -23,6 +23,15 @@ import { kanbanOrchestrator } from '../workflow/kanban-orchestrator';
 
 import { errMsg } from '../utils/error';
 
+// Audit gap #20/#42: producer imports the canonical TraceBreakdown shape
+// and the shared `UNTAGGED_BUCKET` constant directly from the production-side
+// types module (`src/types/trace-breakdown.ts`) rather than a `test/`
+// helper, so producer and consumer share a single source of truth — drift
+// in the wire shape surfaces as a compile error here and in both
+// producer/consumer tests.
+import type { TraceBreakdownRow, TraceBreakdownMessage } from '../types/trace-breakdown';
+import { UNTAGGED_BUCKET } from '../types/trace-breakdown';
+
 // P0 #1 fix: Track active webview stream disposables per artifact so repeated
 // `kanban:jumpToTerminal` clicks don't stack listeners and duplicate output.
 const terminalStreamDisposables = new Map<string, vscode.Disposable>();
@@ -41,12 +50,148 @@ export function disposeAllTerminalStreams(): void {
   }
 }
 
+// =============================================================================
+// Trace Breakdown (Audit follow-up to gap #20/#42)
+// =============================================================================
+//
+// Mirror of `TraceBreakdownMessage` / `TraceBreakdownRow` in
+// webview-ui/src/types.ts. Defined locally here (not imported) because the
+// extension and webview-ui are separate TS projects with independent
+// tsconfigs — the wire format is the structural identity, and any drift
+// will be caught by the consumer's structural check on receipt.
+
 /**
- * Handle messages from the Agentic Kanban webview.
+ * Compute the trace breakdown for the most recent Kanban autonomous-loop
+ * run window.
  *
- * @param webview  Optional webview to post responses back to.
- * @returns `true` if the message was handled, `false` if the caller should handle it.
+ * A "run" is a `(started X, completed X | abandoned | error)` pair detected
+ * from `lane-transition` agent decisions — same heuristic as
+ * `TraceRecorder.scanInterruptedSessions` so what the panel shows matches
+ * what the extension considers an active-or-just-finished run. Includes
+ * `flushAll()` before searching because `searchTraces` only reads from
+ * disk; without a flush the panel would lag up to 2s behind active tool
+ * calls during the run window.
+ *
+ * Exported as a testing seam so unit tests in
+ * `agentic-kanban-message-handler.test.ts` can drive it directly with
+ * mocked `TraceRecorder` dependencies. Production code calls it through
+ * the `case 'getTraceBreakdown':` IPC handler below.
  */
+export async function computeTraceBreakdownForMostRecentRun(): Promise<TraceBreakdownMessage> {
+  const trace = getTraceRecorder();
+
+  // Force in-flight buffered entries to disk so the search is current.
+  // Cheap (writes a buffered blob) and necessary — searchTraces does not
+  // consult the in-memory buffer.
+  await trace.flushAll();
+
+  // Pull decisions emitted by the lane-transition agent. Same sentinel
+  // shape used by `TraceRecorder.scanInterruptedSessions`
+  // (src/trace/trace-recorder.ts:373-379): `data.decision` starts with
+  // `started ` for run-start and `completed ` (or `abandoned`, or `type:
+  // 'error'` for a transition error) for run-end.
+  const decisions = await trace.searchTraces({
+    agent: 'lane-transition',
+    type: 'decision',
+    limit: 1000,
+  });
+  decisions.sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
+
+  // Walk chronologically: (started X) → next terminal-style entry closes
+  // the run. Most recent pair wins; an un-terminated `started` becomes a
+  // still-running run with `endedAt: null` and `isRunning: true`.
+  let startInfo: { time: string; workflow: string } | null = null;
+  let lastWindow: { startedAt: string; endedAt: string | null; workflow: string; isRunning: boolean } | null = null;
+  for (const d of decisions) {
+    const decision: string = d.data?.decision ?? '';
+    if (decision.startsWith('started ')) {
+      startInfo = { time: d.timestamp, workflow: decision.slice('started '.length) };
+      continue;
+    }
+    const isTerminalMark =
+      decision.startsWith('completed ') || decision === 'abandoned' || d.type === 'error';
+    if (startInfo && isTerminalMark) {
+      lastWindow = {
+        startedAt: startInfo.time,
+        endedAt: d.timestamp,
+        workflow: startInfo.workflow,
+        isRunning: false,
+      };
+      startInfo = null;
+    }
+  }
+  if (startInfo) {
+    // No matching terminal marker → run is still in progress.
+    lastWindow = {
+      startedAt: startInfo.time,
+      endedAt: null,
+      workflow: startInfo.workflow,
+      isRunning: true,
+    };
+  }
+
+  if (!lastWindow) {
+    return {
+      type: 'traceBreakdownResponse',
+      workflowName: '',
+      startedAt: '',
+      endedAt: null,
+      isRunning: false,
+      totalEntries: 0,
+      totalToolCalls: 0,
+      totalErrors: 0,
+      perWorkflow: [],
+    };
+  }
+
+  // Pull every entry in the window. Use a generous limit and trim by
+  // terminal time so we don't include post-run noise.
+  const allInWindow = await trace.searchTraces({
+    since: new Date(lastWindow.startedAt),
+    limit: 5000,
+  });
+  const endMs = lastWindow.endedAt ? Date.parse(lastWindow.endedAt) : Date.now();
+  const filtered = allInWindow.filter(e => Date.parse(e.timestamp) <= endMs);
+
+  // Group by `entry.workflowName` (top-level field). Pre-audit entries                // show under `UNTAGGED_BUCKET` — same convention as the underlying helper
+  // semantics: no workflow name → not part of a named workflow.
+  const buckets = new Map<string, { toolCalls: number; errors: number; tools: Set<string>; total: number }>();
+  for (const e of filtered) {                const key = e.workflowName ?? UNTAGGED_BUCKET;
+    const bucket = buckets.get(key) ?? {
+      toolCalls: 0,
+      errors: 0,
+      tools: new Set<string>(),
+      total: 0,
+    };
+    if (e.type === 'tool_call') bucket.toolCalls += 1;
+    if (e.type === 'error') bucket.errors += 1;
+    const toolName = e.data?.toolName;
+    if (typeof toolName === 'string') bucket.tools.add(toolName);
+    bucket.total += 1;
+    buckets.set(key, bucket);
+  }
+  const perWorkflow: TraceBreakdownRow[] = Array.from(buckets.entries())
+    .map(([workflow, b]) => ({
+      workflow,
+      toolCallCount: b.toolCalls,
+      errorCount: b.errors,
+      distinctTools: Array.from(b.tools).sort(),
+      totalEntries: b.total,
+    }))
+    .sort((a, b) => b.toolCallCount - a.toolCallCount);
+
+  return {
+    type: 'traceBreakdownResponse',
+    workflowName: lastWindow.workflow,
+    startedAt: lastWindow.startedAt,
+    endedAt: lastWindow.endedAt,
+    isRunning: lastWindow.isRunning,
+    totalEntries: filtered.length,
+    totalToolCalls: filtered.filter(e => e.type === 'tool_call').length,
+    totalErrors: filtered.filter(e => e.type === 'error').length,
+    perWorkflow,
+  };
+}
 export async function handleAgenticKanbanMessage(
   message: { type: string; [key: string]: any },
   store: ArtifactStore,
@@ -294,27 +439,42 @@ export async function handleAgenticKanbanMessage(
         const wasRunning = kanbanOrchestrator?.abort(abandonId) ?? false;
         if (!wasRunning) {
           concurrencyQueue.release(abandonId);
-        }
-
-        // Write a trace entry so this session is no longer identified as
+        }        // Write a trace entry so this session is no longer identified as
         // interrupted on the next restart. The entry has type 'decision'
         // with decision 'abandoned' — scanInterruptedSessions recognizes
         // this as a terminal state.
+        //
+        // TODO(audit-gap-#20-#42): tag this entry's top-level `workflowName`
+        // so it lands in the workflow's bucket instead of `(untagged)` in the
+        // Trace Breakdown. Today `workflowId` is NOT in scope here — only
+        // `abandonId` (artifactId) and `abandonSessionId`. Two follow-up
+        // paths to consider:
+        //   (a) query the recorder for the session's most recent
+        //       `started X` decision to recover workflowId (would require
+        //       converting this try/catch to async — currently `record()`
+        //       is fire-and-forget within the synchronous IPC branch);
+        //   (b) plumb `workflowId` through the `kanban:abandonExecution`
+        //       IPC payload from the webview (state already exists there
+        //       in the restored checkpoint).
+        // The breakdown walk still resolves the workflow from the prior
+        // `started X` decision's `data.decision` text, so the panel's
+        // workflow-name header remains correct — this is cosmetic drift,
+        // not a functional bug.
         try {
-          if (abandonSessionId) {
-            getTraceRecorder().record({
-              sessionId: abandonSessionId,
-              type: 'decision',
-              agent: 'lane-transition',
-              data: {
-                decision: 'abandoned',
-                artifactId: abandonId,
-                rationale: 'User abandoned the interrupted execution',
-              },
-            });
-          }
+            if (abandonSessionId) {
+                getTraceRecorder().record({
+                    sessionId: abandonSessionId,
+                    type: 'decision',
+                    agent: 'lane-transition',
+                    data: {
+                        decision: 'abandoned',
+                        artifactId: abandonId,
+                        rationale: 'User abandoned the interrupted execution',
+                    },
+                });
+            }
         } catch {
-          // Trace recorder may not be initialized (shouldn't happen, but guard)
+            // Trace recorder may not be initialized (shouldn't happen, but guard)
         }
 
         if (webview) {
@@ -573,6 +733,38 @@ export async function handleAgenticKanbanMessage(
           terminalInfo,
           traceSummary,
         });
+      }
+      return true;
+    }
+
+    /**
+     * Audit follow-up to gap #20/#42 — return a per-workflow aggregation of
+     * tool-call entries from the most recent Kanban autonomous-loop run
+     * window, so the webview can render a "Trace" panel that answers
+     * "what workflows ran during the kanban loop, and how many tool calls
+     * did each one make?".
+     */
+    case 'getTraceBreakdown': {
+      if (webview) {
+        try {
+          const breakdown = await computeTraceBreakdownForMostRecentRun();
+          webview.postMessage(breakdown);
+        } catch (error) {
+          logger.warn(`[AgenticKanban] computeTraceBreakdownForMostRecentRun failed: ${errMsg(error)}`);
+          // Surface an empty breakdown rather than failing the IPC — the
+          // panel renders its own empty-state hint when perWorkflow is [].
+          webview.postMessage({
+            type: 'traceBreakdownResponse',
+            workflowName: '',
+            startedAt: '',
+            endedAt: null,
+            isRunning: false,
+            totalEntries: 0,
+            totalToolCalls: 0,
+            totalErrors: 0,
+            perWorkflow: [],
+          });
+        }
       }
       return true;
     }

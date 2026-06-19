@@ -120,6 +120,6 @@ Then(
     const store = getDataStore(this);
     const found = store.findArtifactById(storyId);
     assert.ok(found, `story ${storyId} not found`);
-    assert.strictEqual(found.artifact.status, status);
+    assert.strictEqual(found.artifact.status, status, `Expected story ${storyId} status to be '${status}', got '${found.artifact.status}'`);
   }
 );

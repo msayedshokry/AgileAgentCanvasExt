@@ -21,7 +21,7 @@ import { schedulerWebviewControls, MSG_SCHEDULER_STATE } from './scheduler-webvi
 import { schedulerStatePersistence } from './scheduler-state-persistence';
 import { budgetEnforcer } from './budget-enforcer';
 import { circuitBreaker } from './circuit-breaker';
-import { terminalExecutor } from './terminal-executor';
+import { terminalExecutor, checkProcessAlive } from './terminal-executor';
 import { concurrencyQueue } from './concurrency-queue';
 import { goalDecomposer, type ProposedStory } from './goal-decomposer';
 import { dependencyAutoResume } from './dependency-auto-resume';
@@ -300,9 +300,13 @@ export class AutonomyLifecycle extends EventEmitter {
 
           logger.info(`[Autonomy] Reconnected to terminal: ${matchName} (pid: ${pid})`);
 
-          // Register health checks for the reconnected session
+          // Register health checks for the reconnected session.
+          // Issue #15: use real process-liveness check (tasklist on
+          // Windows, /proc/<pid>/stat on Linux) instead of hardcoded
+          // true so the health monitor can detect when a reconnected
+          // terminal's process has died.
           const adapter = {
-            isAlive: () => true,
+            isAlive: () => checkProcessAlive(pid),
             getLastOutputTime: () => Date.now(),
           };
           const { createTerminalHealthChecks } = require('./terminal-health-checks');

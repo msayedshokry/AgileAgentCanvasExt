@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    include: ['src/workflow/**/*.test.ts', 'src/acp/**/*.test.ts'],
+    include: ['src/workflow/**/*.test.ts', 'src/acp/**/*.test.ts', 'src/views/**/*.test.ts'],
     setupFiles: ['src/test/setup.ts'],
     environment: 'node',
     globals: false,

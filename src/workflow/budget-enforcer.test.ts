@@ -10,6 +10,7 @@ import { BudgetEnforcer } from './budget-enforcer';
 // pulling in the full AI provider chain.
 vi.mock('../chat/cost-tracker', () => ({
   costTracker: {
+    perWorkflowBreakdown: vi.fn().mockReturnValue([]),
     costForArtifact: () => 0.42,
     totalCost: () => 1.50,
   },
