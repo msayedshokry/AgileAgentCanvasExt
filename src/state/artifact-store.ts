@@ -8,14 +8,13 @@ import { ArtifactFileWriter } from './artifact-file-writer';
 import { ArtifactMigrator } from './artifact-migrator';
 import { addEpic, addStory, addRequirement, createEpic, createStory, createRequirement, createOrUpdateVision, createUseCase, createProductBrief, createPRD, createArchitecture, createTestCase, createTestStrategy } from './artifact-factory';
 import { backupArtifactFiles, pruneOldBackups } from './artifact-backup';
-import { findAllJsonFiles, detectArtifactType, loadUiState, loadEpicStoryRefs, removeStoryLinksFromRequirements, syncRequirementLinks, checkForInlineStories, reconcileDerivedState } from './artifact-load-helpers';import { generateVisionMarkdown, generateSingleEpicMarkdown, generateEpicsMarkdown, generateProductBriefMarkdown, generatePRDMarkdown, generateArchitectureMarkdown, generateTestCasesMarkdown, generateTestStrategyMarkdown, generateTestDesignMarkdown, generateAllArtifactsMarkdown } from './artifact-markdown-generator';
-import { generateJiraCSV, generatePDF, exportArtifacts, stripMarkdownInline } from './artifact-exporter';
+import { findAllJsonFiles, detectArtifactType, loadUiState, loadEpicStoryRefs, removeStoryLinksFromRequirements, syncRequirementLinks, checkForInlineStories, reconcileDerivedState } from './artifact-load-helpers';
+import { exportArtifacts } from './artifact-exporter';
 import { mapSchemaEpicToInternal, mergeEpicDuplicate, extractStoryId, mapSchemaStoryToInternal, mapStatus, mapSchemaRequirement, mapSchemaNonFunctionalRequirement, mapSchemaAdditionalRequirement } from './schema-mappers';
 import { repairArtifactData } from './schema-artifact-mapper';
-import { resolveArtifactTargetUri, writeJsonFile, writeMarkdownCompanion, normalizeLegacyArtifact } from './artifact-file-io';
+import { writeMarkdownCompanion, normalizeLegacyArtifact } from './artifact-file-io';
 import { schemaValidator } from './schema-validator';
 import { harnessEngine } from '../harness/policy-engine';
-import { harnessFeedback } from '../harness/harness-feedback';
 import {
     BmadArtifacts,
     BmadMetadata,
