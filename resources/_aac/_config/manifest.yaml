@@ -22,20 +22,20 @@ modules:
     installDate: 2026-02-26T10:26:53.833Z
     lastUpdated: 2026-06-09T00:00:00.000Z
     source: external
-    npmPackage: bmad-builder
-    repoUrl: https://github.com/bmad-code-org/bmad-builder
+    npmPackage: aac-builder
+    repoUrl: https://github.com/aac-code-org/aac-builder
   - name: tea
     version: 1.19.0
     installDate: 2026-02-26T10:26:59.417Z
     lastUpdated: 2026-06-09T00:00:00.000Z
     source: external
-    npmPackage: bmad-method-test-architecture-enterprise
-    repoUrl: https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
+    npmPackage: aac-method-test-architecture-enterprise
+    repoUrl: https://github.com/aac-code-org/aac-method-test-architecture-enterprise
   - name: cis
     version: 0.1.9
     installDate: 2026-02-26T10:27:03.579Z
     lastUpdated: 2026-06-09T00:00:00.000Z
     source: external
-    npmPackage: bmad-creative-intelligence-suite
-    repoUrl: https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
+    npmPackage: aac-creative-intelligence-suite
+    repoUrl: https://github.com/aac-code-org/aac-module-creative-intelligence-suite
 ides: []
