@@ -551,21 +551,6 @@ export function activate(context: vscode.ExtensionContext) {
             } catch {
                 logger.info(`Output folder not found (new project?): ${outputUri.fsPath}`);
             }
-            try {
-                await vscode.workspace.fs.stat(outputUri);
-                await artifactStore.loadFromFolder(outputUri);
-                logger.info(`Auto-loaded project from: ${outputUri.fsPath}`);
-
-                // ── Restore interrupted execution state from traces ──────
-                // Now that artifacts are loaded, scan traces and push agent
-                // state to the kanban so the user can see which artifacts
-                // were mid-execution and resume or abandon them.
-                restoreInterruptedSessions(agenticKanbanProvider).catch(err => {
-                  logger.warn(`Failed to restore interrupted sessions: ${err instanceof Error ? err.message : String(err)}`);
-                });
-            } catch {
-                logger.info(`Output folder not found (new project?): ${outputUri.fsPath}`);
-            }
 
             // Set context key so the Agentic Kanban view shows in the sidebar.
             // This must fire even when the output folder doesn't exist yet
