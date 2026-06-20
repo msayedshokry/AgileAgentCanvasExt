@@ -279,15 +279,6 @@ export class ArtifactStore {
     private fileWriter: ArtifactFileWriter;
     private migrator: ArtifactMigrator;
 
-    /**
-     * Build the epic-scoped directory path for a given epic ID.
-     * E.g. epicId = 'EPIC-3' → baseUri/epics/epic-3
-     *      epicId = '7'      → baseUri/epics/epic-7
-     */
-    private epicScopedDir(baseUri: vscode.Uri, epicId: string): vscode.Uri {
-        const idSlug = String(epicId).replace(/\D/g, '') || '0';
-        return vscode.Uri.joinPath(baseUri, 'epics', `epic-${idSlug}`);
-    }
 
 
     constructor(context: vscode.ExtensionContext) {
@@ -302,7 +293,7 @@ export class ArtifactStore {
       () => this.sourceFolder,
       () => this.getOutputFormat(),
       {
-        reloadState: () => this.loadFromFolder(this.sourceFolder!),
+        reloadState: (folderUri: vscode.Uri) => this.loadFromFolder(folderUri),
         syncFiles: () => this.syncToFiles(),
       },
     );
@@ -1075,7 +1066,7 @@ export class ArtifactStore {
 
                             // Epic-scoped directory: epics/epic-{N}/stories/
                             const storiesDir = vscode.Uri.joinPath(
-                                this.epicScopedDir(this.sourceFolder, epicId || '0'),
+                                ArtifactFileWriter.epicScopedDir(this.sourceFolder, epicId || '0'),
                                 'stories'
                             );
                             try { await vscode.workspace.fs.createDirectory(storiesDir); } catch { /* exists */ }
@@ -1789,7 +1780,7 @@ export class ArtifactStore {
                     // Clean up the entire epic folder from disk to prevent shadow cards on reload
                     // Must be awaited to prevent race with syncToFiles re-creating files (CR-3)
                     if (this.sourceFolder) {
-                        const epicDir = this.epicScopedDir(this.sourceFolder, artifactId);
+                        const epicDir = ArtifactFileWriter.epicScopedDir(this.sourceFolder, artifactId);
                         try {
                             await vscode.workspace.fs.delete(epicDir, { recursive: true, useTrash: true });
                             logDebug(`Deleted epic folder: ${epicDir.fsPath}`);
@@ -1834,7 +1825,7 @@ export class ArtifactStore {
                     this.sourceFiles.delete(storySourceKey);
                 } else if (deletedStoryId && deletedFromEpicId && this.sourceFolder) {
                     // Fallback to deriving the path if sourceFiles mapping was lost
-                    const epicDir = this.epicScopedDir(this.sourceFolder, deletedFromEpicId);
+                    const epicDir = ArtifactFileWriter.epicScopedDir(this.sourceFolder, deletedFromEpicId);
                     const storiesDir = vscode.Uri.joinPath(epicDir, 'stories');
                     const storyFileName = `${String(deletedStoryId).replace(/[^a-zA-Z0-9.-]/g, '-')}.json`;
                     const storyFileUri = vscode.Uri.joinPath(storiesDir, storyFileName);
@@ -4978,7 +4969,7 @@ export class ArtifactStore {
                     const fileName = `${safeStoryId}.json`;
                     // Epic-scoped stories dir: epics/epic-{N}/stories/
                     const storiesDir = vscode.Uri.joinPath(
-                        this.epicScopedDir(this.sourceFolder!, epicId),
+                        ArtifactFileWriter.epicScopedDir(this.sourceFolder!, epicId),
                         'stories'
                     );
                     try { await vscode.workspace.fs.createDirectory(storiesDir); } catch { /* exists */ }

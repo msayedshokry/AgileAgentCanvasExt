@@ -18,7 +18,7 @@ export class ArtifactFileWriter {
     private getSourceFolder: () => vscode.Uri | null,
     private getOutputFormat: () => 'json' | 'markdown' | 'dual',
     private callbacks?: {
-      reloadState?: () => Promise<void>;
+      reloadState?: (folderUri: vscode.Uri) => Promise<void>;
       syncFiles?: () => Promise<void>;
     },
   ) {}
