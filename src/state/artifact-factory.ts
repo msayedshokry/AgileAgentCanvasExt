@@ -3,6 +3,7 @@ import { createLogger } from '../utils/logger';
 import type { Epic, Story, FunctionalRequirement, UseCase, ProductBrief, PRD, Architecture, TestCase, TestStrategy } from '../types';
 
 const factoryLogger = createLogger('artifact-factory');
+const logDebug = (...args: unknown[]) => factoryLogger.debug(...args);
 
 /**
  * addEpic — add an epic to the artifacts map.
@@ -58,7 +59,7 @@ export function createEpic(artifacts: Map<string, any>, notifyChange: () => void
     };
     
     addEpic(artifacts, newEpic);
-    factoryLogger.debug(`[ArtifactFactory] Created new epic: ${newEpic.id}`);
+    logDebug(`[ArtifactFactory] Created new epic: ${newEpic.id}`);
     return newEpic;
 }
 
@@ -101,7 +102,7 @@ export function createStory(artifacts: Map<string, any>, notifyChange: () => voi
     };
     
     addStory(artifacts, targetEpic.id, newStory);
-    factoryLogger.debug(`[ArtifactFactory] Created new story: ${newStory.id} in ${targetEpic.id}`);
+    logDebug(`[ArtifactFactory] Created new story: ${newStory.id} in ${targetEpic.id}`);
     return newStory;
 }
 
@@ -125,7 +126,7 @@ export function createRequirement(artifacts: Map<string, any>, notifyChange: () 
     };
     
     addRequirement(artifacts, notifyChange, newReq);
-    factoryLogger.debug(`[ArtifactFactory] Created new requirement: ${newReq.id}`);
+    logDebug(`[ArtifactFactory] Created new requirement: ${newReq.id}`);
     return newReq;
 }
 
@@ -141,7 +142,7 @@ export function createOrUpdateVision(artifacts: Map<string, any>, notifyChange: 
             status: 'draft'
         });
         notifyChange();
-        factoryLogger.debug(`[ArtifactFactory] Created new vision`);
+        logDebug(`[ArtifactFactory] Created new vision`);
     }
 }
 
@@ -200,14 +201,14 @@ export function createUseCase(artifacts: Map<string, any>, notifyChange: () => v
     
     notifyChange();
     
-    factoryLogger.debug(`[ArtifactFactory] Created new use case: ${newUseCase.id} in ${targetEpic.id}`);
+    logDebug(`[ArtifactFactory] Created new use case: ${newUseCase.id} in ${targetEpic.id}`);
     return newUseCase;
 }
 
 export function createProductBrief(artifacts: Map<string, any>, notifyChange: () => void): ProductBrief {
     const existing = artifacts.get('productBrief');
     if (existing) {
-        factoryLogger.debug(`[ArtifactFactory] ProductBrief already exists, returning existing`);
+        logDebug(`[ArtifactFactory] ProductBrief already exists, returning existing`);
         return existing;
     }
     
@@ -223,14 +224,14 @@ export function createProductBrief(artifacts: Map<string, any>, notifyChange: ()
     
     artifacts.set('productBrief', newBrief);
     notifyChange();
-    factoryLogger.debug(`[ArtifactFactory] Created new product brief`);
+    logDebug(`[ArtifactFactory] Created new product brief`);
     return newBrief;
 }
 
 export function createPRD(artifacts: Map<string, any>, notifyChange: () => void): PRD {
     const existing = artifacts.get('prd');
     if (existing) {
-        factoryLogger.debug(`[ArtifactFactory] PRD already exists, returning existing`);
+        logDebug(`[ArtifactFactory] PRD already exists, returning existing`);
         return existing;
     }
     
@@ -246,14 +247,14 @@ export function createPRD(artifacts: Map<string, any>, notifyChange: () => void)
     
     artifacts.set('prd', newPRD);
     notifyChange();
-    factoryLogger.debug(`[ArtifactFactory] Created new PRD`);
+    logDebug(`[ArtifactFactory] Created new PRD`);
     return newPRD;
 }
 
 export function createArchitecture(artifacts: Map<string, any>, notifyChange: () => void): Architecture {
     const existing = artifacts.get('architecture');
     if (existing) {
-        factoryLogger.debug(`[ArtifactFactory] Architecture already exists, returning existing`);
+        logDebug(`[ArtifactFactory] Architecture already exists, returning existing`);
         return existing;
     }
     
@@ -269,7 +270,7 @@ export function createArchitecture(artifacts: Map<string, any>, notifyChange: ()
     
     artifacts.set('architecture', newArch);
     notifyChange();
-    factoryLogger.debug(`[ArtifactFactory] Created new architecture`);
+    logDebug(`[ArtifactFactory] Created new architecture`);
     return newArch;
 }
 
@@ -307,7 +308,7 @@ export function createTestCase(artifacts: Map<string, any>, notifyChange: () => 
 
     artifacts.set('testCases', [...testCases, newTestCase]);
     notifyChange();
-    factoryLogger.debug(`[ArtifactFactory] Created new test case: ${newTestCase.id}`);
+    logDebug(`[ArtifactFactory] Created new test case: ${newTestCase.id}`);
     return newTestCase;
 }
 
@@ -318,7 +319,7 @@ export function createTestStrategy(artifacts: Map<string, any>, notifyChange: ()
         const epic = epics.find((e: Epic) => e.id === epicId);
         if (epic) {
             if (epic.testStrategy) {
-                factoryLogger.debug(`[ArtifactFactory] TestStrategy already exists on epic ${epicId}, returning existing`);
+                logDebug(`[ArtifactFactory] TestStrategy already exists on epic ${epicId}, returning existing`);
                 return epic.testStrategy;
             }
             // Derive next numeric suffix: scan all epics for existing TS-N ids
@@ -350,7 +351,7 @@ export function createTestStrategy(artifacts: Map<string, any>, notifyChange: ()
             epic.testStrategy = newStrategy;
             artifacts.set('epics', [...epics]);
             notifyChange();
-            factoryLogger.debug(`[ArtifactFactory] Created new test strategy ${newStrategy.id} on epic ${epicId}`);
+            logDebug(`[ArtifactFactory] Created new test strategy ${newStrategy.id} on epic ${epicId}`);
             return newStrategy;
         }
     }
@@ -358,7 +359,7 @@ export function createTestStrategy(artifacts: Map<string, any>, notifyChange: ()
     // Fallback: project-level singleton (backward compat)
     const existing = artifacts.get('testStrategy');
     if (existing) {
-        factoryLogger.debug(`[ArtifactFactory] TestStrategy already exists, returning existing`);
+        logDebug(`[ArtifactFactory] TestStrategy already exists, returning existing`);
         return existing;
     }
 
@@ -374,7 +375,7 @@ export function createTestStrategy(artifacts: Map<string, any>, notifyChange: ()
 
     artifacts.set('testStrategy', newStrategy);
     notifyChange();
-    factoryLogger.debug(`[ArtifactFactory] Created new test strategy`);
+    logDebug(`[ArtifactFactory] Created new test strategy`);
     return newStrategy;
 }
 
