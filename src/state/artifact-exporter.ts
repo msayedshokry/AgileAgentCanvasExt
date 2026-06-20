@@ -1,3 +1,4 @@
+import * as vscode from 'vscode';
 import PDFDocument from 'pdfkit';
 import type { BmadArtifacts } from '../types';
 import { generateAllArtifactsMarkdown } from './artifact-markdown-generator';
@@ -409,4 +410,80 @@ export function stripMarkdownInline(text: string): string {
         .replace(/`(.+?)`/g, '$1')            // inline code
         .replace(/\[(.+?)\]\(.+?\)/g, '$1')   // links
         .replace(/~~(.+?)~~/g, '$1');          // strikethrough
+}
+
+/**
+ * Export artifacts in various formats.
+ * Pure function — operates solely on the passed-in state.
+ */
+export async function exportArtifacts(
+    state: BmadArtifacts,
+    format: string,
+    targetUri?: vscode.Uri,
+): Promise<vscode.Uri | null> {
+    switch (format) {
+        case 'json': {
+            if (!targetUri) return null;
+            await vscode.workspace.fs.writeFile(
+                targetUri,
+                Buffer.from(JSON.stringify(state, null, 2), 'utf-8'),
+            );
+            return targetUri;
+        }
+
+        case 'markdown': {
+            if (!targetUri) return null;
+            await vscode.workspace.fs.writeFile(
+                targetUri,
+                Buffer.from(generateAllArtifactsMarkdown(state), 'utf-8'),
+            );
+            return targetUri;
+        }
+
+        case 'jira csv': {
+            if (!targetUri) return null;
+            await vscode.workspace.fs.writeFile(
+                targetUri,
+                Buffer.from(generateJiraCSV(state), 'utf-8'),
+            );
+            return targetUri;
+        }
+
+        case 'pdf': {
+            if (!targetUri) return null;
+            const pdfBuffer = await generatePDF(state);
+            await vscode.workspace.fs.writeFile(targetUri, pdfBuffer);
+            return targetUri;
+        }
+
+        case 'all formats': {
+            if (!targetUri) return null;
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            try {
+                await vscode.workspace.fs.createDirectory(targetUri);
+            } catch { /* folder might exist */ }
+
+            const jsonUri = vscode.Uri.joinPath(targetUri, `bmad-export-${timestamp}.json`);
+            await vscode.workspace.fs.writeFile(
+                jsonUri,
+                Buffer.from(JSON.stringify(state, null, 2), 'utf-8'),
+            );
+            const mdUri = vscode.Uri.joinPath(targetUri, `bmad-export-${timestamp}.md`);
+            await vscode.workspace.fs.writeFile(
+                mdUri,
+                Buffer.from(generateAllArtifactsMarkdown(state), 'utf-8'),
+            );
+            const csvUri = vscode.Uri.joinPath(targetUri, `bmad-jira-${timestamp}.csv`);
+            await vscode.workspace.fs.writeFile(
+                csvUri,
+                Buffer.from(generateJiraCSV(state), 'utf-8'),
+            );
+            const pdfUri = vscode.Uri.joinPath(targetUri, `bmad-export-${timestamp}.pdf`);
+            const pdfBuf = await generatePDF(state);
+            await vscode.workspace.fs.writeFile(pdfUri, pdfBuf);
+            return targetUri;
+        }
+    }
+
+    return null;
 }

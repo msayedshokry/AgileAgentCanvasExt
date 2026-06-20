@@ -1,15 +1,28 @@
 import * as vscode from 'vscode';
 import { createLogger } from '../utils/logger';
+import type { BmadArtifacts } from '../types';
+import { ArtifactFileWriter } from './artifact-file-writer';
+import { writeMarkdownCompanion } from './artifact-file-io';
 
 const migratorLogger = createLogger('artifact-migrator');
+const logDebug = (...args: unknown[]) => migratorLogger.debug(...args);
 
 /**
  * ArtifactMigrator — extracted collaborator that handles folder-structure
  * migrations (e.g., migrating legacy implementation/ folders to canonical
- * stories/ locations).
- * Previously embedded in ArtifactStore.migrateImplementationFolder().
+ * stories/ locations, and the inline-story → standalone-file migration).
+ * Previously embedded in ArtifactStore.
  */
 export class ArtifactMigrator {
+    constructor(
+        private getSourceFolder: () => vscode.Uri | null,
+        private getSourceFiles: () => Map<string, vscode.Uri>,
+        private getOutputChannel: () => vscode.OutputChannel,
+        private getOutputFormat: () => 'json' | 'markdown' | 'dual',
+        private loadFromFolder: (folderUri: vscode.Uri) => Promise<void>,
+        private syncToFiles: () => Promise<void>,
+    ) {}
+
     /**
      * Migrate story files from legacy `epics/epic-{N}/implementation/`
      * directories to the canonical `epics/epic-{N}/stories/` location.
@@ -145,6 +158,192 @@ export class ArtifactMigrator {
             }
         } catch (err) {
             migratorLogger.debug(`[Migration] migrateImplementationFolder failed: ${err}`);
+        }
+    }
+
+    /**
+     * Migrate inline stories from epics.json into standalone story files,
+     * and remove the legacy requirementsInventory key.
+     */
+    async migrateToReferenceArchitecture(): Promise<{ success: boolean; summary: string }> {
+        const sourceFolder = this.getSourceFolder();
+        if (!sourceFolder) {
+            return { success: false, summary: 'No project loaded. Open a project first.' };
+        }
+
+        logDebug('[Migration] Starting migrate-to-reference-architecture...');
+
+        try {
+            const epicsFile = this.getSourceFiles().get('epics');
+            if (!epicsFile) {
+                return { success: false, summary: 'No epics.json found in this project.' };
+            }
+
+            const raw = await vscode.workspace.fs.readFile(epicsFile);
+            const epicsJson = JSON.parse(Buffer.from(raw).toString('utf-8'));
+
+            const backupUri = vscode.Uri.file(epicsFile.fsPath + '.pre-migration.bak');
+            await vscode.workspace.fs.writeFile(backupUri, raw);
+            logDebug(`[Migration] Backup created: ${backupUri.fsPath}`);
+
+            const epics = epicsJson.content?.epics || epicsJson.epics || [];
+            let extractedCount = 0;
+            let skippedCount = 0;
+            const migrationLog: string[] = [];
+
+            for (const epic of epics) {
+                if (!Array.isArray(epic.stories)) continue;
+
+                const storyRefs: string[] = [];
+
+                for (const story of epic.stories) {
+                    if (typeof story === 'string') {
+                        storyRefs.push(story);
+                        continue;
+                    }
+
+                    const storyId = story.id || story.storyId || `S${epic.id?.replace(/\D/g, '') || '0'}.${extractedCount + 1}`;
+                    const epicId = epic.id || 'EPIC-1';
+
+                    const storyFileContent = {
+                        metadata: {
+                            schemaVersion: '1.0.0',
+                            artifactType: 'story',
+                            timestamps: {
+                                created: new Date().toISOString(),
+                                lastModified: new Date().toISOString(),
+                            },
+                            status: 'draft',
+                        },
+                        content: {
+                            id: storyId,
+                            epicId: epicId,
+                            epicTitle: epic.title || '',
+                            title: story.title || 'Untitled Story',
+                            status: story.status || 'draft',
+                            ...story,
+                        },
+                    };
+                    storyFileContent.content.id = storyId;
+                    storyFileContent.content.epicId = epicId;
+
+                    const safeStoryId = String(storyId).replace(/[^a-zA-Z0-9.-]/g, '-');
+                    const fileName = `${safeStoryId}.json`;
+                    const storiesDir = vscode.Uri.joinPath(
+                        ArtifactFileWriter.epicScopedDir(sourceFolder, epicId),
+                        'stories',
+                    );
+                    try { await vscode.workspace.fs.createDirectory(storiesDir); } catch { /* exists */ }
+                    const fileUri = vscode.Uri.joinPath(storiesDir, fileName);
+
+                    let alreadyExists = false;
+                    try {
+                        await vscode.workspace.fs.stat(fileUri);
+                        alreadyExists = true;
+                    } catch { /* file doesn't exist */ }
+
+                    if (alreadyExists) {
+                        logDebug(`[Migration] Story file already exists: ${fileName} — skipping (standalone wins)`);
+                        skippedCount++;
+                    } else {
+                        const migFormat = this.getOutputFormat();
+                        if (migFormat === 'json' || migFormat === 'dual') {
+                            const content = Buffer.from(JSON.stringify(storyFileContent, null, 2), 'utf-8');
+                            await vscode.workspace.fs.writeFile(fileUri, content);
+                        }
+                        if (migFormat === 'markdown' || migFormat === 'dual') {
+                            const sc = storyFileContent.content;
+                            let sMd = `# Story ${sc.id}: ${sc.title}\n\n`;
+                            sMd += `**Epic:** ${sc.epicId} — ${sc.epicTitle}\n`;
+                            sMd += `**Status:** ${sc.status || 'draft'}\n\n`;
+                            if (sc.userStory) sMd += `${sc.userStory}\n\n`;
+                            const mdName = fileName.replace(/\.json$/, '.md');
+                            await writeMarkdownCompanion(fileUri, mdName, sMd);
+                        }
+                        extractedCount++;
+                        migrationLog.push(`  Extracted: ${storyId} → ${fileName}`);
+                    }
+
+                    storyRefs.push(storyId);
+                }
+
+                epic.stories = storyRefs;
+            }
+
+            let reqsRemoved = false;
+            if (epicsJson.content?.requirementsInventory) {
+                delete epicsJson.content.requirementsInventory;
+                reqsRemoved = true;
+                migrationLog.push('  Removed requirementsInventory from epics.json (PRD is authoritative)');
+            }
+
+            const migEpicsFormat = this.getOutputFormat();
+            if (migEpicsFormat === 'json' || migEpicsFormat === 'dual') {
+                const updatedContent = Buffer.from(JSON.stringify(epicsJson, null, 2), 'utf-8');
+                await vscode.workspace.fs.writeFile(epicsFile, updatedContent);
+            }
+            logDebug('[Migration] Updated epics.json with story refs');
+
+            await this.loadFromFolder(sourceFolder);
+            await this.syncToFiles();
+            migrationLog.push('  Re-synced all project files to enforce slim epic format');
+
+            const maxLogLines = 10;
+            const truncatedLog = migrationLog.length > maxLogLines
+                ? [...migrationLog.slice(0, maxLogLines), `  ... and ${migrationLog.length - maxLogLines} more files`]
+                : migrationLog;
+
+            const summary = [
+                'Migration complete:',
+                `  ${extractedCount} stories extracted to files`,
+                `  ${skippedCount} stories skipped (files already exist)`,
+                reqsRemoved ? '  requirementsInventory removed from epics.json' : '',
+                `  Backup: ${backupUri.fsPath}`,
+                '',
+                ...truncatedLog,
+            ].filter(Boolean).join('\n');
+
+            logDebug(`[Migration] ${summary}`);
+            return { success: true, summary };
+
+        } catch (err: any) {
+            const msg = `Migration failed: ${err?.message ?? err}`;
+            logDebug(`[Migration] ${msg}`);
+            return { success: false, summary: msg };
+        }
+    }
+
+    /**
+     * Restore epics.json from the pre-migration backup.
+     */
+    async restorePreMigrationBackup(): Promise<{ success: boolean; summary: string }> {
+        const sourceFolder = this.getSourceFolder();
+        if (!sourceFolder) {
+            return { success: false, summary: 'No project loaded.' };
+        }
+
+        const epicsFile = this.getSourceFiles().get('epics');
+        if (!epicsFile) {
+            return { success: false, summary: 'No epics.json found.' };
+        }
+
+        const backupUri = vscode.Uri.file(epicsFile.fsPath + '.pre-migration.bak');
+        try {
+            const backupContent = await vscode.workspace.fs.readFile(backupUri);
+            await vscode.workspace.fs.writeFile(epicsFile, backupContent);
+            logDebug(`[Migration] Restored epics.json from backup: ${backupUri.fsPath}`);
+
+            await this.loadFromFolder(sourceFolder);
+
+            return {
+                success: true,
+                summary: `Restored epics.json from pre-migration backup.\nNote: Extracted story files in epics/epic-{N}/stories/ were NOT deleted.\nYou can delete them manually if needed.`,
+            };
+        } catch (err: any) {
+            return {
+                success: false,
+                summary: `Restore failed: ${err?.message ?? err}\nBackup file may not exist at: ${backupUri.fsPath}`,
+            };
         }
     }
 }

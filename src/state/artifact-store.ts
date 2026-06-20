@@ -9,7 +9,7 @@ import { ArtifactMigrator } from './artifact-migrator';
 import { addEpic, addStory, addRequirement, createEpic, createStory, createRequirement, createOrUpdateVision, createUseCase, createProductBrief, createPRD, createArchitecture, createTestCase, createTestStrategy } from './artifact-factory';
 import { backupArtifactFiles, pruneOldBackups } from './artifact-backup';
 import { findAllJsonFiles, detectArtifactType, loadUiState, loadEpicStoryRefs, removeStoryLinksFromRequirements, syncRequirementLinks, checkForInlineStories, reconcileDerivedState } from './artifact-load-helpers';import { generateVisionMarkdown, generateSingleEpicMarkdown, generateEpicsMarkdown, generateProductBriefMarkdown, generatePRDMarkdown, generateArchitectureMarkdown, generateTestCasesMarkdown, generateTestStrategyMarkdown, generateTestDesignMarkdown, generateAllArtifactsMarkdown } from './artifact-markdown-generator';
-import { generateJiraCSV, generatePDF, stripMarkdownInline } from './artifact-exporter';
+import { generateJiraCSV, generatePDF, exportArtifacts, stripMarkdownInline } from './artifact-exporter';
 import { mapSchemaEpicToInternal, mergeEpicDuplicate, extractStoryId, mapSchemaStoryToInternal, mapStatus, mapSchemaRequirement, mapSchemaNonFunctionalRequirement, mapSchemaAdditionalRequirement } from './schema-mappers';
 import { repairArtifactData } from './schema-artifact-mapper';
 import { resolveArtifactTargetUri, writeJsonFile, writeMarkdownCompanion, normalizeLegacyArtifact } from './artifact-file-io';
@@ -269,7 +269,7 @@ export class ArtifactStore {
 
         // Initialize default state
         this.initializeDefaultState();
-        this.sprintSync = new SprintStatusSync(() => this.sourceFolder, () => this.artifacts, () => this.sourceFiles, () => this.getOutputFormat(), (ms: number) => { this._syncingUntil = ms; });
+        this.sprintSync = new SprintStatusSync(() => this.sourceFolder, () => this.artifacts, () => this.sourceFiles, () => this.getOutputFormat(), (ms: number) => { this._syncingUntil = ms; }, () => this.getOutputChannel(), () => this.notifyChange());
         this.fileWriter = new ArtifactFileWriter(
       this.sourceFiles,
       () => this.sourceFolder,
@@ -279,7 +279,14 @@ export class ArtifactStore {
         syncFiles: () => this.syncToFiles(),
       },
     );
-        this.migrator = new ArtifactMigrator();
+        this.migrator = new ArtifactMigrator(
+            () => this.sourceFolder,
+            () => this.sourceFiles,
+            () => this.getOutputChannel(),
+            () => this.getOutputFormat(),
+            (folderUri: vscode.Uri) => this.loadFromFolder(folderUri),
+            () => this.syncToFiles(),
+        );
     }
 
     private initializeDefaultState() {
@@ -3253,90 +3260,22 @@ export class ArtifactStore {
     // Atomic Status Sync (LLM tool backing)
     // =========================================================================
 
-    /**
-     * Atomically sync a story's status across ALL tracker files:
-     *   1. epics/epic-{N}/stories/{id}.json  → content.status + metadata.status (SINGLE SOURCE OF TRUTH)
-     *   2. In-memory model
-     *
-     * Story JSON files are the single source of truth for status.
-     * Called by the `agileagentcanvas_sync_story_status` LM tool.
-     */
     async syncStoryStatusAtomic(
         storyId: string,
         epicId: string,
         newStatus: string
     ): Promise<{ success: boolean; updatedFiles: string[] }> {
-        const acOutput = this.getOutputChannel();
-        const updatedFiles: string[] = [];
-
-        storeLogger.debug(`[AtomicSync] Story ${storyId} in epic ${epicId} → ${newStatus}`);
-
-        // Suppress file-watcher during batch
-        this._syncingUntil = Date.now() + 10_000;
-
-        try {
-            // 1. Patch standalone story file + in-memory model
-            const storyPatched = await this.patchStoryStatusOnDisk(epicId, storyId, newStatus, true);
-            if (storyPatched) {
-                updatedFiles.push(`epics/epic-${epicId}/stories/${storyId}.json`);
-            }
-
-
-            // Story JSON is authoritative — no YAML sync
-
-            // 5. Notify canvas
-            this.notifyChange();
-
-            storeLogger.debug(`[AtomicSync] Story sync complete: ${updatedFiles.length} files updated`);
-            return { success: true, updatedFiles };
-        } catch (e) {
-            storeLogger.debug(`[AtomicSync] Story sync failed: ${e}`);
-            return { success: false, updatedFiles };
-        } finally {
-            this._syncingUntil = Date.now() + 500;
-        }
+        return this.sprintSync.syncStoryStatusAtomic(storyId, epicId, newStatus);
     }
 
-    /**
-     * Atomically sync an epic's status across ALL tracker files:
-     *   1. epics/epic-{N}/epic.json  → content.status + metadata.status
-     *   2. In-memory model
-     *
-     * Epic JSON files are the single source of truth for status.
-     * Called by the `agileagentcanvas_sync_epic_status` LM tool.
-     */
+
     async syncEpicStatusAtomic(
         epicId: string,
         newStatus: string
     ): Promise<{ success: boolean; updatedFiles: string[] }> {
-        const acOutput = this.getOutputChannel();
-        const updatedFiles: string[] = [];
-
-        storeLogger.debug(`[AtomicSync] Epic ${epicId} → ${newStatus}`);
-
-        this._syncingUntil = Date.now() + 10_000;
-
-        try {
-            // 1. Patch epic.json + in-memory
-            const patched = await this.patchEpicStatusOnDisk(epicId, newStatus, true);
-            if (patched) {
-                updatedFiles.push(`epics/epic-${epicId}/epic.json`);
-            }
-
-            // Epic JSON is authoritative — no YAML sync
-
-            // 3. Notify canvas
-            this.notifyChange();
-
-            storeLogger.debug(`[AtomicSync] Epic sync complete: ${updatedFiles.length} files updated`);
-            return { success: true, updatedFiles };
-        } catch (e) {
-            storeLogger.debug(`[AtomicSync] Epic sync failed: ${e}`);
-            return { success: false, updatedFiles };
-        } finally {
-            this._syncingUntil = Date.now() + 500;
-        }
+        return this.sprintSync.syncEpicStatusAtomic(epicId, newStatus);
     }
+
 
     private async findAllJsonFiles(
         folderUri: vscode.Uri,
@@ -3929,209 +3868,14 @@ export class ArtifactStore {
      * Returns a summary of what was migrated.
      */
     async migrateToReferenceArchitecture(): Promise<{ success: boolean; summary: string }> {
-        if (!this.sourceFolder) {
-            return { success: false, summary: 'No project loaded. Open a project first.' };
-        }
-
-        const acOutput = this.getOutputChannel();
-        storeLogger.debug('[Migration] Starting migrate-to-reference-architecture...');
-
-        try {
-            // ── 1. Find epics.json ─────────────────────────────────────────
-            const epicsFile = this.sourceFiles.get('epics');
-            if (!epicsFile) {
-                return { success: false, summary: 'No epics.json found in this project.' };
-            }
-
-            // Read current epics.json
-            const raw = await vscode.workspace.fs.readFile(epicsFile);
-            const epicsJson = JSON.parse(Buffer.from(raw).toString('utf-8'));
-
-            // ── 2. Backup ──────────────────────────────────────────────────
-            const backupUri = vscode.Uri.file(epicsFile.fsPath + '.pre-migration.bak');
-            await vscode.workspace.fs.writeFile(backupUri, raw);
-            storeLogger.debug(`[Migration] Backup created: ${backupUri.fsPath}`);
-
-            // ── 3. Extract inline stories to files ─────────────────────────
-            // ── 3. Extract inline stories to files ─────────────────────────
-            const epics = epicsJson.content?.epics || epicsJson.epics || [];
-            let extractedCount = 0;
-            let skippedCount = 0;
-            const migrationLog: string[] = [];
-
-            for (const epic of epics) {
-                if (!Array.isArray(epic.stories)) continue;
-
-                const storyRefs: string[] = [];
-
-                for (const story of epic.stories) {
-                    // If already a string ref, keep it
-                    if (typeof story === 'string') {
-                        storyRefs.push(story);
-                        continue;
-                    }
-
-                    // Inline story object → extract
-                    const storyId = story.id || story.storyId || `S${epic.id?.replace(/\D/g, '') || '0'}.${extractedCount + 1}`;
-                    const epicId = epic.id || 'EPIC-1';
-
-                    // Build the standalone story file content
-                    const storyFileContent = {
-                        metadata: {
-                            schemaVersion: '1.0.0',
-                            artifactType: 'story',
-                            timestamps: {
-                                created: new Date().toISOString(),
-                                lastModified: new Date().toISOString()
-                            },
-                            status: 'draft'
-                        },
-                        content: {
-                            id: storyId,
-                            epicId: epicId,
-                            epicTitle: epic.title || '',
-                            title: story.title || 'Untitled Story',
-                            status: story.status || 'draft',
-                            ...story
-                        }
-                    };
-                    // Ensure id and epicId are at top level of content
-                    storyFileContent.content.id = storyId;
-                    storyFileContent.content.epicId = epicId;
-
-                    // Generate an immutable filename using the story ID: {id}.json
-                    // e.g. S-1.2.json — predictable, slug-free, AI-agent friendly
-                    const safeStoryId = String(storyId).replace(/[^a-zA-Z0-9.-]/g, '-');
-                    const fileName = `${safeStoryId}.json`;
-                    // Epic-scoped stories dir: epics/epic-{N}/stories/
-                    const storiesDir = vscode.Uri.joinPath(
-                        ArtifactFileWriter.epicScopedDir(this.sourceFolder!, epicId),
-                        'stories'
-                    );
-                    try { await vscode.workspace.fs.createDirectory(storiesDir); } catch { /* exists */ }
-                    const fileUri = vscode.Uri.joinPath(storiesDir, fileName);
-
-                    // Check if a file already exists for this story by exact ID match.
-                    // Filenames are now immutable: {id}.json (e.g. S-1.2.json)
-                    let alreadyExists = false;
-                    try {
-                        await vscode.workspace.fs.stat(fileUri);
-                        alreadyExists = true;
-                    } catch { /* file doesn't exist at the generated path — safe to write */ }
-
-                    if (alreadyExists) {
-                        storeLogger.debug(`[Migration] Story file already exists: ${fileName} — skipping (standalone wins)`);
-                        skippedCount++;
-                    } else {
-                        // File doesn't exist — write it
-                        const migFormat = this.getOutputFormat();
-                        if (migFormat === 'json' || migFormat === 'dual') {
-                            const content = Buffer.from(JSON.stringify(storyFileContent, null, 2), 'utf-8');
-                            await vscode.workspace.fs.writeFile(fileUri, content);
-                        }
-                        if (migFormat === 'markdown' || migFormat === 'dual') {
-                            const sc = storyFileContent.content;
-                            let sMd = `# Story ${sc.id}: ${sc.title}\n\n`;
-                            sMd += `**Epic:** ${sc.epicId} — ${sc.epicTitle}\n`;
-                            sMd += `**Status:** ${sc.status || 'draft'}\n\n`;
-                            if (sc.userStory) sMd += `${sc.userStory}\n\n`;
-                            const mdName = fileName.replace(/\.json$/, '.md');
-                            await writeMarkdownCompanion(fileUri, mdName, sMd);
-                        }
-                        extractedCount++;
-                        migrationLog.push(`  Extracted: ${storyId} → ${fileName}`);
-                    }
-
-                    storyRefs.push(storyId);
-                }
-
-                // Replace inline stories with refs
-                epic.stories = storyRefs;
-            }
-
-            // ── 4. Remove requirementsInventory from epics.json ────────────
-            let reqsRemoved = false;
-            if (epicsJson.content?.requirementsInventory) {
-                delete epicsJson.content.requirementsInventory;
-                reqsRemoved = true;
-                migrationLog.push('  Removed requirementsInventory from epics.json (PRD is authoritative)');
-            }
-
-            // ── 5. Write updated epics.json ────────────────────────────────
-            const migEpicsFormat = this.getOutputFormat();
-            if (migEpicsFormat === 'json' || migEpicsFormat === 'dual') {
-                const updatedContent = Buffer.from(JSON.stringify(epicsJson, null, 2), 'utf-8');
-                await vscode.workspace.fs.writeFile(epicsFile, updatedContent);
-            }
-            storeLogger.debug(`[Migration] Updated epics.json with story refs`);
-
-            // ── 6. Reload from disk to verify ──────────────────────────────
-            await this.loadFromFolder(this.sourceFolder);
-
-            // ── 7. Enforce slim architecture across all files ──────────────
-            await this.syncToFiles();
-            migrationLog.push('  Re-synced all project files to enforce slim epic format');
-
-            // Truncate migration log to prevent uncloseable modals
-            const maxLogLines = 10;
-            const truncatedLog = migrationLog.length > maxLogLines
-                ? [...migrationLog.slice(0, maxLogLines), `  ... and ${migrationLog.length - maxLogLines} more files`]
-                : migrationLog;
-
-            const summary = [
-                `Migration complete:`,
-                `  ${extractedCount} stories extracted to files`,
-                `  ${skippedCount} stories skipped (files already exist)`,
-                reqsRemoved ? '  requirementsInventory removed from epics.json' : '',
-                `  Backup: ${backupUri.fsPath}`,
-                '',
-                ...truncatedLog
-            ].filter(Boolean).join('\n');
-
-            storeLogger.debug(`[Migration] ${summary}`);
-            return { success: true, summary };
-
-        } catch (err: any) {
-            const msg = `Migration failed: ${err?.message ?? err}`;
-            storeLogger.debug(`[Migration] ${msg}`);
-            return { success: false, summary: msg };
-        }
+        return this.migrator.migrateToReferenceArchitecture();
     }
 
-    /**
-     * Restore epics.json from the pre-migration backup.
-     */
+
     async restorePreMigrationBackup(): Promise<{ success: boolean; summary: string }> {
-        if (!this.sourceFolder) {
-            return { success: false, summary: 'No project loaded.' };
-        }
-
-        const acOutput = this.getOutputChannel();
-        const epicsFile = this.sourceFiles.get('epics');
-        if (!epicsFile) {
-            return { success: false, summary: 'No epics.json found.' };
-        }
-
-        const backupUri = vscode.Uri.file(epicsFile.fsPath + '.pre-migration.bak');
-        try {
-            const backupContent = await vscode.workspace.fs.readFile(backupUri);
-            await vscode.workspace.fs.writeFile(epicsFile, backupContent);
-            storeLogger.debug(`[Migration] Restored epics.json from backup: ${backupUri.fsPath}`);
-
-            // Reload from disk
-            await this.loadFromFolder(this.sourceFolder);
-
-            return {
-                success: true,
-                summary: `Restored epics.json from pre-migration backup.\nNote: Extracted story files in epics/epic-{N}/stories/ were NOT deleted.\nYou can delete them manually if needed.`
-            };
-        } catch (err: any) {
-            return {
-                success: false,
-                summary: `Restore failed: ${err?.message ?? err}\nBackup file may not exist at: ${backupUri.fsPath}`
-            };
-        }
+        return this.migrator.restorePreMigrationBackup();
     }
+
 
     private getOutputChannel(): vscode.OutputChannel {
         // Use the shared output channel from the extension, which allows for testing mocks
@@ -4183,79 +3927,10 @@ export class ArtifactStore {
      * Used by the export command when "markdown" or "all formats" is selected.
      */
 
-    /**
-     * Export artifacts in various formats
-     */
     async exportArtifacts(format: string, targetUri?: vscode.Uri): Promise<vscode.Uri | null> {
-        const state = this.getState();
-
-        switch (format) {
-            case 'json': {
-                if (!targetUri) return null;
-                await vscode.workspace.fs.writeFile(
-                    targetUri,
-                    Buffer.from(JSON.stringify(state, null, 2), 'utf-8')
-                );
-                return targetUri;
-            }
-
-            case 'markdown': {
-                if (!targetUri) return null;
-                await vscode.workspace.fs.writeFile(
-                    targetUri,
-                    Buffer.from(generateAllArtifactsMarkdown(state), 'utf-8')
-                );
-                return targetUri;
-            }
-
-            case 'jira csv': {
-                if (!targetUri) return null;
-                await vscode.workspace.fs.writeFile(
-                    targetUri,
-                    Buffer.from(generateJiraCSV(state), 'utf-8')
-                );
-                return targetUri;
-            }
-
-            case 'pdf': {
-                if (!targetUri) return null;
-                const pdfBuffer = await generatePDF(state);
-                await vscode.workspace.fs.writeFile(targetUri, pdfBuffer);
-                return targetUri;
-            }
-
-            case 'all formats': {
-                if (!targetUri) return null;
-                // targetUri is a folder; write all three formats into it
-                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-                try {
-                    await vscode.workspace.fs.createDirectory(targetUri);
-                } catch { /* folder might exist */ }
-
-                const jsonUri = vscode.Uri.joinPath(targetUri, `bmad-export-${timestamp}.json`);
-                await vscode.workspace.fs.writeFile(
-                    jsonUri,
-                    Buffer.from(JSON.stringify(state, null, 2), 'utf-8')
-                );
-                const mdUri = vscode.Uri.joinPath(targetUri, `bmad-export-${timestamp}.md`);
-                await vscode.workspace.fs.writeFile(
-                    mdUri,
-                    Buffer.from(generateAllArtifactsMarkdown(state), 'utf-8')
-                );
-                const csvUri = vscode.Uri.joinPath(targetUri, `bmad-jira-${timestamp}.csv`);
-                await vscode.workspace.fs.writeFile(
-                    csvUri,
-                    Buffer.from(generateJiraCSV(state), 'utf-8')
-                );
-                const pdfUri = vscode.Uri.joinPath(targetUri, `bmad-export-${timestamp}.pdf`);
-                const pdfBuf = await generatePDF(state);
-                await vscode.workspace.fs.writeFile(pdfUri, pdfBuf);
-                return targetUri;
-            }
-        }
-
-        return null;
+        return exportArtifacts(this.getState(), format, targetUri);
     }
+
 
     /**
      * Generate JIRA-compatible CSV.

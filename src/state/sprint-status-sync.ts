@@ -20,6 +20,8 @@ export class SprintStatusSync {
     private getSourceFiles: () => Map<string, vscode.Uri>,
     private getOutputFormat: () => 'json' | 'markdown' | 'dual',
     private setSyncingUntil: (ms: number) => void,
+    private getOutputChannel: () => vscode.OutputChannel,
+    private notifyChange: () => void,
   ) {}
 
   // ── Pure mappers (public for unit-testability) ──────────────────────────
@@ -43,6 +45,90 @@ export class SprintStatusSync {
       case 'review': return 'review';
       case 'done': return 'done';
       default: return status;
+    }
+  }
+
+  // ── Atomic status sync (LM-tool callable) ──────────────────────────────
+
+  /**
+   * Atomically sync a story's status across ALL tracker files:
+   *   1. epics/epic-{N}/stories/{id}.json  → content.status + metadata.status (SINGLE SOURCE OF TRUTH)
+   *   2. In-memory model
+   *
+   * Story JSON files are the single source of truth for status.
+   * Called by the `agileagentcanvas_sync_story_status` LM tool.
+   */
+  async syncStoryStatusAtomic(
+    storyId: string,
+    epicId: string,
+    newStatus: string,
+  ): Promise<{ success: boolean; updatedFiles: string[] }> {
+    const updatedFiles: string[] = [];
+
+    syncLogger.debug(`[AtomicSync] Story ${storyId} in epic ${epicId} → ${newStatus}`);
+
+    // Suppress file-watcher during batch
+    this.setSyncingUntil(Date.now() + 10_000);
+
+    try {
+      // 1. Patch standalone story file + in-memory model
+      const storyPatched = await this.patchStoryStatusOnDisk(epicId, storyId, newStatus, true);
+      if (storyPatched) {
+        updatedFiles.push(`epics/epic-${epicId}/stories/${storyId}.json`);
+      }
+
+      // Story JSON is authoritative — no YAML sync
+
+      // 5. Notify canvas
+      this.notifyChange();
+
+      syncLogger.debug(`[AtomicSync] Story sync complete: ${updatedFiles.length} files updated`);
+      return { success: true, updatedFiles };
+    } catch (e) {
+      syncLogger.debug(`[AtomicSync] Story sync failed: ${e}`);
+      return { success: false, updatedFiles };
+    } finally {
+      this.setSyncingUntil(Date.now() + 500);
+    }
+  }
+
+  /**
+   * Atomically sync an epic's status across ALL tracker files:
+   *   1. epics/epic-{N}/epic.json  → content.status + metadata.status
+   *   2. In-memory model
+   *
+   * Epic JSON files are the single source of truth for status.
+   * Called by the `agileagentcanvas_sync_epic_status` LM tool.
+   */
+  async syncEpicStatusAtomic(
+    epicId: string,
+    newStatus: string,
+  ): Promise<{ success: boolean; updatedFiles: string[] }> {
+    const updatedFiles: string[] = [];
+
+    syncLogger.debug(`[AtomicSync] Epic ${epicId} → ${newStatus}`);
+
+    this.setSyncingUntil(Date.now() + 10_000);
+
+    try {
+      // 1. Patch epic.json + in-memory
+      const patched = await this.patchEpicStatusOnDisk(epicId, newStatus, true);
+      if (patched) {
+        updatedFiles.push(`epics/epic-${epicId}/epic.json`);
+      }
+
+      // Epic JSON is authoritative — no YAML sync
+
+      // 3. Notify canvas
+      this.notifyChange();
+
+      syncLogger.debug(`[AtomicSync] Epic sync complete: ${updatedFiles.length} files updated`);
+      return { success: true, updatedFiles };
+    } catch (e) {
+      syncLogger.debug(`[AtomicSync] Epic sync failed: ${e}`);
+      return { success: false, updatedFiles };
+    } finally {
+      this.setSyncingUntil(Date.now() + 500);
     }
   }
 
