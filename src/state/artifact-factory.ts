@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import { createLogger } from '../utils/logger';
-import { openChat } from '../commands/chat-bridge';
 import type { Epic, Story, FunctionalRequirement, UseCase, ProductBrief, PRD, Architecture, TestCase, TestStrategy } from '../types';
 
 const factoryLog = createLogger('artifact-factory');
