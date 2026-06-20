@@ -4,6 +4,9 @@ import type {
     ArtifactDeleteCtx,
     ArtifactDeleteFn,
     ArtifactDeleteRegistry,
+    ArtifactLoadCtx,
+    ArtifactLoadFn,
+    ArtifactLoadRegistry,
     ArtifactReducerCtx,
     ArtifactReducerFn,
     ArtifactReducerRegistry,
@@ -16,6 +19,10 @@ import { registerL1DeleteReducers, L1_DELETE_REGISTERED_TYPES } from './delete-l
 import { registerTeaDeleteReducers, TEA_DELETE_REGISTERED_TYPES } from './delete-tea-reductions';
 import { registerBmmDeleteReducers, BMM_DELETE_REGISTERED_TYPES } from './delete-bmm-reductions';
 import { registerCisDeleteReducers, CIS_DELETE_REGISTERED_TYPES } from './delete-cis-reductions';
+import { registerL1LoadReducers, L1_LOAD_REGISTERED_TYPES } from './load-l1-loaders';
+import { registerTeaLoadReducers, TEA_LOAD_REGISTERED_TYPES } from './load-tea-loaders';
+import { registerBmmLoadReducers, BMM_LOAD_REGISTERED_TYPES } from './load-bmm-loaders';
+import { registerCisLoadReducers, CIS_LOAD_REGISTERED_TYPES } from './load-cis-loaders';
 
 const regLogger = createLogger('reducer-registry');
 const logDebug = (...args: unknown[]) => regLogger.debug(...args);
@@ -38,6 +45,7 @@ const logDebug = (...args: unknown[]) => regLogger.debug(...args);
 export class ArtifactReducerDispatcher {
     private registry: ArtifactReducerRegistry;
     private deleteRegistry: ArtifactDeleteRegistry;
+    private loadRegistry: ArtifactLoadRegistry;
 
     constructor() {
         this.registry = new Map();
@@ -52,6 +60,12 @@ export class ArtifactReducerDispatcher {
         registerBmmDeleteReducers(this.deleteRegistry);
         registerCisDeleteReducers(this.deleteRegistry);
 
+        this.loadRegistry = new Map();
+        registerL1LoadReducers(this.loadRegistry);
+        registerTeaLoadReducers(this.loadRegistry);
+        registerBmmLoadReducers(this.loadRegistry);
+        registerCisLoadReducers(this.loadRegistry);
+
         logDebug(
             `[ArtifactReducerDispatcher] Built update registry with ${this.registry.size} handlers ` +
             `(L1: ${L1_REGISTERED_TYPES.length}, TEA: ${TEA_REGISTERED_TYPES.length}, ` +
@@ -61,6 +75,11 @@ export class ArtifactReducerDispatcher {
             `[ArtifactReducerDispatcher] Built delete registry with ${this.deleteRegistry.size} handlers ` +
             `(L1: ${L1_DELETE_REGISTERED_TYPES.length}, TEA: ${TEA_DELETE_REGISTERED_TYPES.length}, ` +
             `BMM: ${BMM_DELETE_REGISTERED_TYPES.length}, CIS: ${CIS_DELETE_REGISTERED_TYPES.length})`,
+        );
+        logDebug(
+            `[ArtifactReducerDispatcher] Built load registry with ${this.loadRegistry.size} handlers ` +
+            `(L1: ${L1_LOAD_REGISTERED_TYPES.length}, TEA: ${TEA_LOAD_REGISTERED_TYPES.length}, ` +
+            `BMM: ${BMM_LOAD_REGISTERED_TYPES.length}, CIS: ${CIS_LOAD_REGISTERED_TYPES.length})`,
         );
     }
 
@@ -133,5 +152,38 @@ export class ArtifactReducerDispatcher {
      */
     hasDelete(artifactType: string): boolean {
         return this.deleteRegistry.has(artifactType);
+    }
+
+    // ─── Load dispatch (Phase 11) ──────────────────────────────────────────
+
+    /**
+     * Dispatch a load reducer for the current `artifactType`.  The orchestrator
+     * (loadFromFolder) mutates the per-file fields on `ctx` BEFORE dispatching.
+     * Returns true if a handler was found and called; false if the type is
+     * unknown (orchestrator logs a debug message and falls back to its
+     * inline default branch that detects epics/story from content shape).
+     */
+    async dispatchLoad(ctx: ArtifactLoadCtx, artifactType: string): Promise<boolean> {
+        const fn: ArtifactLoadFn | undefined = this.loadRegistry.get(artifactType);
+        if (!fn) {
+            return false;
+        }
+        await fn(ctx);
+        return true;
+    }
+
+    /**
+     * Direct accessor for testing/extension — returns a copy of the
+     * load-registry keys.
+     */
+    listRegisteredLoadTypes(): string[] {
+        return Array.from(this.loadRegistry.keys());
+    }
+
+    /**
+     * Lookup accessor for tests — returns true if a load handler exists.
+     */
+    hasLoad(artifactType: string): boolean {
+        return this.loadRegistry.has(artifactType);
     }
 }

@@ -1,5 +1,5 @@
 import type * as vscode from 'vscode';
-import type { BmadMetadata } from '../types';
+import type { BmadMetadata, Epic, Story, BmadArtifacts } from '../types';
 
 /**
  * Reducer types — Phase 9 extraction of the `updateArtifact` switch (was ~825 lines)
@@ -136,3 +136,101 @@ export type ArtifactDeleteRegistry = Map<string, ArtifactDeleteFn>;
 
 /** A delete-reducer module exposes a register hook for its cases. */
 export type ArtifactDeleteRegistration = (registry: ArtifactDeleteRegistry) => void;
+
+// ──────────────────────────────────────────────────────────────────────
+// Phase 11: Load reducer types — for the `loadFromFolder` switch.
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * DI bag passed to load reducers.  Constructed ONCE per
+ * `loadFromFolder` invocation; the orchestrator mutates the per-file
+ * fields (`fileUri`, `fileName`, `artifactType`, `data`,
+ * `isEpicsManifest`) each iteration BEFORE calling `dispatchLoad()`.
+ *
+ * The shared scratch containers (`allEpics`, `standaloneStories`,
+ * `pendingUseCases`, `unresolvedUseCases`, `requirements`,
+ * `standaloneReqsLoaded`, `projectName`, `loadValidationIssues`)
+ * accumulate state across iterations of the per-file loop, then are
+ * written back to `ctx.artifacts` in the orchestrator's post-loop tail.
+ *
+ * Key differences from update/delete ctx:
+ *   - File-shaped (not artifact-id shaped) — there is no `artifactId`
+ *     parameter; the loader picks id(s) from `ctx.data`.
+ *   - Scratch state is mutable — loaders may push/filter the shared
+ *     containers directly.  This mirrors the inline switch's
+ *     `allEpics.push(...)` / `pendingUseCases.push(...)`, just
+ *     relocated to the ctx.
+ *   - Local helpers (`normalizeEpicId`, `epicIdFromUseCaseId`) lifted
+ *     to ctx so loaders don't see them as closure-locals.
+ */
+export interface ArtifactLoadCtx {
+    // ── Per-file fields (mutated each iteration before dispatch) ──
+    /** Source URI of the file currently being processed. */
+    fileUri: vscode.Uri;
+    /** Relative path used for logs and validation messages. */
+    fileName: string;
+    /** Detected or metadata-declared artifact type. */
+    artifactType: string;
+    /** Parsed JSON contents of the file. */
+    data: any;
+    /** True only when `data.content.epics` is a manifest of refs (not inline epics). */
+    isEpicsManifest: boolean;
+
+    // ── Per-iteration output (read by epics / use-case linking) ──
+    /** All detected epics; mutated by cases `epics` and `epic`. */
+    allEpics: Epic[];
+    /** Standalone story files awaiting post-loop routing by epicId. */
+    standaloneStories: Story[];
+    /** Use cases with no parent epic yet; post-loop falls back to name match. */
+    pendingUseCases: { uc: any; parentEpicId: string | null }[];
+    /** Use cases that couldn't be linked even after fallback (logged). */
+    unresolvedUseCases: any[];
+    /** Mutable map of FR/NFR/additional requirement lists.
+     *  Concrete shape (NOT `BmadArtifacts['requirements']`) — that indexed
+     *  access resolves to `... | undefined` in this project's strict tsconfig,
+     *  which TS refuses to narrow on `let` rebinding inside `loadFromFolder`. */
+    requirements: {
+        functional: any[];
+        nonFunctional: any[];
+        additional: any[];
+    };
+    /** Tracks which req categories came from a standalone file (skips PRD fallback). */
+    standaloneReqsLoaded: { functional: boolean; nonFunctional: boolean; additional: boolean };
+    /** Mutable project name string; first non-empty write wins. */
+    projectName: string;
+    /** Schema-validation issues collected across iterations. */
+    loadValidationIssues: { file: string; type: string; errors: string[] }[];
+
+    // ── Persistent store state ──
+    /** Mutable store Map. */
+    artifacts: Map<string, any>;
+    /** Per-id source-file URI map (e.g. `epic:EPIC-1`, `story:S-1.1`). */
+    sourceFiles: Map<string, vscode.Uri>;
+    /** Source folder URI (for epic-scoped or test-strategy path derivation). */
+    sourceFolder: vscode.Uri;
+
+    // ── Helpers (lifted from inline closure) ──
+    /** Coerce `EPIC3`, `EPIC-3`, `3`, etc. → `EPIC-3`. */
+    normalizeEpicId: (id: string | null) => string | null;
+    /** Parse `EPIC-N` from a use-case id like `UC-3-foo`. */
+    epicIdFromUseCaseId: (id: string | null) => string | null;
+    /** Async epic-story-ref resolver (delegated to ArtifactStore private). */
+    loadEpicStoryRefs: (epic: Epic, epicData: any, fileUri: vscode.Uri) => Promise<void>;
+    /** ArtifactStore static perIdKey helper for stable lookup keys. */
+    perIdKey: (prefix: string, id: string) => string;
+    /** Build from BMAD schema using the store's perIdKey helper. */
+}
+
+/**
+ * A load reducer reads `ctx.data` (and ctx fields) and writes parsed
+ * artifacts into `ctx.allEpics`, `ctx.artifacts.set('vision', ...)`,
+ * `ctx.requirements.functional.push(...)`, etc.  Returns
+ * `void | Promise<void>` — no return value is needed because correctly
+ * loaded state is observable through the mutations themselves.
+ */
+export type ArtifactLoadFn = (ctx: ArtifactLoadCtx) => void | Promise<void>;
+
+export type ArtifactLoadRegistry = Map<string, ArtifactLoadFn>;
+
+/** A load-reducer module exposes a register hook that adds its cases to a map. */
+export type ArtifactLoadRegistration = (registry: ArtifactLoadRegistry) => void;

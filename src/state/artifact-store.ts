@@ -12,7 +12,7 @@ import { findAllJsonFiles, detectArtifactType, loadUiState, loadEpicStoryRefs, r
 import { findArtifactById, mergeFromState } from './artifact-merge';
 import { ArtifactRepairer } from './artifact-repair';
 import { ArtifactReducerDispatcher } from './reducer-registry';
-import type { ArtifactReducerCtx, ArtifactChanges, ArtifactDeleteCtx } from './reducer-types';
+import type { ArtifactReducerCtx, ArtifactChanges, ArtifactDeleteCtx, ArtifactLoadCtx } from './reducer-types';
 import { exportArtifacts } from './artifact-exporter';
 import { mapSchemaEpicToInternal, mergeEpicDuplicate, extractStoryId, mapSchemaStoryToInternal, mapStatus, mapSchemaRequirement, mapSchemaNonFunctionalRequirement, mapSchemaAdditionalRequirement } from './schema-mappers';
 import { repairArtifactData } from './schema-artifact-mapper';
@@ -949,35 +949,64 @@ export class ArtifactStore {
         this.sourceFiles.clear();
         
         try {
-            const allEpics: Epic[] = [];
-            const standaloneStories: Story[] = [];
-            const pendingUseCases: { uc: any; parentEpicId: string | null }[] = [];
-            const unresolvedUseCases: any[] = [];
-
-            const normalizeEpicId = (id: string | null): string | null => {
-                if (!id) return null;
-                const match = id.match(/EPIC[\s-]*(\d+)/i);
-                if (match) return `EPIC-${parseInt(match[1], 10)}`;
-                const numeric = id.match(/^(\d+)$/);
-                if (numeric) return `EPIC-${parseInt(numeric[1], 10)}`;
-                return id;
+            // [phase11-ctx-injected]
+            // ─── Build the artifact-load context (Phase 11) ───────────────
+            // One ctx per loadFromFolder call; per-file fields (`fileUri`,
+            // `fileName`, `artifactType`, `data`, `isEpicsManifest`) are
+            // mutated each iteration BEFORE calling `dispatchLoad()`. The
+            // shared scratch containers accumulate state across iterat...
+            // Each `let` below is rebound to the corresponding ctx.X ref to
+            // keep the post-loop code unchanged: arrays and helper objects
+            // are passed by reference, so mutations land on ctx.
+            type LoadCtx = ArtifactLoadCtx;
+            const ctx: LoadCtx = {
+                // Per-file fields (mutated each iteration before dispatch)
+                fileUri: folderUri,
+                fileName: '',
+                artifactType: '',
+                data: {},
+                isEpicsManifest: false,
+                // Shared scratch
+                allEpics: [] as Epic[],
+                standaloneStories: [] as Story[],
+                pendingUseCases: [] as { uc: any; parentEpicId: string | null }[],
+                unresolvedUseCases: [] as any[],
+                requirements: { functional: [], nonFunctional: [], additional: [] },
+                standaloneReqsLoaded: { functional: false, nonFunctional: false, additional: false },
+                projectName: '',
+                loadValidationIssues: [] as { file: string; type: string; errors: string[] }[],
+                // Persistent store state
+                artifacts: this.artifacts,
+                sourceFiles: this.sourceFiles,
+                sourceFolder: folderUri,
+                // Helpers (lifted from inline closure)
+                normalizeEpicId: (id) => {
+                    if (!id) return null;
+                    const m = id.match(/EPIC[\s-]*(\d+)/i);
+                    if (m) return `EPIC-${parseInt(m[1], 10)}`;
+                    const n = id.match(/^(\d+)$/);
+                    if (n) return `EPIC-${parseInt(n[1], 10)}`;
+                    return id;
+                },
+                epicIdFromUseCaseId: (id) => {
+                    if (!id) return null;
+                    const m = id.match(/^UC-(\d+)(?:-|$)/i);
+                    if (!m) return null;
+                    return `EPIC-${m[1]}`;
+                },
+                loadEpicStoryRefs: (epic, epicData, fileUri) =>
+                    this.loadEpicStoryRefs(epic, epicData, fileUri),
+                perIdKey: ArtifactStore.perIdKey,
             };
-
-            const epicIdFromUseCaseId = (id: string | null): string | null => {
-                if (!id) return null;
-                const match = id.match(/^UC-(\d+)(?:-|$)/i);
-                if (!match) return null;
-                return `EPIC-${match[1]}`;
-            };
-            let projectName = '';
-            const requirements: BmadArtifacts['requirements'] = {
-                functional: [],
-                nonFunctional: [],
-                additional: []
-            };
-            // Track which requirement categories were loaded from standalone
-            // files so PRD extraction can defer (standalone > PRD priority).
-            const standaloneReqsLoaded = { functional: false, nonFunctional: false, additional: false };
+            let allEpics = ctx.allEpics;
+            let standaloneStories = ctx.standaloneStories;
+            let pendingUseCases = ctx.pendingUseCases;
+            let unresolvedUseCases = ctx.unresolvedUseCases;
+            let requirements = ctx.requirements;
+            let projectName = ctx.projectName;
+            let standaloneReqsLoaded = ctx.standaloneReqsLoaded;
+            const normalizeEpicId = ctx.normalizeEpicId;
+            const epicIdFromUseCaseId = ctx.epicIdFromUseCaseId;
 
             // Recursively find ALL JSON files in the folder and subfolders
             const allJsonFiles = await this.findAllJsonFiles(folderUri);
@@ -1002,7 +1031,8 @@ export class ArtifactStore {
             }
 
             /** Accumulates per-file validation warnings for the load summary. */
-            const loadValidationIssues: { file: string; type: string; errors: string[] }[] = [];
+            // [phase11-lvi-injected] — loadValidationIssues lives on ctx.
+            const loadValidationIssues = ctx.loadValidationIssues;
 
             // Process each JSON file based on its content
             for (const fileUri of allJsonFiles) {
@@ -1052,786 +1082,47 @@ export class ArtifactStore {
                         }
                     }
 
-                    switch (artifactType) {
-                        case 'epics': {
-                            // Epics manifest or monolithic epics file
-                            this.sourceFiles.set('epics', fileUri);
-                            const epicsArray = data.content?.epics || data.epics || [data.content || data];
-
-                            // Determine if this is a manifest with refs or a monolithic file with inline epics
-                            const isManifest = epicsArray.length > 0 && epicsArray.every(
-                                (e: any) => typeof e === 'string' || (e.file && typeof e.file === 'string' && !e.stories)
-                            );
-
-                            if (isManifest) {
-                                // ── New format: manifest with refs ──────────────────
-                                // Resolve the directory containing the manifest
-                                const manifestParts = fileUri.path.split('/');
-                                manifestParts.pop();
-                                const manifestDirUri = fileUri.with({ path: manifestParts.join('/') });
-
-                                for (const ref of epicsArray) {
-                                    const refPath = typeof ref === 'string' ? ref : ref.file;
-                                    if (!refPath) continue;
-                                    const epicFileUri = vscode.Uri.joinPath(manifestDirUri, refPath);
-                                    try {
-                                        const epicContent = await vscode.workspace.fs.readFile(epicFileUri);
-                                        const epicJson = JSON.parse(Buffer.from(epicContent).toString('utf-8'));
-                                        const epicData = epicJson.content || epicJson;
-                                        const epic = mapSchemaEpicToInternal(epicData);
-                                        if (epic) {
-                                            await this.loadEpicStoryRefs(epic, epicData, epicFileUri);
-                                            storeLogger.debug(`[ArtifactStore] Loaded epic from ref: ${epic.id} - ${epic.title} (${epic.stories.length} stories)`);
-                                            const existingIndex = allEpics.findIndex(e => e.id === epic.id);
-                                            if (existingIndex >= 0) {
-                                                mergeEpicDuplicate(allEpics[existingIndex], epic);
-                                            } else {
-                                                allEpics.push(epic);
-                                            }
-                                            this.sourceFiles.set(ArtifactStore.perIdKey('epic', epic.id), epicFileUri);
-                                        }
-                                    } catch (refErr: any) {
-                                        storeLogger.debug(`[ArtifactStore] Failed to load epic ref '${refPath}': ${refErr?.message ?? refErr}`);
-                                    }
-                                }
-                            } else {
-                                // ── Old format: monolithic file with inline epic objects ──
-                                for (const epicData of epicsArray) {
-                                    const epic = mapSchemaEpicToInternal(epicData);
-                                    if (epic) {
-                                        await this.loadEpicStoryRefs(epic, epicData, fileUri);
-                                        storeLogger.debug(`[ArtifactStore] Loaded epic: ${epic.id} - ${epic.title} (${epic.stories.length} stories)`);
-                                        const existingIndex = allEpics.findIndex(e => e.id === epic.id);
-                                        if (existingIndex >= 0) {
-                                            mergeEpicDuplicate(allEpics[existingIndex], epic);
-                                        } else {
-                                            allEpics.push(epic);
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            // Extract project name
-                            if (!projectName) {
-                                projectName = data.metadata?.projectName || 
-                                             data.content?.overview?.projectName || '';
-                            }
-                            
-                            // Extract requirements inventory from epics.json
-                            // NOTE: This is a FALLBACK source. PRD is the authoritative source
-                            // for requirements. epics.json requirementsInventory is read for
-                            // backward compat but NOT written back on save.
-                            const reqInventory = data.content?.requirementsInventory;
-                            if (reqInventory) {
-                                if (reqInventory.functional?.length) {
-                                    requirements.functional.push(
-                                        ...reqInventory.functional.map((fr: any) => mapSchemaRequirement(fr))
-                                    );
-                                }
-                                if (reqInventory.nonFunctional?.length) {
-                                    requirements.nonFunctional.push(
-                                        ...reqInventory.nonFunctional.map((nfr: any) => mapSchemaNonFunctionalRequirement(nfr))
-                                    );
-                                }
-                                if (reqInventory.additional?.length) {
-                                    requirements.additional.push(
-                                        ...reqInventory.additional.map((ar: any) => mapSchemaAdditionalRequirement(ar))
-                                    );
-                                }
-                            }
-                            break;
-                        }
-
-                        case 'epic': {
-                            // Standalone single-epic file — merge metadata-level fields
-                            // (dependencies, status, priority, labels, etc.) into content
-                            const epicData = {
-                                ...(data.metadata || {}),
-                                ...(data.content || data),
-                            };
-                            const epic = mapSchemaEpicToInternal(epicData);
-                            if (epic) {
-                                await this.loadEpicStoryRefs(epic, epicData, fileUri);
-                                storeLogger.debug(`[ArtifactStore] Loaded standalone epic: ${epic.id} - ${epic.title} (${epic.stories.length} stories)`);
-                                const existingIndex = allEpics.findIndex(e => e.id === epic.id);
-                                if (existingIndex >= 0) {
-                                    mergeEpicDuplicate(allEpics[existingIndex], epic);
-                                } else {
-                                    allEpics.push(epic);
-                                }
-                                this.sourceFiles.set(ArtifactStore.perIdKey('epic', epic.id), fileUri);
-                            }
-                            break;
-                        }
-                            
-                        case 'story':
-                            // Standalone story file — merge metadata-level fields
-                            // (dependencies, status, priority, requirementRefs, testCases)
-                            // into content so they reach the mapper
-                            const storyData = {
-                                ...(data.metadata || {}),
-                                ...(data.content || data),
-                            };
-                            const story = mapSchemaStoryToInternal(storyData);
-                            if (story) {
-                                storeLogger.debug(`[ArtifactStore] Loaded standalone story: ${story.title}`);
-                                standaloneStories.push(story);
-                                this.sourceFiles.set(ArtifactStore.perIdKey('story', story.id), fileUri);
-                            }
-                            break;
-                            
-                        case 'use-case':
-                        case 'usecase': {
-                            // Use case file — link to its parent epic via epicId field or ID prefix UC-N-*
-                            storeLogger.debug(`[ArtifactStore] Found use-case: ${fileName}`);
-                            const ucData = data.content || data;
-                            const ucId = ucData.id || fileName.replace(/\.json$/, '');
-                            const summary = ucData.summary || ucData.description || '';
-                            const uc: UseCase = {
-                                id: ucId,
-                                title: ucData.title || ucData.name || summary || `Use Case ${ucId}`,
-                                summary,
-                                description: summary,
-                                scenario: ucData.scenario || { context: '', before: '', after: '', impact: '' },
-                                actors: ucData.actors,
-                                status: ucData.status,
-                                primaryActor: ucData.primaryActor,
-                                secondaryActors: ucData.secondaryActors,
-                                trigger: ucData.trigger,
-                                preconditions: ucData.preconditions,
-                                postconditions: ucData.postconditions,
-                                mainFlow: ucData.mainFlow,
-                                alternativeFlows: ucData.alternativeFlows,
-                                exceptionFlows: ucData.exceptionFlows,
-                                businessRules: ucData.businessRules,
-                                relatedRequirements: ucData.relatedRequirements,
-                                relatedEpic: ucData.relatedEpic,
-                                relatedStories: ucData.relatedStories,
-                                sourceDocument: ucData.sourceDocument,
-                                notes: ucData.notes
-                            };
-                            // Determine parent epic: prefer explicit epicId, fall back to ID prefix UC-N-*
-                            const parentEpicId = normalizeEpicId(
-                                ucData.epicId ||
-                                epicIdFromUseCaseId(uc.id)
-                            );
-                            if (parentEpicId) {
-                                const epicsArr: any[] = this.artifacts.get('epics') || [];
-                                const parentEpic = epicsArr.find((e: any) => normalizeEpicId(e.id) === parentEpicId);
-                                if (parentEpic) {
-                                    if (!parentEpic.useCases) { parentEpic.useCases = []; }
-                                    const existing = parentEpic.useCases.find((u: any) => u.id === uc.id);
-                                    if (existing) {
-                                        const hasExistingContent = (existing.summary || existing.title || '').trim().length > 0;
-                                        const hasNewContent = (uc.summary || uc.title || '').trim().length > 0;
-                                        if (!hasExistingContent && hasNewContent) {
-                                            Object.assign(existing, uc);
-                                            storeLogger.debug(`[ArtifactStore] Updated placeholder use-case ${uc.id} in epic ${parentEpicId}`);
-                                        }
+                    // [phase11-switch-injected]
+                    // ── Dispatch via load reducer registry (Phase 11) ──
+                    // The ~25 case arms are now extracted into per-domain
+                    // load-l1/tea/bmm/cis modules, registered through
+                    // `ArtifactReducerDispatcher.dispatchLoad()`.  The
+                    // inline default branch handles content-shape detection
+                    // (epics array / userStory).
+                    ctx.fileUri = fileUri;
+                    ctx.fileName = fileName;
+                    ctx.artifactType = artifactType;
+                    ctx.data = data;
+                    ctx.isEpicsManifest = isEpicsManifest;
+                    const dispatched = await this.reducers.dispatchLoad(ctx, artifactType);
+                    if (!dispatched) {
+                        // ── Default branch (inline) ───────────────────────
+                        if (data.content?.epics || data.epics) {
+                            const epicsArr = data.content?.epics || data.epics;
+                            for (const epicData of epicsArr) {
+                                const epic = mapSchemaEpicToInternal(epicData);
+                                if (epic) {
+                                    const existingIndex = ctx.allEpics.findIndex(e => e.id === epic.id);
+                                    if (existingIndex >= 0) {
+                                        mergeEpicDuplicate(ctx.allEpics[existingIndex], epic);
                                     } else {
-                                        parentEpic.useCases.push(uc);
-                                        storeLogger.debug(`[ArtifactStore] Linked use-case ${uc.id} to epic ${parentEpicId}`);
-                                    }
-                                } else {
-                                    pendingUseCases.push({ uc, parentEpicId });
-                                    storeLogger.debug(`[ArtifactStore] Parent epic ${parentEpicId} not found for use-case ${uc.id}, queued for linking`);
-                                }
-                            } else {
-                                pendingUseCases.push({ uc, parentEpicId: null });
-                                storeLogger.debug(`[ArtifactStore] No parent epic found for use-case ${uc.id}, queued for linking`);
-                            }
-                            break;
-                        }
-
-                        case 'use-cases': {
-                            // Per-epic use cases collection file (epics/epic-N/use-cases.json)
-                            storeLogger.debug(`[ArtifactStore] Found use-cases collection: ${fileName}`);
-                            const ucArr = (data.content?.useCases || []).map((ucRaw: any) => {
-                                const ucId = ucRaw.id || fileName.replace(/\.json$/, '');
-                                const summary = ucRaw.summary || ucRaw.description || '';
-                                return {
-                                    id: ucId,
-                                    title: ucRaw.title || ucRaw.name || summary || `Use Case ${ucId}`,
-                                    summary,
-                                    description: summary,
-                                    scenario: ucRaw.scenario || { context: '', before: '', after: '', impact: '' },
-                                    actors: ucRaw.actors,
-                                    status: ucRaw.status,
-                                    primaryActor: ucRaw.primaryActor,
-                                    secondaryActors: ucRaw.secondaryActors,
-                                    trigger: ucRaw.trigger,
-                                    preconditions: ucRaw.preconditions,
-                                    postconditions: ucRaw.postconditions,
-                                    mainFlow: ucRaw.mainFlow,
-                                    alternativeFlows: ucRaw.alternativeFlows,
-                                    exceptionFlows: ucRaw.exceptionFlows,
-                                    businessRules: ucRaw.businessRules,
-                                    relatedRequirements: ucRaw.relatedRequirements,
-                                    relatedEpic: ucRaw.relatedEpic,
-                                    relatedStories: ucRaw.relatedStories,
-                                    sourceDocument: ucRaw.sourceDocument,
-                                    notes: ucRaw.notes
-                                };
-                            });
-                            // Derive parent epic from metadata or directory path
-                            const ucRelPath = fileUri.path.replace(folderUri.path, '');
-                            const ucDirMatch = ucRelPath.match(/epics[\/\\]epic-(\d+)/);
-                            const ucEpicId = normalizeEpicId(
-                                data.metadata?.epicId ||
-                                (ucDirMatch ? ucDirMatch[1] : null)
-                            );
-                            if (ucEpicId && ucArr.length) {
-                                const epicsArr: any[] = this.artifacts.get('epics') || allEpics;
-                                const parentEpic = epicsArr.find((e: any) => normalizeEpicId(e.id) === ucEpicId) ||
-                                                   allEpics.find((e: any) => normalizeEpicId(e.id) === ucEpicId);
-                                if (parentEpic) {
-                                    if (!parentEpic.useCases) { parentEpic.useCases = []; }
-                                    for (const uc of ucArr) {
-                                        const existing = parentEpic.useCases.find((u: any) => u.id === uc.id);
-                                        if (!existing) {
-                                            parentEpic.useCases.push(uc);
-                                        }
-                                    }
-                                    storeLogger.debug(`[ArtifactStore] Linked ${ucArr.length} use-cases to epic ${ucEpicId}`);
-                                } else {
-                                    // Queue for deferred linking
-                                    for (const uc of ucArr) {
-                                        pendingUseCases.push({ uc, parentEpicId: ucEpicId });
-                                    }
-                                    storeLogger.debug(`[ArtifactStore] Parent epic ${ucEpicId} not yet loaded, queued ${ucArr.length} use-cases`);
-                                }
-                            }
-                            break;
-                        }
-
-                        case 'epic-test-strategy':
-                        case 'test-strategy': {
-                            // Per-epic test strategy file (NOT the global test-summary)
-                            if (data.metadata?.artifactType === 'test-summary') {
-                                // Global test summary — fall through to default handler
-                                break;
-                            }
-                            const tsRelPath = fileUri.path.replace(folderUri.path, '');
-                            const tsDirMatch = tsRelPath.match(/epics[\/\\]epic-(\d+)/);
-                            const tsEpicId = normalizeEpicId(
-                                data.metadata?.epicId ||
-                                data.content?.epicId ||
-                                (tsDirMatch ? tsDirMatch[1] : null)
-                            );
-                            if (tsEpicId) {
-                                storeLogger.debug(`[ArtifactStore] Found epic test-strategy: ${fileName}`);
-                                const epicsArr: any[] = this.artifacts.get('epics') || allEpics;
-                                const parentEpic = epicsArr.find((e: any) => normalizeEpicId(e.id) === tsEpicId) ||
-                                                   allEpics.find((e: any) => normalizeEpicId(e.id) === tsEpicId);
-                                if (parentEpic) {
-                                    parentEpic.testStrategy = data.content;
-                                    storeLogger.debug(`[ArtifactStore] Linked test-strategy to epic ${tsEpicId}`);
-                                } else {
-                                    storeLogger.debug(`[ArtifactStore] Parent epic ${tsEpicId} not yet loaded for test-strategy, skipped`);
-                                }
-                            } else {
-                                // Global test strategy
-                                this.sourceFiles.set('testStrategy', fileUri);
-                                const tsData = data.content || data;
-                                this.artifacts.set('testStrategy', tsData);
-                                storeLogger.debug(`[ArtifactStore] Loaded global test strategy: ${tsData.title || '(unnamed)'}`);
-                            }
-                            break;
-                        }
-                            
-                        case 'requirements':
-                            // Standalone requirements file — authoritative source
-                            this.sourceFiles.set('requirements', fileUri);
-                            const reqs = data.content || data;
-                            if (reqs.functional) {
-                                requirements.functional.push(
-                                    ...reqs.functional.map((fr: any) => mapSchemaRequirement(fr))
-                                );
-                                standaloneReqsLoaded.functional = true;
-                            }
-                            if (reqs.nonFunctional) {
-                                requirements.nonFunctional.push(
-                                    ...reqs.nonFunctional.map((nfr: any) => mapSchemaNonFunctionalRequirement(nfr))
-                                );
-                                standaloneReqsLoaded.nonFunctional = true;
-                            }
-                            if (reqs.additional) {
-                                requirements.additional.push(
-                                    ...reqs.additional.map((ar: any) => mapSchemaAdditionalRequirement(ar))
-                                );
-                                standaloneReqsLoaded.additional = true;
-                            }
-                            storeLogger.debug(`[ArtifactStore] Loaded standalone requirements: ${reqs.functional?.length || 0} FR, ${reqs.nonFunctional?.length || 0} NFR, ${reqs.additional?.length || 0} additional`);
-                            break;
-                        
-                        case 'functional-requirements': {
-                            // Domain-based functional requirements file
-                            // Structure: content.domains.{domainKey}.requirements[]
-                            this.sourceFiles.set('functionalRequirements', fileUri);
-                            const frContent = data.content || data;
-                            const domains = frContent.domains;
-                            if (domains && typeof domains === 'object') {
-                                let frCount = 0;
-                                for (const domainKey of Object.keys(domains)) {
-                                    const domain = domains[domainKey];
-                                    const domainReqs: any[] = domain.requirements || [];
-                                    for (const fr of domainReqs) {
-                                        // Synthesize description from detailedRequirements/userStories if no description
-                                        const desc = fr.description
-                                            || (fr.detailedRequirements && Array.isArray(fr.detailedRequirements)
-                                                ? fr.detailedRequirements.join(' ')
-                                                : '')
-                                            || (fr.userStories && Array.isArray(fr.userStories)
-                                                ? fr.userStories.join(' ')
-                                                : '');
-                                        const mapped = mapSchemaRequirement({
-                                            ...fr,
-                                            description: desc,
-                                            // Carry domain context for display
-                                            capabilityArea: fr.capabilityArea || domain.title || domainKey,
-                                            type: fr.type || 'functional'
-                                        });
-                                        // Deduplicate by ID
-                                        if (!requirements.functional.find((existing: any) => existing.id === mapped.id)) {
-                                            requirements.functional.push(mapped);
-                                            frCount++;
-                                        }
+                                        ctx.allEpics.push(epic);
                                     }
                                 }
-                                storeLogger.debug(`[ArtifactStore] Loaded ${frCount} functional requirements from ${Object.keys(domains).length} domains in ${fileName}`);
                             }
-                            // Also check for top-level functional/nonFunctional/additional arrays
-                            if (frContent.functional) {
-                                requirements.functional.push(
-                                    ...frContent.functional.map((fr: any) => mapSchemaRequirement(fr))
-                                );
-                            }
-                            if (frContent.nonFunctional) {
-                                requirements.nonFunctional.push(
-                                    ...frContent.nonFunctional.map((nfr: any) => mapSchemaNonFunctionalRequirement(nfr))
-                                );
-                            }
-                            break;
-                        }
-                        
-                        case 'vision':
-                            // Vision file — supports both standard BMAD schema (data.content.*)
-                            // and flat product-vision schema (data.product.name, data.visionStatement, etc.)
-                            // Also handles nested content.vision.{statement, problemStatement, proposedSolution}
-                            this.sourceFiles.set('vision', fileUri);
-                            const visionData = data.content || data;
-                            // The vision sub-object may contain statement/problemStatement/proposedSolution
-                            const visionSubObj = visionData.vision && typeof visionData.vision === 'object' ? visionData.vision : null;
-
-                            // Product name: standard schema or flat schema (data.product.name)
-                            const visionProductName =
-                                visionData.productName ||
-                                data.product?.name ||
-                                data.metadata?.projectName || '';
-
-                            // problemStatement: check nested vision sub-object first, then flat field
-                            const rawPS = visionData.problemStatement || visionSubObj?.problemStatement;
-                            const flatProblemStatement: string =
-                                typeof rawPS === 'string' ? rawPS :
-                                rawPS && typeof rawPS === 'object'
-                                    ? [rawPS.coreProblem, ...(Array.isArray(rawPS.impacts) ? rawPS.impacts : [])].filter(Boolean).join(' ')
-                                    : (data.visionStatement || '');
-
-                            // valueProposition: check nested vision sub-object, then flat field
-                            const rawVP = visionData.valueProposition || data.valueProposition ||
-                                visionSubObj?.proposedSolution || visionSubObj?.statement;
-                            const flatValueProposition: string =
-                                Array.isArray(rawVP) ? rawVP.join(' ') :
-                                typeof rawVP === 'string' ? rawVP : '';
-
-                            // targetUsers: preserve rich objects for the renderer
-                            const rawTargetUsers = visionData.targetUsers || [];
-
-                            // successMetrics/successCriteria: check visionData (content level) first, then data root
-                            const rawSC = visionData.successCriteria || visionData.successMetrics || data.successMetrics || [];
-
-                            const vision = {
-                                productName: visionProductName,
-                                problemStatement: flatProblemStatement,
-                                // Pass through the nested vision sub-object so the renderer
-                                // can display statement/problemStatement/proposedSolution
-                                vision: visionSubObj || undefined,
-                                // Preserve rich targetUsers objects (renderer normalizes both strings and objects)
-                                targetUsers: rawTargetUsers,
-                                // Preserve rich successMetrics objects (renderer normalizes both strings and objects)
-                                successMetrics: rawSC,
-                                valueProposition: flatValueProposition,
-                                // Keep flat successCriteria for backward compat with any code reading it
-                                successCriteria: rawSC.map((s: any) =>
-                                    typeof s === 'string' ? s :
-                                    s.metric ? `${s.metric}: ${s.target || s.description || ''}`.trim() :
-                                    s.criterion ? `${s.criterion}${s.target ? ': ' + s.target : ''}` :
-                                    JSON.stringify(s)
-                                ),
-                                status: data.status || data.metadata?.status || 'draft'
+                        } else if (data.content?.userStory || data.userStory) {
+                            const storyMerged = {
+                                ...(data.metadata || {}),
+                                ...(data.content || data),
                             };
-                            this.artifacts.set('vision', vision);
-                            storeLogger.debug(`[ArtifactStore] Loaded vision: ${vision.productName}`);
-                            
-                            // Use vision product name as project name if not set
-                            if (!projectName && vision.productName) {
-                                projectName = vision.productName;
+                            const story = mapSchemaStoryToInternal(storyMerged);
+                            if (story) {
+                                ctx.standaloneStories.push(story);
+                                ctx.sourceFiles.set(ArtifactStore.perIdKey('story', story.id), fileUri);
                             }
-                            break;
-                            
-                        case 'product-brief': {
-                            this.sourceFiles.set('productBrief', fileUri);
-                            const pbData = data.content || data;
-                            this.artifacts.set('productBrief', pbData);
-                            if (!projectName) projectName = pbData.productName || data.metadata?.projectName || '';
-                            storeLogger.debug(`[ArtifactStore] Loaded product-brief: ${pbData.productName || '(unnamed)'}`);
-                            break;
                         }
-
-                        case 'prd': {
-                            this.sourceFiles.set('prd', fileUri);
-                            const prdData = data.content || data;
-                            this.artifacts.set('prd', prdData);
-                            if (!projectName) projectName = prdData.productOverview?.productName || data.metadata?.projectName || '';
-                            storeLogger.debug(`[ArtifactStore] Loaded PRD: ${prdData.productOverview?.productName || '(unnamed)'}`);
-
-                            // ── Extract PRD requirements into the requirements map ──
-                            // PRD is the seed source for NFR and additional requirements.
-                            // Standalone requirements.json (if exists) takes priority per
-                            // category — skip PRD extraction for categories already loaded.
-                            // Functional requirements are ALWAYS skipped here because
-                            // functional-requirements.json (domain-based) already covers them.
-                            const prdReqs = prdData.requirements;
-                            if (prdReqs) {
-                                if (!standaloneReqsLoaded.nonFunctional
-                                    && Array.isArray(prdReqs.nonFunctional) && prdReqs.nonFunctional.length > 0) {
-                                    requirements.nonFunctional.push(
-                                        ...prdReqs.nonFunctional.map((nfr: any) => mapSchemaNonFunctionalRequirement(nfr))
-                                    );
-                                    storeLogger.debug(`[ArtifactStore] Extracted ${prdReqs.nonFunctional.length} non-functional requirements from PRD`);
-                                } else if (standaloneReqsLoaded.nonFunctional) {
-                                    storeLogger.debug(`[ArtifactStore] Skipped PRD NFR extraction (standalone requirements.json takes priority)`);
-                                }
-                                if (!standaloneReqsLoaded.additional
-                                    && Array.isArray(prdReqs.additional) && prdReqs.additional.length > 0) {
-                                    requirements.additional.push(
-                                        ...prdReqs.additional.map((ar: any) => mapSchemaAdditionalRequirement(ar))
-                                    );
-                                    storeLogger.debug(`[ArtifactStore] Extracted ${prdReqs.additional.length} additional requirements from PRD`);
-                                } else if (standaloneReqsLoaded.additional) {
-                                    storeLogger.debug(`[ArtifactStore] Skipped PRD additional extraction (standalone requirements.json takes priority)`);
-                                }
-                            }
-                            break;
-                        }
-
-                        case 'architecture': {
-                            this.sourceFiles.set('architecture', fileUri);
-                            const archData = data.content || data;
-                            this.artifacts.set('architecture', archData);
-                            storeLogger.debug(`[ArtifactStore] Loaded architecture: ${archData.overview?.projectName || '(unnamed)'}`);
-                            break;
-                        }
-
-                        case 'test-cases':
-                        case 'test-case': {
-                            // File may contain a single TC or an array under content.testCases
-                            this.sourceFiles.set('testCases', fileUri);
-                            const tcContent = data.content || data;
-                            const tcArray: any[] = tcContent.testCases || (Array.isArray(tcContent) ? tcContent : [tcContent]);
-                            const existingTCs: any[] = this.artifacts.get('testCases') || [];
-                            // Merge, avoiding duplicates by id
-                            const merged = [...existingTCs];
-                            tcArray.forEach((tc: any) => {
-                                if (!tc) return;
-                                if (!tc.id) {
-                                    tc.id = `TC-${merged.length + 1}`;
-                                }
-                                if (!merged.find((e: any) => e.id === tc.id)) {
-                                    merged.push(tc);
-                                }
-                            });
-                            this.artifacts.set('testCases', merged);
-                            storeLogger.debug(`[ArtifactStore] Loaded ${tcArray.length} test case(s) from ${fileName}`);
-                            break;
-                        }
-
-                        case 'test-design':
-                        case 'test-design-qa':
-                        case 'test-design-architecture': {
-                            const tdContent = data.content || data;
-                            const tdId = tdContent.id || `test-design-${fileName}`;
-                            this.sourceFiles.set(ArtifactStore.perIdKey('testDesign', tdId), fileUri);
-                            const existingTDs = this.artifacts.get('testDesigns') || [];
-                            existingTDs.push(tdContent);
-                            this.artifacts.set('testDesigns', existingTDs);
-                            storeLogger.debug(`[ArtifactStore] Loaded test-design ${tdId} from ${fileName}`);
-                            break;
-                        }
-
-
-
-                        // ─── TEA module artifacts ───────────────────────────────────
-                        case 'traceability-matrix': {
-                            this.sourceFiles.set('traceabilityMatrix', fileUri);
-                            const tmData = data.content || data;
-                            this.artifacts.set('traceabilityMatrix', tmData);
-                            storeLogger.debug(`[ArtifactStore] Loaded traceability matrix`);
-                            break;
-                        }
-
-                        case 'test-review': {
-                            const trData = data.content || data;
-                            const trId = data.metadata?.id || trData.id || `test-review-${fileName}`;
-                            this.sourceFiles.set(ArtifactStore.perIdKey('testReview', trId), fileUri);
-                            const existing = this.artifacts.get('testReviews') || [];
-                            existing.push(trData);
-                            this.artifacts.set('testReviews', existing);
-                            storeLogger.debug(`[ArtifactStore] Loaded test review ${trId} from ${fileName}`);
-                            break;
-                        }
-
-                        case 'nfr-assessment': {
-                            this.sourceFiles.set('nfrAssessment', fileUri);
-                            const nfrData = data.content || data;
-                            this.artifacts.set('nfrAssessment', nfrData);
-                            storeLogger.debug(`[ArtifactStore] Loaded NFR assessment`);
-                            break;
-                        }
-
-                        case 'atdd-checklist': {
-                            this.sourceFiles.set('atddChecklist', fileUri);
-                            const atddData = data.content || data;
-                            this.artifacts.set('atddChecklist', atddData);
-                            storeLogger.debug(`[ArtifactStore] Loaded ATDD checklist`);
-                            break;
-                        }
-
-                        case 'test-framework': {
-                            this.sourceFiles.set('testFramework', fileUri);
-                            const tfData = data.content || data;
-                            this.artifacts.set('testFramework', tfData);
-                            storeLogger.debug(`[ArtifactStore] Loaded test framework`);
-                            break;
-                        }
-
-                        case 'ci-pipeline': {
-                            this.sourceFiles.set('ciPipeline', fileUri);
-                            const ciData = data.content || data;
-                            this.artifacts.set('ciPipeline', ciData);
-                            storeLogger.debug(`[ArtifactStore] Loaded CI pipeline`);
-                            break;
-                        }
-
-                        case 'automation-summary': {
-                            this.sourceFiles.set('automationSummary', fileUri);
-                            const asData = data.content || data;
-                            this.artifacts.set('automationSummary', asData);
-                            storeLogger.debug(`[ArtifactStore] Loaded automation summary`);
-                            break;
-                        }
-
-                        // ─── BMM module artifacts ───────────────────────────────────
-                        case 'research': {
-                            const resData = data.content || data;
-                            const resId = data.metadata?.id || resData.id || `research-${fileName}`;
-                            this.sourceFiles.set(ArtifactStore.perIdKey('research', resId), fileUri);
-                            const existing = this.artifacts.get('researches') || [];
-                            existing.push(resData);
-                            this.artifacts.set('researches', existing);
-                            storeLogger.debug(`[ArtifactStore] Loaded research ${resId} from ${fileName}`);
-                            break;
-                        }
-
-                        case 'ux-design': {
-                            const uxData = data.content || data;
-                            const uxId = data.metadata?.id || uxData.id || `ux-design-${fileName}`;
-                            this.sourceFiles.set(ArtifactStore.perIdKey('uxDesign', uxId), fileUri);
-                            const existing = this.artifacts.get('uxDesigns') || [];
-                            existing.push(uxData);
-                            this.artifacts.set('uxDesigns', existing);
-                            storeLogger.debug(`[ArtifactStore] Loaded UX design ${uxId} from ${fileName}`);
-                            break;
-                        }
-
-                        case 'readiness-report': {
-                            const rrData = data.content || data;
-                            const rrId = data.metadata?.id || rrData.id || `readiness-report-${fileName}`;
-                            this.sourceFiles.set(ArtifactStore.perIdKey('readinessReport', rrId), fileUri);
-                            const existing = this.artifacts.get('readinessReports') || [];
-                            existing.push(rrData);
-                            this.artifacts.set('readinessReports', existing);
-                            storeLogger.debug(`[ArtifactStore] Loaded readiness report ${rrId} from ${fileName}`);
-                            break;
-                        }
-
-                        case 'sprint-status': {
-                            const ssData = data.content || data;
-                            const ssId = data.metadata?.id || ssData.id || `sprint-status-${fileName}`;
-                            this.sourceFiles.set(ArtifactStore.perIdKey('sprintStatus', ssId), fileUri);
-                            const existing = this.artifacts.get('sprintStatuses') || [];
-                            existing.push(ssData);
-                            this.artifacts.set('sprintStatuses', existing);
-                            storeLogger.debug(`[ArtifactStore] Loaded sprint status ${ssId} from ${fileName}`);
-                            break;
-                        }
-
-                        case 'retrospective': {
-                            const retroData = data.content || data;
-                            const retroId = data.metadata?.id || retroData.id || `retrospective-${fileName}`;
-                            this.sourceFiles.set(ArtifactStore.perIdKey('retrospective', retroId), fileUri);
-                            const existing = this.artifacts.get('retrospectives') || [];
-                            existing.push(retroData);
-                            this.artifacts.set('retrospectives', existing);
-                            storeLogger.debug(`[ArtifactStore] Loaded retrospective ${retroId} from ${fileName}`);
-                            break;
-                        }
-
-                        case 'change-proposal': {
-                            const cpData = data.content || data;
-                            const cpId = data.metadata?.id || cpData.id || `change-proposal-${fileName}`;
-                            this.sourceFiles.set(ArtifactStore.perIdKey('changeProposal', cpId), fileUri);
-                            const existing = this.artifacts.get('changeProposals') || [];
-                            existing.push(cpData);
-                            this.artifacts.set('changeProposals', existing);
-                            storeLogger.debug(`[ArtifactStore] Loaded change proposal ${cpId} from ${fileName}`);
-                            break;
-                        }
-
-                        case 'code-review': {
-                            const crData = data.content || data;
-                            const crId = data.metadata?.id || crData.id || `code-review-${fileName}`;
-                            this.sourceFiles.set(ArtifactStore.perIdKey('codeReview', crId), fileUri);
-                            const existing = this.artifacts.get('codeReviews') || [];
-                            existing.push(crData);
-                            this.artifacts.set('codeReviews', existing);
-                            storeLogger.debug(`[ArtifactStore] Loaded code review ${crId} from ${fileName}`);
-                            break;
-                        }
-
-                        case 'project-overview': {
-                            this.sourceFiles.set('projectOverview', fileUri);
-                            const poData = data.content || data;
-                            this.artifacts.set('projectOverview', poData);
-                            storeLogger.debug(`[ArtifactStore] Loaded project overview`);
-                            break;
-                        }
-
-                        case 'project-context': {
-                            this.sourceFiles.set('projectContext', fileUri);
-                            const pcData = data.content || data;
-                            this.artifacts.set('projectContext', pcData);
-                            storeLogger.debug(`[ArtifactStore] Loaded project context`);
-                            break;
-                        }
-
-                        case 'tech-spec': {
-                            const tspcData = data.content || data;
-                            const tspcId = data.metadata?.id || tspcData.id || `tech-spec-${fileName}`;
-                            this.sourceFiles.set(ArtifactStore.perIdKey('techSpec', tspcId), fileUri);
-                            const existing = this.artifacts.get('techSpecs') || [];
-                            existing.push(tspcData);
-                            this.artifacts.set('techSpecs', existing);
-                            storeLogger.debug(`[ArtifactStore] Loaded tech spec ${tspcId} from ${fileName}`);
-                            break;
-                        }
-
-                        case 'source-tree': {
-                            this.sourceFiles.set('sourceTree', fileUri);
-                            const stData = data.content || data;
-                            this.artifacts.set('sourceTree', stData);
-                            storeLogger.debug(`[ArtifactStore] Loaded source tree`);
-                            break;
-                        }
-
-                        case 'test-summary': {
-                            this.sourceFiles.set('testSummary', fileUri);
-                            const tsmData = data.content || data;
-                            this.artifacts.set('testSummary', tsmData);
-                            storeLogger.debug(`[ArtifactStore] Loaded test summary`);
-                            break;
-                        }
-
-                        case 'risks': {
-                            this.sourceFiles.set('risks', fileUri);
-                            const risksData = data.content || data;
-                            this.artifacts.set('risks', risksData);
-                            storeLogger.debug(`[ArtifactStore] Loaded risks`);
-                            break;
-                        }
-
-                        case 'definition-of-done': {
-                            this.sourceFiles.set('definitionOfDone', fileUri);
-                            const dodData = data.content || data;
-                            this.artifacts.set('definitionOfDone', dodData);
-                            storeLogger.debug(`[ArtifactStore] Loaded definition of done`);
-                            break;
-                        }
-
-                        // ─── CIS module artifacts ───────────────────────────────────
-                        case 'storytelling': {
-                            this.sourceFiles.set('storytelling', fileUri);
-                            const storyData = data.content || data;
-                            this.artifacts.set('storytelling', storyData);
-                            storeLogger.debug(`[ArtifactStore] Loaded storytelling`);
-                            break;
-                        }
-
-                        case 'problem-solving': {
-                            this.sourceFiles.set('problemSolving', fileUri);
-                            const psData = data.content || data;
-                            this.artifacts.set('problemSolving', psData);
-                            storeLogger.debug(`[ArtifactStore] Loaded problem solving`);
-                            break;
-                        }
-
-                        case 'innovation-strategy': {
-                            this.sourceFiles.set('innovationStrategy', fileUri);
-                            const isData = data.content || data;
-                            this.artifacts.set('innovationStrategy', isData);
-                            storeLogger.debug(`[ArtifactStore] Loaded innovation strategy`);
-                            break;
-                        }
-
-                        case 'design-thinking': {
-                            this.sourceFiles.set('designThinking', fileUri);
-                            const dtData = data.content || data;
-                            this.artifacts.set('designThinking', dtData);
-                            storeLogger.debug(`[ArtifactStore] Loaded design thinking`);
-                            break;
-                        }
-
-                        default:
-                            // Try to detect content structure
-                            if (data.content?.epics || data.epics) {
-                                // Has epics array - treat as epics file
-                                const epics = data.content?.epics || data.epics;
-                                for (const epicData of epics) {
-                                    const epic = mapSchemaEpicToInternal(epicData);
-                                    if (epic) {
-                                        const existingIndex = allEpics.findIndex(e => e.id === epic.id);
-                                        if (existingIndex >= 0) {
-                                            mergeEpicDuplicate(allEpics[existingIndex], epic);
-                                        } else {
-                                            allEpics.push(epic);
-                                        }
-                                    }
-                                }
-                            } else if (data.content?.userStory || data.userStory) {
-                                // Has userStory - treat as story
-                                // Merge metadata-level fields into content so dependencies etc. are preserved
-                                const storyMerged = {
-                                    ...(data.metadata || {}),
-                                    ...(data.content || data),
-                                };
-                                const story = mapSchemaStoryToInternal(storyMerged);
-                                if (story) {
-                                    standaloneStories.push(story);
-                                    this.sourceFiles.set(ArtifactStore.perIdKey('story', story.id), fileUri);
-                                }
-                            }
-                            break;
                     }
+
                 } catch (e) {
                     storeLogger.debug(`[ArtifactStore] Could not parse ${fileUri.fsPath}: ${e}`);
                 }
