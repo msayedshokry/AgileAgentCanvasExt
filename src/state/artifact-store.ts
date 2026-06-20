@@ -5,6 +5,7 @@ import { BMAD_RESOURCE_DIR } from './constants';
 import { openChat } from '../commands/chat-bridge';
 import { createLogger } from '../utils/logger';
 import { SprintStatusSync } from './sprint-status-sync';
+import { ArtifactFileWriter } from './artifact-file-writer';
 import { resolveArtifactTargetUri, writeJsonFile, writeMarkdownCompanion, normalizeLegacyArtifact } from './artifact-file-io';
 import { schemaValidator } from './schema-validator';
 import { harnessEngine } from '../harness/policy-engine';
@@ -272,6 +273,7 @@ export class ArtifactStore {
     // before starting a fix, or await the promise stored here.
     private _fixInProgress: Promise<void> | null = null;
     private sprintSync: SprintStatusSync;
+    private fileWriter: ArtifactFileWriter;
 
     /**
      * Build the epic-scoped directory path for a given epic ID.
@@ -291,6 +293,7 @@ export class ArtifactStore {
         // Initialize default state
         this.initializeDefaultState();
         this.sprintSync = new SprintStatusSync(() => this.sourceFolder, () => this.artifacts, () => this.sourceFiles, () => this.getOutputFormat(), (ms: number) => { this._syncingUntil = ms; });
+        this.fileWriter = new ArtifactFileWriter(this.sourceFiles, () => this.sourceFolder, () => this.getOutputFormat());
     }
 
     private initializeDefaultState() {
@@ -5290,7 +5293,7 @@ export class ArtifactStore {
             if (state.vision) {
                 await this.saveVisionToFile(state, baseUri);
             } else {
-                await this.deleteSourceFile('vision');
+                await this.fileWriter.deleteSourceFile('vision');
             }
         } catch (e) { errors.push(`vision: ${e}`); }
 
@@ -5299,7 +5302,7 @@ export class ArtifactStore {
             if (state.productBrief) {
                 await this.saveProductBriefToFile(state, baseUri);
             } else {
-                await this.deleteSourceFile('productBrief');
+                await this.fileWriter.deleteSourceFile('productBrief');
             }
         } catch (e) { errors.push(`productBrief: ${e}`); }
 
@@ -5308,7 +5311,7 @@ export class ArtifactStore {
             if (state.prd) {
                 await this.savePRDToFile(state, baseUri);
             } else {
-                await this.deleteSourceFile('prd');
+                await this.fileWriter.deleteSourceFile('prd');
             }
         } catch (e) { errors.push(`prd: ${e}`); }
 
@@ -5317,7 +5320,7 @@ export class ArtifactStore {
             if (state.architecture) {
                 await this.saveArchitectureToFile(state, baseUri);
             } else {
-                await this.deleteSourceFile('architecture');
+                await this.fileWriter.deleteSourceFile('architecture');
             }
         } catch (e) { errors.push(`architecture: ${e}`); }
         
@@ -5334,7 +5337,7 @@ export class ArtifactStore {
             if (state.testCases && state.testCases.length > 0) {
                 await this.saveTestCasesToFile(state, baseUri);
             } else {
-                await this.deleteSourceFile('testCases');
+                await this.fileWriter.deleteSourceFile('testCases');
             }
         } catch (e) { errors.push(`testCases: ${e}`); }
 
@@ -5343,7 +5346,7 @@ export class ArtifactStore {
             if (state.testStrategy) {
                 await this.saveTestStrategyToFile(state, baseUri);
             } else {
-                await this.deleteSourceFile('testStrategy');
+                await this.fileWriter.deleteSourceFile('testStrategy');
             }
         } catch (e) { errors.push(`testStrategy: ${e}`); }
 
@@ -5357,7 +5360,7 @@ export class ArtifactStore {
                     if (key.startsWith('testDesign:')) {
                         const id = key.substring(11);
                         if (!activeIds.has(id)) {
-                            await this.deleteSourceFile(key);
+                            await this.fileWriter.deleteSourceFile(key);
                         }
                     }
                 }
@@ -5367,7 +5370,7 @@ export class ArtifactStore {
             } else {
                 for (const [key, _] of this.sourceFiles.entries()) {
                     if (key.startsWith('testDesign:')) {
-                        await this.deleteSourceFile(key);
+                        await this.fileWriter.deleteSourceFile(key);
                     }
                 }
             }
@@ -5376,8 +5379,8 @@ export class ArtifactStore {
         // ─── TEA module artifacts ───────────────────────────────────────
         try {
             if (state.traceabilityMatrix) {
-                await this.saveGenericArtifactToFile('traceabilityMatrix', 'traceability-matrix', state.traceabilityMatrix, state, baseUri);
-            } else { await this.deleteSourceFile('traceabilityMatrix'); }
+                await this.fileWriter.saveGenericArtifactToFile('traceabilityMatrix', 'traceability-matrix', state.traceabilityMatrix, state, baseUri);
+            } else { await this.fileWriter.deleteSourceFile('traceabilityMatrix'); }
         } catch (e) { errors.push(`traceabilityMatrix: ${e}`); }
 
         const syncArrayArtifacts = async (stateArray: any[] | undefined, baseKey: string, fileSlugBase: string) => {
@@ -5387,19 +5390,19 @@ export class ArtifactStore {
                     if (key.startsWith(`${baseKey}:`)) {
                         const id = String(key.substring(baseKey.length + 1));
                         if (!activeIds.has(id)) {
-                            await this.deleteSourceFile(key);
+                            await this.fileWriter.deleteSourceFile(key);
                         }
                     }
                 }
                 for (const item of stateArray) {
                     const id = String(item.id || item.metadata?.id || 'default');
                     const safeId = id.replace(/[^a-zA-Z0-9_-]/g, '-');
-                    await this.saveGenericArtifactToFile(`${baseKey}:${id}`, `${fileSlugBase}-${safeId}`, item, state, baseUri);
+                    await this.fileWriter.saveGenericArtifactToFile(`${baseKey}:${id}`, `${fileSlugBase}-${safeId}`, item, state, baseUri);
                 }
             } else {
                 for (const [key, _] of this.sourceFiles.entries()) {
                     if (key.startsWith(`${baseKey}:`)) {
-                        await this.deleteSourceFile(key);
+                        await this.fileWriter.deleteSourceFile(key);
                     }
                 }
             }
@@ -5409,32 +5412,32 @@ export class ArtifactStore {
 
         try {
             if (state.nfrAssessment) {
-                await this.saveGenericArtifactToFile('nfrAssessment', 'nfr-assessment', state.nfrAssessment, state, baseUri);
-            } else { await this.deleteSourceFile('nfrAssessment'); }
+                await this.fileWriter.saveGenericArtifactToFile('nfrAssessment', 'nfr-assessment', state.nfrAssessment, state, baseUri);
+            } else { await this.fileWriter.deleteSourceFile('nfrAssessment'); }
         } catch (e) { errors.push(`nfrAssessment: ${e}`); }
 
         try {
             if (state.testFramework) {
-                await this.saveGenericArtifactToFile('testFramework', 'test-framework', state.testFramework, state, baseUri);
-            } else { await this.deleteSourceFile('testFramework'); }
+                await this.fileWriter.saveGenericArtifactToFile('testFramework', 'test-framework', state.testFramework, state, baseUri);
+            } else { await this.fileWriter.deleteSourceFile('testFramework'); }
         } catch (e) { errors.push(`testFramework: ${e}`); }
 
         try {
             if (state.ciPipeline) {
-                await this.saveGenericArtifactToFile('ciPipeline', 'ci-pipeline', state.ciPipeline, state, baseUri);
-            } else { await this.deleteSourceFile('ciPipeline'); }
+                await this.fileWriter.saveGenericArtifactToFile('ciPipeline', 'ci-pipeline', state.ciPipeline, state, baseUri);
+            } else { await this.fileWriter.deleteSourceFile('ciPipeline'); }
         } catch (e) { errors.push(`ciPipeline: ${e}`); }
 
         try {
             if (state.automationSummary) {
-                await this.saveGenericArtifactToFile('automationSummary', 'automation-summary', state.automationSummary, state, baseUri);
-            } else { await this.deleteSourceFile('automationSummary'); }
+                await this.fileWriter.saveGenericArtifactToFile('automationSummary', 'automation-summary', state.automationSummary, state, baseUri);
+            } else { await this.fileWriter.deleteSourceFile('automationSummary'); }
         } catch (e) { errors.push(`automationSummary: ${e}`); }
 
         try {
             if (state.atddChecklist) {
-                await this.saveGenericArtifactToFile('atddChecklist', 'atdd-checklist', state.atddChecklist, state, baseUri);
-            } else { await this.deleteSourceFile('atddChecklist'); }
+                await this.fileWriter.saveGenericArtifactToFile('atddChecklist', 'atdd-checklist', state.atddChecklist, state, baseUri);
+            } else { await this.fileWriter.deleteSourceFile('atddChecklist'); }
         } catch (e) { errors.push(`atddChecklist: ${e}`); }
 
         // ─── BMM module artifacts ───────────────────────────────────────
@@ -5454,65 +5457,65 @@ export class ArtifactStore {
 
         try {
             if (state.risks) {
-                await this.saveGenericArtifactToFile('risks', 'risks', state.risks, state, baseUri);
-            } else { await this.deleteSourceFile('risks'); }
+                await this.fileWriter.saveGenericArtifactToFile('risks', 'risks', state.risks, state, baseUri);
+            } else { await this.fileWriter.deleteSourceFile('risks'); }
         } catch (e) { errors.push(`risks: ${e}`); }
 
         try {
             if (state.definitionOfDone) {
-                await this.saveGenericArtifactToFile('definitionOfDone', 'definition-of-done', state.definitionOfDone, state, baseUri);
-            } else { await this.deleteSourceFile('definitionOfDone'); }
+                await this.fileWriter.saveGenericArtifactToFile('definitionOfDone', 'definition-of-done', state.definitionOfDone, state, baseUri);
+            } else { await this.fileWriter.deleteSourceFile('definitionOfDone'); }
         } catch (e) { errors.push(`definitionOfDone: ${e}`); }
 
         try {
             if (state.projectOverview) {
-                await this.saveGenericArtifactToFile('projectOverview', 'project-overview', state.projectOverview, state, baseUri);
-            } else { await this.deleteSourceFile('projectOverview'); }
+                await this.fileWriter.saveGenericArtifactToFile('projectOverview', 'project-overview', state.projectOverview, state, baseUri);
+            } else { await this.fileWriter.deleteSourceFile('projectOverview'); }
         } catch (e) { errors.push(`projectOverview: ${e}`); }
 
         try {
             if (state.projectContext) {
-                await this.saveGenericArtifactToFile('projectContext', 'project-context', state.projectContext, state, baseUri);
-            } else { await this.deleteSourceFile('projectContext'); }
+                await this.fileWriter.saveGenericArtifactToFile('projectContext', 'project-context', state.projectContext, state, baseUri);
+            } else { await this.fileWriter.deleteSourceFile('projectContext'); }
         } catch (e) { errors.push(`projectContext: ${e}`); }
 
         try { await syncArrayArtifacts(state.techSpecs, 'techSpec', 'tech-spec'); } catch (e) { errors.push(`techSpecs: ${e}`); }
 
         try {
             if (state.sourceTree) {
-                await this.saveGenericArtifactToFile('sourceTree', 'source-tree', state.sourceTree, state, baseUri);
-            } else { await this.deleteSourceFile('sourceTree'); }
+                await this.fileWriter.saveGenericArtifactToFile('sourceTree', 'source-tree', state.sourceTree, state, baseUri);
+            } else { await this.fileWriter.deleteSourceFile('sourceTree'); }
         } catch (e) { errors.push(`sourceTree: ${e}`); }
 
         try {
             if (state.testSummary) {
-                await this.saveGenericArtifactToFile('testSummary', 'test-summary', state.testSummary, state, baseUri);
-            } else { await this.deleteSourceFile('testSummary'); }
+                await this.fileWriter.saveGenericArtifactToFile('testSummary', 'test-summary', state.testSummary, state, baseUri);
+            } else { await this.fileWriter.deleteSourceFile('testSummary'); }
         } catch (e) { errors.push(`testSummary: ${e}`); }
 
         // ─── CIS module artifacts ───────────────────────────────────────
         try {
             if (state.storytelling) {
-                await this.saveGenericArtifactToFile('storytelling', 'storytelling', state.storytelling, state, baseUri);
-            } else { await this.deleteSourceFile('storytelling'); }
+                await this.fileWriter.saveGenericArtifactToFile('storytelling', 'storytelling', state.storytelling, state, baseUri);
+            } else { await this.fileWriter.deleteSourceFile('storytelling'); }
         } catch (e) { errors.push(`storytelling: ${e}`); }
 
         try {
             if (state.problemSolving) {
-                await this.saveGenericArtifactToFile('problemSolving', 'problem-solving', state.problemSolving, state, baseUri);
-            } else { await this.deleteSourceFile('problemSolving'); }
+                await this.fileWriter.saveGenericArtifactToFile('problemSolving', 'problem-solving', state.problemSolving, state, baseUri);
+            } else { await this.fileWriter.deleteSourceFile('problemSolving'); }
         } catch (e) { errors.push(`problemSolving: ${e}`); }
 
         try {
             if (state.innovationStrategy) {
-                await this.saveGenericArtifactToFile('innovationStrategy', 'innovation-strategy', state.innovationStrategy, state, baseUri);
-            } else { await this.deleteSourceFile('innovationStrategy'); }
+                await this.fileWriter.saveGenericArtifactToFile('innovationStrategy', 'innovation-strategy', state.innovationStrategy, state, baseUri);
+            } else { await this.fileWriter.deleteSourceFile('innovationStrategy'); }
         } catch (e) { errors.push(`innovationStrategy: ${e}`); }
 
         try {
             if (state.designThinking) {
-                await this.saveGenericArtifactToFile('designThinking', 'design-thinking', state.designThinking, state, baseUri);
-            } else { await this.deleteSourceFile('designThinking'); }
+                await this.fileWriter.saveGenericArtifactToFile('designThinking', 'design-thinking', state.designThinking, state, baseUri);
+            } else { await this.fileWriter.deleteSourceFile('designThinking'); }
         } catch (e) { errors.push(`designThinking: ${e}`); }
 
         if (errors.length > 0) {
@@ -5636,17 +5639,7 @@ export class ArtifactStore {
      * Only deletes if we have a recorded source file for the given key.
      */
     private async deleteSourceFile(key: string): Promise<void> {
-        if (!this.sourceFiles.has(key)) return;
-        const fileUri = this.sourceFiles.get(key)!;
-        try {
-            await vscode.workspace.fs.delete(fileUri);
-            this.sourceFiles.delete(key);
-            logDebug(`Deleted ${key} file from disk: ${fileUri.fsPath}`);
-        } catch (e) {
-            // File may already be gone
-            this.sourceFiles.delete(key);
-            logDebug(`Could not delete ${key} file (may already be removed):`, e);
-        }
+        return this.fileWriter.deleteSourceFile(key);
     }
     
     /**
@@ -6742,60 +6735,7 @@ export class ArtifactStore {
         state: BmadArtifacts,
         baseUri: vscode.Uri
     ): Promise<void> {
-        let targetUri: vscode.Uri;
-
-        // Determine the output folder based on the artifact module
-        let folder: string;
-        const baseType = storeKey.split(':')[0];
-        const teaTypes = ['traceabilityMatrix', 'testReview', 'nfrAssessment', 'testFramework', 'ciPipeline', 'automationSummary', 'atddChecklist'];
-        const cisTypes = ['storytelling', 'problemSolving', 'innovationStrategy', 'designThinking'];
-        if (teaTypes.includes(baseType)) {
-            folder = 'testing';
-        } else if (cisTypes.includes(baseType)) {
-            folder = 'cis';
-        } else {
-            folder = 'bmm';
-        }
-        const folderUri = vscode.Uri.joinPath(baseUri, folder);
-        try {
-            await vscode.workspace.fs.createDirectory(folderUri);
-        } catch {
-            // Folder might already exist
-        }
-        targetUri = vscode.Uri.joinPath(folderUri, `${fileSlug}.json`);
-
-        // Build the JSON envelope: separate id/status into metadata, rest is content
-        const { id, status, ...contentFields } = artifact;
-        const jsonEnvelope = {
-            metadata: {
-                schemaVersion: '1.0.0',
-                artifactType: fileSlug,
-                workflowName: 'agileagentcanvas',
-                projectName: state.projectName,
-                timestamps: {
-                    created: new Date().toISOString(),
-                    lastModified: new Date().toISOString()
-                },
-                status: (status as string) || 'draft'
-            },
-            content: contentFields
-        };
-
-        // Write JSON if output format includes JSON
-        const outputFormat = this.getOutputFormat();
-        if (outputFormat === 'json' || outputFormat === 'dual') {
-            await writeJsonFile(targetUri, jsonEnvelope);
-            logDebug(`Saved ${fileSlug} to:`, targetUri.fsPath);
-        }
-
-        // Write markdown companion if output format includes markdown
-        if (outputFormat === 'markdown' || outputFormat === 'dual') {
-            const md = this.generateGenericArtifactMarkdown(fileSlug, artifact, state);
-            const mdUri = await writeMarkdownCompanion(targetUri, `${fileSlug}.md`, md);
-            logDebug('Saved markdown companion:', mdUri.fsPath);
-        }
-
-        this.sourceFiles.set(storeKey, targetUri);
+    return this.fileWriter.saveGenericArtifactToFile(storeKey, fileSlug, artifact, state, baseUri);
     }
 
     /**
@@ -6809,77 +6749,7 @@ export class ArtifactStore {
         artifact: Record<string, unknown>,
         state: BmadArtifacts
     ): string {
-        // Convert kebab-case to Title Case for heading
-        const title = fileSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-        let md = `# ${state.projectName} - ${title}\n\n`;
-
-        const renderValue = (value: unknown, depth: number): string => {
-            if (value === null || value === undefined) return '';
-            if (typeof value === 'string') return value;
-            if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-            if (Array.isArray(value)) {
-                return value.map((item, i) => {
-                    if (typeof item === 'string') return `- ${item}`;
-                    if (typeof item === 'object' && item !== null) {
-                        const entries = Object.entries(item as Record<string, unknown>);
-                        if (entries.length === 0) return `- (empty)`;
-                        // For objects in arrays, render as a bullet with key-value sub-items
-                        const firstVal = entries[0][1];
-                        const label = typeof firstVal === 'string' ? firstVal : `Item ${i + 1}`;
-                        let result = `- **${label}**`;
-                        for (const [k, v] of entries.slice(typeof firstVal === 'string' ? 1 : 0)) {
-                            if (v === null || v === undefined) continue;
-                            if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
-                                result += `\n  - ${formatKey(k)}: ${v}`;
-                            } else if (Array.isArray(v)) {
-                                result += `\n  - ${formatKey(k)}: ${(v as unknown[]).filter(x => x != null).join(', ')}`;
-                            }
-                        }
-                        return result;
-                    }
-                    return `- ${String(item)}`;
-                }).join('\n');
-            }
-            if (typeof value === 'object') {
-                const entries = Object.entries(value as Record<string, unknown>);
-                return entries.map(([k, v]) => {
-                    if (v === null || v === undefined) return '';
-                    if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
-                        return `- **${formatKey(k)}**: ${v}`;
-                    }
-                    if (Array.isArray(v)) {
-                        return `**${formatKey(k)}**:\n${renderValue(v, depth + 1)}`;
-                    }
-                    if (typeof v === 'object') {
-                        return `**${formatKey(k)}**:\n${renderValue(v, depth + 1)}`;
-                    }
-                    return '';
-                }).filter(Boolean).join('\n');
-            }
-            return String(value);
-        };
-
-        const formatKey = (key: string): string => {
-            // camelCase to Title Case
-            return key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
-        };
-
-        // Skip id and status (already in header / metadata)
-        for (const [key, value] of Object.entries(artifact)) {
-            if (key === 'id' || key === 'status') continue;
-            if (value === null || value === undefined) continue;
-
-            const heading = formatKey(key);
-            md += `## ${heading}\n\n`;
-
-            if (typeof value === 'string') {
-                md += `${value}\n\n`;
-            } else {
-                md += `${renderValue(value, 0)}\n\n`;
-            }
-        }
-
-        return md;
+    return this.fileWriter.generateGenericArtifactMarkdown(fileSlug, artifact, state);
     }
 
     /**
@@ -8214,11 +8084,11 @@ export class ArtifactStore {
             if (data) {
                 if (Array.isArray(data)) {
                     for (const item of data) {
-                        const md = this.generateGenericArtifactMarkdown(slug, item as Record<string, unknown>, state);
+                        const md = this.fileWriter.generateGenericArtifactMarkdown(slug, item as Record<string, unknown>, state);
                         if (md) sections.push(md);
                     }
                 } else {
-                    const md = this.generateGenericArtifactMarkdown(slug, data as Record<string, unknown>, state);
+                    const md = this.fileWriter.generateGenericArtifactMarkdown(slug, data as Record<string, unknown>, state);
                     if (md) sections.push(md);
                 }
             }
