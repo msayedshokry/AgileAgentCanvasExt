@@ -19,6 +19,32 @@ import type {
     UseCase,
 } from '../types';
 
+// ─── Field allowlists (Phase 18 follow-up) ──────────────────────────────
+//
+// Each reducer body that calls `Object.assign(upd, pickChanges(...))`
+// (or the l1-style `Object.assign(updatedTD, pickChanges(...))`
+// equivalent) references a named `*_FIELDS` const declared here.
+// L1 has only one such reducer — `reduceTestDesign` — which Phase 17
+// previously inlined the field allowlist as a `const contentFields`
+// declared inside the reducer body.  Phase 18 promotes that const up
+// to module level (as `TEST_DESIGN_FIELDS`) so it is IDE jump-to-def
+// discoverable alongside the cis/tea/bmm equivalents, instead of
+// substring-grep-buried inside the reducer body.
+//
+// `readonly string[]` is the immutable-array convention.  An
+// `as const` would give TypeScript a narrower element type (a union
+// of the literal field names), but `pickChanges(changes, fieldList)`
+// already accepts `readonly string[]`, so the wider type here keeps
+// callers free of unnecessary casts.
+
+const TEST_DESIGN_FIELDS: readonly string[] = [
+    'epicInfo', 'summary', 'notInScope', 'riskAssessment',
+    'entryExitCriteria', 'projectTeam', 'coveragePlan', 'testCases',
+    'executionOrder', 'testEnvironment', 'resourceEstimates',
+    'qualityGateCriteria', 'mitigationPlans', 'assumptionsAndDependencies',
+    'defectManagement', 'approval', 'appendices',
+];
+
 const l1Logger = createLogger('l1-reductions');
 const logDebug = (...args: unknown[]) => l1Logger.debug(...args);
 
@@ -29,9 +55,19 @@ const logDebug = (...args: unknown[]) => l1Logger.debug(...args);
  * Covers the 13 "first-class" BMAD artifacts that the LM tools touch
  * most often + a few administrative types.  Each function mutates the
  * artifacts Map in place per the original switch-arm logic.
+ *
+ * Only `reduceTestDesign` uses the `parts` pattern (see the Phase 17 /
+ * Phase 18 narrative in `reducer-types.ts`); the other 12 reducers
+ * either narrow-cast individual `changes.*` fields directly (since
+ * their target types are first-class canonical types rather than
+ * open-shape BMAD content types) or read the full `changes` blob as
+ * a top-level replacement.  This is intentional — the L1 reducers
+ * are FIRST-CLASS type-aware, while cis/tea/bmm are BMAD-content
+ * keyed off map keys, which is what makes them amenable to the
+ * generic `pickChanges` allowlist pattern.
  */
 
-// ─── vision ─────────────────────────────────────────────────────────────────
+// ─── vision ───────────────────────────────────────────────────────────────
 
 const reduceVision: ArtifactReducerFn<'vision'> = (ctx, _artifactId, changes) => {
     const currentVision = ctx.artifacts.get('vision') || {};
@@ -47,7 +83,7 @@ const reduceVision: ArtifactReducerFn<'vision'> = (ctx, _artifactId, changes) =>
     }
 };
 
-// ─── epic ──────────────────────────────────────────────────────────────────
+// ─── epic ───────────────────────────────────────────────────────────────
 
 const reduceEpic: ArtifactReducerFn<'epic'> = (ctx, artifactId, changes) => {
     const epics: Epic[] = ctx.artifacts.get('epics') || [];
@@ -102,7 +138,7 @@ const reduceEpic: ArtifactReducerFn<'epic'> = (ctx, artifactId, changes) => {
     );
 };
 
-// ─── story ─────────────────────────────────────────────────────────────────
+// ─── story ──────────────────────────────────────────────────────────────
 //
 // Story reducer is the most complex: it can update an existing story OR
 // create a new standalone story file + add it to the matching epic.
@@ -288,7 +324,7 @@ const reduceStory: ArtifactReducerFn<'story'> = async (ctx, artifactId, changes)
     }
 };
 
-// ─── requirement / requirements ───────────────────────────────────────────
+// ─── requirement / requirements ──────────────────────────────────────────
 
 const reduceRequirement: ArtifactReducerFn<'requirement'> = (ctx, artifactId, changes) => {
     const requirements = ctx.artifacts.get('requirements') || { functional: [], nonFunctional: [], additional: [] };
@@ -319,14 +355,14 @@ const reduceRequirementsBulk: ArtifactReducerFn<'requirements'> = (ctx, _artifac
     ctx.artifacts.set('requirements', { ...currentReqs, ...changes });
 };
 
-// ─── aiCursor ──────────────────────────────────────────────────────────────
+// ─── aiCursor ────────────────────────────────────────────────────────────
 
 const reduceAiCursor: ArtifactReducerFn<'aiCursor'> = (ctx, _artifactId, changes) => {
     // UI-only cursor tracking (current artifact, position). No BMAD schema.
     ctx.artifacts.set('aiCursor', changes);
 };
 
-// ─── test-case ─────────────────────────────────────────────────────────────
+// ─── test-case ───────────────────────────────────────────────────────────
 
 const reduceTestCase: ArtifactReducerFn<'test-case'> = (ctx, artifactId, changes) => {
     const testCases: TestCase[] = ctx.artifacts.get('testCases') || [];
@@ -348,7 +384,7 @@ const reduceTestCase: ArtifactReducerFn<'test-case'> = (ctx, artifactId, changes
     logDebug('[l1-reductions] Updated test case:', updated.id, updated.title);
 };
 
-// ─── test-strategy ─────────────────────────────────────────────────────────
+// ─── test-strategy ────────────────────────────────────────────────────────
 
 const reduceTestStrategy: ArtifactReducerFn<'test-strategy'> = (ctx, artifactId, changes) => {
     // Check if this is a per-epic test strategy
@@ -373,7 +409,7 @@ const reduceTestStrategy: ArtifactReducerFn<'test-strategy'> = (ctx, artifactId,
     }
 };
 
-// ─── product-brief / prd / architecture (singleton updates) ──────────────
+// ─── product-brief / prd / architecture (singleton updates) ────────────
 
 const reduceProductBrief: ArtifactReducerFn<'product-brief'> = (ctx, _artifactId, changes) => {
     const current = ctx.artifacts.get('productBrief') || {};
@@ -408,7 +444,7 @@ const reduceArchitecture: ArtifactReducerFn<'architecture'> = (ctx, _artifactId,
     ctx.artifacts.set('architecture', updated);
 };
 
-// ─── use-case (nested in epic) ────────────────────────────────────────────
+// ─── use-case (nested in epic) ──────────────────────────────────────────
 
 const reduceUseCase: ArtifactReducerFn<'use-case'> = (ctx, artifactId, changes) => {
     const allEpics: Epic[] = ctx.artifacts.get('epics') || [];
@@ -430,7 +466,7 @@ const reduceUseCase: ArtifactReducerFn<'use-case'> = (ctx, artifactId, changes) 
     }
 };
 
-// ─── test-design (TEA-adjacent; placed in L1 due to test-plan flow) ───────
+// ─── test-design (TEA-adjacent; placed in L1 due to test-plan flow) ─────
 
 const reduceTestDesign: ArtifactReducerFn<'test-design'> = (ctx, artifactId, changes) => {
     const testDesigns: TestDesign[] = ctx.artifacts.get('testDesigns') || [];
@@ -444,15 +480,11 @@ const reduceTestDesign: ArtifactReducerFn<'test-design'> = (ctx, artifactId, cha
     if (changes.metadata && typeof changes.metadata === 'object') {
         if (changes.metadata.status) updatedTD.status = changes.metadata.status;
     }
-    // Merge flattened content fields (LLM sends them at top level, not wrapped in `content`)
-    const contentFields = [
-        'epicInfo', 'summary', 'notInScope', 'riskAssessment',
-        'entryExitCriteria', 'projectTeam', 'coveragePlan', 'testCases',
-        'executionOrder', 'testEnvironment', 'resourceEstimates',
-        'qualityGateCriteria', 'mitigationPlans', 'assumptionsAndDependencies',
-        'defectManagement', 'approval', 'appendices',
-    ];
-    Object.assign(updatedTD, pickChanges(changes, contentFields));
+    // Merge flattened content fields (LLM sends them at top level, not wrapped in `content`).
+    // The field allowlist is the module-level `TEST_DESIGN_FIELDS` const,
+    // promoted from inside-reducer-body by Phase 18 to match the cis/tea/bmm
+    // convention (IDE jump-to-def discoverable).
+    Object.assign(updatedTD, pickChanges(changes, TEST_DESIGN_FIELDS));
     if (tdIndex >= 0) {
         testDesigns[tdIndex] = updatedTD;
     } else {
@@ -463,7 +495,7 @@ const reduceTestDesign: ArtifactReducerFn<'test-design'> = (ctx, artifactId, cha
     // coveragePlan→TC extraction runs via reconcileDerivedState() in orchestrator tail
 };
 
-// ─── Registration ──────────────────────────────────────────────────────────
+// ─── Registration ───────────────────────────────────────────────────────
 
 export const L1_REGISTERED_TYPES = [
     'vision',

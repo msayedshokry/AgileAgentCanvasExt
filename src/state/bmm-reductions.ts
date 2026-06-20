@@ -6,6 +6,110 @@ import type {
     ArtifactReducerRegistry,
 } from './reducer-types';
 
+// ─── Field allowlists (Phase 18 follow-up) ──────────────────────────────
+//
+// Each reducer body that calls `Object.assign(upd, pickChanges(...))`
+// references a named `*_FIELDS` const declared here.  Phase 17 left
+// the field arrays as INLINE literals at the call sites — readable
+// for short arrays but noisy once they exceeded ~10 fields (BMM has
+// 17-field arrays in `reduceResearch` and `reduceUxDesign`, 18-field
+// in `reduceTechSpec`).  This Phase 18 follow-up promotes each inline
+// allowlist to a named module-level const, which gives readers an
+// IDE jump-to-def target (`go to definition` on any `*_FIELDS`
+// symbol lands here instead of requiring a substring grep across
+// the consuming file).
+//
+// `readonly string[]` is the immutable-array convention.  An
+// `as const` would give TypeScript a narrower element type (a union
+// of the literal field names), but `pickChanges(changes, fieldList)`
+// already accepts `readonly string[]`, so the wider type here keeps
+// callers free of unnecessary casts if a future reducer needs to
+// assemble the allowlist at runtime (none do today).
+
+const RESEARCH_FIELDS: readonly string[] = [
+    'researchType', 'topic', 'scope', 'goals', 'questions', 'methodology',
+    'findings', 'competitiveAnalysis', 'marketAnalysis', 'trends',
+    'technicalFindings', 'userResearch', 'recommendations', 'risks',
+    'synthesis', 'references', 'appendices',
+];
+
+const UX_DESIGN_FIELDS: readonly string[] = [
+    'overview', 'coreExperience', 'designInspiration', 'designSystem',
+    'userJourneys', 'wireframes', 'componentStrategy', 'pageLayouts',
+    'uxPatterns', 'responsive', 'accessibility', 'interactions',
+    'errorStates', 'emptyStates', 'loadingStates', 'implementationNotes', 'references',
+];
+
+const READINESS_REPORT_FIELDS: readonly string[] = [
+    'summary', 'assessment', 'blockers', 'risks', 'recommendations',
+    'dependencyAnalysis', 'resourceAssessment', 'nextSteps', 'appendices',
+];
+
+const SPRINT_STATUS_FIELDS: readonly string[] = [
+    'generated', 'project', 'projectKey', 'trackingSystem', 'storyLocation',
+    'summary', 'epics', 'developmentStatus', 'statusDefinitions',
+];
+
+const RETROSPECTIVE_FIELDS: readonly string[] = [
+    'epicReference', 'summary', 'whatWentWell', 'whatDidNotGoWell',
+    'lessonsLearned', 'storyAnalysis', 'technicalDebt', 'impactOnFutureWork',
+    'teamFeedback', 'actionItems', 'metricsSnapshot',
+];
+
+const CHANGE_PROPOSAL_FIELDS: readonly string[] = [
+    'changeRequest', 'impactAnalysis', 'proposal', 'approval', 'implementation',
+];
+
+const CODE_REVIEW_FIELDS: readonly string[] = [
+    'storyReference', 'reviewSummary', 'findings',
+    'acceptanceCriteriaVerification', 'testCoverageAnalysis', 'securityAnalysis',
+    'architectureCompliance', 'nextSteps', 'reviewerNotes',
+];
+
+const RISKS_FIELDS: readonly string[] = [
+    'risks', 'assumptions', 'dependencies', 'riskMatrix', 'summary',
+];
+
+const DEFINITION_OF_DONE_FIELDS: readonly string[] = [
+    'items', 'qualityGates', 'acceptanceSummary', 'templates', 'summary',
+];
+
+const PROJECT_OVERVIEW_FIELDS: readonly string[] = [
+    'projectInfo', 'executiveSummary', 'projectClassification',
+    'multiPartStructure', 'techStackSummary', 'keyFeatures',
+    'architectureHighlights', 'codebaseAnalysis', 'development',
+    'repositoryStructure', 'entryPoints', 'dataFlows', 'integrations',
+    'knownIssues', 'recommendations', 'documentationMap', 'additionalNotes',
+];
+
+const PROJECT_CONTEXT_FIELDS: readonly string[] = [
+    'projectInfo', 'overview', 'techStack', 'implementationRules',
+    'patterns', 'forbiddenPatterns', 'keyFiles', 'entryPoints',
+    'developmentWorkflow', 'errorHandling', 'stateManagement',
+    'apiInteraction', 'securityConsiderations', 'performanceConsiderations',
+    'knownIssues', 'additionalNotes',
+];
+
+const TECH_SPEC_FIELDS: readonly string[] = [
+    'title', 'slug', 'version', 'overview', 'context', 'techStack',
+    'dataModel', 'apiChanges', 'filesToModify', 'filesToCreate',
+    'codePatterns', 'testPatterns', 'implementationPlan', 'testingStrategy',
+    'risks', 'rollbackPlan', 'additionalContext', 'reviewers',
+];
+
+const SOURCE_TREE_FIELDS: readonly string[] = [
+    'overview', 'statistics', 'multiPartStructure', 'directoryStructure',
+    'criticalDirectories', 'entryPoints', 'fileOrganizationPatterns',
+    'namingConventions', 'keyFileTypes', 'assetLocations', 'configurationFiles',
+    'buildArtifacts', 'testLocations', 'documentationLocations', 'moduleGraph',
+    'developmentNotes', 'recommendations',
+];
+
+const TEST_SUMMARY_FIELDS: readonly string[] = [
+    'summary', 'generatedTests', 'coverageAnalysis', 'testPatterns',
+    'recommendations', 'executionNotes',
+];
+
 const bmmLogger = createLogger('bmm-reductions');
 const logDebug = (...args: unknown[]) => bmmLogger.debug(...args);
 
@@ -14,10 +118,12 @@ const logDebug = (...args: unknown[]) => bmmLogger.debug(...args);
  * `ArtifactStore.updateArtifact` switch (Phase 9).
  *
  * Covers the 12+ "BMM" (Business Method for AI) artifact types,
- * spanning array, singleton, and deprecated-alias cases.
+ * spanning array, singleton, and deprecated-alias cases.  Field
+ * allowlists for each reducer body live in the `*_FIELDS` const
+ * block above (see the Phase 18 follow-up rationale there).
  */
 
-// ─── research (array) ──────────────────────────────────────────────────────
+// ─── research (array) ───────────────────────────────────────────────────
 
 const reduceResearch: ArtifactReducerFn<'research'> = (ctx, artifactId, changes) => {
     const arr: any[] = ctx.artifacts.get('researches') || [];
@@ -27,18 +133,13 @@ const reduceResearch: ArtifactReducerFn<'research'> = (ctx, artifactId, changes)
     if (!upd.id) upd.id = artifactId || 'research-1';
     if (changes.status) upd.status = changes.status;
     if (changes.metadata?.status) upd.status = changes.metadata.status;
-    Object.assign(upd, pickChanges(changes, [
-        'researchType', 'topic', 'scope', 'goals', 'questions', 'methodology',
-        'findings', 'competitiveAnalysis', 'marketAnalysis', 'trends',
-        'technicalFindings', 'userResearch', 'recommendations', 'risks',
-        'synthesis', 'references', 'appendices',
-    ]));
+    Object.assign(upd, pickChanges(changes, RESEARCH_FIELDS));
     if (idx >= 0) arr[idx] = upd; else arr.push(upd);
     ctx.artifacts.set('researches', arr);
     logDebug('[bmm-reductions] Updated research:', upd.id);
 };
 
-// ─── ux-design (array) ─────────────────────────────────────────────────────
+// ─── ux-design (array) ──────────────────────────────────────────────────
 
 const reduceUxDesign: ArtifactReducerFn<'ux-design'> = (ctx, artifactId, changes) => {
     const arr: any[] = ctx.artifacts.get('uxDesigns') || [];
@@ -48,18 +149,13 @@ const reduceUxDesign: ArtifactReducerFn<'ux-design'> = (ctx, artifactId, changes
     if (!upd.id) upd.id = artifactId || 'ux-design-1';
     if (changes.status) upd.status = changes.status;
     if (changes.metadata?.status) upd.status = changes.metadata.status;
-    Object.assign(upd, pickChanges(changes, [
-        'overview', 'coreExperience', 'designInspiration', 'designSystem',
-        'userJourneys', 'wireframes', 'componentStrategy', 'pageLayouts',
-        'uxPatterns', 'responsive', 'accessibility', 'interactions',
-        'errorStates', 'emptyStates', 'loadingStates', 'implementationNotes', 'references',
-    ]));
+    Object.assign(upd, pickChanges(changes, UX_DESIGN_FIELDS));
     if (idx >= 0) arr[idx] = upd; else arr.push(upd);
     ctx.artifacts.set('uxDesigns', arr);
     logDebug('[bmm-reductions] Updated UX design:', upd.id);
 };
 
-// ─── readiness-report / readiness (array, deprecated alias) ──────────────
+// ─── readiness-report / readiness (array, deprecated alias) ───────────────
 
 const reduceReadinessReport: ArtifactReducerFn<'readiness-report'> = (ctx, artifactId, changes) => {
     const arr: any[] = ctx.artifacts.get('readinessReports') || [];
@@ -69,16 +165,13 @@ const reduceReadinessReport: ArtifactReducerFn<'readiness-report'> = (ctx, artif
     if (!upd.id) upd.id = artifactId || 'readiness-report-1';
     if (changes.status) upd.status = changes.status;
     if (changes.metadata?.status) upd.status = changes.metadata.status;
-    Object.assign(upd, pickChanges(changes, [
-        'summary', 'assessment', 'blockers', 'risks', 'recommendations',
-        'dependencyAnalysis', 'resourceAssessment', 'nextSteps', 'appendices',
-    ]));
+    Object.assign(upd, pickChanges(changes, READINESS_REPORT_FIELDS));
     if (idx >= 0) arr[idx] = upd; else arr.push(upd);
     ctx.artifacts.set('readinessReports', arr);
     logDebug('[bmm-reductions] Updated readiness report:', upd.id);
 };
 
-// ─── sprint-status / sprint (array, deprecated alias) ─────────────────────
+// ─── sprint-status / sprint (array, deprecated alias) ──────────────────
 
 const reduceSprintStatus: ArtifactReducerFn<'sprint-status'> = (ctx, artifactId, changes) => {
     const arr: any[] = ctx.artifacts.get('sprintStatuses') || [];
@@ -88,16 +181,13 @@ const reduceSprintStatus: ArtifactReducerFn<'sprint-status'> = (ctx, artifactId,
     if (!upd.id) upd.id = artifactId || 'sprint-status-1';
     if (changes.status) upd.status = changes.status;
     if (changes.metadata?.status) upd.status = changes.metadata.status;
-    Object.assign(upd, pickChanges(changes, [
-        'generated', 'project', 'projectKey', 'trackingSystem', 'storyLocation',
-        'summary', 'epics', 'developmentStatus', 'statusDefinitions',
-    ]));
+    Object.assign(upd, pickChanges(changes, SPRINT_STATUS_FIELDS));
     if (idx >= 0) arr[idx] = upd; else arr.push(upd);
     ctx.artifacts.set('sprintStatuses', arr);
     logDebug('[bmm-reductions] Updated sprint status:', upd.id);
 };
 
-// ─── retrospective (array) ─────────────────────────────────────────────────
+// ─── retrospective (array) ──────────────────────────────────────────────
 
 const reduceRetrospective: ArtifactReducerFn<'retrospective'> = (ctx, artifactId, changes) => {
     const arr: any[] = ctx.artifacts.get('retrospectives') || [];
@@ -107,17 +197,13 @@ const reduceRetrospective: ArtifactReducerFn<'retrospective'> = (ctx, artifactId
     if (!upd.id) upd.id = artifactId || 'retrospective-1';
     if (changes.status) upd.status = changes.status;
     if (changes.metadata?.status) upd.status = changes.metadata.status;
-    Object.assign(upd, pickChanges(changes, [
-        'epicReference', 'summary', 'whatWentWell', 'whatDidNotGoWell',
-        'lessonsLearned', 'storyAnalysis', 'technicalDebt', 'impactOnFutureWork',
-        'teamFeedback', 'actionItems', 'metricsSnapshot',
-    ]));
+    Object.assign(upd, pickChanges(changes, RETROSPECTIVE_FIELDS));
     if (idx >= 0) arr[idx] = upd; else arr.push(upd);
     ctx.artifacts.set('retrospectives', arr);
     logDebug('[bmm-reductions] Updated retrospective:', upd.id);
 };
 
-// ─── change-proposal (array) ───────────────────────────────────────────────
+// ─── change-proposal (array) ───────────────────────────────────────────
 
 const reduceChangeProposal: ArtifactReducerFn<'change-proposal'> = (ctx, artifactId, changes) => {
     const arr: any[] = ctx.artifacts.get('changeProposals') || [];
@@ -127,15 +213,13 @@ const reduceChangeProposal: ArtifactReducerFn<'change-proposal'> = (ctx, artifac
     if (!upd.id) upd.id = artifactId || 'change-proposal-1';
     if (changes.status) upd.status = changes.status;
     if (changes.metadata?.status) upd.status = changes.metadata.status;
-    Object.assign(upd, pickChanges(changes, [
-        'changeRequest', 'impactAnalysis', 'proposal', 'approval', 'implementation',
-    ]));
+    Object.assign(upd, pickChanges(changes, CHANGE_PROPOSAL_FIELDS));
     if (idx >= 0) arr[idx] = upd; else arr.push(upd);
     ctx.artifacts.set('changeProposals', arr);
     logDebug('[bmm-reductions] Updated change proposal:', upd.id);
 };
 
-// ─── code-review (array) ───────────────────────────────────────────────────
+// ─── code-review (array) ────────────────────────────────────────────────
 
 const reduceCodeReview: ArtifactReducerFn<'code-review'> = (ctx, artifactId, changes) => {
     const arr: any[] = ctx.artifacts.get('codeReviews') || [];
@@ -145,17 +229,13 @@ const reduceCodeReview: ArtifactReducerFn<'code-review'> = (ctx, artifactId, cha
     if (!upd.id) upd.id = artifactId || 'code-review-1';
     if (changes.status) upd.status = changes.status;
     if (changes.metadata?.status) upd.status = changes.metadata.status;
-    Object.assign(upd, pickChanges(changes, [
-        'storyReference', 'reviewSummary', 'findings',
-        'acceptanceCriteriaVerification', 'testCoverageAnalysis', 'securityAnalysis',
-        'architectureCompliance', 'nextSteps', 'reviewerNotes',
-    ]));
+    Object.assign(upd, pickChanges(changes, CODE_REVIEW_FIELDS));
     if (idx >= 0) arr[idx] = upd; else arr.push(upd);
     ctx.artifacts.set('codeReviews', arr);
     logDebug('[bmm-reductions] Updated code review:', upd.id);
 };
 
-// ─── risks (singleton) ──────────────────────────────────────────────────────
+// ─── risks (singleton) ──────────────────────────────────────────────────
 
 const reduceRisks: ArtifactReducerFn<'risks'> = (ctx, artifactId, changes) => {
     const cur: any = ctx.artifacts.get('risks') || {};
@@ -163,12 +243,12 @@ const reduceRisks: ArtifactReducerFn<'risks'> = (ctx, artifactId, changes) => {
     if (!upd.id) upd.id = artifactId || 'risks-1';
     if (changes.status) upd.status = changes.status;
     if (changes.metadata?.status) upd.status = changes.metadata.status;
-    Object.assign(upd, pickChanges(changes, ['risks', 'assumptions', 'dependencies', 'riskMatrix', 'summary']));
+    Object.assign(upd, pickChanges(changes, RISKS_FIELDS));
     ctx.artifacts.set('risks', upd);
     logDebug('[bmm-reductions] Updated risks:', upd.id);
 };
 
-// ─── definition-of-done (singleton) ───────────────────────────────────────
+// ─── definition-of-done (singleton) ─────────────────────────────────────
 
 const reduceDefinitionOfDone: ArtifactReducerFn<'definition-of-done'> = (ctx, artifactId, changes) => {
     const cur: any = ctx.artifacts.get('definitionOfDone') || {};
@@ -176,12 +256,12 @@ const reduceDefinitionOfDone: ArtifactReducerFn<'definition-of-done'> = (ctx, ar
     if (!upd.id) upd.id = artifactId || 'definition-of-done-1';
     if (changes.status) upd.status = changes.status;
     if (changes.metadata?.status) upd.status = changes.metadata.status;
-    Object.assign(upd, pickChanges(changes, ['items', 'qualityGates', 'acceptanceSummary', 'templates', 'summary']));
+    Object.assign(upd, pickChanges(changes, DEFINITION_OF_DONE_FIELDS));
     ctx.artifacts.set('definitionOfDone', upd);
     logDebug('[bmm-reductions] Updated definition of done:', upd.id);
 };
 
-// ─── project-overview (singleton) ──────────────────────────────────────────
+// ─── project-overview (singleton) ───────────────────────────────────────
 
 const reduceProjectOverview: ArtifactReducerFn<'project-overview'> = (ctx, artifactId, changes) => {
     const cur: any = ctx.artifacts.get('projectOverview') || {};
@@ -189,18 +269,12 @@ const reduceProjectOverview: ArtifactReducerFn<'project-overview'> = (ctx, artif
     if (!upd.id) upd.id = artifactId || 'project-overview-1';
     if (changes.status) upd.status = changes.status;
     if (changes.metadata?.status) upd.status = changes.metadata.status;
-    Object.assign(upd, pickChanges(changes, [
-        'projectInfo', 'executiveSummary', 'projectClassification',
-        'multiPartStructure', 'techStackSummary', 'keyFeatures',
-        'architectureHighlights', 'codebaseAnalysis', 'development',
-        'repositoryStructure', 'entryPoints', 'dataFlows', 'integrations',
-        'knownIssues', 'recommendations', 'documentationMap', 'additionalNotes',
-    ]));
+    Object.assign(upd, pickChanges(changes, PROJECT_OVERVIEW_FIELDS));
     ctx.artifacts.set('projectOverview', upd);
     logDebug('[bmm-reductions] Updated project overview:', upd.id);
 };
 
-// ─── project-context (singleton) ───────────────────────────────────────────
+// ─── project-context (singleton) ────────────────────────────────────────
 
 const reduceProjectContext: ArtifactReducerFn<'project-context'> = (ctx, artifactId, changes) => {
     const cur: any = ctx.artifacts.get('projectContext') || {};
@@ -208,18 +282,12 @@ const reduceProjectContext: ArtifactReducerFn<'project-context'> = (ctx, artifac
     if (!upd.id) upd.id = artifactId || 'project-context-1';
     if (changes.status) upd.status = changes.status;
     if (changes.metadata?.status) upd.status = changes.metadata.status;
-    Object.assign(upd, pickChanges(changes, [
-        'projectInfo', 'overview', 'techStack', 'implementationRules',
-        'patterns', 'forbiddenPatterns', 'keyFiles', 'entryPoints',
-        'developmentWorkflow', 'errorHandling', 'stateManagement',
-        'apiInteraction', 'securityConsiderations', 'performanceConsiderations',
-        'knownIssues', 'additionalNotes',
-    ]));
+    Object.assign(upd, pickChanges(changes, PROJECT_CONTEXT_FIELDS));
     ctx.artifacts.set('projectContext', upd);
     logDebug('[bmm-reductions] Updated project context:', upd.id);
 };
 
-// ─── tech-spec (array) ─────────────────────────────────────────────────────
+// ─── tech-spec (array) ──────────────────────────────────────────────────
 
 const reduceTechSpec: ArtifactReducerFn<'tech-spec'> = (ctx, artifactId, changes) => {
     const arr: any[] = ctx.artifacts.get('techSpecs') || [];
@@ -229,18 +297,13 @@ const reduceTechSpec: ArtifactReducerFn<'tech-spec'> = (ctx, artifactId, changes
     if (!upd.id) upd.id = artifactId || 'tech-spec-1';
     if (changes.status) upd.status = changes.status;
     if (changes.metadata?.status) upd.status = changes.metadata.status;
-    Object.assign(upd, pickChanges(changes, [
-        'title', 'slug', 'version', 'overview', 'context', 'techStack',
-        'dataModel', 'apiChanges', 'filesToModify', 'filesToCreate',
-        'codePatterns', 'testPatterns', 'implementationPlan', 'testingStrategy',
-        'risks', 'rollbackPlan', 'additionalContext', 'reviewers',
-    ]));
+    Object.assign(upd, pickChanges(changes, TECH_SPEC_FIELDS));
     if (idx >= 0) arr[idx] = upd; else arr.push(upd);
     ctx.artifacts.set('techSpecs', arr);
     logDebug('[bmm-reductions] Updated tech spec:', upd.id);
 };
 
-// ─── source-tree (singleton) ───────────────────────────────────────────────
+// ─── source-tree (singleton) ────────────────────────────────────────────
 
 const reduceSourceTree: ArtifactReducerFn<'source-tree'> = (ctx, artifactId, changes) => {
     const cur: any = ctx.artifacts.get('sourceTree') || {};
@@ -248,18 +311,12 @@ const reduceSourceTree: ArtifactReducerFn<'source-tree'> = (ctx, artifactId, cha
     if (!upd.id) upd.id = artifactId || 'source-tree-1';
     if (changes.status) upd.status = changes.status;
     if (changes.metadata?.status) upd.status = changes.metadata.status;
-    Object.assign(upd, pickChanges(changes, [
-        'overview', 'statistics', 'multiPartStructure', 'directoryStructure',
-        'criticalDirectories', 'entryPoints', 'fileOrganizationPatterns',
-        'namingConventions', 'keyFileTypes', 'assetLocations', 'configurationFiles',
-        'buildArtifacts', 'testLocations', 'documentationLocations', 'moduleGraph',
-        'developmentNotes', 'recommendations',
-    ]));
+    Object.assign(upd, pickChanges(changes, SOURCE_TREE_FIELDS));
     ctx.artifacts.set('sourceTree', upd);
     logDebug('[bmm-reductions] Updated source tree:', upd.id);
 };
 
-// ─── test-summary (singleton) ──────────────────────────────────────────────
+// ─── test-summary (singleton) ────────────────────────────────────────────
 
 const reduceTestSummary: ArtifactReducerFn<'test-summary'> = (ctx, artifactId, changes) => {
     const cur: any = ctx.artifacts.get('testSummary') || {};
@@ -267,15 +324,12 @@ const reduceTestSummary: ArtifactReducerFn<'test-summary'> = (ctx, artifactId, c
     if (!upd.id) upd.id = artifactId || 'test-summary-1';
     if (changes.status) upd.status = changes.status;
     if (changes.metadata?.status) upd.status = changes.metadata.status;
-    Object.assign(upd, pickChanges(changes, [
-        'summary', 'generatedTests', 'coverageAnalysis', 'testPatterns',
-        'recommendations', 'executionNotes',
-    ]));
+    Object.assign(upd, pickChanges(changes, TEST_SUMMARY_FIELDS));
     ctx.artifacts.set('testSummary', upd);
     logDebug('[bmm-reductions] Updated test summary:', upd.id);
 };
 
-// ─── Registration ──────────────────────────────────────────────────────────
+// ─── Registration ───────────────────────────────────────────────────────
 
 export const BMM_REGISTERED_TYPES = [
     'research',
