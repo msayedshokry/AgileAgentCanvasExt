@@ -138,13 +138,26 @@ function countAliasHints(): number {
  *  `countAliasHints()` ('deprecated alias') so the two helpers
  *  can't disagree silently if a future maintainer adds a different
  *  '[ArtifactReducerDispatcher]…' logDebug (e.g. a constructor banner).
- *  Returns null if no alias hint has been emitted — callers must
- *  assert count >= 1 before calling this helper. */
-function lastAliasHint(): string | null {
+ *
+ *  THROWS on empty filter — callers must assert `countAliasHints() >= 1`
+ *  before calling this, otherwise the test gets a descriptive
+ *  `Error: no alias hint captured …` rather than a confusing
+ *  `TypeError: Cannot read properties of null` from a downstream
+ *  `message.toMatch(...)`. The rename to `assert…` makes the
+ *  assertion-style access natural at the call site:
+ *    `expect(assertLastAliasHint()).toMatch(/…/)`,
+ *  instead of the prior `const message = …; expect(message).toMatch(…)`
+ *  pattern that was a foot-gun for future maintainers. */
+function assertLastAliasHint(): string {
     const filtered = debugMock.mock.calls.filter(
         (call) => typeof call[0] === 'string' && (call[0] as string).includes('deprecated alias'),
     );
-    return filtered.length === 0 ? null : (filtered[filtered.length - 1][0] as string);
+    if (filtered.length === 0) {
+        throw new Error(
+            'no alias hint captured — call countAliasHints() >= 1 before invoking assertLastAliasHint()',
+        );
+    }
+    return filtered[filtered.length - 1][0] as string;
 }
 
 describe('ArtifactReducerDispatcher — Phase 14 deprecated-alias migration hint', () => {
@@ -179,11 +192,10 @@ describe('ArtifactReducerDispatcher — Phase 14 deprecated-alias migration hint
             async (alias) => {
                 await dispatcher.dispatch(makeUpdateCtx(), alias, 'artifact-1', {});
                 expect(countAliasHints()).toBe(1);
-                const message = lastAliasHint();
-                expect(message).toMatch(/ArtifactReducerDispatcher\.dispatch/);
-                expect(message).toMatch(new RegExp(`deprecated alias '${alias}'`));
-                expect(message).toMatch(new RegExp(`canonical '${DEPRECATED_CANONICAL[alias]}'`));
-                expect(message).toMatch(/\(artifactId=artifact-1\)/);
+                expect(assertLastAliasHint()).toMatch(/ArtifactReducerDispatcher\.dispatch/);
+                expect(assertLastAliasHint()).toMatch(new RegExp(`deprecated alias '${alias}'`));
+                expect(assertLastAliasHint()).toMatch(new RegExp(`canonical '${DEPRECATED_CANONICAL[alias]}'`));
+                expect(assertLastAliasHint()).toMatch(/\(artifactId=artifact-1\)/);
             },
         );
 
@@ -202,10 +214,9 @@ describe('ArtifactReducerDispatcher — Phase 14 deprecated-alias migration hint
             async (alias) => {
                 await dispatcher.dispatchDelete(makeDeleteCtx(), alias, 'artifact-1');
                 expect(countAliasHints()).toBe(1);
-                const message = lastAliasHint();
-                expect(message).toMatch(/ArtifactReducerDispatcher\.dispatchDelete/);
-                expect(message).toMatch(new RegExp(`deprecated alias '${alias}'`));
-                expect(message).toMatch(new RegExp(`canonical '${DEPRECATED_CANONICAL[alias]}'`));
+                expect(assertLastAliasHint()).toMatch(/ArtifactReducerDispatcher\.dispatchDelete/);
+                expect(assertLastAliasHint()).toMatch(new RegExp(`deprecated alias '${alias}'`));
+                expect(assertLastAliasHint()).toMatch(new RegExp(`canonical '${DEPRECATED_CANONICAL[alias]}'`));
             },
         );
 
@@ -221,15 +232,14 @@ describe('ArtifactReducerDispatcher — Phase 14 deprecated-alias migration hint
             async (alias) => {
                 await dispatcher.dispatchLoad(makeLoadCtx(), alias);
                 expect(countAliasHints()).toBe(1);
-                const message = lastAliasHint();
-                expect(message).toMatch(/ArtifactReducerDispatcher\.dispatchLoad/);
-                expect(message).toMatch(new RegExp(`deprecated alias '${alias}'`));
-                expect(message).toMatch(new RegExp(`canonical '${DEPRECATED_CANONICAL[alias]}'`));
+                expect(assertLastAliasHint()).toMatch(/ArtifactReducerDispatcher\.dispatchLoad/);
+                expect(assertLastAliasHint()).toMatch(new RegExp(`deprecated alias '${alias}'`));
+                expect(assertLastAliasHint()).toMatch(new RegExp(`canonical '${DEPRECATED_CANONICAL[alias]}'`));
                 // dispatchLoad has no per-id artifact — verify the helper
                 // does NOT print (artifactId=undefined) and instead omits
                 // the suffix entirely.
-                expect(message).not.toMatch(/\(artifactId=undefined\)/);
-                expect(message).not.toMatch(/\(artifactId=/);
+                expect(assertLastAliasHint()).not.toMatch(/\(artifactId=undefined\)/);
+                expect(assertLastAliasHint()).not.toMatch(/\(artifactId=/);
             },
         );
 
