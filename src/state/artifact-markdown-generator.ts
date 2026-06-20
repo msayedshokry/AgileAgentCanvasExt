@@ -2336,3 +2336,161 @@ export function generateTestDesignMarkdown(td: any, state: BmadArtifacts): strin
 
 }
 
+
+export function generateAllArtifactsMarkdown(state: BmadArtifacts): string {
+    const sections: string[] = [];
+
+    const visionMd = generateVisionMarkdown(state);
+    if (visionMd) sections.push(visionMd);
+
+    const pbMd = generateProductBriefMarkdown(state);
+    if (pbMd) sections.push(pbMd);
+
+    const prdMd = generatePRDMarkdown(state);
+    if (prdMd) sections.push(prdMd);
+
+    const epicsMd = generateEpicsMarkdown(state);
+    if (epicsMd) sections.push(epicsMd);
+
+    const archMd = generateArchitectureMarkdown(state);
+    if (archMd) sections.push(archMd);
+
+    const tcMd = generateTestCasesMarkdown(state);
+    if (tcMd) sections.push(tcMd);
+
+    const tsMd = generateTestStrategyMarkdown(state);
+    if (tsMd) sections.push(tsMd);
+
+    if (state.testDesigns && state.testDesigns.length > 0) {
+        for (const td of state.testDesigns) {
+            const tdMd = generateTestDesignMarkdown(td, state);
+            if (tdMd) sections.push(tdMd);
+        }
+    }
+    // TEA module artifacts
+    const genericArtifacts: { slug: string; data: Record<string, unknown> | any[] | undefined }[] = [
+        { slug: 'traceability-matrix', data: state.traceabilityMatrix },
+        { slug: 'test-review', data: state.testReviews },
+        { slug: 'nfr-assessment', data: state.nfrAssessment },
+        { slug: 'test-framework', data: state.testFramework },
+        { slug: 'ci-pipeline', data: state.ciPipeline },
+        { slug: 'automation-summary', data: state.automationSummary },
+        { slug: 'atdd-checklist', data: state.atddChecklist },
+        // BMM module artifacts
+        { slug: 'research', data: state.researches },
+        { slug: 'ux-design', data: state.uxDesigns },
+        { slug: 'readiness-report', data: state.readinessReports },
+        { slug: 'sprint-status', data: state.sprintStatuses },
+        { slug: 'retrospective', data: state.retrospectives },
+        { slug: 'change-proposal', data: state.changeProposals },
+        { slug: 'code-review', data: state.codeReviews },
+        { slug: 'risks', data: state.risks },
+        { slug: 'definition-of-done', data: state.definitionOfDone },
+        { slug: 'project-overview', data: state.projectOverview },
+        { slug: 'project-context', data: state.projectContext },
+        { slug: 'tech-spec', data: state.techSpecs },
+        // CIS module artifacts
+        { slug: 'storytelling', data: state.storytelling },
+        { slug: 'problem-solving', data: state.problemSolving },
+        { slug: 'innovation-strategy', data: state.innovationStrategy },
+        { slug: 'design-thinking', data: state.designThinking },
+    ];
+
+    for (const { slug, data } of genericArtifacts) {
+        if (data) {
+            if (Array.isArray(data)) {
+                for (const item of data) {
+                    const md = generateGenericArtifactMarkdown(slug, item as Record<string, unknown>, state);
+                    if (md) sections.push(md);
+                }
+            } else {
+                const md = generateGenericArtifactMarkdown(slug, data as Record<string, unknown>, state);
+                if (md) sections.push(md);
+            }
+        }
+    }
+
+    if (sections.length === 0) {
+        return `# ${state.projectName}\n\nNo artifacts have been created yet.\n`;
+    }
+
+    return sections.join('\n\n---\n\n');
+}
+
+export function generateGenericArtifactMarkdown(
+  fileSlug: string,
+  artifact: Record<string, unknown>,
+  state: BmadArtifacts,
+): string {
+  // Convert kebab-case to Title Case for heading
+  const title = fileSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  let md = `# ${state.projectName} - ${title}\n\n`;
+
+  const renderValue = (value: unknown, depth: number): string => {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+    if (Array.isArray(value)) {
+      return value.map((item, i) => {
+        if (typeof item === 'string') return `- ${item}`;
+        if (typeof item === 'object' && item !== null) {
+          const entries = Object.entries(item as Record<string, unknown>);
+          if (entries.length === 0) return `- (empty)`;
+          // For objects in arrays, render as a bullet with key-value sub-items
+          const firstVal = entries[0][1];
+          const label = typeof firstVal === 'string' ? firstVal : `Item ${i + 1}`;
+          let result = `- **${label}**`;
+          for (const [k, v] of entries.slice(typeof firstVal === 'string' ? 1 : 0)) {
+            if (v === null || v === undefined) continue;
+            if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
+              result += `\n  - ${formatKey(k)}: ${v}`;
+            } else if (Array.isArray(v)) {
+              result += `\n  - ${formatKey(k)}: ${(v as unknown[]).filter(x => x != null).join(', ')}`;
+            }
+          }
+          return result;
+        }
+        return `- ${String(item)}`;
+      }).join('\n');
+    }
+    if (typeof value === 'object') {
+      const entries = Object.entries(value as Record<string, unknown>);
+      return entries.map(([k, v]) => {
+        if (v === null || v === undefined) return '';
+        if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
+          return `- **${formatKey(k)}**: ${v}`;
+        }
+        if (Array.isArray(v)) {
+          return `**${formatKey(k)}**:\n${renderValue(v, depth + 1)}`;
+        }
+        if (typeof v === 'object') {
+          return `**${formatKey(k)}**:\n${renderValue(v, depth + 1)}`;
+        }
+        return '';
+      }).filter(Boolean).join('\n');
+    }
+    return String(value);
+  };
+
+  const formatKey = (key: string): string => {
+    // camelCase to Title Case
+    return key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
+  };
+
+  // Skip id and status (already in header / metadata)
+  for (const [key, value] of Object.entries(artifact)) {
+    if (key === 'id' || key === 'status') continue;
+    if (value === null || value === undefined) continue;
+
+    const heading = formatKey(key);
+    md += `## ${heading}\n\n`;
+
+    if (typeof value === 'string') {
+      md += `${value}\n\n`;
+    } else {
+      md += `${renderValue(value, 0)}\n\n`;
+    }
+  }
+
+  return md;
+}
