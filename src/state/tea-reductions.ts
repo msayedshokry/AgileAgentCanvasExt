@@ -21,7 +21,7 @@ const logDebug = (...args: unknown[]) => teaLogger.debug(...args);
 
 // ─── traceability-matrix (singleton) ───────────────────────────────────────
 
-const reduceTraceabilityMatrix: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceTraceabilityMatrix: ArtifactReducerFn<'traceability-matrix'> = (ctx, artifactId, changes) => {
     const cur: any = ctx.artifacts.get('traceabilityMatrix') || {};
     const upd = { ...cur };
     if (!upd.id) upd.id = artifactId || 'traceability-matrix-1';
@@ -39,7 +39,7 @@ const reduceTraceabilityMatrix: ArtifactReducerFn = (ctx, artifactId, changes) =
 
 // ─── test-review (array) ───────────────────────────────────────────────────
 
-const reduceTestReview: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceTestReview: ArtifactReducerFn<'test-review'> = (ctx, artifactId, changes) => {
     const arr: any[] = ctx.artifacts.get('testReviews') || [];
     const idx = arr.findIndex((a: any) => a.id === artifactId || a.metadata?.id === artifactId);
     const cur = idx >= 0 ? arr[idx] : {};
@@ -62,7 +62,7 @@ const reduceTestReview: ArtifactReducerFn = (ctx, artifactId, changes) => {
 
 // ─── nfr-assessment / nfr (singleton, deprecated alias) ──────────────────
 
-const reduceNfrAssessment: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceNfrAssessment: ArtifactReducerFn<'nfr-assessment'> = (ctx, artifactId, changes) => {
     const cur: any = ctx.artifacts.get('nfrAssessment') || {};
     const upd = { ...cur };
     if (!upd.id) upd.id = artifactId || 'nfr-assessment-1';
@@ -81,7 +81,7 @@ const reduceNfrAssessment: ArtifactReducerFn = (ctx, artifactId, changes) => {
 
 // ─── test-framework (singleton) ────────────────────────────────────────────
 
-const reduceTestFramework: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceTestFramework: ArtifactReducerFn<'test-framework'> = (ctx, artifactId, changes) => {
     const cur: any = ctx.artifacts.get('testFramework') || {};
     const upd = { ...cur };
     if (!upd.id) upd.id = artifactId || 'test-framework-1';
@@ -100,7 +100,7 @@ const reduceTestFramework: ArtifactReducerFn = (ctx, artifactId, changes) => {
 
 // ─── ci-pipeline (singleton) ───────────────────────────────────────────────
 
-const reduceCiPipeline: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceCiPipeline: ArtifactReducerFn<'ci-pipeline'> = (ctx, artifactId, changes) => {
     const cur: any = ctx.artifacts.get('ciPipeline') || {};
     const upd = { ...cur };
     if (!upd.id) upd.id = artifactId || 'ci-pipeline-1';
@@ -118,7 +118,7 @@ const reduceCiPipeline: ArtifactReducerFn = (ctx, artifactId, changes) => {
 
 // ─── automation-summary (singleton) ───────────────────────────────────────
 
-const reduceAutomationSummary: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceAutomationSummary: ArtifactReducerFn<'automation-summary'> = (ctx, artifactId, changes) => {
     const cur: any = ctx.artifacts.get('automationSummary') || {};
     const upd = { ...cur };
     if (!upd.id) upd.id = artifactId || 'automation-summary-1';
@@ -137,7 +137,7 @@ const reduceAutomationSummary: ArtifactReducerFn = (ctx, artifactId, changes) =>
 
 // ─── atdd-checklist (singleton) ────────────────────────────────────────────
 
-const reduceAtddChecklist: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceAtddChecklist: ArtifactReducerFn<'atdd-checklist'> = (ctx, artifactId, changes) => {
     const cur: any = ctx.artifacts.get('atddChecklist') || {};
     const upd = { ...cur };
     if (!upd.id) upd.id = artifactId || 'atdd-checklist-1';

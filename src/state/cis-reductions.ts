@@ -19,7 +19,7 @@ const logDebug = (...args: unknown[]) => cisLogger.debug(...args);
 
 // ─── storytelling ──────────────────────────────────────────────────────────
 
-const reduceStorytelling: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceStorytelling: ArtifactReducerFn<'storytelling'> = (ctx, artifactId, changes) => {
     const cur: any = ctx.artifacts.get('storytelling') || {};
     const upd = { ...cur };
     if (!upd.id) upd.id = artifactId || 'storytelling-1';
@@ -39,7 +39,7 @@ const reduceStorytelling: ArtifactReducerFn = (ctx, artifactId, changes) => {
 
 // ─── problem-solving ───────────────────────────────────────────────────────
 
-const reduceProblemSolving: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceProblemSolving: ArtifactReducerFn<'problem-solving'> = (ctx, artifactId, changes) => {
     const cur: any = ctx.artifacts.get('problemSolving') || {};
     const upd = { ...cur };
     if (!upd.id) upd.id = artifactId || 'problem-solving-1';
@@ -58,7 +58,7 @@ const reduceProblemSolving: ArtifactReducerFn = (ctx, artifactId, changes) => {
 
 // ─── innovation-strategy ───────────────────────────────────────────────────
 
-const reduceInnovationStrategy: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceInnovationStrategy: ArtifactReducerFn<'innovation-strategy'> = (ctx, artifactId, changes) => {
     const cur: any = ctx.artifacts.get('innovationStrategy') || {};
     const upd = { ...cur };
     if (!upd.id) upd.id = artifactId || 'innovation-strategy-1';
@@ -78,7 +78,7 @@ const reduceInnovationStrategy: ArtifactReducerFn = (ctx, artifactId, changes) =
 
 // ─── design-thinking ───────────────────────────────────────────────────────
 
-const reduceDesignThinking: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceDesignThinking: ArtifactReducerFn<'design-thinking'> = (ctx, artifactId, changes) => {
     const cur: any = ctx.artifacts.get('designThinking') || {};
     const upd = { ...cur };
     if (!upd.id) upd.id = artifactId || 'design-thinking-1';

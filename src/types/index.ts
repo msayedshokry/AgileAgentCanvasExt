@@ -2116,6 +2116,20 @@ export interface BmadArtifactTypeMap {
     retrospective: Retrospective;
     risks: Risks;
     storytelling: Storytelling;
+    // ── Short kebab-case aliases (Phase 12) ─────────────────────────
+    // These were dispatch keys registered alongside their canonical
+    // neighbours (see reducer-types.ts `L1_REGISTERED_TYPES`,
+    // `TEA_REGISTERED_TYPES`, etc.) but never added to BmadArtifactTypeMap.
+    // Adding them here lets `ArtifactReducerFn<T extends keyof BmadArtifactTypeMap & string>`
+    // and `updateArtifact<T>` accept the same string keys the reducers
+    // register, without forcing callers to translate. JSDoc @deprecated
+    // tags nudge callers toward the canonical kebab-case spellings.
+    /** @deprecated Use `nfr-assessment` in `BmadArtifactTypeMap` instead. */
+    nfr: NfrAssessment;
+    /** @deprecated Use `readiness-report` in `BmadArtifactTypeMap` instead. */
+    readiness: ReadinessReport;
+    /** @deprecated Use `sprint-status` in `BmadArtifactTypeMap` instead. */
+    sprint: SprintStatus;
 }
 
 /**

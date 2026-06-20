@@ -32,7 +32,7 @@ const logDebug = (...args: unknown[]) => l1Logger.debug(...args);
 
 // ─── vision ─────────────────────────────────────────────────────────────────
 
-const reduceVision: ArtifactReducerFn = (ctx, _artifactId, changes) => {
+const reduceVision: ArtifactReducerFn<'vision'> = (ctx, _artifactId, changes) => {
     const currentVision = ctx.artifacts.get('vision') || {};
     // Handle metadata updates
     if (changes.metadata) {
@@ -48,7 +48,7 @@ const reduceVision: ArtifactReducerFn = (ctx, _artifactId, changes) => {
 
 // ─── epic ──────────────────────────────────────────────────────────────────
 
-const reduceEpic: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceEpic: ArtifactReducerFn<'epic'> = (ctx, artifactId, changes) => {
     const epics: Epic[] = ctx.artifacts.get('epics') || [];
     const epicIndex = epics.findIndex((e: Epic) => e.id === artifactId);
     if (epicIndex < 0) {
@@ -64,7 +64,14 @@ const reduceEpic: ArtifactReducerFn = (ctx, artifactId, changes) => {
         Object.assign(updatedEpic, changes.metadata);
     }
 
-    const { metadata: _meta, description, ...topFields } = changes;
+    // Phase 12: LM tool wire sends a `description` field that this reducer
+    // maps to `Epic.goal`. `description` is NOT a canonical Epic field;
+    // the wire contract preserves it for backward compatibility with
+    // legacy LM prompts that use the LLM-friendlier `description`
+    // spelling. The narrow cast declares exactly the wire-only +
+    // metadata envelope carried by `BmadArtifactChange` (canonical
+    // `ArtifactChanges` adds `metadata?: BmadMetadata` to every payload).
+    const { metadata: _meta, description, ...topFields } = changes as Partial<Epic> & { metadata?: import('../types').BmadMetadata; description?: string };
     if (description) { updatedEpic.goal = description; }
     Object.assign(updatedEpic, topFields);
 
@@ -93,7 +100,7 @@ const reduceEpic: ArtifactReducerFn = (ctx, artifactId, changes) => {
 // create a new standalone story file + add it to the matching epic.
 // On success, it also recalculates parent epic status.
 
-const reduceStory: ArtifactReducerFn = async (ctx, artifactId, changes) => {
+const reduceStory: ArtifactReducerFn<'story'> = async (ctx, artifactId, changes) => {
     const allEpics: Epic[] = ctx.artifacts.get('epics') || [];
     let storyFound = false;
 
@@ -134,7 +141,14 @@ const reduceStory: ArtifactReducerFn = async (ctx, artifactId, changes) => {
             title: changes.title || `Story ${artifactId}`,
             status: changes.status || 'draft',
             storyPoints: changes.storyPoints,
-            userStory: changes.userStory,
+            // Phase 12: LM wire sends partial `userStory` (`{ asA? }`),
+            // but `Story.userStory` is required. Default-fill at the call
+            // site so an omitted LM wire field doesn't write
+            // `{asA: undefined, iWant: undefined, soThat: undefined}` to
+            // the store. Schema validation upstream at the LM tool
+            // boundary is the enforcement layer for the field shape; the
+            // cast preserves the wire packet's optionality.
+            userStory: changes.userStory ?? { asA: '', iWant: '', soThat: '' },
             acceptanceCriteria: changes.acceptanceCriteria || [],
             technicalNotes: changes.technicalNotes,
             tasks: changes.tasks || [],
@@ -143,8 +157,12 @@ const reduceStory: ArtifactReducerFn = async (ctx, artifactId, changes) => {
             ...changes,
         };
 
-        // Determine parent epicId — from changes, or derive from ID pattern
-        let epicId = changes.epicId;
+        // Determine parent epicId — from changes, or derive from ID pattern.
+        // Phase 12: `epicId` is a LM wire-only field on story creation (it's
+        // an Epic-level concept, not on the canonical Story type). The narrow
+        // `Partial<Story> & { epicId?: string }` cast declares the exact wire
+        // contract for this single extra key.
+        let epicId = (changes as Partial<Story> & { epicId?: string }).epicId;
         if (!epicId) {
             const idMatch = artifactId.match(/^S?-?(\d+)[.\-]/i);
             if (idMatch) {
@@ -256,7 +274,7 @@ const reduceStory: ArtifactReducerFn = async (ctx, artifactId, changes) => {
 
 // ─── requirement / requirements ───────────────────────────────────────────
 
-const reduceRequirement: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceRequirement: ArtifactReducerFn<'requirement'> = (ctx, artifactId, changes) => {
     const requirements = ctx.artifacts.get('requirements') || { functional: [], nonFunctional: [], additional: [] };
     const reqIndex = requirements.functional.findIndex((r: FunctionalRequirement) => r.id === artifactId);
     if (reqIndex < 0) {
@@ -279,7 +297,7 @@ const reduceRequirement: ArtifactReducerFn = (ctx, artifactId, changes) => {
     logDebug('[l1-reductions] Updated requirement:', updatedReq.id, updatedReq.title);
 };
 
-const reduceRequirementsBulk: ArtifactReducerFn = (ctx, _artifactId, changes) => {
+const reduceRequirementsBulk: ArtifactReducerFn<'requirements'> = (ctx, _artifactId, changes) => {
     // Bulk replacement of category arrays — no per-item validation
     const currentReqs = ctx.artifacts.get('requirements') || {};
     ctx.artifacts.set('requirements', { ...currentReqs, ...changes });
@@ -287,14 +305,14 @@ const reduceRequirementsBulk: ArtifactReducerFn = (ctx, _artifactId, changes) =>
 
 // ─── aiCursor ──────────────────────────────────────────────────────────────
 
-const reduceAiCursor: ArtifactReducerFn = (ctx, _artifactId, changes) => {
+const reduceAiCursor: ArtifactReducerFn<'aiCursor'> = (ctx, _artifactId, changes) => {
     // UI-only cursor tracking (current artifact, position). No BMAD schema.
     ctx.artifacts.set('aiCursor', changes);
 };
 
 // ─── test-case ─────────────────────────────────────────────────────────────
 
-const reduceTestCase: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceTestCase: ArtifactReducerFn<'test-case'> = (ctx, artifactId, changes) => {
     const testCases: TestCase[] = ctx.artifacts.get('testCases') || [];
     const tcIndex = testCases.findIndex((tc: TestCase) => tc.id === artifactId);
     if (tcIndex < 0) {
@@ -316,7 +334,7 @@ const reduceTestCase: ArtifactReducerFn = (ctx, artifactId, changes) => {
 
 // ─── test-strategy ─────────────────────────────────────────────────────────
 
-const reduceTestStrategy: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceTestStrategy: ArtifactReducerFn<'test-strategy'> = (ctx, artifactId, changes) => {
     // Check if this is a per-epic test strategy
     const epics: Epic[] = ctx.artifacts.get('epics') || [];
     const ownerEpic = epics.find(e => e.testStrategy && e.testStrategy.id === artifactId);
@@ -341,7 +359,7 @@ const reduceTestStrategy: ArtifactReducerFn = (ctx, artifactId, changes) => {
 
 // ─── product-brief / prd / architecture (singleton updates) ──────────────
 
-const reduceProductBrief: ArtifactReducerFn = (ctx, _artifactId, changes) => {
+const reduceProductBrief: ArtifactReducerFn<'product-brief'> = (ctx, _artifactId, changes) => {
     const current = ctx.artifacts.get('productBrief') || {};
     const updated = { ...current };
     if (changes.title) updated.productName = changes.title;
@@ -350,7 +368,7 @@ const reduceProductBrief: ArtifactReducerFn = (ctx, _artifactId, changes) => {
     ctx.artifacts.set('productBrief', updated);
 };
 
-const reducePRD: ArtifactReducerFn = (ctx, _artifactId, changes) => {
+const reducePRD: ArtifactReducerFn<'prd'> = (ctx, _artifactId, changes) => {
     const current = ctx.artifacts.get('prd') || {};
     const updated = { ...current };
     if (changes.title) {
@@ -362,7 +380,7 @@ const reducePRD: ArtifactReducerFn = (ctx, _artifactId, changes) => {
     ctx.artifacts.set('prd', updated);
 };
 
-const reduceArchitecture: ArtifactReducerFn = (ctx, _artifactId, changes) => {
+const reduceArchitecture: ArtifactReducerFn<'architecture'> = (ctx, _artifactId, changes) => {
     const current = ctx.artifacts.get('architecture') || {};
     const updated = { ...current };
     if (changes.title) {
@@ -376,7 +394,7 @@ const reduceArchitecture: ArtifactReducerFn = (ctx, _artifactId, changes) => {
 
 // ─── use-case (nested in epic) ────────────────────────────────────────────
 
-const reduceUseCase: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceUseCase: ArtifactReducerFn<'use-case'> = (ctx, artifactId, changes) => {
     const allEpics: Epic[] = ctx.artifacts.get('epics') || [];
     let found = false;
     for (const epic of allEpics) {
@@ -398,7 +416,7 @@ const reduceUseCase: ArtifactReducerFn = (ctx, artifactId, changes) => {
 
 // ─── test-design (TEA-adjacent; placed in L1 due to test-plan flow) ───────
 
-const reduceTestDesign: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceTestDesign: ArtifactReducerFn<'test-design'> = (ctx, artifactId, changes) => {
     const testDesigns: TestDesign[] = ctx.artifacts.get('testDesigns') || [];
     const tdIndex = testDesigns.findIndex(td => td.id === artifactId);
     const currentTD: TestDesign | any = tdIndex >= 0 ? testDesigns[tdIndex] : {};

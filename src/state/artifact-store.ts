@@ -12,7 +12,7 @@ import { findAllJsonFiles, detectArtifactType, loadUiState, loadEpicStoryRefs, r
 import { findArtifactById, mergeFromState } from './artifact-merge';
 import { ArtifactRepairer } from './artifact-repair';
 import { ArtifactReducerDispatcher } from './reducer-registry';
-import type { ArtifactReducerCtx, ArtifactChanges, ArtifactDeleteCtx, ArtifactLoadCtx } from './reducer-types';
+import type { ArtifactReducerCtx, ArtifactChanges, ArtifactDeleteCtx, ArtifactLoadCtx, WritableChanges } from './reducer-types';
 import { exportArtifacts } from './artifact-exporter';
 import { mapSchemaEpicToInternal, mergeEpicDuplicate, extractStoryId, mapSchemaStoryToInternal, mapStatus, mapSchemaRequirement, mapSchemaNonFunctionalRequirement, mapSchemaAdditionalRequirement } from './schema-mappers';
 import { repairArtifactData } from './schema-artifact-mapper';
@@ -669,7 +669,7 @@ export class ArtifactStore {
     async updateArtifact(
         artifactType: string,
         artifactId: string,
-        changes: Partial<any>
+        changes: ArtifactChanges
     ): Promise<void> {
         logDebug('updateArtifact called:', artifactType, artifactId, changes);
         // ── Harness pre-flight checks (Epic 4) ──────────────────────────────
@@ -706,9 +706,15 @@ export class ArtifactStore {
                 const isEmpty = (v: any) =>
                     v === undefined || v === null || v === '' ||
                     (Array.isArray(v) && v.length === 0);
+                // Phase 12: relax changes indexing locally for the auto-fix
+                // loop via the named `WritableChanges` type from
+                // `reducer-types.ts`. The dispatch path still passes
+                // `changes` as-is to the per-reducer pipeline — only the
+                // auto-fix mutator widens locally.
+                const mutableChanges = changes as WritableChanges;
                 for (const [key, value] of Object.entries(lastFix.fixedArtifact)) {
-                    if (isEmpty(                    (candidate as Record<string, unknown>)[key])) {
-                        changes[key] = value;
+                    if (isEmpty((candidate as Record<string, unknown>)[key])) {
+                        mutableChanges[key] = value;
                     }
                 }
             }

@@ -1,5 +1,31 @@
 import type * as vscode from 'vscode';
-import type { BmadMetadata, Epic, Story, BmadArtifacts } from '../types';
+import type {
+    BmadMetadata,
+    BmadArtifact,
+    Epic,
+    Story,
+    BmadArtifacts,
+    BmadArtifactTypeMap,
+    ArtifactChanges as _ArtifactChanges,
+} from '../types';
+
+/**
+ * Re-export so {@link ArtifactReducerRegistry} can reference
+ * `keyof BmadArtifactTypeMap` without consumers having to import
+ * the canonical map directly from `../types`.  See the Phase 12
+ * dispatch typing for context.
+ */
+export type { BmadArtifactTypeMap } from '../types';
+
+
+/**
+ * Phase 12: drop the local `Partial<any>` escape hatch by re-exporting
+ * the canonical `ArtifactChanges<T>` from `types/index.ts`. The canonical
+ * version is parameterised on `T` so callers see per-type narrowing when
+ * they supply a specific `T`.  Reducers that need the most-defensive
+ * `Partial<any>` shape can still cast inside their body.
+ */
+export type ArtifactChanges<T = BmadArtifact> = _ArtifactChanges<T>;
 
 /**
  * Reducer types — Phase 9 extraction of the `updateArtifact` switch (was ~825 lines)
@@ -11,18 +37,15 @@ import type { BmadMetadata, Epic, Story, BmadArtifacts } from '../types';
  *     → harness pre-flight
  *     → registry.get(type)(ctx, id, changes)
  *     → reconcileDerivedState / notifyChange / syncToFiles
- */
-
-/**
- * Runtime shape of the third argument to `updateArtifact`.  The body of
- * the LM tool wire can be any of the per-type shapes defined in
- * `BmadArtifactTypeMap`; here we accept `Partial<any>` to absorb the
- * structural spread form callers (chat-participant.ts, etc.) send.
  *
- * Callers that want compile-time safety should use:
- *   `Partial<BmadArtifactTypeMap[T]> & { metadata?: BmadMetadata }`
+ * Phase 12: the local `Partial<any>` re-export that used to live here has been
+ * removed.  Callers now consume the canonical `ArtifactChanges<T>` from
+ * `types/index.ts` (re-exported above as the generic
+ * `ArtifactChanges<T = BmadArtifact>`).  Each reducer names its `T`
+ * literally — e.g. `ArtifactReducerFn<'epic'>` — so the `changes` parameter
+ * type narrows to `Partial<Epic> & { metadata?: BmadMetadata }` inside
+ * that reducer.
  */
-export type ArtifactChanges = Partial<any> & { metadata?: BmadMetadata };
 
 /**
  * The dependency-injection bag passed to each reducer.  Mirrors the
@@ -60,26 +83,91 @@ export interface ArtifactReducerCtx {
  * directly when intermediate writes need to flush, or return without
  * doing anything if the artifact can't be found.
  *
+ * Phase 12: parameterised on `T extends keyof BmadArtifactTypeMap & string`.
+ * Each reducer declares its `T` literally — e.g.
+ * `ArtifactReducerFn<'epic'>` — so the `changes` parameter type
+ * narrows to `Partial<Epic> & { metadata?: BmadMetadata }` inside that
+ * reducer, and the registry's heterogeneous Map stores reducers as
+ * `ArtifactReducerFn<any>` to avoid variance friction at the collection
+ * layer.
+ *
+ * A reducer MUST NOT call `reconcileDerivedState` / `notifyChange`
+ * for the final pass — those happen in the orchestrator after the
+ * reducer returns.  (Some reducers DO call them mid-flight, e.g. the
+ * story reducer writes a standalone file before the orchestrator's
+ * tail — those are intermediate, not terminal.)
+ *
+ * ## Dropping the `Partial<any>` escape hatch
+ *
+ * Before Phase 12, the `changes` param type was declared as
+ * `ArtifactChanges = Partial<any> & { metadata?: BmadMetadata }`,
+ * which silently accepted ANY shape from callers.  Phase 12 replaces
+ * that with the canonical `ArtifactChanges<T>` (= `Partial<T> & { metadata? }`)
+ * from `types/index.ts`.  Reducer bodies still use `(changes as any)[field]`
+ * for indexed access — the per-type annotation narrows WHICH fields
+ * `T` exposes, but the bodies deliberately preserve runtime flexibility
+ * because BMAD schemas include many metadata-or-content fields that
+ * shift between versions and the reducer bodies absorb those by design.
+ */
+
+/**
+ * The full registry: maps artifact type strings (kebab-case + aliases)
+ * to their reducer.  Built once at store construction time.
+ *
+ * Phase 12: typed as `Map<string, ArtifactReducerFn<any>>` for variance
+ * safety — each entry's `T` literal is preserved via `Map.set(type, fn)`
+ * call sites (see `l1/tea/bmm/cis-reductions.ts`), but the heterogeneous
+ * collection is widened to `any` to avoid variance friction at the
+ * type system level when calling `fn(ctx, id, changes)` with a union-shaped
+ * changes argument from the orchestrator.
+ */
+/**
+ * A reducer applies `changes` to a single artifact found by `artifactId`
+ * within `ctx.artifacts`.  May mutate the map, fire `notifyChange()`
+ * directly when intermediate writes need to flush, or return without
+ * doing anything if the artifact can't be found.
+ *
+ * Phase 12: parameterised on `T extends keyof BmadArtifactTypeMap & string`.
+ * Each reducer declares its `T` literally — e.g.
+ * `ArtifactReducerFn<'epic'>` — so the `changes` parameter type
+ * narrows to `Partial<Epic> & { metadata?: BmadMetadata }` inside that
+ * reducer, and the registry's heterogeneous Map stores reducers as
+ * `ArtifactReducerFn<any>` to avoid variance friction at the collection
+ * layer.
+ *
  * A reducer MUST NOT call `reconcileDerivedState` / `notifyChange`
  * for the final pass — those happen in the orchestrator after the
  * reducer returns.  (Some reducers DO call them mid-flight, e.g. the
  * story reducer writes a standalone file before the orchestrator's
  * tail — those are intermediate, not terminal.)
  */
-export type ArtifactReducerFn = (
+export type ArtifactReducerFn<
+    T extends keyof BmadArtifactTypeMap & string = keyof BmadArtifactTypeMap & string,
+> = (
     ctx: ArtifactReducerCtx,
     artifactId: string,
-    changes: ArtifactChanges,
+    changes: ArtifactChanges<BmadArtifactTypeMap[T]>,
 ) => void | Promise<void>;
 
-/**
- * The full registry: maps artifact type strings (kebab-case + aliases)
- * to their reducer.  Built once at store construction time.
- */
-export type ArtifactReducerRegistry = Map<string, ArtifactReducerFn>;
+export type ArtifactReducerRegistry = Map<string, ArtifactReducerFn<any>>;
 
 /** A reducer module exposes a register hook that adds its cases to a map. */
 export type ArtifactReducerRegistration = (registry: ArtifactReducerRegistry) => void;
+
+/**
+ * Phase 12: writable changes shape used in harness-pre-flight auto-fix
+ * loops. The pre-flight mutates the changes object by string key when
+ * applying auto-fixed fields, which the canonical
+ * `ArtifactChanges<BmadArtifact>` union does not permit (arbitrary
+ * string-key indexing is rejected by TS). This named alias declares
+ * the *writable* contract explicitly so the cast at the auto-fix site
+ * is discoverable and lint-greppable, not an ad-hoc
+ * `Record<string, any>`.
+ *
+ * NB: the actual dispatch path still passes `ArtifactChanges<T>` to
+ * reducers; only the harness pre-flight widens locally.
+ */
+export type WritableChanges = Record<string, any>;
 
 // ──────────────────────────────────────────────────────────────────────
 // Phase 10: Delete reducer types — mirror of update reducers for the

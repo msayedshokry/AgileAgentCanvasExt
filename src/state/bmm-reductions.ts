@@ -18,7 +18,7 @@ const logDebug = (...args: unknown[]) => bmmLogger.debug(...args);
 
 // ─── research (array) ──────────────────────────────────────────────────────
 
-const reduceResearch: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceResearch: ArtifactReducerFn<'research'> = (ctx, artifactId, changes) => {
     const arr: any[] = ctx.artifacts.get('researches') || [];
     const idx = arr.findIndex((a: any) => a.id === artifactId || a.metadata?.id === artifactId);
     const cur = idx >= 0 ? arr[idx] : {};
@@ -41,7 +41,7 @@ const reduceResearch: ArtifactReducerFn = (ctx, artifactId, changes) => {
 
 // ─── ux-design (array) ─────────────────────────────────────────────────────
 
-const reduceUxDesign: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceUxDesign: ArtifactReducerFn<'ux-design'> = (ctx, artifactId, changes) => {
     const arr: any[] = ctx.artifacts.get('uxDesigns') || [];
     const idx = arr.findIndex((a: any) => a.id === artifactId || a.metadata?.id === artifactId);
     const cur = idx >= 0 ? arr[idx] : {};
@@ -64,7 +64,7 @@ const reduceUxDesign: ArtifactReducerFn = (ctx, artifactId, changes) => {
 
 // ─── readiness-report / readiness (array, deprecated alias) ──────────────
 
-const reduceReadinessReport: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceReadinessReport: ArtifactReducerFn<'readiness-report'> = (ctx, artifactId, changes) => {
     const arr: any[] = ctx.artifacts.get('readinessReports') || [];
     const idx = arr.findIndex((a: any) => a.id === artifactId || a.metadata?.id === artifactId);
     const cur: any = idx >= 0 ? arr[idx] : {};
@@ -85,7 +85,7 @@ const reduceReadinessReport: ArtifactReducerFn = (ctx, artifactId, changes) => {
 
 // ─── sprint-status / sprint (array, deprecated alias) ─────────────────────
 
-const reduceSprintStatus: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceSprintStatus: ArtifactReducerFn<'sprint-status'> = (ctx, artifactId, changes) => {
     const arr: any[] = ctx.artifacts.get('sprintStatuses') || [];
     const idx = arr.findIndex((a: any) => a.id === artifactId || a.metadata?.id === artifactId);
     const cur: any = idx >= 0 ? arr[idx] : {};
@@ -106,7 +106,7 @@ const reduceSprintStatus: ArtifactReducerFn = (ctx, artifactId, changes) => {
 
 // ─── retrospective (array) ─────────────────────────────────────────────────
 
-const reduceRetrospective: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceRetrospective: ArtifactReducerFn<'retrospective'> = (ctx, artifactId, changes) => {
     const arr: any[] = ctx.artifacts.get('retrospectives') || [];
     const idx = arr.findIndex((a: any) => a.id === artifactId || a.metadata?.id === artifactId);
     const cur = idx >= 0 ? arr[idx] : {};
@@ -128,7 +128,7 @@ const reduceRetrospective: ArtifactReducerFn = (ctx, artifactId, changes) => {
 
 // ─── change-proposal (array) ───────────────────────────────────────────────
 
-const reduceChangeProposal: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceChangeProposal: ArtifactReducerFn<'change-proposal'> = (ctx, artifactId, changes) => {
     const arr: any[] = ctx.artifacts.get('changeProposals') || [];
     const idx = arr.findIndex((a: any) => a.id === artifactId || a.metadata?.id === artifactId);
     const cur = idx >= 0 ? arr[idx] : {};
@@ -148,7 +148,7 @@ const reduceChangeProposal: ArtifactReducerFn = (ctx, artifactId, changes) => {
 
 // ─── code-review (array) ───────────────────────────────────────────────────
 
-const reduceCodeReview: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceCodeReview: ArtifactReducerFn<'code-review'> = (ctx, artifactId, changes) => {
     const arr: any[] = ctx.artifacts.get('codeReviews') || [];
     const idx = arr.findIndex((a: any) => a.id === artifactId || a.metadata?.id === artifactId);
     const cur = idx >= 0 ? arr[idx] : {};
@@ -170,7 +170,7 @@ const reduceCodeReview: ArtifactReducerFn = (ctx, artifactId, changes) => {
 
 // ─── risks (singleton) ──────────────────────────────────────────────────────
 
-const reduceRisks: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceRisks: ArtifactReducerFn<'risks'> = (ctx, artifactId, changes) => {
     const cur: any = ctx.artifacts.get('risks') || {};
     const upd = { ...cur };
     if (!upd.id) upd.id = artifactId || 'risks-1';
@@ -185,7 +185,7 @@ const reduceRisks: ArtifactReducerFn = (ctx, artifactId, changes) => {
 
 // ─── definition-of-done (singleton) ───────────────────────────────────────
 
-const reduceDefinitionOfDone: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceDefinitionOfDone: ArtifactReducerFn<'definition-of-done'> = (ctx, artifactId, changes) => {
     const cur: any = ctx.artifacts.get('definitionOfDone') || {};
     const upd = { ...cur };
     if (!upd.id) upd.id = artifactId || 'definition-of-done-1';
@@ -200,7 +200,7 @@ const reduceDefinitionOfDone: ArtifactReducerFn = (ctx, artifactId, changes) => 
 
 // ─── project-overview (singleton) ──────────────────────────────────────────
 
-const reduceProjectOverview: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceProjectOverview: ArtifactReducerFn<'project-overview'> = (ctx, artifactId, changes) => {
     const cur: any = ctx.artifacts.get('projectOverview') || {};
     const upd = { ...cur };
     if (!upd.id) upd.id = artifactId || 'project-overview-1';
@@ -221,7 +221,7 @@ const reduceProjectOverview: ArtifactReducerFn = (ctx, artifactId, changes) => {
 
 // ─── project-context (singleton) ───────────────────────────────────────────
 
-const reduceProjectContext: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceProjectContext: ArtifactReducerFn<'project-context'> = (ctx, artifactId, changes) => {
     const cur: any = ctx.artifacts.get('projectContext') || {};
     const upd = { ...cur };
     if (!upd.id) upd.id = artifactId || 'project-context-1';
@@ -242,7 +242,7 @@ const reduceProjectContext: ArtifactReducerFn = (ctx, artifactId, changes) => {
 
 // ─── tech-spec (array) ─────────────────────────────────────────────────────
 
-const reduceTechSpec: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceTechSpec: ArtifactReducerFn<'tech-spec'> = (ctx, artifactId, changes) => {
     const arr: any[] = ctx.artifacts.get('techSpecs') || [];
     const idx = arr.findIndex((a: any) => a.id === artifactId || a.metadata?.id === artifactId);
     const cur = idx >= 0 ? arr[idx] : {};
@@ -265,7 +265,7 @@ const reduceTechSpec: ArtifactReducerFn = (ctx, artifactId, changes) => {
 
 // ─── source-tree (singleton) ───────────────────────────────────────────────
 
-const reduceSourceTree: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceSourceTree: ArtifactReducerFn<'source-tree'> = (ctx, artifactId, changes) => {
     const cur: any = ctx.artifacts.get('sourceTree') || {};
     const upd = { ...cur };
     if (!upd.id) upd.id = artifactId || 'source-tree-1';
@@ -286,7 +286,7 @@ const reduceSourceTree: ArtifactReducerFn = (ctx, artifactId, changes) => {
 
 // ─── test-summary (singleton) ──────────────────────────────────────────────
 
-const reduceTestSummary: ArtifactReducerFn = (ctx, artifactId, changes) => {
+const reduceTestSummary: ArtifactReducerFn<'test-summary'> = (ctx, artifactId, changes) => {
     const cur: any = ctx.artifacts.get('testSummary') || {};
     const upd = { ...cur };
     if (!upd.id) upd.id = artifactId || 'test-summary-1';
