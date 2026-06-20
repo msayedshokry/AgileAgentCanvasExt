@@ -6,7 +6,9 @@ import { createLogger } from '../utils/logger';
 import { SprintStatusSync } from './sprint-status-sync';
 import { ArtifactFileWriter } from './artifact-file-writer';
 import { ArtifactMigrator } from './artifact-migrator';
-import { findAllJsonFiles, detectArtifactType, loadUiState, loadEpicStoryRefs, removeStoryLinksFromRequirements, syncRequirementLinks, checkForInlineStories } from './artifact-load-helpers';import { generateVisionMarkdown, generateSingleEpicMarkdown, generateEpicsMarkdown, generateProductBriefMarkdown, generatePRDMarkdown, generateArchitectureMarkdown, generateTestCasesMarkdown, generateTestStrategyMarkdown, generateTestDesignMarkdown, generateAllArtifactsMarkdown } from './artifact-markdown-generator';
+import { addEpic, addStory, addRequirement, createEpic, createStory, createRequirement, createOrUpdateVision, createUseCase, createProductBrief, createPRD, createArchitecture, createTestCase, createTestStrategy } from './artifact-factory';
+import { backupArtifactFiles, pruneOldBackups } from './artifact-backup';
+import { findAllJsonFiles, detectArtifactType, loadUiState, loadEpicStoryRefs, removeStoryLinksFromRequirements, syncRequirementLinks, checkForInlineStories, reconcileDerivedState } from './artifact-load-helpers';import { generateVisionMarkdown, generateSingleEpicMarkdown, generateEpicsMarkdown, generateProductBriefMarkdown, generatePRDMarkdown, generateArchitectureMarkdown, generateTestCasesMarkdown, generateTestStrategyMarkdown, generateTestDesignMarkdown, generateAllArtifactsMarkdown } from './artifact-markdown-generator';
 import { generateJiraCSV, generatePDF, stripMarkdownInline } from './artifact-exporter';
 import { mapSchemaEpicToInternal, mergeEpicDuplicate, extractStoryId, mapSchemaStoryToInternal, mapStatus, mapSchemaRequirement, mapSchemaNonFunctionalRequirement, mapSchemaAdditionalRequirement } from './schema-mappers';
 import { repairArtifactData } from './schema-artifact-mapper';
@@ -343,157 +345,7 @@ export class ArtifactStore {
     //   2. test-design.riskAssessment  →  risks[] on matching epic
     // =====================================================================
     reconcileDerivedState(): void {
-        const epics: Epic[] = this.artifacts.get('epics') || [];
-        const testDesigns: any[] = this.artifacts.get('testDesigns') || [];
-
-        // ── 1. Extract coveragePlan items from test-design into testCases ──
-        // We partition existing TCs into "from-file" (test-cases.json) and
-        // "from-coveragePlan" so we can rebuild the latter without losing the
-        // former.  A TC is considered "from-coveragePlan" if its id matches
-        // the coveragePlan item IDs.
-        const allTCs: TestCase[] = this.artifacts.get('testCases') || [];
-        const coveragePlanItemIds = new Set<string>();
-        const priorities = ['p0', 'p1', 'p2', 'p3'] as const;
-
-        for (const testDesign of testDesigns) {
-            if (testDesign?.coveragePlan) {
-                for (const pKey of priorities) {
-                    for (const item of (testDesign.coveragePlan[pKey] || [])) {
-                        if (item.id) coveragePlanItemIds.add(item.id);
-                    }
-                }
-            }
-        }
-
-        // Keep only TCs that did NOT originate from coveragePlan
-        const fileTCs = allTCs.filter((tc: TestCase) => !coveragePlanItemIds.has(tc.id));
-        const extractedTCs: TestCase[] = [];
-
-        for (const testDesign of testDesigns) {
-            if (testDesign?.coveragePlan) {
-                const tdEpicId = testDesign.epicInfo?.epicId || '';
-                const normEpicId = tdEpicId.replace(/^EPIC-/i, '').replace(/^Epic\s*/i, '').trim();
-                const tdEpicStoryIds = new Set<string>();
-                const matchingEpic = epics.find((e: Epic) => e.id === tdEpicId || e.id === normEpicId);
-                if (matchingEpic) {
-                    (matchingEpic.stories || []).forEach((s: Story) => tdEpicStoryIds.add(s.id));
-                }
-
-                // Scope-based story fallback
-                let scopeStoryId: string | undefined;
-                const scopeMatch = (testDesign.summary?.scope || '').match(/\bS-[\d]+\.[\d]+\b/i);
-                if (scopeMatch) scopeStoryId = scopeMatch[0];
-
-                for (const pKey of priorities) {
-                    const items: any[] = testDesign.coveragePlan[pKey] || [];
-                    for (const item of items) {
-                    if (!item.id) continue;
-                    // Skip if a file-originated TC already has this ID
-                    if (fileTCs.find((tc: TestCase) => tc.id === item.id)) continue;
-                    if (extractedTCs.find((tc: TestCase) => tc.id === item.id)) continue;
-
-                    // Derive storyId from test ID prefix: "1.3-COMP-001" → "S-1.3"
-                    let storyId: string | undefined;
-                    const prefixMatch = item.id.match(/^([\d]+\.[\d]+)-/);
-                    if (prefixMatch) {
-                        const candidate = `S-${prefixMatch[1]}`;
-                        if (tdEpicStoryIds.has(candidate)) {
-                            storyId = candidate;
-                        } else if (tdEpicStoryIds.has(prefixMatch[1])) {
-                            storyId = prefixMatch[1];
-                        }
-                    }
-                    if (!storyId && scopeStoryId && tdEpicStoryIds.has(scopeStoryId)) {
-                        storyId = scopeStoryId;
-                    }
-
-                    // Map testLevel → TestCaseType
-                    const rawLevel = (item.testLevel || '').toLowerCase();
-                    let tcType: TestCaseType = 'acceptance';
-                    if (rawLevel === 'unit') tcType = 'unit';
-                    else if (rawLevel === 'integration' || rawLevel === 'performance') tcType = 'integration';
-                    else if (rawLevel === 'e2e') tcType = 'e2e';
-
-                    extractedTCs.push({
-                        id: item.id,
-                        title: item.requirement || item.id,
-                        description: item.testApproach || '',
-                        type: tcType,
-                        status: 'draft',
-                        priority: pKey === 'p0' ? 'P0' : pKey === 'p1' ? 'P1' : pKey === 'p2' ? 'P2' : 'P3',
-                        storyId,
-                        epicId: tdEpicId || undefined,
-                        relatedRequirements: item.requirementId ? [item.requirementId] : [],
-                        tags: item.riskLink ? [item.riskLink] : []
-                    });
-                    }
-                }
-            }
-        }
-
-        this.artifacts.set('testCases', [...fileTCs, ...extractedTCs]);
-
-        // ── 2. Attach test-design riskAssessment risks to matching epic ──
-        for (const testDesign of testDesigns) {
-            if (testDesign?.riskAssessment && testDesign.epicInfo?.epicId) {
-                const tdEpicIdRaw = testDesign.epicInfo.epicId;
-                const tdEpicId = tdEpicIdRaw.replace(/^EPIC-/i, '').replace(/^Epic\s*/i, '').trim();
-                const ra = testDesign.riskAssessment;
-                const tdRisks: any[] = [
-                    ...(ra.highPriority || []),
-                    ...(ra.mediumPriority || []),
-                    ...(ra.lowPriority || [])
-                ];
-            if (tdRisks.length > 0) {
-                const normalized = tdRisks.map((r: any) => ({
-                    id: r.riskId || r.id,
-                    title: r.description || r.risk || `Risk ${r.riskId || ''}`,
-                    risk: r.description || r.risk,
-                    description: r.description || r.risk,
-                    category: r.category,
-                    probability: r.probability,
-                    impact: r.impact,
-                    riskScore: r.score,
-                    mitigation: r.mitigation,
-                    owner: r.owner,
-                    testStrategy: r.testStrategy,
-                    relatedRequirements: r.relatedRequirements,
-                    status: 'identified'
-                }));
-                const targetEpic = epics.find((e: Epic) => e.id === tdEpicId);
-                    if (targetEpic) {
-                        // Remove previously-attached TD risks, then re-add
-                        // (idempotent: we identify TD risks by their normalized IDs)
-                        const tdRiskIds = new Set(normalized.map((r: any) => r.id));
-                        const nonTdRisks = (targetEpic.risks || []).filter((r: any) => !tdRiskIds.has(r.id));
-                        targetEpic.risks = [...nonTdRisks, ...normalized];
-                    }
-                }
-            }
-        }
-        
-        // ── 3. test_execution_status from sprintStatuses ──────────────────────
-        // Story/Epic statuses are the single source of truth in their JSON files.
-        // Only test execution statuses are applied from sprintStatuses.
-        const sprintStatusesArr = this.artifacts.get('sprintStatuses') || [];
-        for (const sprintStatus of sprintStatusesArr) {
-            if (sprintStatus.test_execution_status) {
-                const testCases: any[] = this.artifacts.get('testCases') || [];
-                for (const [testId, rawStatus] of Object.entries(sprintStatus.test_execution_status)) {
-                    let status: any = 'draft';
-                    if (rawStatus === 'ready') status = 'ready';
-                    else if (rawStatus === 'passed') status = 'passed';
-                    else if (rawStatus === 'failed') status = 'failed';
-                    else if (rawStatus === 'blocked') status = 'blocked';
-
-                    const tc = testCases.find((t: any) => t.id === testId);
-                    if (tc) {
-                        tc.status = status;
-                    }
-                }
-                this.artifacts.set('testCases', testCases);
-            }
-        }
+        reconcileDerivedState(this.artifacts);
     }
 
     /**
@@ -2016,416 +1868,58 @@ export class ArtifactStore {
         syncRequirementLinks(epicId, oldReqIds, newReqIds, reqType, this.artifacts);
     }
 
-    /**
-     * Add a new epic
-     */
     addEpic(epic: Epic): void {
-        const epics = this.artifacts.get('epics') || [];
-        this.artifacts.set('epics', [...epics, epic]);
+        addEpic(this.artifacts, epic);
         this.notifyChange();
     }
 
-    /**
-     * Add a story to an epic
-     */
     addStory(epicId: string, story: Story): void {
-        const epics = this.artifacts.get('epics') || [];
-        const epic = epics.find((e: Epic) => e.id === epicId);
-        if (epic) {
-            epic.stories.push(story);
-            this.artifacts.set('epics', [...epics]);
-            this.notifyChange();
-        }
+        addStory(this.artifacts, epicId, story);
+        this.notifyChange();
     }
 
-    /**
-     * Add a new functional requirement
-     */
     addRequirement(requirement: FunctionalRequirement): void {
-        const requirements = this.artifacts.get('requirements') || { 
-            functional: [], 
-            nonFunctional: [], 
-            additional: [] 
-        };
-        requirements.functional.push(requirement);
-        this.artifacts.set('requirements', requirements);
-        this.notifyChange();
+        addRequirement(this.artifacts, () => this.notifyChange(), requirement);
     }
 
-    /**
-     * Create a new epic with default values and return it
-     * Used by canvas "Add Epic" button
-     */
     createEpic(): Epic {
-        const epics = this.artifacts.get('epics') || [];
-        // Derive next ID from the highest existing numeric suffix to avoid collisions after deletion
-        const maxNum = epics.reduce((max: number, e: Epic) => {
-            const m = e.id.match(/^EPIC-(\d+)$/);
-            return m ? Math.max(max, parseInt(m[1], 10)) : max;
-        }, 0);
-        const nextId = maxNum + 1;
-        
-        const newEpic: Epic = {
-            id: `EPIC-${nextId}`,
-            title: `New Epic ${nextId}`,
-            goal: '',
-            functionalRequirements: [],
-            status: 'draft',
-            stories: []
-        };
-        
-        this.addEpic(newEpic);
-        storeLogger.debug(`[ArtifactStore] Created new epic: ${newEpic.id}`);
-        return newEpic;
+        return createEpic(this.artifacts, () => this.notifyChange());
     }
 
-    /**
-     * Create a new story and add it to an epic
-     * If no epicId provided, creates in first epic or creates a new epic
-     */
     createStory(epicId?: string): Story {
-        const epics = this.artifacts.get('epics') || [];
-        
-        // Find target epic or create one
-        let targetEpic: Epic;
-        if (epicId) {
-            targetEpic = epics.find((e: Epic) => e.id === epicId);
-            if (!targetEpic) {
-                throw new Error(`Epic ${epicId} not found`);
-            }
-        } else if (epics.length > 0) {
-            // Do not silently pick epics[0]; callers must supply an explicit epicId
-            throw new Error("createStory: epicId is required when epics exist. Pass the parent epic's ID explicitly.");
-        } else {
-            // Create a new epic first
-            targetEpic = this.createEpic();
-        }
-        
-        // Derive next ID from the highest existing numeric suffix to avoid collisions after deletion
-        const epicNum = targetEpic.id.replace('EPIC-', '');
-        const storyMaxNum = (targetEpic.stories || []).reduce((max: number, s: Story) => {
-            const m = s.id.match(/^STORY-\d+-(\d+)$/);
-            return m ? Math.max(max, parseInt(m[1], 10)) : max;
-        }, 0);
-        const storyNum = storyMaxNum + 1;
-        
-        const newStory: Story = {
-            id: `STORY-${epicNum}-${storyNum}`,
-            title: `New Story ${storyNum}`,
-            userStory: {
-                asA: '',
-                iWant: '',
-                soThat: ''
-            },
-            acceptanceCriteria: [],
-            status: 'draft'
-        };
-        
-        this.addStory(targetEpic.id, newStory);
-        storeLogger.debug(`[ArtifactStore] Created new story: ${newStory.id} in ${targetEpic.id}`);
-        return newStory;
+        return createStory(this.artifacts, () => this.notifyChange(), epicId);
     }
 
-    /**
-     * Create a new functional requirement with default values
-     */
     createRequirement(): FunctionalRequirement {
-        const requirements = this.artifacts.get('requirements') || { 
-            functional: [], 
-            nonFunctional: [], 
-            additional: [] 
-        };
-        // Derive next ID from the highest existing numeric suffix to avoid collisions after deletion
-        const maxReqNum = requirements.functional.reduce((max: number, r: FunctionalRequirement) => {
-            const m = r.id.match(/^FR-(\d+)$/);
-            return m ? Math.max(max, parseInt(m[1], 10)) : max;
-        }, 0);
-        const nextId = maxReqNum + 1;
-        
-        const newReq: FunctionalRequirement = {
-            id: `FR-${nextId}`,
-            title: `New Requirement ${nextId}`,
-            description: ''
-        };
-        
-        this.addRequirement(newReq);
-        storeLogger.debug(`[ArtifactStore] Created new requirement: ${newReq.id}`);
-        return newReq;
+        return createRequirement(this.artifacts, () => this.notifyChange());
     }
 
-    /**
-     * Initialize or update the vision
-     */
     createOrUpdateVision(): void {
-        const currentVision = this.artifacts.get('vision');
-        if (!currentVision) {
-            this.artifacts.set('vision', {
-                productName: 'New Product',
-                problemStatement: '',
-                targetUsers: [],
-                valueProposition: '',
-                successCriteria: [],
-                status: 'draft'
-            });
-            this.notifyChange();
-            storeLogger.debug(`[ArtifactStore] Created new vision`);
-        }
+        createOrUpdateVision(this.artifacts, () => this.notifyChange());
     }
 
-    /**
-     * Create a new use case and add it to an epic
-     * If no epicId provided, adds to first epic or creates a new epic
-     */
     createUseCase(epicId?: string): UseCase {
-        const epics = this.artifacts.get('epics') || [];
-        
-        // Find target epic or create one
-        let targetEpic: Epic;
-        if (epicId) {
-            targetEpic = epics.find((e: Epic) => e.id === epicId);
-            if (!targetEpic) {
-                throw new Error(`Epic ${epicId} not found`);
-            }
-        } else if (epics.length > 0) {
-            // Do not silently pick epics[0]; callers must supply an explicit epicId
-            throw new Error('createUseCase: epicId is required when epics exist. Pass the parent epic\'s ID explicitly.');
-        } else {
-            // Create a new epic first
-            targetEpic = this.createEpic();
-        }
-        
-        // Initialize useCases array if not present
-        if (!targetEpic.useCases) {
-            targetEpic.useCases = [];
-        }
-        
-        // Derive next ID from the highest existing numeric suffix to avoid collisions after deletion
-        const epicNum = targetEpic.id.replace('EPIC-', '');
-        const ucMaxNum = (targetEpic.useCases || []).reduce((max: number, uc: UseCase) => {
-            const m = uc.id.match(/^UC-\d+-(\d+)$/);
-            return m ? Math.max(max, parseInt(m[1], 10)) : max;
-        }, 0);
-        const ucNum = ucMaxNum + 1;
-        
-        const newUseCase: UseCase = {
-            id: `UC-${epicNum}-${ucNum}`,
-            title: `New Use Case ${ucNum}`,
-            summary: '',
-            scenario: {
-                context: '',
-                before: '',
-                after: '',
-                impact: ''
-            }
-        };
-        
-        // Add to epic's useCases array
-        targetEpic.useCases.push(newUseCase);
-        
-        // Update the epic in storage
-        const epicIndex = epics.findIndex((e: Epic) => e.id === targetEpic.id);
-        if (epicIndex !== -1) {
-            epics[epicIndex] = targetEpic;
-            this.artifacts.set('epics', epics);
-        }
-        
-        this.notifyChange();
-        
-        storeLogger.debug(`[ArtifactStore] Created new use case: ${newUseCase.id} in ${targetEpic.id}`);
-        return newUseCase;
+        return createUseCase(this.artifacts, () => this.notifyChange(), epicId);
     }
 
-    /**
-     * Create a new Product Brief with default values
-     */
     createProductBrief(): ProductBrief {
-        const existing = this.artifacts.get('productBrief');
-        if (existing) {
-            storeLogger.debug(`[ArtifactStore] ProductBrief already exists, returning existing`);
-            return existing;
-        }
-        
-        const newBrief: ProductBrief = {
-            id: 'product-brief-1',
-            productName: 'New Product',
-            status: 'draft',
-            vision: {
-                statement: '',
-                problemStatement: ''
-            }
-        };
-        
-        this.artifacts.set('productBrief', newBrief);
-        this.notifyChange();
-        storeLogger.debug(`[ArtifactStore] Created new product brief`);
-        return newBrief;
+        return createProductBrief(this.artifacts, () => this.notifyChange());
     }
 
-    /**
-     * Create a new PRD (Product Requirements Document) with default values
-     */
     createPRD(): PRD {
-        const existing = this.artifacts.get('prd');
-        if (existing) {
-            storeLogger.debug(`[ArtifactStore] PRD already exists, returning existing`);
-            return existing;
-        }
-        
-        const newPRD: PRD = {
-            id: 'prd-1',
-            status: 'draft',
-            productOverview: {
-                productName: 'New Product',
-                purpose: '',
-                problemStatement: ''
-            }
-        };
-        
-        this.artifacts.set('prd', newPRD);
-        this.notifyChange();
-        storeLogger.debug(`[ArtifactStore] Created new PRD`);
-        return newPRD;
+        return createPRD(this.artifacts, () => this.notifyChange());
     }
 
-    /**
-     * Create a new Architecture document with default values
-     */
     createArchitecture(): Architecture {
-        const existing = this.artifacts.get('architecture');
-        if (existing) {
-            storeLogger.debug(`[ArtifactStore] Architecture already exists, returning existing`);
-            return existing;
-        }
-        
-        const newArch: Architecture = {
-            id: 'architecture-1',
-            status: 'draft',
-            overview: {
-                projectName: 'New Project',
-                summary: ''
-            },
-            decisions: []
-        };
-        
-        this.artifacts.set('architecture', newArch);
-        this.notifyChange();
-        storeLogger.debug(`[ArtifactStore] Created new architecture`);
-        return newArch;
+        return createArchitecture(this.artifacts, () => this.notifyChange());
     }
 
-    /**
-     * Create a new test case, optionally linked to a story and/or epic.
-     * If storyId is provided, epicId is derived automatically from the epic tree.
-     * If only epicId is provided (epic-level test case), storyId remains undefined.
-     */
     createTestCase(storyId?: string, directEpicId?: string): TestCase {
-        const testCases: TestCase[] = this.artifacts.get('testCases') || [];
-        // Derive next ID from the highest existing numeric suffix to avoid collisions after deletion
-        const maxTcNum = testCases.reduce((max: number, tc: TestCase) => {
-            const m = tc.id.match(/^TC-(\d+)$/);
-            return m ? Math.max(max, parseInt(m[1], 10)) : max;
-        }, 0);
-        const nextId = maxTcNum + 1;
-
-        // Determine epicId: derive from story first, then use directly-supplied epicId
-        let epicId: string | undefined = directEpicId;
-        if (storyId) {
-            const epics: Epic[] = this.artifacts.get('epics') || [];
-            for (const epic of epics) {
-                if (epic.stories?.some((s: Story) => s.id === storyId)) {
-                    epicId = epic.id;
-                    break;
-                }
-            }
-        }
-
-        const newTestCase: TestCase = {
-            id: `TC-${nextId}`,
-            title: `New Test Case ${nextId}`,
-            type: 'acceptance',
-            status: 'draft',
-            storyId,
-            epicId,
-            steps: [],
-            relatedRequirements: []
-        };
-
-        this.artifacts.set('testCases', [...testCases, newTestCase]);
-        this.notifyChange();
-        storeLogger.debug(`[ArtifactStore] Created new test case: ${newTestCase.id}`);
-        return newTestCase;
+        return createTestCase(this.artifacts, () => this.notifyChange(), storyId, directEpicId);
     }
 
-    /**
-     * Create a test strategy.
-     * When epicId is provided, the strategy is stored on the epic (per-epic).
-     * Otherwise falls back to the top-level project singleton for backward compat.
-     */
     createTestStrategy(epicId?: string): TestStrategy {
-        if (epicId) {
-            // Per-epic test strategy
-            const epics: Epic[] = this.artifacts.get('epics') || [];
-            const epic = epics.find((e: Epic) => e.id === epicId);
-            if (epic) {
-                if (epic.testStrategy) {
-                    storeLogger.debug(`[ArtifactStore] TestStrategy already exists on epic ${epicId}, returning existing`);
-                    return epic.testStrategy;
-                }
-                // Derive next numeric suffix: scan all epics for existing TS-N ids
-                let maxTsNum = 0;
-                for (const e of epics) {
-                    if (e.testStrategy) {
-                        const m = e.testStrategy.id.match(/^TS-(\d+)$/);
-                        if (m) maxTsNum = Math.max(maxTsNum, parseInt(m[1], 10));
-                    }
-                }
-                // Also check the top-level singleton
-                const topLevel = this.artifacts.get('testStrategy');
-                if (topLevel) {
-                    const m = topLevel.id?.match(/^TS-(\d+)$/);
-                    if (m) maxTsNum = Math.max(maxTsNum, parseInt(m[1], 10));
-                }
-                const nextId = maxTsNum + 1;
-
-                const newStrategy: TestStrategy = {
-                    id: `TS-${nextId}`,
-                    title: `Test Strategy`,
-                    status: 'draft',
-                    epicId,
-                    testTypes: ['unit', 'integration', 'e2e', 'acceptance'],
-                    tooling: [],
-                    coverageTargets: [],
-                    riskAreas: []
-                };
-                epic.testStrategy = newStrategy;
-                this.artifacts.set('epics', [...epics]);
-                this.notifyChange();
-                storeLogger.debug(`[ArtifactStore] Created new test strategy ${newStrategy.id} on epic ${epicId}`);
-                return newStrategy;
-            }
-        }
-
-        // Fallback: project-level singleton (backward compat)
-        const existing = this.artifacts.get('testStrategy');
-        if (existing) {
-            storeLogger.debug(`[ArtifactStore] TestStrategy already exists, returning existing`);
-            return existing;
-        }
-
-        const newStrategy: TestStrategy = {
-            id: 'TS-1',
-            title: 'Test Strategy',
-            status: 'draft',
-            testTypes: ['unit', 'integration', 'e2e', 'acceptance'],
-            tooling: [],
-            coverageTargets: [],
-            riskAreas: []
-        };
-
-        this.artifacts.set('testStrategy', newStrategy);
-        this.notifyChange();
-        storeLogger.debug(`[ArtifactStore] Created new test strategy`);
-        return newStrategy;
+        return createTestStrategy(this.artifacts, () => this.notifyChange(), epicId);
     }
 
     /**
@@ -3699,104 +3193,14 @@ export class ArtifactStore {
         }
     }
 
-    /**
-     * Back up all artifact JSON files from the source folder into a timestamped
-     * `.bmad-backup/<timestamp>/` directory alongside the source folder.
-     *
-     * Returns the backup folder URI on success, or `null` if there was nothing
-     * to back up or the source folder is unknown.
-     */
     async backupArtifactFiles(): Promise<vscode.Uri | null> {
-        if (!this.sourceFolder) {
-            storeLogger.debug('[ArtifactStore] backupArtifactFiles: no sourceFolder — skipping');
-            return null;
-        }
-
-        const allJsonFiles = await this.findAllJsonFiles(this.sourceFolder);
-        if (allJsonFiles.length === 0) {
-            storeLogger.debug('[ArtifactStore] backupArtifactFiles: no JSON files found — skipping');
-            return null;
-        }
-
-        // Build backup folder: <parent>/.bmad-backup/<ISO timestamp>
-        const parentUri = vscode.Uri.joinPath(this.sourceFolder, '..');
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const backupFolderUri = vscode.Uri.joinPath(parentUri, '.bmad-backup', timestamp);
-
-        try {
-            await vscode.workspace.fs.createDirectory(backupFolderUri);
-        } catch {
-            // directory may already exist
-        }
-
-        let copied = 0;
-        for (const fileUri of allJsonFiles) {
-            try {
-                // Preserve relative path from sourceFolder
-                const relativePath = fileUri.fsPath
-                    .substring(this.sourceFolder.fsPath.length)
-                    .replace(/^[/\\]+/, '');
-                const destUri = vscode.Uri.joinPath(backupFolderUri, relativePath);
-
-                // Ensure sub-directory exists
-                const destDir = vscode.Uri.joinPath(destUri, '..');
-                try { await vscode.workspace.fs.createDirectory(destDir); } catch { /* ok */ }
-
-                await vscode.workspace.fs.copy(fileUri, destUri, { overwrite: true });
-                copied++;
-            } catch (e) {
-                storeLogger.debug(`[ArtifactStore] backupArtifactFiles: failed to copy ${fileUri.fsPath}: ${e}`);
-            }
-        }
-
-        storeLogger.debug(
-            `[ArtifactStore] backupArtifactFiles: backed up ${copied}/${allJsonFiles.length} files to ${backupFolderUri.fsPath}`
-        );
-        return backupFolderUri;
+        if (!this.sourceFolder) return null;
+        return backupArtifactFiles(this.sourceFolder);
     }
 
-    /**
-     * Remove old backup folders, keeping only the most recent `keepCount`.
-     * Called automatically after a successful backup to prevent unlimited growth.
-     *
-     * @param keepCount  Number of recent backups to retain (default 5).
-     */
     async pruneOldBackups(keepCount = 5): Promise<void> {
         if (!this.sourceFolder) return;
-
-        const parentUri = vscode.Uri.joinPath(this.sourceFolder, '..');
-        const backupRootUri = vscode.Uri.joinPath(parentUri, '.bmad-backup');
-
-        let entries: [string, vscode.FileType][];
-        try {
-            entries = await vscode.workspace.fs.readDirectory(backupRootUri);
-        } catch {
-            // .bmad-backup doesn't exist — nothing to prune
-            return;
-        }
-
-        // Only look at directories (timestamp folders)
-        const dirs = entries
-            .filter(([, type]) => type === vscode.FileType.Directory)
-            .map(([name]) => name)
-            .sort(); // ISO timestamps sort lexicographically
-
-        if (dirs.length <= keepCount) return;
-
-        const toRemove = dirs.slice(0, dirs.length - keepCount);
-        for (const dirName of toRemove) {
-            try {
-                const dirUri = vscode.Uri.joinPath(backupRootUri, dirName);
-                await vscode.workspace.fs.delete(dirUri, { recursive: true });
-                storeLogger.debug(
-                    `[ArtifactStore] pruneOldBackups: removed old backup ${dirName}`
-                );
-            } catch (e) {
-                storeLogger.debug(
-                    `[ArtifactStore] pruneOldBackups: failed to remove ${dirName}: ${e}`
-                );
-            }
-        }
+        return pruneOldBackups(this.sourceFolder, keepCount);
     }
     // =========================================================================
     // Sprint-Status YAML → JSON sync pipeline (delegated to SprintStatusSync)

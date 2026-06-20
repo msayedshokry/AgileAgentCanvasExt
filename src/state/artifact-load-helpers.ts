@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { createLogger } from '../utils/logger';
 import { mapSchemaStoryToInternal } from './schema-mappers';
-import type { Epic, Story } from '../types';
+import type { Epic, Story, TestCase, TestCaseType } from '../types';
 
 const helpersLogger = createLogger('artifact-load-helpers');
 const logDebug = (...args: unknown[]) => helpersLogger.debug(...args);
@@ -401,6 +401,161 @@ export async function checkForInlineStories(
     } catch {
         // Silent — detection is best-effort, should never break load
         return false;
+    }
+}
+
+
+export function reconcileDerivedState(artifacts: Map<string, any>): void {
+    const epics: Epic[] = artifacts.get('epics') || [];
+    const testDesigns: any[] = artifacts.get('testDesigns') || [];
+
+    // ── 1. Extract coveragePlan items from test-design into testCases ──
+    // We partition existing TCs into "from-file" (test-cases.json) and
+    // "from-coveragePlan" so we can rebuild the latter without losing the
+    // former.  A TC is considered "from-coveragePlan" if its id matches
+    // the coveragePlan item IDs.
+    const allTCs: TestCase[] = artifacts.get('testCases') || [];
+    const coveragePlanItemIds = new Set<string>();
+    const priorities = ['p0', 'p1', 'p2', 'p3'] as const;
+
+    for (const testDesign of testDesigns) {
+        if (testDesign?.coveragePlan) {
+            for (const pKey of priorities) {
+                for (const item of (testDesign.coveragePlan[pKey] || [])) {
+                    if (item.id) coveragePlanItemIds.add(item.id);
+                }
+            }
+        }
+    }
+
+    // Keep only TCs that did NOT originate from coveragePlan
+    const fileTCs = allTCs.filter((tc: TestCase) => !coveragePlanItemIds.has(tc.id));
+    const extractedTCs: TestCase[] = [];
+
+    for (const testDesign of testDesigns) {
+        if (testDesign?.coveragePlan) {
+            const tdEpicId = testDesign.epicInfo?.epicId || '';
+            const normEpicId = tdEpicId.replace(/^EPIC-/i, '').replace(/^Epic\s*/i, '').trim();
+            const tdEpicStoryIds = new Set<string>();
+            const matchingEpic = epics.find((e: Epic) => e.id === tdEpicId || e.id === normEpicId);
+            if (matchingEpic) {
+                (matchingEpic.stories || []).forEach((s: Story) => tdEpicStoryIds.add(s.id));
+            }
+
+            // Scope-based story fallback
+            let scopeStoryId: string | undefined;
+            const scopeMatch = (testDesign.summary?.scope || '').match(/\bS-[\d]+\.[\d]+\b/i);
+            if (scopeMatch) scopeStoryId = scopeMatch[0];
+
+            for (const pKey of priorities) {
+                const items: any[] = testDesign.coveragePlan[pKey] || [];
+                for (const item of items) {
+                if (!item.id) continue;
+                // Skip if a file-originated TC already has this ID
+                if (fileTCs.find((tc: TestCase) => tc.id === item.id)) continue;
+                if (extractedTCs.find((tc: TestCase) => tc.id === item.id)) continue;
+
+                // Derive storyId from test ID prefix: "1.3-COMP-001" → "S-1.3"
+                let storyId: string | undefined;
+                const prefixMatch = item.id.match(/^([\d]+\.[\d]+)-/);
+                if (prefixMatch) {
+                    const candidate = `S-${prefixMatch[1]}`;
+                    if (tdEpicStoryIds.has(candidate)) {
+                        storyId = candidate;
+                    } else if (tdEpicStoryIds.has(prefixMatch[1])) {
+                        storyId = prefixMatch[1];
+                    }
+                }
+                if (!storyId && scopeStoryId && tdEpicStoryIds.has(scopeStoryId)) {
+                    storyId = scopeStoryId;
+                }
+
+                // Map testLevel → TestCaseType
+                const rawLevel = (item.testLevel || '').toLowerCase();
+                let tcType: TestCaseType = 'acceptance';
+                if (rawLevel === 'unit') tcType = 'unit';
+                else if (rawLevel === 'integration' || rawLevel === 'performance') tcType = 'integration';
+                else if (rawLevel === 'e2e') tcType = 'e2e';
+
+                extractedTCs.push({
+                    id: item.id,
+                    title: item.requirement || item.id,
+                    description: item.testApproach || '',
+                    type: tcType,
+                    status: 'draft',
+                    priority: pKey === 'p0' ? 'P0' : pKey === 'p1' ? 'P1' : pKey === 'p2' ? 'P2' : 'P3',
+                    storyId,
+                    epicId: tdEpicId || undefined,
+                    relatedRequirements: item.requirementId ? [item.requirementId] : [],
+                    tags: item.riskLink ? [item.riskLink] : []
+                });
+                }
+            }
+        }
+    }
+
+    artifacts.set('testCases', [...fileTCs, ...extractedTCs]);
+
+    // ── 2. Attach test-design riskAssessment risks to matching epic ──
+    for (const testDesign of testDesigns) {
+        if (testDesign?.riskAssessment && testDesign.epicInfo?.epicId) {
+            const tdEpicIdRaw = testDesign.epicInfo.epicId;
+            const tdEpicId = tdEpicIdRaw.replace(/^EPIC-/i, '').replace(/^Epic\s*/i, '').trim();
+            const ra = testDesign.riskAssessment;
+            const tdRisks: any[] = [
+                ...(ra.highPriority || []),
+                ...(ra.mediumPriority || []),
+                ...(ra.lowPriority || [])
+            ];
+        if (tdRisks.length > 0) {
+            const normalized = tdRisks.map((r: any) => ({
+                id: r.riskId || r.id,
+                title: r.description || r.risk || `Risk ${r.riskId || ''}`,
+                risk: r.description || r.risk,
+                description: r.description || r.risk,
+                category: r.category,
+                probability: r.probability,
+                impact: r.impact,
+                riskScore: r.score,
+                mitigation: r.mitigation,
+                owner: r.owner,
+                testStrategy: r.testStrategy,
+                relatedRequirements: r.relatedRequirements,
+                status: 'identified'
+            }));
+            const targetEpic = epics.find((e: Epic) => e.id === tdEpicId);
+                if (targetEpic) {
+                    // Remove previously-attached TD risks, then re-add
+                    // (idempotent: we identify TD risks by their normalized IDs)
+                    const tdRiskIds = new Set(normalized.map((r: any) => r.id));
+                    const nonTdRisks = (targetEpic.risks || []).filter((r: any) => !tdRiskIds.has(r.id));
+                    targetEpic.risks = [...nonTdRisks, ...normalized];
+                }
+            }
+        }
+    }
+    
+    // ── 3. test_execution_status from sprintStatuses ──────────────────────
+    // Story/Epic statuses are the single source of truth in their JSON files.
+    // Only test execution statuses are applied from sprintStatuses.
+    const sprintStatusesArr = artifacts.get('sprintStatuses') || [];
+    for (const sprintStatus of sprintStatusesArr) {
+        if (sprintStatus.test_execution_status) {
+            const testCases: any[] = artifacts.get('testCases') || [];
+            for (const [testId, rawStatus] of Object.entries(sprintStatus.test_execution_status)) {
+                let status: any = 'draft';
+                if (rawStatus === 'ready') status = 'ready';
+                else if (rawStatus === 'passed') status = 'passed';
+                else if (rawStatus === 'failed') status = 'failed';
+                else if (rawStatus === 'blocked') status = 'blocked';
+
+                const tc = testCases.find((t: any) => t.id === testId);
+                if (tc) {
+                    tc.status = status;
+                }
+            }
+            artifacts.set('testCases', testCases);
+        }
     }
 }
 
