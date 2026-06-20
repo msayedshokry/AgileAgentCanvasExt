@@ -22,6 +22,38 @@ const l1Logger = createLogger('l1-reductions');
 const logDebug = (...args: unknown[]) => l1Logger.debug(...args);
 
 /**
+ * Pick only defined fields from the wire packet (changes) using the given
+ * allowlist, returning a fresh `Record<string, unknown>` with just those
+ * fields set.  Replaces the indexed-access for-loop boilerplate that was
+ * used in `reduceTestDesign` (and mirrors the same shape in cis/tea/bmm):
+ *
+ *     for (const field of contentFields) {
+ *         if ((changes as any)[field] !== undefined) {
+ *             (updatedTD as any)[field] = (changes as any)[field];
+ *         }
+ *     }
+ *
+ * with a single line:
+ *
+ *     Object.assign(updatedTD, pickChanges(changes, contentFields));
+ *
+ * `contentFields` here is the const-var allowlist declared inside
+ * `reduceTestDesign` — using a named variable (instead of an inline array
+ * literal) keeps the field list close to the reducer body that uses it,
+ * which is a stylistic choice this module has consistently made for the
+ * test-design fields.  Future reducers adopting the same shape may use
+ * either an inline literal (cis/tea/bmm style) or a module-level const
+ * variable (l1 style) — both are accepted by the helper.
+ */
+function pickChanges(changes: any, fieldList: readonly string[]): Record<string, any> {
+    const out: Record<string, any> = {};
+    for (const f of fieldList) {
+        if (changes[f] !== undefined) out[f] = changes[f];
+    }
+    return out;
+}
+
+/**
  * L1 first-class artifact reducers — extracted from
  * `ArtifactStore.updateArtifact` switch (Phase 9).
  *
@@ -451,11 +483,7 @@ const reduceTestDesign: ArtifactReducerFn<'test-design'> = (ctx, artifactId, cha
         'qualityGateCriteria', 'mitigationPlans', 'assumptionsAndDependencies',
         'defectManagement', 'approval', 'appendices',
     ];
-    for (const field of contentFields) {
-        if ((changes as any)[field] !== undefined) {
-            (updatedTD as any)[field] = (changes as any)[field];
-        }
-    }
+    Object.assign(updatedTD, pickChanges(changes, contentFields));
     if (tdIndex >= 0) {
         testDesigns[tdIndex] = updatedTD;
     } else {
