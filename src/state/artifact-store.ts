@@ -12,7 +12,7 @@ import { findAllJsonFiles, detectArtifactType, loadUiState, loadEpicStoryRefs, r
 import { findArtifactById, mergeFromState } from './artifact-merge';
 import { ArtifactRepairer } from './artifact-repair';
 import { ArtifactReducerDispatcher } from './reducer-registry';
-import type { ArtifactReducerCtx, ArtifactChanges } from './reducer-types';
+import type { ArtifactReducerCtx, ArtifactChanges, ArtifactDeleteCtx } from './reducer-types';
 import { exportArtifacts } from './artifact-exporter';
 import { mapSchemaEpicToInternal, mergeEpicDuplicate, extractStoryId, mapSchemaStoryToInternal, mapStatus, mapSchemaRequirement, mapSchemaNonFunctionalRequirement, mapSchemaAdditionalRequirement } from './schema-mappers';
 import { repairArtifactData } from './schema-artifact-mapper';
@@ -776,292 +776,65 @@ export class ArtifactStore {
         };
         return this.reducers.dispatch(ctx, artifactType, artifactId, changes);
     }
+
+    /**
+     * Build the delete reducer context (DI bag) and dispatch this delete
+     * to the matching per-type reducer.  Returns true if a reducer handled
+     * it, false if `artifactType` is unknown (orchestrator logs a debug
+     * message, matching the original switch's default branch behaviour).
+     *
+     * Phase 10: replaces the ~250-line switch previously inline in
+     * `deleteArtifact()`.  All per-type logic now lives in:
+     *   - delete-l1-reductions.ts  (vision, product-brief, prd,
+     *     architecture, epic (folder cleanup), story (exact-URI cleanup),
+     *     use-case, requirement, test-case, test-strategy, test-design)
+     *   - delete-tea-reductions.ts (traceability-matrix, test-review,
+     *     nfr(-assessment), test-framework, ci-pipeline, automation-summary,
+     *     atdd-checklist)
+     *   - delete-bmm-reductions.ts (research, ux-design, readiness(-report),
+     *     sprint(-status), retrospective, change-proposal, code-review,
+     *     project-overview, project-context, tech-spec, source-tree,
+     *     test-summary, risks, definition-of-done)
+     *   - delete-cis-reductions.ts (storytelling, problem-solving,
+     *     innovation-strategy, design-thinking)
+     *
+     * [phase10-helper-inserted]
+     */
+    private async _dispatchDeleteArtifact(
+        artifactType: string,
+        artifactId: string,
+    ): Promise<void> {
+        const ctx: ArtifactDeleteCtx = {
+            artifacts: this.artifacts,
+            sourceFiles: this.sourceFiles,
+            sourceFolder: this.sourceFolder,
+            notifyChange: () => this.notifyChange(),
+            // Phase 9 lesson: lazy accessor so vitest mock isn't required
+            // unless a reducer actually emits a warning.
+            getOutputChannel: () => this.getOutputChannel(),
+            syncRequirementLinks: (epicId, oldReqIds, newReqIds, reqType) =>
+                this.syncRequirementLinks(epicId, oldReqIds, newReqIds, reqType),
+            removeStoryLinksFromRequirements: (storyIds) =>
+                this.removeStoryLinksFromRequirements(storyIds),
+        };
+        const dispatched = await this.reducers.dispatchDelete(ctx, artifactType, artifactId);
+        if (!dispatched) {
+            logDebug('Unknown artifact type:', artifactType);
+        }
+    }
+
     /**
      * Delete an artifact by type/id.
      * For epics, also removes associated stories and use cases.
      */
-    async deleteArtifact(artifactType: string, artifactId: string): Promise<void> {
-        logDebug('deleteArtifact called:', artifactType, artifactId);
+    async deleteArtifact(artifactType: string, artifactId: string): Promise<void> {        logDebug('deleteArtifact called:', artifactType, artifactId);
 
-        switch (artifactType) {
-            case 'vision':
-                this.artifacts.set('vision', undefined);
-                break;
-
-            case 'product-brief':
-                this.artifacts.set('productBrief', undefined);
-                break;
-
-            case 'prd':
-                this.artifacts.set('prd', undefined);
-                break;
-
-            case 'architecture':
-                this.artifacts.set('architecture', undefined);
-                break;
-
-            case 'epic': {
-                const epics = this.artifacts.get('epics') || [];
-                const epicToDelete = epics.find((e: Epic) => e.id === artifactId);
-                const nextEpics = epics.filter((e: Epic) => e.id !== artifactId);
-                this.artifacts.set('epics', nextEpics);
-
-                if (epicToDelete) {
-                    this.syncRequirementLinks(
-                        artifactId,
-                        epicToDelete.functionalRequirements || [],
-                        [],
-                        'functional'
-                    );
-                    this.syncRequirementLinks(
-                        artifactId,
-                        epicToDelete.nonFunctionalRequirements || [],
-                        [],
-                        'nonFunctional'
-                    );
-
-                    const deletedStoryIds = (epicToDelete.stories || []).map((story: Story) => story.id);
-                    if (deletedStoryIds.length > 0) {
-                        this.removeStoryLinksFromRequirements(deletedStoryIds);
-                    }
-                    
-                    // Clean up the entire epic folder from disk to prevent shadow cards on reload
-                    // Must be awaited to prevent race with syncToFiles re-creating files (CR-3)
-                    if (this.sourceFolder) {
-                        const epicDir = ArtifactFileWriter.epicScopedDir(this.sourceFolder, artifactId);
-                        try {
-                            await vscode.workspace.fs.delete(epicDir, { recursive: true, useTrash: true });
-                            logDebug(`Deleted epic folder: ${epicDir.fsPath}`);
-                        } catch (err) {
-                            logDebug(`Failed to delete epic folder ${epicDir.fsPath}:`, err);
-                        }
-                    }
-                }
-                break;
-            }
-
-            case 'story': {
-                const epics = this.artifacts.get('epics') || [];
-                let changed = false;
-                let deletedStoryId: string | null = null;
-                let deletedFromEpicId: string | null = null;
-                epics.forEach((epic: Epic) => {
-                    if (epic.stories?.some((s: Story) => s.id === artifactId)) {
-                        epic.stories = epic.stories.filter((s: Story) => s.id !== artifactId);
-                        deletedStoryId = artifactId;
-                        deletedFromEpicId = epic.id;
-                        changed = true;
-                    }
-                });
-                if (changed) {
-                    this.artifacts.set('epics', [...epics]);
-                }
-                if (deletedStoryId) {
-                    this.removeStoryLinksFromRequirements([deletedStoryId]);
-                }
-                // Clean up standalone story file from disk using exactly tracked source URI
-                // Must be awaited to prevent race with syncToFiles re-creating the file (CR-3)
-                const storySourceKey = `story:${artifactId}`;
-                if (this.sourceFiles.has(storySourceKey)) {
-                    const storyFileUri = this.sourceFiles.get(storySourceKey)!;
-                    try {
-                        await vscode.workspace.fs.delete(storyFileUri, { useTrash: true });
-                        logDebug(`Deleted exact story file: ${storyFileUri.fsPath}`);
-                    } catch (err) {
-                        logDebug('Failed to delete story file:', err);
-                    }
-                    this.sourceFiles.delete(storySourceKey);
-                } else if (deletedStoryId && deletedFromEpicId && this.sourceFolder) {
-                    // Fallback to deriving the path if sourceFiles mapping was lost
-                    const epicDir = ArtifactFileWriter.epicScopedDir(this.sourceFolder, deletedFromEpicId);
-                    const storiesDir = vscode.Uri.joinPath(epicDir, 'stories');
-                    const storyFileName = `${String(deletedStoryId).replace(/[^a-zA-Z0-9.-]/g, '-')}.json`;
-                    const storyFileUri = vscode.Uri.joinPath(storiesDir, storyFileName);
-                    try {
-                        await vscode.workspace.fs.delete(storyFileUri, { useTrash: true });
-                        logDebug(`Deleted derived story file: ${storyFileUri.fsPath}`);
-                    } catch {
-                        /* file may not exist — ignore */
-                    }
-                }
-                break;
-            }
-
-            case 'use-case': {
-                const epics = this.artifacts.get('epics') || [];
-                let changed = false;
-                epics.forEach((epic: Epic) => {
-                    if (epic.useCases?.some((uc: UseCase) => uc.id === artifactId)) {
-                        epic.useCases = epic.useCases.filter((uc: UseCase) => uc.id !== artifactId);
-                        changed = true;
-                    }
-                });
-                if (changed) {
-                    this.artifacts.set('epics', [...epics]);
-                }
-                break;
-            }
-
-            case 'requirement': {
-                const requirements = this.artifacts.get('requirements') || { functional: [], nonFunctional: [], additional: [] };
-                const nextFunctional = (requirements.functional || []).filter((r: FunctionalRequirement) => r.id !== artifactId);
-                const nextNonFunctional = (requirements.nonFunctional || []).filter((r: NonFunctionalRequirement) => r.id !== artifactId);
-                const nextAdditional = (requirements.additional || []).filter((r: AdditionalRequirement) => r.id !== artifactId);
-                this.artifacts.set('requirements', {
-                    ...requirements,
-                    functional: nextFunctional,
-                    nonFunctional: nextNonFunctional,
-                    additional: nextAdditional
-                });
-
-                const epics = this.artifacts.get('epics') || [];
-                epics.forEach((epic: Epic) => {
-                    if (epic.functionalRequirements) {
-                        epic.functionalRequirements = epic.functionalRequirements.filter((id: string) => id !== artifactId);
-                    }
-                    if (epic.nonFunctionalRequirements) {
-                        epic.nonFunctionalRequirements = epic.nonFunctionalRequirements.filter((id: string) => id !== artifactId);
-                    }
-                });
-                this.artifacts.set('epics', [...epics]);
-                break;
-            }
-
-            case 'test-case': {
-                const testCases: TestCase[] = this.artifacts.get('testCases') || [];
-                this.artifacts.set('testCases', testCases.filter((tc: TestCase) => tc.id !== artifactId));
-                break;
-            }
-
-            case 'test-strategy': {
-                // Check if this is a per-epic test strategy
-                const epicsForTSDel = this.getEpics();
-                const tsOwnerEpic = epicsForTSDel.find(e => e.testStrategy && e.testStrategy.id === artifactId);
-                if (tsOwnerEpic) {
-                    tsOwnerEpic.testStrategy = undefined;
-                    this.artifacts.set('epics', [...epicsForTSDel]);
-                } else {
-                    // Fall back to top-level project singleton
-                    this.artifacts.set('testStrategy', undefined);
-                }
-                break;
-            }
-
-            case 'test-design': {
-                const testDesigns = this.artifacts.get('testDesigns') || [];
-                const tdIndex = testDesigns.findIndex((td: any) => td.id === artifactId);
-                if (tdIndex >= 0) {
-                    testDesigns.splice(tdIndex, 1);
-                    this.artifacts.set('testDesigns', testDesigns);
-                }
-                break;
-            }
-
-            // TEA module artifacts
-            case 'traceability-matrix':
-                this.artifacts.set('traceabilityMatrix', undefined);
-                break;
-            case 'test-review': {
-                const arr = this.artifacts.get('testReviews') || [];
-                this.artifacts.set('testReviews', arr.filter((a: any) => a.id !== artifactId && a.metadata?.id !== artifactId));
-                break;
-            }
-            case 'nfr-assessment':
-            case 'nfr':  // @deprecated alias for 'nfr-assessment'
-                this.artifacts.set('nfrAssessment', undefined);
-                break;
-            case 'atdd-checklist':
-                this.artifacts.set('atddChecklist', undefined);
-                break;
-            case 'test-framework':
-                this.artifacts.set('testFramework', undefined);
-                break;
-            case 'ci-pipeline':
-                this.artifacts.set('ciPipeline', undefined);
-                break;
-            case 'automation-summary':
-                this.artifacts.set('automationSummary', undefined);
-                break;
-
-            // BMM module artifacts
-            case 'research': {
-                const arr = this.artifacts.get('researches') || [];
-                this.artifacts.set('researches', arr.filter((a: any) => a.id !== artifactId && a.metadata?.id !== artifactId));
-                break;
-            }
-            case 'ux-design': {
-                const arr = this.artifacts.get('uxDesigns') || [];
-                this.artifacts.set('uxDesigns', arr.filter((a: any) => a.id !== artifactId && a.metadata?.id !== artifactId));
-                break;
-            }
-            case 'readiness-report':
-            case 'readiness': { // @deprecated alias for 'readiness-report'
-                const arr = this.artifacts.get('readinessReports') || [];
-                this.artifacts.set('readinessReports', arr.filter((a: any) => a.id !== artifactId && a.metadata?.id !== artifactId));
-                break;
-            }
-            case 'sprint-status':
-            case 'sprint': { // @deprecated alias for 'sprint-status'
-                const arr = this.artifacts.get('sprintStatuses') || [];
-                this.artifacts.set('sprintStatuses', arr.filter((a: any) => a.id !== artifactId && a.metadata?.id !== artifactId));
-                break;
-            }
-            case 'retrospective': {
-                const arr = this.artifacts.get('retrospectives') || [];
-                this.artifacts.set('retrospectives', arr.filter((a: any) => a.id !== artifactId && a.metadata?.id !== artifactId));
-                break;
-            }
-            case 'change-proposal': {
-                const arr = this.artifacts.get('changeProposals') || [];
-                this.artifacts.set('changeProposals', arr.filter((a: any) => a.id !== artifactId && a.metadata?.id !== artifactId));
-                break;
-            }
-            case 'code-review': {
-                const arr = this.artifacts.get('codeReviews') || [];
-                this.artifacts.set('codeReviews', arr.filter((a: any) => a.id !== artifactId && a.metadata?.id !== artifactId));
-                break;
-            }
-            case 'project-overview':
-                this.artifacts.set('projectOverview', undefined);
-                break;
-            case 'project-context':
-                this.artifacts.set('projectContext', undefined);
-                break;
-            case 'tech-spec': {
-                const arr = this.artifacts.get('techSpecs') || [];
-                this.artifacts.set('techSpecs', arr.filter((a: any) => a.id !== artifactId && a.metadata?.id !== artifactId));
-                break;
-            }
-            case 'source-tree':
-                this.artifacts.set('sourceTree', undefined);
-                break;
-            case 'test-summary':
-                this.artifacts.set('testSummary', undefined);
-                break;
-            case 'risks':
-                this.artifacts.set('risks', undefined);
-                break;
-            case 'definition-of-done':
-                this.artifacts.set('definitionOfDone', undefined);
-                break;
-
-            // CIS module artifacts
-            case 'storytelling':
-                this.artifacts.set('storytelling', undefined);
-                break;
-            case 'problem-solving':
-                this.artifacts.set('problemSolving', undefined);
-                break;
-            case 'innovation-strategy':
-                this.artifacts.set('innovationStrategy', undefined);
-                break;
-            case 'design-thinking':
-                this.artifacts.set('designThinking', undefined);
-                break;
-
-            default:
-                logDebug('Unknown artifact type:', artifactType);
-        }
+        // ── Dispatch via delete reducer registry (Phase 10) ────────────────────────
+        // The 30+ case arms are now extracted into per-domain delete-reductions
+        // modules (delete-l1/tea/bmm/cis-reductions.ts), registered through
+        // ArtifactReducerDispatcher.dispatchDelete().
+        // [phase10-delete-injected]
+        await this._dispatchDeleteArtifact(artifactType, artifactId);
 
         this.notifyChange();
 
@@ -1069,7 +842,10 @@ export class ArtifactStore {
         if (autoSync) {
             await this.syncToFiles();
         }
+    
+
     }
+
 
     private removeStoryLinksFromRequirements(storyIds: string[]): void {
         removeStoryLinksFromRequirements(storyIds, this.artifacts);
