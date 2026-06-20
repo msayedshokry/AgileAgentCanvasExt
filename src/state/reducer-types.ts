@@ -87,9 +87,24 @@ export interface ArtifactReducerCtx {
  * Each reducer declares its `T` literally — e.g.
  * `ArtifactReducerFn<'epic'>` — so the `changes` parameter type
  * narrows to `Partial<Epic> & { metadata?: BmadMetadata }` inside that
- * reducer, and the registry's heterogeneous Map stores reducers as
- * `ArtifactReducerFn<any>` to avoid variance friction at the collection
- * layer.
+ * reducer.
+ *
+ * ## Registry widening rationale (Phase 12)
+ *
+ * The registry stores reducers as `ArtifactReducerFn<any>` rather than
+ * `ArtifactReducerFn<T>` for variance safety: each entry's `T` literal
+ * is preserved via `Map.set(type, fn)` call sites in
+ * `l1/tea/bmm/cis-reductions.ts`, but the heterogeneous collection
+ * is widened to `any` to avoid variance friction at the type system
+ * level when calling `fn(ctx, id, changes)` with a union-shaped
+ * `changes` argument from the orchestrator.  This widens each
+ * reducer's `changes` parameter back to the canonical
+ * `ArtifactChanges<BmadArtifact>` form at the call site; the per-type
+ * narrowing is preserved inside each reducer body because each one
+ * ALSO names its `T` literally in its `ArtifactReducerFn<'X'>` type
+ * annotation.
+ *
+ * ## Reducer contract caveat
  *
  * A reducer MUST NOT call `reconcileDerivedState` / `notifyChange`
  * for the final pass — those happen in the orchestrator after the
@@ -170,38 +185,6 @@ export interface ArtifactReducerCtx {
  * declare a `*_FIELDS: readonly string[]` module-level const and
  * pass it to `Object.assign(upd, pickChanges(...))`.
  */
-
-/**
- * The full registry: maps artifact type strings (kebab-case + aliases)
- * to their reducer.  Built once at store construction time.
- *
- * Phase 12: typed as `Map<string, ArtifactReducerFn<any>>` for variance
- * safety — each entry's `T` literal is preserved via `Map.set(type, fn)`
- * call sites (see `l1/tea/bmm/cis-reductions.ts`), but the heterogeneous
- * collection is widened to `any` to avoid variance friction at the
- * type system level when calling `fn(ctx, id, changes)` with a union-shaped
- * changes argument from the orchestrator.
- */
-/**
- * A reducer applies `changes` to a single artifact found by `artifactId`
- * within `ctx.artifacts`.  May mutate the map, fire `notifyChange()`
- * directly when intermediate writes need to flush, or return without
- * doing anything if the artifact can't be found.
- *
- * Phase 12: parameterised on `T extends keyof BmadArtifactTypeMap & string`.
- * Each reducer declares its `T` literally — e.g.
- * `ArtifactReducerFn<'epic'>` — so the `changes` parameter type
- * narrows to `Partial<Epic> & { metadata?: BmadMetadata }` inside that
- * reducer, and the registry's heterogeneous Map stores reducers as
- * `ArtifactReducerFn<any>` to avoid variance friction at the collection
- * layer.
- *
- * A reducer MUST NOT call `reconcileDerivedState` / `notifyChange`
- * for the final pass — those happen in the orchestrator after the
- * reducer returns.  (Some reducers DO call them mid-flight, e.g. the
- * story reducer writes a standalone file before the orchestrator's
- * tail — those are intermediate, not terminal.)
- */
 export type ArtifactReducerFn<
     T extends keyof BmadArtifactTypeMap & string = keyof BmadArtifactTypeMap & string,
 > = (
@@ -210,6 +193,12 @@ export type ArtifactReducerFn<
     changes: ArtifactChanges<BmadArtifactTypeMap[T]>,
 ) => void | Promise<void>;
 
+/**
+ * Maps artifact type strings (kebab-case + aliases) to their reducer.
+ * Built once at store construction time.  See the `## Registry
+ * widening rationale` section on `ArtifactReducerFn` for why the
+ * value type widens to `ArtifactReducerFn<any>` here.
+ */
 export type ArtifactReducerRegistry = Map<string, ArtifactReducerFn<any>>;
 
 /** A reducer module exposes a register hook that adds its cases to a map. */
