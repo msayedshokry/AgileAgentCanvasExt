@@ -97,17 +97,58 @@ export interface ArtifactReducerCtx {
  * story reducer writes a standalone file before the orchestrator's
  * tail — those are intermediate, not terminal.)
  *
- * ## Dropping the `Partial<any>` escape hatch
+ * ## Dropping the `Partial<any>` escape hatch (and the indexed-access pattern)
  *
  * Before Phase 12, the `changes` param type was declared as
  * `ArtifactChanges = Partial<any> & { metadata?: BmadMetadata }`,
  * which silently accepted ANY shape from callers.  Phase 12 replaces
  * that with the canonical `ArtifactChanges<T>` (= `Partial<T> & { metadata? }`)
- * from `types/index.ts`.  Reducer bodies still use `(changes as any)[field]`
- * for indexed access — the per-type annotation narrows WHICH fields
- * `T` exposes, but the bodies deliberately preserve runtime flexibility
- * because BMAD schemas include many metadata-or-content fields that
- * shift between versions and the reducer bodies absorb those by design.
+ * from `types/index.ts`.
+ *
+ * Before Phase 17, reducer bodies merged the wire packet's content
+ * fields via an indexed-access for-loop boilerplate that was
+ * duplicated 26+ times across the cis/tea/bmm/l1 reducer modules:
+ *
+ *     for (const f of [
+ *         'a', 'b', 'c',
+ *     ]) {
+ *         if ((changes as any)[f] !== undefined) upd[f] = (changes as any)[f];
+ *     }
+ *
+ * Phase 17 collapsed that loop into the canonical "parts" pattern:
+ *
+ *     Object.assign(upd, pickChanges(changes, ['a', 'b', 'c']));
+ *
+ * `pickChanges` lives in `src/state/reducer-helpers.ts`.  Phase 18
+ * (commit `0a9641f`) lifted the per-file copies added by Phase 17
+ * (commits `fec166e` cis, `1f47652` tea, `06adb75` bmm, `5aa0931` l1)
+ * into that single shared module; all four reducer files now
+ * `import { pickChanges } from './reducer-helpers'`.  Each call
+ * site passes a `readonly string[]` allowlist of the content
+ * fields that reducer body is willing to absorb from the wire packet.
+ *
+ * # Per-file allowlist convention
+ *
+ * The four reducer modules use two stylistic flavours of the
+ * allowlist argument; both forms are accepted by
+ * `pickChanges(changes: any, fieldList: readonly string[])` and
+ * both are grep-discoverable:
+ *
+ * - **Inline array literal** (cis, tea, bmm style) — the field list
+ *   appears directly inside the `Object.assign(upd, pickChanges(...))`
+ *   call.  Used in 25 call sites across cis (4), tea (7), and bmm
+ *   (14).  The field list is grep-discoverable by searching
+ *   `pickChanges(changes, [` in each consuming file.
+ *
+ * - **Const-var declared inside the reducer body** (l1 style) —
+ *   used by `l1-reductions.ts::reduceTestDesign`, which declares its
+ *   `contentFields` array as a `const` inside the reducer body and
+ *   passes the variable name: `Object.assign(updatedTD, pickChanges(changes, contentFields))`.
+ *   The const-var form keeps the field list close to the reducer
+ *   body that consumes it.
+ *
+ * Future reducers adopting the canonical pattern may use either
+ * form — both are equally valid callers of the shared helper.
  */
 
 /**
