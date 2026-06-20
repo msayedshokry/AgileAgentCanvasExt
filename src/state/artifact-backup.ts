@@ -3,6 +3,7 @@ import { createLogger } from '../utils/logger';
 import { findAllJsonFiles } from './artifact-load-helpers';
 
 const backupLogger = createLogger('artifact-backup');
+const logDebug = (...args: unknown[]) => backupLogger.debug(...args);
 
 /**
  * Backup all artifact JSON files to a timestamped .bmad-backup directory.
@@ -18,7 +19,7 @@ export async function backupArtifactFiles(sourceFolder: vscode.Uri): Promise<vsc
     try {
         await vscode.workspace.fs.createDirectory(backupDir);
     } catch (err) {
-        backupLogger.debug(`[Backup] Could not create backup directory ${backupDir.fsPath}: ${err}`);
+        logDebug(`[Backup] Could not create backup directory ${backupDir.fsPath}: ${err}`);
         return null;
     }
 
@@ -36,11 +37,11 @@ export async function backupArtifactFiles(sourceFolder: vscode.Uri): Promise<vsc
             await vscode.workspace.fs.copy(fileUri, destUri, { overwrite: true });
             results.push(destUri);
         } catch (err) {
-            backupLogger.debug(`[Backup] Could not backup ${fileUri.fsPath}: ${err}`);
+            logDebug(`[Backup] Could not backup ${fileUri.fsPath}: ${err}`);
         }
     }
 
-    backupLogger.debug(`[Backup] Backed up ${results.length} files to ${backupDir.fsPath}`);
+    logDebug(`[Backup] Backed up ${results.length} files to ${backupDir.fsPath}`);
     return backupDir;
 }
 
@@ -68,9 +69,9 @@ export async function pruneOldBackups(sourceFolder: vscode.Uri, keepCount = 5): 
         const dirUri = vscode.Uri.joinPath(backupRoot, dirName);
         try {
             await vscode.workspace.fs.delete(dirUri, { recursive: true });
-            backupLogger.debug(`[Backup] Pruned old backup: ${dirName}`);
+            logDebug(`[Backup] Pruned old backup: ${dirName}`);
         } catch (err) {
-            backupLogger.debug(`[Backup] Could not prune ${dirName}: ${err}`);
+            logDebug(`[Backup] Could not prune ${dirName}: ${err}`);
         }
     }
 }
