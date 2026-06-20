@@ -9,6 +9,35 @@ const teaLogger = createLogger('tea-reductions');
 const logDebug = (...args: unknown[]) => teaLogger.debug(...args);
 
 /**
+ * Pick only defined fields from the wire packet (changes) using the given
+ * allowlist, returning a fresh `Record<string, unknown>` with just those
+ * fields set.  Replaces the boilerplate that was duplicated across all seven
+ * TEA reducer bodies (and mirrors the same shape in cis/bmm/l1):
+ *
+ *     for (const f of [
+ *         'a', 'b', 'c',
+ *     ]) {
+ *         if ((changes as any)[f] !== undefined) upd[f] = (changes as any)[f];
+ *     }
+ *
+ * with a single line:
+ *
+ *     Object.assign(upd, pickChanges(changes, ['a', 'b', 'c']));
+ *
+ * The inline-array allowlist stays grep-discoverable (any reader can find
+ * the field list by grepping `pickChanges(changes, [` in this file).  Future
+ * reducers can adopt the same shape by calling this helper instead of
+ * writing the indexed-access for-loop boilerplate by hand.
+ */
+function pickChanges(changes: any, fieldList: readonly string[]): Record<string, any> {
+    const out: Record<string, any> = {};
+    for (const f of fieldList) {
+        if (changes[f] !== undefined) out[f] = changes[f];
+    }
+    return out;
+}
+
+/**
  * TEA module artifact reducers — extracted from
  * `ArtifactStore.updateArtifact` switch (Phase 9).
  *
@@ -27,12 +56,10 @@ const reduceTraceabilityMatrix: ArtifactReducerFn<'traceability-matrix'> = (ctx,
     if (!upd.id) upd.id = artifactId || 'traceability-matrix-1';
     if (changes.status) upd.status = changes.status;
     if (changes.metadata?.status) upd.status = changes.metadata.status;
-    for (const f of [
+    Object.assign(upd, pickChanges(changes, [
         'storyInfo', 'traceability', 'gateDecision', 'cicdYamlSnippet',
         'relatedArtifacts', 'signOff',
-    ]) {
-        if ((changes as any)[f] !== undefined) upd[f] = (changes as any)[f];
-    }
+    ]));
     ctx.artifacts.set('traceabilityMatrix', upd);
     logDebug('[tea-reductions] Updated traceability matrix:', upd.id);
 };
@@ -47,14 +74,12 @@ const reduceTestReview: ArtifactReducerFn<'test-review'> = (ctx, artifactId, cha
     if (!upd.id) upd.id = artifactId || 'test-review-1';
     if (changes.status) upd.status = changes.status;
     if (changes.metadata?.status) upd.status = changes.metadata.status;
-    for (const f of [
+    Object.assign(upd, pickChanges(changes, [
         'reviewInfo', 'executiveSummary', 'qualityAssessment', 'qualityScoreBreakdown',
         'criticalIssues', 'recommendations', 'bestPracticesFound', 'testFileAnalysis',
         'coverageAnalysis', 'contextAndIntegration', 'knowledgeBaseReferences',
         'nextSteps', 'decision', 'appendix',
-    ]) {
-        if ((changes as any)[f] !== undefined) upd[f] = (changes as any)[f];
-    }
+    ]));
     if (idx >= 0) arr[idx] = upd; else arr.push(upd);
     ctx.artifacts.set('testReviews', arr);
     logDebug('[tea-reductions] Updated test review:', upd.id);
@@ -68,13 +93,11 @@ const reduceNfrAssessment: ArtifactReducerFn<'nfr-assessment'> = (ctx, artifactI
     if (!upd.id) upd.id = artifactId || 'nfr-assessment-1';
     if (changes.status) upd.status = changes.status;
     if (changes.metadata?.status) upd.status = changes.metadata.status;
-    for (const f of [
+    Object.assign(upd, pickChanges(changes, [
         'featureInfo', 'executiveSummary', 'nfrRequirements', 'assessments', 'quickWins',
         'recommendedActions', 'monitoringHooks', 'failFastMechanisms', 'evidenceGaps',
         'findingsSummary', 'gateYamlSnippet', 'testEvidence', 'signOff',
-    ]) {
-        if ((changes as any)[f] !== undefined) upd[f] = (changes as any)[f];
-    }
+    ]));
     ctx.artifacts.set('nfrAssessment', upd);
     logDebug('[tea-reductions] Updated NFR assessment:', upd.id);
 };
@@ -87,13 +110,11 @@ const reduceTestFramework: ArtifactReducerFn<'test-framework'> = (ctx, artifactI
     if (!upd.id) upd.id = artifactId || 'test-framework-1';
     if (changes.status) upd.status = changes.status;
     if (changes.metadata?.status) upd.status = changes.metadata.status;
-    for (const f of [
+    Object.assign(upd, pickChanges(changes, [
         'framework', 'configuration', 'directoryStructure', 'fixtures', 'helpers',
         'pageObjects', 'mocking', 'dependencies', 'scripts', 'setupInstructions',
         'bestPractices',
-    ]) {
-        if ((changes as any)[f] !== undefined) upd[f] = (changes as any)[f];
-    }
+    ]));
     ctx.artifacts.set('testFramework', upd);
     logDebug('[tea-reductions] Updated test framework:', upd.id);
 };
@@ -106,12 +127,10 @@ const reduceCiPipeline: ArtifactReducerFn<'ci-pipeline'> = (ctx, artifactId, cha
     if (!upd.id) upd.id = artifactId || 'ci-pipeline-1';
     if (changes.status) upd.status = changes.status;
     if (changes.metadata?.status) upd.status = changes.metadata.status;
-    for (const f of [
+    Object.assign(upd, pickChanges(changes, [
         'platform', 'pipeline', 'jobs', 'testExecution', 'qualityGates', 'artifacts',
         'notifications', 'caching', 'secrets', 'documentation',
-    ]) {
-        if ((changes as any)[f] !== undefined) upd[f] = (changes as any)[f];
-    }
+    ]));
     ctx.artifacts.set('ciPipeline', upd);
     logDebug('[tea-reductions] Updated CI pipeline:', upd.id);
 };
@@ -124,13 +143,11 @@ const reduceAutomationSummary: ArtifactReducerFn<'automation-summary'> = (ctx, a
     if (!upd.id) upd.id = artifactId || 'automation-summary-1';
     if (changes.status) upd.status = changes.status;
     if (changes.metadata?.status) upd.status = changes.metadata.status;
-    for (const f of [
+    Object.assign(upd, pickChanges(changes, [
         'summary', 'coverageAnalysis', 'testsCreated', 'fixturesCreated',
         'factoriesCreated', 'bmadIntegration', 'automationStrategy', 'recommendations',
         'executionResults',
-    ]) {
-        if ((changes as any)[f] !== undefined) upd[f] = (changes as any)[f];
-    }
+    ]));
     ctx.artifacts.set('automationSummary', upd);
     logDebug('[tea-reductions] Updated automation summary:', upd.id);
 };
@@ -143,15 +160,13 @@ const reduceAtddChecklist: ArtifactReducerFn<'atdd-checklist'> = (ctx, artifactI
     if (!upd.id) upd.id = artifactId || 'atdd-checklist-1';
     if (changes.status) upd.status = changes.status;
     if (changes.metadata?.status) upd.status = changes.metadata.status;
-    for (const f of [
+    Object.assign(upd, pickChanges(changes, [
         'storyInfo', 'storySummary', 'acceptanceCriteria', 'failingTestsCreated',
         'testScenarios', 'dataFactoriesCreated', 'fixturesCreated', 'mockRequirements',
         'requiredDataTestIds', 'pageObjects', 'implementationChecklist', 'runningTests',
         'redGreenRefactorWorkflow', 'knowledgeBaseReferences', 'testExecutionEvidence',
         'completionStatus',
-    ]) {
-        if ((changes as any)[f] !== undefined) upd[f] = (changes as any)[f];
-    }
+    ]));
     ctx.artifacts.set('atddChecklist', upd);
     logDebug('[tea-reductions] Updated ATDD checklist:', upd.id);
 };
