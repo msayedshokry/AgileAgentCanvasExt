@@ -196,7 +196,7 @@ export function loadDemoData(store: ArtifactStore): Thenable<void> {
             store.updateArtifact('vision', 'main', {
         productName: 'BMAD Demo Project',
         problemStatement: 'Development teams struggle to translate business requirements into well-structured epics and stories.',
-        targetUsers: ['Product Managers', 'Business Analysts', 'Development Teams'],
+        targetUsers: [{ segment: 'Product Managers' }, { segment: 'Business Analysts' }, { segment: 'Development Teams' }],
         valueProposition: 'AI-assisted visual workflow for designing product artifacts',
         successCriteria: [
             '50% reduction in time to create epics/stories',

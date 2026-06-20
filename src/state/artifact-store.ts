@@ -30,6 +30,10 @@ import {
     StoryHistoryEntry,
     Story,
     AcceptanceCriterion,
+    TargetUser,
+    SuccessMetric,
+    StoryUxReference,
+    StoryReference,
     UseCase,
     UseCaseFlowStep,
     UseCaseAlternativeFlow,
@@ -47,6 +51,9 @@ import {
     PrdSuccessCriterion,
     PrdConstraint,
     PrdRisk,
+    PrdTechnicalRequirement,
+    PrdApproval,
+    PrdAppendix,
     PRD,
     ArchitectureDecision,
     ArchitecturePattern,
@@ -107,6 +114,10 @@ export {
     StoryTask,
     StoryDependencies,
     StoryDevNotes,
+    TargetUser,
+    SuccessMetric,
+    StoryUxReference,
+    StoryReference,
     StoryDevAgentRecord,
     StoryHistoryEntry,
     Story,
@@ -125,6 +136,9 @@ export {
     UserJourneyStep,
     PrdUserJourney,
     DomainConcept,
+    PrdTechnicalRequirement,
+    PrdApproval,
+    PrdAppendix,
     PrdSuccessCriterion,
     PrdConstraint,
     PrdRisk,
@@ -7227,7 +7241,7 @@ export class ArtifactStore {
                 if (typeof u === 'string') {
                     md += `- ${u}\n`;
                 } else {
-                    md += `- **${u.persona || 'User'}**`;
+                    md += `- **${u.segment || 'User'}**`;
                     if (u.description) md += `: ${u.description}`;
                     md += '\n';
                 }
@@ -7243,8 +7257,8 @@ export class ArtifactStore {
                 if (typeof m === 'string') {
                     md += `- ${m}\n`;
                 } else {
-                    md += `- **${m.metric || 'Metric'}**`;
-                    if (m.description) md += `: ${m.description}`;
+                    md += `- **${m.name || 'Metric'}**`;
+                    if (m.target) md += `: ${m.target}`;
                     md += '\n';
                 }
             }

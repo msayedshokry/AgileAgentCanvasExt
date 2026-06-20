@@ -575,7 +575,7 @@ export class AgileAgentCanvasChatParticipant {
             const vision = {
                 productName: state.projectName || 'My Product',
                 problemStatement: prompt || 'Define the problem...',
-                targetUsers: ['Primary User', 'Secondary User'],
+                targetUsers: [{ segment: 'Primary User' }, { segment: 'Secondary User' }],
                 valueProposition: 'Unique value...',
                 successCriteria: ['Criterion 1', 'Criterion 2'],
                 status: 'draft' as const
@@ -1866,7 +1866,7 @@ Review and refine this product vision to make it compelling, specific, and measu
 ### Current Vision:
 - Product Name: ${vision.productName || 'Not set'}
 - Problem Statement: ${vision.problemStatement || 'Not set'}
-- Target Users: ${(vision.targetUsers || []).join(', ') || 'Not defined'}
+- Target Users: ${(vision.targetUsers || []).map((u: any) => typeof u === 'string' ? u : u.segment || u.persona || JSON.stringify(u)).join(', ') || 'Not defined'}
 - Value Proposition: ${vision.valueProposition || 'Not set'}
 - Success Criteria: ${(vision.successCriteria || []).join('; ') || 'None'}
 
@@ -2306,7 +2306,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
                 contextParts.push(`- Problem: ${state.vision.problemStatement}`);
             }
             if (state.vision.targetUsers && state.vision.targetUsers.length > 0) {
-                contextParts.push(`- Target users: ${state.vision.targetUsers.join(', ')}`);
+                contextParts.push(`- Target users: ${state.vision.targetUsers.map((u: any) => typeof u === 'string' ? u : u.segment || u.persona || JSON.stringify(u)).join(', ')}`);
             }
             if (state.vision.valueProposition) {
                 contextParts.push(`- Value proposition: ${state.vision.valueProposition}`);
@@ -4328,7 +4328,7 @@ Output ONLY the JSON, no explanation.`;
                 contextParts.push(`Problem: ${state.vision.problemStatement}`);
             }
             if (state.vision.targetUsers?.length) {
-                contextParts.push(`Target users: ${state.vision.targetUsers.join(', ')}`);
+                contextParts.push(`Target users: ${state.vision.targetUsers.map((u: any) => typeof u === 'string' ? u : u.segment || u.persona || JSON.stringify(u)).join(', ')}`);
             }
         }
         if (state.prd) {

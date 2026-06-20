@@ -14,6 +14,27 @@
  * + content shape, populated by the extension-side normalisation).
  * `status` is required and uses the canonical Vision enum.
  */
+
+/** A target user segment described in the vision artifact. */
+export interface TargetUser {
+    /** User segment / persona label (e.g. "Data Scientist", "Enterprise Admin") */
+    segment: string;
+    /** Human-readable description of this user group */
+    description?: string;
+    /** Key needs expressed as short bullet strings */
+    needs?: string[];
+}
+
+/** A success metric tracked against the vision. */
+export interface SuccessMetric {
+    /** Metric short-name (e.g. "Daily Active Users", "P99 latency") */
+    name: string;
+    /** Target value (e.g. "10,000 DAU", "< 200ms") */
+    target?: string;
+    /** Current baseline value */
+    baseline?: string;
+}
+
 export interface Vision {
     /** ID of the vision artifact (e.g. "vision-1"); required at runtime for queries */
     id?: string;
@@ -28,10 +49,10 @@ export interface Vision {
         problemStatement?: string;
         proposedSolution?: string;
     };
-    targetUsers: any[];
+    targetUsers: TargetUser[];
     valueProposition: string;
     /** Rich success metrics objects from the JSON file */
-    successMetrics?: any[];
+    successMetrics?: SuccessMetric[];
     /** Flattened success criteria strings for backward compat */
     successCriteria: string[];
 }
@@ -216,6 +237,28 @@ export interface ExternalDependencyRef {
     owner?: string;
 }
 
+/** UX design reference attached to a story. */
+export interface StoryUxReference {
+    /** Reference type (e.g. "wireframe", "mockup", "prototype", "design-spec") */
+    type?: string;
+    /** Path, URL, or other locator for the referenced asset */
+    reference?: string;
+    /** Human-readable description of what the reference shows */
+    description?: string;
+}
+
+/** Source-document reference attached to a story. */
+export interface StoryReference {
+    /** Source document name or identifier */
+    source?: string;
+    /** Specific section referenced */
+    section?: string;
+    /** Why this reference is relevant to the story */
+    relevance?: string;
+    /** Relevant excerpt or quote from the source */
+    quote?: string;
+}
+
 export interface StoryDependencies {
     blockedBy?: (string | StoryBlockedByRef)[];
     blocks?: (string | StoryBlocksRef)[];
@@ -298,8 +341,8 @@ export interface Story {
     implementationDetails?: string[];
     definitionOfDone?: string[];
     requirementRefs?: string[];
-    uxReferences?: any[];
-    references?: any[];
+    uxReferences?: StoryUxReference[];
+    references?: StoryReference[];
     notes?: string;
     dependencies?: StoryDependencies;
     tasks?: StoryTask[];
@@ -370,7 +413,8 @@ export interface UseCase {
     relatedStories?: string[];
     sourceDocument?: string;
     notes?: string;
-    actors?: any;
+    /** Additional actor identifiers beyond primaryActor (legacy, use secondaryActors instead). */
+    actors?: string[];
     status?: string;
 }
 
@@ -1564,6 +1608,43 @@ export interface PrdRisk {
     triggers?: string[];
 }
 
+/** A technical constraint / architecture requirement within the PRD. */
+export interface PrdTechnicalRequirement {
+    id: string;
+    /** Category (e.g. platform, security, scalability) */
+    category?: string;
+    title: string;
+    description: string;
+    rationale?: string;
+    impact?: string;
+}
+
+/** A document approval entry within the PRD. */
+export interface PrdApproval {
+    /** Approver role (e.g. "Product Owner", "Tech Lead") */
+    role: string;
+    /** Approver display name */
+    name?: string;
+    /** Approval date string */
+    date?: string;
+    /** Approval status */
+    status?: 'pending' | 'approved' | 'rejected' | 'approved-with-comments';
+    /** Optional comments */
+    comments?: string;
+}
+
+/** An appendix entry within the PRD. */
+export interface PrdAppendix {
+    /** Optional identifier */
+    id?: string;
+    /** Appendix heading */
+    title: string;
+    /** Full appendix body content */
+    content?: string;
+    /** Cross-references to other documents */
+    references?: string[];
+}
+
 export interface PRD {
     id: string;
     status: 'draft' | 'review' | 'approved' | 'archived';
@@ -1605,9 +1686,9 @@ export interface PRD {
     nonFunctionalRequirementIds?: string[];
     technicalRequirementIds?: string[];
     requirements?: {
-        functional?: any[];
-        nonFunctional?: any[];
-        technical?: any[];
+        functional?: FunctionalRequirement[];
+        nonFunctional?: NonFunctionalRequirement[];
+        technical?: PrdTechnicalRequirement[];
     };
     scope?: {
         inScope?: { item: string; description?: string; priority?: string }[];
@@ -1628,8 +1709,8 @@ export interface PRD {
             deliverables?: string[];
         }[];
     };
-    approvals?: any[];
-    appendices?: any[];
+    approvals?: PrdApproval[];
+    appendices?: PrdAppendix[];
 }
 
 // =============================================================================
