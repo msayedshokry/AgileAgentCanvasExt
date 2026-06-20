@@ -180,8 +180,41 @@ const reduceStory: ArtifactReducerFn<'story'> = async (ctx, artifactId, changes)
         ctx.artifacts.set('epics', [...allEpics]);
     } else {
         // ── Create new standalone story ──────────────────────────────────
+        // Phase 17 fix (epicId wire-only contract enforcement):
+        // destructure `epicId` out of `changes` BEFORE the `newStory`
+        // literal so the spread that follows cannot re-include epicId
+        // onto the canonical Story shape — closing the leak that the
+        // `[Phase 17] epicId wire-only contract` regression guard in
+        // `reducer-bodies-l1.test.ts` was holding open.  Mirrors the
+        // `description`-al destructure pattern in `reduceEpic` (per-call
+        // site expression of the wire-only contract: peel-DESTRUCTURE
+        // → use-for-routing → never-re-include-via-spread).
+        //
+        // Phase 12 narrow-cast contract: the
+        // `Partial<Story> & { epicId?: string }` cast declares the EXACT
+        // shape of the wire packet (canonical Story + the one wire-only
+        // `epicId`).  Phase 13 sweep: epicId is a creation-time parenting
+        // hint (which Epic does the new story attach to), NOT a Story-level
+        // attribute — after creation, the parent relationship is the
+        // CONTAINING EPIC, so promoting epicId to canonical Story would
+        // create two sources of truth for the same parent link.  The
+        // narrow cast (and Phase 17 destructure) is therefore the correct
+        // expression of the wire contract, not a candidate for
+        // canonical-field promotion like the previous description → goal
+        // case.
+        // Wildcard note: `topFields` is `Partial<Story>` — the destructure
+        // removed ONLY `epicId`.  This is INTENTIONAL — `story` is a
+        // TOP_LEVEL_SPREAD key in the smoke matrix, so unknown wire keys
+        // MUST spread through (preserves the prior `...changes` tail
+        // behavior).  `metadata` similarly flows through unchanged because
+        // the SMOKE matrix expects the topLevelSpread reducers to lift
+        // the wire packet verbatim; do NOT "fix" this by stripping
+        // metadata the way `reduceEpic` does, or you will regress the
+        // smoke-matrix test for unknownWireField + metadata-only payloads.
+        const { epicId: routingEpicId, ...topFields } = (changes as Partial<Story> & { epicId?: string });
         const newStory: Story = {
-            id: artifactId,
+            ...topFields,        // base (excludes epicId)
+            id: artifactId,      // explicit overrides win on tie
             title: changes.title || `Story ${artifactId}`,
             status: changes.status || 'draft',
             storyPoints: changes.storyPoints,
@@ -192,29 +225,26 @@ const reduceStory: ArtifactReducerFn<'story'> = async (ctx, artifactId, changes)
             // the store. Schema validation upstream at the LM tool
             // boundary is the enforcement layer for the field shape; the
             // cast preserves the wire packet's optionality.
+            // Phase 17 ORDER NOTE: the `...topFields` spread runs FIRST
+            // and the explicit userStory line runs AFTER, so the
+            // default-fill wins on override — preserving the smoke
+            // contract pinned by `'creates new story with userStory
+            // default-fill on wire OMISSION'` in
+            // `reducer-bodies-l1.test.ts`.
             userStory: changes.userStory ?? { asA: '', iWant: '', soThat: '' },
             acceptanceCriteria: changes.acceptanceCriteria || [],
             technicalNotes: changes.technicalNotes,
             tasks: changes.tasks || [],
             dependencies: changes.dependencies,
             requirementRefs: changes.requirementRefs,
-            ...changes,
         };
 
-        // Determine parent epicId — from changes, or derive from ID pattern.
-        // Phase 12: `epicId` is a LM wire-only field on story creation (it's
-        // an Epic-level concept, not on the canonical Story type). The narrow
-        // `Partial<Story> & { epicId?: string }` cast declares the exact wire
-        // contract for this single extra key.
-        // Phase 13 sweep: epicId is a creation-time parenting hint
-        // (which Epic does the new story attach to), NOT a Story-level
-        // attribute. After creation, the parent relationship is the
-        // containing Epic — promoting epicId to canonical Story would
-        // create two sources of truth for the same parent link. The
-        // narrow cast above is therefore the correct expression of the
-        // wire contract, not a candidate for canonical-field promotion
-        // like the previous description → goal case.
-        let epicId = (changes as Partial<Story> & { epicId?: string }).epicId;
+        // Determine parent epicId from the destructured `routingEpicId`
+        // (captured above), or derive from ID pattern.  This is the
+        // SINGLE permitted `epicId` consumer — by the time we reach
+        // here, the canonical-S Story is already epicId-free due to
+        // the destructure.
+        let epicId = routingEpicId;
         if (!epicId) {
             const idMatch = artifactId.match(/^S?-?(\d+)[.\-]/i);
             if (idMatch) {
