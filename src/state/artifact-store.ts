@@ -9,6 +9,8 @@ import { ArtifactMigrator } from './artifact-migrator';
 import { addEpic, addStory, addRequirement, createEpic, createStory, createRequirement, createOrUpdateVision, createUseCase, createProductBrief, createPRD, createArchitecture, createTestCase, createTestStrategy } from './artifact-factory';
 import { backupArtifactFiles, pruneOldBackups } from './artifact-backup';
 import { findAllJsonFiles, detectArtifactType, loadUiState, loadEpicStoryRefs, removeStoryLinksFromRequirements, syncRequirementLinks, checkForInlineStories, reconcileDerivedState } from './artifact-load-helpers';
+import { findArtifactById, mergeFromState } from './artifact-merge';
+import { ArtifactRepairer } from './artifact-repair';
 import { exportArtifacts } from './artifact-exporter';
 import { mapSchemaEpicToInternal, mergeEpicDuplicate, extractStoryId, mapSchemaStoryToInternal, mapStatus, mapSchemaRequirement, mapSchemaNonFunctionalRequirement, mapSchemaAdditionalRequirement } from './schema-mappers';
 import { repairArtifactData } from './schema-artifact-mapper';
@@ -259,6 +261,7 @@ export class ArtifactStore {
     private sprintSync: SprintStatusSync;
     private fileWriter: ArtifactFileWriter;
     private migrator: ArtifactMigrator;
+    private repairer: ArtifactRepairer;
 
 
 
@@ -285,6 +288,15 @@ export class ArtifactStore {
             () => this.getOutputFormat(),
             (folderUri: vscode.Uri) => this.loadFromFolder(folderUri),
             () => this.syncToFiles(),
+        );
+        this.repairer = new ArtifactRepairer(
+            () => this.sourceFolder,
+            (ms: number) => { this._syncingUntil = ms; },
+            () => this.markDirty(),
+            () => this.getOutputFormat(),
+            () => this.syncToFiles(),
+            (folderUri: vscode.Uri) => this.findAllJsonFiles(folderUri),
+            (data: any, fileName: string) => this.detectArtifactType(data, fileName),
         );
     }
 
@@ -3353,72 +3365,7 @@ export class ArtifactStore {
      *   • story: strip unknown metadata fields
      */
     async fixAndSyncToFiles(): Promise<void> {
-        storeLogger.debug('[ArtifactStore] fixAndSyncToFiles: starting schema-aware repair pass');
-        const sourceFolder = this.sourceFolder;
-        if (!sourceFolder) {
-            storeLogger.debug('[ArtifactStore] fixAndSyncToFiles: no sourceFolder — falling back to plain syncToFiles');
-            this._dirty = true; // Force sync even if not otherwise dirty
-            await this.syncToFiles();
-            return;
-        }
-
-        // Mark syncing to suppress file-watcher
-        this._syncingUntil = Date.now() + 60_000;
-
-        try {
-            const allJsonFiles = await this.findAllJsonFiles(sourceFolder);
-            storeLogger.debug(`[ArtifactStore] fixAndSyncToFiles: found ${allJsonFiles.length} JSON files`);
-
-            let repaired = 0;
-            for (const fileUri of allJsonFiles) {
-                try {
-                    const raw = await vscode.workspace.fs.readFile(fileUri);
-                    const data = JSON.parse(Buffer.from(raw).toString('utf-8'));
-                    const sfBase = sourceFolder.path.replace(/\/$/, '');
-                    const fileName = fileUri.path.startsWith(sfBase)
-                        ? fileUri.path.slice(sfBase.length + 1)
-                        : fileUri.path.split('/').pop() || '';
-                    const artifactType = data.metadata?.artifactType || this.detectArtifactType(data, fileName);
-
-                    if (!artifactType || artifactType === 'unknown') continue;
-
-                    // Validate before repair — skip files that are already valid
-                    if (schemaValidator.isInitialized()) {
-                        const pre = schemaValidator.validate(artifactType, data, fileName);
-                        if (pre.valid) continue;
-                    }
-
-                    const fixed = repairArtifactData(data, artifactType, fileName);
-                    if (fixed !== data) {
-                        const repairFormat = this.getOutputFormat();
-                        if (repairFormat === 'json' || repairFormat === 'dual') {
-                            await vscode.workspace.fs.writeFile(
-                                fileUri,
-                                Buffer.from(JSON.stringify(fixed, null, 2), 'utf-8')
-                            );
-                        }
-                        // Intentionally NO markdown companion write here.
-                        // fixAndSyncToFiles repairs JSON only; syncToFiles is NOT
-                        // called afterward, so no derived MD is produced.
-                        repaired++;
-                        storeLogger.debug(`[ArtifactStore] fixAndSyncToFiles: repaired ${fileName}`);
-                    }
-                } catch (e) {
-                    storeLogger.debug(`[ArtifactStore] fixAndSyncToFiles: error repairing ${fileUri.fsPath}: ${e}`);
-                }
-            }
-
-            storeLogger.debug(`[ArtifactStore] fixAndSyncToFiles: repaired ${repaired}/${allJsonFiles.length} files`);
-
-            // NOTE: We intentionally do NOT call syncToFiles() here.
-            // syncToFiles() re-serialises from in-memory state which may still
-            // contain the unrepaired data, overwriting our on-disk fixes.
-            // The message handler will reload from folder after this method
-            // returns, which picks up the repaired files.
-
-        } finally {
-            this._syncingUntil = Date.now() + 500;
-        }
+        return this.repairer.fixAndSyncToFiles();
     }
 
     async syncToFiles(): Promise<void> {
@@ -3978,81 +3925,7 @@ export class ArtifactStore {
      * architecture, productBrief, testStrategy) existing values are preserved.
      */
     mergeFromState(data: Partial<BmadArtifacts>): void {
-        // Project name: only overwrite if currently empty
-        if (data.projectName && !this.artifacts.get('projectName')) {
-            this.artifacts.set('projectName', data.projectName);
-        }
-
-        // Singleton artifacts: keep existing, fill empty slots
-        if (data.vision && !this.artifacts.get('vision')) {
-            this.artifacts.set('vision', data.vision);
-        }
-        if (data.prd && !this.artifacts.get('prd')) {
-            this.artifacts.set('prd', data.prd);
-        }
-        if (data.architecture && !this.artifacts.get('architecture')) {
-            this.artifacts.set('architecture', data.architecture);
-        }
-        if (data.productBrief && !this.artifacts.get('productBrief')) {
-            this.artifacts.set('productBrief', data.productBrief);
-        }
-        if (data.testStrategy && !this.artifacts.get('testStrategy')) {
-            this.artifacts.set('testStrategy', data.testStrategy);
-        }
-
-        // Epics: merge by ID (add new epics, merge new stories into existing epics)
-        if (data.epics && data.epics.length > 0) {
-            const existing: Epic[] = this.artifacts.get('epics') || [];
-            const existingMap = new Map(existing.map(e => [e.id, e]));
-
-            for (const importedEpic of data.epics) {
-                const match = existingMap.get(importedEpic.id);
-                if (match) {
-                    // Merge stories into existing epic
-                    const existingStoryIds = new Set((match.stories || []).map(s => s.id));
-                    for (const story of importedEpic.stories || []) {
-                        if (!existingStoryIds.has(story.id)) {
-                            match.stories.push(story);
-                        }
-                    }
-                } else {
-                    existing.push(importedEpic);
-                }
-            }
-            this.artifacts.set('epics', existing);
-        }
-
-        // Requirements: merge by ID
-        if (data.requirements) {
-            const existing = this.artifacts.get('requirements') || { functional: [], nonFunctional: [], additional: [] };
-            const mergeList = (target: any[], source: any[]) => {
-                const ids = new Set(target.map((r: any) => r.id));
-                for (const item of source) {
-                    if (!ids.has(item.id)) {
-                        target.push(item);
-                    }
-                }
-            };
-            if (data.requirements.functional) mergeList(existing.functional, data.requirements.functional);
-            if (data.requirements.nonFunctional) mergeList(existing.nonFunctional, data.requirements.nonFunctional);
-            if (data.requirements.additional) mergeList(existing.additional, data.requirements.additional);
-            this.artifacts.set('requirements', existing);
-        }
-
-        // Test cases: merge by ID
-        if (data.testCases && data.testCases.length > 0) {
-            const existing: TestCase[] = this.artifacts.get('testCases') || [];
-            const existingIds = new Set(existing.map(tc => tc.id));
-            for (const tc of data.testCases) {
-                if (!existingIds.has(tc.id)) {
-                    existing.push(tc);
-                }
-            }
-            this.artifacts.set('testCases', existing);
-        }
-
-        this.notifyChange();
-        storeLogger.debug(`[ArtifactStore] mergeFromState: merged data into current project`);
+        mergeFromState(this.artifacts, () => this.notifyChange(), data);
     }
 
     /**
@@ -4100,97 +3973,7 @@ export class ArtifactStore {
      * Find an artifact by ID across all types
      */
     findArtifactById(id: string): { type: string; artifact: any } | null {
-        const state = this.getState();
-        
-        // Check vision
-        if (id === 'vision-1' && state.vision) {
-            return { type: 'vision', artifact: state.vision };
-        }
-
-        // Check PRD
-        if (id === 'prd-1' && state.prd) {
-            return { type: 'prd', artifact: state.prd };
-        }
-
-        // Check architecture
-        if (id === 'architecture-1' && state.architecture) {
-            return { type: 'architecture', artifact: state.architecture };
-        }
-
-        // Check product brief
-        if (id === 'product-brief-1' && state.productBrief) {
-            return { type: 'product-brief', artifact: state.productBrief };
-        }
-        
-        // Check requirements (functional)
-        const req = state.requirements?.functional.find(r => r.id === id);
-        if (req) {
-            return { type: 'requirement', artifact: req };
-        }
-
-        // Check requirements (non-functional)
-        const nfr = state.requirements?.nonFunctional?.find((r: any) => r.id === id);
-        if (nfr) {
-            return { type: 'requirement', artifact: nfr };
-        }
-        
-        // Check epics
-        const epic = state.epics?.find(e => e.id === id);
-        if (epic) {
-            return { type: 'epic', artifact: epic };
-        }
-        
-        // Check stories across all epics
-        for (const e of state.epics || []) {
-            const story = e.stories?.find(s => s.id === id);
-            if (story) {
-                return { type: 'story', artifact: { ...story, epicId: e.id } };
-            }
-        }
-
-        // Check use-cases across all epics
-        for (const e of state.epics || []) {
-            const uc = e.useCases?.find((u: any) => u.id === id);
-            if (uc) {
-                return { type: 'use-case', artifact: { ...uc, epicId: e.id } };
-            }
-        }
-
-        // Check test cases
-        const testCase = state.testCases?.find(tc => tc.id === id);
-        if (testCase) {
-            return { type: 'test-case', artifact: testCase };
-        }
-
-        // Check test strategies on epics (per-epic test strategies)
-        for (const e of state.epics || []) {
-            if (e.testStrategy && e.testStrategy.id === id) {
-                return { type: 'test-strategy', artifact: { ...e.testStrategy, epicId: e.id } };
-            }
-        }
-
-        // Check top-level test strategy (project singleton, backward compat)
-        if (state.testStrategy && (id === 'TS-1' || id === state.testStrategy.id)) {
-            return { type: 'test-strategy', artifact: state.testStrategy };
-        }
-        
-        // Check readiness reports (plural array — search by id or metadata.id).
-        // Without this, harness pre-flight at updateArtifact's top saw
-        // existingArtifact = {} for these types and auto-fix policies could
-        // clobber real content with placeholders (the same data-loss pattern
-        // that previously bit epic updates).
-        const readiness = state.readinessReports?.find((a: any) => a.id === id || a.metadata?.id === id);
-        if (readiness) {
-            return { type: 'readiness-report', artifact: readiness };
-        }
-
-        // Check sprint statuses (plural array — search by id or metadata.id)
-        const sprint = state.sprintStatuses?.find((a: any) => a.id === id || a.metadata?.id === id);
-        if (sprint) {
-            return { type: 'sprint-status', artifact: sprint };
-        }
-
-        return null;
+        return findArtifactById(this.getState(), id);
     }
 
     // ============================================
