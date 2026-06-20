@@ -271,7 +271,7 @@ export const WORKFLOW_REGISTRY: WorkflowDefinition[] = [
         tags: ['planning', 'ux', 'design']
     },
     {
-        id: 'bmad-spec',
+        id: 'aac-spec',
         name: 'Create Spec (V6)',
         description: 'Canonical transformer to distill input into machine-contract SPEC.md',
         module: 'bmm',
@@ -282,7 +282,7 @@ export const WORKFLOW_REGISTRY: WorkflowDefinition[] = [
         tags: ['planning', 'spec', 'distillation']
     },
     {
-        id: 'bmad-prd',
+        id: 'aac-prd',
         name: 'PRD Facilitator (V6)',
         description: 'Master PRD coach with structured discovery, stakes calibration, reviewer gates, decision logging',
         module: 'bmm',
@@ -293,7 +293,7 @@ export const WORKFLOW_REGISTRY: WorkflowDefinition[] = [
         tags: ['planning', 'prd', 'coaching']
     },
     {
-        id: 'bmad-ux',
+        id: 'aac-ux',
         name: 'UX Design (V6)',
         description: 'Master UX facilitation producing DESIGN.md and EXPERIENCE.md peer contracts',
         module: 'bmm',
@@ -423,7 +423,7 @@ export const WORKFLOW_REGISTRY: WorkflowDefinition[] = [
         tags: ['implementation', 'review', 'quality']
     },
     {
-        id: 'bmad-investigate',
+        id: 'aac-investigate',
         name: 'Investigate (V6)',
         description: 'Forensic case investigation with evidence-graded findings (Confirmed/Deduced/Hypothesized)',
         module: 'bmm',
@@ -1049,7 +1049,7 @@ export const WORKFLOW_REGISTRY: WorkflowDefinition[] = [
     // and improve existing agents/workflows via structured quality dimensions.
     // ============================================
     {
-        id: 'bmad-agent-builder',
+        id: 'aac-agent-builder',
         name: 'Agent Builder (BMB)',
         description: 'Build and quality-scan BMAD agents — cohesion analysis, enhancement opportunities, script detection',
         module: 'bmb',
@@ -1060,7 +1060,7 @@ export const WORKFLOW_REGISTRY: WorkflowDefinition[] = [
         tags: ['bmb', 'agent', 'quality', 'scan', 'builder']
     },
     {
-        id: 'bmad-workflow-builder',
+        id: 'aac-workflow-builder',
         name: 'Workflow Builder (BMB)',
         description: 'Build and quality-scan BMAD workflows — integrity checks, enhancement opportunities, script analysis',
         module: 'bmb',
@@ -1079,35 +1079,35 @@ export const WORKFLOW_REGISTRY: WorkflowDefinition[] = [
  */
 const LEGACY_WORKFLOW_PATH_TO_SKILL: Record<string, string> = {
     // BMM Analysis
-    'bmm/workflows/1-analysis/create-product-brief/workflow.md': 'bmad-product-brief',
-    'bmm/workflows/1-analysis/research/workflow-domain-research.md': 'bmad-domain-research',
-    'bmm/workflows/1-analysis/research/workflow-market-research.md': 'bmad-market-research',
-    'bmm/workflows/1-analysis/research/workflow-technical-research.md': 'bmad-technical-research',
+    'bmm/workflows/1-analysis/create-product-brief/workflow.md': 'aac-product-brief',
+    'bmm/workflows/1-analysis/research/workflow-domain-research.md': 'aac-domain-research',
+    'bmm/workflows/1-analysis/research/workflow-market-research.md': 'aac-market-research',
+    'bmm/workflows/1-analysis/research/workflow-technical-research.md': 'aac-technical-research',
     // BMM Planning
-    'bmm/workflows/2-plan-workflows/create-prd/workflow-create-prd.md': 'bmad-create-prd',
-    'bmm/workflows/2-plan-workflows/create-prd/workflow-edit-prd.md': 'bmad-edit-prd',
-    'bmm/workflows/2-plan-workflows/create-prd/workflow-validate-prd.md': 'bmad-validate-prd',
-'bmm/workflows/2-plan-workflows/create-ux-design/workflow.md': 'bmad-create-ux-design',
-    'bmm/workflows/2-plan-workflows/bmad-spec/workflow.md': 'bmad-spec',
-    'bmm/workflows/2-plan-workflows/bmad-prd/workflow.md': 'bmad-prd',
-    'bmm/workflows/2-plan-workflows/bmad-ux/workflow.md': 'bmad-ux',
+    'bmm/workflows/2-plan-workflows/create-prd/workflow-create-prd.md': 'aac-create-prd',
+    'bmm/workflows/2-plan-workflows/create-prd/workflow-edit-prd.md': 'aac-edit-prd',
+    'bmm/workflows/2-plan-workflows/create-prd/workflow-validate-prd.md': 'aac-validate-prd',
+'bmm/workflows/2-plan-workflows/create-ux-design/workflow.md': 'aac-create-ux-design',
+    'bmm/workflows/2-plan-workflows/bmad-spec/workflow.md': 'aac-spec',
+    'bmm/workflows/2-plan-workflows/bmad-prd/workflow.md': 'aac-prd',
+    'bmm/workflows/2-plan-workflows/bmad-ux/workflow.md': 'aac-ux',
     // BMM Solutioning
-    'bmm/workflows/3-solutioning/create-architecture/workflow.md': 'bmad-create-architecture',
-    'bmm/workflows/3-solutioning/create-epics-and-stories/workflow.md': 'bmad-create-epics-and-stories',
-    'bmm/workflows/3-solutioning/create-epics-and-stories/steps/step-02a-epic-enhancement.md': 'bmad-create-epics-and-stories',
-    'bmm/workflows/3-solutioning/create-epics-and-stories/steps/step-03a-story-enhancement.md': 'bmad-create-epics-and-stories',
-    'bmm/workflows/3-solutioning/check-implementation-readiness/workflow.md': 'bmad-create-epics-and-stories',
+    'bmm/workflows/3-solutioning/create-architecture/workflow.md': 'aac-create-architecture',
+    'bmm/workflows/3-solutioning/create-epics-and-stories/workflow.md': 'aac-create-epics-and-stories',
+    'bmm/workflows/3-solutioning/create-epics-and-stories/steps/step-02a-epic-enhancement.md': 'aac-create-epics-and-stories',
+    'bmm/workflows/3-solutioning/create-epics-and-stories/steps/step-03a-story-enhancement.md': 'aac-create-epics-and-stories',
+    'bmm/workflows/3-solutioning/check-implementation-readiness/workflow.md': 'aac-create-epics-and-stories',
     // BMM Implementation
-    'bmm/workflows/4-implementation/sprint-planning/workflow.yaml': 'bmad-sprint-planning',
-    'bmm/workflows/4-implementation/sprint-status/workflow.yaml': 'bmad-sprint-status',
-    'bmm/workflows/4-implementation/create-story/workflow.yaml': 'bmad-create-story',
-    'bmm/workflows/4-implementation/create-story/checklist.md': 'bmad-create-story',
-    'bmm/workflows/4-implementation/dev-story/workflow.yaml': 'bmad-dev-story',
-    'bmm/workflows/4-implementation/dev-story/checklist.md': 'bmad-dev-story',
-'bmm/workflows/4-implementation/bmad-investigate/workflow.md': 'bmad-investigate',
-    'bmm/workflows/4-implementation/code-review/workflow.yaml': 'bmad-review-adversarial-general',
-    'bmm/workflows/4-implementation/retrospective/workflow.yaml': 'bmad-retrospective',
-    'bmm/workflows/4-implementation/correct-course/workflow.yaml': 'bmad-retrospective',
+    'bmm/workflows/4-implementation/sprint-planning/workflow.yaml': 'aac-sprint-planning',
+    'bmm/workflows/4-implementation/sprint-status/workflow.yaml': 'aac-sprint-status',
+    'bmm/workflows/4-implementation/create-story/workflow.yaml': 'aac-create-story',
+    'bmm/workflows/4-implementation/create-story/checklist.md': 'aac-create-story',
+    'bmm/workflows/4-implementation/dev-story/workflow.yaml': 'aac-dev-story',
+    'bmm/workflows/4-implementation/dev-story/checklist.md': 'aac-dev-story',
+'bmm/workflows/4-implementation/bmad-investigate/workflow.md': 'aac-investigate',
+    'bmm/workflows/4-implementation/code-review/workflow.yaml': 'aac-review-adversarial-general',
+    'bmm/workflows/4-implementation/retrospective/workflow.yaml': 'aac-retrospective',
+    'bmm/workflows/4-implementation/correct-course/workflow.yaml': 'aac-retrospective',
     // BMM Review
     'bmm/workflows/4-review/security-audit/workflow.md': 'aac-review-security-audit',
     'bmm/workflows/4-review/ceo-scope-review/workflow.md': 'aac-review-ceo-scope-review',
@@ -1124,21 +1124,21 @@ const LEGACY_WORKFLOW_PATH_TO_SKILL: Record<string, string> = {
     'bmm/workflows/4-review/execution-task-protocol/workflow.yaml': 'aac-review-execution-task-protocol',
     'bmm/workflows/4-review/test-classification/workflow.yaml': 'aac-review-test-classification',
     // BMM Quick Flow
-    'bmm/workflows/bmad-quick-flow/quick-spec/workflow.md': 'bmad-quick-dev',
-    'bmm/workflows/bmad-quick-flow/quick-dev/workflow.md': 'bmad-quick-dev',
+    'bmm/workflows/bmad-quick-flow/quick-spec/workflow.md': 'aac-quick-dev',
+    'bmm/workflows/bmad-quick-flow/quick-dev/workflow.md': 'aac-quick-dev',
     // BMM QA
-    'bmm/workflows/qa-generate-e2e-tests/workflow.yaml': 'bmad-qa-generate-e2e-tests',
+    'bmm/workflows/qa-generate-e2e-tests/workflow.yaml': 'aac-qa-generate-e2e-tests',
     // BMM Supporting
-    'bmm/workflows/supporting/create-use-cases/workflow.yaml': 'bmad-create-epics-and-stories',
-    'bmm/workflows/supporting/create-use-cases/instructions.md': 'bmad-create-epics-and-stories',
-    'bmm/workflows/supporting/create-risks/workflow.yaml': 'bmad-create-epics-and-stories',
-    'bmm/workflows/supporting/create-definition-of-done/workflow.yaml': 'bmad-create-epics-and-stories',
+    'bmm/workflows/supporting/create-use-cases/workflow.yaml': 'aac-create-epics-and-stories',
+    'bmm/workflows/supporting/create-use-cases/instructions.md': 'aac-create-epics-and-stories',
+    'bmm/workflows/supporting/create-risks/workflow.yaml': 'aac-create-epics-and-stories',
+    'bmm/workflows/supporting/create-definition-of-done/workflow.yaml': 'aac-create-epics-and-stories',
     // BMM Utility
-    'bmm/workflows/document-project/workflow.yaml': 'bmad-document-project',
-    'bmm/workflows/generate-project-context/workflow.md': 'bmad-generate-project-context',
+    'bmm/workflows/document-project/workflow.yaml': 'aac-document-project',
+    'bmm/workflows/generate-project-context/workflow.md': 'aac-generate-project-context',
     // Core
-    'core/workflows/brainstorming/workflow.md': 'bmad-party-mode',
-    'core/workflows/party-mode/workflow.md': 'bmad-party-mode',
+    'core/workflows/brainstorming/workflow.md': 'aac-party-mode',
+    'core/workflows/party-mode/workflow.md': 'aac-party-mode',
     'core/workflows/convert-to-json/workflow.md': 'aac-agent-canvas-integrator',
     // TEA
     'tea/workflows/testarch/teach-me-testing/workflow.md': 'aac-tea-teach-me-testing',
@@ -1169,8 +1169,8 @@ const LEGACY_WORKFLOW_PATH_TO_SKILL: Record<string, string> = {
     'bmb/workflows/workflow/workflow-validate-max-parallel-workflow.md': 'aac-bmb-workflow',
     'bmb/workflows/workflow/workflow-rework-workflow.md': 'aac-bmb-workflow',
     // BMB V1.1.0 quality-scan skills
-    'bmb/workflows/bmb-agent-builder/workflow.md': 'bmad-agent-builder',
-    'bmb/workflows/bmb-workflow-builder/workflow.md': 'bmad-workflow-builder',
+    'bmb/workflows/bmb-agent-builder/workflow.md': 'aac-agent-builder',
+    'bmb/workflows/bmb-workflow-builder/workflow.md': 'aac-workflow-builder',
 };
 
 /**

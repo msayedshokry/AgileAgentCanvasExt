@@ -618,7 +618,7 @@ interface ElicitationMethod {
  * Returns an array of ElicitationMethod objects.
  */
 export function loadElicitationMethods(extensionUri: vscode.Uri): ElicitationMethod[] {
-    const csvPath = path.join(extensionUri.fsPath, 'resources', BMAD_RESOURCE_DIR, 'skills', 'bmad-advanced-elicitation', 'methods.csv');
+    const csvPath = path.join(extensionUri.fsPath, 'resources', BMAD_RESOURCE_DIR, 'skills', 'aac-advanced-elicitation', 'methods.csv');
 
     try {
         const raw = fs.readFileSync(csvPath, 'utf-8');
@@ -1009,7 +1009,7 @@ const PHASE_MAP: Record<string, { label: string; order: number }> = {
     '2-plan-workflows':        { label: 'Planning',       order: 2 },
     '3-solutioning':           { label: 'Solutioning',    order: 3 },
     '4-implementation':        { label: 'Implementation', order: 4 },
-    'bmad-quick-flow':         { label: 'Quick Flow',     order: 5 },
+    'aac-quick-flow':         { label: 'Quick Flow',     order: 5 },
     'document-project':        { label: 'Documentation',  order: 6 },
     'generate-project-context':{ label: 'Documentation',  order: 6 },
     'generate-readme':         { label: 'Documentation',  order: 6 },
@@ -1165,22 +1165,22 @@ export function loadBmmWorkflows(resourcesRoot: string): BmmWorkflowInfo[] {
  */
 function resolveSkillPhase(skillName: string): { label: string; order: number } {
     // bmad-* core workflows
-    if (skillName.startsWith('bmad-product-brief') || skillName.startsWith('bmad-domain') || skillName.startsWith('bmad-market')) {
+    if (skillName.startsWith('aac-product-brief') || skillName.startsWith('aac-domain') || skillName.startsWith('aac-market')) {
         return { label: 'Analysis', order: 1 };
     }
-    if (skillName.startsWith('bmad-create-prd') || skillName.startsWith('bmad-edit-prd') || skillName.startsWith('bmad-validate-prd') || skillName.startsWith('bmad-create-epics') || skillName.startsWith('bmad-sprint')) {
+    if (skillName.startsWith('aac-create-prd') || skillName.startsWith('aac-edit-prd') || skillName.startsWith('aac-validate-prd') || skillName.startsWith('aac-create-epics') || skillName.startsWith('aac-sprint')) {
         return { label: 'Planning', order: 2 };
     }
-    if (skillName.startsWith('bmad-create-architecture') || skillName.startsWith('bmad-create-ux') || skillName.startsWith('bmad-create-story')) {
+    if (skillName.startsWith('aac-create-architecture') || skillName.startsWith('aac-create-ux') || skillName.startsWith('aac-create-story')) {
         return { label: 'Solutioning', order: 3 };
     }
-    if (skillName.startsWith('bmad-dev-story') || skillName.startsWith('bmad-quick-dev') || skillName.startsWith('bmad-qa-generate')) {
+    if (skillName.startsWith('aac-dev-story') || skillName.startsWith('aac-quick-dev') || skillName.startsWith('aac-qa-generate')) {
         return { label: 'Implementation', order: 4 };
     }
-    if (skillName.startsWith('bmad-quick')) {
+    if (skillName.startsWith('aac-quick')) {
         return { label: 'Quick Flow', order: 5 };
     }
-    if (skillName.startsWith('bmad-document') || skillName.startsWith('bmad-generate') || skillName.startsWith('aac-generate') || skillName.startsWith('bmad-index-docs')) {
+    if (skillName.startsWith('aac-document') || skillName.startsWith('aac-generate') || skillName.startsWith('aac-generate') || skillName.startsWith('aac-index-docs')) {
         return { label: 'Documentation', order: 6 };
     }
     // TEA workflows
@@ -1196,7 +1196,7 @@ function resolveSkillPhase(skillName: string): { label: string; order: number } 
         return { label: 'Meta-Build', order: 9 };
     }
     // Review skills
-    if (skillName.startsWith('aac-review') || skillName.startsWith('bmad-review')) {
+    if (skillName.startsWith('aac-review') || skillName.startsWith('aac-review')) {
         return { label: 'Review', order: 10 };
     }
     // Supporting / misc
