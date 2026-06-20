@@ -1,4 +1,5 @@
 import { createLogger } from '../utils/logger';
+import { pickChanges } from './reducer-helpers';
 import type {
     ArtifactReducerCtx,
     ArtifactReducerFn,
@@ -7,35 +8,6 @@ import type {
 
 const bmmLogger = createLogger('bmm-reductions');
 const logDebug = (...args: unknown[]) => bmmLogger.debug(...args);
-
-/**
- * Pick only defined fields from the wire packet (changes) using the given
- * allowlist, returning a fresh `Record<string, unknown>` with just those
- * fields set.  Replaces the boilerplate that was duplicated across all
- * fourteen BMM reducer bodies (and mirrors the same shape in cis/tea/l1):
- *
- *     for (const f of [
- *         'a', 'b', 'c',
- *     ]) {
- *         if ((changes as any)[f] !== undefined) upd[f] = (changes as any)[f];
- *     }
- *
- * with a single line:
- *
- *     Object.assign(upd, pickChanges(changes, ['a', 'b', 'c']));
- *
- * The inline-array allowlist stays grep-discoverable (any reader can find
- * the field list by grepping `pickChanges(changes, [` in this file).  Future
- * reducers can adopt the same shape by calling this helper instead of
- * writing the indexed-access for-loop boilerplate by hand.
- */
-function pickChanges(changes: any, fieldList: readonly string[]): Record<string, any> {
-    const out: Record<string, any> = {};
-    for (const f of fieldList) {
-        if (changes[f] !== undefined) out[f] = changes[f];
-    }
-    return out;
-}
 
 /**
  * BMM module artifact reducers — extracted from
