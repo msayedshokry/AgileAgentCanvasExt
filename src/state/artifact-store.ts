@@ -6,11 +6,12 @@ import { openChat } from '../commands/chat-bridge';
 import { createLogger } from '../utils/logger';
 import { SprintStatusSync } from './sprint-status-sync';
 import { ArtifactFileWriter } from './artifact-file-writer';
+import { ArtifactMigrator } from './artifact-migrator';
+import { repairArtifactData } from './schema-artifact-mapper';
 import { resolveArtifactTargetUri, writeJsonFile, writeMarkdownCompanion, normalizeLegacyArtifact } from './artifact-file-io';
 import { schemaValidator } from './schema-validator';
 import { harnessEngine } from '../harness/policy-engine';
 import { harnessFeedback } from '../harness/harness-feedback';
-import { repairDataWithSchema } from './schema-repair-engine';
 import {
     BmadArtifacts,
     BmadMetadata,
@@ -274,6 +275,7 @@ export class ArtifactStore {
     private _fixInProgress: Promise<void> | null = null;
     private sprintSync: SprintStatusSync;
     private fileWriter: ArtifactFileWriter;
+    private migrator: ArtifactMigrator;
 
     /**
      * Build the epic-scoped directory path for a given epic ID.
@@ -294,6 +296,7 @@ export class ArtifactStore {
         this.initializeDefaultState();
         this.sprintSync = new SprintStatusSync(() => this.sourceFolder, () => this.artifacts, () => this.sourceFiles, () => this.getOutputFormat(), (ms: number) => { this._syncingUntil = ms; });
         this.fileWriter = new ArtifactFileWriter(this.sourceFiles, () => this.sourceFolder, () => this.getOutputFormat());
+        this.migrator = new ArtifactMigrator();
     }
 
     private initializeDefaultState() {
@@ -3628,7 +3631,7 @@ export class ArtifactStore {
                 // ─── Migration auto-detection ────────────────────────────
                 // 1. Migrate any legacy implementation/ directory to single-source story files.
                 //    Runs once per project load; fire-and-forget, does not block load path.
-                void this.migrateImplementationFolder(folderUri);
+                void this.migrator.migrateImplementationFolder(folderUri);
 
                 // 2. Check if epics.json still has inline story objects (pre-migration).
                 // Show a one-time nudge per session.
@@ -4722,7 +4725,7 @@ export class ArtifactStore {
                         if (pre.valid) continue;
                     }
 
-                    const fixed = this.repairArtifactData(data, artifactType, fileName);
+                    const fixed = repairArtifactData(data, artifactType, fileName);
                     if (fixed !== data) {
                         const repairFormat = this.getOutputFormat();
                         if (repairFormat === 'json' || repairFormat === 'dual') {
@@ -4753,496 +4756,6 @@ export class ArtifactStore {
         } finally {
             this._syncingUntil = Date.now() + 500;
         }
-    }
-
-    /**
-     * Apply targeted schema-conformance repairs to an artifact's raw JSON data.
-     * Returns a new object if changes were made, or the original object if no
-     * repairs were needed.
-     */
-    private repairArtifactData(
-        data: Record<string, any>,
-        artifactType: string,
-        fileName: string
-    ): Record<string, any> {
-        // Guard against null/undefined/non-object input (e.g. corrupted JSON files)
-        if (!data || typeof data !== 'object' || Array.isArray(data)) {
-            return data;
-        }
-
-        // Work on a deep copy so we don't mutate the caller's reference
-        const d = JSON.parse(JSON.stringify(data));
-        let changed = false;
-
-        // ── 0) Schema-driven automatic repair ──
-        // Walk the schema tree and fix type mismatches, missing required fields,
-        // extra properties, invalid enums, min/max violations, etc.
-        // Runs BEFORE the hardcoded per-type repairs so they can override.
-        if (schemaValidator.isInitialized()) {
-            const rawSchema = schemaValidator.getRawSchema(artifactType);
-            if (rawSchema) {
-                const result = repairDataWithSchema(d, rawSchema);
-                if (result.changed) {
-                    changed = true;
-                    for (const r of result.repairs) {
-                        storeLogger.debug(
-                            `[ArtifactStore] schema-repair: ${r} in ${fileName}`
-                        );
-                    }
-                }
-            }
-        }
-
-        // ── 1) Ensure { metadata, content } wrapper for types that require it ──
-        const wrappedTypes = new Set([
-            'product-brief', 'vision', 'prd', 'architecture', 'epics', 'epic',
-            'story', 'research', 'ux-design', 'readiness-report', 'sprint-status',
-            'retrospective', 'change-proposal', 'code-review', 'tech-spec',
-            'project-overview', 'project-context',
-            'test-design', 'test-design-qa', 'test-design-architecture',
-            'traceability-matrix', 'test-review', 'nfr-assessment',
-            'test-framework', 'ci-pipeline', 'automation-summary', 'atdd-checklist',
-            'storytelling', 'problem-solving', 'innovation-strategy', 'design-thinking',
-            'risks', 'definition-of-done', 'fit-criteria', 'success-metrics',
-        ]);
-
-        // Use-cases have a FLAT schema (no metadata/content wrapper)
-        const flatTypes = new Set(['use-case']);
-
-        if (wrappedTypes.has(artifactType) && !d.metadata && !d.content) {
-            // File is bare data without wrapper — wrap it, then continue
-            // through the remaining repair steps (do NOT early-return).
-            const now = new Date().toISOString();
-            const contentCopy = { ...d };
-            // Clear all keys on d, then set metadata + content
-            for (const key of Object.keys(d)) {
-                delete d[key];
-            }
-            d.metadata = {
-                schemaVersion: '1.0.0',
-                artifactType: artifactType,
-                workflowName: 'agileagentcanvas',
-                timestamps: { created: now, lastModified: now },
-                status: contentCopy.status || 'draft',
-            };
-            // Remove status from content since it's in metadata
-            delete contentCopy.status;
-            d.content = contentCopy;
-            changed = true;
-        }
-
-        // ── 2) Fix metadata.timestamps ──
-        if (d.metadata && typeof d.metadata === 'object') {
-            if (!d.metadata.timestamps) {
-                const now = new Date().toISOString();
-                d.metadata.timestamps = { created: now, lastModified: now };
-                changed = true;
-            } else if (!d.metadata.timestamps.created) {
-                d.metadata.timestamps.created = new Date().toISOString();
-                changed = true;
-            }
-
-            // Ensure required metadata fields
-            if (!d.metadata.schemaVersion) {
-                d.metadata.schemaVersion = '1.0.0';
-                changed = true;
-            }
-            if (!d.metadata.artifactType) {
-                d.metadata.artifactType = artifactType;
-                changed = true;
-            }
-        }
-
-        // ── 3) Product-brief / vision specific repairs ──
-        if ((artifactType === 'product-brief' || artifactType === 'vision') && d.content) {
-            // Ensure content.vision exists (required by schema)
-            if (!d.content.vision) {
-                d.content.vision = {};
-                changed = true;
-                storeLogger.debug(
-                    `[ArtifactStore] fixAndSyncToFiles: added empty content.vision to ${fileName}`
-                );
-            }
-
-            // Move stray content fields into content.vision where they belong
-            if (d.content.problemStatement && !d.content.vision.problemStatement) {
-                d.content.vision.problemStatement = d.content.problemStatement;
-                changed = true;
-            }
-            if (d.content.valueProposition && !d.content.vision.uniqueValueProposition) {
-                d.content.vision.uniqueValueProposition = d.content.valueProposition;
-                changed = true;
-            }
-
-            // Rename successCriteria to successMetrics (schema uses successMetrics)
-            if (d.content.successCriteria && !d.content.successMetrics) {
-                d.content.successMetrics = Array.isArray(d.content.successCriteria)
-                    ? d.content.successCriteria.map((c: any) =>
-                        typeof c === 'string' ? { metric: c, description: c } : c
-                    )
-                    : d.content.successCriteria;
-                changed = true;
-            }
-
-            // Ensure content.productName exists (required by schema)
-            if (!d.content.productName) {
-                d.content.productName = d.metadata?.projectName || '';
-                changed = true;
-            }
-
-            // Coerce targetUsers strings to { persona, description } objects
-            if (Array.isArray(d.content.targetUsers)) {
-                const users = d.content.targetUsers;
-                let coerced = false;
-                for (let i = 0; i < users.length; i++) {
-                    if (typeof users[i] === 'string') {
-                        users[i] = { persona: users[i], description: '' };
-                        coerced = true;
-                    }
-                }
-                if (coerced) {
-                    changed = true;
-                    storeLogger.debug(
-                        `[ArtifactStore] fixAndSyncToFiles: coerced targetUsers strings to objects in ${fileName}`
-                    );
-                }
-            }
-
-        }
-
-        // ── 3b) PRD specific repairs (M1) ──
-        if (artifactType === 'prd' && d.content) {
-            // Ensure required content fields exist
-            if (!d.content.productOverview) {
-                d.content.productOverview = {};
-                changed = true;
-                storeLogger.debug(
-                    `[ArtifactStore] fixAndSyncToFiles: added empty content.productOverview to ${fileName}`
-                );
-            }
-            if (!d.content.requirements) {
-                d.content.requirements = {};
-                changed = true;
-                storeLogger.debug(
-                    `[ArtifactStore] fixAndSyncToFiles: added empty content.requirements to ${fileName}`
-                );
-            }
-        }
-
-        // ── 3c) Architecture specific repairs (M2) ──
-        if (artifactType === 'architecture' && d.content) {
-            // Ensure required content fields exist
-            if (!d.content.overview) {
-                d.content.overview = {};
-                changed = true;
-                storeLogger.debug(
-                    `[ArtifactStore] fixAndSyncToFiles: added empty content.overview to ${fileName}`
-                );
-            }
-            if (!d.content.decisions) {
-                d.content.decisions = [];
-                changed = true;
-                storeLogger.debug(
-                    `[ArtifactStore] fixAndSyncToFiles: added empty content.decisions to ${fileName}`
-                );
-            }
-        }
-
-        // ── 3d) Test-design / test-strategy / test-cases specific repairs (M3) ──
-        if ((artifactType === 'test-design' || artifactType === 'test-design-qa'
-            || artifactType === 'test-design-architecture'
-            || artifactType === 'test-strategy' || artifactType === 'test-cases'
-            || artifactType === 'test-case') && d.content) {
-            // All test design variants share the same schema structure
-            // Ensure required content fields exist
-            if (!d.content.summary) {
-                d.content.summary = {};
-                changed = true;
-                storeLogger.debug(
-                    `[ArtifactStore] fixAndSyncToFiles: added empty content.summary to ${fileName}`
-                );
-            }
-            if (!d.content.coveragePlan) {
-                d.content.coveragePlan = {};
-                changed = true;
-                storeLogger.debug(
-                    `[ArtifactStore] fixAndSyncToFiles: added empty content.coveragePlan to ${fileName}`
-                );
-            }
-        }
-
-
-        // ── 4) Use-case specific repairs ──
-        if (flatTypes.has(artifactType)) {
-            // Use-case schema: { id, title, summary, ... } at root — NO wrapper
-            // If the file has a metadata/content wrapper, unwrap it
-            if (d.metadata && d.content && typeof d.content === 'object') {
-                const unwrapped = { ...d.content };
-                // Clear all keys on d first to avoid orphan properties
-                for (const key of Object.keys(d)) {
-                    delete d[key];
-                }
-                // Re-populate with just the unwrapped content
-                Object.assign(d, unwrapped);
-                changed = true;
-            }
-
-            // Ensure required fields: id, title, summary
-            if (!d.id) {
-                // Try to derive from filename (e.g. "uc-01.json" → "UC-01")
-                const match = fileName.match(/uc[_-]?(\d+)/i);
-                if (match) {
-                    d.id = `UC-${match[1].padStart(2, '0')}`;
-                } else {
-                    d.id = `UC-${Date.now() % 10000}`;
-                }
-                changed = true;
-            } else {
-                // Normalise ID to match pattern ^UC-[0-9]+$
-                // Handles: UC_01, UC01, UC-1-1, UC-01-configure-qa, etc.
-                const ucMatch = d.id.match(/^UC[_-]?(\d+)/i);
-                if (ucMatch) {
-                    const normalised = `UC-${ucMatch[1].padStart(2, '0')}`;
-                    if (d.id !== normalised) {
-                        d.id = normalised;
-                        changed = true;
-                    }
-                }
-            }
-
-            if (!d.title) {
-                d.title = d.scenario?.context || d.summary || `Use Case ${d.id}`;
-                changed = true;
-            }
-            if (!d.summary) {
-                d.summary = d.title || '';
-                changed = true;
-            }
-        }
-
-        // ── 5) Epics specific repairs ──
-        if ((artifactType === 'epics' || artifactType === 'epic') && d.metadata && d.content) {
-
-            // Ensure content.epics exists (required)
-            if (!d.content.epics && Array.isArray(d.content)) {
-                // Content is the array itself — wrap it
-                d.content = { epics: d.content };
-                changed = true;
-            } else if (!d.content.epics) {
-                // Content is an object but missing the required epics array
-                d.content.epics = [];
-                changed = true;
-                storeLogger.debug(
-                    `[ArtifactStore] fixAndSyncToFiles: added empty content.epics to ${fileName}`
-                );
-            }
-
-
-            // Fix use-case IDs inside epics
-            if (Array.isArray(d.content.epics)) {
-                for (const epic of d.content.epics) {
-                    if (Array.isArray(epic.useCases)) {
-                        for (const uc of epic.useCases) {
-                            if (uc.id) {
-                                // Handles: UC_01, UC01, UC-1-1, UC-01-configure-qa, etc.
-                                const ucMatch = uc.id.match(/^UC[_-]?(\d+)/i);
-                                if (ucMatch) {
-                                    const normalised = `UC-${ucMatch[1].padStart(2, '0')}`;
-                                    if (uc.id !== normalised) {
-                                        uc.id = normalised;
-                                        changed = true;
-                                    }
-                                }
-                            }
-                            // Ensure title and summary on embedded use-cases
-                            if (!uc.title && uc.scenario?.context) {
-                                uc.title = uc.scenario.context;
-                                changed = true;
-                            }
-                            if (!uc.summary && uc.title) {
-                                uc.summary = uc.title;
-                                changed = true;
-                            }
-                        }
-                    }
-
-                    // Fix inline stories: ensure required fields or convert to string refs
-                    if (Array.isArray(epic.stories)) {
-                        for (let si = 0; si < epic.stories.length; si++) {
-                            const story = epic.stories[si];
-                            if (typeof story !== 'object' || story === null) continue;
-
-                            // Ensure required fields for inline story schema compliance
-                            if (!story.id) {
-                                // No id at all — convert to string ref if possible
-                                if (story.storyId) {
-                                    epic.stories[si] = story.storyId;
-                                    changed = true;
-                                    storeLogger.debug(
-                                        `[ArtifactStore] fixAndSyncToFiles: converted inline story with storyId "${story.storyId}" to string ref in ${fileName}`
-                                    );
-                                    continue;
-                                }
-                                // Generate an id from epic + index
-                                story.id = `S-${epic.id?.replace(/\D/g, '') || '0'}.${si + 1}`;
-                                changed = true;
-                            }
-                            if (!story.title) {
-                                story.title = story.userStory?.formatted || story.id || 'Untitled Story';
-                                changed = true;
-                            }
-                            if (!story.userStory) {
-                                story.userStory = {
-                                    formatted: story.title || `Story ${story.id}`
-                                };
-                                changed = true;
-                                storeLogger.debug(
-                                    `[ArtifactStore] fixAndSyncToFiles: added missing userStory to inline story ${story.id} in ${fileName}`
-                                );
-                            }
-                            if (!story.acceptanceCriteria) {
-                                story.acceptanceCriteria = [
-                                    { criterion: `${story.title || story.id} works as expected` }
-                                ];
-                                changed = true;
-                                storeLogger.debug(
-                                    `[ArtifactStore] fixAndSyncToFiles: added placeholder acceptanceCriteria to inline story ${story.id} in ${fileName}`
-                                );
-                            }
-
-                            // Fix uxReferences: schema expects string[], data may have objects
-                            if (Array.isArray(story.uxReferences)) {
-                                let uxChanged = false;
-                                story.uxReferences = story.uxReferences.map((ref: any) => {
-                                    if (typeof ref === 'object' && ref !== null) {
-                                        uxChanged = true;
-                                        // Flatten object to descriptive string
-                                        return [ref.type, ref.reference, ref.description]
-                                            .filter(Boolean).join(': ');
-                                    }
-                                    return ref;
-                                });
-                                if (uxChanged) {
-                                    changed = true;
-                                    storeLogger.debug(
-                                        `[ArtifactStore] fixAndSyncToFiles: flattened uxReferences objects to strings in ${fileName} story ${story.id || '?'}`
-                                    );
-                                }
-                            }
-                        }
-                    }
-
-                    // Fix fitCriteria.security invalid enum values
-                    if (epic.fitCriteria?.security && Array.isArray(epic.fitCriteria.security)) {
-                        const validCategories = new Set([
-                            'authentication', 'authorization', 'encryption',
-                            'audit', 'compliance', 'data-protection', 'network-security'
-                        ]);
-                        const validVerificationMethods = new Set([
-                            'security-audit', 'penetration-test', 'code-review',
-                            'compliance-review', 'inspection'
-                        ]);
-                        const categoryMap: Record<string, string> = {
-                            'hipaa': 'compliance',
-                            'gdpr': 'compliance',
-                            'soc2': 'compliance',
-                            'regulatory': 'compliance',
-                            'regulatory-compliance': 'compliance',
-                            'access-control': 'authorization',
-                            'identity': 'authentication',
-                            'privacy': 'data-protection',
-                            'data-privacy': 'data-protection',
-                            'data-security': 'data-protection',
-                            'data-integrity': 'data-protection',
-                            'infrastructure': 'network-security',
-                            'network': 'network-security',
-                            'api-security': 'network-security',
-                            'firewall': 'network-security',
-                            'logging': 'audit',
-                            'monitoring': 'audit',
-                            'audit-logging': 'audit',
-                            'crypto': 'encryption',
-                            'cryptography': 'encryption',
-                            'tls': 'encryption',
-                            'ssl': 'encryption',
-                        };
-                        const verificationMap: Record<string, string> = {
-                            'audit': 'security-audit',
-                            'pentest': 'penetration-test',
-                            'pen-test': 'penetration-test',
-                            'review': 'code-review',
-                            'manual-review': 'code-review',
-                            'compliance-audit': 'compliance-review',
-                            'automated-scan': 'security-audit',
-                            'scan': 'security-audit',
-                            'test': 'penetration-test',
-                            'testing': 'penetration-test',
-                            'manual-inspection': 'inspection',
-                            'visual-inspection': 'inspection',
-                        };
-                        for (const sc of epic.fitCriteria.security) {
-                            if (sc.category && !validCategories.has(sc.category)) {
-                                const mapped = categoryMap[sc.category.toLowerCase()];
-                                const prev = sc.category;
-                                sc.category = mapped || 'compliance';
-                                changed = true;
-                                storeLogger.debug(
-                                    `[ArtifactStore] fixAndSyncToFiles: remapped fitCriteria.security category "${prev}" → "${sc.category}" in ${fileName} epic ${epic.id || '?'}`
-                                );
-                            }
-                            if (sc.verificationMethod && !validVerificationMethods.has(sc.verificationMethod)) {
-                                const mapped = verificationMap[sc.verificationMethod.toLowerCase()];
-                                const prev = sc.verificationMethod;
-                                sc.verificationMethod = mapped || 'inspection';
-                                changed = true;
-                                storeLogger.debug(
-                                    `[ArtifactStore] fixAndSyncToFiles: remapped fitCriteria.security verificationMethod "${prev}" → "${sc.verificationMethod}" in ${fileName} epic ${epic.id || '?'}`
-                                );
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if (artifactType === 'story' && d.metadata && d.content) {
-            // Migrate legacy storyId → id
-            if ((!d.content.id || d.content.id === '') && d.content.storyId) {
-                d.content.id = d.content.storyId;
-                delete d.content.storyId;
-                changed = true;
-                storeLogger.debug(
-                    `[ArtifactStore] fixAndSyncToFiles: migrated storyId → id ("${d.content.id}") in ${fileName}`
-                );
-            }
-
-            // Derive epicId from filename prefix if missing (e.g. "1-2-foo.json" → "1")
-            if (!d.content.epicId && fileName) {
-                const epicMatch = fileName.match(/^(\d+)-/);
-                if (epicMatch) {
-                    d.content.epicId = epicMatch[1];
-                    changed = true;
-                    storeLogger.debug(
-                        `[ArtifactStore] fixAndSyncToFiles: derived epicId "${d.content.epicId}" from filename ${fileName}`
-                    );
-                }
-            }
-
-            // Ensure content.title (required by schema)
-            if (!d.content.title) {
-                d.content.title = d.content.userStory
-                    || d.content.storyId
-                    || d.metadata?.artifactType
-                    || 'Untitled Story';
-                changed = true;
-                storeLogger.debug(
-                    `[ArtifactStore] fixAndSyncToFiles: added missing content.title to ${fileName}`
-                );
-            }
-        }
-
-
-        return changed ? d : data;
     }
 
     async syncToFiles(): Promise<void> {
@@ -5639,7 +5152,17 @@ export class ArtifactStore {
      * Only deletes if we have a recorded source file for the given key.
      */
     private async deleteSourceFile(key: string): Promise<void> {
-        return this.fileWriter.deleteSourceFile(key);
+        if (!this.sourceFiles.has(key)) return;
+        const fileUri = this.sourceFiles.get(key)!;
+        try {
+            await vscode.workspace.fs.delete(fileUri);
+            this.sourceFiles.delete(key);
+            logDebug(`Deleted ${key} file from disk: ${fileUri.fsPath}`);
+        } catch (e) {
+            // File may already be gone
+            this.sourceFiles.delete(key);
+            logDebug(`Could not delete ${key} file (may already be removed):`, e);
+        }
     }
     
     /**
@@ -5727,152 +5250,6 @@ export class ArtifactStore {
      *
      * Runs fire-and-forget — does not block the load path.
      */
-    private async migrateImplementationFolder(folderUri: vscode.Uri): Promise<void> {
-        try {
-            // The implementation/ directories live inside each epic folder:
-            //   epics/epic-{N}/implementation/
-            // NOT at the project root. Iterate all epic-{N} dirs and migrate each.
-            const epicsDir = vscode.Uri.joinPath(folderUri, 'epics');
-            let epicEntries: [string, vscode.FileType][];
-            try {
-                epicEntries = await vscode.workspace.fs.readDirectory(epicsDir);
-            } catch {
-                // No epics/ directory — nothing to migrate
-                return;
-            }
-
-            let totalMigrated = 0;
-            let totalSkipped = 0;
-
-            for (const [epicDirName, epicType] of epicEntries) {
-                if (epicType !== vscode.FileType.Directory) { continue; }
-
-                const epicFolderUri = vscode.Uri.joinPath(epicsDir, epicDirName);
-                const implDir = vscode.Uri.joinPath(epicFolderUri, 'implementation');
-
-                // Check if this epic has an implementation/ subdirectory
-                try {
-                    await vscode.workspace.fs.stat(implDir);
-                } catch {
-                    continue; // this epic has no implementation/ — skip
-                }
-
-                storeLogger.debug(`[Migration] Detected legacy implementation/ in ${epicDirName} — migrating...`);
-
-                let migratedCount = 0;
-                let skippedCount = 0;
-
-                // Pre-read stories/ directory so we can do prefix-based matching
-                // (implementation/ may use slightly different slugs than stories/)
-                let existingStoryFiles: [string, vscode.FileType][] = [];
-                const storiesDirUri = vscode.Uri.joinPath(epicFolderUri, 'stories');
-                try {
-                    existingStoryFiles = await vscode.workspace.fs.readDirectory(storiesDirUri);
-                } catch { /* stories/ doesn't exist yet */ }
-
-                // Helper: extract story number prefix like "16.1-" from a filename
-                const storyPrefix = (fname: string) => {
-                    const m = fname.match(/^(\d+\.\d+(?:\.\d+)?)-/);
-                    return m ? m[1] + '-' : null;
-                };
-
-                const entries = await vscode.workspace.fs.readDirectory(implDir);
-                for (const [name, type] of entries) {
-                    if (type !== vscode.FileType.File || !name.endsWith('.json')) { continue; }
-
-                    try {
-                        const fileUri = vscode.Uri.joinPath(implDir, name);
-                        const rawBytes = await vscode.workspace.fs.readFile(fileUri);
-                        const raw = Buffer.from(rawBytes).toString('utf-8');
-                        const data = JSON.parse(raw);
-
-                        // Extract id and epicId from the story payload
-                        const storyId: string = data?.content?.id || data?.id || '';
-                        const epicId: string = data?.content?.epicId || data?.epicId || '';
-
-                        if (!storyId) {
-                            storeLogger.debug(`[Migration] Skipping ${name}: missing id field`);
-                            skippedCount++;
-                            continue;
-                        }
-
-                        // Canonical path: epics/epic-{N}/stories/
-                        // Derive epic folder from epicId if present, otherwise stay in current epic dir
-                        const resolvedEpicFolder = epicId
-                            ? vscode.Uri.joinPath(epicsDir, `epic-${epicId.replace(/\D/g, '')}`)
-                            : epicFolderUri;
-                        const storiesDir = vscode.Uri.joinPath(resolvedEpicFolder, 'stories');
-                        try { await vscode.workspace.fs.createDirectory(storiesDir); } catch { /* exists */ }
-
-                        // Re-read stories dir for this epic (may differ from epicFolderUri)
-                        let currentStoryFiles = existingStoryFiles;
-                        if (epicId && epicId.replace(/\D/g, '') !== epicDirName.replace(/\D/g, '')) {
-                            try { currentStoryFiles = await vscode.workspace.fs.readDirectory(storiesDir); } catch { currentStoryFiles = []; }
-                        }
-
-                        // Find an existing file in stories/ by story number prefix (fuzzy slug match)
-                        const prefix = storyPrefix(name);
-                        const existingMatch = prefix
-                            ? currentStoryFiles.find(([fn]) => fn.startsWith(prefix) && fn.endsWith('.json'))
-                            : undefined;
-
-                        let shouldWrite = true;
-                        let targetFilename = name; // default: keep implementation/ filename
-
-                        if (existingMatch) {
-                            const [existingName] = existingMatch;
-                            const existingUri = vscode.Uri.joinPath(storiesDir, existingName);
-                            const existingStat = await vscode.workspace.fs.stat(existingUri);
-
-                            if (existingStat.size >= rawBytes.byteLength) {
-                                // Existing file is same size or larger — leave it alone
-                                storeLogger.debug(`[Migration] ${existingName} already up-to-date (${existingStat.size}B ≥ ${rawBytes.byteLength}B) — skipping`);
-                                shouldWrite = false;
-                                skippedCount++;
-                            } else {
-                                // Implementation file is richer — delete old stub, write richer version
-                                storeLogger.debug(`[Migration] ${existingName} is smaller (${existingStat.size}B < ${rawBytes.byteLength}B) — replacing with richer version`);
-                                try { await vscode.workspace.fs.delete(existingUri); } catch { /* best-effort */ }
-                                targetFilename = existingName; // keep the original slug to avoid new dupes
-                            }
-                        }
-
-                        if (shouldWrite) {
-                            const canonicalUri = vscode.Uri.joinPath(storiesDir, targetFilename);
-                            await vscode.workspace.fs.writeFile(canonicalUri, rawBytes);
-                            storeLogger.debug(`[Migration] Migrated ${epicDirName}/implementation/${name} → stories/${targetFilename}`);
-                            migratedCount++;
-                        }
-                    } catch (err) {
-                        storeLogger.debug(`[Migration] Error processing ${epicDirName}/implementation/${name}: ${err}`);
-                        skippedCount++;
-                    }
-                }
-
-                // Rename implementation/ → .deprecated_implementation/ to exclude from future scans
-                const deprecatedDir = vscode.Uri.joinPath(epicFolderUri, '.deprecated_implementation');
-                try {
-                    await vscode.workspace.fs.rename(implDir, deprecatedDir, { overwrite: false });
-                    storeLogger.debug(`[Migration] ${epicDirName}: Renamed implementation/ → .deprecated_implementation/ (${migratedCount} migrated, ${skippedCount} skipped)`);
-                } catch (err) {
-                    storeLogger.debug(`[Migration] ${epicDirName}: Could not rename implementation/: ${err}`);
-                }
-
-                totalMigrated += migratedCount;
-                totalSkipped += skippedCount;
-            }
-
-            if (totalMigrated > 0) {
-                void vscode.window.showInformationMessage(
-                    `Migrated ${totalMigrated} story file${totalMigrated > 1 ? 's' : ''} from epic implementation/ folders to canonical stories/ locations. ` +
-                    `The old implementation/ folders have been renamed to .deprecated_implementation/ for safety.`
-                );
-            }
-        } catch (err) {
-            // Silent — migration is best-effort, should never break the load path
-            storeLogger.debug(`[Migration] migrateImplementationFolder failed: ${err}`);
-        }
-    }
 
     /**
      * Check if the project's epics.json still contains inline story objects.
@@ -6735,7 +6112,60 @@ export class ArtifactStore {
         state: BmadArtifacts,
         baseUri: vscode.Uri
     ): Promise<void> {
-    return this.fileWriter.saveGenericArtifactToFile(storeKey, fileSlug, artifact, state, baseUri);
+        let targetUri: vscode.Uri;
+
+        // Determine the output folder based on the artifact module
+        let folder: string;
+        const baseType = storeKey.split(':')[0];
+        const teaTypes = ['traceabilityMatrix', 'testReview', 'nfrAssessment', 'testFramework', 'ciPipeline', 'automationSummary', 'atddChecklist'];
+        const cisTypes = ['storytelling', 'problemSolving', 'innovationStrategy', 'designThinking'];
+        if (teaTypes.includes(baseType)) {
+            folder = 'testing';
+        } else if (cisTypes.includes(baseType)) {
+            folder = 'cis';
+        } else {
+            folder = 'bmm';
+        }
+        const folderUri = vscode.Uri.joinPath(baseUri, folder);
+        try {
+            await vscode.workspace.fs.createDirectory(folderUri);
+        } catch {
+            // Folder might already exist
+        }
+        targetUri = vscode.Uri.joinPath(folderUri, `${fileSlug}.json`);
+
+        // Build the JSON envelope: separate id/status into metadata, rest is content
+        const { id, status, ...contentFields } = artifact;
+        const jsonEnvelope = {
+            metadata: {
+                schemaVersion: '1.0.0',
+                artifactType: fileSlug,
+                workflowName: 'agileagentcanvas',
+                projectName: state.projectName,
+                timestamps: {
+                    created: new Date().toISOString(),
+                    lastModified: new Date().toISOString()
+                },
+                status: (status as string) || 'draft'
+            },
+            content: contentFields
+        };
+
+        // Write JSON if output format includes JSON
+        const outputFormat = this.getOutputFormat();
+        if (outputFormat === 'json' || outputFormat === 'dual') {
+            await writeJsonFile(targetUri, jsonEnvelope);
+            logDebug(`Saved ${fileSlug} to:`, targetUri.fsPath);
+        }
+
+        // Write markdown companion if output format includes markdown
+        if (outputFormat === 'markdown' || outputFormat === 'dual') {
+            const md = this.fileWriter.generateGenericArtifactMarkdown(fileSlug, artifact, state);
+            const mdUri = await writeMarkdownCompanion(targetUri, `${fileSlug}.md`, md);
+            logDebug('Saved markdown companion:', mdUri.fsPath);
+        }
+
+        this.sourceFiles.set(storeKey, targetUri);
     }
 
     /**
@@ -6749,7 +6179,77 @@ export class ArtifactStore {
         artifact: Record<string, unknown>,
         state: BmadArtifacts
     ): string {
-    return this.fileWriter.generateGenericArtifactMarkdown(fileSlug, artifact, state);
+        // Convert kebab-case to Title Case for heading
+        const title = fileSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        let md = `# ${state.projectName} - ${title}\n\n`;
+
+        const renderValue = (value: unknown, depth: number): string => {
+            if (value === null || value === undefined) return '';
+            if (typeof value === 'string') return value;
+            if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+            if (Array.isArray(value)) {
+                return value.map((item, i) => {
+                    if (typeof item === 'string') return `- ${item}`;
+                    if (typeof item === 'object' && item !== null) {
+                        const entries = Object.entries(item as Record<string, unknown>);
+                        if (entries.length === 0) return `- (empty)`;
+                        // For objects in arrays, render as a bullet with key-value sub-items
+                        const firstVal = entries[0][1];
+                        const label = typeof firstVal === 'string' ? firstVal : `Item ${i + 1}`;
+                        let result = `- **${label}**`;
+                        for (const [k, v] of entries.slice(typeof firstVal === 'string' ? 1 : 0)) {
+                            if (v === null || v === undefined) continue;
+                            if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
+                                result += `\n  - ${formatKey(k)}: ${v}`;
+                            } else if (Array.isArray(v)) {
+                                result += `\n  - ${formatKey(k)}: ${(v as unknown[]).filter(x => x != null).join(', ')}`;
+                            }
+                        }
+                        return result;
+                    }
+                    return `- ${String(item)}`;
+                }).join('\n');
+            }
+            if (typeof value === 'object') {
+                const entries = Object.entries(value as Record<string, unknown>);
+                return entries.map(([k, v]) => {
+                    if (v === null || v === undefined) return '';
+                    if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
+                        return `- **${formatKey(k)}**: ${v}`;
+                    }
+                    if (Array.isArray(v)) {
+                        return `**${formatKey(k)}**:\n${renderValue(v, depth + 1)}`;
+                    }
+                    if (typeof v === 'object') {
+                        return `**${formatKey(k)}**:\n${renderValue(v, depth + 1)}`;
+                    }
+                    return '';
+                }).filter(Boolean).join('\n');
+            }
+            return String(value);
+        };
+
+        const formatKey = (key: string): string => {
+            // camelCase to Title Case
+            return key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
+        };
+
+        // Skip id and status (already in header / metadata)
+        for (const [key, value] of Object.entries(artifact)) {
+            if (key === 'id' || key === 'status') continue;
+            if (value === null || value === undefined) continue;
+
+            const heading = formatKey(key);
+            md += `## ${heading}\n\n`;
+
+            if (typeof value === 'string') {
+                md += `${value}\n\n`;
+            } else {
+                md += `${renderValue(value, 0)}\n\n`;
+            }
+        }
+
+        return md;
     }
 
     /**
