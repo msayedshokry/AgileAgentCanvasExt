@@ -181,6 +181,26 @@ export interface Epic {
     id: string;
     title: string;
     goal: string;
+    /**
+     * Human-readable description of the epic's goal.  Optional
+     * canonical field that the LM-tool wire uses as a legacy
+     * synonym for `goal` (some LM prompts send `description`
+     * instead of `goal` because it's more LLM-friendly).  The
+     * `reduceEpic` reducer maps `description` → `goal` when
+     * description is set, so callers can send either spelling.
+     *
+     * NB: `description` is a canonical Epic field as of Phase 13
+     * (promoted from LM-wire-only). Pre-Phase 13, reducers used
+     * an ad-hoc narrow cast to accept the wire packet — that
+     * escape hatch was dropped here.
+     *
+     * @deprecated Prefer `goal` for new writes. `description` is
+     * retained for backward compatibility with legacy LM prompts
+     * that send it as an LLM-friendly synonym for `goal`. When
+     * both `description` and `goal` are supplied, the canonical
+     * `goal` wins (see `reduceEpic` precedence note).
+     */
+    description?: string;
     valueDelivered?: string;
     functionalRequirements: string[];
     nonFunctionalRequirements?: string[];

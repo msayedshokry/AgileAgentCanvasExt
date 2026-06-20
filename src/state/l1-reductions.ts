@@ -64,16 +64,23 @@ const reduceEpic: ArtifactReducerFn<'epic'> = (ctx, artifactId, changes) => {
         Object.assign(updatedEpic, changes.metadata);
     }
 
-    // Phase 12: LM tool wire sends a `description` field that this reducer
-    // maps to `Epic.goal`. `description` is NOT a canonical Epic field;
-    // the wire contract preserves it for backward compatibility with
-    // legacy LM prompts that use the LLM-friendlier `description`
-    // spelling. The narrow cast declares exactly the wire-only +
-    // metadata envelope carried by `BmadArtifactChange` (canonical
-    // `ArtifactChanges` adds `metadata?: BmadMetadata` to every payload).
-    const { metadata: _meta, description, ...topFields } = changes as Partial<Epic> & { metadata?: import('../types').BmadMetadata; description?: string };
+    // Phase 13: `description` is now a canonical optional field on `Epic`
+    // (promoted from LM-wire-only as part of the data-shape fix).  Legacy
+    // LM prompts that send `description` continue to work: this reducer
+    // maps `description` → `goal` so the canonical storage is in `goal`.
+    // The cast is gone — `changes: ArtifactChanges<Epic>` now includes
+    // `description?: string` natively through the canonical map.
+    const { metadata: _meta, description, ...topFields } = changes;
     if (description) { updatedEpic.goal = description; }
     Object.assign(updatedEpic, topFields);
+    // Precedence contract (Phase 13 round-up): when callers supply
+    // BOTH `description` and `goal`, the canonical `goal` wins — the
+    // `if (description)` block above seeds `goal` for description-only
+    // callers, and the Object.assign that follows overwrites it if a
+    // canonical `goal` was provided in the same changes packet.
+    // Intentional: canonical beats legacy synonym, but worth pinning
+    // here so future maintainers don't reshuffle and silently invert
+    // the precedence.
 
     epics[epicIndex] = updatedEpic;
     ctx.artifacts.set('epics', [...epics]);
@@ -162,6 +169,14 @@ const reduceStory: ArtifactReducerFn<'story'> = async (ctx, artifactId, changes)
         // an Epic-level concept, not on the canonical Story type). The narrow
         // `Partial<Story> & { epicId?: string }` cast declares the exact wire
         // contract for this single extra key.
+        // Phase 13 sweep: epicId is a creation-time parenting hint
+        // (which Epic does the new story attach to), NOT a Story-level
+        // attribute. After creation, the parent relationship is the
+        // containing Epic — promoting epicId to canonical Story would
+        // create two sources of truth for the same parent link. The
+        // narrow cast above is therefore the correct expression of the
+        // wire contract, not a candidate for canonical-field promotion
+        // like the previous description → goal case.
         let epicId = (changes as Partial<Story> & { epicId?: string }).epicId;
         if (!epicId) {
             const idMatch = artifactId.match(/^S?-?(\d+)[.\-]/i);
