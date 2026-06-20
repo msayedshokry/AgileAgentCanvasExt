@@ -129,26 +129,46 @@ export interface ArtifactReducerCtx {
  *
  * # Per-file allowlist convention
  *
- * The four reducer modules use two stylistic flavours of the
- * allowlist argument; both forms are accepted by
- * `pickChanges(changes: any, fieldList: readonly string[])` and
- * both are grep-discoverable:
+ * All four reducer files declare a module-level
+ * `const X_FIELDS: readonly string[]` for each reducer body's
+ * allowlist, then pass the named const to `pickChanges`:
  *
- * - **Inline array literal** (cis, tea, bmm style) — the field list
- *   appears directly inside the `Object.assign(upd, pickChanges(...))`
- *   call.  Used in 25 call sites across cis (4), tea (7), and bmm
- *   (14).  The field list is grep-discoverable by searching
- *   `pickChanges(changes, [` in each consuming file.
+ *     Object.assign(upd, pickChanges(changes, STORYTELLING_FIELDS));
  *
- * - **Const-var declared inside the reducer body** (l1 style) —
- *   used by `l1-reductions.ts::reduceTestDesign`, which declares its
- *   `contentFields` array as a `const` inside the reducer body and
- *   passes the variable name: `Object.assign(updatedTD, pickChanges(changes, contentFields))`.
- *   The const-var form keeps the field list close to the reducer
- *   body that consumes it.
+ * 26 named consts across the four files:
  *
- * Future reducers adopting the canonical pattern may use either
- * form — both are equally valid callers of the shared helper.
+ * | Module              | Consts | Reduced types                                                   |
+ * | ------------------- | -----: | --------------------------------------------------------------- |
+ * | `cis-reductions`    |      4 | `STORYTELLING` / `PROBLEM_SOLVING` / `INNOVATION_STRATEGY` / `DESIGN_THINKING` |
+ * | `tea-reductions`    |      7 | `TRACEABILITY_MATRIX` / `TEST_REVIEW` / `NFR_ASSESSMENT` / `TEST_FRAMEWORK` / `CI_PIPELINE` / `AUTOMATION_SUMMARY` / `ATDD_CHECKLIST` |
+ * | `bmm-reductions`    |     14 | `RESEARCH` / `UX_DESIGN` / `READINESS_REPORT` / `SPRINT_STATUS` / `RETROSPECTIVE` / `CHANGE_PROPOSAL` / `CODE_REVIEW` / `RISKS` / `DEFINITION_OF_DONE` / `PROJECT_OVERVIEW` / `PROJECT_CONTEXT` / `TECH_SPEC` / `SOURCE_TREE` / `TEST_SUMMARY` |
+ * | `l1-reductions`     |      1 | `TEST_DESIGN_FIELDS`                                             |
+ *
+ * Phase 17 (commits `fec166e` / `1f47652` / `06adb75` / `5aa0931`)
+ * landed the canonical `parts` pattern but kept the allowlists
+ * as inline literals at the call sites for 25 of the 26 sites;
+ * the one outlier was l1's `reduceTestDesign`, which declared
+ * its allowlist as `const contentFields` inside the reducer body.
+ * The most recent commit (Phase 18 follow-up) promoted every
+ * allowlist to a named module-level `*_FIELDS` const, including
+ * the previously-inside-body l1 const which renames to
+ * `TEST_DESIGN_FIELDS` to match the `<AREA>_FIELDS` convention
+ * used by the other 25 consts.
+ *
+ * The lift tightens grep-discoverability from "grep substring
+ * `pickChanges(changes, [`" to a named symbol with IDE
+ * jump-to-def (`go to definition` on any `X_FIELDS` reference
+ * lands on its module-level const declaration).  Each const is
+ * typed as `readonly string[]` (the wider TS form) rather than
+ * `as const` literal-union because `pickChanges(changes, fieldList:
+ * readonly string[])` already accepts the wider form; the `as const`
+ * narrower element union would require call-site casts if a future
+ * reducer needed to assemble the allowlist at runtime, so
+ * `readonly string[]` keeps reducer bodies cast-free.
+ *
+ * Future reducers adopting the canonical pattern continue to
+ * declare a `*_FIELDS: readonly string[]` module-level const and
+ * pass it to `Object.assign(upd, pickChanges(...))`.
  */
 
 /**
