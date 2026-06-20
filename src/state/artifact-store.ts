@@ -4,6 +4,7 @@ import PDFDocument from 'pdfkit';
 import { BMAD_RESOURCE_DIR } from './constants';
 import { openChat } from '../commands/chat-bridge';
 import { createLogger } from '../utils/logger';
+import { SprintStatusSync } from './sprint-status-sync';
 import { resolveArtifactTargetUri, writeJsonFile, writeMarkdownCompanion, normalizeLegacyArtifact } from './artifact-file-io';
 import { schemaValidator } from './schema-validator';
 import { harnessEngine } from '../harness/policy-engine';
@@ -270,6 +271,7 @@ export class ArtifactStore {
     // interleaving writes and reads.  Callers should check `isFixInProgress()`
     // before starting a fix, or await the promise stored here.
     private _fixInProgress: Promise<void> | null = null;
+    private sprintSync: SprintStatusSync;
 
     /**
      * Build the epic-scoped directory path for a given epic ID.
@@ -288,6 +290,7 @@ export class ArtifactStore {
 
         // Initialize default state
         this.initializeDefaultState();
+        this.sprintSync = new SprintStatusSync(() => this.sourceFolder, () => this.artifacts, () => this.sourceFiles, () => this.getOutputFormat(), (ms: number) => { this._syncingUntil = ms; });
     }
 
     private initializeDefaultState() {
@@ -3875,380 +3878,52 @@ export class ArtifactStore {
             }
         }
     }
-
     // =========================================================================
-    // Sprint-Status YAML → JSON sync pipeline
+    // Sprint-Status YAML → JSON sync pipeline (delegated to SprintStatusSync)
     // =========================================================================
 
-    /**
-     * Scan the project folder for sprint-status.yaml / sprint-status.yml.
-     * Checks the root folder and the bmm/ subfolder.
-     */
     private async findSprintStatusYaml(folderUri: vscode.Uri): Promise<vscode.Uri | undefined> {
-        const candidates = [
-            vscode.Uri.joinPath(folderUri, 'sprint-status.yaml'),
-            vscode.Uri.joinPath(folderUri, 'sprint-status.yml'),
-            vscode.Uri.joinPath(folderUri, 'bmm', 'sprint-status.yaml'),
-            vscode.Uri.joinPath(folderUri, 'bmm', 'sprint-status.yml'),
-        ];
-        for (const uri of candidates) {
-            try {
-                await vscode.workspace.fs.stat(uri);
-                return uri;
-            } catch { /* file doesn't exist */ }
-        }
-        return undefined;
+        return this.sprintSync.findSprintStatusYaml(folderUri);
     }
 
-    /**
-     * Parse sprint-status.yaml and extract the development_status map.
-     * Returns a flat Record<string, string> e.g. { "epic-3": "in-progress", "3-1-foo": "done" }.
-     */
     private async parseSprintStatusYamlFile(fileUri: vscode.Uri): Promise<Record<string, string>> {
-        const raw = await vscode.workspace.fs.readFile(fileUri);
-        const text = Buffer.from(raw).toString('utf-8');
-        const lines = text.split('\n');
-        const statusMap: Record<string, string> = {};
-
-        let inDevStatus = false;
-        for (const rawLine of lines) {
-            const line = rawLine.trimEnd();
-            if (!line || line.startsWith('#')) continue;
-
-            // Detect section header
-            if (/^development_status:\s*$/.test(line)) {
-                inDevStatus = true;
-                continue;
-            }
-            // Any non-indented line (that isn't a comment) ends the section
-            if (inDevStatus && /^\S/.test(line)) {
-                inDevStatus = false;
-            }
-
-            if (inDevStatus) {
-                const m = line.match(/^\s{2}([^:]+):\s*(.+)$/);
-                if (m) {
-                    const key = m[1].trim();
-                    const value = m[2].trim().replace(/"/g, '');
-                    statusMap[key] = value;
-                }
-            }
-        }
-
-        return statusMap;
+        return this.sprintSync.parseSprintStatusYamlFile(fileUri);
     }
 
-    /**
-     * Map a raw YAML status string to the internal status enum.
-     * Returns undefined if the value shouldn't be applied.
-     */
     private mapYamlStatusToInternal(rawStatus: string): string | undefined {
-        switch (rawStatus) {
-            case 'ready-for-dev': return 'ready';
-            case 'in-progress': return 'in-progress';
-            case 'review': return 'review';
-            case 'done': return 'done';
-            case 'backlog': return 'draft';
-            default: return undefined;
-        }
+        return this.sprintSync.mapYamlStatusToInternal(rawStatus);
     }
 
-    /**
-     * Map an internal status string back to the YAML format.
-     */
     private mapInternalStatusToYaml(status: string): string {
-        switch (status) {
-            case 'ready': return 'ready-for-dev';
-            case 'in-progress': return 'in-progress';
-            case 'review': return 'review';
-            case 'done': return 'done';
-            case 'draft': return 'backlog';
-            default: return status;
-        }
+        return this.sprintSync.mapInternalStatusToYaml(status);
     }
 
-    /**
-     * Reverse sync: update a single development_status entry in sprint-status.yaml.
-     * Reads the YAML, finds the matching key, replaces only its value, writes back.
-     * The sprints: section and all other content is preserved exactly as-is.
-     *
-     * @param type    'epic' or 'story'
-     * @param epicId  The internal epic ID (e.g. '3')
-     * @param storyId Optional story ID (e.g. 'S-3.1') — required when type='story'
-     * @param newStatus The new internal status (e.g. 'in-progress')
-     */
     async syncStatusToYaml(
         type: 'epic' | 'story',
         epicId: string,
         storyId: string | undefined,
-        newStatus: string
+        newStatus: string,
     ): Promise<void> {
-        if (!this.sourceFolder) return;
-        const acOutput = this.getOutputChannel();
-
-        const yamlUri = await this.findSprintStatusYaml(this.sourceFolder);
-        if (!yamlUri) return; // No YAML file — nothing to sync back
-
-        try {
-            const raw = await vscode.workspace.fs.readFile(yamlUri);
-            const text = Buffer.from(raw).toString('utf-8');
-            const lines = text.split('\n');
-            const yamlStatus = this.mapInternalStatusToYaml(newStatus);
-
-            // Determine the key prefix to search for
-            let keyPrefix: string;
-            if (type === 'epic') {
-                keyPrefix = `epic-${epicId.replace(/\D/g, '')}`;
-            } else {
-                // Story: S-3.1 → prefix "3-1-"
-                const normalized = (storyId || '').replace(/^S-/i, '');
-                const parts = normalized.split('.');
-                keyPrefix = parts.length >= 2 ? `${parts[0]}-${parts[1]}-` : normalized;
-            }
-
-            // Find and replace the matching line in development_status section
-            let inDevStatus = false;
-            let updated = false;
-
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i].trimEnd();
-                if (!line || line.startsWith('#')) continue;
-
-                if (/^development_status:\s*$/.test(line)) {
-                    inDevStatus = true;
-                    continue;
-                }
-                if (inDevStatus && /^\S/.test(line)) {
-                    inDevStatus = false;
-                }
-
-                if (inDevStatus) {
-                    const m = line.match(/^(\s{2})([^:]+):(\s*)(.+)$/);
-                    if (m) {
-                        const key = m[2].trim();
-                        const matchesEpic = type === 'epic' && key === keyPrefix;
-                        const matchesStory = type === 'story' && key.startsWith(keyPrefix);
-
-                        if (matchesEpic || matchesStory) {
-                            // Preserve original indentation and spacing
-                            lines[i] = `${m[1]}${key}:${m[3]}${yamlStatus}`;
-                            updated = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (updated) {
-                // Update last_updated timestamp, preserving original formatting
-                const now = new Date();
-                const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-                let lastUpdatedFound = false;
-                for (let i = 0; i < lines.length; i++) {
-                    const line = lines[i].trimEnd();
-                    if (line.startsWith('#')) continue;
-                    const m = line.match(/^(\s*)last_updated:(\s*)(.*)$/);
-                    if (m) {
-                        lines[i] = `${m[1]}last_updated:${m[2]}${ts}`;
-                        lastUpdatedFound = true;
-                        break;
-                    }
-                }
-                if (!lastUpdatedFound) {
-                    storeLogger.debug(`[SprintSync] last_updated field not found in ${yamlUri.fsPath}; staleness detection will fall back to generated`);
-                }
-
-                // Suppress file-watcher during write
-                this._syncingUntil = Date.now() + 2000;
-                await vscode.workspace.fs.writeFile(
-                    yamlUri,
-                    Buffer.from(lines.join('\n'), 'utf-8')
-                );
-                storeLogger.debug(`[SprintSync] Reverse-synced ${type} ${epicId}${storyId ? '/' + storyId : ''} → ${yamlStatus} in YAML`);
-            }
-        } catch (e) {
-            storeLogger.debug(`[SprintSync] Failed to reverse-sync to YAML: ${e}`);
-        }
+        return this.sprintSync.syncStatusToYaml(type, epicId, storyId, newStatus);
     }
 
-    /**
-     * Compare the YAML development_status map against loaded in-memory epics/stories.
-     * Returns an array of mismatches with the target ID, type, current status, and desired status.
-     */
     private detectSprintStatusMismatches(
         statusMap: Record<string, string>
     ): { key: string; type: 'epic' | 'story'; epicId: string; storyId?: string; currentStatus: string; newStatus: string }[] {
-        const epics: any[] = this.artifacts.get('epics') || [];
-        const mismatches: { key: string; type: 'epic' | 'story'; epicId: string; storyId?: string; currentStatus: string; newStatus: string }[] = [];
-
-        for (const [key, rawStatus] of Object.entries(statusMap)) {
-            const newStatus = this.mapYamlStatusToInternal(rawStatus);
-            if (!newStatus) continue;
-
-            const isEpic = key.toLowerCase().startsWith('epic');
-            if (isEpic) {
-                const epicId = key.replace(/^epic-/i, '');
-                const ep = epics.find((e: any) => e.id === epicId || e.id === `EPIC-${epicId}` || String(e.id) === epicId);
-                if (ep) {
-                    const currentStatus = ep.status || 'draft';
-                    if (currentStatus !== newStatus) {
-                        mismatches.push({ key, type: 'epic', epicId: String(ep.id), currentStatus, newStatus });
-                    }
-                }
-            } else {
-                // Story key format: X-Y-slug → storyId S-X.Y
-                const parts = key.split('-');
-                if (parts.length >= 2) {
-                    const storyId = `S-${parts[0]}.${parts[1]}`;
-                    for (const ep of epics) {
-                        const st = (ep.stories || []).find((s: any) => s.id === storyId);
-                        if (st) {
-                            const currentStatus = st.status || 'draft';
-                            if (currentStatus !== newStatus) {
-                                mismatches.push({ key, type: 'story', epicId: String(ep.id), storyId, currentStatus, newStatus });
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        return mismatches;
+        return this.sprintSync.detectSprintStatusMismatches(statusMap);
     }
 
-    /**
-     * Surgically patch an epic's status on disk.
-     * Reads the JSON file, updates ONLY metadata.status + content.status, validates, writes back.
-     * Also updates the in-memory epic status.
-     */
-    private async patchEpicStatusOnDisk(epicId: string, newStatus: string, skipYamlSync = false): Promise<boolean> {
-        const acOutput = this.getOutputChannel();
-        const fileUri = this.sourceFiles.get(ArtifactStore.perIdKey('epic', epicId));
-        if (!fileUri) {
-            storeLogger.debug(`[SprintSync] No source file found for epic:${epicId} — skipping`);
-            return false;
-        }
-
-        try {
-            // 1. Read from disk
-            const raw = await vscode.workspace.fs.readFile(fileUri);
-            const data = JSON.parse(Buffer.from(raw).toString('utf-8'));
-
-            // 2. Validate target — make sure content.id matches
-            const contentId = String(data.content?.id ?? data.content?.epicId ?? '');
-            if (contentId !== epicId && contentId !== `EPIC-${epicId}`) {
-                storeLogger.debug(`[SprintSync] Epic ID mismatch in ${fileUri.fsPath}: expected ${epicId}, found ${contentId} — skipping`);
-                return false;
-            }
-
-            // 3. Patch status (both locations for backward compat)
-            if (data.metadata) {
-                data.metadata.status = newStatus;
-                // Update timestamp
-                if (data.metadata.timestamps) {
-                    data.metadata.timestamps.lastModified = new Date().toISOString();
-                }
-            }
-            if (data.content) {
-                data.content.status = newStatus;
-            }
-
-            // 4. Write back
-            await vscode.workspace.fs.writeFile(
-                fileUri,
-                Buffer.from(JSON.stringify(data, null, 2), 'utf-8')
-            );
-
-            // 5. Update in-memory
-            const epics: any[] = this.artifacts.get('epics') || [];
-            const ep = epics.find((e: any) => String(e.id) === epicId);
-            if (ep) ep.status = newStatus;
-
-            storeLogger.debug(`[SprintSync] Patched epic ${epicId} status → ${newStatus} in ${fileUri.fsPath}`);
-
-            // Epic JSON file is the authoritative status source; no YAML sync needed
-
-            return true;
-        } catch (e) {
-            storeLogger.debug(`[SprintSync] Failed to patch epic ${epicId}: ${e}`);
-            return false;
-        }
+    private async patchEpicStatusOnDisk(
+        epicId: string, newStatus: string, skipYamlSync: boolean = false,
+    ): Promise<boolean> {
+        return this.sprintSync.patchEpicStatusOnDisk(epicId, newStatus, skipYamlSync);
     }
 
-    /**
-     * Surgically patch a story's status on disk.
-     * Tries standalone story file first, then falls back to inline in epic.json.
-     * Always patches both locations if both exist.
-     * Also updates the in-memory story status.
-     */
-    private async patchStoryStatusOnDisk(epicId: string, storyId: string, newStatus: string, skipYamlSync = false): Promise<boolean> {
-        const acOutput = this.getOutputChannel();
-        let patchedStandalone = false;
-
-        // ── Path A: Standalone story file ────────────────────────────────
-        if (this.sourceFolder) {
-            const storiesDir = vscode.Uri.joinPath(
-                this.epicScopedDir(this.sourceFolder, epicId),
-                'stories'
-            );
-            try {
-                const entries = await vscode.workspace.fs.readDirectory(storiesDir);
-                for (const [name, type] of entries) {
-                    if ((type & vscode.FileType.File) === 0 || !name.endsWith('.json')) continue;
-                    const fileUri = vscode.Uri.joinPath(storiesDir, name);
-                    try {
-                        const raw = await vscode.workspace.fs.readFile(fileUri);
-                        const data = JSON.parse(Buffer.from(raw).toString('utf-8'));
-                        const contentId = String(data.content?.id ?? '');
-                        if (contentId === storyId) {
-                            // Found the standalone file — patch it
-                            if (data.metadata) {
-                                data.metadata.status = newStatus;
-                                if (data.metadata.timestamps) {
-                                    data.metadata.timestamps.lastModified = new Date().toISOString();
-                                }
-                            }
-                            if (data.content) {
-                                data.content.status = newStatus;
-                            }
-                            await vscode.workspace.fs.writeFile(
-                                fileUri,
-                                Buffer.from(JSON.stringify(data, null, 2), 'utf-8')
-                            );
-                            storeLogger.debug(`[SprintSync] Patched standalone story ${storyId} status → ${newStatus} in ${name}`);
-                            patchedStandalone = true;
-                            break;
-                        }
-                    } catch { /* skip unreadable files */ }
-                }
-            } catch { /* stories dir may not exist */ }
-        }
-
-
-        // ── Update in-memory ─────────────────────────────────────────────
-        if (patchedStandalone) {
-            const epics: any[] = this.artifacts.get('epics') || [];
-            for (const ep of epics) {
-                if (String(ep.id) !== epicId) continue;
-                const st = (ep.stories || []).find((s: any) => s.id === storyId);
-                if (st) {
-                    st.status = newStatus;
-                }
-                break;
-            }
-        }
-
-        if (!patchedStandalone) {
-            storeLogger.debug(`[SprintSync] Could not find story ${storyId} in epic ${epicId} — skipping`);
-            return false;
-        }
-
-        // Story JSON file is the authoritative status source; no YAML sync needed
-
-        return true;
+    private async patchStoryStatusOnDisk(
+        epicId: string, storyId: string, newStatus: string, skipYamlSync: boolean = false,
+    ): Promise<boolean> {
+        return this.sprintSync.patchStoryStatusOnDisk(epicId, storyId, newStatus, skipYamlSync);
     }
-
 
     // =========================================================================
     // Atomic Status Sync (LLM tool backing)
