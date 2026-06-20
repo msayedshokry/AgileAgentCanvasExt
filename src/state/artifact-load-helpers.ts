@@ -3,9 +3,9 @@ import { createLogger } from '../utils/logger';
 import { mapSchemaStoryToInternal } from './schema-mappers';
 import type { Epic, Story, TestCase, TestCaseType } from '../types';
 
-const helpersLogger = createLogger('artifact-load-helpers');
-const logDebug = (...args: unknown[]) => helpersLogger.debug(...args);
-const logError = (...args: unknown[]) => helpersLogger.error(...args);
+const loadHelpersLogger = createLogger('artifact-load-helpers');
+const logDebug = (...args: unknown[]) => loadHelpersLogger.debug(...args);
+const logError = (...args: unknown[]) => loadHelpersLogger.error(...args);
 
 /**
  * ArtifactLoadHelpers — extracted load-phase utilities from ArtifactStore.
