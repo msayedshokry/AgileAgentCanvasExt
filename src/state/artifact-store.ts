@@ -880,6 +880,15 @@ export class ArtifactStore {
         addRequirement(this.artifacts, () => this.notifyChange(), requirement);
     }
 
+    mapSchemaEpicToInternal(epicData: any): any {
+        return mapSchemaEpicToInternal(epicData);
+    }
+    mapSchemaStoryToInternal(storyData: any): any {
+        return mapSchemaStoryToInternal(storyData);
+    }
+    mapSchemaRequirement(reqData: any): any {
+        return mapSchemaRequirement(reqData);
+    }
     createEpic(): Epic {
         return createEpic(this.artifacts, () => this.notifyChange());
     }
