@@ -118,6 +118,12 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
   // it with the close button. Null = no diff to review.
   const [commitDiff, setCommitDiff] = useState<GitDiffMessage | null>(null);
 
+  // ── Agent take-over (P1 #4) ────────────────────────────────────────────
+  // When the user clicks "Take Over" on a running agent, we switch to
+  // terminals view and flash the specific tile. focusedSessionId drives
+  // TerminalGrid's scroll-to + flash animation; cleared on completion.
+  const [focusedSessionId, setFocusedSessionId] = useState<string | null>(null);
+
   // ── Imperative refs (NOT state mirrors) ──────────────────────────────────
   // These track backend IPC bookkeeping, not React state. They survive
   // re-renders without participating in the render cycle.
@@ -939,7 +945,12 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
       <DiffPanel diff={commitDiff} onClose={() => setCommitDiff(null)} />
 
       {view === 'terminals' ? (
-        <TerminalGrid sessions={terminalSessions} interactive={terminalInteractive} />
+        <TerminalGrid
+          sessions={terminalSessions}
+          interactive={terminalInteractive}
+          focusedSessionId={focusedSessionId}
+          onFocusComplete={() => setFocusedSessionId(null)}
+        />
       ) : (
       <div className="agentic-kanban-board">
         {KANBAN_COLUMNS.map(col => (
@@ -980,6 +991,13 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
             setView('terminals');
             vscode.postMessage({ type: 'kanban:jumpToTerminal', artifactId: item.id });
           }}
+          onTakeOver={(item) => {
+            // P1 #4: switch to terminals view and flash the agent's tile
+            setView('terminals');
+            setFocusedSessionId(item.id);
+            vscode.postMessage({ type: 'kanban:takeOverAgent', artifactId: item.id });
+          }}
+          terminalInteractive={terminalInteractive}
           infoCache={agentInfoCache}
           resumingArtifactId={resumingArtifactId}
           onResumeStateChange={setResumingArtifactId}

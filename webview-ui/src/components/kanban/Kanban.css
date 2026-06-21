@@ -469,6 +469,66 @@
   color: white;
 }
 
+/* P1 #4: Take-over button — blue accent to distinguish from View Terminal */
+.agentic-detail-btn--takeover {
+  background: var(--vscode-focusBorder, #007acc);
+  color: white;
+}
+
+.agentic-detail-btn--takeover:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* P1 #4: Send Command quick-input — type a one-liner to inject into the pty */
+.agentic-detail-send-command {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.agentic-detail-send-command-input {
+  flex: 1;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-family: var(--vscode-editor-font-family);
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 4px;
+  outline: none;
+}
+
+.agentic-detail-send-command-input:focus {
+  border-color: var(--vscode-focusBorder, #007acc);
+}
+
+.agentic-detail-send-command-input::placeholder {
+  color: var(--vscode-input-placeholderForeground);
+  opacity: 0.6;
+}
+
+.agentic-detail-send-command-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.agentic-detail-send-command-btn:hover {
+  background: var(--vscode-button-hoverBackground);
+}
+
+.agentic-detail-send-command-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* ── Toast Notifications ── */
 .kanban-toast {
   position: fixed;

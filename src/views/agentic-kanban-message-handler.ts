@@ -635,6 +635,24 @@ export async function handleAgenticKanbanMessage(
       return true;
     }
 
+    // P1 #4: agent take-over — acknowledge the webview's take-over request
+    // and push the latest terminal:capabilities so the UI knows whether
+    // interactive input is available for this session.
+    case 'kanban:takeOverAgent': {
+      const { artifactId: takeoverId } = message;
+      if (webview) {
+        // Re-push capabilities so the webview knows if input works
+        webview.postMessage({
+          type: 'terminal:capabilities',
+          supportsInput: terminalRouter?.supportsInput ?? false,
+        });
+        // Jump to the terminal in the VS Code panel as fallback
+        terminalExecutor.jumpToTerminal(takeoverId);
+        logger.info(`[AgenticKanban] Take-over requested for ${takeoverId}`);
+      }
+      return true;
+    }
+
     case 'kanban:jumpToTerminal': {
       const { artifactId: jumpId } = message;
 

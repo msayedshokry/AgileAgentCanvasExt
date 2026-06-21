@@ -13,3 +13,15 @@
 .terminal-tile-dot.status-failed, .terminal-tile-dot.status-dead { background: #f85149; }
 .terminal-tile-body { flex: 1; min-height: 0; padding: 4px; }
 .terminal-grid-empty { padding: 24px; text-align: center; opacity: .6; }
+
+/* ── Take-over flash animation (P1 #4) ──────────────────────────────── */
+@keyframes terminal-tile-flash {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  25% { box-shadow: 0 0 0 3px var(--vscode-focusBorder, #007acc); }
+  50% { box-shadow: 0 0 0 3px transparent; }
+  75% { box-shadow: 0 0 0 3px var(--vscode-focusBorder, #007acc); }
+}
+.terminal-tile--flash {
+  animation: terminal-tile-flash 1.2s ease-out;
+  border-color: var(--vscode-focusBorder, #007acc) !important;
+}

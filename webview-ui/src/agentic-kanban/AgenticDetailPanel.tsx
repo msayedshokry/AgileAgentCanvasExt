@@ -14,6 +14,10 @@ interface AgenticDetailPanelProps {
   item: KanbanItem;
   onClose: () => void;
   onOpenTerminal?: (item: KanbanItem) => void;
+  /** P1 #4: request take-over of this agent (switch to terminals, focus tile). */
+  onTakeOver?: (item: KanbanItem) => void;
+  /** Whether the embedded terminal backend supports typed input. */
+  terminalInteractive?: boolean;
   /** Cache shared with the parent so card re-clicks don't re-fetch. */
   infoCache?: React.MutableRefObject<Map<string, { info: AgentInfo; status: string }>>;
   resumingArtifactId?: string | null;
@@ -50,6 +54,8 @@ export function AgenticDetailPanel({
   item,
   onClose,
   onOpenTerminal,
+  onTakeOver,
+  terminalInteractive,
   infoCache,
   resumingArtifactId,
   onResumeStateChange,
@@ -67,6 +73,8 @@ export function AgenticDetailPanel({
   });
   const [traceFilter, setTraceFilter] = useState<TraceFilter>('all');
   const [pendingUndoArtifact, setPendingUndoArtifact] = useState<{ artifactId: string; sessionId?: string } | null>(null);
+  // P1 #4: quick command input for sending one-liners to the agent's pty
+  const [sendCommand, setSendCommand] = useState('');
   const undoTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const resumeTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const isResuming = resumingArtifactId === item.id;
@@ -186,6 +194,7 @@ export function AgenticDetailPanel({
   const agentIcon = persona?.icon || '';
 
   const hasRunAction = isInterrupted || hasTerminal || !!terminalInfo || hasPendingUndo;
+  const isRunning = item.agentState?.status === 'running';
 
   const formatTime = (iso: string) => {
     try {
@@ -384,6 +393,48 @@ export function AgenticDetailPanel({
               >
                 View Terminal
               </button>
+            )}
+            {/* P1 #4: Take Over — switch to interactive terminal view, focus this agent's tile */}
+            {isRunning && onTakeOver && (
+              <button
+                className="agentic-detail-btn agentic-detail-btn--takeover"
+                onClick={() => onTakeOver(item)}
+                title={terminalInteractive ? 'Take over — type directly into the agent terminal' : 'Take over requires embedded terminal (enable in settings)'}
+                disabled={!terminalInteractive}
+              >
+                {terminalInteractive ? 'Take Over' : 'Take Over (no pty)'}
+              </button>
+            )}
+            {/* P1 #4: Send Command — quick one-liner injection without leaving the board */}
+            {isRunning && terminalInteractive && (
+              <div className="agentic-detail-send-command">
+                <input
+                  type="text"
+                  className="agentic-detail-send-command-input"
+                  placeholder="Type a command and press Enter…"
+                  value={sendCommand}
+                  onChange={e => setSendCommand(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && sendCommand.trim()) {
+                      vscode.postMessage({ type: 'terminal:input', sessionId: item.id, data: sendCommand + '\n' });
+                      setSendCommand('');
+                    }
+                  }}
+                />
+                <button
+                  className="agentic-detail-send-command-btn"
+                  disabled={!sendCommand.trim()}
+                  onClick={() => {
+                    if (sendCommand.trim()) {
+                      vscode.postMessage({ type: 'terminal:input', sessionId: item.id, data: sendCommand + '\n' });
+                      setSendCommand('');
+                    }
+                  }}
+                  title="Send command to agent"
+                >
+                  Send
+                </button>
+              </div>
             )}
           </div>
         </section>
