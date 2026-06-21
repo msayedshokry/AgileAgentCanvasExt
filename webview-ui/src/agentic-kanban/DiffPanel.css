@@ -1,0 +1,254 @@
+/* ── DiffPanel — In-canvas diff review (P0 #3) ──────────────────────────────── */
+
+.diff-panel {
+  display: flex;
+  flex-direction: column;
+  border-top: 2px solid var(--vscode-panel-border);
+  margin-top: 8px;
+  padding: 8px 0;
+  max-height: 360px;
+  overflow: hidden;
+  background: var(--vscode-editor-background);
+  font-family: var(--vscode-editor-font-family);
+  font-size: 12px;
+}
+
+.diff-panel--empty {
+  border-top: 1px solid var(--vscode-panel-border);
+  padding: 10px 12px;
+  max-height: unset;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+
+.diff-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px 6px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  flex-shrink: 0;
+}
+
+.diff-panel-header-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.diff-panel-sha {
+  font-family: var(--vscode-editor-font-family);
+  font-size: 11px;
+  color: var(--vscode-terminal-ansiYellow);
+  background: var(--vscode-badge-background);
+  padding: 1px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.diff-panel-message {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.diff-panel-story {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+  background: var(--vscode-badge-background);
+  padding: 1px 4px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.diff-panel-header-stats {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.diff-panel-stat {
+  font-family: var(--vscode-editor-font-family);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.diff-panel-stat--add {
+  color: var(--vscode-terminal-ansiGreen);
+}
+
+.diff-panel-stat--del {
+  color: var(--vscode-terminal-ansiRed);
+}
+
+.diff-panel-stat--files {
+  color: var(--vscode-descriptionForeground);
+  font-weight: 400;
+}
+
+.diff-panel-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--vscode-descriptionForeground);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  flex-shrink: 0;
+  border-radius: 3px;
+}
+
+.diff-panel-close-btn:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+  color: var(--vscode-foreground);
+}
+
+/* ── Meta (empty state) ──────────────────────────────────────────────────── */
+
+.diff-panel-meta {
+  color: var(--vscode-descriptionForeground);
+  font-size: 11px;
+  font-style: italic;
+}
+
+/* ── Body ────────────────────────────────────────────────────────────────── */
+
+.diff-panel-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── File list ───────────────────────────────────────────────────────────── */
+
+.diff-panel-file-list {
+  width: 200px;
+  min-width: 140px;
+  max-width: 280px;
+  overflow-y: auto;
+  border-right: 1px solid var(--vscode-panel-border);
+  flex-shrink: 0;
+}
+
+.diff-panel-file-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 3px 8px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  color: var(--vscode-foreground);
+  font-family: var(--vscode-editor-font-family);
+  font-size: 11px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.diff-panel-file-item:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.diff-panel-file-item--active {
+  background: var(--vscode-list-activeSelectionBackground) !important;
+  color: var(--vscode-list-activeSelectionForeground) !important;
+}
+
+.diff-panel-file-status {
+  font-weight: 700;
+  font-size: 10px;
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.diff-panel-file-path {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  font-size: 11px;
+}
+
+.diff-panel-file-stats {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.diff-panel-file-adds {
+  color: var(--vscode-terminal-ansiGreen);
+}
+
+.diff-panel-file-dels {
+  color: var(--vscode-terminal-ansiRed);
+}
+
+/* ── Diff view ───────────────────────────────────────────────────────────── */
+
+.diff-panel-diff-view {
+  flex: 1;
+  overflow: auto;
+  min-width: 0;
+}
+
+.diff-panel-diff-content {
+  margin: 0;
+  padding: 8px 12px;
+  font-family: var(--vscode-editor-font-family);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--vscode-editor-foreground);
+  background: var(--vscode-editor-background);
+  white-space: pre;
+  tab-size: 4;
+}
+
+.diff-panel-diff-content code {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.diff-panel-diff-header {
+  color: var(--vscode-terminal-ansiCyan);
+  font-weight: 700;
+}
+
+.diff-panel-diff-hunk {
+  color: var(--vscode-terminal-ansiMagenta);
+}
+
+.diff-panel-diff-add {
+  background: var(--vscode-diffEditor-insertedTextBackground, rgba(35, 134, 54, 0.15));
+  color: var(--vscode-diffEditor-insertedTextColor, var(--vscode-terminal-ansiGreen));
+}
+
+.diff-panel-diff-del {
+  background: var(--vscode-diffEditor-removedTextBackground, rgba(218, 54, 51, 0.15));
+  color: var(--vscode-diffEditor-removedTextColor, var(--vscode-terminal-ansiRed));
+}
+
+.diff-panel-diff-context {
+  color: var(--vscode-editor-foreground);
+}
+
+.diff-panel-diff-empty {
+  padding: 16px;
+  color: var(--vscode-descriptionForeground);
+  font-size: 12px;
+  font-style: italic;
+  text-align: center;
+}

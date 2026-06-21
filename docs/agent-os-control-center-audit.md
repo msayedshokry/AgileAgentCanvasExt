@@ -94,7 +94,7 @@ What still forces the user out of the canvas today:
 
 | Task | Currently requires | Gap |
 |---|---|---|
-| **Review the diff an agent produced** | Open files / SCM view in VS Code | 🔴 No in-canvas diff view. `autonomousGit` broadcasts `gitBranch`/`gitCommit`/`gitPR` but the **webview has no handlers** (prior audit gap #51) — the user never even sees what changed |
+| **Review the diff an agent produced** | Open files / SCM view in VS Code | ✅ **Resolved.** In-canvas `DiffPanel` renders agent commit diffs with file list + unified diff view. `autonomousGit` now computes and broadcasts structured diff data alongside commit SHAs. |
 | **Approve / merge a PR** | GitHub / VS Code | 🟠 No in-canvas PR review |
 | **Watch an agent properly** | VS Code terminal panel | 🔴 §3 |
 | **Chat with an agent / re-plan** | Copilot Chat panel | 🟡 Separate surface; goal-decomposer modal partly covers planning |
@@ -136,7 +136,7 @@ Everything in §4.1–4.2 hinges on this. Two viable paths:
 **🔴 P0 — without these it isn't a control center**
 1. ✅ **SHIPPED (2026-06-21): xterm.js terminal rendering** in the canvas (replaces the `<pre>` in `TerminalModal`). ANSI/color/TUI correctness via `@xterm/xterm` + `@xterm/addon-fit`.
 2. ✅ **SHIPPED (2026-06-21): Multi-agent terminal grid** — one live `AgentTerminal` tile per session, driven by the existing agent state (`displayItems.filter(is running)`); replaces one-at-a-time `TerminalModal` (deleted). Board/Terminals toggle in the canvas header.
-3. **In-canvas diff review** — wire the missing `gitBranch`/`gitCommit`/`gitPR` webview handlers (prior audit gap #51) and render the agent's changes as a reviewable diff before/after it touches disk. **← next priority**
+3. ✅ **SHIPPED (2026-06-21): In-canvas diff review** — `autonomousGit.maybeCommit()` now asynchronously computes structured diff data via `git diff-tree --numstat`/`--name-status` + `git show` and fires the new `onCommitDiff` hook. The `autonomyLifecycle` wires it to broadcast `gitDiff` messages with commit SHA, message, per-file additions/deletions/status, and full unified diff text. The webview `DiffPanel` component renders a file list sidebar (color-coded status badges) and a unified diff view with syntax-colored additions/deletions. Appears below the board automatically when a diff arrives.
 
 **🟠 P1 — needed for "stay and steer"**
 4. **Agent input / take-over** — a path to send input to a running agent (Option B / node-pty for real fidelity).

@@ -11,6 +11,7 @@ import { ContextMenu } from './ContextMenu';
 import { useEvent } from './useEvent';
 import { AutonomyBar, type SchedulerStateMessage, type BudgetStatus, type ProposedGoal, type SystemicIssue } from './AutonomyBar';
 import { TracePanel } from './TracePanel';
+import { DiffPanel, type GitDiffMessage } from './DiffPanel';
 import { GoalDecomposerModal } from './GoalDecomposerModal';
 import type { TraceBreakdownMessage } from '../types';
 import './Autonomy.css';
@@ -110,6 +111,12 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
   // Keyed by story id; merged into displayItems so the KanbanCard badge
   // (🔗/⛔ Blocked by N) stays in sync with the live dependency graph.
   const [depBadges, setDepBadges] = useState<Map<string, DependencyBadge>>(() => new Map());
+
+  // ── In-canvas diff review (P0 #3) ──────────────────────────────────────
+  // Holds the latest agent commit diff pushed by the extension. The panel
+  // opens automatically when a gitDiff message arrives; the user can dismiss
+  // it with the close button. Null = no diff to review.
+  const [commitDiff, setCommitDiff] = useState<GitDiffMessage | null>(null);
 
   // ── Imperative refs (NOT state mirrors) ──────────────────────────────────
   // These track backend IPC bookkeeping, not React state. They survive
@@ -255,6 +262,18 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
       case 'gitPR': {
         if (message.url) {
           setToast({ message: `PR created: ${message.url}`, type: 'success' });
+        }
+        break;
+      }
+      // P0 #3: structured diff data for in-canvas review — opens DiffPanel
+      // below the board so the user can review what the agent changed.
+      case 'gitDiff': {
+        setCommitDiff(message as GitDiffMessage);
+        if (message.storyId) {
+          setToast({
+            message: `Diff ready: ${String(message.sha ?? '').slice(0, 7)} — ${message.files?.length ?? 0} file(s)`,
+            type: 'info',
+          });
         }
         break;
       }
@@ -916,6 +935,8 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
       />
 
       <TracePanel breakdown={traceBreakdown} />
+
+      <DiffPanel diff={commitDiff} onClose={() => setCommitDiff(null)} />
 
       {view === 'terminals' ? (
         <TerminalGrid sessions={terminalSessions} interactive={terminalInteractive} />

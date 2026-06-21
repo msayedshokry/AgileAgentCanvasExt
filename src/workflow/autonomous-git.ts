@@ -26,10 +26,29 @@ export interface GitRunner {
   createPR?(title: string, body: string, base: string): Promise<string>;
 }
 
+/** A single file changed in a commit. */
+export interface DiffFile {
+  path: string;
+  status: 'added' | 'modified' | 'deleted' | 'renamed';
+  additions: number;
+  deletions: number;
+}
+
+/** Structured diff data for in-canvas review (P0 #3). */
+export interface CommitDiff {
+  sha: string;
+  storyId: string;
+  message: string;
+  files: DiffFile[];
+  diff: string;       // raw unified diff text
+}
+
 export interface GitHooks {
   onBranch: (storyId: string, branchName: string) => void;
   onCommit: (storyId: string, sha: string) => void;
   onPR:     (storyId: string, url: string) => void;
+  /** Fires after maybeCommit when a structured diff is available for in-canvas review. */
+  onCommitDiff?: (storyId: string, diff: CommitDiff) => void;
 }
 
 // ── Operations ───────────────────────────────────────────────────────────────
@@ -92,9 +111,81 @@ export class AutonomousGit {
       const sha = this.parseCommitSha(out) ?? 'unknown';
       logger.info('Commit created', { storyId, sha, message });
       this.hooks?.onCommit(storyId, sha);
+
+      // P0 #3: in-canvas diff review — compute structured diff data after
+      // the commit and fire the onCommitDiff hook so the webview can render
+      // the agent's changes as a reviewable diff without leaving the canvas.
+      if (this.hooks?.onCommitDiff && sha !== 'unknown') {
+        this.getCommitDiff(storyId, sha, cwd).then(diff => {
+          if (diff) this.hooks!.onCommitDiff!(storyId, diff);
+        }).catch(err => {
+          logger.warn('Failed to compute commit diff', { storyId, sha, error: String(err) });
+        });
+      }
       return sha;
     } catch (err) {
       logger.warn('Commit failed', { storyId, error: String(err) });
+      return null;
+    }
+  }
+
+  /**
+   * Compute structured diff data for a commit (P0 #3).
+   * Uses git show for the unified diff and git diff-tree for per-file stats.
+   * Returns null if git commands fail (e.g. root commit with no parent).
+   */
+  async getCommitDiff(storyId: string, sha: string, cwd: string): Promise<CommitDiff | null> {
+    if (!this.runner) return null;
+    try {
+      // Commit message
+      let message = '';
+      try {
+        message = (await this.runner.run(['log', '-1', '--format=%s', sha], cwd)).trim();
+      } catch { /* keep empty */ }
+
+      // Per-file additions/deletions (numstat: "adds\tdels\tpath" per line)
+      let numstatOut = '';
+      try {
+        numstatOut = (await this.runner.run(['diff-tree', '--no-commit-id', '--numstat', '-r', sha], cwd)).trim();
+      } catch { /* keep empty */ }
+
+      // Per-file status (A/M/D/R\tpath per line)
+      let nameStatusOut = '';
+      try {
+        nameStatusOut = (await this.runner.run(['diff-tree', '--no-commit-id', '--name-status', '-r', sha], cwd)).trim();
+      } catch { /* keep empty */ }
+
+      // Unified diff (exclude commit header with --format=)
+      let diffOut = '';
+      try {
+        diffOut = await this.runner.run(['show', '--format=', sha], cwd);
+      } catch { /* keep empty */ }
+
+      // Parse file list: walk numstat and name-status lines in lockstep
+      const numstatLines = numstatOut ? numstatOut.split('\n').filter(Boolean) : [];
+      const nameStatusLines = nameStatusOut ? nameStatusOut.split('\n').filter(Boolean) : [];
+      const files: DiffFile[] = [];
+      for (let i = 0; i < numstatLines.length; i++) {
+        const parts = numstatLines[i].split('\t');
+        if (parts.length < 3) continue;
+        const additions = parts[0] === '-' ? 0 : parseInt(parts[0], 10) || 0;
+        const deletions = parts[1] === '-' ? 0 : parseInt(parts[1], 10) || 0;
+        const filePath = parts[2];
+        // Parse status from name-status output (same index)
+        let status: DiffFile['status'] = 'modified';
+        if (i < nameStatusLines.length) {
+          const rawStatus = nameStatusLines[i][0];
+          if (rawStatus === 'A') status = 'added';
+          else if (rawStatus === 'D') status = 'deleted';
+          else if (rawStatus === 'R') status = 'renamed';
+          else status = 'modified';
+        }
+        files.push({ path: filePath, status, additions, deletions });
+      }
+
+      return { sha, storyId, message, files, diff: diffOut };
+    } catch (err) {
+      logger.warn('getCommitDiff failed', { storyId, sha, error: String(err) });
       return null;
     }
   }
