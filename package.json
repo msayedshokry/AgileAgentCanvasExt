@@ -1335,6 +1335,11 @@
                 "minimum": 1
               }
             }
+          },
+          "agileagentcanvas.agenticKanban.embeddedTerminal": {
+            "type": "boolean",
+            "default": false,
+            "description": "Run agents in an embedded node-pty terminal you can type into, instead of the VS Code terminal panel. When enabled, agent workflows spawn inside xterm.js tiles in the Terminals view instead of the VS Code integrated terminal. Requires node-pty to be rebuilt for the VS Code Electron version (handled automatically by the packaging step). Disable to use the output-only VS Code terminal fallback."
           }
         }
       },
@@ -1469,6 +1474,7 @@
     "gpt-tokenizer": "^3.4.0",
     "headroom-ai": "^0.22.4",
     "microdiff": "^1.5.0",
+    "node-pty": "^1.1.0",
     "pdfkit": "^0.17.2",
     "simple-git": "^3.36.0",
     "yaml": "^2.8.2"
