@@ -1,7 +1,8 @@
 # Agent OS / Control Center — Vision Audit
 
-> **Date:** 2026-06-19 · **Commit:** `242adbf`
+> **Date:** 2026-06-21 · **Commits:** `25692cd`–`1bcb081` on `chore/architecture-hardening`
 > **Scope:** What is missing for the Agentic Kanban to become a *truly autonomous AI-agent OS* — a single-pane control center the user never has to leave — with a built-in terminal-light to watch the fleet of agents.
+> **Update (2026-06-21):** §3 / §6 P0 #1–#2 (embedded xterm.js terminal grid) **shipped** across Phases 1–4. Bidirectional input available as opt-in via `agileagentcanvas.agenticKanban.embeddedTerminal`. See [`docs/superpowers/plans/2026-06-19-embedded-agent-terminal-grid.md`](superpowers/plans/2026-06-19-embedded-agent-terminal-grid.md) for the full implementation plan.
 > **Relationship to the existing audit:** [`kanban-agentic-os-audit.md`](kanban-agentic-os-audit.md) audits **autonomy correctness** (scheduler → orchestrator → verdict → transition mechanics) and is ~90% resolved. This document audits a *different axis*: the **OS / control-center experience** — observability, intervention, continuous operation, and single-pane completeness. They are complementary; almost nothing here overlaps with that doc.
 
 ---
@@ -38,7 +39,7 @@ The autonomy engine already satisfies a lot of #3. The control-center experience
 |---|---|---|---|
 | Agent execution | `src/workflow/terminal-executor.ts` | Spawns each agent as a **VS Code integrated terminal** (`vscode.window.createTerminal`) running a headless CLI (Claude Code / Codex / Gemini / OpenCode / Aider) | Terminals live *outside* the canvas, in VS Code's panel |
 | Output streaming | `terminal-executor.ts:385-414`, `:654` (`attachWebviewStream`) | Taps `terminal.onDidWriteData` and forwards raw chunks to the webview as `terminalOutput` / `terminalOutputAppend` | **Output-only.** No input path back to the agent |
-| Terminal viewer | `webview-ui/src/agentic-kanban/TerminalModal.tsx` | A **modal** that splits the raw stream on `\r?\n` into a `<pre>` | **No xterm.js, no ANSI parsing** → colors/spinners/TUI redraws render as garbage; **one agent at a time**; "Open in Panel" button **ejects you to VS Code's terminal** |
+| Terminal viewer | **SHIPPED (2026-06-21):** `webview-ui/src/agentic-kanban/AgentTerminal.tsx` + `TerminalGrid.tsx` | Embedded **xterm.js** multi-pane grid with ANSI/color/TUI rendering. Output-only by default (Option A — `VsCodeTerminalBackend`); bidirectional input opt-in via `agenticKanban.embeddedTerminal` (Option B — `NodePtyTerminalBackend`). Replaces the plaintext `TerminalModal`. | — |
 | Fleet list | `src/views/agent-sessions-view-provider.ts` + `webview-ui/src/components/AgentSessionsPanel.tsx` | Sidebar webview aggregating ACP + kanban-progress + terminal + health into status **pills** | Read-only status rows — not live terminals, no interaction |
 | Board + live badges | `webview-ui/src/agentic-kanban/AgenticKanbanApp.tsx` | Kanban with agent badges, autonomy bar, budget gauge, dep badges, goal modal, trace panel | Good — this is the strongest part |
 | Trace/observability | `TracePanel.tsx` + `src/trace/trace-recorder.ts` | Per-session decision log, crash recovery | Good |
@@ -69,14 +70,14 @@ The autonomy engine already satisfies a lot of #3. The control-center experience
 
 ### 4.1 Observability — "see the different agents" 🔴 biggest gap
 
-- **Missing:** an embedded, ANSI-correct, **multi-agent terminal grid** in the canvas. Today it's a plaintext modal, one at a time, and the escape hatch sends you to VS Code's panel.
+- **SHIPPED (2026-06-21):** Embedded xterm.js multi-agent terminal grid in the canvas, driven by the existing agent state. One live `AgentTerminal` tile per running session, rendered in a `TerminalGrid` with a Board/Terminals toggle in the Agentic Kanban header. The `TerminalBackend` seam swaps between output-only (Option A, default) and bidirectional (Option B, opt-in via `agenticKanban.embeddedTerminal`). See `docs/superpowers/plans/2026-06-19-embedded-agent-terminal-grid.md`.
 - **Missing:** a **fleet dashboard** combining live tiles with per-agent metrics (tokens/cost burn rate, iteration N/max, elapsed, current step, health). The data exists across `cost-tracker`, `budget-enforcer`, `agent-health-monitor`, `kanban-orchestrator` — it's just never composed into one view.
 - **Present & good:** the Agent Sessions status list, trace panel, budget gauge.
 
 ### 4.2 Intervention / control — "steer a running agent" 🔴 major gap
 
-- **Missing:** **input to a running agent.** The stream is output-only; there is no way to type a correction, answer a prompt, or nudge a stuck agent from the canvas. (`vscode.Terminal.sendText` exists but isn't wired to the webview, and it's a blunt instrument.)
-- **Missing:** **inline approve/deny.** Headless CLIs run with auto-approval (`--permission-mode acceptEdits`, `--ask-for-approval never`, `--yolo`). That maximizes autonomy but means the user has **no in-the-loop checkpoint** they can opt into. A truly trustable OS needs a "pause on risky action → ask me in-canvas" mode.
+- **SHIPPED (opt-in):** **input to a running agent** via `NodePtyTerminalBackend` (Option B). When `agenticKanban.embeddedTerminal` is ON and node-pty loads successfully, the webview `AgentTerminal` tiles become bidirectional — keystrokes flow `terminal:input → TerminalSessionRouter → NodePtyTerminalBackend.write() → pty shell`. When OFF or node-pty unavailable, tiles are read-only (Option A fallback, no crash). The full bidirectional path is `onData → vscode.postMessage(terminal:input) → isTerminalInbound → router.handle → backend.write → session.pty.write`.
+- **Missing:** **inline approve/deny.** Headless CLIs run with auto-approval; no in-the-loop checkpoint that pauses on risky actions and asks the user in-canvas.
 - **Missing:** **take-over / handoff.** No "grab this agent's session into chat and drive it myself," then hand back.
 - **Present:** per-story pause/resume/abandon (resolved in the prior audit), `killTerminal`, `jumpToTerminal` (but that ejects you).
 
@@ -126,16 +127,16 @@ Everything in §4.1–4.2 hinges on this. Two viable paths:
 - ❌ More work; `node-pty` is a native module (needs prebuilds per platform/VS Code Electron ABI) — a real packaging consideration.
 - ❌ Loses the "it's also in my VS Code terminal" familiarity (can be mitigated by keeping a "pop to panel" option).
 
-**Recommendation:** ship **Option A first** (xterm.js rendering of the existing stream + multi-pane grid) for the immediate "watch the fleet" win, then evaluate **Option B** for true interaction once the grid proves the UX. Don't try to rebuild Terax; adopt its xterm.js + owned-PTY *pattern* at the boundaries ACC already has.
+**Recommendation:** **Option A shipped first** (xterm.js rendering of the existing stream + multi-pane grid) — Phases 1–3 complete, delivers the "watch the fleet" headline with zero native-module risk. **Option B shipped as opt-in** (Phase 4) — `NodePtyTerminalBackend` behind the same `TerminalBackend` interface, gated on the `agenticKanban.embeddedTerminal` setting and the node-pty packaging spike (Phase 0, result: GO). The `@electron/rebuild` step in `vscode:prepublish` rebuilds node-pty against Electron 30.4.0 before packaging.
 
 ---
 
 ## 6. What's missing — prioritized
 
 **🔴 P0 — without these it isn't a control center**
-1. **xterm.js terminal rendering** in the canvas (replace the `<pre>` in `TerminalModal`). ANSI/color/TUI correctness.
-2. **Multi-agent terminal grid** — one live tile per session, driven by the existing `AgentSessionsViewProvider` enumeration; replace one-at-a-time modal.
-3. **In-canvas diff review** — wire the missing `gitBranch`/`gitCommit`/`gitPR` webview handlers (prior audit gap #51) and render the agent's changes as a reviewable diff before/after it touches disk.
+1. ✅ **SHIPPED (2026-06-21): xterm.js terminal rendering** in the canvas (replaces the `<pre>` in `TerminalModal`). ANSI/color/TUI correctness via `@xterm/xterm` + `@xterm/addon-fit`.
+2. ✅ **SHIPPED (2026-06-21): Multi-agent terminal grid** — one live `AgentTerminal` tile per session, driven by the existing agent state (`displayItems.filter(is running)`); replaces one-at-a-time `TerminalModal` (deleted). Board/Terminals toggle in the canvas header.
+3. **In-canvas diff review** — wire the missing `gitBranch`/`gitCommit`/`gitPR` webview handlers (prior audit gap #51) and render the agent's changes as a reviewable diff before/after it touches disk. **← next priority**
 
 **🟠 P1 — needed for "stay and steer"**
 4. **Agent input / take-over** — a path to send input to a running agent (Option B / node-pty for real fidelity).

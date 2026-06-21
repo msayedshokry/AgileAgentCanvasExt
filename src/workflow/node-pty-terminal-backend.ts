@@ -40,6 +40,8 @@ export class NodePtyTerminalBackend implements TerminalBackend {
   private readonly ptyModule: typeof import('node-pty') | undefined;
 
   private sessions = new Map<string, PtySession>();
+  /** Called when a pty session exits so the executor can clean up. */
+  onSessionExit?: (sessionId: string, artifactId: string, exitCode?: number) => void;
 
   /** @param ptyOverride — injection point for tests; production passes nothing. */
   constructor(ptyOverride?: typeof import('node-pty')) {
@@ -87,9 +89,10 @@ export class NodePtyTerminalBackend implements TerminalBackend {
         }
       });
 
-      p.onExit(() => {
-        logger.debug(`[NodePtyTerminalBackend] Session ${sessionId} exited`);
+      p.onExit(({ exitCode }) => {
+        logger.debug(`[NodePtyTerminalBackend] Session ${sessionId} exited (code ${exitCode})`);
         this.sessions.delete(sessionId);
+        this.onSessionExit?.(sessionId, sessionId, typeof exitCode === 'number' ? exitCode : undefined);
       });
     } catch (err) {
       logger.error(`[NodePtyTerminalBackend] Failed to spawn session ${sessionId}: ${err}`);

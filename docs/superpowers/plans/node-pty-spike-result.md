@@ -75,8 +75,14 @@ If `node-pty` fails to load (not rebuilt, ABI mismatch), the extension gracefull
 `node-pty` builds, smoke-tests, and has a well-understood, production-hardened ABI resolution path (`@electron/rebuild`). The native-module risk is retired — Option B is viable, gated on adding `@electron/rebuild` to the packaging pipeline.
 
 ### Phase 4 preconditions:
-- [ ] Add `@electron/rebuild` devDep
-- [ ] Add `vscode:prepublish` script to rebuild `node-pty` against Electron 30.x
-- [ ] Add `'node-pty'` to `esbuild.mjs` `external`
-- [ ] Add `copyNodePty()` to `esbuild.mjs`
-- [ ] Lazy-require `node-pty` with graceful fallback to Option A
+- [x] Add `@electron/rebuild` devDep
+- [x] Add `vscode:prepublish` script to rebuild `node-pty` against Electron 30.x
+- [x] Add `'node-pty'` to `esbuild.mjs` `external`
+- [x] Add `copyNodePty()` to `esbuild.mjs`
+- [x] Lazy-require `node-pty` with graceful fallback to Option A
+
+### Build machine requirement
+
+The `rebuild:node-pty` script (`npx @electron/rebuild -f -w node-pty -v 30.4.0`) requires **Spectre-mitigated MSVC libraries** to be installed. Without them, `node-gyp` fails with `MSB8040`. Install via Visual Studio Installer → Individual Components → search "Spectre" → check "MSVC v143 Spectre-mitigated libs" for x86/x64.
+
+On CI (GitHub Actions `windows-latest`), the "Desktop development with C++" workload includes these by default — no extra setup needed.

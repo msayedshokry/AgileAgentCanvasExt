@@ -11,6 +11,7 @@ import { concurrencyQueue } from '../workflow/concurrency-queue';
 import { getWorkflowExecutor } from '../workflow/workflow-executor';
 import { getTraceRecorder } from '../trace/trace-recorder';
 import { terminalExecutor } from '../workflow/terminal-executor';
+import { setActivePtyBackend } from '../workflow/embedded-terminal-provider';
 import { inferRoleFromWorkflow } from '../harness/role-inference';
 import { getPersonaForArtifactType } from '../chat/agent-personas';
 import { setKanbanAutoAdvance, isKanbanAutoAdvanceEnabled, getKanbanWipLimits } from '../workflow/kanban-settings';
@@ -82,6 +83,22 @@ function getTerminalRouter(webview: vscode.Webview): TerminalSessionRouter {
       type: 'terminal:capabilities',
       supportsInput: backend.supportsInput,
     });
+    // Wire the pty backend into the terminal executor so agents spawned
+    // via executeTerminalWorkflow run in embedded pty shells instead of
+    // VS Code terminals. When the setting is off or node-pty failed to
+    // load, ptyBackend is undefined and the executor falls back to Option A.
+    if (ptyBackend?.supportsInput) {
+      setActivePtyBackend(ptyBackend);
+      // When the pty shell exits, clean up executor tracking AND post
+      // terminal:exit to the webview so AgentTerminal tiles show the
+      // [session ended] marker.
+      ptyBackend.onSessionExit = (sessionId, artifactId, exitCode) => {
+        terminalExecutor.onPtySessionExit(artifactId, exitCode);
+        terminalRouter?.emitExit(artifactId);
+      };
+    } else {
+      setActivePtyBackend(undefined);
+    }
     lastWebview = webview;
   }
   return terminalRouter;

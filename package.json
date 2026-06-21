@@ -1420,7 +1420,9 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run rebuild:node-pty && npm run compile",
+    "rebuild:node-pty": "npx @electron/rebuild -f -w node-pty -v 30.4.0",
+    "_comment_rebuild": "Electron version (30.4.0) must match VS Code engine in 'engines.vscode'. When bumping ^1.93.0 → ^1.XX update the version here too.",
     "compile": "npm run check-types && npm run bundle && npm run compile-webview",
     "vsce:package": "vsce package --no-git-tag-version",
     "check-types": "tsc -p ./ --noEmit",
@@ -1446,6 +1448,7 @@
   },
   "devDependencies": {
     "@cucumber/cucumber": "^12.6.0",
+    "@electron/rebuild": "^4.0.4",
     "@types/chai": "^5.2.3",
     "@types/mock-require": "^3.0.0",
     "@types/node": "^20.19.33",

@@ -36,6 +36,8 @@ import {
   type KanbanVerdict,
 } from './kanban-verdict';
 
+import { getActivePtyBackend } from './embedded-terminal-provider';
+
 import { errMsg } from '../utils/error';
 import { inferRoleFromWorkflow } from '../harness/role-inference';
 import { PONYTAIL_HEURISTICS } from '../chat/ponytail-heuristics';
@@ -84,7 +86,8 @@ export async function checkProcessAlive(pid: number): Promise<boolean> {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface TerminalSession {
-  terminal: vscode.Terminal;
+  /** VS Code terminal instance; undefined for pty (embedded) sessions. */
+  terminal?: vscode.Terminal;
   sessionId: string;
   workflowId: string;
   artifactId: string;
@@ -102,6 +105,8 @@ export interface TerminalSession {
   lastOutputAt?: number;
   /** Gap #23: prompt length in characters for terminal cost estimation. */
   promptLength?: number;
+  /** True when the session runs via node-pty (Option B) instead of a VS Code terminal. */
+  isPty?: boolean;
 }
 
 /** vscode.Terminal has onDidWriteData at runtime but it's not in the type defs. */
@@ -340,16 +345,17 @@ export class TerminalExecutor implements vscode.Disposable {
     const sessionId = `term-${workflowId}-${artifactId}-${Date.now()}`;
 
     // Generate trace entry for the terminal execution
+    const executionMode = getActivePtyBackend() ? 'pty' : 'vscode-terminal';
     try {
       getTraceRecorder().record({
         sessionId,
         type: 'decision',
         agent: `terminal-${provider}`,
         data: {
-          decision: `started ${workflowId} via terminal (${provider})`,
+          decision: `started ${workflowId} via ${executionMode} (${provider})`,
           artifactId,
           artifactType: artifact?.type || 'unknown',
-          rationale: `Terminal-based agentic execution using ${provider}`,
+          rationale: `Terminal-based agentic execution using ${provider} (mode: ${executionMode})`,
         },
       });
     } catch {
@@ -369,8 +375,89 @@ export class TerminalExecutor implements vscode.Disposable {
 
     const prompt = buildTerminalPrompt(workflowId, artifact, outputFolder, options?.skillContent);
 
-    // Create the terminal with a descriptive name
     const termName = `AAC: ${workflowId} ${artifactId}`;
+    const args = buildCliCommand(provider, prompt);
+    const cmdLine = args.map((a) => shellQuote(a)).join(' ');
+
+    // ── Branch: embedded pty vs VS Code terminal ────────────────────────────
+    const ptyBackend = getActivePtyBackend();
+
+    if (ptyBackend) {
+      // ── Option B: embedded pty (bidirectional, no VS Code terminal) ──
+      logger.info(`[TerminalExecutor] Launching pty session for ${artifactId} (${provider})`);
+
+      let accumulatedData = '';
+      let lastOutputAt = Date.now();
+
+      // Spawn the pty shell process keyed by artifactId so onSessionExit
+      // can look up the session directly.
+      ptyBackend.spawnSession(artifactId);
+
+      // Attach a stream listener for output accumulation + webview streaming
+      const ptyDisposable = ptyBackend.attach(artifactId, (chunk: string) => {
+        accumulatedData += chunk;
+        lastOutputAt = Date.now();
+        this.scheduleLockTimeout(artifactId);
+
+        const cb = this.webviewStreams.get(artifactId);
+        if (cb) {
+          try { cb(chunk); } catch { this.webviewStreams.delete(artifactId); }
+        }
+      });
+
+      // Write the CLI command to the shell via pty
+      try {
+        ptyBackend.write(artifactId, cmdLine + '\n');
+      } catch (err) {
+        logger.error(`[TerminalExecutor] Failed to write command to pty: ${errMsg(err)}`);
+      }
+
+      const session: TerminalSession = {
+        terminal: undefined,
+        sessionId,
+        workflowId,
+        artifactId,
+        artifactType: artifact?.type || 'unknown',
+        agentRole,
+        provider,
+        startedAt: new Date().toISOString(),
+        accumulatedData,
+        dataListener: ptyDisposable,
+        promptLength: prompt.length,
+        isPty: true,
+      };
+      this.activeTerminals.set(artifactId, session);
+
+      // P1 #11: schedule lock-release timeout
+      this.scheduleLockTimeout(artifactId);
+
+      // Issue #21: register output-stall health checks. No PID is available
+      // for pty sessions, so the liveness check always returns true (the
+      // onSessionExit callback handles explicit termination).
+      const terminalAdapter = {
+        isAlive: () => true,
+        getLastOutputTime: () => lastOutputAt,
+      };
+      const artifactAdapter = {
+        lastModified: lastOutputAt,
+        getLastModifiedTime: () => lastOutputAt,
+      };
+      for (const check of createTerminalHealthChecks(terminalAdapter, artifactAdapter)) {
+        agentHealthMonitor.registerCheck(sessionId, check);
+      }
+      session.healthSessionId = sessionId;
+      session.lastOutputAt = lastOutputAt;
+
+      this.persistSessionMetadata();
+
+      logger.info(
+        `[TerminalExecutor] Launched pty session "${termName}" (${provider}) for ${artifactId}`,
+      );
+
+      return sessionId;
+    }
+
+    // ── Option A: VS Code terminal (existing path) ─────────────────────────
     const termOptions: vscode.TerminalOptions = {
       name: termName,
       message: `${agentRole} executing ${workflowId} on ${artifactId}`,
@@ -437,8 +524,6 @@ export class TerminalExecutor implements vscode.Disposable {
     // prompts — at that point we can plumb a separate `terminalLaunchLong`
     // hook per provider instead of dropping-in the stdin path inline.
     try {
-      const args = buildCliCommand(provider, prompt);
-      const cmdLine = args.map((a) => shellQuote(a)).join(' ');
       terminal.sendText(cmdLine, true);
     } catch (err) {
       logger.error(
@@ -620,9 +705,15 @@ export class TerminalExecutor implements vscode.Disposable {
     if (!session) {
       return false;
     }
+    // Pity sessions have no VS Code terminal to focus — the webview grid
+    // is the only "terminal" UI. Still return true so callers know the
+    // session is alive.
+    if (session.isPty) {
+      return true;
+    }
 
     try {
-      session.terminal.show(true);
+      session.terminal!.show(true);
       return true;
     } catch {
       // Terminal may have been disposed externally
@@ -671,7 +762,11 @@ export class TerminalExecutor implements vscode.Disposable {
     const session = this.activeTerminals.get(artifactId);
     if (!session) return;
     try {
-      session.terminal.dispose();
+      if (session.isPty) {
+        await getActivePtyBackend()?.kill(artifactId);
+      } else if (session.terminal) {
+        session.terminal.dispose();
+      }
       logger.info(`[TerminalExecutor] Killed terminal for ${artifactId}`);
     } catch (err) {
       logger.warn(`[TerminalExecutor] Failed to kill terminal for ${artifactId}: ${errMsg(err)}`);
@@ -690,7 +785,7 @@ export class TerminalExecutor implements vscode.Disposable {
       // processId is a Thenable<number|undefined> in newer @types/vscode —
       // the recovery flow tolerates a missing pid (treats as 'terminal-lost'),
       // so leaving it undefined here is correct.
-      name: s.terminal.name,
+      name: s.terminal?.name ?? `pty:${s.artifactId}`,
       startedAt: Date.parse(s.startedAt),
     }));
   }
@@ -726,7 +821,7 @@ export class TerminalExecutor implements vscode.Disposable {
       const sessions = Array.from(this.activeTerminals.values()).map(s => ({
         sessionId: s.sessionId,
         artifactId: s.artifactId,
-        name: s.terminal.name,
+        name: s.terminal?.name ?? (s.isPty ? `pty:${s.artifactId}` : `AAC: ${s.workflowId} ${s.artifactId}`),
         startedAt: Date.parse(s.startedAt),
         // Issue #35: truncate to keep terminal-sessions.json bounded. Live
         // output typically runs to <100KB; cap at 200KB as a safety margin.
@@ -773,8 +868,51 @@ export class TerminalExecutor implements vscode.Disposable {
   /**
    * Clean up tracking when a terminal is closed.
    */
+  /**
+   * Called by the message handler when a pty session exits (node-pty
+   * onExit callback). Mirrors the cleanup that onDidCloseTerminal does
+   * for VS Code terminals: clears tracking, lock timeout, health checks,
+   * and the concurrency lock.
+   */
+  onPtySessionExit(artifactId: string, _exitCode?: number): void {
+    const session = this.activeTerminals.get(artifactId);
+    if (!session?.isPty) return;
+
+    logger.debug(
+      `[TerminalExecutor] Pty session exited for ${artifactId} — cleaning up tracking`,
+    );
+    this.activeTerminals.delete(artifactId);
+
+    this.persistSessionMetadata();
+    this.clearLockTimeout(artifactId);
+
+    if (session.healthSessionId) {
+      try { agentHealthMonitor.deregisterCheck(session.healthSessionId); }
+      catch (err) { logger.debug(`[TerminalExecutor] deregisterCheck failed: ${errMsg(err)}`); }
+    }
+
+    concurrencyQueue.release(artifactId);
+
+    try {
+      getTraceRecorder().record({
+        sessionId: session.sessionId,
+        type: 'decision',
+        agent: `terminal-${session.provider}`,
+        data: {
+          decision: `completed ${session.workflowId} (pty exited)`,
+          artifactId,
+          artifactType: session.artifactType,
+        },
+      });
+    } catch {
+      // Trace recorder may not be initialized
+    }
+  }
+
+  /** Skip pty sessions — they don't have VS Code terminals to close. */
   private onDidCloseTerminal(closed: vscode.Terminal): void {
     for (const [artifactId, session] of this.activeTerminals.entries()) {
+      if (session.isPty) continue; // pty sessions cleaned up via onPtySessionExit
       if (session.terminal === closed) {
         logger.debug(
           `[TerminalExecutor] Terminal closed for ${artifactId} — cleaning up tracking`
