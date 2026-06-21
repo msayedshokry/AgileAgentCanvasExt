@@ -46,7 +46,7 @@ This repository compiles **two independent programs** that ship in one VSIX:
 (`node esbuild.mjs --production`) → `compile-webview` (`cd webview-ui && npm run
 build`). The two halves never share a module; they communicate **only** by
 `postMessage` (see §7). The webview build is a separate npm project
-(`webview-ui/package.json`, name `bmad-canvas-webview`) depending on `react`,
+(`webview-ui/package.json`) depending on `react`,
 `react-dom`, `three`, `3d-force-graph`, `marked`, `html2canvas`, and
 `@vscode/webview-ui-toolkit`.
 
@@ -164,7 +164,7 @@ other).
 
 The heart of persistence. Files:
 
-- **`artifact-store.ts`** (9,300 lines — the single largest module). `ArtifactStore`
+- **`artifact-store.ts`** (2,290 lines — the single largest module). `ArtifactStore`
   (`:206`) holds the entire project's artifacts in memory and is the *only*
   writer of truth. Key surface:
   - `loadFromFolder(uri)` (`:2515`) — reads the context folder into memory.
@@ -194,6 +194,18 @@ The heart of persistence. Files:
   `workspaceState`, shows a picker when ambiguous, and fires
   `onDidChangeActiveProject`. This is what lets a single window juggle several
   BMAD projects.
+
+**Store collaborators** (extracted during the architecture-hardening
+sweep, Phase 4) — `ArtifactStore` delegates to four cohesive method groups
+rather than carrying them inline; the **public surface is preserved**
+and the moved private bodies are thin one-line delegations:
+
+- `SprintStatusSync` — YAML sprint-status round-trip + epic/story on-disk patches.
+- `ArtifactFileWriter` — per-shape `save*ToFile` writers (vision / stories / epics / product-brief / PRD / architecture / test-cases) + `deleteSourceFile` + `getOutputFormat`. Invoked by `ArtifactStore.syncToFiles()` (`:5556`), which stays on the store as the dispatch fan-out point.
+- `SchemaArtifactMapper` — schema→internal mappers for Epic / Story / Requirement buckets.
+- `ArtifactMigrator` — backup, prune, implementation-folder migration. **`migrateToReferenceArchitecture` and `restorePreMigrationBackup` stay as public methods on `ArtifactStore`** (called directly by `extension.ts:454,468`); `ArtifactMigrator` holds the implementation.
+
+Type hygiene on the store post-extraction: **33 `any`** (down from ~189 pre-sweep).
 
 **Output format.** The store can emit `markdown`, `json`, or `dual`
 (`agileagentcanvas.outputFormat`). A migration in `extension.ts:1182`
@@ -278,6 +290,9 @@ The conversational surface and the AI plumbing.
      `gpt-tokenizer` estimate, and records to `costTracker` keyed by
      `workflow:<name>` when available, tagging entries `api` vs `estimate`
      (`:330-372`). This is what feeds the budget gauge and `cost-tracking.jsonl`.
+
+> **Methodology Carve-out:** The `Bmad*` mentions in this subsystem and in the internal types refer to the upstream BMAD-METHOD methodology to mirror and preserve schema-faithfulness. Specifically, this covers the 6 exported identifiers: `BmadModel` (`src/chat/ai-provider.ts`), and `BmadArtifacts`, `BmadArtifact`, `BmadArtifactChange`, `BmadArtifactTypeMap`, `BmadMetadata` (all in `src/types/index.ts`). These are not skill or workflow identifiers (live skill/persona paths live under `.github/aac-*.md` per Phase 2). The same framework designation applies to the subordinate path and configuration-key namespaces (`bmadPath`, `BmadPath`, `bmadResourcePath`, and `bmad-*` config keys).
+
 - **`agileagentcanvas-tools.ts`** (2,221 lines) — registers the 21 Language Model
   tools (`registerTools`, `:238`) the model can call mid-chat: file I/O scoped to
   the project (`agileagentcanvas_read_file`, `_write_file`, `_list_directory`,
@@ -467,11 +482,18 @@ external tool is absent.
 
 Not code — the *content* the engine executes. Structure:
 
-- `skills/` — ~140 skill folders, each a BMAD capability. Two parallel families:
-  `bmad-*` (upstream) and `aac-*` (this project's extended variants). Each skill
-  may contain `workflow.md`/`workflow.yaml` (the steps), `steps/`, `agents/`
-  (sub-agent persona markdown), and knowledge. The workflow registry is built by
-  scanning these.
+- `skills/` — ~92 skill folders, all under the unified **`aac-*` family**
+  (was ~140 = 48 `bmad-*` + 92 `aac-*` pre-Phase-2; the `bmad-*` skill /
+  persona identifier prefix was migrated during the architecture-hardening
+  sweep;  methodology terminology stays per the plan's carve-out). The single `bmad-`
+  token intentionally retained is the upstream npm bundle name in
+  `webview-ui/package.json#name` (renaming it would break the `webview-ui/`
+  consumer chain; it is npm metadata, not a skill or persona identifier).
+  Each skill
+  contains `workflow.md`/`workflow.yaml` (the steps), `steps/`, `agents/`
+  (sub-agent persona markdown), and knowledge. The workflow registry is built
+  by scanning these. Verify zero `bmad-*` folders with
+  `ls resources/_aac/skills/ | grep -c '^bmad-'` → 0.
 - `schemas/{bmm,cis,tea,common}/` — ~40 JSON Schemas that `SchemaValidator`
   enforces (e.g. `bmm/story.schema.json`, `bmm/epics.schema.json`,
   `bmm/architecture.schema.json`, `tea/test-cases.schema.json`).
@@ -610,31 +632,31 @@ by editing TypeScript.
 
 ## 10. Where reality differs from the docs
 
-These are points where the running code diverges from `CLAUDE.md` / `README.md`,
-worth knowing before trusting the prose:
+> **Purpose.** Each item below is a *checkable reality check*: a precise claim
+> about how the running code or on-disk layout diverges from `CLAUDE.md` /
+> `README.md`, anchored to a specific source (a setting, a code path, or a
+> directory tree) so a maintainer can verify or rewrite it. New items must point
+> at a specific source — no unsourced claim. Stale items must be deleted, not
+> softened.
 
 1. **"4-lane workflow."** `CLAUDE.md` describes a fixed 4-lane canvas. The code's
-   lane logic is rule-driven (`TRANSITION_RULES` in `lane-transitions.ts`) and the
-   Kanban supports configurable WIP limits and auto-advance
-   (`kanban.wipLimits`, `kanban.autoAdvance`, `kanban.maxIterations`); lanes are a
-   convention of those rules, not a hardcoded four.
-2. **"Workflows live in `resources/_aac/workflows/`."** They don't — there is no
-   top-level `workflows/` dir. Workflow definitions live inside each skill folder
-   (`resources/_aac/skills/<skill>/workflow.{md,yaml}`), and the registry is built
-   by scanning `skills/` at runtime (`buildWorkflowRegistry`), with the static
-   `WORKFLOW_REGISTRY` only a fallback. The "44 workflows" figure is approximate;
-   there are 39 `workflow.*` files at this commit and ~140 skills.
-3. **Provider list is broader than documented.** `CLAUDE.md` lists `auto, copilot,
+   lane logic is rule-driven (`TRANSITION_RULES` in `lane-transitions.ts:48`)
+   and the Kanban supports configurable WIP limits and auto-advance
+   (`kanban.wipLimits`, `kanban.autoAdvance`, `kanban.maxIterations`); lanes are
+   a convention of those rules, not a hardcoded four. Verify with
+   `grep -nE 'TRANSITION_RULES' src/workflow/lane-transitions.ts`.
+2. **Provider list is broader than documented.** `CLAUDE.md` lists `auto, copilot,
    openai, anthropic, gemini, ollama, antigravity`. The code's `ProviderType` also
-   includes **`omp`** (`ai-provider.ts:21`).
-4. **Agents are not in one `agents/` directory.** `CLAUDE.md` implies
-   `resources/_aac/agents/`. In reality persona/agent markdown is distributed
-   under individual skills (`skills/*/agents/`) plus module dirs (`tea/agents`,
-   `_config/agents`), and loaded by `agent-personas.ts`.
-5. **There is a large agentic/autonomy subsystem not mentioned in the overview.**
-   The `acp/`, `harness/`, `trace/`, and most of `workflow/` (orchestrator,
-   scheduler, circuit breaker, budget enforcer, terminal executor, autonomous git,
-   A2A) implement an autonomous multi-agent delivery loop that the high-level docs
-   don't describe. It is arguably the project's center of gravity.
-6. **graphify `index` command** was renamed upstream — the code maps the old
-   `index` command to `cluster-only` (`extension.ts:401`).
+   includes **`omp`** (`ai-provider.ts:21`). Verify with
+   `grep -nE "ProviderType\s*=" src/chat/ai-provider.ts`.
+3. **There is a large agentic/autonomy subsystem not mentioned in the overview.**
+   `acp/`, `harness/`, `trace/`, and the **core** autonomy modules of
+   `workflow/` — kanban-orchestrator, lane-transitions, auto-scheduler,
+   terminal-executor, circuit-breaker, budget-enforcer, autonomous-git —
+   implement an autonomous multi-agent delivery loop that the high-level docs
+   don't describe. It is arguably the project's center of gravity. Verify with
+   `ls -1 src | grep -E '^(acp|harness|trace)$'` and
+   `ls src/workflow/ | grep -cE '^(kanban-orchestrator|lane-transitions|auto-scheduler|terminal-executor|circuit-breaker|budget-enforcer|autonomous-git)\.ts$'`.
+4. **graphify `index` command** was renamed upstream — the code maps the old
+   `index` command to `cluster-only` (`extension.ts:402`). Verify with
+   `grep -n 'cluster-only' src/extension.ts`.

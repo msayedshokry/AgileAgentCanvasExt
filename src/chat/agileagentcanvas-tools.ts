@@ -95,7 +95,7 @@ export interface AgileAgentCanvasToolContext {
     /**
      * Set by the chat participant (or `WorkflowExecutor.executeWithTools`)
      * before tool invocations so every emitted trace entry carries the
-     * workflow name (e.g. `bmad-create-prd`, `dev-story`, `help`) for
+     * workflow name (e.g. `aac-create-prd`, `aac-dev-story`, `help`) for
      * per-workflow attribution (audit follow-up to gap #20/#42). Undefined
      * ⇒ the tool runs without a workflow tag — the resulting trace entry
      * simply omits the `workflowName` field, letting downstream filters

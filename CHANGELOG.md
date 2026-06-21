@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Removed: 10 legacy BMAD tea/testarch duplicate directories
+
+Ten legacy `bmad-tea` / `bmad-testarch-*` directories under `resources/_aac/tea/` are gone from the extension. Each was a stale duplicate of a live `aac-tea-*` skill that's been the actual runtime path since the Phase 2 baseline refactor; nothing that reads the catalogue, the skill manifest, or installed skills can notice the deletion. The BMAD → AAC migration is now fully resolved on disk — only the methodology carve-outs (the `{bmad-path}` workflow-template variable, BMAD-methodology persona copy in chat-participant.ts, the `BMAD Integration` UI section) remain by design per Decision Rule 2. The deletion leaves every skill ID invokable and every workflow reachable.
+
+- `resources/_aac/tea/agents/bmad-tea/` → live runtime at `resources/_aac/tea/agents/aac-tea/`
+- 8 `resources/_aac/tea/workflows/testarch/bmad-testarch-{atdd,automate,ci,framework,nfr,test-design,test-review,trace}/` → live runtime at the matching `resources/_aac/skills/aac-tea-<suffix>/` skill directory
+- `bmad-testarch-teach-me-testing/` was already gone (no-op deletion); its `resources/_aac/skills/aac-tea-teach-me-testing/` twin was always live
+
 ### Refactored: Phase 18 — `pickChanges` helper centralised + per-file `*_FIELDS: readonly string[]` consts
 
 Phase 18 closes the canonical "parts" pattern that Phase 17 promoted across all four reducer modules (`Object.assign(upd, pickChanges(changes, [ ... ]))`). Two follow-up refactors tidy up the surrounding debt across four commits in sequence.
@@ -237,6 +245,31 @@ Closes the Phase 3 compression rollout (Φ-rate → real BPE → summarise).
   for test isolation; vitest `beforeEach` clears both before each suite.
 
 All phases green: tsc clean, vitest 132/132 in 1.36s, production bundle clean.
+
+### Refactored: BMAD → AAC Phase 2 close-out
+
+The Phase 2 catalogue migration is now fully resolved with a final sweep of internal resource identifiers, test fixtures, and manifest rows. Every deployed agent and skill now correctly resolves to its renamed skill/agent directory, leaving only the named methodology carve-outs by design.
+
+- The production installer now emits 6 agent personas and 12 skill tags under their renamed skill/agent directories, replacing the prior legacy names.
+- Six previously-missing catalogue rows (5 entries that previously lacked a parallel directory, plus 1 semantic remap) have been added to the skill manifest, so the help-skill auto-router surfaces them by name.
+- Internal documentation examples and test fixtures are updated to use real framework paths or explicit `mock-workflow-fixture` literals, so synthetic placeholders no longer leak into production references.
+- The residual footprint mapping document has been expanded to capture the full v1 → v5 documentation evolution, finalize the phase close-out status, and confirm 0 keep-as-stable-identifier IDs remain.
+
+### Fixed: Framework documentation and methodology prose boundaries
+
+Phase 5 prose reconciliation clarifies where BMAD-methodology branding ends and the extension's own identifier namespace begins across the three primary user-facing surfaces.
+
+- The main README now distinguishes the methodology's full theoretical catalog from the 10 curated built-in guided workflows shipped in this extension, and adds an inline carve-out paragraph naming every place the upstream attribution stays by design.
+- The architecture document enumerates the 6 exported TypeScript identifiers and configuration namespaces kept under the methodology carve-out policy, so future maintainers don't search for an absent rename target.
+- Copilot workspace instructions now reference the new plural naming convention for installed framework agents, and an inline carve-out paragraph names the persona-file paths the migration has actually landed under.
+
+### Feature: Mapping-document CI guards and pre-commit linting
+
+A dedicated linting script now protects the residual mapping document from the cross-paragraph contradiction and milestone-row regression patterns that have blocked prior releases of this document, with both pre-commit and CI hooks wired in.
+
+- New strict-mode linting script enforces non-decreasing row counts in the documentation-evolution table, matches the milestone intro paragraph to the actual row count, and flags missing 'resolved' sentinels in the deletion/stable-identifier sections. Warn-only `--soft` flag for migrations.
+- A five-fixture regression smoke test catches future parser bugs without coupling to the live document, so editor-side refactors of the parser fail fast against pinned fixture inputs.
+- Pre-commit hook runs the regression guard automatically when the mapping document is staged; the CI pipeline includes the same lint as a dedicated build step that blocks merge on any violation.
 
 
 ---

@@ -2740,7 +2740,7 @@ Begin executing the workflow now.`;
         // Audit follow-up to gap #20/#42 — thread the workflow name into
         // `sharedToolContext` so every trace entry emitted by LM tools
         // fired during this workflow execution is tagged with the
-        // workflow's basename (e.g. `bmad-create-prd`, `dev-story`) and
+        // workflow's basename (e.g. `aac-create-prd`, `aac-dev-story`) and
         // reconciles with the cost-tracker's `workflow:<basename>` bucket.
         // The chat-participant dispatch site's outer try/finally restores
         // `currentWorkflowName` on exit, so this is a single non-invasive

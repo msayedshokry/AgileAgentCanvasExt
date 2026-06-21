@@ -51,4 +51,28 @@ FOOTER
   exit 1
 fi
 
+# Mapping doc table-vs-narrative consistency check. Catches the v3/v4-ship-blocker
+# class of desync (Doc Evolution count column, close-out 2.1/2.4 sum claims,
+# "N phase milestones" intro vs row count) BEFORE the commit lands. Slow-fail.
+if printf '%s\n' "$staged" | grep -q '^docs/superpowers/plans/bmad-to-aac-mapping.md$'; then
+  echo "→ scripts/lint-mapping-doc.mjs running against staged mapping doc..."
+  if ! node scripts/lint-mapping-doc.mjs; then
+    cat >&2 <<'MAPPING_ERR'
+
+❌ Refusing to commit: mapping doc has internal-consistency violations that mirror
+   the v3/v4-ship-blocker class (table count != close-out sum, milestones intro !=
+   row count, etc.). The fix is to bring the dependent sites into agreement and
+   re-stage.
+
+   Quick diagnostics:
+     npm run lint:mapping-doc                # see violations on the current file
+     npm run lint:mapping-doc -- --soft      # warn-only (use while migrating)
+
+   Bypass (use only when you really mean it):
+     git commit --no-verify
+MAPPING_ERR
+    exit 1
+  fi
+fi
+
 exit 0

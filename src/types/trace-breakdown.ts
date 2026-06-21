@@ -32,7 +32,7 @@ export const UNTAGGED_BUCKET = '(untagged)';
  * `TracePanel` component prop in the webview.
  */
 export interface TraceBreakdownRow {
-  /** Workflow label (e.g. `bmad-create-prd`, `dev-story`) or `UNTAGGED_BUCKET`. */
+  /** Workflow label (e.g. `aac-create-prd`, `aac-dev-story`) or `UNTAGGED_BUCKET`. */
   workflow: string;
   /** Number of `tool_call`-type entries bucketed under `workflow`. */
   toolCallCount: number;

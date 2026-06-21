@@ -1214,15 +1214,15 @@ BMAD JSON schemas for artifact validation are located at: \`${schemasDir}\`
 
 | Category | Best Skills |
 |----------|-------------|
-| **Planning & requirements** | bmad-create-product-brief, bmad-create-prd, bmad-create-epics-and-stories |
+| **Planning & requirements** | aac-product-brief, aac-create-prd, aac-create-epics-and-stories |
 | **Development** | bmad-dev-story, bmad-quick-dev, bmad-code-review |
-| **Testing & quality** | aac-agent-tea, aac-tea-ci, bmad-tea-testarch-test-design |
-| **Architecture** | bmad-create-architecture, bmad-generate-project-context |
-| **UX & design** | bmad-create-ux-design, aac-cis-design-thinking |
+| **Testing & quality** | aac-agent-tea, aac-tea-ci, aac-tea-test-design |
+| **Architecture** | aac-create-architecture, aac-generate-project-context |
+| **UX & design** | aac-create-ux-design, aac-cis-design-thinking |
 | **Creativity & innovation** | aac-cis-innovation-strategy, aac-cis-problem-solving, aac-cis-storytelling |
-| **Sprint & project management** | bmad-sprint-planning, bmad-sprint-status, bmad-retrospective |
-| **Documentation** | bmad-document-project, aac-generate-readme, aac-generate-api-docs |
-| **Conversion** | bmad-to-json, aac-agent-canvas-integrator |
+| **Sprint & project management** | aac-sprint-planning, aac-sprint-status, aac-retrospective |
+| **Documentation** | aac-document-project, aac-generate-readme, aac-generate-api-docs |
+| **Conversion** | aac-to-json, aac-agent-canvas-integrator |
 
 ## Full Skill Catalogue
 
@@ -1235,14 +1235,14 @@ When the user asks to "talk to" a persona by name, match to the corresponding ag
 | Persona | Name | Skill |
 |---------|------|-------|
 | Master | BMad Master | aac-agent-analyst |
-| Analyst | Mary | bmad-agent-analyst |
-| PM | John | bmad-agent-pm |
-| Architect | Winston | bmad-agent-architect |
-| Dev | Amelia | bmad-agent-dev |
+| Analyst | Mary | aac-agent-analyst |
+| PM | John | aac-agent-pm |
+| Architect | Winston | aac-agent-architect |
+| Dev | Amelia | aac-agent-dev |
 | QA | Quinn | aac-agent-tea |
 | Scrum Master | Bob | aac-agent-pm |
-| UX Designer | Sally | bmad-agent-ux-designer |
-| Tech Writer | Paige | bmad-agent-tech-writer |
+| UX Designer | Sally | aac-agent-ux-designer |
+| Tech Writer | Paige | aac-agent-tech-writer |
 | Test Architect | Murat | aac-agent-tea |
 | Solo Dev | Barry | aac-agent-dev |
 | Agent Builder | Bond | aac-bmb-agent-builder |

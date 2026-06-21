@@ -33,7 +33,7 @@ function makeBreakdown(over: Partial<TraceBreakdownMessage>): TraceBreakdownMess
     totalErrors: 0,
     perWorkflow: [
       {
-        workflow: 'bmad-create-prd',
+        workflow: 'mock-workflow-fixture',
         toolCallCount: 3,
         errorCount: 0,
         distinctTools: ['foo', 'bar'],
@@ -150,13 +150,13 @@ describe('TracePanel', () => {
     expect(screen.queryByText('foo')).not.toBeInTheDocument();
     expect(screen.queryByText('bar')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByLabelText(/Expand bmad-create-prd tools/i));
+    fireEvent.click(screen.getByLabelText(/Expand mock-workflow-fixture tools/i));
 
     expect(screen.getByText('foo')).toBeInTheDocument();
     expect(screen.getByText('bar')).toBeInTheDocument();
     // aria-label flips to Collapse on the same button.
     expect(
-      screen.getByLabelText(/Collapse bmad-create-prd tools/i),
+      screen.getByLabelText(/Collapse mock-workflow-fixture tools/i),
     ).toBeInTheDocument();
   });
 
@@ -168,9 +168,9 @@ describe('TracePanel', () => {
       />,
     );
 
-    fireEvent.click(screen.getByLabelText(/Expand bmad-create-prd tools/i));
+    fireEvent.click(screen.getByLabelText(/Expand mock-workflow-fixture tools/i));
     expect(screen.getByText('foo')).toBeInTheDocument();
-    fireEvent.click(screen.getByLabelText(/Collapse bmad-create-prd tools/i));
+    fireEvent.click(screen.getByLabelText(/Collapse mock-workflow-fixture tools/i));
     expect(screen.queryByText('foo')).not.toBeInTheDocument();
   });
 
@@ -186,7 +186,7 @@ describe('TracePanel', () => {
           totalEntries: 4,
           perWorkflow: [
             {
-              workflow: 'bmad-create-prd',
+              workflow: 'mock-workflow-fixture',
               toolCallCount: 3,
               errorCount: 0,
               distinctTools: ['foo', 'bar'],
