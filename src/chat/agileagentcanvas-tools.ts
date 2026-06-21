@@ -22,7 +22,7 @@ import deepmerge, { type Options as DeepmergeOptions } from 'deepmerge';
 /**
  * AgileAgentCanvas Language Model Tools
  *
- * Registers three tools that the LLM can call during workflow execution:
+ * Registers 25 LM tools that the LLM can call during workflow execution:
  *   agileagentcanvas_read_file       — read any file under bmadPath, outputPath, or workspace folders
  *   agileagentcanvas_list_directory  — list contents of any directory under bmadPath, outputPath, or workspace folders
  *   agileagentcanvas_update_artifact — write changes to an artifact in the store
@@ -95,7 +95,7 @@ export interface AgileAgentCanvasToolContext {
     /**
      * Set by the chat participant (or `WorkflowExecutor.executeWithTools`)
      * before tool invocations so every emitted trace entry carries the
-     * workflow name (e.g. `bmad-create-prd`, `dev-story`, `help`) for
+     * workflow name (e.g. `aac-create-prd`, `aac-dev-story`, `help`) for
      * per-workflow attribution (audit follow-up to gap #20/#42). Undefined
      * ⇒ the tool runs without a workflow tag — the resulting trace entry
      * simply omits the `workflowName` field, letting downstream filters
@@ -1536,7 +1536,103 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
         )
     );
 
-    logger.debug('[AgileAgentCanvasTools] Registered 21 language model tools');
+    // ── agileagentcanvas_headroom_simulate ──────────────────────────────────────
+    disposables.push(
+        vscode.lm.registerTool<{ messages: any[]; model?: string }>(
+            'agileagentcanvas_headroom_simulate',
+            wrapToolWithDynamicTracing({
+                async invoke(request, _token) {
+                    return trackToolCall('agileagentcanvas_headroom_simulate', async () => {
+                        const { messages, model } = request.input;
+
+                        if (!messages || !Array.isArray(messages)) {
+                            return new vscode.LanguageModelToolResult([
+                                new vscode.LanguageModelTextPart(
+                                    JSON.stringify({ ok: false, reason: 'invalid_messages', message: 'messages must be a non-empty array.' })
+                                )
+                            ]);
+                        }
+
+                        if (messages.length > 100) {
+                            return new vscode.LanguageModelToolResult([
+                                new vscode.LanguageModelTextPart(
+                                    JSON.stringify({ ok: false, reason: 'too_many_messages', message: 'Maximum 100 messages for simulation.' })
+                                )
+                            ]);
+                        }
+
+                        try {
+                            const { simulateMessages } = await import('../integrations/headroom/headroom-compressor.js');
+                            const sim = await simulateMessages(messages, model);
+                            if (!sim) {
+                                return new vscode.LanguageModelToolResult([
+                                    new vscode.LanguageModelTextPart(
+                                        JSON.stringify({ ok: false, reason: 'headroom_unavailable', message: 'Headroom is not available or not enabled.' })
+                                    )
+                                ]);
+                            }
+                            logger.debug(`[agileagentcanvas_headroom_simulate] tokensBefore=${sim.tokensBefore} tokensSaved=${sim.tokensSaved}`);
+                            return new vscode.LanguageModelToolResult([
+                                new vscode.LanguageModelTextPart(JSON.stringify({ ok: true, ...sim }))
+                            ]);
+                        } catch (err: any) {
+                            const msg = `Simulate error: ${err?.message ?? err}`;
+                            logger.debug(`[agileagentcanvas_headroom_simulate] ${msg}`);
+                            return new vscode.LanguageModelToolResult([
+                                new vscode.LanguageModelTextPart(JSON.stringify({ ok: false, reason: 'simulate_error', message: msg }))
+                            ]);
+                        }
+                    });
+                }
+            }, 'agileagentcanvas_headroom_simulate')
+        )
+    );
+
+    // ── agileagentcanvas_headroom_retrieve ───────────────────────────────────────
+    disposables.push(
+        vscode.lm.registerTool<{ hash: string; query?: string }>(
+            'agileagentcanvas_headroom_retrieve',
+            wrapToolWithDynamicTracing({
+                async invoke(request, _token) {
+                    return trackToolCall('agileagentcanvas_headroom_retrieve', async () => {
+                        const { hash, query } = request.input;
+
+                        if (!hash || typeof hash !== 'string') {
+                            return new vscode.LanguageModelToolResult([
+                                new vscode.LanguageModelTextPart(
+                                    JSON.stringify({ ok: false, reason: 'invalid_hash', message: 'hash must be a non-empty string.' })
+                                )
+                            ]);
+                        }
+
+                        try {
+                            const { retrieveFromCCR } = await import('../integrations/headroom/headroom-compressor.js');
+                            const result = await retrieveFromCCR(hash, query);
+                            if (!result) {
+                                return new vscode.LanguageModelToolResult([
+                                    new vscode.LanguageModelTextPart(
+                                        JSON.stringify({ ok: false, reason: 'retrieval_failed', message: `CCR retrieve failed for hash ${hash}. Headroom may not be available or the hash may have expired.` })
+                                    )
+                                ]);
+                            }
+                            logger.debug(`[agileagentcanvas_headroom_retrieve] hash=${hash} retrieved=${!!result}`);
+                            return new vscode.LanguageModelToolResult([
+                                new vscode.LanguageModelTextPart(JSON.stringify({ ok: true, ...result }))
+                            ]);
+                        } catch (err: any) {
+                            const msg = `Retrieve error: ${err?.message ?? err}`;
+                            logger.debug(`[agileagentcanvas_headroom_retrieve] ${msg}`);
+                            return new vscode.LanguageModelToolResult([
+                                new vscode.LanguageModelTextPart(JSON.stringify({ ok: false, reason: 'retrieve_error', message: msg }))
+                            ]);
+                        }
+                    });
+                }
+            }, 'agileagentcanvas_headroom_retrieve')
+        )
+    );
+
+    logger.debug('[AgileAgentCanvasTools] Registered 25 language model tools');
     return disposables;
 }
 
@@ -2071,6 +2167,54 @@ export function getToolDefinitions(): vscode.LanguageModelChatTool[] {
                     }
                 },
                 required: ['query']
+            }
+        },
+        {
+            name: 'agileagentcanvas_headroom_simulate',
+            description:
+                "Dry-run compression preview — shows how many tokens Headroom would save " +
+                "without actually modifying messages or making an LLM call. " +
+                "Use this before sending a large context to estimate cost savings. " +
+                "Returns tokensBefore, tokensAfter, tokensSaved, estimatedSavings, " +
+                "transforms, and wasteSignals. Max 100 messages.",
+            inputSchema: {
+                type: 'object' as const,
+                properties: {
+                    messages: {
+                        type: 'array' as const,
+                        description: "The chat messages to simulate compression on (max 100)",
+                        items: {
+                            type: 'object' as const
+                        }
+                    },
+                    model: {
+                        type: 'string',
+                        description: "Optional model hint for compression tuning (e.g. 'gpt-4')"
+                    }
+                },
+                required: ['messages']
+            }
+        },
+        {
+            name: 'agileagentcanvas_headroom_retrieve',
+            description:
+                "Retrieves original content from the Headroom CCR (Contextual Compression " +
+                "Retrieval) store by hash. Use this when a compression result includes " +
+                "ccrHashes and you need to recover the original text for a specific hash. " +
+                "Returns the original content as a JSON object.",
+            inputSchema: {
+                type: 'object' as const,
+                properties: {
+                    hash: {
+                        type: 'string',
+                        description: "CCR hash to retrieve (from compress result's ccrHashes array)"
+                    },
+                    query: {
+                        type: 'string',
+                        description: "Optional query to filter or scope the retrieval"
+                    }
+                },
+                required: ['hash']
             }
         }
     ];

@@ -1240,6 +1240,13 @@
             "type": "boolean",
             "default": true,
             "description": "Enable Headroom context compression. When enabled, chat messages are transparently compressed before reaching the AI provider, saving tokens. Requires the Headroom proxy to be running (npx headroom-ai proxy). Disable to opt out of compression."
+          },
+          "agileagentcanvas.headroom.compressionLevel": {
+            "type": "number",
+            "default": 3,
+            "minimum": 1,
+            "maximum": 5,
+            "description": "Compression aggressiveness level (1-5). 1 = light compression (preserve more context), 3 = balanced (default), 5 = aggressive (max token savings). Maps to the bias parameter in Headroom's CompressionProfile."
           }
         }
       },
@@ -1328,6 +1335,11 @@
                 "minimum": 1
               }
             }
+          },
+          "agileagentcanvas.agenticKanban.embeddedTerminal": {
+            "type": "boolean",
+            "default": false,
+            "description": "Run agents in an embedded node-pty terminal you can type into, instead of the VS Code terminal panel. When enabled, agent workflows spawn inside xterm.js tiles in the Terminals view instead of the VS Code integrated terminal. Requires node-pty to be rebuilt for the VS Code Electron version (handled automatically by the packaging step). Disable to use the output-only VS Code terminal fallback."
           }
         }
       },
@@ -1408,7 +1420,9 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run rebuild:node-pty && npm run compile",
+    "rebuild:node-pty": "npx @electron/rebuild -f -w node-pty -v 30.4.0",
+    "_comment_rebuild": "Electron version (30.4.0) must match VS Code engine in 'engines.vscode'. When bumping ^1.93.0 → ^1.XX update the version here too.",
     "compile": "npm run check-types && npm run bundle && npm run compile-webview",
     "vsce:package": "vsce package --no-git-tag-version",
     "check-types": "tsc -p ./ --noEmit",
@@ -1418,6 +1432,8 @@
     "watch": "node esbuild.mjs --watch",
     "lint": "eslint src features --ext ts --rulesdir eslint-rules",
     "lint:changelog": "node scripts/lint-changelog.mjs",
+    "lint:mapping-doc": "node scripts/lint-mapping-doc.mjs",
+    "lint:mapping-doc:smoke": "node scripts/lint-mapping-doc.smoke.mjs",
     "prepare": "git config core.hooksPath .githooks || true",
     "pretest": "node -e \"const fs=require('fs'),path=require('path');const RE=/^\\.test-traces-\\d+$/;const SCRATCH=['cucumber-output.txt','cucumber-output.json','cucumber-full-output.txt','cucumber-remaining.json','full-output.txt','full-output-2.txt','remaining-failures.txt'];const root=process.cwd();let n=0;for(const e of fs.readdirSync(root)){if(RE.test(e)||SCRATCH.includes(e)){try{fs.rmSync(path.join(root,e),{recursive:true,force:true});n++;}catch{}}}console.log('[pretest] cleaned',n,'scratch entries');\"",
     "clean:scratch": "node -e \"const fs=require('fs'),path=require('path');const RE=/^\\.test-traces-\\d+$/;const SCRATCH=['cucumber-output.txt','cucumber-output.json','cucumber-full-output.txt','cucumber-remaining.json','full-output.txt','full-output-2.txt','remaining-failures.txt'];const root=process.cwd();let n=0;for(const e of fs.readdirSync(root)){if(RE.test(e)||SCRATCH.includes(e)){try{fs.rmSync(path.join(root,e),{recursive:true,force:true});n++;}catch{}}}console.log('cleaned',n,'scratch entries');\"",
@@ -1432,6 +1448,7 @@
   },
   "devDependencies": {
     "@cucumber/cucumber": "^12.6.0",
+    "@electron/rebuild": "^4.0.4",
     "@types/chai": "^5.2.3",
     "@types/mock-require": "^3.0.0",
     "@types/node": "^20.19.33",
@@ -1460,6 +1477,7 @@
     "gpt-tokenizer": "^3.4.0",
     "headroom-ai": "^0.22.4",
     "microdiff": "^1.5.0",
+    "node-pty": "^1.1.0",
     "pdfkit": "^0.17.2",
     "simple-git": "^3.36.0",
     "yaml": "^2.8.2"

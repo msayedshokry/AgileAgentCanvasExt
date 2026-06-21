@@ -1,0 +1,15 @@
+.terminal-grid { display: grid; gap: 8px; height: 100%;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); }
+.terminal-grid[data-count="1"] { grid-template-columns: 1fr; }
+.terminal-tile { display: flex; flex-direction: column; min-height: 220px;
+  border: 1px solid var(--vscode-panel-border, #333); border-radius: 6px; overflow: hidden;
+  background: var(--vscode-terminal-background, #1e1e1e); }
+.terminal-tile-header { display: flex; align-items: center; gap: 8px; padding: 4px 8px;
+  font-size: 11px; background: var(--vscode-sideBar-background, #252526); }
+.terminal-tile-title { font-weight: 600; }
+.terminal-tile-role { margin-left: auto; opacity: .7; }
+.terminal-tile-dot { width: 8px; height: 8px; border-radius: 50%; background: #888; }
+.terminal-tile-dot.status-running { background: #3fb950; }
+.terminal-tile-dot.status-failed, .terminal-tile-dot.status-dead { background: #f85149; }
+.terminal-tile-body { flex: 1; min-height: 0; padding: 4px; }
+.terminal-grid-empty { padding: 24px; text-align: center; opacity: .6; }

@@ -5,7 +5,7 @@ import { KANBAN_COLUMNS, normalizeToKanbanColumn } from '../components/kanban/Ka
 import { vscode } from '../vscodeApi';
 import '../components/kanban/Kanban.css';
 
-import { TerminalModal } from './TerminalModal';
+import { TerminalGrid, type TerminalGridSession } from './TerminalGrid';
 import { AgenticDetailPanel } from './AgenticDetailPanel';
 import { ContextMenu } from './ContextMenu';
 import { useEvent } from './useEvent';
@@ -81,7 +81,8 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
   const [pendingTransitions, setPendingTransitions] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<KanbanToast | null>(null);
   const [loading, setLoading] = useState<boolean>(!initialArtifacts);
-  const [terminalModal, setTerminalModal] = useState<{ artifactId: string; artifactTitle: string } | null>(null);
+  const [view, setView] = useState<'board' | 'terminals'>('board');
+  const [terminalInteractive, setTerminalInteractive] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
   const agentInfoCache = useRef<Map<string, { info: AgentInfo; status: string }>>(new Map());
@@ -260,16 +261,10 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
       case 'terminalReconnected': {
         // Issue #35: the autonomy lifecycle restored the stream for an
         // orphaned terminal after VS Code restart / network blip. Show a
-        // toast so the user knows the agent is back online, and auto-open
-        // the TerminalModal so the buffered chunks become visible
-        // immediately. If a modal is already open (for this artifact or
-        // another), skip the auto-open so the modal's own `terminalReconnected`
-        // listener handles the state — we don't want to throwaway whatever
-        // the user is currently looking at.
+        // toast so the user knows the agent is back online.
         const name = message.terminalName ?? message.sessionId ?? 'terminal';
-        const chunks = typeof message.bufferedData === 'string' ? message.bufferedData : '';
-        if (!terminalModal && message.artifactId && chunks.length > 0) {
-          setTerminalModal({ artifactId: message.artifactId, artifactTitle: name });
+        if (message.artifactId) {
+          setView('terminals');
         }
         setToast({ message: `Terminal reconnected: ${name}`, type: 'success' });
         break;
@@ -301,6 +296,10 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
         // were unblocked by a status change).
         const incoming: DependencyBadge[] = Array.isArray(message.badges) ? message.badges : [];
         setDepBadges(new Map(incoming.map(b => [b.id, b])));
+        break;
+      }
+      case 'terminal:capabilities': {
+        setTerminalInteractive(!!message.supportsInput);
         break;
       }
       case 'agentStateUpdated': {
@@ -494,6 +493,19 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
     }
     return { displayItems: enriched, dimmedIds: dimmed };
   }, [items, pendingTransitions, searchQuery, depBadges]);
+
+  // ── TerminalGrid sessions derived from agent state ───────────────────────
+  const terminalSessions = useMemo<TerminalGridSession[]>(() =>
+    displayItems
+      .filter(item => item.agentState?.status === 'running')
+      .map(item => ({
+        sessionId: item.id,
+        title: item.title,
+        agentRole: item.agentState?.agentRole,
+        statusKey: item.agentState?.status ?? 'running',
+      })),
+    [displayItems],
+  );
 
   const epicIdsWithChildren = useMemo(() => {
     const ids = new Set<string>();
@@ -813,6 +825,21 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
       <header className="agentic-kanban-header">
         <h2>Agentic Execution Board</h2>
         <div className="agentic-kanban-toolbar">
+          <button
+            onClick={() => setView(v => v === 'terminals' ? 'board' : 'terminals')}
+            style={{
+              background: view === 'terminals' ? 'var(--vscode-button-background)' : 'transparent',
+              color: view === 'terminals' ? 'var(--vscode-button-foreground)' : 'var(--vscode-descriptionForeground)',
+              border: '1px solid var(--vscode-button-border, var(--vscode-panel-border))',
+              borderRadius: '4px',
+              padding: '4px 8px',
+              fontSize: '12px',
+              cursor: 'pointer',
+            }}
+            title="Watch all running agent terminals live"
+          >
+            {view === 'terminals' ? 'Board' : 'Terminals'}
+          </button>
           <input
             ref={searchInputRef}
             className="agentic-kanban-search"
@@ -890,6 +917,9 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
 
       <TracePanel breakdown={traceBreakdown} />
 
+      {view === 'terminals' ? (
+        <TerminalGrid sessions={terminalSessions} interactive={terminalInteractive} />
+      ) : (
       <div className="agentic-kanban-board">
         {KANBAN_COLUMNS.map(col => (
           <KanbanColumn
@@ -919,12 +949,16 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
           />
         ))}
       </div>
+      )}
 
       {selectedItem && (
         <AgenticDetailPanel
           item={selectedItem}
           onClose={() => { setSelectedIds(new Set()); setAnchorId(null); }}
-          onOpenTerminal={(item) => setTerminalModal({ artifactId: item.id, artifactTitle: item.title })}
+          onOpenTerminal={(item) => {
+            setView('terminals');
+            vscode.postMessage({ type: 'kanban:jumpToTerminal', artifactId: item.id });
+          }}
           infoCache={agentInfoCache}
           resumingArtifactId={resumingArtifactId}
           onResumeStateChange={setResumingArtifactId}
@@ -948,16 +982,6 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
         </div>
       )}
 
-      {terminalModal && (
-        <TerminalModal
-          artifactId={terminalModal.artifactId}
-          artifactTitle={terminalModal.artifactTitle}
-          onClose={() => {
-            vscode.postMessage({ type: 'kanban:closeTerminal', artifactId: terminalModal.artifactId });
-            setTerminalModal(null);
-          }}
-        />
-      )}
 
       {goalReviewOpen && pendingGoal && (
         <GoalDecomposerModal

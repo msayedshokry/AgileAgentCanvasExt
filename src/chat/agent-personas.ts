@@ -52,26 +52,26 @@ export type ArtifactAgentKey =
 // ── Artifact-type → skill mapping ────────────────────────────────────────────
 
 const ARTIFACT_TYPE_TO_AGENT: Record<string, { skillName: string; key: ArtifactAgentKey }> = {
-    'vision':              { skillName: 'bmad-agent-pm',             key: 'pm' },
-    'product-brief':       { skillName: 'bmad-agent-pm',             key: 'pm' },
-    'prd':                 { skillName: 'bmad-agent-pm',             key: 'pm' },
-    'requirement':         { skillName: 'bmad-agent-analyst',        key: 'analyst' },
-    'epic':                { skillName: 'bmad-agent-pm',             key: 'pm' },
-    'story':               { skillName: 'bmad-agent-dev',            key: 'dev' },
-    'use-case':            { skillName: 'bmad-agent-analyst',        key: 'analyst' },
-    'architecture':        { skillName: 'bmad-agent-architect',      key: 'architect' },
+    'vision':              { skillName: 'aac-agent-pm',              key: 'pm' },
+    'product-brief':       { skillName: 'aac-agent-pm',              key: 'pm' },
+    'prd':                 { skillName: 'aac-agent-pm',              key: 'pm' },
+    'requirement':         { skillName: 'aac-agent-analyst',         key: 'analyst' },
+    'epic':                { skillName: 'aac-agent-pm',              key: 'pm' },
+    'story':               { skillName: 'aac-agent-dev',             key: 'dev' },
+    'use-case':            { skillName: 'aac-agent-analyst',         key: 'analyst' },
+    'architecture':        { skillName: 'aac-agent-architect',       key: 'architect' },
     'test-case':           { skillName: 'aac-agent-tea',             key: 'tea' },
     'test-strategy':       { skillName: 'aac-agent-tea',             key: 'tea' },
     'nfr':                 { skillName: 'aac-agent-tea',             key: 'tea' },
-    'sprint':              { skillName: 'bmad-agent-dev',            key: 'dev' },
-    'ux-design':           { skillName: 'bmad-agent-ux-designer',    key: 'ux-designer' },
-    'readiness':           { skillName: 'bmad-agent-architect',      key: 'architect' },
-    'party':               { skillName: 'bmad-party-mode',           key: 'analyst' },
-    'document':            { skillName: 'bmad-agent-analyst',        key: 'analyst' },
-    'code-review':         { skillName: 'bmad-agent-dev',            key: 'dev' },
+    'sprint':              { skillName: 'aac-agent-dev',             key: 'dev' },
+    'ux-design':           { skillName: 'aac-agent-ux-designer',     key: 'ux-designer' },
+    'readiness':           { skillName: 'aac-agent-architect',       key: 'architect' },
+    'party':               { skillName: 'aac-party-mode',            key: 'analyst' },
+    'document':            { skillName: 'aac-agent-analyst',         key: 'analyst' },
+    'code-review':         { skillName: 'aac-agent-dev',             key: 'dev' },
     'ci-pipeline':         { skillName: 'aac-agent-tea',             key: 'tea' },
-    'quick-spec':          { skillName: 'bmad-agent-dev',            key: 'dev' },
-    'quick-dev':           { skillName: 'bmad-agent-dev',            key: 'dev' },
+    'quick-spec':          { skillName: 'aac-agent-dev',             key: 'dev' },
+    'quick-dev':           { skillName: 'aac-agent-dev',             key: 'dev' },
     'design-thinking':     { skillName: 'aac-cis-agent-design-thinking',   key: 'cis-design-thinking-coach' },
     'innovation-strategy': { skillName: 'aac-cis-agent-innovation',        key: 'cis-innovation-strategist' },
     'problem-solving':     { skillName: 'aac-cis-agent-problem-solver',    key: 'cis-creative-problem-solver' },
@@ -86,7 +86,7 @@ const ARTIFACT_TYPE_TO_AGENT: Record<string, { skillName: string; key: ArtifactA
     'canvas-convert':      { skillName: 'aac-agent-canvas-integrator',     key: 'canvas-integrator' },
 };
 
-const DEFAULT_AGENT = { skillName: 'bmad-agent-analyst', key: 'analyst' as ArtifactAgentKey };
+const DEFAULT_AGENT = { skillName: 'aac-agent-analyst', key: 'analyst' as ArtifactAgentKey };
 
 // ── Persona cache ────────────────────────────────────────────────────────────
 
@@ -232,7 +232,7 @@ export function loadAllAgentPersonas(bmadPath: string): { persona: AgentPersona;
             else if (entry.startsWith('aac-cis')) { module = 'CIS'; }
             else if (entry.startsWith('aac-bmb')) { module = 'BMB'; }
             else if (entry.startsWith('aac-')) { module = 'Core'; }
-            else if (!entry.startsWith('bmad-')) { module = 'User'; }
+            else if (!entry.startsWith('aac-')) { module = 'User'; }
 
             results.push({ persona, module, relativePath: `skills/${entry}` });
         }
@@ -389,17 +389,17 @@ When creating or updating artifacts:
 // ── Legacy path translation ──────────────────────────────────────────────────
 
 const LEGACY_PATH_MAP: Record<string, string> = {
-    'bmm/agents/analyst.md': 'bmad-agent-analyst',
-    'bmm/agents/pm.md': 'bmad-agent-pm',
-    'bmm/agents/sm.md': 'bmad-agent-dev',
-    'bmm/agents/architect.md': 'bmad-agent-architect',
-    'bmm/agents/qa.md': 'bmad-agent-dev',
-    'bmm/agents/dev.md': 'bmad-agent-dev',
-    'bmm/agents/ux-designer.md': 'bmad-agent-ux-designer',
-    'bmm/agents/quick-flow-solo-dev.md': 'bmad-agent-dev',
-    'bmm/agents/tech-writer/tech-writer.md': 'bmad-agent-tech-writer',
+    'bmm/agents/analyst.md': 'aac-agent-analyst',
+    'bmm/agents/pm.md': 'aac-agent-pm',
+    'bmm/agents/sm.md': 'aac-agent-dev',
+    'bmm/agents/architect.md': 'aac-agent-architect',
+    'bmm/agents/qa.md': 'aac-agent-dev',
+    'bmm/agents/dev.md': 'aac-agent-dev',
+    'bmm/agents/ux-designer.md': 'aac-agent-ux-designer',
+    'bmm/agents/quick-flow-solo-dev.md': 'aac-agent-dev',
+    'bmm/agents/tech-writer/tech-writer.md': 'aac-agent-tech-writer',
     'tea/agents/tea.md': 'aac-agent-tea',
-    'core/agents/bmad-master.md': 'bmad-agent-analyst',
+    'core/agents/bmad-master.md': 'aac-agent-analyst',
     'core/agents/canvas-integrator.md': 'aac-agent-canvas-integrator',
     'cis/agents/brainstorming-coach.md': 'aac-cis-agent-brainstorming',
     'cis/agents/creative-problem-solver.md': 'aac-cis-agent-problem-solver',

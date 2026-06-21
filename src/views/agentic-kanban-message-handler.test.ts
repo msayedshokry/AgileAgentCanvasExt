@@ -121,12 +121,12 @@ describe('computeTraceBreakdownForMostRecentRun (audit gap #20/#42)', () => {
       }),
       entry({
         sessionId: 's1', agent: 'chat', type: 'tool_call',
-        timestamp: t(500), workflowName: 'bmad-create-prd',
+        timestamp: t(500), workflowName: 'mock-workflow-fixture',
         data: { toolName: 'foo' },
       }),
       entry({
         sessionId: 's1', agent: 'chat', type: 'tool_call',
-        timestamp: t(1000), workflowName: 'bmad-create-prd',
+        timestamp: t(1000), workflowName: 'mock-workflow-fixture',
         data: { toolName: 'bar' },
       }),
       entry({
@@ -149,7 +149,7 @@ describe('computeTraceBreakdownForMostRecentRun (audit gap #20/#42)', () => {
     // that don't currently carry a workflowName tag.
     expect(result.perWorkflow).toEqual<TraceBreakdownMessage['perWorkflow']>([
       {
-        workflow: 'bmad-create-prd',
+        workflow: 'mock-workflow-fixture',
         toolCallCount: 2,
         errorCount: 0,
         distinctTools: ['bar', 'foo'],   // alphabetical for determinism
@@ -175,7 +175,7 @@ describe('computeTraceBreakdownForMostRecentRun (audit gap #20/#42)', () => {
       }),
       entry({
         sessionId: 's1', agent: 'chat', type: 'tool_call',
-        timestamp: t(500), workflowName: 'bmad-create-prd',
+        timestamp: t(500), workflowName: 'mock-workflow-fixture',
         data: { toolName: 'foo' },
       }),
     ]);
@@ -191,7 +191,7 @@ describe('computeTraceBreakdownForMostRecentRun (audit gap #20/#42)', () => {
     // (untagged) appears because the un-marked decision lands there.
     expect(result.perWorkflow).toEqual<TraceBreakdownMessage['perWorkflow']>([
       {
-        workflow: 'bmad-create-prd',
+        workflow: 'mock-workflow-fixture',
         toolCallCount: 1,
         errorCount: 0,
         distinctTools: ['foo'],
@@ -288,12 +288,12 @@ describe('computeTraceBreakdownForMostRecentRun (audit gap #20/#42)', () => {
       }),
       entry({
         sessionId: 's1', agent: 'chat', type: 'tool_call',
-        timestamp: t(500), workflowName: 'bmad-create-prd',
+        timestamp: t(500), workflowName: 'mock-workflow-fixture',
         data: { toolName: 'tagged-tool' },
       }),
       entry({
         sessionId: 's1', agent: 'chat', type: 'tool_call',
-        timestamp: t(1000), workflowName: 'bmad-create-prd',
+        timestamp: t(1000), workflowName: 'mock-workflow-fixture',
         data: { toolName: 'tagged-tool' },
       }),
       // The orphan entry — no workflowName tag.
@@ -318,7 +318,7 @@ describe('computeTraceBreakdownForMostRecentRun (audit gap #20/#42)', () => {
     // (untagged) group-style aggregation works without exception.
     expect(result.perWorkflow).toEqual<TraceBreakdownMessage['perWorkflow']>([
       {
-        workflow: 'bmad-create-prd',
+        workflow: 'mock-workflow-fixture',
         toolCallCount: 2,
         errorCount: 0,
         distinctTools: ['tagged-tool'],

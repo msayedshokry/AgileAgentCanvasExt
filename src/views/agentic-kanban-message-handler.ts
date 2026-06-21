@@ -11,6 +11,7 @@ import { concurrencyQueue } from '../workflow/concurrency-queue';
 import { getWorkflowExecutor } from '../workflow/workflow-executor';
 import { getTraceRecorder } from '../trace/trace-recorder';
 import { terminalExecutor } from '../workflow/terminal-executor';
+import { setActivePtyBackend } from '../workflow/embedded-terminal-provider';
 import { inferRoleFromWorkflow } from '../harness/role-inference';
 import { getPersonaForArtifactType } from '../chat/agent-personas';
 import { setKanbanAutoAdvance, isKanbanAutoAdvanceEnabled, getKanbanWipLimits } from '../workflow/kanban-settings';
@@ -20,6 +21,37 @@ import { budgetEnforcer } from '../workflow/budget-enforcer';
 import { circuitBreaker } from '../workflow/circuit-breaker';
 
 import { kanbanOrchestrator } from '../workflow/kanban-orchestrator';
+
+import { isTerminalInbound } from './terminal-protocol';
+import { TerminalSessionRouter } from './terminal-session-router';
+import type { TerminalBackend } from '../workflow/terminal-backend';
+import { VsCodeTerminalBackend } from '../workflow/vscode-terminal-backend';
+import { NodePtyTerminalBackend } from '../workflow/node-pty-terminal-backend';
+
+// ── Terminal-close → terminal:exit bridge ────────────────────────────────────
+// The terminalExecutor already handles internal cleanup when a VS Code terminal
+// closes, but the webview Terminals view needs to display [session ended]. This
+// listener watches every closed terminal, parses the AAC naming convention
+// ("AAC: {workflowId} {artifactId}"), and posts terminal:exit for the matching
+// sessionId (= artifactId) so AgentTerminal tiles show the end-of-session marker.
+//
+// Lazy-registered (not at module load) so test mocks that don't include
+// vscode.window.onDidCloseTerminal don't crash the Cucumber suite.
+let terminalCloseListener: vscode.Disposable | undefined;
+function ensureTerminalCloseListener(): void {
+  if (terminalCloseListener) return;
+  if (typeof vscode.window.onDidCloseTerminal !== 'function') return;
+  terminalCloseListener = vscode.window.onDidCloseTerminal((closed) => {
+    const router = terminalRouter;
+    if (!router) return;
+    const name = closed.name;
+    const match = name.match(/^AAC:\s+\S+\s+(\S+)/);
+    if (match) {
+      const artifactId = match[1];
+      router.emitExit(artifactId);
+    }
+  });
+}
 
 import { errMsg } from '../utils/error';
 
@@ -31,6 +63,54 @@ import { errMsg } from '../utils/error';
 // producer/consumer tests.
 import type { TraceBreakdownRow, TraceBreakdownMessage } from '../types/trace-breakdown';
 import { UNTAGGED_BUCKET } from '../types/trace-breakdown';
+
+// ─── Terminal router (backend-agnostic, bridges protocol → TerminalBackend) ───
+// Re-created when the webview changes so `postMessage` always targets the
+// active panel (not a stale, closed one from a previous view lifecycle).
+let terminalRouter: TerminalSessionRouter | undefined;
+let lastWebview: vscode.Webview | undefined;
+function getTerminalRouter(webview: vscode.Webview): TerminalSessionRouter {
+  ensureTerminalCloseListener();
+  if (webview !== lastWebview || !terminalRouter) {
+    terminalRouter?.dispose();
+    const useEmbedded = vscode.workspace
+      .getConfiguration('agileagentcanvas.agenticKanban')
+      .get<boolean>('embeddedTerminal', false);
+    // Only create the pty backend when the setting is on (avoids wasted
+    // binary loads of node-pty when the user stays on Option A).
+    const ptyBackend = useEmbedded ? new NodePtyTerminalBackend() : undefined;
+    const backend: TerminalBackend = ptyBackend?.supportsInput
+      ? ptyBackend
+      : new VsCodeTerminalBackend(terminalExecutor);
+    terminalRouter = new TerminalSessionRouter(
+      backend,
+      (m) => webview.postMessage(m),
+    );
+    // Notify the webview of current backend capabilities
+    webview.postMessage({
+      type: 'terminal:capabilities',
+      supportsInput: backend.supportsInput,
+    });
+    // Wire the pty backend into the terminal executor so agents spawned
+    // via executeTerminalWorkflow run in embedded pty shells instead of
+    // VS Code terminals. When the setting is off or node-pty failed to
+    // load, ptyBackend is undefined and the executor falls back to Option A.
+    if (ptyBackend?.supportsInput) {
+      setActivePtyBackend(ptyBackend);
+      // When the pty shell exits, clean up executor tracking AND post
+      // terminal:exit to the webview so AgentTerminal tiles show the
+      // [session ended] marker.
+      ptyBackend.onSessionExit = (sessionId, artifactId, exitCode) => {
+        terminalExecutor.onPtySessionExit(artifactId, exitCode);
+        terminalRouter?.emitExit(artifactId);
+      };
+    } else {
+      setActivePtyBackend(undefined);
+    }
+    lastWebview = webview;
+  }
+  return terminalRouter;
+}
 
 // P0 #1 fix: Track active webview stream disposables per artifact so repeated
 // `kanban:jumpToTerminal` clicks don't stack listeners and duplicate output.
@@ -198,6 +278,14 @@ export async function handleAgenticKanbanMessage(
   extensionUri: vscode.Uri,
   webview?: vscode.Webview
 ): Promise<boolean> {
+  // ── Terminal protocol routing (backend-agnostic) ─────────────────────────
+  if (isTerminalInbound(message)) {
+    if (webview) {
+      getTerminalRouter(webview).handle(message);
+    }
+    return true;
+  }
+
   switch (message.type) {
     case 'kanban:statusChanged': {
       const { artifactId, fromStatus, toStatus, artifactType } = message;

@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+### Removed: 10 legacy BMAD tea/testarch duplicate directories
+
+Ten legacy `bmad-tea` / `bmad-testarch-*` directories under `resources/_aac/tea/` are gone from the extension. Each was a stale duplicate of a live `aac-tea-*` skill that's been the actual runtime path since the Phase 2 baseline refactor; nothing that reads the catalogue, the skill manifest, or installed skills can notice the deletion. The BMAD → AAC migration is now fully resolved on disk — only the methodology carve-outs (the `{bmad-path}` workflow-template variable, BMAD-methodology persona copy in chat-participant.ts, the `BMAD Integration` UI section) remain by design per Decision Rule 2. The deletion leaves every skill ID invokable and every workflow reachable.
+
+- `resources/_aac/tea/agents/bmad-tea/` → live runtime at `resources/_aac/tea/agents/aac-tea/`
+- 8 `resources/_aac/tea/workflows/testarch/bmad-testarch-{atdd,automate,ci,framework,nfr,test-design,test-review,trace}/` → live runtime at the matching `resources/_aac/skills/aac-tea-<suffix>/` skill directory
+- `bmad-testarch-teach-me-testing/` was already gone (no-op deletion); its `resources/_aac/skills/aac-tea-teach-me-testing/` twin was always live
+
+### Refactored: Phase 18 — `pickChanges` helper centralised + per-file `*_FIELDS: readonly string[]` consts
+
+Phase 18 closes the canonical "parts" pattern that Phase 17 promoted across all four reducer modules (`Object.assign(upd, pickChanges(changes, [ ... ]))`). Two follow-up refactors tidy up the surrounding debt across four commits in sequence.
+
+- **Helper centralised** (commit `0a9641f`) — The per-file `pickChanges(changes, fieldList)` copies added in Phase 17 (commits `fec166e` cis, `1f47652` tea, `06adb75` bmm, `5aa0931` l1) collapse into a single shared `src/state/reducer-helpers.ts` module, which all four reducer files now `import { pickChanges } from './reducer-helpers'`. -119 / +81 across cis/tea/bmm/l1. Helper body is bytewise-identical to the per-file copies so behaviour is preserved by construction; the Phase 12 narrowing contract on the `changes` parameter type still applies unchanged.
+
+- **Field allowlists promoted** (commit `e4d8ed7`) — Each `Object.assign(upd, pickChanges(changes, [ ... inline array ... ]))` call site becomes `Object.assign(upd, pickChanges(changes, X_FIELDS))` where `const X_FIELDS: readonly string[] = [ ... ]` is a module-level const declared right after the file's imports. 26 named consts total: cis 4 (`STORYTELLING_FIELDS` / `PROBLEM_SOLVING_FIELDS` / `INNOVATION_STRATEGY_FIELDS` / `DESIGN_THINKING_FIELDS`), tea 7 (`TRACEABILITY_MATRIX_FIELDS` / `TEST_REVIEW_FIELDS` / `NFR_ASSESSMENT_FIELDS` / `TEST_FRAMEWORK_FIELDS` / `CI_PIPELINE_FIELDS` / `AUTOMATION_SUMMARY_FIELDS` / `ATDD_CHECKLIST_FIELDS`), bmm 14 (`RESEARCH_FIELDS` / `UX_DESIGN_FIELDS` / `READINESS_REPORT_FIELDS` / `SPRINT_STATUS_FIELDS` / `RETROSPECTIVE_FIELDS` / `CHANGE_PROPOSAL_FIELDS` / `CODE_REVIEW_FIELDS` / `RISKS_FIELDS` / `DEFINITION_OF_DONE_FIELDS` / `PROJECT_OVERVIEW_FIELDS` / `PROJECT_CONTEXT_FIELDS` / `TECH_SPEC_FIELDS` / `SOURCE_TREE_FIELDS` / `TEST_SUMMARY_FIELDS`), l1 1 (`TEST_DESIGN_FIELDS`, which renames the previous in-reducer-body `const contentFields` to match the `<AREA>_FIELDS` convention and promotes it up to module level). +322 / -173 across cis/tea/bmm/l1. The lift tightens grep-discoverability from "grep substring `pickChanges(changes, [`" to "named symbol with IDE jump-to-def".
+
+- **Docs align** (commits `4c11ce7` + `f81f602`) — `src/state/reducer-types.ts` JSDoc describes both stories: the canonical `parts` pattern itself (the `## Dropping the \`Partial<any>\` escape hatch` section now rewritten to cover Phase 12's `Partial<any>` → `ArtifactChanges<T>` canonicalisation AND Phase 17/18's indexed-access → `pickChanges` canonicalisation, in `+47 / -6`), and the all-module-level `*_FIELDS` convention post-lift (with per-file const-counts table 4+7+14+1 = 26 + the l1 rename note + a `readonly string[]` typing rationale, in `+37 / -17`).
+
+Net diff across the four-commit sequence: **+287 / -136** across 5 files (cis/tea/bmm/l1/reducer-types.ts) plus the new `src/state/reducer-helpers.ts` module. No user-visible behaviour change — every refactor preserves the original mutation semantics bytewise (`Object.assign(upd, ...)` chains merge identically to the for-loop boilerplate it replaced; the const lift reorders fields only via the helper's iteration order which is order-independent for `Object.assign` on disjoint keysets). Validation: `npx tsc --noEmit` clean throughout, `npx vitest run` 602/603 (1 expected unrelated `[Phase 17] epicId wire-only contract` surface marker from Phase 16 — see below).
+
 ### Fixed: 4 Critical Kanban Agentic OS Issues (#30–#33)
 
 Four critical issues from the Kanban Agentic OS deep audit have been fixed to make the autonomous loop robust for both chat (in-Copilot) and terminal (headless CLI) execution paths.
@@ -98,6 +118,162 @@ The hierarchy now extends to three more prompt paths.
 - **Antigravity orchestrator** — A mode-not-interactive guard inside buildGuideContent injects autonomous + default; interactive untouched.
 - **Goal decomposer** — 12-token carve-out ("If the goal fits in a single story, return one") preserves the narrow JSON-shape prompt.
 - **Regression guards** — 36 vitest assertions lock both.
+
+### Feature: Headroom — dry-run simulation, retrieval, and inter-agent observability
+
+### Feature: Headroom status bar — always visible with descriptive state text
+
+### Feature: Headroom — in-process proxy (zero-effort setup, auto-manages port 8787)
+
+The extension now owns the Headroom proxy lifecycle so users never need to run `npx headroom-ai proxy` manually. The proxy speaks the wire-protocol subset the headroom-ai SDK actually consumes (health, compress, retrieve, telemetry).
+
+- **In-process Node http server** — Listens on `127.0.0.1:8787` (the SDK’s default baseUrl) on activate. Wire-protocol endpoints: GET /health, GET /v1/health, GET /v1/telemetry, GET /v1/retrieve/stats, POST /v1/compress, POST /v1/retrieve. Auto-disposed on extension deactivate (with closeAllConnections drain so in-flight SDK calls don’t crash during shutdown).
+- **EADDRINUSE coexists with the real engine** — If port 8787 is already taken (a separate headroom-ai proxy process is running), the extension steps aside and uses the external proxy. Status bar surfaces this distinctly so users know which one is answering.
+- **Naïve MVP compression** — /v1/compress returns snake_case wire-format responses and applies dedupe (adjacent identical messages) + content truncation (capped at 4000 chars) + rough token estimation (len/4). Real engine-quality compression still requires the standalone engine.
+- **Malformed-body safety** — Bad JSON in POST bodies returns 400 { error: { type: invalid_request } } instead of a generic 500, so the SDK can disambiguate client input errors from server faults.
+- **notifyHeadroomProxyStarting() now real** — Sets the proxy state to starting and refreshes the status bar. The bar subscribes to every proxy-state transition so refreshes are event-driven, never polling.
+- **New $(rocket) Headroom: starting… state** — Shown while the proxy boots (under a second in practice), suppresses the previous 'proxy offline' flicker on cold start.
+- **Revised offline copy** — Differentiates fallback (external proxy already running on 8787), failed (other listen error — check the output channel), and idle (extension will auto-spawn on activation). No more 'run npx headroom-ai proxy' advice — the extension owns this.
+- **New LM-tool contracts untouched** — Existing agileagentcanvas_headroom_simulate and agileagentcanvas_headroom_retrieve LM tools keep working; the proxy’s wire-protocol endpoints back them transparently.
+
+11 new vitest assertions across in-process-proxy.test.ts (lifecycle, endpoints, listen-error handling, managed-stats snapshot immutability) + 4 new status-bar describe blocks (starting, fallback, failed, subscription-driven refresh).
+
+The status bar is now permanently visible so users always know Headroomʹs state, even before the proxy is ready. Each state has distinct text, tooltip, and click action.
+
+- **Disabled** —  Headroom: disabled with tooltip pointing at Headroom settings; click opens workbench.action.openSettings filtered to agileagentcanvas.headroom.
+- **SDK missing** —  Headroom with tooltip explaining the bundled headroom-ai package wasnʹt detected.
+- **Proxy offline** —  Headroom: proxy offline with tooltip pointing at the proxy start command and port (Phase 2 will auto-spawn the in-process proxy — currently a manual step).
+- **Proxy running, no calls** —  Headroom with tooltip noting "No compression calls yet — savings appear after the first LLM call."
+- **Active with stats** —  XX% with detailed tooltip including tokens saved (locale-formatted), compression ratio, call count, and full SharedContext (A2A handoff) + CCR store metrics when available.
+- **Refresh contract** — refreshHeadroomStatusBar() immediately re-renders; periodic re-check every 60s for state changes.
+
+Budget-aware compression: agents can preview savings before committing, retrieve compressed content by hash, and see handoff compression statistics on the status bar.
+
+- **Headroom Simulate** — New LM tool that estimates token savings, transforms, and waste signals for a message set without performing the real compression. Useful for cost forecasting before long sessions.
+- **Headroom Retrieve** — New LM tool that resolves a content hash from a previous compression back into the original text, avoiding redundant re-compression when the AI re-asks about cached content.
+- **A2A handoff compression** — When one agent hands off work to another via the agent bus, intermediate artifacts are compressed through SharedContext before transmission. Receiving agents decompress on demand, dropping per-handoff token overhead substantially (savings scale with the configured compression tier).
+- **Status bar observability** — The Headroom status bar tooltip now surfaces inter-agent SharedContext stats (compressed entries, tokens saved, savings %) alongside the CCR store metrics (entries, retrieval rate). Sections appear silently only when the corresponding data is available, so the bar stays quiet when nothing is happening.
+### Test infrastructure: L1 reducer body sweep surfaces a Phase 17 wire-only contract gap
+
+Phase 16 adds a 46-test smoke sweep across all 13 L1 dispatch keys, classifying each as top-level-spread, bulk-replace, or narrow-cast with tailored assertions per class. 45 tests pass; one (labeled `[Phase 17] epicId wire-only contract`) intentionally fails in CI to surface a Phase 12 narrative versus runtime contradiction: Phase 12's narrow-cast audit classified epicId as a wire-only field that must not persist on the canonical Story shape, but the new-story literal in the story reducer spreads the whole wire packet via `...changes`, so epicId currently lands on the persisted Story instance. The failing test is the Phase 17 regression target, and the JSDoc in that test provides two correct fix paths (destructure out + reorder spread, or spread + delete-after). No user-visible behavior change for normal usage - the failure only fires when epicId is explicitly supplied on a new-story wire packet. If you see a red CI test with the `[Phase 17]` prefix, that is the expected-to-fail Phase 16 surface - not a regression.
+
+### Feature: Headroom — click-to-hover quick-pick on the active bar
+
+Click the active Headroom bar (`$(rocket) XX%` or the `$(rocket) Headroom` zero-calls label) to surface a transient QuickPick with SharedContext, CCR store, and Recent Compress Calls drilldowns. Settings stays reachable from the quick-pick’s terminal row.
+
+- **Active-bar click routed to `agileagentcanvas.headroom.showDetails`** — `headroom-status-bar.ts` switches `_item.command` to the new command for the two active states (`running + zero calls`, `running with stats`). All four non-active branches (disabled / starting / offline fallback / offline failed) keep their existing `workbench.action.openSettings` action so the lifecycle-aware help text remains the obvious next step on first launch.
+- **HEADROOM_SHOW_DETAILS_COMMAND constant** — exported from `headroom-status-bar.ts` as a module-level const so the test file can pin both ends (status-bar `command` + registered command id) without a typo regression.
+- **Top-level QuickPick layout** — `headroom-quick-pick.ts` builds 5 stable rows: Compressor summary (`$(rocket) Headroom Compression — XX% saved`) → SharedContext (A2A handoffs; switches id from `sharedContextHeader` to the real `sharedContext` based on `entries > 0`) → CCR store (`$(database) CCR store`) → Recent compress calls (`$(history) Recent compress calls`) → Open Headroom settings (`$(settings-gear) Open Headroom settings`). Wrapped in a `vscode.window.showQuickPick` titled `Headroom Compression`.
+- **SharedContext drilldown** — Read-only summary when entries > 0; falls back to an information message (`SharedContext has no entries yet…`) otherwise.
+- **CCR store drilldown** — Fetches `getCCRStats()` and renders key/value rows; falls back to the info-message surface (`CCR store stats unavailable…`) on SDK rejection so a stale or older headroom-ai doesn’t crash the click flow.
+- **Recent Compress Calls drilldown** — Renders the ring buffer (capped at 20 entries, newest first) with per-call breakdown (`$(compress) ago · % saved · tokens saved`, message-count delta, transforms applied, compression ratio). Selecting a row opens the full `RecentCompressCall` JSON in a Beside-column virtual text document with a 5 s status-bar message summarizing the selection. Drilldown errors are caught and logged through the `headroom-quick-pick` logger (reaches the Agile Agent Canvas output channel, not dev-tools only).
+- **`RecentCompressCall` ring buffer** — `in-process-proxy.ts` exposes `getRecentCalls()` returning a `ReadonlyArray<Readonly<RecentCompressCall>>` snapshot (defensive `.slice()` copy), FIFO-evicted at `RECENT_CALL_CAP = 20`. `_pushRecentCallForTest(entry)` test-only accessor sidesteps Node’s TIME_WAIT port-release race so cap-and-shape invariants can be asserted without binding port 8787.
+- **`agileagentcanvas.headroom.showDetails` command registered** — `extension.ts` registers the command via `vscode.commands.registerCommand` and pushes the disposable to `context.subscriptions` for clean teardown.
+
+21 new vitest assertions across three test files: `src/views/headroom-quick-pick.test.ts` (NEW, 11 tests: top-level layout, drilldown routing per id, SharedContext header-variant switching, CCR live-stats picker + error fallback, Recent-calls empty-state info-message path, cancel-on-top); 6 new `src/views/headroom-status-bar.test.ts` describe blocks (active-bar click routing per non-active branch + show-details command constant pinning); 4 new `src/integrations/headroom/in-process-proxy.test.ts` ring-buffer describe blocks (empty default, snapshot immutability, cap=20 invariant with oldest/newest survivor locked, entry shape).
+
+### Feature: Headroom — real BPE token counts via gpt-tokenizer (Phase 3.1)
+
+The in-process proxy's token-estimator no longer uses the uniform `ceil(content.length / 4)` heuristic — it now uses `countTokens(text)` from `gpt-tokenizer` (cl100k_base BPE, the same encoding family GPT-4 uses) for string content, and `countTokens(part.text)` per text-part for multi-part OpenAI content. Non-text parts (image_url, etc.) contribute 0 because the bar's "saved tokens" metric is a textual estimate by design — image bytes aren't billable as text.
+
+- **Wire format unchanged** — `tokens_before` / `tokens_after` / `tokens_saved` keys continue to round-trip the existing `deepCamelCase` pass through the headroom-ai SDK. No breaking change for `/v1/compress` callers.
+- **Bar percentages now correct** — code-heavy prompts were over-counted by the heuristic (ASCII operators/punctuation split aggressively under BPE, ~2.5 chars per token for JS/CSS) and CJK Han characters were under-counted (each is typically 1 token, not 0.25). The mismatch could skew the status-bar savings percentage by several points for these prompt shapes. BPE aligns to whatever the downstream SDK actually bills.
+- **Only the heuristic changed** — adjacent-message dedupe (step 1), 4000-char content cap (step 2), and the snake_case wire response are all unchanged. Phase 3.2 (tool-result summarization) and 3.3 (CCR cross-call dedup) are the next incremental slices, each independently shippable.
+- **New vitest assertion** — single test in `src/integrations/headroom/in-process-proxy.test.ts` (`endpoint surface` describe block) locks the count to whatever `gpt-tokenizer.countTokens(fixture)` returns at test-time AND asserts it is NOT the legacy `ceil(fixture.length / 4)` heuristic value. Fixture: `'hello world test message'` (23 chars; BPE encodes 4 tokens while heuristic returns 6; the 4 ≠ 6 delta is what makes the regression guard meaningful).
+- **Bundle compat** — `git-tokenizer` v3.4.0 is dual-published ESM+CJS. esbuild for `platform: 'node'` CJS output bundles the CJS build cleanly. `npm run bundle` verified end-to-end.
+- **Comment / helper cleanups** — `TOKEN_CHARS_PER_TOKEN` constant removed (dead after the swap); `_estimateMessageTokens` now carries a JSDoc explaining the rationale for the swap and the multi-part/empty-string edge cases; the file-header algorithm section back-references `docs/phase-3-compression-design.md` for the rest of the rollout plan.
+
+Existing 803-extension Cucumber scenarios, 119 vitest assertions, and the 19-test in-process-proxy suite continue to pass.
+
+### Feature: Headroom — tool-result summarisation with re-stringify + parse-verify guard (Phase 3.2)
+
+The in-process proxy now actively summarises role:'tool' / role:'function' JSON content before tokenising, recovering meaningful savings on the longest messages (tool outputs dominate LM prompt bytes for code-heavy sessions).
+
+- **Role detection** — A new `_isToolish(msg)` helper returns true for `role:'tool'`, `role:'function'`, or `role:'user'` whose content is a multi-part array containing any part with `type` starting with `'tool_result'`. Strict role-based detection (rather than `type`-only) avoids accidentally compressing arbitrary model prose.
+- **`_summariseToolResult(content)` — three branches**:
+  - **Array root** — strict `JSON.parse` succeeds and the root is an array: keep first 2 + last 1 items, splice in a `"...[${N - 3} items truncated]..."` placeholder string between them.
+  - **Object root** — strict `JSON.parse` succeeds and the root is an object: walk top-level keys, truncate any string value > 500 chars to a 500-char prefix + `…[truncated N chars]…` suffix marker. Per the design the walk is top-level only — deep recursion is not in scope for engine-grade compression delivered by an upstream binary.
+  - **Non-JSON / scalar** — leave the original untouched (LM-bound prose must not be broken).
+- **Re-stringify + parse-verify guard** — after every successful summarise, the helper calls `JSON.parse(reStringified)` to confirm the round-trip is valid. If it throws (NaN/Infinity, unicode surrogates, or any other strict-JSON incompatibility), the helper returns `null` and the caller leaves the original content unchanged. Failure mode is "uncompressed original", strictly safer than a malformed payload reaching the LM.
+- **Multi-part `role:'user'` content** — the integration in `_naiveCompress` walks every part of an array content; for any `{type:'tool_result', ...}` part whose inner `content` is a summarisable string, the inner string is summarised independently. `tool_use_id` and non-tool parts (text, image_url) pass through untouched.
+- **Transform label discipline** — `_headroomSummarised` is stamped only when content was actually reduced; the new `'compress_tool_call'` transform only appears in `transforms_applied` when at least one message was shrunk. Identity transforms still report `'identity'`. Ordering: `'dedupe'` → `'compress_tool_call'` → `'truncate'` (or `'identity'` if none fired).
+- **`_estimateMessageTokens` extended** — multi-part content with `type:'tool_result'` parts now counts `countTokens(part.content)` for each such part (otherwise the summarise-vs-after BPE delta reads as zero and the bar hides real savings). Text-bearing parts continue to count their `text` field; image-bearing parts remain at 0 because they're not billable as text. JSDoc updated to document the new branch.
+
+Tests — 5 new endpoint-surface assertions in `src/integrations/headroom/in-process-proxy.test.ts`: 1000-item array root summarisation with re-parse; non-JSON prose untouched; object-mode walk key truncation with re-parse; parse-failure revert (fail-open safety); multi-part `role:'user'` tool_result inner array summarised end-to-end with `tool_use_id` preserved and real BPE savings asserted. Total in-process-proxy suite: 19 → 24 tests; full Headroom vitest suite: 120 → 125 / 0; `npm run bundle` verified.
+
+Wire format unchanged — `tokens_before` / `tokens_after` / `transforms_applied` / `compressed` continue to round-trip the SDK's `deepCamelCase` pass. Existing 803-extension Cucumber scenarios unchanged.
+
+### Headroom — CCR cross-call dedup with LRU
+
+### Headroom — CCR cross-call dedup with LRU (Phase 3.3)
+
+Closes the Phase 3 compression rollout (Φ-rate → real BPE → summarise).
+
+- New `in-process-proxy.ts` CCR (Cross-Call Remember) store: module-level
+  `Map<hash, CcrEntry>` with LRU semantics (native `Map` insertion order,
+  evict-oldest on overflow at `CCR_CAP = 1000`). Hashes are SHA-256 over
+  `(role + NUL + canonical(content))`, truncated to 64 bits. Canonical form
+  sorts plain-object keys alphabetically while preserving array element
+  order — so `[{a, b}, {c}]` and `[{c}, {b, a}]` correctly hash the same
+  only when their structural keys align. Phase 4 will revisit hash length.
+- New `/v1/retrieve` route returns `{hash, content (preview), similarity,
+  cached, tokenCount}` — the SDK can fetch the first 200 chars of any
+  original input by hash instead of re-running the full compress pipeline.
+  Cache-miss shape echoes `{hash, content:null, similarity:0, cached:false}`.
+- New `/v1/retrieve/stats` route surfaces live `{entries, capacity,
+  totalOriginalTokens, totalCompressedTokens, totalTokensSaved, hitRate,
+  savingsPercent}`. `hitRate` and `savingsPercent` are placeholders until
+  Phase 4 wires the hit-vs-miss counter (deferred — see TODO in source).
+- `_naiveCompress` now upserts each input message into the CCR store BEFORE
+  running dedupe / summarise / truncate, then emits `ccr_hashes` on the
+  wire response. Hashes reflect raw-input signatures, so a caller can later
+  resolve the most-recent compress call's pre-transform content via
+  `/v1/retrieve`.
+- `_upsertCcrEntry` is true LRU — on hit, the entry is `delete`/`set` so it
+  bumps to the tail of insertion order before re-reading the cap. No
+  `Array.sort` per call.
+- `/v1/compress` dispose hooks (`server.close()` on listen-error, `_ccr.clear()`
+  on dispose) so an extension reload doesn't carry stale hashes from the
+  prior workspace into the next session.
+- New test surface (12 endpoint tests + 7 CCR-store tests = 19 total for 3.3):
+  stable-on-replay hashing, content change → new hash, role scope
+  (same content, different roles hash differently), `/v1/retrieve` cache
+  hit/miss shapes, `/v1/retrieve/stats` shape, CCR cap at 1001 inserts
+  evicts oldest, listen-error handler closes the underlying server so
+  subsequent `startInProcessProxy()` calls survive synthetic error events.
+- New test utility `_clearCcrForTest()` mirrors `_clearRecentCallsForTest()`
+  for test isolation; vitest `beforeEach` clears both before each suite.
+
+All phases green: tsc clean, vitest 132/132 in 1.36s, production bundle clean.
+
+### Refactored: BMAD → AAC Phase 2 close-out
+
+The Phase 2 catalogue migration is now fully resolved with a final sweep of internal resource identifiers, test fixtures, and manifest rows. Every deployed agent and skill now correctly resolves to its renamed skill/agent directory, leaving only the named methodology carve-outs by design.
+
+- The production installer now emits 6 agent personas and 12 skill tags under their renamed skill/agent directories, replacing the prior legacy names.
+- Six previously-missing catalogue rows (5 entries that previously lacked a parallel directory, plus 1 semantic remap) have been added to the skill manifest, so the help-skill auto-router surfaces them by name.
+- Internal documentation examples and test fixtures are updated to use real framework paths or explicit `mock-workflow-fixture` literals, so synthetic placeholders no longer leak into production references.
+- The residual footprint mapping document has been expanded to capture the full v1 → v5 documentation evolution, finalize the phase close-out status, and confirm 0 keep-as-stable-identifier IDs remain.
+
+### Fixed: Framework documentation and methodology prose boundaries
+
+Phase 5 prose reconciliation clarifies where BMAD-methodology branding ends and the extension's own identifier namespace begins across the three primary user-facing surfaces.
+
+- The main README now distinguishes the methodology's full theoretical catalog from the 10 curated built-in guided workflows shipped in this extension, and adds an inline carve-out paragraph naming every place the upstream attribution stays by design.
+- The architecture document enumerates the 6 exported TypeScript identifiers and configuration namespaces kept under the methodology carve-out policy, so future maintainers don't search for an absent rename target.
+- Copilot workspace instructions now reference the new plural naming convention for installed framework agents, and an inline carve-out paragraph names the persona-file paths the migration has actually landed under.
+
+### Feature: Mapping-document CI guards and pre-commit linting
+
+A dedicated linting script now protects the residual mapping document from the cross-paragraph contradiction and milestone-row regression patterns that have blocked prior releases of this document, with both pre-commit and CI hooks wired in.
+
+- New strict-mode linting script enforces non-decreasing row counts in the documentation-evolution table, matches the milestone intro paragraph to the actual row count, and flags missing 'resolved' sentinels in the deletion/stable-identifier sections. Warn-only `--soft` flag for migrations.
+- A five-fixture regression smoke test catches future parser bugs without coupling to the live document, so editor-side refactors of the parser fail fast against pinned fixture inputs.
+- Pre-commit hook runs the regression guard automatically when the mapping document is staged; the CI pipeline includes the same lint as a dedicated build step that blocks merge on any violation.
+
+
+---
+
 ## 0.5.5
 
 ### Feature: Autonomous Auto-Advance for Agentic Kanban

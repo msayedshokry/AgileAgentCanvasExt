@@ -2,12 +2,17 @@
  * Regression guard for the Headroom status bar item.
  *
  * Contract being locked:
- *  - disabled (headroom.enabled: false) → status bar is hidden
- *  - npm package not installed → status bar is hidden
- *  - proxy not running → shows "offline" hint with tooltip about starting the proxy
- *  - proxy running, zero compression calls → shows "Headroom" label with no savings %
- *  - active with cumulative stats → shows "XX%" with detailed tooltip
- *  - refreshHeadroomStatusBar() triggers a zero-delay re-render
+ *  - The bar is ALWAYS SHOWING (never hides after activation) so users
+ *    always know Headroom's state.
+ *  - disabled (headroom.enabled: false) → "Headroom: disabled" with a
+ *    click-action that opens Headroom settings.
+ *  - npm package not installed → "Headroom" with a warning icon and a
+ *    tooltip explaining the SDK is missing.
+ *  - proxy not running → "Headroom: proxy offline" with a tooltip
+ *    pointing at the proxy start one-liner.
+ *  - proxy running, zero compression calls → "Headroom" label (no %).
+ *  - active with cumulative stats → "XX%" with detailed tooltip.
+ *  - refreshHeadroomStatusBar() triggers a zero-delay re-render.
  */
 
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
@@ -30,6 +35,24 @@ vi.mock('../integrations/headroom', () => ({
     installed: false,
     proxyRunning: false,
   })),
+  getCCRStats: vi.fn().mockResolvedValue(null),
+}));
+
+// ─── Proxy-state mock (Phase 2) ─────────────────────────────────────────────
+// Tests drive `setLocalProxyState` directly to validate status-bar reactions
+// to each lifecycle transition. The proxy-state module is NOT mocked —
+// importing the real module keeps the test contract honest.
+
+// ─── Proxy-state mock (Phase 2) ─────────────────────────────────────────────
+// Tests import the state hooks directly so they can drive transitions and
+// verify that the bar reacts to setLocalProxyState.
+
+// ─── Mock handoff-negotiation ─────────────────────────────────────────────
+
+vi.mock('../acp/agent-bus/handoff-negotiation', () => ({
+  handoffNegotiation: {
+    getSharedContextStats: vi.fn().mockReturnValue(null),
+  },
 }));
 
 // ─── vscode mock ──────────────────────────────────────────────────────────
@@ -76,8 +99,11 @@ vi.mock('vscode', () => ({
 import {
   createHeadroomStatusBar,
   refreshHeadroomStatusBar,
+  HEADROOM_SHOW_DETAILS_COMMAND,
 } from './headroom-status-bar';
-import { getCompressionStats, getAvailability } from '../integrations/headroom';
+import { getCompressionStats, getAvailability, getCCRStats } from '../integrations/headroom';
+import { handoffNegotiation } from '../acp/agent-bus/handoff-negotiation';
+import { setLocalProxyState, getLocalProxyState, resetLocalProxyStateForTest, type LocalProxyState } from '../integrations/headroom/proxy-state';
 
 // fake context — only needs subscriptions.push
 const fakeContext: any = {
@@ -111,6 +137,14 @@ function setEnabled(enabled: boolean) {
   mockHeadroomEnabled = enabled;
 }
 
+function setSharedContextStats(stats: Record<string, any> | null) {
+  vi.mocked(handoffNegotiation.getSharedContextStats).mockReturnValue(stats);
+}
+
+function setCCRStats(stats: Record<string, any> | null) {
+  vi.mocked(getCCRStats).mockResolvedValue(stats);
+}
+
 // Create the status bar (resets module-level _item so state doesn't leak).
 function create() {
   // Recreate the item mock since createStatusBarItem is called in createHeadroomStatusBar
@@ -125,6 +159,10 @@ beforeEach(() => {
   setEnabled(true);
   setAvailability({ installed: false, proxyRunning: false });
   setStats({ totalCalls: 0 });
+  // Drop any listeners registered by a prior test's createHeadroomStatusBar
+  // call. Without this, the proxy-state module-level Set piles up and
+  // triggers refreshes for un-related state transitions in later tests.
+  resetLocalProxyStateForTest();
 });
 
 afterEach(() => {
@@ -134,32 +172,63 @@ afterEach(() => {
 // ─── State 1: DISABLED (headroom.enabled = false) ─────────────────────────
 
 describe('headroom status bar — disabled', () => {
-  it('hides the status bar when headroom.enabled is false', () => {
-    setEnabled(false);
-    create();
-    expect(mockItem.hide).toHaveBeenCalled();
+  beforeEach(() => {
+    // Explicitly set up an "otherwise-running" state to confirm that the
+    // disabled-short-circuit fires before any availability branch is reached.
+    setAvailability({ installed: true, proxyRunning: true });
   });
 
-  it('shows nothing (empty text) when disabled', () => {
+  it('shows the bar (never hides) when headroom.enabled is false', () => {
     setEnabled(false);
     create();
-    expect(mockItem.text).toBe('');
+    expect(mockItem.show).toHaveBeenCalled();
+    expect(mockItem.hide).not.toHaveBeenCalled();
+  });
+
+  it('shows "Headroom: disabled" with the circle-slash icon', () => {
+    setEnabled(false);
+    create();
+    expect(mockItem.text).toBe('$(circle-slash) Headroom: disabled');
+  });
+
+  it('tooltip points at the Headroom settings page', () => {
+    setEnabled(false);
+    create();
+    expect(mockItem.tooltip).toContain('Click to open Headroom settings');
+  });
+
+  it('command opens the workbench settings (filtered to agileagentcanvas.headroom)', () => {
+    setEnabled(false);
+    create();
+    expect(mockItem.command).toEqual({
+      command: 'workbench.action.openSettings',
+      arguments: ['agileagentcanvas.headroom'],
+      title: 'Open Headroom Settings',
+    });
   });
 });
 
 // ─── State 2: NOT INSTALLED ────────────────────────────────────────────────
 
 describe('headroom status bar — not installed', () => {
-  it('hides the status bar when npm package is not resolvable', () => {
+  it('shows the bar (never hides) when npm package is not resolvable', () => {
     setAvailability({ installed: false, proxyRunning: false });
     create();
-    expect(mockItem.hide).toHaveBeenCalled();
+    expect(mockItem.show).toHaveBeenCalled();
+    expect(mockItem.hide).not.toHaveBeenCalled();
   });
 
-  it('shows nothing (empty text) when not installed', () => {
+  it('shows "Headroom" with the warning icon', () => {
     setAvailability({ installed: false, proxyRunning: false });
     create();
-    expect(mockItem.text).toBe('');
+    expect(mockItem.text).toBe('$(warning) Headroom');
+  });
+
+  it('tooltip explains the SDK is missing', () => {
+    setAvailability({ installed: false, proxyRunning: false });
+    create();
+    expect(mockItem.tooltip).toContain('Headroom SDK not detected');
+    expect(mockItem.tooltip).toContain('headroom-ai');
   });
 });
 
@@ -169,7 +238,7 @@ describe('headroom status bar — proxy offline', () => {
   it('shows the offline hint when the proxy is not running', () => {
     setAvailability({ installed: true, proxyRunning: false, version: '0.22.4' });
     create();
-    expect(mockItem.text).toContain('Headroom: offline');
+    expect(mockItem.text).toContain('Headroom: proxy offline');
   });
 
   it('shows the rocket icon in the offline hint', () => {
@@ -178,11 +247,14 @@ describe('headroom status bar — proxy offline', () => {
     expect(mockItem.text).toContain('$(rocket)');
   });
 
-  it('shows a tooltip referencing the proxy start command', () => {
+  it('shows a tooltip referencing the port and the extension auto-spawn message (idle state)', () => {
+    // Phase 2 contract: when the proxy hasn't started yet (state='idle'),
+    // the bar tells the user the extension auto-spawns it — no manual
+    // `npx headroom-ai proxy` step needed.
     setAvailability({ installed: true, proxyRunning: false });
     create();
     expect(mockItem.tooltip).toContain('localhost:8787');
-    expect(mockItem.tooltip).toContain('headroom-ai proxy');
+    expect(mockItem.tooltip).toContain('auto-spawn');
   });
 
   it('does NOT show compression stats when offline', () => {
@@ -190,6 +262,128 @@ describe('headroom status bar — proxy offline', () => {
     setAvailability({ installed: true, proxyRunning: false });
     create();
     expect(mockItem.text).not.toContain('%');
+  });
+
+  it('bar stays visible (never hides) when offline', () => {
+    setAvailability({ installed: true, proxyRunning: false });
+    create();
+    expect(mockItem.show).toHaveBeenCalled();
+  });
+});
+
+// ─── State 3a (Phase 2): in-process proxy starting up ──────────────────────
+
+describe('headroom status bar — proxy starting (Phase 2)', () => {
+  beforeEach(() => {
+    setAvailability({ installed: true, proxyRunning: false, version: '0.5.5-managed' });
+    setLocalProxyState('starting');
+  });
+
+  it('shows the bar (never hides) while the proxy is booting', () => {
+    create();
+    expect(mockItem.show).toHaveBeenCalled();
+    expect(mockItem.hide).not.toHaveBeenCalled();
+  });
+
+  it('shows "Headroom: starting…" with the rocket icon', () => {
+    create();
+    expect(mockItem.text).toBe('$(rocket) Headroom: starting\u2026');
+  });
+
+  it('tooltip tells the user the extension is starting the proxy', () => {
+    create();
+    expect(mockItem.tooltip).toContain('in-process');
+    expect(mockItem.tooltip).toContain('127.0.0.1:8787');
+    expect(mockItem.tooltip).toContain('No manual setup');
+  });
+
+  it('command opens Headroom settings', () => {
+    create();
+    expect(mockItem.command).toEqual({
+      command: 'workbench.action.openSettings',
+      arguments: ['agileagentcanvas.headroom'],
+      title: 'Open Headroom Settings',
+    });
+  });
+
+  it('takes precedence over the offline branch (proxyRunning=false but state != idle)', () => {
+    create();
+    expect(mockItem.text).not.toContain('proxy offline');
+  });
+});
+
+// ─── State 3b (Phase 2): proxy offline – fallback (port 8787 already in use) ─
+
+describe('headroom status bar — proxy offline (fallback: external proxy present)', () => {
+  beforeEach(() => {
+    setAvailability({ installed: true, proxyRunning: false });
+    setLocalProxyState('fallback');
+  });
+
+  it('still shows the offline hint', () => {
+    create();
+    expect(mockItem.text).toBe('$(rocket) Headroom: proxy offline');
+  });
+
+  it('tooltip explains an external process is using port 8787', () => {
+    create();
+    expect(mockItem.tooltip).toContain('Another process is already listening on port 8787');
+    expect(mockItem.tooltip).toContain('localhost:8787');
+    // Does NOT mention manual proxy start — extension would have hosted its own.
+    expect(mockItem.tooltip).not.toContain('`npx headroom-ai proxy`');
+  });
+});
+
+// ─── State 3c (Phase 2): proxy offline – failed (other listen error) ─────────
+
+describe('headroom status bar — proxy offline (failed)', () => {
+  beforeEach(() => {
+    setAvailability({ installed: true, proxyRunning: false });
+    setLocalProxyState('failed');
+  });
+
+  it('still shows the offline hint', () => {
+    create();
+    expect(mockItem.text).toBe('$(rocket) Headroom: proxy offline');
+  });
+
+  it('tooltip tells the user to check the output channel', () => {
+    create();
+    expect(mockItem.tooltip).toContain('extension-owned proxy failed');
+    expect(mockItem.tooltip).toContain('output channel');
+  });
+});
+
+// ─── Subscriber-driven refresh (Phase 2) ───────────────────────────────────
+
+describe('headroom status bar — proxy-state subscription', () => {
+  it('re-renders when LocalProxyState transitions without calling refreshHeadroomStatusBar', async () => {
+    // First paint: 'starting' with proxyRunning=false → '$(rocket) Headroom: starting…'
+    setAvailability({ installed: true, proxyRunning: false });
+    setLocalProxyState('starting');
+    create();
+    expect(mockItem.text).toBe('$(rocket) Headroom: starting\u2026');
+
+    // Now model the real transition: state flips to 'running' AND the
+    // downstream health check confirms proxyRunning=true. The bar should
+    // drop the 'starting…' affordance and surface the active state.
+    setLocalProxyState('running');
+    setAvailability({ installed: true, proxyRunning: true, version: '0.5.5-managed' });
+    setStats({ totalCalls: 0 });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mockItem.text).not.toContain('starting');
+    expect(mockItem.text).toBe('$(rocket) Headroom');   // active, zero calls
+  });
+
+  it('does not fire duplicate refreshes when state is set to the same value', () => {
+    setAvailability({ installed: true, proxyRunning: true });
+    setLocalProxyState('running');
+    create();
+    const initialShowCount = vi.mocked(mockItem.show).mock.calls.length;
+
+    setLocalProxyState('running');
+    setLocalProxyState('running');
+    expect(vi.mocked(mockItem.show).mock.calls.length).toBe(initialShowCount);
   });
 });
 
@@ -203,24 +397,56 @@ describe('headroom status bar — zero calls', () => {
     expect(mockItem.text).toBe('$(rocket) Headroom');
   });
 
-  it('shows a tooltip indicating no calls have happened yet', () => {
+  it('routes the click into the show-details quick-pick command (not settings)', () => {
     setAvailability({ installed: true, proxyRunning: true, version: '0.22.4' });
     setStats({ totalCalls: 0 });
     create();
+    expect(mockItem.command).toEqual({
+      command: 'agileagentcanvas.headroom.showDetails',
+      title: 'Show Headroom Details',
+    });
+  });
+
+  it('shows a tooltip indicating no calls have happened yet', async () => {
+    setAvailability({ installed: true, proxyRunning: true, version: '0.22.4' });
+    setStats({ totalCalls: 0 });
+    create();
+    await vi.advanceTimersByTimeAsync(0);
     expect(mockItem.tooltip).toContain('No compression calls yet');
   });
 
-  it('shows the version in the tooltip', () => {
+  it('click command remains show-details even when user has toggled the setting after first paint', async () => {
+    setAvailability({ installed: true, proxyRunning: true, version: '0.22.4' });
+    setStats({ totalCalls: 0 });
+    create();
+    await vi.advanceTimersByTimeAsync(0);
+
+    // Mutate command then re-render — the active branch must overwrite it
+    // back to show-details (NOT a leftover reference to settings from a
+    // prior state).
+    mockItem.command = { command: 'workbench.action.openSettings', arguments: [], title: 'old' };
+    refreshHeadroomStatusBar();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockItem.command).toEqual({
+      command: 'agileagentcanvas.headroom.showDetails',
+      title: 'Show Headroom Details',
+    });
+  });
+
+  it('shows the version in the tooltip', async () => {
     setAvailability({ installed: true, proxyRunning: true, version: '0.25.1' });
     setStats({ totalCalls: 0 });
     create();
+    await vi.advanceTimersByTimeAsync(0);
     expect(mockItem.tooltip).toContain('0.25.1');
   });
 
-  it('falls back to ? when version is undefined', () => {
+  it('falls back to ? when version is undefined', async () => {
     setAvailability({ installed: true, proxyRunning: true /* no version */ });
     setStats({ totalCalls: 0 });
     create();
+    await vi.advanceTimersByTimeAsync(0);
     expect(mockItem.tooltip).toContain('v?');
   });
 });
@@ -251,6 +477,20 @@ describe('headroom status bar — active with stats', () => {
     expect(mockItem.text).toBe('$(rocket) 40%');
   });
 
+  it('routes the click into the show-details quick-pick command (not settings)', () => {
+    setAvailability({ installed: true, proxyRunning: true });
+    setStats({
+      totalCalls: 5,
+      totalTokensBefore: 10000,
+      totalTokensSaved: 4000,
+    });
+    create();
+    expect(mockItem.command).toEqual({
+      command: 'agileagentcanvas.headroom.showDetails',
+      title: 'Show Headroom Details',
+    });
+  });
+
   it('shows zero percent when tokensBefore is zero', () => {
     setAvailability({ installed: true, proxyRunning: true });
     setStats({
@@ -262,7 +502,7 @@ describe('headroom status bar — active with stats', () => {
     expect(mockItem.text).toBe('$(rocket) 0%');
   });
 
-  it('shows a detailed tooltip with tokens and calls', () => {
+  it('shows a detailed tooltip with tokens and calls', async () => {
     setAvailability({ installed: true, proxyRunning: true });
     setStats({
       totalCalls: 12,
@@ -271,6 +511,7 @@ describe('headroom status bar — active with stats', () => {
       totalTokensSaved: 20000,
     });
     create();
+    await vi.advanceTimersByTimeAsync(0);
     expect(mockItem.tooltip).toContain('Tokens saved');
     // toLocaleString is locale-dependent — check for the numeric substring
     const savedPart = (20000).toLocaleString();
@@ -294,7 +535,7 @@ describe('refreshHeadroomStatusBar', () => {
     setEnabled(false);
     setAvailability({ installed: false, proxyRunning: false });
     create();
-    expect(mockItem.text).toBe('');
+    expect(mockItem.text).toBe('$(circle-slash) Headroom: disabled');
 
     // Toggle enabled and simulate a proxy now running
     setEnabled(true);
@@ -309,5 +550,243 @@ describe('refreshHeadroomStatusBar', () => {
     await vi.advanceTimersByTimeAsync(0);
 
     expect(mockItem.text).toBe('$(rocket) 50%');
+  });
+});
+
+// ─── SharedContext tooltip section ──────────────────────────────────────────
+
+// ─── Show-details command routing contract ─────────────────────────────────
+
+describe('headroom status bar — show-details click routing', () => {
+  // Every branch below should keep its existing click behaviour except
+  // the two ACTIVE branches (zero calls / with stats), which now route
+  // to the new quick-pick command. Lock the contract per branch.
+
+  it('disabled branch keeps opening settings', () => {
+    setEnabled(false);
+    setAvailability({ installed: true, proxyRunning: true });
+    create();
+    expect(mockItem.command?.command).toBe('workbench.action.openSettings');
+    expect(mockItem.command?.arguments).toEqual(['agileagentcanvas.headroom']);
+  });
+
+  it('not-installed branch clears the click command (no action)', () => {
+    setAvailability({ installed: false });
+    create();
+    expect(mockItem.command).toBeUndefined();
+  });
+
+  it('starting branch keeps opening settings', () => {
+    setAvailability({ installed: true, proxyRunning: false });
+    setLocalProxyState('starting');
+    create();
+    expect(mockItem.command?.command).toBe('workbench.action.openSettings');
+  });
+
+  it('offline branch keeps opening settings', () => {
+    setAvailability({ installed: true, proxyRunning: false });
+    setLocalProxyState('idle');
+    create();
+    expect(mockItem.command?.command).toBe('workbench.action.openSettings');
+  });
+
+  it('offline fallback branch keeps opening settings', () => {
+    setAvailability({ installed: true, proxyRunning: false });
+    setLocalProxyState('fallback');
+    create();
+    expect(mockItem.command?.command).toBe('workbench.action.openSettings');
+  });
+
+  it('offline failed branch keeps opening settings', () => {
+    setAvailability({ installed: true, proxyRunning: false });
+    setLocalProxyState('failed');
+    create();
+    expect(mockItem.command?.command).toBe('workbench.action.openSettings');
+  });
+});
+
+// ─── Show-details command registered extension-side ────────────────────────
+
+describe('HEADROOM_SHOW_DETAILS_COMMAND constant', () => {
+  it('matches the registered command id', () => {
+    expect(HEADROOM_SHOW_DETAILS_COMMAND).toBe('agileagentcanvas.headroom.showDetails');
+  });
+});
+
+describe('headroom status bar — SharedContext tooltip', () => {
+  beforeEach(() => {
+    setAvailability({ installed: true, proxyRunning: true });
+    setStats({ totalCalls: 1, totalTokensBefore: 10000, totalTokensSaved: 4000 });
+    setCCRStats(null);
+  });
+
+  it('shows SharedContext section when entries > 0', async () => {
+    setSharedContextStats({
+      entries: 3,
+      totalOriginalTokens: 4500,
+      totalCompressedTokens: 2000,
+      totalTokensSaved: 2500,
+      savingsPercent: 55,
+    });
+    create();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockItem.tooltip).toContain('SharedContext (A2A handoffs)');
+    expect(mockItem.tooltip).toContain('Compressed entries: 3');
+    expect(mockItem.tooltip).toContain('Tokens saved');
+    expect(mockItem.tooltip).toContain('55% avg');
+  });
+
+  it('hides SharedContext section when stats return null', async () => {
+    setSharedContextStats(null);
+    create();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockItem.tooltip).not.toContain('SharedContext');
+    expect(mockItem.tooltip).not.toContain('A2A handoffs');
+  });
+
+  it('hides SharedContext section when entries is 0', async () => {
+    setSharedContextStats({
+      entries: 0,
+      totalOriginalTokens: 0,
+      totalCompressedTokens: 0,
+      totalTokensSaved: 0,
+      savingsPercent: 0,
+    });
+    create();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockItem.tooltip).not.toContain('SharedContext');
+  });
+
+  it('includes token savings with locale formatting', async () => {
+    setSharedContextStats({
+      entries: 1,
+      totalOriginalTokens: 10000,
+      totalCompressedTokens: 3500,
+      totalTokensSaved: 6500,
+      savingsPercent: 65,
+    });
+    create();
+    await vi.advanceTimersByTimeAsync(0);
+
+    const savedPart = (6500).toLocaleString();
+    expect(mockItem.tooltip).toContain(savedPart);
+    expect(mockItem.tooltip).toContain('65% avg');
+  });
+});
+
+// ─── CCR store tooltip section ──────────────────────────────────────────────
+
+describe('headroom status bar — CCR tooltip', () => {
+  beforeEach(() => {
+    setAvailability({ installed: true, proxyRunning: true });
+    setStats({ totalCalls: 1, totalTokensBefore: 10000, totalTokensSaved: 4000 });
+    setSharedContextStats(null);
+  });
+
+  it('shows CCR Store section when getCCRStats returns data', async () => {
+    setCCRStats({
+      enabled: true,
+      totalCompressions: 42,
+      totalRetrievals: 7,
+      globalRetrievalRate: 0.15,
+      toolSignaturesTracked: 12,
+      avgCompressionRatio: 0.45,
+      avgTokenReduction: 350,
+    });
+    create();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockItem.tooltip).toContain('CCR Store');
+    expect(mockItem.tooltip).toContain('totalCompressions');
+    expect(mockItem.tooltip).toContain('42');
+    expect(mockItem.tooltip).toContain('globalRetrievalRate');
+    // toLocaleString() is locale-dependent — check the key exists, not the exact value
+    expect(mockItem.tooltip).toMatch(/globalRetrievalRate: [\d,.]+/);
+  });
+
+  it('hides CCR Store section when getCCRStats returns null', async () => {
+    setCCRStats(null);
+    create();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockItem.tooltip).not.toContain('CCR Store');
+  });
+
+  it('hides CCR Store section when getCCRStats rejects', async () => {
+    vi.mocked(getCCRStats).mockRejectedValue(new Error('fetch failed'));
+    create();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockItem.tooltip).not.toContain('CCR Store');
+  });
+
+  it('formats numeric values with locale', async () => {
+    setCCRStats({
+      totalEntries: 1234,
+      totalSize: 567890,
+    });
+    create();
+    await vi.advanceTimersByTimeAsync(0);
+
+    const entriesPart = (1234).toLocaleString();
+    const sizePart = (567890).toLocaleString();
+    expect(mockItem.tooltip).toContain(entriesPart);
+    expect(mockItem.tooltip).toContain(sizePart);
+  });
+});
+
+// ─── Combined SharedContext + CCR sections ──────────────────────────────────
+
+describe('headroom status bar — combined sections', () => {
+  it('shows both SharedContext and CCR sections when both return data', async () => {
+    setAvailability({ installed: true, proxyRunning: true });
+    setStats({ totalCalls: 3, totalTokensBefore: 20000, totalTokensSaved: 8000 });
+    setSharedContextStats({
+      entries: 2,
+      totalOriginalTokens: 3000,
+      totalCompressedTokens: 1200,
+      totalTokensSaved: 1800,
+      savingsPercent: 60,
+    });
+    setCCRStats({ totalCompressions: 10, totalRetrievals: 3 });
+
+    create();
+    await vi.advanceTimersByTimeAsync(0);
+
+    // Compressor section
+    expect(mockItem.tooltip).toContain('Headroom Compression');
+    // SharedContext section
+    expect(mockItem.tooltip).toContain('SharedContext (A2A handoffs)');
+    expect(mockItem.tooltip).toContain('Compressed entries: 2');
+    // CCR section
+    expect(mockItem.tooltip).toContain('CCR Store');
+    expect(mockItem.tooltip).toContain('totalCompressions');
+    // Active state with stats — click routes into the show-details quick-pick,
+    // not settings (settings is still reachable from the quick-pick terminal item).
+    expect(mockItem.command).toEqual({
+      command: HEADROOM_SHOW_DETAILS_COMMAND,
+      title: 'Show Headroom Details',
+    });
+  });
+
+  it('bar text still shows compression percentage when sections are present', async () => {
+    setAvailability({ installed: true, proxyRunning: true });
+    setStats({ totalCalls: 1, totalTokensBefore: 10000, totalTokensSaved: 3000 });
+    setSharedContextStats({
+      entries: 1,
+      totalOriginalTokens: 1000,
+      totalCompressedTokens: 500,
+      totalTokensSaved: 500,
+      savingsPercent: 50,
+    });
+    setCCRStats({ flag: true });
+
+    create();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockItem.text).toBe('$(rocket) 30%');
   });
 });

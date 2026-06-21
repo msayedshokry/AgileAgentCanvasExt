@@ -33,6 +33,12 @@ jobs:
         run: npm run lint || true
       - name: Lint Changelog
         run: npm run lint:changelog || true
+      - name: Lint Mapping Doc
+        # If this fails CI on a known-clean mapping doc, the maintainer probably
+        # broke the parser (not the doc). Run `npm run lint:mapping-doc -- --soft`
+        # locally to confirm whether it's a parser regression or a genuine doc bug,
+        # then either fix the parser or amend the doc before pushing a fix.
+        run: npm run lint:mapping-doc
       - name: Bundle Extension
         run: npm run bundle
 

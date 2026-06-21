@@ -136,6 +136,8 @@ export interface HandoffSession {
     intermediateArtifacts: Record<string, any>;
     pendingDecisions?: string[];
     evaluationResults?: any;
+    _compressedViaSharedContext?: boolean;
+    _shareCtxKey?: string;
   };
   status: HandoffStatus;
   /** Trace entries recorded during the handoff */

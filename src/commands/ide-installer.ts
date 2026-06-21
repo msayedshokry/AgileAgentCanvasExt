@@ -47,7 +47,7 @@ interface Artifact {
     description: string;
     /** Module this artifact belongs to (core, bmm, bmb, cis, tea) */
     module: string;
-    /** Path to the artifact file relative to the resources root (e.g. core/agents/bmad-master.md) */
+    /** Path to the artifact file relative to the resources root (e.g. core/agents/aac-agent-analyst.md) */
     relativePath: string;
 }
 
@@ -589,28 +589,28 @@ interface WorkflowStub {
  * Undefined means the stub is VS Code-only (keeps delegation body).
  */
 const STUB_TO_MANIFEST: Record<string, string | undefined> = {
-    'dev': 'skills/bmad-dev-story/SKILL.md',
-    'review': 'skills/bmad-review-adversarial-general/SKILL.md',
-    'sprint': 'skills/bmad-sprint-planning/SKILL.md',
-    'quick': 'skills/bmad-quick-dev/SKILL.md',
-    'epics': 'skills/bmad-create-epics-and-stories/SKILL.md',
-    'stories': 'skills/bmad-create-story/SKILL.md',
-    'readiness': 'skills/bmad-check-implementation-readiness/SKILL.md',
-    'ux': 'skills/bmad-create-ux-design/SKILL.md',
-    'requirements': 'skills/bmad-create-prd/SKILL.md',
-    'vision': 'skills/bmad-product-brief/SKILL.md',
-    'context': 'skills/bmad-generate-project-context/SKILL.md',
-    'convert-to-json': 'skills/bmad-to-json/SKILL.md',
+    'dev': 'skills/aac-dev-story/SKILL.md',
+    'review': 'skills/aac-review-adversarial-general/SKILL.md',
+    'sprint': 'skills/aac-sprint-planning/SKILL.md',
+    'quick': 'skills/aac-quick-dev/SKILL.md',
+    'epics': 'skills/aac-create-epics-and-stories/SKILL.md',
+    'stories': 'skills/aac-create-story/SKILL.md',
+    'readiness': 'skills/aac-check-implementation-readiness/SKILL.md',
+    'ux': 'skills/aac-create-ux-design/SKILL.md',
+    'requirements': 'skills/aac-create-prd/SKILL.md',
+    'vision': 'skills/aac-product-brief/SKILL.md',
+    'context': 'skills/aac-generate-project-context/SKILL.md',
+    'convert-to-json': 'skills/aac-to-json/SKILL.md',
     'design-thinking': 'skills/aac-cis-design-thinking/SKILL.md',
     'innovate': 'skills/aac-cis-innovation-strategy/SKILL.md',
     'solve': 'skills/aac-cis-problem-solving/SKILL.md',
     'story-craft': 'skills/aac-cis-storytelling/SKILL.md',
-    'enhance': 'skills/bmad-create-epics-and-stories/SKILL.md',
-    'elicit': 'skills/bmad-advanced-elicitation/SKILL.md',
-    'document': 'skills/bmad-document-project/SKILL.md',
-    'review-code': 'skills/bmad-code-review/SKILL.md',
+    'enhance': 'skills/aac-create-epics-and-stories/SKILL.md',
+    'elicit': 'skills/aac-advanced-elicitation/SKILL.md',
+    'document': 'skills/aac-document-project/SKILL.md',
+    'review-code': 'skills/aac-code-review/SKILL.md',
     'ci': 'skills/aac-tea-ci/SKILL.md',
-    'party': 'skills/bmad-party-mode/SKILL.md',
+    'party': 'skills/aac-party-mode/SKILL.md',
     // VS Code-only — no CLI equivalent (depend on VS Code extension APIs)
     'refine': undefined,
 };
@@ -1214,15 +1214,15 @@ BMAD JSON schemas for artifact validation are located at: \`${schemasDir}\`
 
 | Category | Best Skills |
 |----------|-------------|
-| **Planning & requirements** | bmad-create-product-brief, bmad-create-prd, bmad-create-epics-and-stories |
+| **Planning & requirements** | aac-product-brief, aac-create-prd, aac-create-epics-and-stories |
 | **Development** | bmad-dev-story, bmad-quick-dev, bmad-code-review |
-| **Testing & quality** | aac-agent-tea, aac-tea-ci, bmad-tea-testarch-test-design |
-| **Architecture** | bmad-create-architecture, bmad-generate-project-context |
-| **UX & design** | bmad-create-ux-design, aac-cis-design-thinking |
+| **Testing & quality** | aac-agent-tea, aac-tea-ci, aac-tea-test-design |
+| **Architecture** | aac-create-architecture, aac-generate-project-context |
+| **UX & design** | aac-create-ux-design, aac-cis-design-thinking |
 | **Creativity & innovation** | aac-cis-innovation-strategy, aac-cis-problem-solving, aac-cis-storytelling |
-| **Sprint & project management** | bmad-sprint-planning, bmad-sprint-status, bmad-retrospective |
-| **Documentation** | bmad-document-project, aac-generate-readme, aac-generate-api-docs |
-| **Conversion** | bmad-to-json, aac-agent-canvas-integrator |
+| **Sprint & project management** | aac-sprint-planning, aac-sprint-status, aac-retrospective |
+| **Documentation** | aac-document-project, aac-generate-readme, aac-generate-api-docs |
+| **Conversion** | aac-to-json, aac-agent-canvas-integrator |
 
 ## Full Skill Catalogue
 
@@ -1234,17 +1234,17 @@ When the user asks to "talk to" a persona by name, match to the corresponding ag
 
 | Persona | Name | Skill |
 |---------|------|-------|
-| Master | BMad Master | bmad-master |
-| Analyst | Mary | bmad-agent-analyst |
-| PM | John | bmad-agent-pm |
-| Architect | Winston | bmad-agent-architect |
-| Dev | Amelia | bmad-agent-dev |
-| QA | Quinn | bmad-agent-qa |
-| Scrum Master | Bob | bmad-agent-sm |
-| UX Designer | Sally | bmad-agent-ux-designer |
-| Tech Writer | Paige | bmad-agent-tech-writer |
+| Master | BMad Master | aac-agent-analyst |
+| Analyst | Mary | aac-agent-analyst |
+| PM | John | aac-agent-pm |
+| Architect | Winston | aac-agent-architect |
+| Dev | Amelia | aac-agent-dev |
+| QA | Quinn | aac-agent-tea |
+| Scrum Master | Bob | aac-agent-pm |
+| UX Designer | Sally | aac-agent-ux-designer |
+| Tech Writer | Paige | aac-agent-tech-writer |
 | Test Architect | Murat | aac-agent-tea |
-| Solo Dev | Barry | bmad-agent-quick-flow-solo-dev |
+| Solo Dev | Barry | aac-agent-dev |
 | Agent Builder | Bond | aac-bmb-agent-builder |
 | Module Builder | Morgan | aac-bmb-agent-module-builder |
 | Workflow Builder | Wendy | aac-bmb-agent-workflow-builder |

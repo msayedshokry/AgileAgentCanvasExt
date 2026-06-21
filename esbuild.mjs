@@ -13,7 +13,7 @@ const buildOptions = {
     entryPoints: ['src/extension.ts'],
     bundle: true,
     outfile: 'dist/extension.js',
-    external: ['vscode'], // vscode is provided by the host
+    external: ['vscode', 'node-pty'], // vscode provided by host; node-pty is a native addon
     format: 'cjs',
     platform: 'node',
     target: 'node20',
@@ -37,6 +37,21 @@ function copyPdfkitFontData() {
     console.log('[esbuild] Copied pdfkit font data → dist/data/');
 }
 
+/**
+ * Copy the node-pty native addon into dist/ so it can be required at
+ * runtime.  node-pty is a native C++ addon; esbuild cannot bundle it.
+ * We externalize the import and ship the pre-built binary alongside.
+ * The binary must be rebuilt against Electron 30.x headers (via
+ * @electron/rebuild in the packaging step) before this copy runs.
+ */
+function copyNodePty() {
+    const src = join(__dirname, 'node_modules', 'node-pty');
+    const dest = join(__dirname, 'dist', 'node_modules', 'node-pty');
+    mkdirSync(dest, { recursive: true });
+    cpSync(src, dest, { recursive: true });
+    console.log('[esbuild] Copied node-pty → dist/node_modules/node-pty/');
+}
+
 async function main() {
     if (watch) {
         const ctx = await esbuild.context(buildOptions);
@@ -45,6 +60,7 @@ async function main() {
     } else {
         await esbuild.build(buildOptions);
         copyPdfkitFontData();
+        copyNodePty();
         console.log('[esbuild] Extension bundled successfully');
     }
 }

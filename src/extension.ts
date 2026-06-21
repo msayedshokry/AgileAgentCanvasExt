@@ -38,6 +38,7 @@ import { handleAgenticKanbanMessage } from './views/agentic-kanban-message-handl
 import { createGraphifyStatusBar, refreshGraphifyStatusBar } from './views/graphify-status-bar';
 import { createCodeburnStatusBar, refreshCodeburnStatusBar } from './views/codeburn-status-bar';
 import { createHeadroomStatusBar, refreshHeadroomStatusBar } from './views/headroom-status-bar';
+import { showHeadroomDetails } from './views/headroom-quick-pick';
 import { createChatProviderStatusBar, registerPickChatProviderCommand, refreshChatProviderStatusBar } from './views/chat-provider-status-bar';
 import { setSelectedProvider, getSelectedProvider, type ChatProviderId } from './commands/chat-bridge';
 import {
@@ -61,7 +62,7 @@ import {
     loadReport
 } from './integrations/graphify';
 import { detectCodeburn } from './integrations/codeburn';
-import { detectHeadroom } from './integrations/headroom';
+import { detectHeadroom, disposeHeadroomClient, startInProcessProxy } from './integrations/headroom';
 import { JiraSecrets } from './integrations/jira-secrets';
 import { createLogger, setLoggerOutputSink } from './utils/logger';
 import { autonomyLifecycle } from './workflow/autonomy-lifecycle';
@@ -550,21 +551,6 @@ export function activate(context: vscode.ExtensionContext) {
             } catch {
                 logger.info(`Output folder not found (new project?): ${outputUri.fsPath}`);
             }
-            try {
-                await vscode.workspace.fs.stat(outputUri);
-                await artifactStore.loadFromFolder(outputUri);
-                logger.info(`Auto-loaded project from: ${outputUri.fsPath}`);
-
-                // ── Restore interrupted execution state from traces ──────
-                // Now that artifacts are loaded, scan traces and push agent
-                // state to the kanban so the user can see which artifacts
-                // were mid-execution and resume or abandon them.
-                restoreInterruptedSessions(agenticKanbanProvider).catch(err => {
-                  logger.warn(`Failed to restore interrupted sessions: ${err instanceof Error ? err.message : String(err)}`);
-                });
-            } catch {
-                logger.info(`Output folder not found (new project?): ${outputUri.fsPath}`);
-            }
 
             // Set context key so the Agentic Kanban view shows in the sidebar.
             // This must fire even when the output folder doesn't exist yet
@@ -683,7 +669,24 @@ export function activate(context: vscode.ExtensionContext) {
     createGraphifyStatusBar(context);
 
     // ── headroom: status bar (compression savings) ──────────────────────────
+    // Start the in-process proxy BEFORE creating the status bar so the
+    // first render reflects the real lifecycle state (starting / running)
+    // instead of a misleading 'idle → offline' flicker.
+    const inProcessProxyDisposable = startInProcessProxy();
+    context.subscriptions.push(inProcessProxyDisposable);
+
     createHeadroomStatusBar(context);
+
+    // ── headroom: show-details quick-pick (click on the active bar) ───────
+    // The status bar routes the active-with-stats and active-with-zero-calls
+    // branches into this command instead of opening settings. Settings is
+    // still reachable from the quick-pick's terminal "Open Headroom settings"
+    // row, so we don't lose that flow.
+    context.subscriptions.push(
+        vscode.commands.registerCommand('agileagentcanvas.headroom.showDetails', () => {
+            return showHeadroomDetails();
+        })
+    );
 
     // ── headroom: proactive detection (runs async so status bar reflects availability) ─
     detectHeadroom().then(() => refreshHeadroomStatusBar()).catch(() => {});
@@ -1263,6 +1266,9 @@ export function deactivate() {
     // Stop the Autonomy lifecycle (issue #21) so the health monitor, auto-
     // recovery listener, and scheduler webview controls all wind down.
     autonomyLifecycle.stop();
+
+    // Clean up HeadroomClient singleton (closes HTTP keep-alive)
+    disposeHeadroomClient();
 
     // Cancel A2A polling before store dispose — poll callbacks access the store
     if (laneTransitionEngine) {

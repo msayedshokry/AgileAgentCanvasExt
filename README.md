@@ -10,7 +10,7 @@ Bring structured, AI-powered product development into VS Code. Design a product 
 
 - **Visual 4-lane canvas** — Discovery → Planning → Solutioning → Implementation. Cards are colour-coded by artifact type and connected with dependency arrows. Click any card to edit it inline. A minimap helps you navigate large projects.
 - **AI chat participant** — `@agileagentcanvas` in Copilot Chat with 35+ slash commands for product development, plus 26 LM tools the AI can call autonomously.
-- **Workflow system** — 44 built-in BMAD workflows with defined steps, validation checkpoints, and artefacts that populate the canvas automatically.
+- **Workflow system** — 10 built-in BMAD workflows with defined steps, validation checkpoints, and artefacts that populate the canvas automatically.
 - **Knowledge graph** — optional [graphify](https://github.com/safishamsi/graphify) integration that builds a semantic dependency graph of your codebase and feeds it into AI context.
 - **Jira Cloud sync** — fetch epics and stories from Jira, with a field-level conflict picker before any overwrite.
 - **Skill catalogue** — 86 built-in skills and agents, extendable with your own folder or any git repo.
@@ -130,6 +130,10 @@ A short list of the highest-traffic commands. Run any from the Command Palette (
 Agile Agent Canvas is built on the [BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD) framework by BMad Code, LLC (MIT License).
 
 Knowledge graph features are powered by [graphify](https://github.com/safishamsi/graphify) by Safi Shamsi (MIT License) — an external tool invoked by the extension, not bundled.
+
+> The `BMAD` mentions in this file's tagline, headline (`What is BMAD?`), body intro, workflow count, `## Most-used commands` (`Install Framework to IDE`), and `## Acknowledgments` are upstream BMAD-METHOD framework attribution, not skill or workflow identifiers — kept for upstream attribution per the carve-out policy.
+>
+> The upstream github link in the headline and Acknowledgments is preserved. The upstream `44 guided workflows for each phase` reference at lines 5-6 describes the upstream framework's full 44-workflow-per-phase catalog design intent; this extension's curated subset is the `10 built-in` workflows on line 13. Live skill/persona paths live under `.github/aac-*.md` per Phase 2.
 
 ## Feedback and issues
 

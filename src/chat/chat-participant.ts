@@ -575,7 +575,7 @@ export class AgileAgentCanvasChatParticipant {
             const vision = {
                 productName: state.projectName || 'My Product',
                 problemStatement: prompt || 'Define the problem...',
-                targetUsers: ['Primary User', 'Secondary User'],
+                targetUsers: [{ segment: 'Primary User' }, { segment: 'Secondary User' }],
                 valueProposition: 'Unique value...',
                 successCriteria: ['Criterion 1', 'Criterion 2'],
                 status: 'draft' as const
@@ -613,7 +613,7 @@ export class AgileAgentCanvasChatParticipant {
             ? `Refine and enhance the existing product vision. User input: "${prompt || 'improve it'}". Existing vision: ${existingVision}`
             : `Create a new product vision. User description: "${prompt}"`;
 
-        const workflowPath = path.join(executor.getBmadPath(), 'skills', 'bmad-product-brief', 'SKILL.md');
+        const workflowPath = path.join(executor.getBmadPath(), 'skills', 'aac-product-brief', 'SKILL.md');
 
         await executor.executeWithTools(
             model,
@@ -679,7 +679,7 @@ export class AgileAgentCanvasChatParticipant {
                 ? `Extract functional and non-functional requirements from this PRD document. PRD content:\n\n${prdContent.substring(0, 8000)}`
                 : `Extract functional and non-functional requirements from this description. Description: "${sourceText}"`;
 
-            const workflowPath = path.join(executor.getBmadPath(), 'skills', 'bmad-create-prd', 'SKILL.md');
+            const workflowPath = path.join(executor.getBmadPath(), 'skills', 'aac-create-prd', 'SKILL.md');
 
             await executor.executeWithTools(model, task, null, stream, token, this.store, workflowPath);
 
@@ -743,7 +743,7 @@ export class AgileAgentCanvasChatParticipant {
                 ? `Design epics that organize these requirements by user value.\n\nRequirements:\n${reqSummary}${prompt ? `\n\nAdditional instructions: ${prompt}` : ''}`
                 : `Design epics. User description: "${prompt}"`;
 
-            const workflowPath = path.join(executor.getBmadPath(), 'skills', 'bmad-create-epics-and-stories', 'SKILL.md');
+            const workflowPath = path.join(executor.getBmadPath(), 'skills', 'aac-create-epics-and-stories', 'SKILL.md');
 
             await executor.executeWithTools(model, task, null, stream, token, this.store, workflowPath);
 
@@ -832,7 +832,7 @@ export class AgileAgentCanvasChatParticipant {
 Epic goal: ${targetEpic.goal || 'Not set'}
 Requirements covered: ${targetEpic.functionalRequirements?.join(', ') || 'None'}${prompt ? `\nAdditional instructions: ${prompt}` : ''}`;
 
-            const workflowPath = path.join(executor.getBmadPath(), 'skills', 'bmad-create-epics-and-stories', 'SKILL.md');
+            const workflowPath = path.join(executor.getBmadPath(), 'skills', 'aac-create-epics-and-stories', 'SKILL.md');
 
             await executor.executeWithTools(
                 model,
@@ -954,8 +954,8 @@ Requirements covered: ${targetEpic.functionalRequirements?.join(', ') || 'None'}
                 : 'all details (use cases, fit criteria, success metrics, risks, definition of done)';
 
             // Route to the most relevant supporting workflow; for "all" fall back to epic-enhancement step
-            const supportingBase = path.join(executor.getBmadPath(), 'skills', 'bmad-create-epics-and-stories');
-            const enhancementStep = path.join(executor.getBmadPath(), 'skills', 'bmad-create-epics-and-stories', 'SKILL.md');
+            const supportingBase = path.join(executor.getBmadPath(), 'skills', 'aac-create-epics-and-stories');
+            const enhancementStep = path.join(executor.getBmadPath(), 'skills', 'aac-create-epics-and-stories', 'SKILL.md');
             const workflowPath = enhancementStep;
 
             const task = `Enhance the epic "${targetEpic.title}" (${targetEpic.id}) with ${enhanceType}.
@@ -1866,7 +1866,7 @@ Review and refine this product vision to make it compelling, specific, and measu
 ### Current Vision:
 - Product Name: ${vision.productName || 'Not set'}
 - Problem Statement: ${vision.problemStatement || 'Not set'}
-- Target Users: ${(vision.targetUsers || []).join(', ') || 'Not defined'}
+- Target Users: ${(vision.targetUsers || []).map((u: any) => typeof u === 'string' ? u : u.segment || u.persona || JSON.stringify(u)).join(', ') || 'Not defined'}
 - Value Proposition: ${vision.valueProposition || 'Not set'}
 - Success Criteria: ${(vision.successCriteria || []).join('; ') || 'None'}
 
@@ -2180,7 +2180,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
 
         if (subMode === 'status') {
             // Sprint-status workflow — reads existing sprint-status.yaml
-            workflowPath = path.join(bmadPath, 'skills', 'bmad-sprint-status', 'SKILL.md');
+            workflowPath = path.join(bmadPath, 'skills', 'aac-sprint-status', 'SKILL.md');
             task = [
                 'Read and analyze the existing sprint-status.yaml file.',
                 'Summarize the current sprint status: count stories by status, detect risks,',
@@ -2189,7 +2189,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
             ].filter(Boolean).join(' ');
         } else {
             // Sprint-planning workflow — generates sprint-status.yaml from epics
-            workflowPath = path.join(bmadPath, 'skills', 'bmad-sprint-planning', 'SKILL.md');
+            workflowPath = path.join(bmadPath, 'skills', 'aac-sprint-planning', 'SKILL.md');
 
             // Provide epic context from the store
             const epicSummary = epics
@@ -2287,7 +2287,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
 
         // ── Build task description ────────────────────────────────────────
         const bmadPath = executor.getBmadPath();
-        const workflowPath = path.join(bmadPath, 'skills', 'bmad-create-ux-design', 'SKILL.md');
+        const workflowPath = path.join(bmadPath, 'skills', 'aac-create-ux-design', 'SKILL.md');
 
         // Gather available context from the store
         const state = this.store.getState();
@@ -2306,7 +2306,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
                 contextParts.push(`- Problem: ${state.vision.problemStatement}`);
             }
             if (state.vision.targetUsers && state.vision.targetUsers.length > 0) {
-                contextParts.push(`- Target users: ${state.vision.targetUsers.join(', ')}`);
+                contextParts.push(`- Target users: ${state.vision.targetUsers.map((u: any) => typeof u === 'string' ? u : u.segment || u.persona || JSON.stringify(u)).join(', ')}`);
             }
             if (state.vision.valueProposition) {
                 contextParts.push(`- Value proposition: ${state.vision.valueProposition}`);
@@ -2401,7 +2401,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
 
         // ── Build task description ────────────────────────────────────────
         const bmadPath = executor.getBmadPath();
-        const workflowPath = path.join(bmadPath, 'skills', 'bmad-create-epics-and-stories', 'SKILL.md');
+        const workflowPath = path.join(bmadPath, 'skills', 'aac-create-epics-and-stories', 'SKILL.md');
 
         // Summarise what artifacts exist in the store to give the LLM context
         const state = this.store.getState();
@@ -2510,7 +2510,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
 
         // ── Build agent roster ────────────────────────────────────────────
         const bmadPath = executor.getBmadPath();
-        const workflowPath = path.join(bmadPath, 'skills', 'bmad-party-mode', 'SKILL.md');
+        const workflowPath = path.join(bmadPath, 'skills', 'aac-party-mode', 'SKILL.md');
 
         const agentEntries = loadAllAgentPersonas(bmadPath);
         const rosterMarkdown = formatAgentRoster(agentEntries);
@@ -2615,7 +2615,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
         }
 
         const bmadPath = executor.getBmadPath();
-        const workflowPath = path.join(bmadPath, 'skills', 'bmad-document-project', 'SKILL.md');
+        const workflowPath = path.join(bmadPath, 'skills', 'aac-document-project', 'SKILL.md');
 
         const contextParts: string[] = [
             'Start the document-project workflow. You are Mary, the Business Analyst.',
@@ -2689,7 +2689,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
         }
 
         const bmadPath = executor.getBmadPath();
-        const workflowPath = path.join(bmadPath, 'skills', 'bmad-review-adversarial-general', 'SKILL.md');
+        const workflowPath = path.join(bmadPath, 'skills', 'aac-review-adversarial-general', 'SKILL.md');
 
         const contextParts: string[] = [
             'Start the adversarial code review workflow. You are Quinn, the QA Engineer.',
@@ -2855,8 +2855,8 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
 
         const bmadPath = executor.getBmadPath();
         const workflowPath = subCommand === 'dev'
-            ? path.join(bmadPath, 'skills', 'bmad-quick-dev', 'SKILL.md')
-            : path.join(bmadPath, 'skills', 'bmad-quick-dev', 'SKILL.md');
+            ? path.join(bmadPath, 'skills', 'aac-quick-dev', 'SKILL.md')
+            : path.join(bmadPath, 'skills', 'aac-quick-dev', 'SKILL.md');
 
         const artifactType = subCommand === 'dev' ? 'quick-dev' : 'quick-spec';
 
@@ -3345,7 +3345,7 @@ Expected output pattern: ${outputPattern}
 Always end the interaction by either saving confirmed changes or acknowledging the user's decision not to save.`;
 
         const bmadPath = executor.getBmadPath();
-        const workflowPath = path.join(bmadPath, 'skills', 'bmad-advanced-elicitation', 'SKILL.md');
+        const workflowPath = path.join(bmadPath, 'skills', 'aac-advanced-elicitation', 'SKILL.md');
 
         try {
             await executor.executeWithTools(
@@ -3426,7 +3426,7 @@ Always end the interaction by either saving confirmed changes or acknowledging t
         const configuredAgent = this.getConfiguredDefaultAgent();
         const personaByAgent: Record<'analyst' | 'pm' | 'architect', { agentId: string; fallback: string }> = {
             analyst: {
-                agentId: 'bmad-agent-analyst',
+                agentId: 'aac-agent-analyst',
                 fallback: `You are Mary, a Business Analyst from the BMAD (Business Method for AI Development) methodology team.
 
 ## Your Persona:
@@ -3435,7 +3435,7 @@ Always end the interaction by either saving confirmed changes or acknowledging t
 - **Principles**: Channel expert business analysis frameworks. Articulate requirements with absolute precision. Ground findings in verifiable evidence.`
             },
             pm: {
-                agentId: 'bmad-agent-pm',
+                agentId: 'aac-agent-pm',
                 fallback: `You are John, a Product Manager from the BMAD (Business Method for AI Development) methodology team.
 
 ## Your Persona:
@@ -3444,7 +3444,7 @@ Always end the interaction by either saving confirmed changes or acknowledging t
 - **Principles**: Prioritize user value, define measurable outcomes, maintain roadmap clarity.`
             },
             architect: {
-                agentId: 'bmad-agent-architect',
+                agentId: 'aac-agent-architect',
                 fallback: `You are Winston, a Solution Architect from the BMAD (Business Method for AI Development) methodology team.
 
 ## Your Persona:
@@ -4058,7 +4058,7 @@ Output ONLY the JSON, no explanation.`;
         }
 
         const bmadPath = executor.getBmadPath();
-        const workflowPath = path.join(bmadPath, 'skills', 'bmad-generate-project-context', 'SKILL.md');
+        const workflowPath = path.join(bmadPath, 'skills', 'aac-generate-project-context', 'SKILL.md');
 
         const contextParts: string[] = [
             'Start the generate-project-context workflow. You are Paige, the Technical Writer.',
@@ -4140,7 +4140,7 @@ Output ONLY the JSON, no explanation.`;
 
         // The write-doc command loads the Tech Writer agent definition and memory
         // then engages in multi-turn document writing following documentation standards.
-        const agentPath = path.join(bmadPath, 'skills', 'bmad-agent-tech-writer', 'SKILL.md');
+        const agentPath = path.join(bmadPath, 'skills', 'aac-agent-tech-writer', 'SKILL.md');
         const standardsPath = path.join(bmadPath, '_memory', 'tech-writer-sidecar', 'documentation-standards.md');
 
         const contextParts: string[] = [
@@ -4224,7 +4224,7 @@ Output ONLY the JSON, no explanation.`;
         }
 
         const bmadPath = executor.getBmadPath();
-        const agentPath = path.join(bmadPath, 'skills', 'bmad-agent-tech-writer', 'SKILL.md');
+        const agentPath = path.join(bmadPath, 'skills', 'aac-agent-tech-writer', 'SKILL.md');
         const standardsPath = path.join(bmadPath, '_memory', 'tech-writer-sidecar', 'documentation-standards.md');
 
         const contextParts: string[] = [
@@ -4328,7 +4328,7 @@ Output ONLY the JSON, no explanation.`;
                 contextParts.push(`Problem: ${state.vision.problemStatement}`);
             }
             if (state.vision.targetUsers?.length) {
-                contextParts.push(`Target users: ${state.vision.targetUsers.join(', ')}`);
+                contextParts.push(`Target users: ${state.vision.targetUsers.map((u: any) => typeof u === 'string' ? u : u.segment || u.persona || JSON.stringify(u)).join(', ')}`);
             }
         }
         if (state.prd) {
@@ -5183,7 +5183,7 @@ Output ONLY the JSON, no explanation.`;
         }
 
         const bmadPath = executor.getBmadPath();
-        const workflowPath = path.join(bmadPath, 'skills', 'bmad-review-adversarial-general', 'SKILL.md');
+        const workflowPath = path.join(bmadPath, 'skills', 'aac-review-adversarial-general', 'SKILL.md');
 
         const contextParts: string[] = [
             '## Ponytail Review — Over-Engineering Audit',

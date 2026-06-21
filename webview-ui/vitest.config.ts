@@ -12,6 +12,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@test': resolve(__dirname, './src/test'),
+      // Allow webview tests to import from the parent extension src/
+      // (e.g. terminal-protocol types shared across the boundary).
+      '@ext-src': resolve(__dirname, '..', 'src'),
     },
   },
   test: {

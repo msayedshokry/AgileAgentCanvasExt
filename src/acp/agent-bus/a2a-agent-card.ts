@@ -256,7 +256,7 @@ export function generatePlatformAgentCard(
         outputModes: CONFIG.DEFAULT_OUTPUT_MODES,
       },
       {
-        id: 'bmad-workflows',
+        id: 'aac-workflows',
         name: 'BMAD Workflows',
         description: 'Execute BMAD methodology workflows for product development',
         tags: ['bmad', 'methodology', 'product', 'development'],
