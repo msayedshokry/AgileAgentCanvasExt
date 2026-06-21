@@ -12,6 +12,7 @@ import { useEvent } from './useEvent';
 import { AutonomyBar, type SchedulerStateMessage, type BudgetStatus, type ProposedGoal, type SystemicIssue } from './AutonomyBar';
 import { TracePanel } from './TracePanel';
 import { DiffPanel, type GitDiffMessage } from './DiffPanel';
+import { ApprovalBanner, type ApprovalRequest } from './ApprovalBanner';
 import { GoalDecomposerModal } from './GoalDecomposerModal';
 import type { TraceBreakdownMessage } from '../types';
 import './Autonomy.css';
@@ -123,6 +124,12 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
   // terminals view and flash the specific tile. focusedSessionId drives
   // TerminalGrid's scroll-to + flash animation; cleared on completion.
   const [focusedSessionId, setFocusedSessionId] = useState<string | null>(null);
+
+  // ── Approval checkpoint (P1 #5) ────────────────────────────────────────
+  // When the orchestrator hits a blocking harness failure and the user has
+  // opted into approval checkpoints, it pauses and broadcasts an approval
+  // request. The banner shows Approve/Deny buttons. Null = no pending request.
+  const [approvalRequest, setApprovalRequest] = useState<ApprovalRequest | null>(null);
 
   // ── Imperative refs (NOT state mirrors) ──────────────────────────────────
   // These track backend IPC bookkeeping, not React state. They survive
@@ -329,6 +336,16 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
       }
       case 'agentStateUpdated': {
         const incomingStatus = message.agentState?.status;
+        // P1 #5: detect approval checkpoint — agentState has role "approval-needed"
+        if (message.agentState?.agentRole === 'approval-needed') {
+          setApprovalRequest({
+            artifactId: message.artifactId,
+            workflowId: message.agentState?.approvalDetails?.workflowId,
+            policyFailures: message.agentState?.approvalDetails?.policyFailures ?? [],
+          });
+          setToast({ message: `Approval needed for ${message.artifactId}`, type: 'info' });
+          return;
+        }
         if (incomingStatus === 'completed' || incomingStatus === 'failed' || incomingStatus === 'interrupted') {
           agentInfoCache.current.delete(message.artifactId);
         }
@@ -941,6 +958,20 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
       />
 
       <TracePanel breakdown={traceBreakdown} />
+
+      <ApprovalBanner
+        request={approvalRequest}
+        onRespond={(approved) => {
+          if (approvalRequest) {
+            vscode.postMessage({
+              type: 'kanban:approvalResponse',
+              artifactId: approvalRequest.artifactId,
+              approved,
+            });
+          }
+          setApprovalRequest(null);
+        }}
+      />
 
       <DiffPanel diff={commitDiff} onClose={() => setCommitDiff(null)} />
 

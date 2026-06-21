@@ -13,6 +13,7 @@ const CONFIG_KEY = 'agileagentcanvas';
 const AUTO_ADVANCE_SETTING = 'kanban.autoAdvance';
 const MAX_ITERATIONS_SETTING = 'kanban.maxIterations';
 const WIP_LIMITS_SETTING = 'kanban.wipLimits';
+const APPROVAL_CHECKPOINTS_SETTING = 'kanban.approvalCheckpoints';
 const DEFAULT_MAX_ITERATIONS = 3;
 
 let autoAdvanceOverride: boolean | undefined;
@@ -46,6 +47,13 @@ export function getKanbanMaxIterations(): number {
     .getConfiguration(CONFIG_KEY)
     .get<number>(MAX_ITERATIONS_SETTING, DEFAULT_MAX_ITERATIONS);
   return Number.isFinite(v) && v > 0 ? Math.floor(v) : DEFAULT_MAX_ITERATIONS;
+}
+
+/** P1 #5: whether the user must approve risky autonomous actions in-canvas. */
+export function isApprovalCheckpointEnabled(): boolean {
+  return vscode.workspace
+    .getConfiguration(CONFIG_KEY)
+    .get<boolean>(APPROVAL_CHECKPOINTS_SETTING, false);
 }
 
 /** Per-column WIP limits from VS Code settings (e.g. { "in-progress": 3, "review": 2 }). */

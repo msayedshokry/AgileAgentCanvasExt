@@ -137,7 +137,7 @@ Everything in §4.1–4.2 hinges on this. Two viable paths:
 
 **🟠 P1 — needed for "stay and steer"**
 4. ✅ **SHIPPED (2026-06-21): Agent input / take-over** — "Take Over" button on running agent detail panels switches to terminals view and flashes the specific tile. "Send Command" quick-input lets users inject one-liners directly into the agent's pty without leaving the board view. `TerminalGrid` accepts `focusedSessionId` for scroll-to + flash animation. Extension `kanban:takeOverAgent` handler re-pushes capabilities and jumps to terminal.
-5. **Opt-in approval checkpoints** — a "pause on risky action, ask me in-canvas" mode layered over the auto-approve CLI flags + the harness.
+5. ✅ **SHIPPED (2026-06-22): Opt-in approval checkpoints** — `kanban.approvalCheckpoints` setting gates pre-flight harness policy evaluation before autonomous step execution. When blocking failures are found, the orchestrator fires `kanban:approvalNeeded` → webview `ApprovalBanner` renders policy failure details with Approve/Deny buttons. `kanbanOrchestrator.resolveApproval()` resolves the pending Promise; denial returns BLOCKED verdict; abort resolves with denial to prevent deadlocks. Layered over auto-approve CLI flags + `HarnessEngine`.
 6. **"Continuous mode" switch + state machine** — one visible RUNNING/WAITING/BLOCKED/IDLE control with a run-to-empty contract.
 7. **"Needs you" inbox + out-of-band notify** (Telegram is already configured) — escalate the cases the OS can't resolve.
 
