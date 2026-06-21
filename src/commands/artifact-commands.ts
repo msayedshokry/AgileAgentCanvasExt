@@ -1177,7 +1177,7 @@ function resolveSkillPhase(skillName: string): { label: string; order: number } 
     if (skillName.startsWith('aac-dev-story') || skillName.startsWith('aac-quick-dev') || skillName.startsWith('aac-qa-generate')) {
         return { label: 'Implementation', order: 4 };
     }
-    if (skillName.startsWith('aac-quick')) {
+    if (skillName.startsWith('aac-quick') || skillName.startsWith('bmad-quick')) {
         return { label: 'Quick Flow', order: 5 };
     }
     if (skillName.startsWith('aac-document') || skillName.startsWith('aac-generate') || skillName.startsWith('aac-generate') || skillName.startsWith('aac-index-docs')) {
@@ -1213,7 +1213,7 @@ function loadLegacyBmmWorkflows(workflowsRoot: string): BmmWorkflowInfo[] {
     for (const topEntry of topEntries) {
         if (!topEntry.isDirectory()) continue;
         const topFolder = topEntry.name;
-        const phaseInfo = PHASE_MAP[topFolder] ?? { label: topFolder, order: 99 };
+        const phaseInfo = resolveSkillPhase(topFolder);
         const topPath = path.join(workflowsRoot, topFolder);
 
         const directFiles = ['workflow.yaml', 'workflow.yml', 'workflow.md']

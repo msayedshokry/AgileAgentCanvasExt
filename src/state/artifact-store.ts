@@ -15,6 +15,7 @@ import { ArtifactReducerDispatcher } from './reducer-registry';
 import type { ArtifactReducerCtx, ArtifactChanges, ArtifactDeleteCtx, ArtifactLoadCtx, WritableChanges } from './reducer-types';
 import { exportArtifacts } from './artifact-exporter';
 import { mapSchemaEpicToInternal, mergeEpicDuplicate, extractStoryId, mapSchemaStoryToInternal, mapStatus, mapSchemaRequirement, mapSchemaNonFunctionalRequirement, mapSchemaAdditionalRequirement } from './schema-mappers';
+import { generateAllArtifactsMarkdown } from './artifact-markdown-generator';
 import { repairArtifactData } from './schema-artifact-mapper';
 import { writeMarkdownCompanion, normalizeLegacyArtifact } from './artifact-file-io';
 import { schemaValidator } from './schema-validator';
@@ -885,6 +886,10 @@ export class ArtifactStore {
     }
     mapSchemaStoryToInternal(storyData: any): any {
         return mapSchemaStoryToInternal(storyData);
+    }
+
+    generateAllArtifactsMarkdown(state: BmadArtifacts): string {
+        return generateAllArtifactsMarkdown(state);
     }
     mapSchemaRequirement(reqData: any): any {
         return mapSchemaRequirement(reqData);
@@ -2297,3 +2302,4 @@ export class ArtifactStore {
         return this._selectedArtifact !== null;
     }
 }
+

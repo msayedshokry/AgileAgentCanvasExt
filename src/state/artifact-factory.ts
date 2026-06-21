@@ -59,6 +59,7 @@ export function createEpic(artifacts: Map<string, any>, notifyChange: () => void
     };
     
     addEpic(artifacts, newEpic);
+    notifyChange();
     logDebug(`[ArtifactFactory] Created new epic: ${newEpic.id}`);
     return newEpic;
 }
@@ -102,6 +103,7 @@ export function createStory(artifacts: Map<string, any>, notifyChange: () => voi
     };
     
     addStory(artifacts, targetEpic.id, newStory);
+    notifyChange();
     logDebug(`[ArtifactFactory] Created new story: ${newStory.id} in ${targetEpic.id}`);
     return newStory;
 }
