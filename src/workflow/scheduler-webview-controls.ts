@@ -6,18 +6,25 @@
 // Issue: #16 — Scheduler Webview Controls
 
 import { EventEmitter } from 'events';
-import { autoScheduler, SchedulerState } from './auto-scheduler';
+import { autoScheduler, SchedulerState, type DisplayState } from './auto-scheduler';
 import { createLogger } from '../utils/logger';
+import { isContinuousModeEnabled, setContinuousMode } from './kanban-settings';
 
 const logger = createLogger('scheduler-webview-controls');
 
 export interface SchedulerStateMessage {
   state: SchedulerState;
+  /** P1 #6: User-facing display state for the continuous-mode contract. */
+  displayState: DisplayState;
+  /** P1 #6: why the scheduler last paused (for tooltip/details). */
+  pauseReason?: string;
   nextUp: string | null;
   inProgress: string[];
   enabled: boolean;
   /** Audit gap #50 — stories paused at the user's request (not by budget/circuit). */
   pausedStories: Array<{ id: string; reason?: string; pausedAt: number }>;
+  /** P1 #6: whether continuous mode is currently toggled on. */
+  continuousMode: boolean;
 }
 
 // ── Message types ────────────────────────────────────────────────────────────
@@ -27,11 +34,13 @@ export const MSG_SET_SCHEDULER_STATE = 'setSchedulerState';
 
 export type SetSchedulerStatePayload = {
   type: typeof MSG_SET_SCHEDULER_STATE;
-  action: 'pause' | 'resume' | 'toggle' | 'stop' | 'pauseStory' | 'resumeStory';
+  action: 'pause' | 'resume' | 'toggle' | 'stop' | 'pauseStory' | 'resumeStory' | 'setContinuousMode';
   /** Required when action is `pauseStory` / `resumeStory`. */
   artifactId?: string;
   /** Optional reason recorded on the scheduler's pausedStoryIds entry. */
   reason?: string;
+  /** P1 #6: value for setContinuousMode action. */
+  enabled?: boolean;
 };
 
 // ── Controls ─────────────────────────────────────────────────────────────────
@@ -78,6 +87,21 @@ export class SchedulerWebviewControls extends EventEmitter {
         else autoScheduler.resume();
         break;
       case 'stop':   autoScheduler.stop(); break;
+      // P1 #6: toggle continuous mode via VS Code setting.
+      // ON → start scheduler if idle/paused; OFF → stop scheduler.
+      case 'setContinuousMode': {
+        if (typeof payload.enabled === 'boolean') {
+          void setContinuousMode(payload.enabled);
+          if (payload.enabled) {
+            if (autoScheduler.getState() === 'idle') autoScheduler.start();
+            else if (autoScheduler.getState() === 'paused') autoScheduler.resume();
+          } else {
+            autoScheduler.stop();
+          }
+          this.rebuildAndEmit();
+        }
+        break;
+      }
       // Audit gap #50 — per-story pause/resume.
       case 'pauseStory': {
         if (!payload.artifactId) {
@@ -104,10 +128,13 @@ export class SchedulerWebviewControls extends EventEmitter {
     const next = autoScheduler.pickNext();
     return {
       state,
+      displayState: autoScheduler.getDisplayState(),
+      pauseReason: autoScheduler.getPauseReason(),
       nextUp: next?.id ?? null,
       inProgress: autoScheduler.getInProgressIds(),
       enabled: state !== 'idle',
       pausedStories: autoScheduler.getPausedStories(),
+      continuousMode: isContinuousModeEnabled(),
     };
   }
 

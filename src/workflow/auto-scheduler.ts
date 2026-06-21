@@ -8,12 +8,19 @@ import { EventEmitter } from 'events';
 import { createLogger } from '../utils/logger';
 import { circuitBreaker } from './circuit-breaker';
 import { budgetEnforcer } from './budget-enforcer';
+import { isContinuousModeEnabled } from './kanban-settings';
 
 const logger = createLogger('auto-scheduler');
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export type SchedulerState = 'idle' | 'active' | 'paused';
+
+// ── P1 #6: User-facing display state for the "continuous mode" contract ──
+export type DisplayState = 'idle' | 'running' | 'waiting-on-human' | 'blocked';
+
+/** Human-readable reason a scheduler paused. Set by the tick loop when it stops itself. */
+export type PauseReason = 'user' | 'budget' | 'circuit' | 'approval' | 'queue-empty';
 
 export interface SchedulerStory {
   id: string;
@@ -52,6 +59,9 @@ export class AutoScheduler extends EventEmitter {
   private inProgressIds = new Set<string>();
   /** Audit gap #50 — per-story pause map. Stories here are skipped by pickNext() and persist across restarts. */
   private pausedStoryIds: Map<string, { reason?: string; pausedAt: number }> = new Map();
+
+  /** P1 #6: why the scheduler last entered the `paused` state. Reset on start/resume. */
+  private pauseReason: PauseReason = 'user';
 
   constructor(pollIntervalMs: number = DEFAULT_POLL_INTERVAL_MS, wipLimit: number = DEFAULT_WIP_LIMIT) {
     super();
@@ -119,6 +129,7 @@ export class AutoScheduler extends EventEmitter {
 
   start(): void {
     if (this.state === 'active') return;
+    this.pauseReason = 'user'; // reset on fresh start
     this.setState('active');
     this.timer = setInterval(() => this.tick(), this.pollIntervalMs);
     this.timer.unref?.();
@@ -129,13 +140,24 @@ export class AutoScheduler extends EventEmitter {
 
   pause(): void {
     if (this.state !== 'active') return;
+    this.pauseReason = 'user'; // explicit user pause overrides previous reason
     this.setState('paused');
     if (this.timer) { clearInterval(this.timer); this.timer = null; }
     logger.info('AutoScheduler paused');
   }
 
+  /** P1 #6: pause with a specific reason so the display state can surface it. */
+  pauseForReason(reason: PauseReason): void {
+    if (this.state !== 'active') return;
+    this.pauseReason = reason;
+    this.setState('paused');
+    if (this.timer) { clearInterval(this.timer); this.timer = null; }
+    logger.info(`AutoScheduler paused (${reason})`);
+  }
+
   resume(): void {
     if (this.state !== 'paused') return;
+    this.pauseReason = 'user'; // reset pause reason on resume
     this.setState('active');
     this.timer = setInterval(() => this.tick(), this.pollIntervalMs);
     this.timer.unref?.();
@@ -149,6 +171,7 @@ export class AutoScheduler extends EventEmitter {
     this.setState('idle');
     if (this.timer) { clearInterval(this.timer); this.timer = null; }
     this.inProgressIds.clear();
+    this.pauseReason = 'user';
     logger.info('AutoScheduler stopped');
   }
 
@@ -156,6 +179,31 @@ export class AutoScheduler extends EventEmitter {
 
   getState(): SchedulerState {
     return this.state;
+  }
+
+  /** P1 #6: Map internal scheduler state + pause reason to user-facing display state. */
+  getDisplayState(): DisplayState {
+    if (this.state === 'idle') return 'idle';
+    if (this.state === 'active') return 'running';
+    // State is 'paused' — surface the reason
+    switch (this.pauseReason) {
+      case 'budget':
+      case 'circuit':
+      case 'approval':
+        return 'waiting-on-human';
+      case 'queue-empty':
+        return 'blocked';
+      default: // 'user'
+        // If user paused but there ARE eligible stories, it's just idle.
+        // If user paused AND there are no eligible stories, it's blocked.
+        const next = this.pickNext();
+        return next ? 'idle' : 'blocked';
+    }
+  }
+
+  /** P1 #6: Get the last pause reason (for tooltip/details). */
+  getPauseReason(): PauseReason {
+    return this.pauseReason;
   }
 
   isRunning(): boolean {
@@ -225,14 +273,19 @@ export class AutoScheduler extends EventEmitter {
     // If the budget enforcer is paused (cap hit), pause the scheduler's
     // timer so it stops polling. The scheduler is resumed when the user
     // calls budgetEnforcer.unpause() (wired in autonomy-lifecycle.ts).
+    // P1 #6: use pauseForReason so display state shows 'waiting-on-human'.
     if (budgetEnforcer.isPaused()) {
       logger.info('Budget enforcer is paused — scheduler tick bailing out');
-      this.pause();
+      this.pauseForReason('budget');
       return;
     }
 
     const next = this.pickNext();
     if (!next) {
+      // P1 #6: only auto-pause on queue-empty in continuous mode.
+      if (this.inProgressIds.size === 0 && isContinuousModeEnabled()) {
+        this.pauseForReason('queue-empty');
+      }
       this.emit('queueEmpty');
       return;
     }

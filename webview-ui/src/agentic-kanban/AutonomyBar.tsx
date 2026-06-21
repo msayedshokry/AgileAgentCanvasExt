@@ -7,11 +7,22 @@ import { useEvent } from './useEvent';
 
 export type SchedulerState = 'idle' | 'paused' | 'running';
 
+/** P1 #6: User-facing display state for the continuous-mode contract. */
+export type DisplayState = 'idle' | 'running' | 'waiting-on-human' | 'blocked';
+
 export interface SchedulerStateMessage {
   state: SchedulerState;
+  /** P1 #6: User-facing display state. */
+  displayState: DisplayState;
+  /** P1 #6: why the scheduler last paused (for tooltip/details). */
+  pauseReason?: string;
   nextUp: string | null;
   inProgress: string[];
   enabled: boolean;
+  /** Audit gap #50 — stories paused at the user's request. */
+  pausedStories: Array<{ id: string; reason?: string; pausedAt: number }>;
+  /** P1 #6: whether continuous mode is currently toggled on. */
+  continuousMode: boolean;
 }
 
 /** Per-workflow cost breakdown row (mirrored from src/workflow/budget-enforcer.ts). */
@@ -73,6 +84,26 @@ function severityRank(s: SystemicPattern['severity']): number {
   return { low: 1, medium: 2, high: 3, critical: 4 }[s];
 }
 
+// ── Display-state labels + colors ────────────────────────────────────────────
+
+const DISPLAY_STATE_CONFIG: Record<DisplayState, { label: string; className: string; icon: string }> = {
+  idle:              { label: '● Idle',              className: 'autonomy-display--idle',              icon: '●' },
+  running:           { label: '▶ Running',           className: 'autonomy-display--running',           icon: '▶' },
+  'waiting-on-human':{ label: '🛑 Needs You',        className: 'autonomy-display--waiting',           icon: '🛑' },
+  blocked:           { label: '⛔ Blocked',           className: 'autonomy-display--blocked',           icon: '⛔' },
+};
+
+/** Human-friendly label for pause reasons shown in tooltip. */
+function pauseReasonLabel(reason?: string): string {
+  switch (reason) {
+    case 'budget':        return 'Paused — daily budget cap hit. Increase cap or wait for reset.';
+    case 'circuit':       return 'Paused — circuit breaker open. Resume manually after investigation.';
+    case 'approval':      return 'Paused — approval required for the next step.';
+    case 'queue-empty':   return 'Paused — no eligible stories left. Add stories or adjust WIP.';
+    default:              return reason ? `Paused — ${reason}.` : '';
+  }
+}
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function AutonomyBar({
@@ -99,6 +130,15 @@ export function AutonomyBar({
   });
   const handleToggle = useEvent(() => {
     vscode.postMessage({ type: 'setSchedulerState', state: { action: 'toggle' } });
+  });
+
+  // ── P1 #6: Continuous Mode toggle ───────────────────────────────────────
+  const continuousMode = schedulerState?.continuousMode ?? false;
+  const handleContinuousModeToggle = useEvent(() => {
+    vscode.postMessage({
+      type: 'setSchedulerState',
+      state: { action: 'setContinuousMode', enabled: !continuousMode },
+    });
   });
 
   // ── Budget refresh (pull on mount + on demand) ──────────────────────────
@@ -130,13 +170,16 @@ export function AutonomyBar({
   const isPaused = state === 'paused';
   const isIdle = state === 'idle';
 
+  // P1 #6: User-facing display state
+  const displayState: DisplayState = schedulerState?.displayState ?? 'idle';
+  const dsConfig = DISPLAY_STATE_CONFIG[displayState];
+  const pauseTooltip = pauseReasonLabel(schedulerState?.pauseReason);
+
   // Budget: prefer backend gauge string for consistency with extension
   const dailyUsed = budgetStatus?.daily.used ?? 0;
   const dailyCap = budgetStatus?.daily.cap ?? 0;
   const budgetExceeded = budgetStatus?.anyExceeded ?? false;
   const budgetPct = dailyCap > 0 ? Math.min(100, Math.round((dailyUsed / dailyCap) * 100)) : 0;
-  // Per-workflow subtotals since midnight UTC (follow-up to audit gap #20/#42).
-  // Each chip is one workflow column showing its own $. Empty list → hide the row.
   const workflowBreakdown = budgetStatus?.workflowBreakdown ?? [];
 
   // ── Max severity across patterns for the banner color ─────────────────
@@ -150,6 +193,42 @@ export function AutonomyBar({
 
   return (
     <div className="autonomy-bar">
+      {/* ── P1 #6: Continuous Mode toggle + display state ──────────────── */}
+      <div className="autonomy-bar-group autonomy-bar-group--continuous">
+        <label
+          className="autonomy-continuous-toggle"
+          title={continuousMode
+            ? 'Continuous mode ON — scheduler runs until backlog empty or needs you. Click to disable.'
+            : 'Continuous mode OFF — move cards manually. Click to enable hands-off execution.'}
+        >
+          <span className="autonomy-continuous-label">Continuous:</span>
+          <div className={`autonomy-continuous-switch ${continuousMode ? 'autonomy-continuous-switch--on' : ''}`}>
+            <div className="autonomy-continuous-switch-knob" />
+          </div>
+          <span className={`autonomy-continuous-text ${continuousMode ? 'autonomy-continuous-text--on' : ''}`}>
+            {continuousMode ? 'ON' : 'OFF'}
+          </span>
+          <input
+            type="checkbox"
+            checked={continuousMode}
+            onChange={handleContinuousModeToggle}
+            className="autonomy-continuous-checkbox"
+            aria-label="Toggle continuous mode"
+          />
+        </label>
+
+        {/* State label — only shown when continuous mode is ON */}
+        {continuousMode && (
+          <span
+            className={`autonomy-display-state ${dsConfig.className}`}
+            title={pauseTooltip || undefined}
+          >
+            <span className="autonomy-display-state-icon">{dsConfig.icon}</span>
+            {dsConfig.label}
+          </span>
+        )}
+      </div>
+
       {/* ── Scheduler controls ─────────────────────────────────────────── */}
       <div className="autonomy-bar-group autonomy-bar-group--scheduler">
         <span className="autonomy-bar-label">Scheduler:</span>

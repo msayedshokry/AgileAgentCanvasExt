@@ -14,7 +14,17 @@ const AUTO_ADVANCE_SETTING = 'kanban.autoAdvance';
 const MAX_ITERATIONS_SETTING = 'kanban.maxIterations';
 const WIP_LIMITS_SETTING = 'kanban.wipLimits';
 const APPROVAL_CHECKPOINTS_SETTING = 'kanban.approvalCheckpoints';
+const CONTINUOUS_MODE_SETTING = 'kanban.continuousMode';
 const DEFAULT_MAX_ITERATIONS = 3;
+
+// ── P1 #6: Continuous Mode state machine ─────────────────────────────────
+// User-facing display state for the "hands-off until done" contract.
+// Derived from internal scheduler state + pause reason + queue state.
+export type ContinuousModeState =
+  | 'idle'               // Scheduler not started (off)
+  | 'running'            // Actively picking & executing stories
+  | 'waiting-on-human'   // Paused — needs user input (approval, budget, circuit)
+  | 'blocked';           // Paused — no eligible stories (all blocked/done)
 
 let autoAdvanceOverride: boolean | undefined;
 
@@ -54,6 +64,30 @@ export function isApprovalCheckpointEnabled(): boolean {
   return vscode.workspace
     .getConfiguration(CONFIG_KEY)
     .get<boolean>(APPROVAL_CHECKPOINTS_SETTING, false);
+}
+
+// ── P1 #6: Continuous Mode ───────────────────────────────────────────────
+
+let continuousModeOverride: boolean | undefined;
+
+/** Read the continuous-mode toggle (runtime override wins over config). */
+export function isContinuousModeEnabled(): boolean {
+  if (continuousModeOverride !== undefined) return continuousModeOverride;
+  return vscode.workspace
+    .getConfiguration(CONFIG_KEY)
+    .get<boolean>(CONTINUOUS_MODE_SETTING, false);
+}
+
+/** Set the continuous-mode toggle. Persists to config best-effort. */
+export async function setContinuousMode(enabled: boolean): Promise<void> {
+  continuousModeOverride = enabled;
+  try {
+    await vscode.workspace
+      .getConfiguration(CONFIG_KEY)
+      .update(CONTINUOUS_MODE_SETTING, enabled, vscode.ConfigurationTarget.Workspace);
+  } catch {
+    // Persistence is best-effort; in-memory override still applies.
+  }
 }
 
 /** Per-column WIP limits from VS Code settings (e.g. { "in-progress": 3, "review": 2 }). */
