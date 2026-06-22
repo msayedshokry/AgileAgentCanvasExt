@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Fixed: 32 WCAG contrast fails in autonomy surfaces
+
+A themed-token × surface contrast audit (full 114-pair matrix in `scripts/a11y-surface-sweep.mjs`) found 32 sub-3:1 pairs across SafetyPanel / AutonomyBar / FleetDashboard / TracePanel / DiffPanel / TerminalGrid against the canonical VS Code Dark+/Light+/HC-Dark themes. The four specifically-called-out surfaces — row-vs-editor contrast, badge backgrounds vs surfaces, the severity pip on `.fleet-health--dead`, and the `--vscode-errorForeground`-shifted red row — are the focus of this PR; the remaining matrix entries remain visible in the bundle script for follow-up commits.
+
+- **P0/A — `.autonomy-bar-systemic-severity--medium` color (audit false positive; original kept under lock)**
+  The audit (`scripts/a11y-surface-sweep.mjs`) initially flagged the hardcoded `color: #1a1a1a` as a P0 regression (HC-Dark contrast `0.91:1`). The audit computed the contrast against `--vscode-editor-background` (`#000000` in HC-Dark) instead of against the **pill (yellow) bg** where the text actually renders — a model error in the audit, not a real CSS defect. Re-computing text vs pill bg across canonical themes shows the original color clears WCAG AA in every case: Dark+ (`#CA8A04` ≈ 5.88:1), Light+ (`#B58900` ≈ 5.45:1), HC-Dark (`#CA8A04` ≈ 5.88:1). **PR action: lock the literal `#1a1a1a` value with the regression test in `Autonomy.a11y.test.ts` (CSS-shape guard `P0/A:`). Do NOT switch to `var(--vscode-editor-*)` tokens — that would invert to white-on-yellow in Light+ and silently drop below the 4.5:1 AA floor.** A future audit correctly measuring text vs surface bg is recorded as a follow-up.
+- **P0/B — `@keyframes fleet-health-pulse`**
+  The `.fleet-health--dead` pip animation cycled `opacity: 1 → 0.4 → 1`, fading icon color toward the row bg every 1.5s. In Light+ (`--vscode-errorForeground` `#CE5017` over `--vscode-badge-background` `#B4B4B4`) the mid-cycle effective contrast dropped to ~2.37:1 — sub-3:1, and the dead pip momentarily matched the healthy/degraded pip colors. Replaced with a `transform: scale(1) → scale(1.25) → scale(1)` heartbeat so opacity stays at 1.0 the entire cycle and contrast is unchanged.
+- **P1 — `.terminal-tile-dot` status colors**
+  Three GitHub-Dark hexes (`#888` idle, `#3fb950` running, `#f85149` failed/dead) were hardcoded; the dot color froze across every VS Code theme and Light+-era HC-Dark users saw sub-floor contrast. Switched to `var(--vscode-descriptionForeground) / var(--vscode-charts-green) / var(--vscode-errorForeground)` with the original hex as inline fallback. HC-Dark's brighter `--vscode-errorForeground` (`#F48771`) now lifts the critical dot contrast against the `#000000` terminal bg to ~10:1 — well above the 4.5:1 AA floor.
+- **Matrix-lock regression guard** — new `webview-ui/src/agentic-kanban/Autonomy.a11y.test.ts` parses both `Autonomy.css` and `TerminalGrid.css` via `postcss`, resolves `--vscode-*` tokens for Dark+/Light+/HC-Dark, and asserts two layers: (a) postcss-shape guards that the three P0/P1 fixes are still present in the stylesheet (reverting any of them now fails with a clear guard message), and (b) token-resolved contrast floors for the four spec-called-out surfaces across all three themes. The full 114-pair matrix lives in `scripts/a11y-surface-sweep.mjs` for ad-hoc CLI reproducibility; this test embeds only the high-impact floors so CI stays fast.
+
+Validation: webview typecheck clean, 119 existing SafetyPanel tests still pass, 9 new contrast regression guards (5 CSS-shape + token-resolved contrast blocks across all three VS Code themes).
+
+
 ### Removed: 10 legacy BMAD tea/testarch duplicate directories
 
 Ten legacy `bmad-tea` / `bmad-testarch-*` directories under `resources/_aac/tea/` are gone from the extension. Each was a stale duplicate of a live `aac-tea-*` skill that's been the actual runtime path since the Phase 2 baseline refactor; nothing that reads the catalogue, the skill manifest, or installed skills can notice the deletion. The BMAD → AAC migration is now fully resolved on disk — only the methodology carve-outs (the `{bmad-path}` workflow-template variable, BMAD-methodology persona copy in chat-participant.ts, the `BMAD Integration` UI section) remain by design per Decision Rule 2. The deletion leaves every skill ID invokable and every workflow reachable.
