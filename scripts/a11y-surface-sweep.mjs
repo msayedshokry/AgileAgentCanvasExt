@@ -814,18 +814,24 @@ const SURFACES = [
     fg: 'var(--vscode-charts-orange, #f97316)', bg: 'inherit' },
 
   // === Status dots inside column header counts (3 variants) ===
-  { cat: 'severity-pip',  cluster: 'D-2-tokenize', s: '.kanban-column-status-dot--running (amber pulse)',
+  // Cluster D-2 #6 tokenized. Reuses D-2 #3 TOKS tokens (orange + indigo) with
+  // bgSetsFg:true routing that treats the `background:` decl as the rendered
+  // dot fg for the contrast pass. Cluster flag dropped.
+  { cat: 'severity-pip',
     chipClass: '.kanban-column-status-dot--running', bgSetsFg: true,
+    s: '.kanban-column-status-dot--running (amber pulse + tokenized orange)',
     parent: '--vscode-editor-lineHighlightBackground',
-    fg: '#f59e0b', bg: 'inherit' },
-  { cat: 'severity-pip',  cluster: 'D-2-tokenize', s: '.kanban-column-status-dot--queued (indigo)',
+    fg: 'var(--vscode-charts-orange, #f59e0b)', bg: 'inherit' },
+  { cat: 'severity-pip',
     chipClass: '.kanban-column-status-dot--queued', bgSetsFg: true,
+    s: '.kanban-column-status-dot--queued (indigo + tokenized NOVEL --vscode-charts-indigo)',
     parent: '--vscode-editor-lineHighlightBackground',
-    fg: '#6366f1', bg: 'inherit' },
-  { cat: 'severity-pip',  cluster: 'D-2-tokenize', s: '.kanban-column-status-dot--interrupted (orange)',
+    fg: 'var(--vscode-charts-indigo, #6366f1)', bg: 'inherit' },
+  { cat: 'severity-pip',
     chipClass: '.kanban-column-status-dot--interrupted', bgSetsFg: true,
+    s: '.kanban-column-status-dot--interrupted (orange + tokenized same --vscode-charts-orange as --running)',
     parent: '--vscode-editor-lineHighlightBackground',
-    fg: '#f97316', bg: 'inherit' },
+    fg: 'var(--vscode-charts-orange, #f97316)', bg: 'inherit' },
 ];
 
 // =============================================================================

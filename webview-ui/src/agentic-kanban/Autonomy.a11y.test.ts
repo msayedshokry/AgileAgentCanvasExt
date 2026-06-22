@@ -1591,6 +1591,75 @@ describe('Cluster-D2-5 - kanban-card chrome SHAPE + cross-theme guards', () => {
 });
 
 // =============================================================================
+// Cluster D-2 #6 - kanban-column-status-dot tokenization (bgSetsFg-routed)
+// =============================================================================
+// Tokenizes 3 HARDCODED .kanban-column-status-dot--* bg hexes in Kanban.css:
+//   --running     #f59e0b  -> var(--vscode-charts-orange, #f59e0b)
+//   --queued      #6366f1  -> var(--vscode-charts-indigo,  #6366f1)  [NOVEL token from D-2 #3]
+//   --interrupted #f97316  -> var(--vscode-charts-orange, #f97316)
+// Reuses D-2 #3 / D-2 #4 / D-2 #5 TOKS tokens -- no NOVEL tokens added.
+// NO @media Light+ override required -- tokens auto-darken in Light+ to tones
+// that clear 3:1 WCAG 1.4.11 UI-floor comfortably (Light+ #B85C00 orange vs
+// #FFFFFF ~4.25:1; #4f46e5 indigo vs #FFFFFF ~6.48:1).
+// NOTE: --running has a `pulse` keyframe that animates opacity 1 -> 0.6 -> 1;
+// mid-cycle the rendered dot fg blends with parent bg (mid-cycle Light+ ratio
+// drops below 3:1 UI-floor). Acknowledged as a future-batch followup
+// (separate scope from tokenization; appropriate fix paths: change pulse
+// keyframe to transform-scale like .fleet-health-pulse from Cluster C, OR add
+// a `pulse:0.4` audit-script mid-cycle row to expose drift).
+
+const KC_DOT_SHAPE_LOCKS: Array<{
+  sel: string; prop: string; expr: string; hex: string;
+}> = [
+  { sel: '.kanban-column-status-dot--running',     prop: 'background', expr: 'var(--vscode-charts-orange, #f59e0b)', hex: '#f59e0b' },
+  { sel: '.kanban-column-status-dot--queued',      prop: 'background', expr: 'var(--vscode-charts-indigo, #6366f1)', hex: '#6366f1' },
+  { sel: '.kanban-column-status-dot--interrupted', prop: 'background', expr: 'var(--vscode-charts-orange, #f97316)', hex: '#f97316' },
+];
+
+describe('Cluster-D2-6 - kanban-column-status-dot SHAPE + cross-theme guards', () => {
+  // Block-local helper: mirrors scripts/a11y-surface-sweep.mjs `ratio()` byte-for-byte.
+  function ratio(fg: string, bg: string): number {
+    const L = (c: string) => {
+      const v = parseInt(c, 16) / 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    };
+    const lum = (hex: string): number =>
+      0.2126 * L(hex.slice(1, 3)) + 0.7152 * L(hex.slice(3, 5)) + 0.0722 * L(hex.slice(5, 7));
+    const [L1, L2] = [lum(fg), lum(bg)].sort((a: number, b: number) => b - a);
+    return (L1 + 0.05) / (L2 + 0.05);
+  }
+
+  // 3 SHAPE-tokenized locks (one per dot).
+  for (const s of KC_DOT_SHAPE_LOCKS) {
+    it(`SHAPE-tokenized: ${s.sel} ${s.prop} -> ${s.expr}`, () => {
+      const rule = findRule(KANBAN_ROOT, s.sel);
+      expect(rule, `rule for selector containing "${s.sel}" not found in Kanban.css`).toBeTruthy();
+      const decl = (rule.nodes || []).find((n: any) => n.type === 'decl' && n.prop === s.prop);
+      expect(decl, `decl "${s.prop}" not in rule for ${s.sel}`).toBeTruthy();
+      expect(decl.value.trim(), `${s.sel} ${s.prop} must equal "${s.expr}"; HARDCODED ${s.hex} is forbidden`).toBe(s.expr);
+      expect(decl.value, `HARDCODED ${s.hex} hex-prefix is forbidden in ${s.sel} ${s.prop}; must be tokenized`).not.toMatch(new RegExp(`^${s.hex}\\b`, 'i'));
+    });
+  }
+
+  // 9 cross-theme contrast guards (3 dots * 3 themes). bgSetsFg-routed; the
+  // audit-script treats `background:` as the rendered dot fg via bgSetsFg:true.
+  for (const s of KC_DOT_SHAPE_LOCKS) {
+    for (const themeName of Object.keys(THEMES) as Array<keyof typeof THEMES>) {
+      it(`cross-theme-contrast: ${s.sel} ${themeName} >= 3:1 UI-floor`, () => {
+        // bgSetsFg routing: background IS the dot fg (audit-script mirrors this).
+        // resolveToken(s.expr, themeName) returns the per-theme resolved hex.
+        const fg = resolveToken(s.expr, themeName);
+        // Parent bg = THEMES[themeName].editorBg (audit-script's resolve fallback
+        // for the bare --vscode-editor-lineHighlightBackground token name).
+        const bg = THEMES[themeName].editorBg;
+        const r = ratio(fg, bg);
+        expect(r, `${s.sel} ${themeName} contrast ${r.toFixed(2)}:1 must clear 3:1 WCAG 1.4.11 UI-floor`).toBeGreaterThanOrEqual(3.0);
+      });
+    }
+  }
+});
+
+// =============================================================================
 // Cluster D-3 commit 3 — post-harvest regression guards
 // =============================================================================
 //

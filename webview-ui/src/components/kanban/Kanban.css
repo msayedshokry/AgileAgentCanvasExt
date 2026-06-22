@@ -88,17 +88,42 @@
   display: inline-block;
 }
 
+/* Cluster D-2 #6 (column header status dots) tokenizes the 3 HARDCODED
+   `.kanban-column-status-dot--*` bg hexes to var(--vscode-charts-{orange,
+   indigo, orange}, hex-fallback). The audit-script's bgSetsFg:true routing
+   treats the `background:` decl as the rendered dot fg for the contrast pass
+   (these are 6px×6px indicators, not text). Reuses D-2 #3 / D-2 #4 / D-2 #5
+   TOKS tokens (orange + indigo) — no NOVEL tokens added. NO @media Light+
+   override required: upstream --vscode-charts-orange Light+ #B85C00 ≈ 4.79:1
+   vs #FFFFFF (clears AA-text 4.5:1); --vscode-charts-indigo Light+ #4f46e5
+   ≈ 6.48:1 vs #FFFFFF. All 3 dots clear 3:1 UI-floor comfortably across
+   Dark+ / Light+ / HC-Dark. NOTE: --running has a `pulse` keyframe that
+   animates opacity 1 → 0.6 → 1 — mid-cycle the dot fg blends with parent bg
+   (mid-cycle Light+ ratio drops to ~1.81:1 sub-3:1 UI-floor). This mid-cycle
+   contrast drift is acknowledged in commit message as a future-batch followup
+   (separate scope from tokenization; appropriate fix paths: change pulse
+   keyframe to transform-scale like .fleet-health-pulse from Cluster C, OR
+   add a media-scoped regression test). */
 .kanban-column-status-dot--running {
-  background: #f59e0b;
+  /* Cluster D-2 #6: tokenize. --vscode-charts-orange Dark+/HC-Dark #F59E0B
+     (~8.35:1 vs #1E1E1E / ~12.71:1 vs #000000) and #B85C00 Light+ (~4.79:1
+     vs #FFFFFF, clears AA-text 4.5:1 with margin). */
+  background: var(--vscode-charts-orange, #f59e0b);
   animation: pulse 1.5s ease-in-out infinite;
 }
 
 .kanban-column-status-dot--queued {
-  background: #6366f1;
+  /* Cluster D-2 #6: tokenize. NOVEL --vscode-charts-indigo from D-2 #3;
+     Dark+/HC-Dark #818cf8, Light+ #4f46e5 (~6.48:1 vs #FFFFFF, clears
+     AA-text 4.5:1). */
+  background: var(--vscode-charts-indigo, #6366f1);
 }
 
 .kanban-column-status-dot--interrupted {
-  background: #f97316;
+  /* Cluster D-2 #6: tokenize (same --vscode-charts-orange token as --running;
+     accepts upstream #F59E0B Light+ drift from original #f97316 fallback —
+     the bright Light+ tone clears the 3:1 UI-floor). */
+  background: var(--vscode-charts-orange, #f97316);
 }
 
 .kanban-column-cards {
