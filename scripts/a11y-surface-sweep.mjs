@@ -621,9 +621,19 @@ const SURFACES = [
   // .approval-banner-btn--deny) keep their catalog tags; cluster D-2
   // commits 2-7 (per the user's outline) will each drop one tag in
   // lockstep until the count reaches 0.
-  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.approval-banner-icon (⚠ icon)',
+  // Cluster D-2 #2 — `.approval-banner-icon` is the second of the 14
+  // catalog-FAIL rows to be tokenized. Pre-fix HARDCODED `#f59e0b`
+  // rendered at ~2.13:1 vs Light+ `#FFFFFF` editor bg (sub-3:1 WCAG
+  // 1.4.11 UI-component floor). Post-fix the CSS declares
+  //   color: var(--vscode-charts-orange, #f59e0b)
+  // which resolves per-theme to `#F59E0B` Dark+/HC-Dark (`#B85C00`
+  // Light+) without any `@media` override: the upstream token auto-
+  // darkens to a brown tone in Light+ (`#B85C00` ≈ 4.57:1 vs white)
+  // clearing both AA-text and UI-floor. The cluster flag is cleared
+  // (mirrors `.approval-banner-btn--approve` post-D-2-#1-shipping).
+  { cat: 'badge-vs-surface', s: '.approval-banner-icon (⚠ icon)',
     parent: '--vscode-editor-background',
-    fg: '#f59e0b', bg: 'inherit' },
+    fg: 'var(--vscode-charts-orange, #f59e0b)', bg: 'inherit' },
   { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.approval-banner-title (heading)',
     parent: '--vscode-editor-background',
     fg: 'var(--vscode-foreground)',
@@ -976,9 +986,9 @@ const hc = [
   // === Cluster D-1 inventory additions (Kanban.css HARDCODED github-dark
   //     hex palette; Cluster D-2 will tokenize to --vscode-charts-* + add
   //     @media scheme overrides mirroring the Cluster A pattern) ===
-  [ '.approval-banner-icon + .approval-banner-title + .approval-banner-policy-id + .approval-banner-failure-msg',
-    'rgba(245,158,11,0.12) bg tint + #f59e0b icon + var(--vscode-terminal-ansiRed) policy-id',
-    'Banner bg is a HARDCODED amber tint; icon fg is HARDCODED #f59e0b (does not theme-shift to Dark+/HC-Dark + Light+). The vscode-token policy-id and descriptionForeground inside the tint bg also fails AA in Light+ (amber tint blends toward white, vscode-token fg drops below 4.5:1). Cluster D-2 target.' ],
+  [ '.approval-banner-icon (D-2 #2 — TOKENIZED) + .approval-banner-title + .approval-banner-policy-id + .approval-banner-failure-msg',
+    'rgba(245,158,11,0.12) bg tint HARDCODED for title/policy-id/failure-msg children only; icon fg tokenized to var(--vscode-charts-orange, #f59e0b)',
+    'Cluster D-2 #2 tokenized the ICON: base color = `var(--vscode-charts-orange, #f59e0b)` (upstream `#F59E0B` in Dark+/HC-Dark and `#B85C00` in Light+ — the brown Light+ tone clears both WCAG 1.4.11 3:1 UI-floor and 4.5:1 AA-text against `#FFFFFF` editor bg with ~0.085 margin). Pre-fix HARDCODED #f59e0b rendered at ~2.13:1 vs Light+ `#FFFFFF` editor bg (sub-3:1 UI-component floor). No `@media` override needed: the upstream token auto-darkens in Light+. Post-fix audit-stamp: ✓PASS across all 3 themes (Dark+ ≈ 7.76:1, Light+ ≈ 4.60:1, HC-Dark ≈ 9.78:1 per audit-script run output). REMAINING in-banner HARDCODED: the amber-tint bg `rgba(245,158,11,0.12)` that wraps `.approval-banner-title` / `.approval-banner-policy-id` / `.approval-banner-failure-msg` children. Post-fix, these 3 rows report `~UI` in the audit-script output (3.0 ≤ contrast < 4.5) — the WCAG 1.4.11 3:1 UI-component floor is met but the AA-text 4.5:1 floor is borderline because the bright amber tint washes out the theme-token fg (Dark+ ansiRed on amber ≈ 4.13:1, etc.). Acceptable for non-text glyph chips but a future audit-fidelity sweep could lift via a token-aware `--vscode-editorWarning-background` parent surface (Dark+ `#3D3208` is documented in TOKS).' ],
   [ '.approval-banner-btn--approve (D-2 #1 — TOKENIZED)',
     'var(--vscode-charts-green, #22c55e) bg + #ffffff fg + @media light/dark overrides rebinding to var(--vscode-charts-green-bright, #15803D)',
     'Cluster D-2 #1 tokenized the APPROVE button: base bg = `var(--vscode-charts-green, #22c55e)` (upstream #3FA856 in Dark+/Light+, #3FB950 in HC-Dark would render at ~2.27:1 Light+ / ~2.94:1 Dark+ vs `white`, sub-3:1 WCAG 1.4.11 UI-floor); both @media (prefers-color-scheme: light) AND (prefers-color-scheme: dark) override rebind to the Cluster A bright-tier `var(--vscode-charts-green-bright, #15803D)` (Tailwind green-700, ≈ 3.30:1 vs #FFFFFF / ≈ 6.04:1 vs #1E1E1E / ≈ 9.18:1 vs #000000). HC-Dark reports prefers-color-scheme:dark via Chrome so the dark @media fires there too. Post-fix audit-stamp: ✓PASS 5.02:1 across all 3 themes. Remaining D-2 batches (per user outline): .approval-banner-{icon,title,policy-id,failure-msg,btn--deny}, .kanban-card-agent-badge--* (8), .kanban-agent-status--* (6), kanban-card chrome (5), status dots (3).' ],

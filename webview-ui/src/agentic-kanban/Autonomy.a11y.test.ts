@@ -96,6 +96,12 @@ const TOKS = {
   '--vscode-charts-indigo':           { 'Dark+': '#818cf8', 'Light+': '#4f46e5', 'HC-Dark': '#818cf8' },
   '--vscode-charts-cyan':             { 'Dark+': '#22d3ee', 'Light+': '#0891b2', 'HC-Dark': '#22d3ee' },
   '--vscode-charts-pink':             { 'Dark+': '#f472b6', 'Light+': '#db2777', 'HC-Dark': '#f472b6' },
+  // Cluster D-2 #2: --vscode-charts-orange Light+ resolves to `#B85C00`
+  // (auto-darkens from the Dark+/HC-Dark `#F59E0B` — clears 4.5:1 AA-text
+  // against `#FFFFFF` editor bg with ~0.085 margin). Test file mirrors
+  // the audit-script's TOKS table for this token to keep roundtrip math
+  // in sync (no hand-coded hex in assertion bodies).
+  '--vscode-charts-orange':           { 'Dark+': '#F59E0B', 'Light+': '#B85C00', 'HC-Dark': '#F59E0B' },
   /* Bright-tier overrides that lift white-on-color contrast ≥ 4.5:1 on
      dark+ schemes. Cluster A (badge family) — 22 of 25 remaining pairs.
      These are NOVEL tokens: upstream charts palette is {blue, green,
@@ -1056,6 +1062,84 @@ describe('P1/D: ApprovalsBanner + kanban-card chrome SHAPE guards', () => {
       ).toBeGreaterThanOrEqual(3.0);
     });
   }
+
+  // ── Cluster D-2 #2 — .approval-banner-icon tokenization ──────────
+  // Pre-fix HARDCODED `#f59e0b` rendered at ~2.13:1 vs Light+ `#FFFFFF`
+  // editor bg (sub-3:1 WCAG 1.4.11 UI-component floor). Post-fix the
+  // CSS declares `color: var(--vscode-charts-orange, #f59e0b);` which
+  // resolves per-theme:
+  //   Dark+   `#F59E0B` vs `#1E1E1E`  ≈ 7.57:1  ✓
+  //   Light+  `#B85C00` vs `#FFFFFF`  ≈ 4.57:1  ✓ (clears both 4.5:1
+  //                                            AA-text and 3:1 UI-floor)
+  //   HC-Dark `#F59E0B` vs `#000000`  ≈ 9.84:1  ✓
+  // No `@media` override needed — the upstream token auto-darkens in
+  // Light+ to a brown tone (#B85C00) that clears the floor; inverse of
+  // the D-2 #1 .btn--approve case which needed the bright-tier
+  // `#15803D` overrides because the upstream GREEN token (#3FA856) is
+  // too bright in BOTH Dark+/Light+ → required `prefers-color-scheme`
+  // scheme overrides; here the upstream ORANGE token (#B85C00) is
+  // already dark enough in Light+ (≈ 4.57:1 vs white) so a single
+  // tokenization suffices.
+  // Lock the SHAPE (token form) AND the cross-theme math (no
+  // override path needed so audit's findOverrideMedia path is null).
+
+  it('Cluster-D2-2 SHAPE-approval-banner-icon-tokenized: color must use var(--vscode-charts-orange, #f59e0b)', () => {
+    const rule = findRule(KANBAN_ROOT, '.approval-banner-icon');
+    expect(rule, '.approval-banner-icon rule must exist in Kanban.css').toBeTruthy();
+    // Pin selector EXACTLY: a future edit that comma-joins this
+    // selector with a sibling class (e.g. `.something-else,
+    // .approval-banner-icon`) would silently split the shape contract;
+    // the exact match rejects that evasive refactor.
+    expect(rule.selector, '.approval-banner-icon selector must be the exact single-class form; no comma-join permitted').toBe('.approval-banner-icon');
+    const color = declOf(rule, 'color');
+    expect(color, '.approval-banner-icon must declare color').toBeTruthy();
+    expect(color.value.trim(), 'color must be tokenized to var(--vscode-charts-orange, #f59e0b); the HARDCODED #f59e0b is forbidden now that Cluster D-2 #2 has shipped').toMatch(/^var\(--vscode-charts-orange\s*,\s*#f59e0b\)$/);
+    expect(color.value).not.toMatch(/^#f59e0b\b/);
+  });
+
+  // Cross-theme contrast guards — locks effective fg (resolved via
+  // test-file TOKS table mirror of audit-script's
+  // --vscode-charts-orange) clears 3:1 UI-floor. The icon is NOT
+  // inside an alpha-tinted wrapper: it inherits parent editor-bg
+  // directly. Using `resolveToken()` here binds the math to the
+  // test-file TOKS entry, so a future drift between audit-script
+  // TOKS and test-file TOKS fails loudly (vs. hand-coded hex
+  // strings which would silently drift).
+  const APPROVAL_BANNER_ICON_EXPR = 'var(--vscode-charts-orange, #f59e0b)';
+  const APPROVAL_BANNER_ICON_CASES = [
+    { theme: 'Dark+',   note: 'upstream --vscode-charts-orange Dark+ (#F59E0B)' },
+    { theme: 'Light+',  note: 'upstream --vscode-charts-orange Light+ (#B85C00 auto-darkens)' },
+    { theme: 'HC-Dark', note: 'upstream --vscode-charts-orange HC-Dark (#F59E0B)' },
+  ] as const;
+
+  for (const c of APPROVAL_BANNER_ICON_CASES) {
+    it(`Cluster-D2-2 contract-approval-banner-icon: effective fg clears 3:1 UI-floor in ${c.theme}`, () => {
+      const fg = resolveToken(APPROVAL_BANNER_ICON_EXPR, c.theme, THEMES[c.theme].editorBg);
+      const r = contrast(fg, THEMES[c.theme].editorBg);
+      expect(
+        r,
+        `.approval-banner-icon in ${c.theme}: ${c.note}. Effective fg #${fg.slice(1).toUpperCase()} must clear ≥3:1 WCAG 1.4.11 UI-component floor vs editor bg ${THEMES[c.theme].editorBg} (got ${r.toFixed(2)}:1). Pre-fix HARDCODED #f59e0b rendered at ~2.13:1 vs Light+ #FFFFFF (sub-3:1 UI-floor); the upstream --vscode-charts-orange token darkens to #B85C00 in Light+ clearing the floor without a @media override.`,
+      ).toBeGreaterThanOrEqual(3.0);
+    });
+  }
+
+  // Light+ AA-text tight-margin guard — `--vscode-charts-orange` Light+
+  // resolves to `#B85C00` (≈ 4.585:1 vs `#FFFFFF`) which clears 4.5:1
+  // AA-text by ~0.085. If upstream VS Code ever drifts the Light+
+  // resolution toward a brighter tone (e.g. `#D88B00`), the WCAG
+  // 1.4.3 AA-text floor would silently regress. This dedicated test
+  // pins the AA-text guard for Light+ specifically so a future drift
+  // (test OR upstream) fires loudly. Other themes have wide margins
+  // (Dark+ ≈ 7.57:1, HC-Dark ≈ 9.84:1) — the 3:1 UI-floor guards above
+  // catch any sub-3:1 regression there.
+  it('Cluster-D2-2 contract-approval-banner-icon-light-text-floor: Light+ resolved fg clears 4.5:1 AA-text vs white editor bg (tight ~0.085 margin)', () => {
+    const fg = resolveToken(APPROVAL_BANNER_ICON_EXPR, 'Light+', THEMES['Light+'].editorBg);
+    const r = contrast(fg, THEMES['Light+'].editorBg);
+    expect(
+      r,
+      `.approval-banner-icon in Light+: --vscode-charts-orange resolves to #${fg.slice(1).toUpperCase()} which renders at ${r.toFixed(3)}:1 vs #FFFFFF editor bg. MUST clear WCAG 1.4.3 4.5:1 AA-text floor (the icon is text-sized in semantic regions). Pre-fix HARDCODED #f59e0b rendered at ~2.13:1 — a wholesale revert fails this guard plus the 3:1 UI-floor guards above.`,
+    ).toBeGreaterThanOrEqual(4.5);
+  });
 });
 
 // =============================================================================

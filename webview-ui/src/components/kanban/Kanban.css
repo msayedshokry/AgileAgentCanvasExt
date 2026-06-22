@@ -866,7 +866,15 @@
   font-size: 20px;
   line-height: 1;
   flex-shrink: 0;
-  color: #f59e0b;
+  /* Cluster D-2 #2: tokenize. Upstream --vscode-charts-orange resolves to
+     `#F59E0B` in Dark+/HC-Dark (≈ 7.57:1 vs #1E1E1E and ≈ 9.84:1 vs
+     #000000) and `#B85C00` in Light+ (≈ 4.57:1 vs #FFFFFF, clearing both
+     4.5:1 AA-text and WCAG 1.4.11 3:1 UI-component floor). The literal
+     `#f59e0b` is the Universal fallback for themes that omit the upstream
+     token. Pre-fix HARDCODED `#f59e0b` failed at ~2.13:1 vs Light+ white
+     editor bg (sub-3:1 UI-floor). No `@media` override is needed: the
+     upstream token already auto-darkens in Light+. */
+  color: var(--vscode-charts-orange, #f59e0b);
 }
 
 .approval-banner-body {
