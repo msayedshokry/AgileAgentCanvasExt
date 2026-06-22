@@ -2141,3 +2141,145 @@ describe('Cluster-D2-7', () => {
   }
 });
 
+
+
+describe('Cluster-D2-8', () => {
+  // SHAPE_LOCKS Cluster-D2-8 marker (v2 no-f-string; file-end append; v4 boundary + comment-strip + brace-counted NO-OPACITY-DRIFT)
+  // Cluster D-2 #8 close-out fixup for the badge-family pulse animation
+  // drift. Math verification (Python pre-commit script) confirmed mid-cycle
+  // opacity-blend drift:
+  //
+  //   .kanban-card-agent-badge--running     Dark+: 3.84 -> 2.70  (-1.14)
+  //   .kanban-card-agent-badge--running     Light+: 4.24 -> 1.84 (-2.40)
+  //   .kanban-card-agent-badge--running     HC-Dark: 4.23 -> 2.95 (-1.28)
+  //   .kanban-card-agent-badge--queued      Dark+: 3.97 -> 2.78  (-1.20)
+  //   .kanban-card-agent-badge--queued      Light+: 5.57 -> 1.96 (-3.60)
+  //   .kanban-card-agent-badge--queued      HC-Dark: 4.51 -> 3.10 (-1.41)
+  //   .kanban-card-agent-badge--interrupted Dark+: 4.45 -> 2.72  (-1.74)
+  //   .kanban-card-agent-badge--interrupted Light+: 4.17 -> 1.62 (-2.55) (worst)
+  //   .kanban-card-agent-badge--interrupted HC-Dark: 4.94 -> 2.97 (-1.97)
+  //
+  // 8 of 9 mid-cycle cases drop below the 3:1 WCAG 1.4.11 UI-component floor
+  // (Light+ is worst across all 3 because the rgba-tint composites toward
+  // white, washing out contrast). The fix creates 2 NEW transform-only
+  // keyframes (mirrors D-2 #7's dot-running-pulse pattern):
+  //
+  //   @keyframes badge-running-pulse {
+  //     0%, 100% { transform: scale(1); }
+  //     50%      { transform: scale(1.05); }   // subtle, larger UI element
+  //   }
+  //
+  //   @keyframes badge-interrupted-pulse {
+  //     0%, 100% { transform: scale(1); }
+  //     50%      { transform: scale(1.12); }   // strongly stronger for
+  //                                              // interrupted's urgency
+  //   }
+  //
+  // The previously-shared `@keyframes pulse` and `@keyframes interruptedPulse`
+  // opacity keyframes are REMOVED (cleanup phase - no remaining selectors
+  // after the 3 badge references switched over).
+  //
+  // Seven load-bearing locks per the D-2 #7 mirror pattern:
+  //   3 SHAPE-anim-tokenized (one per badge selector declaration)
+  //   2 SHAPE-NO-OPACITY-DRIFT (one per new keyframe block, brace-counted
+  //     slice + comment-strip pattern)
+  //   2 SHAPE-NO-ORPHAN (locks the orphan opacity keyframes are GONE;
+  //     anti-revert structural)
+
+  // // RATIO_LOCK Cluster-D2-8 (mirrors D-2-#5/6/7 pattern)
+  function ratio(fg, bg) {
+    const lum = (hex) => {
+      const m = hex.replace('#', '');
+      const r = parseInt(m.substring(0, 2), 16) / 255;
+      const g = parseInt(m.substring(2, 4), 16) / 255;
+      const b = parseInt(m.substring(4, 6), 16) / 255;
+      const lin = (v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+      return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+    };
+    const L1 = lum(fg);
+    const L2 = lum(bg);
+    return (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05);
+  }
+
+  // // KANBAN_CSS_LOCK Cluster-D2-8 (mirrors local pattern; resolves ReferenceError)
+  const KANBAN_CSS = readFileSync(KANBAN_CSS_PATH, 'utf-8');
+
+  it('SHAPE-anim-tokenized: .kanban-card-agent-badge--running uses transform-only badge-running-pulse (NOT the removed shared opacity pulse)', () => {
+    const ruleMatch = /\.kanban-card-agent-badge--running\s*\{([^}]+)\}/m.exec(KANBAN_CSS);
+    expect(ruleMatch, '.kanban-card-agent-badge--running rule not found in Kanban.css').not.toBeNull();
+    const body = ruleMatch![1];
+    expect(body).toMatch(/animation:\s*badge-running-pulse\b/);
+    expect(body).not.toMatch(/animation:\s*pulse\b/);
+    expect(body).not.toMatch(/animation:\s*interruptedPulse\b/);
+  });
+
+  it('SHAPE-anim-tokenized: .kanban-card-agent-badge--queued uses transform-only badge-running-pulse (NOT the removed shared opacity pulse)', () => {
+    const ruleMatch = /\.kanban-card-agent-badge--queued\s*\{([^}]+)\}/m.exec(KANBAN_CSS);
+    expect(ruleMatch, '.kanban-card-agent-badge--queued rule not found in Kanban.css').not.toBeNull();
+    const body = ruleMatch![1];
+    expect(body).toMatch(/animation:\s*badge-running-pulse\b/);
+    expect(body).not.toMatch(/animation:\s*pulse\b/);
+    expect(body).not.toMatch(/animation:\s*interruptedPulse\b/);
+  });
+
+  it('SHAPE-anim-tokenized: .kanban-card-agent-badge--interrupted uses transform-only badge-interrupted-pulse (NOT the removed shared opacity interruptedPulse)', () => {
+    const ruleMatch = /\.kanban-card-agent-badge--interrupted\s*\{([^}]+)\}/m.exec(KANBAN_CSS);
+    expect(ruleMatch, '.kanban-card-agent-badge--interrupted rule not found in Kanban.css').not.toBeNull();
+    const body = ruleMatch![1];
+    expect(body).toMatch(/animation:\s*badge-interrupted-pulse\b/);
+    expect(body).not.toMatch(/animation:\s*interruptedPulse\b/);
+    expect(body).not.toMatch(/animation:\s*pulse\b/);
+  });
+
+  // SHAPE-NO-OPACITY-DRIFT (v4 pattern: brace-counted slice + comment-strip).
+  // 2 NEW keyframe blocks: badge-running-pulse + badge-interrupted-pulse.
+  // Note: uses JavaScript template literals (${name}) for expressiveness; the
+  // Python file uses ordinary string literals so the JS template syntax
+  // isn't interpreted by Python's parser.
+  for (const [name, pattern] of [
+    ['badge-running-pulse',     /\btransform:\s*scale\(1\b/],
+    ['badge-interrupted-pulse', /\btransform:\s*scale\(1\.12\b/],
+  ] as const) {
+    it(`SHAPE-NO-OPACITY-DRIFT: @keyframes ${name} block contains NO \`opacity:\` declaration (transform-only contract)`, () => {
+      // Brace-counted slice: guarantees the captured body is EXACTLY the
+      // keyframe block (v4 fix over v2 boundary-split false-positives).
+      const startMatch = new RegExp('@keyframes\\s+' + name + '\\s*\\{').exec(KANBAN_CSS);
+      expect(startMatch, '@keyframes ' + name + ' block not found in Kanban.css (fix regression - re-create the keyframe)').not.toBeNull();
+      const startIdx = startMatch!.index + startMatch![0].length;
+      let depth = 1;
+      let endIdx = startIdx;
+      while (endIdx < KANBAN_CSS.length && depth > 0) {
+        const c = KANBAN_CSS[endIdx];
+        if (c === '{') depth++;
+        else if (c === '}') depth--;
+        endIdx++;
+      }
+      expect(depth, 'Unbalanced braces inside @keyframes ' + name + ' (parse error in Kanban.css)').toBe(0);
+      const body = KANBAN_CSS.substring(startIdx, endIdx - 1);
+      // v3 mitigation: strip CSS comments before line scan (defends against
+      // /* ... opacity: ... */ prose false-positives).
+      const stripped = body.replace(/\/\*[\s\S]*?\*\//g, '');
+      const lines = stripped.split(/\r?\n/);
+      const opacityLines = lines.filter((l) => /\bopacity\s*:/.test(l));
+      expect(
+        opacityLines,
+        '@keyframes ' + name + ' must NOT declare opacity: (lock the transform-only design choice to prevent mid-cycle contrast drift)',
+      ).toEqual([]);
+      // Positive transform-scale assertion (defends against silent keyframe deletion).
+      expect(body).toMatch(pattern);
+    });
+  }
+
+  // SHAPE-NO-ORPHAN: locks that the previously-shared opacity keyframes are
+  // GONE from the file. Anti-revert structural lock.
+  it('SHAPE-NO-ORPHAN @keyframes pulse: the removed shared opacity pulse keyframe must NOT be defined anywhere in Kanban.css', () => {
+    // Search with explicit name boundary to avoid false matches against
+    // `dot-running-pulse`, `badge-running-pulse`, `interruptedPulse`, etc.
+    expect(/@keyframes\s+pulse\s*\{/.test(KANBAN_CSS), '@keyframes pulse should be REMOVED from Kanban.css (D-2 #8 cleanup). A future contributor reintroducing it would re-trigger mid-cycle contrast drift on the badge-family surfaces.').toBe(false);
+  });
+
+  it('SHAPE-NO-ORPHAN @keyframes interruptedPulse: the removed shared opacity interruptedPulse keyframe must NOT be defined anywhere in Kanban.css', () => {
+    expect(/@keyframes\s+interruptedPulse\s*\{/.test(KANBAN_CSS), '@keyframes interruptedPulse should be REMOVED from Kanban.css (D-2 #8 cleanup). A future contributor reintroducing it would re-trigger the worst mid-cycle drift (1.62:1 in Light+ for .interrupted).').toBe(false);
+  });
+});
+

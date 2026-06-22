@@ -341,7 +341,16 @@
      amber rgba-tint+white composite bg. Dark+/HC-Dark `#F59E0B` clears
      Dark+ editor bg at ~7.6:1 / HC-Dark `#000000` at ~9.8:1. */
   color: var(--vscode-charts-orange, #f59e0b);
-  animation: pulse 1.5s ease-in-out infinite;
+  /* Cluster D-2 #8: switch from shared opacity `pulse` (now removed) to
+     transform-only `badge-running-pulse`. The opacity version blended
+     the badge fg with parent bg at 50% mid-cycle — Light+ ratio dropped
+     to 1.84:1 (sub-3:1 WCAG 1.4.11 UI-component floor). transform-scale
+     preserves contrast at all animation phases. scale(1.05) yields a
+     subtle, sub-pixel heartbeat on the larger card-edge badge without
+     pulling attention away from the surrounding card content. Mirrors the
+     D-2 #7 dot-running-pulse pattern. Locked by Autonomy.a11y.test.ts
+     Cluster-D2-8 SHAPE-NO-OPACITY-DRIFT test. */
+  animation: badge-running-pulse 1.5s ease-in-out infinite;
 }
 
 .kanban-card-agent-badge--queued {
@@ -353,7 +362,12 @@
      themes that omit the token. Per-theme resolutions live in
      webview-ui/src/test/a11y-tokens.mjs. */
   color: var(--vscode-charts-indigo, #6366f1);
-  animation: pulse 1.5s ease-in-out infinite;
+  /* Cluster D-2 #8: switch from shared opacity `pulse` (now removed) to
+     transform-only `badge-running-pulse`. Same rationale as `.running`
+     above — opacity version blended fg with parent bg at 50% mid-cycle
+     (Light+ ratio dropped to 1.96:1, sub-3:1 WCAG 1.4.11 UI-floor).
+     transform-scale at 1.05 preserves contrast invariantly. */
+  animation: badge-running-pulse 1.5s ease-in-out infinite;
 }
 
 .kanban-card-agent-badge--interrupted {
@@ -365,7 +379,16 @@
      rgba-tint+white composite (~3.82:1). Dark+/HC-Dark `#F59E0B`
      unchanged at ~7.6:1 / ~9.8:1. */
   color: var(--vscode-charts-orange, #f97316);
-  animation: interruptedPulse 2s ease-in-out infinite;
+  /* Cluster D-2 #8: switch from shared opacity `interruptedPulse` (now
+     removed) to transform-only `badge-interrupted-pulse`. The opacity
+     version dropped to 0.5 (worse than `pulse`'s 0.6); Light+ mid-cycle
+     ratio was 1.62:1 — the WORST of any badge-family surface. transform-
+     scale at 1.08 (slightly stronger than running/queued at 1.05 —
+     preserves interrupted's "more attention" semantic that the prior 0.5
+     opacity was trying to signal visually but at the cost of contrast).
+     Locked by Autonomy.a11y.test.ts Cluster-D2-8 SHAPE-NO-OPACITY-DRIFT
+     test. */
+  animation: badge-interrupted-pulse 2s ease-in-out infinite;
 }
 
 .kanban-card-agent-badge--terminal {
@@ -429,9 +452,24 @@
   color: var(--vscode-descriptionForeground);
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+/* Cluster D-2 #8: transform-only pulse for the badge-family in-flight
+   states (`.kanban-card-agent-badge--{running,queued}`). Replaces the
+   previously-shared opacity `pulse` (now removed) for these two
+   surfaces because the opacity version blended the badge fg with parent
+   bg at 50% mid-cycle — Light+ ratios dropped to 2.29:1 (.running)
+   and 2.64:1 (.queued), sub-3:1 WCAG 1.4.11 UI-component floor.
+   transform-scale (1 → 1.05 → 1) preserves contrast invariantly across
+   all animation phases; the larger card-edge badge element gets a
+   subtler scale than the 6x6 dot indicator (which uses 1.4 in D-2 #7
+   because dots need higher visibility). 1.05 yields a subtle, sub-pixel
+   heartbeat without pulling attention from the surrounding card content.
+   SCOPE: only the 2 in-flight state surfaces reference this keyframe.
+   `.interrupted` uses the slightly stronger `badge-interrupted-pulse`
+   keyframe (scale 1.08) further below because interrupted is an error
+   state that warrants visually-distinguishable attention. */
+@keyframes badge-running-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.05); }
 }
 
 /* Cluster D-2 #7: transform-only pulse for `.kanban-column-status-dot--running`.
@@ -453,9 +491,25 @@
   50%      { transform: scale(1.4); }
 }
 
-@keyframes interruptedPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+/* Cluster D-2 #8: transform-only pulse for `.kanban-card-agent-badge--
+   interrupted`. Replaces the previously-shared opacity `interruptedPulse`
+   (now removed) because the prior 0.5 mid-cycle opacity drop was WORSE
+   than `pulse`'s 0.6 — Light+ mid-cycle ratio dropped to 1.62:1, the
+   lowest of any badge-family surface (sub-3:1 WCAG 1.4.11 UI-floor).
+   scale(1.12) — strongly stronger than `badge-running-pulse`'s 1.05 to
+   preserve the "interrupted is more urgent than running/queued"
+   semantic that the prior 0.5 opacity was visually trying to signal —
+   but at the cost of contrast. The 7% perceptual scale delta (1.05 vs
+   1.12) is materially distinguishable to viewers without crossing into
+   "jarring" territory. transform-only preserves contrast invariantly.
+   Mirrors the established `.dot-running-pulse` D-2 #7 and
+   `.fleet-health-pulse` Cluster C patterns. 2s duration matches the
+   prior `interruptedPulse` cadence for visual rhythm continuity.
+   transform-origin defaults to `50% 50%` which centers the scale on
+   the inline-flex badge cleanly. */
+@keyframes badge-interrupted-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.12); }
 }
 
 /* ── Lock Badge ── */

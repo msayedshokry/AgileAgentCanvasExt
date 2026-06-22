@@ -631,19 +631,19 @@ const SURFACES = [
     bg: 'rgba(128,128,128,0.15)' },
   // D-2 #3 tokenized: amber HARDCODED → --vscode-charts-orange. Light+
   // resolves to `#B85C00` clearing 3:1 against rgba-tint+white composite.
-  { cat: 'badge-vs-surface', s: '.kanban-card-agent-badge--running (amber)',
+  { cat: 'badge-vs-surface',    s: '.kanban-card-agent-badge--running (amber transform-pulse + tokenized orange)',
     parent: '--vscode-editor-background',
     fg: 'var(--vscode-charts-orange, #f59e0b)',
     bg: 'rgba(245,158,11,0.15)' },
   // D-2 #3 tokenized: indigo HARDCODED → NOVEL --vscode-charts-indigo.
   // Light+ resolves to `#4f46e5` clearing 4.5:1 AA-text.
-  { cat: 'badge-vs-surface', s: '.kanban-card-agent-badge--queued (indigo)',
+  { cat: 'badge-vs-surface',    s: '.kanban-card-agent-badge--queued (indigo transform-pulse + tokenized indigo)',
     parent: '--vscode-editor-background',
     fg: 'var(--vscode-charts-indigo, #6366f1)',
     bg: 'rgba(99,102,241,0.15)' },
   // D-2 #3 tokenized: orange HARDCODED → --vscode-charts-orange (accept
   // upstream `#F59E0B` drift from original `#f97316`; semantics similar).
-  { cat: 'badge-vs-surface', s: '.kanban-card-agent-badge--interrupted (orange)',
+  { cat: 'badge-vs-surface',    s: '.kanban-card-agent-badge--interrupted (orange transform-pulse-stronger + tokenized orange)',
     parent: '--vscode-editor-background',
     fg: 'var(--vscode-charts-orange, #f97316)',
     bg: 'rgba(249,115,22,0.15)' },
