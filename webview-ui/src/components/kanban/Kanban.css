@@ -240,27 +240,70 @@
   animation: none;
 }
 
+/* Cluster D-2 #3: tokenize 6 HARDCODED `.kanban-card-agent-badge--*`
+   surface fg hexes while keeping the HARDCODED alpha-tint backgrounds
+   (the 0.15 tints are theme-agnostic — chrome PASSES 3:1 UI-floor via
+   theme-aware fg via TOKS-table resolution; only `.terminal` and
+   `.completed` need an additional `@media (prefers-color-scheme: light)`
+   rebind to the bright-tier `--vscode-charts-green-bright` because the
+   upstream `#3FA856` Light+ renders at ~2.6:1 vs the green-tint+white
+   composite bg — sub-3:1).
+
+   Pre-fix values vs post-fix var() forms (mirrored in scripts/a11y-surface-sweep.mjs
+   SURFACES rows for the audit catalog):
+     .running       #f59e0b → var(--vscode-charts-orange, #f59e0b)
+     .queued        #6366f1 → var(--vscode-charts-indigo,  #6366f1)  [NOVEL token]
+     .interrupted   #f97316 → var(--vscode-charts-orange, #f97316)  [accept drift; #F59E0B Light+ clears via bright-tier pattern]
+     .terminal      #22c55e → var(--vscode-charts-green,  #22c55e)  [Light+ override below]
+     .completed     #22c55e → var(--vscode-charts-green,  #22c55e)  [Light+ override below]
+     .failed        #ef4444 → var(--vscode-charts-red,    #ef4444)  [novel token, mirrors --vscode-charts-green-bright family contract]
+   The `.idle` (already `var(--vscode-descriptionForeground)`) and `.resuming`
+   (already `--vscode-charts-blue` via `color-mix()`) require no change but
+   get SHAPE-only test coverage to lock their form. */
+
 .kanban-card-agent-badge--running {
   background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
+  /* Cluster D-2 #3: tokenize. --vscode-charts-orange Light+ resolves to
+     `#B85C00` (Tailwind orange-700) — clears 3:1 UI-floor against the
+     amber rgba-tint+white composite bg. Dark+/HC-Dark `#F59E0B` clears
+     Dark+ editor bg at ~7.6:1 / HC-Dark `#000000` at ~9.8:1. */
+  color: var(--vscode-charts-orange, #f59e0b);
   animation: pulse 1.5s ease-in-out infinite;
 }
 
 .kanban-card-agent-badge--queued {
   background: rgba(99, 102, 241, 0.15);
-  color: #6366f1;
+  /* Cluster D-2 #3: tokenize. --vscode-charts-indigo is a NOVEL token
+     (upstream VS Code palette has `-blue` which is BLUE `#1E80E0`, not
+     indigo). Per-theme: Dark+/HC-Dark `#818cf8`, Light+ `#4f46e5`. The
+     Universal `#6366f1` fallback preserves the visual identity for
+     themes that omit the token. Per-theme resolutions live in
+     webview-ui/src/test/a11y-tokens.mjs. */
+  color: var(--vscode-charts-indigo, #6366f1);
   animation: pulse 1.5s ease-in-out infinite;
 }
 
 .kanban-card-agent-badge--interrupted {
   background: rgba(249, 115, 22, 0.15);
-  color: #f97316;
+  /* Cluster D-2 #3: tokenize. Maps to --vscode-charts-orange (same token
+     as .running) — accept the upstream `#F59E0B` Light+ hex (`#B85C00`)
+     over the originally HARDCODED `#f97316` (orange-500). The Light+
+     bright-tier tone `#B85C00` clears 3:1 UI-floor against the orange
+     rgba-tint+white composite (~3.82:1). Dark+/HC-Dark `#F59E0B`
+     unchanged at ~7.6:1 / ~9.8:1. */
+  color: var(--vscode-charts-orange, #f97316);
   animation: interruptedPulse 2s ease-in-out infinite;
 }
 
 .kanban-card-agent-badge--terminal {
   background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
+  /* Cluster D-2 #3: tokenize. Upstream --vscode-charts-green Dark+/Light+
+     `#3FA856` clears 3:1 vs `#1E1E1E` (~7.6:1) BUT in Light+ atop the
+     rgba-green-tint+white composite the rendered ratio drops to ~2.6:1
+     (sub-3:1 UI-component floor). The `@media` Light+ override below
+     rebinds to `--vscode-charts-green-bright, #15803D` clearing the
+     floor (~4.36:1). HC-Dark `#3FB950` clears at ~8.27:1. */
+  color: var(--vscode-charts-green, #22c55e);
   cursor: pointer;
   text-decoration: underline;
   text-decoration-style: dotted;
@@ -273,13 +316,39 @@
 
 .kanban-card-agent-badge--completed {
   background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
+  /* Cluster D-2 #3: tokenize (same rationale as .terminal; Light+
+     override below applies via the comma-joined selector list). */
+  color: var(--vscode-charts-green, #22c55e);
 }
 
 .kanban-card-agent-badge--failed {
   background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  /* Cluster D-2 #3: tokenize. --vscode-charts-red is a NOVEL token (upstream
+     VS Code palette does NOT define it — `.kanban-column--wip-exceeded`
+     already uses `--vscode-charts-red, #ef4444` as a Universal fallback,
+     so we mirror the contract: per-theme Dark+/HC-Dark `#F85149`,
+     Light+ `#E51400`. Light+ `#E51400` clears 3:1 vs the red rgba-tint+
+     white composite (~4.13:1); Dark+ `#F85149` clears at ~4.5:1 vs
+     `#1E1E1E`; HC-Dark clears at ~7.3:1 vs `#000000`. */
+  color: var(--vscode-charts-red, #ef4444);
   animation: shake 0.4s ease-in-out;
+}
+
+/* Cluster D-2 #3 Light+ override for green-family badges: the upstream
+   `--vscode-charts-green` resolves to `#3FA856` in Light+ which renders
+   at ~2.6:1 atop the rgba-green-tint+white composite — sub-3:1
+   WCAG 1.4.11 UI-component floor. Rebind BOTH `.terminal` and
+   `.completed` to the bright-tier `--vscode-charts-green-bright, #15803D`
+   in Light+ (Tailwind green-700, ~5.65:1 vs `#FFFFFF`). Dark+ and
+   HC-Dark keep the upstream `#3FA856` / `#3FB950` because those schemes
+   have dark editor bgs (`#1E1E1E` / `#000000`) against which the
+   upstream green clears ≥4.5:1. Mirrors the `.approval-banner-btn--approve`
+   pre-existing bright-tier pattern (Kanban.css L975 area). */
+@media (prefers-color-scheme: light) {
+  .kanban-card-agent-badge--terminal,
+  .kanban-card-agent-badge--completed {
+    color: var(--vscode-charts-green-bright, #15803D);
+  }
 }
 
 .kanban-card-agent-badge--idle {
