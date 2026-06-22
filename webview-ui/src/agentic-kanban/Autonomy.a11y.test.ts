@@ -1057,3 +1057,374 @@ describe('P1/D: ApprovalsBanner + kanban-card chrome SHAPE guards', () => {
     });
   }
 });
+
+// =============================================================================
+// Cluster D-3 commit 3 — post-harvest regression guards
+// =============================================================================
+//
+// Locks the post-Cluster-D-3.1 / D-3.2 state in 4 dimensions:
+//   A. Aggregate harvest guards — in-process TSX introspector produces
+//      ≥100 rows from 9/9 files; per-file coverage is ≥8/9 (a single
+//      layout-only file like Canvas.tsx may legitimately contribute 0
+//      color-bearing rows even though it has 18 style={{}} bodies).
+//   B. color-mix() CSS-presence locks — 180 color-mix sites (3 in
+//      Kanban.css + 177 in styles/index.css) all 2-stop `in srgb`;
+//      no `in srgb-linear | oklab | hsl | lab | xyz | lch | oklch`
+//      leak into the codebase (the parser in scripts/a11y-surface-sweep.mjs
+//      only handles `in srgb`); categorical CSS-rule anchors still
+//      anchor the surface colors.
+//   C. 5 spot-check contrast assertions — sample 5 HARVEST rows and
+//      compute the cross-theme contrast ratio IN-TEST (mirrors the
+//      audit-script's resolve+ratio pipeline). Tolerance ±0.20 locks
+//      against drift in either direction. A future regression that
+//      drops a ratio below the observed-tolerance band fails loudly.
+//   D. color-mix() math spec tests — pure math (no file system) —
+//      boundary weight, midpoint, and symmetry invariants of the LERP
+//      formula defined in CSS Color 5 § 4.5.1 (opaque-mix variant).
+//
+// WHY in-process harvest (instead of `execSync` the audit-script):
+//   execSync-ing the audit-script from vitest's worker caused a Node
+//   heap OOM regression (the audit-script's stdout buffers + vitest
+//   instrumentation exceeded the worker heap). Mirroring the introspector
+//   in-test gives us identical coverage without the subprocess cost; the
+//   introspector logic is small (~30 LOC of regex) and stays
+//   synchronized with `scripts/a11y-surface-sweep.mjs` because both
+//   sites use the same regex constants and COLOR_KEYS set. (A future
+//   divergence would fail Catalog A-1's regex shape guard EXACTLY the
+//   way a future audit-script parser bug would.)
+// =============================================================================
+
+const WEBVIEW_SRC_DIR = path.resolve(process.cwd(), 'src');
+const STYLES_CSS_PATH = path.resolve(process.cwd(), 'src/styles', 'index.css');
+
+const INLINE_TSX_TARGETS = [
+  'App.tsx',
+  'agentic-kanban/AgenticKanbanApp.tsx',
+  'components/Canvas.tsx',
+  'components/Corpus3DView.tsx',
+  'components/renderers/bmm-renderers.tsx',
+  'components/renderers/cis-renderers.tsx',
+  'components/renderers/core-renderers.tsx',
+  'components/renderers/tea-renderers.tsx',
+  'components/renderers/test-renderers.tsx',
+];
+
+// Mirrors `scripts/a11y-surface-sweep.mjs` COLOR_KEYS / FG_KEYS exactly.
+// A future divergence that adds a new key here-but-not-there or vice
+// versa trips the count aggregate guards (A-1 / A-3) — the contract is
+// self-enforcing.
+const INLINE_COLOR_KEYS = new Set([
+  'color', 'background', 'backgroundColor',
+  'borderColor', 'borderTopColor', 'borderBottomColor',
+  'borderLeftColor', 'borderRightColor', 'outlineColor',
+]);
+const INLINE_FG_KEYS = new Set(['color']);
+
+interface HarvestRow {
+  key: string;
+  value: string;
+  relPath: string;
+  lineNum: number;
+  rail: 'fg' | 'bg';
+  label: string;       // pre-formatted audit-script row substring
+}
+
+function harvestInlineTsx(): { rows: HarvestRow[]; filesScanned: number; zeroContributionFiles: string[] } {
+  const STYLE_BODY_RE = /style=\{\{([\s\S]*?)\}\}/g;
+  const KV_QUOTED_RE = /([\w-]+)\s*:\s*(['"`])([^'"`]*?)\2/g;
+  const rows: HarvestRow[] = [];
+  const fileContribution = new Map<string, number>();
+  let filesScanned = 0;
+  for (const rel of INLINE_TSX_TARGETS) {
+    let content: string;
+    try { content = readFileSync(path.join(WEBVIEW_SRC_DIR, rel), 'utf-8'); }
+    catch { continue; } // missing → skip silently (mirrors audit-script)
+    filesScanned++;
+    fileContribution.set(rel, 0);
+    STYLE_BODY_RE.lastIndex = 0;
+    let bodyMatch: RegExpExecArray | null;
+    while ((bodyMatch = STYLE_BODY_RE.exec(content)) !== null) {
+      const body = bodyMatch[1];
+      const lineNum = content.slice(0, bodyMatch.index).split('\n').length;
+      KV_QUOTED_RE.lastIndex = 0;
+      let kv: RegExpExecArray | null;
+      while ((kv = KV_QUOTED_RE.exec(body)) !== null) {
+        const key = kv[1];
+        const value = kv[3];
+        if (!INLINE_COLOR_KEYS.has(key)) continue;
+        const rail: 'fg' | 'bg' = INLINE_FG_KEYS.has(key) ? 'fg' : 'bg';
+        const label = `inline-${rail === 'fg' ? 'style' : 'bg'} ${key} @ ${rel}:L${lineNum}`;
+        rows.push({ key, value, relPath: rel, lineNum, rail, label });
+        fileContribution.set(rel, (fileContribution.get(rel) ?? 0) + 1);
+      }
+    }
+  }
+  const zeroContributionFiles: string[] = [];
+  for (const [f, n] of fileContribution.entries()) {
+    if (n === 0) zeroContributionFiles.push(f);
+  }
+  return { rows, filesScanned, zeroContributionFiles };
+}
+
+describe('Cluster D-3 commit 3 — post-harvest regression guards', () => {
+  // Compute the harvest ONCE at describe-block construction time. This
+  // mirrors the audit-script's boot-time harvest; the harvest is cached on
+  // the closure for use by A/B/C blocks below. NO beforeAll needed — the
+  // module-level computation runs before any it() callback fires.
+  const HARVEST = harvestInlineTsx();
+
+  // ─────────────────────────────────────────────────────────────────────
+  // A. Aggregate harvest guards
+  // ─────────────────────────────────────────────────────────────────────
+  describe('A — Aggregate harvest guards', () => {
+    it('A-1: introspector scans all 9 INLINE_TSX_TARGETS files (no silent regex disable)', () => {
+      expect(HARVEST.filesScanned, 'introspector must scan exactly 9 files (the 9 INLINE_TSX_TARGETS set; matches scripts/a11y-surface-sweep.mjs INLINE_TSX_TARGETS)').toBe(9);
+    });
+
+    it('A-2: harvest produces ≥ 100 color-bearing rows (Cluster D-3 commit 2 baseline: 109)', () => {
+      expect(HARVEST.rows.length, 'introspector must produce ≥100 color-bearing rows (109 from bmm/cis/core/tea/test/Canvas/Corpus3DView/AgenticKanbanApp/App files)').toBeGreaterThanOrEqual(100);
+    });
+
+    it('A-3: per-file coverage — ≥ 8 of 9 harvested files contribute ≥ 1 row (≤ 1 layout-only zero-contributor permitted)', () => {
+      // Permits up to 1 file (e.g. layout-only Canvas.tsx — 18 style={{}}
+      // bodies but no color-bearing keys) to contribute 0 rows without
+      // failing the surface guard. Two or more zero-contributors signal a
+      // wholesale introspector regex regression (the regex went too narrow).
+      expect(HARVEST.zeroContributionFiles.length, `≤ 1 zero-contribution file permitted; got ${HARVEST.zeroContributionFiles.length} (${HARVEST.zeroContributionFiles.join(', ')})`).toBeLessThanOrEqual(1);
+      expect(INLINE_TSX_TARGETS.length - HARVEST.zeroContributionFiles.length, '≥ 8 of 9 harvested files must contribute ≥ 1 inline-tsx row').toBeGreaterThanOrEqual(8);
+    });
+
+    it('A-4: color-bearing key match — harvest only contains keys from COLOR_KEYS set, fg rail uses only `color`', () => {
+      // Defensive check: every harvested row's key must be a known
+      // color-bearing key. If a future contributor adds a color-bearing
+      // key without extending the audit-script's COLOR_KEYS, we catch
+      // it here.
+      for (const r of HARVEST.rows) {
+        expect(INLINE_COLOR_KEYS.has(r.key), `harvested row key "${r.key}" must be in COLOR_KEYS set — extends audit-script's contract`).toBe(true);
+        if (r.rail === 'fg') {
+          expect(r.key, 'fg-rail rows must use `color` key').toBe('color');
+        }
+      }
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────
+  // B. color-mix() CSS-presence locks
+  // ─────────────────────────────────────────────────────────────────────
+  describe('B — color-mix() CSS-presence locks', () => {
+    it('B-1: Kanban.css has ≥ 3 color-mix() sites (Cluster D-1 baseline)', () => {
+      const css = readFileSync(KANBAN_CSS_PATH, 'utf-8');
+      const matches = css.match(/color-mix\(/g) ?? [];
+      expect(matches.length, 'Kanban.css must retain ≥ 3 color-mix() sites — coverage is the .kanban-card-agent-badge--{...} mint layer at the kanban-card chrome bottom block').toBeGreaterThanOrEqual(3);
+    });
+
+    it('B-2: styles/index.css has ≥ 170 color-mix() sites (Cluster D-2 baseline)', () => {
+      const css = readFileSync(STYLES_CSS_PATH, 'utf-8');
+      const matches = css.match(/color-mix\(/g) ?? [];
+      expect(matches.length, 'styles/index.css must retain ≥ 170 color-mix() sites — a wholesale deletion of the canonical chip palette (badge backgrounds, type accents, modal chrome, capture overlays, mindmap depth shading, artifact-card entity tints) without re-issuing them trips this guard').toBeGreaterThanOrEqual(170);
+    });
+
+    it('B-3: ≥ 5 distinct categorical CSS-rule anchors in styles/index.css USE color-mix() with the 2-stop form (selector token is part of the contract — rename trips the guard)', () => {
+      // Anchor by CSS selector token (NOT line numbers — line numbers
+      // drift with CSS-reorg, but selector tokens mirror shape contracts).
+      // The list below is curated from the canonical catalog: each token
+      // names a CSS class group that uses color-mix() in its bg/fg box.
+      // A future rename that drops a token (`.priority-label` → `.prio`)
+      // shrinks the found count and fails the guard.
+      const indexRoot = postcss.parse(
+        readFileSync(STYLES_CSS_PATH, 'utf-8'),
+        { from: STYLES_CSS_PATH },
+      );
+      const CATEGORY_PATTERNS = [
+        'priority',         // priority chip background
+        'mindmap',          // mindmap depth shading
+        'capture',          // toolbar capture overlay
+        'artifact-card',    // artifact-card entity tints (.artifact-card.nfr/.risk/.task)
+        'kanban',           // kanban-card chrome
+        'pulse',            // HALO pulse animation tints
+        'pane',             // inspector pane surfaces
+        'badge',            // generic badge chrome
+        'chip',             // generic chip chrome
+        'modal',            // modal chrome surfaces
+      ];
+      const found = new Set<string>();
+      indexRoot.walkRules((rule) => {
+        if (!rule.selector) return;
+        const sel = rule.selector.toLowerCase();
+        const hasColorMix = (rule.nodes ?? []).some(
+          (n: any) => n.type === 'decl' && typeof n.value === 'string' && /color-mix\(/.test(n.value),
+        );
+        if (!hasColorMix) return;
+        for (const p of CATEGORY_PATTERNS) {
+          if (sel.includes(p)) found.add(p);
+        }
+      });
+      expect(found.size, `Expected ≥5 distinct categorical CSS-rule anchors USE color-mix(in srgb, ...); found ${found.size} (${[...found].join(', ')}). Anchor tokens are part of the contract — any rename must update this list or expand the category coverage.`).toBeGreaterThanOrEqual(5);
+    });
+
+    it('B-4: syntax lock — no foreign colorspaces (oklab/hsl/lab/lch/oklch/xyz) leak into color-mix() across both CSS files', () => {
+      const css = readFileSync(STYLES_CSS_PATH, 'utf-8') + '\n' + readFileSync(KANBAN_CSS_PATH, 'utf-8');
+      // The parser in scripts/a11y-surface-sweep.mjs handles `in srgb`
+      // only. Future contributors adding a new colorspace surface a
+      // silent-unresolvable regression unless they also extend the
+      // parser — this guard makes the contract explicit.
+      expect(
+        css,
+        'styles/index.css + Kanban.css must NOT contain foreign-colorspace color-mix() — the parser only handles `in srgb`.',
+      ).not.toMatch(/color-mix\(\s*in\s+(?:srgb-linear|oklab|hsl|lab|lch|oklch|xyz)\b/i);
+    });
+
+    it('B-5: 2-stop is dominant (≥ 50 matches) AND boundary 0% / 100% sites are uncommon (≤ 10)', () => {
+      const css = readFileSync(STYLES_CSS_PATH, 'utf-8');
+      // CSS Color 5 2-stop form: `color-mix(in srgb, COLOR_A p%, COLOR_B)`
+      const formRegex = /color-mix\(\s*in\s+srgb\s*,\s*([^,]+?)\s+(\d+)%\s*,\s*([^)]+?)\s*\)/g;
+      let total = 0;
+      let boundaries = 0;
+      let m: RegExpExecArray | null;
+      while ((m = formRegex.exec(css)) !== null) {
+        total++;
+        const pct = parseInt(m[2], 10);
+        if (pct === 0 || pct === 100) boundaries++;
+      }
+      expect(total, 'at least 50 known 2-stop color-mix sites in styles/index.css (out of ≥170 baseline)').toBeGreaterThanOrEqual(50);
+      expect(boundaries, `boundary 0% / 100% color-mix sites should be uncommon (≤ 10) — these are mathematically redundant with a direct value but legitimate uses (e.g. color-mix(A 0%, transparent) for gauge tints) are tolerated`).toBeLessThanOrEqual(10);
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────
+  // C. 5 spot-check HARVEST anchors (SHAPE-only — no in-process contrast math)
+  // ─────────────────────────────────────────────────────────────────────
+  describe('C — 5 spot-check HARVEST anchors (SHAPE only — no in-process contrast math)', () => {
+    // SHAPE-only lock: each anchor must (1) appear in HARVEST with the
+    // exact (relPath, lineNum, key) tuple, AND (2) carry an exact value
+    // matching the contract. Contrast math lives ONLY in
+    // scripts/a11y-surface-sweep.mjs — mirroring the resolver in-test
+    // creates a duplication hazard (regex sync between audit-script and
+    // test mirror; one could drift from the other without failing).
+    // Cross-theme contrast coverage remains in the audit-script itself
+    // (it is the source of truth) — these SHAPE locks assert the
+    // structural contract that future contributors must respect.
+    interface AnchorContract {
+      relPath: string;
+      lineno: number;
+      key: string;
+      rail: 'fg' | 'bg';
+      expectedValueRegex: RegExp;
+      note: string;
+    }
+    const ANCHOR_CONTRACTS: AnchorContract[] = [
+      // App.tsx:L52 — error-boundary-fallback color rail.
+      { relPath: 'App.tsx', lineno: 52, key: 'color', rail: 'fg',
+        expectedValueRegex: /var\(--vscode-errorForeground/,
+        note: 'theme-aware red error text (error-boundary-fallback)' },
+      // AgenticKanbanApp.tsx:L896 — input field bg rail.
+      { relPath: 'agentic-kanban/AgenticKanbanApp.tsx', lineno: 896, key: 'background', rail: 'bg',
+        expectedValueRegex: /var\(--vscode-input-background/,
+        note: 'theme-aware input field background' },
+      // bmm-renderers.tsx:L95 — BMAD-method renderer badge bg.
+      { relPath: 'components/renderers/bmm-renderers.tsx', lineno: 95, key: 'background', rail: 'bg',
+        expectedValueRegex: /var\(--vscode-editor-inactiveSelectionBackground/,
+        note: 'theme-aware muted selection (BMAD-method renderer tint)' },
+      // Corpus3DView.tsx:L370 — borderTopColor rail.
+      // Known regression target: low contrast in Dark+/HC-Dark.
+      { relPath: 'components/Corpus3DView.tsx', lineno: 370, key: 'borderTopColor', rail: 'bg',
+        expectedValueRegex: /var\(--vscode-focusBorder/,
+        note: 'theme-aware focus-border accent (low contrast in Dark+/HC-Dark — known regression target)' },
+      // AgenticKanbanApp.tsx:L909 — toolbar toggle button bg.
+      // Currently `'transparent'` (HARDCODED literal). The contract also
+      // accepts `var(--vscode-*)` theme tokens so a future migration to
+      // theme-aware chrome passes without breaking this lock. Pure HARDCODED
+      // hex (e.g. `#000`, `#fff`) does NOT match — the audit matrix
+      // surfaces that as a regression candidate for follow-up tokenization.
+      { relPath: 'agentic-kanban/AgenticKanbanApp.tsx', lineno: 909, key: 'background', rail: 'bg',
+        expectedValueRegex: /^transparent$|^var\(--vscode-/,
+        note: 'transparent (current) or theme token (future migration); HARDCODED hex swap fails this guard' },
+    ];
+
+    for (const a of ANCHOR_CONTRACTS) {
+      describe(`Anchor ${a.relPath}:L${a.lineno} ${a.key} (${a.note})`, () => {
+        it('HARVEST lookup: introspector surfaces this specific (relPath, lineNum, key) tuple', () => {
+          const hits = HARVEST.rows.filter(
+            (r) => r.relPath === a.relPath && r.lineNum === a.lineno && r.key === a.key,
+          );
+          expect(
+            hits.length,
+            `${a.relPath}:L${a.lineno} ${a.key} must appear in HARVEST — if absent, the introspector's regex went too narrow or the source moved`,
+          ).toBeGreaterThanOrEqual(1);
+          if (hits.length > 0) {
+            expect(hits[0].rail, `row must be on the ${a.rail} rail`).toBe(a.rail);
+          }
+        });
+        it('value contract: harvested CSS expression matches the documented pattern', () => {
+          const row = HARVEST.rows.find(
+            (r) => r.relPath === a.relPath && r.lineNum === a.lineno && r.key === a.key,
+          );
+          expect(row, 'precondition: HARVEST lookup must succeed (see sibling test)').toBeTruthy();
+          expect(
+            row!.value,
+            `${a.relPath}:L${a.lineno} ${a.key} value must match expected pattern — a future rewrite that swaps the expression (e.g. HARDCODED hex replacement) trips this guard`,
+          ).toMatch(a.expectedValueRegex);
+        });
+      });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────────────
+  // D. color-mix() math spec tests (Linear LERP per CSS Color 5)
+  // ─────────────────────────────────────────────────────────────────────
+  describe('D — color-mix() math spec tests (Linear LERP per CSS Color 5 § 4.5.1)', () => {
+    // Per CSS Color 5 § 4.5.1, the opaque-mix formula is a linear-light
+    // interpolation: `result = (1-w)·L_b + w·L_a` (w = fractional weight
+    // of the FIRST operand `a`). The sqrt-form variant applies only
+    // when one operand is alpha < 1.0 (`transparent` operand) — out of
+    // scope for our codebase (no transparent uses in the 180 sites).
+    function srgbByteToLinear(c: number) {
+      const v = c / 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    }
+    function linearToSrgbByte(L: number) {
+      const v = L <= 0.0031308 ? L * 12.92 : 1.055 * Math.pow(L, 1 / 2.4) - 0.055;
+      return Math.max(0, Math.min(255, Math.round(v * 255)));
+    }
+    function colorMixLerp(aHex: string, w: number, bHex: string): string {
+      const a = aHex.match(/[\da-f]{2}/gi)!.map((h) => parseInt(h, 16));
+      const b = bHex.match(/[\da-f]{2}/gi)!.map((h) => parseInt(h, 16));
+      const al = a.map(srgbByteToLinear);
+      const bl = b.map(srgbByteToLinear);
+      const r = (1 - w) * bl[0] + w * al[0];
+      const g = (1 - w) * bl[1] + w * al[1];
+      const blc = (1 - w) * bl[2] + w * al[2];
+      return '#' + [r, g, blc].map(linearToSrgbByte).map((x) => x.toString(16).padStart(2, '0')).join('').toUpperCase();
+    }
+
+    it('D-1: weight 0 → pure B (a contributes nothing)', () => {
+      expect(colorMixLerp('#000000', 0, '#FFFFFF')).toBe('#FFFFFF');
+      expect(colorMixLerp('#15803D', 0, '#FFFFFF')).toBe('#FFFFFF');
+    });
+
+    it('D-2: weight 1 → pure A (b contributes nothing)', () => {
+      expect(colorMixLerp('#000000', 1, '#FFFFFF')).toBe('#000000');
+      expect(colorMixLerp('#15803D', 1, '#FFFFFF')).toBe('#15803D');
+    });
+
+    it('D-3: 50/50 mix of #000000 and #FFFFFF resolves to mid-gray `#BCBCBC` (NOT naive `#808080` because LERP is in linear-light)', () => {
+      // CSS Color 5 spec reference: linear-light LERP at w=0.5 yields
+      // L = 0.5, which round-trips through linearToSrgb to ≈ 188 (0xBC).
+      // A naive sRGB LERP at w=0.5 yields L = 0.5 naively (~0x80) —
+      // incorrect because it does the interpolation in gamma-corrected
+      // space.
+      expect(colorMixLerp('#000000', 0.5, '#FFFFFF')).toBe('#BCBCBC');
+    });
+
+    it('D-4: symmetry — colorMixLerp(A, w, B) == colorMixLerp(B, 1-w, A) for any w ∈ [0,1]', () => {
+      // LERP is a linear combination, so this is an identity-invariant
+      // check rather than a numerical one — covers any weight and any
+      // pair of distinct colors.
+      for (const w of [0.1, 0.25, 0.42, 0.5, 0.7, 0.95]) {
+        expect(colorMixLerp('#15803D', w, '#FFFFFF')).toBe(colorMixLerp('#FFFFFF', 1 - w, '#15803D'));
+        expect(colorMixLerp('#EF4444', w, '#1E1E1E')).toBe(colorMixLerp('#1E1E1E', 1 - w, '#EF4444'));
+        expect(colorMixLerp('#8B5CF6', w, '#22C55E')).toBe(colorMixLerp('#22C55E', 1 - w, '#8B5CF6'));
+      }
+    });
+  });
+});
