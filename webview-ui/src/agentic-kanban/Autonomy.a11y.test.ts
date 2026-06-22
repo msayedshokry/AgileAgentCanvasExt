@@ -512,6 +512,65 @@ describe('Autonomy.css — P0/P1 fix presence (CSS-shape guards)', () => {
       expect(resolved, `--vscode-charts-pink on ${themeName} must resolve to the documented per-theme hex`).toBe(expected[themeName].toLowerCase());
     }
   });
+
+  // --- chip-on-red-row overlay locks ---
+  // The `.safety-block` row carries the red --vscode-inputValidation-errorBackground
+  // tint; chip fg vs that composite bg drops below 3:1 in 5 (chip, theme) pairs.
+  // The compensation is a parent-scoped override that punches the chip's own
+  // bg through to the editor bg (`background: var(--vscode-editor-background)`
+  // on `.safety-block .safety-block-type`), so the chip fg's contrast is now
+  // measured against the editor surface again. The chip fg itself is NOT
+  // recoloured, so the per-type colour cue survives unchanged.
+  //
+  // These guards lock the overlay both structurally (CSS shape) and
+  // arithmetically (contrast floor in each failing (chip, theme) pair).
+
+  it('PIN-chip-on-red-row-overlay exists: .safety-block .safety-block-type must set background to --vscode-editor-background', () => {
+    // Walk all `.safety-block .safety-block-type` rules — there can be
+    // multiple comma-separated selector variants. We assert that AT LEAST ONE
+    // rule scoped to .safety-block .safety-block-type overrides `background`
+    // to var(--vscode-editor-background).
+    let overlayBg: string | null = null;
+    AUTONOMY_ROOT.walkRules((rule) => {
+      if (overlayBg) return;
+      if (!rule.selector) return;
+      // Strict selector match: must contain `.safety-block` AND `.safety-block-type`.
+      // Excludes the bare `.safety-block-type { ... }` rule (no parent context).
+      if (!rule.selector.includes('.safety-block ') && !rule.selector.includes('.safety-block\t') && !/^\.safety-block\s+\.safety-block-type/.test(rule.selector)) return;
+      rule.walkDecls((d) => {
+        if (d.prop === 'background' && d.value.includes('var(--vscode-editor-background')) {
+          overlayBg = d.value.trim();
+        }
+      });
+    });
+    expect(overlayBg, 'A `.safety-block .safety-block-type` rule must override background to var(--vscode-editor-background) so the chip punches through the red-tinted row bg. Without this, chips embedded in .safety-block drop below 3:1 against the row bg in 5 (chip, theme) pairs.').toBeTruthy();
+  });
+
+  // 5 (chip, theme) contrast assertions — one per still-failing pair. With
+  // the overlay, chip fg is measured against the editor bg (the same surface
+  // a non-nested chip uses); restore 3:1+ across all 5 pairs.
+  const CHIP_ON_RED_ROW_FIX = [
+    { chip: 'story',     expr: 'var(--vscode-charts-blue, #6366f1)',  theme: 'Dark+' },
+    { chip: 'story',     expr: 'var(--vscode-charts-blue, #6366f1)',  theme: 'HC-Dark' },
+    { chip: 'risk',      expr: 'var(--vscode-errorForeground, #ef4444)', theme: 'Light+' },
+    { chip: 'test-case', expr: 'var(--vscode-charts-yellow, #ca8a04)', theme: 'Light+' },
+    { chip: 'test-case', expr: 'var(--vscode-charts-yellow, #ca8a04)', theme: 'HC-Dark' },
+  ] as const;
+
+  for (const fix of CHIP_ON_RED_ROW_FIX) {
+    it(`PIN-chip-on-red-row: .safety-block-type--${fix.chip} bg-overlay restores 3:1 UI-floor on ${fix.theme}`, () => {
+      // With the overlay, chip fg renders against the editor bg, NOT the
+      // red-tinted row bg. resolveToken on the chip fg + theme gives us
+      // the same hex the test TOKS resolution locks for the bare chip;
+      // contrast against THEMES[theme].editorBg is the post-fix surface.
+      const fg = resolveToken(fix.expr, fix.theme, THEMES[fix.theme].editorBg);
+      const r = contrast(fg, THEMES[fix.theme].editorBg);
+      expect(
+        r,
+        `chip-on-red-row fix: chip .safety-block-type--${fix.chip} resolved fg ${fg} must clear 3:1 vs editor bg on ${fix.theme} (got ${r.toFixed(2)}:1). The overlay punches chip bg through to --vscode-editor-background; without it the chip competes with the red row tint and the audit measured --story Dark+ at 2.94:1, --risk Light+ at 2.53:1, --test-case Light+ at 2.25:1, --test-case HC-Dark at 2.06:1.`,
+      ).toBeGreaterThanOrEqual(3.0);
+    });
+  }
 });
 
 // =============================================================================

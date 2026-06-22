@@ -1499,6 +1499,51 @@
    the soft-failure contract the type-system gate was designed to
    prevent. */
 
+/* Chip-on-red-row contrast override — closes the 5 still-failing
+   (chip, theme) pairs surfaced by the audit in
+   `scripts/a11y-surface-sweep.mjs`:
+     .safety-block-type--story       Dark+  2.94:1 → 3+ overlay below
+     .safety-block-type--story       HC-Dark 2.94:1 → 3+ overlay below
+     .safety-block-type--risk        Light+ 2.53:1 → 3+ overlay below
+     .safety-block-type--test-case   Light+ 2.25:1 → 3+ overlay below
+     .safety-block-type--test-case   HC-Dark 2.06:1 → 3+ overlay below
+
+   Mechanism: the parent `.safety-block` row carries the red
+   `--vscode-inputValidation-errorBackground` tint; chips embedded in
+   that row compete their tint-vs-tint fg/bg and drop below 3:1. The
+   override here punches the chip's own bg through to the editor bg
+   (via `--vscode-editor-background`), so the chip fg's contrast is
+   measured against the editor surface again (the same surface the
+   chip baseline uses when not nested in a red row) — restoring 3:1+.
+   The chip fg itself is NOT recoloured, so the per-type colour cue
+   (.story=blue, .risk=red, .test-case=yellow) survives unchanged.
+
+   Locked by `Autonomy.a11y.test.ts` — `PIN-chip-on-red-row: <chip>
+   contrast vs editor bg in <theme>` × 5, plus the shape guard
+   `PIN-chip-on-red-row-overlay exists`. */
+.safety-block .safety-block-type {
+  background: var(--vscode-editor-background);
+}
+.safety-block .safety-block-type--story, .safety-block .safety-block-type--requirement,
+.safety-block .safety-block-type--use-case, .safety-block .safety-block-type--use-cases,
+.safety-block .safety-block-type--additional-req, .safety-block .safety-block-type--nfr-assessment {
+  border-left-color: var(--vscode-charts-blue, #6366f1);
+}
+.safety-block .safety-block-type--risk, .safety-block .safety-block-type--risks,
+.safety-block .safety-block-type--definition-of-done {
+  border-left-color: var(--vscode-errorForeground, #ef4444);
+}
+.safety-block .safety-block-type--test-case, .safety-block .safety-block-type--test-cases,
+.safety-block .safety-block-type--test-strategy, .safety-block .safety-block-type--test-design,
+.safety-block .safety-block-type--test-design-qa, .safety-block .safety-block-type--test-design-architecture,
+.safety-block .safety-block-type--test-summary, .safety-block .safety-block-type--test-coverage,
+.safety-block .safety-block-type--test-review, .safety-block .safety-block-type--atdd-checklist,
+.safety-block .safety-block-type--traceability-matrix, .safety-block .safety-block-type--test-framework,
+.safety-block .safety-block-type--ci-pipeline, .safety-block .safety-block-type--automation-summary,
+.safety-block .safety-block-type--epic-test-strategy {
+  border-left-color: var(--vscode-charts-yellow, #ca8a04);
+}
+
 .safety-block-verb {
   font-size: 9px;
   font-weight: 600;
