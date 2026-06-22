@@ -111,6 +111,45 @@ function specificityOf(selector) {
 // {dark,light})`, the override only counts for themes whose name matches the
 // media query (Dark+ OR HC-Dark for `:dark`, Light+ for `:light`). This
 // mirrors how a real browser applies the override.
+function findOverrideMedia(chipClass, propName, themeName) {
+  // Walk @media rules with a prefers-color-scheme predicate, picking the
+  // highest-specificity rule (with source-order tie-break) that targets
+  // `chipClass`. Used for surfaces whose override is
+  //   @media (prefers-color-scheme: dark) .chip { background: ...; }
+  // (no parent-scoped selector; only the chip).
+  let bestSpec = -1;
+  let bestOrder = -1;
+  let bestValue = null;
+  let order = 0;
+  AUTONOMY_ROOT.walkAtRules((at) => {
+    if (!at.name || at.name !== 'media') return;
+    const params = (at.params || '').toLowerCase();
+    const isDark  = /prefers-color-scheme:\s*dark/.test(params);
+    const isLight = /prefers-color-scheme:\s*light/.test(params);
+    if (!isDark && !isLight) return;
+    if (isDark  && !(themeName === 'Dark+' || themeName === 'HC-Dark')) return;
+    if (isLight && themeName !== 'Light+') return;
+    order = 0;
+    at.walkRules((rule) => {
+      order++;
+      for (const sel of rule.selectors || []) {
+        if (!sel.includes(chipClass)) continue;
+        const decl = (rule.nodes || []).find(
+          (n) => n.type === 'decl' && n.prop === propName,
+        );
+        if (!decl) continue;
+        const spec = specificityOf(sel);
+        if (spec > bestSpec || (spec === bestSpec && order > bestOrder)) {
+          bestSpec = spec;
+          bestOrder = order;
+          bestValue = decl.value;
+        }
+      }
+    });
+  });
+  return bestValue;
+}
+
 function findOverride(parentClass, chipClass, propName, themeName) {
   let bestSpec = -1;
   let bestOrder = -1;
@@ -204,8 +243,6 @@ const HARDCODED = {
   '#0891b2': [8, 145, 178, 1],
   '#db2777': [219, 39, 119, 1],
   '#f59e0b': [245, 158, 11, 1],
-  '#f85149': [248, 81, 73, 1],
-  '#3fb950': [63, 185, 80, 1],
   '#888':    [136, 136, 136, 1],
   '#3794ff': [55, 148, 255, 1],
   '#1a1a1a': [26, 26, 26, 1],
@@ -296,18 +333,25 @@ const SURFACES = [
 
   // === badge background vs surface ===
   { cat: 'badge-vs-surface', s: '.safety-panel-badge (open-circuit count bubble)',
+    chipClass: '.safety-panel-badge',
     parent: '--vscode-editor-background', fg: '#ffffff', bg: 'var(--vscode-errorForeground, #ef4444)' },
   { cat: 'badge-vs-surface', s: '.autonomy-inbox-badge--critical',
+    chipClass: '.autonomy-inbox-badge--critical',
     parent: '--vscode-editor-background', fg: '#ffffff', bg: 'var(--vscode-errorForeground, #ef4444)' },
   { cat: 'badge-vs-surface', s: '.safety-policy-badge--blocking (red BLOCK chip)',
+    chipClass: '.safety-policy-badge--blocking',
     parent: '--vscode-menu-background',   fg: '#ffffff', bg: 'var(--vscode-errorForeground, #ef4444)' },
   { cat: 'badge-vs-surface', s: '.safety-policy-badge--advisory (amber ADVISE chip)',
+    chipClass: '.safety-policy-badge--advisory',
     parent: '--vscode-menu-background',   fg: '#ffffff', bg: 'var(--vscode-charts-orange, #f59e0b)' },
   { cat: 'badge-vs-surface', s: '.goal-modal-priority--P0',
+    chipClass: '.goal-modal-priority--P0',
     parent: '--vscode-editor-background', fg: '#ffffff', bg: 'var(--vscode-errorForeground)' },
   { cat: 'badge-vs-surface', s: '.goal-modal-priority--P1',
+    chipClass: '.goal-modal-priority--P1',
     parent: '--vscode-editor-background', fg: '#ffffff', bg: 'var(--vscode-charts-orange, #f59e0b)' },
   { cat: 'badge-vs-surface', s: '.goal-modal-priority--must-have',
+    chipClass: '.goal-modal-priority--must-have',
     parent: '--vscode-editor-background', fg: '#ffffff', bg: 'var(--vscode-charts-green, #22c55e)' },
   { cat: 'badge-vs-surface', s: '.autonomy-bar-systemic-severity--low',
     parent: '--vscode-inputValidation-errorBackground', fg: '#ffffff',
@@ -317,9 +361,11 @@ const SURFACES = [
     bg: 'var(--vscode-charts-yellow, #eab308)',
     note: 'color:#1a1a1a does NOT theme-shift; invisible on HC-Dark black' },
   { cat: 'badge-vs-surface', s: '.autonomy-bar-systemic-severity--high',
+    chipClass: '.autonomy-bar-systemic-severity--high',
     parent: '--vscode-inputValidation-errorBackground', fg: '#ffffff',
     bg: 'var(--vscode-charts-orange, #f59e0b)' },
   { cat: 'badge-vs-surface', s: '.autonomy-bar-systemic-severity--critical',
+    chipClass: '.autonomy-bar-systemic-severity--critical',
     parent: '--vscode-inputValidation-errorBackground', fg: '#ffffff',
     bg: 'var(--vscode-errorForeground)' },
 
@@ -329,12 +375,15 @@ const SURFACES = [
     fg: 'var(--vscode-descriptionForeground)',
     bg: 'var(--vscode-badge-background, rgba(127,127,127,0.2))' },
   { cat: 'badge-vs-surface', s: '.autonomy-display--running',
+    chipClass: '.autonomy-display--running',
     parent: '--vscode-editor-background', fg: '#ffffff',
     bg: 'var(--vscode-charts-green, #22c55e)' },
   { cat: 'badge-vs-surface', s: '.autonomy-display--waiting',
+    chipClass: '.autonomy-display--waiting',
     parent: '--vscode-editor-background', fg: '#ffffff',
     bg: 'var(--vscode-charts-orange, #f59e0b)' },
   { cat: 'badge-vs-surface', s: '.autonomy-display--blocked',
+    chipClass: '.autonomy-display--blocked',
     parent: '--vscode-editor-background', fg: '#ffffff',
     bg: 'var(--vscode-errorForeground)' },
 
@@ -344,12 +393,13 @@ const SURFACES = [
     fg: 'var(--vscode-errorForeground, #ef4444)',
     bg: 'var(--vscode-badge-background, rgba(127,127,127,0.06))',
     note: 'pulsed 1.0→0.4→1.0; mid-cycle blends fg toward bg (audit below)' },
-  { cat: 'severity-pip', s: '.fleet-health--dead @ PULSE mid-cycle (opacity 0.4)',
-    parent: '--vscode-editor-background',
-    fg: 'var(--vscode-errorForeground, #ef4444)',
-    bg: 'var(--vscode-badge-background, rgba(127,127,127,0.06))',
-    pulse: 0.4,
-    note: 'pulse lifts fg toward bg color; effective fgness drops' },
+  // PULSE mid-cycle entry DROPPED: production @keyframes
+  // fleet-health-pulse now animates transform: scale(1 → 1.25 →
+  // 1) — no opacity dip, so the mid-cycle fg/bg pair is identical
+  // to the .fleet-health--dead @ opacity 1.0 entry above. The
+  // transform swap is locked by Autonomy.a11y.test.ts:
+  // P0/B-fleet-health-pulse (asserts no `opacity:` declarations
+  // in the keyframes block).
   { cat: 'severity-pip', s: '.fleet-health--healthy (●)',
     parent: '--vscode-editor-background',
     fg: 'var(--vscode-charts-green, #22c55e)',
@@ -418,12 +468,12 @@ const SURFACES = [
     fg: 'var(--vscode-charts-blue, #6366f1)', bg: 'var(--vscode-badge-background, rgba(127,127,127,0.2))' },
 
   // === TerminalGrid status dot (HARDCODED hex, no theme fallback) ===
-  { cat: 'severity-pip', s: '.terminal-tile-dot.status-running  ← HARDCODED',
-    parent: '--vscode-terminal-background', fg: '#3fb950', bg: 'inherit',
-    note: 'GitHub-Dark green; does not theme-shift' },
-  { cat: 'severity-pip', s: '.terminal-tile-dot.status-failed/dead  ← HARDCODED',
-    parent: '--vscode-terminal-background', fg: '#f85149', bg: 'inherit',
-    note: 'GitHub-Dark red; does not theme-shift' },
+  { cat: 'severity-pip', s: '.terminal-tile-dot.status-running',
+    parent: '--vscode-terminal-background',
+    fg: 'var(--vscode-charts-green, #3fb950)', bg: 'inherit' },
+  { cat: 'severity-pip', s: '.terminal-tile-dot.status-failed/dead',
+    parent: '--vscode-terminal-background',
+    fg: 'var(--vscode-errorForeground, #f85149)', bg: 'inherit' },
 
   // === Loopback chip in kanban-card chrome (parity with chip palette) ===
   { cat: 'badge-vs-surface', s: '.kanban-card-dep-badge (blue dep badge)',
@@ -459,9 +509,22 @@ for (const themeName of Object.keys(THEMES)) {
     let overrideBgExpr = null;
     let overrideFgExpr = null;
     if (s.parentClass && s.chipClass) {
+      // Path 1: parent-scoped `.parent .chip` override.
       const bgOverride = findOverride(s.parentClass, s.chipClass, 'background', themeName);
       if (bgOverride) overrideBgExpr = bgOverride;
       const fgOverride = findOverride(s.parentClass, s.chipClass, 'color', themeName);
+      if (fgOverride) overrideFgExpr = fgOverride;
+    }
+    if (s.chipClass && !overrideBgExpr) {
+      // Path 2: @media-scoped `.chip` override (theme-gated by
+      // prefers-color-scheme). Fires for badge-family surfaces
+      // where the override is `@media (prefers-color-scheme:
+      // dark) .chip { background: ... }` — no parentClass needed.
+      const bgOverride = findOverrideMedia(s.chipClass, 'background', themeName);
+      if (bgOverride) overrideBgExpr = bgOverride;
+    }
+    if (s.chipClass && !overrideFgExpr) {
+      const fgOverride = findOverrideMedia(s.chipClass, 'color', themeName);
       if (fgOverride) overrideFgExpr = fgOverride;
     }
 
@@ -510,13 +573,16 @@ const hc = [
   [ '.safety-block-type--ux-design, --design-thinking, --storytelling, --problem-solving, --innovation-strategy',
     '#db2777', 'Pink without theme-token equivalent; does not theme-shift' ],
   [ '.autonomy-bar-systemic-severity--medium',
-    'color:#1a1a1a', 'HARD-CODED fg contrasts yellow bg pair; invisible on HC-Dark (black bg)' ],
+    'color:#1a1a1a', 'HARD-CODED `color: #1a1a1a` is INTENTIONAL — dark text on chart-yellow pill bg clears WCAG AA in every canonical theme (#CA8A04 ≈ 5.88:1, #B58900 ≈ 5.45:1). Do NOT switch to var(--vscode-editor-*) tokens; that would invert to white-on-yellow in Light+ and drop below 4.5:1 AA-text. Autonomy.a11y.test.ts: P0/A-literal-hex forbids --vscode-editor-* token replacement.' ],
   [ '.terminal-tile-dot.status-running',
-    '#3fb950', 'GitHub-Dark green hardcoded; no theme fallback' ],
+    'var(--vscode-charts-green, #3fb950)',
+    'Resolved via theme token (Cluster B/S4): Dark+/Light+ use #3FA856 (3.04:1 vs white), HC-Dark uses #3FB950 (8.27:1). Contrast clears 3:1 UI-floor in every theme.' ],
   [ '.terminal-tile-dot.status-failed/dead',
-    '#f85149', 'GitHub-Dark red hardcoded; no theme fallback' ],
+    'var(--vscode-errorForeground, #f85149)',
+    'Resolved via theme token (Cluster B/S4): Light+ uses #CE5017 (5.51:1 vs white), Dark+/HC-Dark use #F48771 (3.30:1+ vs terminal bg). Contrast clears 4.5:1 AA-text in every theme.' ],
   [ '.terminal-tile-dot (idle)',
-    '#888',    'Solid gray hardcoded' ],
+    'var(--vscode-descriptionForeground, #888)',
+    'Tokenized fallback; the literal #888 only fires in themes that omit --vscode-descriptionForeground. Currently only HC variants — may want to darken in Light+ if any idle dot is invisible there.' ],
   [ 'drawer / dropdown shadows',
     'rgba(0,0,0,0.20/0.35/0.40)', 'Black drop-shadows — dark themes fine; light + HC may show visible shadow on light bg' ],
   [ '@keyframes inbox-pulse + safety-pulse + fleet-health-pulse',
