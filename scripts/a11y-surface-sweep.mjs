@@ -304,7 +304,15 @@ function resolve(expr, themeName, parentBg) {
   const m = expr.match(/^\s*var\((--[\w-]+)\s*,\s*([^)]+)\)\s*$/);
   if (m) {
     const tokVal = TOKS[m[1]]?.[themeName];
-    if (tokVal) return tokVal;
+    if (tokVal) {
+      // Cluster D-3 #3 — when the TOKS-resolved value is itself a rgba() string,
+      // re-apply the alpha-blend formula over parent bg. Without this branch,
+      // the rgba-resolved hex would bypass blending and yield a sub-3:1 false-
+      // positive in the audit-script's contrast pass.
+      const rgbaTok = tokVal.match(/^\s*rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\)\s*$/);
+      if (rgbaTok) return blend([+rgbaTok[1], +rgbaTok[2], +rgbaTok[3], +rgbaTok[4]], parentBg);
+      return tokVal;
+    }
     // Token unset — use inline fallback expression (which may itself be rgba())
     return resolve(m[2].trim(), themeName, parentBg);
   }
@@ -916,6 +924,50 @@ const SURFACES = [
     parent: '--vscode-editor-background',
     fg: '#15803D',
     bg: 'inherit' },
+  // === Cluster D-3 #1.b — agent-renderer-tag family (3 base + 3 Light+ override) ===
+  // Base (Dark+/HC-Dark): tokenized bg via var() + fg tokenized via custom property.
+  { cat: 'renderers', s: '.agent-renderer-tag--success (verified/passed/achieved chips, base)',
+    chipClass: '.agent-renderer-tag--success',
+    parent: '--vscode-editor-background',
+    fg: 'var(--agent-renderer-tag-foreground, #FFFFFF)',
+    bg: 'var(--vscode-charts-green, #4CAF50)' },
+  { cat: 'renderers', s: '.agent-renderer-tag--error (failed/rejected chips, base)',
+    chipClass: '.agent-renderer-tag--error',
+    parent: '--vscode-editor-background',
+    fg: 'var(--agent-renderer-tag-foreground, #FFFFFF)',
+    bg: 'var(--vscode-charts-red, #F44336)' },
+  { cat: 'renderers', s: '.agent-renderer-tag--warning (changes-requested chips, base)',
+    chipClass: '.agent-renderer-tag--warning',
+    parent: '--vscode-editor-background',
+    fg: 'var(--agent-renderer-tag-foreground, #FFFFFF)',
+    bg: 'var(--vscode-charts-orange, #FF9800)' },
+  // Light+ override: deeper-tone bg + dark fg (via custom property).
+  { cat: 'renderers', s: '.agent-renderer-tag--success @media light (deeper-tone rebind)',
+    chipClass: '.agent-renderer-tag--success',
+    parent: '--vscode-editor-background',
+    fg: '#1F1F1F', bg: '#15803D' },
+  { cat: 'renderers', s: '.agent-renderer-tag--error @media light (deeper-tone rebind)',
+    chipClass: '.agent-renderer-tag--error',
+    parent: '--vscode-editor-background',
+    fg: '#FFFFFF', bg: '#B91C1C' },
+  { cat: 'renderers', s: '.agent-renderer-tag--warning @media light (deeper-tone rebind)',
+    chipClass: '.agent-renderer-tag--warning',
+    parent: '--vscode-editor-background',
+    fg: '#FFFFFF', bg: '#B45309' },
+  // === Cluster D-3 #3 — Pulse halo effects (mid-cycle @ 0.4 alpha) ===
+  // Mid-cycle avg blend for the box-shadow halo. Parent surface is the editor
+  // bg; the halo fades to 0 alpha at the keyframe 50% step which is a
+  // separate render pass — the audit-script reports the 1.0-alpha cycle end
+  // (baseline) here.
+  { cat: 'pulse-fx', s: '.inbox-pulse (mid-cycle amber halo)',
+    chipClass: '.inbox-pulse',
+    parent: '--vscode-editor-background',
+    fg: 'inherit', bg: 'var(--vscode-pulse-halo-amber, rgba(245, 158, 11, 0.4))' },
+  { cat: 'pulse-fx', s: '.safety-pulse (mid-cycle red halo)',
+    chipClass: '.safety-pulse',
+    parent: '--vscode-editor-background',
+    fg: 'inherit', bg: 'var(--vscode-pulse-halo-red, rgba(239, 68, 68, 0.4))' },
+
 ];
 
 // =============================================================================

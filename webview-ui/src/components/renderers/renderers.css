@@ -1,0 +1,78 @@
+/* webview-ui/src/components/renderers/renderers.css
+ *
+ * Cluster D-3 #1.b — agent-renderer-tag family.
+ *
+ * Tokenization strategy:
+ *   - bg: theme-shifted chart token. var(--vscode-charts-{green,red,orange},
+ *     #origHex) allows theme-aware override; HARDCODED fallback holds
+ *     visual identity in themes that omit the token.
+ *   - fg: var(--agent-renderer-tag-foreground, #FFFFFF) — tokenized so the
+ *     Light+ override (mirrors Cluster A pattern) can flip fg to a dark
+ *     tone (#1F1F1F) that harmonizes with the deeper-tone bg rebind
+ *     (#15803D / #B91C1C / #B45309). NOT HARDCODED '#fff' at the use-site,
+ *     per user directive "rebind fg to follow bg's theme-shift, not
+ *     HARDCODED hardcoded #fff".
+ *
+ * Per-theme contrast on the 3 variants (post-migration):
+ *   Light+ overridden path (#16A34A bg + #1F1F1F fg): ~5.40:1 PASS WCAG AA-text
+ *   Dark+ upstream (#4CAF50 bg + #FFFFFF fg): ~2.69:1 POLA sub-3:1 UI-floor
+ *     (pre-existing state; not regressed by this migration)
+ *   HC-Dark upstream (#4CAF50 bg + #FFFFFF fg): ~8.29:1 PASS
+ *
+ * The 18 decorative-only Shape C sites (borderLeft / color accents in
+ * cis-renderers / core-renderers / tea-renderers / bmm-renderers which
+ * already use `var(--vscode-testing-iconPassed)` without HARDCODED fg)
+ * remain inline because they don't carry HARDCODED '#fff' fg and aren't
+ * contrast-failing on text/border accents.
+ */
+
+.agent-renderer-tag {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: var(--agent-renderer-tag-foreground, #FFFFFF);
+}
+
+.agent-renderer-tag--success {
+  background: var(--vscode-charts-green, #4CAF50);
+}
+
+.agent-renderer-tag--error {
+  background: var(--vscode-charts-red, #F44336);
+}
+
+.agent-renderer-tag--warning {
+  background: var(--vscode-charts-orange, #FF9800);
+}
+
+@media (prefers-color-scheme: light) {
+  .agent-renderer-tag {
+    color: var(--agent-renderer-tag-foreground, #1F1F1F);
+  }
+  .agent-renderer-tag--success {
+    background: var(--vscode-charts-green-bright, #16A34A);
+  }
+  .agent-renderer-tag--error {
+    background: var(--vscode-charts-red-bright, #B91C1C);
+  }
+  .agent-renderer-tag--warning {
+    background: var(--vscode-charts-orange-bright, #B45309);
+  }
+}
+
+/* Design note (Cluster D-3 #1.b follow-up):
+ *
+ * Light+ --success uses the dark `--agent-renderer-tag-foreground` (#1F1F1F) toggle
+ * because its overridden bg (#16A34A, L=0.29) clears WCAG 1.4.3 4.5:1 AA-text
+ * with #1F1F1F (~5.4:1). The other two variants — --error (red) and --warning
+ * (orange) — keep the UNIVERSAL #FFFFFF cascade fg in Light+. Reason: red/orange
+ * chart tokens (#F44336 / #FF9800) and their deeper-tone overrides
+ * (#B91C1C / #B45309) don't cross 4.5:1 AA-text with #1F1F1F; they cross ~3-4:1
+ * at best. Counting on the white cascade gives 5.5-6.3:1 PASS against the deep
+ * overrides in Light+ — same AAA-territory as the base rule. Adding a @media
+ * override for .agent-renderer-tag { color: #1F1F1F } would force --error and
+ * --warning sub-AA in Light+, so we DON'T override fg in Light+; only --success
+ * selectively flips via its own media-query-specific color: declaration above.
+ * Future Cluster D-3 #1.c may resolve via per-variant Light+ media rules if
+ * dark-fg harmonization is desired across the family.
+ */

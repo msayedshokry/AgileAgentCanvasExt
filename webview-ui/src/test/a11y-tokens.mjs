@@ -131,6 +131,19 @@ export const TOKS = {
   '--vscode-panel-border':                      { 'Dark+': '#252526', 'Light+': '#DCDCDC', 'HC-Dark': '#6FC3DF' },
   '--vscode-editor-lineHighlightBackground':    { 'Dark+': '#262626', 'Light+': '#F0F0F0', 'HC-Dark': '#000000' },
   '--vscode-input-placeholderForeground':       { 'Dark+': '#A6A6A6', 'Light+': '#717171', 'HC-Dark': '#FFFFFF' },
+  // Cluster D-3 #3 — Pulse halo tokens (custom rgba-string TOKS rows).
+  // Per-theme resolutions model the user's halo-color calming pattern:
+  //   - Dark+/HC-Dark use chart-bright tones (labels match the "alarm" red/amber)
+  //   - Light+ uses deeper-tone (#B85C00 amber / #E51400 red) for AA pass on white
+  // The transparent variants (alpha=0) are needed because the 50% box-shadow
+  // value drops to 0 alpha (the box-shadow ring shrinks to 0). Without the
+  // transparent token, the audit-script's rgba blend resolves to pure parent-bg.
+  '--vscode-pulse-halo-amber':              { 'Dark+': 'rgba(245, 158, 11, 0.4)', 'Light+': 'rgba(184, 92, 0, 0.4)', 'HC-Dark': 'rgba(245, 158, 11, 0.4)' },
+  '--vscode-pulse-halo-amber-transparent':  { 'Dark+': 'rgba(245, 158, 11, 0)',  'Light+': 'rgba(184, 92, 0, 0)',  'HC-Dark': 'rgba(245, 158, 11, 0)' },
+  '--vscode-pulse-halo-red':                { 'Dark+': 'rgba(248, 81, 73, 0.4)',  'Light+': 'rgba(229, 20, 0, 0.4)',  'HC-Dark': 'rgba(248, 81, 73, 0.4)' },
+  '--vscode-pulse-halo-red-transparent':    { 'Dark+': 'rgba(248, 81, 73, 0)',   'Light+': 'rgba(229, 20, 0, 0)',   'HC-Dark': 'rgba(248, 81, 73, 0)' },
+
+
 };
 
 // Bright-tier Universal-fallback hexes — mirrors the literal after the

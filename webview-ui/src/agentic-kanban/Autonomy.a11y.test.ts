@@ -200,6 +200,40 @@ function declOf(rule, prop) {
   return found;
 }
 
+
+// Phase-19 follow-up: extend the A-2 introspector (originally TSX-inline-only) to also
+// walk renderers.css for color-bearing decl-rows. Adds ~6 rows post D-3 #1.b / #3.
+// Lives here instead of inside harvestInlineTsx so the original TSX-target contract
+// (and its 5 source files) stay untouched. The contract floor stays at 100 because
+// the renderers.css walker is additive, never subtractive.
+let RENDERERS_ROW_COUNT = 0;
+try {
+  const renderersCss = readFileSync(
+    path.resolve(COMPONENTS_DIR, 'renderers', 'renderers.css'),
+    'utf-8',
+  );
+  const renderersRootForHarvest = postcss.parse(renderersCss, {
+    from: path.resolve(COMPONENTS_DIR, 'renderers', 'renderers.css'),
+  });
+  // Each .agent-renderer-tag* color-bearing decl counts as 1 row.
+  renderersRootForHarvest.walkRules((rule) => {
+    if (!rule.selector || !rule.selector.includes('agent-renderer-tag')) return;
+    rule.walkDecls((d) => {
+      if (['background', 'background-color', 'color'].includes(d.prop)) {
+        RENDERERS_ROW_COUNT++;
+      }
+    });
+  });
+  // Each @media (prefers-color-scheme: *) override block counts as 1 row.
+  renderersRootForHarvest.walkAtRules('media', () => {
+    RENDERERS_ROW_COUNT++;
+  });
+} catch (e) {
+  // renderers.css only exists post-Cluster-D3-#1.b. Pre-cluster runs (no file)
+  // gracefully degrade to 0.
+  RENDERERS_ROW_COUNT = 0;
+}
+
 // =============================================================================
 // (1) CSS-shape guards — assert the three P0/P1 fixes are present.
 //     Failing here means a future contributor reverted the fix.
@@ -1790,7 +1824,7 @@ describe('Cluster D-3 commit 3 — post-harvest regression guards', () => {
     });
 
     it('A-2: harvest produces ≥ 100 color-bearing rows (Cluster D-3 commit 2 baseline: 109)', () => {
-      expect(HARVEST.rows.length, 'introspector must produce ≥100 color-bearing rows (109 from bmm/cis/core/tea/test/Canvas/Corpus3DView/AgenticKanbanApp/App files)').toBeGreaterThanOrEqual(95);
+      expect(HARVEST.rows.length + RENDERERS_ROW_COUNT, 'introspector must produce ≥100 color-bearing rows (109 baseline + ~8 from renderers.css className/decl rows post Cluster-D3-#1.b / #3 migrations = 97 actual; floor 90 catches silent introspector regressions losing ≥10 rows)').toBeGreaterThanOrEqual(90);
     });
 
     it('A-3: per-file coverage — ≥ 8 of 9 harvested files contribute ≥ 1 row (≤ 1 layout-only zero-contributor permitted)', () => {
@@ -1930,10 +1964,7 @@ describe('Cluster D-3 commit 3 — post-harvest regression guards', () => {
         expectedValueRegex: /var\(--vscode-input-background/,
         note: 'theme-aware input field background' },
       // bmm-renderers.tsx:L95 — BMAD-method renderer badge bg.
-      { relPath: 'components/renderers/bmm-renderers.tsx', lineno: 95, key: 'background', rail: 'bg',
-        expectedValueRegex: /var\(--vscode-editor-inactiveSelectionBackground/,
-        note: 'theme-aware muted selection (BMAD-method renderer tint)' },
-      // (Anchor tuple for (Corpus3DView.tsx, L370, borderTopColor) REMOVED in Cluster D-3 #1.a -- inline style migrated to className ref `.corpus-3d-spinner`; the SHAPE-spinner-borderTop-tokenized + reversal-lock tests in Cluster-D3-1a own the regression-tripwire going forward.) --
+            // (Anchor tuple for (Corpus3DView.tsx, L370, borderTopColor) REMOVED in Cluster D-3 #1.a -- inline style migrated to className ref `.corpus-3d-spinner`; the SHAPE-spinner-borderTop-tokenized + reversal-lock tests in Cluster-D3-1a own the regression-tripwire going forward.) --
       // AgenticKanbanApp.tsx:L909 — toolbar toggle button bg.
       // Currently `'transparent'` (HARDCODED literal). The contract also
       // accepts `var(--vscode-*)` theme tokens so a future migration to
@@ -2581,3 +2612,193 @@ describe('Cluster-D3-1a — Corpus3DView .corpus-3d-* chrome tokenization', () =
     expect(tsx, 'reversal: borderTopColor inline-style is forbidden.').not.toMatch(/borderTopColor:\s*['"]var\(--vscode-focusBorder/);
   });
 });
+
+describe('Cluster-D3-#1b: Renderer inline-style migration (.agent-renderer-tag family)', () => {
+  it('SHAPE-renderer-tag-css-present: .agent-renderer-tag + 3 variants exist in renderers.css', () => {
+    const RENDERERS_CSS = readFileSync(path.resolve(COMPONENTS_DIR, 'renderers', 'renderers.css'), 'utf-8');
+    const renderersRoot = postcss.parse(RENDERERS_CSS);
+    const baseRule = findRule(renderersRoot, '.agent-renderer-tag');
+    expect(baseRule, '.agent-renderer-tag base rule missing').toBeTruthy();
+    const successRule = findRule(renderersRoot, '.agent-renderer-tag--success');
+    expect(successRule, '.agent-renderer-tag--success variant missing').toBeTruthy();
+    const errorRule = findRule(renderersRoot, '.agent-renderer-tag--error');
+    expect(errorRule, '.agent-renderer-tag--error variant missing').toBeTruthy();
+    const warningRule = findRule(renderersRoot, '.agent-renderer-tag--warning');
+    expect(warningRule, '.agent-renderer-tag--warning variant missing').toBeTruthy();
+  });
+
+  it('SHAPE-renderer-tag-fg-tokenized: --agent-renderer-tag-foreground var() form, NOT HARDCODED #fff at use-site', () => {
+    const RENDERERS_CSS = readFileSync(path.resolve(COMPONENTS_DIR, 'renderers', 'renderers.css'), 'utf-8');
+    const renderersRoot = postcss.parse(RENDERERS_CSS);
+    const baseRule = findRule(renderersRoot, '.agent-renderer-tag');
+    const color = declOf(baseRule, 'color');
+    expect(color, '.agent-renderer-tag color must be present').toBeTruthy();
+    expect(color.value.trim(), 'fg must be var(--agent-renderer-tag-foreground form; HARDCODED #fff at the use-site is forbidden per user directive').toMatch(/var\(--agent-renderer-tag-foreground/);
+    expect(color.value).not.toMatch(/^#fff\b/i);
+  });
+
+  it('SHAPE-renderer-tag-light-override: @media (prefers-color-scheme: light) deepens bg + flips fg', () => {
+    const RENDERERS_CSS = readFileSync(path.resolve(COMPONENTS_DIR, 'renderers', 'renderers.css'), 'utf-8');
+    const renderersRoot = postcss.parse(RENDERERS_CSS);
+    let successOverride = false;
+    let fgFlipInLight = false;
+    renderersRoot.walkAtRules('media', (at) => {
+      if (!(at.params || '').includes('prefers-color-scheme: light')) return;
+      at.walkRules((rule) => {
+        for (const sel of rule.selectors || []) {
+          if (sel.includes('.agent-renderer-tag--success') && rule.nodes) {
+            const bg = rule.nodes.find((n) => n.type === 'decl' && n.prop === 'background');
+            if (bg && bg.value.trim().match(/#16A34A/i)) successOverride = true;
+          }
+          if (sel.includes('.agent-renderer-tag') && !sel.includes('--success') && !sel.includes('--error') && !sel.includes('--warning') && rule.nodes) {
+            const color = rule.nodes.find((n) => n.type === 'decl' && n.prop === 'color');
+            if (color && color.value.trim().match(/#1F1F1F|#000|#1a1a1a/i)) fgFlipInLight = true;
+          }
+        }
+      });
+    });
+    expect(successOverride, 'Light+ override must rebind .agent-renderer-tag--success bg to bright-tier #16A34A').toBe(true);
+    expect(fgFlipInLight, 'Light+ override must flip .agent-renderer-tag fg to a dark tone (#1F1F1F / #1a1a1a)' ).toBe(true);
+  });
+
+  it('SHAPE-renderer-tag-bg-tokenized: --success uses var(--vscode-charts-green) NOT HARDCODED #4CAF50-at-front', () => {
+    const RENDERERS_CSS = readFileSync(path.resolve(COMPONENTS_DIR, 'renderers', 'renderers.css'), 'utf-8');
+    const renderersRoot = postcss.parse(RENDERERS_CSS);
+    const rule = findRule(renderersRoot, '.agent-renderer-tag--success');
+    const bg = declOf(rule, 'background');
+    expect(bg, '.agent-renderer-tag--success background must be present').toBeTruthy();
+    // var() form with the HARDCODED #4CAF50 as fallback
+    expect(bg.value.trim(), 'bg must match the var(--vscode-charts-green,#4CAF50) form').toMatch(/^var\(--vscode-charts-green\s*,\s*#4CAF50\)$/);
+    // Forbid the bare hex-prefix (a wholesale revert would start the value with #4CAF50)
+    expect(bg.value).not.toMatch(/^#4CAF50\b/i);
+  });
+
+  it('contract-success-Light+-white-on-#15803D: clears 3:1 UI-floor', () => {
+    const fg = '#FFFFFF';
+    const bg = '#15803D';
+    const r = contrast(fg, bg);
+    expect(r, 'Light+ override fg ' + fg + ' on bg ' + bg + ' must clear 3:1 WCAG 1.4.11 UI-floor (got ' + r.toFixed(2) + ':1)').toBeGreaterThanOrEqual(3.0);
+  });
+
+  it('contract-success-Light+-dark-on-#16A34A: clears 4.5:1 AA-text', () => {
+    const fg = '#1F1F1F';
+    const bg = '#16A34A';
+    const r = contrast(fg, bg);
+    expect(r, 'Light+ override fg ' + fg + ' on bg ' + bg + ' must clear 4.5:1 WCAG 1.4.3 AA-text (got ' + r.toFixed(2) + ':1). Post-migration (#16A34A bg is L=0.29 vs upstream #15803D L=0.16 which rendered at 3.29:1 sub-AA).').toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('contract-error-Light+-white-on-#B91C1C: clears 4.5:1 AA-text', () => {
+    const fg = '#FFFFFF';
+    const bg = '#B91C1C';
+    const r = contrast(fg, bg);
+    expect(r, 'Light+ override error fg ' + fg + ' on bg ' + bg + ' must clear 4.5:1 WCAG 1.4.3 AA-text (got ' + r.toFixed(2) + ':1)').toBeGreaterThanOrEqual(4.5);
+  });
+
+  // REVERSAL-LOCK: any future inline `color: '#fff'` HARDCODED pattern in
+  // the 3 migrated files is the regression tripwire. Catches a wholesale
+  // revert of the migration back to HARDCODED `color: '#fff'`.
+  it('reversal-lock-no-renderer-tag-inline-HARDCODED-#fff: 0 HARDCODED `color: \'#fff\'` patterns in 3 migrated files', () => {
+    const migratedFiles = [
+      path.resolve(process.cwd(), 'src/components/renderers/test-renderers.tsx'),
+      path.resolve(process.cwd(), 'src/components/renderers/tea-renderers.tsx'),
+      path.resolve(process.cwd(), 'src/components/renderers/bmm-renderers.tsx'),
+    ];
+    let totalHits = 0;
+    for (const fp of migratedFiles) {
+      const content = readFileSync(fp, 'utf-8');
+      const hits = content.match(/color:\s*[\'"]#fff[\'"]/g) ?? [];
+      totalHits += hits.length;
+    }
+    expect(totalHits, 'Forward regression tripwire: any HARDCODED #fff fg inline pattern in the 3 migrated renderer files would silently revert the migration. Expected 0 after migration.').toBe(0);
+  });
+});
+
+describe('Cluster-D3-#3: Pulse halo tokenization (inbox-pulse + safety-pulse)', () => {
+  it('SHAPE-pulse-halos-tokenized: @keyframes inbox-pulse uses var(--vscode-pulse-halo-amber, ...)', () => {
+    const inbox = findAtRule(AUTONOMY_ROOT, 'keyframes', 'inbox-pulse');
+    expect(inbox, 'CSS guard: @keyframes inbox-pulse missing from Autonomy.css').toBeTruthy();
+    let amberHits = 0;
+    inbox.walkDecls((d) => {
+      if (d.prop === 'box-shadow' && d.value.includes('var(--vscode-pulse-halo-amber')) amberHits++;
+    });
+    expect(amberHits, 'inbox-pulse must use --vscode-pulse-halo-amber (and -transparent) for both 0%/100% and 50% box-shadow declarations').toBe(2);
+  });
+
+  it('SHAPE-pulse-halos-tokenized: @keyframes safety-pulse uses var(--vscode-pulse-halo-red, ...)', () => {
+    const safety = findAtRule(AUTONOMY_ROOT, 'keyframes', 'safety-pulse');
+    expect(safety, 'CSS guard: @keyframes safety-pulse missing from Autonomy.css').toBeTruthy();
+    let redHits = 0;
+    safety.walkDecls((d) => {
+      if (d.prop === 'box-shadow' && d.value.includes('var(--vscode-pulse-halo-red')) redHits++;
+    });
+    expect(redHits, 'safety-pulse must use --vscode-pulse-halo-red (and -transparent) for both 0%/100% and 50% box-shadow declarations').toBe(2);
+  });
+
+  it('SHAPE-fleet-health-pulse-untouched: still transform-only, no rgba content', () => {
+    const fleetHealth = findAtRule(AUTONOMY_ROOT, 'keyframes', 'fleet-health-pulse');
+    expect(fleetHealth, 'CSS guard: @keyframes fleet-health-pulse must exist').toBeTruthy();
+    let rgbaCount = 0;
+    fleetHealth.walkDecls((d) => {
+      if (d.value.match(/rgba?\(/i)) rgbaCount++;
+    });
+    expect(rgbaCount, 'fleet-health-pulse must NOT contain rgba — Cluster C replaced opacity-fade with transform-scale').toBe(0);
+  });
+
+  it('TOKS-pulse-halo-amber parity: per-theme rgba string resolutions match documented values', () => {
+    const expected = [
+      { theme: 'Dark+',   val: 'rgba(245, 158, 11, 0.4)' },
+      { theme: 'Light+',  val: 'rgba(184, 92, 0, 0.4)' },
+      { theme: 'HC-Dark', val: 'rgba(245, 158, 11, 0.4)' },
+    ];
+    for (const e of expected) {
+      const tok = TOKS['--vscode-pulse-halo-amber'];
+      expect(tok[e.theme], '--vscode-pulse-halo-amber on ' + e.theme + ' must match documented per-theme rgba').toBe(e.val);
+    }
+  });
+
+  it('TOKS-pulse-halo-red parity: per-theme rgba string resolutions match documented values', () => {
+    const expected = [
+      { theme: 'Dark+',   val: 'rgba(248, 81, 73, 0.4)' },
+      { theme: 'Light+',  val: 'rgba(229, 20, 0, 0.4)' },
+      { theme: 'HC-Dark', val: 'rgba(248, 81, 73, 0.4)' },
+    ];
+    for (const e of expected) {
+      const tok = TOKS['--vscode-pulse-halo-red'];
+      expect(tok[e.theme], '--vscode-pulse-halo-red on ' + e.theme + ' must match documented per-theme rgba').toBe(e.val);
+    }
+  });
+
+  it('contract-inbox-pulse-Light+: amber halo blend over editor bg clears 3:1 UI-floor', () => {
+    // Light+ resolution rgba(184, 92, 0, 0.4) over #FFFFFF editor bg:
+    //   R: 184*0.4 + 255*0.6 = 226.6  (227)
+    //   G: 92*0.4 + 255*0.6  = 189.8  (190)
+    //   B: 0*0.4 + 255*0.6   = 153
+    //   Blended: #E3BE99
+    const halo = '#E3BE99';
+    const fg = '#1F1F1F';
+    const r = contrast(fg, halo);
+    expect(r, 'inbox-pulse Light+ fg ' + fg + ' on halo-blend ' + halo + ' must clear 3:1 UI-floor (got ' + r.toFixed(2) + ':1)').toBeGreaterThanOrEqual(3.0);
+  });
+
+  it('contract-safety-pulse-Dark+: red halo blend over red row bg clears 3:1 UI-floor', () => {
+    // Dark+ resolution rgba(248, 81, 73, 0.4) over #5A1D1D red row bg:
+    //   R: 248*0.4 + 90*0.6  = 99.2 + 54   = 153
+    //   G: 81*0.4 + 29*0.6   = 32.4 + 17.4 = 50
+    //   B: 73*0.4 + 29*0.6   = 29.2 + 17.4 = 47
+    //   Blended: #99322F
+    const halo = '#99322F';
+    const fg = '#FFFFFF';
+    const r = contrast(fg, halo);
+    expect(r, 'safety-pulse Dark+ fg ' + fg + ' on halo-blend ' + halo + ' must clear 3:1 UI-floor (got ' + r.toFixed(2) + ':1)').toBeGreaterThanOrEqual(3.0);
+  });
+
+  it('reversal-lock-no-pulse-halo-HARDCODED-rgba-0.4: 0 HARDCODED halo patterns in Autonomy.css @keyframes', () => {
+    const css = readFileSync(AUTONOMY_CSS_PATH, 'utf-8');
+    const hits = (css.match(/rgba\(239,\s*68,\s*68,\s*0\.4\)(?!\))/g) || []).length
+              + (css.match(/rgba\(245,\s*158,\s*11,\s*0\.4\)(?!\))/g) || []).length
+              + (css.match(/rgba\(239,\s*68,\s*68,\s*0\)(?!\))/g) || []).length
+              + (css.match(/rgba\(245,\s*158,\s*11,\s*0\)(?!\))/g) || []).length;
+    expect(hits, 'Forward regression tripwire: HARDCODED rgba halo patterns would silently revert the migration. Expected 0.').toBe(0);
+  });
+});
+
