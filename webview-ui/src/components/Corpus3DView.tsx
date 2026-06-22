@@ -362,45 +362,25 @@ export function Corpus3DView({ artifacts, onSelect, onOpenDetail, selectedId }: 
       <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
 
       {loadState === 'loading' && (
-        <div style={{
-          position: 'absolute', inset: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'var(--vscode-foreground)', flexDirection: 'column', gap: 12,
-        }}>
-          <div style={{
-            width: 32, height: 32,
-            border: '3px solid var(--vscode-editorWidget-border)',
-            borderTopColor: 'var(--vscode-focusBorder)',
-            borderRadius: '50%',
-            animation: 'corpus-spin 1s linear infinite',
-          }} />
+        <div className="corpus-3d-loading-wrap">
+          <div className="corpus-3d-spinner" />
           <p>Building corpus landscape…</p>
           <style>{`@keyframes corpus-spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       )}
 
       {loadState === 'error' && (
-        <div style={{
-          position: 'absolute', inset: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'var(--vscode-errorForeground)', flexDirection: 'column', gap: 8, padding: 20,
-        }}>
+        <div className="corpus-3d-error-wrap">
           <p>Failed to load corpus view</p>
-          <p style={{ fontSize: 11, opacity: 0.7 }}>{loadError}</p>
+          <p className="corpus-3d-error-detail">{loadError}</p>
         </div>
       )}
 
       {loadState === 'ready' && (
         <>
           {/* Search box */}
-          <div style={{
-            position: 'absolute', top: 12, left: 12, zIndex: 10,
-            display: 'flex', alignItems: 'center', gap: 8,
-            background: 'rgba(30,30,30,0.85)', padding: '6px 12px',
-            borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)',
-            minWidth: 220,
-          }}>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="rgba(255,255,255,0.5)" style={{ flexShrink: 0 }}>
+          <div className="corpus-3d-search-box">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="rgba(255,255,255,0.5)" className="corpus-3d-search-icon">
               <path d="M11.5 7a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0zm-.82 4.74a6 6 0 1 1 1.06-1.06l3.04 3.04a.75.75 0 1 1-1.06 1.06l-3.04-3.04z"/>
             </svg>
             <input
@@ -408,19 +388,12 @@ export function Corpus3DView({ artifacts, onSelect, onOpenDetail, selectedId }: 
               placeholder="Search artifacts…"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              style={{
-                background: 'transparent', border: 'none', outline: 'none',
-                color: 'var(--vscode-foreground)', fontSize: 12,
-                width: '100%', fontFamily: 'inherit',
-              }}
+              className="corpus-3d-search-input"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  color: 'rgba(255,255,255,0.5)', fontSize: 14, padding: '0 2px', lineHeight: 1,
-                }}
+                className="corpus-3d-search-clear"
                 title="Clear search"
               >×</button>
             )}
@@ -428,26 +401,16 @@ export function Corpus3DView({ artifacts, onSelect, onOpenDetail, selectedId }: 
 
           {/* Match count badge */}
           {searchQuery && (
-            <div style={{
-              position: 'absolute', top: 52, left: 12, zIndex: 10,
-              background: 'rgba(30,30,30,0.85)', padding: '4px 10px',
-              borderRadius: 4, fontSize: 11, color: 'var(--vscode-foreground)',
-              border: '1px solid rgba(255,255,255,0.1)',
-            }}>
+            <div className="corpus-3d-match-count">
               {matchedSet() ? `${matchedSet()!.size} found` : 'No matches'}
             </div>
           )}
 
           {/* Phase legend */}
-          <div style={{
-            position: 'absolute', top: 12, right: 12, zIndex: 10,
-            display: 'flex', flexDirection: 'column', gap: 4,
-            background: 'rgba(0,0,0,0.5)', padding: '8px 12px', borderRadius: 6,
-            fontSize: 11, color: 'var(--vscode-foreground)',
-          }}>
+          <div className="corpus-3d-phase-legend">
             {PHASE_NAMES.map((name, i) => (
-              <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: PHASE_COLORS[i], display: 'inline-block' }} />
+              <div key={name} className="corpus-3d-phase-legend-row">
+                <span className={`corpus-3d-phase-swatch corpus-3d-phase-swatch--${i}`} />
                 <span>{name}</span>
               </div>
             ))}

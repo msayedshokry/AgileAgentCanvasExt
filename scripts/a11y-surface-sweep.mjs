@@ -843,6 +843,79 @@ const SURFACES = [
     s: '.kanban-column-status-dot--interrupted (orange + tokenized same --vscode-charts-orange as --running)',
     parent: '--vscode-editor-lineHighlightBackground',
     fg: 'var(--vscode-charts-orange, #f97316)', bg: 'inherit' },
+
+  // =====================================================================
+  // Cluster D-3 #1.a — Corpus3DView chrome surfaces (className refs +
+  // HARDCODED Universal fallbacks + Light+ media-query overrides).
+  // =====================================================================
+  // Closes the 5–6 inline-tsx Corpus3DView FAILs by replacing 6 inline
+  // `style={{...}}` sites (spinner / loading-wrap / error-wrap / error-detail
+  // / search-box / search-input / search-clear / match-count /
+  // phase-legend / phase-swatch × 4 variants) with className refs.
+  //
+  // Row layout:
+  //   *  4 fg-vs-editor-bg rows that mirror CSS rule bindings directly
+  //      (.corpus-3d-spinner borderTop-color, .error-wrap fg, .search-input
+  //      fg, .phase-swatch --0 clears 3:1 naturally — light override shifts
+  //      --1/--2/--3 below).
+  //   *  3 chrome/container rows that measure rendered contrast against
+  //      the chrome tile (the rgba layering composes to a non-inherited
+  //      bg; for Light+ the @media override flips to opaque editor-bg so
+  //      we log two rows per chrome — one for the base path, one for
+  //      the override path).
+  //   *  3 phase-swatch Light+ override rows (.--1, .--2, .--3 rebinds).
+  { cat: 'corpus-3d', s: '.corpus-3d-spinner (borderTop-color, accent ring)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-focusBorder, #007FD8)',
+    bg: 'inherit' },
+  { cat: 'corpus-3d', s: '.corpus-3d-error-wrap (error fg, conventional error-rendering)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-errorForeground)',
+    bg: 'inherit' },
+  { cat: 'corpus-3d', s: '.corpus-3d-search-input (search text fg)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-foreground)',
+    bg: 'inherit' },
+  { cat: 'corpus-3d', s: '.corpus-3d-search-clear (clear-button color, base path)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-descriptionForeground)',
+    bg: 'inherit' },
+  { cat: 'corpus-3d', s: '.corpus-3d-search-clear (Light+ override path: TOKS-resolved var(--vscode-descriptionForeground, #505050))',
+    chipClass: '.corpus-3d-search-clear',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-descriptionForeground, #505050)',
+    bg: 'inherit' },
+  { cat: 'corpus-3d', s: '.corpus-3d-phase-swatch--0 (Phase 0 purple #ab47bc, clears floor naturally)',
+    parent: '--vscode-editor-background',
+    fg: '#ab47bc',
+    bg: 'inherit' },
+  { cat: 'corpus-3d', s: '.corpus-3d-phase-swatch--1 (Phase 1 cyan base HARDCODED #4fc3f7)',
+    parent: '--vscode-editor-background',
+    fg: '#4fc3f7',
+    bg: 'inherit' },
+  { cat: 'corpus-3d', s: '.corpus-3d-phase-swatch--1 (Light+ override: #0e7490 clears 3:1 vs #FFFFFF)',
+    chipClass: '.corpus-3d-phase-swatch--1',
+    parent: '--vscode-editor-background',
+    fg: '#0e7490',
+    bg: 'inherit' },
+  { cat: 'corpus-3d', s: '.corpus-3d-phase-swatch--2 (Phase 2 orange base HARDCODED #ff9800)',
+    parent: '--vscode-editor-background',
+    fg: '#ff9800',
+    bg: 'inherit' },
+  { cat: 'corpus-3d', s: '.corpus-3d-phase-swatch--2 (Light+ override: #b45309 clears 3:1 vs #FFFFFF)',
+    chipClass: '.corpus-3d-phase-swatch--2',
+    parent: '--vscode-editor-background',
+    fg: '#b45309',
+    bg: 'inherit' },
+  { cat: 'corpus-3d', s: '.corpus-3d-phase-swatch--3 (Phase 3 green base HARDCODED #4caf50)',
+    parent: '--vscode-editor-background',
+    fg: '#4caf50',
+    bg: 'inherit' },
+  { cat: 'corpus-3d', s: '.corpus-3d-phase-swatch--3 (Light+ override: #15803D clears 3:1 vs #FFFFFF)',
+    chipClass: '.corpus-3d-phase-swatch--3',
+    parent: '--vscode-editor-background',
+    fg: '#15803D',
+    bg: 'inherit' },
 ];
 
 // =============================================================================

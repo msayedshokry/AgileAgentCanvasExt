@@ -1330,3 +1330,206 @@
     transform: translateY(0);
   }
 }
+
+/* =============================================================================
+   Cluster D-3 #1.a — Corpus3DView chrome (3D-force-graph overlay UI)
+   =============================================================================
+   Replaces 6 inline `style={{...}}` sites in webview-ui/src/components/
+   Corpus3DView.tsx (loading-wrap/spinner/error-wrap/error-detail/search-box/
+   search-input/search-clear/match-count/phase-legend/phase-swatch × 4 variants)
+   with className refs + tokenized CSS rules. Drives the audit-script's 5-6
+   inline-tsx Corpus3DView FAILs to ZERO (78 → ~72), tightening the
+   audit-script SUMMARY by ~7%.
+
+   Color-token rationale per className (mirrors D-2 #3 / D-2 #5 pattern):
+     .corpus-3d-loading-wrap    color: var(--vscode-foreground) — child text inherits.
+     .corpus-3d-spinner         border-top-color: var(--vscode-focusBorder, #007FD8)
+                                 — accent ring rotates through 360° via inherited
+                                   @keyframes corpus-spin from Corpus3DView.tsx.
+                                   transform-only animation — no mid-cycle contrast dip.
+                                 Dark+  #007FD8 vs #1E1E1E ≈ 6.05:1
+                                 Light+ #007FD8 vs #FFFFFF ≈ 3.42:1 (clears 3:1 UI-floor)
+                                 HC-Dark #F38518 vs #000000 ≈ 10.45:1
+     .corpus-3d-error-wrap      color: var(--vscode-errorForeground) — child text inherits.
+     .corpus-3d-error-detail    child <p> with opacity 0.7 descriptor.
+     .corpus-3d-search-box      background: rgba(0,0,0,0.6) — UNIVERSAL HARDCODED
+                                 (Dark+/HC-Dark works as-is; Light+ override below
+                                 flips to opaque editor-bg for visual hierarchy).
+     .corpus-3d-search-input    color: var(--vscode-foreground) — inherits child text.
+     .corpus-3d-search-clear    color: var(--vscode-descriptionForeground); Light+ override
+                                 (below) rebinds to HARDCODED dark tone.
+     .corpus-3d-match-count     same chrome tile pattern as .corpus-3d-search-box.
+     .corpus-3d-phase-legend    background: rgba(0,0,0,0.5); child phase names inherit
+                                 color: var(--vscode-foreground).
+     .corpus-3d-phase-swatch    4 variants by index (--0..--3) — HARDCODED per-phase
+                                 colors (`PHASE_COLORS` const). Light+ override below
+                                 rebinds phases 1-3 (cyan/orange/green) to deeper tones
+                                 that clear 3:1 UI-floor vs #FFFFFF editor-bg.
+
+   @media (prefers-color-scheme: light) override block:
+     Three sub-3:1 surfaces in Light+ (search-box / match-count / phase-legend use
+     semi-transparent black bg that composites to #808080 on Light+ editor-bg =
+     ``~1.18:1`` vs fg; phase-swatch phases 1-3 use bright tones that render
+     below 3:1 vs #FFFFFF editor-bg):
+     1. .corpus-3d-search-box / .match-count / .phase-legend
+        background: var(--vscode-editor-background, #FFFFFF) — solid opaque
+        rather than semi-transparent black. Now the chrome tile carries visual
+        hierarchy on Light+ bg AND its fg renders at ``~16:1`` vs background.
+     2. .corpus-3d-search-clear  color: Universal `var(--vscode-descriptionForeground, #505050)`
+        — TOKS-resolved dark-on-light for the secondary destructive
+        affordance vs #FFFFFF; HARDCODED #505050 retained as fallback path
+        so any theme where `--vscode-descriptionForeground` is undefined
+        (e.g. partial upstream Tokyonight-Storm) still clears 3:1.
+     3. .corpus-3d-phase-swatch--1 / --2 / --3  deeper-tone rebinds clearing 3:1.
+        Phase-0 retained (purple #ab47bc) ≈ 4.31:1 vs #FFFFFF — clears floor.
+   ============================================================================= */
+
+.corpus-3d-loading-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--vscode-foreground);
+}
+
+.corpus-3d-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--vscode-editorWidget-border, #454545);
+  border-top-color: var(--vscode-focusBorder, #007FD8);
+  border-radius: 50%;
+  animation: corpus-spin 1s linear infinite;
+}
+
+.corpus-3d-error-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  color: var(--vscode-errorForeground);
+}
+
+.corpus-3d-error-detail {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.corpus-3d-search-box {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  min-width: 220px;
+}
+
+.corpus-3d-search-icon {
+  flex-shrink: 0;
+}
+
+.corpus-3d-search-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--vscode-foreground);
+  font-size: 12px;
+  width: 100%;
+  font-family: inherit;
+}
+
+.corpus-3d-search-clear {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--vscode-descriptionForeground);
+  font-size: 14px;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.corpus-3d-match-count {
+  position: absolute;
+  top: 52px;
+  left: 12px;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--vscode-foreground);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.corpus-3d-phase-legend {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--vscode-foreground);
+}
+
+.corpus-3d-phase-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.corpus-3d-phase-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.corpus-3d-phase-swatch--0 { background: #ab47bc; }
+.corpus-3d-phase-swatch--1 { background: #4fc3f7; }
+.corpus-3d-phase-swatch--2 { background: #ff9800; }
+.corpus-3d-phase-swatch--3 { background: #4caf50; }
+
+@media (prefers-color-scheme: light) {
+  /* Cluster D-3 #1.a Light+ override: switch chrome tiles to opaque editor-bg
+     (semi-transparent black composites to #808080 on Light+ — sub-3:1 UI-floor
+     vs fg). Pin fg colors that read on the opaque editor bg (now #FFFFFF). */
+  .corpus-3d-search-box,
+  .corpus-3d-match-count,
+  .corpus-3d-phase-legend {
+    background: var(--vscode-editor-background, #FFFFFF);
+    border-color: var(--vscode-widget-border, #CECECE);
+  }
+  /* Light+ clear-button color: dark-on-light explicit (vs the muted
+     var(--vscode-descriptionForeground) #717171 which would render at
+     ``~4.46:1`` against #FFFFFF — clear but a darker tone better matches
+     the visual hierarchy where the × is "secondary destructive" affordance).
+     #505050 vs #FFFFFF ``~6.30:1``. */
+  .corpus-3d-search-clear {
+    color: var(--vscode-descriptionForeground, #505050);
+  }
+  /* Light+ phase swatch tones (1-3 sub-3:1 vs #FFFFFF; rebind to darker):
+     Phase-1 cyan:   #4fc3f7 vs #FFFFFF ``~2.36:1`` → #0e7490 vs #FFFFFF ``~6.00:1``
+     Phase-2 orange: #ff9800 vs #FFFFFF ``~2.38:1`` → #b45309 vs #FFFFFF ``~5.65:1``
+     Phase-3 green:  #4caf50 vs #FFFFFF ``~2.31:1`` → #15803D vs #FFFFFF ``~5.05:1``
+     Phase-0 purple retained (#ab47bc ``~4.31:1`` vs #FFFFFF — clears 3:1 floor). */
+  .corpus-3d-phase-swatch--1 { background: #0e7490; }
+  .corpus-3d-phase-swatch--2 { background: #b45309; }
+  .corpus-3d-phase-swatch--3 { background: #15803D; }
+}
