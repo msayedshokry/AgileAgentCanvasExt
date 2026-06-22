@@ -61,6 +61,11 @@ const TERMINAL_GRID_ROOT = postcss.parse(
   readFileSync(TERMINAL_GRID_CSS_PATH, 'utf-8'),
   { from: TERMINAL_GRID_CSS_PATH },
 );
+const DIFF_PANEL_CSS_PATH = path.resolve(CSS_DIR, 'DiffPanel.css');
+const DIFF_PANEL_ROOT = postcss.parse(
+  readFileSync(DIFF_PANEL_CSS_PATH, 'utf-8'),
+  { from: DIFF_PANEL_CSS_PATH },
+);
 
 // ── Theme resolution table. Values come from canonical VS Code Light+ / Dark+ /
 //    HC-Dark defaults; '' = unset in that theme (fallback hex fires). ──────
@@ -94,6 +99,7 @@ const TOKS = {
   '--vscode-descriptionForeground':   { 'Dark+': '#8B8B8B', 'Light+': '#717171',  'HC-Dark': '#FFFFFF' },
   '--vscode-terminal-background':     { 'Dark+': '#1E1E1E', 'Light+': '#FFFFFF',  'HC-Dark': '#000000' },
   '--vscode-badge-background':        { 'Dark+': '#4D4D4D', 'Light+': '#B4B4B4',  'HC-Dark': '' },
+  '--vscode-terminal-ansiYellow':     { 'Dark+': '#E5C07B', 'Light+': '#915E1D',  'HC-Dark': '#E5C07B' },
 };
 
 const FALLBACK_HEX_FROM_CSS = {
@@ -142,7 +148,12 @@ function resolveToken(expr, themeName, parentBg) {
   }
   const bare = expr.match(/^\s*var\((--[\w-]+)\)\s*$/);
   if (bare) {
-    return TOKS[bare[1]]?.[themeName] ?? parentBg;
+    // Truthy check (`||`) instead of nullish (`??`) so an empty-string
+    // token (TOKS marks `--vscode-X` = '' for HC-Dark meaning "unset in
+    // HC-Dark") falls back to parentBg — mirrors the wrapped-var branch
+    // above. Otherwise an unset token resolves to '' and downstream
+    // contrast math crashes or yields NaN.
+    return TOKS[bare[1]]?.[themeName] || parentBg;
   }
   const rgba = expr.match(/^\s*rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\)\s*$/);
   if (rgba) {
@@ -773,6 +784,63 @@ describe('P1/B: badge-family bright-tier overrides', () => {
       const fg = '#FFFFFF';
       const r = contrast(fg, bg);
       expect(r, `${spec.selector} on dark scheme: white-on-var(--vscode-charts-${spec.bucket}-bright,#${bg.replace('#', '')}) contrast must be ≥ 3:1 (got ${r.toFixed(2)}:1)`).toBeGreaterThanOrEqual(3.0);
+    });
+  }
+});
+
+/* ──────────────────────────────────────────────────────────────────────
+ * P1/C: .diff-panel-sha Light+ override
+ *
+ * The commit-hash chip renders `color: var(--vscode-terminal-ansiYellow)`
+ * against `background: var(--vscode-badge-background)`. In Light+ the
+ * upstream token pair resolves to `#915E1D` (dark yellow-brown) on
+ * `#B4B4B4` (light gray) — ~2.65:1, sub-3:1 WCAG 1.4.11 UI-component floor.
+ *
+ * Fix: one `@media (prefers-color-scheme: light)` rule in DiffPanel.css
+ * re-binds the chip fg to `var(--vscode-foreground, #1F1F1F)` which
+ * resolves to `#1F1F1F` in Light+ (≈ 7.16:1 against the chip badge-bg;
+ * clears AA-text + 3:1 UI-floor comfortably). Dark+/HC-Dark keep the
+ * upstream `#E5C07B` yellow (clears 4.5:1 against the dark `#4D4D4D` /
+ * unset badge-bg there).
+ *
+ * Lock the SHAPE (the @media override rule exists with the expected fg
+ * value), AND the post-fix contrast against the chip's own badge-bg
+ * surface in each theme. Light+ enforces the floor; Dark+/HC-Dark guard
+ * against a future refactor that drops the upstream fg/bg pair.
+ * ───────────────────────────────────────────────────────────────────── */
+
+describe('P1/C: .diff-panel-sha Light+ override', () => {
+  it('SHAPE-diff-panel-sha-light-override: @media light block sets color to --vscode-foreground', () => {
+    let overrideColor: string | null = null;
+    DIFF_PANEL_ROOT.walkAtRules('media', (at) => {
+      if (!/prefers-color-scheme:\s*light/.test(at.params)) return;
+      at.walkRules((rule) => {
+        if (!rule.selector || !rule.selector.includes('.diff-panel-sha')) return;
+        rule.walkDecls((d) => {
+          if (d.prop === 'color') overrideColor = d.value.trim();
+        });
+      });
+    });
+    expect(overrideColor, '.diff-panel-sha @media (prefers-color-scheme: light) must override color').toBeTruthy();
+    expect(overrideColor).toMatch(/var\(--vscode-foreground/);
+  });
+
+  const DIFF_PANEL_SHA_CASES = [
+    { theme: 'Light+',  fg: 'var(--vscode-foreground)',          bg: 'var(--vscode-badge-background)', note: 'override path' },
+    { theme: 'Dark+',   fg: 'var(--vscode-terminal-ansiYellow)', bg: 'var(--vscode-badge-background)', note: 'upstream path' },
+    { theme: 'HC-Dark', fg: 'var(--vscode-terminal-ansiYellow)', bg: 'var(--vscode-badge-background)', note: 'upstream path' },
+  ] as const;
+
+  for (const c of DIFF_PANEL_SHA_CASES) {
+    it(`P1C-diff-panel-sha: chip fg vs badge-bg clears 4.5:1 AA-text in ${c.theme}`, () => {
+      const theme = THEMES[c.theme];
+      const fg = resolveToken(c.fg, c.theme, theme.editorBg);
+      const bg = resolveToken(c.bg, c.theme, theme.editorBg);
+      const r = contrast(fg, bg);
+      expect(
+        r,
+        `.diff-panel-sha ${c.note} fg ${fg} must clear 4.5:1 AA-text vs badge-bg ${bg} in ${c.theme} (got ${r.toFixed(2)}:1); the upstream ansiYellow drops to ~2.65:1 in Light+ — the @media light override re-binds to --vscode-foreground (#1F1F1F in Light+).`,
+      ).toBeGreaterThanOrEqual(4.5);
     });
   }
 });
