@@ -1161,9 +1161,10 @@ describe('P1/D: ApprovalsBanner + kanban-card chrome SHAPE guards', () => {
       expect(color, `.kanban-card-agent-badge--${s.state} must declare color`).toBeTruthy();
       // Build the escaped regex from the expression literally (forbidden hex
       // pattern matched separately).
-      const escapedExpr = s.expr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      expect(color.value.trim(), `color must be tokenized to ${s.expr}; HARDCODED ${s.hex} is forbidden`).toMatch(new RegExp(`^${escapedExpr}$`));
-      expect(color.value).not.toMatch(new RegExp(`^${s.hex}\\b`, 'i'));
+      // Direct literal-string comparison (cleaner than a regex-with-escape path that
+      // was breaking on JSON-encoding trips; .toBe() shows the actual diff on regress).
+      expect(color.value.trim(), `color must be tokenized to ${s.expr}; HARDCODED ${s.hex} is forbidden`).toBe(s.expr);
+      expect(color.value, `color must not start with HARDCODED hex ${s.hex} (a wholesale revert fails this guard)`).not.toMatch(/^#[0-9a-f]+/i);
     });
   }
 
@@ -1281,6 +1282,188 @@ describe('P1/D: ApprovalsBanner + kanban-card chrome SHAPE guards', () => {
       expect(
         r,
         `.kanban-card-agent-badge--${c.state} AA-text guard: ${c.note}. MUST clear WCAG 1.4.3 4.5:1 AA-text floor in Light+ (got ${r.toFixed(3)}:1). A wholesale revert of the var() form to HARDCODED hex fails this guard plus the 3:1 UI-floor guards above.`,
+      ).toBeGreaterThanOrEqual(4.5);
+    });
+  }
+
+  // ── Cluster D-2 #4 — .kanban-agent-status--* tokenization ─────────────────
+  // Same palette as the card-agent-badge (Cluster D-2 #3) but on the
+  // detail-panel side-drawer `.agentic-detail-panel` (no animation, no
+  // chip-on-row overlay). Per-state token mapping + rationale (mirrors
+  // D-2 #3):
+  //   .running      #f59e0b → var(--vscode-charts-orange, #f59e0b)
+  //   .queued       #6366f1 → var(--vscode-charts-indigo,  #6366f1)  [NOVEL token]
+  //   .interrupted  #f97316 → var(--vscode-charts-orange,  #f97316)  [accept upstream #F59E0B drift]
+  //   .completed    #22c55e → var(--vscode-charts-green,   #22c55e) + @media (light) green-bright
+  //   .failed       #ef4444 → var(--vscode-charts-red,     #ef4444)  [NOVEL token]
+  // The base `.kanban-agent-status` and `.kanban-agent-status--idle` states
+  // already use `var(--vscode-descriptionForeground)` and get SHAPE-only
+  // tests to lock the form. The `.completed` green family needs an
+  // `@media (prefers-color-scheme: light)` override because the upstream
+  // `--vscode-charts-green` (`#3FA856` in Light+) atop the rgba-green
+  // -tint+white composite drops to ~2.6:1 (sub-3:1 UI-component floor).
+
+  // SHAPE-tokenized lock — one per HARDCODED-to-tokenized state. Each
+  // pins the var() form AND forbids the prior HARDCODED hex.
+  const KANBAN_AGENT_STATUS_SHAPE_LOCKS = [
+    { state: 'running',     hex: '#f59e0b', expr: 'var(--vscode-charts-orange, #f59e0b)' },
+    { state: 'queued',      hex: '#6366f1', expr: 'var(--vscode-charts-indigo, #6366f1)' },
+    { state: 'interrupted', hex: '#f97316', expr: 'var(--vscode-charts-orange, #f97316)' },
+    { state: 'completed',   hex: '#22c55e', expr: 'var(--vscode-charts-green, #22c55e)' },
+    { state: 'failed',      hex: '#ef4444', expr: 'var(--vscode-charts-red, #ef4444)' },
+  ] as const;
+
+  for (const s of KANBAN_AGENT_STATUS_SHAPE_LOCKS) {
+    it(`Cluster-D2-4 SHAPE-kanban-agent-status--${s.state}-tokenized: color must use ${s.expr}`, () => {
+      const rule = findRule(KANBAN_ROOT, `.kanban-agent-status--${s.state}`);
+      expect(rule, `.kanban-agent-status--${s.state} rule must exist in Kanban.css`).toBeTruthy();
+      // Pin selector EXACTLY: a future comma-join with a sibling class
+      // would silently split the shape contract; the exact match rejects
+      // that evasive refactor.
+      expect(rule.selector, `.kanban-agent-status--${s.state} selector must be the exact single-class form`).toBe(`.kanban-agent-status--${s.state}`);
+      const color = declOf(rule, 'color');
+      expect(color, `.kanban-agent-status--${s.state} must declare color`).toBeTruthy();
+            // Direct literal-string comparison (cleaner than a regex-with-escape
+      // path that broke on JSON-encoding trips; .toBe(s.expr) pins the
+      // exact value AND prints the actual diff on regress).
+      expect(color.value.trim(), `color must be tokenized to ${s.expr}; HARDCODED ${s.hex} is forbidden`).toBe(s.expr);
+      expect(color.value, `color must not start with HARDCODED hex ${s.hex} (a wholesale revert fails this guard)`).not.toMatch(/^#[0-9a-f]+/i);    });
+  }
+
+  // SHAPE-only baseline locks — .kanban-agent-status (base) and
+  // .kanban-agent-status--idle use theme tokens already; no tokenization
+  // was needed. These tests exist so a future contributor reverting
+  // either state to HARDCODED hex fails loudly.
+  it('Cluster-D2-4 SHAPE-kanban-agent-status-tokenized: base color must use var(--vscode-descriptionForeground)', () => {
+    const rule = findRule(KANBAN_ROOT, '.kanban-agent-status');
+    expect(rule, '.kanban-agent-status base rule must exist').toBeTruthy();
+    const color = declOf(rule, 'color');
+    expect(color, '.kanban-agent-status base must declare color').toBeTruthy();
+    expect(color.value.trim(), '.kanban-agent-status base color must be var(--vscode-descriptionForeground)').toBe('var(--vscode-descriptionForeground)');
+  });
+
+  it('Cluster-D2-4 SHAPE-kanban-agent-status--idle-tokenized: color must use var(--vscode-descriptionForeground)', () => {
+    const rule = findRule(KANBAN_ROOT, '.kanban-agent-status--idle');
+    expect(rule, '.kanban-agent-status--idle rule must exist').toBeTruthy();
+    const color = declOf(rule, 'color');
+    expect(color, '.kanban-agent-status--idle must declare color').toBeTruthy();
+    expect(color.value.trim(), '.kanban-agent-status--idle color must be var(--vscode-descriptionForeground)').toBe('var(--vscode-descriptionForeground)');
+  });
+
+  // SHAPE-@media-light-override: .kanban-agent-status--completed rebinds
+  // its color to the bright-tier Green in Light+ via a single
+  // `@media (prefers-color-scheme: light)` block. The override is
+  // structurally identical to the D-2 #3 `.kanban-card-agent-badge--
+  // terminal/--completed` override (different selector name, same
+  // bright-tier fallback hex). Locking it prevents the override from
+  // being silently dropped in a future Kanban.css refactor.
+  it('Cluster-D2-4 SHAPE-kanban-agent-status--completed-light-override: @media (prefers-color-scheme: light) rebinds color to green-bright', () => {
+    let overrideFound = false;
+    KANBAN_ROOT.walkAtRules('media', (at) => {
+      if (!at.params || !at.params.includes('prefers-color-scheme: light')) return;
+      at.walkRules((rule) => {
+        if (!rule.selector || !rule.selector.includes('.kanban-agent-status--completed')) return;
+        rule.walkDecls((d) => {
+          if (d.prop === 'color' && d.value.trim().match(/#15803D/i)) overrideFound = true;
+        });
+      });
+    });
+    expect(overrideFound, 'A @media (prefers-color-scheme: light) rule must rebind .kanban-agent-status--completed color to the bright-tier #15803D; upstream --vscode-charts-green (#3FA856 in Light+) atop the rgba-green-tint+white composite drops to ~2.6:1 (sub-3:1 UI-component floor). The override lifts to --vscode-charts-green-bright (~4.36:1).').toBe(true);
+  });
+
+  // Cross-theme 3:1 UI-floor guards. For each tokenized state, run the
+  // resolved hex through contrast() against THEMES[theme].editorBg — the
+  // token-aware color resolves per theme via
+  // webview-ui/src/test/a11y-tokens.mjs (the shared module mirror). Using
+  // `resolveToken()` binds the math to the TOKS table — drift between
+  // audit-script and test-file TOKS fires the contrast assertion itself,
+  // not a separate SHAPE contract.
+  //
+  // For `.kanban-agent-status--completed`, the audit-script's
+  // `findOverrideMedia()` would re-route to the @media light override in
+  // production; the test here asserts the upstream token resolution (which
+  // Dark+/HC-Dark keep). The Light+ cross-theme assertion still passes
+  // because upstream `#3FA856` vs `#FFFFFF` editor bg = 3.02:1 (just at
+  // the 3:1 UI-floor — borderline). The AA-text Light+ guard below covers
+  // the override-path math.
+  const KANBAN_AGENT_STATUS_CONTRAST_CASES = [
+    { state: 'running',     expr: 'var(--vscode-charts-orange, #f59e0b)' },
+    { state: 'queued',      expr: 'var(--vscode-charts-indigo, #6366f1)' },
+    { state: 'interrupted', expr: 'var(--vscode-charts-orange, #f97316)' },
+    { state: 'completed',   expr: 'var(--vscode-charts-green, #22c55e)' },
+    { state: 'failed',      expr: 'var(--vscode-charts-red, #ef4444)' },
+  ] as const;
+
+  for (const c of KANBAN_AGENT_STATUS_CONTRAST_CASES) {
+    for (const themeName of Object.keys(THEMES) as Array<keyof typeof THEMES>) {
+      it(`Cluster-D2-4 contract-kanban-agent-status--${c.state}: resolved fg clears 3:1 UI-floor vs editor bg in ${themeName}`, () => {
+        // .kanban-agent-status--completed has an @media (prefers-color-scheme: light)
+        // override rebinding to `--vscode-charts-green-bright, #15803D` (mirrors the
+        // D-2 #3 card-badge pattern). Mirror the override in-test by swapping the
+        // expression when crossing into Light+ — eliminates the 0.02-margin tripwire
+        // the upstream `--vscode-charts-green` resolution (`#3FA856` vs `#FFFFFF`
+        // editor bg = 3.02:1) would otherwise impose.
+        const effectiveExpr = (c.state === 'completed' && themeName === 'Light+')
+          ? 'var(--vscode-charts-green-bright, #15803D)'
+          : c.expr;
+        const fg = resolveToken(effectiveExpr, themeName, THEMES[themeName].editorBg);
+        const r = contrast(fg, THEMES[themeName].editorBg);
+        expect(
+          r,
+          `.kanban-agent-status--${c.state} in ${themeName}: expr ${c.expr} resolves to #${fg.slice(1).toUpperCase()}; the rendered fg-vs-editor-bg contrast must clear WCAG 1.4.11 3:1 UI-component floor (got ${r.toFixed(2)}:1). Pre-fix HARDCODED fg hexes rendered sub-3:1 in Light+ but clear in Dark+/HC-Dark — this 3-theme loop catches both the Light+ regression risk and any future token-value drift in Dark+/HC-Dark themes.`,
+        ).toBeGreaterThanOrEqual(3.0);
+      });
+    }
+  }
+
+  // Already-tokenized cross-theme contrasts (the neutral base + idle
+  // states use `var(--vscode-descriptionForeground)` — the upstream
+  // token resolves per-theme to a different hex; lock the floor in all
+  // 3 themes to catch any future token-value drift).
+  for (const themeName of Object.keys(THEMES) as Array<keyof typeof THEMES>) {
+    it(`Cluster-D2-4 contract-kanban-agent-status (neutral base): var(--vscode-descriptionForeground) clears 3:1 UI-floor vs editor bg in ${themeName}`, () => {
+      const fg = resolveToken('var(--vscode-descriptionForeground)', themeName, THEMES[themeName].editorBg);
+      const r = contrast(fg, THEMES[themeName].editorBg);
+      expect(
+        r,
+        `.kanban-agent-status base / .idle in ${themeName}: --vscode-descriptionForeground resolves to #${fg.slice(1).toUpperCase()} must clear ≥ 3:1 WCAG 1.4.11 UI-component floor (got ${r.toFixed(2)}:1). The base/.idle states already used var(--vscode-descriptionForeground) pre-Cluster-D-2 (SHAPE-only locked); this guard catches any future drift in the upstream token's per-theme resolution.`,
+      ).toBeGreaterThanOrEqual(3.0);
+    });
+  }
+
+  // Light+ AA-text tight-margin guards — the kanban-agent-status is
+  // rendered in the side-drawer detail panel where text is actually read
+  // (vs the card badge which is decorative). Same reasoning as D-2 #3's
+  // AA-text guards: Light+ resolves toward brighter hexes than Dark+/
+  // HC-Dark and the WCAG 1.4.3 4.5:1 floor must hold.
+  //
+  // For .completed, the @media light override fires in production; the
+  // override SHAPE test above pins the CSS rule and this test pins the
+  // resulting contrast against the override path's #15803D literal —
+  // mirrors the D-2 #3 pattern.
+  const KANBAN_AGENT_STATUS_AA_TEXT_LIGHT = [
+    { state: 'running',     expr: 'var(--vscode-charts-orange, #f59e0b)', note: 'Light+ resolves to #B85C00 (~4.585:1 vs rgba-tint+white composite — sub-4.5 AA-text margin ~0.085)' },
+    { state: 'interrupted', expr: 'var(--vscode-charts-orange, #f97316)', note: 'Light+ resolves to #B85C00 (same as .running — same margin)' },
+    { state: 'completed',   expr: 'var(--vscode-charts-green, #22c55e)',  note: 'Light+ resolved via @media light override to #15803D (~5.05:1 vs rgba-tint+white composite)' },
+    { state: 'failed',      expr: 'var(--vscode-charts-red, #ef4444)',    note: 'Light+ resolves to #E51400 (~4.67:1 vs rgba-tint+white composite — sub-4.5 AA-text margin ~0.17)' },
+  ] as const;
+
+  for (const c of KANBAN_AGENT_STATUS_AA_TEXT_LIGHT) {
+    it(`Cluster-D2-4 contract-kanban-agent-status--${c.state}-text-floor: Light+ resolved fg clears 4.5:1 AA-text vs editor bg (tight margin guard)`, () => {
+      let fg: string;
+      if (c.state === 'completed') {
+        // @media light override fires in production; pin the override
+        // path's #15803D literal directly so the test mirrors the
+        // audit-script's findOverrideMedia-resolved value without
+        // implementing the override-detection in-test.
+        fg = '#15803D';
+      } else {
+        fg = resolveToken(c.expr, 'Light+', THEMES['Light+'].editorBg);
+      }
+      const r = contrast(fg, THEMES['Light+'].editorBg);
+      expect(
+        r,
+        `.kanban-agent-status--${c.state} AA-text guard: ${c.note}. MUST clear WCAG 1.4.3 4.5:1 AA-text floor in Light+ (got ${r.toFixed(3)}:1). A wholesale revert of the var() form to HARDCODED hex fails this guard plus the 3:1 UI-floor guards above.`,
       ).toBeGreaterThanOrEqual(4.5);
     });
   }

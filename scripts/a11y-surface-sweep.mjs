@@ -690,27 +690,62 @@ const SURFACES = [
 
   // === Detail-panel agent status (8 state variants) ===
   // Same hex palette as the card badges but no animation, sits inside the
-  // side-drawer (`.agentic-detail-panel`).
-  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.kanban-agent-status (neutral)',
+  // side-drawer (`.agentic-detail-panel`). Cluster D-2 #4 tokenized 5
+  // HARDCODED fg hexes (mirroring the Cluster D-2 #3 card-agent-badge
+  // mapping) to `--vscode-charts-{orange,indigo,green,red}` + an `@media
+  // (prefers-color-scheme: light)` override on `.kanban-agent-status--completed`
+  // rebinding to `--vscode-charts-green-bright` (the upstream `#3FA856` in
+  // Light+ atop the green-tint+white composite drops to ~2.6:1, sub-3:1
+  // WCAG 1.4.11 UI-component floor). The rgba(0.15) tint bgs remain
+  // HARDCODED intentionally — theme-agnostic decoration; per-theme fg
+  // contrast closes the floor. The `.kanban-agent-status` (neutral base)
+  // and `.kanban-agent-status--idle` states already used
+  // `--vscode-descriptionForeground` and were SHAPE-only locked (no
+  // var-form change). Cluster flag dropped for all 7 rows below.
+  { cat: 'badge-vs-surface', s: '.kanban-agent-status (neutral base)',
     parent: '--vscode-editor-background',
     fg: 'var(--vscode-descriptionForeground)',
     bg: 'rgba(128,128,128,0.15)' },
-  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.kanban-agent-status--running',
-    parent: '--vscode-editor-background', fg: '#f59e0b',
+  // D-2 #4 tokenized: amber HARDCODED → --vscode-charts-orange. Light+
+  // resolves to `#B85C00` clearing ≈ 4.585:1 AA-text vs `#FFFFFF`.
+  { cat: 'badge-vs-surface', s: '.kanban-agent-status--running (amber)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-charts-orange, #f59e0b)',
     bg: 'rgba(245,158,11,0.15)' },
-  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.kanban-agent-status--queued',
-    parent: '--vscode-editor-background', fg: '#6366f1',
+  // D-2 #4 tokenized: indigo HARDCODED → NOVEL --vscode-charts-indigo.
+  // Light+ resolves to `#4f46e5` clearing 4.5:1 AA-text.
+  { cat: 'badge-vs-surface', s: '.kanban-agent-status--queued (indigo)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-charts-indigo, #6366f1)',
     bg: 'rgba(99,102,241,0.15)' },
-  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.kanban-agent-status--interrupted',
-    parent: '--vscode-editor-background', fg: '#f97316',
+  // D-2 #4 tokenized: orange HARDCODED → --vscode-charts-orange (same
+  // token as .running; accepts upstream `#F59E0B` drift from original
+  // `#f97316`; semantics similar — both are warm orange tones).
+  { cat: 'badge-vs-surface', s: '.kanban-agent-status--interrupted (orange)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-charts-orange, #f97316)',
     bg: 'rgba(249,115,22,0.15)' },
-  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.kanban-agent-status--completed',
-    parent: '--vscode-editor-background', fg: '#22c55e',
+  // D-2 #4 tokenized: green HARDCODED → --vscode-charts-green. The
+  // chipClass annotation enables `findOverrideMedia()` to detect the
+  // `@media (prefers-color-scheme: light) { color: green-bright; }`
+  // override added in Kanban.css (Light+ re-binds to `--vscode-charts-
+  // green-bright, #15803D` because upstream `#3FA856` atop the green-
+  // tint+white composite drops to ~2.6:1).
+  { cat: 'badge-vs-surface',
+    chipClass: '.kanban-agent-status--completed',
+    s: '.kanban-agent-status--completed (green + @media light green-bright)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-charts-green, #22c55e)',
     bg: 'rgba(34,197,94,0.15)' },
-  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.kanban-agent-status--failed',
-    parent: '--vscode-editor-background', fg: '#ef4444',
+  // D-2 #4 tokenized: red HARDCODED → NOVEL --vscode-charts-red (per-theme:
+  // Dark+/HC-Dark `#F85149`, Light+ `#E51400`).
+  { cat: 'badge-vs-surface', s: '.kanban-agent-status--failed (red)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-charts-red, #ef4444)',
     bg: 'rgba(239,68,68,0.15)' },
-  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.kanban-agent-status--idle',
+  // Already-tokenized (.idle uses --vscode-descriptionForeground + the
+  // neutral 0.15 grey tint). No @media override required.
+  { cat: 'badge-vs-surface', s: '.kanban-agent-status--idle (gray)',
     parent: '--vscode-editor-background',
     fg: 'var(--vscode-descriptionForeground)',
     bg: 'rgba(128,128,128,0.15)' },
@@ -998,9 +1033,9 @@ const hc = [
   [ '.kanban-card-agent-badge--* (D-2 #3: 6 of 8 TOKENIZED)',
     'var(--vscode-charts-{orange,indigo,green,red}, ...) tokenized fg + @media light green-bright override; the rgba(0.15) tint bgs remain intentional HARDCODED decoration',
     'Cluster D-2 #3 tokenized 6 HARDCODED fg hexes: `#f59e0b` (.running amber) → `--vscode-charts-orange, #f59e0b`; `#6366f1` (.queued indigo) → NOVEL `--vscode-charts-indigo, #6366f1` (per-theme Dark+/HC-Dark `#818cf8`, Light+ `#4f46e5`); `#f97316` (.interrupted orange) → `--vscode-charts-orange, #f97316` (accepts upstream `#F59E0B` drift in Light+ ambient — passes 3:1 atop rgba-tint); `#22c55e` (.terminal/.completed green) → `--vscode-charts-green, #22c55e` PLUS `@media (prefers-color-scheme: light) { color: var(--vscode-charts-green-bright, #15803D); }` because upstream `#3FA856` in Light+ atop the green-tint+white composite drops to ~2.6:1 (sub-3:1 UI-component floor); `#ef4444` (.failed red) → NOVEL `--vscode-charts-red, #ef4444` (per-theme Dark+/HC-Dark `#F85149`, Light+ `#E51400`). The `.idle` (already `var(--vscode-descriptionForeground)`) and `.resuming` (already `--vscode-charts-blue` via `color-mix()`) states pass through unchanged. The rgba(0.15) tint bgs remain HARDCODED intentionally — they\'re theme-agnostic decoration; per-theme fg contrast is what closes the WCAG 1.4.11 3:1 UI-floor.' ],
-  [ '.kanban-agent-status--* (detail-panel badge — same palette as the card agent badges, no animation)',
-    'same as above',
-    'Mirror of the card agent-badge inventory. Cluster D-2 will tokenize identically.' ],
+  [ '.kanban-agent-status--* (D-2 #4: 5 of 7 TOKENIZED — same palette as the card agent badges, no animation)',
+    'var(--vscode-charts-{orange,indigo,green,red}, ...) tokenized fg + @media light green-bright override; the rgba(0.15) tint bgs remain intentional HARDCODED decoration',
+    'Cluster D-2 #4 tokenized 5 HARDCODED fg hexes (mirroring D-2 #3 card-badge mapping): `#f59e0b` (.running amber) → `--vscode-charts-orange, #f59e0b` (Light+ `#B85C00` clears ≈ 4.585:1 AA-text); `#6366f1` (.queued indigo) → NOVEL `--vscode-charts-indigo, #6366f1` (per-theme Dark+/HC-Dark `#818cf8`, Light+ `#4f46e5`); `#f97316` (.interrupted orange) → `--vscode-charts-orange, #f97316` (accepts upstream `#F59E0B` Light+ drift); `#22c55e` (.completed green) → `--vscode-charts-green, #22c55e` PLUS `@media (prefers-color-scheme: light) { color: var(--vscode-charts-green-bright, #15803D); }` because upstream `#3FA856` in Light+ atop the green-tint+white composite drops to ~2.6:1 (sub-3:1 UI-component floor); `#ef4444` (.failed red) → NOVEL `--vscode-charts-red, #ef4444` (per-theme Dark+/HC-Dark `#F85149`, Light+ `#E51400` ≈ 4.13:1). The `.kanban-agent-status` (neutral base, already `--vscode-descriptionForeground`) and `.kanban-agent-status--idle` (also `--vscode-descriptionForeground`) pass through unchanged. The rgba(0.15) tint bgs remain HARDCODED intentionally — they\'re theme-agnostic decoration; per-theme fg closes the WCAG 1.4.11 3:1 UI-floor.' ],
   [ '.kanban-card-epic-tag + .kanban-card-harness-badge--error + .kanban-column-status-dot--*',
     '#8b5cf6 / #ef4444 / #f59e0b (HARDCODED hex fg on alpha tint bg)',
     'Card chrome accents. Cluster D-2 will tokenize to --vscode-charts-purple / --vscode-errorForeground / --vscode-charts-orange.' ],
