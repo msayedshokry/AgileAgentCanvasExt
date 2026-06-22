@@ -844,3 +844,58 @@ describe('P1/C: .diff-panel-sha Light+ override', () => {
     });
   }
 });
+
+// =============================================================================
+// P1/C-cl: .terminal-tile-dot.status-running Light+ override
+// =============================================================================
+// Mirrors the P1/C diff-panel-sha shape pattern but for the running-dot
+// case. The audit-script's `findOverrideMedia()` walks a `ROOTS` array
+// (Cluster C: AUTONOMY_ROOT + DIFF_PANEL_ROOT + TERMINAL_GRID_ROOT) so
+// the @media light override on `.terminal-tile-dot.status-running` in
+// TerminalGrid.css is discoverable. The override re-routes the upstream
+// `--vscode-charts-green` (#3FA856 in Light+) to the bright-tier fallback
+// `--vscode-charts-green-bright, #15803D` (Tailwind green-700, ~5.05:1
+// contrast vs `#FFFFFF`). Without the override, Light+ renders the dot
+// against the `terminal-background #FFFFFF` at exactly 3.02:1 (just at
+// the WCAG 1.4.11 3:1 UI-component floor — borderline). The override
+// lifts this to ~5.05:1, comfortably clearing 3:1.
+// =============================================================================
+describe('P1/C-cl: .terminal-tile-dot.status-running Light+ override', () => {
+  it('SHAPE-terminal-running-dot-light-override: @media light block rebinds bg to green-bright', () => {
+    let overrideBg = null;
+    TERMINAL_GRID_ROOT.walkAtRules('media', (at) => {
+      if (!at.params || !/prefers-color-scheme:\s*light/.test(at.params)) return;
+      at.walkRules((rule) => {
+        if (!rule.selector || !rule.selector.includes('.terminal-tile-dot.status-running')) return;
+        const decl = (rule.nodes || []).find(
+          (n) => n.type === 'decl' && (n.prop === 'background' || n.prop === 'background-color'),
+        );
+        if (decl) overrideBg = decl.value;
+      });
+    });
+    expect(
+      overrideBg,
+      '.terminal-tile-dot.status-running @media light override must rebind background to `--vscode-charts-green-bright, #15803D`; without this the upstream `--vscode-charts-green` resolves to `#3FA856` which renders at ~3.02:1 vs Light+ `#FFFFFF` (borderline).',
+    ).toMatch(/#15803D/);
+  });
+
+  // Cross-theme contrast assertion — same dot, three themes, observed
+  // effective color (post-override path where applicable). Threshold is
+  // WCAG 1.4.11 3:1 UI-component floor (the dot is a non-text severity
+  // indicator, not text content).
+  const TERMINAL_RUNNING_DOT_CASES = [
+    { theme: 'Light+',  dot: '#15803D', bg: THEMES['Light+'].editorBg,  note: 'override path: --vscode-charts-green-bright (#15803D)' },
+    { theme: 'Dark+',   dot: '#3FA856', bg: THEMES['Dark+'].editorBg,   note: 'upstream --vscode-charts-green (#3FA856)' },
+    { theme: 'HC-Dark', dot: '#3FB950', bg: THEMES['HC-Dark'].editorBg, note: 'upstream --vscode-charts-green (#3FB950, bright)' },
+  ] as const;
+
+  for (const c of TERMINAL_RUNNING_DOT_CASES) {
+    it(`P1C-cl-terminal-running-dot: dot fg clears 3:1 UI-floor in ${c.theme}`, () => {
+      const r = contrast(c.dot, c.bg);
+      expect(
+        r,
+        `.terminal-tile-dot.status-running ${c.note} dot ${c.dot} must clear WCAG 1.4.11 3:1 UI-component floor vs terminal-bg ${c.bg} in ${c.theme} (got ${r.toFixed(2)}:1). The @media light override is required for Light+ to clear the floor comfortably.`,
+      ).toBeGreaterThanOrEqual(3.0);
+    });
+  }
+});

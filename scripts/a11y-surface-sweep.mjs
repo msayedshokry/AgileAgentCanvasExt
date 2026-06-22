@@ -34,16 +34,31 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import postcss from 'postcss';
 
-// ── Locate + parse Autonomy.css (relative to this script) ──────────────
+// ── Locate + parse every CSS root the audit may need to override-resolve
+//    (relative to this script). Multiroot walk was added in Cluster C: the
+//    @media (prefers-color-scheme: light) overrides for `.diff-panel-sha`
+//    (DiffPanel.css) and `.terminal-tile-dot.status-running`
+//    (TerminalGrid.css) live OUTSIDE Autonomy.css, so the helper needs to
+//    walk all three. The 12 badge-family dark overrides still live in
+//    Autonomy.css (Cluster A).
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const AUTONOMY_CSS_PATH = path.resolve(
-  __dirname, '..', 'webview-ui', 'src', 'agentic-kanban', 'Autonomy.css',
+const AGENTIC_KANBAN_DIR = path.resolve(
+  __dirname, '..', 'webview-ui', 'src', 'agentic-kanban',
 );
 const AUTONOMY_ROOT = postcss.parse(
-  readFileSync(AUTONOMY_CSS_PATH, 'utf-8'),
-  { from: AUTONOMY_CSS_PATH },
+  readFileSync(path.join(AGENTIC_KANBAN_DIR, 'Autonomy.css'), 'utf-8'),
+  { from: path.join(AGENTIC_KANBAN_DIR, 'Autonomy.css') },
 );
+const DIFF_PANEL_ROOT = postcss.parse(
+  readFileSync(path.join(AGENTIC_KANBAN_DIR, 'DiffPanel.css'), 'utf-8'),
+  { from: path.join(AGENTIC_KANBAN_DIR, 'DiffPanel.css') },
+);
+const TERMINAL_GRID_ROOT = postcss.parse(
+  readFileSync(path.join(AGENTIC_KANBAN_DIR, 'TerminalGrid.css'), 'utf-8'),
+  { from: path.join(AGENTIC_KANBAN_DIR, 'TerminalGrid.css') },
+);
+const ROOTS = [AUTONOMY_ROOT, DIFF_PANEL_ROOT, TERMINAL_GRID_ROOT];
 
 function L(c) {
   const v = c / 255;
@@ -117,23 +132,64 @@ function findOverrideMedia(chipClass, propName, themeName) {
   // `chipClass`. Used for surfaces whose override is
   //   @media (prefers-color-scheme: dark) .chip { background: ...; }
   // (no parent-scoped selector; only the chip).
+  //
+  // Multiroot walk (Cluster C): override may live in Autonomy.css OR
+  // DiffPanel.css OR TerminalGrid.css. Cross-root ties are not a concern
+  // because the codebase uses BEM-namespaced class tokens (.safety-* ,
+  // .diff-panel-* , .terminal-*) so a selector match in one root is
+  // structurally unique to that surface across the whole bundle.
   let bestSpec = -1;
   let bestOrder = -1;
   let bestValue = null;
   let order = 0;
-  AUTONOMY_ROOT.walkAtRules((at) => {
-    if (!at.name || at.name !== 'media') return;
-    const params = (at.params || '').toLowerCase();
-    const isDark  = /prefers-color-scheme:\s*dark/.test(params);
-    const isLight = /prefers-color-scheme:\s*light/.test(params);
-    if (!isDark && !isLight) return;
-    if (isDark  && !(themeName === 'Dark+' || themeName === 'HC-Dark')) return;
-    if (isLight && themeName !== 'Light+') return;
-    order = 0;
-    at.walkRules((rule) => {
+  for (const root of ROOTS) {
+    root.walkAtRules((at) => {
+      if (!at.name || at.name !== 'media') return;
+      const params = (at.params || '').toLowerCase();
+      const isDark  = /prefers-color-scheme:\s*dark/.test(params);
+      const isLight = /prefers-color-scheme:\s*light/.test(params);
+      if (!isDark && !isLight) return;
+      if (isDark  && !(themeName === 'Dark+' || themeName === 'HC-Dark')) return;
+      if (isLight && themeName !== 'Light+') return;
+      const atOrder = ++order;
+      at.walkRules((rule) => {
+        for (const sel of rule.selectors || []) {
+          if (!sel.includes(chipClass)) continue;
+          const decl = (rule.nodes || []).find(
+            (n) => n.type === 'decl' && n.prop === propName,
+          );
+          if (!decl) continue;
+          const spec = specificityOf(sel);
+          if (spec > bestSpec || (spec === bestSpec && atOrder > bestOrder)) {
+            bestSpec = spec;
+            bestOrder = atOrder;
+            bestValue = decl.value;
+          }
+        }
+      });
+    });
+  }
+  return bestValue;
+}
+
+function findOverride(parentClass, chipClass, propName, themeName) {
+  let bestSpec = -1;
+  let bestOrder = -1;
+  let bestValue = null;
+  let order = 0;
+  for (const root of ROOTS) {
+    root.walkRules((rule) => {
       order++;
+      // @media filter
+      if (rule.parent && rule.parent.type === 'atrule' && rule.parent.name === 'media') {
+        const params = (rule.parent.params || '').toLowerCase();
+        const isDark  = params.includes('dark');
+        const isLight = params.includes('light');
+        if (isDark  && !(themeName === 'Dark+' || themeName === 'HC-Dark')) return;
+        if (isLight && themeName !== 'Light+') return;
+      }
       for (const sel of rule.selectors || []) {
-        if (!sel.includes(chipClass)) continue;
+        if (!sel.includes(parentClass) || !sel.includes(chipClass)) continue;
         const decl = (rule.nodes || []).find(
           (n) => n.type === 'decl' && n.prop === propName,
         );
@@ -146,39 +202,7 @@ function findOverrideMedia(chipClass, propName, themeName) {
         }
       }
     });
-  });
-  return bestValue;
-}
-
-function findOverride(parentClass, chipClass, propName, themeName) {
-  let bestSpec = -1;
-  let bestOrder = -1;
-  let bestValue = null;
-  let order = 0;
-  AUTONOMY_ROOT.walkRules((rule) => {
-    order++;
-    // @media filter
-    if (rule.parent && rule.parent.type === 'atrule' && rule.parent.name === 'media') {
-      const params = (rule.parent.params || '').toLowerCase();
-      const isDark  = params.includes('dark');
-      const isLight = params.includes('light');
-      if (isDark  && !(themeName === 'Dark+' || themeName === 'HC-Dark')) return;
-      if (isLight && themeName !== 'Light+') return;
-    }
-    for (const sel of rule.selectors || []) {
-      if (!sel.includes(parentClass) || !sel.includes(chipClass)) continue;
-      const decl = (rule.nodes || []).find(
-        (n) => n.type === 'decl' && n.prop === propName,
-      );
-      if (!decl) continue;
-      const spec = specificityOf(sel);
-      if (spec > bestSpec || (spec === bestSpec && order > bestOrder)) {
-        bestSpec = spec;
-        bestOrder = order;
-        bestValue = decl.value;
-      }
-    }
-  });
+  }
   return bestValue;
 }
 
@@ -393,13 +417,24 @@ const SURFACES = [
     fg: 'var(--vscode-errorForeground, #ef4444)',
     bg: 'var(--vscode-badge-background, rgba(127,127,127,0.06))',
     note: 'pulsed 1.0→0.4→1.0; mid-cycle blends fg toward bg (audit below)' },
-  // PULSE mid-cycle entry DROPPED: production @keyframes
-  // fleet-health-pulse now animates transform: scale(1 → 1.25 →
-  // 1) — no opacity dip, so the mid-cycle fg/bg pair is identical
-  // to the .fleet-health--dead @ opacity 1.0 entry above. The
-  // transform swap is locked by Autonomy.a11y.test.ts:
-  // P0/B-fleet-health-pulse (asserts no `opacity:` declarations
-  // in the keyframes block).
+  // PULSE mid-cycle entry RE-ADDED (post-fix model, Cluster C):
+  // production @keyframes fleet-health-pulse now animates `transform:
+  // scale(1 → 1.25 → 1)` — no opacity dip, so the mid-cycle fg/bg pair
+  // is identical to the .fleet-health--dead @ opacity 1.0 entry above.
+  // We model the same end-state here with `pulse: 0` (the audit blend
+  // formula is `blend(fgRGB, 1 - pulse, bg)` where `1 - 0 = 1` is a
+  // full-alpha blend that produces zero drift toward bg, i.e. fg stays
+  // at full luminosity throughout the cycle). Locked by
+  // Autonomy.a11y.test.ts: P0/B-fleet-health-pulse (asserts no `opacity:`
+  // declarations in the keyframes block — a future reversion to the
+  // opacity-fade model would shift this entry's contrast below 3:1 and
+  // the keyframes-test guard would catch the regression).
+  { cat: 'severity-pip', s: '.fleet-health--dead @ PULSE mid-cycle (transform-scale, opacity stays 1.0)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-errorForeground, #ef4444)',
+    bg: 'var(--vscode-badge-background, rgba(127,127,127,0.06))',
+    pulse: 0,
+    note: 'transform-pulse: opacity stays at 1.0 → mid-cycle fg/bg == baseline entry (pulse:0 = full-alpha blend, no drift)' },
   { cat: 'severity-pip', s: '.fleet-health--healthy (●)',
     parent: '--vscode-editor-background',
     fg: 'var(--vscode-charts-green, #22c55e)',
@@ -447,6 +482,7 @@ const SURFACES = [
     parent: '--vscode-editor-background',
     fg: 'var(--vscode-terminal-ansiRed)', bg: 'inherit' },
   { cat: 'badge-vs-surface', s: '.diff-panel-sha (commit hash)',
+    chipClass: '.diff-panel-sha',
     parent: '--vscode-editor-background',
     fg: 'var(--vscode-terminal-ansiYellow)', bg: 'var(--vscode-badge-background)' },
   { cat: 'row-vs-editor', s: '.diff-panel-diff-add (diff "+" line)',
@@ -468,10 +504,25 @@ const SURFACES = [
     fg: 'var(--vscode-charts-blue, #6366f1)', bg: 'var(--vscode-badge-background, rgba(127,127,127,0.2))' },
 
   // === TerminalGrid status dot (HARDCODED hex, no theme fallback) ===
+  // `bgSetsFg: true` (Cluster C mirror of the dot override-routing
+  // heuristic). For a single-color DOT the production CSS uses the
+  // `background` property to set the rendered foreground color, not to
+  // sit a text glyph over a chrome surface. So when
+  // findOverrideMedia('') returns a @media-scoped `background:` value
+  // it must replace the audit's fg (the dot color), not the bg (the
+  // surrounding terminal chrome). Locked by
+  // `Autonomy.a11y.test.ts` (SHAPE-terminal-running-dot-light-override
+  // + the P1C- terminal-running-dot contrast assertion).
   { cat: 'severity-pip', s: '.terminal-tile-dot.status-running',
+    chipClass: '.terminal-tile-dot.status-running', bgSetsFg: true,
     parent: '--vscode-terminal-background',
     fg: 'var(--vscode-charts-green, #3fb950)', bg: 'inherit' },
-  { cat: 'severity-pip', s: '.terminal-tile-dot.status-failed/dead',
+  { cat: 'severity-pip', s: '.terminal-tile-dot.status-failed',
+    chipClass: '.terminal-tile-dot.status-failed', bgSetsFg: true,
+    parent: '--vscode-terminal-background',
+    fg: 'var(--vscode-errorForeground, #f85149)', bg: 'inherit' },
+  { cat: 'severity-pip', s: '.terminal-tile-dot.status-dead',
+    chipClass: '.terminal-tile-dot.status-dead', bgSetsFg: true,
     parent: '--vscode-terminal-background',
     fg: 'var(--vscode-errorForeground, #f85149)', bg: 'inherit' },
 
@@ -510,22 +561,34 @@ for (const themeName of Object.keys(THEMES)) {
     let overrideFgExpr = null;
     if (s.parentClass && s.chipClass) {
       // Path 1: parent-scoped `.parent .chip` override.
+      // `bgSetsFg` (Cluster C) routing is applied here too — so a future
+      // parent-scoped override on a DOT-shaped surface (e.g.
+      // `.terminal-tile--flash .terminal-tile-dot.status-running { ... }`)
+      // routes to fg just like Path 2's media-scoped counterpart.
       const bgOverride = findOverride(s.parentClass, s.chipClass, 'background', themeName);
-      if (bgOverride) overrideBgExpr = bgOverride;
+      if (bgOverride) {
+        if (s.bgSetsFg) overrideFgExpr = bgOverride;
+        else            overrideBgExpr = bgOverride;
+      }
       const fgOverride = findOverride(s.parentClass, s.chipClass, 'color', themeName);
       if (fgOverride) overrideFgExpr = fgOverride;
     }
-    if (s.chipClass && !overrideBgExpr) {
+    if (s.chipClass) {
       // Path 2: @media-scoped `.chip` override (theme-gated by
-      // prefers-color-scheme). Fires for badge-family surfaces
-      // where the override is `@media (prefers-color-scheme:
-      // dark) .chip { background: ... }` — no parentClass needed.
+      // prefers-color-scheme). Falls through per-slot: Path 1
+      // (parent-scoped, specificity 20) beats Path 2 (theme-scoped,
+      // specificity 10), so a Path 1 win already populates the slot —
+      // we don't stomp it. Caveat: a previous draft gated Path 2 on
+      // BOTH `!overrideBgExpr && !overrideFgExpr`, which wrongly blocks
+      // Path 2 when Path 1 set only the `color:` slot. Per-slot gating
+      // is correct: bg slot is checked independently of fg slot.
       const bgOverride = findOverrideMedia(s.chipClass, 'background', themeName);
-      if (bgOverride) overrideBgExpr = bgOverride;
-    }
-    if (s.chipClass && !overrideFgExpr) {
+      if (bgOverride) {
+        if (s.bgSetsFg && !overrideFgExpr) overrideFgExpr = bgOverride;
+        if (!s.bgSetsFg && !overrideBgExpr) overrideBgExpr = bgOverride;
+      }
       const fgOverride = findOverrideMedia(s.chipClass, 'color', themeName);
-      if (fgOverride) overrideFgExpr = fgOverride;
+      if (fgOverride && !overrideFgExpr) overrideFgExpr = fgOverride;
     }
 
     let fgRaw = resolve(overrideFgExpr || s.fg, themeName, theme.editorBg);
