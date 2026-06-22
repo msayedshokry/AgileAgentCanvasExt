@@ -819,7 +819,7 @@ const SURFACES = [
   // dot fg for the contrast pass. Cluster flag dropped.
   { cat: 'severity-pip',
     chipClass: '.kanban-column-status-dot--running', bgSetsFg: true,
-    s: '.kanban-column-status-dot--running (amber pulse + tokenized orange)',
+    s: '.kanban-column-status-dot--running (amber transform-pulse + tokenized orange)',
     parent: '--vscode-editor-lineHighlightBackground',
     fg: 'var(--vscode-charts-orange, #f59e0b)', bg: 'inherit' },
   { cat: 'severity-pip',

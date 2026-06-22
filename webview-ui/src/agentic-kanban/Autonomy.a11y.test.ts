@@ -1540,7 +1540,7 @@ describe('Cluster-D2-5 - kanban-card chrome SHAPE + cross-theme guards', () => {
 
   // Block-local helper: linear-light WCAG 2.x contrast formula
   // (byte-identical to scripts/a11y-surface-sweep.mjs's `ratio()`).
-  function ratio(fg: string, bg: string): number {
+  function ratio(fg, bg) {
     const L = (c: string) => {
       const v = parseInt(c, 16) / 255;
       return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
@@ -2029,3 +2029,115 @@ describe('Cluster D-3 commit 3 — post-harvest regression guards', () => {
     });
   });
 });
+
+
+describe('Cluster-D2-7', () => {
+  // SHAPE_LOCKS Cluster-D2-7 marker (v4 brace-counted)
+  // Cluster D-2 #7 close-out fixup for `.kanban-column-status-dot--running`:
+  // the original `animation: pulse` (used the SHARED opacity-pulse keyframe
+  // inherited from `.kanban-card-agent-badge--{running,queued,interrupted}`)
+  // blends the dot fg with parent bg at the 50% mid-cycle. Light+ mid-cycle
+  // ratio drops to ~1.81:1 (sub-3:1 WCAG 1.4.11 UI-component floor). The
+  // fix creates a NEW transform-only `@keyframes dot-running-pulse` (scoped
+  // to the column-status-dot only) so the badge-family keeps its opacity
+  // pulse but the dot no longer recomposites opacity over time. Mirrors the
+  // `.fleet-health-pulse` Cluster C pattern from Autonomy.css.
+  //
+  // Three load-bearing locks:
+  //   SHAPE-anim-tokenized: locks `animation: dot-running-pulse` form
+  //     (prevents accidental revert to `animation: pulse`)
+  //   SHAPE-NO-OPACITY-DRIFT (v4): brace-counting from `@keyframes dot-
+  //     running-pulse {` to its matching close `}` — slice is provably the
+  //     keyframe body only (no leakage to adjacent declarations between
+  //     @keyframes blocks). Then comment-stripped (v3 mitigation) and
+  //     line-scanned for `opacity:` declarations. Positive assertion also
+  //     verifies the `transform: scale(...)` contract is in place.
+  //   cross-theme-contrast matrix: confirms the dot's STATIC baseline clears
+  //     the UI-floor in all 3 themes. Because the keyframe uses transform-only
+  //     (not opacity), contrast is INVARIANT across animation phases.
+
+
+  // KANBAN_CSS_LOCK Cluster-D2-7 (mirrors local pattern; resolves ReferenceError).
+  // Loaded once at the top of this describe block so all it() bodies below
+  // can access the Kanban.css source via `KANBAN_CSS` constant. Mirrors the
+  // local-mirror pattern used for `function ratio(fg, bg)` declared above.
+  // `KANBAN_CSS_PATH` is declared at module level (line ~75) so we can read
+  // it directly here. One read per describe block.
+  const KANBAN_CSS = readFileSync(KANBAN_CSS_PATH, 'utf-8');
+
+  it('SHAPE-anim-tokenized: .kanban-column-status-dot--running uses transform-only dot-running-pulse (NOT the shared opacity pulse)', () => {
+    const ruleMatch = /\.kanban-column-status-dot--running\s*\{([^}]+)\}/m.exec(KANBAN_CSS);
+    expect(ruleMatch, '.kanban-column-status-dot--running rule not found in Kanban.css').not.toBeNull();
+    const body = ruleMatch![1];
+    expect(body).toMatch(/animation:\s*dot-running-pulse\b/);
+    expect(body).not.toMatch(/animation:\s*pulse\b/);
+  });
+
+  it('SHAPE-NO-OPACITY-DRIFT: @keyframes dot-running-pulse block contains NO `opacity:` declaration (transform-only contract; v4 brace-counted slice + comment-stripped)', () => {
+    // V4 FIX over V3: brace-counting from `@keyframes dot-running-pulse {`
+    // to its matching close `}`. The v3 boundary-splitting approach sliced
+    // from `@keyframes` to the NEXT `@keyframes` (or EOF), which captured
+    // content OUTSIDE the keyframe block — a maintainer adding
+    // `.some-rule { opacity: 0.5 }` between keyframes would falsely fail
+    // the test. Brace-counting guarantees the slice is exactly the keyframe
+    // body. v3 comment-stripping preserved from prior version (defends
+    // against `/* ... opacity: ... */` prose false-positives).
+    const startMatch = /@keyframes\s+dot-running-pulse\s*\{/.exec(KANBAN_CSS);
+    expect(startMatch, '@keyframes dot-running-pulse block not found in Kanban.css (fix regression — re-create the keyframe)').not.toBeNull();
+    const startIdx = startMatch!.index + startMatch![0].length;
+    let depth = 1;
+    let endIdx = startIdx;
+    while (endIdx < KANBAN_CSS.length && depth > 0) {
+      const c = KANBAN_CSS[endIdx];
+      if (c === '{') depth++;
+      else if (c === '}') depth--;
+      endIdx++;
+    }
+    expect(depth, 'Unbalanced braces inside @keyframes dot-running-pulse (parse error in Kanban.css)').toBe(0);
+    // Body is KANBAN_CSS[startIdx : endIdx - 1] (the `endIdx - 1` skips past the matching `}`)
+    const dotRunningBody = KANBAN_CSS.substring(startIdx, endIdx - 1);
+    // v3 mitigation: strip CSS comments BEFORE the line scan to defend against
+    // `/* ... opacity: ... */` prose false-positives.
+    const stripped = dotRunningBody.replace(/\/\*[\s\S]*?\*\//g, '');
+    const lines = stripped.split(/\r?\n/);
+    const opacityLines = lines.filter((l) => /\bopacity\s*:/.test(l));
+    expect(
+      opacityLines,
+      '@keyframes dot-running-pulse must NOT declare opacity: (lock the transform-only design choice to prevent mid-cycle contrast drift)',
+    ).toEqual([]);
+    // Positively assert the transform-scale contract is in place (sanity).
+    expect(stripped).toMatch(/\btransform:\s*scale\(/);
+  });
+
+  // Cross-theme contrast guard matrix for the --running dot. Static
+  // baseline, post-tokenization. Because the animation is now transform-
+  // only, contrast is INVARIANT across animation phases.
+
+  // RATIO_LOCK Cluster-D2-7 (mirrors D-2 #5 pattern; resolves ReferenceError).
+  // Linear-light WCAG 2.x contrast ratio helper. Mirrors the D-2 #5 round-4
+  // declaration. local to this describe so it's in scope for the
+  // cross-theme-contrast matrix below.
+  function ratio(fg: string, bg: string): number {
+    const lum = (hex) => {
+      const m = hex.replace('#', '');
+      const r = parseInt(m.substring(0, 2), 16) / 255;
+      const g = parseInt(m.substring(2, 4), 16) / 255;
+      const b = parseInt(m.substring(4, 6), 16) / 255;
+      const lin = (v: number): number => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+      return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+    };
+    const L1 = lum(fg);
+    const L2 = lum(bg);
+    return (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05);
+  }
+  const KC_RUNNING_BG = 'var(--vscode-charts-orange, #f59e0b)';
+  for (const [theme, floor] of [['Dark+', 7.0], ['Light+', 4.0], ['HC-Dark', 9.0]] as const) {
+    it('cross-theme-contrast: .kanban-column-status-dot--running vs ' + theme + ' ' + THEMES[theme].editorBg + ' >= ' + floor + ':1 (static baseline; transform-pulse invariance)', () => {
+      const parentBg = THEMES[theme].editorBg;
+      const fg = resolveToken(KC_RUNNING_BG, theme, parentBg);
+      const r = ratio(fg, parentBg);
+      expect(r, '.kanban-column-status-dot--running ' + theme + ' contrast ' + r.toFixed(2) + ':1 must clear ' + floor + ':1 (post-tokenization static baseline; transform-pulse preserves contrast at all phases)').toBeGreaterThanOrEqual(floor);
+    });
+  }
+});
+

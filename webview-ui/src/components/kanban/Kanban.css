@@ -109,7 +109,18 @@
      (~8.35:1 vs #1E1E1E / ~12.71:1 vs #000000) and #B85C00 Light+ (~4.79:1
      vs #FFFFFF, clears AA-text 4.5:1 with margin). */
   background: var(--vscode-charts-orange, #f59e0b);
-  animation: pulse 1.5s ease-in-out infinite;
+  /* Cluster D-2 #7: switch from shared opacity `pulse` to transform-only
+     `dot-running-pulse`. The opacity version blended the dot fg with parent
+     bg at 50% mid-cycle (Light+ ratio dropped to ~1.81:1 sub-3:1 UI-floor).
+     transform-scale preserves contrast at all animation phases — see
+     `@keyframes dot-running-pulse` below. SCOPE NOTE: this change is
+     surgical to the column-status-dot only; the badge-family
+     (`.kanban-card-agent-badge--running/-queued/-interrupted`) keep the
+     shared opacity `pulse` because their left/center card layout can
+     accommodate alpha-blending without contrast drift against the card
+     bg (different parent bg, different geometry). Locked by
+     `Autonomy.a11y.test.ts` Cluster-D2-7 SHAPE-NO-OPACITY-DRIFT test. */
+  animation: dot-running-pulse 1.5s ease-in-out infinite;
 }
 
 .kanban-column-status-dot--queued {
@@ -421,6 +432,25 @@
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.6; }
+}
+
+/* Cluster D-2 #7: transform-only pulse for `.kanban-column-status-dot--running`.
+   Replaces the shared opacity `pulse` for this single 6x6 indicator because
+   the previous opacity animation blended the dot fg with parent bg at 50%
+   mid-cycle in Light+ (mid-cycle ratio ~1.81:1 sub-3:1 WCAG 1.4.11
+   UI-component floor). transform-scale preserves contrast at all animation
+   phases and reads as a hardware-style LED heartbeat for a tiny indicator
+   better than opacity-fade (which can register as anti-aliasing blur).
+   scale(1.4) yields a clear 8.4px peak-width pulse without overflowing the
+   inline-flex container. Duration/easing mirrors the shared `pulse` timing
+   for visual rhythm consistency; transform-origin defaults to `50% 50%`
+   which centers the scale on the `border-radius: 50%` dot cleanly. SCOPE:
+   only `.kanban-column-status-dot--running` references this keyframe. The
+   badge-family (`.kanban-card-agent-badge--running/-queued/-interrupted`)
+   continue to use the shared opacity `pulse`. */
+@keyframes dot-running-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.4); }
 }
 
 @keyframes interruptedPulse {
