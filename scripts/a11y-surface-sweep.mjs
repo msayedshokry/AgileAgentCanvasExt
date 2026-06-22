@@ -8,7 +8,42 @@
 //   * 3.0:1  WCAG 1.4.11 UI-component     (border / icon vs bg)
 //   * <3.0   severe-fail
 // Pulse mid-cycle (opacity 0.4) treated as a linear fg-toward-bg blend.
+//
+// CSS-specificity-aware override resolution
+// -----------------------------------------
+// The chip-on-red-row surface group (.safety-block-type--{story,risk,test-case}
+// embedded inside .safety-block) used to report sub-3:1 against the composite
+// row+chip+editor triple-blend. That was a *simulation* artifact: the actual
+// CSS now contains a parent-scoped override `.safety-block .safety-block-type
+// { background: var(--vscode-editor-background); }` which wins on specificity
+// (parent + class > single class) and replaces the chip's own rgba bg with
+// the editor surface — so the chip fg's contrast is measured against the
+// editor, not a 3-layer composite.
+//
+// To mirror that at the audit layer, the script now parses Autonomy.css
+// with postcss and, for each surface annotated with a `parentClass` and a
+// `chipClass`, walks the AST to find the most-specific rule that sets the
+// requested property for selectors matching BOTH class tokens. The override's
+// resolved value replaces the chip's own rgba bg before the contrast pass.
+// Any future fix of the same pattern (parent-scoped override on `*.chip`)
+// is auto-detected.
 // =============================================================================
+
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import postcss from 'postcss';
+
+// ── Locate + parse Autonomy.css (relative to this script) ──────────────
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const AUTONOMY_CSS_PATH = path.resolve(
+  __dirname, '..', 'webview-ui', 'src', 'agentic-kanban', 'Autonomy.css',
+);
+const AUTONOMY_ROOT = postcss.parse(
+  readFileSync(AUTONOMY_CSS_PATH, 'utf-8'),
+  { from: AUTONOMY_CSS_PATH },
+);
 
 function L(c) {
   const v = c / 255;
@@ -31,6 +66,81 @@ function blend([R, G, B, A], base) {
   const g = Math.round(G * A + bG * (1 - A));
   const b = Math.round(B * A + bB * (1 - A));
   return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
+// =============================================================================
+// CSS-specificity override resolution
+// =============================================================================
+//
+// `specificityOf(selector)`: weighted count of class tokens + pseudo-classes
+// (weight 10 each) + element identifiers (weight 1 each). The codebase has
+// no `#id` selectors today, so the ID component (weight 100) is omitted.
+// Combinators (` `, `>`, `+`, `~`) are NOT counted — they're syntactic
+// separators only per the CSS specificity spec.
+//
+// Pseudo-classes like `:hover` ARE counted as classes (CSS spec).
+function specificityOf(selector) {
+  // Strip combinators and count remaining tokens, separating class-ish from
+  // element-ish. Class-ish: tokens prefixed with `.` or `:`.
+  const tokens = selector.split(/[\s>+~]+/).filter(Boolean);
+  let classes = 0;
+  let elements = 0;
+  for (const t of tokens) {
+    // Class chain: `.foo.bar` — count every `.` token + pseudo-class (`:`)
+    classes  += (t.match(/\./g)  || []).length;
+    classes  += (t.match(/:/g)  || []).length;
+    // Element: identifier parts that are NOT preceded by `.` and not `:`
+    const elemParts = t.split(/[.:]/).filter(p => /^[a-zA-Z][a-zA-Z0-9_-]*$/.test(p));
+    elements += elemParts.length;
+  }
+  return classes * 10 + elements;
+}
+
+// `findOverride(parentClass, chipClass, propName, themeName)`:
+// Walk all rules in the parsed stylesheet. Among those whose selector
+// tokens contain BOTH `parentClass` AND `chipClass` (substring match is
+// tight enough for this codebase — `.safety-block` and `.safety-block-type`
+// are unique tokens not shared with longer class names), pick the
+// declaration for `propName` from the highest-specificity match.
+//
+// Tie-break: when two rules have equal specificity, the AST-traversal order
+// wins (later rules are visited later, matching CSS source-order semantics
+// for equally-specific selectors).
+//
+// `@media` filter: if a rule is nested inside `@media (prefers-color-scheme:
+// {dark,light})`, the override only counts for themes whose name matches the
+// media query (Dark+ OR HC-Dark for `:dark`, Light+ for `:light`). This
+// mirrors how a real browser applies the override.
+function findOverride(parentClass, chipClass, propName, themeName) {
+  let bestSpec = -1;
+  let bestOrder = -1;
+  let bestValue = null;
+  let order = 0;
+  AUTONOMY_ROOT.walkRules((rule) => {
+    order++;
+    // @media filter
+    if (rule.parent && rule.parent.type === 'atrule' && rule.parent.name === 'media') {
+      const params = (rule.parent.params || '').toLowerCase();
+      const isDark  = params.includes('dark');
+      const isLight = params.includes('light');
+      if (isDark  && !(themeName === 'Dark+' || themeName === 'HC-Dark')) return;
+      if (isLight && themeName !== 'Light+') return;
+    }
+    for (const sel of rule.selectors || []) {
+      if (!sel.includes(parentClass) || !sel.includes(chipClass)) continue;
+      const decl = (rule.nodes || []).find(
+        (n) => n.type === 'decl' && n.prop === propName,
+      );
+      if (!decl) continue;
+      const spec = specificityOf(sel);
+      if (spec > bestSpec || (spec === bestSpec && order > bestOrder)) {
+        bestSpec = spec;
+        bestOrder = order;
+        bestValue = decl.value;
+      }
+    }
+  });
+  return bestValue;
 }
 
 // =============================================================================
@@ -151,6 +261,14 @@ function resolve(expr, themeName, parentBg) {
 // =============================================================================
 // Surface catalogue — every (parent bg, fg, surface bg, fg-mode) combo
 // pulled from the live CSS. One row per pair we'll contrast.
+//
+// Surfaces annotated with `parentClass` + `chipClass` are eligible for the
+// CSS-specificity-aware override path: the script scans the parsed
+// Autonomy.css for any rule whose selector matches BOTH class tokens and
+// has higher specificity than the chip's own bucket rule, then uses that
+// rule's resolved value for the chip's effective bg (or color) in the
+// contrast pass. Today that's just the 3 chip-on-red-row entries; the
+// mechanism is general for any future parent-scoped overrides.
 // =============================================================================
 const SURFACES = [
   // === specifically-called-out: row-vs-editor in 3 themes ===
@@ -246,18 +364,30 @@ const SURFACES = [
     bg: 'var(--vscode-inputValidation-errorBackground, rgba(255,0,0,0.06))' },
 
   // === chips drawn ON the red row ===
-  { cat: 'chip-on-red-row', s: '.safety-block-type--story chip ON row in Dark+',
-    parentOverride: '#5A1D1D',  // explicit row bg
+  // The parentClass + chipClass annotations enable the specificity-aware
+  // override path. The override that's expected is:
+  //   .safety-block .safety-block-type { background: var(--vscode-editor-background); }
+  // which wins on specificity (parent + class > single class) and replaces
+  // the chip's own rgba bg with the editor surface. The chip fg remains
+  // unchanged; contrast is measured against the editor.
+  { cat: 'chip-on-red-row', s: '.safety-block-type--story chip ON row',
+    parentOverride: '#5A1D1D',
     fg: 'var(--vscode-charts-blue, #6366f1)',
-    bg: 'rgba(99,102,241,0.12)' },
-  { cat: 'chip-on-red-row', s: '.safety-block-type--risk chip ON row in Dark+',
+    bg: 'rgba(99,102,241,0.12)',
+    parentClass: '.safety-block',
+    chipClass: '.safety-block-type' },
+  { cat: 'chip-on-red-row', s: '.safety-block-type--risk chip ON row',
     parentOverride: '#5A1D1D',
     fg: 'var(--vscode-errorForeground, #ef4444)',
-    bg: 'rgba(239,68,68,0.12)' },
-  { cat: 'chip-on-red-row', s: '.safety-block-type--test-case chip ON row in Light+',
+    bg: 'rgba(239,68,68,0.12)',
+    parentClass: '.safety-block',
+    chipClass: '.safety-block-type' },
+  { cat: 'chip-on-red-row', s: '.safety-block-type--test-case chip ON row',
     parentOverride: '#FCD9D9',
     fg: 'var(--vscode-charts-yellow, #ca8a04)',
-    bg: 'rgba(202,138,4,0.12)' },
+    bg: 'rgba(202,138,4,0.12)',
+    parentClass: '.safety-block',
+    chipClass: '.safety-block-type' },
 
   // === DiffPanel surfaces ===
   { cat: 'badge-vs-surface', s: '.diff-panel-stat--add (+N count)',
@@ -307,6 +437,8 @@ const SURFACES = [
 console.log('================================================================================');
 console.log('A11Y SWEEP — autonomy / fleet / trace / diff / terminal surfaces');
 console.log('Floors: AA-text 4.5:1, WCAG-1.4.11 UI-component 3.0:1, severe-fail <3.0:1');
+console.log('Specificity-aware override resolution: ENABLED (Autonomy.css parsed for');
+console.log('  parent-scoped `.parent .chip { ... }` overrides keyed by parentClass+chipClass');
 console.log('================================================================================\n');
 
 let totalPairs = 0, fails = 0, uiFails = 0, hardcodedHits = 0;
@@ -316,8 +448,25 @@ for (const themeName of Object.keys(THEMES)) {
   console.log(`--- THEME: ${themeName}  (editor bg ${theme.editorBg}) ---\n`);
   for (const s of SURFACES) {
     const parentBg = s.parentOverride || resolve(s.parent, themeName, theme.editorBg);
-    let fgRaw = resolve(s.fg, themeName, theme.editorBg);
-    let bgRaw = resolve(s.bg, themeName, parentBg);
+
+    // ── CSS-specificity-aware override resolution ────────────────────
+    // When a surface is annotated with parentClass + chipClass, search the
+    // enumerated CSS for a parent-scoped rule that overrides property X.
+    // The replacement value wins if its selector specificity is HIGHER than
+    // the chip's own bucket rule (typically the case for any
+    // `.parent .child` rule, which adds a sibling class to the chip's
+    // existing class token).
+    let overrideBgExpr = null;
+    let overrideFgExpr = null;
+    if (s.parentClass && s.chipClass) {
+      const bgOverride = findOverride(s.parentClass, s.chipClass, 'background', themeName);
+      if (bgOverride) overrideBgExpr = bgOverride;
+      const fgOverride = findOverride(s.parentClass, s.chipClass, 'color', themeName);
+      if (fgOverride) overrideFgExpr = fgOverride;
+    }
+
+    let fgRaw = resolve(overrideFgExpr || s.fg, themeName, theme.editorBg);
+    let bgRaw = resolve(overrideBgExpr || s.bg, themeName, parentBg);
 
     // Pulse dim: blends fg toward bg at the listed opacity
     if (s.pulse !== undefined) {
@@ -338,9 +487,12 @@ for (const themeName of Object.keys(THEMES)) {
     totalPairs++;
 
     // Highlight specifically-called-out items
-    const called = /(PULSE|row in Dark\+|row in Light\+|fleet-health--dead|fleet-health--healthy|fleet-health--degraded|dead @|safety-block-verb|autonomy-systemic--critical|inputValidation-errorBackground|HARDCODED)/.test(s.s)
+    const called = /(PULSE|row in Dark\+|row in Light\+|fleet-health--dead|fleet-health--healthy|fleet-health--degraded|dead @|safety-block-verb|autonomy-systemic--critical|inputValidation-errorBackground|HARDCODED|chip ON row)/.test(s.s)
                  ? ' ←' : '   ';
-    console.log(`  ${mark} ${r.toFixed(2).padStart(5)}:1 ${called} [${s.cat.padEnd(18)}] ${s.s}` +
+    const overrideTag = (overrideBgExpr || overrideFgExpr)
+      ? `[override: ${overrideBgExpr ? 'bg' : ''}${overrideFgExpr ? 'fg' : ''}] `
+      : '';
+    console.log(`  ${mark} ${r.toFixed(2).padStart(5)}:1 ${called} ${overrideTag}[${s.cat.padEnd(18)}] ${s.s}` +
       (s.note ? `   (${s.note})` : ''));
   }
   console.log();
