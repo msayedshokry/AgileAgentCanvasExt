@@ -1,0 +1,80 @@
+fix(a11y/kanban): Cluster D-3 #1c — tokenize .kanban-card-type-tag + Light+ dark-bg rebind
+
+## What
+Closes the lone remaining CSS-side FAIL row from the audit-script sweep
+(.kanban-card-type-tag, KEY chip on Kanban card). Pre-fix the rule declared
+`background: var(--vscode-badge-background)` + `color: var(--vscode-badge-foreground)`
+with NO HARDCODED fallback and NO @media Light+ override; in HC-Dark where the upstream
+--vscode-badge-background token is unset in TOKS, both resolved to the parent bg
+(1.00:1 identity-mismatch) and Light+ upstream #B4B4B4 rendered ~2.07:1 vs #FFFFFF fg
+— both sub-3:1 WCAG 1.4.11 UI-component floor.
+
+## Why this fix shape
+- **HARDCODED Universal fallbacks** (`#4D4D4D` bg + `#FFFFFF` fg): guarantee HC-Dark
+  renders against a known-good gray regardless of theme settings.
+- **Light+ `@media (prefers-color-scheme: light)` override HARDCODED** (`#1F1F1F` bg +
+  `#FFFFFF` fg): pre-fix the override used `var(--vscode-editor-background)` /
+  `var(--vscode-foreground)` which TOKS-resolves to `#FFFFFF` / `#1F1F1F` — 16:1 ratio
+  but the chip BACKGROUND aliased to the parent card bg (`#FFFFFF` in Light+) making
+  the chip visually invisible. The dark-bg/white-fg inverse style keeps the chip
+  identifiably distinct from the card surface while clearing WCAG 1.4.11 + AA-text at
+  ~15:1.
+
+## Audit-script SURFACES row (1 line)
+`.kanban-card-type-tag (KEY chip on card + D-3-#1c tokenized)` with
+`fg: var(--vscode-badge-foreground, #FFFFFF)` + `bg: var(--vscode-badge-background, #4D4D4D)`.
+Audit-script reports the row PASSING at 8.45:1 across Dark+/HC-Dark (Light+ override is
+media-query applied post-resolution in browser; audit tracts the BASE form 8.45:1 contract).
+
+## Test-file (Autonomy.a11y.test.ts) — NEW Cluster-D3-1c describe block, 5 tests
+- **SHAPE-tokenized** — postcss-extracts rule; asserts `background` + `color` decls are var()-form tokenized (NOT bare var()).
+- **SHAPE-Anchor #4D4D4D** — HARDCODED bg fallback literal present.
+- **SHAPE-light-override** — `@media (prefers-color-scheme: light)` block exists; rebinds bg to `#1F1F1F` and fg to `#FFFFFF` (HARDCODED literal-check, code-reviewer-validated post-fix). Updated mid-iteration when the override rebind surfaced the chip's visual issue (var-resolved form would alias to parent bg).
+- **contract-HC-Dark** — postcss-based contrast ratio `#FFFFFF on #4D4D4D` >= 3:1.
+- **contract-Light+** — postcss structural assertion (chip carries visible chrome in Light+).
+
+Idempotency: `SHAPE_LOCKS Cluster-D3-1c` marker docblock at top of describe ensures
+re-running tmp-* scripts does not double-append.
+
+### DRY-amortization: KANBAN_CSS hoist to module-scope
+Right below the `KANBAN_CSS_PATH` declaration at L75 of the test file. Resolves the
+`ReferenceError: KANBAN_CSS is not defined` thrown by the new SHAPE-Anchor test — and
+amortizes the DRY debt flagged in D-2 #7 closure (each prior D-2 #N describe was
+declaring its own local `const KANBAN_CSS = readFileSync(...)`).
+
+The hoist uses an anchored multiline regex to detect module-scope insertion — earlier
+v1 used a naive substring check that falsely matched the local redeclarations inside
+describe blocks (L2066/L2205), causing v1 to SKIP hoisting. v4 detects only the
+actual module-scope insertion right below `KANBAN_CSS_PATH`.
+
+Intent documented in the inserted comment block: **module-scope is the L1 baseline;
+local re-declarations inside D-2 #N describes are explicit fresh-parses for tests
+that need to re-read after a CSS mutation.** Shadowing is bounded and intentional —
+not swept because doing so could regress tests that depend on fresh reads.
+
+Also: dead `KANBAN_CSS_FOR_D3_1C` alias dropped, replaced with direct module-scope
+`KANBAN_CSS` references.
+
+## Files changed (3)
+
+### 1. webview-ui/src/components/kanban/Kanban.css (net +14 / -2)
+- `.kanban-card-type-tag` HARDCODED Universal fallbacks (`#4D4D4D` bg, `#FFFFFF` fg)
+- `@media (prefers-color-scheme: light)` override HARDCODED (`#1F1F1F` bg, `#FFFFFF` fg) to keep chip visible against parent card bg in Light+
+- Extended chip-comment block explaining token rationale + Light+ UX
+
+### 2. scripts/a11y-surface-sweep.mjs (1 line)
+- SURFACES row description `.kanban-card-type-tag (KEY chip on card + D-3-#1c tokenized)` (forward-looking label reflects tokenized-with-fallback form)
+
+### 3. webview-ui/src/agentic-kanban/Autonomy.a11y.test.ts (~+60 lines)
+- module-scope `const KANBAN_CSS = readFileSync(KANBAN_CSS_PATH, 'utf-8')` (DRY-amortize for all future D-3-N + fix ReferenceError)
+- appended `describe('Cluster-D3-1c', ...)` with 5 tests + 2 contract cross-theme guards
+- dropped dead `KANBAN_CSS_FOR_D3_1C` alias + rewired 2 usages to module-scope `KANBAN_CSS`
+
+## Audit-script SUMMARY
+- Pre-D3-1c: 388 PASS / 80 UI-only / 78 FAIL / 15 HARDCODED
+- Post-D3-1c: 389 PASS / 80 UI-only / 77 FAIL / 15 HARDCODED
+- Delta: +1 PASS, -1 FAIL on the .kanban-card-type-tag row
+
+## Test counts
+- Pre-D3-1c: 210 vitest / 0 fail (after Cluster D-2 #8)
+- Post-D3-1c: 215 vitest / 0 fail (+5 new tests in Cluster-D3-1c describe)

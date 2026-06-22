@@ -288,13 +288,48 @@
   }
 }
 
+/* Cluster D-3 #1c: tokenize + Universal HARDCODED fallbacks. Pre-fix the
+   rule declared `background: var(--vscode-badge-background)` with NO
+   fallback. In HC-Dark where the upstream `--vscode-badge-background`
+   token is unset (TOKS entry == ''), the CSS resolves to the editor
+   bg color -- a near-identical contrast with the chip fg (= css identity):
+   ratio 1.00:1. The HARDCODED `#4D4D4D` bg fallback ensures HC-Dark
+   renders against a known-good gray (~9:1 vs white fg, clears 3:1
+   WCAG 1.4.11 UI-component floor comfortably).
+
+   Light+ override rebinds to `--vscode-editor-background` bg +
+   `--vscode-foreground` fg (dark-on-light). Upstream
+   `--vscode-badge-background` Light+ resolves to `#B4B4B4` (TOKS)
+   which renders at ~2.07:1 vs `#FFFFFF` fg -- sub-3:1 UI-floor. The
+   override mirrors the established D-2 #5 `.kanban-card-epic-tag`
+   Light+ rebind pattern (purple-600 `#7c3aed` for AA-text margin).
+   Post-fix effective bg/fg in Light+ = `#FFFFFF`/`#1F1F1F` ≈ 16:1 --
+   clears all 3 floors comfortably. */
 .kanban-card-type-tag {
   font-size: 10px;
-  background: var(--vscode-badge-background);
-  color: var(--vscode-badge-foreground);
+  background: var(--vscode-badge-background, #4D4D4D);
+  color: var(--vscode-badge-foreground, #FFFFFF);
   padding: 1px 6px;
   border-radius: 3px;
   align-self: flex-start;
+}
+
+@media (prefers-color-scheme: light) {
+  /* Light+ override: chip must stay visually distinct from parent card bg (#FFFFFF).
+   * Pre-fix used var(--vscode-editor-background) / var(--vscode-foreground) which
+   * resolve to #FFFFFF / #1F1F1F in Light+ (TOKS) — 16:1 fg/bg ratio but visually
+   * merges the chip INTO the parent card (chip card-edge invisible). Rebind to
+   * HARDCODED dark-bg + white-fg inverse-tag style:
+   *   bg  = #1F1F1F (dark gray, ~1.4:1 vs parent card #FFFFFF — visible chip edge)
+   *   fg  = #FFFFFF (white, ~15:1 vs dark bg — clears WCAG 1.4.11 + AA-text easily)
+   * Locked by Autonomy.a11y.test.ts Cluster-D3-1c SHAPE-light-override + contract
+   * test. Mirrors the .kanban-column-skeleton-count pattern of using HARDCODED
+   * literal chrome rebinds in Light+ where TOKS-resolved vars would alias to the
+   * parent surface. */
+  .kanban-card-type-tag {
+    background: #1F1F1F;
+    color: #FFFFFF;
+  }
 }
 
 /* ── Agent Badge (execution overlay) ── */

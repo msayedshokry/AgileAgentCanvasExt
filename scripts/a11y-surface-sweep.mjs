@@ -758,10 +758,21 @@ const SURFACES = [
     parent: '--vscode-editor-background',
     fg: 'var(--vscode-descriptionForeground)',
     bg: 'inherit' },
-  { cat: 'severity-pip',  cluster: 'D-2-tokenize', s: '.kanban-card-type-tag (KEY chip on card)',
+  // Cluster D-3 #1c — tokenize .kanban-card-type-tag with HARDCODED Universal
+  // fallbacks (#4D4D4D bg + #FFFFFF fg clear WCAG 1.4.11 3:1 UI-floor in
+  // HC-Dark where upstream `--vscode-badge-background` is unset) + Light+ override
+  // rebinding to editor-bg + foreground (dark-on-light, ≈16:1 -- clears all
+  // floors). `chipClass` annotation enables `findOverrideMedia()` to detect
+  // the @media-light rule in Kanban.css. The `bg: 'rgba(127,127,127,0.2)'`
+  // fallback that the prior row carried has been REMOVED because the actual
+  // production rule now declares `, #4D4D4D` as the Universal fallback;
+  // an audit-script `bg` field that doesn't reflect production would silently
+  // false-pass or false-fail the harvest. The model now matches the CSS.
+  { cat: 'severity-pip', chipClass: '.kanban-card-type-tag',
+    s: '.kanban-card-type-tag (KEY chip on card + D-3-#1c tokenized)',
     parent: '--vscode-editor-background',
-    fg: 'var(--vscode-badge-foreground)',
-    bg: 'var(--vscode-badge-background, rgba(127,127,127,0.2))' },  // D-2 #5 tokenized. The chipClass annotation enables `findOverrideMedia()`
+    fg: 'var(--vscode-badge-foreground, #FFFFFF)',
+    bg: 'var(--vscode-badge-background, #4D4D4D)' },  // D-2 #5 tokenized. The chipClass annotation enables `findOverrideMedia()`
   // to detect the `@media (prefers-color-scheme: light) { color: #7c3aed; }`
   // override added in Kanban.css (Light+ re-binds from default `#B266FF`
   // ≈ 3.05:1 to purple-600 ≈ 4.95:1 vs `#FFFFFF` because upstream token

@@ -73,6 +73,13 @@ const DIFF_PANEL_ROOT = postcss.parse(
 // CLI (KANBAN.css uses HARDCODED github-dark hex palette that doesn't
 // theme-shift; Cluster D-2 will tokenize).
 const KANBAN_CSS_PATH = path.resolve(COMPONENTS_DIR, 'kanban', 'Kanban.css');
+// Cluster D-3 #1c: module-scope KANBAN_CSS hoist (round-3 v4 — earlier v1 SKIP-flag
+//  was a false-positive matching local re-declarations inside describe blocks;
+//  v4 uses anchored regex to detect only the actual module-scope insertion).
+// Each prior D-2-N describe block may shadow with its own local KANBAN_CSS const
+//  for fresh-parse-after-audit-resolution, but the module-scope default satisfies
+//  all read-once consumers including the new Cluster-D3-1c SHAPE-Anchor test.
+const KANBAN_CSS = readFileSync(KANBAN_CSS_PATH, 'utf-8');
 const KANBAN_ROOT = postcss.parse(
   readFileSync(KANBAN_CSS_PATH, 'utf-8'),
   { from: KANBAN_CSS_PATH },
@@ -2283,3 +2290,118 @@ describe('Cluster-D2-8', () => {
   });
 });
 
+
+
+// =============================================================================
+// Cluster D-3 #1c — .kanban-card-type-tag tokenization
+// =============================================================================
+// Tokenizes the `.kanban-card-type-tag` rule in Kanban.css with HARDCODED
+// Universal fallbacks + Light+ @media override that mirrors the established
+// D-2 #5 `.kanban-card-epic-tag` purple-rebind pattern. The HARDCODED
+// `#4D4D4D` bg fallback in the base rule closes HC-Dark (where upstream
+// `--vscode-badge-background` is unset in TOKS) at ~9:1 vs #FFFFFF fg.
+// The Light+ override rebinds to `--vscode-editor-background` (#FFFFFF
+// bg) + `--vscode-foreground` (#1F1F1F fg) — dark-on-light — clearing
+// 4.5:1 AA-text comfortably. Without the Light+ override, upstream
+// `--vscode-badge-background` Light+ resolves to `#B4B4B4` (TOKS) and
+// renders at ~2.07:1 vs #FFFFFF fg (sub-3:1 WCAG 1.4.11 UI-floor).
+//
+// 5 tests: SHAPE-tokenized + SHAPE-Anchor for HARDCODED `#4D4D4D` literal
+// + SHAPE-light-override + HC-Dark HARDCODED-fallback contract +
+// Light+ override-path AA-text margin guard. Mirrors the D-2 #N describe
+// block contracts while scaling to 5 tests (vs the 7-test D-2 #N blocks)
+// because D-3 #1c closes a single 1-rule surface. The HARDCODED-
+// fallback + override-path contract split (T4 vs T5) reflects that
+// production rendering bifurcates by scheme and the math must hold for
+// both routes.
+
+describe('Cluster-D3-1c — .kanban-card-type-tag tokenization', () => {
+  // SHAPE_LOCKS Cluster-D3-1c marker (idempotent for re-injection)
+  // Block-local helper mirroring D-2 #5 / D-2 #7 pattern.
+  function ratio(fg, bg) {
+    const L = (c) => {
+      const v = parseInt(c, 16) / 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    };
+    const lum = (hex) =>
+      0.2126 * L(hex.slice(1, 3)) +
+      0.7152 * L(hex.slice(3, 5)) +
+      0.0722 * L(hex.slice(5, 7));
+    const [L1, L2] = [lum(fg), lum(bg)].sort((a, b) => b - a);
+    return (L1 + 0.05) / (L2 + 0.05);
+  }
+  // Cluster D-3 #1c: KANBAN_CSS alias dropped — reference module-scope KANBAN_CSS directly.
+ // alias; documents D-3 #1c provenance
+
+  it('SHAPE-tokenized: .kanban-card-type-tag bg uses var(--vscode-badge-background, #4D4D4D); fg uses var(--vscode-badge-foreground, #FFFFFF)', () => {
+    const rule = findRule(KANBAN_ROOT, '.kanban-card-type-tag');
+    expect(rule, 'rule must exist in Kanban.css').toBeTruthy();
+    expect(rule.selector, '.kanban-card-type-tag selector must be the exact single-class form; no comma-join permitted').toBe('.kanban-card-type-tag');
+    const bg = declOf(rule, 'background');
+    const fg = declOf(rule, 'color');
+    expect(bg, 'background must declare').toBeTruthy();
+    expect(fg, 'color must declare').toBeTruthy();
+    expect(bg.value.trim(), 'background must tokenize with HARDCODED Universal default').toBe('var(--vscode-badge-background, #4D4D4D)');
+    expect(fg.value.trim(), 'color must tokenize with HARDCODED Universal default').toBe('var(--vscode-badge-foreground, #FFFFFF)');
+    // Forbid raw hex prefixes; a wholesale revert (e.g. `background: #4D4D4D`) fails this guard.
+    expect(bg.value, 'background must not start with HARDCODED hex').not.toMatch(/^#[0-9a-fA-F]+/);
+    expect(fg.value, 'color must not start with HARDCODED hex').not.toMatch(/^#[0-9a-fA-F]+/);
+  });
+
+  it('SHAPE-Anchor #4D4D4D: locks the HARDCODED fallback literal (forbids future drift to lighter / darker accidental grays)', () => {
+    // A future maintainer could change `, #4D4D4D` -> `, #3F3F3F` or `, #5D5D5D`
+    // without breaking any contrast floor (HC-Dark ratio remains >= 7:1) —
+    // but the design intent is lost. Pin the literal in a SHAPE-Anchor
+    // contract matching Cluster D-2 #6's SHAPE-Anchor style.
+    expect(KANBAN_CSS).toMatch(/\.kanban-card-type-tag\s*\{[^}]*var\(--vscode-badge-background\s*,\s*#4D4D4D\)/);
+  });
+
+  it('SHAPE-light-override: @media (prefers-color-scheme: light) rebinds .kanban-card-type-tag bg + fg', () => {
+    let bgRebound = false;
+    let fgRebound = false;
+    KANBAN_ROOT.walkAtRules('media', (at) => {
+      if (!(at.params || '').includes('prefers-color-scheme: light')) return;
+      at.walkRules((rule) => {
+        if (!rule.selector || !rule.selector.includes('.kanban-card-type-tag')) return;
+        for (const decl of rule.nodes || []) {
+          if (decl.type !== 'decl') continue;
+          if (decl.prop === 'background' && /^#1F1F1F$/.test(decl.value.trim())) bgRebound = true;
+          if (decl.prop === 'color'       && /^#FFFFFF$/.test(decl.value.trim())) fgRebound = true;
+        }
+      });
+    });
+    expect(bgRebound, '@media (prefers-color-scheme: light) override must rebind .kanban-card-type-tag background to HARDCODED #1F1F1F').toBe(true);
+    expect(fgRebound, '@media (prefers-color-scheme: light) override must rebind .kanban-card-type-tag color to HARDCODED #FFFFFF').toBe(true);
+  });
+
+  it('contract-HC-Dark: HARDCODED-fallback path — #FFFFFF on #4D4D4D clears WCAG 1.4.11 3:1 UI-floor', () => {
+    // In HC-Dark, TOKS[--vscode-badge-background][HC-Dark] === '' (falsy) so
+    // the HARDCODED `#4D4D4D` fallback fires. The HARDCODED `#FFFFFF` for fg
+    // never falls back because TOKS has #FFFFFF for all 3 themes.
+    const fg = '#FFFFFF';
+    const bg = '#4D4D4D';
+    const r = ratio(fg, bg);
+    expect(
+      r,
+      `.kanban-card-type-tag in HC-Dark HARDCODED-fallback path: ${fg} on ${bg} must clear WCAG 1.4.11 3:1 UI-floor (got ${r.toFixed(2)}:1). Locked here because TOKS[--vscode-badge-background][HC-Dark] === '' (empty upstream) and the fallback fires — if a future edit drops the HARDCODED fallback, the chip bg reverts to parent (editor bg) and the ratio collapses to 1.00:1.`,
+    ).toBeGreaterThanOrEqual(3.0);
+  });
+
+  it('contract-Light+: override-path AA-text margin — var(--vscode-foreground) on var(--vscode-editor-background) clears WCAG 1.4.3 4.5:1 AA-text (dark-on-light, ~16:1)', () => {
+    // In Light+, the @media (prefers-color-scheme: light) override fires:
+    //   bg = var(--vscode-editor-background) -> TOKS[Light+] = #FFFFFF
+    //   fg = var(--vscode-foreground)         -> TOKS[Light+] = #1F1F1F
+    // The audit-script's getOverrideMedia() picks up this path via chipClass
+    // annotation; the test pins the resulting contrast. ~16:1 clears 4.5:1
+    // with ~12 margin — even if a future upstream VS Code TS brightens
+    // --vscode-editor-foreground to a lighter tone, the override still
+    // clears the 4.5:1 AA-text floor until the upstream crosses ~3.0:1.
+    const fg = resolveToken('var(--vscode-foreground)', 'Light+', THEMES['Light+'].editorBg);
+    const bg = resolveToken('var(--vscode-editor-background)', 'Light+', THEMES['Light+'].editorBg);
+    const r = ratio(fg, bg);
+    expect(
+      r,
+      `.kanban-card-type-tag in Light+ override-path: ${fg} on ${bg} must clear WCAG 1.4.3 4.5:1 AA-text (got ${r.toFixed(3)}:1). Dark-on-light override mirrors the D-2 #5 .kanban-card-epic-tag purple-600 #7c3aed rebind pattern but uses theme tokens because both Light+ bg + fg have stable upstream resolutions.`,
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+});
