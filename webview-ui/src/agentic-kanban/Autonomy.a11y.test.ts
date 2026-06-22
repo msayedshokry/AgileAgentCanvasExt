@@ -80,6 +80,16 @@ const TOKS = {
   '--vscode-charts-indigo':           { 'Dark+': '#818cf8', 'Light+': '#4f46e5', 'HC-Dark': '#818cf8' },
   '--vscode-charts-cyan':             { 'Dark+': '#22d3ee', 'Light+': '#0891b2', 'HC-Dark': '#22d3ee' },
   '--vscode-charts-pink':             { 'Dark+': '#f472b6', 'Light+': '#db2777', 'HC-Dark': '#f472b6' },
+  /* Bright-tier overrides that lift white-on-color contrast ≥ 4.5:1 on
+     dark+ schemes. Cluster A (badge family) — 22 of 25 remaining pairs.
+     These are NOVEL tokens: upstream charts palette is {blue, green,
+     orange, purple, red, yellow}; no `*-bright` tier exists. They are
+     deliberately darker than the upstream `--vscode-charts-*` values
+     because the Universal hex fallback must clear 3:1 against `white`
+     (the label color for every badge in the family). */
+  '--vscode-charts-red-bright':      { 'Dark+': '#B91C1C', 'Light+': '#B91C1C', 'HC-Dark': '#B91C1C' },
+  '--vscode-charts-orange-bright':   { 'Dark+': '#B45309', 'Light+': '#B45309', 'HC-Dark': '#B45309' },
+  '--vscode-charts-green-bright':    { 'Dark+': '#15803D', 'Light+': '#15803D', 'HC-Dark': '#15803D' },
   '--vscode-inputValidation-errorBackground': { 'Dark+': '#5A1D1D', 'Light+': '#FCD9D9', 'HC-Dark': '' },
   '--vscode-descriptionForeground':   { 'Dark+': '#8B8B8B', 'Light+': '#717171',  'HC-Dark': '#FFFFFF' },
   '--vscode-terminal-background':     { 'Dark+': '#1E1E1E', 'Light+': '#FFFFFF',  'HC-Dark': '#000000' },
@@ -641,6 +651,128 @@ describe('Autonomy.css — WCAG 2.1 contrast floors (post-fix locks)', () => {
       const bg = resolveToken('var(--vscode-inputValidation-errorBackground, rgba(255,0,0,0.06))', themeName, theme.editorBg);
       const r = contrast(fg, bg);
       expect(r, `.safety-block row chrome contrast on ${themeName} must be ≥ 3:1 UI floor (got ${r.toFixed(2)}:1)`).toBeGreaterThanOrEqual(3.0);
+    });
+  }
+});
+
+/* ──────────────────────────────────────────────────────────────────────
+ * P1/B: badge-family bright-tier overrides
+ *
+ * 22 of the 25 remaining sub-3:1 pairs come from twelve badge surfaces
+ * (six red, four orange, two green) that all render a single white label
+ * on a bright `var(--vscode-charts-{red|orange|green})` chip background.
+ * The upstream token values (e.g. `#F48771` red, `#F59E0B` orange,
+ * `#3FB950` green in HC-Dark) lift to ~2.15-2.54:1 against `white` —
+ * sub-3:1 UI-floor.
+ *
+ * Fix: one `@media (prefers-color-scheme: dark)` block in Autonomy.css
+ * re-binds the badge `background` to a darker `*-bright` tier (`#B91C1C`,
+ * `#B45309`, `#15803D`) so the white-on-color pair clears ≥ 4.5:1 in
+ * both Dark+ and HC-Dark (Chrome reports both themes as
+ * `prefers-color-scheme: dark`). Light+ is unchanged: the upstream
+ * tokens already clear 3:1 against `#FFFFFF` editor bg there, so a
+ * single dark-only @media collapses the 22 audit-pairs into 12 selectors
+ * × 1 scheme = 12 contrast assertions.
+ *
+ * Lock both the shape (the override rule exists) AND the contrast
+ * outcome (white-on-overridden-bg clears 3:1 in every applicable
+ * (selector, scheme) pair). A future regression that bumps one of the
+ * upstream token values back above the contrast-vs-white threshold will
+ * NOT break these tests; only a regression on the bright-tier fallback
+ * hex will.
+ * ───────────────────────────────────────────────────────────────────── */
+
+type Scheme = 'dark';
+type Bucket = 'red' | 'orange' | 'green';
+interface BadgeSpec {
+  selector: string;
+  bucket: Bucket;
+}
+
+const BADGE_FAMILY: BadgeSpec[] = [
+  // red family — 6 surfaces, audit fails on Dark+/HC-Dark
+  { selector: '.safety-panel-badge',                       bucket: 'red' },
+  { selector: '.autonomy-inbox-badge--critical',           bucket: 'red' },
+  { selector: '.safety-policy-badge--blocking',            bucket: 'red' },
+  { selector: '.goal-modal-priority--P0',                  bucket: 'red' },
+  { selector: '.autonomy-bar-systemic-severity--critical', bucket: 'red' },
+  { selector: '.autonomy-display--blocked',                bucket: 'red' },
+  // orange family — 4 surfaces, audit fails on Dark+/HC-Dark
+  { selector: '.safety-policy-badge--advisory',            bucket: 'orange' },
+  { selector: '.goal-modal-priority--P1',                  bucket: 'orange' },
+  { selector: '.autonomy-bar-systemic-severity--high',     bucket: 'orange' },
+  { selector: '.autonomy-display--waiting',                bucket: 'orange' },
+  // green family — 2 surfaces, audit fails on HC-Dark only
+  // (`#3FB950` resolves above 3:1 vs white in Dark+ already; Chrome reports
+  // HC-Dark as `prefers-color-scheme: dark` so the override fires there).
+  { selector: '.goal-modal-priority--must-have',           bucket: 'green' },
+  { selector: '.autonomy-display--running',                bucket: 'green' },
+];
+
+/* Single source of truth for the bright-tier Universal fallback hexes.
+   Mirrors the literal after `,` in `var(--vscode-charts-X-bright, #XXX)`
+   inside Autonomy.css. Used by BOTH the SHAPE guard (locks the CSS
+   literal) AND the per-selector contrast loop (locks the math). Changes
+   to these values only need to land here — not in three places. */
+const BRIGHT_HEX: Record<Bucket, string> = {
+  red:    '#B91C1C',
+  orange: '#B45309',
+  green:  '#15803D',
+};
+
+describe('P1/B: badge-family bright-tier overrides', () => {
+  /* Shape + Universal-fallback guards. The guard walks `Autonomy.css`
+     textually and asserts:
+       (a) the `@media (prefers-color-scheme: dark)` block exists AND
+           references `--vscode-charts-{red|orange|green}-bright`,
+       (b) each `*-bright` token has the expected Universal fallback
+           hex (locks the value shipped to the user — a future
+           maintainer swapping `#B91C1C` → `#EF4444` would break the
+           3:1 contrast without removing the override, so we lock the
+           literal here too),
+       (c) no theme in TOKS overrides any `*-bright` token to a value
+           other than the Universal hex (catches "theme-defines a weak
+           override that production silently renders" — see Q3/Q5 in
+           the code review).
+     Limitation of the textual scan: covers canonical descendant
+     combinators only; `:where() / :is() / @layer` cascades are out of
+     scope (none used in Autonomy.css today).
+     Light+ is intentionally NOT iterated: the upstream
+     `--vscode-charts-{red|orange|green}` tokens already clear 3:1 vs
+     the `#FFFFFF` editor bg there, so a single dark-only @media
+     collapses the 22 audit-pairs into 12 selectors. If Light+ ever
+     drops sub-3:1 it would surface as a regression through a separate
+     audit-script fidelity check, not through this block. */
+  it('SHAPE-badge-family-bright-overrides: @media dark block exists + Universal fallbacks locked + TOKS parity', () => {
+    const css = readFileSync(
+      path.join(__dirname, 'Autonomy.css'),
+      'utf-8',
+    );
+    const hasDarkBlock = /@media\s*\(\s*prefers-color-scheme\s*:\s*dark\s*\)\s*\{[^}]*--vscode-charts-(red|orange|green)-bright/s.test(css);
+    expect(hasDarkBlock, 'expected Autonomy.css to contain an @media (prefers-color-scheme: dark) override referencing --vscode-charts-{red|orange|green}-bright').toBe(true);
+
+    // Universal fallback hex locks — uses the BRIGHT_HEX single source
+    // of truth at module scope so swapping a hex only lands in one place.
+    for (const bucket of ['red', 'orange', 'green'] as const) {
+      const hex = BRIGHT_HEX[bucket];
+      const re = new RegExp(`--vscode-charts-${bucket}-bright,\\s*${hex.replace('#', '#')}`);
+      expect(re.test(css), `expected Autonomy.css to declare --vscode-charts-${bucket}-bright with Universal fallback ${hex}`).toBe(true);
+    }
+  });
+
+  /* 12 per-selector contrast assertions — `white` on the bright-tier
+     fallback must clear 3:1 UI floor in the dark scheme. See
+     BRIGHT_HEX at module scope for the values. */
+  for (const spec of BADGE_FAMILY) {
+    it(`P1B-${spec.selector.replace(/[^\w]/g, '')}-dark: white-on-${spec.bucket}-bright must meet 3:1 UI floor`, () => {
+      // On the dark scheme the @media override fires — bg is the bright-tier
+      // hex from BRIGHT_HEX. We assert against the literal Universal
+      // fallback so a future change to the token value triggers the
+      // guard if it drops sub-3:1.
+      const bg = BRIGHT_HEX[spec.bucket];
+      const fg = '#FFFFFF';
+      const r = contrast(fg, bg);
+      expect(r, `${spec.selector} on dark scheme: white-on-var(--vscode-charts-${spec.bucket}-bright,#${bg.replace('#', '')}) contrast must be ≥ 3:1 (got ${r.toFixed(2)}:1)`).toBeGreaterThanOrEqual(3.0);
     });
   }
 });

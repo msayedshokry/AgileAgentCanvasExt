@@ -2087,3 +2087,60 @@
   padding: 0 4px;
   white-space: nowrap;
 }
+
+/* Badge-family contrast override — closes the 12 (badges) × 2 (themes) =
+   22 of the 25 remaining (badge-vs-surface) FAIL pairs surfaced by the
+   audit `scripts/a11y-surface-sweep.mjs`:
+     .safety-panel-badge / .autonomy-inbox-badge--critical /
+     .safety-policy-badge--blocking / .goal-modal-priority--P0 /
+     .autonomy-bar-systemic-severity--critical / .autonomy-display--blocked
+       Dark+ 2.46:1 / HC-Dark 2.46:1 → cleared by #B91C1C (white-vs-bg ≈ 6.04:1)
+     .safety-policy-badge--advisory / .goal-modal-priority--P1 /
+     .autonomy-bar-systemic-severity--high / .autonomy-display--waiting
+       Dark+ 2.15:1 / HC-Dark 2.15:1 → cleared by #B45309 (white-vs-bg ≈ 4.20:1)
+     .goal-modal-priority--must-have / .autonomy-display--running
+       HC-Dark 2.54:1 → cleared by #15803D (white-vs-bg ≈ 3.30:1)
+
+   Mechanism: white text on the bright-vs-dark-shade of var(--vscode-errorForeground)
+   / var(--vscode-charts-orange) / var(--vscode-charts-green) drops below 3:1 in
+   Dark+/HC-Dark because the resolved token is the bright hue (e.g. #F48771 red =
+   2.46:1 vs white). The override bumps the badge bg to the dark-side tone of the
+   same hue family so white-on-it clears WCAG 3:1 UI-floor with comfortable margin.
+
+   Token provenance note: like --vscode-charts-{indigo,cyan,pink} introduced in
+   the chip-palette follow-up commit, the tokens below are NOVEL proposed token
+   names (upstream VS Code --vscode-charts-* palette ships
+   blue/green/orange/purple/red/yellow but no `*-bright` tier). Today the inline
+   fallback hex always applies in production; theme authors can opt-in by
+   declaring the proposed tokens on their theme to override the per-theme
+   cascade below. The override targets `prefers-color-scheme: dark` which on
+   Chrome/Windows correctly applies for HC-Dark as well (HC-Dark reports
+   both `prefers-color-scheme: dark` and `prefers-contrast: more`).
+
+   Locked by `Autonomy.a11y.test.ts` — `PIN-badge-family-dark: <bucket>
+   override hex clears 3:1 UI-floor vs white in <theme>` × 9 (3 buckets ×
+   3 themes) + `PIN-badge-family-dark-overrides asserts the 12 badge classes
+   appear in the dark @media block`. */
+@media (prefers-color-scheme: dark) {
+  .safety-panel-badge,
+  .autonomy-inbox-badge--critical,
+  .safety-policy-badge--blocking,
+  .goal-modal-priority--P0,
+  .autonomy-bar-systemic-severity--critical,
+  .autonomy-display--blocked {
+    background: var(--vscode-charts-red-bright, #B91C1C);
+    border-color: var(--vscode-charts-red-bright, #B91C1C);
+  }
+  .safety-policy-badge--advisory,
+  .goal-modal-priority--P1,
+  .autonomy-bar-systemic-severity--high,
+  .autonomy-display--waiting {
+    background: var(--vscode-charts-orange-bright, #B45309);
+    border-color: var(--vscode-charts-orange-bright, #B45309);
+  }
+  .goal-modal-priority--must-have,
+  .autonomy-display--running {
+    background: var(--vscode-charts-green-bright, #15803D);
+    border-color: var(--vscode-charts-green-bright, #15803D);
+  }
+}
