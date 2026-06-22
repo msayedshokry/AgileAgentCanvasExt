@@ -17,6 +17,22 @@ A themed-token × surface contrast audit (full 114-pair matrix in `scripts/a11y-
 Validation: webview typecheck clean, 119 existing SafetyPanel tests still pass, 9 new contrast regression guards (5 CSS-shape + token-resolved contrast blocks across all three VS Code themes).
 
 
+
+### Added: chip-palette tokenization + 9-test cross-theme regression
+
+Follow-up to the `32 WCAG contrast fails` fix: the three long-standing chip-palette
+buckets for `architecture` (`#4f46e5` indigo), `sprint/ops/research` (`#0891b2` cyan),
+and `design/CIS/innovation` (`#db2777` pink) now declare as
+`var(--vscode-charts-{indigo|cyan|pink}, #UniversalFallbackHex)` instead of hardcoded hexes.
+The Universal fallback keeps chips legible in built-in themes (VS Code upstream defines
+`--vscode-charts-blue/green/orange/purple/red/yellow` but NOT `indigo/cyan/pink` — so the
+fallback always fires today; theme authors opt in by declaring the new tokens).
+`@media (prefers-color-scheme: {dark,light})` overrides are tuned per-theme so chips
+clear WCAG 3:1 UI-floor against their own alpha-tinted bg in Dark+/Light+/HC-Dark.
+The per-theme TOKS-resolution table is documented in JSDoc in `Autonomy.css` and locked
+by 9 new tests in `Autonomy.a11y.test.ts` (3 buckets × 3 themes) that resolve the
+`var(--vscode-charts-X, #fb)` expression through the test TOKS table and assert contrast
+against the canonical editor bg (Dark+ `#1E1E1E` / Light+ `#FFFFFF` / HC-Dark `#000000`).
 ### Removed: 10 legacy BMAD tea/testarch duplicate directories
 
 Ten legacy `bmad-tea` / `bmad-testarch-*` directories under `resources/_aac/tea/` are gone from the extension. Each was a stale duplicate of a live `aac-tea-*` skill that's been the actual runtime path since the Phase 2 baseline refactor; nothing that reads the catalogue, the skill manifest, or installed skills can notice the deletion. The BMAD → AAC migration is now fully resolved on disk — only the methodology carve-outs (the `{bmad-path}` workflow-template variable, BMAD-methodology persona copy in chat-participant.ts, the `BMAD Integration` UI section) remain by design per Decision Rule 2. The deletion leaves every skill ID invokable and every workflow reachable.

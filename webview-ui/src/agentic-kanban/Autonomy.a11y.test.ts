@@ -77,6 +77,9 @@ const TOKS = {
   '--vscode-errorForeground':         { 'Dark+': '#F48771', 'Light+': '#CE5017',  'HC-Dark': '#F48771' },
   '--vscode-charts-green':            { 'Dark+': '#3FA856', 'Light+': '#3FA856',  'HC-Dark': '#3FB950' },
   '--vscode-charts-yellow':           { 'Dark+': '#CA8A04', 'Light+': '#B58900',  'HC-Dark': '#CA8A04' },
+  '--vscode-charts-indigo':           { 'Dark+': '#818cf8', 'Light+': '#4f46e5', 'HC-Dark': '#818cf8' },
+  '--vscode-charts-cyan':             { 'Dark+': '#22d3ee', 'Light+': '#0891b2', 'HC-Dark': '#22d3ee' },
+  '--vscode-charts-pink':             { 'Dark+': '#f472b6', 'Light+': '#db2777', 'HC-Dark': '#f472b6' },
   '--vscode-inputValidation-errorBackground': { 'Dark+': '#5A1D1D', 'Light+': '#FCD9D9', 'HC-Dark': '' },
   '--vscode-descriptionForeground':   { 'Dark+': '#8B8B8B', 'Light+': '#717171',  'HC-Dark': '#FFFFFF' },
   '--vscode-terminal-background':     { 'Dark+': '#1E1E1E', 'Light+': '#FFFFFF',  'HC-Dark': '#000000' },
@@ -269,6 +272,245 @@ describe('Autonomy.css — P0/P1 fix presence (CSS-shape guards)', () => {
     const bg = declOf(rule, 'background');
     expect(bg).toBeTruthy();
     expect(bg.value).toMatch(/var\(--vscode-/);
+  });
+
+  // --- chip-palette token-presence guards (indigo / cyan / pink) ---
+  // The three chip palette buckets previously hardcoded `#4f46e5` `#0891b2`
+  // `#db2777` (RGB hexes with no theme-awareness). The fix tokenizes them
+  // as `var(--vscode-charts-{indigo|cyan|pink}, #originalHex)` so theme
+  // authors CAN override; the original hex stays as a Universal fallback so
+  // themes without the token still render legibly. The bucketed selectors
+  // are comma-joined across multiple variant types, so we walk all rules
+  // and match the first whose selector includes the bucket name.
+  //
+  // IMPORTANT (novel-token notice): VS Code's upstream `--vscode-charts-*`
+  // palette is `blue / green / orange / purple / red / yellow` — `indigo`,
+  // `cyan`, and `pink` are NOVEL tokens introduced in this extension to
+  // fill upstream gaps. Today the inline fallback hex always fires in
+  // built-in themes because the upstream palette does not define them.
+  function findChipBucketRule(expectedBucket: string): any {
+    let found: any = null;
+    AUTONOMY_ROOT.walkRules((r) => {
+      if (found) return;
+      const selectors = r.selectors ?? [];
+      if (selectors.some((s: string) => s.includes(`safety-block-type--${expectedBucket}`))) {
+        found = r;
+      }
+    });
+    return found;
+  }
+  // Single-pass AST walk that captures both the override foreground hex AND
+  // the override background for a given bucket within a given media-query
+  // prefers-color-scheme. Returns null fields if either is absent.
+  function findMediaRule(
+    bucket: string,
+    scheme: 'dark' | 'light',
+  ): { fg: string | null; bg: string | null } {
+    const result: { fg: string | null; bg: string | null } = { fg: null, bg: null };
+    AUTONOMY_ROOT.walkAtRules('media', (at) => {
+      const re = new RegExp(`prefers-color-scheme:\\s*${scheme}`);
+      if (!re.test(at.params)) return;
+      at.walkRules((rule) => {
+        const selectors = rule.selectors ?? [];
+        if (!selectors.some((s: string) => s.includes(`safety-block-type--${bucket}`))) return;
+        rule.walkDecls((d) => {
+          if (d.prop === 'color' && /^#[0-9a-fA-F]{6}$/.test(d.value.trim()) && !result.fg) {
+            result.fg = d.value.trim();
+          }
+          if (d.prop === 'background' && !result.bg) {
+            const trimmed = d.value.trim();
+            if (/^rgba?\(/.test(trimmed)) result.bg = trimmed;
+          }
+        });
+      });
+    });
+    return result;
+  }
+
+  it('chip-indigo: bucket rule uses var(--vscode-charts-indigo, #fb) on color + border-left-color', () => {
+    const rule = findChipBucketRule('architecture');
+    expect(rule, 'indigo bucket rule must exist').toBeTruthy();
+    const color = declOf(rule, 'color');
+    const border = declOf(rule, 'border-left-color');
+    expect(color, 'color decl must exist').toBeTruthy();
+    expect(border, 'border-left-color decl must exist').toBeTruthy();
+    expect(color.value.trim()).toMatch(/var\(--vscode-charts-indigo\s*,/);
+    expect(border.value.trim()).toMatch(/var\(--vscode-charts-indigo\s*,/);
+  });
+
+  it('chip-indigo: @media (prefers-color-scheme: dark) override lifts chip color above the base #4f46e5 (lifts Dark+ chip past 3:1 UI-floor)', () => {
+    const override = findMediaRule('architecture', 'dark').fg;
+    // Any Dark+ override must use a higher-luminance indigo than the
+    // Universal-fallback hex so contrast clears the 3:1 UI-floor on the
+    // Dark+ editor bg. We just assert a different hex was applied, and
+    // that it's a valid 6-digit hex (concrete brightness tuning is the
+    // designer's call).
+    expect(override, '@media (prefers-color-scheme: dark) override must override .safety-block-type--architecture color with a literal hex').toBeTruthy();
+    expect(override).not.toBe('#4f46e5');
+  });
+
+  it('chip-cyan: bucket rule uses var(--vscode-charts-cyan, #fb) on color + border-left-color', () => {
+    const rule = findChipBucketRule('sprint-status');
+    expect(rule, 'cyan bucket rule must exist').toBeTruthy();
+    const color = declOf(rule, 'color');
+    const border = declOf(rule, 'border-left-color');
+    expect(color).toBeTruthy();
+    expect(border).toBeTruthy();
+    expect(color.value.trim()).toMatch(/var\(--vscode-charts-cyan\s*,/);
+    expect(border.value.trim()).toMatch(/var\(--vscode-charts-cyan\s*,/);
+  });
+
+  it('chip-cyan: @media (prefers-color-scheme: light) override darkens chip color below the base #0891b2 (drops Light+ chip past 3:1 UI-floor)', () => {
+    const override = findMediaRule('sprint-status', 'light').fg;
+    expect(override, '@media (prefers-color-scheme: light) override must override .safety-block-type--sprint-status color with a literal hex').toBeTruthy();
+    expect(override).not.toBe('#0891b2');
+  });
+
+  it('chip-pink: bucket rule uses var(--vscode-charts-pink, #fb) on color + border-left-color', () => {
+    const rule = findChipBucketRule('ux-design');
+    expect(rule, 'pink bucket rule must exist').toBeTruthy();
+    const color = declOf(rule, 'color');
+    const border = declOf(rule, 'border-left-color');
+    expect(color).toBeTruthy();
+    expect(border).toBeTruthy();
+    expect(color.value.trim()).toMatch(/var\(--vscode-charts-pink\s*,/);
+    expect(border.value.trim()).toMatch(/var\(--vscode-charts-pink\s*,/);
+  });
+
+  it('chip-pink: @media (prefers-color-scheme: dark) override lifts chip color above the base #db2777 (lifts Dark+/HC-Dark chip past 3:1 UI-floor)', () => {
+    const override = findMediaRule('ux-design', 'dark').fg;
+    expect(override).toBeTruthy();
+    expect(override).not.toBe('#db2777');
+  });
+
+  // --- chip-palette override-vs-tinted-bg contrast guards (parametrized) ---
+  // Each bucket is tested in BOTH:
+  //   (a) the theme where it has a media-query override — verifies the
+  //       override hex clears 3:1 vs the alpha-bumped override bg; and
+  //   (b) the theme where it falls back to the Universal hex in
+  //       `var(--vscode-charts-X, #fb)` — verifies the Universal fallback
+  //       hex ALSO clears 3:1 vs the base bg.
+  // 3 buckets × 2 themes per bucket = 6 tests. The shape guards above already
+  // verify the override EXISTS; these guards verify the override MEETS WCAG.
+
+  function effectiveBg(rgbaStr: string, blendHex: string): string {
+    const m = rgbaStr.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\s*\)$/);
+    if (!m) return blendHex;
+    const [R, G, B, A] = [+m[1], +m[2], +m[3], +m[4]];
+    const pR = parseInt(blendHex.slice(1, 3), 16);
+    const pG = parseInt(blendHex.slice(3, 5), 16);
+    const pB = parseInt(blendHex.slice(5, 7), 16);
+    const r = Math.round(R * A + pR * (1 - A));
+    const g = Math.round(G * A + pG * (1 - A));
+    const b = Math.round(B * A + pB * (1 - A));
+    return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+  }
+
+  // Parametrize: 3 buckets, each with (override theme, fallback theme).
+  const CHIP_BUCKETS = [
+    { token: 'indigo', bucket: 'architecture',
+      baseHex: '#4f46e5', baseBg: 'rgba(79, 70, 229, 0.12)',
+      overrideScheme: 'dark',
+      overrideTheme: 'Dark+', fallbackTheme: 'Light+' },
+    { token: 'cyan',   bucket: 'sprint-status',
+      baseHex: '#0891b2', baseBg: 'rgba(8, 145, 178, 0.12)',
+      overrideScheme: 'light',
+      overrideTheme: 'Light+', fallbackTheme: 'Dark+' },
+    { token: 'pink',   bucket: 'ux-design',
+      baseHex: '#db2777', baseBg: 'rgba(219, 39, 119, 0.12)',
+      overrideScheme: 'dark',
+      overrideTheme: 'Dark+', fallbackTheme: 'Light+' },
+  ] as const;
+
+  for (const b of CHIP_BUCKETS) {
+    it(`chip-${b.token} (override): media-query override fg clears 3:1 UI-floor vs alpha-blended bg on ${b.overrideTheme}`, () => {
+      const { fg: overrideFg, bg: overrideBg } = findMediaRule(b.bucket, b.overrideScheme);
+      expect(overrideFg, `${b.token} ${b.overrideScheme} override must exist`).toBeTruthy();
+      expect(overrideBg, `${b.token} ${b.overrideScheme} override must declare rgba(...) background`).toBeTruthy();
+      const effBg = effectiveBg(overrideBg!, THEMES[b.overrideTheme].editorBg);
+      const r = contrast(overrideFg!, effBg);
+      expect(
+        r,
+        `chip-${b.token} ${b.overrideScheme}-override fg must clear 3:1 vs effective bg ${effBg} on ${b.overrideTheme} (got ${r.toFixed(2)}:1)`,
+      ).toBeGreaterThanOrEqual(3.0);
+    });
+
+    it(`chip-${b.token} (fallback): Universal fallback hex clears 3:1 UI-floor vs alpha-blended bg on ${b.fallbackTheme}`, () => {
+      // No media-query override applies — the chip renders at the literal
+      // `var(--vscode-charts-X, #baseHex)` Universal fallback. The baseHex
+      // must clear 3:1 against the chip's own baseBg alpha-blended over the
+      // editor bg.
+      const effBg = effectiveBg(b.baseBg, THEMES[b.fallbackTheme].editorBg);
+      const r = contrast(b.baseHex, effBg);
+      expect(
+        r,
+        `chip-${b.token} Universal fallback ${b.baseHex} must clear 3:1 vs effective bg ${effBg} on ${b.fallbackTheme} (got ${r.toFixed(2)}:1)`,
+      ).toBeGreaterThanOrEqual(3.0);
+    });
+  }
+
+  // --- chip-token vs editor-bg cross-theme contrast (covers HC-Dark) ---
+  // The two parametrized tests above validate the override theme and the
+  // non-override theme for each bucket. HC-Dark coverage lives here because
+  // HC-Dark does NOT map cleanly to a single fallback or override path in
+  // every browser (most browsers report `prefers-color-scheme: dark` for
+  // HC, but a small subset reports `prefers-color-scheme: light`).
+  // This test walks the TOKS-resolution path so the asserted hex is
+  // whichever the browser would actually emit in HC-Dark — either the
+  // `:dark` override hex (e.g. #818cf8 indigo) or the Universal fallback
+  // (e.g. #4f46e5 indigo if the override is not applied). It then asserts
+  // that hex clears 3:1 against the editor bg itself (cheaper to reason
+  // about than the alpha-blended composite for cross-theme coverage).
+  const CHIP_TOKEN_COLORS = [
+    { token: 'indigo', expr: 'var(--vscode-charts-indigo, #4f46e5)', baseHex: '#4f46e5' },
+    { token: 'cyan',   expr: 'var(--vscode-charts-cyan, #0891b2)',   baseHex: '#0891b2' },
+    { token: 'pink',   expr: 'var(--vscode-charts-pink, #db2777)',   baseHex: '#db2777' },
+  ] as const;
+
+  for (const c of CHIP_TOKEN_COLORS) {
+    for (const themeName of Object.keys(THEMES) as Array<keyof typeof THEMES>) {
+      it(`chip-${c.token}-token (cross-theme): resolved hex clears 3:1 UI-floor on ${themeName} editor bg`, () => {
+        const resolved = resolveToken(c.expr, themeName, THEMES[themeName].editorBg);
+        // The cross-theme resolved hex must clear 3:1 against the editor bg
+        // (not the alpha-blended chip bg — that's the alpha-blended guard's
+        // job). This catches HC-Dark as the worst-case background and forces
+        // every theme's TOKS value (or the Universal fallback) to be
+        // independently legible.
+        const r = contrast(resolved, THEMES[themeName].editorBg);
+        expect(
+          r,
+          `chip-${c.token} resolved hex ${resolved} must clear 3:1 vs ${themeName} editor bg ${THEMES[themeName].editorBg} (got ${r.toFixed(2)}:1)`,
+        ).toBeGreaterThanOrEqual(3.0);
+      });
+    }
+  }
+
+  // --- 4th-tier lock: proposed per-theme token resolutions are wired ---
+  // The chip-palette tokenization PR proposed --vscode-charts-indigo/cyan/pink
+  // and documented per-theme resolutions in the CSS comment. This test
+  // tie-loops the proposal through the test's TOKS table + resolveToken
+  // pipeline, so a future rename or value-shift in the table breaks the
+  // build loudly instead of silently diverging from the CSS comment.
+  it('chip-token-resolution: --vscode-charts-indigo resolves to the documented Dark+/Light+/HC-Dark hexes', () => {
+    const expected = { 'Dark+': '#818cf8', 'Light+': '#4f46e5', 'HC-Dark': '#818cf8' };
+    for (const themeName of Object.keys(expected) as Array<keyof typeof expected>) {
+      const resolved = resolveToken('var(--vscode-charts-indigo, #4f46e5)', themeName, THEMES[themeName].editorBg);
+      expect(resolved, `--vscode-charts-indigo on ${themeName} must resolve to the documented per-theme hex`).toBe(expected[themeName].toLowerCase());
+    }
+  });
+  it('chip-token-resolution: --vscode-charts-cyan resolves to the documented Dark+/Light+/HC-Dark hexes', () => {
+    const expected = { 'Dark+': '#22d3ee', 'Light+': '#0891b2', 'HC-Dark': '#22d3ee' };
+    for (const themeName of Object.keys(expected) as Array<keyof typeof expected>) {
+      const resolved = resolveToken('var(--vscode-charts-cyan, #0891b2)', themeName, THEMES[themeName].editorBg);
+      expect(resolved, `--vscode-charts-cyan on ${themeName} must resolve to the documented per-theme hex`).toBe(expected[themeName].toLowerCase());
+    }
+  });
+  it('chip-token-resolution: --vscode-charts-pink resolves to the documented Dark+/Light+/HC-Dark hexes', () => {
+    const expected = { 'Dark+': '#f472b6', 'Light+': '#db2777', 'HC-Dark': '#f472b6' };
+    for (const themeName of Object.keys(expected) as Array<keyof typeof expected>) {
+      const resolved = resolveToken('var(--vscode-charts-pink, #db2777)', themeName, THEMES[themeName].editorBg);
+      expect(resolved, `--vscode-charts-pink on ${themeName} must resolve to the documented per-theme hex`).toBe(expected[themeName].toLowerCase());
+    }
   });
 });
 

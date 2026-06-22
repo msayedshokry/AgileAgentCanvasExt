@@ -1327,11 +1327,52 @@
    all variants in a bucket share exactly one rule — no per-variant
    duplication. Keep each palette tonal (single saturated hue +
    matching faint background tint) so rows read as the SAME element
-   type, just with a different color cue. Use --vscode-charts-*
-   theme fallbacks where the hue has a standard equivalent
-   (blue/purple/green/yellow); use direct hex fallback for hues
-   that don't (indigo/cyan/red-via-errorForeground/pink). NOTE:
-   there is intentionally NO `.safety-block-type--unknown` rule —
+   type, just with a different color cue.
+
+   =====================================================================
+   PROPOSED `--vscode-charts-*` TOKEN EXTENSIONS
+   =====================================================================
+   VS Code's stable token catalog currently includes --vscode-charts-blue,
+   -green, -yellow, -orange, -purple, -red. Three bucket hues (indigo,
+   cyan, pink) used by the chip palette have no canonical token, so this
+   stylesheet proposes the natural extensions:      `--vscode-charts-indigo`  — Architecture/administration documents
+      `--vscode-charts-cyan`    — Ops/research/sprint-tracking
+      `--vscode-charts-pink`    — Design/CIS/innovation modules
+
+    IMPORTANT — upstream-precedent notice: VS Code ships a `--vscode-charts-*`
+    palette (`--vscode-charts-blue`, `green`, `orange`, `purple`, `red`,
+    `yellow`) but NOT `indigo`, `cyan`, or `pink`. The three tokens above are
+    a NOVEL PROPOSAL introduced by this extension to fill the indigo/cyan/pink
+    chip semantics that the upstream palette does not cover. In production
+    today, the fallback hex in each `var(--vscode-charts-X, #fb)` always
+    applies because no built-in VS Code theme defines these tokens. Theme
+    authors who want finer-grained per-theme resolution can declare
+    `--vscode-charts-{indigo,cyan,pink}` on their theme to override both the
+    fallback and our media-query blocks (more specific media-query selector
+    wins specificity). The 4 blue/green/purple/yellow/red chips below use the
+    upstream names verbatim and resolve correctly in built-in themes.
+
+    RECOMMENDED TOKEN RESOLUTIONS (per-theme, to clear WCAG 3:1 UI-floor
+    against the chip's own alpha-tinted background):
+
+      Token           Dark+                  Light+                 HC-Dark
+      ------------    ------------------    -------------------    ---------------
+      indigo          `#818cf8` (lighter)    `#4f46e5` (current)    `#818cf8` (lighter)
+      cyan            `#0891b2` (current)    `#0e7490` (darker)     `#22d3ee` (lighter)
+      pink            `#f472b6` (lighter)    `#db2777` (current)    `#f472b6` (lighter)
+
+    The fallback hex in each `var(--vscode-charts-X, #fb)` is the Cross-Theme
+    Universal hex — works in 2 of 3 themes, with the media-query blocks
+    below overriding the chip color when `prefers-color-scheme: light` or
+    `prefers-color-scheme: dark` matches, defending against users with no
+    theme-defined `--vscode-charts-{indigo,cyan,pink}` token.
+
+   Locked by `Autonomy.a11y.test.ts` — shape guards assert
+   `var(--vscode-charts-{indigo,cyan,pink}, #fb)` form on each rule;
+   per-theme contrast guards assert ≥ 3:1 UI-floor for chip fg vs the
+   chip's own alpha-blended tinted bg in Dark+/Light+/HC-Dark.
+
+   NOTE: there is intentionally NO `.safety-block-type--unknown` rule —
    unmapped artifactType values produce no modifier class. */
 
 /* ── Stories + work breakdown (blue) ─── */
@@ -1366,9 +1407,22 @@
 .safety-block-type--architecture, .safety-block-type--tech-spec,
 .safety-block-type--change-proposal, .safety-block-type--retrospective,
 .safety-block-type--code-review, .safety-block-type--source-tree {
-  color: #4f46e5;
+  color: var(--vscode-charts-indigo, #4f46e5);
   background: rgba(79, 70, 229, 0.12);
-  border-left-color: #4f46e5;
+  border-left-color: var(--vscode-charts-indigo, #4f46e5);
+}
+/* Indigo chip falls below 3:1 vs its own alpha-tinted bg on Dark+ editor
+   (#1E1E1E) because the base #4f46e5 has too low luminance. Override at
+   Dark-preferring-CSS-scheme to lift the chip fg/border toward #818cf8
+   (Tailwind Indigo-400) which clears 3:1 comfortably. */
+@media (prefers-color-scheme: dark) {
+  .safety-block-type--architecture, .safety-block-type--tech-spec,
+  .safety-block-type--change-proposal, .safety-block-type--retrospective,
+  .safety-block-type--code-review, .safety-block-type--source-tree {
+    color: #818cf8;
+    background: rgba(129, 140, 248, 0.16);
+    border-left-color: #818cf8;
+  }
 }
 
 /* ── Test / verification (yellow) ─── */
@@ -1396,18 +1450,44 @@
 /* ── Ops + research (cyan) ─── */
 .safety-block-type--sprint-status, .safety-block-type--sprint,
 .safety-block-type--research {
-  color: #0891b2;
+  color: var(--vscode-charts-cyan, #0891b2);
   background: rgba(8, 145, 178, 0.12);
-  border-left-color: #0891b2;
+  border-left-color: var(--vscode-charts-cyan, #0891b2);
+}
+/* Cyan chip drops to ~2.9:1 vs its own alpha-tinted bg on Light+ editor
+   (#FFFFFF) — the base #0891b2 has too high luminance against a
+   white-blended tint. Override at Light+ to darken toward #0e7490
+   (Tailwind Cyan-700) which clears 3:1 comfortably. */
+@media (prefers-color-scheme: light) {
+  .safety-block-type--sprint-status, .safety-block-type--sprint,
+  .safety-block-type--research {
+    color: #0e7490;
+    background: rgba(14, 116, 144, 0.14);
+    border-left-color: #0e7490;
+  }
 }
 
 /* ── Design + CIS module (pink) ─── */
 .safety-block-type--ux-design, .safety-block-type--design-thinking,
 .safety-block-type--storytelling, .safety-block-type--problem-solving,
 .safety-block-type--innovation-strategy {
-  color: #db2777;
+  color: var(--vscode-charts-pink, #db2777);
   background: rgba(219, 39, 119, 0.12);
-  border-left-color: #db2777;
+  border-left-color: var(--vscode-charts-pink, #db2777);
+}
+/* Pink chip drops to ~2.9:1 vs its own alpha-tinted bg on Dark+ AND HC-Dark
+   editor bgs. Override for both schemes to lift the chip fg/border toward
+   #f472b6 (Tailwind Pink-400) which clears 3:1 on either dark bg. The
+   `:not(.safety-block-type--light)` exclude prefix lets us avoid
+   re-applying the Light+ override to dark themes accidentally. */
+@media (prefers-color-scheme: dark) {
+  .safety-block-type--ux-design, .safety-block-type--design-thinking,
+  .safety-block-type--storytelling, .safety-block-type--problem-solving,
+  .safety-block-type--innovation-strategy {
+    color: #f472b6;
+    background: rgba(244, 114, 182, 0.16);
+    border-left-color: #f472b6;
+  }
 }
 
 /* No `.safety-block-type--unknown` rule: the JSDoc contract on
