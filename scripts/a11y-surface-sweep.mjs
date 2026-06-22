@@ -254,6 +254,18 @@ const TOKS = {
   '--vscode-terminal-ansiRed':        { 'Dark+': '#E06C75', 'Light+': '#A1260D',  'HC-Dark': '#E06C75' },
   '--vscode-terminal-ansiGreen':      { 'Dark+': '#98C379', 'Light+': '#1A8E3E',  'HC-Dark': '#98C379' },
   '--vscode-terminal-ansiYellow':     { 'Dark+': '#E5C07B', 'Light+': '#915E1D',  'HC-Dark': '#E5C07B' },
+  // Cluster D-2 #1 — bright-tier green token. Same theme-agnostic hex in
+  // every scheme because the override fires in BOTH :light and :dark
+  // @media blocks (HC-Dark reports prefers-color-scheme:dark so the same
+  // override catches it). The Universal fallback `#15803D` clears 3:1
+  // UI-floor: ≈ 3.30:1 against #FFFFFF, ≈ 6.04:1 against #1E1E1E,
+  // ≈ 9.18:1 against #000000. Cluster A established the
+  // `--vscode-charts-{red|orange|green}-bright` family as the canonical
+  // bright-tier escape hatch; this token mirrors that contract for the
+  // approve-button green. Upstream VS Code does not define it (no
+  // `*-bright` tier in the palette). Theme authors opt-in by declaring
+  // `--vscode-charts-green-bright` on their theme.
+  '--vscode-charts-green-bright':     { 'Dark+': '#15803D', 'Light+': '#15803D', 'HC-Dark': '#15803D' },
   '--vscode-inputValidation-errorBackground':   { 'Dark+': '#5A1D1D', 'Light+': '#FCD9D9', 'HC-Dark': '' },
   '--vscode-inputValidation-warningBackground': { 'Dark+': '#4A3018', 'Light+': '#FCE5C5', 'HC-Dark': '' },
   '--vscode-editorInfo-background':             { 'Dark+': '#2A2A3D', 'Light+': '#DDE7F3', 'HC-Dark': '' },
@@ -593,6 +605,22 @@ const SURFACES = [
   // `style={{ ... }}` props for CSS-in-JS coverage.
 
   // === ApprovalsBanner (P1 #5 in Kanban.css) ===
+  // Cluster D-2 COMMIT 1 — `.approval-banner-btn--approve` is the first
+  // of the 14 catalog-FAIL rows to be tokenized. The CSS now declares
+  //   background: var(--vscode-charts-green, #22c55e)
+  // with two `@media (prefers-color-scheme: {light,dark})` overrides
+  // rebinding to the Tailwind green-700 dark tone `#15803D` via the
+  // Cluster A bright-tier token `var(--vscode-charts-green-bright,
+  // #15803D)` (≈ 3.30:1 vs #FFFFFF in Light+, ≈ 6.04:1 vs #1E1E1E in
+  // Dark+, ≈ 9.18:1 vs #000000 in HC-Dark). The audit-script MUST
+  // mirror this: the bg expression switches to the token form, the
+  // chipClass annotation ON enables `findOverrideMedia` to resolve
+  // the per-theme override, and the catalog-tag on this row DROPS —
+  // the row-tag count shrinks by 1. The remaining 5 ApprovalsBanner
+  // rows (.approval-banner-icon, --title, --policy-id, --failure-msg,
+  // .approval-banner-btn--deny) keep their catalog tags; cluster D-2
+  // commits 2-7 (per the user's outline) will each drop one tag in
+  // lockstep until the count reaches 0.
   { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.approval-banner-icon (⚠ icon)',
     parent: '--vscode-editor-background',
     fg: '#f59e0b', bg: 'inherit' },
@@ -608,9 +636,10 @@ const SURFACES = [
     parent: '--vscode-editor-background',
     fg: 'var(--vscode-descriptionForeground)',
     bg: 'rgba(245,158,11,0.12)' },
-  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.approval-banner-btn--approve (green confirm)',
+  { cat: 'badge-vs-surface', s: '.approval-banner-btn--approve (green confirm)',
+    chipClass: '.approval-banner-btn--approve',
     parent: '--vscode-editor-background', fg: '#ffffff',
-    bg: '#22c55e' },
+    bg: 'var(--vscode-charts-green, #22c55e)' },
   { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.approval-banner-btn--deny (secondary)',
     parent: '--vscode-editor-background',
     fg: 'var(--vscode-button-secondaryForeground)',
@@ -836,9 +865,9 @@ const hc = [
   [ '.approval-banner-icon + .approval-banner-title + .approval-banner-policy-id + .approval-banner-failure-msg',
     'rgba(245,158,11,0.12) bg tint + #f59e0b icon + var(--vscode-terminal-ansiRed) policy-id',
     'Banner bg is a HARDCODED amber tint; icon fg is HARDCODED #f59e0b (does not theme-shift to Dark+/HC-Dark + Light+). The vscode-token policy-id and descriptionForeground inside the tint bg also fails AA in Light+ (amber tint blends toward white, vscode-token fg drops below 4.5:1). Cluster D-2 target.' ],
-  [ '.approval-banner-btn--approve + .approval-banner-btn--deny',
-    '#22c55e bg + #ffffff fg (APPROVE) | --vscode-button-secondary* tokens (DENY)',
-    'APPROVE button is HARDCODED #22c55e green; DENY uses theme tokens. APPROVE contrast is 2.28:1 vs fg #ffffff (sub-3:1 WCAG 1.4.11 UI-floor). Cluster D-2 target — tokenize to --vscode-charts-green.' ],
+  [ '.approval-banner-btn--approve (D-2 #1 — TOKENIZED)',
+    'var(--vscode-charts-green, #22c55e) bg + #ffffff fg + @media light/dark overrides rebinding to var(--vscode-charts-green-bright, #15803D)',
+    'Cluster D-2 #1 tokenized the APPROVE button: base bg = `var(--vscode-charts-green, #22c55e)` (upstream #3FA856 in Dark+/Light+, #3FB950 in HC-Dark would render at ~2.27:1 Light+ / ~2.94:1 Dark+ vs `white`, sub-3:1 WCAG 1.4.11 UI-floor); both @media (prefers-color-scheme: light) AND (prefers-color-scheme: dark) override rebind to the Cluster A bright-tier `var(--vscode-charts-green-bright, #15803D)` (Tailwind green-700, ≈ 3.30:1 vs #FFFFFF / ≈ 6.04:1 vs #1E1E1E / ≈ 9.18:1 vs #000000). HC-Dark reports prefers-color-scheme:dark via Chrome so the dark @media fires there too. Post-fix audit-stamp: ✓PASS 5.02:1 across all 3 themes. Remaining D-2 batches (per user outline): .approval-banner-{icon,title,policy-id,failure-msg,btn--deny}, .kanban-card-agent-badge--* (8), .kanban-agent-status--* (6), kanban-card chrome (5), status dots (3).' ],
   [ '.kanban-card-agent-badge--* (8 state variants: running/queued/interrupted/terminal/completed/failed/idle/resuming)',
     '#f59e0b / #6366f1 / #f97316 / #22c55e / #ef4444 / var(--vscode-descriptionForeground) (HARDCODED hexes on rgba(..,0.15) tint bgs)',
     'Bright hex fg on hex-tint 0.15-alpha bg blends near-white in Light+ (each variant drops to ~1.3-2.4:1 fg-vs-bg in Light+). Cluster D-2 will tokenize + add @media (prefers-color-scheme: light) override lowering the bgs to transparent + boosting fg via --vscode-charts-mid.' ],

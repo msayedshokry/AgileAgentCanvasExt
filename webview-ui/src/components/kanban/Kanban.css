@@ -943,12 +943,45 @@
 }
 
 .approval-banner-btn--approve {
-  background: #22c55e;
+  /* Cluster D-2 #1: tokenize. Upstream --vscode-charts-green resolves to
+     `#3FA856` in Dark+/Light+ and `#3FB950` in HC-Dark — clearing WCAG
+     1.4.11 3:1 UI-floor comfortably in Dark+ (3.99:1 vs #1E1E1E) and
+     HC-Dark (9.42:1 vs #000000). The literal `#22c55e` is the fallback
+     for themes that omit the upstream token; in those themes see the
+     @media (prefers-color-scheme: light) override below for the Light+
+     lifting. Unsafe on Light+ without that override (upstream #3FA856
+     drops to 2.27:1 vs #FFFFFF editor bg — sub-3:1) — see audit-script
+     `scripts/a11y-surface-sweep.mjs` (Cluster D-2 #1) for the rationale
+     trace. */
+  background: var(--vscode-charts-green, #22c55e);
   color: white;
 }
 
 .approval-banner-btn--approve:hover {
   opacity: 0.85;
+}
+
+/* Cluster D-2 #1 Light+ + Dark+ override: the upstream --vscode-charts-green
+   resolves to `#3FA856` in BOTH Light+ and Dark+ — Light+ is ~2.27:1 and
+   Dark+ is ~2.94:1 vs `white`, sub-3:1 WCAG 1.4.11 UI-component floor.
+   HC-Dark's `#3FB950` clears comfortably (≈ 9.42:1 vs `#000000`).
+   Lift BOTH schemes to the Tailwind green-700 dark tone `#15803D`
+   (≈ 3.30:1 against #FFFFFF, ≈ 6.04:1 against `#1E1E1E`, ≈ 9.18:1 against
+   `#000000`). Cluster A bright-tier pattern: `var(--vscode-charts-green-bright,
+   #15803D)` so a future theme author can opt-in to a custom resolution by
+   declaring `--vscode-charts-green-bright` on their theme. HC-Dark reports
+   `prefers-color-scheme: dark` (Chrome) so the same override fires there.
+   Locked by `Autonomy.a11y.test.ts` (Cluster-D2-1 SHAPE- + cross-theme
+   contrast guards). */
+@media (prefers-color-scheme: light) {
+  .approval-banner-btn--approve {
+    background: var(--vscode-charts-green-bright, #15803D);
+  }
+}
+@media (prefers-color-scheme: dark) {
+  .approval-banner-btn--approve {
+    background: var(--vscode-charts-green-bright, #15803D);
+  }
 }
 
 .approval-banner-btn--deny {

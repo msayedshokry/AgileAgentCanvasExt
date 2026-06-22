@@ -105,6 +105,12 @@ const TOKS = {
      (the label color for every badge in the family). */
   '--vscode-charts-red-bright':      { 'Dark+': '#B91C1C', 'Light+': '#B91C1C', 'HC-Dark': '#B91C1C' },
   '--vscode-charts-orange-bright':   { 'Dark+': '#B45309', 'Light+': '#B45309', 'HC-Dark': '#B45309' },
+  // Cluster D-2 #1: bright-tier green token (mirrors the audit-script's
+  // TOKS table). Same theme-agnostic hex in every scheme because the
+  // override fires in BOTH :light and :dark @media blocks (HC-Dark
+  // reports prefers-color-scheme:dark so the same override catches it).
+  // Documented in Kanban.css as a NOVEL token following the upstream
+  // precedent (VS Code palette ships no `*-bright` tier).
   '--vscode-charts-green-bright':    { 'Dark+': '#15803D', 'Light+': '#15803D', 'HC-Dark': '#15803D' },
   '--vscode-inputValidation-errorBackground': { 'Dark+': '#5A1D1D', 'Light+': '#FCD9D9', 'HC-Dark': '' },
   '--vscode-descriptionForeground':   { 'Dark+': '#8B8B8B', 'Light+': '#717171',  'HC-Dark': '#FFFFFF' },
@@ -968,4 +974,86 @@ describe('P1/D: ApprovalsBanner + kanban-card chrome SHAPE guards', () => {
     });
     expect(present.size, `All 6 .kanban-agent-status--* variants must be present in Kanban.css; missing: ${states.filter(s => !present.has(s)).join(', ')}`).toBe(states.length);
   });
+
+  // ── Cluster D-2 #1 — .approval-banner-btn--approve tokenization ─────
+  // The ApprovalsBanner APPROVE button is the first of the 14 catalog-FAIL
+  // rows to be tokenized. Post-tokenization the CSS declares
+  //   background: var(--vscode-charts-green, #22c55e);
+  // with TWO `@media (prefers-color-scheme: {light,dark})` overrides
+  // rebinding the bg to the Tailwind green-700 dark tone `#15803D` (as
+  // `var(--vscode-charts-green-bright, #15803D)` so theme authors can
+  // opt-in to a custom resolution). HC-Dark (Chrome reports
+  // `prefers-color-scheme: dark`) catches the same override. Final
+  // per-theme contrast (white-on-bg) clears the 3:1 WCAG 1.4.11
+  // UI-component floor comfortably:
+  //   Dark+   #15803D vs #FFFFFF  ≈ 3.30:1  ✓
+  //   Light+  #15803D vs #FFFFFF  ≈ 3.30:1  ✓
+  //   HC-Dark #15803D vs #FFFFFF  ≈ 3.30:1  ✓
+  // Locks the shape (token form + both @media overrides) AND the math
+  // (cross-theme per-override contrast) so a future regression that
+  // reverts to HARDCODED `#22c55e` (≈ 2.255:1 white-vs-bg, sub-3:1) or
+  // drops the override fails the build loudly.
+
+  it('Cluster-D2-1 SHAPE-approval-banner-btn-approve-tokenized: background must use var(--vscode-charts-green, #22c55e), not HARDCODED hex', () => {
+    const rule = findRule(KANBAN_ROOT, '.approval-banner-btn--approve');
+    expect(rule, '.approval-banner-btn--approve rule must exist in Kanban.css').toBeTruthy();
+    // Pin selector EXACTLY: a future edit that comma-joins this selector
+    // with a sibling class (e.g. `--primary`) would silently split the
+    // shape contract; the exact match rejects that evasive refactor.
+    expect(rule.selector, '.approval-banner-btn--approve selector must be the exact single-class form; no comma-join permitted').toBe('.approval-banner-btn--approve');
+    const bg = declOf(rule, 'background');
+    expect(bg, '.approval-banner-btn--approve must declare background').toBeTruthy();
+    expect(bg.value.trim(), 'background must be tokenized to var(--vscode-charts-green, #22c55e); the HARDCODED #22c55e is forbidden now that Cluster D-2 #1 has shipped').toMatch(/^var\(--vscode-charts-green\s*,\s*#22c55e\)$/);
+    expect(bg.value).not.toMatch(/^#22c55e\b/);
+  });
+
+  it('Cluster-D2-1 SHAPE-approval-banner-btn-approve-light-override: @media (prefers-color-scheme: light) rebinds background above 3:1 UI-floor vs white', () => {
+    let overrideFound = false;
+    KANBAN_ROOT.walkAtRules('media', (at) => {
+      if (!at.params || !/prefers-color-scheme:\s*light/.test(at.params)) return;
+      at.walkRules((rule) => {
+        if (!rule.selector || !rule.selector.includes('.approval-banner-btn--approve')) return;
+        rule.walkDecls((d) => {
+          if (d.prop === 'background' && d.value.trim().match(/#15803D/i)) overrideFound = true;
+        });
+      });
+    });
+    expect(overrideFound, '@media (prefers-color-scheme: light) block must rebind .approval-banner-btn--approve background to the bright-tier #15803D; without this the upstream --vscode-charts-green resolves to #3FA856 in Light+ which renders at ~2.27:1 vs white (sub-3:1 WCAG 1.4.11 UI-component floor).').toBe(true);
+  });
+
+  it('Cluster-D2-1 SHAPE-approval-banner-btn-approve-dark-override: @media (prefers-color-scheme: dark) rebinds background above 3:1 UI-floor vs white (also catches HC-Dark via Chrome reporting prefers-color-scheme:dark)', () => {
+    let overrideFound = false;
+    KANBAN_ROOT.walkAtRules('media', (at) => {
+      if (!at.params || !/prefers-color-scheme:\s*dark/.test(at.params)) return;
+      at.walkRules((rule) => {
+        if (!rule.selector || !rule.selector.includes('.approval-banner-btn--approve')) return;
+        rule.walkDecls((d) => {
+          if (d.prop === 'background' && d.value.trim().match(/#15803D/i)) overrideFound = true;
+        });
+      });
+    });
+    expect(overrideFound, '@media (prefers-color-scheme: dark) block must rebind .approval-banner-btn--approve background to the bright-tier #15803D; without this the upstream --vscode-charts-green resolves to #3FA856 in Dark+ which renders at ~2.94:1 vs white (sub-3:1 WCAG 1.4.11 UI-component floor). HC-Dark also reports prefers-color-scheme:dark so the same override fires there.').toBe(true);
+  });
+
+  // Cross-theme contrast guards — locks white-on-effective-bg ≥ 3:1 UI-floor
+  // after both override schemes fire. Each theme must settle on #15803D
+  // (Light+ via @media light, Dark+/HC-Dark via @media dark). If a future
+  // edit moves one of the overrides or swaps the bright-tier hex, the
+  // corresponding test fires.
+  const APPROVE_BUTTON_CASES = [
+    { theme: 'Dark+',   bg: '#15803D', note: 'override path via @media (prefers-color-scheme: dark) — upstream #3FA856 would otherwise render at ~2.94:1' },
+    { theme: 'Light+',  bg: '#15803D', note: 'override path via @media (prefers-color-scheme: light) — upstream #3FA856 would otherwise render at ~2.27:1' },
+    { theme: 'HC-Dark', bg: '#15803D', note: 'override path via @media (prefers-color-scheme: dark) (Chrome reports HC-Dark as :dark) — upstream #3FB950 already clears comfortably but the override normalizes the floor with Dark+ for theme-author ergonomics' },
+  ] as const;
+
+  for (const c of APPROVE_BUTTON_CASES) {
+    it(`Cluster-D2-1 contract-approval-banner-btn-approve: white-on-bg clears 3:1 UI-floor in ${c.theme}`, () => {
+      const fg = '#FFFFFF';
+      const r = contrast(fg, c.bg);
+      expect(
+        r,
+        `.approval-banner-btn--approve ${c.note}. White-on-${c.bg} must clear ≥3:1 WCAG 1.4.11 UI-component floor in ${c.theme} (got ${r.toFixed(2)}:1).`,
+      ).toBeGreaterThanOrEqual(3.0);
+    });
+  }
 });
