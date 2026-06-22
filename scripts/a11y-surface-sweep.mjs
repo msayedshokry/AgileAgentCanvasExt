@@ -41,10 +41,28 @@ import postcss from 'postcss';
 //    (TerminalGrid.css) live OUTSIDE Autonomy.css, so the helper needs to
 //    walk all three. The 12 badge-family dark overrides still live in
 //    Autonomy.css (Cluster A).
+//
+//    Cluster D-1 (this commit) adds `KANBAN_ROOT` for
+//    `webview-ui/src/components/kanban/Kanban.css` — a different source
+//    directory. This file owns ApprovalsBanner styles (`.approval-banner-*`)
+//    + kanban-card chrome (`.kanban-card-*`, `.kanban-card-agent-badge--*`,
+//    `.kanban-agent-status--*`, status dots, toast banners). Its HARDCODED
+//    github-dark hex palette is OUT OF SCOPE for postcss-based auto-detection
+//    of theme-shift overrides; the catalog surfaces appear as ✗FAIL in
+//    Light+/HC-Dark until Cluster D-2 tokenizes the hexes to
+//    `--vscode-charts-*` (mirroring Autonomy.css Cluster A pattern).
+//
+//    ChatPanel CSS: ChatPanel.tsx, ChatMessages.tsx, ChatInput.tsx have no
+//    paired `.styles.ts` files; styling is inherited from base tokens or
+//    composes onto Autonomy surfaces. Escrowed to a follow-up sweep that
+//    introspects React `style={{ ... }}` props (out of postcss scope).
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const AGENTIC_KANBAN_DIR = path.resolve(
   __dirname, '..', 'webview-ui', 'src', 'agentic-kanban',
+);
+const WEBVIEW_COMPONENTS_DIR = path.resolve(
+  __dirname, '..', 'webview-ui', 'src', 'components',
 );
 const AUTONOMY_ROOT = postcss.parse(
   readFileSync(path.join(AGENTIC_KANBAN_DIR, 'Autonomy.css'), 'utf-8'),
@@ -58,7 +76,11 @@ const TERMINAL_GRID_ROOT = postcss.parse(
   readFileSync(path.join(AGENTIC_KANBAN_DIR, 'TerminalGrid.css'), 'utf-8'),
   { from: path.join(AGENTIC_KANBAN_DIR, 'TerminalGrid.css') },
 );
-const ROOTS = [AUTONOMY_ROOT, DIFF_PANEL_ROOT, TERMINAL_GRID_ROOT];
+const KANBAN_ROOT = postcss.parse(
+  readFileSync(path.join(WEBVIEW_COMPONENTS_DIR, 'kanban', 'Kanban.css'), 'utf-8'),
+  { from: path.join(WEBVIEW_COMPONENTS_DIR, 'kanban', 'Kanban.css') },
+);
+const ROOTS = [AUTONOMY_ROOT, DIFF_PANEL_ROOT, TERMINAL_GRID_ROOT, KANBAN_ROOT];
 
 function L(c) {
   const v = c / 255;
@@ -273,6 +295,13 @@ const HARDCODED = {
   '#3c3c3c': [60, 60, 60, 1],
   '#fcd9d9': [252, 217, 217, 1],
   '#ffffff': [255, 255, 255, 1],
+  // Cluster D-1: Kanban.css HARDCODED hex palette (cluster of github-dark
+  // colors that do NOT theme-shift across Light+/HC-Dark). Cluster D-2
+  // will tokenize these to var(--vscode-charts-*) and add @media scheme
+  // overrides mirroring the Cluster A pattern.
+  '#8b5cf6': [139, 92, 246, 1],   // .kanban-card--epic border + epic-tag fg
+  '#f97316': [249, 115, 22, 1],   // .kanban-card--interrupted + .agent-status--interrupted fg
+  '#007acc': [0, 122, 204, 1],    // .kanban-drag-ghost-badge bg + focus fallback
   // chip-palette 0.12 alphas (need a parent color for alpha rendering)
   'rgba(99,102,241,0.12)':  [99, 102, 241, 0.12],
   'rgba(34,197,94,0.12)':   [34, 197, 94, 0.12],
@@ -282,6 +311,16 @@ const HARDCODED = {
   'rgba(239,68,68,0.12)':   [239, 68, 68, 0.12],
   'rgba(8,145,178,0.12)':   [8, 145, 178, 0.12],
   'rgba(219,39,119,0.12)':  [219, 39, 119, 0.12],
+  // Cluster D-1: tints Kanban.css uses (rgba fg/bg under agent-badge--
+  // variants). 0.15 = HEAVIER hit than the 0.12 chip-palette alphas.
+  'rgba(245,158,11,0.15)':  [245, 158, 11, 0.15],
+  'rgba(99,102,241,0.15)':  [99, 102, 241, 0.15],
+  'rgba(249,115,22,0.15)':  [249, 115, 22, 0.15],
+  'rgba(239,68,68,0.15)':   [239, 68, 68, 0.15],
+  'rgba(128,128,128,0.15)': [128, 128, 128, 0.15],
+  'rgba(139,92,246,0.10)':  [139, 92, 246, 0.10],
+  'rgba(249,115,22,0.10)':  [249, 115, 22, 0.10],
+  'rgba(245,158,11,0.12)':  [245, 158, 11, 0.12],  // .approval-banner bg tint
 };
 
 // Resolver: given a CSS expression, return the effective color for the
@@ -315,7 +354,12 @@ function resolve(expr, themeName, parentBg) {
 
   // Fallback literal hex like #RGB
   if (expr.startsWith('#')) return expr;
-  // Unparseable → parent
+  // Unparseable → parent. Known unparseable spots:
+  //   * `color-mix(in srgb, expr1 expr2%, transparent)` — affects
+  //     `.kanban-card-agent-badge--resuming` accuracy only (the
+  //     measurement will be parentBg-vs-fg rather than the realistic
+  //     blend). SHAPE guards still lock CSS presence. Cluster D-3
+  //     (future) will add a `color-mix()` parser.
   return parentBg;
 }
 
@@ -530,6 +574,141 @@ const SURFACES = [
   { cat: 'badge-vs-surface', s: '.kanban-card-dep-badge (blue dep badge)',
     parent: '--vscode-editor-background', fg: '#ffffff',
     bg: 'var(--vscode-charts-blue, #6366f1)' },
+
+  // =====================================================================
+  // Cluster D-1 — ApprovalsBanner + kanban-card chrome surfaces
+  // =====================================================================
+  // Catalog-only expansion (this commit). All entries below flag ✗FAIL
+  // across Light+/HC-Dark because Kanban.css uses HARDCODED github-dark
+  // hex palette (#8b5cf6 / #f59e0b / #6366f1 / #f97316) that does NOT
+  // theme-shift; production fix planned for Cluster D-2 (tokenize to
+  // --vscode-charts-* + @media scheme overrides, mirroring Cluster A).
+  // Future-maintainer fingerprint: grep the audit-script for
+  // `CLUSTER-D-2-TODO` to enumerate every row that Cluster D-2 must
+  // address.
+  //
+  // ChatPanel surfaces are OUT OF SCOPE — ChatPanel.tsx, ChatMessages.tsx,
+  // ChatInput.tsx have no paired `.styles.ts` files; styling is inherited
+  // from base tokens. Cluster D-3 (future) will introspect React
+  // `style={{ ... }}` props for CSS-in-JS coverage.
+
+  // === ApprovalsBanner (P1 #5 in Kanban.css) ===
+  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.approval-banner-icon (⚠ icon)',
+    parent: '--vscode-editor-background',
+    fg: '#f59e0b', bg: 'inherit' },
+  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.approval-banner-title (heading)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-foreground)',
+    bg: 'rgba(245,158,11,0.12)' },
+  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.approval-banner-policy-id (red code chip)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-terminal-ansiRed)',
+    bg: 'rgba(245,158,11,0.12)' },
+  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.approval-banner-failure-msg (description)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-descriptionForeground)',
+    bg: 'rgba(245,158,11,0.12)' },
+  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.approval-banner-btn--approve (green confirm)',
+    parent: '--vscode-editor-background', fg: '#ffffff',
+    bg: '#22c55e' },
+  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.approval-banner-btn--deny (secondary)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-button-secondaryForeground)',
+    bg: 'var(--vscode-button-secondaryBackground)' },
+
+  // === kanban-card agent badge (8 state variants, kanban.css bottom block) ===
+  // Pattern: hex fg on rgba(...,0.15) tint bg. The pair is HARDCODED — does
+  // not theme-shift.
+  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.kanban-card-agent-badge (neutral base)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-descriptionForeground)',
+    bg: 'rgba(128,128,128,0.15)' },
+  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.kanban-card-agent-badge--running (amber)',
+    parent: '--vscode-editor-background', fg: '#f59e0b',
+    bg: 'rgba(245,158,11,0.15)' },
+  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.kanban-card-agent-badge--queued (indigo)',
+    parent: '--vscode-editor-background', fg: '#6366f1',
+    bg: 'rgba(99,102,241,0.15)' },
+  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.kanban-card-agent-badge--interrupted (orange)',
+    parent: '--vscode-editor-background', fg: '#f97316',
+    bg: 'rgba(249,115,22,0.15)' },
+  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.kanban-card-agent-badge--terminal (green)',
+    parent: '--vscode-editor-background', fg: '#22c55e',
+    bg: 'rgba(34,197,94,0.15)' },
+  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.kanban-card-agent-badge--completed (green)',
+    parent: '--vscode-editor-background', fg: '#22c55e',
+    bg: 'rgba(34,197,94,0.15)' },
+  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.kanban-card-agent-badge--failed (red)',
+    parent: '--vscode-editor-background', fg: '#ef4444',
+    bg: 'rgba(239,68,68,0.15)' },
+  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.kanban-card-agent-badge--idle (gray)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-descriptionForeground)',
+    bg: 'rgba(128,128,128,0.15)' },
+
+  // === Detail-panel agent status (8 state variants) ===
+  // Same hex palette as the card badges but no animation, sits inside the
+  // side-drawer (`.agentic-detail-panel`).
+  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.kanban-agent-status (neutral)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-descriptionForeground)',
+    bg: 'rgba(128,128,128,0.15)' },
+  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.kanban-agent-status--running',
+    parent: '--vscode-editor-background', fg: '#f59e0b',
+    bg: 'rgba(245,158,11,0.15)' },
+  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.kanban-agent-status--queued',
+    parent: '--vscode-editor-background', fg: '#6366f1',
+    bg: 'rgba(99,102,241,0.15)' },
+  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.kanban-agent-status--interrupted',
+    parent: '--vscode-editor-background', fg: '#f97316',
+    bg: 'rgba(249,115,22,0.15)' },
+  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.kanban-agent-status--completed',
+    parent: '--vscode-editor-background', fg: '#22c55e',
+    bg: 'rgba(34,197,94,0.15)' },
+  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.kanban-agent-status--failed',
+    parent: '--vscode-editor-background', fg: '#ef4444',
+    bg: 'rgba(239,68,68,0.15)' },
+  { cat: 'badge-vs-surface',  cluster: 'D-2-tokenize', s: '.kanban-agent-status--idle',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-descriptionForeground)',
+    bg: 'rgba(128,128,128,0.15)' },
+
+  // === kanban-card chrome (state-border accents) ===
+  // The bg of `.kanban-card` is `--vscode-editor-background`; the title/key
+  // text rides on that. The accent is the wp-* border color which is fg in
+  // audit semantics (vs editor bg) — UI-component floor.
+  { cat: 'severity-pip',  cluster: 'D-2-tokenize', s: '.kanban-card (base key small text)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-descriptionForeground)',
+    bg: 'inherit' },
+  { cat: 'severity-pip',  cluster: 'D-2-tokenize', s: '.kanban-card-type-tag (KEY chip on card)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-badge-foreground)',
+    bg: 'var(--vscode-badge-background, rgba(127,127,127,0.2))' },
+  { cat: 'severity-pip',  cluster: 'D-2-tokenize', s: '.kanban-card-epic-tag (purple EPIC chip)',
+    parent: '--vscode-editor-background', fg: '#8b5cf6',
+    bg: 'rgba(139,92,246,0.10)' },
+  { cat: 'severity-pip',  cluster: 'D-2-tokenize', s: '.kanban-card-lock-badge (LOCK chip)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-descriptionForeground)',
+    bg: 'rgba(128,128,128,0.15)' },
+  { cat: 'severity-pip',  cluster: 'D-2-tokenize', s: '.kanban-card-harness-badge--error (red error chip)',
+    parent: '--vscode-editor-background', fg: '#ef4444',
+    bg: 'rgba(239,68,68,0.15)' },
+
+  // === Status dots inside column header counts (3 variants) ===
+  { cat: 'severity-pip',  cluster: 'D-2-tokenize', s: '.kanban-column-status-dot--running (amber pulse)',
+    chipClass: '.kanban-column-status-dot--running', bgSetsFg: true,
+    parent: '--vscode-editor-lineHighlightBackground',
+    fg: '#f59e0b', bg: 'inherit' },
+  { cat: 'severity-pip',  cluster: 'D-2-tokenize', s: '.kanban-column-status-dot--queued (indigo)',
+    chipClass: '.kanban-column-status-dot--queued', bgSetsFg: true,
+    parent: '--vscode-editor-lineHighlightBackground',
+    fg: '#6366f1', bg: 'inherit' },
+  { cat: 'severity-pip',  cluster: 'D-2-tokenize', s: '.kanban-column-status-dot--interrupted (orange)',
+    chipClass: '.kanban-column-status-dot--interrupted', bgSetsFg: true,
+    parent: '--vscode-editor-lineHighlightBackground',
+    fg: '#f97316', bg: 'inherit' },
 ];
 
 // =============================================================================
@@ -651,6 +830,27 @@ const hc = [
   [ '@keyframes inbox-pulse + safety-pulse + fleet-health-pulse',
     'rgba(239,68,68,0.4) and rgba(245,158,11,0.4)',
     'Halo color hardcoded; theme-correct halo for HC would be brighter tone, not literal #ef4444' ],
+  // === Cluster D-1 inventory additions (Kanban.css HARDCODED github-dark
+  //     hex palette; Cluster D-2 will tokenize to --vscode-charts-* + add
+  //     @media scheme overrides mirroring the Cluster A pattern) ===
+  [ '.approval-banner-icon + .approval-banner-title + .approval-banner-policy-id + .approval-banner-failure-msg',
+    'rgba(245,158,11,0.12) bg tint + #f59e0b icon + var(--vscode-terminal-ansiRed) policy-id',
+    'Banner bg is a HARDCODED amber tint; icon fg is HARDCODED #f59e0b (does not theme-shift to Dark+/HC-Dark + Light+). The vscode-token policy-id and descriptionForeground inside the tint bg also fails AA in Light+ (amber tint blends toward white, vscode-token fg drops below 4.5:1). Cluster D-2 target.' ],
+  [ '.approval-banner-btn--approve + .approval-banner-btn--deny',
+    '#22c55e bg + #ffffff fg (APPROVE) | --vscode-button-secondary* tokens (DENY)',
+    'APPROVE button is HARDCODED #22c55e green; DENY uses theme tokens. APPROVE contrast is 2.28:1 vs fg #ffffff (sub-3:1 WCAG 1.4.11 UI-floor). Cluster D-2 target — tokenize to --vscode-charts-green.' ],
+  [ '.kanban-card-agent-badge--* (8 state variants: running/queued/interrupted/terminal/completed/failed/idle/resuming)',
+    '#f59e0b / #6366f1 / #f97316 / #22c55e / #ef4444 / var(--vscode-descriptionForeground) (HARDCODED hexes on rgba(..,0.15) tint bgs)',
+    'Bright hex fg on hex-tint 0.15-alpha bg blends near-white in Light+ (each variant drops to ~1.3-2.4:1 fg-vs-bg in Light+). Cluster D-2 will tokenize + add @media (prefers-color-scheme: light) override lowering the bgs to transparent + boosting fg via --vscode-charts-mid.' ],
+  [ '.kanban-agent-status--* (detail-panel badge — same palette as the card agent badges, no animation)',
+    'same as above',
+    'Mirror of the card agent-badge inventory. Cluster D-2 will tokenize identically.' ],
+  [ '.kanban-card-epic-tag + .kanban-card-harness-badge--error + .kanban-column-status-dot--*',
+    '#8b5cf6 / #ef4444 / #f59e0b (HARDCODED hex fg on alpha tint bg)',
+    'Card chrome accents. Cluster D-2 will tokenize to --vscode-charts-purple / --vscode-errorForeground / --vscode-charts-orange.' ],
+  [ '.kanban-card--epic + .kanban-card--running + .kanban-card--queued + .kanban-card--interrupted (border)',
+    '#8b5cf6 / #f59e0b / #6366f1 / #f97316 HARDCODED border color',
+    'No theme-shift. Cluster D-2 will tokenize. Note: border colors do not have a direct UI contrast floor in the audit matrix (they decorate without text), but HC theme + Light+ aesthetic consistency requires them to theme-shift like the badges.' ],
 ];
 hc.forEach(([loc, val, why]) => {
   console.log(`  • ${loc.padEnd(70)}\n      hex=${val}\n      → ${why}\n`);

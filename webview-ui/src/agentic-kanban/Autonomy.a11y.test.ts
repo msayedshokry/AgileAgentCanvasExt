@@ -50,6 +50,7 @@ import path from 'node:path';
 //    `path.resolve` keeps the two helpers unambiguous. ────────────
 
 const CSS_DIR = path.resolve(process.cwd(), 'src/agentic-kanban');
+const COMPONENTS_DIR = path.resolve(CSS_DIR, '..', 'components');
 const AUTONOMY_CSS_PATH = path.resolve(CSS_DIR, 'Autonomy.css');
 const TERMINAL_GRID_CSS_PATH = path.resolve(CSS_DIR, 'TerminalGrid.css');
 
@@ -65,6 +66,16 @@ const DIFF_PANEL_CSS_PATH = path.resolve(CSS_DIR, 'DiffPanel.css');
 const DIFF_PANEL_ROOT = postcss.parse(
   readFileSync(DIFF_PANEL_CSS_PATH, 'utf-8'),
   { from: DIFF_PANEL_CSS_PATH },
+);
+// Cluster D-1: parse Kanban.css (different source directory — webview-ui/src
+// /components/kanban/). Owns ApprovalsBanner + kanban-card chrome + status
+// dots. Parsed but NOT auto-walked for override-resolution by the audit
+// CLI (KANBAN.css uses HARDCODED github-dark hex palette that doesn't
+// theme-shift; Cluster D-2 will tokenize).
+const KANBAN_CSS_PATH = path.resolve(COMPONENTS_DIR, 'kanban', 'Kanban.css');
+const KANBAN_ROOT = postcss.parse(
+  readFileSync(KANBAN_CSS_PATH, 'utf-8'),
+  { from: KANBAN_CSS_PATH },
 );
 
 // ── Theme resolution table. Values come from canonical VS Code Light+ / Dark+ /
@@ -898,4 +909,63 @@ describe('P1/C-cl: .terminal-tile-dot.status-running Light+ override', () => {
       ).toBeGreaterThanOrEqual(3.0);
     });
   }
+});
+
+// =============================================================================
+// P1/D: ApprovalsBanner + kanban-card chrome SHAPE guards
+// =============================================================================
+// Cluster D-1 added ApprovalsBanner + kanban-card chrome + status dot
+// surfaces to the audit CLI. This block asserts the CSS-presence SHAPE
+// guards for the highest-stakes pieces (ApprovalsBanner buttons + agent
+// badge states). Contrast assertions remain tied to the audit-script
+// output — these guards lock that the CSS rules are present in
+// `Kanban.css` so a future Kanban.css refactor can't silently delete the
+// styles. Full Cluster D-2 will tokenize the HARDCODED hexes to
+// --vscode-charts-* + close the audit ✗FAILs that this catalog expansion
+// surfaced.
+// =============================================================================
+describe('P1/D: ApprovalsBanner + kanban-card chrome SHAPE guards', () => {
+  it('SHAPE-approval-banner-css-present: .approval-banner block + icon + body + actions in Kanban.css', () => {
+    let hasRoot = false, hasIcon = false, hasTitle = false, hasBody = false, hasActions = false, hasBtnApprove = false, hasBtnDeny = false;
+    KANBAN_ROOT.walkRules((rule) => {
+      const sel = rule.selector || '';
+      if (!sel) return;
+      if (sel.includes('.approval-banner') && sel.trim() === '.approval-banner') hasRoot = true;
+      if (sel.includes('.approval-banner-icon')) hasIcon = true;
+      if (sel.includes('.approval-banner-title')) hasTitle = true;
+      if (sel.includes('.approval-banner-body')) hasBody = true;
+      if (sel.includes('.approval-banner-actions')) hasActions = true;
+      if (sel.includes('.approval-banner-btn--approve')) hasBtnApprove = true;
+      if (sel.includes('.approval-banner-btn--deny')) hasBtnDeny = true;
+    });
+    expect(hasRoot && hasIcon && hasTitle && hasBody && hasActions && hasBtnApprove && hasBtnDeny,
+      'Kanban.css must contain the full ApprovalsBanner stylesheet (.approval-banner + icon + title + body + actions + btn--approve + btn--deny).').toBe(true);
+  });
+
+  it('SHAPE-kanban-card-agent-badge-states: 8 status variants in Kanban.css', () => {
+    const states = [
+      'running', 'queued', 'interrupted', 'terminal',
+      'completed', 'failed', 'idle', 'resuming',
+    ];
+    const present = new Set();
+    KANBAN_ROOT.walkRules((rule) => {
+      const sel = rule.selector || '';
+      for (const s of states) {
+        if (sel.includes(`.kanban-card-agent-badge--${s}`)) present.add(s);
+      }
+    });
+    expect(present.size, `All 8 .kanban-card-agent-badge--* states must be present in Kanban.css; missing: ${states.filter(s => !present.has(s)).join(', ')}`).toBe(states.length);
+  });
+
+  it('SHAPE-kanban-agent-status-states: 6 status variants in Kanban.css (detail-panel badge)', () => {
+    const states = ['running', 'queued', 'interrupted', 'completed', 'failed', 'idle'];
+    const present = new Set();
+    KANBAN_ROOT.walkRules((rule) => {
+      const sel = rule.selector || '';
+      for (const s of states) {
+        if (sel.includes(`.kanban-agent-status--${s}`)) present.add(s);
+      }
+    });
+    expect(present.size, `All 6 .kanban-agent-status--* variants must be present in Kanban.css; missing: ${states.filter(s => !present.has(s)).join(', ')}`).toBe(states.length);
+  });
 });
