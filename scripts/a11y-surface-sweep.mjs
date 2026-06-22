@@ -761,17 +761,57 @@ const SURFACES = [
   { cat: 'severity-pip',  cluster: 'D-2-tokenize', s: '.kanban-card-type-tag (KEY chip on card)',
     parent: '--vscode-editor-background',
     fg: 'var(--vscode-badge-foreground)',
-    bg: 'var(--vscode-badge-background, rgba(127,127,127,0.2))' },
-  { cat: 'severity-pip',  cluster: 'D-2-tokenize', s: '.kanban-card-epic-tag (purple EPIC chip)',
-    parent: '--vscode-editor-background', fg: '#8b5cf6',
+    bg: 'var(--vscode-badge-background, rgba(127,127,127,0.2))' },  // D-2 #5 tokenized. The chipClass annotation enables `findOverrideMedia()`
+  // to detect the `@media (prefers-color-scheme: light) { color: #7c3aed; }`
+  // override added in Kanban.css (Light+ re-binds from default `#B266FF`
+  // ≈ 3.05:1 to purple-600 ≈ 4.95:1 vs `#FFFFFF` because upstream token
+  // default Light+ atop the rgba-purple-10%-tint+white composite drops to
+  // ≈ 3.05:1, sub-AA-text 4.5:1 for 10px small text).
+  { cat: 'severity-pip',
+    chipClass: '.kanban-card-epic-tag',
+    s: '.kanban-card-epic-tag (purple EPIC chip + @media light `#7c3aed`)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-charts-purple, #8b5cf6)',
     bg: 'rgba(139,92,246,0.10)' },
   { cat: 'severity-pip',  cluster: 'D-2-tokenize', s: '.kanban-card-lock-badge (LOCK chip)',
     parent: '--vscode-editor-background',
     fg: 'var(--vscode-descriptionForeground)',
-    bg: 'rgba(128,128,128,0.15)' },
-  { cat: 'severity-pip',  cluster: 'D-2-tokenize', s: '.kanban-card-harness-badge--error (red error chip)',
-    parent: '--vscode-editor-background', fg: '#ef4444',
+    bg: 'rgba(128,128,128,0.15)' },  // D-2 #5 tokenized. Conventional error AA-large 3:1 acceptable in Light+
+  // (Light+ `#E51400` vs red-tint+white composite ≈ 4.04:1 → ~UI marker
+  // per audit; clears UI-floor but not AA-text 4.5:1 — conventional for
+  // error messaging). Mirrors the established D-2 #3 `.failed` decision.
+  { cat: 'badge-vs-surface', s: '.kanban-card-harness-badge--error (red error chip + tokenized)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-charts-red, #ef4444)',
     bg: 'rgba(239,68,68,0.15)' },
+
+  // === Cluster D-2 #5 — kanban-card chrome border accents (decorative) ===
+  // Border colors do NOT have a direct WCAG 1.4.11 UI-component contrast
+  // floor (they decorate without text overlap), but HC theme + Light+
+  // aesthetic consistency requires them to theme-shift like the badges.
+  // Tokenized: --vscode-charts-{purple,orange,indigo,orange} mapping.
+  // Purple `#B266FF` is constant across all 3 themes (visual unchanged
+  // post-tokenization); orange Light+ `#B85C00` deepens; indigo Light+
+  // `#4f46e5` deepens. Contrast ratios vs `--vscode-editor-background`
+  // parent bg clear 3:1 UI-floor in all themes (purple 4.89 Dark+ / 3.41
+  // Light+ / 6.17 HC-Dark; orange 7.76 / 4.585 / 9.84; indigo 4.04 / 5.29
+  // / 5.04). No @media override required.
+  { cat: 'severity-pip',
+    s: '.kanban-card--epic (4px left border accent)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-charts-purple, #8b5cf6)', bg: 'inherit' },
+  { cat: 'severity-pip',
+    s: '.kanban-card--running (border accent + box-shadow glow)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-charts-orange, #f59e0b)', bg: 'inherit' },
+  { cat: 'severity-pip',
+    s: '.kanban-card--queued (border accent)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-charts-indigo, #6366f1)', bg: 'inherit' },
+  { cat: 'severity-pip',
+    s: '.kanban-card--interrupted (border accent + box-shadow glow)',
+    parent: '--vscode-editor-background',
+    fg: 'var(--vscode-charts-orange, #f97316)', bg: 'inherit' },
 
   // === Status dots inside column header counts (3 variants) ===
   { cat: 'severity-pip',  cluster: 'D-2-tokenize', s: '.kanban-column-status-dot--running (amber pulse)',
@@ -1036,12 +1076,12 @@ const hc = [
   [ '.kanban-agent-status--* (D-2 #4: 5 of 7 TOKENIZED — same palette as the card agent badges, no animation)',
     'var(--vscode-charts-{orange,indigo,green,red}, ...) tokenized fg + @media light green-bright override; the rgba(0.15) tint bgs remain intentional HARDCODED decoration',
     'Cluster D-2 #4 tokenized 5 HARDCODED fg hexes (mirroring D-2 #3 card-badge mapping): `#f59e0b` (.running amber) → `--vscode-charts-orange, #f59e0b` (Light+ `#B85C00` clears ≈ 4.585:1 AA-text); `#6366f1` (.queued indigo) → NOVEL `--vscode-charts-indigo, #6366f1` (per-theme Dark+/HC-Dark `#818cf8`, Light+ `#4f46e5`); `#f97316` (.interrupted orange) → `--vscode-charts-orange, #f97316` (accepts upstream `#F59E0B` Light+ drift); `#22c55e` (.completed green) → `--vscode-charts-green, #22c55e` PLUS `@media (prefers-color-scheme: light) { color: var(--vscode-charts-green-bright, #15803D); }` because upstream `#3FA856` in Light+ atop the green-tint+white composite drops to ~2.6:1 (sub-3:1 UI-component floor); `#ef4444` (.failed red) → NOVEL `--vscode-charts-red, #ef4444` (per-theme Dark+/HC-Dark `#F85149`, Light+ `#E51400` ≈ 4.13:1). The `.kanban-agent-status` (neutral base, already `--vscode-descriptionForeground`) and `.kanban-agent-status--idle` (also `--vscode-descriptionForeground`) pass through unchanged. The rgba(0.15) tint bgs remain HARDCODED intentionally — they\'re theme-agnostic decoration; per-theme fg closes the WCAG 1.4.11 3:1 UI-floor.' ],
-  [ '.kanban-card-epic-tag + .kanban-card-harness-badge--error + .kanban-column-status-dot--*',
-    '#8b5cf6 / #ef4444 / #f59e0b (HARDCODED hex fg on alpha tint bg)',
-    'Card chrome accents. Cluster D-2 will tokenize to --vscode-charts-purple / --vscode-errorForeground / --vscode-charts-orange.' ],
-  [ '.kanban-card--epic + .kanban-card--running + .kanban-card--queued + .kanban-card--interrupted (border)',
-    '#8b5cf6 / #f59e0b / #6366f1 / #f97316 HARDCODED border color',
-    'No theme-shift. Cluster D-2 will tokenize. Note: border colors do not have a direct UI contrast floor in the audit matrix (they decorate without text), but HC theme + Light+ aesthetic consistency requires them to theme-shift like the badges.' ],
+  [ '.kanban-card chrome (D-2 #5: 6 of 6 TOKENIZED — kanban-card chrome complete)',
+    'var(--vscode-charts-{purple,orange,indigo,orange}, ...) for 2 chip-pip fg + 4 border accents + @media light override for .kanban-card-epic-tag rebinds to #7c3aed (purple-600)',
+    'Cluster D-2 #5 tokenizes 6 HARDCODED kanban-card-chrome hexes: 2 chip-pips (.kanban-card-epic-tag fg `#8b5cf6` → `var(--vscode-charts-purple, #8b5cf6)` with `@media (prefers-color-scheme: light) { color: #7c3aed; }` rebind because upstream `#B266FF` Light+ atop the rgba-purple-10%-tint+white composite drops to ≈ 3.05:1, sub-AA-text 4.5:1 for 10px small text; .kanban-card-harness-badge--error fg `#ef4444` → `var(--vscode-charts-red, #ef4444)` mirroring the established D-2 #3 `.failed` decision (Light+ `#E51400` ≈ 4.04:1 is conventionally AA-large 3:1 acceptable for error messaging) + 4 border-accent decorations (.kanban-card--epic border-left `#8b5cf6` → `var(--vscode-charts-purple, #8b5cf6)`; .kanban-card--running border `#f59e0b` → `var(--vscode-charts-orange, #f59e0b)`; .kanban-card--queued border `#6366f1` → `var(--vscode-charts-indigo, #6366f1)`; .kanban-card--interrupted border `#f97316` → `var(--vscode-charts-orange, #f97316)` accepting upstream `#F59E0B` Light+ visual drift from the original `#f97316`). The 3 `.kanban-column-status-dot--*` rows remain HARDCODED in this commit (separate scope: column header status dots vs card chrome — out of scope for D-2 #5 per user task brief; planned for a future Cluster D-x batch).' ],
+  [ '.kanban-column-status-dot--* (column header status dot trio, NOT tokenized in D-2 #5)',
+    '#f59e0b / #6366f1 / #f97316 HARDCODED bg in Kanban.css',
+    'Column header sub-count status dots. Same HARDCODED hex palette as the card-state borders but rendered as `<--running>/<--queued>/<--interrupted>` 6px dot markers inside `.kanban-column-count`. Separate scope from D-2 #5 (user specified kanban-card chrome only — column status dots belong to a future batch).' ],
 ];
 hc.forEach(([loc, val, why]) => {
   console.log(`  • ${loc.padEnd(70)}\n      hex=${val}\n      → ${why}\n`);

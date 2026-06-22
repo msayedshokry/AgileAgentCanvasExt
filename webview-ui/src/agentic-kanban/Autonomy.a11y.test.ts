@@ -1470,6 +1470,127 @@ describe('P1/D: ApprovalsBanner + kanban-card chrome SHAPE guards', () => {
 });
 
 // =============================================================================
+// Cluster D-2 #5 - kanban-card chrome tokenization (HARDCODED -> var(--vscode-charts-*))
+// =============================================================================
+// Tokenizes 6 HARDCODED kanban-card-chrome hexes in Kanban.css (+1 Light+
+// override for .kanban-card-epic-tag rebinding to #7c3aed because upstream
+// --vscode-charts-purple Light+ #B266FF atop the rgba-purple-10%-tint+white
+// composite drops to ~3.05:1, sub-AA-text 4.5:1 for 10px small text).
+// Reuses D-2 #3 / D-2 #4 TOKS tokens (purple/orange/indigo/red) - no NOVEL
+// tokens added in this commit.
+
+const KANBAN_CARD_CHROME_SHAPE_LOCKS: Array<{
+  sel: string; prop: string; expr: string; hex: string; what: string; shorthand?: boolean;
+}> = [
+  // 2 chip-pips
+  { sel: '.kanban-card-epic-tag', prop: 'color', expr: 'var(--vscode-charts-purple, #8b5cf6)', hex: '#8b5cf6', what: 'fg tokenized to --vscode-charts-purple (purple EPIC chip); Light+ override rebinds to #7c3aed' },
+  { sel: '.kanban-card-harness-badge--error', prop: 'color', expr: 'var(--vscode-charts-red, #ef4444)', hex: '#ef4444', what: 'fg tokenized to --vscode-charts-red (red error chip); conventional AA-large 3:1 for error messaging' },
+  // 4 border accents (decorative chrome - no contrast-floor requirement)
+  { sel: '.kanban-card--epic', prop: 'border-left', expr: 'var(--vscode-charts-purple, #8b5cf6)', hex: '#8b5cf6', what: 'left border tokenized', shorthand: true },
+  { sel: '.kanban-card--running', prop: 'border-color', expr: 'var(--vscode-charts-orange, #f59e0b)', hex: '#f59e0b', what: 'border-color tokenized' },
+  { sel: '.kanban-card--queued', prop: 'border-color', expr: 'var(--vscode-charts-indigo, #6366f1)', hex: '#6366f1', what: 'border-color tokenized' },
+  { sel: '.kanban-card--interrupted', prop: 'border-color', expr: 'var(--vscode-charts-orange, #f97316)', hex: '#f97316', what: 'border-color tokenized' },
+];
+
+// (findChromeRule removed - dead-code dedup. Reuse existing
+// findRule(KANBAN_ROOT, sel) from line ~174 per code-reviewer's
+// critical feedback on Cluster D-2 #5.)
+
+describe('Cluster-D2-5 - kanban-card chrome SHAPE + cross-theme guards', () => {
+  // 6 SHAPE-tokenized locks (one per chrome surface)
+  for (const s of KANBAN_CARD_CHROME_SHAPE_LOCKS) {
+    it(`SHAPE-tokenized: ${s.sel} ${s.prop} -> ${s.expr} (${s.what})`, () => {
+      const rule = findRule(KANBAN_ROOT, s.sel);
+      expect(rule, 'rule for selector containing "' + s.sel + '" not found in Kanban.css').toBeTruthy();
+      const decl = (rule.nodes || []).find((n: any) => n.type === 'decl' && n.prop === s.prop);
+      expect(decl, 'decl "' + s.prop + '" not in rule for ' + s.sel).toBeTruthy();
+      const value = decl.value.trim();
+      if (s.shorthand) {
+        // .kanban-card--epic uses border-left: 4px solid var(...) - composite shorthand; substring match is correct.
+        expect(value, s.sel + ' ' + s.prop + ' must contain "' + s.expr + '"').toContain(s.expr);
+      } else {
+        // Direct .toBe() literal-compare mirrors D-2 #3 / D-2 #4 SHAPE locks.
+        expect(value, s.sel + ' ' + s.prop + ' must equal "' + s.expr + '"').toBe(s.expr);
+      }
+      // Forbidden HARDCODED hex sentinel - per-state attribution.
+      expect(value, 'HARDCODED ' + s.hex + ' hex-prefix is forbidden in ' + s.sel + ' ' + s.prop).not.toMatch(new RegExp('^' + s.hex + '\\b', 'i'));
+    });
+  }
+
+  // 1 SHAPE-light-override test: .kanban-card-epic-tag @media (prefers-color-scheme: light) -> color: #7c3aed
+  // Locks the AA-text floor on the 10px small text. Without this override, upstream #B266FF Light+
+  // atop the rgba-purple-10%-tint+white composite would render at ~3.05:1 - sub-AA-text 4.5:1.
+  it('SHAPE-light-override: .kanban-card-epic-tag @media light -> color: #7c3aed', () => {
+    let found = false;
+    KANBAN_ROOT.walkAtRules('media', (at: any) => {
+      if (!(at.params || '').includes('prefers-color-scheme: light')) return;
+      at.walkRules((rule: any) => {
+        for (const sel of rule.selectors || []) {
+          if (!sel.includes('.kanban-card-epic-tag')) continue;
+          const decl = (rule.nodes || []).find((n: any) => n.type === 'decl' && n.prop === 'color');
+          if (decl) {
+            expect(decl.value.trim(), 'Light+ override must equal #7c3aed (purple-600, ~4.95:1 vs #FFFFFF)').toBe('#7c3aed');
+            found = true;
+          }
+        }
+      });
+    });
+    expect(found, '@media (prefers-color-scheme: light) override for .kanban-card-epic-tag not found in Kanban.css').toBe(true);
+  });
+
+  // Block-local helper: linear-light WCAG 2.x contrast formula
+  // (byte-identical to scripts/a11y-surface-sweep.mjs's `ratio()`).
+  function ratio(fg: string, bg: string): number {
+    const L = (c: string) => {
+      const v = parseInt(c, 16) / 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    };
+    const lum = (hex: string): number =>
+      0.2126 * L(hex.slice(1, 3)) + 0.7152 * L(hex.slice(3, 5)) + 0.0722 * L(hex.slice(5, 7));
+    const [L1, L2] = [lum(fg), lum(bg)].sort((a: number, b: number) => b - a);
+    return (L1 + 0.05) / (L2 + 0.05);
+  }
+
+  // 2 cross-theme contrast loops (epic-tag + harness-badge-error each x 3 themes = 6 tests).
+  // Borders are decorative chrome and skip the contrast test (no contrast-floor requirement).
+  // Mirrors audit-script's findOverrideMedia() Light+ rebind for .kanban-card-epic-tag.
+  const KC_CONTRAST_CASES: Array<{
+    sel: string; expr: string; bg: string; lightOverride?: string; floor: number;
+  }> = [
+    { sel: '.kanban-card-epic-tag', expr: 'var(--vscode-charts-purple, #8b5cf6)', bg: 'rgba(139,92,246,0.10)', lightOverride: '#7c3aed', floor: 3.0 },
+    { sel: '.kanban-card-harness-badge--error', expr: 'var(--vscode-charts-red, #ef4444)', bg: 'rgba(239,68,68,0.15)', floor: 3.0 },
+  ];
+  for (const c of KC_CONTRAST_CASES) {
+    for (const themeName of Object.keys(THEMES) as Array<keyof typeof THEMES>) {
+      it('cross-theme-contrast: ' + c.sel + ' ' + themeName + ' >= ' + c.floor + ':1', () => {
+        let fg = resolveToken(c.expr, themeName);
+        if (c.lightOverride && themeName === 'Light+') fg = c.lightOverride;
+        const parentBg = THEMES[themeName].editorBg;
+        const bg = resolveToken(c.bg, themeName, parentBg);
+        const r = ratio(fg, bg);
+        expect(r, c.sel + ' ' + themeName + ' contrast ' + r.toFixed(2) + ':1 must clear ' + c.floor + ':1').toBeGreaterThanOrEqual(c.floor);
+      });
+    }
+  }
+
+  // 1 AA-text Light+ margin guard for epic-tag (with override, MUST clear 4.5:1).
+  it('AA-text-Light+ margin: .kanban-card-epic-tag override #7c3aed MUST clear WCAG 1.4.3 4.5:1 AA-text', () => {
+    const parentBg = THEMES['Light+'].editorBg;
+    const r = ratio('#7c3aed', resolveToken('rgba(139,92,246,0.10)', 'Light+', parentBg));
+    expect(r, 'epic-tag Light+ override #7c3aed contrast ' + r.toFixed(2) + ':1 MUST clear WCAG 1.4.3 4.5:1 AA-text').toBeGreaterThanOrEqual(4.5);
+  });
+
+  // 1 AA-text Light+ marker for harness-badge-error (no override, ~UI marker acceptable).
+  // Mirrors D-2 #3 .failed decision: error messaging is conventionally AA-large 3:1, NOT AA-text 4.5:1.
+  it('AA-text-Light+ marker: .kanban-card-harness-badge--error no override >= 3:1 UI-floor', () => {
+    const parentBg = THEMES['Light+'].editorBg;
+    const fg = resolveToken('var(--vscode-charts-red, #ef4444)', 'Light+');
+    const r = ratio(fg, resolveToken('rgba(239,68,68,0.15)', 'Light+', parentBg));
+    expect(r, 'harness-badge-error Light+ ' + r.toFixed(2) + ':1 must clear 3:1 UI-floor (conventional error AA-large)').toBeGreaterThanOrEqual(3.0);
+  });
+});
+
+// =============================================================================
 // Cluster D-3 commit 3 — post-harvest regression guards
 // =============================================================================
 //

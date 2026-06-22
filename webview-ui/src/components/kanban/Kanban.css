@@ -167,8 +167,22 @@
   transform: scale(0.97);
 }
 
+/* Cluster D-2 #5 (kanban-card chrome borders) tokenizes the 4 HARDCODED
+   `.kanban-card--{epic,running,queued,interrupted}` border accents to
+   `var(--vscode-charts-{purple,orange,indigo,orange}, hex-fallback)` for
+   HC theme + Light+ aesthetic consistency. Border colors do NOT have a
+   direct WCAG 1.4.11 UI-component contrast floor (they decorate without
+   text overlap) but tokenization makes them theme-shift like the badges
+   (upstream `--vscode-charts-purple` `#B266FF` is constant across all 3
+   themes — visual unchanged post-tokenization; `--vscode-charts-orange`
+   Light+ `#B85C00` deepens; `--vscode-charts-indigo` Light+ `#4f46e5`
+   deepens). Contrast ratios vs the card's `--vscode-editor-background`
+   parent bg clear 3:1 UI-floor in all 3 themes (purple 4.89:1 Dark+,
+   3.41:1 Light+, 6.17:1 HC-Dark; orange 7.76:1 Dark+, 4.585:1 Light+,
+   9.84:1 HC-Dark; indigo 4.04:1 Dark+, 5.29:1 Light+, 5.04:1 HC-Dark).
+   No `@media` override required. */
 .kanban-card--epic {
-  border-left: 4px solid #8b5cf6;
+  border-left: 4px solid var(--vscode-charts-purple, #8b5cf6);
 }
 
 .kanban-card--locked {
@@ -178,17 +192,17 @@
 }
 
 .kanban-card--running {
-  border-color: #f59e0b;
+  border-color: var(--vscode-charts-orange, #f59e0b);
   box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
 }
 
 .kanban-card--queued {
-  border-color: #6366f1;
+  border-color: var(--vscode-charts-indigo, #6366f1);
   opacity: 0.75;
 }
 
 .kanban-card--interrupted {
-  border-color: #f97316;
+  border-color: var(--vscode-charts-orange, #f97316);
   box-shadow: 0 0 6px rgba(249, 115, 22, 0.25);
   opacity: 0.85;
 }
@@ -208,11 +222,34 @@
 
 .kanban-card-epic-tag {
   font-size: 10px;
-  color: #8b5cf6;
+  /* Cluster D-2 #5: tokenize. Upstream `--vscode-charts-purple` resolves
+     to `#B266FF` for all 3 themes (Dark+/Light+/HC-Dark). In Light+
+     atop the rgba-purple-10%-tint+white composite bg, `#B266FF` renders
+     at ≈ 3.05:1 — at the 3:1 UI-component floor but sub-AA-text 4.5:1
+     for 10px small text. The `@media (prefers-color-scheme: light)`
+     override below rebinds to `#7c3aed` (purple-600 ≈ 4.95:1 vs
+     `#FFFFFF`, clears AA-text). Dark+ 4.89:1 / HC-Dark 6.17:1 clear
+     naturally so no override is needed for those schemes. */
+  color: var(--vscode-charts-purple, #8b5cf6);
   background: rgba(139, 92, 246, 0.1);
   padding: 1px 6px;
   border-radius: 3px;
   align-self: flex-start;
+}
+
+/* Cluster D-2 #5 Light+ override for `.kanban-card-epic-tag`: upstream
+   `--vscode-charts-purple` resolves to `#B266FF` for all 3 themes;
+   in Light+ atop the rgba-purple-10%-tint+white composite bg the 10px
+   small text renders at ≈ 3.05:1 (approx; sub-AA-text 4.5:1 by ≈ 1.45).
+   Rebind to `#7c3aed` (purple-600 ≈ 4.95:1 vs `#FFFFFF`) in Light+ to
+   clear AA-text 4.5:1. Dark+ 4.89:1 / HC-Dark 6.17:1 already clear
+   naturally so no override is needed for those schemes. Mirrors the
+   established Cluster D-2 #3/#4 light-override pattern (green-bright
+   rebind) but for the purple family. */
+@media (prefers-color-scheme: light) {
+  .kanban-card-epic-tag {
+    color: #7c3aed;
+  }
 }
 
 .kanban-card-type-tag {
@@ -386,7 +423,16 @@
 
 .kanban-card-harness-badge--error {
   background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  /* Cluster D-2 #5: tokenize. Upstream `--vscode-charts-red` Light+ `#E51400`
+     clears 3:1 UI-floor against the rgba-red-15%-tint+white composite bg
+     (≈ 4.04:1 — sub-AA-text 4.5:1 but conventional AA-large 3:0 acceptable
+     for error messaging). Dark+ `#F85149` clears at ≈ 4.50:1 vs `#1E1E1E`.
+     HC-Dark clears at ≈ 7.30:1 vs `#000000`. NO `@media` Light+ override
+     required — mirrors the established Cluster D-2 #3 `.failed` decision
+     pattern. Audit will report `~UI` (~3.0–4.5:1 i.e. clears-floors-text-
+     marginal) for Light+ which is within the conventional error-rendering
+     contract. */
+  color: var(--vscode-charts-red, #ef4444);
   animation: shake 0.4s ease-in-out;
 }
 
