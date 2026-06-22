@@ -92,6 +92,22 @@ export const TOKS = {
   '--vscode-charts-orange-bright':     { 'Dark+': '#B45309', 'Light+': '#B45309', 'HC-Dark': '#B45309' },
   '--vscode-charts-green-bright':      { 'Dark+': '#15803D', 'Light+': '#15803D', 'HC-Dark': '#15803D' },
 
+  // Cluster D-3 #1.c — NEW bright-tier escape-hatch tokens for
+  // .agent-renderer-tag--{error,warning} Light+ override path. Both
+  // tokens are flat (same hex across all 3 themes) because they're
+  // designed for use inside a `@media (prefers-color-scheme: light)`
+  // block where other-schemes simply don't resolve the rule. Flat
+  // definitions match the existing `-bright` family pattern (Cluster A).
+  // The hexes are Tailwind red-400 / amber-600 — chosen to cross WCAG
+  // 1.4.3 4.5:1 AA-text with `#1F1F1F` (the universal dark fg cascade
+  // inherited from `.agent-renderer-tag { color: #1F1F1F }` Light+
+  // override). Specifically avoids re-use of `-bright` because the
+  // `-bright` family is consumed by 13 pre-existing inline-tsx sites +
+  // the kanban-card-agent-badge family — adding NEW scoped tokens
+  // prevents ripple effects on those existing consumers.
+  '--vscode-charts-red-coral':             { 'Dark+': '#F87171', 'Light+': '#F87171', 'HC-Dark': '#F87171' },
+  '--vscode-charts-orange-amber-bright':   { 'Dark+': '#D97706', 'Light+': '#D97706', 'HC-Dark': '#D97706' },
+
   // Terminal ANSI palette — used by .approval-banner-policy-id and the
   // terminal-grid running dots.
   '--vscode-terminal-ansiRed':         { 'Dark+': '#E06C75', 'Light+': '#A1260D', 'HC-Dark': '#E06C75' },

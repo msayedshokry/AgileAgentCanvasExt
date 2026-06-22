@@ -2798,5 +2798,151 @@ describe('Cluster-D3-#3: Pulse halo tokenization (inbox-pulse + safety-pulse)', 
               + (css.match(/rgba\(245,\s*158,\s*11,\s*0\)(?!\))/g) || []).length;
     expect(hits, 'Forward regression tripwire: HARDCODED rgba halo patterns would silently revert the migration. Expected 0.').toBe(0);
   });
+
+// =============================================================================
+// Cluster D-3 #1.c - .agent-renderer-tag--{error,warning} Light+ harmonization
+// =============================================================================
+// Resolves the design asymmetry flagged in D-3 #1.b's design note:
+// --success flips fg to dark `#1F1F1F` in Light+ (~5.0:1 PASS), but --error and
+// --warning kept the universal `#FFFFFF` cascade because deep-tone overrides
+// (#B91C1C / #B45309) only cross 2.63:1 / 3.43:1 with `#1F1F1F` (sub-AA-text).
+//
+// Fix: 2 NEW chart tokens introduced (in webview-ui/src/test/a11y-tokens.mjs):
+//   --vscode-charts-red-coral              #F87171  (Tailwind red-400)
+//   --vscode-charts-orange-amber-bright    #D97706  (Tailwind amber-600)
+// re-bind the Light+ --error / --warning bg tones so the existing
+// `.agent-renderer-tag { color: #1F1F1F }` Light+ cascade harmonizes across
+// the WHOLE family (all 3 variants share the same dark-fg cascade in Light+).
+//
+// Per-variant Light+ contrast outcomes (WCAG-A relative-luminance):
+//   --success:  bg #16A34A x fg #1F1F1F  approx 5.06:1 PASS AA-text
+//   --error:    bg #F87171 x fg #1F1F1F  approx 5.96:1 PASS AA-text
+//   --warning:  bg #D97706 x fg #1F1F1F  approx 5.17:1 PASS AA-text
+//
+// Rationale for choosing brighter override tones (#F87171 / #D97706) vs the
+// deeper-tone --bright family (#B91C1C / #B45309): the brighter shades cross
+// 4.5:1 AA-text with #1F1F1F, while the deeper shades only reach 2.63:1 / 3.43:1
+// (sub-AA-text). Picking the brighter side was deliberate: --error / --warning
+// chips are still visually identifiable as red / orange (semantic depth
+// preserved), AND they harmonize with --success's dark-fg cascade in Light+.
+//
+// NEW tokens vs reusing `--vscode-charts-{red|orange}-bright`: the `-bright`
+// family is already consumed by 13 pre-existing inline-tsx sites + the
+// kanban-card-agent-badge Green family. Adding NEW scoped tokens
+// (`-red-coral`, `-orange-amber-bright`) keeps the existing consumers
+// unchanged (they still resolve to #B91C1C / #B45309 in all 3 themes) and
+// scopes the D-3 #1.c fix to renderers.css only - no ripple risk.
+//
+// Dark+ / HC-Dark downstream paths UNCHANGED (pre-existing state, not regressed):
+//   --error   bg #F44336 x fg #FFFFFF  approx 3.68:1 (~UI marker; chip, not body)
+//   --warning bg #FF9800 x fg #FFFFFF  approx 2.16:1 (~UI marker; chip, not body)
+//
+// 5 test cases: 3 SHAPE (Light+ override bg uses NEW tokens + dark-fg cascade
+// covers all variants) + 2 TOKS parity (NEW tokens resolve identically
+// across all 3 themes - mirrors the -bright family flat resolution).
+// (Contrast floor assertions are covered by the SHAPE guards above:
+// the Light+ --error / --warning 4.5:1 AA-text clears are the design
+// outcome. SHAPE ensures the new tokens are wired; contrast math is a
+// separate pair of explicit tests below for the post-fix shipped values.)
+// =============================================================================
+describe('Cluster D-3 #1.c: agent-renderer-tag Light+ dark-fg harmonization', () => {
+  // SHAPE 1 - .agent-renderer-tag--error Light+ override bg now uses NEW
+  // --vscode-charts-red-coral token (no longer --vscode-charts-red-bright
+  // which conflicts with 13 pre-existing inline-tsx sites).
+  it('SHAPE-agent-renderer-tag--error-light-override-bg: @media light uses --vscode-charts-red-coral (#F87171)', () => {
+    let overrideBg: string | null = null;
+    renderersRootForHarvest.walkAtRules('media', (at) => {
+      if (!at.params || !/prefers-color-scheme:\s*light/.test(at.params)) return;
+      at.walkRules((rule) => {
+        if (!rule.selector || !rule.selector.includes('.agent-renderer-tag--error')) return;
+        rule.walkDecls((d) => {
+          if (d.prop === 'background') overrideBg = d.value.trim();
+        });
+      });
+    });
+    expect(overrideBg, '.agent-renderer-tag--error @media light override must declare background with NEW --vscode-charts-red-coral token; pre-D-3-#1.c the override used --vscode-charts-red-bright (#B91C1C) which paired with the Light+ dark-fg cascade (#1F1F1F) at ~2.63:1 (sub-AA-text).').toBeTruthy();
+    expect(overrideBg, '.agent-renderer-tag--error Light+ bg must equal var(--vscode-charts-red-coral, #F87171)').toBe('var(--vscode-charts-red-coral, #F87171)');
+  });
+
+  // SHAPE 2 - .agent-renderer-tag--warning Light+ override bg now uses NEW
+  // --vscode-charts-orange-amber-bright token.
+  it('SHAPE-agent-renderer-tag--warning-light-override-bg: @media light uses --vscode-charts-orange-amber-bright (#D97706)', () => {
+    let overrideBg: string | null = null;
+    renderersRootForHarvest.walkAtRules('media', (at) => {
+      if (!at.params || !/prefers-color-scheme:\s*light/.test(at.params)) return;
+      at.walkRules((rule) => {
+        if (!rule.selector || !rule.selector.includes('.agent-renderer-tag--warning')) return;
+        rule.walkDecls((d) => {
+          if (d.prop === 'background') overrideBg = d.value.trim();
+        });
+      });
+    });
+    expect(overrideBg, '.agent-renderer-tag--warning @media light override must declare background with NEW --vscode-charts-orange-amber-bright token; pre-D-3-#1.c the override used --vscode-charts-orange-bright (#B45309) which paired with the Light+ dark-fg cascade (#1F1F1F) at ~3.43:1 (sub-AA-text).').toBeTruthy();
+    expect(overrideBg, '.agent-renderer-tag--warning Light+ bg must equal var(--vscode-charts-orange-amber-bright, #D97706)').toBe('var(--vscode-charts-orange-amber-bright, #D97706)');
+  });
+
+  // SHAPE 3 - The .agent-renderer-tag { color: #1F1F1F } Light+ cascade is
+  // UNCHANGED - it covers ALL 3 variants (--success, --error, --warning)
+  // with a single shared dark-fg override. The cascade is the harmonization
+  // mechanism: per-variant bg re-binds (+ the .agent-renderer-tag base
+  // { color: #1F1F1F } Light+) gives every variant the same dark fg atop
+  // its own theme-appropriate bg.
+  it('SHAPE-agent-renderer-tag-light-fg-cascade: @media light rule sets .agent-renderer-tag { color: #1F1F1F } (shared across all variants)', () => {
+    let fg: string | null = null;
+    renderersRootForHarvest.walkAtRules('media', (at) => {
+      if (!at.params || !/prefers-color-scheme:\s*light/.test(at.params)) return;
+      at.walkRules((rule) => {
+        if (!rule.selector) return;
+        // Match the SHARED base cascade: '.agent-renderer-tag' WITHOUT a --variant suffix.
+        // Per-variant rules include the variant; the base cascade does not.
+        if (rule.selector !== '.agent-renderer-tag') return;
+        rule.walkDecls((d) => {
+          if (d.prop === 'color') fg = d.value.trim();
+        });
+      });
+    });
+    expect(fg, '.agent-renderer-tag @media light must declare color (the shared dark-fg cascade that harmonizes all 3 variants)').toBeTruthy();
+    expect(fg!.toLowerCase(), '.agent-renderer-tag @media light color must reach #1F1F1F dark cascade (clears 4.5:1 AA-text with each variant bg)').toContain('#1f1f1f');
+  });
+
+  // TOKS-resolution parity - shared TOKS table mirrors the audit-script:
+  // both NEW --vscode-charts-* tokens resolve to the same hex across all
+  // 3 themes (flat definitions, mirrors the existing -bright family pattern
+  // from Cluster A). Drift between audit-script and test-file TOKS fires the
+  // resolveToken path itself.
+  it('TOKS-resolution: --vscode-charts-red-coral resolves to #F87171 in all 3 themes (flat resolution, mirrors -bright family pattern)', () => {
+    const expected = '#F87171';
+    for (const themeName of Object.keys(THEMES) as Array<keyof typeof THEMES>) {
+      const resolved = resolveToken('var(--vscode-charts-red-coral, #F87171)', themeName, THEMES[themeName].editorBg);
+      expect(resolved, `--vscode-charts-red-coral on ${themeName} must resolve to ${expected}`).toBe(expected);
+    }
+  });
+  it('TOKS-resolution: --vscode-charts-orange-amber-bright resolves to #D97706 in all 3 themes (flat resolution, mirrors -bright family pattern)', () => {
+    const expected = '#D97706';
+    for (const themeName of Object.keys(THEMES) as Array<keyof typeof THEMES>) {
+      const resolved = resolveToken('var(--vscode-charts-orange-amber-bright, #D97706)', themeName, THEMES[themeName].editorBg);
+      expect(resolved, `--vscode-charts-orange-amber-bright on ${themeName} must resolve to ${expected}`).toBe(expected);
+    }
+  });
+
+  // Light+ contrast floor assertions - locks the post-D-3-#1.c SHIPPED
+  // contrast outcome. The Light+ @media override routes the chip into the
+  // shared dark-fg cascade (#1F1F1F) atop the NEW bg hexes; the math easily
+  // clears 4.5:1 AA-text (5.96:1 / 5.17:1 / 5.06:1 for the 3 variants).
+  it('Light+ --error contrast: #F87171 bg x #1F1F1F fg MUST clear WCAG 1.4.3 4.5:1 AA-text (post-D-3-#1.c SHIPPED value)', () => {
+    const r = contrast('#1F1F1F', '#F87171');
+    expect(
+      r,
+      `Light+ --error post-D-3-#1.c SHIPPED contrast must clear 4.5:1 AA-text (got ${r.toFixed(2)}:1); pre-D-3-#1.c the override used #B91C1C bg which paired with the Light+ dark-fg cascade (#1F1F1F) at ~2.63:1 (sub-AA-text). The asymmetric fg cascade made --error invisible in Light+; D-3 #1.c resolves by picking brighTER override tones (#F87171 vs #B91C1C) that clear 4.5:1.`,
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+  it('Light+ --warning contrast: #D97706 bg x #1F1F1F fg MUST clear WCAG 1.4.3 4.5:1 AA-text (post-D-3-#1.c SHIPPED value)', () => {
+    const r = contrast('#1F1F1F', '#D97706');
+    expect(
+      r,
+      `Light+ --warning post-D-3-#1.c SHIPPED contrast must clear 4.5:1 AA-text (got ${r.toFixed(2)}:1); pre-D-3-#1.c the override used #B45309 bg which paired with the Light+ dark-fg cascade (#1F1F1F) at ~3.43:1 (sub-AA-text). The asymmetric fg cascade made --warning invisible in Light+; D-3 #1.c resolves by picking deeper-tone override (#D97706 vs #B45309) that clears 4.5:1.`,
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+});
 });
 

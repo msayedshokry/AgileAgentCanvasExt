@@ -946,14 +946,14 @@ const SURFACES = [
     chipClass: '.agent-renderer-tag--success',
     parent: '--vscode-editor-background',
     fg: '#1F1F1F', bg: '#15803D' },
-  { cat: 'renderers', s: '.agent-renderer-tag--error @media light (deeper-tone rebind)',
+  { cat: 'renderers', s: '.agent-renderer-tag--error @media light (tint-shift rebind — D-3 #1.c)',
     chipClass: '.agent-renderer-tag--error',
     parent: '--vscode-editor-background',
-    fg: '#FFFFFF', bg: '#B91C1C' },
-  { cat: 'renderers', s: '.agent-renderer-tag--warning @media light (deeper-tone rebind)',
+    fg: '#1F1F1F', bg: '#F87171' },
+  { cat: 'renderers', s: '.agent-renderer-tag--warning @media light (tint-shift rebind — D-3 #1.c)',
     chipClass: '.agent-renderer-tag--warning',
     parent: '--vscode-editor-background',
-    fg: '#FFFFFF', bg: '#B45309' },
+    fg: '#1F1F1F', bg: '#D97706' },
   // === Cluster D-3 #3 — Pulse halo effects (mid-cycle @ 0.4 alpha) ===
   // Mid-cycle avg blend for the box-shadow halo. Parent surface is the editor
   // bg; the halo fades to 0 alpha at the keyframe 50% step which is a
