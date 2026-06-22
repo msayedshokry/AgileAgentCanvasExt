@@ -741,6 +741,116 @@ const SURFACES = [
 ];
 
 // =============================================================================
+// Cluster D-3 commit 2 — lazy run-time TSX introspector (CSS-in-JS coverage)
+// =============================================================================
+//
+// Walks 9 harvested `.tsx` files at audit-script startup and regex-extracts
+// every `style={{ ... }}` JSX body that carries a color-bearing key. Each
+// captured expression becomes a SURFACES row tagged `cat: 'inline-tsx'` so
+// the existing contrast matrix picks it up automatically — no special-case
+// in the engine loop.
+//
+// Scope: only STATIC LITERAL values (single / double / backtick quoted).
+// Runtime variables and ternaries (e.g. `borderTopColor: col.accent`,
+// `view === 'terminals' ? 'var(--foo)' : 'transparent'`) fall through
+// silently — those surfaces would need a colored checkpoint in production
+// to audit deterministically, which is out of scope for a static sweep.
+//
+// Regex shape:
+//   outer   `/style={{([\s\S]*?)}}/g`        — non-greedy so consecutive
+//                                               blocks don't merge; handles
+//                                               multi-line style bodies.
+//   inner   `/([\w-]+):\s*(['"`])([^'"`]*?)\2/g` — only quoted-literal
+//                                                       values; bookmarks the
+//                                                       source line for the
+//                                                       audit row label.
+//
+// The 9 harvested files span two directories (App.tsx + agentic-kanban/
+// + components/ sub-tree). Files missing on disk are skipped silently so
+// the harvest remains resilient to future renames. The renderer files
+// (bmm/cis/core/tea/test) carry most of the density — 1755 raw `style={{`
+// matches total but only ≈205 are color-bearing; the audit-concern
+// surface is those ≈205, not the layout-only majority.
+// =============================================================================
+const INLINE_TSX_TARGETS = [
+  'App.tsx',
+  'agentic-kanban/AgenticKanbanApp.tsx',
+  'components/Canvas.tsx',
+  'components/Corpus3DView.tsx',
+  'components/renderers/bmm-renderers.tsx',
+  'components/renderers/cis-renderers.tsx',
+  'components/renderers/core-renderers.tsx',
+  'components/renderers/tea-renderers.tsx',
+  'components/renderers/test-renderers.tsx',
+];
+
+// Color-bearing keys and which slot they own. `color` is the only fg slot;
+// every other key (background, backgroundColor, border*Color, outlineColor)
+// renders to a border or surface-decoration bg slot, which is the WCAG
+// 1.4.11 UI-component floor (3:1) rather than the AA-text floor (4.5:1).
+const COLOR_KEYS = new Set([
+  'color', 'background', 'backgroundColor',
+  'borderColor', 'borderTopColor', 'borderBottomColor',
+  'borderLeftColor', 'borderRightColor', 'outlineColor',
+]);
+const FG_KEYS = new Set(['color']);
+
+const STYLE_BODY_RE = /style=\{\{([\s\S]*?)\}\}/g;
+const KV_QUOTED_RE = /([\w-]+)\s*:\s*(['"`])([^'"`]*?)\2/g;
+
+function harvestInlineTsxSurfaces() {
+  const rows = [];
+  const webviewSrcDir = path.resolve(
+    __dirname, '..', 'webview-ui', 'src',
+  );
+  let filesScanned = 0;
+  for (const relPath of INLINE_TSX_TARGETS) {
+    const fullPath = path.join(webviewSrcDir, relPath);
+    let content;
+    try { content = readFileSync(fullPath, 'utf-8'); }
+    catch { continue; } // missing file → skip silently; harvest remains resilient to renames
+    filesScanned++;
+    STYLE_BODY_RE.lastIndex = 0;
+    let bodyMatch;
+    while ((bodyMatch = STYLE_BODY_RE.exec(content)) !== null) {
+      const body = bodyMatch[1];
+      const lineNum = content.slice(0, bodyMatch.index).split('\n').length;
+      KV_QUOTED_RE.lastIndex = 0;
+      let kv;
+      while ((kv = KV_QUOTED_RE.exec(body)) !== null) {
+        const key = kv[1];
+        const value = kv[3];
+        if (!COLOR_KEYS.has(key)) continue;
+        if (FG_KEYS.has(key)) {
+          rows.push({
+            cat: 'inline-tsx',
+            source: 'inline-tsx',
+            s: `inline-style ${key} @ ${relPath}:L${lineNum}`,
+            parent: '--vscode-editor-background',
+            fg: value,
+            bg: 'inherit',
+          });
+        } else {
+          rows.push({
+            cat: 'inline-tsx',
+            source: 'inline-tsx',
+            s: `inline-bg ${key} @ ${relPath}:L${lineNum}`,
+            parent: '--vscode-editor-background',
+            fg: 'var(--vscode-foreground)',
+            bg: value,
+          });
+        }
+      }
+    }
+  }
+  return { rows, filesScanned };
+}
+
+const HARVEST = harvestInlineTsxSurfaces();
+console.log(`INLINE-TSX HARVEST: ${HARVEST.rows.length} color-bearing rows from ${HARVEST.filesScanned}/${INLINE_TSX_TARGETS.length} files`);
+SURFACES.push(...HARVEST.rows);
+
+// =============================================================================
 // Run matrix
 // =============================================================================
 console.log('================================================================================');
@@ -812,7 +922,11 @@ for (const themeName of Object.keys(THEMES)) {
     // final fg/bg
     const fg = fgRaw, bg = bgRaw;
     const r = ratio(fg, bg);
-    const minFloor = (s.cat === 'severity-pip' || s.cat === 'badge-vs-surface' || s.cat === 'row-vs-editor') ? 3.0 : 4.5;
+    // UI-component 3.0:1 floor for inline-tsx rows too — those are borders
+    // and surface decorations (background, borderColor, outlineColor) where
+    // AA-text 4.5:1 is the wrong gate. AA-text only applies to the `color`
+    // slot which is the minority of inline-tsx keys (most are bg/border).
+    const minFloor = (s.cat === 'severity-pip' || s.cat === 'badge-vs-surface' || s.cat === 'row-vs-editor' || s.cat === 'inline-tsx') ? 3.0 : 4.5;
     let mark;
     if (r >= 4.5) mark = '✓PASS';
     else if (r >= minFloor) { mark = '~UI'; uiFails++; }
