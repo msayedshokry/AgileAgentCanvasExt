@@ -206,33 +206,31 @@ function declOf(rule, prop) {
 // Lives here instead of inside harvestInlineTsx so the original TSX-target contract
 // (and its 5 source files) stay untouched. The contract floor stays at 100 because
 // the renderers.css walker is additive, never subtractive.
+// renderers.css is part of the same Cluster D-3 #3 commit so its existence
+// is part of the test-file's contract. Read directly and let readFileSync
+// surface ENOENT loudly if the contract ever regresses — silent fallback
+// to 0 would mask a broken file path or missing-import regression.
+const renderersCss = readFileSync(
+  path.resolve(COMPONENTS_DIR, 'renderers', 'renderers.css'),
+  'utf-8',
+);
+const renderersRootForHarvest = postcss.parse(renderersCss, {
+  from: path.resolve(COMPONENTS_DIR, 'renderers', 'renderers.css'),
+});
+// Each .agent-renderer-tag* color-bearing decl counts as 1 row.
 let RENDERERS_ROW_COUNT = 0;
-try {
-  const renderersCss = readFileSync(
-    path.resolve(COMPONENTS_DIR, 'renderers', 'renderers.css'),
-    'utf-8',
-  );
-  const renderersRootForHarvest = postcss.parse(renderersCss, {
-    from: path.resolve(COMPONENTS_DIR, 'renderers', 'renderers.css'),
+renderersRootForHarvest.walkRules((rule) => {
+  if (!rule.selector || !rule.selector.includes('agent-renderer-tag')) return;
+  rule.walkDecls((d) => {
+    if (['background', 'background-color', 'color'].includes(d.prop)) {
+      RENDERERS_ROW_COUNT++;
+    }
   });
-  // Each .agent-renderer-tag* color-bearing decl counts as 1 row.
-  renderersRootForHarvest.walkRules((rule) => {
-    if (!rule.selector || !rule.selector.includes('agent-renderer-tag')) return;
-    rule.walkDecls((d) => {
-      if (['background', 'background-color', 'color'].includes(d.prop)) {
-        RENDERERS_ROW_COUNT++;
-      }
-    });
-  });
-  // Each @media (prefers-color-scheme: *) override block counts as 1 row.
-  renderersRootForHarvest.walkAtRules('media', () => {
-    RENDERERS_ROW_COUNT++;
-  });
-} catch (e) {
-  // renderers.css only exists post-Cluster-D3-#1.b. Pre-cluster runs (no file)
-  // gracefully degrade to 0.
-  RENDERERS_ROW_COUNT = 0;
-}
+});
+// Each @media (prefers-color-scheme: *) override block counts as 1 row.
+renderersRootForHarvest.walkAtRules('media', () => {
+  RENDERERS_ROW_COUNT++;
+});
 
 // =============================================================================
 // (1) CSS-shape guards — assert the three P0/P1 fixes are present.
