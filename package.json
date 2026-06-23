@@ -17,6 +17,9 @@
   "engines": {
     "vscode": "^1.93.0"
   },
+  "workspaces": [
+    "webview-ui"
+  ],
   "categories": [
     "Other",
     "Visualization"
