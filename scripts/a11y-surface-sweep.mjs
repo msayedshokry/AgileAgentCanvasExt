@@ -301,7 +301,13 @@ function resolve(expr, themeName, parentBg) {
   if (expr === 'white') return '#FFFFFF';
 
   // var(--X, fallback) — try to resolve the token; else fall through
-  const m = expr.match(/^\s*var\((--[\w-]+)\s*,\s*([^)]+)\)\s*$/);
+  // Cluster D-5: wrapped-var regex migrated to greedy `.+` + terminal `\)`
+  // to handle nested parens in rgba() fallback expressions. The prior
+  // `[^)]+` choked on the inner `)` in `rgba(...)` and silently fell
+  // through to parentBg — the audit no longer emitted the canonical
+  // alpha-blended mount for `var(--editorWarning-background, rgba(...))`
+  // and the pulse-halo family until D-5.
+  const m = expr.match(/^\s*var\((--[\w-]+)\s*,\s*(.+)\)\s*$/);
   if (m) {
     const tokVal = TOKS[m[1]]?.[themeName];
     if (tokVal) {
@@ -310,7 +316,13 @@ function resolve(expr, themeName, parentBg) {
       // the rgba-resolved hex would bypass blending and yield a sub-3:1 false-
       // positive in the audit-script's contrast pass.
       const rgbaTok = tokVal.match(/^\s*rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\)\s*$/);
-      if (rgbaTok) return blend([+rgbaTok[1], +rgbaTok[2], +rgbaTok[3], +rgbaTok[4]], parentBg);
+      if (rgbaTok)   // @see webview-ui/src/agentic-kanban/Autonomy.a11y.test.ts alphaOverlay()
+  //      -- byte-identical alpha-blend math. Keep these two helpers in
+  //      sync to prevent test/audit drift; neither file is THE source --
+  //      both must agree for the TOKS-resolved rgba branch to faithfully
+  //      mirror between the test fixtures and the audit-script's
+  //      production sweep.
+return blend([+rgbaTok[1], +rgbaTok[2], +rgbaTok[3], +rgbaTok[4]], parentBg);
       return tokVal;
     }
     // Token unset — use inline fallback expression (which may itself be rgba())

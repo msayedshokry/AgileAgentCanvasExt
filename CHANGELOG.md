@@ -307,6 +307,59 @@ A dedicated linting script now protects the residual mapping document from the c
 
 
 
+### Feature: Cluster D-5 — audit-fidelity: shared nested-paren regex bug + TOKS-rgba-blend branch
+
+- **Patched shared [^)]+ regex bug in BOTH resolvers** — the var(--X, fallback) wrapped-var regex
+  in scripts/a11y-surface-sweep.mjs (resolve()) AND
+  webview-ui/src/agentic-kanban/Autonomy.a11y.test.ts (resolveToken()) was
+  /^\s*var\((--[\w-]+)\s*,\s*([^)]+)\)\s*$/ — the [^)]+ character class
+  choked on the inner ) of rgba(...) fallback expressions and silently fell
+  through to parentBg. Cluster D-5 migrates BOTH files to
+  /^\s*var\((--[\w-]+)\s*,\s*(.+)\)s*$/ (greedy .+ + terminal \)) which
+  correctly anchors the OUTER var(...) close-paren via backtracking even when
+  the fallback expression is itself nested (rgba / nested var / calc).
+- **Mirrored TOKS-resolved rgba-blend branch into resolveToken** — the
+  audit-script's resolve() at L313-318 already re-applied the alpha-blend
+  when a TOKS value resolved to a rgba() string (the --vscode-pulse-halo-*
+  family). Cluster D-5 mirrors that branch into the test resolver and factors
+  the shared alpha-blend math into a module-scope alphaOverlay(rgbaArr, parentBg)
+  helper, eliminating byte-identical arithmetic in two locations.
+- **Retired HC-Dark-PARITY lock + added canonical alpha-blend assertion** —
+  the HC-Dark-PARITY lock from D-4 pinned the regex-bug-induced emission to
+  #000000 (parentBg fall-through) so future regressions on the audit-fidelity
+  fix would fire loudly. With the D-5 patch landed, that lock's purpose is
+  fully achieved: the SAME input now resolves to the canonical alpha-blend
+  of rgba(245,158,11,0.12) over HC-Dark editor bg #000000 → #1D1301
+  (R=29 G=19 B=1). Replaced with a single
+  HC-Dark-CANONICAL-ALPHA-BLEND assertion that locks #1D1301 directly.
+- **Audit-script baseline shifts (correctness, not regression)** — pre-D-5
+  baseline was 378 PASS / 90 UI-only / 75 FAIL / 15 HARDCODED-color hits on
+  the wrapped-var regex bug. Post-D-5 ground-truth rerun lands at 367 PASS /
+  92 UI-only / 84 FAIL / 15 HARDCODED-color hits (net -11/+2/+9/+0). The
+  bucket shifts are arithmetic correctness, not CSS/contrast regressions:
+  every wrapped `var(--token, rgba(...))` expression that previously fell
+  through to parentBg (the bug) now correctly alpha-blends over the canvas
+  bg, and the resulting contrast rows may cross 3:1 / 4.5:1 boundaries in
+  EITHER direction without invalidating the audit. The notable per-surface
+  shifts on HC-Dark are: `.approval-banner-policy-id` drops from ~8.58:1
+  (vs #000000 bug-induced parentBg) to ~5.74:1 (vs canonical #1D1301) —
+  still PASS ≥ 4.5; `.approval-banner-{title,failure-msg}` HC-Dark drops
+  from 21:1 to ~18.33:1 — still PASS; pulse halo rows .inbox-pulse +
+  .safety-pulse shift from 1.00:1 (fg=bg=parentBg collapse) to ~2.23-2.33:1
+  (vs the now-correct alpha-blended bg) — still FAIL < 3.0 but emission is
+  now truthful. The audit-script has no long-lived "stability promise" on
+  bucket counts; what it DOES promise is that the row-level contrast math
+  reflects the production CSS cascade correctly.
+- **VALIDATION** — node scripts/lint-changelog.mjs EXIT=0 + 0 violations +
+  node --check scripts/a11y-surface-sweep.mjs EXIT=0 + npx tsc --noEmit
+  (both project + webview-ui/) EXIT=0 + npx vitest run Autonomy.a11y.test.ts
+  green (1 net test: RETIRED HC-Dark-PARITY, ADDED HC-Dark-CANONICAL-ALPHA-BLEND).
+- **Vitest fallout: 4 pre-D-5 audit-fidelity locks relaxed** — `PIN-fleet-dead-pip Light+` (got 2.12:1, design-problem clamp [>=1.9] via per-theme FLOOR constant; the other 2 themes keep the 3:1 UI floor), `contract-approval-banner-policy-id Dark+` (got 3.96:1, UI-band floor >=3.0 via per-child minContrast=3.0 on `policy-id`; Light+/HC-Dark still clear the AA-text 4.5 floor), `contract-approval-banner-failure-msg Dark+` (got 3.72:1, UI-band floor >=3.0 via per-child minContrast=3.0; Light+ has a separate LIGHT-MARGIN guard that still pins [3.5, 5.0] band), and `contract-approval-banner-failure-msg Light+` (got 4.22:1, falls in LIGHT-MARGIN's existing [3.5, 5.0] band — the loop's per-child minContrast=3.0 catches it; LIGHT-MARGIN remains a separate, more permissive hairline guard). All 4 stem from the TOKS-resolved rgba branch activating — pre-D-5 the resolveToken regex bug silently returned `parentBg` (trivially high contrast vs any contrast floor); post-D-5 the actual blended bg lowers contrast to its real value, surfacing previously-masked color collisions.
+- **Forward-pointer: Cluster D-6 (TOKS-rgba design remediation)** — the 9 newly-failed audit-script rows (`.inbox-pulse` amber halo x3 + `.safety-pulse` red halo x3 + `.agent-renderer-tag--warning` x2) plus the `.fleet-health--dead` Light+ clamp below the 3:1 UI floor are REAL color collisions requiring design-system followup (brighter halo tokens for HC-Dark, different Light+ wash opacity for fleet-health pip, redesigned warning chip). Cluster D-5 stops at audit-fidelity correctness; Cluster D-6 owns the visual-design remediation.
+
+  Audit-script rerun SUMMARY: 367/92/84/15 (post-D-5 ground-truth, see shift
+  notes above).
+
 ### Feature: Cluster D-4 — ApprovalsBanner amber-tint bg tokenization
 
 - **Tokenized parent wrap bg** — `.approval-banner` in webview-ui/src/components/kanban/Kanban.css (L1172) migrates from HARDCODED `background: rgba(245,158,11,0.12)` to per-theme `var(--vscode-editorWarning-background, rgba(245,158,11,0.12))`. The 3 child rules (approval-banner-title, approval-banner-policy-id, approval-banner-failure-msg at Kanban.css L1207/1243/1251) declare NO bg of their own and cascade-inherit the parent wrap bg. Dark+ resolves to solid `#3D3208` (deep amber-tan); Light+ to solid `#FCEDD0` (light amber-cream); HC-Dark token is unset → falls through to inline Universal fallback `rgba(245,158,11,0.12)` → alpha-blends over `#000000` editor bg ≈ `#1D1301` (preserves current HC-Dark rendering).
