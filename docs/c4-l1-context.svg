@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 808 1104" width="808" height="1104">
+  <rect width="808" height="1104" fill="#ffffff"/>
+  <text x="16" y="30" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">╔══════════════════════════════════════════════════════════════════════════════════════════════╗</text>
+  <text x="16" y="46" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">║  AGILE AGENT CANVAS EXTENSION  ·  C4 Context Diagram (Level 1)                                ║</text>
+  <text x="16" y="62" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">║  Scope: the whole extension and its ecosystem       Audience: all stakeholders               ║</text>
+  <text x="16" y="78" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">╚══════════════════════════════════════════════════════════════════════════════════════════════╝</text>
+  <text x="16" y="94" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve"></text>
+  <text x="16" y="110" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve"></text>
+  <text x="16" y="126" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   ┌──────────────────────┐                                          ┌──────────────────────────┐</text>
+  <text x="16" y="142" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   │  Product Developer   │                                          │  AI Provider             │</text>
+  <text x="16" y="158" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   │  [Person]            │                                          │  [External System]       │</text>
+  <text x="16" y="174" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   │                      │                                          │                          │</text>
+  <text x="16" y="190" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   │  • Writes stories    │  Copilot Chat + VS Code commands         │  • Anthropic Claude      │</text>
+  <text x="16" y="206" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   │  • Runs workflows    │ ──────────────────────────────────►      │  • OpenAI GPT            │</text>
+  <text x="16" y="222" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   │  • Reviews kanban    │                                          │  • Google Gemini         │</text>
+  <text x="16" y="238" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   │  • Approves gates    │                                          │  • Ollama (local)        │</text>
+  <text x="16" y="254" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   │  • Configures policy │                                          │  • Antigravity           │</text>
+  <text x="16" y="270" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   └──────────┬───────────┘                                          └─────────────┬────────────┘</text>
+  <text x="16" y="286" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">              │                                                                   │</text>
+  <text x="16" y="302" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">              │ uses                                                              │ tool calls</text>
+  <text x="16" y="318" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">              ▼                                                                   │ + streaming</text>
+  <text x="16" y="334" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   ╔══════════════════════════════════════════════════════════════════════════════▼══════════╗</text>
+  <text x="16" y="350" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   ║                                                                                          ║</text>
+  <text x="16" y="366" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   ║   AGILE AGENT CANVAS  ·  [Software System]                                               ║</text>
+  <text x="16" y="382" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   ║                                                                                          ║</text>
+  <text x="16" y="398" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   ║   VS Code extension implementing BMAD methodology.                                        ║</text>
+  <text x="16" y="414" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   ║   AI-powered product development with 4-lane canvas +                                    ║</text>
+  <text x="16" y="430" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   ║   Agentic Kanban autonomy surfaces.                                                      ║</text>
+  <text x="16" y="446" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   ║                                                                                          ║</text>
+  <text x="16" y="462" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   ║   Internal scope:                                                                        ║</text>
+  <text x="16" y="478" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   ║   • Chat participant (@agileagentcanvas)                                                 ║</text>
+  <text x="16" y="494" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   ║   • Workflow executor (44+ BMAD workflows)                                               ║</text>
+  <text x="16" y="510" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   ║   • Artifact store (typed, schema-validated)                                              ║</text>
+  <text x="16" y="526" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   ║   • Canvas webview (4-lane) + Agentic Kanban autonomy                                    ║</text>
+  <text x="16" y="542" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   ║   • Jira / graphify / Antigravity adapters                                               ║</text>
+  <text x="16" y="558" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   ║                                                                                          ║</text>
+  <text x="16" y="574" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   ╚══════╤══════════════════╤═══════════════════╤═══════════════════╤═════════════════════════╝</text>
+  <text x="16" y="590" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">          │                  │                   │                   │</text>
+  <text x="16" y="606" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">          │ REST + OAuth     │ pip + JSON        │ LSP / LM API      │ subprocess / socket</text>
+  <text x="16" y="622" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">          │                  │                   │                   │</text>
+  <text x="16" y="638" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">          ▼                  ▼                   ▼                   ▼</text>
+  <text x="16" y="654" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  ┌──────────────────┐</text>
+  <text x="16" y="670" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   │  Jira Cloud  │  │  graphify    │  │  GitHub Copilot  │  │  Antigravity     │</text>
+  <text x="16" y="686" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   │  [External]  │  │  [External]  │  │  [VS Code Ext]   │  │  [External]      │</text>
+  <text x="16" y="702" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   │              │  │              │  │                  │  │                  │</text>
+  <text x="16" y="718" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   │  • Epics     │  │  • KG build  │  │  • LM API        │  │  • Alt IDE       │</text>
+  <text x="16" y="734" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   │  • Two-way   │  │  • Semantic  │  │  • Tool registry │  │  • Orchestrator  │</text>
+  <text x="16" y="750" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   │    sync      │  │    search    │  │  • Model select  │  │  • Shared LM     │</text>
+  <text x="16" y="766" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">   └──────────────┘  └──────────────┘  └──────────────────┘  └──────────────────┘</text>
+  <text x="16" y="782" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve"></text>
+  <text x="16" y="798" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve"></text>
+  <text x="16" y="814" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">  Legend</text>
+  <text x="16" y="830" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">  ──────</text>
+  <text x="16" y="846" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">    [Person]             Human actor who uses the system</text>
+  <text x="16" y="862" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">    [Software System]    The system under design (the only such box at L1)</text>
+  <text x="16" y="878" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">    [External System]    Third-party system outside our trust boundary</text>
+  <text x="16" y="894" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">    [VS Code Ext]        First-party extension we depend on at the IDE level</text>
+  <text x="16" y="910" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve"></text>
+  <text x="16" y="926" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">    ───►   Unidirectional flow  (commands, R/W, events)</text>
+  <text x="16" y="942" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">    ◄──►   Bidirectional        (sync, RPC)</text>
+  <text x="16" y="958" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve"></text>
+  <text x="16" y="974" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve"></text>
+  <text x="16" y="990" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">  House Style (L1)</text>
+  <text x="16" y="1006" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">  ────────────────</text>
+  <text x="16" y="1022" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">    • One system boundary box (the extension)</text>
+  <text x="16" y="1038" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">    • External actors (people) on the left</text>
+  <text x="16" y="1054" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">    • External systems on the right</text>
+  <text x="16" y="1070" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">    • Other external dependencies on the bottom</text>
+  <text x="16" y="1086" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="12" xml:space="preserve">    • No internal structure shown (that&#x27;s L2&#x27;s job)</text>
+</svg>
