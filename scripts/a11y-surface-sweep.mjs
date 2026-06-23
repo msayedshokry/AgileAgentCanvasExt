@@ -245,10 +245,12 @@ const THEMES = {
 // The bright-tier family `--vscode-charts-{red|orange|green}-bright` is the
 // canonical escape hatch when the upstream token fails the WCAG 1.4.11 3:1
 // UI-floor in some scheme. Per-theme resolution is owned by
-// webview-ui/src/test/a11y-tokens.mjs — that file is the single source of
-// truth, edited in one place when a token's per-theme resolution or
-// bright-tier fallback changes.
-const { TOKS } = await import('../webview-ui/src/test/a11y-tokens.mjs');
+// bmad-canvas-webview/test/a11y-tokens — exposed via the `exports` map
+// in webview-ui/package.json. With the workspace declared, Node
+// enforces exports for physical-path imports into the package;
+// by-name is the only legal outside-the-package form (relative form
+// ERR_PACKAGE_PATH_NOT_EXPORTEDs at load time).
+const { TOKS } = await import('bmad-canvas-webview/test/a11y-tokens');
 
 const HARDCODED = {
   '#ef4444': [239, 68, 68, 1],
