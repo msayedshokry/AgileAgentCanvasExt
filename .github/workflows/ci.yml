@@ -57,6 +57,7 @@ jobs:
         with:
           node-version: '20'
       - run: rm -f package-lock.json && npm install
+        working-directory: .
       - name: TypeCheck
         run: npx tsc --noEmit
       - name: Lint
