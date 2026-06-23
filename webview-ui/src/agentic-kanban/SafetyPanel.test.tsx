@@ -574,6 +574,76 @@ describe('ARTIFACT_TYPE_VARIANTS — catalog integrity', () => {
       REQUIRED_BMAD_KEYS.length,
     );
   });
+  // INTENTIONAL NARROWING (locked). The 48-key `ArtifactType` discriminated
+  // union contains three values that are deliberately EXCLUDED from the
+  // curated `ARTIFACT_TYPE_VARIANTS` Record above (`architecture-decision`,
+  // `nfr`, `system-component`). Each excluded value has no corresponding
+  // `.safety-block-type--<variant>` rule in `Autonomy.css` because they
+  // were intentionally skipped when the chip-colour palette was curated
+  // to the 7 buckets (blue/green/purple/indigo/yellow/red/cyan/pink).
+  // Adding any of these keys to the const Record without also adding the
+  // matching CSS rule + WCAG AA cross-theme contrast validation would
+  // silently regress a11y on the chip badge variant set (see the
+  // `scripts/a11y-surface-sweep.mjs` cluster-D audit matrices). The
+  // runtime fallback at the chip-class lookup site in `SafetyPanel.tsx >
+  // artifactTypeClass` first lowercases input, then does an `in` check;
+  // unmapped types return `undefined` and the JSX renders the bare
+  // base-class `.safety-block-type` chip with NO `--variant` modifier,
+  // preserving the text payload verbatim. The case-insensitive
+  // `toLowerCase()` matters: `Architecture-Decision` (capitalised) also
+  // falls through this path even if a contributor thinks they added
+  // matching strict-equality support.
+  //
+  // Triple-locking for any future widening:
+  //   1. drop the corresponding string from EXCLUDED_FROM_ARTIFACT_TYPE_VARIANTS,
+  //   2. update the INTENTIONAL NARROWING JSDoc block on
+  //      ARTIFACT_TYPE_VARIANTS in `webview-ui/src/types.ts`,
+  //   3. add a `.safety-block-type--<variant>` rule in `Autonomy.css`
+  //      with `var(--vscode-charts-X, #fb)` token + WCAG validation,
+  //   4. add the new key to REQUIRED_BMAD_KEYS in this file in the
+  //      appropriate bucket order.
+  // Skipping any of the four steps trips an integrity invariant loudly
+  // with an attribution message naming all required steps.
+  const EXCLUDED_FROM_ARTIFACT_TYPE_VARIANTS = [
+    'architecture-decision',
+    'nfr',
+    'system-component',
+  ] as const;
+
+  it('7c_a) EXCLUDED_FROM_ARTIFACT_TYPE_VARIANTS is non-empty — empty-pass guard', () => {
+    // Silent empty-pass guard: an accidentally emptied exclusion list
+    // (e.g. a maintainer mid-widening) would otherwise let every loop in
+    // 7c_b run zero times. Fails loudly to point at the JSDoc.
+    expect(
+      EXCLUDED_FROM_ARTIFACT_TYPE_VARIANTS.length,
+      'EXCLUDED_FROM_ARTIFACT_TYPE_VARIANTS is empty. To widen the catalogue, see the JSDoc on ARTIFACT_TYPE_VARIANTS in webview-ui/src/types.ts (step 1 says: drop the corresponding string from this list).',
+    ).toBeGreaterThan(0);
+  });
+
+  it('7c_b) INTENTIONAL NARROWING: the three valid ArtifactType values below are locked as EXCLUDED from ARTIFACT_TYPE_VARIANTS', () => {
+    // Single bulk check: no const-Record key is in the hardcoded
+    // exclusion list. Catches the "re-added by accident" failure mode
+    // with one assertion that produces a single attribution message
+    // naming every leaked key.
+    const recordKeys = Object.keys(ARTIFACT_TYPE_VARIANTS);
+    const leakedKeys = recordKeys.filter(
+      k => (EXCLUDED_FROM_ARTIFACT_TYPE_VARIANTS as readonly string[]).includes(k),
+    );
+    expect(
+      leakedKeys,
+      leakedKeys.length === 0
+        ? 'OK \u2014 no excluded key leaked into ARTIFACT_TYPE_VARIANTS.'
+        : `Found ${leakedKeys.length} excluded key(s) re-added to ARTIFACT_TYPE_VARIANTS: ${leakedKeys.join(', ')}. To widen: drop each leaked key from EXCLUDED_FROM_ARTIFACT_TYPE_VARIANTS in 7c (step 1), AND update the INTENTIONAL NARROWING JSDoc block in webview-ui/src/types.ts (step 2), AND add the matching .safety-block-type--<variant> rule in Autonomy.css (step 3), AND add each leaked key to REQUIRED_BMAD_KEYS in the corresponding bucket (step 4).`,
+    ).toEqual([]);
+
+    // Per-key attribution message: each excluded value gets an explicit
+    // `not.toHaveProperty` assertion. If the const Record contains the
+    // key, vitest's failure message points at the offender directly.
+    for (const k of EXCLUDED_FROM_ARTIFACT_TYPE_VARIANTS) {
+      expect(ARTIFACT_TYPE_VARIANTS)
+        .not.toHaveProperty(k);
+    }
+  });
 
   // ─────────── CSS bucket parity (Q7 of the previous review round) ───────────
   //

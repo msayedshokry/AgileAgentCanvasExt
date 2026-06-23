@@ -400,6 +400,12 @@ Closes the design asymmetry flagged in `cluster D-3 #1.b's trailing renderers.cs
 
 ---
 
+### Added: `<artifact-type>`-variant contract lock-in
+
+- **Intentional narrowing JSDoc** — `webview-ui/src/types.ts > ARTIFACT_TYPE_VARIANTS` now carries a locked-in JSDoc block explaining that the const is a **50-key curated CSS-colour-bucket subset**, deliberately omitting three valid `ArtifactType` values (`architecture-decision`, `nfr`, `system-component`) because they have no matching `.safety-block-type--<variant>` rule in `webview-ui/src/agentic-kanban/Autonomy.css`. Unmapped `artifactType` strings safely render as bare `.safety-block-type` chips via the load-bearing fallback contract at `SafetyPanel.tsx > artifactTypeClass`.
+- **Catalog integrity test 7c** — `webview-ui/src/agentic-kanban/SafetyPanel.test.tsx` grows an `EXCLUDED_FROM_ARTIFACT_TYPE_VARIANTS` invariant asserting (a) the excluded list is non-empty, (b) every excluded string is genuinely absent from the const Record (no silent regressions), and (c) every excluded string is a real `ArtifactType` literal (no drift). The test cross-references the lazy `const lower = artifactType.toLowerCase()` lookup site in `SafetyPanel.tsx`.
+- **Future-widening checklist** — JSDoc enumerates the 4-step widening protocol: (1) drop the new key from `EXCLUDED_FROM_ARTIFACT_TYPE_VARIANTS`, (2) add an `ARTIFACT_TYPE_VARIANTS: [...]` row paired to one of the 8 CSS colour buckets (blue/green-task/purple/indigo/yellow/red/cyan/pink), (3) add a `\.safety-block-type--<key>` rule in `Autonomy.css` and an `Autonomy.a11y.test.ts` row, (4) extend `REQUIRED_BMAD_KEYS` so 7a/7b/9a/9b/9c stay GREEN. No code-only widening is safe.
+
 ## 0.5.5
 
 ### Feature: Autonomous Auto-Advance for Agentic Kanban
