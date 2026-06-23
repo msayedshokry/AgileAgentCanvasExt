@@ -43,6 +43,11 @@ npx cucumber-js features/workflow-executor.feature
 npx cucumber-js --tags @wip
 ```
 
+> **First-time setup:** This repo uses `.npmrc` with `ignore-scripts=true` to lock
+> source-binary provenance. After `git clone` + `npm install`, run:
+> `npm run bootstrap:hooks` to set up pre-commit githooks.
+> See `.npmrc` and `CHANGELOG.md#unreleased` for rationale.
+
 ## Architecture
 
 ### Core Layers
