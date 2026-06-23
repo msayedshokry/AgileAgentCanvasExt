@@ -1175,8 +1175,17 @@
   gap: 12px;
   padding: 10px 14px;
   margin: 8px 16px;
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.4);
+  /* Cluster D-4 — tokenize parent wrap bg to per-theme editorWarning.
+     Dark+ resolves to solid `#3D3208` (deep amber-tan), Light+ to solid
+     `#FCEDD0` (light amber-cream). HC-Dark token is unset → falls through
+     to the inline Universal fallback `rgba(245,158,11,0.12)` (preserves
+     current HC-Dark rendering). The 3 child rules declare NO bg of their
+     own (Kanban.css L1207/1243/1251); they cascade-inherit from this wrap.
+     The `border` sibling stays HARDCODED — no canonical VS Code
+     `--vscode-editorWarning-border` token exists and introducing a NOVEL
+     token solely for this single rule is out-of-scope for the D-4 batch. */
+  background: var(--vscode-editorWarning-background, rgba(245,158,11,0.12));
+  border: 1px solid rgba(245,158,11,0.4);
   border-radius: 8px;
   animation: approvalBannerSlideIn 0.3s ease-out;
 }
