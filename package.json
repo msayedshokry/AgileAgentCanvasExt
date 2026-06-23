@@ -1438,7 +1438,7 @@
     "lint:mapping-doc": "node scripts/lint-mapping-doc.mjs",
     "lint:mapping-doc:smoke": "node scripts/lint-mapping-doc.smoke.mjs",
     "prepare": "git config core.hooksPath .githooks || true",
-    "postinstall": "patch-package && node scripts/fix-workspace-symlinks.mjs",
+    "postinstall": "node scripts/postinstall.mjs",
     "pretest": "node -e \"const fs=require('fs'),path=require('path');const RE=/^\\.test-traces-\\d+$/;const SCRATCH=['cucumber-output.txt','cucumber-output.json','cucumber-full-output.txt','cucumber-remaining.json','full-output.txt','full-output-2.txt','remaining-failures.txt'];const root=process.cwd();let n=0;for(const e of fs.readdirSync(root)){if(RE.test(e)||SCRATCH.includes(e)){try{fs.rmSync(path.join(root,e),{recursive:true,force:true});n++;}catch{}}}console.log('[pretest] cleaned',n,'scratch entries');\"",
     "clean:scratch": "node -e \"const fs=require('fs'),path=require('path');const RE=/^\\.test-traces-\\d+$/;const SCRATCH=['cucumber-output.txt','cucumber-output.json','cucumber-full-output.txt','cucumber-remaining.json','full-output.txt','full-output-2.txt','remaining-failures.txt'];const root=process.cwd();let n=0;for(const e of fs.readdirSync(root)){if(RE.test(e)||SCRATCH.includes(e)){try{fs.rmSync(path.join(root,e),{recursive:true,force:true});n++;}catch{}}}console.log('cleaned',n,'scratch entries');\"",
     "test": "cucumber-js",
