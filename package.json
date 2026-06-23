@@ -1423,7 +1423,7 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run rebuild:node-pty && npm run compile",
+    "vscode:prepublish": "node scripts/prepublish-guard.js && npm run compile",
     "rebuild:node-pty": "npx @electron/rebuild -f -w node-pty -v 30.4.0",
     "_comment_rebuild": "Electron version (30.4.0) must match VS Code engine in 'engines.vscode'. When bumping ^1.93.0 → ^1.XX update the version here too.",
     "compile": "npm run check-types && npm run bundle && npm run compile-webview",
@@ -1482,9 +1482,11 @@
     "gpt-tokenizer": "^3.4.0",
     "headroom-ai": "^0.22.4",
     "microdiff": "^1.5.0",
-    "node-pty": "^1.1.0",
     "pdfkit": "^0.17.2",
     "simple-git": "^3.36.0",
     "yaml": "^2.8.2"
+  },
+  "optionalDependencies": {
+    "node-pty": "^1.1.0"
   }
 }
