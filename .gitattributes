@@ -1,0 +1,5 @@
+# Mark node-pty NAPI prebuilds as binary so PR diffs render as binary
+# rather than garbled text. Only the linux-x64 build is force-committed
+# (the Windows / macOS prebuilds come from npm via optionalDependencies
+# and live in a gitignored tree).
+node_modules/node-pty/prebuilds/*.node binary -diff
