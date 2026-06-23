@@ -1454,6 +1454,110 @@ export const ARTIFACT_STATUS_OPTIONS: ArtifactStatus[] = [
   'complete', 'completed', 'approved', 'done', 'archived',
 ];
 
+/**
+ * Canonical catalogue of artifact-type variants the webview renderers
+ * (SafetyPanel / FleetDashboard / TracePanel) know how to draw with a
+ * per-type colour bucket. Curated subset — NOT exhaustive across the
+ * 48-key `ArtifactType` discriminated union; only variants that have a
+ * matching `.safety-block-type--<variant>` rule in
+ * `webview-ui/src/agentic-kanban/Autonomy.css` belong here.
+ *
+ * The integrity invariant is enforced by five vitest assertions in
+ * `SafetyPanel.test.tsx > ARTIFACT_TYPE_VARIANTS — catalog integrity`
+ * (tests 7a/7b/9a/9b/9c). The `REQUIRED_BMAD_KEYS` pinned list inside
+ * that describe block MUST stay in lockstep with this Record — adding
+ * a key here means adding it to the test list AND the corresponding
+ * CSS rule, in that order. Removing a key trips all five integrity
+ * assertions loudly with a triage-friendly message.
+ *
+ * Audit follow-up: these two exports were inadvertently dropped during
+ * the working-tree cleanup on `fix/a11y-autonomy-surfaces-wcag-fails`
+ * (a `git checkout HEAD -- webview-ui/src/types.ts` v-not-overwrote
+ * them out of existence). The exports are required for SafetyPanel.tsx
+ * + FleetDashboard.tsx to compile against the canonical `artifactType`
+ * narrow helper.
+ *
+ * INTENTIONAL NARROWING (locked by 7c in SafetyPanel.test.tsx):
+ * The 48-key `ArtifactType` discriminated union contains three values
+ * that are deliberately OMITTED from this curated Record:
+ *
+ *   - `architecture-decision` (BMAD ADR artefact)
+ *   - `nfr`                    (the plain singular-NFR type)
+ *   - `system-component`       (system component diagram)
+ *
+ * Rationale: the SafetyPanel recent-blocks chip palette is intentionally
+ * bounded to the 7 colour buckets (blue/green/purple/indigo/yellow/red/cyan/pink)
+ * that map cleanly to the existing `.safety-block-type--<variant>` rules
+ * in `Autonomy.css`. The three excluded `ArtifactType` values above have
+ * no matching CSS rule, so widening the const without writing a new
+ * `var(--vscode-charts-X, #fb)` rule + WCAG AA cross-theme validation
+ * would silently regress a11y on the chip badge variants (per the
+ * cluster-D audit matrices in `scripts/a11y-surface-sweep.mjs`).
+ *
+ * Runtime behaviour at the chip-class lookup site
+ * (`SafetyPanel.tsx > artifactTypeClass`): the lookup first lowercases
+ * input via `const lower = artifactType.toLowerCase()` and then runs an
+ * `in` check against the const Record. Unmapped `artifactType` strings
+ * (including case-variants like `Architecture-Decision`) safely return
+ * `undefined`; the JSX applies the bare base-class `.safety-block-type`
+ * chip with NO `--variant` modifier and the text payload is preserved
+ * verbatim. The case-insensitive `toLowerCase()` precedes the `in`
+ * check so the three excluded values above ALSO fall through this path
+ * regardless of how the producer capitalises the wire payload. The fallback contract is already
+ * load-bearing for cross-version extension payloads (an older build
+ * that omits `artifactType` produces no badge; the same path serves
+ * intentional narrowing targets). The JSDoc reference to "no `--unknown`
+ * sentinel" in `Autonomy.css` confirms this is the canonical contract.
+ *
+ * If a future maintainer wants to add one of the three excluded values,
+ * they MUST also:
+ *   1. drop the corresponding string from the `EXCLUDED_FROM_ARTIFACT_TYPE_VARIANTS` list inside
+ *      the new test 7c `ARTIFACT_TYPE_VARIANTS — catalog integrity` block
+ *      in `SafetyPanel.test.tsx` (locks this comment + assert),
+ *   2. add a `.safety-block-type--<variant>` rule to `Autonomy.css` with
+ *      a `var(--vscode-charts-X, #fb)` token form that passes the cross-
+ *      theme contrast floors in `Autonomy.a11y.test.ts` (cluster D5 style),
+ *   3. update `REQUIRED_BMAD_KEYS` in `SafetyPanel.test.tsx` to include
+ *      the new key in its bucket ordering.
+ *
+ * Skipping any of the three steps trips the integrity invariants loudly
+ * with a triage-friendly attribution message.
+ */
+// Bucket-ordered to align 1:1 with the colour-bucket CSS rule groups in
+// Autonomy.css. The integrity-invariant test (REQUIRED_BMAD_KEYS in
+// SafetyPanel.test.tsx) checks SET equality, not ORDER — but a future
+// maintainer who wants to visually cross-check the two files side by
+// side will appreciate this canonical grouping.
+export const ARTIFACT_TYPE_VARIANTS = {
+  // ── Stories / work breakdown (blue bucket) ───────────────────────
+  story: true, requirement: true, 'use-case': true, 'use-cases': true,
+  'additional-req': true, 'nfr-assessment': true,
+  // ── Tasks (green bucket) ───────────────────────────────
+  task: true,
+  // ── Planning / strategy (purple bucket) ─────────────────
+  epic: true, epics: true, vision: true, prd: true, 'product-brief': true,
+  'project-overview': true, 'project-context': true, requirements: true,
+  'readiness-report': true, 'fit-criteria': true, 'success-metrics': true,
+  // ── Architecture / system (indigo bucket) ─────────────────
+  architecture: true, 'tech-spec': true, 'change-proposal': true, retrospective: true,
+  'code-review': true, 'source-tree': true,
+  // ── Test / verification (yellow bucket) ─────────────────────────
+  'test-case': true, 'test-cases': true, 'test-strategy': true, 'test-design': true,
+  'test-design-qa': true, 'test-design-architecture': true, 'test-summary': true,
+  'test-coverage': true, 'test-review': true, 'atdd-checklist': true,
+  'traceability-matrix': true, 'test-framework': true, 'ci-pipeline': true,
+  'automation-summary': true, 'epic-test-strategy': true,
+  // ── Risk / quality gate (red bucket) ─────────────────
+  risk: true, risks: true, 'definition-of-done': true,
+  // ── Operational / sprint tracking (cyan bucket) ─────────────────
+  'sprint-status': true, sprint: true, research: true,
+  // ── Design / CIS module (pink bucket) ──────────────────────
+  'ux-design': true, 'design-thinking': true, storytelling: true,
+  'problem-solving': true, 'innovation-strategy': true,
+} as const;
+
+export type KnownArtifactVariant = keyof typeof ARTIFACT_TYPE_VARIANTS;
+
 // =============================================================================
 // Graphify Modal Types
 // =============================================================================

@@ -21,7 +21,8 @@ import type { WorkflowExecutor } from './workflow-executor';
 import type { BmadModel } from '../chat/ai-provider';
 import type { TransitionResult } from './lane-transitions';
 import { concurrencyQueue } from './concurrency-queue';
-import { getKanbanMaxIterations } from './kanban-settings';
+import { getKanbanMaxIterations, isApprovalCheckpointEnabled } from './kanban-settings';
+import { harnessEngine } from '../harness/policy-engine';
 import type { KanbanVerdict, KanbanFixRequest } from './kanban-verdict';
 import { circuitBreaker } from './circuit-breaker';
 import { budgetEnforcer } from './budget-enforcer';
@@ -120,6 +121,8 @@ export class KanbanOrchestrator {
   // function at the next iteration boundary (does NOT abort, does NOT kill
   // terminal — preserves the in-progress state for resume).
   private pausedResolvers: Map<string, () => void> = new Map();
+  // P1 #5: pending approval promisers (resolves to true/false).
+  private approvalResolvers: Map<string, (approved: boolean) => void> = new Map();
 
   constructor(
     private store: ArtifactStore,
@@ -139,6 +142,10 @@ export class KanbanOrchestrator {
     // Kill the running terminal so the CLI agent stops immediately.
     // Idempotent — killTerminal is a no-op if no terminal is active.
     this.terminalExecutor.killTerminal(artifactId);
+    // P1 #5: resolve any pending approval checkpoint to prevent the
+    // autonomous loop from deadlocking (requestApproval Promise hangs
+    // while the abort killed the terminal outside the try/catch).
+    this.resolveApproval(artifactId, false);
     const ctrl = this.abortControllers.get(artifactId);
     if (ctrl) {
       ctrl.abort();
@@ -318,6 +325,10 @@ export class KanbanOrchestrator {
       // Audit gap #50 — clean up any outstanding pause resolver so a future
       // runAutonomous() for the same artifactId doesn't inherit stale state.
       this.pausedResolvers.delete(id);
+      // P1 #5: resolve any pending approval with denied on abort/cancel
+      // to prevent deadlock (the finally block can't execute while the
+      // Promise is still awaiting, so resolve it now).
+      this.resolveApproval(id, false);
       concurrencyQueue.release(id);
     }
   }
@@ -350,6 +361,36 @@ export class KanbanOrchestrator {
     if (!budgetEnforcer.canStart(id)) {
       const status = budgetEnforcer.getStatus(id);
       return { verdict: 'BLOCKED', summary: status.bannerMessage ?? `Budget exceeded for ${id}` };
+    }
+
+    // P1 #5: approval checkpoint — when the user has opted in, evaluate
+    // harness pre-flight policies before proceeding. If blocking failures
+    // exist, pause execution and ask the user in-canvas.
+    if (isApprovalCheckpointEnabled()) {
+      const preFlightResults = await harnessEngine.evaluate(
+        { artifactType: type, artifactId: id, artifact },
+        'pre-flight',
+      );
+      const blockingFailures = preFlightResults.filter(
+        (r): boolean => !r.passed && r.severity === 'blocking',
+      );
+      if (blockingFailures.length > 0) {
+        const failureSummary = blockingFailures
+          .map((r) => `${r.policyId}: ${r.failures.join('; ')}`)
+          .join(' | ');
+        logger.info(`[Orchestrator] ${id}: approval checkpoint triggered — ${blockingFailures.length} blocking policy failure(s)`);
+
+        // Broadcast to webview and await user response
+        const approved = await this.requestApproval(id, workflowId, blockingFailures);
+        if (!approved) {
+          logger.info(`[Orchestrator] ${id}: user denied approval`);
+          return {
+            verdict: 'BLOCKED',
+            summary: `User denied: ${failureSummary}`,
+          };
+        }
+        logger.info(`[Orchestrator] ${id}: user approved — proceeding despite harness warnings`);
+      }
     }
 
     // Determine execution path: chat (in-Copilot) vs terminal (headless CLI)
@@ -467,6 +508,59 @@ export class KanbanOrchestrator {
       verdict: 'UNKNOWN',
       summary: `Retries exhausted: ${errMsg(lastErr)}`,
     } as unknown as KanbanVerdict;
+  }
+
+  // ── Approval checkpoint (P1 #5) ──────────────────────────────────────────
+
+  /**
+   * Broadcast an approval request to the webview and await the user's response.
+   * Uses the kanbanProgress emitter to reach the message handler, which
+   * broadcasts kanban:approvalNeeded to the webview. The response comes back
+   * via kanban:approvalResponse → resolveApproval().
+   */
+  private async requestApproval(
+    id: string,
+    workflowId: string,
+    failures: Array<{ policyId: string; failures: string[]; severity: string }>,
+  ): Promise<boolean> {
+    // Clean up any stale resolver from a previous run
+    this.approvalResolvers.delete(id);
+
+    // Broadcast to webview via the kanbanProgress emitter
+    try {
+      kanbanProgress.fire({
+        artifactId: id,
+        agentState: {
+          status: 'interrupted',
+          agentRole: 'approval-needed',
+          workflowId,
+          approvalDetails: {
+            workflowId,
+            policyFailures: failures.map(f => ({
+              policyId: f.policyId,
+              failures: f.failures,
+            })),
+          },
+        } as any, // progressive: approvalDetails not yet in KanbanProgressEvent union
+      });
+    } catch {
+      // emitter may be disposed
+    }
+
+    return new Promise<boolean>(resolve => {
+      this.approvalResolvers.set(id, resolve);
+    });
+  }
+
+  /** Resolve a pending approval checkpoint (called by message handler). */
+  resolveApproval(artifactId: string, approved: boolean): boolean {
+    const resolver = this.approvalResolvers.get(artifactId);
+    if (resolver) {
+      resolver(approved);
+      this.approvalResolvers.delete(artifactId);
+      return true;
+    }
+    return false;
   }
 
   private async setStatus(type: string, id: string, status: string): Promise<void> {

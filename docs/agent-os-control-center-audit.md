@@ -76,10 +76,7 @@ The autonomy engine already satisfies a lot of #3. The control-center experience
 
 ### 4.2 Intervention / control — "steer a running agent" 🔴 major gap
 
-- **SHIPPED (opt-in):** **input to a running agent** via `NodePtyTerminalBackend` (Option B). When `agenticKanban.embeddedTerminal` is ON and node-pty loads successfully, the webview `AgentTerminal` tiles become bidirectional — keystrokes flow `terminal:input → TerminalSessionRouter → NodePtyTerminalBackend.write() → pty shell`. When OFF or node-pty unavailable, tiles are read-only (Option A fallback, no crash). The full bidirectional path is `onData → vscode.postMessage(terminal:input) → isTerminalInbound → router.handle → backend.write → session.pty.write`.
-- **Missing:** **inline approve/deny.** Headless CLIs run with auto-approval; no in-the-loop checkpoint that pauses on risky actions and asks the user in-canvas.
-- **Missing:** **take-over / handoff.** No "grab this agent's session into chat and drive it myself," then hand back.
-- **Present:** per-story pause/resume/abandon (resolved in the prior audit), `killTerminal`, `jumpToTerminal` (but that ejects you).
+- **SHIPPED (opt-in, 2026-06-21):** **take-over handoff** via "Take Over" button + "Send Command" quick-input on the AgenticDetailPanel. The "Take Over" action switches to terminals view and flashes the agent's tile so the user knows exactly where to type. The "Send Command" input posts `terminal:input` directly to the pty for quick one-liner injections without leaving the board.
 
 ### 4.3 Continuous operation — "run autonomously" 🟠 partial
 
@@ -94,7 +91,7 @@ What still forces the user out of the canvas today:
 
 | Task | Currently requires | Gap |
 |---|---|---|
-| **Review the diff an agent produced** | Open files / SCM view in VS Code | 🔴 No in-canvas diff view. `autonomousGit` broadcasts `gitBranch`/`gitCommit`/`gitPR` but the **webview has no handlers** (prior audit gap #51) — the user never even sees what changed |
+| **Review the diff an agent produced** | Open files / SCM view in VS Code | ✅ **Resolved.** In-canvas `DiffPanel` renders agent commit diffs with file list + unified diff view. `autonomousGit` now computes and broadcasts structured diff data alongside commit SHAs. |
 | **Approve / merge a PR** | GitHub / VS Code | 🟠 No in-canvas PR review |
 | **Watch an agent properly** | VS Code terminal panel | 🔴 §3 |
 | **Chat with an agent / re-plan** | Copilot Chat panel | 🟡 Separate surface; goal-decomposer modal partly covers planning |
@@ -136,12 +133,12 @@ Everything in §4.1–4.2 hinges on this. Two viable paths:
 **🔴 P0 — without these it isn't a control center**
 1. ✅ **SHIPPED (2026-06-21): xterm.js terminal rendering** in the canvas (replaces the `<pre>` in `TerminalModal`). ANSI/color/TUI correctness via `@xterm/xterm` + `@xterm/addon-fit`.
 2. ✅ **SHIPPED (2026-06-21): Multi-agent terminal grid** — one live `AgentTerminal` tile per session, driven by the existing agent state (`displayItems.filter(is running)`); replaces one-at-a-time `TerminalModal` (deleted). Board/Terminals toggle in the canvas header.
-3. **In-canvas diff review** — wire the missing `gitBranch`/`gitCommit`/`gitPR` webview handlers (prior audit gap #51) and render the agent's changes as a reviewable diff before/after it touches disk. **← next priority**
+3. ✅ **SHIPPED (2026-06-21): In-canvas diff review** — `autonomousGit.maybeCommit()` now asynchronously computes structured diff data via `git diff-tree --numstat`/`--name-status` + `git show` and fires the new `onCommitDiff` hook. The `autonomyLifecycle` wires it to broadcast `gitDiff` messages with commit SHA, message, per-file additions/deletions/status, and full unified diff text. The webview `DiffPanel` component renders a file list sidebar (color-coded status badges) and a unified diff view with syntax-colored additions/deletions. Appears below the board automatically when a diff arrives.
 
 **🟠 P1 — needed for "stay and steer"**
-4. **Agent input / take-over** — a path to send input to a running agent (Option B / node-pty for real fidelity).
-5. **Opt-in approval checkpoints** — a "pause on risky action, ask me in-canvas" mode layered over the auto-approve CLI flags + the harness.
-6. **"Continuous mode" switch + state machine** — one visible RUNNING/WAITING/BLOCKED/IDLE control with a run-to-empty contract.
+4. ✅ **SHIPPED (2026-06-21): Agent input / take-over** — "Take Over" button on running agent detail panels switches to terminals view and flashes the specific tile. "Send Command" quick-input lets users inject one-liners directly into the agent's pty without leaving the board view. `TerminalGrid` accepts `focusedSessionId` for scroll-to + flash animation. Extension `kanban:takeOverAgent` handler re-pushes capabilities and jumps to terminal.
+5. ✅ **SHIPPED (2026-06-22): Opt-in approval checkpoints** — `kanban.approvalCheckpoints` setting gates pre-flight harness policy evaluation before autonomous step execution. When blocking failures are found, the orchestrator fires `kanban:approvalNeeded` → webview `ApprovalBanner` renders policy failure details with Approve/Deny buttons. `kanbanOrchestrator.resolveApproval()` resolves the pending Promise; denial returns BLOCKED verdict; abort resolves with denial to prevent deadlocks. Layered over auto-approve CLI flags + `HarnessEngine`.
+6. ✅ **SHIPPED (2026-06-22): "Continuous mode" switch + state machine** — `kanban.continuousMode` VS Code setting. `AutonomyBar` toggle switch (ON/OFF) starts/stops the scheduler. Color-coded display-state pill (▶ Running green, 🛑 Needs You amber, ⛔ Blocked red, ● Idle gray) surfaces the user-facing autonomy state derived from internal scheduler state + pause reason. `AutoScheduler.pauseForReason()` distinguishes budget/circuit/approval/queue-empty pauses. Only visible when continuous mode is ON. run-to-empty: scheduler auto-pauses on queue-empty in continuous mode only.
 7. **"Needs you" inbox + out-of-band notify** (Telegram is already configured) — escalate the cases the OS can't resolve.
 
 **🟡 P2 — completeness & trust**

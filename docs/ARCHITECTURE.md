@@ -9,6 +9,23 @@
 
 ---
 
+### Visual documentation (C4 model)
+
+A parallel set of [C4](https://c4model.com/) architecture diagrams lives alongside this document, drawn at the same level of detail as the prose below. Reach for them as a fast map of "what talks to what" before diving into the section that interests you.
+
+| Diagram | Level | When to reach for it |
+|---|---|---|
+| [c4-l1-context.md](c4-l1-context.md) | L1 Context | Stakeholder overview — who/what does this extension talk to outside its trust boundary? |
+| [c4-l2-container.md](c4-l2-container.md) | L2 Container | Eng onboarding — what are the deployable units and where do they run? |
+| [agentic-kanban-c4-container.md](agentic-kanban-c4-container.md) | L2 Container (focused) | Cluster D-3 A11y review of the agentic-kanban autonomy surfaces end-to-end |
+| [c4-l3-component-webview.md](c4-l3-component-webview.md) | L3 Component | Webview refactor planning — which React components exist and what is their a11y contract? |
+| [c4-l3-component-policy-loop.md](c4-l3-component-policy-loop.md) | L3 Component | Safety review — how does a card-level decision get made and recorded? |
+| [c4-l4-code-message-handler.md](c4-l4-code-message-handler.md) | L4 Code | Protocol review — what is the typed `Envelope<T>` between host and webview? |
+
+All six share a consistent house style (see the "House Style" block inside each file). File names are the navigation key: `c4-<level>-<scope>.md`.
+
+---
+
 ## 1. What this extension actually is
 
 Agile Agent Canvas (extension id surface `agileagentcanvas`, publisher-facing
@@ -31,6 +48,8 @@ The extension activates on `onStartupFinished` (`package.json` →
 `activationEvents`) and has a single entry point, `src/extension.ts`, compiled to
 `dist/extension.js` (`package.json` → `main`).
 
+> See [C4 Context](c4-l1-context.md) for the system landscape (Developer, AI Provider, Jira, graphify, Antigravity) and [C4 Container](c4-l2-container.md) for the two-program topology inside this extension.
+
 ---
 
 ## 2. Build & runtime topology
@@ -49,6 +68,8 @@ build`). The two halves never share a module; they communicate **only** by
 (`webview-ui/package.json`) depending on `react`,
 `react-dom`, `three`, `3d-force-graph`, `marked`, `html2canvas`, and
 `@vscode/webview-ui-toolkit`.
+
+> See [C4 Container](c4-l2-container.md) for the two-container topology and the data stores each one owns.
 
 Runtime dependencies of the **extension host** are deliberately thin
 (`package.json` → `dependencies`): `ajv` (schema validation), `yaml` /
@@ -259,6 +280,8 @@ and a **3D corpus view** (`Corpus3DView`, lazily loading the `3d-force-graph` UM
 bundle injected via `window.__AC_3D_GRAPH_URL__`, `extension.ts:1010-1013`). It
 renders artifact bodies with `marked` and exports images with `html2canvas`.
 
+> See [C4 Component view — webview](c4-l3-component-webview.md) for the React components in the agentic-kanban mode and their a11y contracts.
+
 ### 4.5 Chat layer (`src/chat/`)
 
 The conversational surface and the AI plumbing.
@@ -397,6 +420,8 @@ takes a story card and drives it to "done" with minimal human input. The pieces:
   - `autonomous-git.ts` — branch/commit/PR automation via `simple-git`.
   - `kanban-verdict.ts` — the `KanbanVerdict` contract (`COMPLETED` / `APPROVED` /
     `NEEDS_FIXES` / `BLOCKED` / `UNKNOWN`) shared across the loop.
+
+> See [C4 Container view — agentic kanban (focused)](agentic-kanban-c4-container.md) for the end-to-end autonomy surfaces, and [C4 Component view — policy loop](c4-l3-component-policy-loop.md) for the Orchestrator / Policy Engine / Auto-Scheduler / Recent Blocks Tracker / Settings interaction.
 
 ### 4.8 ACP — Agent Communication Protocol (`src/acp/`)
 
@@ -597,6 +622,8 @@ from `sendArtifactsToPanel`. Webview → extension examples: `ready`, `addArtifa
 `switchProject`, plus the common/catalogue/kanban vocabularies routed through the
 three handlers. The panel HTML is generated in `getCanvasWebviewContent`
 (`extension.ts:1047`) and per-artifact detail tabs in `getDetailTabHtml` (`:1001`).
+
+> See [C4 Code view — message handler](c4-l4-code-message-handler.md) for the typed `Envelope<T>` envelope contract used in the agentic-kanban protocol.
 
 ---
 

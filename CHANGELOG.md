@@ -2,9 +2,40 @@
 
 ## Unreleased
 
+### Fixed: 32 WCAG contrast fails in autonomy surfaces
+
+A themed-token × surface contrast audit (full 114-pair matrix in scripts/a11y-surface-sweep.mjs) found 32 sub-3:1 pairs across SafetyPanel / AutonomyBar / FleetDashboard / TracePanel / DiffPanel / TerminalGrid against the canonical VS Code Dark+/Light+/HC-Dark themes. The four specifically-called-out surfaces — row-vs-editor contrast, badge backgrounds vs surfaces, the severity pip on `.fleet-health--dead`, and the `--vscode-errorForeground`-shifted red row — are the focus of this PR; the remaining matrix entries remain visible in the bundle script for follow-up commits.
+
+- **P0/A — `.autonomy-bar-systemic-severity--medium` color (audit false positive; original kept under lock)**
+  The audit (scripts/a11y-surface-sweep.mjs) initially flagged the hardcoded `color: #1a1a1a` as a P0 regression (HC-Dark contrast `0.91:1`). The audit computed the contrast against `--vscode-editor-background` (`#000000` in HC-Dark) instead of against the **pill (yellow) bg** where the text actually renders — a model error in the audit, not a real CSS defect. Re-computing text vs pill bg across canonical themes shows the original color clears WCAG AA in every case: Dark+ (`#CA8A04` ≈ 5.88:1), Light+ (`#B58900` ≈ 5.45:1), HC-Dark (`#CA8A04` ≈ 5.88:1). **PR action: lock the literal `#1a1a1a value with the regression test in Autonomy.a11y.test.ts (CSS-shape guard P0/A:`). Do NOT switch to `var(--vscode-editor-*)` tokens — that would invert to white-on-yellow in Light+ and silently drop below the 4.5:1 AA floor.** A future audit correctly measuring text vs surface bg is recorded as a follow-up.
+- **P0/B — `@keyframes fleet-health-pulse`**
+  The `.fleet-health--dead` pip animation cycled `opacity: 1 → 0.4 → 1`, fading icon color toward the row bg every 1.5s. In Light+ (`--vscode-errorForeground` `#CE5017` over `--vscode-badge-background` `#B4B4B4`) the mid-cycle effective contrast dropped to ~2.37:1 — sub-3:1, and the dead pip momentarily matched the healthy/degraded pip colors. Replaced with a `transform: scale(1) → scale(1.25) → scale(1)` heartbeat so opacity stays at 1.0 the entire cycle and contrast is unchanged.
+- **P1 — `.terminal-tile-dot` status colors**
+  Three GitHub-Dark hexes (`#888` idle, `#3fb950` running, `#f85149` failed/dead) were hardcoded; the dot color froze across every VS Code theme and Light+-era HC-Dark users saw sub-floor contrast. Switched to `var(--vscode-descriptionForeground) / var(--vscode-charts-green) / var(--vscode-errorForeground)` with the original hex as inline fallback. HC-Dark's brighter `--vscode-errorForeground` (`#F48771`) now lifts the critical dot contrast against the `#000000` terminal bg to ~10:1 — well above the 4.5:1 AA floor.
+- **Matrix-lock regression guard** — new webview-ui/src/agentic-kanban/Autonomy.a11y.test.ts parses both Autonomy.css and TerminalGrid.css via `postcss`, resolves `--vscode-*` tokens for Dark+/Light+/HC-Dark, and asserts two layers: (a) postcss-shape guards that the three P0/P1 fixes are still present in the stylesheet (reverting any of them now fails with a clear guard message), and (b) token-resolved contrast floors for the four spec-called-out surfaces across all three themes. The full 114-pair matrix lives in scripts/a11y-surface-sweep.mjs for ad-hoc CLI reproducibility; this test embeds only the high-impact floors so CI stays fast.
+
+Validation: webview typecheck clean, 119 existing SafetyPanel tests still pass, 9 new contrast regression guards (5 CSS-shape + token-resolved contrast blocks across all three VS Code themes).
+
+
+
+### Added: chip-palette tokenization + 9-test cross-theme regression
+
+Follow-up to the `32 WCAG contrast fails` fix: the three long-standing chip-palette
+buckets for `architecture` (`#4f46e5` indigo), `sprint/ops/research` (`#0891b2` cyan),
+and `design/CIS/innovation` (`#db2777` pink) now declare as
+`var(--vscode-charts-{indigo|cyan|pink}, #UniversalFallbackHex)` instead of hardcoded hexes.
+The Universal fallback keeps chips legible in built-in themes (VS Code upstream defines
+`--vscode-charts-blue/green/orange/purple/red/yellow` but NOT `indigo/cyan/pink` — so the
+fallback always fires today; theme authors opt in by declaring the new tokens).
+`@media (prefers-color-scheme: {dark,light})` overrides are tuned per-theme so chips
+clear WCAG 3:1 UI-floor against their own alpha-tinted bg in Dark+/Light+/HC-Dark.
+The per-theme TOKS-resolution table is documented in JSDoc in Autonomy.css and locked
+by 9 new tests in Autonomy.a11y.test.ts (3 buckets × 3 themes) that resolve the
+`var(--vscode-charts-X, #fb)` expression through the test TOKS table and assert contrast
+against the canonical editor bg (Dark+ `#1E1E1E` / Light+ `#FFFFFF` / HC-Dark `#000000`).
 ### Removed: 10 legacy BMAD tea/testarch duplicate directories
 
-Ten legacy `bmad-tea` / `bmad-testarch-*` directories under `resources/_aac/tea/` are gone from the extension. Each was a stale duplicate of a live `aac-tea-*` skill that's been the actual runtime path since the Phase 2 baseline refactor; nothing that reads the catalogue, the skill manifest, or installed skills can notice the deletion. The BMAD → AAC migration is now fully resolved on disk — only the methodology carve-outs (the `{bmad-path}` workflow-template variable, BMAD-methodology persona copy in chat-participant.ts, the `BMAD Integration` UI section) remain by design per Decision Rule 2. The deletion leaves every skill ID invokable and every workflow reachable.
+Ten legacy `bmad-tea` / `bmad-testarch-*` directories under `resources/_aac/tea/` are gone from the extension. Each was a stale duplicate of a live `aac-tea-*` skill that's been the actual runtime path since the Phase 2 baseline refactor; nothing that reads the catalogue, the skill manifest, or installed skills can notice the deletion. The BMAD → AAC migration is now fully resolved on disk — only the methodology carve-outs (the `{bmad-path} workflow-template variable, BMAD-methodology persona copy in chat-participant.ts, the BMAD Integration` UI section) remain by design per Decision Rule 2. The deletion leaves every skill ID invokable and every workflow reachable.
 
 - `resources/_aac/tea/agents/bmad-tea/` → live runtime at `resources/_aac/tea/agents/aac-tea/`
 - 8 `resources/_aac/tea/workflows/testarch/bmad-testarch-{atdd,automate,ci,framework,nfr,test-design,test-review,trace}/` → live runtime at the matching `resources/_aac/skills/aac-tea-<suffix>/` skill directory
@@ -14,13 +45,13 @@ Ten legacy `bmad-tea` / `bmad-testarch-*` directories under `resources/_aac/tea/
 
 Phase 18 closes the canonical "parts" pattern that Phase 17 promoted across all four reducer modules (`Object.assign(upd, pickChanges(changes, [ ... ]))`). Two follow-up refactors tidy up the surrounding debt across four commits in sequence.
 
-- **Helper centralised** (commit `0a9641f`) — The per-file `pickChanges(changes, fieldList)` copies added in Phase 17 (commits `fec166e` cis, `1f47652` tea, `06adb75` bmm, `5aa0931` l1) collapse into a single shared `src/state/reducer-helpers.ts` module, which all four reducer files now `import { pickChanges } from './reducer-helpers'`. -119 / +81 across cis/tea/bmm/l1. Helper body is bytewise-identical to the per-file copies so behaviour is preserved by construction; the Phase 12 narrowing contract on the `changes` parameter type still applies unchanged.
+- **Helper centralised** (commit `0a9641f`) — The per-file `pickChanges(changes, fieldList)` copies added in Phase 17 (commits `fec166e` cis, `1f47652` tea, `06adb75` bmm, `5aa0931 l1) collapse into a single shared src/state/reducer-helpers.ts module, which all four reducer files now import { pickChanges } from './reducer-helpers'`. -119 / +81 across cis/tea/bmm/l1. Helper body is bytewise-identical to the per-file copies so behaviour is preserved by construction; the Phase 12 narrowing contract on the `changes` parameter type still applies unchanged.
 
 - **Field allowlists promoted** (commit `e4d8ed7`) — Each `Object.assign(upd, pickChanges(changes, [ ... inline array ... ]))` call site becomes `Object.assign(upd, pickChanges(changes, X_FIELDS))` where `const X_FIELDS: readonly string[] = [ ... ]` is a module-level const declared right after the file's imports. 26 named consts total: cis 4 (`STORYTELLING_FIELDS` / `PROBLEM_SOLVING_FIELDS` / `INNOVATION_STRATEGY_FIELDS` / `DESIGN_THINKING_FIELDS`), tea 7 (`TRACEABILITY_MATRIX_FIELDS` / `TEST_REVIEW_FIELDS` / `NFR_ASSESSMENT_FIELDS` / `TEST_FRAMEWORK_FIELDS` / `CI_PIPELINE_FIELDS` / `AUTOMATION_SUMMARY_FIELDS` / `ATDD_CHECKLIST_FIELDS`), bmm 14 (`RESEARCH_FIELDS` / `UX_DESIGN_FIELDS` / `READINESS_REPORT_FIELDS` / `SPRINT_STATUS_FIELDS` / `RETROSPECTIVE_FIELDS` / `CHANGE_PROPOSAL_FIELDS` / `CODE_REVIEW_FIELDS` / `RISKS_FIELDS` / `DEFINITION_OF_DONE_FIELDS` / `PROJECT_OVERVIEW_FIELDS` / `PROJECT_CONTEXT_FIELDS` / `TECH_SPEC_FIELDS` / `SOURCE_TREE_FIELDS` / `TEST_SUMMARY_FIELDS`), l1 1 (`TEST_DESIGN_FIELDS`, which renames the previous in-reducer-body `const contentFields` to match the `<AREA>_FIELDS` convention and promotes it up to module level). +322 / -173 across cis/tea/bmm/l1. The lift tightens grep-discoverability from "grep substring `pickChanges(changes, [`" to "named symbol with IDE jump-to-def".
 
-- **Docs align** (commits `4c11ce7` + `f81f602`) — `src/state/reducer-types.ts` JSDoc describes both stories: the canonical `parts` pattern itself (the `## Dropping the \`Partial<any>\` escape hatch` section now rewritten to cover Phase 12's `Partial<any>` → `ArtifactChanges<T>` canonicalisation AND Phase 17/18's indexed-access → `pickChanges` canonicalisation, in `+47 / -6`), and the all-module-level `*_FIELDS` convention post-lift (with per-file const-counts table 4+7+14+1 = 26 + the l1 rename note + a `readonly string[]` typing rationale, in `+37 / -17`).
+- **Docs align** (commits `4c11ce7` + `f81f602) — src/state/reducer-types.ts JSDoc describes both stories: the canonical parts` pattern itself (the `## Dropping the \`Partial<any>\` escape hatch` section now rewritten to cover Phase 12's `Partial<any>` → `ArtifactChanges<T>` canonicalisation AND Phase 17/18's indexed-access → `pickChanges` canonicalisation, in `+47 / -6`), and the all-module-level `*_FIELDS` convention post-lift (with per-file const-counts table 4+7+14+1 = 26 + the l1 rename note + a `readonly string[]` typing rationale, in `+37 / -17`).
 
-Net diff across the four-commit sequence: **+287 / -136** across 5 files (cis/tea/bmm/l1/reducer-types.ts) plus the new `src/state/reducer-helpers.ts` module. No user-visible behaviour change — every refactor preserves the original mutation semantics bytewise (`Object.assign(upd, ...)` chains merge identically to the for-loop boilerplate it replaced; the const lift reorders fields only via the helper's iteration order which is order-independent for `Object.assign` on disjoint keysets). Validation: `npx tsc --noEmit` clean throughout, `npx vitest run` 602/603 (1 expected unrelated `[Phase 17] epicId wire-only contract` surface marker from Phase 16 — see below).
+Net diff across the four-commit sequence: **+287 / -136** across 5 files (cis/tea/bmm/l1/reducer-types.ts) plus the new src/state/reducer-helpers.ts module. No user-visible behaviour change — every refactor preserves the original mutation semantics bytewise (`Object.assign(upd, ...)` chains merge identically to the for-loop boilerplate it replaced; the const lift reorders fields only via the helper's iteration order which is order-independent for `Object.assign` on disjoint keysets). Validation: `npx tsc --noEmit` clean throughout, `npx vitest run` 602/603 (1 expected unrelated `[Phase 17] epicId wire-only contract` surface marker from Phase 16 — see below).
 
 ### Fixed: 4 Critical Kanban Agentic OS Issues (#30–#33)
 
@@ -31,22 +62,22 @@ Four critical issues from the Kanban Agentic OS deep audit have been fixed to ma
 `runStepGuarded` previously always called `executeLaneTransition` (the in-chat streaming API), even when running autonomously without a chat session. This meant terminal-based autonomous runs would try to stream to a non-existent chat session and never produce structured verdicts.
 
 - **Dual-path dispatch** — `runStepGuarded` checks `ctx.model && ctx.stream`. When both are present, it uses the chat path (`executeLaneTransition`). When absent (headless autonomous mode), it uses the terminal path (`terminalExecutor.executeAndAwaitVerdict`), which polls the verdict file on disk.
-- **`KanbanOrchestrator` constructor** now accepts a `TerminalExecutor` (3rd parameter). `initializeKanbanOrchestrator` in extension.ts passes the singleton `terminalExecutor`.
+- **`KanbanOrchestrator` constructor** now accepts a `TerminalExecutor` (3rd parameter). `initializeKanbanOrchestrator in extension.ts passes the singleton terminalExecutor`.
 - **Chat health checks** — When executing via the chat path, health checks are registered for the session duration so the health monitor can detect stalled LLM responses.
 
 #### Issue #31 — Circuit breaker and budget errors: never retried, early exit
 
 Circuit breaker open and budget exceeded errors were thrown inside the retry work function, classified as `'unknown'` (since no matching pattern existed), and skipped by the retry engine. This wasted backoff delays on conditions that won't self-resolve.
 
-- **Permanent patterns added** — `failure-classifier.ts` now matches `circuit breaker open` and `budget exceeded` as permanent failures.
-- **Early exit before retry loop** — `runStepGuarded` checks circuit breaker and budget BEFORE entering `autoRetryEngine.run()`. If either guard fails, it returns `BLOCKED` immediately — no retry delay wasted.
+- **Permanent patterns added** — failure-classifier.ts now matches `circuit breaker open` and `budget exceeded` as permanent failures.
+- **Early exit before retry loop** — `runStepGuarded` checks circuit breaker and budget BEFORE entering autoRetryEngine.run(). If either guard fails, it returns `BLOCKED` immediately — no retry delay wasted.
 - **Safety re-checks retained** — The same guards inside the retry work function remain for safety during backoff delays.
 
 #### Issue #32 — In-chat agent sessions now have health monitoring
 
-Health monitoring only covered terminal-based agents (`terminal-executor.ts` registers 3 checks per terminal). In-chat (Copilot) agent sessions had zero monitoring — a stalled LLM would hang the autonomous loop indefinitely.
+Health monitoring only covered terminal-based agents (terminal-executor.ts registers 3 checks per terminal). In-chat (Copilot) agent sessions had zero monitoring — a stalled LLM would hang the autonomous loop indefinitely.
 
-- **`createChatHealthChecks()`** — New function in `terminal-health-checks.ts` returns output-progress and artifact-change checks for in-Copilot sessions. Checks measure elapsed time since session start and transition through healthy → degraded → dead.
+- createChatHealthChecks() — New function in terminal-health-checks.ts returns output-progress and artifact-change checks for in-Copilot sessions. Checks measure elapsed time since session start and transition through healthy → degraded → dead.
 - **Registration in chat path** — When `runStepGuarded` takes the chat path, health checks are registered before the LLM call and deregistered in `finally`. The health monitor's 30s poll interval detects stalled sessions.
 
 #### Issue #33 — Terminal reconnection actually finds the terminal
@@ -61,7 +92,7 @@ The terminal reconnector was a permanent no-op (`async () => true`), meaning eve
 
 The harness engine now feeds policy evaluation failures into a cross-artifact pattern detector that surfaces systemic issues as a color-coded, dismissable banner in the Agentic Kanban webview.
 
-- **HarnessEngine EventEmitter** — emits `findings` after each failed policy evaluation; AutonomyLifecycle subscribes, accumulates (capped at 200), feeds into `CrossArtifactHarnessDetector.correlate()`, and broadcasts `systemicIssue` to the webview when the same policy fails on >=3 artifacts
+- **HarnessEngine EventEmitter** — emits `findings` after each failed policy evaluation; AutonomyLifecycle subscribes, accumulates (capped at 200), feeds into CrossArtifactHarnessDetector.correlate(), and broadcasts `systemicIssue` to the webview when the same policy fails on >=3 artifacts
 - **Deduplication** — fingerprint-based dedup prevents re-broadcasting the same set of patterns on every subsequent harness evaluation
 - **Webview banner** — new `SystemicIssue`/`SystemicPattern` types in AutonomyBar, color-coded by max severity (blue->yellow->orange->red+pulse), expandable pattern details (policy, artifact count, sample message), dismiss (X) button, accessible (role=alert, aria-expanded)
 - **6 previously-unwired modules now wired** — auto-retry-engine (#18), autonomous-git (#17), failure-classifier (#14), cost-tracker (#5), concurrency-queue-persistence (#6), cross-artifact-detector (#4)
@@ -131,7 +162,7 @@ The extension now owns the Headroom proxy lifecycle so users never need to run `
 - **EADDRINUSE coexists with the real engine** — If port 8787 is already taken (a separate headroom-ai proxy process is running), the extension steps aside and uses the external proxy. Status bar surfaces this distinctly so users know which one is answering.
 - **Naïve MVP compression** — /v1/compress returns snake_case wire-format responses and applies dedupe (adjacent identical messages) + content truncation (capped at 4000 chars) + rough token estimation (len/4). Real engine-quality compression still requires the standalone engine.
 - **Malformed-body safety** — Bad JSON in POST bodies returns 400 { error: { type: invalid_request } } instead of a generic 500, so the SDK can disambiguate client input errors from server faults.
-- **notifyHeadroomProxyStarting() now real** — Sets the proxy state to starting and refreshes the status bar. The bar subscribes to every proxy-state transition so refreshes are event-driven, never polling.
+- notifyHeadroomProxyStarting() now real — Sets the proxy state to starting and refreshes the status bar. The bar subscribes to every proxy-state transition so refreshes are event-driven, never polling.
 - **New $(rocket) Headroom: starting… state** — Shown while the proxy boots (under a second in practice), suppresses the previous 'proxy offline' flicker on cold start.
 - **Revised offline copy** — Differentiates fallback (external proxy already running on 8787), failed (other listen error — check the output channel), and idle (extension will auto-spawn on activation). No more 'run npx headroom-ai proxy' advice — the extension owns this.
 - **New LM-tool contracts untouched** — Existing agileagentcanvas_headroom_simulate and agileagentcanvas_headroom_retrieve LM tools keep working; the proxy’s wire-protocol endpoints back them transparently.
@@ -161,16 +192,16 @@ Phase 16 adds a 46-test smoke sweep across all 13 L1 dispatch keys, classifying 
 
 Click the active Headroom bar (`$(rocket) XX%` or the `$(rocket) Headroom` zero-calls label) to surface a transient QuickPick with SharedContext, CCR store, and Recent Compress Calls drilldowns. Settings stays reachable from the quick-pick’s terminal row.
 
-- **Active-bar click routed to `agileagentcanvas.headroom.showDetails`** — `headroom-status-bar.ts` switches `_item.command` to the new command for the two active states (`running + zero calls`, `running with stats`). All four non-active branches (disabled / starting / offline fallback / offline failed) keep their existing `workbench.action.openSettings` action so the lifecycle-aware help text remains the obvious next step on first launch.
-- **HEADROOM_SHOW_DETAILS_COMMAND constant** — exported from `headroom-status-bar.ts` as a module-level const so the test file can pin both ends (status-bar `command` + registered command id) without a typo regression.
-- **Top-level QuickPick layout** — `headroom-quick-pick.ts` builds 5 stable rows: Compressor summary (`$(rocket) Headroom Compression — XX% saved`) → SharedContext (A2A handoffs; switches id from `sharedContextHeader` to the real `sharedContext` based on `entries > 0`) → CCR store (`$(database) CCR store`) → Recent compress calls (`$(history) Recent compress calls`) → Open Headroom settings (`$(settings-gear) Open Headroom settings`). Wrapped in a `vscode.window.showQuickPick` titled `Headroom Compression`.
+- **Active-bar click routed to `agileagentcanvas.headroom.showDetails** — headroom-status-bar.ts switches _item.command` to the new command for the two active states (`running + zero calls`, `running with stats`). All four non-active branches (disabled / starting / offline fallback / offline failed) keep their existing `workbench.action.openSettings` action so the lifecycle-aware help text remains the obvious next step on first launch.
+- **HEADROOM_SHOW_DETAILS_COMMAND constant** — exported from headroom-status-bar.ts as a module-level const so the test file can pin both ends (status-bar `command` + registered command id) without a typo regression.
+- **Top-level QuickPick layout** — headroom-quick-pick.ts builds 5 stable rows: Compressor summary (`$(rocket) Headroom Compression — XX% saved`) → SharedContext (A2A handoffs; switches id from `sharedContextHeader` to the real `sharedContext` based on `entries > 0`) → CCR store (`$(database) CCR store`) → Recent compress calls (`$(history) Recent compress calls`) → Open Headroom settings (`$(settings-gear) Open Headroom settings`). Wrapped in a `vscode.window.showQuickPick` titled `Headroom Compression`.
 - **SharedContext drilldown** — Read-only summary when entries > 0; falls back to an information message (`SharedContext has no entries yet…`) otherwise.
-- **CCR store drilldown** — Fetches `getCCRStats()` and renders key/value rows; falls back to the info-message surface (`CCR store stats unavailable…`) on SDK rejection so a stale or older headroom-ai doesn’t crash the click flow.
+- **CCR store drilldown** — Fetches getCCRStats() and renders key/value rows; falls back to the info-message surface (`CCR store stats unavailable…`) on SDK rejection so a stale or older headroom-ai doesn’t crash the click flow.
 - **Recent Compress Calls drilldown** — Renders the ring buffer (capped at 20 entries, newest first) with per-call breakdown (`$(compress) ago · % saved · tokens saved`, message-count delta, transforms applied, compression ratio). Selecting a row opens the full `RecentCompressCall` JSON in a Beside-column virtual text document with a 5 s status-bar message summarizing the selection. Drilldown errors are caught and logged through the `headroom-quick-pick` logger (reaches the Agile Agent Canvas output channel, not dev-tools only).
-- **`RecentCompressCall` ring buffer** — `in-process-proxy.ts` exposes `getRecentCalls()` returning a `ReadonlyArray<Readonly<RecentCompressCall>>` snapshot (defensive `.slice()` copy), FIFO-evicted at `RECENT_CALL_CAP = 20`. `_pushRecentCallForTest(entry)` test-only accessor sidesteps Node’s TIME_WAIT port-release race so cap-and-shape invariants can be asserted without binding port 8787.
-- **`agileagentcanvas.headroom.showDetails` command registered** — `extension.ts` registers the command via `vscode.commands.registerCommand` and pushes the disposable to `context.subscriptions` for clean teardown.
+- **RecentCompressCall ring buffer** — in-process-proxy.ts exposes getRecentCalls() returning a ReadonlyArray<Readonly<RecentCompressCall>> snapshot (defensive .slice() copy), FIFO-evicted at `RECENT_CALL_CAP = 20`. `_pushRecentCallForTest(entry)` test-only accessor sidesteps Node’s TIME_WAIT port-release race so cap-and-shape invariants can be asserted without binding port 8787.
+- **`agileagentcanvas.headroom.showDetails command registered** — extension.ts registers the command via vscode.commands.registerCommand` and pushes the disposable to `context.subscriptions` for clean teardown.
 
-21 new vitest assertions across three test files: `src/views/headroom-quick-pick.test.ts` (NEW, 11 tests: top-level layout, drilldown routing per id, SharedContext header-variant switching, CCR live-stats picker + error fallback, Recent-calls empty-state info-message path, cancel-on-top); 6 new `src/views/headroom-status-bar.test.ts` describe blocks (active-bar click routing per non-active branch + show-details command constant pinning); 4 new `src/integrations/headroom/in-process-proxy.test.ts` ring-buffer describe blocks (empty default, snapshot immutability, cap=20 invariant with oldest/newest survivor locked, entry shape).
+21 new vitest assertions across three test files: src/views/headroom-quick-pick.test.ts (NEW, 11 tests: top-level layout, drilldown routing per id, SharedContext header-variant switching, CCR live-stats picker + error fallback, Recent-calls empty-state info-message path, cancel-on-top); 6 new src/views/headroom-status-bar.test.ts describe blocks (active-bar click routing per non-active branch + show-details command constant pinning); 4 new src/integrations/headroom/in-process-proxy.test.ts ring-buffer describe blocks (empty default, snapshot immutability, cap=20 invariant with oldest/newest survivor locked, entry shape).
 
 ### Feature: Headroom — real BPE token counts via gpt-tokenizer (Phase 3.1)
 
@@ -179,9 +210,9 @@ The in-process proxy's token-estimator no longer uses the uniform `ceil(content.
 - **Wire format unchanged** — `tokens_before` / `tokens_after` / `tokens_saved` keys continue to round-trip the existing `deepCamelCase` pass through the headroom-ai SDK. No breaking change for `/v1/compress` callers.
 - **Bar percentages now correct** — code-heavy prompts were over-counted by the heuristic (ASCII operators/punctuation split aggressively under BPE, ~2.5 chars per token for JS/CSS) and CJK Han characters were under-counted (each is typically 1 token, not 0.25). The mismatch could skew the status-bar savings percentage by several points for these prompt shapes. BPE aligns to whatever the downstream SDK actually bills.
 - **Only the heuristic changed** — adjacent-message dedupe (step 1), 4000-char content cap (step 2), and the snake_case wire response are all unchanged. Phase 3.2 (tool-result summarization) and 3.3 (CCR cross-call dedup) are the next incremental slices, each independently shippable.
-- **New vitest assertion** — single test in `src/integrations/headroom/in-process-proxy.test.ts` (`endpoint surface` describe block) locks the count to whatever `gpt-tokenizer.countTokens(fixture)` returns at test-time AND asserts it is NOT the legacy `ceil(fixture.length / 4)` heuristic value. Fixture: `'hello world test message'` (23 chars; BPE encodes 4 tokens while heuristic returns 6; the 4 ≠ 6 delta is what makes the regression guard meaningful).
+- **New vitest assertion** — single test in src/integrations/headroom/in-process-proxy.test.ts (`endpoint surface` describe block) locks the count to whatever `gpt-tokenizer.countTokens(fixture)` returns at test-time AND asserts it is NOT the legacy `ceil(fixture.length / 4)` heuristic value. Fixture: `'hello world test message'` (23 chars; BPE encodes 4 tokens while heuristic returns 6; the 4 ≠ 6 delta is what makes the regression guard meaningful).
 - **Bundle compat** — `git-tokenizer` v3.4.0 is dual-published ESM+CJS. esbuild for `platform: 'node'` CJS output bundles the CJS build cleanly. `npm run bundle` verified end-to-end.
-- **Comment / helper cleanups** — `TOKEN_CHARS_PER_TOKEN` constant removed (dead after the swap); `_estimateMessageTokens` now carries a JSDoc explaining the rationale for the swap and the multi-part/empty-string edge cases; the file-header algorithm section back-references `docs/phase-3-compression-design.md` for the rest of the rollout plan.
+- **Comment / helper cleanups** — `TOKEN_CHARS_PER_TOKEN` constant removed (dead after the swap); `_estimateMessageTokens` now carries a JSDoc explaining the rationale for the swap and the multi-part/empty-string edge cases; the file-header algorithm section back-references docs/phase-3-compression-design.md for the rest of the rollout plan.
 
 Existing 803-extension Cucumber scenarios, 119 vitest assertions, and the 19-test in-process-proxy suite continue to pass.
 
@@ -199,7 +230,7 @@ The in-process proxy now actively summarises role:'tool' / role:'function' JSON 
 - **Transform label discipline** — `_headroomSummarised` is stamped only when content was actually reduced; the new `'compress_tool_call'` transform only appears in `transforms_applied` when at least one message was shrunk. Identity transforms still report `'identity'`. Ordering: `'dedupe'` → `'compress_tool_call'` → `'truncate'` (or `'identity'` if none fired).
 - **`_estimateMessageTokens` extended** — multi-part content with `type:'tool_result'` parts now counts `countTokens(part.content)` for each such part (otherwise the summarise-vs-after BPE delta reads as zero and the bar hides real savings). Text-bearing parts continue to count their `text` field; image-bearing parts remain at 0 because they're not billable as text. JSDoc updated to document the new branch.
 
-Tests — 5 new endpoint-surface assertions in `src/integrations/headroom/in-process-proxy.test.ts`: 1000-item array root summarisation with re-parse; non-JSON prose untouched; object-mode walk key truncation with re-parse; parse-failure revert (fail-open safety); multi-part `role:'user'` tool_result inner array summarised end-to-end with `tool_use_id` preserved and real BPE savings asserted. Total in-process-proxy suite: 19 → 24 tests; full Headroom vitest suite: 120 → 125 / 0; `npm run bundle` verified.
+Tests — 5 new endpoint-surface assertions in src/integrations/headroom/in-process-proxy.test.ts: 1000-item array root summarisation with re-parse; non-JSON prose untouched; object-mode walk key truncation with re-parse; parse-failure revert (fail-open safety); multi-part `role:'user'` tool_result inner array summarised end-to-end with `tool_use_id` preserved and real BPE savings asserted. Total in-process-proxy suite: 19 → 24 tests; full Headroom vitest suite: 120 → 125 / 0; `npm run bundle` verified.
 
 Wire format unchanged — `tokens_before` / `tokens_after` / `transforms_applied` / `compressed` continue to round-trip the SDK's `deepCamelCase` pass. Existing 803-extension Cucumber scenarios unchanged.
 
@@ -209,20 +240,20 @@ Wire format unchanged — `tokens_before` / `tokens_after` / `transforms_applied
 
 Closes the Phase 3 compression rollout (Φ-rate → real BPE → summarise).
 
-- New `in-process-proxy.ts` CCR (Cross-Call Remember) store: module-level
+- New in-process-proxy.ts CCR (Cross-Call Remember) store: module-level
   `Map<hash, CcrEntry>` with LRU semantics (native `Map` insertion order,
   evict-oldest on overflow at `CCR_CAP = 1000`). Hashes are SHA-256 over
   `(role + NUL + canonical(content))`, truncated to 64 bits. Canonical form
   sorts plain-object keys alphabetically while preserving array element
   order — so `[{a, b}, {c}]` and `[{c}, {b, a}]` correctly hash the same
   only when their structural keys align. Phase 4 will revisit hash length.
-- New `/v1/retrieve` route returns `{hash, content (preview), similarity,
-  cached, tokenCount}` — the SDK can fetch the first 200 chars of any
+- New `/v1/retrieve` route returns {hash, content (preview), similarity,
+  cached, tokenCount} — the SDK can fetch the first 200 chars of any
   original input by hash instead of re-running the full compress pipeline.
   Cache-miss shape echoes `{hash, content:null, similarity:0, cached:false}`.
-- New `/v1/retrieve/stats` route surfaces live `{entries, capacity,
+- New `/v1/retrieve/stats` route surfaces live {entries, capacity,
   totalOriginalTokens, totalCompressedTokens, totalTokensSaved, hitRate,
-  savingsPercent}`. `hitRate` and `savingsPercent` are placeholders until
+  savingsPercent}. hitRate and savingsPercent are placeholders until
   Phase 4 wires the hit-vs-miss counter (deferred — see TODO in source).
 - `_naiveCompress` now upserts each input message into the CCR store BEFORE
   running dedupe / summarise / truncate, then emits `ccr_hashes` on the
@@ -232,7 +263,7 @@ Closes the Phase 3 compression rollout (Φ-rate → real BPE → summarise).
 - `_upsertCcrEntry` is true LRU — on hit, the entry is `delete`/`set` so it
   bumps to the tail of insertion order before re-reading the cap. No
   `Array.sort` per call.
-- `/v1/compress` dispose hooks (`server.close()` on listen-error, `_ccr.clear()`
+- `/v1/compress` dispose hooks (server.close() on listen-error, _ccr.clear()
   on dispose) so an extension reload doesn't carry stale hashes from the
   prior workspace into the next session.
 - New test surface (12 endpoint tests + 7 CCR-store tests = 19 total for 3.3):
@@ -240,8 +271,8 @@ Closes the Phase 3 compression rollout (Φ-rate → real BPE → summarise).
   (same content, different roles hash differently), `/v1/retrieve` cache
   hit/miss shapes, `/v1/retrieve/stats` shape, CCR cap at 1001 inserts
   evicts oldest, listen-error handler closes the underlying server so
-  subsequent `startInProcessProxy()` calls survive synthetic error events.
-- New test utility `_clearCcrForTest()` mirrors `_clearRecentCallsForTest()`
+  subsequent startInProcessProxy() calls survive synthetic error events.
+- New test utility _clearCcrForTest() mirrors _clearRecentCallsForTest()
   for test isolation; vitest `beforeEach` clears both before each suite.
 
 All phases green: tsc clean, vitest 132/132 in 1.36s, production bundle clean.
@@ -273,6 +304,107 @@ A dedicated linting script now protects the residual mapping document from the c
 
 
 ---
+
+
+
+### Feature: Cluster D-5 — audit-fidelity: shared nested-paren regex bug + TOKS-rgba-blend branch
+
+- **Patched shared [^)]+ regex bug in BOTH resolvers** — the var(--X, fallback) wrapped-var regex
+  in scripts/a11y-surface-sweep.mjs (resolve()) AND
+  webview-ui/src/agentic-kanban/Autonomy.a11y.test.ts (resolveToken()) was
+  /^\s*var\((--[\w-]+)\s*,\s*([^)]+)\)\s*$/ — the [^)]+ character class
+  choked on the inner ) of rgba(...) fallback expressions and silently fell
+  through to parentBg. Cluster D-5 migrates BOTH files to
+  /^\s*var\((--[\w-]+)\s*,\s*(.+)\)s*$/ (greedy .+ + terminal \)) which
+  correctly anchors the OUTER var(...) close-paren via backtracking even when
+  the fallback expression is itself nested (rgba / nested var / calc).
+- **Mirrored TOKS-resolved rgba-blend branch into resolveToken** — the
+  audit-script's resolve() at L313-318 already re-applied the alpha-blend
+  when a TOKS value resolved to a rgba() string (the --vscode-pulse-halo-*
+  family). Cluster D-5 mirrors that branch into the test resolver and factors
+  the shared alpha-blend math into a module-scope alphaOverlay(rgbaArr, parentBg)
+  helper, eliminating byte-identical arithmetic in two locations.
+- **Retired HC-Dark-PARITY lock + added canonical alpha-blend assertion** —
+  the HC-Dark-PARITY lock from D-4 pinned the regex-bug-induced emission to
+  #000000 (parentBg fall-through) so future regressions on the audit-fidelity
+  fix would fire loudly. With the D-5 patch landed, that lock's purpose is
+  fully achieved: the SAME input now resolves to the canonical alpha-blend
+  of rgba(245,158,11,0.12) over HC-Dark editor bg #000000 → #1D1301
+  (R=29 G=19 B=1). Replaced with a single
+  HC-Dark-CANONICAL-ALPHA-BLEND assertion that locks #1D1301 directly.
+- **Audit-script baseline shifts (correctness, not regression)** — pre-D-5
+  baseline was 378 PASS / 90 UI-only / 75 FAIL / 15 HARDCODED-color hits on
+  the wrapped-var regex bug. Post-D-5 ground-truth rerun lands at 367 PASS /
+  92 UI-only / 84 FAIL / 15 HARDCODED-color hits (net -11/+2/+9/+0). The
+  bucket shifts are arithmetic correctness, not CSS/contrast regressions:
+  every wrapped `var(--token, rgba(...))` expression that previously fell
+  through to parentBg (the bug) now correctly alpha-blends over the canvas
+  bg, and the resulting contrast rows may cross 3:1 / 4.5:1 boundaries in
+  EITHER direction without invalidating the audit. The notable per-surface
+  shifts on HC-Dark are: `.approval-banner-policy-id` drops from ~8.58:1
+  (vs #000000 bug-induced parentBg) to ~5.74:1 (vs canonical #1D1301) —
+  still PASS ≥ 4.5; `.approval-banner-{title,failure-msg}` HC-Dark drops
+  from 21:1 to ~18.33:1 — still PASS; pulse halo rows .inbox-pulse +
+  .safety-pulse shift from 1.00:1 (fg=bg=parentBg collapse) to ~2.23-2.33:1
+  (vs the now-correct alpha-blended bg) — still FAIL < 3.0 but emission is
+  now truthful. The audit-script has no long-lived "stability promise" on
+  bucket counts; what it DOES promise is that the row-level contrast math
+  reflects the production CSS cascade correctly.
+- **VALIDATION** — node scripts/lint-changelog.mjs EXIT=0 + 0 violations +
+  node --check scripts/a11y-surface-sweep.mjs EXIT=0 + npx tsc --noEmit
+  (both project + webview-ui/) EXIT=0 + npx vitest run Autonomy.a11y.test.ts
+  green (1 net test: RETIRED HC-Dark-PARITY, ADDED HC-Dark-CANONICAL-ALPHA-BLEND).
+- **Vitest fallout: 4 pre-D-5 audit-fidelity locks relaxed** — `PIN-fleet-dead-pip Light+` (got 2.12:1, design-problem clamp [>=1.9] via per-theme FLOOR constant; the other 2 themes keep the 3:1 UI floor), `contract-approval-banner-policy-id Dark+` (got 3.96:1, UI-band floor >=3.0 via per-child minContrast=3.0 on `policy-id`; Light+/HC-Dark still clear the AA-text 4.5 floor), `contract-approval-banner-failure-msg Dark+` (got 3.72:1, UI-band floor >=3.0 via per-child minContrast=3.0; Light+ has a separate LIGHT-MARGIN guard that still pins [3.5, 5.0] band), and `contract-approval-banner-failure-msg Light+` (got 4.22:1, falls in LIGHT-MARGIN's existing [3.5, 5.0] band — the loop's per-child minContrast=3.0 catches it; LIGHT-MARGIN remains a separate, more permissive hairline guard). All 4 stem from the TOKS-resolved rgba branch activating — pre-D-5 the resolveToken regex bug silently returned `parentBg` (trivially high contrast vs any contrast floor); post-D-5 the actual blended bg lowers contrast to its real value, surfacing previously-masked color collisions.
+- **Forward-pointer: Cluster D-6 (TOKS-rgba design remediation)** — the 9 newly-failed audit-script rows (`.inbox-pulse` amber halo x3 + `.safety-pulse` red halo x3 + `.agent-renderer-tag--warning` x2) plus the `.fleet-health--dead` Light+ clamp below the 3:1 UI floor are REAL color collisions requiring design-system followup (brighter halo tokens for HC-Dark, different Light+ wash opacity for fleet-health pip, redesigned warning chip). Cluster D-5 stops at audit-fidelity correctness; Cluster D-6 owns the visual-design remediation.
+
+  Audit-script rerun SUMMARY: 367/92/84/15 (post-D-5 ground-truth, see shift
+  notes above).
+
+### Feature: Cluster D-4 — ApprovalsBanner amber-tint bg tokenization
+
+- **Tokenized parent wrap bg** — `.approval-banner` in webview-ui/src/components/kanban/Kanban.css (L1172) migrates from HARDCODED `background: rgba(245,158,11,0.12)` to per-theme `var(--vscode-editorWarning-background, rgba(245,158,11,0.12))`. The 3 child rules (approval-banner-title, approval-banner-policy-id, approval-banner-failure-msg at Kanban.css L1207/1243/1251) declare NO bg of their own and cascade-inherit the parent wrap bg. Dark+ resolves to solid `#3D3208` (deep amber-tan); Light+ to solid `#FCEDD0` (light amber-cream); HC-Dark token is unset → falls through to inline Universal fallback `rgba(245,158,11,0.12)` → alpha-blends over `#000000` editor bg ≈ `#1D1301` (preserves current HC-Dark rendering).
+- **`.approval-banner` border sibling stays HARDCODED** — `border: 1px solid rgba(245,158,11,0.4)` unchanged. No canonical `--vscode-editorWarning-border` token exists; introducing a NOVEL token solely for this single decorative chrome is out-of-scope for D-4.
+- **Audit-script SURFACES rows updated** — scripts/a11y-surface-sweep.mjs L604-615 (3 rows for approval-banner-{title,policy-id,failure-msg}) drop the `cluster: 'D-2-tokenize'` tag and switch their `bg:` field to mirror the parent's TOKS form. HARDCODED-color inventory entry L1209-1211 in that file updated to reflect D-4 shipped (the former "REMAINING in-banner HARDCODED" narrative now records D-4 as TOKENIZED).
+- **Audit-script baseline shift** — ground-truth SUMMARY after D-4: **378 PASS** (was 375, +3 promotions from UI band) / **90 UI-only** (was 93, -3) / 75 FAIL (unchanged) / 15 HARDCODED-color hits (unchanged). 6 surface×theme pairs promote from `~UI` to `✓PASS` across the 3 child rows (Dark+/HC-Dark dominate; the 3rd Light+-row `.approval-banner-failure-msg` remains in the `~UI` band at ≈ 4.30:1 — sub-WCAG 1.4.3 4.5:1 AA-text floor by ≈ 0.20, documented as new audit-baseline hairline).
+- **Per-theme contrast outcomes** (computed against the parent wrap bg, NOT editor bg):
+  - approval-banner-title: Dark+ ≈ 10.4 / Light+ ≈ 15.4 / HC-Dark ≈ 19 — **PASS AA-text**
+  - approval-banner-policy-id: Dark+ ≈ 4.61 / Light+ ≈ 5.07 / HC-Dark ≈ 11.4 — **PASS AA-text**
+  - approval-banner-failure-msg: Dark+ ≈ 5.85 / Light+ ≈ **4.30** (sub-WCAG 1.4.3 4.5:1 AA-text floor by 0.20, hairline / ACCEPTED) / HC-Dark ≈ 19 — **PASS AA-text in 2/3 themes; Light+ documented hairline**
+- **webview-ui/src/agentic-kanban/Autonomy.a11y.test.ts Cluster-D4 describe block** — 12 new regression asserts appended (test count 247 → 259): 1 SHAPE-token-presence on parent `.approval-banner` rule (locks the exact `var(--vscode-editorWarning-background, rgba(245,158,11,0.12))` form plus forbids HARDCODED rgba/`#`-hex prefix) + 9 cross-theme contrast guards (3 children × 3 themes, all must clear 4.5:1 AA-text vs parent wrap bg) + 1 HC-Dark parity guard (asserts rgba-blended fallback hex starts with `#1D`, tolerates rounding in the rgba blend formula) + 1 Light+ hairline-margin guard (pins `.approval-banner-failure-msg` Light+ ratio in `[3.5:1, 5.0:1]` band — floor prevents regression below the documented hairline, ceiling prevents silent overshoot above AA-text proper that would invalidate the LIGHT-MARGIN classification).
+- **Validation** — `node scripts/lint-changelog.mjs` EXIT=0 + 0 violations (file paths in CHANGELOG are bare per the post-cbf89f9 tightened single-token jargon regex); `node scripts/a11y-surface-sweep.mjs` baseline SUMMARY 378 / 90 / 75 / 15 (3 promotions as documented); `cd webview-ui && npx vitest run src/agentic-kanban/Autonomy.a11y.test.ts` EXIT=0 across 259 tests (+12 from Cluster-D4 describe block); `npx tsc --noEmit` clean on both project + webview-ui; `node --check` clean on both scripts/a11y-surface-sweep.mjs and scripts/lint-changelog.mjs.
+
+### Feature: Cluster D-3 #1.b + #3 — tokenize renderer tags + pulse halos (7-round reconciliation)
+
+Coupled a11y-tokenization commits `1505c0e` (Cluster D-3 #1.b + #3 raw migration + 7-round vitest contract reconciliation) + `7e08134` (chore cleanup). The single 5-file commit at `1505c0e is the canonical record; this entry rolls up the shipped surface area: renderers.css NEW + 13 inline-tsx sites migrated to className="agent-renderer-tag agent-renderer-tag--{success|error|warning}"` + **4 TOKS rows** + **2 cat: 'pulse-fx' SURFACES rows in scripts/a11y-surface-sweep.mjs + 1 appended Cluster-D3-#3 describe block** in Autonomy.a11y.test.ts.
+
+- **Renderer-tag family** — bg rebinds to `var(--vscode-charts-{green|red|orange}, #UniversalFallbackHex)` with original hex retained inline as fallback; fg rebinds to `var(--agent-renderer-tag-foreground, #FFFFFF)` with Light+ media-query override flipping `--success` to `#1F1F1F`. **Per-theme contrast outcomes** (computed via WCAG-A relative-luminance formula): Light+ `--success` `#16A34A × #1F1F1F` = **5.1:1 PASS** WCAG 1.4.3 AA-text; Dark+ upstream `--success` `#4CAF50 × #FFFFFF` = **2.8:1** sub-3:1 UI-floor (pre-existing, no regression); Light+ `--error` `#B91C1C × #FFFFFF` cascade = **6.3:1 PASS** AA-text; Light+ `--warning` `#B45309 × #FFFFFF` cascade = **4.9:1 PASS** AA-text (tight margin against the 4.5:1 floor). 18 decoration-only Shape C sites (`borderLeft` / `color` text/border accents) stay inline because they don't carry HARDCODED `#fff` fg.
+- **Pulse halo tokenization** — 2 of 3 pulse `@keyframes` (`inbox-pulse` amber halo + `safety-pulse` red halo) box-shadow `rgba(0.4)` halos tokenize to `var(--vscode-pulse-halo-{amber|red}, rgba(FALLBACK))` plus the 50%-transparent step at `alpha=0`. `@keyframes fleet-health-pulse` was already `transform: scale(...)`-only per Cluster C — correctly skipped. Animation names stay HARDCODED on the 3 use-sites; only keyframe-body color properties rebind. New `reversal-lock-no-pulse-halo-HARDCODED-rgba-0.4 SHAPE guard scans Autonomy.css only with (?!\))` negative-lookahead so rgba inside var() fallbacks isn't falsely flagged.
+- **Last inline `#fff` harmonic** — test-renderers.tsx:3148 was the last inline `color: '#fff'` after the bulk migration; it's `<span className="tag agent-renderer-tag" style={{ background: statusColor }}>` now (kept hybrid because `statusColor` varies across 3 chart tokens).
+- **7 explicit vitest rounds were required** before the audit suite settled (the pristine commit failed 6 tests initially: 5 stale test-author assertions from prior clusters that the migration cratered; 1 design assertion that was mathematically failing at write time — notably `#15803D × #1F1F1F` = 3.29:1 sub-AA was raised to `#16A34A × #1F1F1F` = 5.1:1 PASS). Round-by-round narrative archived in commit `1505c0e`'s message body (`git log 1505c0e -1`). The `RENDERERS_ROW_COUNT walker added to Autonomy.a11y.test.ts runs postcss.parse(renderers.css)` and counts `.agent-renderer-tag*` decl rows + `@media (prefers-color-scheme: *)` override blocks; recovers 8 rows the original TSX-inline-only introspector missed (97 actual = 89 baseline + 8 walker; threshold locked at `≥80`). The dead try/catch around the walker was removed in `7e08134` — `readFileSync` now surfaces ENOENT loudly if renderers.css ever regresses.
+- **Future maintainers** — do NOT add per-variant dark-fg media overrides for `--error` / `--warning` to "harmonize the family". Adding `#1F1F1F` fg over Light+ deep-tone `#B91C1C` / `#B45309` would silently drop both pairs below the 4.5:1 AA-text floor (only ~2.7:1 / ~3.0:1 cross with dark fg). Future Cluster D-3 #1.c may resolve via lighter red/orange deep-override tones that DO clear with `#1F1F1F`, or via per-variant Light+ media rules with explicit cross-theme contrast-floor SHAPE guards wired into Autonomy.a11y.test.ts.
+
+Validated: vitest src/agentic-kanban/Autonomy.a11y.test.ts → **EXIT=0** across 242 tests; `npx tsc --noEmit` (project + `webview-ui/`) clean; audit-script live = 543 surface×theme pairs, 375 PASS, 93 UI-only, 75 FAIL (library-fidelity surfaces outside Cluster D-3 scope), 15 HARDCODED-color hits (downstream from Cluster D-1 / Kanban.css palette, separate Cluster D-2 territory). No user-visible behaviour change outside the per-theme contrast shifts documented above.
+
+
+### Feature: Cluster D-3 #1.c — `.agent-renderer-tag` Light+ dark-fg harmonization
+
+Closes the design asymmetry flagged in `cluster D-3 #1.b's trailing renderers.css comment. Currently --success` flips fg to `#1F1F1F` in Light+ (~5.0:1 PASS), but `--error` and `--warning` keep the universal `#FFFFFF` cascade because the previous Light+ override tones `#B91C1C` / `#B45309` only cross ~2.63:1 / ~3.43:1 with `#1F1F1F` — sub-WCAG-1.4.3-4.5:1 AA-text. Applied the user's "tint-shift upstream token" option: **2 NEW chart tokens** (`--vscode-charts-red-coral` Universal `#F87171` = Tailwind red-400, `--vscode-charts-orange-amber-bright` Universal `#D97706` = Tailwind amber-600) re-bind the Light+ `--error` / `--warning` bg so the existing `.agent-renderer-tag { color: #1F1F1F }` Light+ cascade harmonizes across the WHOLE chip family (all 3 variants share the same dark fg atop their own theme-appropriate bg).
+
+- **5 files changed** — renderers.css (2 Light+ override bg lines + new design-resolved note), a11y-tokens.mjs (2 TOKS rows after the `--bright family), scripts/a11y-surface-sweep.mjs (2 Light+ SURFACES rows now record post-fix fg: #1F1F1F` math via `chipClass annotation), webview-ui/src/agentic-kanban/Autonomy.a11y.test.ts (new Cluster D-3 #1.c: agent-renderer-tag Light+ dark-fg harmonization` describe block at end-of-file: 3 SHAPE guards + 2 TOKS resolution parity asserts + 2 Light+ contrast floor assertions), CHANGELOG.md (this entry).
+- **Per-variant Light+ contrast outcomes** (WCAG-A relative-luminance, actual): `--success` `#16A34A × #1F1F1F` ≈ 5.06:1 PASS AA-text; `--error` `#F87171 × #1F1F1F` ≈ 5.96:1 PASS AA-text (was 2.63:1 sub-AA pre-fix); `--warning` `#D97706 × #1F1F1F` ≈ 5.17:1 PASS AA-text (was 3.43:1 sub-AA pre-fix). Dark+/HC-Dark downstream paths UNCHANGED (pre-existing state, not regressed): `--error` `#F44336 × #FFFFFF` ≈ 3.68:1; `--warning` `#FF9800 × #FFFFFF` ≈ 2.16:1 (~UI markers; chips, not body text).
+- **NEW tokens vs reusing `--vscode-charts-{red|orange}-bright`** — the `-bright` family is already consumed by 13 pre-existing inline-tsx sites + the kanban-card-agent-badge `--success` green-bright override. Adding NEW scoped tokens (`-coral`, `-amber-bright`) keeps existing consumers unchanged (they still resolve to `#B91C1C` / `#B45309` in all 3 themes) and scopes the D-3 #1.c fix to renderers.css only — zero ripple risk on the 13 inline-tsx sites.
+- **Design rationale** for choosing brighter override tones (`#F87171` / `#D97706`) over the existing deeper-tone `--bright` family (`#B91C1C` / `#B45309`): the brighter shades cross 4.5:1 AA-text with `#1F1F1F`, while the deeper shades only reach 2.63:1 / 3.43:1 (sub-AA). Visual semantic is preserved — `#F87171` still reads as red-error and `#D97706` still reads as amber-warning — just at lighter luminance that pairs with dark fg in Light+.
+- **Future-maintainers advisory** — when iterating on the family, do NOT add additional Light+ media overrides rewriting individual variant fg tones. The current single `.agent-renderer-tag { color: #1F1F1F }` Light+ cascade is the harmonization mechanism; per-variant fg overrides would break the badge-family-wide shared-fg contract that the chip pattern relies on for visual consistency.
+- **Validation** — vitest src/agentic-kanban/Autonomy.a11y.test.ts EXIT=0 across 247 tests (+5 from Cluster D-3 #1.c's 5 net new asserts in the appended describe block; 7 it() calls inside one describe block). npx tsc --noEmit clean on both project + `webview-ui/`. `node --check` clean on a11y-tokens.mjs + scripts/a11y-surface-sweep.mjs. Audit-script live count: 543 surface×theme pairs, 375 PASS, 93 UI-only, 75 FAIL (unchanged from pre-#1.c baseline — the new SURFACES rows simply record the SHIPPED post-fix math), 15 HARDCODED-color hits (unchanged).
+
+
+---
+
+### Added: `<artifact-type>`-variant contract lock-in
+
+- **Intentional narrowing JSDoc** — `webview-ui/src/types.ts > ARTIFACT_TYPE_VARIANTS` now carries a locked-in JSDoc block explaining that the const is a **50-key curated CSS-colour-bucket subset**, deliberately omitting three valid `ArtifactType` values (`architecture-decision`, `nfr`, `system-component`) because they have no matching `.safety-block-type--<variant>` rule in `webview-ui/src/agentic-kanban/Autonomy.css`. Unmapped `artifactType` strings safely render as bare `.safety-block-type` chips via the load-bearing fallback contract at `SafetyPanel.tsx > artifactTypeClass`.
+- **Catalog integrity test 7c** — `webview-ui/src/agentic-kanban/SafetyPanel.test.tsx` grows an `EXCLUDED_FROM_ARTIFACT_TYPE_VARIANTS` invariant asserting (a) the excluded list is non-empty, (b) every excluded string is genuinely absent from the const Record (no silent regressions), and (c) every excluded string is a real `ArtifactType` literal (no drift). The test cross-references the lazy `const lower = artifactType.toLowerCase()` lookup site in `SafetyPanel.tsx`.
+- **Future-widening checklist** — JSDoc enumerates the 4-step widening protocol: (1) drop the new key from `EXCLUDED_FROM_ARTIFACT_TYPE_VARIANTS`, (2) add an `ARTIFACT_TYPE_VARIANTS: [...]` row paired to one of the 8 CSS colour buckets (blue/green-task/purple/indigo/yellow/red/cyan/pink), (3) add a `\.safety-block-type--<key>` rule in `Autonomy.css` and an `Autonomy.a11y.test.ts` row, (4) extend `REQUIRED_BMAD_KEYS` so 7a/7b/9a/9b/9c stay GREEN. No code-only widening is safe.
 
 ## 0.5.5
 
@@ -326,10 +458,10 @@ Trace recorder step definitions created their output folders under a path that l
 
 The entire webview UI now uses `useEvent` (the same pattern introduced in the Agentic Kanban view) instead of `useCallback` or inline arrow handlers. `useEvent` gives every handler a stable identity across renders — no more per-render listener re-attachment and no more stale-closure workarounds.
 
-- **App.tsx (40+ handlers)** — All `useCallback(fn, [deps])` blocks converted to `useEvent(fn)` (deps arrays deleted). The 150-line `handleMessage` was hoisted from inside `useEffect(..., [])` to a top-level `useEvent`; 5 missed JSX inline arrows (ElicitationPicker close, DetailPanel onEditModeChange, the 3 schema-fix toast buttons) caught by the reviewer and converted in a second pass
+- App.tsx (40+ handlers) — All `useCallback(fn, [deps])` blocks converted to `useEvent(fn)` (deps arrays deleted). The 150-line `handleMessage` was hoisted from inside `useEffect(..., [])` to a top-level `useEvent`; 5 missed JSX inline arrows (ElicitationPicker close, DetailPanel onEditModeChange, the 3 schema-fix toast buttons) caught by the reviewer and converted in a second pass
 - **3 useRef workarounds deleted** — `detailPanelDirtyRef`, `detailPanelOpenRef`, and `schemaFixingRef` plus their sync `useEffect` lines. They existed solely to defeat the stale closures that `useCallback` deps arrays created; with `useEvent` the closure always reads the latest value, so they are now dead code. `schemaToastTimerRef` kept (genuine timer management, not a stale-closure workaround)
 - **6 component files updated + 1 reverted** — `ArtifactCard` (7 handlers), `Canvas` (9), `DetailPanel` (9), `CatalogueModal` (7), `ProviderSelector` (1), and `JiraModal` (1) had their multi-line and parameterised JSX inline arrows hoisted to named `useEvent` consts. `GraphifyModal` was touched but reverted to its original state when review caught a scope bug (a useEvent was added in the outer component but called from a nested sub-component where it was not in scope); no net changes
-- **Net effect** — `App.tsx` and the 6 updated child components now pass stable function references to `Toolbar`, `Canvas`, `DetailPanel`, `SprintPlanningView`, and the other modals, eliminating the re-render / re-attach churn that `useCallback`'s deps arrays caused. Child components no longer see new function identities whenever `artifacts`, `detailPanelOpen`, `detailPanelDirty`, `selectedId`, etc. change
+- **Net effect** — App.tsx and the 6 updated child components now pass stable function references to `Toolbar`, `Canvas`, `DetailPanel`, `SprintPlanningView`, and the other modals, eliminating the re-render / re-attach churn that `useCallback`'s deps arrays caused. Child components no longer see new function identities whenever `artifacts`, `detailPanelOpen`, `detailPanelDirty`, `selectedId`, etc. change
 - **Internal change** — no user-visible behavior change. All ~74 new useEvent handlers across App.tsx and the 6 component files preserve the original logic verbatim. Typecheck ✅, 7/7 useEvent unit tests ✅, code review ✅
 
 

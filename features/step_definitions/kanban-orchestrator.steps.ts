@@ -86,6 +86,7 @@ function buildOrchestrator(world: BmadWorld): OrchCtx {
     },
     './kanban-settings': {
       getKanbanMaxIterations: () => ctx.maxIter,
+      isApprovalCheckpointEnabled: () => false,  // P1 #5: opt-in, off by default
     },
     './circuit-breaker': {
       circuitBreaker: {

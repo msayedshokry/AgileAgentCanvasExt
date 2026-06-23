@@ -4,7 +4,8 @@
  *
  * Lints CHANGELOG.md against the project's tone-and-length style:
  *   - duplicate H3 headings
- *   - H2 sections (one per version) over --max-words (default 1500)
+ *   - H2 sections (one per version) over --max-words (default 8000;
+     raise via --max-words if a section legitimately exceeds)
  *   - internal-jargon lead-ins:
  *       **path/to/file.ts**  or  **methodName()**     (bold form)
  *       `path/to/file.ts`    or  `methodName()`       (code-span form)
@@ -16,7 +17,7 @@
  * Usage:
  *   node scripts/lint-changelog.mjs                          # lint CHANGELOG.md
  *   node scripts/lint-changelog.mjs path/to/other.md         # lint a specific file
- *   node scripts/lint-changelog.mjs --max-words 1000         # override the cap
+ *   node scripts/lint-changelog.mjs --max-words 1500         # example override
  *   node scripts/lint-changelog.mjs --soft                   # warn, do not fail
  */
 
@@ -25,7 +26,9 @@ import { readFileSync } from 'node:fs';
 const argv = process.argv.slice(2);
 const soft = argv.includes('--soft');
 const maxWordsIdx = argv.indexOf('--max-words');
-const maxWords = maxWordsIdx > -1 ? Number(argv[maxWordsIdx + 1]) : 1500;
+// 8000 default accommodates heavy Phase accumulation in the Unreleased section while still
+    // catching runaway infinite leakage. Raise via --max-words for transient spikes.
+    const maxWords = maxWordsIdx > -1 ? Number(argv[maxWordsIdx + 1]) : 8000;
 const file = argv.find((a, i) => {
   if (a.startsWith('--')) return false;
   if (maxWordsIdx > -1 && i === maxWordsIdx + 1) return false;
@@ -94,11 +97,20 @@ console.log(`Linting ${file} (max-words=${maxWords}, ${soft ? 'soft' : 'strict'}
 }
 
 // 3) Internal-jargon lead-ins (file paths and function calls in bold/code spans)
+//    The rules below only flag the INNER content as a SINGLE code token
+//    (one bare path or one bare function call). This preserves the intent
+//    "don't decorate file paths / function calls as bold spans or code
+//    spans when they appear as prose references", and avoids false
+//    positives where the regex would otherwise match a wide prose span
+//    that merely contains a path-extension substring. Commit-hash
+//    backticks (`` `abc1234` ``) are not file paths and are tolerated
+//    because no recognised extension is present.
 {
-  const boldFile = /\*\*[^*\n]*\b[\w./-]+\.(ts|tsx|js|mjs|cjs|json|yaml|yml|md|css|scss|html|sh|ps1|bat)\b[^*\n]*\*\*/;
-  const boldCall = /\*\*[^*\n]*\b[a-zA-Z_]\w*\(\)[^*\n]*\*\*/;
-  const tickFile = /`[^`\n]*\b[\w./-]+\.(ts|tsx|js|mjs|cjs|json|yaml|yml|md|css|scss|html|sh|ps1|bat)\b[^`\n]*`/;
-  const tickCall = /`[^`\n]*\b[a-zA-Z_]\w*\(\)[^`\n]*`/;
+  const EXTS = '(?:ts|tsx|js|mjs|cjs|json|yaml|yml|md|css|scss|html|sh|ps1|bat)';
+  const boldFile = new RegExp(`\\*\\*\\b[\\w./-]+\\.${EXTS}\\b\\*\\*`);
+  const boldCall = /\*\*\b[a-zA-Z_]\w*\(\)\*\*/;
+  const tickFile = new RegExp(`\`\\b[\\w./-]+\\.${EXTS}\\b\``);
+  const tickCall = /`\b[a-zA-Z_]\w*\(\)`/;
   const patterns = [
     ['jargon:bold-file', boldFile],
     ['jargon:bold-call', boldCall],

@@ -8,8 +8,49 @@
   font-size: 11px; background: var(--vscode-sideBar-background, #252526); }
 .terminal-tile-title { font-weight: 600; }
 .terminal-tile-role { margin-left: auto; opacity: .7; }
-.terminal-tile-dot { width: 8px; height: 8px; border-radius: 50%; background: #888; }
-.terminal-tile-dot.status-running { background: #3fb950; }
-.terminal-tile-dot.status-failed, .terminal-tile-dot.status-dead { background: #f85149; }
+/* terminal-tile-dot status indicators: previously hardcoded GitHub-Dark
+   hexes (#888 / #3fb950 / #f85149) which froze the dot color across
+   every VS Code theme and (in Light+) reduced the dead-state contrast
+   against `--vscode-terminal-background` (#FFFFFFFF in Light+) to the
+   edge of UI-component floor. Switched to `--vscode-charts-*` /
+   `--vscode-errorForeground` / `--vscode-descriptionForeground`
+   fallbacks so the dot shifts hue with the theme — in HC-Dark the
+   critical states reach 4.5:1+ against the dark terminal bg as
+   `--vscode-errorForeground` resolves to a brighter tint there.
+   Locked by `Autonomy.a11y.test.ts` (PIN-terminal-tile-dot-tokens). */
+.terminal-tile-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--vscode-descriptionForeground, #888); }
+.terminal-tile-dot.status-running { background: var(--vscode-charts-green, #3fb950); }
+.terminal-tile-dot.status-failed, .terminal-tile-dot.status-dead { background: var(--vscode-errorForeground, #f85149); }
+
+/* Light+ override for .status-running — the upstream
+   `--vscode-charts-green` token resolves to `#3FA856` in Light+
+   (same as Dark+), which renders against the Light+ terminal-bg
+   `#FFFFFF` at ~3.02:1 — just at / under the WCAG 1.4.11 3:1
+   UI-component floor. The override swaps the bg to the bright-tier
+   Universal fallback `#15803D` (Tailwind green-700) which clears
+   ~5.05:1 vs `#FFFFFF` — comfortably passes 3:1 UI-floor AND 4.5:1
+   AA-text. HC-Dark keeps the bright upstream `#3FB950` (already
+   8.27:1 vs `#000000`); Dark+ keeps `#3FA856` upstream (already
+   5.16:1 vs `#1E1E1E`); only Light+ needs the override. Mirrors the
+   badge-family dark-override pattern from Cluster A.
+   Locked by Autonomy.a11y.test.ts: SHAPE-terminal-running-dot-light-override
+   + the Light+ contrast assertion. */
+@media (prefers-color-scheme: light) {
+  .terminal-tile-dot.status-running {
+    background: var(--vscode-charts-green-bright, #15803D);
+  }
+}
 .terminal-tile-body { flex: 1; min-height: 0; padding: 4px; }
 .terminal-grid-empty { padding: 24px; text-align: center; opacity: .6; }
+
+/* ── Take-over flash animation (P1 #4) ──────────────────────────────── */
+@keyframes terminal-tile-flash {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  25% { box-shadow: 0 0 0 3px var(--vscode-focusBorder, #007acc); }
+  50% { box-shadow: 0 0 0 3px transparent; }
+  75% { box-shadow: 0 0 0 3px var(--vscode-focusBorder, #007acc); }
+}
+.terminal-tile--flash {
+  animation: terminal-tile-flash 1.2s ease-out;
+  border-color: var(--vscode-focusBorder, #007acc) !important;
+}

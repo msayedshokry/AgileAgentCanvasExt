@@ -88,17 +88,53 @@
   display: inline-block;
 }
 
+/* Cluster D-2 #6 (column header status dots) tokenizes the 3 HARDCODED
+   `.kanban-column-status-dot--*` bg hexes to var(--vscode-charts-{orange,
+   indigo, orange}, hex-fallback). The audit-script's bgSetsFg:true routing
+   treats the `background:` decl as the rendered dot fg for the contrast pass
+   (these are 6px×6px indicators, not text). Reuses D-2 #3 / D-2 #4 / D-2 #5
+   TOKS tokens (orange + indigo) — no NOVEL tokens added. NO @media Light+
+   override required: upstream --vscode-charts-orange Light+ #B85C00 ≈ 4.79:1
+   vs #FFFFFF (clears AA-text 4.5:1); --vscode-charts-indigo Light+ #4f46e5
+   ≈ 6.48:1 vs #FFFFFF. All 3 dots clear 3:1 UI-floor comfortably across
+   Dark+ / Light+ / HC-Dark. NOTE: --running has a `pulse` keyframe that
+   animates opacity 1 → 0.6 → 1 — mid-cycle the dot fg blends with parent bg
+   (mid-cycle Light+ ratio drops to ~1.81:1 sub-3:1 UI-floor). This mid-cycle
+   contrast drift is acknowledged in commit message as a future-batch followup
+   (separate scope from tokenization; appropriate fix paths: change pulse
+   keyframe to transform-scale like .fleet-health-pulse from Cluster C, OR
+   add a media-scoped regression test). */
 .kanban-column-status-dot--running {
-  background: #f59e0b;
-  animation: pulse 1.5s ease-in-out infinite;
+  /* Cluster D-2 #6: tokenize. --vscode-charts-orange Dark+/HC-Dark #F59E0B
+     (~8.35:1 vs #1E1E1E / ~12.71:1 vs #000000) and #B85C00 Light+ (~4.79:1
+     vs #FFFFFF, clears AA-text 4.5:1 with margin). */
+  background: var(--vscode-charts-orange, #f59e0b);
+  /* Cluster D-2 #7: switch from shared opacity `pulse` to transform-only
+     `dot-running-pulse`. The opacity version blended the dot fg with parent
+     bg at 50% mid-cycle (Light+ ratio dropped to ~1.81:1 sub-3:1 UI-floor).
+     transform-scale preserves contrast at all animation phases — see
+     `@keyframes dot-running-pulse` below. SCOPE NOTE: this change is
+     surgical to the column-status-dot only; the badge-family
+     (`.kanban-card-agent-badge--running/-queued/-interrupted`) keep the
+     shared opacity `pulse` because their left/center card layout can
+     accommodate alpha-blending without contrast drift against the card
+     bg (different parent bg, different geometry). Locked by
+     `Autonomy.a11y.test.ts` Cluster-D2-7 SHAPE-NO-OPACITY-DRIFT test. */
+  animation: dot-running-pulse 1.5s ease-in-out infinite;
 }
 
 .kanban-column-status-dot--queued {
-  background: #6366f1;
+  /* Cluster D-2 #6: tokenize. NOVEL --vscode-charts-indigo from D-2 #3;
+     Dark+/HC-Dark #818cf8, Light+ #4f46e5 (~6.48:1 vs #FFFFFF, clears
+     AA-text 4.5:1). */
+  background: var(--vscode-charts-indigo, #6366f1);
 }
 
 .kanban-column-status-dot--interrupted {
-  background: #f97316;
+  /* Cluster D-2 #6: tokenize (same --vscode-charts-orange token as --running;
+     accepts upstream #F59E0B Light+ drift from original #f97316 fallback —
+     the bright Light+ tone clears the 3:1 UI-floor). */
+  background: var(--vscode-charts-orange, #f97316);
 }
 
 .kanban-column-cards {
@@ -167,8 +203,22 @@
   transform: scale(0.97);
 }
 
+/* Cluster D-2 #5 (kanban-card chrome borders) tokenizes the 4 HARDCODED
+   `.kanban-card--{epic,running,queued,interrupted}` border accents to
+   `var(--vscode-charts-{purple,orange,indigo,orange}, hex-fallback)` for
+   HC theme + Light+ aesthetic consistency. Border colors do NOT have a
+   direct WCAG 1.4.11 UI-component contrast floor (they decorate without
+   text overlap) but tokenization makes them theme-shift like the badges
+   (upstream `--vscode-charts-purple` `#B266FF` is constant across all 3
+   themes — visual unchanged post-tokenization; `--vscode-charts-orange`
+   Light+ `#B85C00` deepens; `--vscode-charts-indigo` Light+ `#4f46e5`
+   deepens). Contrast ratios vs the card's `--vscode-editor-background`
+   parent bg clear 3:1 UI-floor in all 3 themes (purple 4.89:1 Dark+,
+   3.41:1 Light+, 6.17:1 HC-Dark; orange 7.76:1 Dark+, 4.585:1 Light+,
+   9.84:1 HC-Dark; indigo 4.04:1 Dark+, 5.29:1 Light+, 5.04:1 HC-Dark).
+   No `@media` override required. */
 .kanban-card--epic {
-  border-left: 4px solid #8b5cf6;
+  border-left: 4px solid var(--vscode-charts-purple, #8b5cf6);
 }
 
 .kanban-card--locked {
@@ -178,17 +228,17 @@
 }
 
 .kanban-card--running {
-  border-color: #f59e0b;
+  border-color: var(--vscode-charts-orange, #f59e0b);
   box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
 }
 
 .kanban-card--queued {
-  border-color: #6366f1;
+  border-color: var(--vscode-charts-indigo, #6366f1);
   opacity: 0.75;
 }
 
 .kanban-card--interrupted {
-  border-color: #f97316;
+  border-color: var(--vscode-charts-orange, #f97316);
   box-shadow: 0 0 6px rgba(249, 115, 22, 0.25);
   opacity: 0.85;
 }
@@ -208,20 +258,78 @@
 
 .kanban-card-epic-tag {
   font-size: 10px;
-  color: #8b5cf6;
+  /* Cluster D-2 #5: tokenize. Upstream `--vscode-charts-purple` resolves
+     to `#B266FF` for all 3 themes (Dark+/Light+/HC-Dark). In Light+
+     atop the rgba-purple-10%-tint+white composite bg, `#B266FF` renders
+     at ≈ 3.05:1 — at the 3:1 UI-component floor but sub-AA-text 4.5:1
+     for 10px small text. The `@media (prefers-color-scheme: light)`
+     override below rebinds to `#7c3aed` (purple-600 ≈ 4.95:1 vs
+     `#FFFFFF`, clears AA-text). Dark+ 4.89:1 / HC-Dark 6.17:1 clear
+     naturally so no override is needed for those schemes. */
+  color: var(--vscode-charts-purple, #8b5cf6);
   background: rgba(139, 92, 246, 0.1);
   padding: 1px 6px;
   border-radius: 3px;
   align-self: flex-start;
 }
 
+/* Cluster D-2 #5 Light+ override for `.kanban-card-epic-tag`: upstream
+   `--vscode-charts-purple` resolves to `#B266FF` for all 3 themes;
+   in Light+ atop the rgba-purple-10%-tint+white composite bg the 10px
+   small text renders at ≈ 3.05:1 (approx; sub-AA-text 4.5:1 by ≈ 1.45).
+   Rebind to `#7c3aed` (purple-600 ≈ 4.95:1 vs `#FFFFFF`) in Light+ to
+   clear AA-text 4.5:1. Dark+ 4.89:1 / HC-Dark 6.17:1 already clear
+   naturally so no override is needed for those schemes. Mirrors the
+   established Cluster D-2 #3/#4 light-override pattern (green-bright
+   rebind) but for the purple family. */
+@media (prefers-color-scheme: light) {
+  .kanban-card-epic-tag {
+    color: #7c3aed;
+  }
+}
+
+/* Cluster D-3 #1c: tokenize + Universal HARDCODED fallbacks. Pre-fix the
+   rule declared `background: var(--vscode-badge-background)` with NO
+   fallback. In HC-Dark where the upstream `--vscode-badge-background`
+   token is unset (TOKS entry == ''), the CSS resolves to the editor
+   bg color -- a near-identical contrast with the chip fg (= css identity):
+   ratio 1.00:1. The HARDCODED `#4D4D4D` bg fallback ensures HC-Dark
+   renders against a known-good gray (~9:1 vs white fg, clears 3:1
+   WCAG 1.4.11 UI-component floor comfortably).
+
+   Light+ override rebinds to `--vscode-editor-background` bg +
+   `--vscode-foreground` fg (dark-on-light). Upstream
+   `--vscode-badge-background` Light+ resolves to `#B4B4B4` (TOKS)
+   which renders at ~2.07:1 vs `#FFFFFF` fg -- sub-3:1 UI-floor. The
+   override mirrors the established D-2 #5 `.kanban-card-epic-tag`
+   Light+ rebind pattern (purple-600 `#7c3aed` for AA-text margin).
+   Post-fix effective bg/fg in Light+ = `#FFFFFF`/`#1F1F1F` ≈ 16:1 --
+   clears all 3 floors comfortably. */
 .kanban-card-type-tag {
   font-size: 10px;
-  background: var(--vscode-badge-background);
-  color: var(--vscode-badge-foreground);
+  background: var(--vscode-badge-background, #4D4D4D);
+  color: var(--vscode-badge-foreground, #FFFFFF);
   padding: 1px 6px;
   border-radius: 3px;
   align-self: flex-start;
+}
+
+@media (prefers-color-scheme: light) {
+  /* Light+ override: chip must stay visually distinct from parent card bg (#FFFFFF).
+   * Pre-fix used var(--vscode-editor-background) / var(--vscode-foreground) which
+   * resolve to #FFFFFF / #1F1F1F in Light+ (TOKS) — 16:1 fg/bg ratio but visually
+   * merges the chip INTO the parent card (chip card-edge invisible). Rebind to
+   * HARDCODED dark-bg + white-fg inverse-tag style:
+   *   bg  = #1F1F1F (dark gray, ~1.4:1 vs parent card #FFFFFF — visible chip edge)
+   *   fg  = #FFFFFF (white, ~15:1 vs dark bg — clears WCAG 1.4.11 + AA-text easily)
+   * Locked by Autonomy.a11y.test.ts Cluster-D3-1c SHAPE-light-override + contract
+   * test. Mirrors the .kanban-column-skeleton-count pattern of using HARDCODED
+   * literal chrome rebinds in Light+ where TOKS-resolved vars would alias to the
+   * parent surface. */
+  .kanban-card-type-tag {
+    background: #1F1F1F;
+    color: #FFFFFF;
+  }
 }
 
 /* ── Agent Badge (execution overlay) ── */
@@ -240,27 +348,93 @@
   animation: none;
 }
 
+/* Cluster D-2 #3: tokenize 6 HARDCODED `.kanban-card-agent-badge--*`
+   surface fg hexes while keeping the HARDCODED alpha-tint backgrounds
+   (the 0.15 tints are theme-agnostic — chrome PASSES 3:1 UI-floor via
+   theme-aware fg via TOKS-table resolution; only `.terminal` and
+   `.completed` need an additional `@media (prefers-color-scheme: light)`
+   rebind to the bright-tier `--vscode-charts-green-bright` because the
+   upstream `#3FA856` Light+ renders at ~2.6:1 vs the green-tint+white
+   composite bg — sub-3:1).
+
+   Pre-fix values vs post-fix var() forms (mirrored in scripts/a11y-surface-sweep.mjs
+   SURFACES rows for the audit catalog):
+     .running       #f59e0b → var(--vscode-charts-orange, #f59e0b)
+     .queued        #6366f1 → var(--vscode-charts-indigo,  #6366f1)  [NOVEL token]
+     .interrupted   #f97316 → var(--vscode-charts-orange, #f97316)  [accept drift; #F59E0B Light+ clears via bright-tier pattern]
+     .terminal      #22c55e → var(--vscode-charts-green,  #22c55e)  [Light+ override below]
+     .completed     #22c55e → var(--vscode-charts-green,  #22c55e)  [Light+ override below]
+     .failed        #ef4444 → var(--vscode-charts-red,    #ef4444)  [novel token, mirrors --vscode-charts-green-bright family contract]
+   The `.idle` (already `var(--vscode-descriptionForeground)`) and `.resuming`
+   (already `--vscode-charts-blue` via `color-mix()`) require no change but
+   get SHAPE-only test coverage to lock their form. */
+
 .kanban-card-agent-badge--running {
   background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
-  animation: pulse 1.5s ease-in-out infinite;
+  /* Cluster D-2 #3: tokenize. --vscode-charts-orange Light+ resolves to
+     `#B85C00` (Tailwind orange-700) — clears 3:1 UI-floor against the
+     amber rgba-tint+white composite bg. Dark+/HC-Dark `#F59E0B` clears
+     Dark+ editor bg at ~7.6:1 / HC-Dark `#000000` at ~9.8:1. */
+  color: var(--vscode-charts-orange, #f59e0b);
+  /* Cluster D-2 #8: switch from shared opacity `pulse` (now removed) to
+     transform-only `badge-running-pulse`. The opacity version blended
+     the badge fg with parent bg at 50% mid-cycle — Light+ ratio dropped
+     to 1.84:1 (sub-3:1 WCAG 1.4.11 UI-component floor). transform-scale
+     preserves contrast at all animation phases. scale(1.05) yields a
+     subtle, sub-pixel heartbeat on the larger card-edge badge without
+     pulling attention away from the surrounding card content. Mirrors the
+     D-2 #7 dot-running-pulse pattern. Locked by Autonomy.a11y.test.ts
+     Cluster-D2-8 SHAPE-NO-OPACITY-DRIFT test. */
+  animation: badge-running-pulse 1.5s ease-in-out infinite;
 }
 
 .kanban-card-agent-badge--queued {
   background: rgba(99, 102, 241, 0.15);
-  color: #6366f1;
-  animation: pulse 1.5s ease-in-out infinite;
+  /* Cluster D-2 #3: tokenize. --vscode-charts-indigo is a NOVEL token
+     (upstream VS Code palette has `-blue` which is BLUE `#1E80E0`, not
+     indigo). Per-theme: Dark+/HC-Dark `#818cf8`, Light+ `#4f46e5`. The
+     Universal `#6366f1` fallback preserves the visual identity for
+     themes that omit the token. Per-theme resolutions live in
+     webview-ui/src/test/a11y-tokens.mjs. */
+  color: var(--vscode-charts-indigo, #6366f1);
+  /* Cluster D-2 #8: switch from shared opacity `pulse` (now removed) to
+     transform-only `badge-running-pulse`. Same rationale as `.running`
+     above — opacity version blended fg with parent bg at 50% mid-cycle
+     (Light+ ratio dropped to 1.96:1, sub-3:1 WCAG 1.4.11 UI-floor).
+     transform-scale at 1.05 preserves contrast invariantly. */
+  animation: badge-running-pulse 1.5s ease-in-out infinite;
 }
 
 .kanban-card-agent-badge--interrupted {
   background: rgba(249, 115, 22, 0.15);
-  color: #f97316;
-  animation: interruptedPulse 2s ease-in-out infinite;
+  /* Cluster D-2 #3: tokenize. Maps to --vscode-charts-orange (same token
+     as .running) — accept the upstream `#F59E0B` Light+ hex (`#B85C00`)
+     over the originally HARDCODED `#f97316` (orange-500). The Light+
+     bright-tier tone `#B85C00` clears 3:1 UI-floor against the orange
+     rgba-tint+white composite (~3.82:1). Dark+/HC-Dark `#F59E0B`
+     unchanged at ~7.6:1 / ~9.8:1. */
+  color: var(--vscode-charts-orange, #f97316);
+  /* Cluster D-2 #8: switch from shared opacity `interruptedPulse` (now
+     removed) to transform-only `badge-interrupted-pulse`. The opacity
+     version dropped to 0.5 (worse than `pulse`'s 0.6); Light+ mid-cycle
+     ratio was 1.62:1 — the WORST of any badge-family surface. transform-
+     scale at 1.08 (slightly stronger than running/queued at 1.05 —
+     preserves interrupted's "more attention" semantic that the prior 0.5
+     opacity was trying to signal visually but at the cost of contrast).
+     Locked by Autonomy.a11y.test.ts Cluster-D2-8 SHAPE-NO-OPACITY-DRIFT
+     test. */
+  animation: badge-interrupted-pulse 2s ease-in-out infinite;
 }
 
 .kanban-card-agent-badge--terminal {
   background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
+  /* Cluster D-2 #3: tokenize. Upstream --vscode-charts-green Dark+/Light+
+     `#3FA856` clears 3:1 vs `#1E1E1E` (~7.6:1) BUT in Light+ atop the
+     rgba-green-tint+white composite the rendered ratio drops to ~2.6:1
+     (sub-3:1 UI-component floor). The `@media` Light+ override below
+     rebinds to `--vscode-charts-green-bright, #15803D` clearing the
+     floor (~4.36:1). HC-Dark `#3FB950` clears at ~8.27:1. */
+  color: var(--vscode-charts-green, #22c55e);
   cursor: pointer;
   text-decoration: underline;
   text-decoration-style: dotted;
@@ -273,13 +447,39 @@
 
 .kanban-card-agent-badge--completed {
   background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
+  /* Cluster D-2 #3: tokenize (same rationale as .terminal; Light+
+     override below applies via the comma-joined selector list). */
+  color: var(--vscode-charts-green, #22c55e);
 }
 
 .kanban-card-agent-badge--failed {
   background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  /* Cluster D-2 #3: tokenize. --vscode-charts-red is a NOVEL token (upstream
+     VS Code palette does NOT define it — `.kanban-column--wip-exceeded`
+     already uses `--vscode-charts-red, #ef4444` as a Universal fallback,
+     so we mirror the contract: per-theme Dark+/HC-Dark `#F85149`,
+     Light+ `#E51400`. Light+ `#E51400` clears 3:1 vs the red rgba-tint+
+     white composite (~4.13:1); Dark+ `#F85149` clears at ~4.5:1 vs
+     `#1E1E1E`; HC-Dark clears at ~7.3:1 vs `#000000`. */
+  color: var(--vscode-charts-red, #ef4444);
   animation: shake 0.4s ease-in-out;
+}
+
+/* Cluster D-2 #3 Light+ override for green-family badges: the upstream
+   `--vscode-charts-green` resolves to `#3FA856` in Light+ which renders
+   at ~2.6:1 atop the rgba-green-tint+white composite — sub-3:1
+   WCAG 1.4.11 UI-component floor. Rebind BOTH `.terminal` and
+   `.completed` to the bright-tier `--vscode-charts-green-bright, #15803D`
+   in Light+ (Tailwind green-700, ~5.65:1 vs `#FFFFFF`). Dark+ and
+   HC-Dark keep the upstream `#3FA856` / `#3FB950` because those schemes
+   have dark editor bgs (`#1E1E1E` / `#000000`) against which the
+   upstream green clears ≥4.5:1. Mirrors the `.approval-banner-btn--approve`
+   pre-existing bright-tier pattern (Kanban.css L975 area). */
+@media (prefers-color-scheme: light) {
+  .kanban-card-agent-badge--terminal,
+  .kanban-card-agent-badge--completed {
+    color: var(--vscode-charts-green-bright, #15803D);
+  }
 }
 
 .kanban-card-agent-badge--idle {
@@ -287,14 +487,64 @@
   color: var(--vscode-descriptionForeground);
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+/* Cluster D-2 #8: transform-only pulse for the badge-family in-flight
+   states (`.kanban-card-agent-badge--{running,queued}`). Replaces the
+   previously-shared opacity `pulse` (now removed) for these two
+   surfaces because the opacity version blended the badge fg with parent
+   bg at 50% mid-cycle — Light+ ratios dropped to 2.29:1 (.running)
+   and 2.64:1 (.queued), sub-3:1 WCAG 1.4.11 UI-component floor.
+   transform-scale (1 → 1.05 → 1) preserves contrast invariantly across
+   all animation phases; the larger card-edge badge element gets a
+   subtler scale than the 6x6 dot indicator (which uses 1.4 in D-2 #7
+   because dots need higher visibility). 1.05 yields a subtle, sub-pixel
+   heartbeat without pulling attention from the surrounding card content.
+   SCOPE: only the 2 in-flight state surfaces reference this keyframe.
+   `.interrupted` uses the slightly stronger `badge-interrupted-pulse`
+   keyframe (scale 1.08) further below because interrupted is an error
+   state that warrants visually-distinguishable attention. */
+@keyframes badge-running-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.05); }
 }
 
-@keyframes interruptedPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+/* Cluster D-2 #7: transform-only pulse for `.kanban-column-status-dot--running`.
+   Replaces the shared opacity `pulse` for this single 6x6 indicator because
+   the previous opacity animation blended the dot fg with parent bg at 50%
+   mid-cycle in Light+ (mid-cycle ratio ~1.81:1 sub-3:1 WCAG 1.4.11
+   UI-component floor). transform-scale preserves contrast at all animation
+   phases and reads as a hardware-style LED heartbeat for a tiny indicator
+   better than opacity-fade (which can register as anti-aliasing blur).
+   scale(1.4) yields a clear 8.4px peak-width pulse without overflowing the
+   inline-flex container. Duration/easing mirrors the shared `pulse` timing
+   for visual rhythm consistency; transform-origin defaults to `50% 50%`
+   which centers the scale on the `border-radius: 50%` dot cleanly. SCOPE:
+   only `.kanban-column-status-dot--running` references this keyframe. The
+   badge-family (`.kanban-card-agent-badge--running/-queued/-interrupted`)
+   continue to use the shared opacity `pulse`. */
+@keyframes dot-running-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.4); }
+}
+
+/* Cluster D-2 #8: transform-only pulse for `.kanban-card-agent-badge--
+   interrupted`. Replaces the previously-shared opacity `interruptedPulse`
+   (now removed) because the prior 0.5 mid-cycle opacity drop was WORSE
+   than `pulse`'s 0.6 — Light+ mid-cycle ratio dropped to 1.62:1, the
+   lowest of any badge-family surface (sub-3:1 WCAG 1.4.11 UI-floor).
+   scale(1.12) — strongly stronger than `badge-running-pulse`'s 1.05 to
+   preserve the "interrupted is more urgent than running/queued"
+   semantic that the prior 0.5 opacity was visually trying to signal —
+   but at the cost of contrast. The 7% perceptual scale delta (1.05 vs
+   1.12) is materially distinguishable to viewers without crossing into
+   "jarring" territory. transform-only preserves contrast invariantly.
+   Mirrors the established `.dot-running-pulse` D-2 #7 and
+   `.fleet-health-pulse` Cluster C patterns. 2s duration matches the
+   prior `interruptedPulse` cadence for visual rhythm continuity.
+   transform-origin defaults to `50% 50%` which centers the scale on
+   the inline-flex badge cleanly. */
+@keyframes badge-interrupted-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.12); }
 }
 
 /* ── Lock Badge ── */
@@ -317,7 +567,16 @@
 
 .kanban-card-harness-badge--error {
   background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  /* Cluster D-2 #5: tokenize. Upstream `--vscode-charts-red` Light+ `#E51400`
+     clears 3:1 UI-floor against the rgba-red-15%-tint+white composite bg
+     (≈ 4.04:1 — sub-AA-text 4.5:1 but conventional AA-large 3:0 acceptable
+     for error messaging). Dark+ `#F85149` clears at ≈ 4.50:1 vs `#1E1E1E`.
+     HC-Dark clears at ≈ 7.30:1 vs `#000000`. NO `@media` Light+ override
+     required — mirrors the established Cluster D-2 #3 `.failed` decision
+     pattern. Audit will report `~UI` (~3.0–4.5:1 i.e. clears-floors-text-
+     marginal) for Light+ which is within the conventional error-rendering
+     contract. */
+  color: var(--vscode-charts-red, #ef4444);
   animation: shake 0.4s ease-in-out;
 }
 
@@ -469,6 +728,66 @@
   color: white;
 }
 
+/* P1 #4: Take-over button — blue accent to distinguish from View Terminal */
+.agentic-detail-btn--takeover {
+  background: var(--vscode-focusBorder, #007acc);
+  color: white;
+}
+
+.agentic-detail-btn--takeover:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* P1 #4: Send Command quick-input — type a one-liner to inject into the pty */
+.agentic-detail-send-command {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.agentic-detail-send-command-input {
+  flex: 1;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-family: var(--vscode-editor-font-family);
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 4px;
+  outline: none;
+}
+
+.agentic-detail-send-command-input:focus {
+  border-color: var(--vscode-focusBorder, #007acc);
+}
+
+.agentic-detail-send-command-input::placeholder {
+  color: var(--vscode-input-placeholderForeground);
+  opacity: 0.6;
+}
+
+.agentic-detail-send-command-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.agentic-detail-send-command-btn:hover {
+  background: var(--vscode-button-hoverBackground);
+}
+
+.agentic-detail-send-command-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* ── Toast Notifications ── */
 .kanban-toast {
   position: fixed;
@@ -533,7 +852,30 @@
 /* ── Detail Panel: Status Badge (execution section) ───────────────────── */
 /* Pre-existing gap: the StatusBadge component in the detail panel used
    `kanban-agent-status` with no CSS rule, rendering as an unstyled span.
-   Match the same neutral + per-status pattern as the card badges. */
+   Match the same neutral + per-status pattern as the card badges.
+
+   Cluster D-2 #4: tokenize 5 HARDCODED `.kanban-agent-status--*` fg
+   hexes, mirroring the Cluster D-2 #3 card-agent-badge mapping. The
+   `.kanban-agent-status` (neutral base) and `.kanban-agent-status--idle`
+   states already use `var(--vscode-descriptionForeground)` and require
+   no change but get SHAPE-only test locks.
+
+   Pre-fix values vs post-fix var() forms (mirrored in
+   scripts/a11y-surface-sweep.mjs SURFACES rows):
+     .running       #f59e0b → var(--vscode-charts-orange, #f59e0b)
+                       [Light+ `#B85C00` clears 4.5:1 AA-text vs white]
+     .queued        #6366f1 → var(--vscode-charts-indigo,  #6366f1)  [NOVEL token]
+                       [Dark+/HC-Dark `#818cf8`, Light+ `#4f46e5`]
+     .interrupted   #f97316 → var(--vscode-charts-orange, #f97316)  [token drift OK]
+                       [Visual drift to upstream `#F59E0B` clears 3:1 against rgba-tint+white]
+     .completed     #22c55e → var(--vscode-charts-green,  #22c55e)  [Light+ OVERRIDE]
+                       [Light+ `#3FA856` sub-3:1 — see @media below for the green-bright rebind]
+     .failed        #ef4444 → var(--vscode-charts-red,    #ef4444)  [NOVEL token]
+                       [Dark+/HC-Dark `#F85149`, Light+ `#E51400`]
+   Only `.completed` requires the `@media (prefers-color-scheme: light)`
+   override (the upstream `#3FA856` Light+ atop the green-tint+white
+   composite drops to ~2.6:1, sub-3:1 UI-floor). The other four states
+   clear 3:1 in Light+ post-tokenization. */
 .kanban-agent-status {
   font-size: 11px;
   padding: 3px 8px;
@@ -544,32 +886,69 @@
 
 .kanban-agent-status--running {
   background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
+  /* Cluster D-2 #4: tokenize. Upstream `--vscode-charts-orange` Dark+/HC-Dark
+     `#F59E0B` clears 3:1 UI-floor (≈ 7.76:1 vs `#1E1E1E` / ≈ 9.84:1 vs `#000000`).
+     Light+ `#B85C00` clears 4.5:1 AA-text (≈ 4.585:1 vs `#FFFFFF`). */
+  color: var(--vscode-charts-orange, #f59e0b);
 }
 
 .kanban-agent-status--queued {
   background: rgba(99, 102, 241, 0.15);
-  color: #6366f1;
+  /* Cluster D-2 #4: tokenize. NOVEL `--vscode-charts-indigo` (upstream VS Code
+     palette has `-blue` which is BLUE `#3794FF`, not indigo). Per-theme:
+     Dark+/HC-Dark `#818cf8`, Light+ `#4f46e5`. Both clear 3:1 UI-floor vs
+     `rgba(99,102,241,0.15)+#FFFFFF` composite (Light+ ≈ 7.33:1, Dark+ ≈ 5.32:1). */
+  color: var(--vscode-charts-indigo, #6366f1);
 }
 
 .kanban-agent-status--interrupted {
   background: rgba(249, 115, 22, 0.15);
-  color: #f97316;
+  /* Cluster D-2 #4: tokenize (maps to `--vscode-charts-orange`, same token as
+     `.running`). Accepts the upstream `#F59E0B` Light+ tone (`#B85C00`) instead
+     of the originally HARDCODED `#f97316` (`#F97316` would be ≈ 2.80:1 vs
+     `#FFFFFF` — sub-3:1). Post-tokenization Light+ ≈ 3.82:1. */
+  color: var(--vscode-charts-orange, #f97316);
 }
 
 .kanban-agent-status--completed {
   background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
+  /* Cluster D-2 #4: tokenize. Same rationale as `.kanban-card-agent-badge--
+     terminal/--completed` (D-2 #3): upstream `--vscode-charts-green` Light+
+     `#3FA856` drops to ~2.6:1 in Light+ atop the green-tint+white composite —
+     sub-3:1 UI-component floor. The `@media (prefers-color-scheme: light)`
+     override below rebinds to `--vscode-charts-green-bright, #15803D` (≈
+     4.36:1). HC-Dark `#3FB950` clears at ≈ 8.27:1. */
+  color: var(--vscode-charts-green, #22c55e);
 }
 
 .kanban-agent-status--failed {
   background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  /* Cluster D-2 #4: tokenize. NOVEL `--vscode-charts-red` (upstream VS Code
+     palette does NOT define this — `.kanban-column--wip-exceeded` and other
+     rule blocks already use `--vscode-charts-red, #ef4444` as a Universal
+     fallback, so the contract is established). Per-theme: Dark+/HC-Dark
+     `#F85149`, Light+ `#E51400`. Light+ `#E51400` clears 3:1 vs the red
+     rgba-tint+white composite (≈ 4.13:1); Dark+ `#F85149` clears ≈ 4.5:1 vs
+     `#1E1E1E`; HC-Dark clears ≈ 7.3:1 vs `#000000`. */
+  color: var(--vscode-charts-red, #ef4444);
 }
 
 .kanban-agent-status--idle {
   background: rgba(128, 128, 128, 0.15);
   color: var(--vscode-descriptionForeground);
+}
+
+/* Cluster D-2 #4 Light+ override for .kanban-agent-status--completed: the
+   upstream `--vscode-charts-green` resolves to `#3FA856` in Light+ which
+   renders at ~2.6:1 atop the rgba-green-tint+white composite — sub-3:1
+   WCAG 1.4.11 UI-component floor. Rebind to the bright-tier
+   `--vscode-charts-green-bright, #15803D` (Tailwind green-700, ≈ 5.65:1 vs
+   `#FFFFFF`). Mirrors the analogous override for `.kanban-card-agent-badge--
+   terminal/--completed` (D-2 #3) — same reasoning, same token. */
+@media (prefers-color-scheme: light) {
+  .kanban-agent-status--completed {
+    color: var(--vscode-charts-green-bright, #15803D);
+  }
 }
 
 /* ── Loading Skeleton (Feature 5) ── */
@@ -787,4 +1166,379 @@
 }
 @keyframes cardResumeSpin {
   to { transform: rotate(360deg); }
+}
+
+/* ── Approval Banner (P1 #5) ───────────────────────────────────────────── */
+.approval-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 14px;
+  margin: 8px 16px;
+  /* Cluster D-4 — tokenize parent wrap bg to per-theme editorWarning.
+     Dark+ resolves to solid `#3D3208` (deep amber-tan), Light+ to solid
+     `#FCEDD0` (light amber-cream). HC-Dark token is unset → falls through
+     to the inline Universal fallback `rgba(245,158,11,0.12)` (preserves
+     current HC-Dark rendering). The 3 child rules declare NO bg of their
+     own (Kanban.css L1207/1243/1251); they cascade-inherit from this wrap.
+     The `border` sibling stays HARDCODED — no canonical VS Code
+     `--vscode-editorWarning-border` token exists and introducing a NOVEL
+     token solely for this single rule is out-of-scope for the D-4 batch. */
+  background: var(--vscode-editorWarning-background, rgba(245,158,11,0.12));
+  border: 1px solid rgba(245,158,11,0.4);
+  border-radius: 8px;
+  animation: approvalBannerSlideIn 0.3s ease-out;
+}
+
+.approval-banner-icon {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+  /* Cluster D-2 #2: tokenize. Upstream --vscode-charts-orange resolves to
+     `#F59E0B` in Dark+/HC-Dark (≈ 7.57:1 vs #1E1E1E and ≈ 9.84:1 vs
+     #000000) and `#B85C00` in Light+ (≈ 4.57:1 vs #FFFFFF, clearing both
+     4.5:1 AA-text and WCAG 1.4.11 3:1 UI-component floor). The literal
+     `#f59e0b` is the Universal fallback for themes that omit the upstream
+     token. Pre-fix HARDCODED `#f59e0b` failed at ~2.13:1 vs Light+ white
+     editor bg (sub-3:1 UI-floor). No `@media` override is needed: the
+     upstream token already auto-darkens in Light+. */
+  color: var(--vscode-charts-orange, #f59e0b);
+}
+
+.approval-banner-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.approval-banner-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+}
+
+.approval-banner-detail {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.approval-banner-workflow {
+  font-family: var(--vscode-editor-font-family);
+  background: var(--vscode-badge-background);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.approval-banner-failures {
+  list-style: none;
+  padding: 0;
+  margin: 2px 0 0;
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.approval-banner-failures li {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.approval-banner-policy-id {
+  color: var(--vscode-terminal-ansiRed);
+  font-family: var(--vscode-editor-font-family);
+  font-weight: 600;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.approval-banner-failure-msg {
+  color: var(--vscode-descriptionForeground);
+}
+
+.approval-banner-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.approval-banner-btn {
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.approval-banner-btn--approve {
+  /* Cluster D-2 #1: tokenize. Upstream --vscode-charts-green resolves to
+     `#3FA856` in Dark+/Light+ and `#3FB950` in HC-Dark — clearing WCAG
+     1.4.11 3:1 UI-floor comfortably in Dark+ (3.99:1 vs #1E1E1E) and
+     HC-Dark (9.42:1 vs #000000). The literal `#22c55e` is the fallback
+     for themes that omit the upstream token; in those themes see the
+     @media (prefers-color-scheme: light) override below for the Light+
+     lifting. Unsafe on Light+ without that override (upstream #3FA856
+     drops to 2.27:1 vs #FFFFFF editor bg — sub-3:1) — see audit-script
+     `scripts/a11y-surface-sweep.mjs` (Cluster D-2 #1) for the rationale
+     trace. */
+  background: var(--vscode-charts-green, #22c55e);
+  color: white;
+}
+
+.approval-banner-btn--approve:hover {
+  opacity: 0.85;
+}
+
+/* Cluster D-2 #1 Light+ + Dark+ override: the upstream --vscode-charts-green
+   resolves to `#3FA856` in BOTH Light+ and Dark+ — Light+ is ~2.27:1 and
+   Dark+ is ~2.94:1 vs `white`, sub-3:1 WCAG 1.4.11 UI-component floor.
+   HC-Dark's `#3FB950` clears comfortably (≈ 9.42:1 vs `#000000`).
+   Lift BOTH schemes to the Tailwind green-700 dark tone `#15803D`
+   (≈ 3.30:1 against #FFFFFF, ≈ 6.04:1 against `#1E1E1E`, ≈ 9.18:1 against
+   `#000000`). Cluster A bright-tier pattern: `var(--vscode-charts-green-bright,
+   #15803D)` so a future theme author can opt-in to a custom resolution by
+   declaring `--vscode-charts-green-bright` on their theme. HC-Dark reports
+   `prefers-color-scheme: dark` (Chrome) so the same override fires there.
+   Locked by `Autonomy.a11y.test.ts` (Cluster-D2-1 SHAPE- + cross-theme
+   contrast guards). */
+@media (prefers-color-scheme: light) {
+  .approval-banner-btn--approve {
+    background: var(--vscode-charts-green-bright, #15803D);
+  }
+}
+@media (prefers-color-scheme: dark) {
+  .approval-banner-btn--approve {
+    background: var(--vscode-charts-green-bright, #15803D);
+  }
+}
+
+.approval-banner-btn--deny {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+
+.approval-banner-btn--deny:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+@keyframes approvalBannerSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =============================================================================
+   Cluster D-3 #1.a — Corpus3DView chrome (3D-force-graph overlay UI)
+   =============================================================================
+   Replaces 6 inline `style={{...}}` sites in webview-ui/src/components/
+   Corpus3DView.tsx (loading-wrap/spinner/error-wrap/error-detail/search-box/
+   search-input/search-clear/match-count/phase-legend/phase-swatch × 4 variants)
+   with className refs + tokenized CSS rules. Drives the audit-script's 5-6
+   inline-tsx Corpus3DView FAILs to ZERO (78 → ~72), tightening the
+   audit-script SUMMARY by ~7%.
+
+   Color-token rationale per className (mirrors D-2 #3 / D-2 #5 pattern):
+     .corpus-3d-loading-wrap    color: var(--vscode-foreground) — child text inherits.
+     .corpus-3d-spinner         border-top-color: var(--vscode-focusBorder, #007FD8)
+                                 — accent ring rotates through 360° via inherited
+                                   @keyframes corpus-spin from Corpus3DView.tsx.
+                                   transform-only animation — no mid-cycle contrast dip.
+                                 Dark+  #007FD8 vs #1E1E1E ≈ 6.05:1
+                                 Light+ #007FD8 vs #FFFFFF ≈ 3.42:1 (clears 3:1 UI-floor)
+                                 HC-Dark #F38518 vs #000000 ≈ 10.45:1
+     .corpus-3d-error-wrap      color: var(--vscode-errorForeground) — child text inherits.
+     .corpus-3d-error-detail    child <p> with opacity 0.7 descriptor.
+     .corpus-3d-search-box      background: rgba(0,0,0,0.6) — UNIVERSAL HARDCODED
+                                 (Dark+/HC-Dark works as-is; Light+ override below
+                                 flips to opaque editor-bg for visual hierarchy).
+     .corpus-3d-search-input    color: var(--vscode-foreground) — inherits child text.
+     .corpus-3d-search-clear    color: var(--vscode-descriptionForeground); Light+ override
+                                 (below) rebinds to HARDCODED dark tone.
+     .corpus-3d-match-count     same chrome tile pattern as .corpus-3d-search-box.
+     .corpus-3d-phase-legend    background: rgba(0,0,0,0.5); child phase names inherit
+                                 color: var(--vscode-foreground).
+     .corpus-3d-phase-swatch    4 variants by index (--0..--3) — HARDCODED per-phase
+                                 colors (`PHASE_COLORS` const). Light+ override below
+                                 rebinds phases 1-3 (cyan/orange/green) to deeper tones
+                                 that clear 3:1 UI-floor vs #FFFFFF editor-bg.
+
+   @media (prefers-color-scheme: light) override block:
+     Three sub-3:1 surfaces in Light+ (search-box / match-count / phase-legend use
+     semi-transparent black bg that composites to #808080 on Light+ editor-bg =
+     ``~1.18:1`` vs fg; phase-swatch phases 1-3 use bright tones that render
+     below 3:1 vs #FFFFFF editor-bg):
+     1. .corpus-3d-search-box / .match-count / .phase-legend
+        background: var(--vscode-editor-background, #FFFFFF) — solid opaque
+        rather than semi-transparent black. Now the chrome tile carries visual
+        hierarchy on Light+ bg AND its fg renders at ``~16:1`` vs background.
+     2. .corpus-3d-search-clear  color: Universal `var(--vscode-descriptionForeground, #505050)`
+        — TOKS-resolved dark-on-light for the secondary destructive
+        affordance vs #FFFFFF; HARDCODED #505050 retained as fallback path
+        so any theme where `--vscode-descriptionForeground` is undefined
+        (e.g. partial upstream Tokyonight-Storm) still clears 3:1.
+     3. .corpus-3d-phase-swatch--1 / --2 / --3  deeper-tone rebinds clearing 3:1.
+        Phase-0 retained (purple #ab47bc) ≈ 4.31:1 vs #FFFFFF — clears floor.
+   ============================================================================= */
+
+.corpus-3d-loading-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--vscode-foreground);
+}
+
+.corpus-3d-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--vscode-editorWidget-border, #454545);
+  border-top-color: var(--vscode-focusBorder, #007FD8);
+  border-radius: 50%;
+  animation: corpus-spin 1s linear infinite;
+}
+
+.corpus-3d-error-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  color: var(--vscode-errorForeground);
+}
+
+.corpus-3d-error-detail {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.corpus-3d-search-box {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  min-width: 220px;
+}
+
+.corpus-3d-search-icon {
+  flex-shrink: 0;
+}
+
+.corpus-3d-search-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--vscode-foreground);
+  font-size: 12px;
+  width: 100%;
+  font-family: inherit;
+}
+
+.corpus-3d-search-clear {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--vscode-descriptionForeground);
+  font-size: 14px;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.corpus-3d-match-count {
+  position: absolute;
+  top: 52px;
+  left: 12px;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--vscode-foreground);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.corpus-3d-phase-legend {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--vscode-foreground);
+}
+
+.corpus-3d-phase-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.corpus-3d-phase-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.corpus-3d-phase-swatch--0 { background: #ab47bc; }
+.corpus-3d-phase-swatch--1 { background: #4fc3f7; }
+.corpus-3d-phase-swatch--2 { background: #ff9800; }
+.corpus-3d-phase-swatch--3 { background: #4caf50; }
+
+@media (prefers-color-scheme: light) {
+  /* Cluster D-3 #1.a Light+ override: switch chrome tiles to opaque editor-bg
+     (semi-transparent black composites to #808080 on Light+ — sub-3:1 UI-floor
+     vs fg). Pin fg colors that read on the opaque editor bg (now #FFFFFF). */
+  .corpus-3d-search-box,
+  .corpus-3d-match-count,
+  .corpus-3d-phase-legend {
+    background: var(--vscode-editor-background, #FFFFFF);
+    border-color: var(--vscode-widget-border, #CECECE);
+  }
+  /* Light+ clear-button color: dark-on-light explicit (vs the muted
+     var(--vscode-descriptionForeground) #717171 which would render at
+     ``~4.46:1`` against #FFFFFF — clear but a darker tone better matches
+     the visual hierarchy where the × is "secondary destructive" affordance).
+     #505050 vs #FFFFFF ``~6.30:1``. */
+  .corpus-3d-search-clear {
+    color: var(--vscode-descriptionForeground, #505050);
+  }
+  /* Light+ phase swatch tones (1-3 sub-3:1 vs #FFFFFF; rebind to darker):
+     Phase-1 cyan:   #4fc3f7 vs #FFFFFF ``~2.36:1`` → #0e7490 vs #FFFFFF ``~6.00:1``
+     Phase-2 orange: #ff9800 vs #FFFFFF ``~2.38:1`` → #b45309 vs #FFFFFF ``~5.65:1``
+     Phase-3 green:  #4caf50 vs #FFFFFF ``~2.31:1`` → #15803D vs #FFFFFF ``~5.05:1``
+     Phase-0 purple retained (#ab47bc ``~4.31:1`` vs #FFFFFF — clears 3:1 floor). */
+  .corpus-3d-phase-swatch--1 { background: #0e7490; }
+  .corpus-3d-phase-swatch--2 { background: #b45309; }
+  .corpus-3d-phase-swatch--3 { background: #15803D; }
 }

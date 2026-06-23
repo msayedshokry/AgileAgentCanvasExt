@@ -365,6 +365,16 @@ export class AutonomyLifecycle extends EventEmitter {
       onBranch: (storyId, branchName) => this.broadcast({ type: 'gitBranch', storyId, branchName }),
       onCommit: (storyId, sha) => this.broadcast({ type: 'gitCommit', storyId, sha }),
       onPR:     (storyId, url) => this.broadcast({ type: 'gitPR', storyId, url }),
+      // P0 #3: fire gitDiff with structured diff data for in-canvas review
+      onCommitDiff: (storyId, diff) => this.broadcast({
+        type: 'gitDiff',
+        storyId,
+        sha: diff.sha,
+        message: diff.message,
+        files: diff.files,
+        diff: diff.diff,
+        timestamp: new Date().toISOString(),
+      }),
     });
 
     // 14) Cost tracker — wire log path into the output folder. Subscribe to

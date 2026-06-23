@@ -10,6 +10,9 @@ export class TerminalSessionRouter {
     private readonly post: (msg: TerminalOutbound) => void,
   ) {}
 
+  /** Expose backend capability for upstream consumers (e.g. take-over handler). */
+  get supportsInput(): boolean { return this.backend.supportsInput; }
+
   handle(msg: TerminalInbound): void {
     switch (msg.type) {
       case TERMINAL_MSG.open: {
