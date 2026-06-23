@@ -1873,6 +1873,16 @@ describe('Cluster D-3 commit 3 — post-harvest regression guards', () => {
   // the closure for use by A/B/C blocks below. NO beforeAll needed — the
   // module-level computation runs before any it() callback fires.
   const HARVEST = harvestInlineTsx();
+      // DEBUG-INSTRUMENTATION(MMQ-TEMP/CI-DIAG/2026-06-23): one-shot CI debug print.
+      // Localizes test-introspector vs audit-script divergence (L896/L909 HARVEST anchors + #fff fg tripwire).
+      // REVERT after diagnosis -- do NOT merge.
+      console.log('[DEBUG-MMQ] HARVEST filesScanned:', HARVEST.filesScanned,
+        'rows:', HARVEST.rows.length,
+        'AgenticKanbanApp.tsx:L896-substr-rows:', HARVEST.rows.filter(r => r.s.includes('AgenticKanbanApp.tsx:L896')).length,
+        'AgenticKanbanApp.tsx:L896-bg-substr-rows:', HARVEST.rows.filter(r => r.s.includes('AgenticKanbanApp.tsx:L896') && r.s.includes('background')).length,
+        'AgenticKanbanApp.tsx:L909-substr-rows:', HARVEST.rows.filter(r => r.s.includes('AgenticKanbanApp.tsx:L909')).length,
+        'AgenticKanbanApp.tsx:L909-bg-substr-rows:', HARVEST.rows.filter(r => r.s.includes('AgenticKanbanApp.tsx:L909') && r.s.includes('background')).length,
+        'rows-whose-fg-is-#fff-or-#ffffff:', HARVEST.rows.filter(r => { const v = (r.fg || '').toString().toLowerCase().trim(); return v === '#fff' || v === '#ffffff'; }).length);
 
   // ─────────────────────────────────────────────────────────────────────
   // A. Aggregate harvest guards
