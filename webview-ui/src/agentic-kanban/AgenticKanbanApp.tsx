@@ -13,6 +13,8 @@ import { AutonomyBar, type SchedulerStateMessage, type BudgetStatus, type Propos
 import { TracePanel } from './TracePanel';
 import { DiffPanel, type GitDiffMessage } from './DiffPanel';
 import { ApprovalBanner, type ApprovalRequest } from './ApprovalBanner';
+import { SafetyPanel } from './SafetyPanel';
+import { FleetDashboard } from './FleetDashboard';
 import { GoalDecomposerModal } from './GoalDecomposerModal';
 import type { TraceBreakdownMessage } from '../types';
 import './Autonomy.css';
@@ -955,7 +957,13 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
         onOpenGoalReview={() => setGoalReviewOpen(true)}
         systemicIssue={systemicIssue}
         onDismissSystemicIssue={() => setSystemicIssue(null)}
+        approvalRequest={approvalRequest}
       />
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0', padding: '0 10px', borderBottom: '1px solid var(--vscode-editorWidget-border, rgba(127,127,127,0.15))' }}>
+        <SafetyPanel />
+        <FleetDashboard />
+      </div>
 
       <TracePanel breakdown={traceBreakdown} />
 

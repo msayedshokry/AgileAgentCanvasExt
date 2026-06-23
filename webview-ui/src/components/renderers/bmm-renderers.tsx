@@ -6,6 +6,7 @@
 // ==========================================================================
 
 import { RendererProps, CollapsibleSection, Md } from './shared';
+import './renderers.css';
 
 // ==========================================================================
 // DEFINITION OF DONE DETAILS
@@ -3914,7 +3915,7 @@ export function renderTechSpecDetails(props: RendererProps) {
               <div key={i} style={{ padding: '2px 8px' }}>
                 <strong>{r.name || `Reviewer ${i + 1}`}</strong>
                 {r.role && <span style={{ opacity: 0.7 }}> ({r.role})</span>}
-                {r.status && <span className="tag" style={{ marginLeft: '4px', backgroundColor: r.status === 'approved' ? 'var(--vscode-testing-iconPassed)' : r.status === 'changes-requested' ? 'var(--vscode-errorForeground)' : undefined }}>{r.status}</span>}
+                {r.status && <span className={`tag agent-renderer-tag ${r.status === 'approved' ? 'agent-renderer-tag--success' : r.status === 'changes-requested' ? 'agent-renderer-tag--error' : ''}`} style={{ marginLeft: '4px' }}>{r.status}</span>}
               </div>
             ))
           )}
@@ -4224,7 +4225,7 @@ export function renderProjectOverviewDetails(props: RendererProps) {
           {keyFeatures.map((f: any, i: number) => (
             <div key={i} style={{ padding: '2px 8px' }}>
               <strong>{f.feature || `Feature ${i + 1}`}</strong>
-              {f.status && <span className="tag" style={{ marginLeft: '4px', backgroundColor: f.status === 'implemented' ? 'var(--vscode-testing-iconPassed)' : undefined }}>{f.status}</span>}
+              {f.status && <span className={`tag agent-renderer-tag ${f.status === 'implemented' ? 'agent-renderer-tag--success' : ''}`} style={{ marginLeft: '4px' }}>{f.status}</span>}
               {f.location && <code style={{ marginLeft: '4px', fontSize: '0.85em' }}>{f.location}</code>}
             </div>
           ))}

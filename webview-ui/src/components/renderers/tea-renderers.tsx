@@ -5,6 +5,7 @@
 // ==========================================================================
 
 import { RendererProps, CollapsibleSection, Md } from './shared';
+import './renderers.css';
 
 // ==========================================================================
 // TRACEABILITY MATRIX DETAILS
@@ -176,7 +177,7 @@ export function renderTraceabilityMatrixDetails(props: RendererProps) {
             <div style={{ marginTop: '4px' }}>
               {qualityAssessment.findings.map((f: any, i: number) => (
                 <div key={i} style={{ padding: '2px 8px' }}>
-                  <span className="tag" style={{ marginRight: '4px', backgroundColor: f.type === 'positive' ? 'var(--vscode-testing-iconPassed)' : f.type === 'issue' ? 'var(--vscode-errorForeground)' : undefined }}>{f.type}</span>
+                  <span className={`tag agent-renderer-tag ${f.type === 'positive' ? 'agent-renderer-tag--success' : f.type === 'issue' ? 'agent-renderer-tag--error' : ''}`} style={{ marginRight: '4px' }}>{f.type}</span>
                   {f.finding}
                 </div>
               ))}
@@ -200,7 +201,7 @@ export function renderTraceabilityMatrixDetails(props: RendererProps) {
             <div style={{ marginTop: '4px' }}>
               <h4>Test Execution</h4>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <span className="tag" style={{ backgroundColor: 'var(--vscode-testing-iconPassed)' }}>Passed: {gateDecision.evidenceSummary.testExecution.passed}</span>
+                <span className="tag agent-renderer-tag agent-renderer-tag--success">Passed: {gateDecision.evidenceSummary.testExecution.passed}</span>
                 {gateDecision.evidenceSummary.testExecution.failed > 0 && <span className="tag" style={{ backgroundColor: 'var(--vscode-errorForeground)' }}>Failed: {gateDecision.evidenceSummary.testExecution.failed}</span>}
                 {gateDecision.evidenceSummary.testExecution.skipped > 0 && <span className="tag">Skipped: {gateDecision.evidenceSummary.testExecution.skipped}</span>}
                 {gateDecision.evidenceSummary.testExecution.passRate != null && <span className="tag">Pass Rate: {gateDecision.evidenceSummary.testExecution.passRate}%</span>}
@@ -217,7 +218,7 @@ export function renderTraceabilityMatrixDetails(props: RendererProps) {
                 return dc ? (
                   <div key={p} style={{ padding: '2px 8px' }}>
                     <strong>{p.toUpperCase()}:</strong> {dc.actual}/{dc.required}
-                    {dc.pass != null && <span className="tag" style={{ marginLeft: '4px', backgroundColor: dc.pass ? 'var(--vscode-testing-iconPassed)' : 'var(--vscode-errorForeground)' }}>{dc.pass ? 'PASS' : 'FAIL'}</span>}
+                    {dc.pass != null && <span className={`tag agent-renderer-tag ${dc.pass ? 'agent-renderer-tag--success' : 'agent-renderer-tag--error'}`} style={{ marginLeft: '4px' }}>{dc.pass ? 'PASS' : 'FAIL'}</span>}
                   </div>
                 ) : null;
               })}
@@ -592,7 +593,7 @@ export function renderAutomationSummaryDetails(props: RendererProps) {
                   <strong>{g.area || `Gap ${i + 1}`}</strong>
                   {g.gapType && <span className="tag" style={{ marginLeft: '4px' }}>{g.gapType}</span>}
                   {g.priority && <span className="tag" style={{ marginLeft: '4px' }}>{g.priority}</span>}
-                  {g.addressed && <span className="tag" style={{ marginLeft: '4px', backgroundColor: 'var(--vscode-testing-iconPassed)' }}>addressed</span>}
+                  {g.addressed && <span className="tag agent-renderer-tag agent-renderer-tag--success" style={{ marginLeft: '4px' }}>addressed</span>}
                 </div>
               ))}
             </>
@@ -689,7 +690,7 @@ export function renderAutomationSummaryDetails(props: RendererProps) {
         <CollapsibleSection title="Execution Results" sectionId="as-results">
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <span className="tag">Total: {executionResults.totalTests}</span>
-            {executionResults.passed != null && <span className="tag" style={{ backgroundColor: 'var(--vscode-testing-iconPassed)' }}>Passed: {executionResults.passed}</span>}
+            {executionResults.passed != null && <span className="tag agent-renderer-tag agent-renderer-tag--success">Passed: {executionResults.passed}</span>}
             {executionResults.failed != null && executionResults.failed > 0 && <span className="tag" style={{ backgroundColor: 'var(--vscode-errorForeground)' }}>Failed: {executionResults.failed}</span>}
             {executionResults.skipped != null && executionResults.skipped > 0 && <span className="tag">Skipped: {executionResults.skipped}</span>}
             {executionResults.duration && <span className="tag">{executionResults.duration}</span>}
@@ -834,7 +835,7 @@ export function renderAtddChecklistDetails(props: RendererProps) {
       {/* Completion Status */}
       {completion.status && (
         <div style={{ padding: '4px 8px', marginBottom: '4px', display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <span className="tag" style={{ backgroundColor: completion.status === 'complete' ? 'var(--vscode-testing-iconPassed)' : completion.status === 'blocked' ? 'var(--vscode-errorForeground)' : undefined }}>{completion.status}</span>
+          <span className={`tag agent-renderer-tag ${completion.status === 'complete' ? 'agent-renderer-tag--success' : completion.status === 'blocked' ? 'agent-renderer-tag--error' : ''}`}>{completion.status}</span>
           {completion.percentComplete != null && <span>{completion.percentComplete}%</span>}
           {completion.blockers?.length > 0 && <span style={{ color: 'var(--vscode-errorForeground)' }}>Blockers: {completion.blockers.length}</span>}
         </div>
@@ -920,7 +921,7 @@ export function renderAtddChecklistDetails(props: RendererProps) {
       {/* Red-Green-Refactor Workflow */}
       {rgr.iterations?.length > 0 && (
         <CollapsibleSection title="Red-Green-Refactor" count={rgr.iterations.length} sectionId="atdd-rgr">
-          {rgr.currentPhase && <div><strong>Current Phase:</strong> <span className="tag" style={{ backgroundColor: rgr.currentPhase === 'red' ? 'var(--vscode-errorForeground)' : rgr.currentPhase === 'green' ? 'var(--vscode-testing-iconPassed)' : undefined }}>{rgr.currentPhase}</span></div>}
+          {rgr.currentPhase && <div><strong>Current Phase:</strong> <span className={`tag agent-renderer-tag ${rgr.currentPhase === 'red' ? 'agent-renderer-tag--error' : rgr.currentPhase === 'green' ? 'agent-renderer-tag--success' : ''}`}>{rgr.currentPhase}</span></div>}
           {rgr.iterations.map((it: any, i: number) => (
             <CollapsibleSection key={i} title={`Iteration ${it.iteration || i + 1}: ${it.targetAC || ''}`} sectionId={`atdd-rgr-${i}`}>
               {it.red && (
@@ -963,7 +964,7 @@ export function renderAtddChecklistDetails(props: RendererProps) {
         <CollapsibleSection title="Test Execution Evidence" sectionId="atdd-evidence">
           {testEvidence.lastRun && <div style={{ opacity: 0.7 }}>Last run: {testEvidence.lastRun}</div>}
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
-            {testEvidence.results.passed != null && <span className="tag" style={{ backgroundColor: 'var(--vscode-testing-iconPassed)' }}>Passed: {testEvidence.results.passed}</span>}
+            {testEvidence.results.passed != null && <span className="tag agent-renderer-tag agent-renderer-tag--success">Passed: {testEvidence.results.passed}</span>}
             {testEvidence.results.failed != null && testEvidence.results.failed > 0 && <span className="tag" style={{ backgroundColor: 'var(--vscode-errorForeground)' }}>Failed: {testEvidence.results.failed}</span>}
             {testEvidence.results.skipped != null && testEvidence.results.skipped > 0 && <span className="tag">Skipped: {testEvidence.results.skipped}</span>}
             {testEvidence.results.totalDuration && <span className="tag">{testEvidence.results.totalDuration}</span>}
@@ -1016,7 +1017,7 @@ export function renderAtddChecklistDetails(props: RendererProps) {
             <div key={i} style={{ padding: '2px 8px' }}>
               <code>{tid.testId}</code>
               {tid.element && <span className="tag" style={{ marginLeft: '4px' }}>{tid.element}</span>}
-              {tid.status && <span className="tag" style={{ marginLeft: '4px', backgroundColor: tid.status === 'verified' ? 'var(--vscode-testing-iconPassed)' : undefined }}>{tid.status}</span>}
+              {tid.status && <span className={`tag agent-renderer-tag ${tid.status === 'verified' ? 'agent-renderer-tag--success' : ''}`} style={{ marginLeft: '4px' }}>{tid.status}</span>}
               {tid.purpose && <div style={{ opacity: 0.7, fontSize: '0.85em' }}>{tid.purpose}</div>}
             </div>
           ))}

@@ -7,6 +7,7 @@
  * All renderers support both read and edit modes.
  */
 import { RendererProps, Md, CollapsibleSection } from './shared';
+import './renderers.css';
 
 // ==========================================================================
 // TEST DESIGN DETAILS (handles epic-level, QA, and architecture variants)
@@ -3065,8 +3066,8 @@ export function renderTestCoverageDetails(props: RendererProps) {
           <>
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '8px' }}>
               <span className="tag">{totalCount} total</span>
-              <span className="tag" style={{ background: 'var(--vscode-testing-iconPassed, #4caf50)', color: '#fff' }}>{passCount} pass</span>
-              <span className="tag" style={{ background: 'var(--vscode-testing-iconFailed, #f44336)', color: '#fff' }}>{failCount} fail</span>
+              <span className="tag agent-renderer-tag agent-renderer-tag--success">{passCount} pass</span>
+              <span className="tag agent-renderer-tag agent-renderer-tag--error">{failCount} fail</span>
               <span className="tag">{draftCount} draft</span>
             </div>
             <p><strong>Pass Rate:</strong> {pct}%</p>
@@ -3147,7 +3148,7 @@ export function renderTestCoverageDetails(props: RendererProps) {
                   </div>
                 ) : (
                   <>
-                    <p><strong>Status:</strong> <span className="tag" style={{ background: statusColor, color: '#fff' }}>{tcStatus}</span></p>
+                    <p><strong>Status:</strong> <span className="tag agent-renderer-tag" style={{ background: statusColor }}>{tcStatus}</span></p>
                     {tc.type && <p><strong>Type:</strong> <span className="tag">{tc.type}</span></p>}
                     {tc.priority && <p><strong>Priority:</strong> <span className="tag">{tc.priority}</span></p>}
                     {tc.description && (
