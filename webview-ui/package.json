@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "prebuild": "node -e \"require('fs').mkdirSync(require('path').join('public','3d-force-graph'),{recursive:true});require('fs').cpSync(require('path').join('node_modules','3d-force-graph','dist','3d-force-graph.min.js'),require('path').join('public','3d-force-graph','3d-force-graph.min.js'));\"",
+    "prebuild": "node -e \"const fs=require('fs'),path=require('path');fs.mkdirSync(path.join('public','3d-force-graph'),{recursive:true});fs.cpSync(path.join(path.dirname(require.resolve('3d-force-graph')),'3d-force-graph.min.js'),path.join('public','3d-force-graph','3d-force-graph.min.js'));\"",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
