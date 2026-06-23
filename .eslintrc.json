@@ -8,6 +8,22 @@
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended"
   ],
+  "rules": {
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": [
+              "../webview-ui/src/**",
+              "../../webview-ui/src/**"
+            ],
+            "message": "Cross-package relative-path imports from webview-ui/src/ are forbidden. They bypass the `exports` gate declared in webview-ui/package.json (Node only enforces exports for by-name imports, not relative paths). Use the by-name workspace import 'bmad-canvas-webview/<subpath>' instead (see the `exports` field in webview-ui/package.json for allowed subpaths)."
+          }
+        ]
+      }
+    ]
+  },
   "overrides": [
     {
       "files": ["features/step_definitions/*.steps.ts"],
