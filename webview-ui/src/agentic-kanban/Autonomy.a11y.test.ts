@@ -2018,19 +2018,19 @@ describe('Cluster D-3 commit 3 — post-harvest regression guards', () => {
       { relPath: 'App.tsx', lineno: 52, key: 'color', rail: 'fg',
         expectedValueRegex: /var\(--vscode-errorForeground/,
         note: 'theme-aware red error text (error-boundary-fallback)' },
-      // AgenticKanbanApp.tsx:L896 — input field bg rail.
-      { relPath: 'agentic-kanban/AgenticKanbanApp.tsx', lineno: 896, key: 'background', rail: 'bg',
+      // AgenticKanbanApp.tsx:L894 — input field bg rail.
+      { relPath: 'agentic-kanban/AgenticKanbanApp.tsx', lineno: 894, key: 'background', rail: 'bg',
         expectedValueRegex: /var\(--vscode-input-background/,
         note: 'theme-aware input field background' },
       // bmm-renderers.tsx:L95 — BMAD-method renderer badge bg.
             // (Anchor tuple for (Corpus3DView.tsx, L370, borderTopColor) REMOVED in Cluster D-3 #1.a -- inline style migrated to className ref `.corpus-3d-spinner`; the SHAPE-spinner-borderTop-tokenized + reversal-lock tests in Cluster-D3-1a own the regression-tripwire going forward.) --
-      // AgenticKanbanApp.tsx:L909 — toolbar toggle button bg.
+      // AgenticKanbanApp.tsx:L907 — toolbar toggle button bg.
       // Currently `'transparent'` (HARDCODED literal). The contract also
       // accepts `var(--vscode-*)` theme tokens so a future migration to
       // theme-aware chrome passes without breaking this lock. Pure HARDCODED
       // hex (e.g. `#000`, `#fff`) does NOT match — the audit matrix
       // surfaces that as a regression candidate for follow-up tokenization.
-      { relPath: 'agentic-kanban/AgenticKanbanApp.tsx', lineno: 909, key: 'background', rail: 'bg',
+      { relPath: 'agentic-kanban/AgenticKanbanApp.tsx', lineno: 907, key: 'background', rail: 'bg',
         expectedValueRegex: /^transparent$|^var\(--vscode-/,
         note: 'transparent (current) or theme token (future migration); HARDCODED hex swap fails this guard' },
     ];
