@@ -49,6 +49,23 @@
   flex-shrink: 0;
 }
 
+/* Light+ override — the ansiYellow token resolves to `#915E1D` (a dark
+   yellow-brown) in Light+ and renders against the lighter `#B4B4B4`
+   badge-bg, dropping to ~2.65:1 (sub-3:1 WCAG 1.4.11 UI-component floor).
+   The override swaps the chip fg to `--vscode-foreground` which resolves
+   to `#1F1F1F` in Light+ (≈ 7.16:1 vs the chip badge-bg; clears AA-text
+   and 3:1 UI-floor comfortably). Dark+ and HC-Dark keep the upstream
+   `#E5C07B` yellow which clears 4.5:1 vs the dark `#4D4D4D` / unset
+   badge-bg token there.
+
+   Locked by `Autonomy.a11y.test.ts` (SHAPE-diff-panel-sha-light-override)
+   and the cross-theme contrast assertion. */
+@media (prefers-color-scheme: light) {
+  .diff-panel-sha {
+    color: var(--vscode-foreground, #1F1F1F);
+  }
+}
+
 .diff-panel-message {
   font-size: 12px;
   font-weight: 600;
