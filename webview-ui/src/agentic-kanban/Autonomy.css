@@ -22,6 +22,222 @@
 
 /* ── P1 #6: Continuous Mode toggle + display state ──────────────────────── */
 
+/* ── P1 #7: "Needs you" inbox badge + dropdown ─────────────────────────── */
+
+.autonomy-bar-group--inbox {
+  position: relative;
+}
+
+/* Inbox button — pill with bell icon, count badge, and chevron */
+.autonomy-inbox-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  background: var(--vscode-badge-background, rgba(127, 127, 127, 0.2));
+  color: var(--vscode-foreground);
+  border: 1px solid var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.25));
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  position: relative;
+}
+
+.autonomy-inbox-btn:hover {
+  background: var(--vscode-list-hoverBackground, rgba(127, 127, 127, 0.2));
+  border-color: var(--vscode-focusBorder, #007acc);
+}
+
+.autonomy-inbox-btn--open {
+  background: var(--vscode-list-activeSelectionBackground, rgba(0, 122, 204, 0.15));
+  border-color: var(--vscode-focusBorder, #007acc);
+}
+
+.autonomy-inbox-btn--critical {
+  border-color: var(--vscode-charts-orange, #f59e0b);
+  animation: inbox-pulse 2s ease-in-out infinite;
+}
+
+@keyframes inbox-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--vscode-pulse-halo-amber, rgba(245, 158, 11, 0.4)); }
+  50% { box-shadow: 0 0 0 3px var(--vscode-pulse-halo-amber-transparent, rgba(245, 158, 11, 0)); }
+}
+
+.autonomy-inbox-icon { font-size: 14px; line-height: 1; }
+
+/* Count badge — red when critical, muted otherwise */
+.autonomy-inbox-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  padding: 0 5px;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--vscode-badge-background, rgba(127, 127, 127, 0.35));
+  color: var(--vscode-badge-foreground, white);
+  line-height: 1;
+}
+
+.autonomy-inbox-badge--critical {
+  background: var(--vscode-errorForeground, #ef4444);
+  color: white;
+}
+
+.autonomy-inbox-label {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.autonomy-inbox-chevron {
+  font-size: 9px;
+  color: var(--vscode-descriptionForeground);
+  transition: transform 0.15s;
+}
+
+/* ── Dropdown popover ── */
+
+.autonomy-inbox-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 6px;
+  min-width: 320px;
+  max-width: 420px;
+  background: var(--vscode-menu-background, var(--vscode-editor-background));
+  border: 1px solid var(--vscode-menu-border, var(--vscode-editorWidget-border));
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  z-index: 300;
+  max-height: 60vh;
+  overflow-y: auto;
+  animation: inbox-dropdown-in 0.18s ease-out;
+}
+
+@keyframes inbox-dropdown-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Empty state ── */
+
+.autonomy-inbox-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 14px;
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+  font-style: italic;
+}
+
+.autonomy-inbox-empty-icon { font-size: 16px; }
+
+/* ── Inbox items ── */
+
+.autonomy-inbox-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.1));
+  cursor: default;
+  transition: background 0.1s;
+}
+
+.autonomy-inbox-item:last-of-type {
+  border-bottom: none;
+}
+
+.autonomy-inbox-item:hover {
+  background: var(--vscode-list-hoverBackground, rgba(127, 127, 127, 0.1));
+}
+
+/* Severity color accents */
+.inbox-item--critical {
+  border-left: 3px solid var(--vscode-errorForeground, #ef4444);
+}
+
+.inbox-item--warning {
+  border-left: 3px solid var(--vscode-charts-orange, #f59e0b);
+}
+
+.inbox-item--info {
+  border-left: 3px solid var(--vscode-charts-blue, #6366f1);
+}
+
+.autonomy-inbox-item-icon {
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.autonomy-inbox-item-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.autonomy-inbox-item-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  line-height: 1.3;
+}
+
+.autonomy-inbox-item-detail {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  margin-top: 2px;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.autonomy-inbox-item-artifact {
+  font-size: 10px;
+  font-family: var(--vscode-editor-font-family, monospace);
+  color: var(--vscode-textLink-foreground, #3794ff);
+  background: var(--vscode-badge-background, rgba(127, 127, 127, 0.15));
+  padding: 1px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ── Footer ── */
+
+.autonomy-inbox-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 6px 14px;
+  border-top: 1px solid var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.15));
+  background: var(--vscode-editorGroupHeader-tabsBackground, rgba(127, 127, 127, 0.05));
+}
+
+.autonomy-inbox-footer-btn {
+  background: transparent;
+  border: none;
+  color: var(--vscode-textLink-foreground, #3794ff);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: inherit;
+}
+
+.autonomy-inbox-footer-btn:hover {
+  background: var(--vscode-list-hoverBackground, rgba(127, 127, 127, 0.15));
+}
+
+/* ── P1 #6: Continuous Mode toggle + display state (continued) ─────────── */
+
 .autonomy-bar-group--continuous {
   border-right: 1px solid var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.15));
 }
@@ -95,6 +311,16 @@
   width: 0;
   height: 0;
   pointer-events: none;
+}
+
+/* Focus ring on the visual switch when the hidden checkbox has focus.
+   Keyboard users tabbing to the toggle will see a clear focus indicator
+   on the switch pill — :focus-within fires when any child (the checkbox)
+   receives focus, and the browser's :focus-visible heuristics ensure the
+   ring only appears for keyboard navigation, not mouse clicks. */
+.autonomy-continuous-toggle:focus-within .autonomy-continuous-switch {
+  outline: 2px solid var(--vscode-focusBorder, #007acc);
+  outline-offset: 2px;
 }
 
 /* Display state label — color-coded pill */
@@ -521,6 +747,963 @@
   50% { opacity: 0.65; }
 }
 
+/* ─── P2 #8: Fleet dashboard ─────────────────────────────────────────────── */
+
+.fleet-dashboard {
+  position: relative;
+  display: inline-flex;
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.fleet-dashboard-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  background: var(--vscode-badge-background, rgba(127, 127, 127, 0.2));
+  color: var(--vscode-foreground);
+  border: 1px solid var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.25));
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.fleet-dashboard-toggle:hover {
+  background: var(--vscode-list-hoverBackground, rgba(127, 127, 127, 0.2));
+  border-color: var(--vscode-focusBorder, #007acc);
+}
+
+.fleet-dashboard-icon { font-size: 14px; line-height: 1; }
+.fleet-dashboard-title {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  font-weight: 600;
+}
+.fleet-dashboard-count {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--vscode-charts-green, #22c55e);
+}
+.fleet-dashboard-warn {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--vscode-errorForeground, #ef4444);
+}
+.fleet-dashboard-chevron {
+  font-size: 9px;
+  color: var(--vscode-descriptionForeground);
+}
+
+/* ── Agent rows (appear below the toggle in same pill-width layout) ── */
+
+.fleet-dashboard-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+  padding: 4px 6px;
+  background: var(--vscode-menu-background, var(--vscode-editor-background));
+  border: 1px solid var(--vscode-menu-border, var(--vscode-editorWidget-border));
+  border-radius: 8px;
+  min-width: 340px;
+  max-width: 500px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  animation: fleet-rows-in 0.15s ease-out;
+}
+
+@keyframes fleet-rows-in {
+  from { opacity: 0; transform: translateY(-2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fleet-agent-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: var(--vscode-badge-background, rgba(127, 127, 127, 0.06));
+  transition: background 0.1s;
+}
+
+.fleet-agent-row:hover {
+  background: var(--vscode-list-hoverBackground, rgba(127, 127, 127, 0.12));
+}
+
+/* ── Health dot ── */
+
+.fleet-health-dot {
+  font-size: 12px;
+  line-height: 1;
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+}
+
+.fleet-health--healthy  { color: var(--vscode-charts-green, #22c55e); }
+.fleet-health--degraded { color: var(--vscode-charts-orange, #f59e0b); }
+.fleet-health--dead     { color: var(--vscode-errorForeground, #ef4444); animation: fleet-health-pulse 1.5s ease-in-out infinite; transform-origin: center; }
+.fleet-health--unknown  { color: var(--vscode-descriptionForeground); }
+
+/* fleet-health--dead pulse: previously animated `opacity 1.0 → 0.4 → 1.0`,
+   which faded the icon's effective luminosity toward the row bg. In
+   Light+ (`errorForeground` resolves to #CE5017, row bg to #B4B4B4),
+   the mid-cycle effective contrast dropped to ~2.37:1 — sub-3:1
+   UI-component floor — making the dead-severity pip momentarily
+   indistinguishable from the healthy/degraded pips every 1.5s.
+   Switched to a transform-based scale pulse (icon grows + shrinks)
+   so opacity stays at 1.0 the entire cycle and contrast against the
+   row background never decreases. Locked by
+   `Autonomy.a11y.test.ts` (PIN-fleet-dead-pulse-keyframes). */
+@keyframes fleet-health-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.25); }
+}
+
+/* Motion-sensitive users: disable the pip's heartbeat under
+   prefers-reduced-motion. Without this, the (more visually salient)
+   scale pulse repeats every 1.5s indefinitely, which is a vestibular
+   hazard. Locked by Autonomy.a11y.test.ts (P0/B-reduced-motion). */
+@media (prefers-reduced-motion: reduce) {
+  .fleet-health--dead { animation: none; }
+  .autonomy-bar-systemic--critical { animation: none; }
+}
+
+/* ── Role / workflow ── */
+
+.fleet-agent-role {
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  white-space: nowrap;
+  min-width: 50px;
+}
+
+.fleet-agent-workflow {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--vscode-badge-background, rgba(127, 127, 127, 0.2));
+  color: var(--vscode-descriptionForeground);
+}
+
+.fleet-agent-artifact {
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 10px;
+  color: var(--vscode-textLink-foreground, #3794ff);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fleet-agent-elapsed {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+  font-family: var(--vscode-editor-font-family, monospace);
+  white-space: nowrap;
+}
+
+.fleet-agent-cost {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--vscode-charts-blue, #6366f1);
+  font-family: var(--vscode-editor-font-family, monospace);
+  white-space: nowrap;
+}
+
+.fleet-agent-toolcalls {
+  font-size: 9px;
+  color: var(--vscode-descriptionForeground);
+  white-space: nowrap;
+}
+
+.fleet-agent-iteration {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--vscode-descriptionForeground);
+  font-family: var(--vscode-editor-font-family, monospace);
+  white-space: nowrap;
+}
+
+.fleet-agent-burn {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--vscode-charts-green, #22c55e);
+  white-space: nowrap;
+}
+
+/* ─── P1 #10: Safety & governance panel ─────────────────────────────────── */
+
+.safety-panel {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.safety-panel-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  background: var(--vscode-badge-background, rgba(127, 127, 127, 0.2));
+  color: var(--vscode-foreground);
+  border: 1px solid var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.25));
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.safety-panel-btn:hover {
+  background: var(--vscode-list-hoverBackground, rgba(127, 127, 127, 0.2));
+  border-color: var(--vscode-focusBorder, #007acc);
+}
+
+.safety-panel-btn--open {
+  background: var(--vscode-list-activeSelectionBackground, rgba(0, 122, 204, 0.15));
+  border-color: var(--vscode-focusBorder, #007acc);
+}
+
+.safety-panel-btn--danger {
+  border-color: var(--vscode-errorForeground, #ef4444);
+  animation: safety-pulse 2s ease-in-out infinite;
+}
+
+@keyframes safety-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--vscode-pulse-halo-red, rgba(239, 68, 68, 0.4)); }
+  50% { box-shadow: 0 0 0 3px var(--vscode-pulse-halo-red-transparent, rgba(239, 68, 68, 0)); }
+}
+
+.safety-panel-icon { font-size: 14px; line-height: 1; }
+.safety-panel-label {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+.safety-panel-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  padding: 0 5px;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--vscode-errorForeground, #ef4444);
+  color: white;
+  line-height: 1;
+}
+.safety-panel-chevron {
+  font-size: 9px;
+  color: var(--vscode-descriptionForeground);
+  transition: transform 0.15s;
+}
+
+/* ── Dropdown popover ── */
+
+.safety-panel-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 6px;
+  min-width: 380px;
+  max-width: 500px;
+  background: var(--vscode-menu-background, var(--vscode-editor-background));
+  border: 1px solid var(--vscode-menu-border, var(--vscode-editorWidget-border));
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  z-index: 300;
+  max-height: 70vh;
+  overflow-y: auto;
+  animation: safety-dropdown-in 0.18s ease-out;
+}
+
+@keyframes safety-dropdown-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Sections ── */
+
+.safety-section {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.12));
+}
+.safety-section:last-of-type {
+  border-bottom: none;
+}
+.safety-section--kill {
+  background: var(--vscode-editorGroupHeader-tabsBackground, rgba(127, 127, 127, 0.05));
+  padding: 10px 14px;
+}
+
+.safety-section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.safety-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--vscode-foreground);
+}
+.safety-section-meta {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.safety-empty {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  font-style: italic;
+  padding: 4px 0;
+}
+
+/* ── Circuit list ── */
+
+.safety-circuit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.safety-circuit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: var(--vscode-badge-background, rgba(127, 127, 127, 0.08));
+  border-left: 3px solid var(--vscode-charts-green, #22c55e);
+  transition: background 0.1s;
+}
+
+.safety-circuit--closed {
+  border-left-color: var(--vscode-charts-green, #22c55e);
+}
+
+.safety-circuit--open {
+  border-left-color: var(--vscode-errorForeground, #ef4444);
+  background: var(--vscode-inputValidation-errorBackground, rgba(255, 0, 0, 0.06));
+}
+
+.safety-circuit--half-open {
+  border-left-color: var(--vscode-charts-orange, #f59e0b);
+  background: var(--vscode-inputValidation-warningBackground, rgba(255, 150, 0, 0.06));
+}
+
+.safety-circuit-state {
+  font-weight: 600;
+  white-space: nowrap;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 10px;
+}
+
+.safety-circuit-id {
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 10px;
+  color: var(--vscode-textLink-foreground, #3794ff);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.safety-circuit-failures {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--vscode-descriptionForeground);
+  background: var(--vscode-badge-background, rgba(127, 127, 127, 0.2));
+  border-radius: 8px;
+  padding: 0 5px;
+  white-space: nowrap;
+}
+
+.safety-circuit--open .safety-circuit-failures {
+  color: var(--vscode-errorForeground, #ef4444);
+  font-weight: 700;
+}
+
+.safety-circuit-reason {
+  font-size: 9px;
+  color: var(--vscode-descriptionForeground);
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+.safety-circuit-time {
+  font-size: 9px;
+  color: var(--vscode-descriptionForeground);
+  font-family: var(--vscode-editor-font-family, monospace);
+  white-space: nowrap;
+}
+
+.safety-circuit-reset-btn {
+  background: transparent;
+  border: 1px solid var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.3));
+  color: var(--vscode-textLink-foreground, #3794ff);
+  cursor: pointer;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.safety-circuit-reset-btn:hover {
+  background: var(--vscode-list-hoverBackground, rgba(127, 127, 127, 0.15));
+  border-color: var(--vscode-focusBorder, #007acc);
+}
+
+/* ── Policy list ── */
+
+.safety-policy-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.safety-policy {
+  padding: 8px 10px;
+  border-radius: 4px;
+  background: var(--vscode-badge-background, rgba(127, 127, 127, 0.08));
+  border: 1px solid var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.12));
+  transition: background 0.1s;
+}
+
+.safety-policy:hover {
+  background: var(--vscode-list-hoverBackground, rgba(127, 127, 127, 0.1));
+}
+
+.safety-policy-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.safety-policy-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: white;
+}
+
+.safety-policy-badge--blocking {
+  background: var(--vscode-errorForeground, #ef4444);
+}
+
+.safety-policy-badge--advisory {
+  background: var(--vscode-charts-orange, #f59e0b);
+}
+
+.safety-policy-type {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--vscode-descriptionForeground);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.safety-policy-artifactType {
+  font-size: 9px;
+  font-family: var(--vscode-editor-font-family, monospace);
+  color: var(--vscode-descriptionForeground);
+  background: var(--vscode-badge-background, rgba(127, 127, 127, 0.15));
+  border-radius: 3px;
+  padding: 0 4px;
+}
+
+.safety-policy-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  line-height: 1.3;
+}
+
+.safety-policy-desc {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+/* ── Recent Blocks (blocked by policy X) ── */
+
+.safety-blocks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.safety-block {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: var(--vscode-inputValidation-errorBackground, rgba(255, 0, 0, 0.06));
+  border-left: 3px solid var(--vscode-errorForeground, #ef4444);
+  transition: background 0.1s;
+}
+
+.safety-block:hover {
+  background: var(--vscode-inputValidation-errorBackground, rgba(255, 0, 0, 0.12));
+}
+
+.safety-block-artifact {
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--vscode-textLink-foreground, #3794ff);
+  background: var(--vscode-badge-background, rgba(127, 127, 127, 0.15));
+  border-radius: 3px;
+  padding: 0 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Artifact-type chip — sits inline next to artifactId so the user can
+   distinguish a story-block from an epic-block when they share an id
+   space. Rendered only when the IPC payload actually carries
+   artifactType (older extension builds that omit it produce no badge).
+
+   Base styles are intentionally muted so the per-type modifier classes
+   (.safety-block-type--story, --epic, --task) can layer on top with
+   the strong color tinting. Unrecognised `artifactType` values produce
+   NO `--<variant>` modifier class — the chip falls back to the base
+   style alone, so the type-system gap is visible in the DOM (type
+   contract + CSS contract + DOM contract all agree) rather than
+   silently inventing a `--unknown` CSS class with no compile-time
+   warrant. */
+.safety-block-type {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  font-family: var(--vscode-editor-font-family, monospace);
+  color: var(--vscode-descriptionForeground);
+  background: var(--vscode-badge-background, rgba(127, 127, 127, 0.1));
+  border: 1px solid transparent;
+  border-left: 3px solid var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.35));
+  border-radius: 3px;
+  padding: 1px 6px 1px 5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-transform: lowercase;
+  letter-spacing: 0.3px;
+}
+
+/* Per-type color modifiers — driven by `ARTIFACT_TYPE_VARIANTS` (a
+   `const` `Record`-literal in SafetyPanel.tsx whose `keyof` is the
+   source of truth for the literal-union type and the JSX
+   modifier-class lookup). The keyset is exhaustive across the BMAD
+   schema catalogue (~50 kebab-case + camelCase canonical forms);
+   the CSS below groups these into 8 semantic color buckets so
+   the rendered palette stays bounded even as new artifact types
+   are added. Each bucket rule uses comma-separated selectors so
+   all variants in a bucket share exactly one rule — no per-variant
+   duplication. Keep each palette tonal (single saturated hue +
+   matching faint background tint) so rows read as the SAME element
+   type, just with a different color cue.
+
+   =====================================================================
+   PROPOSED `--vscode-charts-*` TOKEN EXTENSIONS
+   =====================================================================
+   VS Code's stable token catalog currently includes --vscode-charts-blue,
+   -green, -yellow, -orange, -purple, -red. Three bucket hues (indigo,
+   cyan, pink) used by the chip palette have no canonical token, so this
+   stylesheet proposes the natural extensions:      `--vscode-charts-indigo`  — Architecture/administration documents
+      `--vscode-charts-cyan`    — Ops/research/sprint-tracking
+      `--vscode-charts-pink`    — Design/CIS/innovation modules
+
+    IMPORTANT — upstream-precedent notice: VS Code ships a `--vscode-charts-*`
+    palette (`--vscode-charts-blue`, `green`, `orange`, `purple`, `red`,
+    `yellow`) but NOT `indigo`, `cyan`, or `pink`. The three tokens above are
+    a NOVEL PROPOSAL introduced by this extension to fill the indigo/cyan/pink
+    chip semantics that the upstream palette does not cover. In production
+    today, the fallback hex in each `var(--vscode-charts-X, #fb)` always
+    applies because no built-in VS Code theme defines these tokens. Theme
+    authors who want finer-grained per-theme resolution can declare
+    `--vscode-charts-{indigo,cyan,pink}` on their theme to override both the
+    fallback and our media-query blocks (more specific media-query selector
+    wins specificity). The 4 blue/green/purple/yellow/red chips below use the
+    upstream names verbatim and resolve correctly in built-in themes.
+
+    RECOMMENDED TOKEN RESOLUTIONS (per-theme, to clear WCAG 3:1 UI-floor
+    against the chip's own alpha-tinted background):
+
+      Token           Dark+                  Light+                 HC-Dark
+      ------------    ------------------    -------------------    ---------------
+      indigo          `#818cf8` (lighter)    `#4f46e5` (current)    `#818cf8` (lighter)
+      cyan            `#0891b2` (current)    `#0e7490` (darker)     `#22d3ee` (lighter)
+      pink            `#f472b6` (lighter)    `#db2777` (current)    `#f472b6` (lighter)
+
+    The fallback hex in each `var(--vscode-charts-X, #fb)` is the Cross-Theme
+    Universal hex — works in 2 of 3 themes, with the media-query blocks
+    below overriding the chip color when `prefers-color-scheme: light` or
+    `prefers-color-scheme: dark` matches, defending against users with no
+    theme-defined `--vscode-charts-{indigo,cyan,pink}` token.
+
+   Locked by `Autonomy.a11y.test.ts` — shape guards assert
+   `var(--vscode-charts-{indigo,cyan,pink}, #fb)` form on each rule;
+   per-theme contrast guards assert ≥ 3:1 UI-floor for chip fg vs the
+   chip's own alpha-blended tinted bg in Dark+/Light+/HC-Dark.
+
+   NOTE: there is intentionally NO `.safety-block-type--unknown` rule —
+   unmapped artifactType values produce no modifier class. */
+
+/* ── Stories + work breakdown (blue) ─── */
+.safety-block-type--story, .safety-block-type--requirement,
+.safety-block-type--use-case, .safety-block-type--use-cases,
+.safety-block-type--additional-req, .safety-block-type--nfr-assessment {
+  color: var(--vscode-charts-blue, #6366f1);
+  background: rgba(99, 102, 241, 0.12);
+  border-left-color: var(--vscode-charts-blue, #6366f1);
+}
+
+/* ── Tasks (green) ─── */
+.safety-block-type--task {
+  color: var(--vscode-charts-green, #22c55e);
+  background: rgba(34, 197, 94, 0.12);
+  border-left-color: var(--vscode-charts-green, #22c55e);
+}
+
+/* ── Epics + planning (purple) ─── */
+.safety-block-type--epic, .safety-block-type--epics,
+.safety-block-type--vision, .safety-block-type--prd,
+.safety-block-type--product-brief, .safety-block-type--project-overview,
+.safety-block-type--project-context, .safety-block-type--requirements,
+.safety-block-type--readiness-report, .safety-block-type--fit-criteria,
+.safety-block-type--success-metrics {
+  color: var(--vscode-charts-purple, #8b5cf6);
+  background: rgba(139, 92, 246, 0.12);
+  border-left-color: var(--vscode-charts-purple, #8b5cf6);
+}
+
+/* ── Architecture (indigo) ─── */
+.safety-block-type--architecture, .safety-block-type--tech-spec,
+.safety-block-type--change-proposal, .safety-block-type--retrospective,
+.safety-block-type--code-review, .safety-block-type--source-tree {
+  color: var(--vscode-charts-indigo, #4f46e5);
+  background: rgba(79, 70, 229, 0.12);
+  border-left-color: var(--vscode-charts-indigo, #4f46e5);
+}
+/* Indigo chip falls below 3:1 vs its own alpha-tinted bg on Dark+ editor
+   (#1E1E1E) because the base #4f46e5 has too low luminance. Override at
+   Dark-preferring-CSS-scheme to lift the chip fg/border toward #818cf8
+   (Tailwind Indigo-400) which clears 3:1 comfortably. */
+@media (prefers-color-scheme: dark) {
+  .safety-block-type--architecture, .safety-block-type--tech-spec,
+  .safety-block-type--change-proposal, .safety-block-type--retrospective,
+  .safety-block-type--code-review, .safety-block-type--source-tree {
+    color: #818cf8;
+    background: rgba(129, 140, 248, 0.16);
+    border-left-color: #818cf8;
+  }
+}
+
+/* ── Test / verification (yellow) ─── */
+.safety-block-type--test-case, .safety-block-type--test-cases,
+.safety-block-type--test-strategy, .safety-block-type--test-design,
+.safety-block-type--test-design-qa, .safety-block-type--test-design-architecture,
+.safety-block-type--test-summary, .safety-block-type--test-coverage,
+.safety-block-type--test-review, .safety-block-type--atdd-checklist,
+.safety-block-type--traceability-matrix, .safety-block-type--test-framework,
+.safety-block-type--ci-pipeline, .safety-block-type--automation-summary,
+.safety-block-type--epic-test-strategy {
+  color: var(--vscode-charts-yellow, #ca8a04);
+  background: rgba(202, 138, 4, 0.12);
+  border-left-color: var(--vscode-charts-yellow, #ca8a04);
+}
+
+/* ── Risk / quality gate (red — semantic to errorForeground) ─── */
+.safety-block-type--risk, .safety-block-type--risks,
+.safety-block-type--definition-of-done {
+  color: var(--vscode-errorForeground, #ef4444);
+  background: rgba(239, 68, 68, 0.12);
+  border-left-color: var(--vscode-errorForeground, #ef4444);
+}
+
+/* ── Ops + research (cyan) ─── */
+.safety-block-type--sprint-status, .safety-block-type--sprint,
+.safety-block-type--research {
+  color: var(--vscode-charts-cyan, #0891b2);
+  background: rgba(8, 145, 178, 0.12);
+  border-left-color: var(--vscode-charts-cyan, #0891b2);
+}
+/* Cyan chip drops to ~2.9:1 vs its own alpha-tinted bg on Light+ editor
+   (#FFFFFF) — the base #0891b2 has too high luminance against a
+   white-blended tint. Override at Light+ to darken toward #0e7490
+   (Tailwind Cyan-700) which clears 3:1 comfortably. */
+@media (prefers-color-scheme: light) {
+  .safety-block-type--sprint-status, .safety-block-type--sprint,
+  .safety-block-type--research {
+    color: #0e7490;
+    background: rgba(14, 116, 144, 0.14);
+    border-left-color: #0e7490;
+  }
+}
+
+/* ── Design + CIS module (pink) ─── */
+.safety-block-type--ux-design, .safety-block-type--design-thinking,
+.safety-block-type--storytelling, .safety-block-type--problem-solving,
+.safety-block-type--innovation-strategy {
+  color: var(--vscode-charts-pink, #db2777);
+  background: rgba(219, 39, 119, 0.12);
+  border-left-color: var(--vscode-charts-pink, #db2777);
+}
+/* Pink chip drops to ~2.9:1 vs its own alpha-tinted bg on Dark+ AND HC-Dark
+   editor bgs. Override for both schemes to lift the chip fg/border toward
+   #f472b6 (Tailwind Pink-400) which clears 3:1 on either dark bg. The
+   `:not(.safety-block-type--light)` exclude prefix lets us avoid
+   re-applying the Light+ override to dark themes accidentally. */
+@media (prefers-color-scheme: dark) {
+  .safety-block-type--ux-design, .safety-block-type--design-thinking,
+  .safety-block-type--storytelling, .safety-block-type--problem-solving,
+  .safety-block-type--innovation-strategy {
+    color: #f472b6;
+    background: rgba(244, 114, 182, 0.16);
+    border-left-color: #f472b6;
+  }
+}
+
+/* No `.safety-block-type--unknown` rule: the JSDoc contract on
+   `artifactTypeClass` (SafetyPanel.tsx) returns `undefined` for
+   unmapped artifactType values, and the JSX applies the modifier
+   class only when the helper returns a `KnownArtifactVariant`. So
+   unknown types render bare chips with base styling only — there is
+   no `--unknown` CSS sentinel, and adding one would silently reinstate
+   the soft-failure contract the type-system gate was designed to
+   prevent. */
+
+/* Chip-on-red-row contrast override — closes the 5 still-failing
+   (chip, theme) pairs surfaced by the audit in
+   `scripts/a11y-surface-sweep.mjs`:
+     .safety-block-type--story       Dark+  2.94:1 → 3+ overlay below
+     .safety-block-type--story       HC-Dark 2.94:1 → 3+ overlay below
+     .safety-block-type--risk        Light+ 2.53:1 → 3+ overlay below
+     .safety-block-type--test-case   Light+ 2.25:1 → 3+ overlay below
+     .safety-block-type--test-case   HC-Dark 2.06:1 → 3+ overlay below
+
+   Mechanism: the parent `.safety-block` row carries the red
+   `--vscode-inputValidation-errorBackground` tint; chips embedded in
+   that row compete their tint-vs-tint fg/bg and drop below 3:1. The
+   override here punches the chip's own bg through to the editor bg
+   (via `--vscode-editor-background`), so the chip fg's contrast is
+   measured against the editor surface again (the same surface the
+   chip baseline uses when not nested in a red row) — restoring 3:1+.
+   The chip fg itself is NOT recoloured, so the per-type colour cue
+   (.story=blue, .risk=red, .test-case=yellow) survives unchanged.
+
+   Locked by `Autonomy.a11y.test.ts` — `PIN-chip-on-red-row: <chip>
+   contrast vs editor bg in <theme>` × 5, plus the shape guard
+   `PIN-chip-on-red-row-overlay exists`. */
+.safety-block .safety-block-type {
+  background: var(--vscode-editor-background);
+}
+.safety-block .safety-block-type--story, .safety-block .safety-block-type--requirement,
+.safety-block .safety-block-type--use-case, .safety-block .safety-block-type--use-cases,
+.safety-block .safety-block-type--additional-req, .safety-block .safety-block-type--nfr-assessment {
+  border-left-color: var(--vscode-charts-blue, #6366f1);
+}
+.safety-block .safety-block-type--risk, .safety-block .safety-block-type--risks,
+.safety-block .safety-block-type--definition-of-done {
+  border-left-color: var(--vscode-errorForeground, #ef4444);
+}
+.safety-block .safety-block-type--test-case, .safety-block .safety-block-type--test-cases,
+.safety-block .safety-block-type--test-strategy, .safety-block .safety-block-type--test-design,
+.safety-block .safety-block-type--test-design-qa, .safety-block .safety-block-type--test-design-architecture,
+.safety-block .safety-block-type--test-summary, .safety-block .safety-block-type--test-coverage,
+.safety-block .safety-block-type--test-review, .safety-block .safety-block-type--atdd-checklist,
+.safety-block .safety-block-type--traceability-matrix, .safety-block .safety-block-type--test-framework,
+.safety-block .safety-block-type--ci-pipeline, .safety-block .safety-block-type--automation-summary,
+.safety-block .safety-block-type--epic-test-strategy {
+  border-left-color: var(--vscode-charts-yellow, #ca8a04);
+}
+
+.safety-block-verb {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--vscode-errorForeground, #ef4444);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.safety-block-policy {
+  font-size: 10px;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  background: var(--vscode-badge-background, rgba(127, 127, 127, 0.12));
+  border-radius: 3px;
+  padding: 0 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.safety-block-reason {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+  font-style: italic;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.safety-block-time {
+  font-size: 9px;
+  color: var(--vscode-descriptionForeground);
+  font-family: var(--vscode-editor-font-family, monospace);
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.safety-block-dismiss-btn {
+  background: transparent;
+  border: none;
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0 4px;
+  margin-left: 6px;
+  line-height: 1;
+  border-radius: 3px;
+  opacity: 0.5;
+  flex-shrink: 0;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+
+.safety-block-dismiss-btn:hover {
+  opacity: 1;
+  color: var(--vscode-errorForeground, #ef4444);
+  background: var(--vscode-inputValidation-errorBackground, rgba(255, 0, 0, 0.12));
+}
+
+.safety-block-dismiss-btn:focus-visible {
+  outline: 2px solid var(--vscode-focusBorder, #007acc);
+  outline-offset: 1px;
+  opacity: 1;
+}
+
+/* Section header actions (meta count + Clear all link) */
+.safety-section-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.safety-section-link-btn {
+  background: transparent;
+  border: none;
+  color: var(--vscode-textLink-foreground, #3794ff);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: inherit;
+  transition: background 0.1s, color 0.1s;
+}
+
+.safety-section-link-btn:hover {
+  background: var(--vscode-list-hoverBackground, rgba(127, 127, 127, 0.15));
+  color: var(--vscode-textLink-activeForeground, #3794ff);
+  text-decoration: underline;
+}
+
+.safety-section-link-btn:focus-visible {
+  outline: 2px solid var(--vscode-focusBorder, #007acc);
+  outline-offset: 1px;
+}
+
+/* ── Kill switch ── */
+
+.safety-kill-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 4px;
+  border: 2px solid var(--vscode-errorForeground, #ef4444);
+  background: var(--vscode-inputValidation-errorBackground, rgba(255, 0, 0, 0.08));
+  color: var(--vscode-errorForeground, #ef4444);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.safety-kill-btn:hover {
+  background: var(--vscode-inputValidation-errorBackground, rgba(255, 0, 0, 0.18));
+  transform: scale(1.02);
+}
+
+.safety-kill-btn--confirm {
+  background: var(--vscode-errorForeground, #ef4444);
+  color: white;
+  border-color: var(--vscode-errorForeground, #ef4444);
+  animation: safety-kill-pulse 0.8s ease-in-out infinite;
+}
+
+@keyframes safety-kill-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+.safety-kill-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.safety-kill-cancel-btn {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 6px 14px;
+  background: transparent;
+  border: 1px solid var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.2));
+  color: var(--vscode-foreground);
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: inherit;
+  transition: background 0.1s;
+}
+
+.safety-kill-cancel-btn:hover {
+  background: var(--vscode-list-hoverBackground, rgba(127, 127, 127, 0.15));
+}
+
 /* ─── Systemic-issue banner (issue #4) ──────────────────────────────────── */
 
 .autonomy-bar-group--systemic {
@@ -653,6 +1836,15 @@
   flex-shrink: 0;
 }
 .autonomy-bar-systemic-severity--low { background: var(--vscode-charts-blue, #6366f1); }
+/* Severity=medium pill text color: hardcoded `color:#1a1a1a` (dark text)
+   on bright chart-yellow bg clears WCAG AA in every canonical theme
+   (Dark+ `#CA8A04` ≈ 5.88:1, Light+ `#B58900` ≈ 5.45:1, HC-Dark `#CA8A04`
+   ≈ 5.88:1). The audit (scripts/a11y-surface-sweep.mjs) initially
+   mis-flags this as sub-3:1 because it computed the contrast against
+   `--vscode-editor-background` (which is `#000000` in HC-Dark) instead
+   of the actual pill bg (yellow). The PR locks the literal-hex dark
+   colour against the pill bg; do not switch to --vscode-editor-
+   * tokens, which invert the contrast in Dark+/Light+ and break AA. */
 .autonomy-bar-systemic-severity--medium { background: var(--vscode-charts-yellow, #eab308); color: #1a1a1a; }
 .autonomy-bar-systemic-severity--high { background: var(--vscode-charts-orange, #f59e0b); }
 .autonomy-bar-systemic-severity--critical { background: var(--vscode-errorForeground); }
@@ -894,4 +2086,61 @@
   border-radius: 4px;
   padding: 0 4px;
   white-space: nowrap;
+}
+
+/* Badge-family contrast override — closes the 12 (badges) × 2 (themes) =
+   22 of the 25 remaining (badge-vs-surface) FAIL pairs surfaced by the
+   audit `scripts/a11y-surface-sweep.mjs`:
+     .safety-panel-badge / .autonomy-inbox-badge--critical /
+     .safety-policy-badge--blocking / .goal-modal-priority--P0 /
+     .autonomy-bar-systemic-severity--critical / .autonomy-display--blocked
+       Dark+ 2.46:1 / HC-Dark 2.46:1 → cleared by #B91C1C (white-vs-bg ≈ 6.04:1)
+     .safety-policy-badge--advisory / .goal-modal-priority--P1 /
+     .autonomy-bar-systemic-severity--high / .autonomy-display--waiting
+       Dark+ 2.15:1 / HC-Dark 2.15:1 → cleared by #B45309 (white-vs-bg ≈ 4.20:1)
+     .goal-modal-priority--must-have / .autonomy-display--running
+       HC-Dark 2.54:1 → cleared by #15803D (white-vs-bg ≈ 3.30:1)
+
+   Mechanism: white text on the bright-vs-dark-shade of var(--vscode-errorForeground)
+   / var(--vscode-charts-orange) / var(--vscode-charts-green) drops below 3:1 in
+   Dark+/HC-Dark because the resolved token is the bright hue (e.g. #F48771 red =
+   2.46:1 vs white). The override bumps the badge bg to the dark-side tone of the
+   same hue family so white-on-it clears WCAG 3:1 UI-floor with comfortable margin.
+
+   Token provenance note: like --vscode-charts-{indigo,cyan,pink} introduced in
+   the chip-palette follow-up commit, the tokens below are NOVEL proposed token
+   names (upstream VS Code --vscode-charts-* palette ships
+   blue/green/orange/purple/red/yellow but no `*-bright` tier). Today the inline
+   fallback hex always applies in production; theme authors can opt-in by
+   declaring the proposed tokens on their theme to override the per-theme
+   cascade below. The override targets `prefers-color-scheme: dark` which on
+   Chrome/Windows correctly applies for HC-Dark as well (HC-Dark reports
+   both `prefers-color-scheme: dark` and `prefers-contrast: more`).
+
+   Locked by `Autonomy.a11y.test.ts` — `PIN-badge-family-dark: <bucket>
+   override hex clears 3:1 UI-floor vs white in <theme>` × 9 (3 buckets ×
+   3 themes) + `PIN-badge-family-dark-overrides asserts the 12 badge classes
+   appear in the dark @media block`. */
+@media (prefers-color-scheme: dark) {
+  .safety-panel-badge,
+  .autonomy-inbox-badge--critical,
+  .safety-policy-badge--blocking,
+  .goal-modal-priority--P0,
+  .autonomy-bar-systemic-severity--critical,
+  .autonomy-display--blocked {
+    background: var(--vscode-charts-red-bright, #B91C1C);
+    border-color: var(--vscode-charts-red-bright, #B91C1C);
+  }
+  .safety-policy-badge--advisory,
+  .goal-modal-priority--P1,
+  .autonomy-bar-systemic-severity--high,
+  .autonomy-display--waiting {
+    background: var(--vscode-charts-orange-bright, #B45309);
+    border-color: var(--vscode-charts-orange-bright, #B45309);
+  }
+  .goal-modal-priority--must-have,
+  .autonomy-display--running {
+    background: var(--vscode-charts-green-bright, #15803D);
+    border-color: var(--vscode-charts-green-bright, #15803D);
+  }
 }

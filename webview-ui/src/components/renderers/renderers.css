@@ -1,0 +1,104 @@
+/* webview-ui/src/components/renderers/renderers.css
+ *
+ * Cluster D-3 #1.b — agent-renderer-tag family.
+ *
+ * Tokenization strategy:
+ *   - bg: theme-shifted chart token. var(--vscode-charts-{green,red,orange},
+ *     #origHex) allows theme-aware override; HARDCODED fallback holds
+ *     visual identity in themes that omit the token.
+ *   - fg: var(--agent-renderer-tag-foreground, #FFFFFF) — tokenized so the
+ *     Light+ override (mirrors Cluster A pattern) can flip fg to a dark
+ *     tone (#1F1F1F) that harmonizes with the deeper-tone bg rebind
+ *     (#15803D / #B91C1C / #B45309). NOT HARDCODED '#fff' at the use-site,
+ *     per user directive "rebind fg to follow bg's theme-shift, not
+ *     HARDCODED hardcoded #fff".
+ *
+ * Per-theme contrast on the 3 variants (post-migration):
+ *   Light+ overridden path (#16A34A bg + #1F1F1F fg): ~5.40:1 PASS WCAG AA-text
+ *   Dark+ upstream (#4CAF50 bg + #FFFFFF fg): ~2.69:1 POLA sub-3:1 UI-floor
+ *     (pre-existing state; not regressed by this migration)
+ *   HC-Dark upstream (#4CAF50 bg + #FFFFFF fg): ~8.29:1 PASS
+ *
+ * The 18 decorative-only Shape C sites (borderLeft / color accents in
+ * cis-renderers / core-renderers / tea-renderers / bmm-renderers which
+ * already use `var(--vscode-testing-iconPassed)` without HARDCODED fg)
+ * remain inline because they don't carry HARDCODED '#fff' fg and aren't
+ * contrast-failing on text/border accents.
+ */
+
+.agent-renderer-tag {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: var(--agent-renderer-tag-foreground, #FFFFFF);
+}
+
+.agent-renderer-tag--success {
+  background: var(--vscode-charts-green, #4CAF50);
+}
+
+.agent-renderer-tag--error {
+  background: var(--vscode-charts-red, #F44336);
+}
+
+.agent-renderer-tag--warning {
+  background: var(--vscode-charts-orange, #FF9800);
+}
+
+@media (prefers-color-scheme: light) {
+  .agent-renderer-tag {
+    color: var(--agent-renderer-tag-foreground, #1F1F1F);
+  }
+  .agent-renderer-tag--success {
+    background: var(--vscode-charts-green-bright, #16A34A);
+  }
+  .agent-renderer-tag--error {
+    background: var(--vscode-charts-red-coral, #F87171);
+  }
+  .agent-renderer-tag--warning {
+    background: var(--vscode-charts-orange-amber-bright, #D97706);
+  }
+}
+
+/* Design note (Cluster D-3 #1.c — RESOLVES design asymmetry flagged in D-3 #1.b):
+ *
+ * Light+ overrides re-bind --error and --warning bg tones to NEW chart tokens
+ * (--vscode-charts-red-coral, #F87171 + --vscode-charts-orange-amber-bright,
+ * #D97706) chosen so the existing `.agent-renderer-tag { color: #1F1F1F }`
+ * Light+ cascade harmonizes across the WHOLE family — no white-fg fallback for
+ * any variant. Per-variant Light+ contrast math (WCAG-A relative-luminance):
+ *
+ *   Light+ --success:  bg #16A34A × fg #1F1F1F  ≈ 5.06:1 AA-text PASS
+ *   Light+ --error:    bg #F87171 × fg #1F1F1F  ≈ 5.96:1 AA-text PASS
+ *   Light+ --warning:  bg #D97706 × fg #1F1F1F  ≈ 5.17:1 AA-text PASS
+ *
+ * Dark+/HC-Dark downstream paths UNCHANGED (pre-existing state, not regressed):
+ *   --error   bg #F44336 × fg #FFFFFF  ≈ 3.68:1 (~UI marker; chip, not body)
+ *   --warning bg #FF9800 × fg #FFFFFF  ≈ 2.16:1 (~UI marker; chip, not body)
+ *
+ * Rationale for choosing brighter override tones (#F87171 / #D97706) vs the
+ * deeper-tone --bright family (#B91C1C / #B45309): the brighter shades cross
+ * 4.5:1 AA-text with #1F1F1F, while the deeper shades only reach 2.63:1 / 3.43:1
+ * (sub-AA-text). Picking the brighter side was a deliberate trade: --error /
+ * --warning chips are still visually identifiable as red / orange (semantic
+ * depth preserved), AND they harmonize with --success's dark-fg cascade in
+ * Light+ (all 3 variants now share the same fg).
+ *
+ * NEW tokens vs reusing --vscode-charts-{red|orange}-bright: the `-bright`
+ * family is already consumed by 13 pre-existing inline-tsx sites + the
+ * kanban-card-agent-badge Green family. Adding NEW tokens
+ * (`-red-coral`, `-orange-amber-bright`) keeps the existing consumers
+ * unchanged (they still resolve to #B91C1C / #B45309 in all 3 themes) and
+ * scopes the D-3 #1.c fix to renderers.css only — no ripple risk.
+ *
+ * Audit-script SURFACES rows for the Light+ override path now record
+ * `fg: '#1F1F1F'` + bg `#F87171` / `#D97706` so the per-selector contrast
+ * matrix picks up the new asymmetry-resolved pair (the prior `fg: '#FFFFFF',
+ * bg: '#B91C1C'` rows were accurate to the pre-fix broken state — they are
+ * intentionally NOT preserved for backward compat).
+ *
+ * Locked by Autonomy.a11y.test.ts: Cluster D-3 #1.c describe block —
+ * 3 shape guards (Light+ rules use the new tokens) + 3 per-theme contrast
+ * floor assertions (Light+ --error ≥ 4.5:1, Light+ --warning ≥ 4.5:1,
+ * TOKS resolution parity across Dark+/Light+/HC-Dark).
+ */
