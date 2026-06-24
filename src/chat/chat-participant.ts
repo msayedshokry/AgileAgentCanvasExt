@@ -32,6 +32,8 @@ import { loadReport, detectGraphify } from '../integrations/graphify';
 import { setActiveChatSession } from './active-session';
 import { graphQuery } from '../integrations/graphify/graph-query';
 import { loadGraph, loadCommunities, loadArchIndexMarkdown } from '../integrations/graphify/graph-loader';
+import { visualPlanService } from '../workflow/visual-plan-service';
+import { isVisualPlanEnabled, VISUAL_PLAN_DISABLED_MARKDOWN } from '../utils/visual-plan-config';
 
 /**
  * AgileAgentCanvas Chat Participant - Integrates with VS Code Copilot Chat
@@ -143,6 +145,7 @@ export class AgileAgentCanvasChatParticipant {
             'tokens': () => this.handleCodeburnCommand(`models ${prompt}`, stream),
 
             'ponytail-review': () => this.handlePonytailReviewCommand(prompt, context, stream, token),
+            'visual-plan': () => this.handleVisualPlanCommand(prompt, stream, token),
             'help': () => this.handleHelpCommand(prompt, stream, token)
         };
 
@@ -5247,6 +5250,44 @@ Output ONLY the JSON, no explanation.`;
         }
 
         return { metadata: { command: 'ponytail-review', status: 'completed' } };
+    }
+
+    private async handleVisualPlanCommand(
+        prompt: string,
+        stream: vscode.ChatResponseStream,
+        token: vscode.CancellationToken
+    ): Promise<vscode.ChatResult> {
+
+        stream.markdown('## Visual Plan\n\n');
+
+        // Gate: respect the visualPlan.enabled configuration setting
+        if (!isVisualPlanEnabled()) {
+            stream.markdown(VISUAL_PLAN_DISABLED_MARKDOWN);
+            return { metadata: { command: 'visual-plan', status: 'disabled' } };
+        }
+
+        const model = await this.getModel();
+        if (!model) {
+            stream.markdown(this.getNoModelMessage());
+            return { metadata: { command: 'visual-plan', status: 'no-model' } };
+        }
+
+        const extensionPath = this.extensionContext?.extensionPath;
+        if (!extensionPath) {
+            stream.markdown('**Error:** No extension path available. Please reload the window.\n');
+            return { metadata: { command: 'visual-plan', status: 'error' } };
+        }
+
+        const contextStr = this.buildArtifactContext();
+        const request = {
+            goal: prompt,
+            context: contextStr,
+            extensionPath,
+        };
+
+        const planId = await visualPlanService.generate(request);
+        stream.markdown('**Plan generated:** ' + planId + '\n');
+        return { metadata: { command: 'visual-plan', status: 'generated', planId } };
     }
 
 }

@@ -7,6 +7,7 @@ import { useEvent } from '../agentic-kanban/useEvent';
 import type { RendererProps } from './renderers/shared';
 import { Md } from './renderers/shared';
 import { convertArtifactToMarkdown } from '../utils/artifact-md-exporter';
+import { VisualPlanSections } from '../visual-plan/VisualPlanSections';
 
 // --- Core renderers ---
 import {
@@ -530,6 +531,19 @@ export function DetailPanel({ artifact, onClose, onUpdate, onDelete, onRefineWit
         return renderInnovationStrategyDetails(rendererProps);
       case 'design-thinking':
         return renderDesignThinkingDetails(rendererProps);
+
+      case 'visual-plan': {
+        // Visual plans are review-only — no edit/save/dirty machinery
+        const planMeta = artifact.metadata as { plan?: import('../visual-plan/types').VisualPlan };
+        return (
+          <VisualPlanSections
+            plan={planMeta?.plan ?? null}
+            onApprove={(taskIds) => vscode.postMessage({ type: 'visualPlan:approve', planId: artifact.id, taskIds })}
+            onRequestChanges={(comments) => vscode.postMessage({ type: 'visualPlan:requestChanges', planId: artifact.id, comments })}
+            onComment={(comment) => vscode.postMessage({ type: 'visualPlan:comment', planId: artifact.id, comment })}
+          />
+        );
+      }
 
       default:
         return renderGenericDetails(rendererProps);

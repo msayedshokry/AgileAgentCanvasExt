@@ -17,6 +17,8 @@ import { getPersonaForArtifactType } from '../chat/agent-personas';
 import { setKanbanAutoAdvance, isKanbanAutoAdvanceEnabled, getKanbanWipLimits } from '../workflow/kanban-settings';
 import { schedulerWebviewControls, MSG_SCHEDULER_STATE } from '../workflow/scheduler-webview-controls';
 import { goalDecomposer } from '../workflow/goal-decomposer';
+import { visualPlanService } from '../workflow/visual-plan-service';
+import { isVisualPlanEnabled, VISUAL_PLAN_DISABLED_MESSAGE } from '../utils/visual-plan-config';
 import { budgetEnforcer } from '../workflow/budget-enforcer';
 import { circuitBreaker } from '../workflow/circuit-breaker';
 
@@ -372,7 +374,7 @@ export async function handleAgenticKanbanMessage(
     }
 
     case 'agenticKanban:refresh': {
-      const artifacts = buildArtifacts(store, vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath);
+      const artifacts = buildArtifacts(store, vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath, visualPlanService.list());
       if (webview) {
         webview.postMessage({ type: 'updateArtifacts', artifacts });
       }
@@ -724,7 +726,7 @@ export async function handleAgenticKanbanMessage(
         logger.info(`[AgenticKanban] Updated title for ${artifactId} to "${title}"`);
         // Push updated artifacts to webview so the title persists visually
         if (webview) {
-          const artifacts = buildArtifacts(store, vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath);
+          const artifacts = buildArtifacts(store, vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath, visualPlanService.list());
           webview.postMessage({ type: 'updateArtifacts', artifacts });
         }
       } catch (error) {
@@ -883,6 +885,113 @@ export async function handleAgenticKanbanMessage(
             totalErrors: 0,
             perWorkflow: [],
           });
+        }
+      }
+      return true;
+    }
+
+    // ── Visual Plan IPC ────────────────────────────────────────────────────
+
+    case 'visualPlan:generate': {
+      // Check if the Visual Plan feature is enabled
+      if (!isVisualPlanEnabled()) {
+        if (webview) {
+          webview.postMessage({
+            type: 'visualPlan:error',
+            error: VISUAL_PLAN_DISABLED_MESSAGE,
+          });
+        }
+        return true;
+      }
+      try {
+        const id = await visualPlanService.generate({
+          goal: message.goal ?? message.text ?? '',
+          sourceArtifactId: message.sourceArtifactId,
+          context: message.context,
+        });
+        if (webview) {
+          webview.postMessage({ type: 'visualPlan:generating', planId: id, goal: message.goal });
+        }
+      } catch (error) {
+        logger.warn(`[AgenticKanban] visualPlan:generate failed: ${errMsg(error)}`);
+        if (webview) {
+          webview.postMessage({ type: 'visualPlan:error', error: errMsg(error) });
+        }
+      }
+      return true;
+    }
+
+    case 'visualPlan:list': {
+      if (webview) {
+        const plans = visualPlanService.list();
+        webview.postMessage({ type: 'visualPlan:list:result', plans });
+      }
+      return true;
+    }
+
+    case 'visualPlan:fetch': {
+      if (webview) {
+        const plan = visualPlanService.get(message.planId);
+        if (plan) {
+          webview.postMessage({ type: 'visualPlan:ready', plan });
+        } else {
+          webview.postMessage({ type: 'visualPlan:error', error: `Plan not found: ${message.planId}` });
+        }
+      }
+      return true;
+    }
+
+    case 'visualPlan:comment': {
+      try {
+        await visualPlanService.addComment(
+          message.planId,
+          message.comment?.sectionId ?? '',
+          message.comment?.body ?? ''
+        );
+        // Refresh the plan so the webview shows the new comment
+        if (webview) {
+          const plan = visualPlanService.get(message.planId);
+          if (plan) {
+            webview.postMessage({ type: 'visualPlan:ready', plan });
+          }
+        }
+      } catch (error) {
+        logger.warn(`[AgenticKanban] visualPlan:comment failed: ${errMsg(error)}`);
+        if (webview) {
+          webview.postMessage({ type: 'visualPlan:error', error: errMsg(error) });
+        }
+      }
+      return true;
+    }
+
+    case 'visualPlan:approve': {
+      try {
+        const dispatchedIds = await visualPlanService.approve(message.planId, message.taskIds ?? []);
+        if (webview) {
+          // Refresh board so ghost cards become solid
+          const artifacts = buildArtifacts(store, vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath, visualPlanService.list());
+          webview.postMessage({ type: 'updateArtifacts', artifacts });
+          webview.postMessage({ type: 'visualPlan:dispatched', planId: message.planId, dispatchedIds });
+        }
+      } catch (error) {
+        logger.warn(`[AgenticKanban] visualPlan:approve failed: ${errMsg(error)}`);
+        if (webview) {
+          webview.postMessage({ type: 'visualPlan:error', error: errMsg(error) });
+        }
+      }
+      return true;
+    }
+
+    case 'visualPlan:requestChanges': {
+      try {
+        const plan = await visualPlanService.requestChanges(message.planId, message.comments ?? []);
+        if (webview) {
+          webview.postMessage({ type: 'visualPlan:ready', plan });
+        }
+      } catch (error) {
+        logger.warn(`[AgenticKanban] visualPlan:requestChanges failed: ${errMsg(error)}`);
+        if (webview) {
+          webview.postMessage({ type: 'visualPlan:error', error: errMsg(error) });
         }
       }
       return true;

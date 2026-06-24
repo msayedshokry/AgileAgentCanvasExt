@@ -8,8 +8,24 @@ vi.mock('../trace/trace-recorder', () => ({
   getTraceRecorder: vi.fn(),
 }));
 
-import { computeTraceBreakdownForMostRecentRun } from './agentic-kanban-message-handler';
+// Mock visualPlanService — the IPC handler imports it at module level.
+vi.mock('../workflow/visual-plan-service', () => ({
+  visualPlanService: {
+    generate: vi.fn(),
+    list: vi.fn(() => []),
+    get: vi.fn(),
+    addComment: vi.fn(),
+    approve: vi.fn(),
+    requestChanges: vi.fn(),
+  },
+}));
+
+import { computeTraceBreakdownForMostRecentRun, handleAgenticKanbanMessage } from './agentic-kanban-message-handler';
+import { VISUAL_PLAN_DISABLED_MESSAGE } from '../utils/visual-plan-config';
 import { getTraceRecorder } from '../trace/trace-recorder';
+import { visualPlanService } from '../workflow/visual-plan-service';
+import * as vscode from 'vscode';
+import type { ArtifactStore } from '../state/artifact-store';
 
 // Shared wire-format shape contract (audit gap #20/#42) — same types as the
 // `TracePanel` consumer test in the webview, so producer/consumer stay in
@@ -332,5 +348,120 @@ describe('computeTraceBreakdownForMostRecentRun (audit gap #20/#42)', () => {
         totalEntries: 3,
       },
     ]);
+  });
+});
+
+
+// ── Visual Plan config gate tests ───────────────────────────────────────────
+
+describe('handleAgenticKanbanMessage — visualPlan:generate config gate', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  /** Override the vscode config mock so .get('visualPlan.enabled') returns the given value. */
+  function setVisualPlanEnabled(enabled: boolean): void {
+    const config = vscode.workspace.getConfiguration();
+    vi.mocked(config.get).mockImplementation(
+      (key: string, defaultValue?: unknown) => {
+        if (key === 'visualPlan.enabled') return enabled;
+        return defaultValue;
+      },
+    );
+  }
+
+  const mockWebview = { postMessage: vi.fn() } as unknown as vscode.Webview;
+  const mockStore = {} as ArtifactStore;
+  const mockUri = {} as vscode.Uri;
+
+  it('returns visualPlan:error and does NOT call generate when visualPlan.enabled is false', async () => {
+    setVisualPlanEnabled(false);
+
+    const result = await handleAgenticKanbanMessage(
+      { type: 'visualPlan:generate', goal: 'test goal', sourceArtifactId: 'S-1' },
+      mockStore,
+      mockUri,
+      mockWebview,
+    );
+
+    expect(result).toBe(true);
+    expect(mockWebview.postMessage).toHaveBeenCalledTimes(1);
+    expect(mockWebview.postMessage).toHaveBeenCalledWith({
+      type: 'visualPlan:error',
+      error: VISUAL_PLAN_DISABLED_MESSAGE,
+    });
+    // The service must NOT be invoked
+    expect(visualPlanService.generate).not.toHaveBeenCalled();
+  });
+
+  it('proceeds to call visualPlanService.generate when visualPlan.enabled is true', async () => {
+    setVisualPlanEnabled(true);
+    vi.mocked(visualPlanService.generate).mockResolvedValue('plan-abc-123');
+
+    const result = await handleAgenticKanbanMessage(
+      { type: 'visualPlan:generate', goal: 'ship it', sourceArtifactId: 'S-2' },
+      mockStore,
+      mockUri,
+      mockWebview,
+    );
+
+    // Handler acknowledged the message
+    expect(result).toBe(true);
+    // Service called with correct params
+    expect(visualPlanService.generate).toHaveBeenCalledWith({
+      goal: 'ship it',
+      sourceArtifactId: 'S-2',
+      context: undefined,
+    });
+    // Single webview message — exact shape, no extras
+    expect(mockWebview.postMessage).toHaveBeenCalledTimes(1);
+    expect(mockWebview.postMessage).toHaveBeenCalledWith({
+      type: 'visualPlan:generating',
+      planId: 'plan-abc-123',
+      goal: 'ship it',
+    });
+  });
+
+  it('posts visualPlan:error when generate throws, and still returns true', async () => {
+    setVisualPlanEnabled(true);
+    const error = new Error('AI provider timeout');
+    vi.mocked(visualPlanService.generate).mockRejectedValue(error);
+
+    const result = await handleAgenticKanbanMessage(
+      { type: 'visualPlan:generate', goal: 'risky plan', sourceArtifactId: 'S-3' },
+      mockStore,
+      mockUri,
+      mockWebview,
+    );
+
+    // Handler still acknowledges the message (does not propagate the error)
+    expect(result).toBe(true);
+    // generate was invoked — it just threw
+    expect(visualPlanService.generate).toHaveBeenCalledWith({
+      goal: 'risky plan',
+      sourceArtifactId: 'S-3',
+      context: undefined,
+    });
+    // Single error message posted — exact shape
+    expect(mockWebview.postMessage).toHaveBeenCalledTimes(1);
+    expect(mockWebview.postMessage).toHaveBeenCalledWith({
+      type: 'visualPlan:error',
+      error: 'AI provider timeout',
+    });
+  });
+
+  it('returns true even when webview is missing (no-op, no crash)', async () => {
+    setVisualPlanEnabled(false);
+
+    // No webview — the gate should still work without crashing
+    const result = await handleAgenticKanbanMessage(
+      { type: 'visualPlan:generate', goal: 'no ui' },
+      mockStore,
+      mockUri,
+      undefined,
+    );
+
+    expect(result).toBe(true);
+    expect(visualPlanService.generate).not.toHaveBeenCalled();
   });
 });

@@ -12,6 +12,8 @@ import { useEvent } from './useEvent';
 import { AutonomyBar, type SchedulerStateMessage, type BudgetStatus, type ProposedGoal, type SystemicIssue } from './AutonomyBar';
 import { TracePanel } from './TracePanel';
 import { DiffPanel, type GitDiffMessage } from './DiffPanel';
+import { VisualPlanSections } from '../visual-plan/VisualPlanSections';
+import type { VisualPlan } from '../visual-plan/types';
 import { ApprovalBanner, type ApprovalRequest } from './ApprovalBanner';
 import { GoalDecomposerModal } from './GoalDecomposerModal';
 import type { TraceBreakdownMessage } from '../types';
@@ -118,6 +120,11 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
   // opens automatically when a gitDiff message arrives; the user can dismiss
   // it with the close button. Null = no diff to review.
   const [commitDiff, setCommitDiff] = useState<GitDiffMessage | null>(null);
+
+  // ── Visual Plan inline panel (P1) ───────────────────────────────────────
+  // When a plan is generated or fetched, render it inline below the board
+  // (same pattern as DiffPanel). Null = no plan to display.
+  const [pendingPlan, setPendingPlan] = useState<VisualPlan | null>(null);
 
   // ── Agent take-over (P1 #4) ────────────────────────────────────────────
   // When the user clicks "Take Over" on a running agent, we switch to
@@ -288,6 +295,19 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
             type: 'info',
           });
         }
+        break;
+      }
+      case 'visualPlan:ready': {
+        setPendingPlan(message.plan);
+        setToast({ message: 'Plan ready for review', type: 'success' });
+        break;
+      }
+      case 'visualPlan:generating': {
+        setToast({ message: `Generating plan: ${message.goal}`, type: 'info' });
+        break;
+      }
+      case 'visualPlan:error': {
+        setToast({ message: `Plan generation failed: ${message.error}`, type: 'error' });
         break;
       }
       case 'terminalReconnected': {
@@ -945,6 +965,12 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
           <button onClick={handleRefreshBoard}>
             Refresh
           </button>
+          <button
+            onClick={() => vscode.postMessage({ type: 'visualPlan:generate', goal: '' })}
+            title="Generate a Visual Plan for the current project"
+          >
+            Plan
+          </button>
         </div>
       </header>
 
@@ -974,6 +1000,25 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
       />
 
       <DiffPanel diff={commitDiff} onClose={() => setCommitDiff(null)} />
+
+      {pendingPlan && (
+        <VisualPlanSections
+          plan={pendingPlan}
+          showApproveBar
+          onApprove={(taskIds) => {
+            vscode.postMessage({ type: 'visualPlan:approve', planId: pendingPlan.id, taskIds });
+            setPendingPlan(null);
+          }}
+          onRequestChanges={(comments) => {
+            vscode.postMessage({ type: 'visualPlan:requestChanges', planId: pendingPlan.id, comments });
+            setPendingPlan(null);
+          }}
+          onComment={(comment) => {
+            vscode.postMessage({ type: 'visualPlan:comment', planId: pendingPlan.id, comment });
+          }}
+          onClose={() => setPendingPlan(null)}
+        />
+      )}
 
       {view === 'terminals' ? (
         <TerminalGrid

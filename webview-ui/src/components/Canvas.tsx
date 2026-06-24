@@ -69,7 +69,7 @@ const LANE_GAP = 20; // gap between lanes
 // ---------- Filter-bar constants ----------
 // Types grouped by lane for display
 const FILTER_TYPE_GROUPS: { label: string; types: ArtifactType[] }[] = [
-  { label: 'Discovery',       types: ['product-brief', 'vision'] },
+  { label: 'Discovery',       types: ['product-brief', 'vision', 'visual-plan'] },
   { label: 'Planning',        types: ['prd', 'requirement', 'nfr', 'additional-req', 'risk'] },
   { label: 'Solutioning',     types: ['architecture', 'architecture-decision', 'system-component'] },
   { label: 'Implementation',  types: ['epic', 'story', 'task', 'use-case', 'test-strategy', 'test-case', 'test-coverage'] },
@@ -146,6 +146,7 @@ const FILTER_TYPE_LABELS: Record<ArtifactType, string> = {
   'problem-solving': 'Problem Solve',
   'innovation-strategy': 'Innovation',
   'design-thinking': 'Design Think',
+  'visual-plan': 'Plan',
 };
 
 export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpand, expandedIds, expandedCategories, onToggleCategoryExpand, onRefineWithAI, onElicit, onExpandLane, onCollapseLane, centerOnId, onCentered, onOpenSearch, searchMatchIds, screenshotTrigger, screenshotFormat, onScreenshotReady, onScreenshotError, onOpenDetail }: CanvasProps) {

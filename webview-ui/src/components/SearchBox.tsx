@@ -52,6 +52,7 @@ const TYPE_LABELS: Record<Artifact['type'], string> = {
   'problem-solving': 'Problem Solving',
   'innovation-strategy': 'Innovation Strategy',
   'design-thinking': 'Design Thinking',
+  'visual-plan': 'Plan',
 };
 
 const STATUS_LABELS: Record<string, string> = {

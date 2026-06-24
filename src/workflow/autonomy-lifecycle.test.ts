@@ -165,7 +165,7 @@ function makeLifecycle(epics: any[] = []) {
   const lc = new AutonomyLifecycle();
   const broadcast = vi.fn();
   const store = makeStore(epics);
-  lc.configure({ broadcast, outputFolder: '/tmp/test-aac' }, store);
+  lc.configure({ broadcast, outputFolder: '/tmp/test-aac', extensionPath: '/fake/ext' }, store);
   return { lc, broadcast, store };
 }
 
@@ -440,7 +440,7 @@ describe('AutonomyLifecycle wiring', () => {
 
     it('error: returns empty arrays when store is null', () => {
       const lc = new AutonomyLifecycle();
-      lc.configure({ broadcast: vi.fn(), outputFolder: '/tmp' }, null as any);
+      lc.configure({ broadcast: vi.fn(), outputFolder: '/tmp', extensionPath: '/fake/ext' }, null as any);
       lc.start();
 
       const result = (lc as any).extractDependencyData();

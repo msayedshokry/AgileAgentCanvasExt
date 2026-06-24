@@ -24,6 +24,12 @@ import { circuitBreaker } from './circuit-breaker';
 import { terminalExecutor, checkProcessAlive } from './terminal-executor';
 import { concurrencyQueue } from './concurrency-queue';
 import { goalDecomposer, type ProposedStory } from './goal-decomposer';
+import { visualPlanService } from './visual-plan-service';
+import { getVisualPlanMode } from '../utils/visual-plan-config';
+import { VisualPlanGenerator } from './visual-plan-generator';
+import type { PlanTask } from '../types/visual-plan';
+import { parseFrontmatter } from './frontmatter';
+import { extractJson } from '../lib/json-extract';
 import { dependencyAutoResume } from './dependency-auto-resume';
 import { terminalSessionRecovery } from './terminal-recovery';
 import { kanbanDependencyVisualizer, StoryWithTitle } from './kanban-dep-visualizer';
@@ -89,6 +95,8 @@ export interface AutonomyLifecycleHooks {
   broadcast: (message: any) => void;
   /** Path to the output folder (for state persistence). */
   outputFolder: string;
+  /** Extension installation path (for loading bundled resources). */
+  extensionPath: string;
   /** Optional git runner for autonomous branch/commit/PR (issue #17). */
   gitRunner?: GitRunner;
 }
@@ -178,6 +186,18 @@ export class AutonomyLifecycle extends EventEmitter {
     goalDecomposer.on('reviewed', (g) => this.broadcast({ type: 'goalReviewed', goal: g }));
     goalDecomposer.on('dispatched', (payload) => this.broadcast({ type: 'goalDispatched', ...payload }));
 
+    // 7b) Visual Plan service — broadcast on events;
+    //     in 'panel' mode, auto-open the pop-out after generation
+    visualPlanService.on('ready', (plan) => {
+      this.broadcast({ type: 'visualPlan:ready', plan });
+      if (getVisualPlanMode() === 'panel') {
+        vscode.commands.executeCommand('agileagentcanvas.openVisualPlan');
+      }
+    });
+    visualPlanService.on('failed', (plan, error) => this.broadcast({ type: 'visualPlan:error', error, planId: plan.id }));
+    visualPlanService.on('dispatched', (payload) => this.broadcast({ type: 'visualPlan:dispatched', ...payload }));
+    visualPlanService.on('changesRequested', (plan) => this.broadcast({ type: 'visualPlan:ready', plan }));
+
     // 8) Wire the AutoScheduler story runner to actually execute stories.
     //    When auto-advance is enabled, each ready-for-dev story picked up
     //    by the scheduler is handed to the KanbanOrchestrator for the full
@@ -214,6 +234,9 @@ export class AutonomyLifecycle extends EventEmitter {
     // 9) Wire Goal Decomposer hooks so the toolbar "Submit Goal" flow
     //    actually works end-to-end.
     this.wireGoalDecomposerHooks();
+
+    // 9b) Wire Visual Plan hooks — generate / persistTask / notifyScheduler
+    this.wireVisualPlanHooks();
 
     // 10) Auto-resume on dependency completion. The ArtifactStore change
     //    event now passes actual change deltas and story data so blocked
@@ -581,6 +604,102 @@ export class AutonomyLifecycle extends EventEmitter {
           storyId,
           status: 'ready-for-dev',
         });
+      },
+    });
+  }
+
+  /**
+   * Wire the Visual Plan service hooks so the "Plan" button flow works.
+   * generate: uses the VS Code LM API (or active chat session) to produce
+   *           a structured VisualPlan JSON.
+   * persistTask: creates a story in the artifact store for each approved task.
+   * notifyScheduler: adds the new story ID to the scheduler.
+   */
+  private wireVisualPlanHooks(): void {
+    if (!this.store) return;
+    if (!this.hooks?.extensionPath) return;
+    const store = this.store;
+    const extensionPath = this.hooks.extensionPath;
+    const generator = new VisualPlanGenerator(extensionPath);
+
+    visualPlanService.setHooks({
+      generate: async (request) => {
+        // Try to use the active chat session (model + stream + token) first.
+        // Fall back to vscode.lm when no chat session is open.
+        try {
+          const { getActiveChatSession } = require('../chat/active-session');
+          const activeSession = getActiveChatSession();
+          if (activeSession?.model && activeSession?.stream && activeSession?.token) {
+            return generator.generate(
+              request,
+              activeSession.model,
+              activeSession.stream,
+              activeSession.token,
+            );
+          }
+        } catch {
+          // getActiveChatSession not available — fall through to vscode.lm
+        }
+
+        // Fallback: use vscode.lm directly (no streaming, simpler path).
+        // Reuses the generator's mapToVisualPlan for consistent normalization.
+        const models = await vscode.lm.selectChatModels({ vendor: 'copilot' });
+        const available = models?.length ? models : await vscode.lm.selectChatModels({});
+        if (!available?.length) {
+          throw new Error('No language model available for plan generation');
+        }
+
+        const lm = available[0];
+        const fallbackPrompt =
+          'You are generating a Visual Plan — a structured, reviewable plan document. ' +
+          'Return a SINGLE JSON object with title, sections (overview, fileMap, tasks required), and optional targets. ' +
+          'No prose, no markdown — only the JSON object.';
+
+        const messages = [
+          vscode.LanguageModelChatMessage.User(
+            `${fallbackPrompt}\n\nGoal: ${request.goal}\n\nReturn ONLY a single JSON object — no prose, no markdown.`,
+          ),
+        ];
+
+        const response = await lm.sendRequest(
+          messages,
+          {},
+          new vscode.CancellationTokenSource().token,
+        );
+
+        let text = '';
+        for await (const chunk of response.text) {
+          text += chunk;
+        }
+
+        const extracted = extractJson(text);
+        if (!extracted.ok) {
+          throw new Error(`Failed to parse plan JSON: ${extracted.error}`);
+        }
+
+        // Reuse the generator's full normalization → consistent section shapes
+        return generator.mapToVisualPlan(request, extracted.data);
+      },
+
+      persistTask: async (task: PlanTask, _planId: string): Promise<string> => {
+        const created = store.createStory(undefined);
+        const storyChanges = {
+          title: task.title,
+          description: task.description || '',
+          metadata: { priority: task.priority },
+        };
+        await store.updateArtifact('story', created.id, storyChanges as any);
+        return created.id;
+      },
+
+      notifyScheduler: (storyId: string) => {
+        const stories = autoScheduler.getStories();
+        stories.push({
+          id: storyId,
+          status: 'ready-for-dev',
+          priority: 'should-have',
+        } as SchedulerStory);
+        autoScheduler.setStories(stories);
       },
     });
   }
