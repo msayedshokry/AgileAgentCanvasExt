@@ -326,6 +326,24 @@ function loadSelectedProviderFromSettings(): ChatProviderId {
     }
 }
 
+/**
+ * Workspace-level admin default — declared in package.json as the "Default
+ * AI chat provider for canvas actions (Refine, Enhance, Break Down, etc.)".
+ * Distinct from `chatProviderSelected` (which mirrors the user's dropdown
+ * pick): when set, it locks canvas actions to a specific provider and
+ * overrides the user pick. Returns the sentinel 'auto' when unset so the
+ * resolver can fall through.
+ */
+function loadWorkspaceChatProviderFromSettings(): ChatProviderId {
+    try {
+        const cfg = vscode.workspace.getConfiguration('agileagentcanvas');
+        const v = cfg.get<ChatProviderId>('chatProvider', 'auto');
+        return v ?? 'auto';
+    } catch {
+        return 'auto';
+    }
+}
+
 // ─── IDE detection ───────────────────────────────────────────────────────────
 
 /**
@@ -669,10 +687,13 @@ export interface OpenChatResult {
  * Open the IDE chat panel OR launch a CLI provider, optionally pre-filling a
  * query. Resolves the provider in this order:
  *   1. options.provider (explicit override from canvas)
- *   2. _selectedProvider (canvas dropdown selection)
- *   3. settings.chatProvider (workspace default)
- *   4. detected host IDE
- *   5. 'copilot' fallback
+ *   2. settings.chatProvider (workspace-level admin default — overrides
+ *      the user's dropdown pick when explicitly configured)
+ *   3. _selectedProvider (canvas dropdown selection)
+ *   4. settings.chatProviderSelected (persisted user pick — defensive
+ *      belt-and-suspenders for races between dropdown write and read)
+ *   5. detected host IDE
+ *   6. 'copilot' fallback
  *
  * @returns OpenChatResult — never throws. UI can use `message` to surface why
  *          the action did not reach a chat panel.
@@ -705,23 +726,34 @@ export async function openChatWithResult(
 
     // ── 1. Resolve provider ──────────────────────────────────────────────
     const explicit = opts.provider && opts.provider !== 'auto' ? opts.provider : undefined;
+    const workspaceProvider = loadWorkspaceChatProviderFromSettings();
     const settings = loadSelectedProviderFromSettings();
     const detected = await detectIdeForChat().catch(() => 'copilot');
 
     // 'auto' is a SENTINEL — it must always fall through. `??` only filters
-    // null/undefined, so the literal string 'auto' short-circuited the
-    // previous chain and forced doOpenChat('auto', ...) into the silent
-    // clipboard fallback (the canvas `|Plan|` button would create a JSON
-    // stub but never reach a chat panel or terminal).
-    const selectedNonAuto = _selectedProvider !== 'auto' ? _selectedProvider : undefined;
+    // null/undefined, so the literal string 'auto' short-circuits the
+    // chain and forces doOpenChat('auto', ...) into the silent clipboard
+    // fallback (the canvas `|Plan|` button would create a JSON stub but
+    // never reach a chat panel or terminal). Collapse both sentinel
+    // filters into one helper so the rule can never drift apart between
+    // the workspace-level admin default and the runtime user-pick source.
+    const nonAuto = (id: ChatProviderId): ChatProviderId | undefined =>
+        id !== 'auto' ? id : undefined;
+    const selectedNonAuto = nonAuto(_selectedProvider);
+    // Workspace-level `chatProvider` admin default — declared in
+    // package.json as "When set, all canvas-triggered actions route to
+    // this provider regardless of which IDE is hosting." When set, it
+    // locks the workspace and overrides the user's dropdown pick.
+    const workspaceNonAuto = nonAuto(workspaceProvider);
 
     const providerId: ChatProviderId = explicit
+        ?? workspaceNonAuto
         ?? selectedNonAuto
         ?? (settings !== 'auto' ? settings : undefined)
         ?? (detected as ChatProviderId)
         ?? 'copilot';
 
-    log(`openChatWithResult: resolved provider=${providerId} (explicit=${explicit} selected=${_selectedProvider} settings=${settings} detected=${detected})`);
+    log(`openChatWithResult: resolved provider=${providerId} (explicit=${explicit ?? '(unset)'} workspace=${workspaceNonAuto ?? '(unset)'} selected=${selectedNonAuto ?? '(unset)'} settings=${settings} detected=${detected})`);
 
     return vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: `Opening ${CHAT_COMMANDS[providerId]?.label ?? providerId}…`, cancellable: false },
