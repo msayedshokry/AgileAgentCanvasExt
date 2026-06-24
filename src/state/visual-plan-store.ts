@@ -23,8 +23,19 @@ function getOutputFolderRoot(): string | undefined {
 
 export class VisualPlanStore {
   private plans = new Map<string, VisualPlan>();
-  private _onDidChange = new vscode.EventEmitter<VisualPlan[]>();
-  readonly onDidChange = this._onDidChange.event;
+  private _onDidChange?: vscode.EventEmitter<VisualPlan[]>;
+
+  private get _emitter(): vscode.EventEmitter<VisualPlan[]> {
+    if (!this._onDidChange) {
+      this._onDidChange = new vscode.EventEmitter<VisualPlan[]>();
+    }
+    return this._onDidChange;
+  }
+
+  /** Exposed as a vscode Event for consumers to subscribe. */
+  get onDidChange(): vscode.Event<VisualPlan[]> {
+    return this._emitter.event;
+  }
 
   /** Hydrate all plans from disk on construction. */
   constructor() {
@@ -81,7 +92,7 @@ export class VisualPlanStore {
     const buf = Buffer.from(JSON.stringify(plan, null, 2), 'utf-8');
     await vscode.workspace.fs.writeFile(fileUri, buf);
     this.plans.set(plan.id, plan);
-    this._onDidChange.fire(this.list());
+    this._emitter.fire(this.list());
     logger.debug(`Saved plan ${plan.id}`);
   }
 
@@ -103,11 +114,11 @@ export class VisualPlanStore {
     } catch (err) {
       logger.debug(`Could not delete plan file for ${id}: ${errMsg(err)}`);
     }
-    this._onDidChange.fire(this.list());
+    this._emitter.fire(this.list());
   }
 
   dispose(): void {
-    this._onDidChange.dispose();
+    this._onDidChange?.dispose();
   }
 }
 
