@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import { loadElicitationMethods, loadBmmWorkflows } from '../commands/artifact-commands';
 import { loadSampleProject } from '../commands/project-commands';
 import { handleCommonWebviewMessage } from './webview-message-handler';
+import { handleAgenticKanbanMessage } from './agentic-kanban-message-handler';
 import { buildArtifacts } from '../canvas/artifact-transformer';
 
 /**
@@ -62,9 +63,19 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
         webviewView.webview.onDidReceiveMessage(async (message) => {
             logger.debug(`[CanvasProvider] Received message: ${message.type}`);
 
-            // Try the shared handler first (covers refineWithAI, breakDown,
-            // enhanceWithAI, elicitWithMethod, startDevelopment, launchWorkflow,
-            // updateArtifact, deleteArtifact, and future additions).
+            // 1. Try the agentic-kanban handler first — covers `visualPlan:*`,
+            //    `kanban:*` (statusChanged / fetchAgentInfo / etc.) and other
+            //    Agentic Kanban domains. The canvas view renders the same
+            //    ArtifactCard / DetailPanel components as the kanban view, so
+            //    card-level actions like "Visualize Plan" or "Move to Lane"
+            //    also flow through this host and must be dispatched.
+            if (await handleAgenticKanbanMessage(message, this.store, this.extensionUri, webviewView.webview)) {
+                return;
+            }
+
+            // 2. Try the shared handler next — covers refineWithAI, breakDown,
+            //    enhanceWithAI, elicitWithMethod, startDevelopment, launchWorkflow,
+            //    updateArtifact, deleteArtifact, and future additions.
             if (await handleCommonWebviewMessage(message, this.store, this.extensionUri, '[CanvasProvider]', webviewView.webview)) {
                 return;
             }
@@ -373,11 +384,20 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
 
         panel.webview.html = this.getDetailTabHtml(panel.webview, artifactId);
 
-        // Handle messages from the detail tab — delegate common cases to shared handler
+        // Handle messages from the detail tab — delegate agentic-kanban first,
+        // then common cases, then panel-specific.
         panel.webview.onDidReceiveMessage(async (message) => {
             logger.debug(`[DetailTab:${artifactId}] Received message: ${message.type}`);
 
-            // Shared handler covers updateArtifact, deleteArtifact, refineWithAI,
+            // 1. Agentic Kanban handler renders the same DetailPanel component
+            //    as the kanban view, so card-level kanban actions (jumpToPhone,
+            //    jumpToTerminal, statusChanged, visualPlan:*, etc.) also flow
+            //    through this host and must be dispatched.
+            if (await handleAgenticKanbanMessage(message, this.store, this.extensionUri, panel.webview)) {
+                return;
+            }
+
+            // 2. Shared handler covers updateArtifact, deleteArtifact, refineWithAI,
             // breakDown, enhanceWithAI, elicitWithMethod, startDevelopment, launchWorkflow.
             if (await handleCommonWebviewMessage(message, this.store, this.extensionUri, `[DetailTab:${artifactId}]`, panel.webview)) {
                 return;
