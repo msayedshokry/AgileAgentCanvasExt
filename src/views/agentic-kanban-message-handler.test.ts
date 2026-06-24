@@ -12,6 +12,7 @@ vi.mock('../trace/trace-recorder', () => ({
 vi.mock('../workflow/visual-plan-service', () => ({
   visualPlanService: {
     generate: vi.fn(),
+    createPendingPlan: vi.fn(),
     list: vi.fn(() => []),
     get: vi.fn(),
     addComment: vi.fn(),
@@ -20,10 +21,24 @@ vi.mock('../workflow/visual-plan-service', () => ({
   },
 }));
 
+// The terminal-agent generate path uses the plan store (for the target file
+// path) and the chat-bridge (to route the prompt to the selected provider).
+vi.mock('../state/visual-plan-store', () => ({
+  visualPlanStore: {
+    planFilePath: vi.fn((id: string) => `/ws/.agileagentcanvas-context/plans/${id}.plan.json`),
+    list: vi.fn(() => []),
+  },
+}));
+vi.mock('../commands/chat-bridge', () => ({
+  getSelectedProvider: vi.fn(() => 'claude'),
+  openChatWithResult: vi.fn(async () => ({ ok: true, provider: 'claude', usedTerminal: true, fallback: 'none' })),
+}));
+
 import { computeTraceBreakdownForMostRecentRun, handleAgenticKanbanMessage } from './agentic-kanban-message-handler';
 import { VISUAL_PLAN_DISABLED_MESSAGE } from '../utils/visual-plan-config';
 import { getTraceRecorder } from '../trace/trace-recorder';
 import { visualPlanService } from '../workflow/visual-plan-service';
+import { openChatWithResult } from '../commands/chat-bridge';
 import * as vscode from 'vscode';
 import type { ArtifactStore } from '../state/artifact-store';
 
@@ -371,7 +386,7 @@ describe('handleAgenticKanbanMessage — visualPlan:generate config gate', () =>
   }
 
   const mockWebview = { postMessage: vi.fn() } as unknown as vscode.Webview;
-  const mockStore = {} as ArtifactStore;
+  const mockStore = { findArtifactById: vi.fn(() => undefined) } as unknown as ArtifactStore;
   const mockUri = {} as vscode.Uri;
 
   it('returns visualPlan:error and does NOT call generate when visualPlan.enabled is false', async () => {
@@ -394,9 +409,12 @@ describe('handleAgenticKanbanMessage — visualPlan:generate config gate', () =>
     expect(visualPlanService.generate).not.toHaveBeenCalled();
   });
 
-  it('proceeds to call visualPlanService.generate when visualPlan.enabled is true', async () => {
+  it('routes plan generation to the selected provider when visualPlan.enabled is true', async () => {
     setVisualPlanEnabled(true);
-    vi.mocked(visualPlanService.generate).mockResolvedValue('plan-abc-123');
+    vi.mocked(visualPlanService.createPendingPlan).mockResolvedValue({
+      id: 'plan-abc-123', title: 'ship it', goal: 'ship it', status: 'generating',
+      createdAt: 1, updatedAt: 1, sections: [], comments: [],
+    });
 
     const result = await handleAgenticKanbanMessage(
       { type: 'visualPlan:generate', goal: 'ship it', sourceArtifactId: 'S-2' },
@@ -407,14 +425,19 @@ describe('handleAgenticKanbanMessage — visualPlan:generate config gate', () =>
 
     // Handler acknowledged the message
     expect(result).toBe(true);
-    // Service called with correct params
-    expect(visualPlanService.generate).toHaveBeenCalledWith({
+    // A 'generating' stub was created with the right params
+    expect(visualPlanService.createPendingPlan).toHaveBeenCalledWith({
       goal: 'ship it',
       sourceArtifactId: 'S-2',
       context: undefined,
     });
-    // Single webview message — exact shape, no extras
-    expect(mockWebview.postMessage).toHaveBeenCalledTimes(1);
+    // The agent prompt was routed to the selected dropdown provider, and tells
+    // the agent to write the plan to the known file path.
+    expect(openChatWithResult).toHaveBeenCalledTimes(1);
+    const arg = vi.mocked(openChatWithResult).mock.calls[0][0]!;
+    expect(arg.provider).toBe('claude');
+    expect(arg.query).toContain('plan-abc-123.plan.json');
+    // 'generating' status pushed to the webview
     expect(mockWebview.postMessage).toHaveBeenCalledWith({
       type: 'visualPlan:generating',
       planId: 'plan-abc-123',
@@ -422,10 +445,9 @@ describe('handleAgenticKanbanMessage — visualPlan:generate config gate', () =>
     });
   });
 
-  it('posts visualPlan:error when generate throws, and still returns true', async () => {
+  it('posts visualPlan:error when generation setup throws, and still returns true', async () => {
     setVisualPlanEnabled(true);
-    const error = new Error('AI provider timeout');
-    vi.mocked(visualPlanService.generate).mockRejectedValue(error);
+    vi.mocked(visualPlanService.createPendingPlan).mockRejectedValue(new Error('disk full'));
 
     const result = await handleAgenticKanbanMessage(
       { type: 'visualPlan:generate', goal: 'risky plan', sourceArtifactId: 'S-3' },
@@ -436,17 +458,62 @@ describe('handleAgenticKanbanMessage — visualPlan:generate config gate', () =>
 
     // Handler still acknowledges the message (does not propagate the error)
     expect(result).toBe(true);
-    // generate was invoked — it just threw
-    expect(visualPlanService.generate).toHaveBeenCalledWith({
-      goal: 'risky plan',
-      sourceArtifactId: 'S-3',
-      context: undefined,
-    });
-    // Single error message posted — exact shape
-    expect(mockWebview.postMessage).toHaveBeenCalledTimes(1);
+    expect(visualPlanService.createPendingPlan).toHaveBeenCalled();
+    // No prompt routed when setup failed
+    expect(openChatWithResult).not.toHaveBeenCalled();
+    // Error surfaced to the webview
     expect(mockWebview.postMessage).toHaveBeenCalledWith({
       type: 'visualPlan:error',
-      error: 'AI provider timeout',
+      error: 'disk full',
+    });
+  });
+
+  it('posts visualPlan:error when openChatWithResult returns ok:false with a fallback message', async () => {
+    setVisualPlanEnabled(true);
+    vi.mocked(visualPlanService.createPendingPlan).mockResolvedValue({
+      id: 'plan-fallback-1', title: 'fallback test', goal: 'fallback test', status: 'generating',
+      createdAt: 1, updatedAt: 1, sections: [], comments: [],
+    });
+    // Simulate clipboard-fallback from openChatWithResult — happens when the
+    // resolved providerId (still 'auto' in the bridge even after our ??-chain
+    // fix because the host has no chat-capable CHAT_COMMANDS entry) has no
+    // panel/terminal/withQuery/openOnly handler, so the bridge silently drops
+    // the prompt on the clipboard and returns { ok: false, message, ... }.
+    vi.mocked(openChatWithResult).mockResolvedValue({
+      ok: false,
+      provider: 'auto',
+      usedTerminal: false,
+      fallback: 'clipboard',
+      message: 'Could not open Auto chat automatically — command copied to clipboard.',
+    });
+
+    const result = await handleAgenticKanbanMessage(
+      { type: 'visualPlan:generate', goal: 'fallback test', sourceArtifactId: 'S-4' },
+      mockStore,
+      mockUri,
+      mockWebview,
+    );
+
+    // Handler still ack's the IPC so the webview drops the queue/loading bar.
+    expect(result).toBe(true);
+    // The plan stub was still created (so the card appears immediately) and
+    // the 'generating' state was still posted — these are pre-failure steps.
+    expect(visualPlanService.createPendingPlan).toHaveBeenCalledWith({
+      goal: 'fallback test',
+      sourceArtifactId: 'S-4',
+      context: undefined,
+    });
+    expect(mockWebview.postMessage).toHaveBeenCalledWith({
+      type: 'visualPlan:generating',
+      planId: 'plan-fallback-1',
+      goal: 'fallback test',
+    });
+    // The fix under test: when openChatWithResult fails AND carries a message,
+    // the handler must post visualPlan:error with that message so the user
+    // sees "command copied to clipboard" rather than a silent no-op.
+    expect(mockWebview.postMessage).toHaveBeenCalledWith({
+      type: 'visualPlan:error',
+      error: 'Could not open Auto chat automatically — command copied to clipboard.',
     });
   });
 

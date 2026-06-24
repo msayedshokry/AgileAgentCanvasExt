@@ -18,7 +18,10 @@ import { setKanbanAutoAdvance, isKanbanAutoAdvanceEnabled, getKanbanWipLimits } 
 import { schedulerWebviewControls, MSG_SCHEDULER_STATE } from '../workflow/scheduler-webview-controls';
 import { goalDecomposer } from '../workflow/goal-decomposer';
 import { visualPlanService } from '../workflow/visual-plan-service';
+import { visualPlanStore } from '../state/visual-plan-store';
+import { getSelectedProvider, openChatWithResult } from '../commands/chat-bridge';
 import { isVisualPlanEnabled, VISUAL_PLAN_DISABLED_MESSAGE } from '../utils/visual-plan-config';
+import type { VisualPlan } from '../types/visual-plan';
 import { budgetEnforcer } from '../workflow/budget-enforcer';
 import { circuitBreaker } from '../workflow/circuit-breaker';
 
@@ -274,6 +277,50 @@ export async function computeTraceBreakdownForMostRecentRun(): Promise<TraceBrea
     perWorkflow,
   };
 }
+/**
+ * Build the prompt sent to the selected agent for terminal-based plan
+ * generation. The agent is told to WRITE the finished plan as JSON to an exact
+ * file path (not print it), so the store's plans-dir watcher can ingest it and
+ * render the structured card.
+ */
+function buildVisualPlanTerminalPrompt(plan: VisualPlan, filePath: string, sourceTitle?: string): string {
+  return [
+    'You are generating a Visual Plan — a structured, reviewable implementation plan.',
+    sourceTitle ? `Scope: changes for "${sourceTitle}".` : '',
+    `Goal: ${plan.goal}`,
+    '',
+    'Ground the plan in the actual repository (real files, symbols, schemas).',
+    'When finished, WRITE the plan as a SINGLE JSON object to this exact file path',
+    '(create/overwrite it — do NOT print the JSON in chat):',
+    `  ${filePath}`,
+    '',
+    'The JSON MUST have this shape:',
+    '{',
+    `  "id": ${JSON.stringify(plan.id)},`,
+    '  "title": string,',
+    `  "goal": ${JSON.stringify(plan.goal)},`,
+    '  "status": "pending",',
+    `  "createdAt": ${plan.createdAt},`,
+    '  "updatedAt": <current epoch ms>,',
+    ...(plan.sourceArtifactId ? [`  "sourceArtifactId": ${JSON.stringify(plan.sourceArtifactId)},`] : []),
+    '  "targets": string[]  (artifact ids this plan affects, optional),',
+    '  "comments": [],',
+    '  "sections": PlanSection[]',
+    '}',
+    '',
+    'Each PlanSection has a unique string "id" and a "kind". Supported kinds:',
+    '- { "kind": "overview", "markdown": string, "risk"?: "low"|"medium"|"high", "groundedFiles"?: string[] }',
+    '- { "kind": "fileMap", "entries": [{ "path": string, "change": "add"|"modify"|"delete"|"rename", "note"?: string }] }',
+    '- { "kind": "diagram", "diagram": { "id": string, "title"?: string, "nodes"?: [{ "id": string, "label": string }], "edges"?: [{ "from": string, "to": string, "label"?: string }] } }',
+    '- { "kind": "apiSpec", "entries": [{ "method": string, "path": string, "summary"?: string, "responses"?: [{ "code": string, "description": string }] }] }',
+    '- { "kind": "schemaMap", "entities": [{ "name": string, "fields"?: [{ "name": string, "type": string, "required"?: boolean }] }] }',
+    '- { "kind": "openQuestions", "questions": [{ "id": string, "question": string }] }',
+    '- { "kind": "tasks", "tasks": [{ "id": string, "title": string, "description"?: string, "priority"?: string }] }',
+    '',
+    'Include at minimum an "overview", a "fileMap", and a "tasks" section. Write valid JSON only to that file.',
+  ].filter(Boolean).join('\n');
+}
+
 export async function handleAgenticKanbanMessage(
   message: { type: string; [key: string]: any },
   store: ArtifactStore,
@@ -904,13 +951,57 @@ export async function handleAgenticKanbanMessage(
         return true;
       }
       try {
-        const id = await visualPlanService.generate({
-          goal: message.goal ?? message.text ?? '',
+        const sourceTitle = message.sourceArtifactId
+          ? store.findArtifactById(message.sourceArtifactId)?.artifact?.title
+          : undefined;
+
+        let goal = (message.goal ?? message.text ?? '').trim();
+        if (!goal) {
+          // No goal supplied (e.g. the canvas/kanban "Plan" button posts
+          // goal:'') — prompt natively rather than generating an empty,
+          // meaningless plan. Pre-contextualize when scoped to an artifact.
+          const entered = await vscode.window.showInputBox({
+            title: 'Generate Visual Plan',
+            prompt: sourceTitle
+              ? `Describe the change to plan for "${sourceTitle}"`
+              : 'Describe what you want to plan',
+            placeHolder: 'e.g. Add OAuth login with GitHub',
+            ignoreFocusOut: true,
+          });
+          goal = (entered ?? '').trim();
+          if (!goal) {
+            return true; // user cancelled the prompt — no-op
+          }
+        }
+
+        // Route through the provider chosen in the canvas dropdown (Copilot →
+        // chat, Claude Code / OMP / … → terminal), matching how every other
+        // card action routes. Persist a 'generating' stub so a card appears
+        // immediately, then instruct the agent to WRITE the finished plan JSON
+        // to a known path; the store's plans-dir watcher ingests it and the
+        // card fills in. (The /visual-plan chat command keeps the direct-API
+        // path for an immediate structured result.)
+        const plan = await visualPlanService.createPendingPlan({
+          goal,
           sourceArtifactId: message.sourceArtifactId,
           context: message.context,
         });
+        const filePath = visualPlanStore.planFilePath(plan.id);
+        if (!filePath) {
+          throw new Error('Open a workspace folder to generate a Visual Plan.');
+        }
         if (webview) {
-          webview.postMessage({ type: 'visualPlan:generating', planId: id, goal: message.goal });
+          webview.postMessage({ type: 'visualPlan:generating', planId: plan.id, goal });
+        }
+
+        const prompt = buildVisualPlanTerminalPrompt(plan, filePath, sourceTitle);
+        const chatResult = await openChatWithResult({ provider: getSelectedProvider(), query: prompt });
+        // If the prompt landed on the clipboard (no provider available, no
+        // model configured, etc.), surface the failure message so the UI
+        // doesn't silently swallow it — the plan file is created either way
+        // but the LLM needs to know it was sent somewhere.
+        if (!chatResult.ok && chatResult.message && webview) {
+          webview.postMessage({ type: 'visualPlan:error', error: chatResult.message });
         }
       } catch (error) {
         logger.warn(`[AgenticKanban] visualPlan:generate failed: ${errMsg(error)}`);

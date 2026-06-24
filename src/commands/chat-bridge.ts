@@ -708,8 +708,15 @@ export async function openChatWithResult(
     const settings = loadSelectedProviderFromSettings();
     const detected = await detectIdeForChat().catch(() => 'copilot');
 
+    // 'auto' is a SENTINEL — it must always fall through. `??` only filters
+    // null/undefined, so the literal string 'auto' short-circuited the
+    // previous chain and forced doOpenChat('auto', ...) into the silent
+    // clipboard fallback (the canvas `|Plan|` button would create a JSON
+    // stub but never reach a chat panel or terminal).
+    const selectedNonAuto = _selectedProvider !== 'auto' ? _selectedProvider : undefined;
+
     const providerId: ChatProviderId = explicit
-        ?? _selectedProvider
+        ?? selectedNonAuto
         ?? (settings !== 'auto' ? settings : undefined)
         ?? (detected as ChatProviderId)
         ?? 'copilot';
