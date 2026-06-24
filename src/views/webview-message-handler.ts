@@ -1074,7 +1074,19 @@ export async function handleCatalogueWebviewMessage(
         case 'selectChatProvider': {
             // Persist the user's dropdown choice so subsequent openChat() calls
             // route to this provider regardless of which IDE is hosting.
-            const id = String(message.provider || 'auto') as ChatProviderId;
+            //
+            // BUGFIX: ProviderSelector.tsx ships the field as `providerId`
+            // (e.g. `{ type: 'selectChatProvider', providerId: 'claude' }`),
+            // but this handler historically read `message.provider`. Because
+            // `message.provider` was undefined for that wire format, we ended
+            // up defaulting back to 'auto' — which silently routed every
+            // subsequent `openChat()` call through the detected host IDE
+            // (typically `copilot`), ignoring the user's pick.
+            //
+            // Accept BOTH `providerId` (current webview) and `provider`
+            // (older wire format & the canonical ChatProviderId field name)
+            // for backward/forward compatibility.
+            const id = String(message.providerId ?? message.provider ?? 'auto') as ChatProviderId;
             setSelectedProvider(id);
             // Echo the change back to all webviews so the dropdown stays in sync.
             if (webview) {
@@ -1087,7 +1099,11 @@ export async function handleCatalogueWebviewMessage(
             // A canvas button fired an action that should go to a specific
             // provider. The webview sends both the prompt and the desired
             // provider id; openChatWithResult() handles routing.
-            const provider = (message.provider as ChatProviderId | undefined) ?? 'auto';
+            //
+            // Same wire-format dual-naming as `selectChatProvider` above:
+            // both `provider` (canonical) and `providerId` (what some webview
+            // cards send) are accepted.
+            const provider = (String(message.provider ?? message.providerId ?? 'auto') as ChatProviderId);
             const query = typeof message.query === 'string' ? message.query : undefined;
             const result = await openChatWithResult({ provider, query });
             if (webview) {
