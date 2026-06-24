@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import { ArtifactStore } from '../state/artifact-store';
 import { buildArtifacts } from '../canvas/artifact-transformer';
 import { handleAgenticKanbanMessage, disposeAllTerminalStreams } from './agentic-kanban-message-handler';
+import { handleCommonWebviewMessage } from './webview-message-handler';
 import { getActiveChatSession } from '../chat/active-session';
 import { kanbanProgress } from '../workflow/kanban-orchestrator';
 import { getKanbanWipLimits } from '../workflow/kanban-settings';
@@ -102,6 +103,14 @@ export class AgenticKanbanViewProvider implements vscode.WebviewViewProvider {
       logger.debug(`[AgenticKanbanProvider] Received: ${message.type}`);
 
       if (await handleAgenticKanbanMessage(message, this.store, this.extensionUri, this._view?.webview)) {
+        return;
+      }
+
+      // Delegate common card-level actions (startDevelopment, startDocumentation,
+      // refineWithAI, breakDown, updateArtifact, deleteArtifact, jiraAction, …)
+      // to the central handler — same delegation the main canvas panel uses.
+      // Without this, all card actions silently fall through and "don't work".
+      if (await handleCommonWebviewMessage(message, this.store, this.extensionUri, '[AgenticKanban]', this._view?.webview)) {
         return;
       }
 
