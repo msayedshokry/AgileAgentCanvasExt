@@ -6382,6 +6382,46 @@ body.vscode-light .minimap-viewport {
   box-shadow: 0 1px 6px rgba(40, 167, 69, 0.3);
 }
 
+/* ================================================
+   PLAN BUTTON — Artifact Card hover button (Visual Plan)
+   Mirrors the docs/elicit/dev card-action pattern with a
+   distinct rose accent so it reads as a sibling action.
+   ================================================ */
+
+.card-plan-btn {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  background: linear-gradient(135deg, rgba(219, 39, 119, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%);
+  color: #ec4899;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  opacity: 0;
+  transform: scale(0.9);
+  flex-shrink: 0;
+}
+
+.artifact-card:hover .card-plan-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.card-plan-btn:hover {
+  background: linear-gradient(135deg, rgba(219, 39, 119, 0.35) 0%, rgba(236, 72, 153, 0.35) 100%);
+  box-shadow: 0 1px 6px rgba(236, 72, 153, 0.3);
+}
+
+.card-plan-btn:focus-visible {
+  opacity: 1;
+  transform: scale(1);
+  outline: 2px solid var(--vscode-focusBorder);
+}
+
 
 
 /* =============================================================================
@@ -9229,6 +9269,61 @@ body.vscode-light .kanban-toggle-fab:hover {
 
 .app.with-detail-panel .kanban-toggle-fab {
   right: 640px;
+}
+
+/* Visual Plan FAB — compact variant at bottom-right */
+.visual-plan-fab {
+  position: absolute;
+  bottom: 80px;
+  right: 16px;
+  z-index: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: 1px solid var(--vscode-button-border, transparent);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 500;
+  font-family: var(--vscode-font-family);
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.14);
+  backdrop-filter: blur(8px);
+  transition: background 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  letter-spacing: 0.01em;
+  user-select: none;
+  opacity: 0.75;
+}
+
+.visual-plan-fab:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+  opacity: 1;
+}
+
+.visual-plan-fab:active {
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  transform: scale(0.97);
+}
+
+body.ac-force-light .visual-plan-fab,
+body.vscode-light .visual-plan-fab {
+  background: #ffffff;
+  color: var(--vscode-foreground, #1a1d23);
+  border: 1px solid #d0d4dc;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+body.ac-force-light .visual-plan-fab:hover,
+body.vscode-light .visual-plan-fab:hover {
+  background: #f5f6f8;
+}
+
+.app.with-detail-panel .visual-plan-fab {
+  right: 396px;
 }
 
 

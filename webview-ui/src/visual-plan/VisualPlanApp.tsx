@@ -22,11 +22,11 @@ export function VisualPlanApp() {
         setLoading(false);
         break;
       case 'visualPlan:list:result':
-        // Extension sends existing plans on connection
-        if (message.plans && message.plans.length > 0) {
-          setPlan(message.plans[0]);
-          setLoading(false);
-        }
+        // Extension sends existing plans on connection. Always clear loading —
+        // even when the list is empty — so the empty-state renders instead of
+        // an infinite "Loading plan…" spinner.
+        setPlan(message.plans && message.plans.length > 0 ? message.plans[0] : null);
+        setLoading(false);
         break;
       case 'visualPlan:error':
         setLoading(false);

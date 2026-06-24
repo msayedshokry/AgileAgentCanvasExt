@@ -186,17 +186,11 @@ export class AutonomyLifecycle extends EventEmitter {
     goalDecomposer.on('reviewed', (g) => this.broadcast({ type: 'goalReviewed', goal: g }));
     goalDecomposer.on('dispatched', (payload) => this.broadcast({ type: 'goalDispatched', ...payload }));
 
-    // 7b) Visual Plan service — broadcast on events;
-    //     in 'panel' mode, auto-open the pop-out after generation
-    visualPlanService.on('ready', (plan) => {
-      this.broadcast({ type: 'visualPlan:ready', plan });
-      if (getVisualPlanMode() === 'panel') {
-        vscode.commands.executeCommand('agileagentcanvas.openVisualPlan');
-      }
-    });
-    visualPlanService.on('failed', (plan, error) => this.broadcast({ type: 'visualPlan:error', error, planId: plan.id }));
-    visualPlanService.on('dispatched', (payload) => this.broadcast({ type: 'visualPlan:dispatched', ...payload }));
-    visualPlanService.on('changesRequested', (plan) => this.broadcast({ type: 'visualPlan:ready', plan }));
+    // 7b) Visual Plan — wire generation hooks + service→webview broadcasts.
+    //     Extracted + idempotent so extension.ts can also call it
+    //     unconditionally (plan generation must work before the autonomy
+    //     stack starts, e.g. a fresh project with no output folder yet).
+    this.ensureVisualPlanWiring(this.store, this.hooks.extensionPath, (m) => this.broadcast(m));
 
     // 8) Wire the AutoScheduler story runner to actually execute stories.
     //    When auto-advance is enabled, each ready-for-dev story picked up
@@ -234,9 +228,6 @@ export class AutonomyLifecycle extends EventEmitter {
     // 9) Wire Goal Decomposer hooks so the toolbar "Submit Goal" flow
     //    actually works end-to-end.
     this.wireGoalDecomposerHooks();
-
-    // 9b) Wire Visual Plan hooks — generate / persistTask / notifyScheduler
-    this.wireVisualPlanHooks();
 
     // 10) Auto-resume on dependency completion. The ArtifactStore change
     //    event now passes actual change deltas and story data so blocked
@@ -615,11 +606,40 @@ export class AutonomyLifecycle extends EventEmitter {
    * persistTask: creates a story in the artifact store for each approved task.
    * notifyScheduler: adds the new story ID to the scheduler.
    */
-  private wireVisualPlanHooks(): void {
-    if (!this.store) return;
-    if (!this.hooks?.extensionPath) return;
-    const store = this.store;
-    const extensionPath = this.hooks.extensionPath;
+  private visualPlanWired = false;
+
+  /**
+   * Wire Visual Plan generation hooks + service→webview broadcasts. Safe to
+   * call independently of start() so plan generation works even before the
+   * autonomy stack starts (e.g. a fresh project with no output folder yet).
+   * Idempotent — wiring happens at most once per process.
+   */
+  ensureVisualPlanWiring(
+    store: ArtifactStore | null | undefined,
+    extensionPath: string | undefined,
+    broadcast: (message: unknown) => void,
+  ): void {
+    if (this.visualPlanWired) return;
+    if (!store || !extensionPath) return;
+    this.visualPlanWired = true;
+    this.store = this.store ?? store;
+
+    // Service → webview broadcasts; in 'panel' mode auto-open the pop-out.
+    visualPlanService.on('ready', (plan) => {
+      broadcast({ type: 'visualPlan:ready', plan });
+      if (getVisualPlanMode() === 'panel') {
+        vscode.commands.executeCommand('agileagentcanvas.openVisualPlan');
+      }
+    });
+    visualPlanService.on('failed', (plan, error) => broadcast({ type: 'visualPlan:error', error, planId: plan.id }));
+    visualPlanService.on('dispatched', (payload) => broadcast({ type: 'visualPlan:dispatched', ...payload }));
+    visualPlanService.on('changesRequested', (plan) => broadcast({ type: 'visualPlan:ready', plan }));
+
+    // Generation / dispatch hooks.
+    this.wireVisualPlanHooks(store, extensionPath);
+  }
+
+  private wireVisualPlanHooks(store: ArtifactStore, extensionPath: string): void {
     const generator = new VisualPlanGenerator(extensionPath);
 
     visualPlanService.setHooks({
@@ -638,47 +658,36 @@ export class AutonomyLifecycle extends EventEmitter {
             );
           }
         } catch {
-          // getActiveChatSession not available — fall through to vscode.lm
+          // getActiveChatSession not available — fall through to headless generation
         }
 
-        // Fallback: use vscode.lm directly (no streaming, simpler path).
-        // Reuses the generator's mapToVisualPlan for consistent normalization.
-        const models = await vscode.lm.selectChatModels({ vendor: 'copilot' });
-        const available = models?.length ? models : await vscode.lm.selectChatModels({});
-        if (!available?.length) {
-          throw new Error('No language model available for plan generation');
+        // No chat session open — resolve a model via the CONFIGURED provider
+        // (agileagentcanvas.aiProvider: copilot / openai / anthropic / gemini /
+        // ollama / …) and generate headlessly with a silent stream. Reuses the
+        // generator's full prompt + JSON-repair path, and — unlike the old
+        // vscode.lm-only fallback — works when the user picked a non-Copilot
+        // provider such as Claude.
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const { selectModel } = require('../chat/ai-provider');
+        const model = await selectModel();
+        if (!model) {
+          throw new Error(
+            'No AI model available for plan generation. Set "agileagentcanvas.aiProvider" ' +
+            '(and an API key if the provider needs one) in Settings.',
+          );
         }
 
-        const lm = available[0];
-        const fallbackPrompt =
-          'You are generating a Visual Plan — a structured, reviewable plan document. ' +
-          'Return a SINGLE JSON object with title, sections (overview, fileMap, tasks required), and optional targets. ' +
-          'No prose, no markdown — only the JSON object.';
+        const nullStream = {
+          markdown: () => {}, anchor: () => {}, button: () => {}, filetree: () => {},
+          progress: () => {}, reference: () => {}, push: () => {},
+        } as unknown as vscode.ChatResponseStream;
 
-        const messages = [
-          vscode.LanguageModelChatMessage.User(
-            `${fallbackPrompt}\n\nGoal: ${request.goal}\n\nReturn ONLY a single JSON object — no prose, no markdown.`,
-          ),
-        ];
-
-        const response = await lm.sendRequest(
-          messages,
-          {},
+        return generator.generate(
+          request,
+          model,
+          nullStream,
           new vscode.CancellationTokenSource().token,
         );
-
-        let text = '';
-        for await (const chunk of response.text) {
-          text += chunk;
-        }
-
-        const extracted = extractJson(text);
-        if (!extracted.ok) {
-          throw new Error(`Failed to parse plan JSON: ${extracted.error}`);
-        }
-
-        // Reuse the generator's full normalization → consistent section shapes
-        return generator.mapToVisualPlan(request, extracted.data);
       },
 
       persistTask: async (task: PlanTask, _planId: string): Promise<string> => {

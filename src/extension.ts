@@ -509,6 +509,37 @@ export function activate(context: vscode.ExtensionContext) {
         autoScheduler.setStories(fresh as Array<{ id: string; status: string; priority?: string }>);
     });
 
+    // Visual plans live in a separate store (visualPlanStore), so an
+    // artifactStore change does NOT fire when a plan is generated, approved, or
+    // has changes requested. Refresh every open canvas panel on plan changes so
+    // a newly generated ◆ Plan card (and its dashed ghost cards) appears without
+    // requiring a VS Code reload. Mirrors the artifactStore subscriber above.
+    visualPlanStore.onDidChange(() => {
+        for (const panel of openCanvasPanels) {
+            try { sendArtifactsToPanel(panel, artifactStore); } catch { /* panel disposed */ }
+        }
+    });
+
+    // Watch the plans/ dir so plan files written by an EXTERNAL terminal agent
+    // (the dropdown "Plan" path for Claude Code / OMP / …) are ingested and
+    // rendered as cards live, without a reload.
+    context.subscriptions.push(visualPlanStore.watchPlansDir());
+
+    // Reusable broadcast to all live canvas panels + the Agentic Kanban view.
+    const broadcastToWebviews = (message: unknown): void => {
+        for (const panel of openCanvasPanels) {
+            try { panel.webview.postMessage(message); } catch { /* panel disposed */ }
+        }
+        try { agenticKanbanProvider.broadcast(message); } catch { /* view not visible */ }
+    };
+
+    // Wire Visual Plan generation UNCONDITIONALLY — independent of the autonomy
+    // stack, which only starts once an output folder exists. This makes the
+    // "Plan" buttons work even in a brand-new project with no
+    // .agileagentcanvas-context folder yet. Idempotent: start() calling it
+    // again is a no-op.
+    autonomyLifecycle.ensureVisualPlanWiring(artifactStore, context.extensionPath, broadcastToWebviews);
+
     // ── Workspace resolver: centralized active-project management ───────
     workspaceResolver = new WorkspaceResolver(context);
     context.subscriptions.push(workspaceResolver);
@@ -540,12 +571,7 @@ export function activate(context: vscode.ExtensionContext) {
 
                 autonomyLifecycle.configure(
                     {
-                        broadcast: (msg) => {
-                            for (const panel of openCanvasPanels) {
-                                try { panel.webview.postMessage(msg); } catch { /* panel disposed */ }
-                            }
-                            try { agenticKanbanProvider.broadcast(msg); } catch { /* view not visible */ }
-                        },
+                        broadcast: broadcastToWebviews,
                         outputFolder: tracesOutputPath,
                         extensionPath: context.extensionPath,
                     },

@@ -87,3 +87,6 @@ wrap-tools-*.js
 
 # Misc generated
 *.tsbuildinfo
+
+# Claude agent orchestration / PRP scratch dir (analogous to .cursor)
+.claude/

@@ -77,6 +77,29 @@ export class VisualPlanService extends EventEmitter {
     return id;
   }
 
+  /**
+   * Create + persist a 'generating' stub WITHOUT calling the AI hook. Used by
+   * the terminal-agent "Plan" path: an external agent (Claude Code / OMP / …)
+   * writes the finished plan file, which the store's watcher ingests. Returns
+   * the stub so the caller knows the id + file path to instruct the agent with.
+   */
+  async createPendingPlan(request: VisualPlanGenerateRequest): Promise<VisualPlan> {
+    const plan: VisualPlan = {
+      id: generateId(),
+      title: request.goal.slice(0, 80) || 'New plan',
+      goal: request.goal,
+      status: 'generating',
+      createdAt: now(),
+      updatedAt: now(),
+      sourceArtifactId: request.sourceArtifactId,
+      sections: [],
+      comments: [],
+    };
+    await visualPlanStore.save(plan);
+    logger.info('VisualPlan pending stub created for terminal generation', { id: plan.id });
+    return plan;
+  }
+
   get(id: string): VisualPlan | undefined {
     return visualPlanStore.get(id);
   }

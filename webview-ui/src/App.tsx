@@ -864,8 +864,11 @@ function App() {
     vscode.postMessage({ type: 'openDetailTab', artifactId });
   });
 
-  const handleOpenVisualPlan = useEvent(() => {
-    vscode.postMessage({ type: 'openVisualPlan' });
+  const handleGenerateVisualPlan = useEvent(() => {
+    // Blank goal — the extension prompts for one natively (showInputBox),
+    // then generates. The new ◆ Plan card appears on the canvas once the
+    // plan is saved (extension subscribes to visualPlanStore changes).
+    vscode.postMessage({ type: 'visualPlan:generate', goal: '' });
   });
 
   const handleFixSchemas = useEvent(() => {
@@ -1077,16 +1080,15 @@ function App() {
         <span className="workflow-fab-icon"><Icon name="workflow" size={18} /></span>
         <span className="workflow-fab-label">Workflows</span>
       </button>
-      {/* Visual Plan FAB — opens the Visual Plan pop-out */}
+      {/* Visual Plan FAB — generate a plan (extension prompts for the goal) */}
       <button
-        className="kanban-toggle-fab"
-        onClick={handleOpenVisualPlan}
-        title="Open Visual Plan"
-        aria-label="Open Visual Plan"
-        style={{ bottom: '176px' }}
+        className="visual-plan-fab"
+        onClick={handleGenerateVisualPlan}
+        title="Generate Visual Plan"
+        aria-label="Generate Visual Plan"
       >
-        <Icon name="prd" size={16} />
-        <span className="kanban-toggle-label">Plan</span>
+        <Icon name="prd" size={12} />
+        <span>Plan</span>
       </button>
       {/* Kanban toggle FAB — sits to the left of the Provider Selector */}
       <button
