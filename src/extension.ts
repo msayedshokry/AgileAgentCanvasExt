@@ -22,6 +22,8 @@ import { registerA2ACommands } from './commands/a2a-commands';
 import { harnessEngine } from './harness/policy-engine';
 import { loadUserPolicies } from './harness/policy-loader';
 import { sendArtifactsToPanel, buildArtifacts } from './canvas/artifact-transformer';
+import { visualPlanStore } from './state/visual-plan-store';
+import { visualPlanService } from './workflow/visual-plan-service';
 import { registerTools, sharedToolContext } from './chat/agileagentcanvas-tools';
 import {
     handleAddArtifact,
@@ -426,6 +428,12 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('agileagentcanvas.openChatPanel', (query?: string) => {
             return openChat(query);
         }),
+        vscode.commands.registerCommand('agileagentcanvas.generateVisualPlan', () => {
+            return openChat('@agileagentcanvas /visual-plan');
+        }),
+        vscode.commands.registerCommand('agileagentcanvas.openVisualPlan', () => {
+            return openVisualPlanPanel(context, artifactStore);
+        }),
         // Ask Agent — open the Ask modal on the canvas (triggered by Ctrl+Shift+A)
         vscode.commands.registerCommand('agileagentcanvas.askAgent', () => {
             // Post to all open canvas panels; the webview will open the Ask modal
@@ -495,7 +503,7 @@ export function activate(context: vscode.ExtensionContext) {
         // Issue #21: re-seed the scheduler with the fresh story universe so a
         // card drag into ready-for-dev is picked up by the next tick (and a
         // drag out of ready-for-dev removes it from consideration).
-        const fresh = buildArtifacts(artifactStore, workspaceRoot)
+        const fresh = buildArtifacts(artifactStore, workspaceRoot, visualPlanStore.list())
             .filter((a: any) => a.type === 'story')
             .map((a: any) => ({ id: a.id, status: a.status, priority: a.priority }));
         autoScheduler.setStories(fresh as Array<{ id: string; status: string; priority?: string }>);
@@ -539,6 +547,7 @@ export function activate(context: vscode.ExtensionContext) {
                             try { agenticKanbanProvider.broadcast(msg); } catch { /* view not visible */ }
                         },
                         outputFolder: tracesOutputPath,
+                        extensionPath: context.extensionPath,
                     },
                     artifactStore
                 );
@@ -880,6 +889,9 @@ async function openCanvasPanel(context: vscode.ExtensionContext, store: Artifact
                         openDetailTab(message.artifactId, context, store);
                     }
                     break;
+                case 'openVisualPlan':
+                    openVisualPlanPanel(context, store);
+                    break;
                 case 'switchProject':
                     {
                         const switched = await workspaceResolver.promptSwitchProject();
@@ -913,6 +925,78 @@ async function openCanvasPanel(context: vscode.ExtensionContext, store: Artifact
     }, null, context.subscriptions);
 }
 
+async function openVisualPlanPanel(context: vscode.ExtensionContext, store: ArtifactStore): Promise<void> {
+    const panel = vscode.window.createWebviewPanel(
+        'agileagentcanvasVisualPlan',
+        'Visual Plan',
+        vscode.ViewColumn.Beside,
+        {
+            enableScripts: true,
+            retainContextWhenHidden: true,
+            localResourceRoots: [
+                vscode.Uri.joinPath(context.extensionUri, 'webview-ui', 'build')
+            ]
+        }
+    );
+
+    panel.webview.html = getVisualPlanHtml(panel.webview, context.extensionUri);
+
+    panel.webview.onDidReceiveMessage(async (message) => {
+        logger.debug(`[VisualPlanPanel] Received: ${message.type}`);
+        if (await handleAgenticKanbanMessage(message, store, context.extensionUri, panel.webview)) return;
+        if (await handleCommonWebviewMessage(message, store, context.extensionUri, '[VisualPlanPanel]', panel.webview)) return;
+    }, undefined, context.subscriptions);
+
+    // Send existing plans immediately so the pop-out isn't stuck in loading state
+    const existingPlans = visualPlanService.list();
+    if (existingPlans.length > 0) {
+        panel.webview.postMessage({ type: 'visualPlan:list:result', plans: existingPlans });
+    }
+
+    // Subscribe to plan events so the pop-out stays in sync with new plans
+    const onReady = (plan: any) => {
+        try { panel.webview.postMessage({ type: 'visualPlan:ready', plan }); } catch { /* disposed */ }
+    };
+    const onError = (_plan: any, error: string) => {
+        try { panel.webview.postMessage({ type: 'visualPlan:error', error }); } catch { /* disposed */ }
+    };
+    visualPlanService.on('ready', onReady);
+    visualPlanService.on('failed', onError);
+    panel.onDidDispose(() => {
+        visualPlanService.off('ready', onReady);
+        visualPlanService.off('failed', onError);
+    }, null, context.subscriptions);
+}
+
+function getVisualPlanHtml(webview: vscode.Webview, extensionUri: vscode.Uri): string {
+    const buildPath = vscode.Uri.joinPath(extensionUri, 'webview-ui', 'build');
+    const scriptUri = webview.asWebviewUri(
+        vscode.Uri.joinPath(buildPath, 'assets', 'index.js')
+    );
+    const styleUri = webview.asWebviewUri(
+        vscode.Uri.joinPath(buildPath, 'assets', 'index.css')
+    );
+
+    const csp = `default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} data:;`;
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="${csp}">
+    <link rel="stylesheet" href="${styleUri}">
+    <title>Visual Plan</title>
+</head>
+<body>
+    <script>console.log('[webview:inline:visualplan] readyState='+document.readyState);window.onerror=function(m,s,l,c,e){console.error('[webview:onerror]',m,'at',s+':'+l+':'+c,e&&e.stack);var el=document.getElementById('root');if(el)el.innerHTML+='<div style="padding:8px;margin:4px;background:#400;color:#faa;font-size:11px;font-family:monospace;white-space:pre-wrap">EARLY ERROR: '+m+'<br>'+s+':'+l+'</div>';return false;};</script>
+    <script>window.__AC_MODE__ = 'visual-plan';</script>
+    <div id="root"></div>
+    <script src="${scriptUri}"></script>
+</body>
+</html>`;
+}
+
 function openDetailTab(artifactId: string, context: vscode.ExtensionContext, store: ArtifactStore): void {
     // If tab already open for this artifact, just reveal it
     const existing = detailTabs.get(artifactId);
@@ -922,7 +1006,7 @@ function openDetailTab(artifactId: string, context: vscode.ExtensionContext, sto
     }
 
     // Look up artifact title for the tab label
-    const artifacts = buildArtifacts(store, vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath);
+    const artifacts = buildArtifacts(store, vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath, visualPlanStore.list());
     const artifact = artifacts.find((a: any) => a.id === artifactId);
     const title = artifact ? `Detail: ${artifact.title || artifactId}` : `Detail: ${artifactId}`;
 
@@ -958,7 +1042,7 @@ function openDetailTab(artifactId: string, context: vscode.ExtensionContext, sto
         switch (message.type) {
             case 'ready':
                 {
-                    const allArtifacts = buildArtifacts(store, vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath);
+                    const allArtifacts = buildArtifacts(store, vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath, visualPlanStore.list());
                     const art = allArtifacts.find((a: any) => a.id === artifactId);
                     if (art) {
                         panel.webview.postMessage({
@@ -978,7 +1062,7 @@ function openDetailTab(artifactId: string, context: vscode.ExtensionContext, sto
     // Update detail tab when artifacts change
     const sub = store.onDidChangeArtifacts(() => {
         try {
-            const allArtifacts = buildArtifacts(store, vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath);
+            const allArtifacts = buildArtifacts(store, vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath, visualPlanStore.list());
             const art = allArtifacts.find((a: any) => a.id === artifactId);
             if (art) {
                 panel.webview.postMessage({

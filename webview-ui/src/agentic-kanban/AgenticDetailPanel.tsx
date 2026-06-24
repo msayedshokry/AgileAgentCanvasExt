@@ -436,6 +436,20 @@ export function AgenticDetailPanel({
                 </button>
               </div>
             )}
+            {/* Visual Plan: generate a plan scoped to this artifact */}
+            <button
+              className="agentic-detail-btn agentic-detail-btn--plan"
+              onClick={() => {
+                vscode.postMessage({
+                  type: 'visualPlan:generate',
+                  goal: `Plan changes for ${item.title}`,
+                  sourceArtifactId: item.id,
+                });
+              }}
+              title="Generate a Visual Plan for this artifact"
+            >
+              Visualize Plan
+            </button>
           </div>
         </section>
       )}

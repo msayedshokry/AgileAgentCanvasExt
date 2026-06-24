@@ -15,6 +15,7 @@ import { SprintPlanningView, parseSprintStatusYaml } from './components/SprintPl
 import type { SprintData } from './components/SprintPlanningView';
 import { AgenticKanbanApp } from './agentic-kanban/AgenticKanbanApp';
 import { AgentSessionsPanel } from './components/AgentSessionsPanel';
+import { VisualPlanApp } from './visual-plan/VisualPlanApp';
 import { SearchBox } from './components/SearchBox';
 import { CatalogueModal } from './components/CatalogueModal';
 import { ProviderSelector } from './components/ProviderSelector';
@@ -863,6 +864,10 @@ function App() {
     vscode.postMessage({ type: 'openDetailTab', artifactId });
   });
 
+  const handleOpenVisualPlan = useEvent(() => {
+    vscode.postMessage({ type: 'openVisualPlan' });
+  });
+
   const handleFixSchemas = useEvent(() => {
     if (schemaFixing) return; // debounce: prevent double-click race (reads live state via useEvent)
     setSchemaFixing(true);
@@ -1071,6 +1076,17 @@ function App() {
       >
         <span className="workflow-fab-icon"><Icon name="workflow" size={18} /></span>
         <span className="workflow-fab-label">Workflows</span>
+      </button>
+      {/* Visual Plan FAB — opens the Visual Plan pop-out */}
+      <button
+        className="kanban-toggle-fab"
+        onClick={handleOpenVisualPlan}
+        title="Open Visual Plan"
+        aria-label="Open Visual Plan"
+        style={{ bottom: '176px' }}
+      >
+        <Icon name="prd" size={16} />
+        <span className="kanban-toggle-label">Plan</span>
       </button>
       {/* Kanban toggle FAB — sits to the left of the Provider Selector */}
       <button
@@ -1381,6 +1397,13 @@ export function RootApp() {
   }
   if (AC_MODE === 'agentic-kanban') {
     return <AgenticKanbanApp />;
+  }
+  if (AC_MODE === 'visual-plan') {
+    return (
+      <ErrorBoundary label="Visual Plan">
+        <VisualPlanApp />
+      </ErrorBoundary>
+    );
   }
   if (AC_MODE === 'agent-sessions') {
     // Full-window webview surface for the new Agent Sessions sidebar.

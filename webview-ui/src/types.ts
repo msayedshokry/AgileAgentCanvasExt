@@ -60,6 +60,7 @@ export type ArtifactStatus =
  * All supported artifact types
  */
 export type ArtifactType = 'vision' | 'requirement' | 'epic' | 'story' | 'use-case' | 'prd' | 'architecture' | 'architecture-decision' | 'system-component' | 'nfr' | 'additional-req' | 'product-brief' | 'test-case' | 'test-strategy' | 'test-design' | 'task' | 'risk' | 'test-coverage'
+  | 'visual-plan'
   // TEA module
   | 'traceability-matrix' | 'test-review' | 'nfr-assessment' | 'test-framework' | 'ci-pipeline' | 'automation-summary' | 'atdd-checklist' | 'test-design-qa' | 'test-design-architecture' | 'test-cases'
   // BMM module
@@ -1378,6 +1379,10 @@ export interface Artifact {
   childCount?: number;
   childBreakdown?: { label: string; count: number; types: string[] }[];
   parentId?: string;
+  /** When true, this card is a ghost preview of proposed work (dashed border). */
+  proposed?: boolean;
+  /** ID of the VisualPlan that proposed this ghost card. */
+  proposedFor?: string;
   rowY?: number;
   rowHeight?: number;
 }

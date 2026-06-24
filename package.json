@@ -821,6 +821,15 @@
         "icon": "$(comment-discussion)"
       },
       {
+        "command": "agileagentcanvas.generateVisualPlan",
+        "title": "Agile Agent Canvas: Generate Visual Plan"
+      },
+      {
+        "command": "agileagentcanvas.openVisualPlan",
+        "title": "Agile Agent Canvas: Open Visual Plan",
+        "icon": "$(preview)"
+      },
+      {
         "command": "agileagentcanvas.migrateToRefArch",
         "title": "Agile Agent Canvas: Migrate to Reference Architecture",
         "icon": "$(arrow-swap)"
@@ -1253,7 +1262,25 @@
           }
         }
       },
+      
       {
+        "title": "Visual Plan",
+        "order": 7,
+        "properties": {
+          "agileagentcanvas.visualPlan.enabled": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable the Visual Plan feature. When disabled, the GoalDecomposerModal fallback is used for goal decomposition."
+          },
+          "agileagentcanvas.visualPlan.mode": {
+            "type": "string",
+            "default": "canvas",
+            "enum": ["canvas", "panel"],
+            "description": "Where to display generated Visual Plans. 'canvas' shows plan cards on the canvas Discovery lane; 'panel' opens the plan in a dedicated pop-out panel."
+          }
+        }
+      },
+{
         "title": "Agentic Execution",
         "order": 8,
         "properties": {

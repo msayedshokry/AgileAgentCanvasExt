@@ -512,4 +512,5 @@ export const ARTIFACT_TYPE_ICON: Record<string, IconName> = {
   'problem-solving':       'wrench',
   'innovation-strategy':   'rocket',
   'design-thinking':       'vision',
+  'visual-plan':            'prd',
 };

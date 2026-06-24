@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import { ArtifactStore } from '../state/artifact-store';
 import { createLogger } from '../utils/logger';
 import type { AcceptanceCriterion } from '../types/index';
+import type { VisualPlan } from '../types/visual-plan';
+import { visualPlanStore } from '../state/visual-plan-store';
 import { detectGraphify } from '../integrations/graphify/graphify-detector';
 import { loadCommunities } from '../integrations/graphify/graph-loader';
 
@@ -11,7 +13,7 @@ const logger = createLogger('artifact-transformer');
  * Transform store state to the artifact array format expected by the canvas webview.
  * Used by the editor panel (extension.ts) and detail tabs (canvas-view-provider.ts).
  */
-export function buildArtifacts(store: ArtifactStore, workspaceRoot?: string): any[] {
+export function buildArtifacts(store: ArtifactStore, workspaceRoot?: string, plans?: VisualPlan[]): any[] {
     const state = store.getState();
 
     const artifacts: any[] = [];
@@ -34,7 +36,8 @@ export function buildArtifacts(store: ArtifactStore, workspaceRoot?: string): an
         'use-case': 250,
         'test-strategy': 260,
         'test-case': 250,
-        'test-coverage': 240
+        'test-coverage': 240,
+        'visual-plan': 280
     };
 
     // Base heights: covers header-top row + status row + title + card padding
@@ -56,7 +59,8 @@ export function buildArtifacts(store: ArtifactStore, workspaceRoot?: string): an
         'use-case': 78,
         'test-strategy': 82,
         'test-case': 78,
-        'test-coverage': 100
+        'test-coverage': 100,
+        'visual-plan': 90
     };
 
     // Approximate characters per line based on card width and font size
@@ -77,7 +81,8 @@ export function buildArtifacts(store: ArtifactStore, workspaceRoot?: string): an
         'use-case': 30,
         'test-strategy': 32,
         'test-case': 30,
-        'test-coverage': 28
+        'test-coverage': 28,
+        'visual-plan': 35
     };
 
     // Line height in pixels
@@ -121,7 +126,8 @@ export function buildArtifacts(store: ArtifactStore, workspaceRoot?: string): an
         'use-case': IMPLEMENTATION_START_X + IMPL_CARD_INSET + 320,
         'test-strategy': IMPLEMENTATION_START_X + IMPL_CARD_INSET + 320,
         'test-case': IMPLEMENTATION_START_X + IMPL_CARD_INSET + 320,
-        'test-coverage': IMPLEMENTATION_START_X + IMPL_CARD_INSET + 320
+        'test-coverage': IMPLEMENTATION_START_X + IMPL_CARD_INSET + 320,
+        'visual-plan': 50
     };
 
     /**
@@ -196,7 +202,8 @@ export function buildArtifacts(store: ArtifactStore, workspaceRoot?: string): an
         'use-case': LANE_CARD_TOP,
         'test-strategy': LANE_CARD_TOP,
         'test-case': LANE_CARD_TOP,
-        'test-coverage': LANE_CARD_TOP
+        'test-coverage': LANE_CARD_TOP,
+        'visual-plan': LANE_CARD_TOP
     };
 
     // =========================================================================
@@ -274,6 +281,54 @@ export function buildArtifacts(store: ArtifactStore, workspaceRoot?: string): an
             metadata: state.vision
         });
         yOffsets.vision += height + CARD_SPACING;
+    }
+
+    // =========================================================================
+    // COLUMN 1b: DISCOVERY PHASE — Visual Plans (under Vision)
+    // =========================================================================
+
+    if (plans && plans.length > 0) {
+        for (const plan of plans) {
+            const height = calculateCardHeight('visual-plan', plan.title, plan.goal, 30);
+
+            artifacts.push({
+                id: plan.id,
+                type: 'visual-plan',
+                title: plan.title,
+                description: plan.goal,
+                status: plan.status === 'dispatched' ? 'approved' : (plan.status === 'generating' ? 'in-progress' : 'draft'),
+                position: { x: COLUMNS['visual-plan'], y: yOffsets['visual-plan'] },
+                size: { width: CARD_WIDTHS['visual-plan'], height },
+                dependencies: plan.targets ?? [],
+                childCount: plan.sections.filter(s => s.kind === 'tasks').reduce((sum, s) => sum + (s.kind === 'tasks' ? s.tasks.length : 0), 0),
+                metadata: { plan },
+            });
+            yOffsets['visual-plan'] += height + CARD_SPACING;
+
+            // Emit proposed ghost cards for pending plans' tasks
+            if (plan.status === 'pending' || plan.status === 'changes-requested') {
+                const taskSection = plan.sections.find(s => s.kind === 'tasks');
+                if (taskSection && taskSection.kind === 'tasks') {
+                    for (const task of taskSection.tasks) {
+                        artifacts.push({
+                            id: `ghost-${task.id}`,
+                            type: 'story',
+                            title: task.title,
+                            description: task.description ?? '',
+                            status: 'draft',
+                            proposed: true,
+                            proposedFor: plan.id,
+                            position: { x: COLUMNS.story, y: yOffsets.story },
+                            size: { width: CARD_WIDTHS.story, height: calculateCardHeight('story', task.title, task.description ?? '', 20) },
+                            dependencies: [plan.id],
+                            parentId: plan.sourceArtifactId,
+                            metadata: { priority: task.priority },
+                        });
+                        yOffsets.story += calculateCardHeight('story', task.title, task.description ?? '', 20) + CARD_SPACING;
+                    }
+                }
+            }
+        }
     }
 
     // =========================================================================
@@ -1391,7 +1446,7 @@ export function sendArtifactsToPanel(panel: vscode.WebviewPanel, store: Artifact
     try {
         const state = store.getState();
         const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath;
-        const artifacts = buildArtifacts(store, workspaceRoot);
+        const artifacts = buildArtifacts(store, workspaceRoot, visualPlanStore.list());
 
         // Derive active folder name for the toolbar display
         let activeFolderName = '';

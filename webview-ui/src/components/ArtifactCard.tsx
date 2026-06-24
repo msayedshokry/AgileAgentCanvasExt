@@ -80,6 +80,7 @@ const TYPE_LABELS: Record<Artifact['type'], string> = {
   'problem-solving': 'Problem Solving',
   'innovation-strategy': 'Innovation Strategy',
   'design-thinking': 'Design Thinking',
+  'visual-plan': 'Plan',
 };
 
 const STATUS_BADGES: Record<Artifact['status'], { label: string; className: string }> = {
@@ -385,6 +386,23 @@ export const ArtifactCard = React.memo(
               <Icon name="rocket" size={14} />
             </button>
           )}
+
+          {/* Plan button — generate a Visual Plan scoped to this artifact */}
+          <button
+            className="card-plan-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              vscode.postMessage({
+                type: 'visualPlan:generate',
+                goal: `Plan changes for ${artifact.title}`,
+                sourceArtifactId: artifact.id,
+              });
+            }}
+            title="Plan changes to this…"
+          >
+            <Icon name="prd" size={14} />
+          </button>
         </span>
       </div>
       
