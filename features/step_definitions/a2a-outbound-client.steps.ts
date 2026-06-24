@@ -53,7 +53,7 @@ function getCtx(world: BmadWorld): A2ATestContext {
 }
 
 function buildFetchStub(ctx: A2ATestContext): (url: string, init?: any) => Promise<any> {
-  return async (url: string, _init?: any) => {
+  return async (url: string) => {
     ctx.callUrls.push(url);
     if (ctx.rejectWith) {
       throw new Error(ctx.rejectWith);
@@ -78,7 +78,6 @@ function buildFetchStub(ctx: A2ATestContext): (url: string, init?: any) => Promi
 }
 
 function buildClient(world: BmadWorld, allowedHosts: string[]): any {
-  const ctx = getCtx(world);
   const module = proxyquire('../../src/acp/agent-bus/a2a-outbound-client', {
     '../../utils/logger': {
       createLogger: () => ({

@@ -92,7 +92,7 @@ Given('agent {string} subscribes to {string}', function (this: BmadWorld, agentI
 Given('agent {string} subscribes to {string} with a handler that always throws', function (this: BmadWorld, agentId: string, topicPattern: string) {
   const ctx = getCtx(this);
   const entry = ensureAgent(ctx, agentId);
-  const subId = ctx.bus.subscribe(agentId, topicPattern, async (_msg: any) => {
+  const subId = ctx.bus.subscribe(agentId, topicPattern, async () => {
     throw new Error('always-fail');
   });
   entry.subscriptionIds.push(subId);

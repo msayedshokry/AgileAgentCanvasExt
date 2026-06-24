@@ -77,7 +77,7 @@ function createOrchestrator(world: BmadWorld): any {
     },
     './session-manager': {
       acpSessionManager: {
-        spawn: async (spec: any, bmadPath: string) => {
+        spawn: async (spec: any, _bmadPath: string) => {
           const id = `acp-test-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
           const session = {
             id,
@@ -86,14 +86,14 @@ function createOrchestrator(world: BmadWorld): any {
             persona: { name: spec.personaId },
             createdAt: new Date(),
             events: [],
-            addEvent: (e: any) => {},
-            setStatus: (s: string) => {},
+            addEvent: () => {},
+            setStatus: () => {},
             dispose: () => {},
           };
           spawnedSessions.set(id, session);
           return session;
         },
-        execute: async (sessionId: string, model: any, store: any, stream: any, token: any) => {
+        execute: async (sessionId: string, _model: any, _store: any, _stream: any, _token: any) => {
           // Look up the session to determine the correct role
           const session = spawnedSessions.get(sessionId);
           const role = session?.spec?.role || 'crafter';
@@ -242,7 +242,7 @@ When('I execute team {string} with task {string} and mock model where crafter fa
         };
         return session;
       },
-      execute: async (sessionId: string, model: any, store: any, stream: any, token: any) => {
+      execute: async (sessionId: string, _model: any, _store: any, _stream: any, _token: any) => {
         failCallCount++;
         if (failCallCount === 2) {
           // Second call = crafter, should fail

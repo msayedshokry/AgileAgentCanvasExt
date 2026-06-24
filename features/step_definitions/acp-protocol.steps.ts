@@ -434,7 +434,7 @@ Then('the ACP session status should be {string}', function (this: BmadWorld, exp
   assert.strictEqual(session?.status, expected, `Expected ACP session status "${expected}", got "${session?.status}"`);
 });
 
-Then('the ACP session ID should match pattern {string}', function (this: BmadWorld, pattern: string) {
+Then('the ACP session ID should match pattern {string}', function (this: BmadWorld, _pattern: string) {
   const ctx = getCtx(this);
   const session = ctx.lastSession || ctx.spawnedSessions[ctx.spawnedSessions.length - 1];
   const id = session?.id || '';
