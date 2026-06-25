@@ -26,6 +26,8 @@ import {
   getSelectedProvider,
   listAvailableProviders,
   CHAT_COMMANDS,
+  shellQuote,
+  isPowerShell,
   type ChatProviderId,
 } from '../commands/chat-bridge';
 import {
@@ -244,13 +246,12 @@ function buildCliCommand(provider: ChatProviderId, prompt: string): string[] {
   return cmd.terminalLaunch(prompt);
 }
 
-// ─── Shell detection ─────────────────────────────────────────────────────────
-
-/** Check if the user's default shell is PowerShell (Windows). */
-export function isPowerShell(): boolean {
-  const shell = vscode.env.shell?.toLowerCase() || '';
-  return shell.includes('powershell') || shell.includes('pwsh');
-}
+// ─── Shell detection + quoting ───────────────────────────────────────────────
+// Both `isPowerShell()` and `shellQuote()` are imported from chat-bridge.ts
+// (the canonical home). terminal-executor used to carry its own PowerShell-
+// aware copies; they duplicated the logic without adding value, so they
+// were collapsed to a single import in chat-bridge.ts. The import block
+// at the top of this file brings them into the local scope.
 
 // ─── Filename sanitization ───────────────────────────────────────────────────
 
@@ -260,18 +261,6 @@ export function isPowerShell(): boolean {
  * becomes a hyphen. Consecutive hyphens are collapsed to one.
  */
 export const sanitizeId = sanitizeResultId;
-
-// ─── Shell quoting ───────────────────────────────────────────────────────────
-
-export function shellQuote(s: string): string {
-  if (s === '') return "''";
-  if (/^[A-Za-z0-9_\-./:=]+$/.test(s)) return s;
-  // PowerShell uses double quotes for paths with spaces, not single quotes
-  if (isPowerShell()) {
-    return '"' + s.replace(/["$`]/g, '`$&') + '"';
-  }
-  return "'" + s.replace(/'/g, "'\\''") + "'";
-}
 
 // ─── TerminalExecutor ────────────────────────────────────────────────────────
 

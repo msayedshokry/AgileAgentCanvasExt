@@ -635,6 +635,23 @@ async function sendToTerminal(args: string[], query: string): Promise<boolean> {
     });
     term.show(true);
     try {
+        // ── Race guard: await term.processId before sendText ────────────
+        // Symptom (Windows/PowerShell): "Launching: claude …" appears in
+        // the terminal HUD but the typed command sits at the prompt
+        // without being executed. `term.sendText` enqueues text into the
+        // terminal's PTY, but on a freshly-created terminal the shell
+        // process can still be initializing — PowerShell in particular
+        // has a several-hundred-millisecond warm-up gap before stdin is
+        // attached. Awaiting `term.processId` resolves once the shell
+        // process has spawned, so the subsequent `sendText` lands into a
+        // live, accepting stdin. Repro: claude 2.x on PowerShell 7.x with
+        // a long single-quoted prompt — the prompt echoes inline but no
+        // CR/LF fires, the command is "typed but never submitted".
+        await term.processId;
+    } catch (e) {
+        log(`sendToTerminal: processId await failed: ${e}`);
+    }
+    try {
         // For long prompts, write to a temp file and have the CLI read it.
         // The 8 KiB threshold is a safe bash-arg limit on most platforms.
         if (query.length > 8192) {
@@ -663,10 +680,53 @@ async function sendToTerminal(args: string[], query: string): Promise<boolean> {
     }
 }
 
-/** Minimal POSIX shell quoting — wraps in single quotes, escapes embedded '. */
-function shellQuote(s: string): string {
+/**
+ * Detect the user's default shell. PowerShell family (`powershell.exe`,
+ * `pwsh`, `pwsh.exe`) interprets single-quoted strings differently from
+ * POSIX shells — `'foo'` is one literal arg in both, but embedded `'\''`
+ * POSIX escape sequences break PowerShell tokenization because PowerShell
+ * reads `\` as a literal backslash inside single quotes. Worse, the
+ * inline-rendering of `'@var'` makes `$`-bearing prompts look like a
+ * variable expansion point to a careless reader. Switch to PowerShell's
+ * preferred double-quote-with-backtick-escape form whenever the user's
+ * default shell is in the PowerShell family so prompts round-trip cleanly.
+ */
+export function isPowerShell(): boolean {
+    const shell = (vscode.env.shell ?? '').toLowerCase();
+    return shell.includes('powershell') || shell.includes('pwsh');
+}
+
+/**
+ * Shell-aware shell quoting for terminal.sendText() cmdLine construction.
+ *
+ * Cross-shell ergonomics are subtle: the same string must round-trip into
+ * a single literal argument regardless of whether the user's default shell
+ * is bash / zsh / sh (POSIX) or PowerShell. Layout:
+ *
+ *   - Safe ASCII identifiers/clauses (`claude`, `--permission-mode`,
+ *     `-p`, etc.) match `/^[A-Za-z0-9_\-./:=]+$/` and pass through
+ *     untouched in both modes — preserves readability of the rendered
+ *     cmdLine.
+ *   - Everything else is wrapped. POSIX gets single quotes with `'\''`
+ *     for any embedded `'`. PowerShell gets double quotes with backtick
+ *     escaping for the three characters that need it inside `"..."`:
+ *     `$` (avoids variable expansion), `` ` `` (avoids escape-sequence
+ *     interpretation), `"` (closes the string prematurely).
+ *
+ * Exported so terminal-executor.ts (and any future terminal-launch
+ * seam) can reuse the same canonical PowerShell-aware flattener instead
+ * of re-implementing the regex and risking drift.
+ */
+export function shellQuote(s: string): string {
     if (s === '') return "''";
     if (/^[A-Za-z0-9_\-./:=]+$/.test(s)) return s;
+    if (isPowerShell()) {
+        // Inside PowerShell double quotes: `$`, `` ` ``, and `"` must be
+        // backtick-escaped. Everything else (single quote, backslash,
+        // newline) is literal in PowerShell double-quoted strings, so
+        // pose no risk.
+        return '"' + s.replace(/[$"`]/g, '`$&') + '"';
+    }
     return "'" + s.replace(/'/g, "'\\''") + "'";
 }
 
