@@ -492,6 +492,32 @@ export class TerminalExecutor implements vscode.Disposable {
 
     terminal.show(true);
 
+    // ── RACE GUARD (fixes kanban-agentic launch on Windows/PowerShell) ─────
+    // Await the terminal's processId BEFORE sendText. On PowerShell (the
+    // user's default shell on Windows), there is a measurable warm-up gap
+    // between `createTerminal()` returning and stdin being attached to
+    // the new shell subprocess. Synchronously calling terminal.sendText
+    // (with the constructed cmdLine) after createTerminal results in the
+    // typed text sitting at the prompt — without a CR/LF PowerShell
+    // accepts as "submit" — and the CLI agent never starts. The kanban
+    // HUD prints "Launching: …" but the artifact does not advance.
+    //
+    // Awaiting `processId` is the documented VS Code gate: it resolves
+    // once the shell subprocess has been spawned. We capture `pid` in the
+    // same await so the health monitor's process-liveness check (Issue
+    // #15) sees the correct value from launch — not `undefined` for the
+    // first tick after send. Wrapped in try/catch defensively (processId
+    // is a Thenable that resolves with `number | undefined`; this does
+    // not reject in normal operation, but isolating it keeps any
+    // unexpected shell-host failure from masking the sendText fallback
+    // path below).
+    let pid: number | undefined;
+    try {
+      pid = await terminal.processId;
+    } catch (err) {
+      logger.warn(`[TerminalExecutor] processId await failed: ${errMsg(err)}`);
+    }
+
     // Send the command to the terminal.
     //
     // Headless CLIs (claude -p, codex exec, gemini -p, opencode run) all
@@ -540,12 +566,10 @@ export class TerminalExecutor implements vscode.Disposable {
     };
     this.activeTerminals.set(artifactId, session);
 
-    // Issue #15: capture the process PID so the health monitor's
-    // process-liveness check can verify the actual shell process
-    // instead of always returning true. If processId is unavailable
-    // (older VS Code builds), fall back to the legacy always-alive
-    // behavior so health checks still function.
-    const pid = await terminal.processId;
+    // Issue #15: pid was captured above (BEFORE sendText, so the health
+    // monitor's process-liveness check sees the correct value from
+    // launch time). If processId is still unavailable (older VS Code
+    // builds), fall back to the legacy always-alive behavior.
 
     // P1 #11: schedule a lock-release timeout so a forgotten/hung terminal
     // doesn't keep the artifact locked forever. The timeout is cleared when

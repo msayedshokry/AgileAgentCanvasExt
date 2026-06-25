@@ -19,6 +19,8 @@
 // doing its job, not a bug in the test.
 
 import { describe, it, expect, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { PONYTAIL_HEURISTICS } from '../chat/ponytail-heuristics';
 
 // ── Module mocks ─────────────────────────────────────────────────────────────
@@ -300,5 +302,61 @@ describe('buildTerminalPrompt — PONYTAIL_HEURISTICS regression guard', () => {
 
         expect(prompt).toContain(PONYTAIL_HEURISTICS);
         expect(prompt).toContain('**Artifact Type:** unknown');
+    });
+});
+
+// ── Race-guard regression — VS Code terminal launch order ────────────────────
+//
+// Same class of bug that bit chat-bridge.sendToTerminal: on Windows/PowerShell,
+// `vscode.window.createTerminal()` returns BEFORE the shell subprocess is
+// attached to stdin. If `terminal.sendText(cmdLine, true)` fires synchronously
+// after createTerminal, the typed text sits at the prompt without a CR/LF that
+// PowerShell accepts as "submit" and the CLI agent never starts. The fix is
+// to `await terminal.processId` BEFORE sendText — processId resolves once
+// VS Code has spawned the shell subprocess.
+//
+// This is a structural, source-level test (cheap, deterministic, no need to
+// mock the full TerminalExecutor surface area) that locks down the ordering
+// invariant: a future refactor that accidentally reorders the two statements
+// will fail this test, not silently reintroduce the PowerShell bug.
+
+describe('TerminalExecutor — VS Code terminal race guard (structural)', () => {
+    it('awaits terminal.processId BEFORE terminal.sendText (kanban-agentic-path PowerShell guard)', () => {
+        const src = readFileSync(
+            resolve(__dirname, 'terminal-executor.ts'),
+            'utf-8',
+        );
+
+        // Narrow to the executeTerminalWorkflow method so any future
+        // ptyBackend.write / spawnSession ordering elsewhere in the file
+        // doesn't shadow the assertion.
+        const methodStart = src.indexOf('async executeTerminalWorkflow');
+        expect(methodStart).toBeGreaterThan(-1);
+        const methodBody = src.slice(methodStart);
+
+        // Locate both anchors within the method body. The search strings
+        // include the trailing semicolon so prose documentation that
+        // happens to mention the function signature (e.g. a comment
+        // like "// `sendText(cmdLine, true)` …") cannot create a false
+        // positive — only actual code statements end the call site with
+        // a `;`. This is defense-in-depth alongside the more natural
+        // choice of placing the test fix in the offender (the comment).
+        const awaitPidIdx = methodBody.indexOf('pid = await terminal.processId;');
+        const sendTextIdx = methodBody.indexOf('terminal.sendText(cmdLine, true);');
+
+        expect(
+            awaitPidIdx,
+            'executeTerminalWorkflow must contain `pid = await terminal.processId` (the race guard)',
+        ).toBeGreaterThan(-1);
+        expect(
+            sendTextIdx,
+            'executeTerminalWorkflow must contain `terminal.sendText(cmdLine, true)`',
+        ).toBeGreaterThan(-1);
+        expect(
+            awaitPidIdx,
+            '`pid = await terminal.processId` MUST appear BEFORE `terminal.sendText(cmdLine, true)` ' +
+            '— reverse the order reintroduces the kanban-agentic PowerShell launch race ' +
+            '(matches chat-bridge.sendToTerminal: see that file\'s race-guard comment).',
+        ).toBeLessThan(sendTextIdx);
     });
 });
