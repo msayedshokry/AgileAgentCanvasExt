@@ -22,7 +22,7 @@ import {
     importArtifacts,
     exportArtifactToMarkdown
 } from '../commands/artifact-commands';
-import { openChat, openChatWithResult, getSelectedProvider, setSelectedProvider, listAvailableProviders, type ChatProviderId } from '../commands/chat-bridge';
+import { openChat, openChatWithResult, getSelectedProvider, setSelectedProvider, listAvailableProviders, loadWorkspaceChatProviderFromSettings, type ChatProviderId } from '../commands/chat-bridge';
 import { JiraClient } from '../integrations/jira-client';
 import { detectGraphify, clearGraphifyCache } from '../integrations/graphify/graphify-detector';
 import { loadArchIndex } from '../integrations/graphify/graph-loader';
@@ -1058,14 +1058,32 @@ export async function handleCatalogueWebviewMessage(
         case 'getChatProviders': {
             // Return the list of available chat providers so the canvas can
             // render a selector dropdown. Each entry includes the metadata the
-            // dropdown needs (label, hint) plus an availability flag.
+            // dropdown needs (label, hint) plus an availability flag. Also
+            // include the workspace-level admin default so the UI can show a
+            // 🔒 lock badge when the dropdown pick is in effect only because
+            // (or despite) an admin default being set.
+            //
+            // Read the admin default via the shared helper (re-exported from
+            // chat-bridge) — the resolver in `openChatWithResult`, the status
+            // bar, and this producer all share one config reader so they
+            // never drift apart on the workspace-level sentinel.
+            //
+            // Belt-and-suspenders try/catch: `loadWorkspaceChatProviderFromSettings`
+            // already has an internal catch that defaults to 'auto', but if the
+            // helper's surface ever changes (telemetry, narrower catch, etc.)
+            // we still want this producer to send a message — never crash.
             const providers = await listAvailableProviders();
             const selected = getSelectedProvider();
+            let adminDefault: ChatProviderId = 'auto';
+            try {
+                adminDefault = loadWorkspaceChatProviderFromSettings();
+            } catch { adminDefault = 'auto'; }
             if (webview) {
                 webview.postMessage({
                     type: 'chatProviders',
                     providers,
                     selected,
+                    adminDefault,
                 });
             }
             return true;

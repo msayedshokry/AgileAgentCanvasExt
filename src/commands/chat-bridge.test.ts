@@ -1,19 +1,22 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Regression tests for openChatWithResult provider resolution.
 //
-// Two bug classes covered here:
+// Three bug classes covered here:
 //   1) The priority chain used `?? _selectedProvider`, which only filters
 //      null/undefined — so the literal 'auto' sentinel short-circuited and
 //      forced every call into the silent clipboard fallback (filed under
 //      "Visualize Plan button creates a JSON file but never reaches
 //      chat/terminal"). Fixed by filtering 'auto' before the chain.
-//   2) The `agileagentcanvas.chatProvider` setting is documented in
-//      package.json as the workspace-level admin default ("Default AI chat
-//      provider for canvas actions … When set, all canvas-triggered actions
-//      route to this provider regardless of which IDE is hosting") but the
-//      resolver was never reading it. Setting `chatProvider: 'claude'` did
-//      nothing — the dropdown pick still won. Fixed by inserting
-//      `chatProvider` BEFORE `_selectedProvider` in the chain.
+//   2) The `agileagentcanvas.chatProvider` setting is documented as the
+//      workspace-level DEFAULT but the resolver was never reading it. Fixed
+//      by inserting `chatProvider` into the chain — but
+//   3) the original (2) fix inserted it ABOVE `_selectedProvider`, silently
+//      overriding the user's active dropdown pick on every action. Symptom:
+//      terminal pane opened with "Launching: claude …" regardless of which
+//      provider the canvas dropdown or status bar Quick Pick showed, because
+//      `chatProvider: 'claude'` was set in workspace settings and the
+//      override was invisible in the UI. Fix: dropdown wins; admin default
+//      acts as a true fallback.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -151,15 +154,20 @@ describe('openChatWithResult — provider resolution', () => {
     expect(result.provider).toBe('claude');
   });
 
-  // ── NEW: workspace chatProvider overrides the user's dropdown pick ───────
-  it('workspace-level chatProvider overrides _selectedProvider when both are set', async () => {
+  // ── REGRESSION: dropdown pick MUST win over workspace admin default ─────
+  // Symptom: terminal pane opened with "Launching: claude …" regardless of
+  // the dropdown pick, because `chatProvider: 'claude'` was silently
+  // sitting ABOVE `_selectedProvider` in the resolution chain. The status
+  // bar and dropdown UI only display `_selectedProvider` — the override was
+  // completely invisible to the user, who then thought the picker was
+  // broken. Fix: dropdown (user's pick) wins; admin default is a fallback.
+  it('REGRESSION: dropdown pick wins over workspace-level chatProvider when both are set', async () => {
     mockWorkspaceChatProvider = 'claude';
     setSelectedProvider('omp');
     const result = await openChatWithResult({ query: 'hi' });
-    // Per package.json: "When set, all canvas-triggered actions route to
-    // this provider regardless of which IDE is hosting." The user's pick
-    // is intentionally overridden by the workspace admin default.
-    expect(result.provider).toBe('claude');
+    // `_selectedProvider` is the user's intentional pick; the workspace
+    // admin default is a FALLBACK, not an override.
+    expect(result.provider).toBe('omp');
   });
 
   // ── NEW: user dropdown pick wins when workspace chatProvider is auto ─────

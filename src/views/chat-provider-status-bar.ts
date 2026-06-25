@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { CHAT_COMMANDS, CHAT_PROVIDER_IDS, getSelectedProvider, setSelectedProvider, type ChatProviderId } from '../commands/chat-bridge';
+import { CHAT_COMMANDS, CHAT_PROVIDER_IDS, getSelectedProvider, setSelectedProvider, loadWorkspaceChatProviderFromSettings, type ChatProviderId } from '../commands/chat-bridge';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('chat-provider-status-bar');
@@ -47,8 +47,40 @@ function _refresh(): void {
     if (!_item) return;
     const selected = getSelectedProvider();
     const cmd = CHAT_COMMANDS[selected] ?? CHAT_COMMANDS['auto'];
-    _item.text = `$(comment-discussion) ${cmd.label}`;
-    _item.tooltip = `AI provider for canvas actions: ${cmd.label}\n${cmd.hint}\n\nClick to change`;
+    // Surface the workspace-level admin default whenever it is set to
+    // anything other than the 'auto' sentinel — paint the lock badge in
+    // both directions of the alignment:
+    //   - adminDefault === selected: the user either picked the same value
+    //     or picked nothing and was resolved to it by the chain. The
+    //     setting is invisible on a single-host setup unless we paint it.
+    //   - adminDefault !== selected: the dropdown pick silently overrides
+    //     the admin default — the lock makes the override legible so the
+    //     user understands the workspace setting exists and can change
+    //     either side to align them.
+    // The reader is `loadWorkspaceChatProviderFromSettings` (re-exported
+    // from chat-bridge) so the status bar and resolver share one config
+    // reader and stay in lockstep.
+    const adminDefault = loadWorkspaceChatProviderFromSettings();
+    const adminIsActive = adminDefault !== 'auto';
+    // Render the admin default's HUMAN label (e.g. "Claude Code") rather
+    // than the raw id ("claude") so the badge text stays consistent with
+    // what the canvas dropdown trigger displays. Falls back to the raw id
+    // when the value isn't a known CHAT_COMMANDS key (typo, removed
+    // provider) so the user still sees something meaningful.
+    const adminLabel = CHAT_COMMANDS[adminDefault]?.label ?? adminDefault;
+    const lockBadge = adminIsActive ? ` $(lock) ${adminLabel}` : '';
+    _item.text = `$(comment-discussion) ${cmd.label}${lockBadge}`;
+    _item.tooltip =
+        `AI provider for canvas actions: ${cmd.label}\n` +
+        `${cmd.hint}\n\n` +
+        (adminIsActive
+            ? `Workspace admin default: \`agileagentcanvas.chatProvider=${adminDefault}\` — ` +
+              `this takes effect for sources where the user dropdown is the 'auto' sentinel. ` +
+              (adminDefault === selected
+                  ? `Your current pick matches the admin default.\n\n`
+                  : `Your dropdown pick ("${selected}") overrides the admin default for this machine.\n\n`)
+            : '') +
+        `Click to change`;
     _item.show();
 }
 

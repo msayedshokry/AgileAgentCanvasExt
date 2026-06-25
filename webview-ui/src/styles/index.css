@@ -9138,6 +9138,31 @@ body.vscode-light .minimap-viewport {
   margin-left: 2px;
 }
 
+/* Lock badge rendered on the trigger when the workspace-level
+   `agileagentcanvas.chatProvider` admin default is active. Mirrors the
+   VS Code status bar's `$(lock)` glyph so canvas + status bar agree on
+   the lock state. */
+.provider-selector-lock {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  line-height: 1;
+  margin: 0 2px 0 4px;
+  padding: 1px 3px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--vscode-charts-yellow, #c4a000) 18%, transparent);
+  color: var(--vscode-charts-yellow, #c4a000);
+  cursor: help;
+  user-select: none;
+}
+
+.provider-selector.compact .provider-selector-lock {
+  margin: 0 0 0 3px;
+  padding: 0 2px;
+  font-size: 9px;
+}
+
 .provider-selector-menu {
   position: absolute;
   top: calc(100% + 4px);

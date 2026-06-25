@@ -199,6 +199,13 @@ function iconFor(id: string): JSX.Element {
 export function ProviderSelector({ compact = false, onChange }: ProviderSelectorProps) {
     const [providers, setProviders] = useState<AvailableProvider[]>([]);
     const [selected, setSelected] = useState<string>('auto');
+    // Workspace-level admin default (`agileagentcanvas.chatProvider`). When
+    // set to anything other than the 'auto' sentinel, the resolver chain in
+    // `openChatWithResult` treats it as a global fallback for sources that
+    // have no explicit user pick. The status bar already paints a $(lock)
+    // badge in this case; mirror it here so the canvas dropdown is equally
+    // legible regardless of which surface the user opens first.
+    const [adminDefault, setAdminDefault] = useState<string>('auto');
     const [open, setOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -217,6 +224,12 @@ export function ProviderSelector({ compact = false, onChange }: ProviderSelector
                 setProviders(msg.providers);
                 if (typeof msg.selected === 'string') {
                     setSelected(msg.selected);
+                }
+                // Mirror the backend's lock-state surface so the dropdown
+                // can render a matching badge. Default to 'auto' if the
+                // producer (older extension builds) omits the field.
+                if (typeof msg.adminDefault === 'string') {
+                    setAdminDefault(msg.adminDefault);
                 }
             }
         };
@@ -276,6 +289,25 @@ export function ProviderSelector({ compact = false, onChange }: ProviderSelector
             >
                 <span className="provider-selector-icon">{displayIcon}</span>
                 <span className="provider-selector-label">{displayLabel}</span>
+                {adminDefault !== 'auto' && (
+                    // Lock badge: deliberate Unicode emoji, not a codicon span.
+                    // The provider-selector already uses inline SVGs for
+                    // per-provider brand marks because codicons aren't loaded
+                    // in this webview bundle — so `<span class="codicon-lock">`
+                    // would render as an empty glyph. 🔒 (U+1F512) reads
+                    // cleanly on Windows 11, macOS, and Ubuntu/GNOME fonts
+                    // and matches the 🔒 already used in the status-bar
+                    // tooltip text. If the webview is ever refactored to
+                    // load codicons, this is the spot to swap to that
+                    // className.
+                    <span
+                        className="provider-selector-lock"
+                        title={`Workspace admin default: ${ID_LABELS[adminDefault] ?? adminDefault} (agileagentcanvas.chatProvider=${adminDefault}) — takes effect for sources where the dropdown is 'auto'`}
+                        aria-label={`Workspace admin default: ${ID_LABELS[adminDefault] ?? adminDefault}`}
+                    >
+                        🔒
+                    </span>
+                )}
                 <span className="provider-selector-caret" aria-hidden>▾</span>
             </button>
             {open && (

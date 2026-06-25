@@ -330,11 +330,15 @@ function loadSelectedProviderFromSettings(): ChatProviderId {
  * Workspace-level admin default — declared in package.json as the "Default
  * AI chat provider for canvas actions (Refine, Enhance, Break Down, etc.)".
  * Distinct from `chatProviderSelected` (which mirrors the user's dropdown
- * pick): when set, it locks canvas actions to a specific provider and
- * overrides the user pick. Returns the sentinel 'auto' when unset so the
- * resolver can fall through.
+ * pick): when set, it acts as a global fallback that only fires when the
+ * user has not picked (the 'auto' sentinel cascades through the resolver
+ * chain in `openChatWithResult`). Returns the sentinel 'auto' when unset so
+ * the resolver can fall through to the detected host IDE.
+ *
+ * Exported so other modules (status bar, webview handshake relays) can read
+ * the same source of truth without duplicating the config reader.
  */
-function loadWorkspaceChatProviderFromSettings(): ChatProviderId {
+export function loadWorkspaceChatProviderFromSettings(): ChatProviderId {
     try {
         const cfg = vscode.workspace.getConfiguration('agileagentcanvas');
         const v = cfg.get<ChatProviderId>('chatProvider', 'auto');
@@ -741,19 +745,36 @@ export async function openChatWithResult(
         id !== 'auto' ? id : undefined;
     const selectedNonAuto = nonAuto(_selectedProvider);
     // Workspace-level `chatProvider` admin default — declared in
-    // package.json as "When set, all canvas-triggered actions route to
-    // this provider regardless of which IDE is hosting." When set, it
-    // locks the workspace and overrides the user's dropdown pick.
+    // package.json as the DEFAULT for canvas actions. Acts as a fallback
+    // that only fires when the user has not actively picked anything
+    // (i.e. `_selectedProvider` is the 'auto' sentinel AND no persisted
+    // pick exists on disk). When set AND the user has also picked, the
+    // user's pick wins — otherwise the dropdown is a dead switch.
     const workspaceNonAuto = nonAuto(workspaceProvider);
 
+    // Resolution precedence — user's intentional UI selection beats the
+    // workspace-level admin default. Documented as "Default AI chat provider
+    // for canvas actions" in package.json — a DEFAULT, not an override. The
+    // admin default only kicks in when the user has not picked (the
+    // 'auto' sentinel cascades through `selectedNonAuto` and `settings`,
+    // falling through to `workspaceNonAuto`). This matches the dropdown
+    // mental model — if the user picked Codex/OMP/anything, that pick must
+    // stick; the admin setting is a global fallback for unconfigured
+    // workspaces, not an opaque lock.
+    //   1. opts.provider           — explicit per-call override (highest)
+    //   2. _selectedProvider        — live dropdown pick (in-memory)
+    //   3. settings.chatProviderSelected — persisted dropdown pick (disk)
+    //   4. settings.chatProvider   — workspace-level admin default
+    //   5. detected IDE             — autocpilot on first launch
+    //   6. 'copilot'                — ultimate fallback
     const providerId: ChatProviderId = explicit
-        ?? workspaceNonAuto
         ?? selectedNonAuto
         ?? (settings !== 'auto' ? settings : undefined)
+        ?? workspaceNonAuto
         ?? (detected as ChatProviderId)
         ?? 'copilot';
 
-    log(`openChatWithResult: resolved provider=${providerId} (explicit=${explicit ?? '(unset)'} workspace=${workspaceNonAuto ?? '(unset)'} selected=${selectedNonAuto ?? '(unset)'} settings=${settings} detected=${detected})`);
+    log(`openChatWithResult: resolved provider=${providerId} (explicit=${explicit ?? '(unset)'} selected=${selectedNonAuto ?? '(unset)'} settings=${settings} workspace=${workspaceNonAuto ?? '(unset)'} detected=${detected})`);
 
     return vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: `Opening ${CHAT_COMMANDS[providerId]?.label ?? providerId}…`, cancellable: false },
