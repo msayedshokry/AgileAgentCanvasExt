@@ -2,6 +2,7 @@ import * as cp from 'child_process';
 import * as vscode from 'vscode';
 import { sendSimplePrompt } from '../antigravity/antigravity-orchestrator';
 import { createLogger } from '../utils/logger';
+import { errMsg } from '../utils/error';
 
 const logger = createLogger('chat-bridge');
 
@@ -658,14 +659,85 @@ async function sendToTerminal(args: string[], query: string): Promise<boolean> {
             const tmp = require('os').tmpdir();
             const path = require('path');
             const fs = require('fs');
-            const promptFile = path.join(tmp, `aac-prompt-${Date.now()}.md`);
-            fs.writeFileSync(promptFile, query, 'utf-8');
-            // First arg becomes the file path; replace any existing file arg.
+            // The random suffix prevents two terminal launches within the
+            // same millisecond on the same VS Code instance from racing
+            // on the same file (Date.now() resolution is 1ms). On a slow
+            // human-paced host this is unlikely; on a fast batch runner
+            // it's cheap insurance.
+            const promptFile = path.join(
+                tmp,
+                `aac-prompt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.md`,
+            );
+            // TODO (cleanup): every long-prompt launch leaks one of these
+            // temp files. OS temp rotation reclaims them eventually but on
+            // a long-running VS Code session (multi-week) this accumulates
+            // to GB-level cruft. Schedule fs.unlinkSync(promptFile) on the
+            // terminal close event downstream — out of scope here.
+            // Wrap the write in its own try/catch so a tmpdir failure
+            // (read-only mount, quota exceeded, permission denied) surfaces
+            // a specific log line that names the temp path — without this
+            // the outer catch collapses it into a generic
+            // `sendToTerminal: failed: ${e}` and ops loses the file-path
+            // context that pins the failure to the temp-file write step
+            // (vs. the redirect/pipe branch or the sendText call).
+            try {
+                fs.writeFileSync(promptFile, query, 'utf-8');
+            } catch (writeErr) {
+                log(`sendToTerminal: failed to write prompt temp file at ${promptFile}: ${errMsg(writeErr)}`);
+                throw writeErr;
+            }
+            // `cmd` is args[0] (command name); the prompt (filter-matched
+            // out of `rest` so the file supplies it via stdin) is dropped
+            // from the inline cmdLine. `restShell` is the remaining flags
+            // already shell-quoted for the active shell — every documented
+            // provider's flags (`--permission-mode acceptEdits`, `-p`,
+            // `--output-format json`, …) pass through unchanged because
+            // they're safe-ASCII.
             const cmd = args[0];
             const rest = args.slice(1).filter(a => a !== query);
-            const terminalLine = rest.length > 0
-                ? `${cmd} ${rest.map(a => shellQuote(a)).join(' ')} < ${shellQuote(promptFile)}`
-                : `${cmd} < ${shellQuote(promptFile)}`;
+            const restShell = rest.map(a => shellQuote(a)).join(' ');
+            const cmdShell = shellQuote(cmd);
+            // Shell-family branching for stdin-redirect syntax.
+            //   - POSIX (bash/zsh/sh): `< file` is the canonical stdin
+            //     redirect. Reads `<tmpdir>/aac-prompt-<ts>-<rand>.md` into
+            //     the CLI's stdin while preserving every CLI flag verbatim.
+            //   - PowerShell family: `< file` is NOT a redirect — PowerShell
+            //     treats it as a literal `<` operator and emits nothing to
+            //     stdin. The PowerShell-idiomatic equivalent is the
+            //     call-operator pattern:
+            //       Get-Content -Raw 'file' | & cmd args
+            //     Three reasons for `-Raw`:
+            //       1) Default `Get-Content` reads line-by-line, strips '\r'
+            //          and emits an array of .NET String objects. The native
+            //          CLI process re-receives them via the per-string
+            //          console-binding path which can corrupt prompt byte
+            //          fidelity (especially for prompts with internal
+            //          newlines, code fences, or tabs).
+            //       2) `-Raw` reads the file as ONE multiline string with
+            //          newlines preserved, so the bytes written by
+            //          fs.writeFileSync round-trip exactly into the CLI's
+            //          stdin.
+            //       3) It's dramatically faster (one stream read vs N
+            //          stream reads) — relevant for prompts that exceed
+            //          tens of KiB.
+            //     `&` invokes the command by path/name (so a `cmd` value
+            //     that contains spaces — e.g. "C:\Program Files\…\claude.exe"
+            //     — round-trips through `shellQuote` for both shells) and
+            //     any tokens after `&` are forwarded as arguments.
+            // The CLI tools we ship with (`claude -p`, `codex exec`,
+            // `gemini -p`, `opencode run`, `aider --message`) all consume
+            // stdin from either redirect under their respective flag, so
+            // both shapes carry the prompt end-to-end.
+            // shellQuote(cmd) is a no-op for today's safe-ASCII binary
+            // names but future-proofs path-bearing providers like
+            // `C:\Program Files\…\claude.exe` on either shell.
+            const terminalLine = isPowerShell()
+                ? (rest.length > 0
+                    ? `Get-Content -Raw ${shellQuote(promptFile)} | & ${cmdShell} ${restShell}`
+                    : `Get-Content -Raw ${shellQuote(promptFile)} | & ${cmdShell}`)
+                : (rest.length > 0
+                    ? `${cmdShell} ${restShell} < ${shellQuote(promptFile)}`
+                    : `${cmdShell} < ${shellQuote(promptFile)}`);
             term.sendText(terminalLine, true);
         } else {
             const cmdLine = args
