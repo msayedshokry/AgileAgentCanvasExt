@@ -139,6 +139,31 @@ describe('in-process proxy — lifecycle', () => {
     await waitFor(() => getLocalProxyState() === 'idle', 2000);
     expect(listenerEvents[listenerEvents.length - 1]).toBe('idle');
   });
+
+  it('rebinds TCP 8787 successfully after a dispose → restart cycle (regression for Windows in-process reload)', async () => {
+    // Regression guard: `exclusive: false` on server.listen() opts into
+    // in-process SO_REUSEADDR on Windows so a same-process dispose → restart
+    // cycle re-binds 8787 cleanly. If a future refactor drops
+    // `exclusive: false`, the second start would land in 'fallback' state
+    // (foreign EADDRINUSE semantics) and the no-fallback assertion below
+    // would fail loudly. Foreign-process contention is still covered by
+    // the listen-error-handling describe block (it synthesizes an
+    // EADDRINUSE 'error' event on the live server).
+    firstDisposable = startInProcessProxy();
+    await waitFor(() => getLocalProxyState() === 'running');
+    firstDisposable.dispose();
+    firstDisposable = null;
+    // dispose() flips state synchronously.
+    expect(getLocalProxyState()).toBe('idle');
+
+    firstDisposable = startInProcessProxy();
+    await waitFor(() => getLocalProxyState() === 'running', 1000);
+    // Explicit no-foreign-fallback invariant — vital because
+    // `state === 'running'` could mask a fall-then-recover sequence.
+    expect(getLocalProxyState()).toBe('running');
+    expect(_getInternalServerForTest()).not.toBeNull();
+    expect(listenerEvents).not.toContain('fallback');
+  });
 });
 
 describe('in-process proxy — endpoint surface', () => {

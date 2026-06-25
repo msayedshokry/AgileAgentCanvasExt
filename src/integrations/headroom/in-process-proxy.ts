@@ -99,6 +99,10 @@ const _recentCalls: RecentCompressCall[] = [];
  * Idempotent — calling twice returns a no-op disposable so the
  * activation path doesn't need to guard duplicates.
  *
+ * The TCP listen uses `exclusive: false` so legitimate same-process
+ * rebinds (extension reload, fork-pool child restart) succeed even on
+ * Windows; foreign-port contention still throws EADDRINUSE.
+ *
  * @returns A `vscode.Disposable`-shaped object that closes the server.
  */
 export function startInProcessProxy(): { dispose(): void } {
@@ -145,7 +149,8 @@ export function startInProcessProxy(): { dispose(): void } {
         try { server.close(() => { /* swallow */ }); } catch { /* ignore */ }
     });
 
-    server.listen(PROXY_PORT, PROXY_HOST, () => {
+    // See `startInProcessProxy` JSDoc for listen-options intent.
+    server.listen({ port: PROXY_PORT, host: PROXY_HOST, exclusive: false }, () => {
         logger.info(`In-process Headroom proxy listening on http://${PROXY_HOST}:${PROXY_PORT}`);
         setLocalProxyState('running');
     });
