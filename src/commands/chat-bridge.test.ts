@@ -262,7 +262,7 @@ describe('shellQuote — cross-shell quoting', () => {
     // NO `\\` escapes — the implementation emits a single ` before each
     // `$`, `"`, or `` ` ``, and a literal `\` is treated by PowerShell as
     // a printable character inside double-quoted strings (no escape
-    // prose), so emitting `\` in the cmdLine would be wrong on PowerShell.
+    // prose), so emitting `\\` in the cmdLine would be wrong on PowerShell.
     expect(shellQuote('$x "y" `z')).toBe('"`$x `"y`" ``z"');
   });
 
@@ -400,60 +400,58 @@ describe('openChatWithResult — terminal launch path (sendToTerminal)', () => {
     expect(processOrder).toBeLessThanOrEqual(sendTextOrder);
   });
 
-  // ── Interactive canvas: claude opens its TUI; no headless flags ────────
-  // The canvas path uses terminalLaunch('claude' without -p, so the
-  // cmdLine is just 'claude' — no flags, no prompt. The user interacts
-  // with claude's TUI directly. Headless flags are only added by
-  // terminal-executor.ts for the kanban/agentic path.
-  it('on bash, claude terminal-launch opens TUI interactively (no headless flags)', async () => {
+  // ── Short-prompt: full claude flags + prompt sent inline on bash ─────────
+  // The canvas path uses CHAT_COMMANDS directly, so terminalLaunch returns
+  // `['claude', '--permission-mode', 'acceptEdits', '--output-format',
+  //  'json', '-p', q]` and sendToTerminal joins+quotes them into the cmdLine.
+  it('on bash, claude terminal-launch includes flags and prompt inline', async () => {
     await openChatWithResult({ provider: 'claude', query: 'hello world' });
     expect(sendTextSpy).toHaveBeenCalledTimes(1);
     const [cmdLine, addNewLine] = sendTextSpy.mock.calls[0] as [string, boolean];
-    expect(cmdLine).toBe('claude');
+    expect(cmdLine).toBe("claude --permission-mode acceptEdits --output-format json -p 'hello world'");
     expect(addNewLine).toBe(true);
   });
 
-  it('on PowerShell, claude terminal-launch opens TUI interactively (no headless flags)', async () => {
+  it('on PowerShell, claude terminal-launch includes flags and prompt inline', async () => {
     Object.assign(vscode.env, { shell: 'pwsh.exe' });
     await openChatWithResult({ provider: 'claude', query: 'hello world' });
     expect(sendTextSpy).toHaveBeenCalledTimes(1);
     const [cmdLine, addNewLine] = sendTextSpy.mock.calls[0] as [string, boolean];
-    expect(cmdLine).toBe('claude');
+    expect(cmdLine).toBe('claude --permission-mode acceptEdits --output-format json -p "hello world"');
     expect(addNewLine).toBe(true);
   });
 
-  // ── Long-prompt branch: bash stdin-redirect shape (`claude < file`) ───────
+  // ── Long-prompt branch: bash stdin-redirect shape ────────────────────────
   // When the prompt is long (>8 KiB), sendToTerminal writes it to a temp
-  // file and redirects stdin: `claude < /tmp/aac-prompt-....md`. The flags
-  // from terminalLaunch are just `['claude']`, so no flags appear between
+  // file and redirects stdin. Flags from terminalLaunch appear between
   // the command and the redirect.
-  it('on bash with a long prompt (>8 KiB), emits `claude < file` stdin-redirect shape', async () => {
+  it('on bash with a long prompt (>8 KiB), emits `claude --flags < file` shape', async () => {
     const longPrompt = 'A'.repeat(8_500);
     await openChatWithResult({ provider: 'claude', query: longPrompt });
     expect(sendTextSpy).toHaveBeenCalledTimes(1);
     const [cmdLine] = sendTextSpy.mock.calls[0] as [string, boolean];
-    // Shape: `claude < <quoted-path>aac-prompt-[\w-]+.md<quoted-path>`
-    expect(cmdLine).toMatch(/^claude < ['"]?.*aac-prompt-[\w-]+\.md['"]?$/);
-    // No headless flags leak into the interactive path.
-    expect(cmdLine).not.toMatch(/--permission-mode/);
-    expect(cmdLine).not.toMatch(/--output-format/);
-    expect(cmdLine).not.toMatch(/ -p /);
-    expect(cmdLine).not.toMatch(/Get-Content/);
+    // Shape: `claude --permission-mode acceptEdits --output-format json -p < <quoted-path>`
+    expect(cmdLine).toMatch(
+      /^claude --permission-mode acceptEdits --output-format json -p < ['"]?.*aac-prompt-[\w-]+\.md['"]?$/
+    );
+    // Prompt content should NOT be duplicated inline (redirect feeds it)
+    expect(cmdLine).not.toContain('AAAA');
   });
 
   // ── Long-prompt branch: PowerShell call-operator shape ───────────────────
-  it('on PowerShell with a long prompt (>8 KiB), emits `Get-Content -Raw | & claude` shape', async () => {
+  it('on PowerShell with a long prompt (>8 KiB), emits `Get-Content -Raw | & claude --flags` shape', async () => {
     Object.assign(vscode.env, { shell: 'pwsh.exe' });
     const longPrompt = 'B'.repeat(8_500);
     await openChatWithResult({ provider: 'claude', query: longPrompt });
     expect(sendTextSpy).toHaveBeenCalledTimes(1);
     const [cmdLine] = sendTextSpy.mock.calls[0] as [string, boolean];
-    // Shape: `Get-Content -Raw <path> | & claude`
-    expect(cmdLine).toMatch(/^Get-Content -Raw ['"]?.*aac-prompt-[\w-]+\.md['"]? \| & claude$/);
-    // No headless flags leak into the interactive path.
-    expect(cmdLine).not.toMatch(/--permission-mode/);
-    expect(cmdLine).not.toMatch(/--output-format/);
-    expect(cmdLine).not.toMatch(/ -p /);
+    // Shape: `Get-Content -Raw <path> | & claude --permission-mode acceptEdits --output-format json -p`
+    // The `-p` flag is stripped of its value (the prompt) in the long-prompt
+    // branch (filter(a => a !== query)), so the flag itself remains in restShell.
+    expect(cmdLine).toMatch(
+      /^Get-Content -Raw ['"]?.*aac-prompt-[\w-]+\.md['"]? \| & claude --permission-mode acceptEdits --output-format json -p$/
+    );
+    // No stdin redirect (`<`) in PowerShell path
     expect(cmdLine).not.toMatch(/ < /);
   });
 
@@ -468,7 +466,7 @@ describe('openChatWithResult — terminal launch path (sendToTerminal)', () => {
   });
 
   // ── Terminal paste provider ('terminal') echoes the prompt ────────────
-  it('terminal paste provider echoes the prompt', async () => {
+  it('terminal paste provider echoes the prompt via echo', async () => {
     await openChatWithResult({ provider: 'terminal', query: 'hello world' });
     expect(sendTextSpy).toHaveBeenCalledTimes(1);
     const [cmdLine] = sendTextSpy.mock.calls[0] as [string, boolean];

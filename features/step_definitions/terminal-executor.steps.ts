@@ -227,16 +227,24 @@ function loadModule(world: BmadWorld): any {
           ],
         },
         opencode: {
-          // Interactive canvas — no headless run subcommand.
-          // Headless flags are injected by buildCliCommand in
-          // terminal-executor.ts for the kanban/agentic path.
-          terminalLaunch: () => ['opencode'],
+          // Mirrors production: opencode run --model auto --format json <prompt>
+          terminalLaunch: (prompt: string) => [
+            'opencode',
+            'run',
+            '--model', 'auto',
+            '--format', 'json',
+            prompt,
+          ],
         },
         pi: {
-          // Interactive canvas — no headless flags.
-          // Headless flags are injected by buildCliCommand in
-          // terminal-executor.ts for the kanban/agentic path.
-          terminalLaunch: () => ['pi'],
+          // Mirrors production: pi --no-session --mode json --approve -p <prompt>
+          terminalLaunch: (prompt: string) => [
+            'pi',
+            '--no-session',
+            '--mode', 'json',
+            '--approve',
+            '-p', prompt,
+          ],
         },
       },
     },
