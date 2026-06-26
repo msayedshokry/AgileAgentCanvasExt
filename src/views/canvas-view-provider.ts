@@ -7,7 +7,7 @@ import * as fs from 'fs';
 
 import { loadElicitationMethods, loadBmmWorkflows } from '../commands/artifact-commands';
 import { loadSampleProject } from '../commands/project-commands';
-import { handleCommonWebviewMessage } from './webview-message-handler';
+import { handleCommonWebviewMessage, handleCatalogueWebviewMessage } from './webview-message-handler';
 import { handleAgenticKanbanMessage } from './agentic-kanban-message-handler';
 import { buildArtifacts } from '../canvas/artifact-transformer';
 
@@ -63,7 +63,14 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
         webviewView.webview.onDidReceiveMessage(async (message) => {
             logger.debug(`[CanvasProvider] Received message: ${message.type}`);
 
-            // 1. Try the agentic-kanban handler first — covers `visualPlan:*`,
+            // 0. Catalogue/skill messages first — covers getChatProviders,
+            //    selectChatProvider, openChatWithProvider, toggleSkill, addSkillRepo,
+            //    and other catalogue-management messages.
+            if (await handleCatalogueWebviewMessage(message, webviewView.webview)) {
+                return;
+            }
+
+            // 1. Try the agentic-kanban handler — covers `visualPlan:*`,
             //    `kanban:*` (statusChanged / fetchAgentInfo / etc.) and other
             //    Agentic Kanban domains. The canvas view renders the same
             //    ArtifactCard / DetailPanel components as the kanban view, so
@@ -388,6 +395,13 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
         // then common cases, then panel-specific.
         panel.webview.onDidReceiveMessage(async (message) => {
             logger.debug(`[DetailTab:${artifactId}] Received message: ${message.type}`);
+
+            // 0. Catalogue/skill messages first — covers getChatProviders,
+            //    selectChatProvider, openChatWithProvider, and other catalogue
+            //    messages that the detail tab's embedded ProviderSelector sends.
+            if (await handleCatalogueWebviewMessage(message, panel.webview)) {
+                return;
+            }
 
             // 1. Agentic Kanban handler renders the same DetailPanel component
             //    as the kanban view, so card-level kanban actions (jumpToPhone,

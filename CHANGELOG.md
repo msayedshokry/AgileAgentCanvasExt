@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### Added: `pi` (pi-mono) as a first-class chat provider
+
+The `pi` CLI (pi-mono, verified against v0.80.2) is now wired up alongside `claude`, `codex`, `gemini-cli`, `aider`, and `opencode` for headless terminal agentic execution. Users whose only installed agentic CLI is `pi` (or who hit the `-p` hang on every other provider’s headless flags) can now route AAC canvas actions through it directly.
+
+- **Headless invocation** — `pi --no-session --mode json --approve -p <prompt>`. Each flag is load-bearing:
+  - `-p / --print` — non-interactive one-shot. Without it `pi` drops into its TUI and waits on stdin (verdict never written).
+  - `--mode json` — parseable JSON envelope on stdout so the orchestrator reads the run result uniformly across providers.
+  - `--approve` — suppress in-prompt `Allow tool call?` gates so the verdict-file `Write` runs unattended. **Required for kanban / agentic execution** — without it the prompt hangs on the first `Write`/`Edit`/`Bash` call. See the **SECURITY note** below.
+  - `--no-session` — ephemeral run; keeps the user’s interactive `pi` session history clean.
+  - `--provider` / `--model` are deliberately not pinned — `pi` reads them from the user’s own `pi` config so this provider honours whatever routing the user has configured rather than forcing one.
+- **SECURITY** — `--approve` auto-trusts project-local files for the run, which empirically also suppresses the in-prompt Write/Edit/Bash confirmation gates pi would otherwise hang on. Do **NOT** enable `pi` as the chat provider in an untrusted workspace (a fork, a clinic intake, a third-party sample) — the trust applies to any project-local agent rules, which can then execute approved tool calls unattended. This makes unattended verdict-file writes possible in a BMAD workspace (the intended behaviour), but in any other workspace the surface area is broader — project-local agent rules can also run Bash, write other files, or install packages.
+- **`CHAT_COMMANDS['pi']` + `ChatProviderId` union + `CHAT_PROVIDER_IDS` array** updated in `src/commands/chat-bridge.ts`.
+- **`AGENTIC_CLI_PROVIDERS`** updated in `src/workflow/terminal-executor.ts` so the agentic-kanban auto-advance loop picks `pi` when only it is on PATH.
+- **BLOCKED verdict summary** now names `pi` as a remediation target when no CLI is available on PATH.
+- **Settings enum** — `agileagentcanvas.chatProvider` and `agileagentcanvas.agenticKanban.terminalProvider` both list `pi` with enum descriptions.
+- **Tests** — new `@pi @headless` Cucumber scenario exercises the full cmdLine shape; 2 new vitest unit tests lock bash + PowerShell quoting; the cucumber step-definition stub now mirrors `shellQuote` / `isPowerShell` semantics (a pre-existing gap that was preventing every `@headless` scenario from running).
+
 ### Fixed: 32 WCAG contrast fails in autonomy surfaces
 
 A themed-token × surface contrast audit (full 114-pair matrix in scripts/a11y-surface-sweep.mjs) found 32 sub-3:1 pairs across SafetyPanel / AutonomyBar / FleetDashboard / TracePanel / DiffPanel / TerminalGrid against the canonical VS Code Dark+/Light+/HC-Dark themes. The four specifically-called-out surfaces — row-vs-editor contrast, badge backgrounds vs surfaces, the severity pip on `.fleet-health--dead`, and the `--vscode-errorForeground`-shifted red row — are the focus of this PR; the remaining matrix entries remain visible in the bundle script for follow-up commits.

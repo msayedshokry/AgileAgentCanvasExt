@@ -13,8 +13,8 @@ const logger = createLogger('chat-bridge');
 /**
  * The identifiers a user can pick from the canvas header provider dropdown.
  * Mirrors `agileagentcanvas.chatProvider` in package.json. The set is broader
- * than the auto-detected IDE list because terminal-based CLIs (codex, gemini,
- * aider) are first-class options the user can target without the host IDE
+ * than the auto-detected IDE list because terminal-based CLIs (codex, aider,
+ * opencode, pi) are first-class options the user can target without the host IDE
  * having a chat panel command.
  */
 export type ChatProviderId =
@@ -26,9 +26,9 @@ export type ChatProviderId =
     | 'antigravity'
     | 'omp'
     | 'codex'
-    | 'gemini-cli'
     | 'aider'
     | 'opencode'
+    | 'pi'
     | 'terminal';
 
 /**
@@ -44,11 +44,10 @@ export type ChatProviderId =
  *                  (https://code.claude.com/docs/en/headless)
  *   - codex      → `codex exec --ask-for-approval never --sandbox workspace-write <prompt>`
  *                  (https://developers.openai.com/codex/cli/reference)
- *   - gemini     → `gemini --yolo --output-format json -p <prompt>`
- *                  (https://github.com/google-gemini/gemini-cli/blob/main/docs/get-started/index.md)
  *   - aider      → `aider --message <prompt>`   (https://aider.chat/docs/scripting: one-shot, exit after reply)
  *   - opencode   → `opencode run --model auto --format json <prompt>`
  *                  (https://opencode.ai/docs/cli/)
+ *   - pi         → `pi --no-session --mode json --approve -p <prompt>` (verdict-friendly)
  *   - terminal   → sentinel `echo`; handled in sendToTerminal
  */
 interface ChatCommand {
@@ -71,7 +70,7 @@ interface ChatCommand {
     /**
      * Returns the command-line args to launch in the integrated terminal.
      * When defined, this strategy takes precedence over withQuery/openOnly.
-     * Use this for CLI tools (`claude`, `codex`, `gemini`, `aider`) that
+     * Use this for CLI tools (`claude`, `codex`, `aider`, `opencode`, `pi`) that
      * should run in a terminal pane.
      */
     terminalLaunch?: (query: string) => string[];
@@ -209,25 +208,6 @@ export const CHAT_COMMANDS: Record<ChatProviderId | 'copilot-fallback', ChatComm
             q,
         ],
     },
-    'gemini-cli': {
-        ide: 'gemini-cli',
-        label: 'Gemini (CLI)',
-        hint: 'launches `gemini` in the terminal',
-        // Google Gemini CLI headless invocation:
-        //   -p                    → positional one-shot prompt (no `> ` prompt,
-        //                            no TUI).
-        //   --yolo                → auto-approve all tool calls (Bash/Edit/Write)
-        //                            so the agent writes the verdict JSON file
-        //                            without any UI confirmation.
-        //   --output-format json  → parseable assistant envelope.
-        // Spec: https://github.com/google-gemini/gemini-cli/blob/main/docs/get-started/index.md
-        terminalLaunch: (q) => [
-            'gemini',
-            '--yolo',
-            '--output-format', 'json',
-            '-p', q,
-        ],
-    },
     'aider': {
         ide: 'aider',
         label: 'Aider',
@@ -254,6 +234,31 @@ export const CHAT_COMMANDS: Record<ChatProviderId | 'copilot-fallback', ChatComm
             q,
         ],
     },
+    'pi': {
+        ide: 'pi',
+        label: 'Pi (CLI)',
+        hint: 'launches `pi` in the terminal',
+        // pi-mono headless invocation. Verified against pi 0.80.2 (`pi --help`).
+        //   -p / --print  → non-interactive one-shot; without it pi drops into
+        //                   its TUI and waits on stdin (verdict is never written).
+        //   --mode json   → parseable JSON envelope on stdout.
+        //   --approve     → suppress in-prompt "Allow tool call?" gates so the
+        //                   Write of the verdict file runs unattended. REQUIRED
+        //                   for kanban/agentic execution; without it the prompt
+        //                   hangs on the first Write/Edit/Bash call.
+        //   --no-session  → ephemeral run; keeps the user's interactive pi
+        //                   session history clean.
+        // `--provider` / `--model` are deliberately NOT pinned — pi reads them
+        // from the user's own pi config (env / global config), so this provider
+        // honours whatever routing the user has set up rather than forcing one.
+        terminalLaunch: (q) => [
+            'pi',
+            '--no-session',
+            '--mode', 'json',
+            '--approve',
+            '-p', q,
+        ],
+    },
     'terminal': {
         ide: 'terminal',
         label: 'Terminal (paste)',
@@ -273,7 +278,7 @@ export const CHAT_COMMANDS: Record<ChatProviderId | 'copilot-fallback', ChatComm
 
 export const CHAT_PROVIDER_IDS: ChatProviderId[] = [
     'auto', 'copilot', 'claude', 'cursor', 'windsurf',
-    'antigravity', 'omp', 'codex', 'gemini-cli', 'aider', 'opencode', 'terminal',
+    'antigravity', 'omp', 'codex', 'aider', 'opencode', 'pi', 'terminal',
 ];
 
 // ─── Logger ──────────────────────────────────────────────────────────────────
@@ -565,9 +570,8 @@ function probeBinariesForProvider(cmd: ChatCommand): string[] {
  * Rules:
  *   - 'auto', 'copilot', 'terminal' are always available.
  *   - Providers with `hasPanel` are available when the panel command exists
- *     OR a CLI fallback (their `terminalLaunch` binary) is on PATH.
- *   - CLI-only providers (codex, gemini-cli, aider, opencode) are available only when
- *     their binary resolves on PATH — not just hardcoded "available".
+ *     OR a CLI fallback (their `terminalLaunch` binary) is on PATH.   *   - CLI-only providers (codex, aider, opencode, pi) are available only when
+   *     their binary resolves on PATH — not just hardcoded "available".
  *
  * Results are cached for 30s per id so opening the dropdown repeatedly does
  * not re-spawn `where`/`which` on every render.
@@ -613,7 +617,7 @@ async function computeAvailability(id: ChatProviderId, cmd: ChatCommand): Promis
         return { available: false, reason: 'unavailable', ts: Date.now() };
     }
 
-    // CLI-only providers (codex, gemini-cli, aider, opencode): must be on PATH.
+    // CLI-only providers (codex, aider, opencode, pi): must be on PATH.
     for (const bin of probeBinariesForProvider(cmd)) {
         if (resolveCliOnPath(bin)) {
             return { available: true, reason: 'cli', ts: Date.now() };
@@ -725,7 +729,7 @@ async function sendToTerminal(args: string[], query: string): Promise<boolean> {
             //     — round-trips through `shellQuote` for both shells) and
             //     any tokens after `&` are forwarded as arguments.
             // The CLI tools we ship with (`claude -p`, `codex exec`,
-            // `gemini -p`, `opencode run`, `aider --message`) all consume
+            // `opencode run`, `aider --message`) all consume
             // stdin from either redirect under their respective flag, so
             // both shapes carry the prompt end-to-end.
             // shellQuote(cmd) is a no-op for today's safe-ASCII binary
@@ -740,9 +744,7 @@ async function sendToTerminal(args: string[], query: string): Promise<boolean> {
                     : `${cmdShell} < ${shellQuote(promptFile)}`);
             term.sendText(terminalLine, true);
         } else {
-            const cmdLine = args
-                .map(a => (a === query ? shellQuote(a) : shellQuote(a)))
-                .join(' ');
+            const cmdLine = args.map(a => shellQuote(a)).join(' ');
             term.sendText(cmdLine, true);
         }
         return true;
@@ -954,7 +956,7 @@ async function doOpenChat(
         }
     }
 
-    // ── Pure terminal-launching providers (codex, gemini-cli, aider, opencode, terminal) ─
+    // ── Pure terminal-launching providers (codex, aider, opencode, pi, terminal) ─
     if (cmd.terminalLaunch) {
         const args = cmd.terminalLaunch(query ?? '');
         log(`[${providerId}] launching terminal: ${args[0]} ${args.length > 1 ? `(${args.length - 1} arg${args.length - 1 ? 's' : ''})` : ''}`);

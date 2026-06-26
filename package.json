@@ -1133,9 +1133,9 @@
               "antigravity",
               "omp",
               "codex",
-              "gemini-cli",
               "aider",
               "opencode",
+              "pi",
               "terminal"
             ],
             "enumDescriptions": [
@@ -1147,9 +1147,9 @@
               "Google Antigravity chat panel (antigravity.sendPromptToAgentPanel)",
               "Oh My Pi (OMP) harness — writes to .omp/inbox.md or invokes omp.sendPrompt",
               "OpenAI Codex CLI — always launches in the integrated terminal",
-              "Google Gemini CLI — always launches in the integrated terminal",
               "Aider — always launches in the integrated terminal",
               "OpenCode CLI (sst/opencode) — always launches in the integrated terminal",
+              "Pi (pi-mono) CLI — always launches in the integrated terminal",
               "Generic terminal: prints the prompt and lets the user run it manually"
             ],
             "description": "Default AI chat provider for canvas actions (Refine, Enhance, Break Down, etc.). When set, all canvas-triggered actions route to this provider regardless of which IDE is hosting. Set per-action via the canvas header dropdown."
@@ -1296,17 +1296,17 @@
               "auto",
               "claude",
               "codex",
-              "gemini-cli",
               "aider",
-              "opencode"
+              "opencode",
+              "pi"
             ],
             "enumDescriptions": [
               "Auto-detect the best available terminal CLI for agentic execution",
               "Anthropic Claude Code CLI — `claude` on PATH",
               "OpenAI Codex CLI — `codex` on PATH",
-              "Google Gemini CLI — `gemini` on PATH",
               "Aider — `aider` on PATH",
-              "OpenCode CLI (sst/opencode) — `opencode` on PATH"
+              "OpenCode CLI (sst/opencode) — `opencode` on PATH",
+              "Pi (pi-mono) CLI — `pi` on PATH"
             ],
             "description": "Terminal CLI provider for agentic (headless) workflow execution. Used when a card is dragged in the Agentic Kanban without an active Copilot Chat session. 'auto' selects the first available CLI on PATH."
           },

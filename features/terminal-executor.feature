@@ -4,7 +4,7 @@ Feature: Terminal Executor - Windows Shell Compatibility and Headless CLI Flags
   So that workflows execute without syntax errors on Windows
 
   As a kanban orchestrator
-  I want CLI providers (claude, codex, gemini-cli, opencode) to launch in headless mode
+  I want CLI providers (claude, codex, opencode, pi) to launch in headless mode
   So that the agent writes a verdict JSON file instead of opening an interactive TUI in the user's terminal
 
   Background:
@@ -81,7 +81,7 @@ Feature: Terminal Executor - Windows Shell Compatibility and Headless CLI Flags
     Then the quoted result should be "''"
 
   # ─── Headless Flags (Long Prompt) ─────────────────────────────────────────
-  # Headless CLIs (claude -p, codex exec, gemini -p, opencode run) require the
+  # Headless CLIs (claude -p, codex exec, opencode run) require the
   # prompt as a positional arg value and DO NOT read it from stdin. The prompt
   # is therefore always sent inline via shellQuote, regardless of length.
 
@@ -90,7 +90,8 @@ Feature: Terminal Executor - Windows Shell Compatibility and Headless CLI Flags
     Given the VS Code shell is "powershell.exe"
     When I execute a terminal workflow with a long prompt
     Then sendText should have been called
-    And the sent command should start with "claude"
+    And the sent command should contain "$null |"
+    And the sent command should contain "claude"
     And the sent command should contain "--permission-mode"
     And the sent command should contain "acceptEdits"
     And the sent command should contain "--output-format"
@@ -114,7 +115,7 @@ Feature: Terminal Executor - Windows Shell Compatibility and Headless CLI Flags
     Then sendText should have been called
     And the sent command should start with "claude"
     And the sent command should contain "--permission-mode"
-    And the sent command should not contain "<"
+    And the sent command should contain "< /dev/null"
     And the sent command should not contain "Get-Content"
     And the sent command should not contain "--bare"
 
@@ -124,7 +125,7 @@ Feature: Terminal Executor - Windows Shell Compatibility and Headless CLI Flags
     And the chat-bridge returns CLI args for claude
     When I execute a terminal workflow with a long prompt
     Then the sent command should start with "claude"
-    And the sent command should not contain "<"
+    And the sent command should contain "< /dev/null"
 
   # ─── Headless Flags (Other Providers) ─────────────────────────────────────
 
@@ -139,19 +140,7 @@ Feature: Terminal Executor - Windows Shell Compatibility and Headless CLI Flags
     And the sent command should contain "--ask-for-approval"
     And the sent command should contain "never"
     And the sent command should contain "--sandbox"
-    And the sent command should not contain "<"
-    And the sent command should not contain "Get-Content"
-
-  @windows @command @headless @gemini
-  Scenario: Gemini CLI launches with headless flags inline
-    Given the VS Code shell is "/bin/bash"
-    And the terminal provider is "gemini-cli"
-    When I execute a terminal workflow with a long prompt
-    Then sendText should have been called
-    And the sent command should start with "gemini"
-    And the sent command should contain "--yolo"
-    And the sent command should contain "--output-format"
-    And the sent command should not contain "<"
+    And the sent command should contain "< /dev/null"
     And the sent command should not contain "Get-Content"
 
   @windows @command @headless @opencode
@@ -164,7 +153,22 @@ Feature: Terminal Executor - Windows Shell Compatibility and Headless CLI Flags
     And the sent command should contain "run"
     And the sent command should contain "--model"
     And the sent command should contain "--format"
-    And the sent command should not contain "<"
+    And the sent command should contain "< /dev/null"
+    And the sent command should not contain "Get-Content"
+
+  @windows @command @headless @pi
+  Scenario: Pi CLI launches with headless flags inline
+    Given the VS Code shell is "/bin/bash"
+    And the terminal provider is "pi"
+    When I execute a terminal workflow with a long prompt
+    Then sendText should have been called
+    And the sent command should start with "pi"
+    And the sent command should contain "--no-session"
+    And the sent command should contain "--mode"
+    And the sent command should contain "json"
+    And the sent command should contain "--approve"
+    And the sent command should contain "-p"
+    And the sent command should contain "< /dev/null"
     And the sent command should not contain "Get-Content"
 
   # ─── Short Prompt ────────────────────────────────────────────────────────
@@ -175,7 +179,8 @@ Feature: Terminal Executor - Windows Shell Compatibility and Headless CLI Flags
     And the prompt length is short (< 8192 chars)
     When I execute a terminal workflow with a short prompt
     Then sendText should have been called
-    And the sent command should start with "claude"
+    And the sent command should contain "$null |"
+    And the sent command should contain "claude"
     And the sent command should not contain "<"
     And the sent command should not contain "Get-Content"
 
@@ -186,6 +191,7 @@ Feature: Terminal Executor - Windows Shell Compatibility and Headless CLI Flags
     When I execute a terminal workflow with a short prompt
     Then sendText should have been called
     And the sent command should start with "claude"
+    And the sent command should contain "< /dev/null"
 
   # ─── Filename Sanitization ────────────────────────────────────────────────
 

@@ -1,7 +1,7 @@
 // Regression test — lock down the terminal-agent prompt contract.
 //
 // `buildTerminalPrompt` is the single source of the prompt string sent to
-// headless CLIs (claude/codex/gemini-cli/aider/opencode) running BMAD
+// headless CLIs (claude/codex/aider/opencode/pi) running BMAD
 // workflows. The Ponytail minimalist-heuristics constant must be
 // concatenated into that prompt so headless runs honor the same
 // "laziest senior developer" discipline as the chat and ACP paths. A

@@ -6,7 +6,7 @@
  * confirm that:
  *   - always-available providers ('auto', 'copilot', 'terminal') never probe
  *   - panel providers fall through to CLI detection when the panel is missing
- *   - CLI-only providers (codex, gemini-cli, aider) are available iff on PATH
+ *   - CLI-only providers (codex, aider) are available iff on PATH
  *   - the 30s in-memory cache deduplicates repeated calls
  *
  * No real filesystem or subprocess calls are made.

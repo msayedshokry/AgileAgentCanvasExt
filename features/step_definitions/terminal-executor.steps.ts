@@ -177,6 +177,27 @@ function loadModule(world: BmadWorld): any {
     '../commands/chat-bridge': {
       getSelectedProvider: () => ctx.selectedProvider,
       listAvailableProviders: async () => [{ id: 'claude', available: true, name: 'Claude' }],
+      // Mirror the production shellQuote semantics (passthrough on safe-ASCII,
+      // POSIX single quotes elsewhere) so cmdLine shape assertions are
+      // accurate. Inlined here because proxyquire.noCallThru() means the
+      // stub doesn't run real chat-bridge code; the @headless scenarios
+      // need shellQuote to actually quote `<query>` so the assertion
+      // `contains '--permission-mode'` resolves against `claude` and not
+      // mixed into the prompt string.
+      shellQuote: (s: string) => {
+        if (s === '') return "''";
+        if (/^[A-Za-z0-9_\-./:=]+$/.test(s)) return s;
+        // PowerShell quoting: double quotes + backtick escaping
+        if (/powershell|pwsh/i.test(ctx.currentShell)) {
+          return '"' + s.replace(/`/g, '``').replace(/\$/g, '`$').replace(/"/g, '`"') + '"';
+        }
+        // POSIX quoting: single quotes
+        return "'" + s.replace(/'/g, "'\\''") + "'";
+      },
+      // isPowerShell is read off the same ctx.currentShell the rest of the
+      // step defs use, so the bash / pwsh.exe scenarios diverge the same
+      // way they do in production code.
+      isPowerShell: () => /powershell|pwsh/i.test(ctx.currentShell),
       // Test mock mirrors the production headless invocations (see
       // src/commands/chat-bridge.ts CHAT_COMMANDS). Headless CLIs require
       // the prompt as a positional arg value, not via stdin.
@@ -205,15 +226,6 @@ function loadModule(world: BmadWorld): any {
             prompt,
           ],
         },
-        'gemini-cli': {
-          // Mirrors production: gemini --yolo --output-format json -p <prompt>
-          terminalLaunch: (prompt: string) => [
-            'gemini',
-            '--yolo',
-            '--output-format', 'json',
-            '-p', prompt,
-          ],
-        },
         opencode: {
           // Mirrors production: opencode run --model auto --format json <prompt>
           terminalLaunch: (prompt: string) => [
@@ -222,6 +234,16 @@ function loadModule(world: BmadWorld): any {
             '--model', 'auto',
             '--format', 'json',
             prompt,
+          ],
+        },
+        pi: {
+          // Mirrors production: pi --no-session --mode json --approve -p <prompt>
+          terminalLaunch: (prompt: string) => [
+            'pi',
+            '--no-session',
+            '--mode', 'json',
+            '--approve',
+            '-p', prompt,
           ],
         },
       },

@@ -98,13 +98,6 @@ Feature: Chat provider availability detection
     Then the provider "codex" should be marked unavailable
 
   @chat-bridge @availability
-  Scenario: gemini-cli is available when installed
-    Given the CLI binary "gemini" is on PATH
-    When I list available providers
-    Then the provider "gemini-cli" should be marked available
-    And the reason for "gemini-cli" should be "cli"
-
-  @chat-bridge @availability
   Scenario: aider is available when installed
     Given the CLI binary "aider" is on PATH
     When I list available providers
@@ -128,7 +121,6 @@ Feature: Chat provider availability detection
     Given no CLI binaries are on PATH
     When I list available providers
     Then the provider "codex" should be marked unavailable
-    And the provider "gemini-cli" should be marked unavailable
     And the provider "aider" should be marked unavailable
     And the provider "auto" should be marked available
     And the provider "copilot" should be marked available

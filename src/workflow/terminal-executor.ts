@@ -1,6 +1,6 @@
 // ─── Terminal Executor ────────────────────────────────────────────────────────
 // Spawns VS Code terminals to execute BMAD workflows via CLI agents (Claude
-// Code, Codex, Gemini CLI, Aider, OpenCode) when no Copilot Chat session is
+// Code, Codex, Aider, OpenCode, Pi) when no Copilot Chat session is
 // active. Replaces the [E2-STUB] log with actual agentic execution.
 //
 // Terminals are named "AAC: {workflowId} {artifactId} ({role})" and tracked
@@ -10,7 +10,7 @@ import { createLogger } from '../utils/logger';
 const logger = createLogger('terminal-executor');
 import * as vscode from 'vscode';
 // `os` import dropped: temp-file+stdin branch was removed (claude `-p`,
-// codex `exec`, gemini `-p`, opencode `run` all require the prompt as a
+// codex `exec`, opencode `run` all require the prompt as a
 // positional arg value and do NOT read it from stdin). The rationale for
 // dropping the long-prompt stdin-redirect path is documented at the
 // `terminal.sendText` call site in `executeTerminalWorkflow`.
@@ -120,7 +120,7 @@ interface WritableTerminal extends vscode.Terminal {
 
 /** CLI-only providers suitable for agentic (non-interactive) execution. */
 const AGENTIC_CLI_PROVIDERS: ChatProviderId[] = [
-  'claude', 'codex', 'gemini-cli', 'aider', 'opencode',
+  'claude', 'codex', 'aider', 'opencode', 'pi',
 ];
 
 /** Fallback CLI provider when the user's selected provider is panel-only. */
@@ -366,7 +366,9 @@ export class TerminalExecutor implements vscode.Disposable {
 
     const termName = `AAC: ${workflowId} ${artifactId}`;
     const args = buildCliCommand(provider, prompt);
-    const cmdLine = args.map((a) => shellQuote(a)).join(' ');
+    const cmdLine = isPowerShell()
+        ? `$null | ${args.map((a) => shellQuote(a)).join(' ')}`
+        : `${args.map((a) => shellQuote(a)).join(' ')} < /dev/null`;
 
     // ── Branch: embedded pty vs VS Code terminal ────────────────────────────
     const ptyBackend = getActivePtyBackend();
@@ -520,7 +522,7 @@ export class TerminalExecutor implements vscode.Disposable {
 
     // Send the command to the terminal.
     //
-    // Headless CLIs (claude -p, codex exec, gemini -p, opencode run) all
+    // Headless CLIs (claude -p, codex exec, opencode run) all
     // REQUIRE the prompt as a positional arg value — they do NOT read it
     // from stdin. The previous long-prompt branch wrote the prompt to a
     // temp file and fed it via `< file` (bash) / `Get-Content | & cmd`
@@ -654,7 +656,7 @@ export class TerminalExecutor implements vscode.Disposable {
         if (entry && !entry.available) {
           return {
             verdict: 'BLOCKED',
-            summary: `No headless CLI available on PATH. Install ${provider === 'claude' ? 'Claude Code (docs.claude.com)' : provider === 'codex' ? 'OpenAI Codex CLI (developers.openai.com/codex)' : provider === 'gemini-cli' ? 'Gemini CLI (github.com/google-gemini/gemini-cli)' : provider === 'aider' ? 'Aider (aider.chat)' : provider === 'opencode' ? 'OpenCode (opencode.ai)' : provider} or configure another in VS Code settings → agileagentcanvas.chatProvider.`,
+            summary: `No headless CLI available on PATH. Install ${provider === 'claude' ? 'Claude Code (docs.claude.com)' : provider === 'codex' ? 'OpenAI Codex CLI (developers.openai.com/codex)' : provider === 'aider' ? 'Aider (aider.chat)' : provider === 'opencode' ? 'OpenCode (opencode.ai)' : provider === 'pi' ? 'Pi CLI (pi-mono)' : provider} or configure another in VS Code settings → agileagentcanvas.chatProvider.`,
           };
         }
       } catch {
@@ -1043,5 +1045,14 @@ export class TerminalExecutor implements vscode.Disposable {
 export const terminalExecutor = new TerminalExecutor();
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** 
+ * Re-export shell quoting helpers so Cucumber step definitions can access them
+ * via the proxyquire-loaded module. These were originally local copies within
+ * terminal-executor.ts; after collapsing them into chat-bridge.ts as the
+ * canonical home, the tests broke because proxyquire.noCallThru() doesn't
+ * follow imports — it only sees what the module directly exports.
+ */
+export { isPowerShell, shellQuote };
 
 /** Infer a display-friendly agent role name from a workflow ID. */
