@@ -248,15 +248,33 @@ function buildCliCommand(provider: ChatProviderId, prompt: string): string[] {
   // CHAT_COMMANDS.terminalLaunch definitions are for interactive canvas
   // use (open the TUI and let the user approve calls). The kanban path
   // needs headless flags to write verdict files unattended.
-  if (provider === 'claude') {
-    return [
-      'claude',
-      '--permission-mode', 'acceptEdits',
-      '--output-format', 'json',
-      '-p', prompt,
-    ];
+  switch (provider) {
+    case 'claude':
+      return [
+        'claude',
+        '--permission-mode', 'acceptEdits',
+        '--output-format', 'json',
+        '-p', prompt,
+      ];
+    case 'opencode':
+      return [
+        'opencode',
+        'run',
+        '--model', 'auto',
+        '--format', 'json',
+        prompt,
+      ];
+    case 'pi':
+      return [
+        'pi',
+        '--no-session',
+        '--mode', 'json',
+        '--approve',
+        '-p', prompt,
+      ];
+    default:
+      return cmd.terminalLaunch(prompt);
   }
-  return cmd.terminalLaunch(prompt);
 }
 
 // ─── Shell detection + quoting ───────────────────────────────────────────────

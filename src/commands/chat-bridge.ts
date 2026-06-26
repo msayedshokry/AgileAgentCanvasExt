@@ -37,9 +37,9 @@ export type ChatProviderId =
  * command that opens the panel without a query, OR a terminal-based
  * strategy that shells out to a CLI.
  *
- * Headless CLI invocations (verified against each tool's published docs;
- * these are the canonical flag reference for agentic / terminal-based
- * workflow execution — see CHAT_COMMANDS[provider].terminalLaunch):
+ * `terminalLaunch` here returns interactive-only commands (open the TUI,
+ * let the user approve tool calls). Headless flags for agentic/kanban
+ * execution are injected by terminal-executor.ts buildCliCommand:
  *   - claude     → `claude --permission-mode acceptEdits --output-format json -p <prompt>`
  *                  (https://code.claude.com/docs/en/headless)
  *   - codex      → `codex exec --ask-for-approval never --sandbox workspace-write <prompt>`
@@ -206,46 +206,23 @@ export const CHAT_COMMANDS: Record<ChatProviderId | 'copilot-fallback', ChatComm
         ide: 'opencode',
         label: 'OpenCode',
         hint: 'launches `opencode` in the terminal',
-        // SST OpenCode headless invocation:
-        //   run                   → non-interactive one-shot subcommand (without
-        //                           `run`, `opencode` launches its full TUI).
-        //   --model auto          → use the configured default model; overridable
-        //                           per-run via --model provider/model.
-        //   --format json         → parseable event stream; verdict is still
-        //                           written by the agent via the Write tool.
-        // Spec: https://opencode.ai/docs/cli/
-        terminalLaunch: (q) => [
-            'opencode',
-            'run',
-            '--model', 'auto',
-            '--format', 'json',
-            q,
-        ],
+        // Interactive canvas launch — opens opencode's TUI so the user can
+        // approve tool calls as they come up. No headless `run` subcommand.
+        // Headless flags are applied only by terminal-executor.ts
+        // (buildCliCommand) for the kanban/agentic path.
+        // Spec (headless): https://opencode.ai/docs/cli/
+        terminalLaunch: (q) => ['opencode'],
     },
     'pi': {
         ide: 'pi',
         label: 'Pi (CLI)',
         hint: 'launches `pi` in the terminal',
-        // pi-mono headless invocation. Verified against pi 0.80.2 (`pi --help`).
-        //   -p / --print  → non-interactive one-shot; without it pi drops into
-        //                   its TUI and waits on stdin (verdict is never written).
-        //   --mode json   → parseable JSON envelope on stdout.
-        //   --approve     → suppress in-prompt "Allow tool call?" gates so the
-        //                   Write of the verdict file runs unattended. REQUIRED
-        //                   for kanban/agentic execution; without it the prompt
-        //                   hangs on the first Write/Edit/Bash call.
-        //   --no-session  → ephemeral run; keeps the user's interactive pi
-        //                   session history clean.
-        // `--provider` / `--model` are deliberately NOT pinned — pi reads them
-        // from the user's own pi config (env / global config), so this provider
-        // honours whatever routing the user has set up rather than forcing one.
-        terminalLaunch: (q) => [
-            'pi',
-            '--no-session',
-            '--mode', 'json',
-            '--approve',
-            '-p', q,
-        ],
+        // Interactive canvas launch — opens pi's TUI so the user can see
+        // and approve tool calls as they come up. No headless flags.
+        // Headless flags are applied only by terminal-executor.ts
+        // (buildCliCommand) for the kanban/agentic path.
+        // Spec (headless, NOT used here): https://pi-mono.com/docs/cli/
+        terminalLaunch: (q) => ['pi'],
     },
     'terminal': {
         ide: 'terminal',
