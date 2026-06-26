@@ -400,115 +400,78 @@ describe('openChatWithResult — terminal launch path (sendToTerminal)', () => {
     expect(processOrder).toBeLessThanOrEqual(sendTextOrder);
   });
 
-  // ── bash: cmdLine is POSIX single-quoted with `\` for the prompt ────────
-  it('on bash, claude terminal-launch produces POSIX single-quoted cmdLine', async () => {
+  // ── Interactive canvas: claude opens its TUI; no headless flags ────────
+  // The canvas path uses terminalLaunch('claude' without -p, so the
+  // cmdLine is just 'claude' — no flags, no prompt. The user interacts
+  // with claude's TUI directly. Headless flags are only added by
+  // terminal-executor.ts for the kanban/agentic path.
+  it('on bash, claude terminal-launch opens TUI interactively (no headless flags)', async () => {
     await openChatWithResult({ provider: 'claude', query: 'hello world' });
     expect(sendTextSpy).toHaveBeenCalledTimes(1);
     const [cmdLine, addNewLine] = sendTextSpy.mock.calls[0] as [string, boolean];
-    expect(cmdLine).toBe("claude --permission-mode acceptEdits --output-format json -p 'hello world'");
+    expect(cmdLine).toBe('claude');
     expect(addNewLine).toBe(true);
   });
 
-  // ── PowerShell: cmdLine is double-quoted with backtick escapes ──────────
-  it('on PowerShell, claude terminal-launch produces double-quoted cmdLine', async () => {
+  it('on PowerShell, claude terminal-launch opens TUI interactively (no headless flags)', async () => {
     Object.assign(vscode.env, { shell: 'pwsh.exe' });
     await openChatWithResult({ provider: 'claude', query: 'hello world' });
     expect(sendTextSpy).toHaveBeenCalledTimes(1);
     const [cmdLine, addNewLine] = sendTextSpy.mock.calls[0] as [string, boolean];
-    expect(cmdLine).toBe('claude --permission-mode acceptEdits --output-format json -p "hello world"');
+    expect(cmdLine).toBe('claude');
     expect(addNewLine).toBe(true);
   });
 
-  // ── PowerShell quoting survives a $ in the prompt ──────────────────────
-  it('on PowerShell, $-bearing prompts are fully escaped (no variable expansion)', async () => {
-    Object.assign(vscode.env, { shell: 'pwsh.exe' });
-    await openChatWithResult({ provider: 'claude', query: '$agileagentcanvas /dev 0.4 Dev Story' });
-    expect(sendTextSpy).toHaveBeenCalledTimes(1);
-    const [cmdLine] = sendTextSpy.mock.calls[0] as [string, boolean];
-    // The `$` in the prompt is backtick-escaped so PowerShell does not
-    // try to evaluate it as a variable (which would produce an empty
-    // expansion under `$agileagentcanvas:` or an error under literal mode).
-    expect(cmdLine).toBe('claude --permission-mode acceptEdits --output-format json -p "`$agileagentcanvas /dev 0.4 Dev Story"');
-  });
-
-  // ── Long-prompt branch: bash stdin-redirect shape (canonical `< file`) ───
-  // Regression guard for prompt lengths > 8 KiB. The chat-bridge writes the
-  // prompt to a temp file and emits `${cmd} rest < ${file}` so bash feeds the
-  // file content into the CLI's stdin while preserving the positional flags.
-  // Assert the *shape*, not the timestamp OR the absolute path prefix — the
-  // temp file name embeds `Date.now() + random-suffix` and the parent
-  // directory varies by platform (`/tmp` on Linux,
-  // `C:\Users\…\AppData\Local\Temp` on Windows, wrapped in `'…'` or `"`
-  // by shellQuote when the path contains backslashes). What matters is:
-  //   1) the redirect operator is `<` followed by a quoted/unquoted path
-  //      ending in `aac-prompt-<digits-or-words>.md`,
-  //   2) the CLI flags (`--permission-mode`, `-p`) precede the redirect, and
-  //   3) the PowerShell-specific tokens (`Get-Content`, `| &`) DO NOT leak
-  //      into the bash cmdLine.
-  // The `shellQuote(cmd)` forward-defensive (path-with-spaces) is already
-  // covered transitively by the shape matchers below — `cmdShell =
-  // shellQuote('claude')` passes through unchanged, so when the test
-  // asserts `^claude` at the start it's also confirming that shellQuote
-  // did not corrupt a simple-ASCII command. A future CHAT_COMMANDS entry
-  // that uses `C:\Program Files\claude\claude.exe` would automatically
-  // fail this test — the forward-defense is locked in by the shape itself.
-  it('on bash with a long prompt (>8 KiB), emits POSIX `< file` stdin-redirect shape', async () => {
+  // ── Long-prompt branch: bash stdin-redirect shape (`claude < file`) ───────
+  // When the prompt is long (>8 KiB), sendToTerminal writes it to a temp
+  // file and redirects stdin: `claude < /tmp/aac-prompt-....md`. The flags
+  // from terminalLaunch are just `['claude']`, so no flags appear between
+  // the command and the redirect.
+  it('on bash with a long prompt (>8 KiB), emits `claude < file` stdin-redirect shape', async () => {
     const longPrompt = 'A'.repeat(8_500);
     await openChatWithResult({ provider: 'claude', query: longPrompt });
     expect(sendTextSpy).toHaveBeenCalledTimes(1);
     const [cmdLine] = sendTextSpy.mock.calls[0] as [string, boolean];
-    // Shape: `claude <flags> < *aac-prompt-[\w-]+.md` (path may be quoted
-    // when it contains backslashes on Windows; suffix is digits + random
-    // base36 → `[\w-]` covers both alphabets + the literal `-` separator).
-    expect(cmdLine).toMatch(/^claude --permission-mode acceptEdits --output-format json -p < ['"]?.*aac-prompt-[\w-]+\.md['"]?$/);
-    // And explicitly NOT the PowerShell form (would mean the branch leaked).
+    // Shape: `claude < <quoted-path>aac-prompt-[\w-]+.md<quoted-path>`
+    expect(cmdLine).toMatch(/^claude < ['"]?.*aac-prompt-[\w-]+\.md['"]?$/);
+    // No headless flags leak into the interactive path.
+    expect(cmdLine).not.toMatch(/--permission-mode/);
+    expect(cmdLine).not.toMatch(/--output-format/);
+    expect(cmdLine).not.toMatch(/ -p /);
     expect(cmdLine).not.toMatch(/Get-Content/);
-    expect(cmdLine).not.toMatch(/ \| & /);
   });
 
-  // ── Long-prompt branch: PowerShell call-operator shape (`Get-Content -Raw | &`) ───
-  // The bash `<` operator is NOT stdin redirect under PowerShell — it's a
-  // literal operator that emits nothing to stdin. The PowerShell-idiomatic
-  // equivalent is the call-operator pattern:
-  //   `Get-Content -Raw 'file' | & claude --permission-mode ... -p`
-  // NOTE on `-Raw`: default `Get-Content` reads line-by-line, strips '\r',
-  // and emits an array of .NET String objects. Each string re-binds to the
-  // native CLI's stdin via the per-string console path, which can corrupt
-  // exact byte fidelity (prompts with internal newlines, code fences, tabs).
-  // `-Raw` reads the file as ONE multiline string with newlines preserved
-  // and bytes intact, guaranteed to match what fs.writeFileSync wrote.
-  // `&` invokes the command by name/path so a CLI location that contains
-  // spaces (e.g. `C:\Program Files\...`) still round-trips through
-  // `shellQuote`. Args after `&` are forwarded as flags.
-  it('on PowerShell with a long prompt (>8 KiB), emits `Get-Content -Raw \'file\' | & cmd args` shape', async () => {
+  // ── Long-prompt branch: PowerShell call-operator shape ───────────────────
+  it('on PowerShell with a long prompt (>8 KiB), emits `Get-Content -Raw | & claude` shape', async () => {
     Object.assign(vscode.env, { shell: 'pwsh.exe' });
     const longPrompt = 'B'.repeat(8_500);
     await openChatWithResult({ provider: 'claude', query: longPrompt });
     expect(sendTextSpy).toHaveBeenCalledTimes(1);
     const [cmdLine] = sendTextSpy.mock.calls[0] as [string, boolean];
-    // Shape: `Get-Content -Raw *aac-prompt-[\w-]+.md | & claude <flags>`.
-    // Path may be quoted (Windows + backslash); trailing `-p` is the last
-    // token so the regex anchors on ` $`. No `/i` flag — POSIX paths and
-    // the `${Date.now()}-${random}` suffix are case-stable; the flag
-    // would only add noise.
-    expect(cmdLine).toMatch(/^Get-Content -Raw ['"]?.*aac-prompt-[\w-]+\.md['"]? \| & claude --permission-mode acceptEdits --output-format json -p$/);
-    // And explicitly NOT the bash form (would mean the branch leaked).
+    // Shape: `Get-Content -Raw <path> | & claude`
+    expect(cmdLine).toMatch(/^Get-Content -Raw ['"]?.*aac-prompt-[\w-]+\.md['"]? \| & claude$/);
+    // No headless flags leak into the interactive path.
+    expect(cmdLine).not.toMatch(/--permission-mode/);
+    expect(cmdLine).not.toMatch(/--output-format/);
+    expect(cmdLine).not.toMatch(/ -p /);
     expect(cmdLine).not.toMatch(/ < /);
   });
 
   // ── Long-prompt branch: prompt itself is NOT duplicated inline ──────────
-  // Belt-and-suspenders: the prompt over 8 KiB is in the file; the inline
-  // cmdLine must reference only the file via redirect/pipe. If a regression
-  // re-appends the prompt inside the cmdLine it would be double-encoded
-  // (once in the file, once on the cmdLine) and re-asserts the size
-  // problem we routed around.
   it('long-prompt branch does not duplicate the prompt inline (avoids re-encoding)', async () => {
     const longPrompt = 'Ctx-' + 'X'.repeat(8_500) + '-End';
     await openChatWithResult({ provider: 'claude', query: longPrompt });
     expect(sendTextSpy).toHaveBeenCalledTimes(1);
     const [cmdLine] = sendTextSpy.mock.calls[0] as [string, boolean];
-    // Neither the prefix nor the suffix of the prompt leaks inline.
     expect(cmdLine).not.toContain('Ctx-');
     expect(cmdLine).not.toContain('-End');
+  });
+
+  // ── Terminal paste provider ('terminal') echoes the prompt ────────────
+  it('terminal paste provider echoes the prompt', async () => {
+    await openChatWithResult({ provider: 'terminal', query: 'hello world' });
+    expect(sendTextSpy).toHaveBeenCalledTimes(1);
+    const [cmdLine] = sendTextSpy.mock.calls[0] as [string, boolean];
+    expect(cmdLine).toBe("echo 'hello world'");
   });
 });

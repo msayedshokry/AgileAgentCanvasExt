@@ -103,30 +103,18 @@ export const CHAT_COMMANDS: Record<ChatProviderId | 'copilot-fallback', ChatComm
         label: 'Claude Code',
         hint: 'claude.openChat, else `claude` in terminal',
         openOnly: () => ['claude.openChat'],
-        // Anthropic Claude Code v2.1.x headless invocation:
-        //   -p / --print       → suppress the interactive TUI (banner + `>` prompt).
-        //                         Without this, the TUI runs in the user's terminal
-        //                         and dumps the prompt into stdin; Claude waits on
-        //                         input instead of returning a verdict.
-        //   --permission-mode  → `acceptEdits` auto-approves Write/Edit tool calls
-        //                         so the agent can persist the verdict JSON file at
-        //                         <outputFolder>/_terminal-output/<id>-<wf>-result.json
-        //                         without any "Allow edit?" modal.
-        //   --output-format    → `json` emits a parseable assistant envelope; the
-        //                         verdict file is still written by the agent via the
-        //                         Write tool, not by the CLI.
-        // Note: we deliberately do NOT pass `--bare`. CLI is documented to
-        // disable CLAUDE.md / hooks / plugins / MCP auto-discovery under
-        // --bare, which would silently strip project-specific agentic rules
-        // from the agent's context. Predictability wins on a single host;
-        // project context wins here.
-        // Spec: https://code.claude.com/docs/en/headless
-        terminalLaunch: (q) => [
-            'claude',
-            '--permission-mode', 'acceptEdits',
-            '--output-format', 'json',
-            '-p', q,
-        ],
+        // Interactive canvas launch — opens claude's TUI so the user can
+        // approve tool calls as they come up. No headless flags:
+        //   -p hangs on real AAC prompts (the agent needs Bash approval
+        //   that acceptEdits doesn't cover).
+        // The prompt is fed via the long-prompt stdin-redirect path
+        // (sendToTerminal) or echoed in the terminal for short prompts;
+        // the user interacts with the TUI directly.
+        // Spec (headless, NOT used here): https://code.claude.com/docs/en/headless
+        //
+        // Headless flags are applied only by terminal-executor.ts
+        // (buildCliCommand) for the kanban/agentic path.
+        terminalLaunch: (q) => ['claude'],
         hasPanel: async () => {
             const cmds = await Promise.resolve(vscode.commands.getCommands(false)).catch(() => [] as string[])
             return cmds.includes('claude.openChat') || cmds.includes('claude-code.openChat');

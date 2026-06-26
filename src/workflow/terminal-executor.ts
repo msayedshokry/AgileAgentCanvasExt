@@ -243,6 +243,19 @@ function buildCliCommand(provider: ChatProviderId, prompt: string): string[] {
     // Fallback — write prompt to temp file and echo instructions
     return ['echo', `No CLI found for ${provider}. See terminal output.`];
   }
+  // For headless (agentic/kanban) execution, inject provider-specific
+  // flags that suppress the TUI and auto-approve tool calls. The
+  // CHAT_COMMANDS.terminalLaunch definitions are for interactive canvas
+  // use (open the TUI and let the user approve calls). The kanban path
+  // needs headless flags to write verdict files unattended.
+  if (provider === 'claude') {
+    return [
+      'claude',
+      '--permission-mode', 'acceptEdits',
+      '--output-format', 'json',
+      '-p', prompt,
+    ];
+  }
   return cmd.terminalLaunch(prompt);
 }
 
