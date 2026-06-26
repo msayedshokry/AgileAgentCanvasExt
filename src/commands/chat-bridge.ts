@@ -114,12 +114,11 @@ export const CHAT_COMMANDS: Record<ChatProviderId | 'copilot-fallback', ChatComm
         label: 'Claude Code',
         hint: 'claude.openChat, else `claude` in terminal',
         openOnly: () => ['claude.openChat'],
-        // Interactive canvas launch — opens claude's TUI so the user can
-        // approve tool calls as they come up. No `-p` flag (hangs on real
-        // AAC prompts that need Bash approval). The prompt is piped via
-        // stdin redirect (temp file) by sendToTerminal.
-        // Headless flags for kanban are applied by terminal-executor.ts.
-        terminalLaunch: () => ['claude'],
+        // Interactive canvas launch — passes the prompt as a positional arg
+        // with --permission-mode acceptEdits (which DOES work interactively).
+        // No `-p` flag (which hangs on real AAC prompts). Headless flags for
+        // kanban are applied by terminal-executor.ts buildCliCommand.
+        terminalLaunch: (q) => ['claude', '--permission-mode', 'acceptEdits', q],
         hasPanel: async () => {
             const cmds = await Promise.resolve(vscode.commands.getCommands(false)).catch(() => [] as string[])
             return cmds.includes('claude.openChat') || cmds.includes('claude-code.openChat');
@@ -211,21 +210,22 @@ export const CHAT_COMMANDS: Record<ChatProviderId | 'copilot-fallback', ChatComm
         ide: 'opencode',
         label: 'OpenCode',
         hint: 'launches `opencode` in the terminal',
-        // Interactive canvas launch — opens opencode's TUI. No `run`
-        // subcommand (that's the headless one-shot). The prompt is piped
-        // via stdin redirect (temp file) by sendToTerminal.
-        // Headless flags for kanban are applied by terminal-executor.ts.
-        terminalLaunch: () => ['opencode'],
+        // Interactive canvas launch — `run` subcommand accepts the prompt
+        // as a positional arg and processes it in the TUI (confirmed working).
+        // `--model auto` and `--format json` are not headless flags (the user
+        // confirmed the full command works). Kanban headless flags are applied
+        // by terminal-executor.ts buildCliCommand.
+        terminalLaunch: (q) => ['opencode', 'run', '--model', 'auto', '--format', 'json', q],
     },
     'pi': {
         ide: 'pi',
         label: 'Pi (CLI)',
         hint: 'launches `pi` in the terminal',
-        // Interactive canvas launch — opens pi's TUI. No `-p` / `--approve`
-        // flags (those are for headless/kanban execution). The prompt is
-        // piped via stdin redirect (temp file) by sendToTerminal.
-        // Headless flags for kanban are applied by terminal-executor.ts.
-        terminalLaunch: () => ['pi'],
+        // Interactive canvas launch — passes the prompt as a positional arg.
+        // No `-p` flag (which hangs). No headless flags (--no-session,
+        // --mode json, --approve). Those are applied by terminal-executor.ts
+        // buildCliCommand for the kanban path.
+        terminalLaunch: (q) => ['pi', q],
     },
     'terminal': {
         ide: 'terminal',
@@ -625,19 +625,14 @@ async function sendToTerminal(args: string[], query: string): Promise<boolean> {
         log(`sendToTerminal: processId await failed: ${e}`);
     }
     try {
-        // Detect whether the prompt is already embedded in the CLI args
-        // (e.g., `['claude', '-p', q]`, `['aider', '--message', q]`,
-        // `['echo', q]`). Interactive CLIs that open a TUI
-        // (e.g., `['claude']`, `['opencode']`, `['pi']`) don't embed the
-        // query in args — the prompt must be piped via stdin.
+        // All providers embed the query in their args (claude accepts
+        // positional arg, opencode uses `run` subcommand, pi accepts
+        // positional arg, codex/aider/echo all embed it). Write the
+        // prompt to a temp file + stdin redirect only for long prompts
+        // (>8 KiB) to avoid shell arg limits.
         const queryInArgs = args.includes(query);
 
-        // Write the prompt to a temp file when:
-        //   A) The prompt is long (>8 KiB) — avoids shell arg limits.
-        //   B) The prompt is NOT embedded in args (interactive CLI) —
-        //      pipes the prompt to the CLI's stdin so the TUI reads it
-        //      as initial user input.
-        if (query.length > 8192 || !queryInArgs) {
+        if (query.length > 8192 && queryInArgs) {
             const tmp = require('os').tmpdir();
             const path = require('path');
             const fs = require('fs');
@@ -668,15 +663,10 @@ async function sendToTerminal(args: string[], query: string): Promise<boolean> {
                 log(`sendToTerminal: failed to write prompt temp file at ${promptFile}: ${errMsg(writeErr)}`);
                 throw writeErr;
             }
-            // `cmd` is args[0] (command name); the prompt (filter-matched
-            // out of `rest` when queryInArgs) is dropped from the inline
-            // cmdLine so the file supplies it via stdin. For interactive
-            // CLIs (query NOT in args), `rest` is just args.slice(1)
-            // (the full arg list sans command name).
+            // `cmd` is args[0] (command name); the prompt is filtered
+            // out of `rest` so the file supplies it via stdin redirect.
             const cmd = args[0];
-            const rest = queryInArgs
-                ? args.slice(1).filter(a => a !== query)
-                : args.slice(1);
+            const rest = args.slice(1).filter(a => a !== query);
             const restShell = rest.map(a => shellQuote(a)).join(' ');
             const cmdShell = shellQuote(cmd);
             // Shell-family branching for stdin-redirect syntax.
@@ -698,18 +688,13 @@ async function sendToTerminal(args: string[], query: string): Promise<boolean> {
             //       2) `-Raw` reads the file as ONE multiline string with
             //          newlines preserved, so the bytes written by
             //          fs.writeFileSync round-trip exactly into the CLI's
-            //          stdin.
-            //       3) It's dramatically faster (one stream read vs N
+            //          stdin.            // 3) It's dramatically faster (one stream read vs N
             //          stream reads) — relevant for prompts that exceed
             //          tens of KiB.
             //     `&` invokes the command by path/name (so a `cmd` value
             //     that contains spaces — e.g. "C:\Program Files\…\claude.exe"
             //     — round-trips through `shellQuote` for both shells) and
             //     any tokens after `&` are forwarded as arguments.
-            // The CLI tools we ship with (`claude -p`, `codex exec`,
-            // `opencode run`, `aider --message`) all consume
-            // stdin from either redirect under their respective flag, so
-            // both shapes carry the prompt end-to-end.
             // shellQuote(cmd) is a no-op for today's safe-ASCII binary
             // names but future-proofs path-bearing providers like
             // `C:\Program Files\…\claude.exe` on either shell.

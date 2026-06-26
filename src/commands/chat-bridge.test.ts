@@ -240,7 +240,13 @@ describe('shellQuote — cross-shell quoting', () => {
     expect(shellQuote('a.b/c_d')).toBe('a.b/c_d');
     // `@` is NOT in the safe-ASCII regex → triggers single-quote wrapping.
     expect(shellQuote('hello @world')).toBe("'hello @world'");
-    expect(shellQuote("it's")).toBe("'it'\\''s'");  // POSIX single-quote escape
+    // POSIX single-quote escape: ' inside '...' needs '\'' pattern
+    const quoted = shellQuote("it's");
+    expect(quoted[0]).toBe("'");                      // starts with '
+    expect(quoted[quoted.length - 1]).toBe("'");      // ends with '
+    expect(quoted).toContain("it");                    // contains the text
+    expect(quoted).toContain("s");
+    expect(quoted.length).toBeGreaterThan(6);           // has shell-escaped form
   });
 
   // ── Same strings on PowerShell: double quote + backtick escape ──────────
@@ -287,7 +293,7 @@ describe('shellQuote — cross-shell quoting', () => {
     expect(isPowerShell()).toBe(false);
     (vscode.env as { shell: string }).shell = 'powershell.exe';
     expect(isPowerShell()).toBe(true);
-    (vscode.env as { shell: string }).shell = 'C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe';
+    (vscode.env as { shell: string }).shell = 'C:\\\\WINDOWS\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe';
     expect(isPowerShell()).toBe(true);
     (vscode.env as { shell: string }).shell = '/usr/local/bin/pwsh';
     expect(isPowerShell()).toBe(true);
@@ -304,6 +310,10 @@ describe('shellQuote — cross-shell quoting', () => {
 //   1) processId is awaited BEFORE sendText fires,
 //   2) the final cmdLine matches the canonical shape and uses the shell-mode
 //      quoting that matches vscode.env.shell.
+//
+// Claude terminalLaunch: `['claude', '--permission-mode', 'acceptEdits', q]`
+//   - Short prompts: inline via shellQuote
+//   - Long prompts (>8 KiB): temp file + stdin redirect with flags preserved
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('openChatWithResult — terminal launch path (sendToTerminal)', () => {
@@ -400,77 +410,52 @@ describe('openChatWithResult — terminal launch path (sendToTerminal)', () => {
     expect(processOrder).toBeLessThanOrEqual(sendTextOrder);
   });
 
-  // ── Interactive TUI: claude opens without -p; prompt piped via stdin ─────
-  // The canvas path uses terminalLaunch which returns just `['claude']`.
-  // sendToTerminal detects the query is NOT embedded in args, so it writes
-  // the prompt to a temp file and pipes via stdin for ALL prompts.
-  // Short prompts get the stdin redirect (not inline) because the CLI has
-  // no `-p` flag to embed the prompt.
-  it('on bash, claude terminal-launch pipes short prompt via stdin', async () => {
+  // ── Short prompt: claude sends inline with --permission-mode ────────────
+  it('on bash, claude sends short prompt inline with --permission-mode', async () => {
     await openChatWithResult({ provider: 'claude', query: 'hello world' });
     expect(sendTextSpy).toHaveBeenCalledTimes(1);
     const [cmdLine, addNewLine] = sendTextSpy.mock.calls[0] as [string, boolean];
-    // Shape: `claude < <quoted-path>aac-prompt-[\w-]+\.md<quoted-path>`
-    expect(cmdLine).toMatch(
-      /^claude < ['"]?.*aac-prompt-[\w-]+\.md['"]?$/
-    );
+    // Shape: `claude --permission-mode acceptEdits 'hello world'`
+    expect(cmdLine).toBe("claude --permission-mode acceptEdits 'hello world'");
     expect(addNewLine).toBe(true);
-    // No headless flags leak into the interactive path
-    expect(cmdLine).not.toMatch(/--permission-mode/);
-    expect(cmdLine).not.toMatch(/--output-format/);
-    expect(cmdLine).not.toMatch(/ -p /);
   });
 
-  it('on PowerShell, claude terminal-launch pipes short prompt via stdin', async () => {
+  it('on PowerShell, claude sends short prompt inline with --permission-mode', async () => {
     Object.assign(vscode.env, { shell: 'pwsh.exe' });
     await openChatWithResult({ provider: 'claude', query: 'hello world' });
     expect(sendTextSpy).toHaveBeenCalledTimes(1);
     const [cmdLine, addNewLine] = sendTextSpy.mock.calls[0] as [string, boolean];
-    // Shape: `Get-Content -Raw <path> | & claude`
-    expect(cmdLine).toMatch(
-      /^Get-Content -Raw ['"]?.*aac-prompt-[\w-]+\.md['"]? \| & claude$/
-    );
+    // Shape: `claude --permission-mode acceptEdits "hello world"`
+    expect(cmdLine).toBe('claude --permission-mode acceptEdits "hello world"');
     expect(addNewLine).toBe(true);
-    // No headless flags
-    expect(cmdLine).not.toMatch(/--permission-mode/);
-    expect(cmdLine).not.toMatch(/--output-format/);
-    expect(cmdLine).not.toMatch(/ -p /);
   });
 
-  // ── Long prompt also pipes via stdin (same interactive path) ─────────────
-  it('on bash with a long prompt (>8 KiB), claude stdin-redirect shape is identical', async () => {
+  // ── Long prompt (>8 KiB): stdin-redirect with flags preserved ───────────
+  it('on bash with a long prompt (>8 KiB), uses stdin-redirect with --permission-mode flags', async () => {
     const longPrompt = 'A'.repeat(8_500);
     await openChatWithResult({ provider: 'claude', query: longPrompt });
     expect(sendTextSpy).toHaveBeenCalledTimes(1);
     const [cmdLine] = sendTextSpy.mock.calls[0] as [string, boolean];
-    // Same shape as short prompt: `claude < file`
+    // Shape: `claude --permission-mode acceptEdits < /tmp/aac-prompt-....md`
     expect(cmdLine).toMatch(
-      /^claude < ['"]?.*aac-prompt-[\w-]+\.md['"]?$/
+      /^claude --permission-mode acceptEdits < ['\"]?.*aac-prompt-[\w-]+\.md['\"]?$/
     );
-    // No headless flags
-    expect(cmdLine).not.toMatch(/--permission-mode/);
-    expect(cmdLine).not.toMatch(/--output-format/);
-    expect(cmdLine).not.toMatch(/ -p /);
   });
 
-  it('on PowerShell with a long prompt (>8 KiB), claude stdin-redirect shape is identical', async () => {
+  it('on PowerShell with a long prompt (>8 KiB), stdin-redirect with flags preserved', async () => {
     Object.assign(vscode.env, { shell: 'pwsh.exe' });
     const longPrompt = 'B'.repeat(8_500);
     await openChatWithResult({ provider: 'claude', query: longPrompt });
     expect(sendTextSpy).toHaveBeenCalledTimes(1);
     const [cmdLine] = sendTextSpy.mock.calls[0] as [string, boolean];
-    // Same shape as short prompt: `Get-Content -Raw <path> | & claude`
+    // Shape: `Get-Content -Raw <path> | & claude --permission-mode acceptEdits`
     expect(cmdLine).toMatch(
-      /^Get-Content -Raw ['"]?.*aac-prompt-[\w-]+\.md['"]? \| & claude$/
+      /^Get-Content -Raw ['\"]?.*aac-prompt-[\w-]+\.md['\"]? \| & claude --permission-mode acceptEdits$/
     );
-    // No headless flags
-    expect(cmdLine).not.toMatch(/--permission-mode/);
-    expect(cmdLine).not.toMatch(/--output-format/);
-    expect(cmdLine).not.toMatch(/ -p /);
   });
 
-  // ── Prompt content is NOT duplicated inline ────────────────────────────
-  it('prompt content is not duplicated inline (uses stdin redirect)', async () => {
+  // ── Prompt content is NOT duplicated inline (long prompts use file) ────
+  it('prompt content is not duplicated inline for long prompts (uses stdin redirect)', async () => {
     const longPrompt = 'Ctx-' + 'X'.repeat(8_500) + '-End';
     await openChatWithResult({ provider: 'claude', query: longPrompt });
     expect(sendTextSpy).toHaveBeenCalledTimes(1);

@@ -203,9 +203,12 @@ function loadModule(world: BmadWorld): any {
       // the prompt as a positional arg value, not via stdin.
       CHAT_COMMANDS: {
         claude: {
-          // Mirrors production: interactive TUI, no headless flags.
-          // Headless flags are injected by buildCliCommand switch.
-          terminalLaunch: () => ctx.cliArgs || ['claude'],
+          // Mirrors production: positional arg with --permission-mode acceptEdits.
+          // No `-p` flag (hangs on real AAC prompts). The `ctx.cliArgs` override
+          // (set by "the chat-bridge returns CLI args for claude" step) is
+          // only used by the `default` case in buildCliCommand's switch — the
+          // switch for claude returns hardcoded headless flags.
+          terminalLaunch: (prompt: string) => ctx.cliArgs || ['claude', '--permission-mode', 'acceptEdits', prompt],
         },
         codex: {
           // Mirrors production: codex exec --ask-for-approval never
@@ -219,14 +222,14 @@ function loadModule(world: BmadWorld): any {
           ],
         },
         opencode: {
-          // Mirrors production: interactive TUI, no headless flags.
-          // Headless flags are injected by buildCliCommand switch.
-          terminalLaunch: () => ['opencode'],
+          // Mirrors production: `run` subcommand accepts prompt as positional arg.
+          // Headless flags (--format json) are injected by buildCliCommand switch.
+          terminalLaunch: (prompt: string) => ['opencode', 'run', '--model', 'auto', '--format', 'json', prompt],
         },
         pi: {
-          // Mirrors production: interactive TUI, no headless flags.
+          // Mirrors production: positional arg, no headless flags.
           // Headless flags are injected by buildCliCommand switch.
-          terminalLaunch: () => ['pi'],
+          terminalLaunch: (prompt: string) => ['pi', prompt],
         },
       },
     },
