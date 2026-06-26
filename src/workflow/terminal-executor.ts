@@ -243,7 +243,38 @@ function buildCliCommand(provider: ChatProviderId, prompt: string): string[] {
     // Fallback — write prompt to temp file and echo instructions
     return ['echo', `No CLI found for ${provider}. See terminal output.`];
   }
-  return cmd.terminalLaunch(prompt);
+  // For headless (agentic/kanban) execution, inject provider-specific
+  // flags that suppress the TUI and auto-approve tool calls. The
+  // CHAT_COMMANDS.terminalLaunch definitions are for interactive canvas
+  // use (open the TUI without -p flags). The kanban path needs headless
+  // flags to write verdict files unattended.
+  switch (provider) {
+    case 'claude':
+      return [
+        'claude',
+        '--permission-mode', 'acceptEdits',
+        '--output-format', 'json',
+        '-p', prompt,
+      ];
+    case 'opencode':
+      return [
+        'opencode',
+        'run',
+        '--model', 'auto',
+        '--format', 'json',
+        prompt,
+      ];
+    case 'pi':
+      return [
+        'pi',
+        '--no-session',
+        '--mode', 'json',
+        '--approve',
+        '-p', prompt,
+      ];
+    default:
+      return cmd.terminalLaunch(prompt);
+  }
 }
 
 // ─── Shell detection + quoting ───────────────────────────────────────────────

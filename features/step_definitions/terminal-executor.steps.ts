@@ -203,17 +203,9 @@ function loadModule(world: BmadWorld): any {
       // the prompt as a positional arg value, not via stdin.
       CHAT_COMMANDS: {
         claude: {
-          // Mirrors production: claude --permission-mode acceptEdits
-          //                     --output-format json -p <prompt>
-          // Note: production shape (no --bare) preserves project CLAUDE.md /
-          // hooks / MCP — see src/commands/chat-bridge.ts note block.
-          terminalLaunch: (prompt: string) =>
-            ctx.cliArgs || [
-              'claude',
-              '--permission-mode', 'acceptEdits',
-              '--output-format', 'json',
-              '-p', prompt,
-            ],
+          // Mirrors production: interactive TUI, no headless flags.
+          // Headless flags are injected by buildCliCommand switch.
+          terminalLaunch: () => ctx.cliArgs || ['claude'],
         },
         codex: {
           // Mirrors production: codex exec --ask-for-approval never
@@ -227,24 +219,14 @@ function loadModule(world: BmadWorld): any {
           ],
         },
         opencode: {
-          // Mirrors production: opencode run --model auto --format json <prompt>
-          terminalLaunch: (prompt: string) => [
-            'opencode',
-            'run',
-            '--model', 'auto',
-            '--format', 'json',
-            prompt,
-          ],
+          // Mirrors production: interactive TUI, no headless flags.
+          // Headless flags are injected by buildCliCommand switch.
+          terminalLaunch: () => ['opencode'],
         },
         pi: {
-          // Mirrors production: pi --no-session --mode json --approve -p <prompt>
-          terminalLaunch: (prompt: string) => [
-            'pi',
-            '--no-session',
-            '--mode', 'json',
-            '--approve',
-            '-p', prompt,
-          ],
+          // Mirrors production: interactive TUI, no headless flags.
+          // Headless flags are injected by buildCliCommand switch.
+          terminalLaunch: () => ['pi'],
         },
       },
     },

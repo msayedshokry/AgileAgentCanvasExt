@@ -37,14 +37,20 @@ export type ChatProviderId =
  * command that opens the panel without a query, OR a terminal-based
  * strategy that shells out to a CLI.
  *
- * `terminalLaunch` here returns the canonical invocation commands for
- * each CLI. The prompt is embedded inline via `-p <prompt>` for providers
- * that support it, so short prompts avoid temp-file overhead. For the
- * kanban/agentic path (`terminal-executor.ts`) these args are wrapped with
- * stdin closure (`< /dev/null` / `$null |`) to keep the CLI from hanging
- * on a live PTY.
+ * `terminalLaunch` interactive (canvas path): opens the CLI's TUI so the
+ * user can approve tool calls as they come up. No headless flags (``-p``,
+ * ``--permission-mode``, etc.) — those hang on real AAC prompts because
+ * Bash tool calls need approval that auto-accept flags don't cover.
  *
- * Headless reference — these are the canonical invocations:
+ * Headless flags for the kanban/agentic path are injected by
+ * `terminal-executor.ts` `buildCliCommand`, which does use `-p`,
+ * `--permission-mode`, `--output-format`, etc. to write verdict files
+ * unattended.
+ *
+ * The prompt is piped to the CLI via stdin redirect (temp file) so the
+ * user sees the prompt as TUI input without needing to type it manually.
+ *
+ * Canonical headless reference (for kanban, NOT canvas):
  *   - claude     → `claude --permission-mode acceptEdits --output-format json -p <prompt>`
  *                  (https://code.claude.com/docs/en/headless)
  *   - codex      → `codex exec --ask-for-approval never --sandbox workspace-write <prompt>`
@@ -108,22 +114,12 @@ export const CHAT_COMMANDS: Record<ChatProviderId | 'copilot-fallback', ChatComm
         label: 'Claude Code',
         hint: 'claude.openChat, else `claude` in terminal',
         openOnly: () => ['claude.openChat'],
-        // Headless invocation (used by both canvas and kanban paths):
-        //   --permission-mode acceptEdits → auto-approve file writes so the
-        //     verdict file can be written unattended.
-        //   --output-format json         → parseable JSON envelope on stdout.
-        //   -p <prompt>                   → non-interactive one-shot (without
-        //     `-p` claude drops into its TUI and waits on stdin).
-        // NOTE: `-p` may hang on prompts containing Bash tool calls that
-        // need approval — the user can retry via the canvas without `-p` to
-        // run interactively.
-        // Spec: https://code.claude.com/docs/en/headless
-        terminalLaunch: (q) => [
-            'claude',
-            '--permission-mode', 'acceptEdits',
-            '--output-format', 'json',
-            '-p', q,
-        ],
+        // Interactive canvas launch — opens claude's TUI so the user can
+        // approve tool calls as they come up. No `-p` flag (hangs on real
+        // AAC prompts that need Bash approval). The prompt is piped via
+        // stdin redirect (temp file) by sendToTerminal.
+        // Headless flags for kanban are applied by terminal-executor.ts.
+        terminalLaunch: () => ['claude'],
         hasPanel: async () => {
             const cmds = await Promise.resolve(vscode.commands.getCommands(false)).catch(() => [] as string[])
             return cmds.includes('claude.openChat') || cmds.includes('claude-code.openChat');
@@ -215,44 +211,21 @@ export const CHAT_COMMANDS: Record<ChatProviderId | 'copilot-fallback', ChatComm
         ide: 'opencode',
         label: 'OpenCode',
         hint: 'launches `opencode` in the terminal',
-        // SST OpenCode headless invocation:
-        //   run               → non-interactive one-shot subcommand (without
-        //                       `run`, opencode launches its full TUI).
-        //   --model auto      → use the default model configured for the CLI.
-        //   --format json     → parseable JSON envelope on stdout.
-        // Spec: https://opencode.ai/docs/cli/
-        terminalLaunch: (q) => [
-            'opencode',
-            'run',
-            '--model', 'auto',
-            '--format', 'json',
-            q,
-        ],
+        // Interactive canvas launch — opens opencode's TUI. No `run`
+        // subcommand (that's the headless one-shot). The prompt is piped
+        // via stdin redirect (temp file) by sendToTerminal.
+        // Headless flags for kanban are applied by terminal-executor.ts.
+        terminalLaunch: () => ['opencode'],
     },
     'pi': {
         ide: 'pi',
         label: 'Pi (CLI)',
         hint: 'launches `pi` in the terminal',
-        // pi-mono headless invocation. Verified against pi 0.80.2 (`pi --help`).
-        //   -p / --print  → non-interactive one-shot; without it pi drops into
-        //                   its TUI and waits on stdin (verdict is never written).
-        //   --mode json   → parseable JSON envelope on stdout.
-        //   --approve     → suppress in-prompt "Allow tool call?" gates so the
-        //                   Write of the verdict file runs unattended. REQUIRED
-        //                   for kanban/agentic execution; without it the prompt
-        //                   hangs on the first Write/Edit/Bash call.
-        //   --no-session  → ephemeral run; keeps the user's interactive pi
-        //                   session history clean.
-        // `--provider` / `--model` are deliberately NOT pinned — pi reads them
-        // from the user's own pi config (env / global config), so this provider
-        // honours whatever routing the user has set up rather than forcing one.
-        terminalLaunch: (q) => [
-            'pi',
-            '--no-session',
-            '--mode', 'json',
-            '--approve',
-            '-p', q,
-        ],
+        // Interactive canvas launch — opens pi's TUI. No `-p` / `--approve`
+        // flags (those are for headless/kanban execution). The prompt is
+        // piped via stdin redirect (temp file) by sendToTerminal.
+        // Headless flags for kanban are applied by terminal-executor.ts.
+        terminalLaunch: () => ['pi'],
     },
     'terminal': {
         ide: 'terminal',
@@ -652,9 +625,19 @@ async function sendToTerminal(args: string[], query: string): Promise<boolean> {
         log(`sendToTerminal: processId await failed: ${e}`);
     }
     try {
-        // For long prompts, write to a temp file and have the CLI read it.
-        // The 8 KiB threshold is a safe bash-arg limit on most platforms.
-        if (query.length > 8192) {
+        // Detect whether the prompt is already embedded in the CLI args
+        // (e.g., `['claude', '-p', q]`, `['aider', '--message', q]`,
+        // `['echo', q]`). Interactive CLIs that open a TUI
+        // (e.g., `['claude']`, `['opencode']`, `['pi']`) don't embed the
+        // query in args — the prompt must be piped via stdin.
+        const queryInArgs = args.includes(query);
+
+        // Write the prompt to a temp file when:
+        //   A) The prompt is long (>8 KiB) — avoids shell arg limits.
+        //   B) The prompt is NOT embedded in args (interactive CLI) —
+        //      pipes the prompt to the CLI's stdin so the TUI reads it
+        //      as initial user input.
+        if (query.length > 8192 || !queryInArgs) {
             const tmp = require('os').tmpdir();
             const path = require('path');
             const fs = require('fs');
@@ -667,7 +650,7 @@ async function sendToTerminal(args: string[], query: string): Promise<boolean> {
                 tmp,
                 `aac-prompt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.md`,
             );
-            // TODO (cleanup): every long-prompt launch leaks one of these
+            // TODO (cleanup): every prompt-file launch leaks one of these
             // temp files. OS temp rotation reclaims them eventually but on
             // a long-running VS Code session (multi-week) this accumulates
             // to GB-level cruft. Schedule fs.unlinkSync(promptFile) on the
@@ -686,14 +669,14 @@ async function sendToTerminal(args: string[], query: string): Promise<boolean> {
                 throw writeErr;
             }
             // `cmd` is args[0] (command name); the prompt (filter-matched
-            // out of `rest` so the file supplies it via stdin) is dropped
-            // from the inline cmdLine. `restShell` is the remaining flags
-            // already shell-quoted for the active shell — every documented
-            // provider's flags (`--permission-mode acceptEdits`, `-p`,
-            // `--output-format json`, …) pass through unchanged because
-            // they're safe-ASCII.
+            // out of `rest` when queryInArgs) is dropped from the inline
+            // cmdLine so the file supplies it via stdin. For interactive
+            // CLIs (query NOT in args), `rest` is just args.slice(1)
+            // (the full arg list sans command name).
             const cmd = args[0];
-            const rest = args.slice(1).filter(a => a !== query);
+            const rest = queryInArgs
+                ? args.slice(1).filter(a => a !== query)
+                : args.slice(1);
             const restShell = rest.map(a => shellQuote(a)).join(' ');
             const cmdShell = shellQuote(cmd);
             // Shell-family branching for stdin-redirect syntax.
@@ -739,6 +722,8 @@ async function sendToTerminal(args: string[], query: string): Promise<boolean> {
                     : `${cmdShell} < ${shellQuote(promptFile)}`);
             term.sendText(terminalLine, true);
         } else {
+            // Short prompt embedded in args (e.g., `-p q`). Send inline
+            // — no temp file needed.
             const cmdLine = args.map(a => shellQuote(a)).join(' ');
             term.sendText(cmdLine, true);
         }

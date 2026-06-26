@@ -400,63 +400,77 @@ describe('openChatWithResult — terminal launch path (sendToTerminal)', () => {
     expect(processOrder).toBeLessThanOrEqual(sendTextOrder);
   });
 
-  // ── Short-prompt: full claude flags + prompt sent inline on bash ─────────
-  // The canvas path uses CHAT_COMMANDS directly, so terminalLaunch returns
-  // `['claude', '--permission-mode', 'acceptEdits', '--output-format',
-  //  'json', '-p', q]` and sendToTerminal joins+quotes them into the cmdLine.
-  it('on bash, claude terminal-launch includes flags and prompt inline', async () => {
+  // ── Interactive TUI: claude opens without -p; prompt piped via stdin ─────
+  // The canvas path uses terminalLaunch which returns just `['claude']`.
+  // sendToTerminal detects the query is NOT embedded in args, so it writes
+  // the prompt to a temp file and pipes via stdin for ALL prompts.
+  // Short prompts get the stdin redirect (not inline) because the CLI has
+  // no `-p` flag to embed the prompt.
+  it('on bash, claude terminal-launch pipes short prompt via stdin', async () => {
     await openChatWithResult({ provider: 'claude', query: 'hello world' });
     expect(sendTextSpy).toHaveBeenCalledTimes(1);
     const [cmdLine, addNewLine] = sendTextSpy.mock.calls[0] as [string, boolean];
-    expect(cmdLine).toBe("claude --permission-mode acceptEdits --output-format json -p 'hello world'");
+    // Shape: `claude < <quoted-path>aac-prompt-[\w-]+\.md<quoted-path>`
+    expect(cmdLine).toMatch(
+      /^claude < ['"]?.*aac-prompt-[\w-]+\.md['"]?$/
+    );
     expect(addNewLine).toBe(true);
+    // No headless flags leak into the interactive path
+    expect(cmdLine).not.toMatch(/--permission-mode/);
+    expect(cmdLine).not.toMatch(/--output-format/);
+    expect(cmdLine).not.toMatch(/ -p /);
   });
 
-  it('on PowerShell, claude terminal-launch includes flags and prompt inline', async () => {
+  it('on PowerShell, claude terminal-launch pipes short prompt via stdin', async () => {
     Object.assign(vscode.env, { shell: 'pwsh.exe' });
     await openChatWithResult({ provider: 'claude', query: 'hello world' });
     expect(sendTextSpy).toHaveBeenCalledTimes(1);
     const [cmdLine, addNewLine] = sendTextSpy.mock.calls[0] as [string, boolean];
-    expect(cmdLine).toBe('claude --permission-mode acceptEdits --output-format json -p "hello world"');
+    // Shape: `Get-Content -Raw <path> | & claude`
+    expect(cmdLine).toMatch(
+      /^Get-Content -Raw ['"]?.*aac-prompt-[\w-]+\.md['"]? \| & claude$/
+    );
     expect(addNewLine).toBe(true);
+    // No headless flags
+    expect(cmdLine).not.toMatch(/--permission-mode/);
+    expect(cmdLine).not.toMatch(/--output-format/);
+    expect(cmdLine).not.toMatch(/ -p /);
   });
 
-  // ── Long-prompt branch: bash stdin-redirect shape ────────────────────────
-  // When the prompt is long (>8 KiB), sendToTerminal writes it to a temp
-  // file and redirects stdin. Flags from terminalLaunch appear between
-  // the command and the redirect.
-  it('on bash with a long prompt (>8 KiB), emits `claude --flags < file` shape', async () => {
+  // ── Long prompt also pipes via stdin (same interactive path) ─────────────
+  it('on bash with a long prompt (>8 KiB), claude stdin-redirect shape is identical', async () => {
     const longPrompt = 'A'.repeat(8_500);
     await openChatWithResult({ provider: 'claude', query: longPrompt });
     expect(sendTextSpy).toHaveBeenCalledTimes(1);
     const [cmdLine] = sendTextSpy.mock.calls[0] as [string, boolean];
-    // Shape: `claude --permission-mode acceptEdits --output-format json -p < <quoted-path>`
+    // Same shape as short prompt: `claude < file`
     expect(cmdLine).toMatch(
-      /^claude --permission-mode acceptEdits --output-format json -p < ['"]?.*aac-prompt-[\w-]+\.md['"]?$/
+      /^claude < ['"]?.*aac-prompt-[\w-]+\.md['"]?$/
     );
-    // Prompt content should NOT be duplicated inline (redirect feeds it)
-    expect(cmdLine).not.toContain('AAAA');
+    // No headless flags
+    expect(cmdLine).not.toMatch(/--permission-mode/);
+    expect(cmdLine).not.toMatch(/--output-format/);
+    expect(cmdLine).not.toMatch(/ -p /);
   });
 
-  // ── Long-prompt branch: PowerShell call-operator shape ───────────────────
-  it('on PowerShell with a long prompt (>8 KiB), emits `Get-Content -Raw | & claude --flags` shape', async () => {
+  it('on PowerShell with a long prompt (>8 KiB), claude stdin-redirect shape is identical', async () => {
     Object.assign(vscode.env, { shell: 'pwsh.exe' });
     const longPrompt = 'B'.repeat(8_500);
     await openChatWithResult({ provider: 'claude', query: longPrompt });
     expect(sendTextSpy).toHaveBeenCalledTimes(1);
     const [cmdLine] = sendTextSpy.mock.calls[0] as [string, boolean];
-    // Shape: `Get-Content -Raw <path> | & claude --permission-mode acceptEdits --output-format json -p`
-    // The `-p` flag is stripped of its value (the prompt) in the long-prompt
-    // branch (filter(a => a !== query)), so the flag itself remains in restShell.
+    // Same shape as short prompt: `Get-Content -Raw <path> | & claude`
     expect(cmdLine).toMatch(
-      /^Get-Content -Raw ['"]?.*aac-prompt-[\w-]+\.md['"]? \| & claude --permission-mode acceptEdits --output-format json -p$/
+      /^Get-Content -Raw ['"]?.*aac-prompt-[\w-]+\.md['"]? \| & claude$/
     );
-    // No stdin redirect (`<`) in PowerShell path
-    expect(cmdLine).not.toMatch(/ < /);
+    // No headless flags
+    expect(cmdLine).not.toMatch(/--permission-mode/);
+    expect(cmdLine).not.toMatch(/--output-format/);
+    expect(cmdLine).not.toMatch(/ -p /);
   });
 
-  // ── Long-prompt branch: prompt itself is NOT duplicated inline ──────────
-  it('long-prompt branch does not duplicate the prompt inline (avoids re-encoding)', async () => {
+  // ── Prompt content is NOT duplicated inline ────────────────────────────
+  it('prompt content is not duplicated inline (uses stdin redirect)', async () => {
     const longPrompt = 'Ctx-' + 'X'.repeat(8_500) + '-End';
     await openChatWithResult({ provider: 'claude', query: longPrompt });
     expect(sendTextSpy).toHaveBeenCalledTimes(1);
