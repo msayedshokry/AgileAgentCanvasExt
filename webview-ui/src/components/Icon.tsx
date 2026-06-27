@@ -30,6 +30,7 @@ export type IconName =
   | 'crystal-ball'    // was 🔮
   | 'split'           // was 🔀
   | 'chevron-down'    // was ▼
+  | 'chevron-left'    // was ◀
   | 'chevron-right'   // was ▶
   | 'close'           // was ✕
   | 'plus'            // was +
@@ -237,6 +238,9 @@ const paths: Record<IconName, JSX.Element> = {
   ),
   'chevron-down': (
     <polyline points="6 9 12 15 18 9" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+  ),
+  'chevron-left': (
+    <polyline points="15 6 9 12 15 18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
   ),
   'chevron-right': (
     <polyline points="9 6 15 12 9 18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />

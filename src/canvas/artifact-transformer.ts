@@ -291,6 +291,21 @@ export function buildArtifacts(store: ArtifactStore, workspaceRoot?: string, pla
         for (const plan of plans) {
             const height = calculateCardHeight('visual-plan', plan.title, plan.goal, 30);
 
+            // Compute task counts so the renderer can show a single
+            // "Plan summary" chip on the card. Previously this loop emitted
+            // one ghost 'story' artifact per AI task (5-20 per plan), which
+            // was indistinguishable from real stories and cluttered the
+            // implementation lane. The Plan card itself is now the source
+            // of truth — see the new `metadata.pendingTaskCount` /
+            // `metadata.isProposalReviewable` fields and the dedicated chip
+            // branch in ArtifactCard.tsx.
+            const totalTaskCount = plan.sections.reduce(
+                (sum, s) => sum + (s.kind === 'tasks' ? s.tasks.length : 0),
+                0
+            );
+            const isProposalReviewable = plan.status === 'pending' || plan.status === 'changes-requested';
+            const pendingTaskCount = isProposalReviewable ? totalTaskCount : 0;
+
             artifacts.push({
                 id: plan.id,
                 type: 'visual-plan',
@@ -300,34 +315,18 @@ export function buildArtifacts(store: ArtifactStore, workspaceRoot?: string, pla
                 position: { x: COLUMNS['visual-plan'], y: yOffsets['visual-plan'] },
                 size: { width: CARD_WIDTHS['visual-plan'], height },
                 dependencies: plan.targets ?? [],
-                childCount: plan.sections.filter(s => s.kind === 'tasks').reduce((sum, s) => sum + (s.kind === 'tasks' ? s.tasks.length : 0), 0),
-                metadata: { plan },
+                childCount: totalTaskCount,
+                metadata: {
+                    plan,
+                    /** Total AI-proposed tasks across all `kind: tasks` sections. */
+                    totalTaskCount,
+                    /** Tasks still awaiting review (== totalTaskCount when pending). */
+                    pendingTaskCount,
+                    /** True when the plan is in a state where the chip should flag it as proposal-reviewable. */
+                    isProposalReviewable,
+                },
             });
             yOffsets['visual-plan'] += height + CARD_SPACING;
-
-            // Emit proposed ghost cards for pending plans' tasks
-            if (plan.status === 'pending' || plan.status === 'changes-requested') {
-                const taskSection = plan.sections.find(s => s.kind === 'tasks');
-                if (taskSection && taskSection.kind === 'tasks') {
-                    for (const task of taskSection.tasks) {
-                        artifacts.push({
-                            id: `ghost-${task.id}`,
-                            type: 'story',
-                            title: task.title,
-                            description: task.description ?? '',
-                            status: 'draft',
-                            proposed: true,
-                            proposedFor: plan.id,
-                            position: { x: COLUMNS.story, y: yOffsets.story },
-                            size: { width: CARD_WIDTHS.story, height: calculateCardHeight('story', task.title, task.description ?? '', 20) },
-                            dependencies: [plan.id],
-                            parentId: plan.sourceArtifactId,
-                            metadata: { priority: task.priority },
-                        });
-                        yOffsets.story += calculateCardHeight('story', task.title, task.description ?? '', 20) + CARD_SPACING;
-                    }
-                }
-            }
         }
     }
 

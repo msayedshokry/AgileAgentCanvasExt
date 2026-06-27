@@ -1274,6 +1274,26 @@ body.ac-force-dark {
 .artifact-card.risk::before           { background: color-mix(in srgb, var(--vscode-charts-red) 80%, var(--vscode-charts-yellow)); }
 .artifact-card.task::before           { background: color-mix(in srgb, var(--vscode-charts-yellow) 70%, var(--vscode-charts-green)); }
 
+/* ── Tree-nested sub-card ──────────────────────────────────────────────────
+   When a visual-plan card (`metadata.plan.sourceArtifactId` points at a
+   parent) is repositioned as a child of that parent by Canvas's display
+   pipeline, give it a dashed left border + lightly indented treatment.
+   Dashed vs solid so users still read it as the same artifact type, but the
+   dashed border + extra left padding signal the hierarchy.  Connector line
+   drawn from the parent's card top-left down a hair via the ::after
+   pseudo-element so the descent is visible without an extra DOM node. */
+.artifact-card.tree-nested            { border-left-style: dashed; padding-left: 8px; opacity: 0.96; }
+.artifact-card.tree-nested::after     {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 12px;
+  width: 1px;
+  height: 10px;
+  background: var(--vscode-editorIndentGuide-activeBackground, rgba(127,127,127,0.4));
+}
+
+
 .artifact-card:hover {
   box-shadow: var(--card-shadow-hover);
   background-color: color-mix(in srgb, var(--card-bg) 95%, var(--vscode-editorWidget-border) 5%);

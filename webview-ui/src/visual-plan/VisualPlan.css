@@ -634,3 +634,170 @@
 .vp-comment-input button:hover {
   background: var(--vscode-button-hoverBackground);
 }
+
+/* ── Modal (in-canvas popup) ─────────────────────────────────────────────────
+   Wider stage for visual-plan review. Closes on backdrop click or Esc
+   (handled by VisualPlanModal.tsx). The .vp-modal-content wrapper makes
+   VisualPlanSections fill the modal dynamically — its intrinsic flex:1
+   body layout scales up to the available width without any renderer
+   changes. */
+
+.vp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--vscode-editor-background) 60%, transparent);
+  backdrop-filter: blur(2px);
+  /* Match .discard-overlay z-index (10000) so this modal sits above
+     every other surface including any pending unsaved-changes guard. */
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: vp-modal-overlay-fade-in 120ms ease-out;
+}
+
+@keyframes vp-modal-overlay-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.vp-modal {
+  background: var(--vscode-editor-background);
+  color: var(--vscode-editor-foreground);
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 8px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+  width: clamp(640px, 90vw, 1400px);
+  height: clamp(480px, 90vh, 1000px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: vp-modal-pop-in 140ms cubic-bezier(0.2, 0.9, 0.3, 1.1);
+}
+
+@keyframes vp-modal-pop-in {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.vp-modal-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  background: var(--vscode-editor-lineHighlightBackground);
+  flex-shrink: 0;
+}
+
+.vp-modal-toolbar-title {
+  font-size: 13px;
+  font-weight: 600;
+  flex: 1;
+}
+
+.vp-modal-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vp-modal-open-in-editor-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.vp-modal-open-in-editor-btn:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.vp-modal-close-btn {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  border: none;
+  border-radius: 4px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.vp-modal-close-btn:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+  color: var(--vscode-editor-foreground);
+}
+
+/* ── Cycle controls (prev / next visual plan) ───────────────────────────── */
+
+.vp-modal-cycle-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 4px;
+  background: var(--vscode-editor-background);
+}
+
+.vp-modal-cycle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 22px;
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.vp-modal-cycle-btn:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+  color: var(--vscode-editor-foreground);
+}
+
+.vp-modal-cycle-btn:focus-visible {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: 1px;
+}
+
+.vp-modal-cycle-counter {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--vscode-descriptionForeground);
+  padding: 0 6px;
+  min-width: 36px;
+  text-align: center;
+  user-select: none;
+}
+
+.vp-modal-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* The .vp-panel inside .vp-modal-content has `height: 100%` so it fills
+   the modal dynamically. Allow the outline rail to expand with the modal
+   width so the section list isn't crammed. */
+.vp-modal-content .vp-panel {
+  width: 100%;
+}
+
+.vp-modal-content .vp-outline {
+  width: 220px;
+}

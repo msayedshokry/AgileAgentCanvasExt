@@ -2,6 +2,7 @@ import { Component, useState, useEffect, useMemo, useRef } from 'react';
 import { useEvent } from './agentic-kanban/useEvent';
 import type { ErrorInfo, ReactNode } from 'react';
 import { Canvas } from './components/Canvas';
+import type { LayoutMode } from './components/Canvas';
 import { AICursor } from './components/AICursor';
 import { Toolbar } from './components/Toolbar';
 import { DetailPanel } from './components/DetailPanel';
@@ -16,6 +17,8 @@ import type { SprintData } from './components/SprintPlanningView';
 import { AgenticKanbanApp } from './agentic-kanban/AgenticKanbanApp';
 import { AgentSessionsPanel } from './components/AgentSessionsPanel';
 import { VisualPlanApp } from './visual-plan/VisualPlanApp';
+import { VisualPlanModal } from './visual-plan/VisualPlanModal';
+import type { VisualPlan as VisualPlanData } from './visual-plan/types';
 import { SearchBox } from './components/SearchBox';
 import { CatalogueModal } from './components/CatalogueModal';
 import { ProviderSelector } from './components/ProviderSelector';
@@ -190,6 +193,103 @@ function App() {
       if (prev === 'light') return 'dark';
       return null; // dark → back to auto
     });
+  });
+
+  // ── Canvas view (zoom + pan) persistence ──
+  // Initial zoom/pan is restored from vscode.setState so the canvas lands at
+  // the same view on remount. Canvas reports back via handleCanvasViewChange;
+  // we forward to setState so a layout-mode switch (lanes ↔ mindmap ↔ 3D no
+  // longer wipes pan/zoom — the user's place on the board survives the swap).
+  const [canvasView, setCanvasView] = useState<{ zoom: number; pan: { x: number; y: number } }>(() => {
+    try {
+      const saved = (vscode.getState() as Record<string, unknown>)?.canvasView;
+      if (saved && typeof saved === 'object') {
+        const z = (saved as { zoom?: unknown }).zoom;
+        const p = (saved as { pan?: { x?: unknown; y?: unknown } }).pan;
+        if (typeof z === 'number' && z >= 0.25 && z <= 2 && p &&
+            typeof p.x === 'number' && typeof p.y === 'number') {
+          return { zoom: z, pan: { x: p.x, y: p.y } };
+        }
+      }
+    } catch (_) { /* ignore */ }
+    return { zoom: 1, pan: { x: 0, y: 0 } };
+  });
+
+  // Stable identity (useEvent) so Canvas's effect doesn't tear down on every
+  // App render. Writes to vscode.setState on every (zoom, pan) change so the
+  // view survives reload.
+  //
+  // Performance: `vscode.setState` is a synchronous IPC round-trip to the
+  // extension host; drag-pan fires 60+ Hz pointermove ticks, so a naive write
+  // here floods the IPC channel.  We update the React state synchronously
+  // (so the in-canvas view stays responsive) but DEBOUNCE the host write
+  // to a 150 ms trailing-edge flush — coalesces 60+ Hz drag into one write
+  // per gesture.  We stash the latest (zoom, pan) in a ref so the unmount
+  // path can actually flush a pending write rather than cancel it (otherwise
+  // the last 150 ms of drag distance would be silently lost on a quick
+  // tab switch / webview reload).
+  const canvasViewPendingRef = useRef<{ zoom: number; pan: { x: number; y: number } } | null>(null);
+  const canvasViewDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flushCanvasView = () => {
+    if (!canvasViewPendingRef.current) return;
+    const { zoom, pan } = canvasViewPendingRef.current;
+    try {
+      const current = (vscode.getState() as Record<string, unknown>) ?? {};
+      vscode.setState({ ...current, canvasView: { zoom, pan } });
+    } catch (_) { /* ignore */ }
+    canvasViewPendingRef.current = null;
+  };
+  const handleCanvasViewChange = useEvent((zoom: number, pan: { x: number; y: number }) => {
+    // No-op echo: Canvas's mount [zoom, pan] effect fires with the seed
+    // value, so skip IPC when the incoming (zoom, pan) matches the most
+    // recent value we already know (pending ref, state fallback after flush).
+    // The `?? canvasView` baseline is safe after a flush because setCanvasView
+    // runs synchronously inside this handler — state stays in lockstep with
+    // whatever the last pending write carried before flushCanvasView nulled
+    // the ref.
+    const known = canvasViewPendingRef.current ?? canvasView;
+    if (known.zoom === zoom && known.pan.x === pan.x && known.pan.y === pan.y) {
+      return;
+    }
+    setCanvasView({ zoom, pan });
+    canvasViewPendingRef.current = { zoom, pan };
+    if (canvasViewDebounceRef.current) clearTimeout(canvasViewDebounceRef.current);
+    canvasViewDebounceRef.current = setTimeout(() => {
+      canvasViewDebounceRef.current = null;
+      flushCanvasView();
+    }, 150);
+  });
+
+  // ── Layout mode (lanes ⇄ mindmap ⇄ 3D corpus) persistence ────────────────
+  // Mirrors the canvasView pattern above: lazy-seed from vscode.getState on
+  // first mount, then write back on every user toggle. Layout flips are
+  // discrete user actions (keyboard 'L' or the canvas toggle button), not
+  // continuous 60+ Hz events, so we write synchronously — no debounce is
+  // warranted and would only complicate the "last choice wins" contract.
+  // Validation guards against stale / corrupted persisted values being
+  // promoted to an unknown LayoutMode.
+  const VALID_LAYOUT_MODES: ReadonlyArray<LayoutMode> = ['lanes', 'mindmap', 'corpus3d'];
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>(() => {
+    try {
+      const saved = (vscode.getState() as Record<string, unknown> | undefined)?.layoutMode;
+      if (typeof saved === 'string' && (VALID_LAYOUT_MODES as readonly string[]).includes(saved)) {
+        return saved as LayoutMode;
+      }
+    } catch (_) { /* ignore */ }
+    return 'lanes';
+  });
+  const handleLayoutModeChange = useEvent((next: LayoutMode) => {
+    // Sync React state to whatever Canvas now reports. The flow is:
+    //   user → Canvas internal setLayoutMode → onLayoutModeChange effect → here.
+    // We don't store React state ahead of Canvas (Canvas owns the truth
+    // for the lifetime of its mount) so any race between React-side state
+    // updates and Canvas-side toggles resolves naturally: Canvas always
+    // reports last, and we follow its lead.
+    setLayoutMode(next);
+    try {
+      const current = (vscode.getState() as Record<string, unknown>) ?? {};
+      vscode.setState({ ...current, layoutMode: next });
+    } catch (_) { /* ignore */ }
   });
 
   // Track artifact IDs to detect when a new project is loaded
@@ -467,6 +567,13 @@ function App() {
     return () => {
       window.removeEventListener('message', handleMessage);
       if (schemaToastTimerRef.current) clearTimeout(schemaToastTimerRef.current);
+      // Flush any pending debounced canvas-view write so we don't lose the
+      // last drag distance during a quick tab switch / webview reload.
+      if (canvasViewDebounceRef.current) {
+        clearTimeout(canvasViewDebounceRef.current);
+        canvasViewDebounceRef.current = null;
+      }
+      flushCanvasView();
     };
   }, [handleMessage]);
 
@@ -601,9 +708,21 @@ function App() {
     vscode.postMessage({ type: 'selectArtifact', id });
   });
 
-  // Open the detail panel for an artifact (double-click or info button)
+  // Open the detail panel for an artifact (double-click or info button).
+  // VisualPlan artifacts open the in-canvas modal instead of the
+  // narrow right-side DetailPanel — plans are wide and the DetailPanel
+  // slot (320-600 px wide) renders them cramped.
   const handleOpenDetailPanel = useEvent((id: string) => {
     console.log('[App] handleOpenDetailPanel called', { id, previousDetailPanelOpen: detailPanelOpen });
+    const target = artifacts.find(a => a.id === id);
+    if (target?.type === 'visual-plan') {
+      // Close any open detail panel first so the modal sits as the
+      // sole right-hand surface and the layout doesn't visually fight.
+      setDetailPanelOpen(false);
+      setVisualPlanModalId(id);
+      vscode.postMessage({ type: 'selectArtifact', id });
+      return;
+    }
     // Guard: if detail panel has unsaved changes and we're switching to a different artifact, confirm first
     if (detailPanelOpen && detailPanelDirty && id !== selectedId) {
       setPendingNavigation({ type: 'open', id });
@@ -930,6 +1049,141 @@ function App() {
     setSchemaIssues([]);
   });
 
+  // ── Visual Plan Modal ──────────────────────────────────────────────────────
+  // VisualPlan cards open this modal on double-click instead of the
+  // narrow right-side DetailPanel. The right-side DetailPanel's max
+  // width (~600 px) is too narrow for plan tables (apiSpec, schemaMap),
+  // inline SVG diagrams, and code blocks — they're unreadable at that
+  // width. This modal scales up to ~90vw × ~90vh and reuses the same
+  // VisualPlanSections renderer as the pop-out tab and the kanban
+  // inline panel, so behaviour is identical across all three surfaces.
+  const [visualPlanModalId, setVisualPlanModalId] = useState<string | null>(null);
+
+  // The artifact backing the modal — populated from `artifacts` whenever
+  // the modal id changes. Reads `metadata.plan` for the renderer payload.
+  const visualPlanModalArtifact = useMemo(
+    () => (visualPlanModalId ? artifacts.find(a => a.id === visualPlanModalId) ?? null : null),
+    [visualPlanModalId, artifacts]
+  );
+
+  // ── Visual plan: tree-nesting + parent-card shortcut ──
+  // Map every parent artifact id → its latest visual-plan artifact id.
+  // A plan is "owned by" the artifact whose id matches plan.sourceArtifactId.
+  // Used by Canvas to (a) reposition plan cards as tree-nested sub-cards below
+  // their parent and (b) drive the new "Show Plan" button on the parent header.
+  // Multiple plans per parent: keep the highest-id plan (deterministic across
+  // renders — same plan wins on every Artifacts[] change with the same content).
+  const childPlanMap = useMemo(() => {
+    const map = new Map<string, string>();
+    const plans = artifacts.filter(a => a.type === 'visual-plan');
+    for (const plan of plans) {
+      const meta = plan.metadata as { plan?: { sourceArtifactId?: string } } | undefined;
+      const parentId = meta?.plan?.sourceArtifactId;
+      if (!parentId) continue;
+      const existing = map.get(parentId);
+      if (!existing || plan.id.localeCompare(existing) > 0) {
+        map.set(parentId, plan.id);
+      }
+    }
+    return map;
+  }, [artifacts]);
+
+  // Open a visual plan in the modal — called when the parent card's "Show Plan"
+  // shortcut button is clicked. We deliberately reuse the visualPlanModalId
+  // path so the modal flow, Escape behaviour and per-plan cycling all stay
+  // identical to the plan-card double-click path.
+  const handleShowPlan = useEvent((planId: string) => {
+    const plan = artifacts.find(a => a.id === planId);
+    if (!plan || plan.type !== 'visual-plan') return;
+    setDetailPanelOpen(false);
+    setVisualPlanModalId(planId);
+    vscode.postMessage({ type: 'selectArtifact', id: planId });
+  });
+
+  // Persist last-opened visual-plan id across re-renders. When the canvas
+  // remounts (e.g. tab/panel switch within the same webview), the restoration
+  // useEffect below re-opens the modal so the user lands back on the plan
+  // they were reviewing. Clear the value on close so the next open rewrites it.
+  useEffect(() => {
+    try {
+      const current = (vscode.getState() as Record<string, unknown>) ?? {};
+      if (visualPlanModalId) {
+        vscode.setState({ ...current, lastOpenedPlanId: visualPlanModalId });
+      } else if (current.lastOpenedPlanId !== undefined) {
+        vscode.setState({ ...current, lastOpenedPlanId: undefined });
+      }
+    } catch (_) { /* ignore */ }
+  }, [visualPlanModalId]);
+
+  // Restore the previously-opened visual-plan modal on remount. Only fires
+  // when the plan still exists in the current artifact set — otherwise we'd
+  // silently open a modal pointing at a stale/deleted plan.
+  useEffect(() => {
+    if (visualPlanModalId) return; // already open, nothing to restore
+    try {
+      const saved = (vscode.getState() as Record<string, unknown>)?.lastOpenedPlanId;
+      if (typeof saved !== 'string') return;
+      // Verify the plan is still in the artifact set and is a visual-plan.
+      const stillExists = artifacts.some(
+        a => a.id === saved && a.type === 'visual-plan'
+      );
+      if (stillExists) setVisualPlanModalId(saved);
+    } catch (_) { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [artifacts]);
+  const visualPlanModalPlan = useMemo<VisualPlanData | null>(() => {
+    if (!visualPlanModalArtifact || visualPlanModalArtifact.type !== 'visual-plan') return null;
+    const meta = visualPlanModalArtifact.metadata as { plan?: VisualPlanData } | undefined;
+    return meta?.plan ?? null;
+  }, [visualPlanModalArtifact]);
+
+  const handleCloseVisualPlanModal = useEvent(() => {
+    setVisualPlanModalId(null);
+  });
+
+  // All visual-plan artifacts in the current canvas view. Sorted by id
+  // for stable, predictable cycle order. We pass this to the modal so
+  // ArrowLeft / ArrowRight (and prev/next buttons) can cycle through
+  // multiple plans without closing the modal.
+  const visualPlanModalAllPlans = useMemo(
+    () =>
+      artifacts
+        .filter(a => a.type === 'visual-plan')
+        .slice()
+        .sort((a, b) => a.id.localeCompare(b.id)),
+    [artifacts]
+  );
+
+  // Cycle direction: -1 wraps to the previous plan, +1 wraps to the
+  // next. Wraps at both ends so the user can stay in the modal and
+  // keep stepping through every plan with one key.
+  //
+  // Note: we deliberately do NOT post `selectArtifact` on each cycle.
+  // The opening IPC already selects the originally-opened plan on the
+  // canvas; cycling inside the modal is a *preview* gesture, and
+  // firing selectArtifact on every press would scroll-thrash the
+  // canvas behind the modal. Closing the modal preserves the original
+  // selection. If we ever want the canvas to follow the modal, gate
+  // the IPC on (a) being on the last cycle before close, or (b) a
+  // "follow canvas" toggle in the toolbar.
+  const handleNavigatePlan = useEvent((delta: -1 | 1) => {
+    if (visualPlanModalAllPlans.length < 2) return;
+    const idx = visualPlanModalAllPlans.findIndex(a => a.id === visualPlanModalId);
+    if (idx === -1) return;
+    // Wrap with modulo so Prev from the first wraps to the last, and
+    // Next from the last wraps to the first.
+    const nextIdx = (idx + delta + visualPlanModalAllPlans.length) % visualPlanModalAllPlans.length;
+    const nextPlan = visualPlanModalAllPlans[nextIdx];
+    if (nextPlan && nextPlan.id !== visualPlanModalId) {
+      setVisualPlanModalId(nextPlan.id);
+    }
+  });
+
+  // Note: the "Open in Editor" button inside VisualPlanModal posts the
+  // `{ type: 'openVisualPlan', artifactId }` IPC directly via VisualPlanModal's
+  // own handler — it doesn't need to bubble up here. So this layer has no
+  // extra wiring; the modal owns that flow.
+
   if (error) {
     return (
       <div className="app error-state">
@@ -998,6 +1252,12 @@ function App() {
               screenshotFormat={screenshotFormat}
               onScreenshotReady={handleScreenshotReady}
               onScreenshotError={handleScreenshotError}
+              initialCanvasView={canvasView}
+              onCanvasViewChange={handleCanvasViewChange}
+              childPlanMap={childPlanMap}
+              onShowPlan={handleShowPlan}
+              initialLayoutMode={layoutMode}
+              onLayoutModeChange={handleLayoutModeChange}
             />
             
             {detailPanelOpen && selectedArtifact && (
@@ -1014,6 +1274,23 @@ function App() {
                   allArtifacts={artifacts}
                   onPopOut={handlePopOut}
                   onDirtyStateChange={setDetailPanelDirty}
+                />
+              </ErrorBoundary>
+            )}
+            {/* Visual Plan Modal — preferred open surface for visual-plan
+                cards so the deeply-nested tables/diagrams in VisualPlanSections
+                have room to breathe. Sits above main-content in z-order; the
+                Escape key and the backdrop click both close it. With 2+
+                plans loaded, the modal exposes prev/next buttons + ArrowLeft /
+                ArrowRight to cycle between plans without closing. */}
+            {visualPlanModalArtifact && (
+              <ErrorBoundary label="Visual Plan Modal" key={visualPlanModalArtifact.id}>
+                <VisualPlanModal
+                  artifactId={visualPlanModalArtifact.id}
+                  plan={visualPlanModalPlan}
+                  allPlans={visualPlanModalAllPlans}
+                  onNavigate={handleNavigatePlan}
+                  onClose={handleCloseVisualPlanModal}
                 />
               </ErrorBoundary>
             )}

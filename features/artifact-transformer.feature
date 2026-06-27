@@ -400,3 +400,56 @@ Feature: Artifact Transformer - Store-to-Canvas Layout
     And the store has 3 functional requirements
     When I build artifacts from the store
     Then all "requirement" artifacts should have non-overlapping Y positions
+
+  # ─── Visual Plan: ghost-card suppression ─────────────────────────────────
+  # Regression coverage for: "Plan button creates many unwanted story cards".
+  # The transformer used to emit one ghost 'story' per AI task. Now it just
+  # enriches the plan card metadata so the chip on the card can summarize
+  # the tasks — no ghost cards at all.
+
+  @transformer @visualplan @regression
+  Scenario: Pending plan does NOT emit ghost story cards
+    Given the store has a visual plan with id "plan-001" status "pending" and 5 tasks
+    When I build artifacts from the store
+    Then the artifacts should contain type "visual-plan"
+    And the artifact count for type "story" should be 0
+    And artifact "plan-001" should have type "visual-plan"
+    And artifact "plan-001" childCount should be 5
+    And artifact "plan-001" metadata totalTaskCount should be 5
+    And artifact "plan-001" metadata pendingTaskCount should be 5
+    And artifact "plan-001" metadata isProposalReviewable should be "true"
+
+  @transformer @visualplan @regression
+  Scenario: Changes-requested plan still suppresses ghost cards
+    Given the store has a visual plan with id "plan-002" status "changes-requested" and 7 tasks
+    When I build artifacts from the store
+    Then the artifacts should contain type "visual-plan"
+    And the artifact count for type "story" should be 0
+    And artifact "plan-002" metadata pendingTaskCount should be 7
+    And artifact "plan-002" metadata isProposalReviewable should be "true"
+
+  @transformer @visualplan @regression
+  Scenario: Dispatched plan suppresses ghost cards and reports 0 pending
+    Given the store has a visual plan with id "plan-003" status "dispatched" and 3 tasks
+    When I build artifacts from the store
+    Then the artifacts should contain type "visual-plan"
+    And the artifact count for type "story" should be 0
+    And artifact "plan-003" metadata totalTaskCount should be 3
+    And artifact "plan-003" metadata pendingTaskCount should be 0
+    And artifact "plan-003" metadata isProposalReviewable should be "false"
+
+  @transformer @visualplan @regression
+  Scenario: Multiple pending plans together emit zero story cards
+    Given the store has a visual plan with id "plan-A" status "pending" and 4 tasks
+    And the store has a visual plan with id "plan-B" status "changes-requested" and 6 tasks
+    When I build artifacts from the store
+    Then the artifact count for type "visual-plan" should be 2
+    And the artifact count for type "story" should be 0
+
+  @transformer @visualplan
+  Scenario: Generating plan with no tasks yet has no child metadata
+    Given the store has a visual plan with id "plan-empty" status "generating" and 0 tasks
+    When I build artifacts from the store
+    Then artifact "plan-empty" childCount should be 0
+    And artifact "plan-empty" metadata totalTaskCount should be 0
+    And artifact "plan-empty" metadata pendingTaskCount should be 0

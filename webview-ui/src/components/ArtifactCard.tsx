@@ -16,6 +16,22 @@ interface ArtifactCardProps {
   compact?: boolean;
   /** Whether the story card's inline task/test rows are expanded */
   isStoryExpanded?: boolean;
+  /**
+   * True when this card has been repositioned as a tree-nested sub-card
+   * beneath its parent artifact (e.g. a visual-plan card whose position
+   * has been overridden by the Canvas display pipeline). Adds a dashed
+   * left border + slightly tighter padding to signal hierarchy.
+   */
+  treeNested?: boolean;
+  /**
+   * Existing visual-plan id whose sourceArtifactId == this artifact's id.
+   * When set AND `onShowPlan` is provided, a "Show Plan" shortcut button
+   * is rendered in the card header so the modal can be opened directly
+   * from the parent card without scrolling to the plan card.
+   */
+  childPlanId?: string;
+  /** Open the visual plan whose id is `childPlanId` in the modal. */
+  onShowPlan?: (planId: string) => void;
   onSelect: (id: string) => void;
   onOpenDetail: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Artifact>) => void;
@@ -118,6 +134,9 @@ export const ArtifactCard = React.memo(
     isSearchMatch,
     compact,
     isStoryExpanded,
+    treeNested,
+    childPlanId,
+    onShowPlan,
     onSelect,
     onOpenDetail,
     onUpdate,
@@ -325,7 +344,7 @@ export const ArtifactCard = React.memo(
   return (
     <div
       ref={cardRef}
-      className={`artifact-card ${artifact.type} status-tint-${artifact.status} ${isSelected ? 'selected' : ''} ${hasChildren ? 'has-children' : ''} ${isExpanded ? 'expanded' : 'collapsed'} ${isFlashing ? 'flashing' : ''} ${isDimmed ? 'dimmed' : ''} ${isSearchMatch ? 'search-match' : ''}${storyExpanded && artifact.type === 'story' ? ' story-expanded' : ''}`}
+      className={`artifact-card ${artifact.type} status-tint-${artifact.status} ${isSelected ? 'selected' : ''} ${hasChildren ? 'has-children' : ''} ${isExpanded ? 'expanded' : 'collapsed'} ${isFlashing ? 'flashing' : ''} ${isDimmed ? 'dimmed' : ''} ${isSearchMatch ? 'search-match' : ''}${storyExpanded && artifact.type === 'story' ? ' story-expanded' : ''}${treeNested ? ' tree-nested' : ''}`}
       style={{
         left: artifact.position.x,
         top: artifact.position.y,
@@ -403,6 +422,25 @@ export const ArtifactCard = React.memo(
           >
             <Icon name="prd" size={14} />
           </button>
+
+          {/* Show Plan button — only rendered when ArtifactCard has been
+              wired with a childPlanId that points at an existing plan.
+              Provides parent-card → plan-modal shortcut so the user does
+              not have to scroll to find the plan card itself. */}
+          {childPlanId && onShowPlan && (
+            <button
+              className="card-show-plan-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                onShowPlan(childPlanId);
+              }}
+              title="Show visual plan for this artifact"
+              aria-label="Show visual plan"
+            >
+              <Icon name="prd" size={14} />
+            </button>
+          )}
         </span>
       </div>
       
@@ -440,6 +478,44 @@ export const ArtifactCard = React.memo(
           ))}
         </div>
       )}
+
+      {/* Plan summary chip — single informational badge for visual-plan cards.
+          Replaces the old per-task ghost cards that polluted the implementation
+          lane. Reads counts from metadata added by artifact-transformer; the chip
+          is intentionally non-interactive (no expansion) since the detail panel
+          already exposes the full task list via VisualPlanSections. */}
+      {artifact.type === 'visual-plan' && (() => {
+        const m = artifact.metadata as {
+          pendingTaskCount?: number;
+          totalTaskCount?: number;
+          isProposalReviewable?: boolean;
+        } | undefined;
+        const total = m?.totalTaskCount ?? 0;
+        if (total === 0) return null;
+        if (m?.isProposalReviewable) {
+          const pending = m?.pendingTaskCount ?? total;
+          return (
+            <div className="artifact-child-breakdown">
+              <span
+                className="child-breakdown-badge visual-plan-summary"
+                title={`${pending} proposed task${pending === 1 ? '' : 's'} from this plan — open the plan card to review and approve.`}
+              >
+                📋 {pending} proposed task{pending === 1 ? '' : 's'}
+              </span>
+            </div>
+          );
+        }
+        return (
+          <div className="artifact-child-breakdown">
+            <span
+              className="child-breakdown-badge visual-plan-summary visual-plan-summary-dispatched"
+              title={`${total} task${total === 1 ? '' : 's'} — plan ${artifact.status === 'in-progress' ? 'is still generating' : 'has been dispatched or approved'}`}
+            >
+              ✓ {total} task{total === 1 ? '' : 's'} dispatched
+            </span>
+          </div>
+        );
+      })()}
 
       {/* Categorized child breakdown badges — each badge independently toggles its category */}
       {artifact.type !== 'story' && hasChildren && artifact.childBreakdown && artifact.childBreakdown.length > 0 && (
@@ -729,6 +805,12 @@ export const ArtifactCard = React.memo(
   if (prevProps.isSearchMatch !== nextProps.isSearchMatch) return false;
   if (prevProps.compact !== nextProps.compact) return false;
   if (prevProps.isStoryExpanded !== nextProps.isStoryExpanded) return false;
+  // tree-nested + childPlanId control the Show-Plan shortcut and CSS class;
+  // both flow from Canvas's display-time computation and never change
+  // unless the underlying artifacts do. onShowPlan is upstream-stable
+  // (useEvent) so it doesn't need a memo slot here.
+  if (prevProps.treeNested !== nextProps.treeNested) return false;
+  if (prevProps.childPlanId !== nextProps.childPlanId) return false;
 
   const prevCat = prevProps.expandedCategories;
   const nextCat = nextProps.expandedCategories;

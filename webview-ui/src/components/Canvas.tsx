@@ -44,6 +44,43 @@ interface CanvasProps {
   onScreenshotReady?: (dataUrl: string, format: 'png' | 'pdf') => void;
   /** Called when screenshot capture fails so the host can surface the error. */
   onScreenshotError?: (message: string) => void;
+  /**
+   * Initial zoom + pan restored from persistent storage (vscode.setState).
+   * Used as the seed for the first render only; subsequent pan/zoom changes
+   * are reported back via {@link onCanvasViewChange} so they survive
+   * layout-mode switches (lanes ↔ mindmap ↔ 3D corpus).
+   */
+  initialCanvasView?: { zoom: number; pan: { x: number; y: number } };
+  /**
+   * Reports every zoom/pan change back to the parent for persistence.
+   * Canvas fires this on a useEffect that watches (zoom, pan) so the call
+   * is decoupled from individual input handlers. This is intentionally NOT
+   * an in-dep — upstream passes a stable useEvent so react doesn't loop.
+   */
+  onCanvasViewChange?: (zoom: number, pan: { x: number; y: number } ) => void;
+  /**
+   * Map of parent artifact id → visual-plan artifact id. Enables tree-nested
+   * positioning of plan cards directly under their parent AND a "Show Plan"
+   * shortcut button on parent cards. Built by App from visual-plan
+   * `metadata.plan.sourceArtifactId`.
+   */
+  childPlanMap?: Map<string, string>;
+  /** Open a visual plan in the modal — passed to the parent card's shortcut button. */
+  onShowPlan?: (planId: string) => void;
+  /**
+   * Initial layout mode restored from persistent storage (vscode.setState).
+   * Used as the seed for first render only; subsequent layout-mode toggles
+   * (lanes ↔ mindmap ↔ 3D corpus) are reported back via {@link onLayoutModeChange}
+   * so the user's last layout choice survives reload and tab-switch.
+   */
+  initialLayoutMode?: LayoutMode;
+  /**
+   * Reports every layout-mode change back to the parent for persistence.
+   * Canvas fires this from a useEffect that watches `layoutMode` so the call
+   * is decoupled from the individual key / click handlers. Stable identity
+   * (useEvent) upstream is what makes this safe to omit from deps.
+   */
+  onLayoutModeChange?: (mode: LayoutMode) => void;
 }
 
 // Map each phase lane to the artifact types whose expand/collapse buttons live there.
@@ -147,13 +184,23 @@ const FILTER_TYPE_LABELS: Record<ArtifactType, string> = {
   'innovation-strategy': 'Innovation',
   'design-thinking': 'Design Think',
   'visual-plan': 'Plan',
-};
-
-export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpand, expandedIds, expandedCategories, onToggleCategoryExpand, onRefineWithAI, onElicit, onExpandLane, onCollapseLane, centerOnId, onCentered, onOpenSearch, searchMatchIds, screenshotTrigger, screenshotFormat, onScreenshotReady, onScreenshotError, onOpenDetail }: CanvasProps) {
+};  export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpand, expandedIds, expandedCategories, onToggleCategoryExpand, onRefineWithAI, onElicit, onExpandLane, onCollapseLane, centerOnId, onCentered, onOpenSearch, searchMatchIds, screenshotTrigger, screenshotFormat, onScreenshotReady, onScreenshotError, onOpenDetail, initialCanvasView, onCanvasViewChange, childPlanMap, onShowPlan, initialLayoutMode, onLayoutModeChange }: CanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
+  // Seed pan/zoom from props.initialCanvasView so a layout-mode switch +
+  // webview remount returns users to their saved view (`vscode.setState`).
+  // The seed is read once via lazy useState; subsequent changes flow back
+  // up through the onCanvasViewChange effect below.
+  const [zoom, setZoom] = useState<number>(() => initialCanvasView?.zoom ?? 1);
+  const [pan, setPan] = useState<{ x: number; y: number }>(() => initialCanvasView?.pan ?? { x: 0, y: 0 });
+
+  // Report every (zoom, pan) change back to the parent for persistence.
+  // Intentionally NOT including `onCanvasViewChange` in deps — upstream wires
+  // it as a `useEvent` with stable identity, and including the prop would
+  // cause render churn if a future caller forgets to memoise it.
+  useEffect(() => {
+    if (onCanvasViewChange) onCanvasViewChange(zoom, pan);
+  }, [zoom, pan]); // eslint-disable-line react-hooks/exhaustive-deps
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const [panStartOffset, setPanStartOffset] = useState({ x: 0, y: 0 });
@@ -171,8 +218,21 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
   const [hiddenLanes, setHiddenLanes] = useState<Set<string>>(new Set());
   // Dependency-line category hiding
   const [hiddenLineCategories, setHiddenLineCategories] = useState<Set<string>>(new Set());
-  // Layout mode: 'lanes' (default column view) or 'mindmap' (tree view)
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>('lanes');
+  // Layout mode: 'lanes' (default column view) or 'mindmap' (tree view).
+  // Seed from props.initialLayoutMode so a tab-switch / webview reload returns
+  // the user to the same layout they were using. The seed is read once via
+  // lazy useState; subsequent changes flow back up through the
+  // onLayoutModeChange effect below so vscode.setState persists them.
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>(() => initialLayoutMode ?? 'lanes');
+
+  // Report every layoutMode change back to the parent for persistence.
+  // Intentionally NOT including `onLayoutModeChange` in deps — upstream wires
+  // it as a `useEvent` with stable identity, mirroring the canvasView pattern
+  // above. Including the prop here would cause render churn if a future caller
+  // forgets to memoise the handler.
+  useEffect(() => {
+    if (onLayoutModeChange) onLayoutModeChange(layoutMode);
+  }, [layoutMode]); // eslint-disable-line react-hooks/exhaustive-deps
   // Screenshot capture in progress
   const [capturing, setCapturing] = useState(false);
   const [captureProgress, setCaptureProgress] = useState<string>('');
@@ -1317,17 +1377,15 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
       case 'l':
       case 'L':
         e.preventDefault();
-        // Cycle: lanes → mindmap → corpus3d → lanes
+        // Cycle: lanes → mindmap → corpus3d → lanes.
+        // Pan + zoom are deliberately preserved across the swap (canvas
+        // view is persisted via vscode.setState) so the user returns to
+        // the same board position after toggling. To reset, press `0`.
         setLayoutMode(m => {
           if (m === 'lanes') return 'mindmap';
           if (m === 'mindmap') return 'corpus3d';
           return 'lanes';
         });
-        // Reset pan/zoom when switching away from mindmap
-        if (layoutMode !== 'lanes') {
-          setPan({ x: 0, y: 0 });
-          setZoom(1);
-        }
         break;
       case '/':
         e.preventDefault();
@@ -1483,8 +1541,39 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
       }
     }
 
+    // ── Tree-nest visual-plan cards beneath their parent ──
+    // If a plan's metadata.plan.sourceArtifactId points to a parent that's
+    // currently visible, reposition the plan to render directly below that
+    // parent at indented position + reduced width — giving a clear visual
+    // "this belongs to that" hierarchy. Plans without a parent reference
+    // (or whose parent is hidden/filtered) stay in their Discovery position.
+    // CSS class .artifact-card.tree-nested provides the visual treatment.
+    if (childPlanMap && childPlanMap.size > 0) {
+      result = result.map(a => {
+        if (a.type !== 'visual-plan') return a;
+        const meta = a.metadata as { plan?: { sourceArtifactId?: string } } | undefined;
+        const parentId = meta?.plan?.sourceArtifactId;
+        if (!parentId) return a;
+        const parent = result.find(b => b.id === parentId);
+        if (!parent) return a; // parent not currently visible — keep Discovery position
+        const TREE_INSET = 20;
+        const TREE_OFFSET_Y = 12;
+        return {
+          ...a,
+          position: {
+            x: parent.position.x + TREE_INSET,
+            y: parent.position.y + parent.size.height + TREE_OFFSET_Y,
+          },
+          size: {
+            width: Math.max(160, parent.size.width - TREE_INSET * 2),
+            height: Math.max(72, a.size.height * 0.65),
+          },
+        };
+      });
+    }
+
     return result;
-  }, [visibleArtifacts, focusTreeIds, hasActiveFilters, hiddenTypes, hiddenStatuses, hiddenLanes, laneLayout, laneXOffsets]);
+  }, [visibleArtifacts, focusTreeIds, hasActiveFilters, hiddenTypes, hiddenStatuses, hiddenLanes, laneLayout, laneXOffsets, childPlanMap]);
 
   // When in mindmap mode, recompute positions using the tree layout engine.
   // In lanes mode, pass through displayArtifacts unchanged.
@@ -1585,7 +1674,11 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
   }, [layoutMode, finalArtifacts]);
 
   // Auto fit-to-view when entering mindmap mode.
-  // Computes optimal zoom to fit all mindmap nodes in the viewport with padding.
+  // Disabled: the canvas view is persisted through vscode.setState so the
+  // user returns to the same pan/zoom across layout-mode swaps. Re-enable
+  // here only if we ever need to force-fit on first entry (e.g. for a
+  // "fit to view" toolbar button); until then, preserve view state.
+  /*
   useEffect(() => {
     if (layoutMode !== 'mindmap' || finalArtifacts.length === 0) return;
     const el = canvasRef.current;
@@ -1594,7 +1687,6 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
     const vpH = el.clientHeight;
     if (vpW === 0 || vpH === 0) return;
 
-    // Compute bounding box of all mindmap nodes
     let minX = Infinity, minY = Infinity, maxX = 0, maxY = 0;
     for (const a of finalArtifacts) {
       const ax = a.position?.x ?? 0;
@@ -1606,30 +1698,54 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
       if (ax + aw > maxX) maxX = ax + aw;
       if (ay + ah > maxY) maxY = ay + ah;
     }
-
     const contentW = maxX - minX;
     const contentH = maxY - minY;
     if (contentW === 0 || contentH === 0) return;
-
-    const FIT_PADDING = 60; // px padding on each side
+    const FIT_PADDING = 60;
     const fitZoomW = (vpW - FIT_PADDING * 2) / contentW;
     const fitZoomH = (vpH - FIT_PADDING * 2) / contentH;
-    // Pick the smaller of the two to ensure everything fits, but cap between 0.3 and 1
     const fitZoom = Math.max(0.3, Math.min(1, Math.min(fitZoomW, fitZoomH)));
-
-    // Center the content in the viewport
     const centerX = (minX + maxX) / 2;
     const centerY = (minY + maxY) / 2;
     const panX = vpW / 2 - centerX * fitZoom;
     const panY = vpH / 2 - centerY * fitZoom;
-
     setZoom(fitZoom);
     setPan({ x: panX, y: panY });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layoutMode, finalArtifacts]);
+  */
 
   // In focus mode use the tree for arrow highlighting; otherwise use single-hop connectedIds
   const arrowHighlightIds = focusTreeIds ?? connectedIds;
+
+  // Set of visual-plan artifact ids whose position has been overridden to
+  // render beneath their parent. Pass from App via `childPlanMap` (parent → plan).
+  // We invert it here so the artifact-render loop can do a Set.has lookup per id.
+  //
+  // IMPORTANT: only include plans whose parent is currently visible.  App
+  // computes `childPlanMap` from ALL artifacts (including ones filtered out by
+  // focus mode / type filters / hidden lanes), so we have to intersect with
+  // `displayArtifacts` here.  Without this intersection, plans whose parent
+  // is hidden still get the `.tree-nested` CSS class even though their position
+  // was NOT overridden (the position branch correctly returns `a` unchanged
+  // when `parent` isn't found).  Mismatched class + position looks broken.
+  const treeNestedPlanIds = useMemo(() => {
+    if (!childPlanMap) return new Set<string>();
+    const ids = new Set<string>();
+    for (const [parentId, planId] of childPlanMap.entries()) {
+      if (displayArtifacts.some(a => a.id === parentId)) {
+        ids.add(planId);
+      }
+    }
+    return ids;
+  }, [childPlanMap, displayArtifacts]);
+
+  // Look up the plan id (if any) whose sourceArtifactId == artifact.id.
+  // Passed to ArtifactCard so the "Show Plan" shortcut button on the parent
+  // header can open the modal without going through child lookups again.
+  const childPlanFor = useCallback(
+    (id: string): string | undefined => childPlanMap?.get(id),
+    [childPlanMap]
+  );
 
   // Search match IDs now come from the SearchBox component via props.
   // Provide a stable default so downstream code doesn't need to null-check.
@@ -1699,6 +1815,9 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
             isDimmed={!focusMode && connectedIds != null && !connectedIds.has(artifact.id)}
             isSearchMatch={effectiveSearchMatchIds.has(artifact.id)}
             compact={layoutMode === 'mindmap'}
+            treeNested={treeNestedPlanIds.has(artifact.id)}
+            childPlanId={childPlanFor(artifact.id)}
+            onShowPlan={onShowPlan}
             onSelect={onSelect}
             onUpdate={onUpdate}
             onOpenDetail={onOpenDetail}
@@ -2034,12 +2153,17 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
             'Switch to lane view (L)'
           }
           onClick={() => {
+            // Persist (zoom, pan) across layout-mode switches:
+            // cycling into another view (mindmap / corpus3d / lanes) deliberately
+            // keeps the user's position on the board.  The seeded initial state
+            // recomputes from `vscode.getState` whenever Canvas remounts, so a
+            // navigation remount (e.g. from another webview surface) restores
+            // the same view.  Press `0` to reset view explicitly.
             setLayoutMode(m => {
               if (m === 'lanes') return 'mindmap';
               if (m === 'mindmap') return 'corpus3d';
               return 'lanes';
             });
-            if (layoutMode !== 'lanes') { setPan({ x: 0, y: 0 }); setZoom(1); }
           }}
         >
           <Icon name="split" size={14} />

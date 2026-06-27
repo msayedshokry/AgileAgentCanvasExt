@@ -28,6 +28,7 @@ const { buildArtifacts } = transformerModule;
 // Per-world test context
 interface TransformerTestContext {
     storeState: Record<string, any>;
+    plans?: any[];
     artifacts: any[];
 }
 
@@ -78,6 +79,7 @@ function findSecondOfType(ctx: TransformerTestContext, type: string): any {
 Given('a fresh artifact transformer', function (this: BmadWorld) {
     const ctx = getCtx(this);
     ctx.storeState = {};
+    ctx.plans = undefined;
     ctx.artifacts = [];
 });
 
@@ -626,6 +628,29 @@ Given('the store has an epic with id {string} and title {string} and a test stra
 
 // --- Full pipeline ---
 
+// --- Visual Plan ---
+
+Given('the store has a visual plan with id {string} status {string} and {int} tasks', function (
+    this: BmadWorld, planId: string, status: string, taskCount: number
+) {
+    const ctx = getCtx(this);
+    if (!ctx.plans) ctx.plans = [];
+    const tasks: any[] = [];
+    for (let i = 0; i < taskCount; i++) {
+        tasks.push({ id: `task-${planId}-${i}`, title: `Task ${i + 1}`, description: `Plan task ${i + 1}` });
+    }
+    ctx.plans.push({
+        id: planId,
+        title: `Plan ${planId}`,
+        goal: `Goal for plan ${planId}`,
+        status,
+        createdAt: 0,
+        updatedAt: 0,
+        sections: [{ id: `tasks-${planId}`, kind: 'tasks', tasks }],
+        comments: []
+    });
+});
+
 Given('the store has a full project with all phases', function (this: BmadWorld) {
     const ctx = getCtx(this);
     ctx.storeState = {
@@ -676,12 +701,13 @@ Given('the store has a full project with all phases', function (this: BmadWorld)
 When('I build artifacts from an empty store', function (this: BmadWorld) {
     const ctx = getCtx(this);
     ctx.storeState = {};
-    ctx.artifacts = buildArtifacts(mockStore(ctx));
+    ctx.plans = undefined;
+    ctx.artifacts = buildArtifacts(mockStore(ctx), undefined, ctx.plans);
 });
 
 When('I build artifacts from the store', function (this: BmadWorld) {
     const ctx = getCtx(this);
-    ctx.artifacts = buildArtifacts(mockStore(ctx));
+    ctx.artifacts = buildArtifacts(mockStore(ctx), undefined, ctx.plans);
 });
 
 // ============================================================================
@@ -818,6 +844,25 @@ Then('artifact {string} metadata draftCount should be {int}', function (this: Bm
     const ctx = getCtx(this);
     const artifact = findArtifact(ctx, id);
     assert.strictEqual(artifact.metadata.draftCount, count, `Expected artifact "${id}" draftCount ${count}, got ${artifact.metadata.draftCount}`);
+});
+
+Then('artifact {string} metadata totalTaskCount should be {int}', function (this: BmadWorld, id: string, count: number) {
+    const ctx = getCtx(this);
+    const artifact = findArtifact(ctx, id);
+    assert.strictEqual(artifact.metadata.totalTaskCount, count, `Expected artifact "${id}" totalTaskCount ${count}, got ${artifact.metadata.totalTaskCount}`);
+});
+
+Then('artifact {string} metadata pendingTaskCount should be {int}', function (this: BmadWorld, id: string, count: number) {
+    const ctx = getCtx(this);
+    const artifact = findArtifact(ctx, id);
+    assert.strictEqual(artifact.metadata.pendingTaskCount, count, `Expected artifact "${id}" pendingTaskCount ${count}, got ${artifact.metadata.pendingTaskCount}`);
+});
+
+Then('artifact {string} metadata isProposalReviewable should be {string}', function (this: BmadWorld, id: string, expected: string) {
+    const ctx = getCtx(this);
+    const artifact = findArtifact(ctx, id);
+    const actual = String(artifact.metadata.isProposalReviewable);
+    assert.strictEqual(actual, expected, `Expected artifact "${id}" isProposalReviewable "${expected}", got "${actual}"`);
 });
 
 Then('the first {string} artifact childBreakdown should contain {string} items', function (this: BmadWorld, type: string, itemType: string) {

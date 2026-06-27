@@ -439,13 +439,11 @@ describe('App', () => {
           expect(document.querySelector('.detail-panel')).not.toBeInTheDocument();
         });
       }
-    });
-
-    it('should add with-detail-panel class when panel is open', async () => {
+    });    it('should add with-detail-panel class when panel is open', async () => {
       render(<App />);
-      
+
       const artifacts = [createMockArtifact({ id: 'epic-1', title: 'Test Epic' })];
-      
+
       act(() => {
         dispatchMessage('updateArtifacts', { artifacts });
       });
@@ -457,6 +455,176 @@ describe('App', () => {
       await waitFor(() => {
         expect(document.querySelector('.app.with-detail-panel')).toBeInTheDocument();
       });
+    });
+  });
+
+  // ── Visual Plan Modal interception ──────────────────────────────────────
+  // Regression guard for the feature that opened visual-plan cards in an
+  // in-canvas modal instead of the narrow right-side DetailPanel. Without
+  // this, a refactor that loses the `type === 'visual-plan'` branch in
+  // handleOpenDetailPanel will silently regress visual-plan UX (plans
+  // become unreadable in the 320–600 px panel).
+  describe('Visual Plan Modal', () => {
+    it('double-click on a visual-plan card opens the modal, NOT the detail panel', async () => {
+      render(<App />);
+
+      act(() => {
+        dispatchMessage('updateArtifacts', {
+          artifacts: [createMockArtifact({ id: 'plan-1', type: 'visual-plan', title: 'Test Plan' })],
+        });
+      });
+
+      await waitFor(() => {
+        expect(document.querySelector('.artifact-card')).toBeInTheDocument();
+      });
+
+      fireEvent.doubleClick(document.querySelector('.artifact-card')!);
+
+      await waitFor(() => {
+        // Modal mounted (in-canvas popup with full review controls)
+        expect(document.querySelector('[data-testid="visual-plan-modal"]')).toBeInTheDocument();
+        // Right-side DetailPanel did NOT open
+        expect(document.querySelector('.detail-panel')).not.toBeInTheDocument();
+      });
+    });
+
+    it('double-click on a non-visual-plan card still opens the DetailPanel', async () => {
+      render(<App />);
+
+      act(() => {
+        dispatchMessage('updateArtifacts', {
+          artifacts: [createMockArtifact({ id: 'epic-1', type: 'epic', title: 'Test Epic' })],
+        });
+      });
+
+      await waitFor(() => {
+        expect(document.querySelector('.artifact-card')).toBeInTheDocument();
+      });
+
+      fireEvent.doubleClick(document.querySelector('.artifact-card')!);
+
+      await waitFor(() => {
+        expect(document.querySelector('.detail-panel')).toBeInTheDocument();
+        expect(document.querySelector('[data-testid="visual-plan-modal"]')).not.toBeInTheDocument();
+      });
+    });
+
+    it('closing the visual-plan modal removes it from the DOM', async () => {
+      // Note: the selectArtifact IPC fires on the OPEN path
+      // (handleOpenDetailPanel's visual-plan branch), not on close —
+      // handleCloseVisualPlanModal only clears state. We don't assert
+      // IPC here so this test stays focused on the close behaviour;
+      // the open-path IPC is verified implicitly by tests 1 and 2.
+      render(<App />);
+
+      act(() => {
+        dispatchMessage('updateArtifacts', {
+          artifacts: [createMockArtifact({ id: 'plan-1', type: 'visual-plan', title: 'Test Plan' })],
+        });
+      });
+
+      await waitFor(() => {
+        expect(document.querySelector('.artifact-card')).toBeInTheDocument();
+      });
+
+      fireEvent.doubleClick(document.querySelector('.artifact-card')!);
+
+      await waitFor(() => {
+        expect(document.querySelector('[data-testid="visual-plan-modal"]')).toBeInTheDocument();
+      });
+
+      // Click the × close button
+      fireEvent.click(screen.getByLabelText('Close plan modal'));
+
+      await waitFor(() => {
+        expect(document.querySelector('[data-testid="visual-plan-modal"]')).not.toBeInTheDocument();
+      });
+    });
+
+    // ── Cycle (prev/next visual-plan) at the App layer ────────────────
+    // Verifies the full integration: App maintains a sorted list of
+    // visual-plan artifacts, the modal exposes prev/next counters and
+    // buttons when 2+ exist, ArrowLeft/Right cycle, and wrap at both ends.
+    it('cycles through multiple visual-plan cards via prev/next buttons and arrow keys', async () => {
+      render(<App />);
+
+      act(() => {
+        dispatchMessage('updateArtifacts', {
+          artifacts: [
+            createMockArtifact({ id: 'plan-a', type: 'visual-plan', title: 'Alpha Plan' }),
+            createMockArtifact({ id: 'plan-b', type: 'visual-plan', title: 'Bravo Plan' }),
+            createMockArtifact({ id: 'plan-c', type: 'visual-plan', title: 'Charlie Plan' }),
+          ],
+        });
+      });
+
+      await waitFor(() => {
+        expect(document.querySelectorAll('.artifact-card').length).toBe(3);
+      });
+
+      // Find the Alpha card by its title text (decoupled from array
+      // index so this test isn't sensitive to canvas render order).
+      const allCards = Array.from(document.querySelectorAll('.artifact-card'));
+      const alphaCard = allCards.find(c => c.textContent?.includes('Alpha Plan'));
+      expect(alphaCard).toBeInTheDocument();
+      fireEvent.doubleClick(alphaCard!);
+
+      await waitFor(() => {
+        expect(document.querySelector('[data-testid="visual-plan-modal"]')).toBeInTheDocument();
+        // Cycle controls present because 2+ plans exist
+        expect(screen.getByTestId('vp-modal-prev-btn')).toBeInTheDocument();
+        expect(screen.getByTestId('vp-modal-next-btn')).toBeInTheDocument();
+      });
+
+      // Snapshot the IPC log BEFORE any cycle step. The open path
+      // posts exactly one selectArtifact for plan-a; we want to lock
+      // the new contract that cycle steps do NOT post further
+      // selectArtifact calls (which would scroll-thrash the canvas).
+      const preCycleSelectArtifactCount =
+        mockVsCodeApi.postMessage.mock.calls.filter(
+          c => (c[0] as any)?.type === 'selectArtifact'
+        ).length;
+
+      // Counter shows 1 / 3 (alpha is first alphabetically)
+      expect(screen.getByTestId('vp-modal-cycle-counter')).toHaveTextContent('1 / 3');
+
+      // Next button → plan-b (2 / 3)
+      fireEvent.click(screen.getByTestId('vp-modal-next-btn'));
+      await waitFor(() => {
+        expect(screen.getByTestId('vp-modal-cycle-counter')).toHaveTextContent('2 / 3');
+      });
+
+      // ArrowRight → plan-c (3 / 3)
+      fireEvent.keyDown(document, { key: 'ArrowRight' });
+      await waitFor(() => {
+        expect(screen.getByTestId('vp-modal-cycle-counter')).toHaveTextContent('3 / 3');
+      });
+
+      // ArrowRight wraps to plan-a (1 / 3)
+      fireEvent.keyDown(document, { key: 'ArrowRight' });
+      await waitFor(() => {
+        expect(screen.getByTestId('vp-modal-cycle-counter')).toHaveTextContent('1 / 3');
+      });
+
+      // ArrowLeft wraps backwards from first to last (3 / 3)
+      fireEvent.keyDown(document, { key: 'ArrowLeft' });
+      await waitFor(() => {
+        expect(screen.getByTestId('vp-modal-cycle-counter')).toHaveTextContent('3 / 3');
+      });
+
+      // Modal stays open across all transitions
+      expect(document.querySelector('[data-testid="visual-plan-modal"]')).toBeInTheDocument();
+
+      // Lock the quiet-cycle contract: cycling inside the modal must
+      // not post any extra selectArtifact calls. The only selectArtifact
+      // post should have been the open-time one (plan-a). This is what
+      // lets the user hold ←/→ without scrolling the canvas behind the
+      // modal.
+      const postCycleSelectArtifactCount =
+        mockVsCodeApi.postMessage.mock.calls.filter(
+          c => (c[0] as any)?.type === 'selectArtifact'
+        ).length;
+      expect(postCycleSelectArtifactCount).toBe(preCycleSelectArtifactCount);
     });
   });
 
@@ -1824,6 +1992,626 @@ describe('App - Side Effects', () => {
       fireEvent.click(sampleBtn);
 
       expect(mockVsCodeApi.postMessage).toHaveBeenCalledWith({ type: 'loadSampleProject' });
+    });
+  });
+});
+
+// ============================================================================
+// NEW TESTS — Tree-nested plan cards + Show Plan button + State persistence
+// ============================================================================
+
+describe('App - Visual Plan Tree Nesting & Show Plan Button', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    document.body.classList.remove('ac-force-light', 'ac-force-dark');
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  // Helper: build a parent artifact plus a visual plan whose
+  // metadata.plan.sourceArtifactId points at the parent. Mirrors how the
+  // artifact-transformer server-side constructs plan cards.
+  const makeParentAndPlan = (parentId: string, parentTitle: string, planId: string, planTitle: string): Artifact[] => ([
+    createMockArtifact({
+      id: parentId,
+      type: 'epic',
+      title: parentTitle,
+      position: { x: 100, y: 100 },
+      size: { width: 280, height: 150 },
+    }),
+    createMockArtifact({
+      id: planId,
+      type: 'visual-plan',
+      title: planTitle,
+      position: { x: 400, y: 1000 },
+      size: { width: 230, height: 130 },
+      metadata: { plan: { sourceArtifactId: parentId, sections: [], tasks: [] } },
+    }),
+  ]);
+
+  describe('tree nesting', () => {
+    it('repositions a visual-plan card directly below its parent AND tags it with the tree-nested class', async () => {
+      const artifacts = makeParentAndPlan('epic-1', 'Parent Epic', 'plan-1', 'Plan for Epic 1');
+
+      render(<App />);
+      act(() => { dispatchMessage('updateArtifacts', { artifacts }); });
+
+      await waitFor(() => {
+        expect(document.querySelectorAll('.artifact-card').length).toBe(2);
+      });
+
+      // The contract we lock in: tree-nested CSS class. JSDOM doesn't
+      // compute layout (offsetWidth/Height are all 0), and React's
+      // inline style gets rendered via JS but parsed style values can
+      // be flaky in JSDOM when the parent re-renders during the same
+      // tick as the plan.  Class tag is the unambiguous contract.
+      const planCard = document.querySelector('.artifact-card.visual-plan') as HTMLElement;
+      expect(planCard).toBeInTheDocument();
+      expect(planCard.classList.contains('tree-nested')).toBe(true);
+
+      // Parent (non-visual-plan) must NOT carry the tree-nested class.
+      const parentCard = document.querySelector('.artifact-card.epic') as HTMLElement;
+      expect(parentCard).toBeInTheDocument();
+      expect(parentCard.classList.contains('tree-nested')).toBe(false);
+    });
+
+    it('keeps plan in its Discovery position when no parent is referenced', async () => {
+      const artifacts = [
+        createMockArtifact({
+          id: 'plan-orphan', type: 'visual-plan', title: 'Orphan Plan',
+          position: { x: 500, y: 700 }, size: { width: 230, height: 130 },
+          metadata: { plan: { sections: [], tasks: [] } },
+        }),
+      ];
+      render(<App />);
+      act(() => { dispatchMessage('updateArtifacts', { artifacts }); });
+
+      await waitFor(() => {
+        expect(document.querySelector('.artifact-card.visual-plan')).toBeInTheDocument();
+      });
+
+      const card = document.querySelector('.artifact-card.visual-plan') as HTMLElement;
+      expect(card.classList.contains('tree-nested')).toBe(false);
+      expect(parseFloat(card.style.left)).toBe(500);
+      expect(parseFloat(card.style.top)).toBe(700);
+    });
+
+    it('keeps plan in Discovery position when its source parent is not in artifacts', async () => {
+      const artifacts = [
+        createMockArtifact({
+          id: 'plan-orphan', type: 'visual-plan', title: 'Plan for Missing Parent',
+          position: { x: 500, y: 700 }, size: { width: 230, height: 130 },
+          metadata: { plan: { sourceArtifactId: 'epic-deleted', sections: [], tasks: [] } },
+        }),
+      ];
+      render(<App />);
+      act(() => { dispatchMessage('updateArtifacts', { artifacts }); });
+
+      await waitFor(() => {
+        expect(document.querySelector('.artifact-card.visual-plan')).toBeInTheDocument();
+      });
+
+      const card = document.querySelector('.artifact-card.visual-plan') as HTMLElement;
+      expect(card.classList.contains('tree-nested')).toBe(false);
+    });
+  });
+
+  describe('Show Plan shortcut button on parent card', () => {
+    it('renders a Show Plan button on a parent card when its plan exists in the artifact set', async () => {
+      const artifacts = makeParentAndPlan('epic-1', 'Parent Epic', 'plan-1', 'Plan for Epic 1');
+      render(<App />);
+      act(() => { dispatchMessage('updateArtifacts', { artifacts }); });
+
+      await waitFor(() => {
+        const parentCard = document.querySelector('.artifact-card.epic') as HTMLElement;
+        expect(parentCard?.querySelector('.card-show-plan-btn')).toBeInTheDocument();
+      });
+    });
+
+    it('does NOT render a Show Plan button on parent cards without a plan', async () => {
+      const artifacts = [createMockArtifact({ id: 'epic-1', type: 'epic', title: 'Epic No Plan' })];
+      render(<App />);
+      act(() => { dispatchMessage('updateArtifacts', { artifacts }); });
+
+      await waitFor(() => {
+        const parentCard = document.querySelector('.artifact-card.epic') as HTMLElement;
+        expect(parentCard).toBeInTheDocument();
+        expect(parentCard.querySelector('.card-show-plan-btn')).not.toBeInTheDocument();
+      });
+    });
+
+    it('clicking Show Plan opens the visual-plan modal AND posts selectArtifact for the plan id', async () => {
+      const artifacts = makeParentAndPlan('epic-1', 'Parent Epic', 'plan-1', 'Plan for Epic 1');
+      render(<App />);
+      act(() => { dispatchMessage('updateArtifacts', { artifacts }); });
+
+      await waitFor(() => {
+        expect(document.querySelector('.artifact-card.epic')).toBeInTheDocument();
+      });
+
+      const showBtn = document.querySelector('.artifact-card.epic .card-show-plan-btn') as HTMLElement;
+      expect(showBtn).toBeInTheDocument();
+      fireEvent.click(showBtn);
+
+      // Modal pipeline contract:
+      //   1. The overlay renders unconditionally (it's outside the
+      //      ErrorBoundary's content) — proves `setVisualPlanModalId`
+      //      fired end-to-end without coupling to VisualPlanSections
+      //      internals.
+      //   2. selectArtifact(plan-1) IPC fired (uses the modal's IPC,
+      //      same path as double-click on the plan card).
+      //   3. The right-side DetailPanel does NOT open — the whole
+      //      point of routing the click to the modal.
+      await waitFor(() => {
+        const overlay = document.querySelector('[data-testid="visual-plan-modal-overlay"]');
+        expect(overlay).toBeInTheDocument();
+        expect(document.querySelector('.detail-panel')).not.toBeInTheDocument();
+        const ipc = mockVsCodeApi.postMessage.mock.calls.find(
+          c => (c[0] as any)?.type === 'selectArtifact' && (c[0] as any)?.id === 'plan-1',
+        );
+        expect(ipc).toBeDefined();
+      });
+    });
+  });
+});
+
+describe('App - Canvas View & Last-Opened Plan Persistence', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    document.body.classList.remove('ac-force-light', 'ac-force-dark');
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('canvasView (zoom + pan) persistence', () => {
+    // ── No-op echo suppression ──────────────────────────────────────────────
+    // On fresh webview mount Canvas's `[zoom, pan]` effect fires with the
+    // same (zoom, pan) we already seeded from vscode.getState(); without
+    // suppression that triggers a redundant vscode.setState() write 150 ms
+    // later. The two tests below lock the new contract:
+    //
+    //   1. Mount-seed WITHOUT a real change: no *new* IPC fires during the
+    //      canvasView debounce window (the echo is skipped). Spread writes
+    //      from themeOverride / layoutMode run on the synchronous commit
+    //      pass so they appear before the debounce timer would have fired,
+    //      and we count deltas across the window to isolate the echo path.
+    //
+    //   2. Mount-seed WITH a real change (wheel-zoom): the trailing IPC
+    //      write DOES land with the new zoom — proving the suppression
+    //      doesn't swallow real user input.
+    it('seeds zoom + pan from vscode.getState() on first mount and SUPPRESSES the redundant echo write', async () => {
+      mockVsCodeApi.getState.mockReturnValue({
+        canvasView: { zoom: 1.5, pan: { x: -120, y: 240 } },
+      });
+      // React 18 + createRoot: useEffect callbacks defer to the next
+      // microtask.  Wrap the render in `await act(async ...)` so all
+      // mount-time effects (themeOverride, layoutMode → handleLayoutModeChange)
+      // flush BEFORE we snapshot the IPC baseline.  Without this, mount-time
+      // spread writes trickle in during the polling window and the count
+      // assertion false-fails.
+      await act(async () => { render(<App />); });
+      const countBaseline = mockVsCodeApi.setState.mock.calls.length;
+      // Fail-fast polling: walk the canvasView 150 ms debounce window in
+      // 25 ms steps, bail the moment we see IPC growth, then assert equality.
+      // In the success case the loop runs to deadline; in the failure case
+      // (suppression broken) we exit early and the expect() below fails
+      // with a clear diagnostic citing EXACTLY which IPC fired.
+      const deadline = Date.now() + 300;
+      while (Date.now() < deadline) {
+        await new Promise(r => setTimeout(r, 25));
+        if (mockVsCodeApi.setState.mock.calls.length > countBaseline) break;
+      }
+      expect(mockVsCodeApi.setState.mock.calls.length).toBe(countBaseline);
+    });
+
+    it('writes canvasView back to vscode.setState after a real wheel-zoom (echo-skip is real-change-aware)', async () => {
+      // Anchor seed to a non-default value so a future default change
+      // (e.g. lazy init flipping to {zoom: 1, pan: {x: 0, y: 0}}) can't
+      // quietly turn the `zoom !== seed` filter below into a tautology.
+      const SEED_ZOOM = 0.8;
+      const SEED_X = -50;
+      const SEED_Y = 75;
+      mockVsCodeApi.getState.mockReturnValue({
+        canvasView: { zoom: SEED_ZOOM, pan: { x: SEED_X, y: SEED_Y } },
+      });
+      // Same React-18 act-flush as the suppress test above: ensures all
+      // mount-time effects settle before fireEvent.wheel runs against the
+      // rendered Canvas.
+      await act(async () => { render(<App />); });
+
+      // Ctrl + wheel-up = zoom in (Canvas.tsx: e.deltaY > 0 ? 0.9 : 1.1).
+      // testing-library's fireEvent.wheel synthesises the event through
+      // React's delegated listener; a raw dispatchEvent(new WheelEvent(...))
+      // is unreliable because React's synthetic wheel handler reads
+      // ctrlKey/clientX from a normalised event object.
+      const canvas = document.querySelector('.canvas') as HTMLElement;
+      expect(canvas).toBeInTheDocument();
+      fireEvent.wheel(canvas, {
+        ctrlKey: true,
+        deltaY: -1,
+        clientX: 100,
+        clientY: 100,
+      });
+
+      // handleCanvasViewChange's debounce path is the SOLE writer of
+      // canvasView's VALUE (spread paths preserve it unchanged). A write
+      // whose canvasView.zoom DIFFERS from the seed proves the wheel
+      // handler actually fired and the suppression didn't swallow it.
+      await waitFor(
+        () => {
+          const writes = mockVsCodeApi.setState.mock.calls
+            .map(c => c[0] as { canvasView?: { zoom: number; pan: { x: number; y: number } } })
+            .filter(s => s?.canvasView && s.canvasView.zoom !== SEED_ZOOM);
+          expect(writes.length).toBeGreaterThan(0);
+        },
+        { timeout: 1000, interval: 25 },
+      );
+    });
+  });
+
+  describe('lastOpenedPlanId persistence', () => {
+    it('writes lastOpenedPlanId to vscode.setState when the visual-plan modal opens', async () => {
+      mockVsCodeApi.getState.mockReturnValue({});
+      render(<App />);
+
+      act(() => {
+        dispatchMessage('updateArtifacts', {
+          artifacts: [createMockArtifact({ id: 'plan-1', type: 'visual-plan', title: 'Plan 1' })],
+        });
+      });
+
+      await waitFor(() => {
+        expect(document.querySelector('.artifact-card')).toBeInTheDocument();
+      });
+
+      fireEvent.doubleClick(document.querySelector('.artifact-card')!);
+
+      await waitFor(() => {
+        expect(document.querySelector('[data-testid="visual-plan-modal"]')).toBeInTheDocument();
+      });
+
+      const writesWithPlan = mockVsCodeApi.setState.mock.calls
+        .map(c => c[0] as Record<string, unknown>)
+        .filter(s => s && 'lastOpenedPlanId' in s);
+      expect(writesWithPlan.length).toBeGreaterThan(0);
+      const last = writesWithPlan[writesWithPlan.length - 1];
+      expect(last.lastOpenedPlanId).toBe('plan-1');
+    });
+
+    it('clears lastOpenedPlanId in setState when the modal closes', async () => {
+      mockVsCodeApi.getState.mockReturnValue({ lastOpenedPlanId: 'plan-stale' });
+      render(<App />);
+
+      act(() => {
+        dispatchMessage('updateArtifacts', {
+          artifacts: [createMockArtifact({ id: 'plan-stale', type: 'visual-plan', title: 'Plan Stale' })],
+        });
+      });
+
+      await waitFor(() => {
+        expect(document.querySelector('[data-testid="visual-plan-modal"]')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByLabelText('Close plan modal'));
+
+      await waitFor(() => {
+        expect(document.querySelector('[data-testid="visual-plan-modal"]')).not.toBeInTheDocument();
+      });
+
+      const allWrites = mockVsCodeApi.setState.mock.calls.map(c => c[0] as Record<string, unknown>);
+      const last = allWrites[allWrites.length - 1];
+      expect(last.lastOpenedPlanId).toBeUndefined();
+    });
+
+    it('does NOT restore the modal if the plan id in setState no longer exists in artifacts', () => {
+      mockVsCodeApi.getState.mockReturnValue({ lastOpenedPlanId: 'plan-deleted' });
+      render(<App />);
+
+      act(() => {
+        dispatchMessage('updateArtifacts', {
+          artifacts: [
+            createMockArtifact({ id: 'epic-1', type: 'epic', title: 'No relation to stale plan' }),
+          ],
+        });
+      });
+
+      expect(document.querySelector('[data-testid="visual-plan-modal"]')).not.toBeInTheDocument();
+    });
+  });
+});
+
+// ============================================================================
+// NEW TESTS — Layout Mode (lanes ⇄ mindmap ⇄ 3D corpus) persistence
+// ============================================================================
+//
+// Mirrors the canvasView + lastOpenedPlanId persistence tests above. The
+// persisted key is `layoutMode` on vscode.setState. App uses a lazy useState
+// to seed from vscode.getState() on first mount and writes back to setState
+// on every user toggle (Canvas's useEffect fires the IPC round-trip).
+//
+// Detection asserts we're in the right mode via stable DOM markers:
+//   - 'lanes'      → mindmap-toggle button title is "Switch to mind map (L)"
+//   - 'mindmap'    → .mindmap-mode-indicator (with "Mind Map" label) renders
+//                     AND mindmap-toggle title flips to "Switch to 3D corpus (L)"
+//   - 'corpus3d'   → mindmap-toggle title flips to "Switch to lane view (L)"
+//
+// We deliberately AVOID asserting which container element renders for the
+// modes — those are deeply internal to Canvas and we have separate unit
+// tests in Canvas's own suite for visual-mode diff. The toggle-button title
+// is the canonical user-facing surface that always tracks the current mode.
+describe('App - Layout Mode (lanes ⇄ mindmap ⇄ 3D corpus) persistence', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    document.body.classList.remove('ac-force-light', 'ac-force-dark');
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  // Helper: stable selector for the mindmap toggle button. The title
+  // attribute is the ONLY one rendered from Canvas's zoom-controls div,
+  // and it always reflects the current layoutMode.
+  const getToggleTitle = () => {
+    const btn = document.querySelector('.mindmap-toggle');
+    return btn?.getAttribute('title') ?? null;
+  };
+
+  describe('seed from vscode.getState on first mount', () => {
+    it('seeds "lanes" (the default) when no layoutMode key is persisted', () => {
+      mockVsCodeApi.getState.mockReturnValue({});
+      render(<App />);
+      // Lanes: "Switch to mind map (L)"
+      expect(getToggleTitle()).toBe('Switch to mind map (L)');
+      expect(document.querySelector('.mindmap-mode-indicator')).not.toBeInTheDocument();
+    });
+
+    it('seeds "mindmap" from vscode.getState() on first mount', async () => {
+      mockVsCodeApi.getState.mockReturnValue({ layoutMode: 'mindmap' });
+      render(<App />);
+      await waitFor(() => {
+        expect(getToggleTitle()).toBe('Switch to 3D corpus (L)');
+        expect(document.querySelector('.mindmap-mode-indicator')).toBeInTheDocument();
+      });
+    });
+
+    it('seeds "corpus3d" from vscode.getState() on first mount', async () => {
+      // corpus3d renders through Corpus3DView which replaces canvas-content.
+      // The robust observable here is JUST the toggle-button title flipping
+      // to "Switch to lane view (L)" — that path always renders regardless
+      // of whether the underlying view is Corpus3D or lane grid.
+      mockVsCodeApi.getState.mockReturnValue({ layoutMode: 'corpus3d' });
+      render(<App />);
+      await waitFor(() => {
+        expect(getToggleTitle()).toBe('Switch to lane view (L)');
+      });
+    });
+
+    it('falls back to "lanes" when persisted layoutMode is an unknown string', () => {
+      mockVsCodeApi.getState.mockReturnValue({ layoutMode: 'sideways' });
+      render(<App />);
+      expect(getToggleTitle()).toBe('Switch to mind map (L)');
+    });
+
+    it('falls back to "lanes" when persisted layoutMode is the wrong type', () => {
+      mockVsCodeApi.getState.mockReturnValue({ layoutMode: 42 });
+      render(<App />);
+      expect(getToggleTitle()).toBe('Switch to mind map (L)');
+    });
+  });
+
+  describe('write back to vscode.setState on toggle', () => {
+    it('writes the new layoutMode to setState when the user clicks the toggle', async () => {
+      mockVsCodeApi.getState.mockReturnValue({});
+      render(<App />);
+
+      // Initial mount: Canvas's first useEffect on layoutMode fires the
+      // IPC, so getState sits at the seeded value.
+      // Click the toggle button once — cycles 'lanes' → 'mindmap'.
+      const toggleBtn = document.querySelector('.mindmap-toggle') as HTMLElement;
+      expect(toggleBtn).toBeInTheDocument();
+      fireEvent.click(toggleBtn);
+
+      await waitFor(() => {
+        expect(getToggleTitle()).toBe('Switch to 3D corpus (L)');
+      });
+
+      const writesWithLayout = mockVsCodeApi.setState.mock.calls
+        .map(c => c[0] as Record<string, unknown>)
+        .filter(s => s && 'layoutMode' in s);
+      expect(writesWithLayout.length).toBeGreaterThan(0);
+      const last = writesWithLayout[writesWithLayout.length - 1];
+      expect(last.layoutMode).toBe('mindmap');
+    });
+
+    it('writes the new layoutMode to setState on the second toggle (mindmap→corpus3d)', async () => {
+      mockVsCodeApi.getState.mockReturnValue({});
+      render(<App />);
+      const toggleBtn = document.querySelector('.mindmap-toggle') as HTMLElement;
+
+      // Cycle once → mindmap, twice → corpus3d
+      fireEvent.click(toggleBtn);
+      await waitFor(() => expect(getToggleTitle()).toBe('Switch to 3D corpus (L)'));
+      fireEvent.click(toggleBtn);
+      await waitFor(() => expect(getToggleTitle()).toBe('Switch to lane view (L)'));
+
+      const writesWithLayout = mockVsCodeApi.setState.mock.calls
+        .map(c => c[0] as Record<string, unknown>)
+        .filter(s => s && 'layoutMode' in s);
+      const last = writesWithLayout[writesWithLayout.length - 1];
+      expect(last.layoutMode).toBe('corpus3d');
+    });
+
+    it('cycles back to "lanes" on the third toggle', async () => {
+      mockVsCodeApi.getState.mockReturnValue({});
+      render(<App />);
+      const toggleBtn = document.querySelector('.mindmap-toggle') as HTMLElement;
+
+      fireEvent.click(toggleBtn);
+      await waitFor(() => expect(getToggleTitle()).toBe('Switch to 3D corpus (L)'));
+      fireEvent.click(toggleBtn);
+      await waitFor(() => expect(getToggleTitle()).toBe('Switch to lane view (L)'));
+      fireEvent.click(toggleBtn);
+      await waitFor(() => expect(getToggleTitle()).toBe('Switch to mind map (L)'));
+
+      const writesWithLayout = mockVsCodeApi.setState.mock.calls
+        .map(c => c[0] as Record<string, unknown>)
+        .filter(s => s && 'layoutMode' in s);
+      const last = writesWithLayout[writesWithLayout.length - 1];
+      expect(last.layoutMode).toBe('lanes');
+    });
+  });
+
+  describe('restore across remount', () => {
+    it('restores "mindmap" mode when vscode.getState() reports it on a fresh mount', async () => {
+      // 'mindmap' is the only mode with a non-toggle stable DOM marker.
+      mockVsCodeApi.getState.mockReturnValue({ layoutMode: 'mindmap' });
+      const { unmount } = render(<App />);
+      await waitFor(() => {
+        expect(document.querySelector('.mindmap-mode-indicator')).toBeInTheDocument();
+      });
+      unmount();
+
+      // Second mount — getState() is called fresh per mount, so the same
+      // { layoutMode: 'mindmap' } is re-read and the same DOM marker appears.
+      render(<App />);
+      await waitFor(() => {
+        expect(document.querySelector('.mindmap-mode-indicator')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Validate invariant: write-end routing', () => {
+    // The IPC writes on toggle come from Canvas's useEffect, which calls
+    // App's onLayoutModeChange handler.  If the handler is missing from the
+    // Canvas-props destructure (or is unintentionally not wired), the
+    // toggle still flips the local React state (Canvas-owned), but the
+    // host setState never receives the new value.  This test locks the
+    // host-write contract.
+    it('always writes layoutMode to vscode.setState when Canvas reports a change', async () => {
+      mockVsCodeApi.getState.mockReturnValue({});
+      render(<App />);
+
+      // Snapshot initial write count (mount-time seed write).
+      const writesBefore = mockVsCodeApi.setState.mock.calls.length;
+
+      // Single toggle.
+      const toggleBtn = document.querySelector('.mindmap-toggle') as HTMLElement;
+      fireEvent.click(toggleBtn);
+
+      await waitFor(() => {
+        const writesAfter = mockVsCodeApi.setState.mock.calls.length;
+        expect(writesAfter).toBeGreaterThan(writesBefore);
+        // Every write since mount should carry a layoutMode key.
+        const newWrites = mockVsCodeApi.setState.mock.calls
+          .slice(writesBefore)
+          .map(c => c[0] as Record<string, unknown>);
+        for (const w of newWrites) {
+          expect(w).toHaveProperty('layoutMode');
+        }
+      });
+    });
+  });
+
+  describe('handleExitMindmapMode (mindmap exit button)', () => {
+    // Canvas.tsx renders <button className="mindmap-mode-exit" onClick={handleExitMindmapMode}>
+    // when in mindmap mode.  handleExitMindmapMode calls setLayoutMode('lanes')
+    // AND setPan({0,0}) AND setZoom(1) — two distinct persistence paths:
+    //   - layoutMode  → useEffect fires synchronously → setState(layoutMode='lanes')
+    //   - canvasView  → useEffect fires after the pan/zoom state updates →
+    //                   debounced (150ms trailing) → setState(canvasView={1,{0,0}})
+    // Lock the dual-write contract so a future refactor that skips the
+    // setLayoutMode(path) — e.g. wiring the Exit button to mutate Canvas's
+    // view state directly without going through the layoutMode state setter
+    // — cannot silently lose the layoutMode write.
+    it('writes layoutMode:"lanes" when the user clicks the mindmap-mode-exit button', async () => {
+      mockVsCodeApi.getState.mockReturnValue({});
+      render(<App />);
+
+      // Step into mindmap mode first.
+      const toggleBtn = document.querySelector('.mindmap-toggle') as HTMLElement;
+      fireEvent.click(toggleBtn);
+
+      // Mindmap exit button only renders in mindmap mode.
+      await waitFor(() => {
+        expect(document.querySelector('.mindmap-mode-exit')).toBeInTheDocument();
+      });
+
+      // Click the Exit button.
+      fireEvent.click(document.querySelector('.mindmap-mode-exit') as HTMLElement);
+
+      // Wait for layoutMode to flip back to lanes.
+      await waitFor(() => {
+        expect(getToggleTitle()).toBe('Switch to mind map (L)');
+      });
+
+      // The most recent layoutMode write must be 'lanes' (synchronous IPC).
+      const layoutWrites = mockVsCodeApi.setState.mock.calls
+        .map(c => c[0] as Record<string, unknown>)
+        .filter(s => s && 'layoutMode' in s);
+      const last = layoutWrites[layoutWrites.length - 1];
+      expect(last.layoutMode).toBe('lanes');
+    });
+
+    it('the canvasView reset (setPan/setZoom) ALSO writes through setState after debounce flush', async () => {
+      // Pre-seed canvasView to NON-EXIT values so Exit's effect must
+      // actually overwrite.  When handleExitMindmapMode correctly fires
+      // setZoom(1) + setPan({0,0}), the [zoom, pan] useEffect schedules
+      // a new IPC write carrying Exit's values - the trailing setState
+      // mock entry then holds those (not the seed).  If the handler were
+      // buggy and skipped the setters, the [zoom, pan] effect wouldn't
+      // fire and the trailing write would still equal the seed; the
+      // assertion below fails with a clear diagnostic either way.
+      // waitFor-with-assertions (testing-library's intended pattern)
+      // retries until the assertions pass or the 1000 ms timeout elapses,
+      // so this naturally absorbs the 150 ms canvasView debounce plus a
+      // generous margin for future tuning.
+      mockVsCodeApi.getState.mockReturnValue({
+        canvasView: { zoom: 2, pan: { x: 300, y: -100 } },
+      });
+      render(<App />);
+
+      // Step into mindmap so the exit button appears.
+      const toggleBtn = document.querySelector('.mindmap-toggle') as HTMLElement;
+      fireEvent.click(toggleBtn);
+      await waitFor(() => {
+        expect(document.querySelector('.mindmap-mode-exit')).toBeInTheDocument();
+      });
+
+      // Snapshot the canvasView-write count BEFORE the Exit click so we
+      // can prove the click triggered a write path, not just that some
+      // canvasView blob exists in setState.
+      const writesBeforeExit = mockVsCodeApi.setState.mock.calls
+        .map(c => c[0] as Record<string, unknown>)
+        .filter(s => s && 'canvasView' in s).length;
+
+      // Click Exit - fires setLayoutMode('lanes') + setPan({0,0}) +
+      // setZoom(1) inside handleExitMindmapMode.
+      fireEvent.click(document.querySelector('.mindmap-mode-exit') as HTMLElement);
+
+      // Wait for the trailing IPC to settle into Exit's values; retries
+      // through the 150 ms debounce window.
+      await waitFor(
+        () => {
+          const writes = mockVsCodeApi.setState.mock.calls
+            .map(c => c[0] as Record<string, unknown>)
+            .filter(s => s && 'canvasView' in s);
+          // (a) Exit click triggered a write: count grew past baseline.
+          expect(writes.length).toBeGreaterThan(writesBeforeExit);
+          // (b) The trailing write holds Exit's reset values, not the seed.
+          const cv = (writes[writes.length - 1] as {
+            canvasView: { zoom: number; pan: { x: number; y: number } };
+          }).canvasView;
+          expect(cv.zoom).toBe(1);
+          expect(cv.pan.x).toBe(0);
+          expect(cv.pan.y).toBe(0);
+        },
+        { timeout: 1000 },
+      );
     });
   });
 });

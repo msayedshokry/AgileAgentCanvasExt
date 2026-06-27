@@ -659,4 +659,97 @@ describe('ArtifactCard', () => {
       expect(document.querySelector('.artifact-labels')).not.toBeInTheDocument();
     });
   });
+
+  describe('Visual Plan summary chip', () => {
+    it('shows "📋 N proposed tasks" chip on pending plan with tasks', () => {
+      const artifact = createMockArtifact({
+        id: 'plan-001',
+        type: 'visual-plan' as any,
+        title: 'My Plan',
+        description: 'Plan goal',
+        status: 'draft',
+        childCount: 7,
+        metadata: {
+          totalTaskCount: 7,
+          pendingTaskCount: 7,
+          isProposalReviewable: true,
+        },
+      });
+      render(<ArtifactCard {...defaultProps} artifact={artifact} />);
+
+      expect(screen.getByText(/📋 7 proposed tasks/)).toBeInTheDocument();
+      expect(document.querySelector('.visual-plan-summary')).toBeInTheDocument();
+    });
+
+    it('shows singular "task" when exactly 1 task is proposed', () => {
+      const artifact = createMockArtifact({
+        id: 'plan-single',
+        type: 'visual-plan' as any,
+        title: 'Tiny Plan',
+        metadata: {
+          totalTaskCount: 1,
+          pendingTaskCount: 1,
+          isProposalReviewable: true,
+        },
+      });
+      render(<ArtifactCard {...defaultProps} artifact={artifact} />);
+
+      expect(screen.getByText(/📋 1 proposed task\b/)).toBeInTheDocument();
+      expect(screen.queryByText(/proposed tasks\b/)).not.toBeInTheDocument();
+    });
+
+    it('shows "✓ N tasks dispatched" chip after plan is no longer reviewable', () => {
+      const artifact = createMockArtifact({
+        id: 'plan-dispatched',
+        type: 'visual-plan' as any,
+        title: 'Done Plan',
+        status: 'approved',
+        childCount: 4,
+        metadata: {
+          totalTaskCount: 4,
+          pendingTaskCount: 0,
+          isProposalReviewable: false,
+        },
+      });
+      render(<ArtifactCard {...defaultProps} artifact={artifact} />);
+
+      expect(screen.getByText(/✓ 4 tasks dispatched/)).toBeInTheDocument();
+      expect(document.querySelector('.visual-plan-summary-dispatched')).toBeInTheDocument();
+      expect(screen.queryByText(/proposed tasks/)).not.toBeInTheDocument();
+    });
+
+    it('hides the chip when the plan has no tasks', () => {
+      const artifact = createMockArtifact({
+        id: 'plan-empty',
+        type: 'visual-plan' as any,
+        title: 'Empty Plan',
+        childCount: 0,
+        metadata: {
+          totalTaskCount: 0,
+          pendingTaskCount: 0,
+          isProposalReviewable: true,
+        },
+      });
+      render(<ArtifactCard {...defaultProps} artifact={artifact} />);
+
+      expect(document.querySelector('.visual-plan-summary')).not.toBeInTheDocument();
+      expect(screen.queryByText(/proposed tasks/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/dispatched/)).not.toBeInTheDocument();
+    });
+
+    it('does not show the visual-plan chip on non-visual-plan types', () => {
+      const artifact = createMockArtifact({
+        type: 'epic',
+        metadata: {
+          totalTaskCount: 5,
+          pendingTaskCount: 5,
+          isProposalReviewable: true,
+        },
+      });
+      render(<ArtifactCard {...defaultProps} artifact={artifact} />);
+
+      expect(document.querySelector('.visual-plan-summary')).not.toBeInTheDocument();
+      expect(screen.queryByText(/📋/)).not.toBeInTheDocument();
+    });
+  });
 });
