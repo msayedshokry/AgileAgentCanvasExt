@@ -26,6 +26,7 @@ interface ToolbarProps {
   onGraphify?: () => void;
   graphifyReady?: boolean;
   onCatalogue?: () => void;
+  onGeneratePlan?: () => void;
 }
 
 /** All artifact types that can be created via the Add menu. */
@@ -71,7 +72,7 @@ const ROOT_TYPES: Set<Artifact['type']> = new Set([
   'epic', 'requirement', 'prd', 'architecture', 'vision', 'product-brief',
 ]);
 
-export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhance, onElicit, themeOverride, onToggleTheme, onSwitchProject, activeFolderName, onExport, onImport, onHelp, onAsk, schemaIssueCount, onFixSchemas, onValidateSchemas, schemaValidating, schemaFixing, onSprintView, onJira, onGraphify, graphifyReady, onCatalogue }: ToolbarProps) {
+export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhance, onElicit, themeOverride, onToggleTheme, onSwitchProject, activeFolderName, onExport, onImport, onHelp, onAsk, schemaIssueCount, onFixSchemas, onValidateSchemas, schemaValidating, schemaFixing, onSprintView, onJira, onGraphify, graphifyReady, onCatalogue, onGeneratePlan }: ToolbarProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -313,6 +314,20 @@ export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhanc
                 <span className="toolbar-popover-label">{item.label}</span>
               </button>
             ))}
+            {onGeneratePlan && (
+              <>
+                <div className="toolbar-popover-divider" />
+                <button
+                  className="toolbar-popover-item toolbar-popover-plan-btn"
+                  onClick={() => { onGeneratePlan(); setOpen(false); }}
+                  title="Generate Visual Plan"
+                  role="menuitem"
+                >
+                  <span className="toolbar-popover-icon"><Icon name="prd" size={16} /></span>
+                  <span className="toolbar-popover-label">Plan</span>
+                </button>
+              </>
+            )}
           </div>
         );
       })()}

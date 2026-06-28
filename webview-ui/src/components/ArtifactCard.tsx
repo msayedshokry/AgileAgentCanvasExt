@@ -155,14 +155,23 @@ export const ArtifactCard = React.memo(
   // Determine if this card has children that can be expanded/collapsed
   const hasChildren = (artifact.childCount ?? 0) > 0;
 
-  // Single click to select
+  // Single click. For visual-plan cards, a click opens the modal popup
+  // (via onShowPlan) instead of selecting the card (which would surface
+  // the side details panel). For every other type, it selects the card
+  // as before. The modal-vs-panel dispatch is owned by handleShowPlan /
+  // handleOpenDetailPanel upstream — this just routes clicks to the
+  // right entry point per card type.
   const handleClick = useCallback((e: React.MouseEvent) => {
     // Don't select if clicking on buttons or editing
     if ((e.target as HTMLElement).closest('button') || isEditing) return;
-    
+
     e.stopPropagation();
-    onSelect(artifact.id);
-  }, [artifact.id, isEditing, onSelect]);
+    if (artifact.type === 'visual-plan' && onShowPlan) {
+      onShowPlan(artifact.id);
+    } else {
+      onSelect(artifact.id);
+    }
+  }, [artifact.id, artifact.type, isEditing, onSelect, onShowPlan]);
 
   // Double click to open detail panel
   const handleDoubleClick = useCallback((e: React.MouseEvent) => {
@@ -333,6 +342,14 @@ export const ArtifactCard = React.memo(
           <span className="artifact-id" title={artifact.id}>{artifact.id}</span>
           <span className="artifact-type">{TYPE_LABELS[artifact.type] ?? artifact.type}</span>
           <span className={`artifact-status ${statusInfo.className}`}>{statusInfo.label}</span>
+          {childPlanId && (
+            <span
+              className="has-plan-chip"
+              title="This card has an attached visual plan"
+            >
+              Plan
+            </span>
+          )}
         </div>
         <div className="artifact-title">
           <h3>{artifact.title}</h3>
@@ -358,6 +375,14 @@ export const ArtifactCard = React.memo(
         <span className="artifact-id" title={artifact.id}>{artifact.id}</span>
         <span className="artifact-type">{TYPE_LABELS[artifact.type] ?? artifact.type}</span>
         <span className={`artifact-status ${statusInfo.className}`}>{statusInfo.label}</span>
+        {childPlanId && (
+          <span
+            className="has-plan-chip"
+            title="This card has an attached visual plan"
+          >
+            Plan
+          </span>
+        )}
         <span className="artifact-header-actions">
           {/* Info button to open detail panel */}
           <button 
@@ -377,57 +402,69 @@ export const ArtifactCard = React.memo(
             <Icon name="docs" size={14} />
           </button>
           
-          {/* AI Refine button */}
-          <button 
-            className="card-ai-btn" 
-            onClick={handleRefineClick}
-            title="Refine with AI"
-          >
-            <Icon name="sparkle" size={14} />
-          </button>
+          {/* AI Refine / Elicit / Generate-Plan — hidden on visual-plan
+              cards. Refine and Elicit don’t apply to a finished plan; “Generate
+              plan from a plan” is nonsense; double-clicking the card itself
+              (which routes to onOpenDetail → modal for visual-plan) and “Show
+              Plan” (which works when this card IS the plan) cover the modal
+              affordance. Dev is already excluded for non epic/story/test-case. */}
+          {artifact.type !== 'visual-plan' && (
+            <>
+              {/* AI Refine button */}
+              <button
+                className="card-ai-btn"
+                onClick={handleRefineClick}
+                title="Refine with AI"
+              >
+                <Icon name="sparkle" size={14} />
+              </button>
 
-          {/* Elicit button */}
-          <button
-            className="card-elicit-btn"
-            onClick={handleElicitClick}
-            title="Elicit with method"
-          >
-            <Icon name="crystal-ball" size={14} />
-          </button>
+              {/* Elicit button */}
+              <button
+                className="card-elicit-btn"
+                onClick={handleElicitClick}
+                title="Elicit with method"
+              >
+                <Icon name="crystal-ball" size={14} />
+              </button>
 
-          {/* Start Dev button — only for epic/story/test-case */}
-          {['epic', 'story', 'test-case'].includes(artifact.type) && (
-            <button
-              className="card-dev-btn"
-              onClick={handleLaunchDevClick}
-              title="Start development"
-            >
-              <Icon name="rocket" size={14} />
-            </button>
+              {/* Start Dev button — only for epic/story/test-case. Already
+                  excludes visual-plan via the type filter; sits inside the
+                  visual-plan guard so all four sibling "creation" actions
+                  (Refine / Elicit / Plan / Dev-Start) live in one block. */}
+              {['epic', 'story', 'test-case'].includes(artifact.type) && (
+                <button
+                  className="card-dev-btn"
+                  onClick={handleLaunchDevClick}
+                  title="Start development"
+                >
+                  <Icon name="rocket" size={14} />
+                </button>
+              )}
+
+              {/* Plan button — generate a Visual Plan scoped to this artifact */}
+              <button
+                className="card-plan-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  vscode.postMessage({
+                    type: 'visualPlan:generate',
+                    goal: `Plan changes for ${artifact.title}`,
+                    sourceArtifactId: artifact.id,
+                  });
+                }}
+                title="Plan changes to this…"
+              >
+                <Icon name="prd" size={14} />
+              </button>
+            </>
           )}
 
-          {/* Plan button — generate a Visual Plan scoped to this artifact */}
-          <button
-            className="card-plan-btn"
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              vscode.postMessage({
-                type: 'visualPlan:generate',
-                goal: `Plan changes for ${artifact.title}`,
-                sourceArtifactId: artifact.id,
-              });
-            }}
-            title="Plan changes to this…"
-          >
-            <Icon name="prd" size={14} />
-          </button>
-
-          {/* Show Plan button — only rendered when ArtifactCard has been
-              wired with a childPlanId that points at an existing plan.
-              Provides parent-card → plan-modal shortcut so the user does
-              not have to scroll to find the plan card itself. */}
-          {childPlanId && onShowPlan && (
+          {/* Show Plan button — hidden on visual-plan cards since the card
+              itself is the plan; the click handler opens its modal directly.
+              Only on parent cards where this surfaces an existing child plan. */}
+          {childPlanId && onShowPlan && artifact.type !== 'visual-plan' && (
             <button
               className="card-show-plan-btn"
               onClick={(e) => {

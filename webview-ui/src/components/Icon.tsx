@@ -29,6 +29,8 @@ export type IconName =
   | 'sparkle'         // was ✨
   | 'crystal-ball'    // was 🔮
   | 'split'           // was 🔀
+  | 'grid'            // lanes view — 2x2 grid of lane quadrants
+  | 'mindmap'         // mindmap view — central node + branches (reused for corpus3d)
   | 'chevron-down'    // was ▼
   | 'chevron-left'    // was ◀
   | 'chevron-right'   // was ▶
@@ -235,6 +237,31 @@ const paths: Record<IconName, JSX.Element> = {
       <polyline points="17 19 17 14 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       <polyline points="10 3 12 5 14 3" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </>
+  ),
+  grid: (
+    // Lanes view: 2x2 grid of lane quadrants
+    <g fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="8" height="8" rx="1.5" />
+      <rect x="13" y="3" width="8" height="8" rx="1.5" />
+      <rect x="3" y="13" width="8" height="8" rx="1.5" />
+      <rect x="13" y="13" width="8" height="8" rx="1.5" />
+    </g>
+  ),
+  mindmap: (
+    // Mindmap view: central node with 4 branches to satellite nodes.
+    // Reused for corpus3d mode — the 3D view is conceptually the same
+    // graph laid out in 3D space, so a separate icon would be redundant.
+    <g fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none" />
+      <circle cx="4" cy="5" r="2" />
+      <circle cx="20" cy="6" r="2" />
+      <circle cx="5" cy="19" r="2" />
+      <circle cx="19" cy="20" r="2" />
+      <line x1="9.7" y1="10.3" x2="5.7" y2="6.3" />
+      <line x1="14.3" y1="10.3" x2="18.3" y2="7.2" />
+      <line x1="9.7" y1="13.7" x2="6.5" y2="17.2" />
+      <line x1="14.3" y1="13.7" x2="17.2" y2="18" />
+    </g>
   ),
   'chevron-down': (
     <polyline points="6 9 12 15 18 9" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />

@@ -852,6 +852,18 @@ body.ac-force-dark {
   font-size: 11px;
 }
 
+.toolbar-popover-divider {
+  grid-column: 1 / -1;
+  height: 1px;
+  background: var(--vscode-editorWidget-border);
+  margin: 4px 0;
+  border: none;
+}
+
+.toolbar-popover-plan-btn {
+  grid-column: 1 / -1;
+}
+
 /* Card flash animation for tree-view reveal */
 @keyframes cardFlash {
   0%   { box-shadow: 0 0 0 3px var(--vscode-focusBorder), 0 0 18px rgba(0, 150, 255, 0.7); }
@@ -888,6 +900,7 @@ body.ac-force-dark {
   position: absolute;
   min-width: 4000px;
   min-height: 4000px;
+  pointer-events: none;
 }
 
 /* Screenshot capture overlay */
@@ -928,7 +941,6 @@ body.ac-force-dark {
   top: 6px;
   left: 0;
   right: 0;
-  pointer-events: none;
 }
 
 .column-header {
@@ -1103,7 +1115,6 @@ body.ac-force-dark {
   top: 48px;
   left: 0;
   right: 0;
-  pointer-events: none;
 }
 
 .column-subheader {
@@ -1228,6 +1239,7 @@ body.ac-force-dark {
 .artifact-card {
   position: absolute;
   z-index: 3;
+  pointer-events: auto;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: 8px;
@@ -1292,7 +1304,6 @@ body.ac-force-dark {
   height: 10px;
   background: var(--vscode-editorIndentGuide-activeBackground, rgba(127,127,127,0.4));
 }
-
 
 .artifact-card:hover {
   box-shadow: var(--card-shadow-hover);
@@ -1363,7 +1374,6 @@ body.ac-force-dark {
   inset: -3px;
   border-radius: 10px;
   border: 2px solid var(--vscode-charts-yellow);
-  pointer-events: none;
   animation: searchPulse 1.5s ease-in-out infinite;
 }
 
@@ -1614,7 +1624,6 @@ body.ac-force-dark {
   border-color: color-mix(in srgb, var(--vscode-descriptionForeground) 20%, transparent);
   color: var(--vscode-descriptionForeground);
 }
-
 
 /* ---- Test Coverage Card (consolidated TC summary) ---- */
 
@@ -2002,7 +2011,6 @@ body.ac-force-dark {
   left: 0;
   width: 100%;
   height: 100%;
-  pointer-events: none;
   z-index: 2;
 }
 
@@ -2027,7 +2035,6 @@ body.ac-force-dark {
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(8px);
-  z-index: 20;
   animation: focusFadeIn 0.2s ease-out;
 }
 
@@ -2098,7 +2105,6 @@ body.ac-force-dark {
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(8px);
-  z-index: 20;
   animation: focusFadeIn 0.2s ease-out;
 }
 
@@ -2214,7 +2220,6 @@ body.ac-force-dark {
   align-items: center;
   justify-content: center;
   cursor: default;
-  pointer-events: none;
   box-shadow: 0 2px 12px color-mix(in srgb, var(--vscode-charts-purple) 20%, transparent);
 }
 .artifact-card.phase-node::before {
@@ -2238,7 +2243,6 @@ body.ac-force-dark {
 .mindmap-group-box {
   position: absolute;
   border-radius: 10px;
-  pointer-events: none;
   z-index: 0;
 }
 
@@ -2448,7 +2452,6 @@ body.ac-force-dark {
   border-radius: 8px;
   backdrop-filter: blur(8px);
   z-index: 10;
-  pointer-events: none;
 }
 
 .corpus-3d-legend-item {
@@ -2485,7 +2488,6 @@ body.ac-force-dark {
   font-size: 11px;
   color: var(--vscode-descriptionForeground);
   z-index: 10;
-  pointer-events: none;
   white-space: nowrap;
 }
 
@@ -2788,19 +2790,19 @@ body.ac-force-dark {
   overflow: hidden;
   cursor: crosshair;
   z-index: 10;
+  opacity: 0.5;
   transition:
     opacity var(--transition-normal),
     transform var(--transition-normal);
 }
 
-.canvas:not(:hover) .minimap {
-  opacity: 0.5;
+.minimap:hover {
+  opacity: 1;
 }
 
 .minimap-artifact {
   position: absolute;
   border-radius: 1px;
-  pointer-events: none;
   transition: opacity 0.15s ease;
 }
 
@@ -2815,7 +2817,6 @@ body.ac-force-dark {
   border: 1.5px solid var(--vscode-focusBorder, #007fd4);
   border-radius: 2px;
   background: rgba(0, 127, 212, 0.08);
-  pointer-events: none;
   z-index: 3;
   transition: none;   /* must track pan instantly */
 }
@@ -2843,11 +2844,6 @@ body.ac-force-dark {
   height: 14px;
 }
 
-.mindmap-toggle.active {
-  color: var(--vscode-charts-green);
-  background: color-mix(in srgb, var(--vscode-charts-green) 15%, transparent);
-}
-
 /* Light theme adjustments */
 body.ac-force-light .minimap,
 body.vscode-light .minimap {
@@ -2864,7 +2860,6 @@ body.vscode-light .minimap-viewport {
 /* AI Cursor */
 .ai-cursor {
   position: absolute;
-  pointer-events: none;
   z-index: 1000;
   transform: translate(-2px, -2px);
 }
@@ -2969,7 +2964,6 @@ body.vscode-light .minimap-viewport {
   left: 50%;
   transform: translateX(-50%);
   z-index: 30;
-  pointer-events: none;
 }
 
 .toast {
@@ -3129,7 +3123,6 @@ body.vscode-light .minimap-viewport {
   bottom: 0;
   left: 0;
   right: 0;
-  pointer-events: none;
   z-index: 0;
 }
 
@@ -3168,7 +3161,6 @@ body.vscode-light .minimap-viewport {
 /* Horizontal epic row bands */
 .epic-row-band {
   position: absolute;
-  pointer-events: none;
   z-index: 0;
   border-radius: 8px;
   border: 1px solid;
@@ -3188,7 +3180,6 @@ body.vscode-light .minimap-viewport {
 /* Horizontal testing row band (orphan test-strategy / test-cases section) */
 .testing-row-band {
   position: absolute;
-  pointer-events: none;
   z-index: 0;
   border-radius: 6px;
   border-top: 1px solid;
@@ -3207,13 +3198,11 @@ body.vscode-light .minimap-viewport {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: rgba(168, 85, 247, 0.5);
-  pointer-events: none;
 }
 
 /* Sub-group labels rendered inside epic row-bands (Stories / Use Cases / Tests) */
 .epic-subgroup-label {
   position: absolute;
-  pointer-events: none;
   z-index: 1;
   font-size: 10px;
   font-weight: 600;
@@ -3770,7 +3759,6 @@ body.vscode-light .minimap-viewport {
   max-height: 0;
   opacity: 0;
   margin: 0;
-  pointer-events: none;
 }
 
 /* Collapsed section takes less vertical space */
@@ -4489,7 +4477,6 @@ body.vscode-light .minimap-viewport {
 
 .btn-saving {
   opacity: 0.85;
-  pointer-events: none;
 }
 
 .save-success-badge {
@@ -4596,7 +4583,6 @@ body.vscode-light .minimap-viewport {
 .shortcut-legend-item:disabled {
   opacity: 0.35;
   cursor: default;
-  pointer-events: none;
 }
 
 .shortcut-legend-close {
@@ -4625,7 +4611,6 @@ body.vscode-light .minimap-viewport {
 .btn:disabled {
   opacity: 0.5;
   cursor: default;
-  pointer-events: none;
 }
 
 .ai-icon {
@@ -6292,8 +6277,6 @@ body.vscode-light .minimap-viewport {
   border-color: rgba(20, 184, 166, 0.5);
 }
 
-
-
 /* ================================================
    ELICITATION BUTTON — Artifact Card hover button
    ================================================ */
@@ -6408,6 +6391,42 @@ body.vscode-light .minimap-viewport {
    distinct rose accent so it reads as a sibling action.
    ================================================ */
 
+/* Show Plan button (view existing visual-plan child) */
+.card-show-plan-btn {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%);
+  color: #a78bfa;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: all 0.2s ease;
+}
+
+.artifact-card:hover .card-show-plan-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.card-show-plan-btn:hover {
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.4) 0%, rgba(168, 85, 247, 0.4) 100%);
+  color: #c4b5fd;
+  box-shadow: 0 1px 6px rgba(147, 51, 234, 0.35);
+}
+
+.card-show-plan-btn:focus-visible {
+  opacity: 1;
+  transform: scale(1);
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
 .card-plan-btn {
   width: 22px;
   height: 22px;
@@ -6441,8 +6460,6 @@ body.vscode-light .minimap-viewport {
   transform: scale(1);
   outline: 2px solid var(--vscode-focusBorder);
 }
-
-
 
 /* =============================================================================
    Workflow Launcher FAB
@@ -8023,7 +8040,6 @@ body.vscode-light .minimap-viewport {
   top: 0;
   bottom: 0;
   width: 32px;
-  pointer-events: none;
   z-index: 2;
 }
 .sprint-tabs-wrapper.can-scroll-left::before {
@@ -9254,8 +9270,6 @@ body.vscode-light .minimap-viewport {
   max-width: 80px;
 }
 
-
-
 /* --- Kanban Toggle FAB (sits to the left of Provider Selector) --- */
 .kanban-toggle-fab {
   position: absolute;
@@ -9292,8 +9306,6 @@ body.vscode-light .minimap-viewport {
   transform: scale(0.97);
 }
 
-
-
 .kanban-toggle-label {
   font-weight: 500;
   font-size: 12px;
@@ -9315,62 +9327,6 @@ body.vscode-light .kanban-toggle-fab:hover {
 .app.with-detail-panel .kanban-toggle-fab {
   right: 640px;
 }
-
-/* Visual Plan FAB — compact variant at bottom-right */
-.visual-plan-fab {
-  position: absolute;
-  bottom: 80px;
-  right: 16px;
-  z-index: 900;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 12px;
-  background: var(--vscode-button-secondaryBackground);
-  color: var(--vscode-button-secondaryForeground);
-  border: 1px solid var(--vscode-button-border, transparent);
-  border-radius: 999px;
-  font-size: 10px;
-  font-weight: 500;
-  font-family: var(--vscode-font-family);
-  cursor: pointer;
-  white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.14);
-  backdrop-filter: blur(8px);
-  transition: background 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
-  letter-spacing: 0.01em;
-  user-select: none;
-  opacity: 0.75;
-}
-
-.visual-plan-fab:hover {
-  background: var(--vscode-button-secondaryHoverBackground);
-  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
-  opacity: 1;
-}
-
-.visual-plan-fab:active {
-  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
-  transform: scale(0.97);
-}
-
-body.ac-force-light .visual-plan-fab,
-body.vscode-light .visual-plan-fab {
-  background: #ffffff;
-  color: var(--vscode-foreground, #1a1d23);
-  border: 1px solid #d0d4dc;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-body.ac-force-light .visual-plan-fab:hover,
-body.vscode-light .visual-plan-fab:hover {
-  background: #f5f6f8;
-}
-
-.app.with-detail-panel .visual-plan-fab {
-  right: 396px;
-}
-
 
 /* ─── Terminal Modal (Agentic Kanban) ──────────────────────────────────── */
 .terminal-modal-overlay {
@@ -9530,7 +9486,6 @@ body.vscode-light .visual-plan-fab:hover {
   color: inherit;
   min-height: 100%;
 }
-
 
 /* ─── Agentic Detail Panel (enriched) ──────────────────────────────────── */
 
@@ -9996,7 +9951,6 @@ body.vscode-light .visual-plan-fab:hover {
 /* ─── Resume spinner + loading state ────────────────────────────────── */
 .agentic-detail-btn--resume.is-loading {
   opacity: 0.8;
-  pointer-events: none;
   position: relative;
   padding-left: 28px;
 }
@@ -10383,4 +10337,44 @@ body.vscode-light .visual-plan-fab:hover {
 
 .agent-session-action-btn--danger:hover {
   background: color-mix(in srgb, var(--vscode-charts-red) 12%, var(--vscode-button-secondaryBackground));
+}
+
+/* has-plan-chip -----------------------------------------------------------
+ * Fires on a parent ArtifactCard when an attached visual plan exists
+ * (driven by the `childPlanId` prop). The chip is a small purple pill so
+ * the user can see at a glance which cards have a plan underneath them.
+ * The selector is scoped under .artifact-card so any future chip
+ * outside of a card cannot accidentally inherit these styles.
+ * ------------------------------------------------------------------------ */
+.artifact-card .has-plan-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--vscode-charts-purple);
+  background: rgba(149, 117, 205, 0.18);
+  padding: 1px 6px;
+  margin-left: 2px;
+  border-radius: 999px;
+  border: 1px solid rgba(149, 117, 205, 0.45);
+  white-space: nowrap;
+  line-height: 1.25;
+  cursor: help;
+  user-select: none;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.artifact-card .has-plan-chip:hover {
+  background: rgba(149, 117, 205, 0.32);
+  border-color: rgba(149, 117, 205, 0.7);
+}
+
+/* Compact (sidebar / mindmap) variant: smaller pill so it doesn't
+ * dominate the narrow card header. */
+.artifact-card.compact .has-plan-chip {
+  font-size: 8px;
+  padding: 0 5px;
+  margin-left: 1px;
 }

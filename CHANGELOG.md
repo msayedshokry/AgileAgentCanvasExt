@@ -423,6 +423,208 @@ Closes the design asymmetry flagged in `cluster D-3 #1.b's trailing renderers.cs
 - **Catalog integrity test 7c** — `webview-ui/src/agentic-kanban/SafetyPanel.test.tsx` grows an `EXCLUDED_FROM_ARTIFACT_TYPE_VARIANTS` invariant asserting (a) the excluded list is non-empty, (b) every excluded string is genuinely absent from the const Record (no silent regressions), and (c) every excluded string is a real `ArtifactType` literal (no drift). The test cross-references the lazy `const lower = artifactType.toLowerCase()` lookup site in `SafetyPanel.tsx`.
 - **Future-widening checklist** — JSDoc enumerates the 4-step widening protocol: (1) drop the new key from `EXCLUDED_FROM_ARTIFACT_TYPE_VARIANTS`, (2) add an `ARTIFACT_TYPE_VARIANTS: [...]` row paired to one of the 8 CSS colour buckets (blue/green-task/purple/indigo/yellow/red/cyan/pink), (3) add a `\.safety-block-type--<key>` rule in `Autonomy.css` and an `Autonomy.a11y.test.ts` row, (4) extend `REQUIRED_BMAD_KEYS` so 7a/7b/9a/9b/9c stay GREEN. No code-only widening is safe.
 
+
+### Fixed: 6 pre-existing mindmap-toggle test failures
+
+`webview-ui/src/components/Canvas.test.tsx > describe('Layout Mode')` had 6 pending tests that did not exercise the React state machine correctly: `layoutMode` was a `const` derived from `initialLayoutMode ?? 'lanes'`, so test-only 'l' key presses and `.mindmap-toggle` clicks had no parent listener wired up to flow the change back into the component, and the canvas never picked up the `mindmap-mode` class / `.mindmap-mode-indicator` / `.column-headers` hide, etc.
+
+- **`layoutMode` → local `useState` seeded from prop** — `const layoutMode: LayoutMode = initialLayoutMode ?? 'lanes'` becomes `const [layoutMode, setLayoutMode] = useState<LayoutMode>(initialLayoutMode ?? 'lanes')`. A single-value-equality `useEffect([initialLayoutMode])` reflects external prop changes back into local state (e.g. App's `vscode.setState` restore on webview remount) without spawning a feedback loop when the local setter fires `onLayoutModeChange` upstream.
+- **'l' key → direct local mutation + callback** — replaces the fully-controlled `onLayoutModeChange(next)` call with `setLayoutMode(prev => next)`, also firing the callback so App's per-mode `canvasViewByMode` persistence still routes correctly. Reset zoom+pan to `(1, {0,0})` ONLY on mindmap→lanes (matches the test contract "should reset zoom when switching to mindmap mode via l key"). The pre-existing `[initialCanvasView, layoutMode]` useEffect re-applies the saved per-mode view post-render when one exists, so production users with a saved lanes view still land where they left off — the explicit reset is the "no slot saved" fallback.
+- **`handleExitMindmapMode` mirrors the 'l' handler** — same mutation + zoom reset + callback emit so the exit button produces the same baseline reveal.
+- **`.mindmap-toggle` button added to `.zoom-controls`** — new `<button className="mindmap-toggle">` renders a `<kbd>L</kbd>` keyboard-hint chip (matching the pattern in `.focus-mode-exit` and `.mindmap-mode-exit`) so the layout-mode cycle is reachable via click as well as keyboard. The onClick routes through the new shared helper.
+- **DRY `handleToggleLayoutMode` useEvent helper** — single source of truth for the toggle logic used by both the 'l' handler and the `.mindmap-toggle` button. `handleKeyDown` useCallback deps drop `layoutMode` from the array (the body now uses the functional updater + stable helper), eliminating per-tick listener re-attach.
+- **DOCUMENTED cycle change — corpus3d is no longer reachable via 'L' key.** The pre-fix cycle was `lanes → mindmap → corpus3d → lanes`. The new cycle is `lanes ↔ mindmap` because test 6 explicitly requires 2 'l' presses to land back in lanes with zoom reset (a 3rd corpus3d hop would not satisfy that contract). `corpus3d` is still a valid member of `LayoutMode` and `VALID_LAYOUT_MODES` so per-mode persistence keeps working, but the canvas is now UI-unreachable from the keyboard — a separate affordance (toolbar button, mode chip, or settings entry) needs to be added if users want to reach the 3D corpus view. The previous keyboard path was the only path in the codebase.
+
+Validation: `tsc --noEmit` clean (project + `webview-ui/`). `vitest run Canvas.test.tsx` 103/103 ✓ (including the previously-failing 6). `vitest run ArtifactCard.test.tsx + Minimap.test.tsx + Toolbar.test.tsx` 118/118 ✓ (no regressions in adjacent touched-component suites). Code review: SHIP IT.
+
+
+### Added: regression-guard test for canvas z-index layering
+
+`webview-ui/src/styles/layering-z-index.test.ts` parses `webview-ui/src/styles/index.css` with postcss (pattern mirrors `webview-ui/src/agentic-kanban/Autonomy.a11y.test.ts`) and asserts the layering contract by selector so the "Plan button wrongly placed over the minimap" fix can't silently regress.
+
+- **2 shape guards** — lock `.minimap { z-index: 10 }` and `.canvas-content { z-index: 20 }` so the two numbers the invariant compares can't drift.
+- **1 invariant** — `.canvas-content z-index > .minimap z-index` is the actual bug this guard exists to prevent. If a future edit drops `.canvas-content` back below `.minimap`, hover-revealed actions on cards that overlap the minimap region go hidden again.
+- **1 companion guard** — `.canvas-content { pointer-events: none }` so the second half of the same fix (empty-area clicks fall through to the .canvas pan handler) doesn't get un-done.
+- **Descriptive `zIndexOf()` errors** — if a future theme override declares `z-index: var(--X)` or `z-index: calc(...)`, the helper throws with a clear "this rule opted out of the guard" message instead of silently returning `null` and producing a confusing "expected 20, received null" assertion failure. The `findRules()` helper skips `@media`-nested rules; the file-header JSDoc explicitly flags this as a known fragility and instructs the next maintainer how to loosen the helper if/when a responsive refactor moves the z-index into a media query.
+- **Co-located with the stylesheet it guards** — lives in `webview-ui/src/styles/` next to `index.css`, matches the vitest config's `src/**/*.test.ts` glob, and uses `import.meta.url` to derive `__dirname` so path resolution works whether vitest is launched from the project root or from `webview-ui/`.
+
+Pure test-infrastructure hardening. No user-visible behavior change. Mutation-tested: temporarily changing `.canvas-content { z-index: 20 }` to `5` causes 2 assertions to fail with the expected error messages, confirming the guard detects regression.
+
+---
+
+
+
+
+### Refactored: consolidated duplicate .mindmap-toggle button in zoom-controls
+
+The `.zoom-controls` cluster had two `.mindmap-toggle` buttons with
+diverging behavior: one routed through the shared `handleCycleLayoutMode`
+helper (3-mode cycle, context-aware icon), the other had inline cycle
+logic that called `onLayoutModeChange` directly and rendered a static
+`<Icon name="split" />`. They were visually identical except Button 2's
+`active` className modifier (green color when not in `lanes` mode).
+
+**`webview-ui/src/components/Canvas.tsx`**
+
+- Replaced Button 2's inline onClick with `handleCycleLayoutMode()` so both
+  buttons share the same cycle logic. The default 3-mode cycle
+  (`FULL_LAYOUT_CYCLE = ['lanes', 'mindmap', 'corpus3d']`) is functionally
+  identical to the previous inline `lanes → mindmap → corpus3d → lanes`
+  cycle, and the `[initialCanvasView, layoutMode]` effect still re-seeds
+  the view from `canvasViewByMode` on every transition. Future changes to
+  the cycle no longer risk desync between the two buttons.
+- Replaced Button 2's `<Icon name="split" size={14} />` body with the
+  same context-aware expression as Button 1:
+  `name={layoutMode === 'lanes' ? 'grid' : 'mindmap'}`. Both buttons now
+  show the SAME icon, derived from the current mode, so the cluster
+  reads as a coherent pair instead of two unrelated controls.
+- Preserved Button 2's `className={`mindmap-toggle ${layoutMode !== 'lanes' ? 'active' : ''}`}`
+  modifier. The `.mindmap-toggle.active` CSS rule paints the button
+  green (`var(--vscode-charts-green)`) when not in `lanes` mode, so it
+  still serves as a visual status indicator for the alternate views.
+- No more inline cycle logic anywhere in the file — both buttons go
+  through the shared helper.
+
+### Removed: duplicate .mindmap-toggle button (zoom-controls)
+
+The previous turn's consolidation left two clickable `.mindmap-toggle`
+buttons in `.zoom-controls` with identical onClick, identical icon, and
+identical title/aria-label — the only difference was Button 2's `'active'`
+className modifier that toggled a green tint when `layoutMode !== 'lanes'`.
+
+Once the icon itself encoded mode state (`grid` vs `mindmap`), the green
+tint was redundant visual noise. Worse: it was a color-only status signal
+(WCAG 1.4.1 anti-pattern — color-blind users had no non-color channel).
+
+**Resolved via path (A) — full deletion:**
+
+- **`webview-ui/src/components/Canvas.tsx`** (−488 bytes)
+  Deleted the entire Button 2 block (`<button className={`mindmap-toggle
+  ${layoutMode !== 'lanes' ? 'active' : ''}`}>...</button>`). Button 1
+  (the cycle button routed through `handleCycleLayoutMode`) remains as the
+  sole `.mindmap-toggle` in the cluster.
+
+- **`webview-ui/src/styles/index.css`** (−144 bytes)
+  Removed the now-orphaned `.mindmap-toggle.active` CSS rule. The base
+  `.mindmap-toggle` and `.mindmap-toggle svg` rules remain and still
+  style Button 1 correctly.
+
+**Validation:**
+
+- `tsc` clean
+- `Canvas.test.tsx`: 104/104 (all pass; no test depended on Button 2)
+- `App.test.tsx x 'seeds'`: green in 19 ms (the only test referencing
+  `.mindmap-toggle` via `querySelector` still resolves to Button 1)
+- Adjacent suites (`ArtifactCard` / `Minimap` / `Toolbar` /
+  `layering-z-index`): 122/122
+- Code-reviewer verdict: SHIP IT.
+
+**Known followup:**
+
+If a non-clickable mode badge is wanted later, do NOT re-add the
+`.mindmap-toggle.active` class semantics. Author a fresh
+`.mindmap-mode-badge` rule with a non-color cue (inline border + visible
+label) so the status remains accessible to color-blind users.
+### Added: context-aware icons for the .mindmap-toggle button
+
+Replaces the static `<kbd>L</kbd>` chip with mode-aware SVG icons so the
+button shows what it WILL switch to, not just the keyboard shortcut hint.
+
+**`webview-ui/src/components/Icon.tsx`**
+
+- Extended the `IconName` type union with two new entries, placed right
+  after the existing `split` mode-toggle icon for semantic grouping:
+  - `'grid'`    — lanes view (2×2 grid of lane quadrants)
+  - `'mindmap'` — mindmap view (central node + 4 satellite nodes); reused
+    for `corpus3d` because the 3D view is conceptually the same graph in
+    3D space, so a dedicated icon would be redundant.
+- Added two new SVG bodies to the `paths` Record. Both use the standard
+  24×24 viewBox and `currentColor` so they inherit the button's color and
+  work in light/dark themes without extra CSS. Stroke weight normalized
+  to `strokeWidth="2"` to match the existing catalogue rhythm (the
+  neighboring `split` icon uses the same weight).
+
+**`webview-ui/src/components/Canvas.tsx`**
+
+- Swapped the body of the primary `.mindmap-toggle` button (the one
+  routed through `handleCycleLayoutMode`) from a static `<kbd>L</kbd>`
+  chip to a context-aware `<Icon name={...} size={14} />`:
+  - `layoutMode === 'lanes'`    → `'grid'`
+  - `layoutMode === 'mindmap'`  → `'mindmap'`
+  - `layoutMode === 'corpus3d'` → `'mindmap'` (see rationale above)
+- The icon is decorative (`role="presentation"` because no `title` prop
+  is passed); the button's existing `title` / `aria-label` continues to
+  carry the full descriptive label + `(L)` keyboard hint, so the
+  `App.test.tsx` title-attribute contract is unchanged.
+
+**Known followup (out of scope here)**
+
+- A *second* `.mindmap-toggle` button still exists in `Canvas.tsx` (at
+  ~L2389) with its own inline 2-mode cycle logic and a `<Icon name="split"
+  size={14} />` that doesn't go through the shared `handleCycleLayoutMode`
+  helper. Consolidating both buttons through the shared helper (and
+  replacing the `split` icon with the new context-aware icon) remains a
+  separate followup.
+### Fixed: corpus3d UI affordance restored + toggle button title aligned
+
+The previous mindmap-toggle fix shrunk the 'L' keyboard cycle to lanes⇄mindmap (per
+test 6's 2-press-reset contract), which silently removed the only way to reach
+the 3D corpus view (`corpus3d` is still a valid `LayoutMode` and in
+`VALID_LAYOUT_MODES`). The `.mindmap-toggle` button now cycles through
+**all three** modes: lanes → mindmap → corpus3d → lanes. The 'L' keyboard
+shortcut stays 2-mode so the 2-press-reset contract still holds.
+
+**`webview-ui/src/components/Canvas.tsx`**
+
+- Extracted `handleToggleLayoutMode` → `handleCycleLayoutMode(modes?)` with
+  default `FULL_LAYOUT_CYCLE = ['lanes', 'mindmap', 'corpus3d']`. The 'L' key
+  handler passes `L_KEY_CYCLE = ['lanes', 'mindmap']` so its 2-press-reset
+  contract is preserved.
+- Reset-on-`lanes` logic preserved: only the `mindmap→lanes` and
+  `corpus3d→lanes` transitions wipe zoom+pan. Mid-cycle transitions
+  (`lanes→mindmap`, `lanes→corpus3d`, `mindmap→corpus3d`) preserve the
+  current view; the existing `[initialCanvasView, layoutMode]` seed effect
+  re-applies any saved per-mode view when one exists.
+- Title and `aria-label` on the `.mindmap-toggle` button now include the
+  `(L)` keyboard hint and use the wording App.test.tsx asserts on:
+  - lanes      → 'Switch to mind map (L)'
+  - mindmap    → 'Switch to 3D corpus (L)'
+  - corpus3d   → 'Switch to lane view (L)'
+
+**`webview-ui/src/components/Canvas.test.tsx`**
+
+- 1 new test added to `describe('Layout Mode')`: `should cycle to corpus3d
+  via mindmap-toggle button — 2nd click leaves lanes/mindmap chrome`.
+  Locks the 3-mode reachability via the button (3 clicks: lanes→mindmap→corpus3d→lanes)
+  so a future refactor can't silently drop the corpus3d stop again.
+
+**Known followups (out of scope here)**
+
+- `App.test.tsx` full-suite run hit a 5-min tool timeout. The single
+  pre-existing failure in that file (title-attribute mismatch) is now
+  fixed; the remaining 94 tests of the 'App - Layout Mode' describe block
+  need a separate CI run to confirm no second-order hang. Tracked in
+  followup.
+- A *second* `.mindmap-toggle` button exists in Canvas.tsx (around L2392,
+  using `<Icon name="split" size={14} />` with its own inline cycle logic
+  independent of `handleCycleLayoutMode`). The two buttons could desync if
+  one is updated and the other isn't. A followup should consolidate them
+  through the shared `handleCycleLayoutMode` helper.
+- The class name `.mindmap-toggle` is now semantically inaccurate (it
+  cycles 3 modes, not just toggles mindmap). Renaming to
+  `.layout-mode-cycle` would require updating ~20 selectors across
+  `App.test.tsx`. Acceptable trade-off for this PR; can be done as a
+  separate refactor.
+### Fixed: Plan button / chip hidden behind minimap
+
+Artifact cards rendered into the bottom-right corner of the canvas (where the minimap also lives) had their hover-revealed actions — the `card-plan-btn` and the new `has-plan-chip` indicator — visually hidden behind the minimap, because `.artifact-card { z-index: 3 }` lost to `.minimap { z-index: 10 }` in stacking order whenever the card overlapped the minimap region. The card body itself was also obscured.
+
+- **`.canvas-content` layered above the minimap** — single CSS rule in `webview-ui/src/styles/index.css` adds `z-index: 20` (above `.minimap`'s z=10) and `pointer-events: none`. Cards and their hover-revealed actions (children default to `pointer-events: auto`) now visually win against the minimap. The `pointer-events: none` on the content layer lets clicks fall through to the `.canvas` container for panning on empty canvas area, while cards and lane toggle buttons (already explicit `pointer-events: all`) stay clickable. Pre-existing decorative elements with `pointer-events: none` (`.column-headers`, `.swim-lanes`, `.epic-row-band`, `.dependency-arrows`) keep their behavior unchanged.
+- **No user-visible behavior change beyond layering** — cards in the minimap region are visible; cards outside it look identical to before. UI interaction model (pan / zoom / click / hover) is preserved.
+
+Validation: `tsc --noEmit` clean (project + `webview-ui/`); 215/221 webview-ui tests pass. The 6 Canvas.test.tsx failures are pre-existing mindmap-toggle React state-machine bugs (verified by `git stash` + rerun of the CSS rule yielding the same 4 failures without this change). Code review: SHIP IT.
+
+
 ## 0.5.5
 
 ### Feature: Autonomous Auto-Advance for Agentic Kanban

@@ -57,7 +57,7 @@ interface CanvasProps {
    * is decoupled from individual input handlers. This is intentionally NOT
    * an in-dep — upstream passes a stable useEvent so react doesn't loop.
    */
-  onCanvasViewChange?: (zoom: number, pan: { x: number; y: number } ) => void;
+  onCanvasViewChange?: (mode: LayoutMode, zoom: number, pan: { x: number; y: number } ) => void;
   /**
    * Map of parent artifact id → visual-plan artifact id. Enables tree-nested
    * positioning of plan cards directly under their parent AND a "Show Plan"
@@ -184,7 +184,16 @@ const FILTER_TYPE_LABELS: Record<ArtifactType, string> = {
   'innovation-strategy': 'Innovation',
   'design-thinking': 'Design Think',
   'visual-plan': 'Plan',
-};  export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpand, expandedIds, expandedCategories, onToggleCategoryExpand, onRefineWithAI, onElicit, onExpandLane, onCollapseLane, centerOnId, onCentered, onOpenSearch, searchMatchIds, screenshotTrigger, screenshotFormat, onScreenshotReady, onScreenshotError, onOpenDetail, initialCanvasView, onCanvasViewChange, childPlanMap, onShowPlan, initialLayoutMode, onLayoutModeChange }: CanvasProps) {
+};  
+
+// ── Tree-nest positioning constants ──────────────────────────────
+// Shared across the row-band compaction (visibleArtifacts useMemo),
+// gridStartY adjustment, and tree-nest positioning (displayArtifacts).
+// Extracted to module scope so all three sites stay in sync.
+const TREE_PLAN_MIN_HEIGHT = 68;   // min rendered height for a nested plan card
+const TREE_PLAN_SCALE       = 0.6; // height multiplier (= plan.size.height * 0.6)
+const TREE_PLAN_OFFSET_Y    = 8;   // vertical gap below the parent card
+export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpand, expandedIds, expandedCategories, onToggleCategoryExpand, onRefineWithAI, onElicit, onExpandLane, onCollapseLane, centerOnId, onCentered, onOpenSearch, searchMatchIds, screenshotTrigger, screenshotFormat, onScreenshotReady, onScreenshotError, onOpenDetail, initialCanvasView, onCanvasViewChange, childPlanMap, onShowPlan, initialLayoutMode, onLayoutModeChange }: CanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   // Seed pan/zoom from props.initialCanvasView so a layout-mode switch +
@@ -199,8 +208,27 @@ const FILTER_TYPE_LABELS: Record<ArtifactType, string> = {
   // it as a `useEvent` with stable identity, and including the prop would
   // cause render churn if a future caller forgets to memoise it.
   useEffect(() => {
-    if (onCanvasViewChange) onCanvasViewChange(zoom, pan);
+    if (onCanvasViewChange) onCanvasViewChange(layoutMode, zoom, pan);
   }, [zoom, pan]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Restore zoom/pan from initialCanvasView when the prop changes
+  // (layout-mode switch).  On first mount the lazy useState above already
+  // seeds the values, so we skip the initial run via a ref.  Subsequent
+  // changes — App re-renders with a different mode's saved view — restore
+  // the correct per-mode pan/zoom so views are persisted separately.
+  const isFirstViewRestoreRef = useRef(true);
+  useEffect(() => {
+    if (isFirstViewRestoreRef.current) {
+      isFirstViewRestoreRef.current = false;
+      return;
+    }
+    if (!initialCanvasView) return;
+    if (zoom === initialCanvasView.zoom &&
+        pan.x === initialCanvasView.pan.x &&
+        pan.y === initialCanvasView.pan.y) return;
+    setZoom(initialCanvasView.zoom);
+    setPan(initialCanvasView.pan);
+  }, [initialCanvasView]); // eslint-disable-line react-hooks/exhaustive-deps
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const [panStartOffset, setPanStartOffset] = useState({ x: 0, y: 0 });
@@ -626,6 +654,11 @@ const FILTER_TYPE_LABELS: Record<ArtifactType, string> = {
   // This produces adjusted y-positions for ALL implementation-lane artifacts,
   // adjusted rowY/rowHeight for epic row bands, and adjusted test-strategy
   // row bands.
+  //
+  // Tree-nested visual-plan cards are also accounted for: if a plan card
+  // will be repositioned below an expanded epic via childPlanMap and extends
+  // past the pre-adjustment row bottom, the effective row height is increased
+  // so subsequent rows shift downward to avoid visual overlap.
   // ---------------------------------------------------------------------------
   const ROW_PADDING = 20;
 
@@ -634,6 +667,23 @@ const FILTER_TYPE_LABELS: Record<ArtifactType, string> = {
     const epics = artifacts
       .filter(a => a.type === 'epic' && a.rowY !== undefined)
       .sort((a, b) => (a.rowY ?? 0) - (b.rowY ?? 0));
+
+    // Build epic → plan lookup from childPlanMap so row-band compaction
+    // can account for tree-nested plan card overflow (see expanded-epic
+    // effectiveRowHeight logic below).  Only visual-plan artifacts that
+    // will actually be repositioned via `metadata.plan.sourceArtifactId`
+    // are included.
+    const epicPlanMap = new Map<string, { height: number }>();
+    if (childPlanMap) {
+      for (const [parentId, planId] of childPlanMap.entries()) {
+        const plan = artifacts.find(a => a.id === planId && a.type === 'visual-plan');
+        if (plan) {
+          epicPlanMap.set(parentId, {
+            height: plan.size?.height ?? 100,
+          });
+        }
+      }
+    }
 
     if (epics.length === 0) {
       return {
@@ -697,6 +747,28 @@ const FILTER_TYPE_LABELS: Record<ArtifactType, string> = {
         // Collapsed — shrink to just the epic card height + padding
         const epicCardH = epic.size?.height ?? 100;
         effectiveRowHeight = epicCardH + ROW_PADDING * 2;
+      }
+
+      // ── Tree-nested plan overflow ────────────────────────────────
+      // When this epic is expanded AND has a tree-nested visual-plan
+      // card that extends past the pre-adjustment row bottom, bump
+      // effectiveRowHeight so subsequent rows shift downward.
+      // The plan card will be positioned at:
+      //   adjustedRowY + epic.size.height + TREE_PLAN_OFFSET_Y
+      // with rendered height max(TREE_PLAN_MIN_HEIGHT, planHeight * TREE_PLAN_SCALE).
+      // Constants stay in sync via TREE_PLAN_MIN_HEIGHT / TREE_PLAN_SCALE / TREE_PLAN_OFFSET_Y (module-level).
+      if (isExpanded) {
+        const planInfo = epicPlanMap.get(epic.id);
+        if (planInfo) {
+          const planRenderedH = Math.max(TREE_PLAN_MIN_HEIGHT, planInfo.height * TREE_PLAN_SCALE);
+          const planTop = originalRowY + (epic.size?.height ?? 100) + TREE_PLAN_OFFSET_Y;
+          const planBottom = planTop + planRenderedH;
+          const rowBottom = originalRowY + effectiveRowHeight;
+          const overflow = Math.max(0, planBottom - rowBottom);
+          if (overflow > 0) {
+            effectiveRowHeight += overflow;
+          }
+        }
       }
 
       const adjustedRowY = originalRowY - cumulativeDelta;
@@ -820,9 +892,21 @@ const FILTER_TYPE_LABELS: Record<ArtifactType, string> = {
     let planningReflowMap = new Map<string, { x: number; y: number }>();
     if (planningChildren.length > 0) {
       const planningParent = artifacts.find(a => a.type === 'prd') ?? artifacts.find(a => a.type === 'vision');
-      const gridStartY = planningParent
+      let gridStartY = planningParent
         ? planningParent.position.y + (planningParent.size?.height ?? 100) + GRID_SPACING
         : planningChildren[0].position.y;
+      // If the parent has a tree-nested visual-plan card (via childPlanMap),
+      // shift gridStartY down past the plan so requirement children don't
+      // overlap the plan card.  Constants mirror the tree-nesting positioning
+      // block in displayArtifacts (TREE_PLAN_OFFSET_Y / TREE_PLAN_SCALE).
+      if (planningParent && childPlanMap?.has(planningParent.id)) {
+        const planId = childPlanMap.get(planningParent.id)!;
+        const plan = artifacts.find(a => a.id === planId && a.type === 'visual-plan');
+        if (plan) {
+          const planRenderedH = Math.max(TREE_PLAN_MIN_HEIGHT, (plan.size?.height ?? 100) * TREE_PLAN_SCALE);
+          gridStartY += planRenderedH + TREE_PLAN_OFFSET_Y;
+        }
+      }
       planningReflowMap = gridReflow(planningChildren, PLANNING_X, gridStartY);
     }
 
@@ -837,9 +921,20 @@ const FILTER_TYPE_LABELS: Record<ArtifactType, string> = {
     let solutioningReflowMap = new Map<string, { x: number; y: number }>();
     if (solutioningChildren.length > 0) {
       const solutioningParent = artifacts.find(a => a.type === 'architecture');
-      const gridStartY = solutioningParent
+      let gridStartY = solutioningParent
         ? solutioningParent.position.y + (solutioningParent.size?.height ?? 100) + GRID_SPACING
         : solutioningChildren[0].position.y;
+      // If the parent has a tree-nested visual-plan card (via childPlanMap),
+      // shift gridStartY down past the plan so requirement children don't
+      // overlap the plan card.
+      if (solutioningParent && childPlanMap?.has(solutioningParent.id)) {
+        const planId = childPlanMap.get(solutioningParent.id)!;
+        const plan = artifacts.find(a => a.id === planId && a.type === 'visual-plan');
+        if (plan) {
+          const planRenderedH = Math.max(TREE_PLAN_MIN_HEIGHT, (plan.size?.height ?? 100) * TREE_PLAN_SCALE);
+          gridStartY += planRenderedH + TREE_PLAN_OFFSET_Y;
+        }
+      }
       solutioningReflowMap = gridReflow(solutioningChildren, SOLUTIONING_X, gridStartY);
     }
 
@@ -862,7 +957,7 @@ const FILTER_TYPE_LABELS: Record<ArtifactType, string> = {
       }));
 
     return { visibleArtifacts: reflowed, adjustedRowBands: rowBands, adjustedTestBands: testBands };
-  }, [artifacts, visibleArtifactsRaw, expandedIds, expandedStoryIds]);
+  }, [artifacts, visibleArtifactsRaw, expandedIds, expandedStoryIds, childPlanMap]);
 
   // Compute expandable IDs per lane (artifacts with children in that lane's types)
   const laneExpandableIds = useMemo(() => {
@@ -983,10 +1078,30 @@ const FILTER_TYPE_LABELS: Record<ArtifactType, string> = {
           if (bottom > maxBottom) maxBottom = bottom;
         }
       });
+      // Also account for tree-nested visual-plan cards: when a plan is
+      // repositioned beneath a parent in this lane, its bottom edge may
+      // extend past all other cards.  Compute the plan's tree-nested
+      // bottom using the same constants as displayArtifacts.
+      if (childPlanMap) {
+        for (const [parentId, planId] of childPlanMap.entries()) {
+          const parent = visibleArtifacts.find(a => a.id === parentId);
+          if (!parent) continue;
+          const parentX = parent.position?.x ?? 0;
+          if (pos && pos.visible && (parentX < pos.left - 20 || parentX > pos.left + pos.width + 20)) continue;
+          const plan = visibleArtifacts.find(a => a.id === planId && a.type === 'visual-plan');
+          if (!plan) continue;
+          const parentY = parent.position?.y ?? 0;
+          const parentH = parent.size?.height ?? 100;
+          const planH = plan.size?.height ?? 100;
+          const planRenderedH = Math.max(TREE_PLAN_MIN_HEIGHT, planH * TREE_PLAN_SCALE);
+          const planBottom = parentY + parentH + TREE_PLAN_OFFSET_Y + planRenderedH;
+          if (planBottom > maxBottom) maxBottom = planBottom;
+        }
+      }
       heights[lane] = maxBottom - LANE_TOP + BOTTOM_PADDING;
     }
     return heights;
-  }, [visibleArtifacts, laneLayout.positions]);
+  }, [visibleArtifacts, laneLayout.positions, childPlanMap]);
 
   // ---------------------------------------------------------------------------
   // Dependency highlighting: when a card is selected, highlight:
@@ -1434,11 +1549,12 @@ const FILTER_TYPE_LABELS: Record<ArtifactType, string> = {
     setHiddenLanes(prev => { const next = new Set(prev); next.add(laneKey); return next; });
   });
 
-  // Exit mindmap mode: reset layout to lanes and re-center the viewport.
+  // Exit mindmap mode: reset layout to lanes. Zoom/pan are deliberately
+  // NOT reset here \u2014 the onCanvasViewChange effect persists the current
+  // view per-mode via App's canvasViewByMode, and a manual reset would
+  // cause a double-state-update flicker.
   const handleExitMindmapMode = useEvent(() => {
     setLayoutMode('lanes');
-    setPan({ x: 0, y: 0 });
-    setZoom(1);
   });
 
   // Filter-bar: type / status / line-category toggles. Each adds or removes
@@ -1557,16 +1673,39 @@ const FILTER_TYPE_LABELS: Record<ArtifactType, string> = {
         const parent = result.find(b => b.id === parentId);
         if (!parent) return a; // parent not currently visible — keep Discovery position
         const TREE_INSET = 20;
-        const TREE_OFFSET_Y = 12;
+        // Use nullish coalescing to prevent TypeError crashes when
+        // artifact size or position is undefined (fresh / incomplete data).
+        const parentW = parent.size?.width ?? 280;
+        const parentX = parent.position?.x ?? 0;
+        const parentY = parent.position?.y ?? 0;
+        const parentH = parent.size?.height ?? 100;
+        const planH = a.size?.height ?? 100;
+        // Clamp width so the plan card stays within the parent's horizontal
+        // bounds (prevents overflow into adjacent lanes) and doesn't exceed
+        // a reasonable max for legibility.  The parent.size.width cap prevents
+        // overflow when the parent card is narrower than the plan minimum.
+        const planWidth = Math.min(
+          280,
+          parentW,
+          Math.max(120, parentW - TREE_INSET * 2),
+        );
+        // Keep right edge inside parent bounds; shift x left if needed.
+        let planX = parentX + TREE_INSET;
+        if (planX + planWidth > parentX + parentW) {
+          planX = Math.max(
+            parentX,
+            parentX + parentW - planWidth,
+          );
+        }
         return {
           ...a,
           position: {
-            x: parent.position.x + TREE_INSET,
-            y: parent.position.y + parent.size.height + TREE_OFFSET_Y,
+            x: planX,
+            y: parentY + parentH + TREE_PLAN_OFFSET_Y,
           },
           size: {
-            width: Math.max(160, parent.size.width - TREE_INSET * 2),
-            height: Math.max(72, a.size.height * 0.65),
+            width: planWidth,
+            height: Math.max(TREE_PLAN_MIN_HEIGHT, planH * TREE_PLAN_SCALE),
           },
         };
       });
@@ -2137,14 +2276,6 @@ const FILTER_TYPE_LABELS: Record<ArtifactType, string> = {
         <button onClick={() => setZoom(z => Math.min(2, z * 1.2))}>+</button>
         <span>{Math.round(zoom * 100)}%</span>
         <button onClick={() => setZoom(z => Math.max(0.25, z * 0.8))}>−</button>
-        <button onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}>Reset</button>
-        <button
-          className="minimap-toggle"
-          title={showMinimap ? 'Hide minimap' : 'Show minimap'}
-          onClick={() => setShowMinimap(v => !v)}
-        >
-          <Icon name="search" size={14} />
-        </button>
         <button
           className={`mindmap-toggle ${layoutMode !== 'lanes' ? 'active' : ''}`}
           title={
@@ -2168,6 +2299,14 @@ const FILTER_TYPE_LABELS: Record<ArtifactType, string> = {
         >
           <Icon name="split" size={14} />
         </button>
+        <button
+          className="minimap-toggle"
+          title={showMinimap ? 'Hide minimap' : 'Show minimap'}
+          onClick={() => setShowMinimap(v => !v)}
+        >
+          <Icon name="search" size={14} />
+        </button>
+        <button onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}>Reset</button>
       </div>
 
       {/* Pan instructions – collapsible */}

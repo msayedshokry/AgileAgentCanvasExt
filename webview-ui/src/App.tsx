@@ -195,64 +195,107 @@ function App() {
     });
   });
 
-  // ── Canvas view (zoom + pan) persistence ──
-  // Initial zoom/pan is restored from vscode.setState so the canvas lands at
-  // the same view on remount. Canvas reports back via handleCanvasViewChange;
-  // we forward to setState so a layout-mode switch (lanes ↔ mindmap ↔ 3D no
-  // longer wipes pan/zoom — the user's place on the board survives the swap).
-  const [canvasView, setCanvasView] = useState<{ zoom: number; pan: { x: number; y: number } }>(() => {
+  // ── Canvas view (zoom + pan) persistence — PER LAYOUT MODE ───────────────
+  // Each of `lanes | mindmap | corpus3d` remembers its own view so panning
+  // the mindmap doesn't clobber the lanes view (and vice versa). Storage
+  // shape is `canvasViewByMode: Record<LayoutMode, {zoom, pan}>`.
+  //
+  // Backwards compat: legacy persistence wrote a single `canvasView` blob
+  // shared across all modes. On first mount after upgrade, we do PER-SLOT
+  // hydration: each slot reads its own entry from the new `canvasViewByMode`
+  // map if valid, else falls back to the legacy single-blob value if valid,
+  // else defaults. This means a corrupt partial upgrade (e.g. the user
+  // crashed mid-write so only `lanes` made it into `canvasViewByMode`)
+  // doesn't lose the surviving valid entries. The modes will diverge
+  // naturally once the user re-enters each layout and pans around.
+  const makeDefaultView = (): { zoom: number; pan: { x: number; y: number } } => ({ zoom: 1, pan: { x: 0, y: 0 } });
+
+  function readView(value: unknown): { zoom: number; pan: { x: number; y: number } } | null {
+    if (!value || typeof value !== 'object') return null;
+    const z = (value as { zoom?: unknown }).zoom;
+    const p = (value as { pan?: { x?: unknown; y?: unknown } }).pan;
+    if (typeof z !== 'number' || z < 0.25 || z > 2) return null;
+    if (!p || typeof p !== 'object') return null;
+    if (typeof p.x !== 'number' || typeof p.y !== 'number') return null;
+    return { zoom: z, pan: { x: p.x, y: p.y } };
+  }
+
+  const [canvasViewByMode, setCanvasViewByMode] = useState<Record<LayoutMode, { zoom: number; pan: { x: number; y: number } }>>(() => {
     try {
-      const saved = (vscode.getState() as Record<string, unknown>)?.canvasView;
-      if (saved && typeof saved === 'object') {
-        const z = (saved as { zoom?: unknown }).zoom;
-        const p = (saved as { pan?: { x?: unknown; y?: unknown } }).pan;
-        if (typeof z === 'number' && z >= 0.25 && z <= 2 && p &&
-            typeof p.x === 'number' && typeof p.y === 'number') {
-          return { zoom: z, pan: { x: p.x, y: p.y } };
-        }
-      }
+      const saved = (vscode.getState() as Record<string, unknown>) ?? {};
+      const byMode = saved.canvasViewByMode as Record<string, unknown> | undefined;
+      const legacy = readView(saved.canvasView);
+      // Per-slot: per-mode entry first, then legacy for upgrades, then default.
+      const slot = (k: LayoutMode) =>
+        readView(byMode?.[k as string]) ?? legacy ?? makeDefaultView();
+      return {
+        lanes: slot('lanes'),
+        mindmap: slot('mindmap'),
+        corpus3d: slot('corpus3d'),
+      };
     } catch (_) { /* ignore */ }
-    return { zoom: 1, pan: { x: 0, y: 0 } };
+    return {
+      lanes: makeDefaultView(),
+      mindmap: makeDefaultView(),
+      corpus3d: makeDefaultView(),
+    };
   });
 
   // Stable identity (useEvent) so Canvas's effect doesn't tear down on every
-  // App render. Writes to vscode.setState on every (zoom, pan) change so the
-  // view survives reload.
+  // App render. Writes to vscode.setState on every (zoom, pan) change so
+  // the view survives reload.
   //
   // Performance: `vscode.setState` is a synchronous IPC round-trip to the
   // extension host; drag-pan fires 60+ Hz pointermove ticks, so a naive write
   // here floods the IPC channel.  We update the React state synchronously
   // (so the in-canvas view stays responsive) but DEBOUNCE the host write
   // to a 150 ms trailing-edge flush — coalesces 60+ Hz drag into one write
-  // per gesture.  We stash the latest (zoom, pan) in a ref so the unmount
-  // path can actually flush a pending write rather than cancel it (otherwise
-  // the last 150 ms of drag distance would be silently lost on a quick
-  // tab switch / webview reload).
-  const canvasViewPendingRef = useRef<{ zoom: number; pan: { x: number; y: number } } | null>(null);
+  // per gesture.  We stash the latest (zoom, pan) WITH its owning mode in a
+  // ref so the flush can route the write to the correct per-mode slot, and
+  // so the unmount path can actually flush a pending write rather than
+  // cancel it (otherwise the last 150 ms of drag distance would be silently
+  // lost on a quick tab switch / webview reload).
+  //
+  // The `mode` argument comes from Canvas itself instead of being read from
+  // a closure — this avoids any race with App's own layoutMode state being
+  // out-of-sync with Canvas's internal mode when handleExitMindmapMode (or
+  // any in-Canvas mode+view update) batches the change in a single commit.
+  // Closing the race here removes the need for useLayoutEffect swaps and
+  // component-remount keys; Canvas keeps its local state (filters, focus
+  // mode, expandedStoryIds, etc.) across layout-mode switches.
+  type PendingView = { mode: LayoutMode; zoom: number; pan: { x: number; y: number } };
+  const canvasViewPendingRef = useRef<PendingView | null>(null);
   const canvasViewDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flushCanvasView = () => {
     if (!canvasViewPendingRef.current) return;
-    const { zoom, pan } = canvasViewPendingRef.current;
+    const { mode, zoom, pan } = canvasViewPendingRef.current;
     try {
       const current = (vscode.getState() as Record<string, unknown>) ?? {};
-      vscode.setState({ ...current, canvasView: { zoom, pan } });
+      const existing = (current.canvasViewByMode as Record<string, { zoom: number; pan: { x: number; y: number } }> | undefined) ?? {};
+      vscode.setState({
+        ...current,
+        canvasViewByMode: { ...existing, [mode]: { zoom, pan } },
+      });
     } catch (_) { /* ignore */ }
     canvasViewPendingRef.current = null;
   };
-  const handleCanvasViewChange = useEvent((zoom: number, pan: { x: number; y: number }) => {
-    // No-op echo: Canvas's mount [zoom, pan] effect fires with the seed
-    // value, so skip IPC when the incoming (zoom, pan) matches the most
-    // recent value we already know (pending ref, state fallback after flush).
-    // The `?? canvasView` baseline is safe after a flush because setCanvasView
-    // runs synchronously inside this handler — state stays in lockstep with
-    // whatever the last pending write carried before flushCanvasView nulled
-    // the ref.
-    const known = canvasViewPendingRef.current ?? canvasView;
-    if (known.zoom === zoom && known.pan.x === pan.x && known.pan.y === pan.y) {
+  const handleCanvasViewChange = useEvent((mode: LayoutMode, zoom: number, pan: { x: number; y: number }) => {
+    // No-op echo suppression: skip the IPC write when incoming
+    // (zoom, pan) matches the slot we already know for this mode. This
+    // absorbs: (a) the mount-time seed echo where Canvas's [zoom, pan]
+    // effect re-fires the value it was just rendered with; (b) the mode
+    // re-sync echo where the [initialCanvasView, layoutMode] resync
+    // effect overwrites local zoom/pan and the [zoom, pan] observer
+    // fires once more. The slot-reflection is safe to rely on because
+    // every prior non-suppressed write to canvasViewByMode[...] happened
+    // synchronously inside this handler — state stays in lockstep with
+    // whatever pending / persisted values exist for `mode`.
+    const slot = canvasViewByMode[mode];
+    if (slot.zoom === zoom && slot.pan.x === pan.x && slot.pan.y === pan.y) {
       return;
     }
-    setCanvasView({ zoom, pan });
-    canvasViewPendingRef.current = { zoom, pan };
+    setCanvasViewByMode(prev => ({ ...prev, [mode]: { zoom, pan } }));
+    canvasViewPendingRef.current = { mode, zoom, pan };
     if (canvasViewDebounceRef.current) clearTimeout(canvasViewDebounceRef.current);
     canvasViewDebounceRef.current = setTimeout(() => {
       canvasViewDebounceRef.current = null;
@@ -1219,8 +1262,9 @@ function App() {
           onValidateSchemas={handleValidateSchemas}
           schemaValidating={schemaValidating}
           schemaFixing={schemaFixing}
-          onCatalogue={handleOpenCatalogue}
-        />
+  onCatalogue={handleOpenCatalogue}
+  onGeneratePlan={handleGenerateVisualPlan}
+/>
       </div>
 
       <div className="main-content">
@@ -1252,7 +1296,7 @@ function App() {
               screenshotFormat={screenshotFormat}
               onScreenshotReady={handleScreenshotReady}
               onScreenshotError={handleScreenshotError}
-              initialCanvasView={canvasView}
+              initialCanvasView={canvasViewByMode[layoutMode]}
               onCanvasViewChange={handleCanvasViewChange}
               childPlanMap={childPlanMap}
               onShowPlan={handleShowPlan}
@@ -1357,16 +1401,7 @@ function App() {
         <span className="workflow-fab-icon"><Icon name="workflow" size={18} /></span>
         <span className="workflow-fab-label">Workflows</span>
       </button>
-      {/* Visual Plan FAB — generate a plan (extension prompts for the goal) */}
-      <button
-        className="visual-plan-fab"
-        onClick={handleGenerateVisualPlan}
-        title="Generate Visual Plan"
-        aria-label="Generate Visual Plan"
-      >
-        <Icon name="prd" size={12} />
-        <span>Plan</span>
-      </button>
+
       {/* Kanban toggle FAB — sits to the left of the Provider Selector */}
       <button
         className="kanban-toggle-fab"

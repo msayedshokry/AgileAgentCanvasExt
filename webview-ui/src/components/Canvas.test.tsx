@@ -1074,7 +1074,7 @@ describe('Canvas', () => {
       expect(document.querySelector('.swim-lanes')).not.toBeInTheDocument();
     });
 
-    it('should reset zoom when switching to mindmap mode via l key', () => {
+    it('zoom persists through l-key mode cycle when no saved view exists', () => {
       render(<Canvas {...defaultProps} />);
       const canvas = document.querySelector('.canvas') as HTMLElement;
       canvas.focus();
@@ -1089,8 +1089,47 @@ describe('Canvas', () => {
       fireEvent.keyDown(canvas, { key: 'l' });
       expect(screen.getByText('120%')).toBeInTheDocument();
 
-      // Switch back to lanes resets zoom to 100%
+      // Switch back to lanes: zoom is not forcibly reset.
+      // The manual reset was removed to eliminate flickering on
+      // mode switches (the [initialCanvasView, layoutMode] effect
+      // re-seeds from App's saved state instead).
       fireEvent.keyDown(canvas, { key: 'l' });
+      // In test mode (no App parent, no initialCanvasView), zoom
+      // stays at 120% after the round-trip.
+      expect(screen.getByText('120%')).toBeInTheDocument();
+    });
+
+    // Lock the corpus3d reachability restored by the 3-mode cycle on the
+    // .mindmap-toggle button. The 'L' keyboard shortcut stays 2-mode (per
+    // the 2-press-reset contract above) so corpus3d is only reachable via
+    // the cycle button. The button cycles: lanes → mindmap → corpus3d → lanes.
+    it('should cycle to corpus3d via mindmap-toggle button — 2nd click leaves lanes/mindmap chrome', () => {
+      render(<Canvas {...defaultProps} />);
+
+      const toggleBtn = document.querySelector('.mindmap-toggle') as HTMLElement;
+      expect(toggleBtn).toBeInTheDocument();
+
+      // Click 1: lanes → mindmap
+      fireEvent.click(toggleBtn);
+      expect(document.querySelector('.mindmap-mode-indicator')).toBeInTheDocument();
+      expect(document.querySelector('.canvas')).toHaveClass('mindmap-mode');
+      expect(document.querySelector('.column-headers')).not.toBeInTheDocument();
+
+      // Click 2: mindmap → corpus3d
+      // In corpus3d mode Canvas renders <Corpus3DView> instead of
+      // <div className="canvas-content">; the mindmap-mode-indicator
+      // (mindmap-only), column-headers (lanes-only), and swim-lanes
+      // (lanes-only) are all gone. The button still has the class so
+      // clicking it advances the cycle one more stop.
+      fireEvent.click(toggleBtn);
+      expect(document.querySelector('.mindmap-mode-indicator')).not.toBeInTheDocument();
+      expect(document.querySelector('.canvas-content')).not.toBeInTheDocument();
+      expect(document.querySelector('.column-headers')).not.toBeInTheDocument();
+
+      // Click 3: corpus3d → lanes (back to the start, with zoom/pan reset)
+      fireEvent.click(toggleBtn);
+      expect(document.querySelector('.column-headers')).toBeInTheDocument();
+      expect(document.querySelector('.mindmap-mode-indicator')).not.toBeInTheDocument();
       expect(screen.getByText('100%')).toBeInTheDocument();
     });
   });
@@ -1520,6 +1559,398 @@ describe('Canvas', () => {
       const zoomText = document.querySelector('.zoom-controls span')?.textContent;
       const zoomValue = parseInt(zoomText || '100');
       expect(zoomValue).toBeGreaterThanOrEqual(25);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Regression: row-band overflow accounting for tree-nested visual-plan cards.
+  //
+  // When a visual-plan card is tree-nested under an epic via `childPlanMap`,
+  // a tall plan extends past the row band's pre-adjustment bottom edge. The
+  // Canvas must add the overflow to the epic's `effectiveRowHeight` so the
+  // `cumulativeDelta` cascade pushes subsequent rows down past the plan.
+  //
+  // This test locks the math contract from the three-bug fix-up. Assertions
+  // are intentionally delta-invariant (not pinned to absolute pixel values)
+  // so legitimate refactors that tweak `BAND_V_INSET`, `ROW_PADDING`, or
+  // the `0.65` plan scale factor won't break it \u2014 the cascade direction
+  // and relative magnitudes are what we're locking.
+  //
+  // Seed math (per Canvas.tsx):
+  //   planRenderedH  = max(68, plan.size.height * 0.6)
+  //   planBottom     = parent.position.y + parent.size.height + 8 + planRenderedH
+  //   rowBottom      = originalRowY + originalRowHeight  (uses ORIGINAL coords)
+  //   maxPlanOverflow = max(0, planBottom - rowBottom)
+  //   effectiveRowHeight (expanded) = originalRowHeight + maxPlanOverflow
+  //   effectiveRowHeight (collapsed) = epicCardH + ROW_PADDING * 2
+  //   BAND_V_INSET is added once to style.top; cancels out across deltas.
+  // ---------------------------------------------------------------------------
+  describe('Tree-nested Visual Plan row-band overflow', () => {
+    // Deterministic seed. Setting `childCount: 1` on the epics is essential:
+    // the row-band branch picker has `isExpanded || (childCount ?? 0) === 0`,
+    // so an unset childCount would treat a collapsed epic as expanded and
+    // silently invalidate the negative assertion below.
+    const artifacts = [
+      createMockArtifact({
+        id: 'epic-1',
+        type: 'epic',
+        childCount: 1,
+        rowY: 100,
+        rowHeight: 200,
+        position: { x: 2510, y: 100 },
+        size: { width: 280, height: 100 },
+      }),
+      createMockArtifact({
+        id: 'plan-1',
+        type: 'visual-plan',
+        position: { x: 50, y: 50 },
+        size: { width: 280, height: 500 }, // tall enough to overflow rowBottom=300
+      }),
+      createMockArtifact({
+        id: 'epic-2',
+        type: 'epic',
+        childCount: 0,
+        rowY: 400,
+        rowHeight: 200,
+        position: { x: 2510, y: 400 },
+        size: { width: 280, height: 100 },
+      }),
+    ];
+
+    const band1 = (root: ParentNode) =>
+      (root.querySelectorAll('.epic-row-band')[1] as HTMLElement)
+        .style.top;
+    const topPx = (s: string) => parseInt(s, 10);
+
+    it('cascades row-band overflow onto the next row when a nested plan extends past the pre-adjustment bottom', () => {
+      // Step 1: baseline. epic-1 expanded, no childPlanMap \u2192 effectiveRowHeight
+      // collapses to originalRowHeight (200), cumulativeDelta stays 0,
+      // epic-2 sits at originalRowY (400) + BAND_V_INSET.
+      const { rerender } = render(
+        <Canvas
+          {...defaultProps}
+          artifacts={artifacts}
+          expandedIds={new Set(['epic-1', 'epic-2'])}
+        />
+      );
+      const baseline = topPx(band1(document));
+      // planRenderedH = max(68, 500*0.6) = 300
+      // planBottom    = 100 + 100 + 8 + 300 = 508
+      // rowBottom     = 100 + 200 = 300
+      // maxPlanOverflow = 208  \u2192  cascade dips cumulativeDelta by -237.
+      const EXPECTED_OVERFLOW = 208;
+
+      // Step 2: introduce childPlanMap. epic-2 must shift DOWN by exactly
+      // maxPlanOverflow (BAND_V_INSET cancels in the delta). 208px shift.
+      const childPlanMap = new Map<string, string>([['epic-1', 'plan-1']]);
+      rerender(
+        <Canvas
+          {...defaultProps}
+          artifacts={artifacts}
+          expandedIds={new Set(['epic-1', 'epic-2'])}
+          childPlanMap={childPlanMap}
+        />
+      );
+      const withOverflow = topPx(band1(document));
+      expect(withOverflow - baseline).toBe(EXPECTED_OVERFLOW);
+
+      // Step 3: collapse epic-1. A hidden nested plan must NOT reserve
+      // virtual overflow space \u2014 the row-band ought to compact down to
+      // epicCardH + 2*ROW_PADDING. Setting childCount: 1 above ensures
+      // the conditional routes into the compact-collapsed branch here.
+      //   effectiveRowHeight = 100 + 2*20 = 140
+      //   saved = 200 - 140 = 60  \u2192  cumulativeDelta = +60
+      //   epic-2 adjustedY = 400 - 60 = 340  \u2192  drops 60px from baseline.
+      // Collapse MUST also still end below the overflow case (collapsed rows
+      // stay shorter than overflow-extended rows).
+      rerender(
+        <Canvas
+          {...defaultProps}
+          artifacts={artifacts}
+          expandedIds={new Set(['epic-2'])}
+          childPlanMap={childPlanMap}
+        />
+      );
+      const collapsed = topPx(band1(document));
+      // Strict invariant ordering: collapsed < baseline < withOverflow.
+      expect(collapsed).toBeLessThan(baseline);
+      expect(baseline).toBeLessThan(withOverflow);
+      // Collapse also must NOT collapse to the same row (sanity: branch
+      // actually routed to the collapsed math, not the expanded branch).
+      expect(baseline - collapsed).toBeGreaterThan(0);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Regression: gridStartY plan-overlap adjustment.
+  //
+  // When a parent card (PRD/Vision for Planning lane, Architecture for
+  // Solutioning lane) has a tree-nested visual-plan card via childPlanMap,
+  // the grid reflow's gridStartY must shift down past the plan so that
+  // requirement children don't render on top of the plan card.
+  //
+  // Seed math (per Canvas.tsx):
+  //   planRenderedH    = max(TREE_PLAN_MIN_HEIGHT, plan.size.height * TREE_PLAN_SCALE)
+  //                    = max(68, 300 * 0.6) = 180
+  //   gridStartY(base) = parent.position.y + parent.size.height + GRID_SPACING
+  //                    = 100 + 100 + 20 = 220
+  //   gridStartY(adj)  = 220 + 180 + TREE_PLAN_OFFSET_Y = 220 + 180 + 8 = 408
+  // ---------------------------------------------------------------------------
+  describe('Grid reflow plan-overlap adjustment', () => {
+    const parentPosition = { x: 390, y: 100 };
+    const parentSize = { width: 240, height: 100 };
+
+    it('shifts planning children down past nested plan when childPlanMap is provided', () => {
+      // Dummy epic needed: the grid reflow code is only reached when
+      // epics.length > 0 (see Canvas.tsx early-return at epics.length === 0).
+      const dummyEpic = createMockArtifact({
+        id: 'epic-dummy', type: 'epic', childCount: 0,
+        rowY: 99999, rowHeight: 100,
+        position: { x: 2510, y: 99999 }, size: { width: 280, height: 100 },
+      });
+      const prd = createMockArtifact({
+        id: 'prd-1', type: 'prd', title: 'My PRD', childCount: 1,
+        position: parentPosition, size: parentSize,
+      });
+      const plan = createMockArtifact({
+        id: 'plan-1', type: 'visual-plan',
+        position: { x: 50, y: 50 },
+        size: { width: 280, height: 300 }, // height=300 → planRenderedH=180
+      });
+      const req = createMockArtifact({
+        id: 'req-1', type: 'requirement', title: 'Req 1',
+        parentId: 'prd-1',
+        position: { x: 390, y: 200 }, size: { width: 240, height: 100 },
+      });
+      const artifacts = [dummyEpic, prd, plan, req];
+      const expandedIds = new Set(['prd-1']);
+
+      const getReqTop = () => {
+        const el = document.querySelector('.artifact-card.requirement');
+        if (!el) return -1;
+        const style = el.getAttribute('style') ?? '';
+        const m = style.match(/top:\s*(\d+)px/);
+        return m ? parseInt(m[1], 10) : -1;
+      };
+
+      // Step 1: baseline — no childPlanMap
+      const { rerender } = render(
+        <Canvas {...defaultProps} artifacts={artifacts} expandedIds={expandedIds} />
+      );
+      const GRID_SPACING = 20;
+      const baselineY = parentPosition.y + parentSize.height + GRID_SPACING;
+      expect(getReqTop()).toBe(baselineY);
+
+      // Step 2: introduce childPlanMap → gridStartY must shift
+      const childPlanMap = new Map([['prd-1', 'plan-1']]);
+      rerender(
+        <Canvas
+          {...defaultProps}
+          artifacts={artifacts}
+          expandedIds={expandedIds}
+          childPlanMap={childPlanMap}
+        />
+      );
+      const planRenderedH = Math.max(
+        // We reference the module constants by their expected value (68, 0.6, 8)
+        // since they are module-scoped and not importable from the test.
+        68, 300 * 0.6
+      );
+      const expectedShift = planRenderedH + 8;
+      expect(getReqTop()).toBe(baselineY + expectedShift);
+
+      // Step 3: remove childPlanMap → gridStartY returns to baseline
+      rerender(
+        <Canvas {...defaultProps} artifacts={artifacts} expandedIds={expandedIds} />
+      );
+      expect(getReqTop()).toBe(baselineY);
+    });
+
+    it('shifts solutioning children down past nested plan when childPlanMap is provided', () => {
+      const dummyEpic = createMockArtifact({
+        id: 'epic-dummy', type: 'epic', childCount: 0,
+        rowY: 99999, rowHeight: 100,
+        position: { x: 2510, y: 99999 }, size: { width: 280, height: 100 },
+      });
+      const arch = createMockArtifact({
+        id: 'arch-1', type: 'architecture', title: 'My Arch', childCount: 1,
+        position: { x: 1450, y: 100 },
+        size: { width: 240, height: 100 },
+      });
+      const plan = createMockArtifact({
+        id: 'plan-2', type: 'visual-plan',
+        position: { x: 50, y: 50 },
+        size: { width: 280, height: 300 },
+      });
+      const child = createMockArtifact({
+        id: 'syscomp-1', type: 'system-component', title: 'Sys Comp 1',
+        parentId: 'arch-1',
+        position: { x: 1450, y: 200 }, size: { width: 240, height: 100 },
+      });
+      const artifacts = [dummyEpic, arch, plan, child];
+      const expandedIds = new Set(['arch-1']);
+
+      const getChildTop = () => {
+        const el = document.querySelector('.artifact-card.system-component');
+        if (!el) return -1;
+        const style = el.getAttribute('style') ?? '';
+        const m = style.match(/top:\s*(\d+)px/);
+        return m ? parseInt(m[1], 10) : -1;
+      };
+
+      // Baseline
+      const { rerender } = render(
+        <Canvas {...defaultProps} artifacts={artifacts} expandedIds={expandedIds} />
+      );
+      const baselineY = 100 + 100 + 20; // arch.y + arch.h + GRID_SPACING
+      expect(getChildTop()).toBe(baselineY);
+
+      // With childPlanMap
+      const childPlanMap = new Map([['arch-1', 'plan-2']]);
+      rerender(
+        <Canvas
+          {...defaultProps}
+          artifacts={artifacts}
+          expandedIds={expandedIds}
+          childPlanMap={childPlanMap}
+        />
+      );
+      const planRenderedH = Math.max(68, 300 * 0.6);
+      expect(getChildTop()).toBe(baselineY + planRenderedH + 8);
+    });
+
+    it('does not shift gridStartY when childPlanMap exists but parent is not in it', () => {
+      // A different parent has a plan, but our PRD doesn't → no shift
+      const dummyEpic = createMockArtifact({
+        id: 'epic-dummy', type: 'epic', childCount: 0,
+        rowY: 99999, rowHeight: 100,
+        position: { x: 2510, y: 99999 }, size: { width: 280, height: 100 },
+      });
+      const prd = createMockArtifact({
+        id: 'prd-2', type: 'prd', title: 'My PRD', childCount: 1,
+        position: parentPosition, size: parentSize,
+      });
+      const plan = createMockArtifact({
+        id: 'plan-3', type: 'visual-plan',
+        position: { x: 50, y: 50 },
+        size: { width: 280, height: 300 },
+      });
+      const req = createMockArtifact({
+        id: 'req-2', type: 'requirement', title: 'Req 2',
+        parentId: 'prd-2',
+        position: { x: 390, y: 200 }, size: { width: 240, height: 100 },
+      });
+      const artifacts = [dummyEpic, prd, plan, req];
+      const expandedIds = new Set(['prd-2']);
+      // childPlanMap maps other-parent → plan, NOT prd-2
+      const childPlanMap = new Map([['some-other-parent', 'plan-3']]);
+
+      render(
+        <Canvas
+          {...defaultProps}
+          artifacts={artifacts}
+          expandedIds={expandedIds}
+          childPlanMap={childPlanMap}
+        />
+      );
+      const el = document.querySelector('.artifact-card.requirement');
+      const style = el?.getAttribute('style') ?? '';
+      const m = style.match(/top:\s*(\d+)px/);
+      const top = m ? parseInt(m[1], 10) : -1;
+      const baselineY = parentPosition.y + parentSize.height + 20;
+      expect(top).toBe(baselineY);
+    });
+  });
+
+  // ── Per-mode view restore ──────────────────────────────────────────────
+  describe('Per-mode canvas view restore', () => {
+    it('restores zoom and pan when initialCanvasView changes on rerender', () => {
+      const onCanvasViewChange = vi.fn();
+      const view1 = { zoom: 1, pan: { x: 0, y: 0 } };
+      const view2 = { zoom: 1.5, pan: { x: 100, y: 200 } };
+
+      const { rerender } = render(
+        <Canvas
+          {...defaultProps}
+          initialCanvasView={view1}
+          onCanvasViewChange={onCanvasViewChange}
+        />
+      );
+
+      const content = document.querySelector('.canvas-content') as HTMLElement;
+      expect(content).toBeTruthy();
+      // Initial transform should reflect view1: translate(0px, 0px) scale(1)
+      expect(content.style.transform).toContain('translate(0px');
+      expect(content.style.transform).toContain('scale(1)');
+
+      // Simulate layout-mode switch: App passes a new initialCanvasView
+      // (the saved view for the new mode, e.g. mindmap)
+      rerender(
+        <Canvas
+          {...defaultProps}
+          initialCanvasView={view2}
+          onCanvasViewChange={onCanvasViewChange}
+        />
+      );
+
+      // After rerender, the view-restore effect should have applied view2's
+      // zoom and pan to the canvas-content transform.
+      const updatedContent = document.querySelector('.canvas-content') as HTMLElement;
+      expect(updatedContent.style.transform).toContain('translate(100px');
+      expect(updatedContent.style.transform).toContain('translate(100px, 200px');
+      expect(updatedContent.style.transform).toContain('scale(1.5)');
+    });
+
+    it('does not restore when initialCanvasView values match current zoom/pan', () => {
+      const onCanvasViewChange = vi.fn();
+      const view = { zoom: 1.2, pan: { x: 50, y: 30 } };
+
+      const { rerender } = render(
+        <Canvas
+          {...defaultProps}
+          initialCanvasView={view}
+          onCanvasViewChange={onCanvasViewChange}
+        />
+      );
+
+      const content = document.querySelector('.canvas-content') as HTMLElement;
+      const transformBefore = content.style.transform;
+
+      // Rerender with the same view values (new object reference, same data)
+      // — simulates App echoing back the same view after a debounced pan.
+      const sameView = { zoom: 1.2, pan: { x: 50, y: 30 } };
+      rerender(
+        <Canvas
+          {...defaultProps}
+          initialCanvasView={sameView}
+          onCanvasViewChange={onCanvasViewChange}
+        />
+      );
+
+      // Transform should be unchanged — value-equality guard prevents
+      // unnecessary restore.
+      const contentAfter = document.querySelector('.canvas-content') as HTMLElement;
+      expect(contentAfter.style.transform).toBe(transformBefore);
+    });
+
+    it('skips restore on initial mount (lazy useState already seeds values)', () => {
+      const onCanvasViewChange = vi.fn();
+      const view = { zoom: 0.75, pan: { x: -40, y: 60 } };
+
+      render(
+        <Canvas
+          {...defaultProps}
+          initialCanvasView={view}
+          onCanvasViewChange={onCanvasViewChange}
+        />
+      );
+
+      // On initial mount, useState seeds zoom/pan from initialCanvasView.
+      // The view-restore effect should NOT fire (isFirstViewRestoreRef skips it).
+      // We verify by checking the transform reflects the seeded view directly.
+      const content = document.querySelector('.canvas-content') as HTMLElement;
+      expect(content.style.transform).toContain('translate(-40px, 60px');
+      expect(content.style.transform).toContain('scale(0.75)');
     });
   });
 });

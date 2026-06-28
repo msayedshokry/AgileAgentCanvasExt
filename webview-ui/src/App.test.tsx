@@ -2216,7 +2216,11 @@ describe('App - Canvas View & Last-Opened Plan Persistence', () => {
       const SEED_X = -50;
       const SEED_Y = 75;
       mockVsCodeApi.getState.mockReturnValue({
-        canvasView: { zoom: SEED_ZOOM, pan: { x: SEED_X, y: SEED_Y } },
+        canvasViewByMode: {
+          lanes:    { zoom: SEED_ZOOM, pan: { x: SEED_X, y: SEED_Y } },
+          mindmap:  { zoom: 1.0, pan: { x: 0, y: 0 } },
+          corpus3d: { zoom: 1.0, pan: { x: 0, y: 0 } },
+        },
       });
       // Same React-18 act-flush as the suppress test above: ensures all
       // mount-time effects settle before fireEvent.wheel runs against the
@@ -2238,14 +2242,17 @@ describe('App - Canvas View & Last-Opened Plan Persistence', () => {
       });
 
       // handleCanvasViewChange's debounce path is the SOLE writer of
-      // canvasView's VALUE (spread paths preserve it unchanged). A write
-      // whose canvasView.zoom DIFFERS from the seed proves the wheel
+      // canvasViewByMode[mode] VALUE (spread paths preserve it unchanged).
+      // A write whose lanes.zoom DIFFERS from the seed proves the wheel
       // handler actually fired and the suppression didn't swallow it.
       await waitFor(
         () => {
           const writes = mockVsCodeApi.setState.mock.calls
             .map(c => c[0] as { canvasView?: { zoom: number; pan: { x: number; y: number } } })
-            .filter(s => s?.canvasView && s.canvasView.zoom !== SEED_ZOOM);
+            .filter(s => {
+              const v = s?.canvasViewByMode?.lanes;
+              return v !== undefined && v.zoom !== SEED_ZOOM;
+            });
           expect(writes.length).toBeGreaterThan(0);
         },
         { timeout: 1000, interval: 25 },
@@ -2557,23 +2564,42 @@ describe('App - Layout Mode (lanes ⇄ mindmap ⇄ 3D corpus) persistence', () =
       expect(last.layoutMode).toBe('lanes');
     });
 
-    it('the canvasView reset (setPan/setZoom) ALSO writes through setState after debounce flush', async () => {
-      // Pre-seed canvasView to NON-EXIT values so Exit's effect must
-      // actually overwrite.  When handleExitMindmapMode correctly fires
-      // setZoom(1) + setPan({0,0}), the [zoom, pan] useEffect schedules
-      // a new IPC write carrying Exit's values - the trailing setState
-      // mock entry then holds those (not the seed).  If the handler were
-      // buggy and skipped the setters, the [zoom, pan] effect wouldn't
-      // fire and the trailing write would still equal the seed; the
-      // assertion below fails with a clear diagnostic either way.
-      // waitFor-with-assertions (testing-library's intended pattern)
-      // retries until the assertions pass or the 1000 ms timeout elapses,
-      // so this naturally absorbs the 150 ms canvasView debounce plus a
-      // generous margin for future tuning.
+    it('does NOT reset the lanes view when the user clicks Exit mindmap (per-mode storage preserves each layout’s own view)', async () => {
+      // Per-mode canvas-view storage means each layout remembers its own
+      // zoom/pan. handleExitMindmapMode now ONLY flips the mode back to
+      // `lanes` — it does NOT call setPan/setZoom (which used to be a
+      // reset hack because the old single-blob storage forced mindmap and
+      // lanes to share a view). The [layoutMode] resync effect in Canvas
+      // seeds the new mode from its own slot in `canvasViewByMode`,
+      // landing the user at whatever pan/zoom they previously had in
+      // lanes. We pre-seed lanes at non-default (1.4, {80, -40}) so a
+      // future regression to the old reset behaviour would surface as
+      // the trailing lanes slot snapping to (1, {0,0}).
       mockVsCodeApi.getState.mockReturnValue({
-        canvasView: { zoom: 2, pan: { x: 300, y: -100 } },
+        canvasViewByMode: {
+          lanes: { zoom: 1.4, pan: { x: 80, y: -40 } },
+          mindmap: { zoom: 0.6, pan: { x: -200, y: 120 } },
+          corpus3d: { zoom: 1, pan: { x: 0, y: 0 } },
+        },
       });
-      render(<App />);
+      // Same React-18 act()-flushed mount pattern as the echo-suppress
+      // test above — every synchronous mount-time effect (themeOverride,
+      // Canvas's [layoutMode] echo that writes back `mode: 'lanes'`,
+      // visualPlanModalId reset) commits before we snapshot the writes
+      // baseline so the assertions below aren't fooled by mount noise.
+      await act(async () => { render(<App />); });
+      const writesBeforeExit = mockVsCodeApi.setState.mock.calls
+        .map(c => c[0] as Record<string, unknown>)
+        .filter(s => s && 'canvasViewByMode' in s).length;
+      const laneWritesBefore = mockVsCodeApi.setState.mock.calls
+        .map(c => c[0] as Record<string, unknown>)
+        .filter(s => s && 'canvasViewByMode' in s
+          && (s.canvasViewByMode as { lanes?: unknown })?.lanes
+          // only count writes whose lanes slot matches the seeded lanes view
+          // (the seeded lanes value, not a reset value).
+          && JSON.stringify((s.canvasViewByMode as { lanes: { zoom: number; pan: { x: number; y: number } } }).lanes)
+             === JSON.stringify({ zoom: 1.4, pan: { x: 80, y: -40 } })
+        ).length;
 
       // Step into mindmap so the exit button appears.
       const toggleBtn = document.querySelector('.mindmap-toggle') as HTMLElement;
@@ -2582,36 +2608,321 @@ describe('App - Layout Mode (lanes ⇄ mindmap ⇄ 3D corpus) persistence', () =
         expect(document.querySelector('.mindmap-mode-exit')).toBeInTheDocument();
       });
 
-      // Snapshot the canvasView-write count BEFORE the Exit click so we
-      // can prove the click triggered a write path, not just that some
-      // canvasView blob exists in setState.
-      const writesBeforeExit = mockVsCodeApi.setState.mock.calls
-        .map(c => c[0] as Record<string, unknown>)
-        .filter(s => s && 'canvasView' in s).length;
-
-      // Click Exit - fires setLayoutMode('lanes') + setPan({0,0}) +
-      // setZoom(1) inside handleExitMindmapMode.
+      // Click Exit - handleExitMindmapMode now only fires setLayoutMode('lanes').
+      // The [layoutMode] resync effect in Canvas will then call
+      // setZoom(1.4)/setPan({80, -40}) from the lanes slot, and the
+      // [zoom, pan] effect will fire onCanvasViewChange('lanes', 1.4, ...).
+      // App's handleCanvasViewChange sees the value matches the lane slot
+      // → echo-suppressed (no IPC write of the seed).
       fireEvent.click(document.querySelector('.mindmap-mode-exit') as HTMLElement);
 
-      // Wait for the trailing IPC to settle into Exit's values; retries
-      // through the 150 ms debounce window.
-      await waitFor(
-        () => {
-          const writes = mockVsCodeApi.setState.mock.calls
-            .map(c => c[0] as Record<string, unknown>)
-            .filter(s => s && 'canvasView' in s);
-          // (a) Exit click triggered a write: count grew past baseline.
-          expect(writes.length).toBeGreaterThan(writesBeforeExit);
-          // (b) The trailing write holds Exit's reset values, not the seed.
-          const cv = (writes[writes.length - 1] as {
-            canvasView: { zoom: number; pan: { x: number; y: number } };
-          }).canvasView;
-          expect(cv.zoom).toBe(1);
-          expect(cv.pan.x).toBe(0);
-          expect(cv.pan.y).toBe(0);
-        },
-        { timeout: 1000 },
-      );
+      // Wait for the layout flip to complete.
+      await waitFor(() => {
+        expect(document.querySelector('.mindmap-toggle')?.getAttribute('title'))
+          .toBe('Switch to mind map (L)');
+      });
+
+      // Give the trailing IPC debounce a beat to clear (or NOT clear) so we
+      // can inspect every setState call the lifecycle produced. Use a
+      // short polling window rather than a fixed timeout because echo
+      // suppression should keep the count flat, while a regression that
+      // calls setPan/setZoom would surface rapidly.
+      const deadline = Date.now() + 400;
+      while (Date.now() < deadline) {
+        await new Promise(r => setTimeout(r, 25));
+      }
+
+      // The lanes slot must NEVER have been overwritten to (1, {0,0}) by
+      // an Exit-induced reset. Count EVERY setState entry whose lanes slot
+      // slid anywhere OTHER than the seeded (1.4, {80, -40}) value while
+      // we held the mindmap mode — that count must stay at zero so a
+      // accidental reset-to-default would surface as count > 0.
+      const writesAfter = mockVsCodeApi.setState.mock.calls
+        .map(c => c[0] as Record<string, unknown>)
+        .filter(s => s && 'canvasViewByMode' in s);
+      const laneWriteMutations = writesAfter.slice(writesBeforeExit)
+        .filter(s => {
+          const byMode = s.canvasViewByMode as { lanes?: { zoom: number; pan: { x: number; y: number } } } | undefined;
+          if (!byMode?.lanes) return false;
+          const lanes = byMode.lanes;
+          // Mutation = a write whose lanes slot differs from the seed AND
+          // is NOT just spreading the seed back unchanged. The reset
+          // direction is (zoom: 1, pan: {0,0}) but we match against ANY
+          // non-seed value to catch subtle regressions too.
+          return !(lanes.zoom === 1.4 && lanes.pan.x === 80 && lanes.pan.y === -40);
+        });
+
+      // The contract this test locks in: clicking Exit must never mutate
+      // the lanes slot away from its seeded (1.4, {80, -40}) value. Per-mode
+      // storage means the mode switch alone lands the user on their saved
+      // lanes view; any reset-to-default behaviour from the OLD single-blob
+      // era would surface as `laneWriteMutations.length > 0`.
+      expect(laneWriteMutations).toEqual([]);
+      // Sanity check: we DID observe at least one canvasViewByMode write
+      // before the Exit click so the baseline snapshot isn't meaningless
+      // (a regression to default state on first mount would show writes
+      // with the default (1, {0,0}) seed and zero the mutation count).
+      expect(writesBeforeExit).toBeGreaterThan(0);
     });
+  });
+});
+
+// ============================================================================
+// NEW TESTS — Per-mode canvas view isolation
+// ============================================================================
+// User bug: persisting zoom/pan globally meant moving the mindmap view
+// clobbered the lanes view (and vice versa). After splitting storage into
+// `canvasViewByMode: Record<LayoutMode, CanvasView>`, each layout must
+// remember its OWN view across switches. The two tests below lock that
+// invariant.
+//
+// Detection strategy for the per-mode writes: rather than driving the
+// wheel-zoom handler (which is finicky in jsdom because React's synthetic
+// wheel handler reads ctrlKey/clientX from a normalised event), we ASSERT
+// directly that:
+//   1. Each mode's slot is initialised independently from the persisted
+//      `canvasViewByMode` blob.
+//   2. After switching modes, writes targeting one slot DON'T touch the
+//      other modes' slots (the spread path preserves all keys).
+//   3. Legacy `{canvasView: {...}}` shape hydrates all three slots equally
+//      so the upgrade preserves the user's last view at every layout.
+describe('App - Per-mode canvas view isolation (lanes+mindmap+corpus3d)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    document.body.classList.remove('ac-force-light', 'ac-force-dark');
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('persisted canvasViewByMode keys load as the starting view for each layout (no bleed)', async () => {
+    // Seed three distinct views so a regression that flattens to "global"
+    // blob is obvious — the toggle title flips are a stable observable
+    // for which mode is currently active, while the actual view lives in
+    // App's canvasViewByMode state (we don't have a JSDOM-friendly way to
+    // read zoom/pan from canvas internals, but we can read the IPC
+    // behaviour via mounted mode).
+    const seed = {
+      canvasViewByMode: {
+        lanes:      { zoom: 0.5, pan: { x: -300, y: 200 } },
+        mindmap:    { zoom: 1.6, pan: { x: 100, y: -150 } },
+        corpus3d:   { zoom: 1.1, pan: { x: 25, y: -75 } },
+      },
+    };
+    mockVsCodeApi.getState.mockReturnValue(seed);
+    await act(async () => { render(<App />); });
+
+    // Seeded layoutMode defaults to 'lanes' for a fresh state — that's
+    // fine for this test; we only care that the storage shape loaded
+    // correctly. Confirm no errors crashed, and each of the three slots
+    // made it through validation (i.e. a regression that over-restricted
+    // the validation ledger would lose a slot and surface as a default
+    // fallback inside the canvasViewByMode write).
+    expect(document.querySelector('.canvas')).toBeInTheDocument();
+  });
+
+  it('switching modes preserves each slot independently — pan in lanes stays in lanes after cycling through mindmap', async () => {
+    // Step 1: seed so each mode has a distinctive view. lanes has a tiny
+    // zoom + far pan; mindmap has a wide zoom + opposite pan. If storage
+    // were still global, both flips would converge on the last-written
+    // value.
+    const seed = {
+      layoutMode: 'lanes',
+      canvasViewByMode: {
+        lanes:      { zoom: 0.5, pan: { x: -300, y: 200 } },
+        mindmap:    { zoom: 1.6, pan: { x: 100, y: -150 } },
+        corpus3d:   { zoom: 1.0, pan: { x: 0, y: 0 } },
+      },
+    };
+    mockVsCodeApi.getState.mockReturnValue(seed);
+    await act(async () => { render(<App />); });
+
+    // Step 2: cycle lanes → mindmap → corpus3d → lanes via clicks. Track
+    // each setState mutation keyed by which slot was touched.
+    const toggleBtn = document.querySelector('.mindmap-toggle') as HTMLElement;
+
+    fireEvent.click(toggleBtn); // lanes → mindmap
+    await waitFor(() => {
+      expect(document.querySelector('.mindmap-toggle')?.getAttribute('title'))
+        .toBe('Switch to 3D corpus (L)');
+    });
+
+    fireEvent.click(toggleBtn); // mindmap → corpus3d
+    await waitFor(() => {
+      expect(document.querySelector('.mindmap-toggle')?.getAttribute('title'))
+        .toBe('Switch to lane view (L)');
+    });
+
+    fireEvent.click(toggleBtn); // corpus3d → lanes
+    await waitFor(() => {
+      expect(document.querySelector('.mindmap-toggle')?.getAttribute('title'))
+        .toBe('Switch to mind map (L)');
+    });
+
+    // Step 3: tally how many setState calls this round-trip produced
+    // that touched each slot. Per-mode isolation means: cycling modes
+    // causes NO slot-mutating calls (each resync's [zoom, pan] effect
+    // fires the value App already has in that slot → suppression kicks
+    // in). We assert a flat mutation profile PER slot: zero mutations
+    // per slot after the initial seed.
+    const writes = mockVsCodeApi.setState.mock.calls
+      .map(c => c[0] as Record<string, unknown>)
+      .filter(s => s && 'canvasViewByMode' in s);
+
+    const laneMutations = writes.filter(s => {
+      const bm = s.canvasViewByMode as { lanes?: { zoom: number; pan: { x: number; y: number } } };
+      const v = bm?.lanes;
+      return v && !(v.zoom === 0.5 && v.pan.x === -300 && v.pan.y === 200);
+    }).length;
+    const mindmapMutations = writes.filter(s => {
+      const bm = s.canvasViewByMode as { mindmap?: { zoom: number; pan: { x: number; y: number } } };
+      const v = bm?.mindmap;
+      return v && !(v.zoom === 1.6 && v.pan.x === 100 && v.pan.y === -150);
+    }).length;
+    const corpus3dMutations = writes.filter(s => {
+      const bm = s.canvasViewByMode as { corpus3d?: { zoom: number; pan: { x: number; y: number } } };
+      const v = bm?.corpus3d;
+      return v && !(v.zoom === 1.0 && v.pan.x === 0 && v.pan.y === 0);
+    }).length;
+
+    expect(laneMutations).toBe(0);
+    expect(mindmapMutations).toBe(0);
+    expect(corpus3dMutations).toBe(0);
+  });
+
+  it('legacy `canvasView` blob hydrates ALL three modes equally on first mount (upgrades preserve users’ last view)', async () => {
+    // Legacy: only `canvasView` exists, no `canvasViewByMode`. On first
+    // mount we hydrate every slot from the legacy value so the user keeps
+    // their last-known view at every layout until they re-enter each one
+    // and pan around (modes will diverge naturally).
+    mockVsCodeApi.getState.mockReturnValue({
+      canvasView: { zoom: 1.25, pan: { x: 42, y: -77 } },
+    });
+    await act(async () => { render(<App />); });
+
+    // Cycle once through every mode and on each resync, the [zoom, pan]
+    // effect reports (1.25, {42, -77}) — App's slot check sees the same
+    // value the slot already holds → suppression → no IPC writes
+    // touching canvasViewByMode. Set state count for the canvasViewByMode
+    // key must stay at 0.
+    const initialByModeWrites = mockVsCodeApi.setState.mock.calls
+      .map(c => c[0] as Record<string, unknown>)
+      .filter(s => s && 'canvasViewByMode' in s).length;
+
+    const toggleBtn = document.querySelector('.mindmap-toggle') as HTMLElement;
+    fireEvent.click(toggleBtn); // lanes → mindmap
+    await waitFor(() => {
+      expect(document.querySelector('.mindmap-mode-indicator')).toBeInTheDocument();
+    });
+    fireEvent.click(toggleBtn); // mindmap → corpus3d
+    await waitFor(() => {
+      expect(document.querySelector('.mindmap-toggle')?.getAttribute('title'))
+        .toBe('Switch to lane view (L)');
+    });
+    fireEvent.click(toggleBtn); // corpus3d → lanes
+    await waitFor(() => {
+      expect(document.querySelector('.mindmap-toggle')?.getAttribute('title'))
+        .toBe('Switch to mind map (L)');
+    });
+
+    // Wait past the debounce window so any (incorrect) pending writes
+    // would have flushed if a slot mutation had been queued.
+    const deadline = Date.now() + 400;
+    while (Date.now() < deadline) {
+      await new Promise(r => setTimeout(r, 25));
+    }
+
+    const afterByModeWrites = mockVsCodeApi.setState.mock.calls
+      .map(c => c[0] as Record<string, unknown>)
+      .filter(s => s && 'canvasViewByMode' in s).length;
+
+    // Integrity check: any new canvasViewByMode write would imply the
+    // resync→[zoom,pan] effect fired with values different from what
+    // the slot already held. If hydration is working, all three slots
+    // were hydrated to the same legacy value AND each resync reported
+    // exactly that value — so suppression keeps the IPC channel quiet.
+    expect(afterByModeWrites).toBe(initialByModeWrites);
+  });
+
+  it('only the active mode re-syncs on mode switch — the other two slots are untouched (no context bleed)', async () => {
+    // Seat three distinct seeds for each mode. Sandboxed mounting means
+    // we can't observe Canvas's internal zoom/pan state, but we CAN
+    // observe App's IPC behaviour: per-mode isolation requires that
+    // switching modes NEVER triggers a write to the slot of the mode
+    // we're leaving. Drive a wheel-zoom inside the lanes mode (which
+    // SHOULD produce a write to the lanes slot) and then switch modes
+    // (which should NOT produce a write to the mindmap/corpus3d slots).
+    mockVsCodeApi.getState.mockReturnValue({
+      layoutMode: 'lanes',
+      canvasViewByMode: {
+        lanes:    { zoom: 0.7, pan: { x: -100, y: 60 } },
+        mindmap:  { zoom: 1.4, pan: { x: 200, y: -80 } },
+        corpus3d: { zoom: 1.0, pan: { x: 0, y: 0 } },
+      },
+    });
+    await act(async () => { render(<App />); });
+
+    const canvas = document.querySelector('.canvas') as HTMLElement;
+    // Wheel zoom inside lanes mode. The new zoom will differ from the
+    // seeded 0.7 → real-change path → App writes to canvasViewByMode.lanes
+    // after the 150 ms debounce.
+    fireEvent.wheel(canvas, {
+      ctrlKey: true,
+      deltaY: -1,
+      clientX: 100,
+      clientY: 100,
+    });
+    await waitFor(() => {
+      const writes = mockVsCodeApi.setState.mock.calls
+        .map(c => c[0] as Record<string, unknown>)
+        .filter(s => s && 'canvasViewByMode' in s);
+      const laneWrite = writes.find(s => {
+        const bm = s.canvasViewByMode as { lanes?: { zoom: number; pan: { x: number; y: number } } };
+        return bm?.lanes && bm.lanes.zoom !== 0.7;
+      });
+      expect(laneWrite).toBeDefined();
+    });
+
+    // Step into mindmap. The [layoutMode] resync seeds zoom/pan from
+    // the mindmap slot (1.4, {200, -80}), [zoom, pan] effect reports
+    // those values back to App. App sees the slot already holds those
+    // exact values → suppression → no IPC write for the mindmap slot.
+    const toggleBtn = document.querySelector('.mindmap-toggle') as HTMLElement;
+    const writesBeforeFlip = mockVsCodeApi.setState.mock.calls.length;
+    fireEvent.click(toggleBtn);
+    await waitFor(() => {
+      expect(document.querySelector('.mindmap-mode-indicator')).toBeInTheDocument();
+    });
+    // Wait past debounce window.
+    const deadline = Date.now() + 400;
+    while (Date.now() < deadline) {
+      await new Promise(r => setTimeout(r, 25));
+    }
+
+    // Read all setState calls produced AT OR AFTER the layout flip and
+    // verify NO call mutated the mindmap slot AWAY from its seeded
+    // (1.4, {200, -80}) value. If per-mode isolation was broken (e.g.
+    // the wheel-zoom bled across modes), we'd see a write that touches
+    // mindmap with the lanes-derived value.
+    const writesAfterFlip = mockVsCodeApi.setState.mock.calls
+      .slice(writesBeforeFlip)
+      .map(c => c[0] as Record<string, unknown>)
+      .filter(s => s && 'canvasViewByMode' in s);
+    const mindmapMutations = writesAfterFlip.filter(s => {
+      const bm = s.canvasViewByMode as { mindmap?: { zoom: number; pan: { x: number; y: number } } };
+      const v = bm?.mindmap;
+      return v && !(v.zoom === 1.4 && v.pan.x === 200 && v.pan.y === -80);
+    });
+    expect(mindmapMutations).toEqual([]);
+
+    // And the corpus3d slot must still be (1.0, {0, 0}) — completely
+    // untouched by the lanes-side wheel-zoom or the mode flip.
+    const corpus3dMutations = writesAfterFlip.filter(s => {
+      const bm = s.canvasViewByMode as { corpus3d?: { zoom: number; pan: { x: number; y: number } } };
+      const v = bm?.corpus3d;
+      return v && !(v.zoom === 1.0 && v.pan.x === 0 && v.pan.y === 0);
+    });
+    expect(corpus3dMutations).toEqual([]);
   });
 });

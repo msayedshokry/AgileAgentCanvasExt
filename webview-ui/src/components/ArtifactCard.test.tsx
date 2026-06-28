@@ -753,3 +753,91 @@ describe('ArtifactCard', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Visual-plan card behavior (Fix #1 #2 #3 contract tests)
+// ---------------------------------------------------------------------------
+describe('ArtifactCard — visual-plan card fixes', () => {
+  const baseVisualPlan: Artifact = {
+    id: 'plan-test-1',
+    type: 'visual-plan',
+    title: 'Refactor auth flow',
+    description: 'Plan for auth refactor',
+    status: 'in-progress',
+    position: { x: 200, y: 200 },
+    size: { width: 240, height: 120 },
+    metadata: {
+      pendingTaskCount: 4,
+      totalTaskCount: 4,
+      isProposalReviewable: true,
+      plan: { sourceArtifactId: 'parent-epic' },
+    } as any,
+    parentId: null as any,
+    childIds: [] as any,
+    childCount: 0,
+    dependencies: {},
+  } as any;
+
+  it('single-click on a visual-plan card opens the modal (calls onShowPlan, NOT onSelect)', () => {
+    const onSelect = vi.fn();
+    const onOpenDetail = vi.fn();
+    const onShowPlan = vi.fn();
+    render(
+      <ArtifactCard
+        artifact={baseVisualPlan}
+        selectedId={null}
+        onSelect={onSelect}
+        onUpdate={() => {}}
+        onToggleExpand={() => {}}
+        expandedIds={new Set()}
+        onOpenDetail={onOpenDetail}
+        onShowPlan={onShowPlan}
+      />
+    );
+    // Click on the card title — outside any inner button / input
+    const titleEl = document.querySelector('.artifact-card') as HTMLElement;
+    fireEvent.click(titleEl);
+    expect(onShowPlan).toHaveBeenCalledWith('plan-test-1');
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('hides generate-plan / refine / elicit / show-plan buttons on a visual-plan card', () => {
+    render(
+      <ArtifactCard
+        artifact={baseVisualPlan}
+        selectedId={null}
+        onSelect={() => {}}
+        onUpdate={() => {}}
+        onToggleExpand={() => {}}
+        expandedIds={new Set()}
+        onOpenDetail={() => {}}
+        onShowPlan={() => {}}
+      />
+    );
+    expect(document.querySelector('.card-ai-btn')).toBeNull();
+    expect(document.querySelector('.card-elicit-btn')).toBeNull();
+    expect(document.querySelector('.card-plan-btn')).toBeNull();
+    expect(document.querySelector('.card-show-plan-btn')).toBeNull();
+    expect(document.querySelector('.card-dev-btn')).toBeNull();
+    expect(document.querySelector('.card-info-btn')).not.toBeNull();
+    expect(document.querySelector('.card-docs-btn')).not.toBeNull();
+  });
+
+  it('still renders card-info-btn and card-docs-btn on a visual-plan card', () => {
+    render(
+      <ArtifactCard
+        artifact={baseVisualPlan}
+        selectedId={null}
+        onSelect={() => {}}
+        onUpdate={() => {}}
+        onToggleExpand={() => {}}
+        expandedIds={new Set()}
+        onOpenDetail={() => {}}
+        onShowPlan={() => {}}
+      />
+    );
+    expect(document.querySelector('.card-info-btn')).toBeInTheDocument();
+    expect(document.querySelector('.card-docs-btn')).toBeInTheDocument();
+  });
+});
+
