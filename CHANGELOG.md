@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Fixed: Visual-plan card overflow in epic row bands
+
+Tree-nested visual-plan cards (repositioned beneath their parent artifact via childPlanMap) were overflowing past the epic row band boundary. The row height calculation and card rendering both underestimated the plan card's actual DOM height.
+
+- **Row-band overflow detection** — The overflow check now iterates ALL childPlanMap entries and correctly handles plans parented to descendants (stories, use-cases, etc.) within an epic's row, not just direct epic children. Uses the parent artifact's actual position.y for accurate plan-bottom computation.
+- **Height estimation constants** — TREE_PLAN_MIN_HEIGHT raised 68 → 200, TREE_PLAN_SCALE raised 0.6 → 0.85 so the estimated plan-card height better matches real content-driven rendering.
+- **Card height constraint** — ArtifactCard default render path (lane view) now applies maxHeight + overflow-y: auto when treeNested is true, constraining cards to their estimated height so they cannot grow past the row band estimate. Previously this constraint was only on phase node and compact render paths.
+- **Band bottom padding** — Added TREE_PLAN_BAND_PAD = 8 to the overflow check. Previously BAND_V_INSET was used in both the overflow math and the band's JSX height, causing them to cancel out and leave zero gap between the card bottom and the band's visual bottom edge.
+
 ### Added: `pi` (pi-mono) as a first-class chat provider
 
 The `pi` CLI (pi-mono, verified against v0.80.2) is now wired up alongside `claude`, `codex`, `gemini-cli`, `aider`, and `opencode` for headless terminal agentic execution. Users whose only installed agentic CLI is `pi` (or who hit the `-p` hang on every other provider’s headless flags) can now route AAC canvas actions through it directly.

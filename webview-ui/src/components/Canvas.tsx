@@ -190,9 +190,11 @@ const FILTER_TYPE_LABELS: Record<ArtifactType, string> = {
 // Shared across the row-band compaction (visibleArtifacts useMemo),
 // gridStartY adjustment, and tree-nest positioning (displayArtifacts).
 // Extracted to module scope so all three sites stay in sync.
-const TREE_PLAN_MIN_HEIGHT = 68;   // min rendered height for a nested plan card
-const TREE_PLAN_SCALE       = 0.6; // height multiplier (= plan.size.height * 0.6)
+const TREE_PLAN_MIN_HEIGHT = 200;  // min rendered height for a nested plan card
+const TREE_PLAN_SCALE       = 0.85; // height multiplier (= plan.size.height * 0.85)
 const TREE_PLAN_OFFSET_Y    = 8;   // vertical gap below the parent card
+const TREE_PLAN_BAND_PAD    = 8;   // extra padding below tree-nested plan card inside row band
+const BAND_V_INSET          = 6;   // vertical inset for epic row band (matched in JSX render)
 export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpand, expandedIds, expandedCategories, onToggleCategoryExpand, onRefineWithAI, onElicit, onExpandLane, onCollapseLane, centerOnId, onCentered, onOpenSearch, searchMatchIds, screenshotTrigger, screenshotFormat, onScreenshotReady, onScreenshotError, onOpenDetail, initialCanvasView, onCanvasViewChange, childPlanMap, onShowPlan, initialLayoutMode, onLayoutModeChange }: CanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -668,23 +670,6 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
       .filter(a => a.type === 'epic' && a.rowY !== undefined)
       .sort((a, b) => (a.rowY ?? 0) - (b.rowY ?? 0));
 
-    // Build epic → plan lookup from childPlanMap so row-band compaction
-    // can account for tree-nested plan card overflow (see expanded-epic
-    // effectiveRowHeight logic below).  Only visual-plan artifacts that
-    // will actually be repositioned via `metadata.plan.sourceArtifactId`
-    // are included.
-    const epicPlanMap = new Map<string, { height: number }>();
-    if (childPlanMap) {
-      for (const [parentId, planId] of childPlanMap.entries()) {
-        const plan = artifacts.find(a => a.id === planId && a.type === 'visual-plan');
-        if (plan) {
-          epicPlanMap.set(parentId, {
-            height: plan.size?.height ?? 100,
-          });
-        }
-      }
-    }
-
     if (epics.length === 0) {
       return {
         visibleArtifacts: visibleArtifactsRaw,
@@ -750,21 +735,27 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
       }
 
       // ── Tree-nested plan overflow ────────────────────────────────
-      // When this epic is expanded AND has a tree-nested visual-plan
-      // card that extends past the pre-adjustment row bottom, bump
-      // effectiveRowHeight so subsequent rows shift downward.
-      // The plan card will be positioned at:
-      //   adjustedRowY + epic.size.height + TREE_PLAN_OFFSET_Y
-      // with rendered height max(TREE_PLAN_MIN_HEIGHT, planHeight * TREE_PLAN_SCALE).
+      // When this epic is expanded AND has tree-nested visual-plan
+      // cards (via childPlanMap) whose rendered bottom extends past
+      // the row bottom, bump effectiveRowHeight so subsequent rows
+      // shift downward.  Plans can be parented to the epic directly
+      // OR to any descendant (story, use-case, etc.) within this row.
       // Constants stay in sync via TREE_PLAN_MIN_HEIGHT / TREE_PLAN_SCALE / TREE_PLAN_OFFSET_Y (module-level).
-      if (isExpanded) {
-        const planInfo = epicPlanMap.get(epic.id);
-        if (planInfo) {
-          const planRenderedH = Math.max(TREE_PLAN_MIN_HEIGHT, planInfo.height * TREE_PLAN_SCALE);
-          const planTop = originalRowY + (epic.size?.height ?? 100) + TREE_PLAN_OFFSET_Y;
-          const planBottom = planTop + planRenderedH;
+      if (isExpanded && childPlanMap) {
+        const descendants = epicDescendants.get(epic.id);
+        for (const [parentId, planId] of childPlanMap.entries()) {
+          if (parentId !== epic.id && (!descendants || !descendants.has(parentId))) continue;
+          const plan = artifacts.find(a => a.id === planId && a.type === 'visual-plan');
+          const parent = artifacts.find(a => a.id === parentId);
+          if (!plan || !parent) continue;
+          const planRenderedH = Math.max(TREE_PLAN_MIN_HEIGHT, (plan.size?.height ?? 100) * TREE_PLAN_SCALE);
+          const parentY = parent.position?.y ?? 0;
+          const parentH = parent.size?.height ?? 100;
+          const planBottom = parentY + parentH + TREE_PLAN_OFFSET_Y + planRenderedH;
           const rowBottom = originalRowY + effectiveRowHeight;
-          const overflow = Math.max(0, planBottom - rowBottom);
+          // Add BAND_V_INSET so the plan card fits within the visual band
+          // (band is inset 6px from the row edges).
+          const overflow = Math.max(0, planBottom + BAND_V_INSET + TREE_PLAN_BAND_PAD - rowBottom);
           if (overflow > 0) {
             effectiveRowHeight += overflow;
           }
@@ -1057,10 +1048,10 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
 
   const laneHeights = useMemo(() => {
     const LANE_CONTENT_TYPES: Record<string, string[]> = {
-      discovery:      ['product-brief', 'vision'],
+      discovery:      ['product-brief', 'vision', 'visual-plan'],
       planning:       ['prd', 'requirement', 'nfr', 'additional-req', 'risk'],
       solutioning:    ['architecture', 'architecture-decision', 'system-component'],
-      implementation: ['epic', 'story', 'use-case', 'test-strategy', 'test-case'],
+      implementation: ['epic', 'story', 'use-case', 'test-strategy', 'test-case', 'visual-plan'],
     };
     const BOTTOM_PADDING = 60;
     const MIN_BOTTOM = LANE_TOP + 200;   // shortest lane is 200px tall

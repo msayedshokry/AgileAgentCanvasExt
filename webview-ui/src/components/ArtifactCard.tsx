@@ -316,6 +316,7 @@ export const ArtifactCard = React.memo(
           left: artifact.position.x,
           top: artifact.position.y,
           width: artifact.size.width,
+          ...(treeNested ? { maxHeight: artifact.size.height, overflowY: 'auto' as const } : {}),
         }}
       >
         <div className="phase-node-label">{artifact.title}</div>
@@ -333,6 +334,7 @@ export const ArtifactCard = React.memo(
           left: artifact.position.x,
           top: artifact.position.y,
           width: artifact.size.width,
+          ...(treeNested ? { maxHeight: artifact.size.height, overflowY: 'auto' as const } : {}),
         }}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
@@ -366,6 +368,7 @@ export const ArtifactCard = React.memo(
         left: artifact.position.x,
         top: artifact.position.y,
         width: artifact.size.width,
+        ...(treeNested ? { maxHeight: artifact.size.height, overflowY: 'auto' as const } : {}),
       }}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}

@@ -1577,7 +1577,7 @@ describe('Canvas', () => {
   // and relative magnitudes are what we're locking.
   //
   // Seed math (per Canvas.tsx):
-  //   planRenderedH  = max(68, plan.size.height * 0.6)
+  //   planRenderedH  = max(200, plan.size.height * 0.85)
   //   planBottom     = parent.position.y + parent.size.height + 8 + planRenderedH
   //   rowBottom      = originalRowY + originalRowHeight  (uses ORIGINAL coords)
   //   maxPlanOverflow = max(0, planBottom - rowBottom)
@@ -1634,14 +1634,16 @@ describe('Canvas', () => {
         />
       );
       const baseline = topPx(band1(document));
-      // planRenderedH = max(68, 500*0.6) = 300
-      // planBottom    = 100 + 100 + 8 + 300 = 508
+      // planRenderedH = max(200, 500*0.85) = 425
+      // planBottom    = 100 + 100 + 8 + 425 = 633
       // rowBottom     = 100 + 200 = 300
       // maxPlanOverflow = 208  \u2192  cascade dips cumulativeDelta by -237.
-      const EXPECTED_OVERFLOW = 208;
+      // +6 for BAND_V_INSET (band is inset 6px from row edges so the plan
+      // card bottom must sit within the visual band, not just the row)
+      const EXPECTED_OVERFLOW = 347;
 
       // Step 2: introduce childPlanMap. epic-2 must shift DOWN by exactly
-      // maxPlanOverflow (BAND_V_INSET cancels in the delta). 208px shift.
+      // maxPlanOverflow (BAND_V_INSET cancels in the delta). 347px shift.
       const childPlanMap = new Map<string, string>([['epic-1', 'plan-1']]);
       rerender(
         <Canvas
@@ -1694,7 +1696,7 @@ describe('Canvas', () => {
   //                    = max(68, 300 * 0.6) = 180
   //   gridStartY(base) = parent.position.y + parent.size.height + GRID_SPACING
   //                    = 100 + 100 + 20 = 220
-  //   gridStartY(adj)  = 220 + 180 + TREE_PLAN_OFFSET_Y = 220 + 180 + 8 = 408
+  //   gridStartY(adj)  = 220 + 255 + TREE_PLAN_OFFSET_Y = 220 + 255 + 8 = 483
   // ---------------------------------------------------------------------------
   describe('Grid reflow plan-overlap adjustment', () => {
     const parentPosition = { x: 390, y: 100 };
@@ -1715,7 +1717,7 @@ describe('Canvas', () => {
       const plan = createMockArtifact({
         id: 'plan-1', type: 'visual-plan',
         position: { x: 50, y: 50 },
-        size: { width: 280, height: 300 }, // height=300 → planRenderedH=180
+        size: { width: 280, height: 300 }, // height=300 → planRenderedH=255
       });
       const req = createMockArtifact({
         id: 'req-1', type: 'requirement', title: 'Req 1',
@@ -1754,7 +1756,7 @@ describe('Canvas', () => {
       const planRenderedH = Math.max(
         // We reference the module constants by their expected value (68, 0.6, 8)
         // since they are module-scoped and not importable from the test.
-        68, 300 * 0.6
+        200, 300 * 0.85
       );
       const expectedShift = planRenderedH + 8;
       expect(getReqTop()).toBe(baselineY + expectedShift);
@@ -1815,7 +1817,7 @@ describe('Canvas', () => {
           childPlanMap={childPlanMap}
         />
       );
-      const planRenderedH = Math.max(68, 300 * 0.6);
+      const planRenderedH = Math.max(200, 300 * 0.85);
       expect(getChildTop()).toBe(baselineY + planRenderedH + 8);
     });
 
