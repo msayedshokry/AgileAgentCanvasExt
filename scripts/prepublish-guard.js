@@ -36,6 +36,50 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
+// Windows-reserved device names (case-insensitive). On Windows these
+// names clash with the OS devices in C:\Windows\System32 and break
+// VSIX extraction (vsce refuses to package them). On non-Windows hosts
+// they sometimes leak in from misdirected shell output (e.g. someone
+// redirected `del nul` into a file named `nul`) and end up committed
+// to the source tree. Scan for them before packaging.
+const WINDOWS_RESERVED_NAMES = new Set([
+  'nul', 'con', 'prn', 'aux',
+  'com1', 'com2', 'com3', 'com4', 'com5', 'com6', 'com7', 'com8', 'com9',
+  'lpt1', 'lpt2', 'lpt3', 'lpt4', 'lpt5', 'lpt6', 'lpt7', 'lpt8', 'lpt9',
+]);
+function findReservedNameFiles(rootDir) {
+  const hits = [];
+  const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'coverage', 'reports', 'webview-ui/build', 'webview-ui/node_modules']);
+  function walk(dir) {
+    let entries;
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); }
+    catch { return; }
+    for (const ent of entries) {
+      const full = path.join(dir, ent.name);
+      if (ent.isDirectory()) {
+        if (SKIP_DIRS.has(ent.name)) continue;
+        walk(full);
+      } else if (ent.isFile()) {
+        if (WINDOWS_RESERVED_NAMES.has(ent.name.toLowerCase())) {
+          hits.push(full);
+        }
+      }
+    }
+  }
+  walk(rootDir);
+  return hits;
+}
+const reservedHits = findReservedNameFiles(path.join(__dirname, '..'));
+if (reservedHits.length > 0) {
+  console.error(
+    `[prepublish-guard] FATAL: found Windows-reserved-name file(s) in the source tree:\n` +
+      reservedHits.map((h) => `  ${h}`).join('\n') + '\n' +
+      `These break VSIX extraction (\`vsce\` refuses to package them). Delete them:\n` +
+      `  ` + reservedHits.map((h) => `rm -f "${h}"`).join('\n  ')
+  );
+  process.exit(1);
+}
+
 // Drift detector — keep these two values in sync with each other AND with
 // the committed linux-x64 prebuild. The shipped binary at
 // node_modules/node-pty/prebuilds/linux-x64/pty.node was compiled against

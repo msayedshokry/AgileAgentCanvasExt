@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.6
+
+### Fixed: Windows reserved-name files blocked VSIX packaging
+
+`vsce package` failed with *"The extension contains an entry extension/webview-ui/nul which is unsafe for extraction"* — two stray files literally named `nul` (a Windows reserved device name, like `con` / `prn` / `com1`) had regenerated in the source tree from a misdirected shell redirect.
+
+- Files deleted.
+- `scripts/prepublish-guard.js` now scans the entire source tree for the full Windows reserved-name set (`nul`, `con`, `prn`, `aux`, `com1`–`com9`, `lpt1`–`lpt9`) and fails the build before `vsce` gets a chance to reject the package. Skips `node_modules`, `.git`, `dist`, `coverage`, `reports`, and `webview-ui/build` to keep the scan fast.
+
 ## 0.5.5
 
 ### Highlights
