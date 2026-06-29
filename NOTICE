@@ -1,0 +1,38 @@
+Agile Agent Canvas
+Copyright (c) 2026 Mohamed Sayed
+
+This product includes software developed by third parties:
+
+---
+
+BMAD-METHOD framework
+https://github.com/bmad-code-org/BMAD-METHOD
+Copyright (c) 2025 BMad Code, LLC
+Licensed under the MIT License.
+
+This extension bundles content (workflows, agent personas, schemas) from the
+BMAD-METHOD framework under its MIT License. See
+https://github.com/bmad-code-org/BMAD-METHOD/blob/main/LICENSE for the full
+license text.
+
+---
+
+graphify
+https://github.com/safishamsi/graphify (PyPI: graphifyy)
+Copyright (c) Safi Shamsi and contributors
+Licensed under the MIT License.
+
+This extension invokes the graphify CLI as an external process and does not
+bundle or redistribute any graphify source code. The graphify package must be
+installed separately by the user (`pip install graphifyy`).
+
+---
+
+Conceptual inspiration drawn from the following MIT-licensed projects:
+
+- get-shit-done — https://github.com/gsd-build/get-shit-done
+- everything-claude-code — https://github.com/affaan-m/everything-claude-code
+- gstack — https://github.com/dzt/gstack
+
+No source code from these projects is included; their workflows and
+organisational patterns informed the design of this extension.
