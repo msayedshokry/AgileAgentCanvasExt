@@ -68,6 +68,10 @@ Search for required documents using these patterns (sharded means a large docume
 
 1. `{planning_artifacts}/*ux*.md` (whole document)
 2. `{planning_artifacts}/*ux*/index.md` (sharded version)
+3. `{planning_artifacts}/*ux*/**/DESIGN.md` (aac-ux spine output — visual identity)
+4. `{planning_artifacts}/*ux*/**/EXPERIENCE.md` (aac-ux spine output — behavioral contract)
+
+If a `*ux*/` folder is found that contains both `DESIGN.md` and `EXPERIENCE.md`, treat the folder as the canonical UX source and load both files. Adopted companion paths may live inside the ux folder or be referenced by relative path from it.
 
 Before proceeding, Ask the user if there are any other documents to include for analysis, and if anything found should be excluded. Wait for user confirmation. Once confirmed, create the {planning_artifacts}/epics.md from the ../templates/epics-template.md and in the front matter list the files in the array of `inputDocuments: []`.
 

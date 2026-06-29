@@ -25,6 +25,7 @@ import { terminalExecutor, checkProcessAlive } from './terminal-executor';
 import { concurrencyQueue } from './concurrency-queue';
 import { goalDecomposer, type ProposedStory } from './goal-decomposer';
 import { visualPlanService } from './visual-plan-service';
+import { visualPlanStore } from '../state/visual-plan-store';
 import { getVisualPlanMode } from '../utils/visual-plan-config';
 import { VisualPlanGenerator } from './visual-plan-generator';
 import type { PlanTask } from '../types/visual-plan';
@@ -505,8 +506,14 @@ export class AutonomyLifecycle extends EventEmitter {
     if (!this.store) return;
     const store = this.store;
 
+    // Track the epic created for the current goal batch so all stories
+    // land under a single epic rather than creating N epics for N stories.
+    let goalEpicId: string | null = null;
+
     goalDecomposer.setHooks({
       decompose: async (goal: string): Promise<ProposedStory[]> => {
+        // Reset the goal epic for a new batch
+        goalEpicId = null;
         try {
           const models = await vscode.lm.selectChatModels({ vendor: 'copilot' });
           // Fallback: accept any available model
@@ -563,21 +570,28 @@ export class AutonomyLifecycle extends EventEmitter {
       },
 
       persistStory: async (story: ProposedStory): Promise<string> => {
-        const created = store.createStory(undefined);
-        // Typed: Partial<Story> & { metadata?: BmadMetadata } (autonomous story creation)
-        // Typed: Partial<Story> & { metadata?: BmadMetadata } (autonomous story creation)
-        // Typed: Partial<Story> has no `description`, so we map
-        // story.description to Story.notes (the closest free-form text field).
-        // Typed: Story has no `description`; widen to the distributive
-        // Partial<BmadArtifact> + metadata envelope so the original literal
-        // is preserved verbatim (and so `persistStory` callers see the same
-        // shape they did pre-migration).
-        const storyChanges: ArtifactChanges = {
-            title: story.title,
-            description: story.description || '',
-            metadata: { priority: story.priority },
-        };
-        await store.updateArtifact('story', created.id, storyChanges);
+        // Create ONE epic per goal batch (first persistStory call creates it,
+        // subsequent calls reuse it so all stories land under a single epic).
+        if (!goalEpicId) {
+          const newEpic = store.createEpic();
+          await store.updateArtifact('epic', newEpic.id, {
+            title: `Goal: ${story.title.slice(0, 60)}`,
+            goal: story.description || story.title,
+          } as ArtifactChanges);
+          goalEpicId = newEpic.id;
+        }
+
+        // Create the story nested under the goal's epic
+        const created = store.createStory(goalEpicId);
+
+        // Populate BMAD Story schema fields
+        await store.updateArtifact('story', created.id, {
+          title: story.title,
+          notes: story.description || '',
+          status: 'ready-for-dev',
+          priority: story.priority,
+        } as ArtifactChanges);
+
         return created.id;
       },
 
@@ -690,14 +704,34 @@ export class AutonomyLifecycle extends EventEmitter {
         );
       },
 
-      persistTask: async (task: PlanTask, _planId: string): Promise<string> => {
-        const created = store.createStory(undefined);
-        const storyChanges = {
+      persistTask: async (task: PlanTask, planId: string): Promise<string> => {
+        // Look up the plan to get the source epic (sourceArtifactId)
+        const plan = visualPlanStore.get(planId);
+        let epicId: string | undefined = plan?.sourceArtifactId;
+
+        // If no source epic (free-form plan or epic was deleted), create a new one
+        if (!epicId) {
+          const newEpic = store.createEpic();
+          if (plan?.title) {
+            await store.updateArtifact('epic', newEpic.id, {
+              title: plan.title.slice(0, 80),
+              goal: plan.goal || plan.title,
+            } as ArtifactChanges);
+          }
+          epicId = newEpic.id;
+        }
+
+        // Create the story nested under its parent epic
+        const created = store.createStory(epicId);
+
+        // Populate BMAD Story schema fields
+        await store.updateArtifact('story', created.id, {
           title: task.title,
-          description: task.description || '',
-          metadata: { priority: task.priority },
-        };
-        await store.updateArtifact('story', created.id, storyChanges as any);
+          notes: task.description || '',
+          status: 'ready-for-dev',
+          priority: task.priority,
+        } as ArtifactChanges);
+
         return created.id;
       },
 

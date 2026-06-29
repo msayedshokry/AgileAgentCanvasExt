@@ -13,7 +13,7 @@ const buildOptions = {
     entryPoints: ['src/extension.ts'],
     bundle: true,
     outfile: 'dist/extension.js',
-    external: ['vscode', 'node-pty'], // vscode provided by host; node-pty is a native addon
+    external: ['vscode', 'node-pty', 'headroom-ai'], // vscode provided by host; node-pty is native; headroom-ai ships alongside
     format: 'cjs',
     platform: 'node',
     target: 'node20',
@@ -35,6 +35,20 @@ function copyPdfkitFontData() {
     mkdirSync(dest, { recursive: true });
     cpSync(src, dest, { recursive: true });
     console.log('[esbuild] Copied pdfkit font data → dist/data/');
+}
+
+/**
+ * Copy headroom-ai into dist/ so it can be required at runtime.
+ * headroom-ai is externalized because its peer-dep adapter imports
+ * (@anthropic-ai/sdk, openai, ai) confuse esbuild's bundler.
+ * Shipping it alongside keeps require.resolve() working in .vsix installs.
+ */
+function copyHeadroomAi() {
+    const src = join(__dirname, 'node_modules', 'headroom-ai');
+    const dest = join(__dirname, 'dist', 'node_modules', 'headroom-ai');
+    mkdirSync(dest, { recursive: true });
+    cpSync(src, dest, { recursive: true });
+    console.log('[esbuild] Copied headroom-ai → dist/node_modules/headroom-ai/');
 }
 
 /**
@@ -60,6 +74,7 @@ async function main() {
     } else {
         await esbuild.build(buildOptions);
         copyPdfkitFontData();
+        copyHeadroomAi();
         copyNodePty();
         console.log('[esbuild] Extension bundled successfully');
     }

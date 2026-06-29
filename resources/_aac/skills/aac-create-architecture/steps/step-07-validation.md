@@ -331,6 +331,44 @@ Show the validation results and present choices:
 
 When user selects 'C', append the content directly to the document using the structure from step 6.
 
+### Breadth-Coverage Rubric (v6.9.0 parity)
+
+In addition to the 16-item checklist above, every architecture must surface a coverage matrix that names every altitude-owned dimension and classifies it. The rubric exists so that "no checklist item was missed" is checked at a different angle than "no domain was silently skipped" — the two can both pass while leaving real holes.
+
+For each dimension below, mark exactly one of `decided` (a real decision is documented), `deferred` (explicitly punted with a reason and a target), or `open` (not yet addressed). Any `open` item must be reflected in the Gap Analysis section above and in the Overall Status (NOT READY if any `open` item remains in Requirements Analysis or Architectural Decisions).
+
+**Requirements Analysis (analysis-phase coverage):**
+
+- Domain context: {decided|deferred|open}
+- Scale and complexity band: {decided|deferred|open}
+- Hard constraints: {decided|deferred|open}
+- Cross-cutting concerns: {decided|deferred|open}
+
+**Architectural Decisions (the spine):**
+
+- Tech stack: {decided|deferred|open}
+- Data model: {decided|deferred|open}
+- API surface: {decided|deferred|open}
+- Integration points: {decided|deferred|open}
+- Security posture: {decided|deferred|open}
+- Observability: {decided|deferred|open}
+- Deployment topology: {decided|deferred|open}
+
+**Implementation Patterns (the rules agents follow):**
+
+- Naming conventions: {decided|deferred|open}
+- Structure patterns: {decided|deferred|open}
+- Communication patterns: {decided|deferred|open}
+- Error and retry patterns: {decided|deferred|open}
+
+**Project Structure (the file layout):**
+
+- Directory tree: {decided|deferred|open}
+- Component boundaries: {decided|deferred|open}
+- Configuration surface: {decided|deferred|open}
+
+Render this matrix in the document immediately after the Gap Analysis section so the reader sees the breadth check and the gaps side-by-side.
+
 ## SUCCESS METRICS:
 
 ✅ All architectural decisions validated for coherence

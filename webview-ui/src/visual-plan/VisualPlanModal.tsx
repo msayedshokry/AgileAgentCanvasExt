@@ -123,6 +123,18 @@ export function VisualPlanModal({
     vscode.postMessage({ type: 'openVisualPlan', artifactId });
   }, [artifactId]);
 
+  const handleAnswerQuestion = useCallback(
+    (questionId: string, answer: string) => {
+      vscode.postMessage({
+        type: 'visualPlan:answerQuestion',
+        planId: artifactId,
+        questionId,
+        answer,
+      });
+    },
+    [artifactId]
+  );
+
   return (
     <div
       className="vp-modal-overlay"
@@ -139,7 +151,7 @@ export function VisualPlanModal({
         data-testid="visual-plan-modal"
       >
         <div className="vp-modal-toolbar">
-          <span className="vp-modal-toolbar-title">◆ Visual Plan</span>
+          <span className="vp-modal-toolbar-title">{plan?.title || '◆ Visual Plan'}</span>
           {/* Cycle controls render only when 2+ plans exist. Wraps
               both ends via the App-level handler, so prev from the
               first plan jumps to the last and vice versa. */}
@@ -178,6 +190,10 @@ export function VisualPlanModal({
               </button>
             </div>
           )}
+          <div className="vp-modal-kbd-hints">
+            <span><kbd className="vp-modal-kbd">Esc</kbd> close</span>
+            {cycle && <span><kbd className="vp-modal-kbd">←</kbd><kbd className="vp-modal-kbd">→</kbd> cycle</span>}
+          </div>
           <div className="vp-modal-toolbar-actions">
             <button
               type="button"
@@ -230,6 +246,7 @@ export function VisualPlanModal({
                   comment,
                 })
               }
+              onAnswerQuestion={handleAnswerQuestion}
             />
           ) : (
             <div className="vp-modal-generating" data-testid="visual-plan-modal-generating">

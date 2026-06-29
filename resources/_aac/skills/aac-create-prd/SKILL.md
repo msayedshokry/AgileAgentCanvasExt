@@ -22,8 +22,6 @@ You will continue to operate with your given name, identity, and communication_s
 
 This uses **step-file architecture** for disciplined execution:
 
-### Core Principles
-
 - **Micro-file Design**: Each step is a self-contained instruction file that is a part of an overall workflow that must be followed exactly
 - **Just-In-Time Loading**: Only the current step file is in memory - never load future step files until told to do so
 - **Sequential Enforcement**: Sequence within the step files must be completed in order, no skipping or optimization allowed
@@ -32,22 +30,11 @@ This uses **step-file architecture** for disciplined execution:
 
 ### Step Processing Rules
 
-1. **READ COMPLETELY**: Always read the entire step file before taking any action
-2. **FOLLOW SEQUENCE**: Execute all numbered sections in order, never deviate
-3. **WAIT FOR INPUT**: If a menu is presented, halt and wait for user selection
-4. **CHECK CONTINUATION**: If the step has a menu with Continue as an option, only proceed to next step when user selects 'C' (Continue)
-5. **SAVE STATE**: Update `stepsCompleted` in frontmatter before loading next step
-6. **LOAD NEXT**: When directed, read fully and follow the next step file
-
-### Critical Rules (NO EXCEPTIONS)
-
-- 🛑 **NEVER** load multiple step files simultaneously
-- 📖 **ALWAYS** read entire step file before execution
-- 🚫 **NEVER** skip steps or optimize the sequence
-- 💾 **ALWAYS** update frontmatter of output files when writing the final output for a specific step
-- 🎯 **ALWAYS** follow the exact instructions in the step file
-- ⏸️ **ALWAYS** halt at menus and wait for user input
-- 📋 **NEVER** create mental todo lists from future steps
+1. **Read completely, then act** — read the whole step file before doing anything in it. A partial read produces a partial step.
+2. **Follow sequence** — execute the numbered sections in order. No skipping, no reordering.
+3. **Halt at menus** — if a menu is presented, stop and wait for the user. Only proceed when the user picks 'C' (or the step's continuation signal).
+4. **Update `stepsCompleted` in frontmatter** before loading the next step.
+5. **Never create a mental list of future steps** — only the current step is in view, and the next step stays out of view until it is loaded.
 
 ## On Activation
 

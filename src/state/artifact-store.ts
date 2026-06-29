@@ -1023,7 +1023,6 @@ export class ArtifactStore {
             let pendingUseCases = ctx.pendingUseCases;
             let unresolvedUseCases = ctx.unresolvedUseCases;
             let requirements = ctx.requirements;
-            let projectName = ctx.projectName;
             let standaloneReqsLoaded = ctx.standaloneReqsLoaded;
             const normalizeEpicId = ctx.normalizeEpicId;
             const epicIdFromUseCaseId = ctx.epicIdFromUseCaseId;
@@ -1326,7 +1325,7 @@ export class ArtifactStore {
                 || this.artifacts.get('architecture') || this.artifacts.get('testCases')
                 || this.artifacts.get('testStrategy') || this.artifacts.get('vision');
             if (hasData) {
-                this.artifacts.set('projectName', projectName);
+                this.artifacts.set('projectName', ctx.projectName);
                 // Sort epics by numeric ID before storing.
                 // fs.readdir / vscode.workspace.fs.readDirectory returns entries
                 // in alphabetical order (epic-1, epic-10, epic-11, …, epic-2),

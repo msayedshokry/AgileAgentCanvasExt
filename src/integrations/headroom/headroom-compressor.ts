@@ -128,10 +128,16 @@ async function _ensureInitialised(): Promise<boolean> {
  * whether the proxy is running (health check on default port).
  */
 export async function detectHeadroom(): Promise<HeadroomAvailability> {
-    // Check npm package availability
+    // Check npm package availability.
+    // Use require() instead of require.resolve() because esbuild bundles
+    // headroom-ai into dist/extension.js. require.resolve is a runtime
+    // Node.js call that looks for the package on disk — it fails in .vsix
+    // installs where node_modules/headroom-ai doesn't exist on disk.
+    // require() is resolved by esbuild at bundle time, so it always succeeds
+    // when the dependency was present at build time.
     let installed = false;
     try {
-        require.resolve('headroom-ai');
+        require('headroom-ai');
         installed = true;
     } catch {
         installed = false;

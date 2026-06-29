@@ -79,7 +79,8 @@ describe('VisualPlanModal', () => {
 
   it('renders toolbar title and Open-in-Editor + close buttons', () => {
     render(<VisualPlanModal artifactId="plan-1" plan={samplePlan} onClose={vi.fn()} />);
-    expect(screen.getByText('◆ Visual Plan')).toBeInTheDocument();
+    // Toolbar shows the plan title; the sections header also shows it, so expect 2+ matches
+    expect(screen.getAllByText(samplePlan.title).length).toBeGreaterThanOrEqual(2);
     expect(screen.getByLabelText('Open in new editor window')).toBeInTheDocument();
     expect(screen.getByLabelText('Close plan modal')).toBeInTheDocument();
   });
@@ -92,12 +93,14 @@ describe('VisualPlanModal', () => {
   it('renders generating-state spinner when plan.status === "generating"', () => {
     const generatingPlan: VisualPlan = { ...samplePlan, status: 'generating', goal: 'test goal' };
     render(<VisualPlanModal artifactId="plan-1" plan={generatingPlan} onClose={vi.fn()} />);
-    expect(screen.getByText(/Generating plan/)).toBeInTheDocument();
+    expect(screen.getByText(/Generating Visual Plan/)).toBeInTheDocument();
   });
 
   it('shows the plan title in the renderer header when plan is loaded', () => {
     render(<VisualPlanModal artifactId="plan-1" plan={samplePlan} onClose={vi.fn()} />);
-    expect(screen.getByText(samplePlan.title)).toBeInTheDocument();
+    // Plan title now appears in both the modal toolbar AND the sections header
+    const matches = screen.getAllByText(samplePlan.title);
+    expect(matches.length).toBeGreaterThanOrEqual(2);
   });
 
   // ── IPC: Open in Editor ──────────────────────────────────────────────────

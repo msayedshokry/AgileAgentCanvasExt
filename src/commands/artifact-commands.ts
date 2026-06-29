@@ -1036,6 +1036,12 @@ function extractTriggerPhrase(description: string): string {
         if (firstQuote) return firstQuote[1];
         return raw;
     }
+    // addyosmani-style descriptions end with "Use when [conditions]" (no quoted phrase).
+    // Return the conditions clause as the trigger so the modal card is crisp.
+    const useWhenMatch = description.match(/[Uu]se when\s+(.+)$/s);
+    if (useWhenMatch) {
+        return useWhenMatch[1].trim();
+    }
     return description;
 }
 
@@ -1165,16 +1171,16 @@ export function loadBmmWorkflows(resourcesRoot: string): BmmWorkflowInfo[] {
  */
 function resolveSkillPhase(skillName: string): { label: string; order: number } {
     // bmad-* core workflows
-    if (skillName.startsWith('aac-product-brief') || skillName.startsWith('aac-domain') || skillName.startsWith('aac-market')) {
+    if (skillName.startsWith('aac-product-brief') || skillName.startsWith('aac-domain') || skillName.startsWith('aac-market') || skillName.startsWith('aac-forge-')) {
         return { label: 'Analysis', order: 1 };
     }
     if (skillName.startsWith('aac-create-prd') || skillName.startsWith('aac-edit-prd') || skillName.startsWith('aac-validate-prd') || skillName.startsWith('aac-create-epics') || skillName.startsWith('aac-sprint')) {
         return { label: 'Planning', order: 2 };
     }
-    if (skillName.startsWith('aac-create-architecture') || skillName.startsWith('aac-create-ux') || skillName.startsWith('aac-create-story')) {
+    if (skillName.startsWith('aac-create-architecture') || skillName.startsWith('aac-create-ux') || skillName.startsWith('aac-create-story') || skillName === 'aac-architecture-spine') {
         return { label: 'Solutioning', order: 3 };
     }
-    if (skillName.startsWith('aac-dev-story') || skillName.startsWith('aac-quick-dev') || skillName.startsWith('aac-qa-generate')) {
+    if (skillName.startsWith('aac-dev-story') || skillName.startsWith('aac-quick-dev') || skillName.startsWith('aac-qa-generate') || skillName.startsWith('aac-source-') || skillName.startsWith('aac-observability-') || skillName.startsWith('aac-shipping-') || skillName.startsWith('aac-frontend-')) {
         return { label: 'Implementation', order: 4 };
     }
     if (skillName.startsWith('aac-quick') || skillName.startsWith('bmad-quick')) {
@@ -1196,7 +1202,7 @@ function resolveSkillPhase(skillName: string): { label: string; order: number } 
         return { label: 'Meta-Build', order: 9 };
     }
     // Review skills
-    if (skillName.startsWith('aac-review') || skillName.startsWith('aac-review')) {
+    if (skillName.startsWith('aac-review') || skillName === 'aac-doubt-driven-development' || skillName === 'aac-codebase-design') {
         return { label: 'Review', order: 10 };
     }
     // Supporting / misc

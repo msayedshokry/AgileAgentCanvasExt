@@ -1055,6 +1055,29 @@ export async function handleAgenticKanbanMessage(
       return true;
     }
 
+    case 'visualPlan:answerQuestion': {
+      try {
+        await visualPlanService.answerQuestion(
+          message.planId,
+          message.questionId ?? '',
+          message.answer ?? ''
+        );
+        // Refresh the plan so the webview shows the answered question
+        if (webview) {
+          const plan = visualPlanService.get(message.planId);
+          if (plan) {
+            webview.postMessage({ type: 'visualPlan:ready', plan });
+          }
+        }
+      } catch (error) {
+        logger.warn(`[AgenticKanban] visualPlan:answerQuestion failed: ${errMsg(error)}`);
+        if (webview) {
+          webview.postMessage({ type: 'visualPlan:error', error: errMsg(error) });
+        }
+      }
+      return true;
+    }
+
     case 'visualPlan:approve': {
       try {
         const dispatchedIds = await visualPlanService.approve(message.planId, message.taskIds ?? []);

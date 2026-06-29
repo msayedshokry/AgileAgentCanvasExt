@@ -74,6 +74,7 @@ const ROOT_TYPES: Set<Artifact['type']> = new Set([
 
 export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhance, onElicit, themeOverride, onToggleTheme, onSwitchProject, activeFolderName, onExport, onImport, onHelp, onAsk, schemaIssueCount, onFixSchemas, onValidateSchemas, schemaValidating, schemaFixing, onSprintView, onJira, onGraphify, graphifyReady, onCatalogue, onGeneratePlan }: ToolbarProps) {
   const [open, setOpen] = useState(false);
+  const [overflowOpen, setOverflowOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const canBreakDown = selectedArtifact && (selectedArtifact.type === 'epic' || selectedArtifact.type === 'requirement');
@@ -107,12 +108,35 @@ export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhanc
     };
   }, [open]);
 
+  // Close overflow popover when clicking outside (mirrors the Add popover)
+  useEffect(() => {
+    if (!overflowOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOverflowOpen(false);
+      }
+    };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        setOverflowOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [overflowOpen]);
+
   return (
     <div className="toolbar-fab-container" ref={containerRef}>
       {/* Primary add button */}
       <button
         className={`toolbar-fab-btn${open ? ' open' : ''}`}
-        onClick={() => setOpen(o => !o)}
+        onClick={() => { setOpen(o => !o); setOverflowOpen(false); }}
         title="Add artifact"
         aria-label="Add artifact"
         aria-expanded={open}
@@ -164,74 +188,7 @@ export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhanc
         </button>
       )}
 
-      {/* Export button */}
-      {onExport && (
-        <button
-          className="toolbar-export-btn"
-          onClick={onExport}
-          title="Export artifacts"
-        >
-          <Icon name="upload" size={16} />
-        </button>
-      )}
-
-      {/* Import button */}
-      {onImport && (
-        <button
-          className="toolbar-import-btn"
-          onClick={onImport}
-          title="Import artifacts"
-        >
-          <Icon name="download" size={16} />
-        </button>
-      )}
-
-      {/* Schema button — validate (when no issues) or fix (when issues exist) */}
-      {(onValidateSchemas || onFixSchemas) && (
-        <button
-          className={`toolbar-fix-btn${(schemaIssueCount ?? 0) > 0 ? ' has-issues' : ''}${schemaValidating || schemaFixing ? ' validating' : ''}`}
-          onClick={(schemaIssueCount ?? 0) > 0 ? onFixSchemas : onValidateSchemas}
-          title={
-            schemaFixing
-              ? 'Fixing schemas...'
-              : schemaValidating
-              ? 'Validating schemas...'
-              : (schemaIssueCount ?? 0) > 0
-              ? `Fix ${schemaIssueCount} schema issue(s)`
-              : 'Validate artifacts against schemas'
-          }
-          disabled={schemaValidating || schemaFixing}
-        >
-          <Icon name="wrench" size={16} />
-          {(schemaIssueCount ?? 0) > 0 && (
-            <span className="toolbar-badge">{schemaIssueCount}</span>
-          )}
-        </button>
-      )}
-
-      {/* Jira button */}
-      {onJira && (
-        <button
-          className="toolbar-jira-btn"
-          onClick={onJira}
-          title="Jira — fetch epics & stories"
-        >
-          <Icon name="jira" size={16} />
-        </button>
-      )}
-
-      {/* Sprint Planning View button */}
-      {onSprintView && (
-        <button
-          className="toolbar-sprint-btn"
-          onClick={onSprintView}
-          title="Sprint Plan — view Kanban board"
-        >
-          <Icon name="sprint" size={16} />
-        </button>
-      )}
-
-      {/* Ask / Chat button */}
+      {/* Ask / Chat button — always visible as a starting point for the user */}
       {onAsk && (
         <button
           className="toolbar-ask-btn"
@@ -242,39 +199,114 @@ export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhanc
         </button>
       )}
 
-      {/* graphify status button */}
-      {onGraphify && (
+      {/* Overflow kebab — absorbs Export / Import / Schema / Sprint / Jira / Graphify / Catalogue / Help */}
+      <div className="toolbar-overflow-wrapper">
         <button
-          className={`toolbar-graphify-btn${graphifyReady ? ' toolbar-graphify-btn--ready' : ''}`}
-          onClick={onGraphify}
-          title={graphifyReady ? 'graphify — knowledge graph active' : 'graphify — click to open status'}
+          className={`toolbar-overflow-btn${overflowOpen ? ' open' : ''}`}
+          onClick={() => { setOverflowOpen(o => !o); setOpen(false); }}
+          title="More actions"
+          aria-label="More actions"
+          aria-expanded={overflowOpen}
         >
-          ⬡
-          {!graphifyReady && <span className="toolbar-graphify-dot" />}
+          <Icon name="more-horizontal" size={16} />
+          {(schemaIssueCount ?? 0) > 0 && (
+            <span className="toolbar-overflow-badge">{schemaIssueCount}</span>
+          )}
         </button>
-      )}
-
-      {/* Skill Catalogue button */}
-      {onCatalogue && (
-        <button
-          className="toolbar-catalogue-btn"
-          onClick={onCatalogue}
-          title="Manage Skill &amp; Agent Catalogue"
-        >
-          <Icon name="catalogue" size={16} />
-        </button>
-      )}
-
-      {/* Help button */}
-      {onHelp && (
-        <button
-          className="toolbar-help-btn"
-          onClick={onHelp}
-          title="Help &amp; instructions"
-        >
-          <Icon name="help" size={16} />
-        </button>
-      )}
+        {overflowOpen && (
+          <div className="toolbar-popover toolbar-popover--right" role="menu">
+            {onExport && (
+              <button
+                className="toolbar-popover-item"
+                onClick={() => { onExport(); setOverflowOpen(false); }}
+                role="menuitem"
+              >
+                <span className="toolbar-popover-icon"><Icon name="upload" size={16} /></span>
+                <span className="toolbar-popover-label">Export</span>
+              </button>
+            )}
+            {onImport && (
+              <button
+                className="toolbar-popover-item"
+                onClick={() => { onImport(); setOverflowOpen(false); }}
+                role="menuitem"
+              >
+                <span className="toolbar-popover-icon"><Icon name="download" size={16} /></span>
+                <span className="toolbar-popover-label">Import</span>
+              </button>
+            )}
+            {(onValidateSchemas || onFixSchemas) && (
+              <button
+                className="toolbar-popover-item"
+                onClick={() => { (schemaIssueCount ?? 0) > 0 ? onFixSchemas?.() : onValidateSchemas?.(); setOverflowOpen(false); }}
+                disabled={schemaValidating || schemaFixing}
+                title={
+                  schemaFixing ? 'Fixing schemas...' :
+                  schemaValidating ? 'Validating schemas...' :
+                  (schemaIssueCount ?? 0) > 0 ? `Fix ${schemaIssueCount} schema issue(s)` :
+                  'Validate artifacts against schemas'
+                }
+                role="menuitem"
+              >
+                <span className="toolbar-popover-icon"><Icon name="wrench" size={16} /></span>
+                <span className="toolbar-popover-label">
+                  {(schemaIssueCount ?? 0) > 0 ? `Fix schemas (${schemaIssueCount})` : 'Validate schemas'}
+                </span>
+              </button>
+            )}
+            {onSprintView && (
+              <button
+                className="toolbar-popover-item"
+                onClick={() => { onSprintView(); setOverflowOpen(false); }}
+                role="menuitem"
+              >
+                <span className="toolbar-popover-icon"><Icon name="sprint" size={16} /></span>
+                <span className="toolbar-popover-label">Sprint Plan</span>
+              </button>
+            )}
+            {onJira && (
+              <button
+                className="toolbar-popover-item"
+                onClick={() => { onJira(); setOverflowOpen(false); }}
+                role="menuitem"
+              >
+                <span className="toolbar-popover-icon"><Icon name="jira" size={16} /></span>
+                <span className="toolbar-popover-label">Jira</span>
+              </button>
+            )}
+            {onGraphify && (
+              <button
+                className="toolbar-popover-item"
+                onClick={() => { onGraphify(); setOverflowOpen(false); }}
+                role="menuitem"
+              >
+                <span className="toolbar-popover-icon">⬡</span>
+                <span className="toolbar-popover-label">{graphifyReady ? 'graphify (active)' : 'graphify'}</span>
+              </button>
+            )}
+            {onCatalogue && (
+              <button
+                className="toolbar-popover-item"
+                onClick={() => { onCatalogue(); setOverflowOpen(false); }}
+                role="menuitem"
+              >
+                <span className="toolbar-popover-icon"><Icon name="catalogue" size={16} /></span>
+                <span className="toolbar-popover-label">Catalogue</span>
+              </button>
+            )}
+            {onHelp && (
+              <button
+                className="toolbar-popover-item"
+                onClick={() => { onHelp(); setOverflowOpen(false); }}
+                role="menuitem"
+              >
+                <span className="toolbar-popover-icon"><Icon name="help" size={16} /></span>
+                <span className="toolbar-popover-label">Help</span>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
 
 
       {/* Theme toggle */}

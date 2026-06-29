@@ -232,6 +232,7 @@ If the command targets a story, set `story_key={{next_story_id}}` when prompted.
 <step n="20" goal="Data mode output">
   <action>Load and parse {sprint_status_file} same as Step 2</action>
   <action>Compute recommendation same as Step 3</action>
+  <action>Read top-level `action_items:` array if present; compute `open_action_items_count` and `open_action_items` (filter status == 'open')</action>
   <template-output>next_workflow_id = {{next_workflow_id}}</template-output>
   <template-output>next_story_id = {{next_story_id}}</template-output>
   <template-output>count_backlog = {{count_backlog}}</template-output>
@@ -242,6 +243,8 @@ If the command targets a story, set `story_key={{next_story_id}}` when prompted.
   <template-output>epic_backlog = {{epic_backlog}}</template-output>
   <template-output>epic_in_progress = {{epic_in_progress}}</template-output>
   <template-output>epic_done = {{epic_done}}</template-output>
+  <template-output>open_action_items_count = {{open_action_items_count}}</template-output>
+  <template-output>open_action_items = {{open_action_items}}</template-output>
   <template-output>risks = {{risks}}</template-output>
   <action>Return to caller</action>
 </step>

@@ -199,4 +199,131 @@ describe('Toolbar', () => {
       expect(screen.queryByTitle(/Break down/i)).not.toBeInTheDocument();
     });
   });
+
+  // ── Overflow kebab menu ──────────────────────────────────
+
+  describe('Overflow kebab', () => {
+    const overflowProps = {
+      onExport: vi.fn(),
+      onImport: vi.fn(),
+      onJira: vi.fn(),
+      onSprintView: vi.fn(),
+      onAsk: vi.fn(),
+      onCatalogue: vi.fn(),
+      onHelp: vi.fn(),
+      onValidateSchemas: vi.fn(),
+      onFixSchemas: vi.fn(),
+      onGraphify: vi.fn(),
+    };
+
+    const openOverflow = () => {
+      fireEvent.click(screen.getByRole('button', { name: /more actions/i }));
+    };
+
+    const overflowLabels = (): string[] => {
+      const items = document.querySelectorAll('.toolbar-popover--right .toolbar-popover-label');
+      return Array.from(items).map(el => el.textContent ?? '');
+    };
+
+    it('renders the kebab button', () => {
+      render(<Toolbar {...defaultProps} />);
+      expect(screen.getByRole('button', { name: /more actions/i })).toBeInTheDocument();
+    });
+
+    it('does not render any overflow popover by default', () => {
+      render(<Toolbar {...defaultProps} />);
+      expect(document.querySelector('.toolbar-popover--right')).not.toBeInTheDocument();
+    });
+
+    it('opens overflow popover on click', () => {
+      render(<Toolbar {...defaultProps} {...overflowProps} />);
+      openOverflow();
+      expect(document.querySelector('.toolbar-popover--right')).toBeInTheDocument();
+    });
+
+    it('lists Export, Import, Sprint, Jira, graphify, Catalogue, Help, Validate schemas (Ask is always-visible, not in menu)', () => {
+      render(<Toolbar {...defaultProps} {...overflowProps} />);
+      openOverflow();
+      expect(overflowLabels()).toEqual([
+        'Export', 'Import', 'Validate schemas', 'Sprint Plan',
+        'Jira', 'graphify', 'Catalogue', 'Help',
+      ]);
+    });
+
+    it('renders Ask button outside the overflow menu (always-visible starting point)', () => {
+      const onAsk = vi.fn();
+      render(<Toolbar {...defaultProps} {...overflowProps} onAsk={onAsk} />);
+      const askBtn = screen.getByTitle('Ask Agile Agent Canvas a question');
+      expect(askBtn).toBeInTheDocument();
+      // Confirm it's NOT inside the overflow popover
+      expect(askBtn.closest('.toolbar-overflow-wrapper')).toBeNull();
+      // Clicking it should NOT require opening the overflow
+      fireEvent.click(askBtn);
+      expect(onAsk).toHaveBeenCalledOnce();
+    });
+
+    it('calls onExport and closes popover', () => {
+      const onExport = vi.fn();
+      render(<Toolbar {...defaultProps} {...overflowProps} onExport={onExport} />);
+      openOverflow();
+      fireEvent.click(screen.getByRole('menuitem', { name: /export/i }));
+      expect(onExport).toHaveBeenCalledOnce();
+      expect(document.querySelector('.toolbar-popover--right')).not.toBeInTheDocument();
+    });
+
+    it('calls onImport and closes popover', () => {
+      const onImport = vi.fn();
+      render(<Toolbar {...defaultProps} {...overflowProps} onImport={onImport} />);
+      openOverflow();
+      fireEvent.click(screen.getByRole('menuitem', { name: /import/i }));
+      expect(onImport).toHaveBeenCalledOnce();
+    });
+
+    it('shows schema issue badge on kebab when issues exist', () => {
+      render(<Toolbar {...defaultProps} {...overflowProps} schemaIssueCount={3} />);
+      const kebab = screen.getByRole('button', { name: /more actions/i });
+      expect(kebab.querySelector('.toolbar-overflow-badge')?.textContent).toBe('3');
+    });
+
+    it('does not show schema issue badge when there are no issues', () => {
+      render(<Toolbar {...defaultProps} {...overflowProps} schemaIssueCount={0} />);
+      const kebab = screen.getByRole('button', { name: /more actions/i });
+      expect(kebab.querySelector('.toolbar-overflow-badge')).toBeNull();
+    });
+
+    it('routes to onFixSchemas when issues exist (not onValidateSchemas)', () => {
+      const onValidateSchemas = vi.fn();
+      const onFixSchemas = vi.fn();
+      render(
+        <Toolbar {...defaultProps} {...overflowProps}
+          schemaIssueCount={2}
+          onValidateSchemas={onValidateSchemas}
+          onFixSchemas={onFixSchemas}
+        />
+      );
+      openOverflow();
+      fireEvent.click(screen.getByRole('menuitem', { name: /fix schemas/i }));
+      expect(onFixSchemas).toHaveBeenCalledOnce();
+      expect(onValidateSchemas).not.toHaveBeenCalled();
+    });
+
+    it('opens overflow popover and closes the Add popover (mutual exclusion)', () => {
+      render(<Toolbar {...defaultProps} {...overflowProps} />);
+      // Open Add popover first
+      fireEvent.click(screen.getByRole('button', { name: /add artifact/i }));
+      expect(document.querySelector('.toolbar-popover:not(.toolbar-popover--right)')).toBeInTheDocument();
+      // Now open overflow
+      openOverflow();
+      expect(document.querySelector('.toolbar-popover--right')).toBeInTheDocument();
+      // Add popover should be closed
+      expect(document.querySelector('.toolbar-popover:not(.toolbar-popover--right)')).not.toBeInTheDocument();
+    });
+
+    it('hides overflow items whose handlers are not provided', () => {
+      // Only onHelp provided; everything else should be absent
+      render(<Toolbar {...defaultProps} onHelp={vi.fn()} />);
+      openOverflow();
+      expect(overflowLabels()).toEqual(['Help']);
+    });
+  });
 });

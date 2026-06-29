@@ -389,6 +389,51 @@ body {
   background: var(--vscode-button-secondaryHoverBackground);
 }
 
+/* Overflow kebab — absorbs Export/Import/Schema/Sprint/Jira/Graphify/Catalogue/Ask/Help */
+.toolbar-overflow-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.toolbar-overflow-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  position: relative;
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: 1px solid var(--vscode-button-border, transparent);
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.toolbar-overflow-btn:hover,
+.toolbar-overflow-btn.open {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.toolbar-overflow-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--vscode-editorError-foreground, #e51400);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+}
+
 .toolbar-switch-btn {
   display: inline-flex;
   align-items: center;
@@ -814,6 +859,14 @@ body.ac-force-dark {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2px;
+}
+
+/* Right-anchored variant for the overflow kebab (mid-bar); collapses to single column for vertical menu */
+.toolbar-popover--right {
+  left: auto;
+  right: 0;
+  grid-template-columns: 1fr;
+  min-width: 180px;
 }
 
 .toolbar-popover-item {
@@ -6057,6 +6110,7 @@ body.vscode-light .minimap-viewport {
 .toolbar-fab-btn:focus-visible,
 .toolbar-ai-btn:focus-visible,
 .toolbar-theme-btn:focus-visible,
+.toolbar-overflow-btn:focus-visible,
 .toolbar-popover-item:focus-visible,
 .close-btn:focus-visible,
 .popout-btn:focus-visible,

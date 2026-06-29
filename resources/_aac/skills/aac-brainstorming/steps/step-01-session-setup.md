@@ -118,6 +118,7 @@ inputDocuments: []
 session_topic: '[session_topic]'
 session_goals: '[session_goals]'
 selected_approach: ''
+facilitation_mode: '[facilitator|creative_partner|ideate_for_me]'
 techniques_used: []
 ideas_generated: []
 context_file: '[context_file if provided]'
@@ -149,7 +150,24 @@ When user selects approach, append the session overview content directly to `{br
 
 "**Session setup complete!** I have a clear understanding of your goals and can select the perfect techniques for your brainstorming needs.
 
-**Ready to explore technique approaches?**
+**What role do you want me to play in this session?**
+[1] **Facilitator** — I guide you through techniques one prompt at a time. You generate the ideas; I keep the energy and structure.
+[2] **Creative Partner** — We co-create. I generate ideas alongside you, react to your prompts, and we build on each other.
+[3] **Ideate for me** — I run the techniques end-to-end and hand you back a filtered, organized set. You review and decide.
+
+(Enter 1-3 — sets `{facilitation_mode}`. You can switch modes mid-session if you change your mind.)"
+
+**HALT — wait for user selection before proceeding.**
+
+Record the choice as `facilitation_mode` in frontmatter (one of: `facilitator`, `creative_partner`, `ideate_for_me`). The mode shapes Step 3 behaviour:
+
+- **facilitator** — Present prompts one at a time. Capture only the user's responses. Push the user with encouragement and pivots; do not generate ideas yourself.
+- **creative_partner** — Alternate turns. After each user idea, offer one of your own, then ask the user to react. Capture every idea with `by: user|ai` attribution.
+- **ideate_for_me** — Run the technique end-to-end. Present a generated idea batch, ask the user to keep / drop / riff. Capture with `by: ai` unless the user adds their own.
+
+### E.2 Technique Approach
+
+"**Now let's pick how to select techniques for your session:**
 [1] User-Selected Techniques - Browse our complete technique library
 [2] AI-Recommended Techniques - Get customized suggestions based on your goals
 [3] Random Technique Selection - Discover unexpected creative methods
@@ -175,6 +193,8 @@ After user selects approach number:
 - **If 2:** Load `./step-02b-ai-recommended.md`
 - **If 3:** Load `./step-02c-random-selection.md`
 - **If 4:** Load `./step-02d-progressive-flow.md`
+
+The selected `facilitation_mode` carries into Step 3 technique execution — the step files read `{facilitation_mode}` from frontmatter and adapt their turn-taking.
 
 ## SUCCESS METRICS:
 

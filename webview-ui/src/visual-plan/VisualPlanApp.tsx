@@ -65,6 +65,9 @@ export function VisualPlanApp() {
         onComment={(comment) => {
           if (plan) vscode.postMessage({ type: 'visualPlan:comment', planId: plan.id, comment });
         }}
+        onAnswerQuestion={(questionId, answer) => {
+          if (plan) vscode.postMessage({ type: 'visualPlan:answerQuestion', planId: plan.id, questionId, answer });
+        }}
       />
     </div>
   );

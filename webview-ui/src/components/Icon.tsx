@@ -59,9 +59,11 @@ export type IconName =
   | 'chat'            // chat bubble / ask
   | 'sprint'          // kanban board / sprint view
   | 'jira'            // Jira integration
+  | 'more-horizontal' // overflow kebab / ⋯ menu trigger
   | 'trash'           // delete / remove
   | 'package'         // package / repo / module
-  | 'catalogue';      // skill & agent catalogue (was 🗂️)
+  | 'catalogue'       // skill & agent catalogue (was 🗂️)
+  | 'code';           // source code brackets <> (was 💻)
 
 interface IconProps {
   name: IconName;
@@ -438,6 +440,14 @@ const paths: Record<IconName, JSX.Element> = {
       />
     </>
   ),
+  'more-horizontal': (
+    // Three horizontal dots — overflow menu trigger
+    <>
+      <circle cx="6"  cy="12" r="1.6" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.6" fill="currentColor" />
+      <circle cx="18" cy="12" r="1.6" fill="currentColor" />
+    </>
+  ),
   'trash': (
     // Trash can
     <>
@@ -462,6 +472,14 @@ const paths: Record<IconName, JSX.Element> = {
       <rect x="13" y="3" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" strokeWidth="2" />
       <rect x="3" y="13" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" strokeWidth="2" />
       <rect x="13" y="13" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" strokeWidth="2" />
+    </>
+  ),
+  'code': (
+    // Code brackets <>
+    <>
+      <polyline points="16 18 22 12 16 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <polyline points="8 6 2 12 8 18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <line x1="14" y1="4" x2="10" y2="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </>
   ),
 };

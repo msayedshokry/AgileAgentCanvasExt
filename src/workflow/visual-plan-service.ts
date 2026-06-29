@@ -132,6 +132,36 @@ export class VisualPlanService extends EventEmitter {
     return plan;
   }
 
+  /** Answer an open question in the plan's openQuestions section. */
+  async answerQuestion(
+    planId: string,
+    questionId: string,
+    answer: string
+  ): Promise<VisualPlan> {
+    const plan = visualPlanStore.get(planId);
+    if (!plan) throw new Error(`Plan not found: ${planId}`);
+
+    const questionsSection = plan.sections.find(
+      (s): s is { id: string; kind: 'openQuestions'; questions: { id: string; question: string; status?: 'open' | 'answered' | 'blocked'; answer?: string }[] } =>
+        s.kind === 'openQuestions'
+    );
+    if (!questionsSection) {
+      throw new Error(`Plan ${planId} has no openQuestions section`);
+    }
+
+    const question = questionsSection.questions.find(q => q.id === questionId);
+    if (!question) {
+      throw new Error(`Question ${questionId} not found in plan ${planId}`);
+    }
+
+    question.status = 'answered';
+    question.answer = answer;
+    plan.updatedAt = now();
+    await visualPlanStore.save(plan);
+    logger.info('Question answered in plan', { planId, questionId });
+    return plan;
+  }
+
   /** Request changes — sets status to changes-requested. */
   async requestChanges(
     planId: string,
@@ -143,13 +173,17 @@ export class VisualPlanService extends EventEmitter {
       throw new Error(`Plan not in reviewable state: ${plan.status}`);
     }
 
+    const existing = new Set(plan.comments.map(c => `${c.sectionId}::${c.body}`));
     for (const c of changes) {
+      const key = `${c.sectionId}::${c.body}`;
+      if (existing.has(key)) continue;
       plan.comments.push({
         id: `change-${now()}-${Math.random().toString(36).slice(2, 6)}`,
         sectionId: c.sectionId,
         body: c.body,
         createdAt: now(),
       });
+      existing.add(key);
     }
     plan.status = 'changes-requested';
     plan.updatedAt = now();

@@ -1397,12 +1397,18 @@ Amelia (Developer): "See you all when prep work is done. Meeting adjourned!"
 ✅ Retrospective document saved: {implementation_artifacts}/epic-{{epic_number}}-retro-{date}.md
 </output>
 
-<action>Update {sprint_status_file} to mark retrospective as completed</action>
+<action>Update {sprint_status_file} to mark retrospective as completed and append open action items</action>
 
 <action>Load the FULL file: {sprint_status_file}</action>
 <action>Find development_status key "epic-{{epic_number}}-retrospective"</action>
 <action>Verify current status (typically "optional" or "pending")</action>
 <action>Update development_status["epic-{{epic_number}}-retrospective"] = "done"</action>
+
+<action>Collect the action items synthesized in Step 8 (Process Improvements, Technical Debt, Documentation, Team Agreements, plus Epic {{next_epic_num}} Preparation Tasks) into a flat list</action>
+<action>For each action item, assign id "retro-{{epic_number}}-{{n}}" (sequential, 1-based), description from the synthesis, owner from the synthesis, and status "open"</action>
+<action>Append or merge the list as a top-level `action_items:` array on {sprint_status_file} — if the file already has an `action_items:` array, append to it; otherwise create it</action>
+<action>Skip items that are pure critical-path blockers without an owner; those live in the retrospective doc, not the action ledger</action>
+
 <action>Update last_updated field to current date</action>
 <action>Save file, preserving ALL comments and structure including STATUS DEFINITIONS</action>
 
@@ -1412,6 +1418,7 @@ Amelia (Developer): "See you all when prep work is done. Meeting adjourned!"
 
 Retrospective key: epic-{{epic_number}}-retrospective
 Status: {{previous_status}} → done
+Action items appended: {{action_count}} open items under `action_items:`
 </output>
 </check>
 

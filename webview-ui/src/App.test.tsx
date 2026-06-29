@@ -1229,7 +1229,9 @@ describe('App - Toolbar Callbacks', () => {
     it('should post exportArtifacts message', async () => {
       render(<App />);
 
-      const exportBtn = document.querySelector('.toolbar-export-btn') as HTMLElement;
+      // Export now lives behind the overflow kebab
+      fireEvent.click(screen.getByRole('button', { name: /more actions/i }));
+      const exportBtn = screen.getByRole('menuitem', { name: /export/i });
       expect(exportBtn).toBeInTheDocument();
 
       fireEvent.click(exportBtn);
@@ -1242,7 +1244,9 @@ describe('App - Toolbar Callbacks', () => {
     it('should post importArtifacts message', async () => {
       render(<App />);
 
-      const importBtn = document.querySelector('.toolbar-import-btn') as HTMLElement;
+      // Import now lives behind the overflow kebab
+      fireEvent.click(screen.getByRole('button', { name: /more actions/i }));
+      const importBtn = screen.getByRole('menuitem', { name: /import/i });
       expect(importBtn).toBeInTheDocument();
 
       fireEvent.click(importBtn);
@@ -1255,7 +1259,9 @@ describe('App - Toolbar Callbacks', () => {
     it('should open help modal', async () => {
       render(<App />);
 
-      const helpBtn = document.querySelector('.toolbar-help-btn') as HTMLElement;
+      // Help now lives behind the overflow kebab
+      fireEvent.click(screen.getByRole('button', { name: /more actions/i }));
+      const helpBtn = screen.getByRole('menuitem', { name: /help/i });
       expect(helpBtn).toBeInTheDocument();
 
       fireEvent.click(helpBtn);
@@ -1268,8 +1274,9 @@ describe('App - Toolbar Callbacks', () => {
     it('should close help modal', async () => {
       render(<App />);
 
-      const helpBtn = document.querySelector('.toolbar-help-btn') as HTMLElement;
-      fireEvent.click(helpBtn);
+      // Help now lives behind the overflow kebab
+      fireEvent.click(screen.getByRole('button', { name: /more actions/i }));
+      fireEvent.click(screen.getByRole('menuitem', { name: /help/i }));
 
       await waitFor(() => {
         expect(document.querySelector('.help-modal')).toBeInTheDocument();
@@ -1673,8 +1680,9 @@ describe('App - Elicitation, Workflow, Search, and Schema Actions', () => {
     it('should post validateSchemas message', async () => {
       render(<App />);
 
-      // When there are no schema issues, clicking the wrench button validates
-      const validateBtn = document.querySelector('.toolbar-fix-btn') as HTMLElement;
+      // Validate schemas now lives behind the overflow kebab
+      fireEvent.click(screen.getByRole('button', { name: /more actions/i }));
+      const validateBtn = screen.getByRole('menuitem', { name: /validate schemas/i });
       expect(validateBtn).toBeInTheDocument();
 
       fireEvent.click(validateBtn);

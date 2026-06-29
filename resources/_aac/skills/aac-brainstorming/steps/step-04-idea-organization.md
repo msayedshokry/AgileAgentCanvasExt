@@ -30,6 +30,14 @@ Organize all brainstorming ideas into coherent themes, facilitate prioritization
 
 ## IDEA ORGANIZATION SEQUENCE:
 
+This step has three phases. Run them in order:
+
+- **Diverge → Organize (sections 1–3)** — review, cluster, and present themes
+- **Converge (section 4)** — explicitly move from "all ideas" to "shortlist". The user picks the few that matter. This is the gate: until convergence is done, do not move to action plans.
+- **Commit (sections 5–7)** — develop action plans and complete the session
+
+The convergence phase is the deliberate narrowing step. Resist the urge to skip it or jump straight from "lots of ideas" to "next steps." A 100-idea session converges best when the user gets to react, defend, and discard. Prompt them: "From this organized set, which 3-5 ideas would you actually pursue?"
+
 ### 1. Review Creative Output
 
 Begin systematic review of all generated ideas:
@@ -110,9 +118,9 @@ Display systematically organized ideas for user review:
 
 **Which themes or specific ideas stand out to you as most valuable?**"
 
-### 4. Facilitate Prioritization
+### 4. Facilitate Prioritization — **Convergence Phase**
 
-Guide user through strategic prioritization:
+Guide user through strategic prioritization. The job here is to move from "many promising ideas" to "the few we will act on." A clean convergence beats a clever list every time.
 
 **Prioritization Framework:**
 

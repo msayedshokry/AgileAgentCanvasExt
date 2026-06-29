@@ -85,6 +85,38 @@
         },
         "additionalProperties": false
       }
+    },
+    "action_items": {
+      "type": "array",
+      "description": "Open action items appended by retrospectives. Each item carries an id, description, optional owner, and status. sprint-status surfaces 'open' items; sprint-planning preserves the array on regenerate.",
+      "items": {
+        "type": "object",
+        "required": ["id", "description", "status"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Stable id, typically 'retro-{epic}-{n}' or any domain-appropriate key"
+          },
+          "description": {
+            "type": "string",
+            "description": "What needs to happen"
+          },
+          "owner": {
+            "type": "string",
+            "description": "Who owns the action (agent name, role, or person)"
+          },
+          "deadline": {
+            "type": "string",
+            "description": "Optional due date or sprint reference"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["open", "in-progress", "done", "dropped"],
+            "description": "Lifecycle status. 'open' is the default written by retrospectives."
+          }
+        },
+        "additionalProperties": false
+      }
     }
   },
   "additionalProperties": false,
