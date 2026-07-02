@@ -80,6 +80,24 @@ export interface AgentInfo {
     toolCalls: number;
     errors: number;
   };
+  /** Latest verdict read from `<outputFolder>/_terminal-output/<id>-<workflow>-result.json`. */
+  latestVerdict?: {
+    verdict: string;
+    summary?: string;
+    fixRequests?: Array<{ failing_criterion?: string }>;
+    sourcePath: string;
+    readAt: string;
+  };
+  /** Lock age + staleness flag (stale = held > 5min with no live terminal). */
+  lockDetail?: {
+    since: string;
+    ageMs: number;
+    holderAgent?: string;
+    isStale: boolean;
+    activeSession: boolean;
+  };
+  /** Last up to 8 trace entries inline (so the user sees context without opening the trace viewer). */
+  recentTrace?: Array<{ ts: string; type: string; summary: string; isError?: boolean }>;
 }
 
 // ── Detail-panel helpers ────────────────────────────────────────────────────

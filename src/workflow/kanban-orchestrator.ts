@@ -23,7 +23,7 @@ import type { TransitionResult } from './lane-transitions';
 import { concurrencyQueue } from './concurrency-queue';
 import { getKanbanMaxIterations, isApprovalCheckpointEnabled } from './kanban-settings';
 import { harnessEngine } from '../harness/policy-engine';
-import type { KanbanVerdict, KanbanFixRequest } from './kanban-verdict';
+import type { KanbanVerdict, KanbanFixRequest, KanbanVerdictKind } from './kanban-verdict';
 import { circuitBreaker } from './circuit-breaker';
 import { budgetEnforcer } from './budget-enforcer';
 import { autoRetryEngine } from './auto-retry-engine';
@@ -607,10 +607,39 @@ export class KanbanOrchestrator {
       ? ' (No structured verdict was produced. Check the terminal output or trace for details.)'
       : '';
     logger.warn(`[Orchestrator] ${id} stopped: ${detail}${diagnosticHint}`);
+
+    // ponytail: revert the card to the previous column on UNKNOWN/BLOCKED so
+    // the user can re-drag to retry. Without this the card sits silently in
+    // in-progress / review with no path forward and no way to recover
+    // without abandoning the artifact entirely. NEEDS_FIXES is excluded \u2014
+    // the dev loop handles re-implementation via `continue`.
+    let revertMessage = '';
+    const nonSuccessVerdicts: KanbanVerdictKind[] = ['UNKNOWN', 'BLOCKED'];
+    if (verdict && nonSuccessVerdicts.includes(verdict.verdict)) {
+      try {
+        const found = this.store.findArtifactById(id);
+        const current = found?.artifact?.status as string | undefined;
+        const revertTarget =
+          // ponytail: orchestrator now sets 'in-review' (schema-canonical
+          // value) when advancing to the review gate; older on-disk values
+          // may still be the legacy 'review' alias, so revert accepts both.
+          current === 'in-review' || current === 'review' ? 'in-progress' :
+          current === 'in-progress' ? 'ready-for-dev' :
+          null;
+        if (revertTarget && current && found) {
+          await this.setStatus(found.type, id, revertTarget);
+          revertMessage = ` Card reverted to ${revertTarget} \u2014 drag again to retry.`;
+          logger.info(`[Orchestrator] ${id} reverted ${current} \u2192 ${revertTarget}`);
+        }
+      } catch (err) {
+        logger.warn(`[Orchestrator] ${id} revert failed: ${errMsg(err)}`);
+      }
+    }
+
     this.emit(id, 'interrupted');
     try {
       vscode.window.showWarningMessage(
-        `Autonomous run stopped for ${id}: ${detail}${diagnosticHint}`
+        `Autonomous run stopped for ${id}: ${detail}${diagnosticHint}${revertMessage}`
       );
     } catch {
       // window API may be unavailable (e.g. in tests)

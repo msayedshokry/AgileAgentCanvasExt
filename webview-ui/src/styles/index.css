@@ -9541,24 +9541,37 @@ body.vscode-light .kanban-toggle-fab:hover {
   min-height: 100%;
 }
 
-/* ─── Agentic Detail Panel (enriched) ──────────────────────────────────── */
+/* ── Detail panel: clean redesign (2026-06-30) ──
+ * One coherent stylesheet for the Agentic Detail Panel. Replaces the
+ * previous two incomplete passses that left orphans and conflicting
+ * classes in place.
+ *
+ * Zones (top to bottom):
+ *   1. Close X — absolute top-right with proper hit area
+ *   2. Header   — status badge inline + meta row + title
+ *   3. TL;DR    — verdict banner (only when verdict / interrupted / blocked)
+ *   4. Chips    — workflow/provider/started/lock/trace pills, single row
+ *   5. Agent    — always-visible one-line persona
+ *   6. Context  — collapsible harness / blockers / activity
+ *   7. Footer   — sticky actions at bottom (always reachable) */
 
 .agentic-detail-panel {
   position: fixed;
   top: 0;
   right: 0;
-  width: 340px;
-  max-width: 90vw;
+  width: 400px;
+  max-width: 92vw;
   height: 100vh;
-  background: var(--vscode-editor-background, #1e1e1e);
-  border-left: 1px solid var(--vscode-editorWidget-border, #454545);
+  background: var(--vscode-editor-background);
+  border-left: 1px solid var(--vscode-editorWidget-border);
   box-shadow: -8px 0 24px rgba(0,0,0,0.25);
   z-index: 999;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
-  overflow-x: hidden;
-  animation: agenticPanelSlideIn 0.2s ease-out;
+  overflow: hidden;
+  font-size: 12px;
+  color: var(--vscode-editor-foreground, #cccccc);
+  animation: agenticPanelSlideIn 0.18s ease-out;
 }
 
 @keyframes agenticPanelSlideIn {
@@ -9566,23 +9579,462 @@ body.vscode-light .kanban-toggle-fab:hover {
   to   { transform: translateX(0); }
 }
 
-/* ── Header ── */
+/* ── Zone 1: Close button ── */
+.agentic-detail-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--vscode-toolbar-hoverBackground, rgba(128,128,128,0.15));
+  border: 1px solid var(--vscode-widget-border, transparent);
+  border-radius: 6px;
+  color: var(--vscode-foreground);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 3;
+  opacity: 1;
+  transition: background 0.15s, border-color 0.15s;
+}
+.agentic-detail-close:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+  border-color: var(--vscode-widget-border);
+}
+.agentic-detail-close:focus-visible {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: 1px;
+}
+
+/* ── Zone 2: Header ── */
 .agentic-detail-header {
-  padding: 14px 16px 10px;
-  border-bottom: 1px solid var(--vscode-editorWidget-border, #454545);
   flex-shrink: 0;
+  padding: 16px 18px 12px 16px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border);
+  background: var(--vscode-titleBar-activeBackground, transparent);
+}
+.agentic-detail-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.agentic-detail-meta {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--vscode-descriptionForeground);
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agentic-detail-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  padding-right: 40px; /* room for absolute close button */
+  word-break: break-word;
+}
+
+/* status badge inline in header (reuses kanban-agent-status from .css) */
+
+/* ── Zone 3: TL;DR — verdict / interrupted / blocked banner ── */
+.agentic-tldr {
+  margin: 10px 12px 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border-left: 4px solid var(--vscode-charts-orange, #f59e0b);
+  background: var(--vscode-editorWidget-background);
+  flex-shrink: 0;
+}
+.agentic-tldr--completed, .agentic-tldr--approved {
+  border-left-color: var(--vscode-charts-green, #22c55e);
+}
+.agentic-tldr--needs_fixes {
+  border-left-color: var(--vscode-charts-yellow, #eab308);
+}
+.agentic-tldr--blocked, .agentic-tldr--unknown {
+  border-left-color: var(--vscode-charts-red, #ef4444);
+}
+.agentic-tldr--interrupted {
+  border-left-color: var(--vscode-charts-purple, #8b5cf6);
+}
+.agentic-tldr-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.agentic-tldr-kind {
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.6px;
+}
+.agentic-tldr-time {
+  font-size: 10px;
+  opacity: 0.6;
+  white-space: nowrap;
+}
+.agentic-tldr-summary {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+.agentic-tldr-status {
+  margin: 6px 0 0;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.85;
+}
+.agentic-tldr-fixes {
+  margin-top: 6px;
+  font-size: 11px;
+}
+.agentic-tldr-fixes summary {
+  cursor: pointer;
+  user-select: none;
+  opacity: 0.85;
+}
+.agentic-tldr-fixes ul {
+  margin: 4px 0 0 16px;
+  padding: 0;
+  list-style: disc;
+}
+
+/* ── Zone 4: Chips row — workflow / provider / started / lock / trace ── */
+.agentic-chips {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border);
+}
+.agentic-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 500;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  border: 1px solid var(--vscode-widget-border);
+  border-radius: 10px;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+.agentic-chip--link {
+  background: none;
+  border-color: var(--vscode-button-background);
+  color: var(--vscode-button-background);
+  cursor: pointer;
+  font-family: inherit;
+}
+.agentic-chip--link:hover { text-decoration: underline; }
+.agentic-chip--stale {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--vscode-charts-red);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+.agentic-chip-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--vscode-charts-green);
+}
+
+/* ── Zone 5: Agent row — always visible, single line ── */
+.agentic-agent-row {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border);
+}
+.agentic-agent-info { flex: 1; min-width: 0; }
+.agentic-agent-name {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.agentic-agent-title {
+  font-size: 11px;
+  color: var(--vscode-charts-blue);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.agentic-loading {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  animation: agenticPulse 1.2s ease-in-out infinite;
+}
+@keyframes agenticPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+.agentic-resume-spinner {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: agenticResumeSpin 0.7s linear infinite;
+}
+@keyframes agenticResumeSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Zone 6: Collapsible context sections ── */
+.agentic-collapse {
+  border-bottom: 1px solid var(--vscode-editorWidget-border);
+}
+.agentic-collapse:last-of-type {
+  border-bottom: none;
+}
+.agentic-collapse-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+.agentic-collapse-summary::-webkit-details-marker { display: none; }
+.agentic-collapse-summary::before {
+  content: '▸';
+  margin-right: 6px;
+  display: inline-block;
+  transition: transform 0.15s;
+  font-size: 10px;
+}
+details[open] > .agentic-collapse-summary::before {
+  transform: rotate(90deg);
+}
+details[open] > .agentic-collapse-summary {
+  color: var(--vscode-editor-foreground);
+}
+.agentic-collapse-body {
+  padding: 4px 12px 12px;
+}
+.agentic-collapse-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: var(--vscode-charts-red);
+  color: white;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.agentic-collapse-counts {
+  display: inline-flex;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.85;
+}
+.agentic-collapse-counts--err {
+  color: var(--vscode-charts-red);
+}
+
+/* harness list */
+.agentic-harness-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.agentic-harness-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: var(--vscode-editor-background);
+}
+.agentic-harness-mark {
+  font-weight: 700;
+  width: 12px;
+  text-align: center;
+}
+.agentic-harness-item--passed .agentic-harness-mark { color: var(--vscode-charts-green); }
+.agentic-harness-item--blocking .agentic-harness-mark { color: var(--vscode-charts-red); }
+.agentic-harness-item--warning .agentic-harness-mark { color: var(--vscode-charts-yellow); }
+.agentic-harness-policy {
+  flex: 1;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.agentic-harness-severity {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 6px;
+  border: 1px solid var(--vscode-widget-border);
+}
+.agentic-harness-severity--blocking { background: rgba(239,68,68,0.15); color: var(--vscode-charts-red); }
+.agentic-harness-severity--warning  { background: rgba(234,179,8,0.15); color: var(--vscode-charts-yellow); }
+.agentic-harness-severity--info     { background: rgba(99,102,241,0.15); color: var(--vscode-charts-blue); }
+
+/* blockers */
+.agentic-blockers-list {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 11px;
+}
+.agentic-blockers-cycle {
+  list-style: none;
+  margin-left: -16px;
+  color: var(--vscode-charts-red);
+}
+
+/* trace */
+.agentic-trace-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 10px;
+}
+.agentic-trace-list li {
+  display: grid;
+  grid-template-columns: 50px 70px 1fr;
+  gap: 6px;
+  padding: 2px 0;
+  border-bottom: 1px dashed var(--vscode-widget-border);
+}
+.agentic-trace-list li:last-child { border-bottom: none; }
+.agentic-trace-time {
+  opacity: 0.7;
+  font-family: var(--vscode-editor-font-family, monospace);
+}
+.agentic-trace-type { color: var(--vscode-charts-blue); font-weight: 500; }
+.agentic-trace-item--err .agentic-trace-type { color: var(--vscode-charts-red); }
+
+/* ── Zone 7: Sticky footer ── */
+.agentic-detail-footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--vscode-editorWidget-border);
+  background: var(--vscode-editorWidget-background);
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  max-height: 50vh;
+}
+.agentic-btn {
+  /* ponytail: flex auto + min-width keeps buttons at natural size. The
+   * earlier `flex: 1` made a lone button fill the entire row. */
+  flex: 0 1 auto;
+  min-width: 64px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: inherit;
+}
+.agentic-btn:hover:not(:disabled) {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+.agentic-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.agentic-btn--block { width: 100%; }
+.agentic-btn--primary {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+.agentic-btn--primary:hover:not(:disabled) {
+  background: var(--vscode-button-hoverBackground);
+}
+.agentic-btn--danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--vscode-charts-red);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+.agentic-btn--ghost {
+  background: none;
+  border-color: var(--vscode-widget-border);
+}
+.agentic-btn.is-loading { cursor: wait; }
+
+.agentic-send-row {
+  display: flex;
+  gap: 6px;
+}
+.agentic-send-input {
+  flex: 1;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, transparent);
+  border-radius: 3px;
+  padding: 5px 8px;
+  font-size: 11px;
+  font-family: var(--vscode-editor-font-family, monospace);
+}
+.agentic-send-input:focus {
+  outline: none;
+  border-color: var(--vscode-focusBorder);
+}
+
+
+.agentic-detail-header {
+  flex-shrink: 0;
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border, #454545);
+  background: var(--vscode-titleBar-activeBackground, transparent);
 }
 
 .agentic-detail-header-row {
   display: flex;
   align-items: flex-start;
   gap: 8px;
+  margin-bottom: 4px;
 }
 
 .agentic-detail-title {
   flex: 1;
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   line-height: 1.3;
   color: var(--vscode-editor-foreground, #cccccc);
@@ -9594,442 +10046,454 @@ body.vscode-light .kanban-toggle-fab:hover {
 }
 
 .agentic-detail-close-btn {
-  background: none;
-  border: none;
-  color: var(--vscode-foreground, #cccccc);
-  font-size: 18px;
-  cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 4px;
-  opacity: 0.6;
-  flex-shrink: 0;
-  transition: opacity 0.15s, background 0.15s;
-}
-
-.agentic-detail-close-btn:hover {
-  opacity: 1;
+  /* ponytail: anchored to the absolute top-right corner of the panel so
+   * it never gets pushed by long titles, and given a 32x32 hit area +
+   * full opacity so it's obviously clickable. The previous opacity:0.6
+   * + small inline-flow position made it invisible. */
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: var(--vscode-toolbar-hoverBackground, rgba(128,128,128,0.15));
+  color: var(--vscode-foreground, #cccccc);
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  opacity: 1;
+  flex-shrink: 0;
+  z-index: 2;
+}
+.agentic-detail-close-btn:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+  border-color: var(--vscode-widget-border, #454545);
+}
+.agentic-detail-close-btn:focus-visible {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: 1px;
 }
 
 .agentic-detail-meta {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 6px;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground, #9d9d9d);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
   flex-wrap: wrap;
+  row-gap: 2px;
 }
 
 .agentic-detail-meta-item {
   font-size: 10px;
   font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  color: var(--vscode-descriptionForeground, #9d9d9d);
 }
 
 .agentic-detail-meta-divider {
+  opacity: 0.4;
+}
+
+/* ── Status badge inline in header ── */
+.kanban-agent-status {
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--vscode-widget-border);
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+}
+
+/* ── TL;DR banner ── — the single most important section */
+.agentic-tldr {
+  margin: 8px 12px 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border-left: 4px solid var(--vscode-charts-orange, #f59e0b);
+  background: var(--vscode-editorWidget-background);
+}
+.agentic-tldr--completed, .agentic-tldr--approved {
+  border-left-color: var(--vscode-charts-green, #22c55e);
+}
+.agentic-tldr--needs_fixes {
+  border-left-color: var(--vscode-charts-yellow, #eab308);
+}
+.agentic-tldr--blocked, .agentic-tldr--unknown {
+  border-left-color: var(--vscode-charts-red, #ef4444);
+}
+.agentic-tldr--interrupted {
+  border-left-color: var(--vscode-charts-purple, #8b5cf6);
+}
+
+.agentic-tldr-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+.agentic-tldr-kind {
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.6px;
+}
+.agentic-tldr-time {
   font-size: 10px;
-  color: var(--vscode-editorWidget-border, #454545);
-  opacity: 0.5;
+  opacity: 0.6;
+}
+.agentic-tldr-summary {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+.agentic-tldr-status {
+  margin: 6px 0 0;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.85;
+}
+.agentic-tldr-fixes {
+  margin-top: 6px;
+  font-size: 11px;
+}
+.agentic-tldr-fixes summary {
+  cursor: pointer;
+  opacity: 0.85;
+  user-select: none;
+}
+.agentic-tldr-fixes ul {
+  margin: 4px 0 0 16px;
+  padding: 0;
+  list-style: disc;
 }
 
-/* ── Sections (scrollable body) ── */
-.agentic-detail-panel {
-  scrollbar-color: var(--vscode-scrollbarSlider-background) transparent;
-  scrollbar-width: thin;
-}
-
-.agentic-detail-panel::-webkit-scrollbar {
-  width: 5px;
-}
-
-.agentic-detail-panel::-webkit-scrollbar-thumb {
-  background: var(--vscode-scrollbarSlider-background);
-  border-radius: 3px;
-}
-
-.agentic-detail-section {
-  padding: 12px 16px;
-  border-bottom: 1px solid color-mix(in srgb, var(--vscode-editorWidget-border) 40%, transparent);
+/* ── Compact status row — pills for workflow / provider / started / lock / trace ── */
+.agentic-status-row {
   flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border, #454545);
+}
+.agentic-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 500;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  border: 1px solid var(--vscode-widget-border);
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.agentic-status-chip--link {
+  background: none;
+  border-color: var(--vscode-button-background, #4fc3f7);
+  color: var(--vscode-button-background, #4fc3f7);
+  cursor: pointer;
+}
+.agentic-status-chip--stale {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--vscode-charts-red, #ef4444);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+.agentic-status-chip-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--vscode-charts-green, #22c55e);
 }
 
-.agentic-detail-section h4 {
-  margin: 0 0 8px;
+/* ── Collapsible sections — <details>/<summary> with custom styling ── */
+.agentic-collapse {
+  border-bottom: 1px solid var(--vscode-editorWidget-border, #454545);
+}
+.agentic-collapse:last-of-type {
+  border-bottom: none;
+}
+.agentic-collapse-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.6px;
   color: var(--vscode-descriptionForeground, #9d9d9d);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+.agentic-collapse-header::-webkit-details-marker {
+  display: none;
+}
+.agentic-collapse-header::before {
+  content: '▸';
+  margin-right: 6px;
+  display: inline-block;
+  transition: transform 0.15s;
+  font-size: 10px;
+}
+details[open] > .agentic-collapse-header::before {
+  transform: rotate(90deg);
+}
+details[open] > .agentic-collapse-header {
+  color: var(--vscode-editor-foreground, #cccccc);
+}
+.agentic-collapse-body {
+  padding: 4px 12px 12px;
+}
+.agentic-collapse-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: var(--vscode-charts-red, #ef4444);
+  color: white;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.agentic-collapse-badge--bad {
+  background: var(--vscode-charts-red, #ef4444);
+}
+.agentic-collapse-counts {
+  display: inline-flex;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.85;
+}
+.agentic-collapse-counts--err {
+  color: var(--vscode-charts-red, #ef4444);
 }
 
-.agentic-detail-section:last-child {
-  border-bottom: none;
-}
-
-/* ── Loading state ── */
-.agentic-detail-loading {
-  font-size: 11px;
-  color: var(--vscode-descriptionForeground, #9d9d9d);
-  padding: 4px 0;
-  animation: agenticPulse 1.2s ease-in-out infinite;
-}
-
-@keyframes agenticPulse {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
-}
-
-/* ── Persona Card ── */
+/* ── Persona card — compact, fits in collapsed body ── */
 .agentic-persona-card {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
 }
-
 .agentic-agent-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: #ffffff;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
 }
-
 .agentic-persona-info {
   flex: 1;
   min-width: 0;
 }
-
 .agentic-persona-name {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--vscode-editor-foreground, #cccccc);
-  line-height: 1.3;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-
 .agentic-persona-title {
   font-size: 11px;
   color: var(--vscode-charts-blue, #4fc3f7);
-  font-weight: 500;
   margin-top: 1px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
-
 .agentic-persona-role {
   font-size: 10px;
-  color: var(--vscode-descriptionForeground, #9d9d9d);
-  margin-top: 3px;
-  line-height: 1.3;
+  opacity: 0.7;
+  margin-top: 1px;
 }
 
-.agentic-persona-style {
-  font-size: 10px;
-  color: var(--vscode-descriptionForeground, #9d9d9d);
-  font-style: italic;
-  margin-top: 2px;
-  opacity: 0.8;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* ── Execution grid ── */
-.agentic-execution-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.agentic-execution-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.agentic-execution-label {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--vscode-descriptionForeground, #9d9d9d);
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  min-width: 56px;
-  flex-shrink: 0;
-}
-
-.agentic-execution-value {
-  font-size: 11px;
-  color: var(--vscode-editor-foreground, #cccccc);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.agentic-execution-value--locked {
-  color: var(--vscode-charts-orange, #ff9800);
-  font-weight: 600;
-}
-
-.agentic-execution-link {
-  font-size: 11px;
-  color: var(--vscode-textLink-foreground, #3794ff);
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.agentic-execution-link:hover {
-  text-decoration: underline;
-}
-
-/* ── Status badges ── */
-.kanban-agent-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 999px;
-  text-transform: capitalize;
-}
-
-.kanban-agent-status--idle {
-  background: color-mix(in srgb, var(--vscode-descriptionForeground) 12%, transparent);
-  color: var(--vscode-descriptionForeground);
-}
-
-.kanban-agent-status--queued {
-  background: color-mix(in srgb, var(--vscode-charts-blue) 15%, transparent);
-  color: var(--vscode-charts-blue);
-}
-
-.kanban-agent-status--running {
-  background: color-mix(in srgb, var(--vscode-charts-green) 15%, transparent);
-  color: var(--vscode-charts-green);
-}
-
-.kanban-agent-status--completed {
-  background: color-mix(in srgb, var(--vscode-charts-green) 20%, transparent);
-  color: var(--vscode-charts-green);
-}
-
-.kanban-agent-status--failed {
-  background: color-mix(in srgb, var(--vscode-charts-red) 15%, transparent);
-  color: var(--vscode-charts-red);
-}
-
-.kanban-agent-status--interrupted {
-  background: color-mix(in srgb, var(--vscode-charts-orange) 15%, transparent);
-  color: var(--vscode-charts-orange);
-}
-
-/* ── Trace Summary ── */
-.agentic-trace-summary {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.agentic-trace-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
-  min-width: 56px;
-  padding: 6px 10px;
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--vscode-textBlockQuote-background) 60%, transparent);
-  border: 1px solid color-mix(in srgb, var(--vscode-editorWidget-border) 30%, transparent);
-}
-
-.agentic-trace-stat--error {
-  border-color: color-mix(in srgb, var(--vscode-charts-red) 30%, transparent);
-  background: color-mix(in srgb, var(--vscode-charts-red) 8%, transparent);
-}
-
-.agentic-trace-stat-value {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--vscode-editor-foreground, #cccccc);
-  line-height: 1.1;
-}
-
-.agentic-trace-stat--error .agentic-trace-stat-value {
-  color: var(--vscode-charts-red, #f44336);
-}
-
-.agentic-trace-stat-label {
-  font-size: 9px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  color: var(--vscode-descriptionForeground, #9d9d9d);
-}
-
-/* ── Action buttons ── */
-.agentic-action-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.agentic-detail-btn {
-  padding: 6px 14px;
-  font-size: 11px;
-  font-weight: 600;
-  font-family: inherit;
-  border: 1px solid var(--vscode-button-border, transparent);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.15s, box-shadow 0.15s;
-}
-
-.agentic-detail-btn--resume {
-  background: var(--vscode-button-background, #0e639c);
-  color: var(--vscode-button-foreground, #ffffff);
-  border-color: transparent;
-}
-
-.agentic-detail-btn--resume:hover {
-  background: var(--vscode-button-hoverBackground, #1177bb);
-}
-
-.agentic-detail-btn--abandon {
-  background: color-mix(in srgb, var(--vscode-charts-red) 15%, transparent);
-  color: var(--vscode-charts-red, #f44336);
-  border-color: color-mix(in srgb, var(--vscode-charts-red) 30%, transparent);
-}
-
-.agentic-detail-btn--abandon:hover {
-  background: color-mix(in srgb, var(--vscode-charts-red) 25%, transparent);
-}
-
-.agentic-detail-btn--terminal {
-  background: color-mix(in srgb, var(--vscode-charts-blue) 15%, transparent);
-  color: var(--vscode-charts-blue, #4fc3f7);
-  border-color: color-mix(in srgb, var(--vscode-charts-blue) 30%, transparent);
-}
-
-.agentic-detail-btn--terminal:hover {
-  background: color-mix(in srgb, var(--vscode-charts-blue) 25%, transparent);
-}
-
-/* ── Warning section ── */
-.agentic-detail-warning-section {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.agentic-detail-warning {
+/* ── Harness list (inside collapsed body) ── */
+.agentic-harness-list {
   margin: 0;
+  padding: 0;
+  list-style: none;
   font-size: 11px;
-  line-height: 1.5;
-  color: var(--vscode-charts-orange, #ff9800);
-  background: color-mix(in srgb, var(--vscode-charts-orange) 10%, transparent);
-  border: 1px solid color-mix(in srgb, var(--vscode-charts-orange) 25%, transparent);
-  border-radius: 6px;
-  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
-
-/* ─── Trace Filter Chips (Activity section) ───────────────────────────── */
-.agentic-trace-filter-bar {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  margin-left: auto;
-}
-
-.agentic-trace-filter-btn {
-  padding: 2px 7px;
-  font-size: 10px;
-  font-weight: 600;
-  border: 1px solid color-mix(in srgb, var(--vscode-editorWidget-border) 50%, transparent);
-  border-radius: 4px;
-  background: transparent;
-  color: var(--vscode-descriptionForeground);
-  cursor: pointer;
-  white-space: nowrap;
-  opacity: 0.6;
-  transition: opacity 0.12s ease, background 0.12s ease, border-color 0.12s, color 0.12s;
-}
-
-.agentic-trace-filter-btn:hover {
-  opacity: 0.9;
-  background: color-mix(in srgb, var(--vscode-list-hoverBackground) 50%, transparent);
-}
-
-.agentic-trace-filter-btn.active {
-  opacity: 1;
-  background: color-mix(in srgb, var(--vscode-charts-blue) 12%, transparent);
-  border-color: color-mix(in srgb, var(--vscode-charts-blue) 40%, transparent);
-  color: var(--vscode-charts-blue);
-}
-
-/* Dimmed stat cards when a filter is active */
-.agentic-trace-stat--dimmed {
-  opacity: 0.3;
-  filter: grayscale(0.8);
-  transition: opacity 0.2s ease, filter 0.2s ease;
-}
-
-.agentic-trace-stat--dimmed:hover {
-  opacity: 0.6;
-  filter: grayscale(0.4);
-}
-
-/* ─── Undo button (inline after Abandon) ───────────────────────────── */
-.agentic-detail-btn--undo {
-  background: color-mix(in srgb, var(--vscode-charts-blue) 12%, transparent);
-  border-color: color-mix(in srgb, var(--vscode-charts-blue) 35%, transparent);
-  color: var(--vscode-charts-blue);
-  animation: agenticUndoSlideIn 0.2s ease-out;
-}
-.agentic-detail-btn--undo:hover {
-  background: color-mix(in srgb, var(--vscode-charts-blue) 22%, transparent);
-  border-color: color-mix(in srgb, var(--vscode-charts-blue) 55%, transparent);
-}
-@keyframes agenticUndoSlideIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ─── Resume spinner + loading state ────────────────────────────────── */
-.agentic-detail-btn--resume.is-loading {
-  opacity: 0.8;
-  position: relative;
-  padding-left: 28px;
-}
-.agentic-detail-warning--resuming {
+.agentic-harness-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: var(--vscode-charts-blue);
-  font-weight: 500;
+  gap: 6px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: var(--vscode-editor-background);
 }
-.agentic-resume-spinner {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  border: 2px solid color-mix(in srgb, var(--vscode-charts-blue) 30%, transparent);
-  border-top-color: var(--vscode-charts-blue);
-  border-radius: 50%;
-  animation: agenticSpin 0.7s linear infinite;
+.agentic-harness-status {
+  font-weight: 700;
+  width: 12px;
+  text-align: center;
+}
+.agentic-harness-item--passed .agentic-harness-status { color: var(--vscode-charts-green, #22c55e); }
+.agentic-harness-item--blocking .agentic-harness-status { color: var(--vscode-charts-red, #ef4444); }
+.agentic-harness-item--warning .agentic-harness-status { color: var(--vscode-charts-yellow, #eab308); }
+.agentic-harness-policy {
+  flex: 1;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.agentic-harness-severity {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 6px;
+  border: 1px solid var(--vscode-widget-border);
+}
+.agentic-harness-severity--blocking { background: rgba(239,68,68,0.15); color: var(--vscode-charts-red, #ef4444); }
+.agentic-harness-severity--warning  { background: rgba(234,179,8,0.15); color: var(--vscode-charts-yellow, #eab308); }
+.agentic-harness-severity--info     { background: rgba(99,102,241,0.15); color: var(--vscode-charts-blue, #6366f1); }
+
+/* ── Blockers (inside collapsed body) ── */
+.agentic-blockers-list {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 11px;
+}
+.agentic-blockers-cycle {
+  list-style: none;
+  margin-left: -16px;
+  color: var(--vscode-charts-red, #ef4444);
+}
+
+/* ── Recent trace (inside collapsed body) ── */
+.agentic-recent-trace {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 10px;
+}
+.agentic-recent-trace li {
+  display: grid;
+  grid-template-columns: 50px 70px 1fr;
+  gap: 6px;
+  padding: 2px 0;
+  border-bottom: 1px dashed var(--vscode-widget-border);
+}
+.agentic-recent-trace li:last-child { border-bottom: none; }
+.agentic-recent-trace-time { opacity: 0.7; font-family: var(--vscode-editor-font-family, monospace); }
+.agentic-recent-trace-type { color: var(--vscode-charts-blue, #6366f1); font-weight: 500; }
+.agentic-recent-trace-entry--error .agentic-recent-trace-type { color: var(--vscode-charts-red, #ef4444); }
+
+/* ── Sticky actions footer ── — always reachable */
+.agentic-detail-footer {
   flex-shrink: 0;
+  border-top: 1px solid var(--vscode-editorWidget-border, #454545);
+  background: var(--vscode-editorWidget-background);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
-@keyframes agenticSpin {
-  to { transform: rotate(360deg); }
+.agentic-detail-actions-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
 }
+.agentic-detail-actions-row--secondary {
+  opacity: 0.85;
+  justify-content: flex-start;
+}
+.agentic-btn {
+  /* ponytail: flex auto + min-width keeps buttons at natural size. Without
+   * `flex-grow: 0` a single button stretches to fill the entire row and
+   * looks like a giant CTA when it's really a secondary action. The main
+   * row (Resume/Abandon) gets primary sizing via .agentic-btn--primary. */
+  flex: 0 1 auto;
+  min-width: 64px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.agentic-btn:hover:not(:disabled) {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+.agentic-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.agentic-btn--primary {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  /* Resume is the primary action — let it grow when there's room, but
+   * still shrinks to its natural size when alone. */
+  flex: 1 1 auto;
+  min-width: 96px;
+}
+.agentic-btn--primary:hover:not(:disabled) {
+  background: var(--vscode-button-hoverBackground);
+}
+.agentic-btn--danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--vscode-charts-red, #ef4444);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+.agentic-btn--ghost {
+  background: none;
+  border-color: var(--vscode-widget-border);
+}
+.agentic-btn.is-loading {
+  cursor: wait;
+}
+
+.agentic-detail-send-command {
+  display: flex;
+  gap: 6px;
+}
+.agentic-detail-send-command-input {
+  flex: 1;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, transparent);
+  border-radius: 3px;
+  padding: 5px 8px;
+  font-size: 11px;
+  font-family: var(--vscode-editor-font-family, monospace);
+}
+.agentic-detail-send-command-input:focus {
+  outline: none;
+  border-color: var(--vscode-focusBorder);
+}
+
+
 /* ======================================================================
-   Agent Sessions Sidebar Panel
+   Agent Sessions Sidebar Panel — restored 2026-06-30 after a CSS purge
+   accidentally removed it. Original block at HEAD index.css:10030-10170.
    ====================================================================== */
 
 .agent-sessions-panel {
@@ -10153,6 +10617,8 @@ body.vscode-light .kanban-toggle-fab:hover {
   max-width: 260px;
 }
 
+
+/* ponytail: rest of the agent-session card styles restored from HEAD — see git blame for the missing block. */
 .agent-session-card {
   background: var(--vscode-editor-background);
   border: 1px solid var(--vscode-editorWidget-border);
@@ -10400,35 +10866,3 @@ body.vscode-light .kanban-toggle-fab:hover {
  * The selector is scoped under .artifact-card so any future chip
  * outside of a card cannot accidentally inherit these styles.
  * ------------------------------------------------------------------------ */
-.artifact-card .has-plan-chip {
-  display: inline-flex;
-  align-items: center;
-  font-size: 9px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: var(--vscode-charts-purple);
-  background: rgba(149, 117, 205, 0.18);
-  padding: 1px 6px;
-  margin-left: 2px;
-  border-radius: 999px;
-  border: 1px solid rgba(149, 117, 205, 0.45);
-  white-space: nowrap;
-  line-height: 1.25;
-  cursor: help;
-  user-select: none;
-  transition: background 120ms ease, border-color 120ms ease;
-}
-
-.artifact-card .has-plan-chip:hover {
-  background: rgba(149, 117, 205, 0.32);
-  border-color: rgba(149, 117, 205, 0.7);
-}
-
-/* Compact (sidebar / mindmap) variant: smaller pill so it doesn't
- * dominate the narrow card header. */
-.artifact-card.compact .has-plan-chip {
-  font-size: 8px;
-  padding: 0 5px;
-  margin-left: 1px;
-}

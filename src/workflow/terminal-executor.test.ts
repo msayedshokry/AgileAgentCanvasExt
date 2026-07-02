@@ -22,6 +22,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { PONYTAIL_HEURISTICS } from '../chat/ponytail-heuristics';
+import { captureWorkspaceSnapshot, diffWorkspaceSnapshots } from './terminal-executor';
 
 // ── Module mocks ─────────────────────────────────────────────────────────────
 
@@ -101,32 +102,58 @@ const SAMPLE_ARTIFACT = {
 const SAMPLE_OUTPUT_FOLDER = '/workspace/.agileagentcanvas-context';
 
 describe('buildTerminalPrompt — BMAD framing regression', () => {
-    it('starts with the BMAD terminal-agent role sentence (no regression)', () => {
+    // ponytail: every test in this block exists because users kept hitting
+    // "card stuck at in-progress" because the agent treated the verdict
+    // JSON write as busywork instead of as the core deliverable. The fix
+    // is structural — the verdict contract must be the FIRST instruction
+    // the model sees, before the BMAD narrative overloads the context.
+    // These tests pin that ordering.
+
+    it('verdict contract appears in the FIRST 500 characters (model sees it on first read)', () => {
         const prompt = buildTerminalPrompt(
             'dev-story',
             SAMPLE_ARTIFACT,
             SAMPLE_OUTPUT_FOLDER,
         );
-
-        expect(prompt).toContain(
-            'You are executing a BMAD methodology workflow as a headless terminal agent',
-        );
+        const head = prompt.slice(0, 500);
+        expect(head).toMatch(/verdict/);
+        expect(head).toMatch(/MUST/);
     });
 
-    it('sections the prompt with the canonical BMAD headers', () => {
+    it('places the verdict contract BEFORE the BMAD workflow narrative', () => {
         const prompt = buildTerminalPrompt(
             'dev-story',
             SAMPLE_ARTIFACT,
             SAMPLE_OUTPUT_FOLDER,
         );
+        const verdictIdx = prompt.indexOf('verdict contract');
+        const bmadIdx = prompt.indexOf('You are executing a BMAD methodology workflow');
+        // ponytail: if either index is -1 the test fails — both must be present.
+        expect(verdictIdx).toBeGreaterThan(-1);
+        expect(bmadIdx).toBeGreaterThan(-1);
+        expect(verdictIdx).toBeLessThan(bmadIdx);
+    });
 
-        // Stable substrings — drop the em-dash literal so a future
-        // em-dash → en-dash refactor doesn't break the contract test.
+    it('the verdict file path appears in the first 500 chars (model can see it immediately)', () => {
+        const prompt = buildTerminalPrompt(
+            'dev-story',
+            SAMPLE_ARTIFACT,
+            SAMPLE_OUTPUT_FOLDER,
+        );
+        const head = prompt.slice(0, 500);
+        // The path includes the sanitized artifactId + workflowId.
+        expect(head).toContain('STORY-1-1-dev-story-result.json');
+    });
+
+    it('sections the prompt with the canonical BMAD headers (no regression)', () => {
+        const prompt = buildTerminalPrompt(
+            'dev-story',
+            SAMPLE_ARTIFACT,
+            SAMPLE_OUTPUT_FOLDER,
+        );
         expect(prompt).toContain('## Workflow');
         expect(prompt).toContain('## Artifact Context');
         expect(prompt).toContain('## Instructions');
-        expect(prompt).toContain('## Important');
-        expect(prompt).toContain('verdict contract');
         expect(prompt).toContain('verdict');
     });
 
@@ -360,3 +387,125 @@ describe('TerminalExecutor — VS Code terminal race guard (structural)', () => 
         ).toBeLessThan(sendTextIdx);
     });
 });
+
+// ─── Synthetic verdict from workspace file diff ─────────────────────────────────────
+// ponytail: regression for "agent ran but never wrote verdict JSON" → the
+// orchestrator used to leave the card wedged in in-progress forever. Now
+// executeAndAwaitVerdict observes file-system state and synthesizes
+// COMPLETED from a real file diff. Asserts both directions.
+
+import { mkdtempSync, writeFileSync, utimesSync, rmSync, mkdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+describe('synthetic verdict from workspace file diff', () => {
+    function setupFs() {
+        const dir = mkdtempSync(join(tmpdir(), 'aac-synth-'));
+        writeFileSync(join(dir, 'src.ts'), '// original\n');
+        writeFileSync(join(dir, 'README.md'), '# hi\n');
+        mkdirSync(join(dir, 'node_modules'), { recursive: true });
+        writeFileSync(join(dir, 'node_modules', 'pkg.js'), '// noise\n');
+        mkdirSync(join(dir, '.git'), { recursive: true });
+        writeFileSync(join(dir, '.git', 'HEAD'), 'noise\n');
+        mkdirSync(join(dir, '.vscode'), { recursive: true });
+        writeFileSync(join(dir, '.vscode', 'settings.json'), 'noise\n');
+        return dir;
+    }
+
+    it('ignores noise directories (.git, node_modules, .vscode)', () => {
+        const dir = setupFs();
+        try {
+            const before = captureWorkspaceSnapshot(dir);
+            utimesSync(join(dir, '.vscode', 'settings.json'), new Date(), new Date());
+            const after = captureWorkspaceSnapshot(dir);
+            const changed = diffWorkspaceSnapshots(before, after);
+            expect(changed).toEqual([]);
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
+    });
+
+    it('flags modified source files as work-done', () => {
+        const dir = setupFs();
+        try {
+            const before = captureWorkspaceSnapshot(dir);
+            writeFileSync(join(dir, 'src.ts'), '// edited by agent\n');
+            const after = captureWorkspaceSnapshot(dir);
+            const changed = diffWorkspaceSnapshots(before, after);
+            expect(changed).toContain('src.ts');
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
+    });
+
+    it('flags new files as work-done', () => {
+        const dir = setupFs();
+        try {
+            const before = captureWorkspaceSnapshot(dir);
+            writeFileSync(join(dir, 'new-file.ts'), 'created\n');
+            const after = captureWorkspaceSnapshot(dir);
+            const changed = diffWorkspaceSnapshots(before, after);
+            expect(changed).toContain('new-file.ts');
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
+    });
+
+    it('flags deleted files as work-done', () => {
+        const dir = setupFs();
+        try {
+            const before = captureWorkspaceSnapshot(dir);
+            rmSync(join(dir, 'README.md'));
+            const after = captureWorkspaceSnapshot(dir);
+            const changed = diffWorkspaceSnapshots(before, after);
+            expect(changed).toContain('README.md');
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
+    });
+
+    // ponytail: regression for the user's "card wedged because synth fired
+    // on tracker noise" bug. Extension rewrites concurrency-queue-state,
+    // terminal-sessions, and trace buffers every time any agent runs — those
+    // changes are NOT the agent's work and must be excluded from the synth.
+    it('excludes extension internal state (.agileagentcanvas-context/concurrency-queue-state.json, terminal-sessions.json, traces/)', () => {
+        const dir = mkdtempSync(join(tmpdir(), 'aac-synth-internal-'));
+        try {
+            // Baseline with user epics + extension trackers
+            mkdirSync(join(dir, '.agileagentcanvas-context', 'traces'), { recursive: true });
+            mkdirSync(join(dir, '.agileagentcanvas-context', 'epics', 'epic-1', 'stories'), { recursive: true });
+            writeFileSync(join(dir, '.agileagentcanvas-context', 'concurrency-queue-state.json'), '[]\n');
+            writeFileSync(join(dir, '.agileagentcanvas-context', 'terminal-sessions.json'), '[]\n');
+            writeFileSync(join(dir, '.agileagentcanvas-context', 'traces', 'harness.jsonl'), '\n');
+            writeFileSync(join(dir, '.agileagentcanvas-context', 'epics', 'epic-1', 'stories', '1.1.json'), '{}');
+            writeFileSync(join(dir, 'src.ts'), '// original\n');
+
+            const before = captureWorkspaceSnapshot(dir);
+
+            // Touch extension trackers — should NOT count as work-done
+            const t1 = new Date();
+            utimesSync(join(dir, '.agileagentcanvas-context', 'concurrency-queue-state.json'), t1, t1);
+            utimesSync(join(dir, '.agileagentcanvas-context', 'terminal-sessions.json'), t1, t1);
+            utimesSync(join(dir, '.agileagentcanvas-context', 'traces', 'harness.jsonl'), t1, t1);
+            // Touch a USER story file — SHOULD count as work-done
+            writeFileSync(join(dir, '.agileagentcanvas-context', 'epics', 'epic-1', 'stories', '1.1.json'), '{"status":"in-progress"}');
+            // Touch a source file — SHOULD count as work-done. Force a
+            // distinct mtime so the diff isn't lost to filesystem mtime
+            // granularity (Windows FAT/NTFS sometimes hashes to the same
+            // second when writes land in the same tick).
+            utimesSync(join(dir, 'src.ts'), new Date(Date.now() + 5_000), new Date(Date.now() + 5_000));
+
+            const after = captureWorkspaceSnapshot(dir);
+            const changed = diffWorkspaceSnapshots(before, after);
+            expect(changed).not.toContain('.agileagentcanvas-context/concurrency-queue-state.json');
+            expect(changed).not.toContain('.agileagentcanvas-context/terminal-sessions.json');
+            expect(changed.every(f => !f.startsWith('.agileagentcanvas-context/traces/'))).toBe(true);
+            expect(changed).toContain('.agileagentcanvas-context/epics/epic-1/stories/1.1.json');
+            expect(changed).toContain('src.ts');
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
+    });
+});
+
+

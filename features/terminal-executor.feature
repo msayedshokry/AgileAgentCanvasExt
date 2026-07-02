@@ -93,8 +93,9 @@ Feature: Terminal Executor - Windows Shell Compatibility and Headless CLI Flags
     And the sent command should contain "$null |"
     And the sent command should contain "claude"
     And the sent command should contain "--permission-mode"
-    And the sent command should contain "acceptEdits"
-    And the sent command should contain "--output-format"
+    And the sent command should contain "bypassPermissions"
+    And the sent command should contain "--dangerously-skip-permissions"
+    And the sent command should not contain "--output-format"
     And the sent command should not contain "<"
     And the sent command should not contain "Get-Content"
     And the sent command should not contain "--bare"
@@ -152,7 +153,7 @@ Feature: Terminal Executor - Windows Shell Compatibility and Headless CLI Flags
     And the sent command should start with "opencode"
     And the sent command should contain "run"
     And the sent command should contain "--model"
-    And the sent command should contain "--format"
+    And the sent command should not contain "--format"
     And the sent command should contain "< /dev/null"
     And the sent command should not contain "Get-Content"
 
@@ -164,12 +165,11 @@ Feature: Terminal Executor - Windows Shell Compatibility and Headless CLI Flags
     Then sendText should have been called
     And the sent command should start with "pi"
     And the sent command should contain "--no-session"
-    And the sent command should contain "--mode"
-    And the sent command should contain "json"
     And the sent command should contain "--approve"
     And the sent command should contain "-p"
     And the sent command should contain "< /dev/null"
     And the sent command should not contain "Get-Content"
+    And the sent command should not contain "--mode"
 
   # ─── Short Prompt ────────────────────────────────────────────────────────
 

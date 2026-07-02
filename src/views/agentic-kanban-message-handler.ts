@@ -18,6 +18,7 @@ import { setKanbanAutoAdvance, isKanbanAutoAdvanceEnabled, getKanbanWipLimits } 
 import { schedulerWebviewControls, MSG_SCHEDULER_STATE } from '../workflow/scheduler-webview-controls';
 import { goalDecomposer } from '../workflow/goal-decomposer';
 import { visualPlanService } from '../workflow/visual-plan-service';
+import { readVerdictFile, resultFilePath, getOutputFolder } from '../workflow/kanban-verdict';
 import { visualPlanStore } from '../state/visual-plan-store';
 import { getSelectedProvider, openChatWithResult } from '../commands/chat-bridge';
 import { isVisualPlanEnabled, VISUAL_PLAN_DISABLED_MESSAGE } from '../utils/visual-plan-config';
@@ -715,6 +716,34 @@ export async function handleAgenticKanbanMessage(
       return true;
     }
 
+    case 'kanban:terminalSubscribe': {
+      // ponytail: live-strip subscription. Same streaming plumbing as
+      // kanban:jumpToTerminal but DOES NOT focus the VS Code terminal,
+      // so the bottom strip can watch multiple agents in parallel.
+      const { artifactId: subId } = message;
+      disposeTerminalStream(subId);
+      const snapshot = terminalExecutor.getTerminalOutput(subId);
+      if (webview) {
+        webview.postMessage({ type: 'terminalOutput', artifactId: subId, data: snapshot });
+      }
+      terminalStreamDisposables.set(subId, terminalExecutor.attachWebviewStream(subId, (chunk: string) => {
+        if (webview) {
+          try {
+            webview.postMessage({ type: 'terminalOutputAppend', artifactId: subId, data: chunk });
+          } catch { disposeTerminalStream(subId); }
+        } else { disposeTerminalStream(subId); }
+      }));
+      return true;
+    }
+
+    case 'kanban:terminalUnsubscribe': {
+      // ponytail: counterpart — called when a session ends or the strip
+      // drops an artifact. Clears the backend listener so we don't leak
+      // subscribers across runs.
+      disposeTerminalStream(message.artifactId);
+      return true;
+    }
+
     case 'kanban:jumpToTerminal': {
       const { artifactId: jumpId } = message;
 
@@ -877,8 +906,9 @@ export async function handleAgenticKanbanMessage(
           }
         : undefined;
 
-      // 3) Trace summary counts: how many decisions, tool calls, errors?
+      // 3) Trace summary + RECENT entries (inline for the detail panel)
       let traceSummary: { decisions: number; toolCalls: number; errors: number } | undefined;
+      let recentTrace: Array<{ ts: string; type: string; summary: string; isError?: boolean }> | undefined;
       try {
         const sid = session?.sessionId;
         if (sid) {
@@ -888,9 +918,80 @@ export async function handleAgenticKanbanMessage(
             toolCalls: entries.filter(e => e.type === 'tool_call').length,
             errors: entries.filter(e => e.type === 'error').length,
           };
+          // ponytail: cap inline trace at 8 entries — the panel is a summary,
+          // the full trace viewer is one click away.
+          recentTrace = entries.slice(-8).map(e => {
+            const summary =
+              e.data?.decision ||
+              e.data?.error ||
+              e.data?.toolName ||
+              e.data?.changeSummary ||
+              (e.data?.handoffFrom ? `handoff ${e.data.handoffFrom} → ${e.data.handoffTo}` : '');
+            return {
+              ts: e.timestamp,
+              type: e.type,
+              summary,
+              isError: e.type === 'error',
+            };
+          });
         }
       } catch {
         // Trace recorder may not have data for this session
+      }
+
+      // 4) Latest verdict from the result file (writes only happen on a
+      // successful poll, so this is the deterministic "what did the agent
+      // conclude" signal that the detail panel was missing).
+      let latestVerdict:
+        | { verdict: string; summary?: string; fixRequests?: Array<{ failing_criterion?: string }>; sourcePath: string; readAt: string }
+        | undefined;
+      try {
+        if (session?.workflowId) {
+          const resultPath = resultFilePath(getOutputFolder(), artifactId, session.workflowId);
+          const v = readVerdictFile(resultPath);
+          if (v) {
+            latestVerdict = {
+              verdict: v.verdict,
+              summary: v.summary,
+              fixRequests: v.fixRequests,
+              sourcePath: resultPath,
+              readAt: new Date().toISOString(),
+            };
+          }
+        }
+      } catch {
+        // verdict file is optional — absence is not an error
+      }
+
+      // 5) Lock detail + staleness. The user's most common confusion is
+      // "card sits in in-progress forever" — that's almost always a stale
+      // lock after the agent terminal died. Surface the age and whether
+      // the holding terminal is still alive.
+      let lockDetail:
+        | { since: string; ageMs: number; holderAgent?: string; isStale: boolean; activeSession: boolean }
+        | undefined;
+      try {
+        const lock = concurrencyQueue.getLock(artifactId);
+        if (lock) {
+          const sinceIso = lock.lockedAt instanceof Date ? lock.lockedAt.toISOString() : String(lock.lockedAt);
+          const sinceMs = new Date(sinceIso).getTime();
+          const ageMs = Math.max(0, Date.now() - (isFinite(sinceMs) ? sinceMs : Date.now()));
+          // ponytail: "active" means the live terminal session currently owns
+          // the same artifactId — lock.workflowId doesn't exist on LockEntry,
+          // so we infer from the session instead.
+          const activeSession = !!session;
+          // Stale = lock older than 5min AND no live terminal holding it.
+          // 5min is generous — normal dev-story runs finish in <90s.
+          lockDetail = {
+            since: sinceIso,
+            ageMs,
+            holderAgent: lock.agentName,
+            isStale: ageMs > 5 * 60_000 && !activeSession,
+            activeSession,
+          };
+        }
+      } catch {
+        // Concurrency queue may not expose a getter in every build
       }
 
       if (webview) {
@@ -900,6 +1001,9 @@ export async function handleAgenticKanbanMessage(
           persona,
           terminalInfo,
           traceSummary,
+          latestVerdict,
+          lockDetail,
+          recentTrace,
         });
       }
       return true;

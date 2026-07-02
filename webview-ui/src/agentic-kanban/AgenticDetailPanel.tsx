@@ -4,7 +4,6 @@ import { vscode } from '../vscodeApi';
 import { useEvent } from './useEvent';
 import {
   AgentInfo,
-  TraceFilter,
   getInterruptionMessage,
   getAvatarColor,
   getInitials,
@@ -71,7 +70,6 @@ export function AgenticDetailPanel({
     const cached = infoCache?.current.get(item.id);
     return !(cached && cached.status === item.status);
   });
-  const [traceFilter, setTraceFilter] = useState<TraceFilter>('all');
   const [pendingUndoArtifact, setPendingUndoArtifact] = useState<{ artifactId: string; sessionId?: string } | null>(null);
   // P1 #4: quick command input for sending one-liners to the agent's pty
   const [sendCommand, setSendCommand] = useState('');
@@ -187,14 +185,20 @@ export function AgenticDetailPanel({
   const persona = agentInfo?.persona;
   const terminalInfo = agentInfo?.terminalInfo;
   const traceSummary = agentInfo?.traceSummary;
+  const latestVerdict = agentInfo?.latestVerdict;
+  const lockDetail = agentInfo?.lockDetail;
+  const recentTrace = agentInfo?.recentTrace;
+  const harnessResults = item.harnessResults ?? [];
 
   const agentDisplayName =
     persona?.name || terminalInfo?.agentRole || item.agentState?.agentRole || 'Agent';
   const agentTitle = persona?.title || terminalInfo?.workflowId || '';
   const agentIcon = persona?.icon || '';
 
-  const hasRunAction = isInterrupted || hasTerminal || !!terminalInfo || hasPendingUndo;
   const isRunning = item.agentState?.status === 'running';
+  const hasHarnessFailures = harnessResults.some(r => !r.passed && r.severity === 'blocking');
+  const hasAnyHarnessResults = harnessResults.length > 0;
+  const hasBlockers = (item.blockedBy ?? 0) > 0 || !!item.hasCycle;
 
   const formatTime = (iso: string) => {
     try {
@@ -205,254 +209,261 @@ export function AgenticDetailPanel({
     }
   };
 
+  const formatDuration = (ms: number) => {
+    const s = Math.floor(ms / 1000);
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m}m ${s % 60}s`;
+    const h = Math.floor(m / 60);
+    return `${h}h ${m % 60}m`;
+  };
+
+  // ponytail: panel-local UI state. Most context (harness, blockers,
+  // activity) is collapsible so the user can answer the common
+  // "why is this card stuck?" question without scrolling. Verdict +
+  // status badges + Agent info are always visible.
+  const [showHarness, setShowHarness] = useState(hasHarnessFailures);
+  const [showBlockers, setShowBlockers] = useState(false);
+  const [showTrace, setShowTrace] = useState(false);
+
   return (
     <div className="agentic-detail-panel">
-      {/* ── Header ── */}
+      {/* ponytail: close button anchored top-right with a 32x32 hit area
+       * and full opacity. The previous inline-flow X with opacity:0.6 was
+       * easy to miss. */}
+      <button
+        onClick={onClose}
+        aria-label="Close detail panel"
+        className="agentic-detail-close"
+        title="Close (Esc)"
+      >
+        ×
+      </button>
+
+      {/* ── Header: status + meta + title ── */}
       <header className="agentic-detail-header">
-        <div className="agentic-detail-header-row">
-          <h3 className="agentic-detail-title">{item.title}</h3>
-          <button onClick={onClose} aria-label="Close" className="agentic-detail-close-btn">&times;</button>
+        <div className="agentic-detail-status-row">
+          <StatusBadge status={status} />
+          <span className="agentic-detail-meta">
+            {item.type} · {item.id}
+            {item.epicKey ? ` · ${item.epicKey}` : ''}
+          </span>
         </div>
-        <div className="agentic-detail-meta">
-          <span className="agentic-detail-meta-item">{item.type}</span>
-          <span className="agentic-detail-meta-divider">|</span>
-          <span className="agentic-detail-meta-item">{item.id}</span>
-          {item.epicKey && (
-            <>
-              <span className="agentic-detail-meta-divider">|</span>
-              <span className="agentic-detail-meta-item">{item.epicKey}</span>
-            </>
-          )}
-        </div>
+        <h3 className="agentic-detail-title">{item.title}</h3>
       </header>
 
-      {/* ── Agent Persona ── */}
-      <section className="agentic-detail-section agentic-detail-persona">
-        <h4>Agent</h4>
-        {loadingInfo && !agentInfo ? (
-          <div className="agentic-detail-loading">Loading agent info…</div>
-        ) : (
-          <div className="agentic-persona-card">
-            <AgentAvatar name={agentDisplayName} icon={agentIcon} />
-            <div className="agentic-persona-info">
-              <div className="agentic-persona-name">{agentDisplayName}</div>
-              {agentTitle && <div className="agentic-persona-title">{agentTitle}</div>}
-              {persona?.role && <div className="agentic-persona-role">{persona.role}</div>}
-              {persona?.communicationStyle && (
-                <div className="agentic-persona-style">{persona.communicationStyle}</div>
-              )}
-            </div>
+      {/* ── TL;DR — the answer to "why is this card here?" ── */}
+      {latestVerdict ? (
+        <section className={`agentic-tldr agentic-tldr--${latestVerdict.verdict.toLowerCase()}`}>
+          <div className="agentic-tldr-head">
+            <span className="agentic-tldr-kind">{latestVerdict.verdict}</span>
+            <span className="agentic-tldr-time">{formatTime(latestVerdict.readAt)}</span>
           </div>
-        )}
-      </section>
-
-      {/* ── Execution Status ── */}
-      <section className="agentic-detail-section agentic-detail-execution">
-        <h4>Execution</h4>
-        <div className="agentic-execution-grid">
-          <div className="agentic-execution-item">
-            <span className="agentic-execution-label">Status</span>
-            <StatusBadge status={status} />
-          </div>
-          {terminalInfo?.workflowId && (
-            <div className="agentic-execution-item">
-              <span className="agentic-execution-label">Workflow</span>
-              <span className="agentic-execution-value">{terminalInfo.workflowId}</span>
-            </div>
+          {latestVerdict.summary && (
+            <p className="agentic-tldr-summary">{latestVerdict.summary}</p>
           )}
-          {terminalInfo?.startedAt && (
-            <div className="agentic-execution-item">
-              <span className="agentic-execution-label">Started</span>
-              <span className="agentic-execution-value">{formatTime(terminalInfo.startedAt)}</span>
-            </div>
+          {latestVerdict.fixRequests && latestVerdict.fixRequests.length > 0 && (
+            <details className="agentic-tldr-fixes">
+              <summary>{latestVerdict.fixRequests.length} fix request{latestVerdict.fixRequests.length === 1 ? '' : 's'}</summary>
+              <ul>
+                {latestVerdict.fixRequests.map((fr, idx) => (
+                  <li key={idx}>{fr.failing_criterion ?? JSON.stringify(fr)}</li>
+                ))}
+              </ul>
+            </details>
           )}
-          {item.lockInfo?.locked && (
-            <div className="agentic-execution-item">
-              <span className="agentic-execution-label">Lock</span>
-              <span className="agentic-execution-value agentic-execution-value--locked">
-                Locked by {item.lockInfo.agentName || 'unknown'}
-              </span>
-            </div>
-          )}
-          {item.agentState?.sessionId && (
-            <div className="agentic-execution-item">
-              <span className="agentic-execution-label">Trace</span>
-              <a
-                href="#"
-                className="agentic-execution-link"
-                onClick={handleViewTrace}
-              >
-                View full trace →
-              </a>
-            </div>
-          )}
-          {terminalInfo?.provider && (
-            <div className="agentic-execution-item">
-              <span className="agentic-execution-label">Provider</span>
-              <span className="agentic-execution-value">{terminalInfo.provider}</span>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ── Trace Summary ── */}
-      {traceSummary && (
-        <section className="agentic-detail-section agentic-detail-trace">
-          <h4>
-            Activity
-            <span className="agentic-trace-filter-bar" role="radiogroup" aria-label="Trace filter">
-              {(['all', 'decisions', 'toolCalls', 'errors'] as const).map(f => (
-                <button
-                  key={f}
-                  className={`agentic-trace-filter-btn${traceFilter === f ? ' active' : ''}`}
-                  // Radio semantics: clicking the active chip does nothing.
-                  role="radio"
-                  aria-checked={traceFilter === f}
-                  onClick={() => setTraceFilter(f)}
-                >
-                  {f === 'all' ? 'All' : f === 'decisions' ? 'Decisions' : f === 'toolCalls' ? 'Tool Calls' : 'Errors'}
-                </button>
-              ))}
-            </span>
-          </h4>
-          <div className="agentic-trace-summary">
-            <div className={`agentic-trace-stat${traceFilter !== 'all' && traceFilter !== 'decisions' ? ' agentic-trace-stat--dimmed' : ''}`}>
-              <span className="agentic-trace-stat-value">{traceSummary.decisions}</span>
-              <span className="agentic-trace-stat-label">decisions</span>
-            </div>
-            <div className={`agentic-trace-stat${traceFilter !== 'all' && traceFilter !== 'toolCalls' ? ' agentic-trace-stat--dimmed' : ''}`}>
-              <span className="agentic-trace-stat-value">{traceSummary.toolCalls}</span>
-              <span className="agentic-trace-stat-label">tool calls</span>
-            </div>
-            {traceSummary.errors > 0 && (
-              <div className={`agentic-trace-stat agentic-trace-stat--error${traceFilter !== 'all' && traceFilter !== 'errors' ? ' agentic-trace-stat--dimmed' : ''}`}>
-                <span className="agentic-trace-stat-value">{traceSummary.errors}</span>
-                <span className="agentic-trace-stat-label">errors</span>
-              </div>
-            )}
-            {traceSummary.errors === 0 && traceFilter === 'errors' && (
-              <div className="agentic-trace-stat agentic-trace-stat--dimmed">
-                <span className="agentic-trace-stat-value">0</span>
-                <span className="agentic-trace-stat-label">errors</span>
-              </div>
-            )}
-          </div>
         </section>
+      ) : isInterrupted ? (
+        <section className="agentic-tldr agentic-tldr--interrupted">
+          <p className="agentic-tldr-summary">{getInterruptionMessage(item.agentState?.interruptionReason)}</p>
+          {isResuming && <p className="agentic-tldr-status"><span className="agentic-resume-spinner" /> Reconnecting…</p>}
+        </section>
+      ) : item.harnessResults?.some(r => !r.passed && r.severity === 'blocking') ? (
+        <section className="agentic-tldr agentic-tldr--blocked">
+          <p className="agentic-tldr-summary">
+            Blocked by <strong>{item.harnessResults!.find(r => !r.passed && r.severity === 'blocking')!.policyId}</strong>
+          </p>
+        </section>
+      ) : null}
+
+      {/* ── Status chips — workflow / provider / started / lock / trace ── */}
+      <div className="agentic-chips">
+        {terminalInfo?.workflowId && <span className="agentic-chip" title="Workflow">{terminalInfo.workflowId}</span>}
+        {terminalInfo?.provider && <span className="agentic-chip" title="Provider">{terminalInfo.provider}</span>}
+        {terminalInfo?.startedAt && (
+          <span className="agentic-chip" title="Started">
+            <span className="agentic-chip-dot" /> {formatTime(terminalInfo.startedAt)}
+          </span>
+        )}
+        {lockDetail && (
+          <span className={`agentic-chip${lockDetail.isStale ? ' agentic-chip--stale' : ''}`} title={`Lock holder: ${lockDetail.holderAgent ?? 'unknown'}`}>
+            🔒 {formatDuration(lockDetail.ageMs)}{lockDetail.isStale ? ' stale' : ''}
+          </span>
+        )}
+        {item.agentState?.sessionId && (
+          <button className="agentic-chip agentic-chip--link" onClick={handleViewTrace}>Trace →</button>
+        )}
+      </div>
+
+      {/* ── Always-visible Agent row ── */}
+      <div className="agentic-agent-row">
+        {loadingInfo && !agentInfo ? (
+          <span className="agentic-loading">Loading agent…</span>
+        ) : (
+          <>
+            <AgentAvatar name={agentDisplayName} icon={agentIcon} />
+            <div className="agentic-agent-info">
+              <div className="agentic-agent-name">{agentDisplayName}</div>
+              {agentTitle && <div className="agentic-agent-title">{agentTitle}</div>}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ── Collapsible context (harness / blockers / activity) ── */}
+      {hasAnyHarnessResults && (
+        <details
+          className="agentic-collapse"
+          open={showHarness}
+          onToggle={e => setShowHarness((e.target as HTMLDetailsElement).open)}
+        >
+          <summary className="agentic-collapse-summary">
+            Harness policies
+            {hasHarnessFailures && (
+              <span className="agentic-collapse-badge agentic-collapse-badge--bad">
+                {harnessResults.filter(r => !r.passed).length} failing
+              </span>
+            )}
+          </summary>
+          <div className="agentic-collapse-body">
+            <ul className="agentic-harness-list">
+              {harnessResults.map((r, idx) => (
+                <li key={idx} className={`agentic-harness-item agentic-harness-item--${r.passed ? 'passed' : r.severity}`}>
+                  <span className="agentic-harness-mark">{r.passed ? '✓' : '✗'}</span>
+                  <span className="agentic-harness-policy">{r.policyId}</span>
+                  <span className={`agentic-harness-severity agentic-harness-severity--${r.severity}`}>{r.severity}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </details>
       )}
 
-      {/* ── Actions ── */}
-      {hasRunAction && (
-        <section className="agentic-detail-section agentic-detail-actions">
-          <h4>Actions</h4>
-          <div className="agentic-action-buttons">
-            {isInterrupted && (
-              <>
-                {!isResuming && (
-                  <p className="agentic-detail-warning">{getInterruptionMessage(item.agentState?.interruptionReason)}</p>
-                )}
-                {isResuming && (
-                  <p className="agentic-detail-warning agentic-detail-warning--resuming">
-                    <span className="agentic-resume-spinner" />
-                    Reconnecting…
-                  </p>
-                )}
-                <button
-                  className={`agentic-detail-btn agentic-detail-btn--resume${isResuming ? ' is-loading' : ''}`}
-                  disabled={isResuming || !chatSessionActive}
-                  title={
-                    !chatSessionActive
-                      ? 'Resume requires an active @agileagentcanvas chat session with a model'
-                      : chatSessionModel
-                        ? `Resume workflow using ${chatSessionModel}`
-                        : 'Resume workflow'
-                  }
-                  onClick={handleResume}
-                >
-                  {isResuming ? '⟳ Reconnecting…' : !chatSessionActive ? 'Resume (no session)' : 'Resume'}
-                </button>
-                <button
-                  className="agentic-detail-btn agentic-detail-btn--abandon"
-                  onClick={handleAbandon}
-                >
-                  Abandon
-                </button>
-                {hasPendingUndo && (
-                  <button
-                    className="agentic-detail-btn agentic-detail-btn--undo"
-                    onClick={handleUndoAbandon}
-                  >
-                    ↩ Undo
-                  </button>
-                )}
-              </>
+      {hasBlockers && (
+        <details
+          className="agentic-collapse"
+          open={showBlockers}
+          onToggle={e => setShowBlockers((e.target as HTMLDetailsElement).open)}
+        >
+          <summary className="agentic-collapse-summary">
+            Blocked by{item.blockedBy ? ` (${item.blockedBy})` : ''}
+          </summary>
+          <div className="agentic-collapse-body">
+            <ul className="agentic-blockers-list">
+              {(item.blockerTitles ?? []).map((title, idx) => (
+                <li key={idx}>{title}</li>
+              ))}
+              {item.hasCycle && <li className="agentic-blockers-cycle">⚠ Circular dependency</li>}
+            </ul>
+          </div>
+        </details>
+      )}
+
+      {traceSummary && (traceSummary.decisions + traceSummary.toolCalls + traceSummary.errors) > 0 && (
+        <details
+          className="agentic-collapse"
+          open={showTrace}
+          onToggle={e => setShowTrace((e.target as HTMLDetailsElement).open)}
+        >
+          <summary className="agentic-collapse-summary">
+            Activity
+            <span className="agentic-collapse-counts">
+              <span>{traceSummary.decisions}d</span>
+              <span>{traceSummary.toolCalls}tc</span>
+              {traceSummary.errors > 0 && <span className="agentic-collapse-counts--err">{traceSummary.errors}err</span>}
+            </span>
+          </summary>
+          <div className="agentic-collapse-body">
+            {recentTrace && recentTrace.length > 0 && (
+              <ul className="agentic-trace-list">
+                {recentTrace.map((entry, idx) => (
+                  <li key={idx} className={entry.isError ? 'agentic-trace-item--err' : ''}>
+                    <span className="agentic-trace-time">{formatTime(entry.ts)}</span>
+                    <span className="agentic-trace-type">{entry.type}</span>
+                    <span className="agentic-trace-summary">{entry.summary || '—'}</span>
+                  </li>
+                ))}
+              </ul>
             )}
-            {(hasTerminal || !!terminalInfo) && (
-              <button
-                className="agentic-detail-btn agentic-detail-btn--terminal"
-                onClick={handleViewTerminal}
-              >
-                View Terminal
-              </button>
-            )}
-            {/* P1 #4: Take Over — switch to interactive terminal view, focus this agent's tile */}
-            {isRunning && onTakeOver && (
-              <button
-                className="agentic-detail-btn agentic-detail-btn--takeover"
-                onClick={() => onTakeOver(item)}
-                title={terminalInteractive ? 'Take over — type directly into the agent terminal' : 'Take over requires embedded terminal (enable in settings)'}
-                disabled={!terminalInteractive}
-              >
-                {terminalInteractive ? 'Take Over' : 'Take Over (no pty)'}
-              </button>
-            )}
-            {/* P1 #4: Send Command — quick one-liner injection without leaving the board */}
-            {isRunning && terminalInteractive && (
-              <div className="agentic-detail-send-command">
-                <input
-                  type="text"
-                  className="agentic-detail-send-command-input"
-                  placeholder="Type a command and press Enter…"
-                  value={sendCommand}
-                  onChange={e => setSendCommand(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && sendCommand.trim()) {
-                      vscode.postMessage({ type: 'terminal:input', sessionId: item.id, data: sendCommand + '\n' });
-                      setSendCommand('');
-                    }
-                  }}
-                />
-                <button
-                  className="agentic-detail-send-command-btn"
-                  disabled={!sendCommand.trim()}
-                  onClick={() => {
-                    if (sendCommand.trim()) {
-                      vscode.postMessage({ type: 'terminal:input', sessionId: item.id, data: sendCommand + '\n' });
-                      setSendCommand('');
-                    }
-                  }}
-                  title="Send command to agent"
-                >
-                  Send
-                </button>
-              </div>
-            )}
-            {/* Visual Plan: generate a plan scoped to this artifact */}
-            <button
-              className="agentic-detail-btn agentic-detail-btn--plan"
-              onClick={() => {
-                vscode.postMessage({
-                  type: 'visualPlan:generate',
-                  goal: `Plan changes for ${item.title}`,
-                  sourceArtifactId: item.id,
-                });
+          </div>
+        </details>
+      )}
+
+      {/* ── Sticky footer with actions — only what's relevant ── */}
+      <footer className="agentic-detail-footer">
+        {isInterrupted && (
+          <button
+            className={`agentic-btn agentic-btn--primary agentic-btn--block${isResuming ? ' is-loading' : ''}`}
+            disabled={isResuming || !chatSessionActive}
+            title={
+              !chatSessionActive
+                ? 'Resume needs an active @agileagentcanvas chat session'
+                : chatSessionModel ? `Resume using ${chatSessionModel}` : 'Resume workflow'
+            }
+            onClick={handleResume}
+          >
+            {isResuming ? '⟳ Reconnecting…' : !chatSessionActive ? 'Resume (no session)' : 'Resume workflow'}
+          </button>
+        )}
+        {isInterrupted && (
+          <button className="agentic-btn agentic-btn--ghost agentic-btn--block" onClick={handleAbandon}>Abandon</button>
+        )}
+        {hasPendingUndo && (
+          <button className="agentic-btn agentic-btn--ghost agentic-btn--block" onClick={handleUndoAbandon}>↩ Undo abandon</button>
+        )}
+        {(hasTerminal || !!terminalInfo) && (
+          <button className="agentic-btn agentic-btn--ghost agentic-btn--block" onClick={handleViewTerminal}>View terminal output</button>
+        )}
+        {isRunning && onTakeOver && (
+          <button
+            className="agentic-btn agentic-btn--ghost agentic-btn--block"
+            onClick={() => onTakeOver(item)}
+            disabled={!terminalInteractive}
+            title={terminalInteractive ? 'Take over — type into the agent terminal' : 'Enable embedded terminal in settings'}
+          >
+            Take over
+          </button>
+        )}
+        {isRunning && terminalInteractive && (
+          <div className="agentic-send-row">
+            <input
+              type="text"
+              className="agentic-send-input"
+              placeholder="Send command (Enter)"
+              value={sendCommand}
+              onChange={e => setSendCommand(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && sendCommand.trim()) {
+                  vscode.postMessage({ type: 'terminal:input', sessionId: item.id, data: sendCommand + '\n' });
+                  setSendCommand('');
+                }
               }}
-              title="Generate a Visual Plan for this artifact"
+            />
+            <button
+              className="agentic-btn agentic-btn--primary"
+              disabled={!sendCommand.trim()}
+              onClick={() => {
+                if (sendCommand.trim()) {
+                  vscode.postMessage({ type: 'terminal:input', sessionId: item.id, data: sendCommand + '\n' });
+                  setSendCommand('');
+                }
+              }}
             >
-              Visualize Plan
+              Send
             </button>
           </div>
-        </section>
-      )}
+        )}
+      </footer>
     </div>
   );
 }

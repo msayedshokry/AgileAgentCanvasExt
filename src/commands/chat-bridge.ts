@@ -51,14 +51,17 @@ export type ChatProviderId =
  * user sees the prompt as TUI input without needing to type it manually.
  *
  * Canonical headless reference (for kanban, NOT canvas):
- *   - claude     → `claude --permission-mode acceptEdits --output-format json -p <prompt>`
+ *   - claude     → `claude --permission-mode bypassPermissions --dangerously-skip-permissions -p <prompt>`
  *                  (https://code.claude.com/docs/en/headless)
+ *                  ponytail: `acceptEdits` was wrong — it only auto-approves Edit on existing
+ *                  files; the kanban verdict file path is fresh each run so the model
+ *                  has to Write. Verified via scripts/_demo/check-headless-claude.ts.
  *   - codex      → `codex exec --ask-for-approval never --sandbox workspace-write <prompt>`
  *                  (https://developers.openai.com/codex/cli/reference)
  *   - aider      → `aider --message <prompt>`   (https://aider.chat/docs/scripting: one-shot, exit after reply)
- *   - opencode   → `opencode run --model auto --format json <prompt>`
+ *   - opencode   → `opencode run --model auto <prompt>` (default `--format default`)
  *                  (https://opencode.ai/docs/cli/)
- *   - pi         → `pi --no-session --mode json --approve -p <prompt>` (verdict-friendly)
+ *   - pi         → `pi --no-session --approve -p <prompt>` (default `--mode text`; JSON mode dropped for readability — verdict loop reads the file, not stdout)
  *   - terminal   → sentinel `echo`; handled in sendToTerminal
  */
 interface ChatCommand {

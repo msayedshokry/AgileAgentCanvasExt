@@ -6,6 +6,7 @@ import { vscode } from '../vscodeApi';
 import '../components/kanban/Kanban.css';
 
 import { TerminalGrid, type TerminalGridSession } from './TerminalGrid';
+import { LiveTerminalStrip } from './LiveTerminalStrip';
 import { AgenticDetailPanel } from './AgenticDetailPanel';
 import { ContextMenu } from './ContextMenu';
 import { useEvent } from './useEvent';
@@ -569,6 +570,16 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
     [displayItems],
   );
 
+  // ponytail: persistent bottom strip watches the same set of running
+  // sessions. Hidden when empty (handled inside the component). Skips the
+  // TerminalGrid overlay tab so output is visible without switching views.
+  const liveStripIds = useMemo(() => terminalSessions.map(s => s.sessionId), [terminalSessions]);
+  const liveStripTitles = useMemo<Record<string, string>>(() => {
+    const map: Record<string, string> = {};
+    for (const s of terminalSessions) map[s.sessionId] = s.title;
+    return map;
+  }, [terminalSessions]);
+
   const epicIdsWithChildren = useMemo(() => {
     const ids = new Set<string>();
     for (const item of displayItems) {
@@ -1123,6 +1134,9 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
             : undefined}
         />
       )}
+
+      {/* ponytail: persistent live-output strip at the bottom of every view */}
+      <LiveTerminalStrip sessionIds={liveStripIds} titles={liveStripTitles} />
     </div>
   );
 }

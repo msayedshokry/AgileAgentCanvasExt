@@ -49,6 +49,64 @@ const execAsync = promisify(cp.exec);
 
 // ─── Process liveness ────────────────────────────────────────────────────────
 
+// ponytail: workspace file snapshot — used to synthesize COMPLETED verdicts
+// when the agent does the work but never writes the verdict JSON. Excludes
+// noise dirs (.git, node_modules, .vscode) AND specific internal-state files
+// this extension writes every time any agent runs (concurrency-queue-state,
+// terminal-sessions, trace buffers) — without these, the synth false-positives
+// on tracker noise every time a pi runs and doesn't write source code.
+const FILE_DIFF_EXCLUDES = new Set(['.git', 'node_modules', '.vscode']);
+// Also exclude specific files inside `.agileagentcanvas-context/` that the
+// extension itself rewrites on every agent run. Done as a prefix match rather
+// than a full path so it survives the user renaming `outputFolder`.
+const INTERNAL_STATE_PREFIXES = [
+  '.agileagentcanvas-context/concurrency-queue-state.json',
+  '.agileagentcanvas-context/terminal-sessions.json',
+  '.agileagentcanvas-context/traces/',
+];
+type WorkspaceSnapshot = Map<string, number>;
+
+export function captureWorkspaceSnapshot(rootDir?: string): WorkspaceSnapshot {
+  const cwd = rootDir ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  const out: WorkspaceSnapshot = new Map();
+  if (!cwd) return out;
+  const stack: string[] = [cwd];
+  while (stack.length > 0) {
+    const dir = stack.pop()!;
+    let entries: fs.Dirent[];
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { continue; }
+    for (const entry of entries) {
+      if (FILE_DIFF_EXCLUDES.has(entry.name)) continue;
+      const abs = path.join(dir, entry.name);
+      const rel = path.relative(cwd, abs).replace(/\\/g, '/');
+      // Internal-state file inside .agileagentcanvas-context/? Then also skip
+      // — but only those specific prefixes, not the whole folder (the user
+      // may store their own epics/stories there).
+      if (rel.startsWith('.agileagentcanvas-context/') &&
+          INTERNAL_STATE_PREFIXES.some(p => rel.startsWith(p))) {
+        continue;
+      }
+      if (entry.isDirectory()) {
+        stack.push(abs);
+      } else if (entry.isFile()) {
+        try { out.set(rel, fs.statSync(abs).mtimeMs); } catch { /* ENOENT etc */ }
+      }
+    }
+  }
+  return out;
+}
+
+export function diffWorkspaceSnapshots(before: WorkspaceSnapshot, after: WorkspaceSnapshot): string[] {
+  const changed: string[] = [];
+  for (const [file, mtime] of after) {
+    if (before.get(file) !== mtime) changed.push(file);
+  }
+  for (const file of before.keys()) {
+    if (!after.has(file)) changed.push(file); // deletions count as work
+  }
+  return changed;
+}
+
 /**
  * Check whether a process with the given PID is still alive.
  * Uses `tasklist` on Windows, `/proc/<pid>/stat` on Linux/Mac.
@@ -180,7 +238,32 @@ export function buildTerminalPrompt(
     ? `## Workflow Definition (authoritative — follow exactly)\n\`\`\`markdown\n${skillContent}\n\`\`\`\n\n`
     : '';
 
-  return `You are executing a BMAD methodology workflow as a headless terminal agent.
+  // ponytail: the verdict contract is the FIRST instruction the model sees,
+  // not the last. Agents were treating the BMAD workflow narrative as the
+  // task and the file-write as busy-work, leaving the verdict JSON on disk
+  // as missing/UNKNOWN. Putting the contract at the top surfaces it before
+  // the model overloads on the workflow narrative below.
+  return `## ⛔ Required first action — verdict contract
+
+You are running as a non-interactive headless agent. Before you do ANY other work in this session, you MUST understand and follow this contract:
+
+- When you finish (success or failure), write a verdict JSON to EXACTLY this file path:
+  \`\`\`
+  ${resultPath}
+  \`\`\`
+- The file MUST contain valid JSON with a top-level \`"verdict"\` field, one of:
+  \`COMPLETED\` · \`APPROVED\` · \`NEEDS_FIXES\` · \`BLOCKED\`
+- For \`NEEDS_FIXES\`, include a top-level \`"fix_requests"\` array describing each failing criterion.
+- If the file does NOT exist or has no \`"verdict"\` field, the card stays stuck in \`in-progress\` forever. The orchestrator will NOT advance without it.
+- This file write is MANDATORY — do not skip it even if the rest of the work succeeded.
+
+If parent directory \`_terminal-output/\` does not exist, create it first.
+
+---
+
+# BMAD Workflow Run
+
+You are executing a BMAD methodology workflow as a headless terminal agent.
 
 ## Workflow
 - **Workflow ID:** ${workflowId}
@@ -197,18 +280,7 @@ ${artifactJson}
 2. If a "Workflow Definition" section is provided above, it is authoritative — follow its gates and output schema exactly. Otherwise read resources/_aac/ for the workflow steps.
 3. Read the artifact store at ${outputFolder} for related artifacts and context.
 4. If the artifact metadata contains \`fixRequests\`, address EVERY one before reporting completion.
-5. When finished, write your structured verdict JSON (the schema in the Output Format / Workflow Definition) to EXACTLY this path:
-   ${resultPath}
-
-## Important — verdict contract
-- This is a non-interactive terminal session — complete the workflow fully.
-- The result file MUST be valid JSON and MUST include a top-level "verdict" field
-  (one of: COMPLETED, APPROVED, NEEDS_FIXES, BLOCKED).
-- The orchestrator reads this file to decide whether to advance the card. If the
-  file is missing or has no verdict, the card will NOT advance.
-- For NEEDS_FIXES, include a "fix_requests" array describing each failing criterion.
-
----
+5. After the workflow completes (success or failure), write your structured verdict JSON to the path in the ⛔ section at the top of this prompt.
 
 ## Minimalist Engineering Principles (apply before adding code)
 
@@ -250,25 +322,41 @@ function buildCliCommand(provider: ChatProviderId, prompt: string): string[] {
   // flags to write verdict files unattended.
   switch (provider) {
     case 'claude':
+      // ponytail: `--permission-mode acceptEdits` only auto-approves Edit on
+      // existing files. The verdict file is a fresh path each run, so the
+      // model has to Write — which `acceptEdits` does NOT auto-approve.
+      // Verified 2026-06-30 via scripts/_demo/check-headless-providers.ts:
+      //   `claude --permission-mode bypassPermissions --dangerously-skip-permissions -p <prompt>`
+      // writes the file. Either flag alone does not (model reports the
+      // action but skips the tool call, see scripts/_demo/check-headless-claude.ts).
+      // ponytail: `--output-format json` dropped — it spawned a single
+      // final-JSON line that buried the assistant's response from the user.
+      // The verdict loop reads the file from disk (kanban-verdict.ts), not
+      // stdout, so dropping the JSON flag has no functional cost.
       return [
         'claude',
-        '--permission-mode', 'acceptEdits',
-        '--output-format', 'json',
+        '--permission-mode', 'bypassPermissions',
+        '--dangerously-skip-permissions',
         '-p', prompt,
       ];
     case 'opencode':
+      // ponytail: `--format json` dropped — streamed NDJSON events to stdout
+      // that obscured the actual response. Default `--format default` is
+      // human-readable.
       return [
         'opencode',
         'run',
         '--model', 'auto',
-        '--format', 'json',
         prompt,
       ];
     case 'pi':
+      // ponytail: `--mode json` dropped — pi streamed NDJSON session events
+      // to stdout (one event per line) which appeared as a wall of XML-like
+      // text. Default `--mode text` is human-readable. The verdict loop
+      // reads the file from disk; stdout is cosmetic.
       return [
         'pi',
         '--no-session',
-        '--mode', 'json',
         '--approve',
         '-p', prompt,
       ];
@@ -672,6 +760,12 @@ export class TerminalExecutor implements vscode.Disposable {
       // best effort
     }
 
+    // ponytail: capture workspace files BEFORE the terminal launches so the
+    // verdict-poll loop can synthesize a verdict from a real file diff if the
+    // agent does the work but never writes the verdict JSON. Ground truth —
+    // independent of model cooperation with the verdict-write contract.
+    const baselineSnapshot = captureWorkspaceSnapshot();
+
     const sessionId = await this.executeTerminalWorkflow(workflowId, artifact, store, {
       skillContent: options?.skillContent,
     });
@@ -730,7 +824,34 @@ export class TerminalExecutor implements vscode.Disposable {
         const stillRunning = this.activeTerminals.has(artifactId);
         if (!stillRunning) {
           const late = readVerdictFile(resultPath);
-          finish(late ?? { verdict: 'UNKNOWN', summary: 'Terminal closed without a verdict file' });
+          if (late) {
+            finish(late);
+            return;
+          }
+          // ponytail: synthesize COMPLETED from a workspace file diff. The
+          // agent did the work but didn't write the verdict JSON — the
+          // orchestrator should still advance the card so the review gate
+          // can evaluate. Logs the synthesized verdict so the user can see
+          // it in the output panel.
+          try {
+            const finalSnapshot = captureWorkspaceSnapshot();
+            const changed = diffWorkspaceSnapshots(baselineSnapshot, finalSnapshot);
+            if (changed.length > 0) {
+              const summary =
+                `Synthesized COMPLETED: agent ran, modified ${changed.length} file(s), ` +
+                `did not write verdict JSON. Examples: ${changed.slice(0, 3).join(', ')}.`;
+              logger.warn(`[TerminalExecutor] ${artifactId} (${workflowId}) ${summary}`);
+              finish({
+                verdict: 'COMPLETED',
+                summary,
+                raw: { synthesized: true, changedFiles: changed.slice(0, 50) },
+              });
+              return;
+            }
+          } catch (err) {
+            logger.warn(`[TerminalExecutor] ${artifactId} snapshot diff failed: ${errMsg(err)}`);
+          }
+          finish({ verdict: 'UNKNOWN', summary: 'Terminal closed without a verdict file' });
           return;
         }
 

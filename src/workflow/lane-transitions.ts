@@ -21,6 +21,8 @@ import { BmadModel } from '../chat/ai-provider';
 import { harnessEngine } from '../harness/policy-engine';
 import { harnessFeedback } from '../harness/harness-feedback';
 import { terminalExecutor } from './terminal-executor';
+import { readVerdictFile, resultFilePath, getOutputFolder } from './kanban-verdict';
+import type { KanbanVerdict } from './kanban-verdict';
 import { getA2AOutboundClient } from '../acp/agent-bus/a2a-outbound-client';
 import { isKanbanAutoAdvanceEnabled } from './kanban-settings';
 import { kanbanOrchestrator } from './kanban-orchestrator';
@@ -243,6 +245,16 @@ export class LaneTransitionEngine {
             logger.info(
               `[E2] Launched terminal execution for ${terminalWorkflowId} on ${artifactId} (session: ${sessionId})`
             );
+            // ponytail: single-shot terminal path was returning `terminal_launched`
+            // immediately and silently leaving the card stuck in `toStatus` if the
+            // agent never wrote a verdict JSON (the user's reported case: dropped an
+            // Epic into in-progress, pi ran, terminal closed, no file, card wedged).
+            // Watch in the background and revert to pre-drag status on
+            // UNKNOWN / BLOCKED / NEEDS_FIXES. COMPLETED / APPROVED are left alone
+            // so the orchestrator or a subsequent drag advances as before.
+            this.watchSingleShotVerdict(
+              artifactId, artifactType, terminalWorkflowId, fromStatus,
+            );
             return { ok: true, workflowLaunched: true, status: 'terminal_launched', terminalSessionId: sessionId };
           } else {
             logger.warn(
@@ -283,6 +295,68 @@ export class LaneTransitionEngine {
       }
     }
   }
+
+  /**
+   * Background watcher for single-shot terminal launches that returned
+   * `terminal_launched` immediately. Polls the verdict JSON the agent
+   * should write, and on a non-success verdict reverts the artifact to
+   * its pre-drag column so the card doesn't sit silently stuck.
+   *
+   * Fire-and-forget — the IPC handler already returned `ok: terminal_launched`
+   * to the caller. Lock is still held by `terminalExecutor` until the
+   * terminal closes; this watcher does NOT touch the lock.
+   */
+  private watchSingleShotVerdict(
+    artifactId: string,
+    artifactType: string,
+    workflowId: string,
+    preDragStatus: string,
+  ): void {
+    const resultPath = resultFilePath(getOutputFolder(), artifactId, workflowId);
+    const timeoutMs = 20 * 60 * 1000;
+    const pollIntervalMs = 3000;
+    const startedAt = Date.now();
+
+    void (async () => {
+      let verdict: KanbanVerdict | undefined;
+      while (Date.now() - startedAt < timeoutMs) {
+        verdict = readVerdictFile(resultPath);
+        if (verdict) break;
+        const session = terminalExecutor.getTerminalSession(artifactId);
+        if (!session) break; // terminal closed without writing a verdict
+        await new Promise((r) => setTimeout(r, pollIntervalMs));
+      }
+      if (!verdict) {
+        verdict = { verdict: 'UNKNOWN', summary: `No verdict within ${Math.round(timeoutMs / 60000)}m` };
+      }
+
+      const successVerdicts = new Set(['COMPLETED', 'APPROVED']);
+      if (successVerdicts.has(verdict.verdict)) {
+        logger.info(`[E2] ${artifactId} (${workflowId}) verdict: ${verdict.verdict} — letting existing transition flow advance`);
+        return;
+      }
+
+      const summary = verdict.summary ?? `Agent exited with ${verdict.verdict}`;
+      const currentStatus: string | undefined = this.store.findArtifactById(artifactId)?.artifact?.status;
+      logger.warn(
+        `[E2] ${artifactId} (${workflowId}) non-success verdict ${verdict.verdict} ` +
+        `(current=${currentStatus ?? '?'}) — reverting to ${preDragStatus}: ${summary}`,
+      );
+      try {
+        if (currentStatus && currentStatus !== preDragStatus) {
+          await this.store.updateArtifact(artifactType, artifactId, { status: preDragStatus });
+        }
+        vscode.window.showWarningMessage(
+          `AAC ${workflowId} on ${artifactId}: ${verdict.verdict} — ${summary}. Card reverted to ${preDragStatus}.`,
+        );
+      } catch (err) {
+        logger.error(`[E2] Failed to revert ${artifactId} after ${verdict.verdict}: ${errMsg(err)}`);
+      }
+    })().catch((err) => {
+      logger.error(`[E2] Verdict watcher crashed for ${artifactId}: ${errMsg(err)}`);
+    });
+  }
+
 
   /**
    * Delegate a transition to a remote A2A agent.

@@ -208,6 +208,58 @@ describe('KanbanOrchestrator', () => {
     expect(result.blockedBy?.[0]).toMatch(/BLOCKED/);
   });
 
+  // ponytail: regression for the "Dev gate returned UNKNOWN — card stuck in
+  // in-progress forever" bug. stop() must revert the artifact so the user
+  // can re-drag to retry instead of abandoning entirely.
+  it('regression: dev gate BLOCKED reverts the card from in-progress to ready-for-dev', async () => {
+    const executor = fakeExecutor();
+    vi.mocked(executor.executeLaneTransition)
+      .mockResolvedValueOnce({ verdict: 'BLOCKED', summary: 'entry gate failed' });
+    let currentStatus = 'in-progress';
+    const store = {
+      findArtifactById: vi.fn((id: string) => ({ artifact: { id, type: 'story', title: id, status: currentStatus } })),
+      updateArtifact: vi.fn(async (_t: string, _id: string, patch: any) => {
+        if (patch && typeof patch.status === 'string') currentStatus = patch.status;
+      }),
+    } as any;
+    const orch = new KanbanOrchestrator(store, executor, fakeTerminalExecutor());
+
+    await orch.runAutonomous({ id: 'S-revert', type: 'story' }, {
+      model: { name: 'gpt-4o' } as any,
+      stream: { markdown: vi.fn() } as any,
+      tracker: noopTrackerStub(),
+    } as any);
+
+    expect(currentStatus).toBe('ready-for-dev');
+  });
+
+  it('regression: review gate UNKNOWN reverts the card from review to in-progress (dev completed)', async () => {
+    const executor = fakeExecutor();
+    // ponytail: orchestrator fires ONE retry on UNKNOWN (gap #47), so the
+    // mock needs to queue two UNKNOWNs — first call returns UNKNOWN, the
+    // retry also returns UNKNOWN, then stop() finally sees UNKNOWN.
+    vi.mocked(executor.executeLaneTransition)
+      .mockResolvedValueOnce({ verdict: 'COMPLETED' }) // dev passes
+      .mockResolvedValueOnce({ verdict: 'UNKNOWN', summary: 'review CLI exited without writing verdict' })
+      .mockResolvedValueOnce({ verdict: 'UNKNOWN', summary: 'review CLI exited without writing verdict' });
+    let currentStatus = 'ready-for-dev';
+    const store = {
+      findArtifactById: vi.fn((id: string) => ({ artifact: { id, type: 'story', title: id, status: currentStatus } })),
+      updateArtifact: vi.fn(async (_t: string, _id: string, patch: any) => {
+        if (patch && typeof patch.status === 'string') currentStatus = patch.status;
+      }),
+    } as any;
+    const orch = new KanbanOrchestrator(store, executor, fakeTerminalExecutor());
+
+    await orch.runAutonomous({ id: 'S-review-revert', type: 'story' }, {
+      model: { name: 'gpt-4o' } as any,
+      stream: { markdown: vi.fn() } as any,
+      tracker: noopTrackerStub(),
+    } as any);
+
+    expect(currentStatus).toBe('in-progress');
+  });
+
   it('#32 supplier contract: chat path with missing tracker → UNKNOWN verdict (autoRetryEngine absorbs the synchronous throw)', async () => {
     // NOTE on shape: the orchestrator wraps the chat-step in autoRetryEngine.run,
     // which catches the synchronous throw from requireChatPathContext and converts
