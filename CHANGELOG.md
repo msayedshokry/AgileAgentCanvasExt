@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.5.7
+
+### Highlights
+
+A lightweight **Ideas drawer** lives in the canvas — capture free-form notes without leaving the canvas, with the AI able to read them. Plus three round-trip / layout fixes that were caught immediately after the 0.5.6 release.
+
+### Added: Ideas drawer
+
+Free-form notes that live in the project folder, parallel to BMAD artifacts but outside the schema-validated BmadArtifacts union.
+
+- **Toolbar 💡 button** (always visible, badge shows active count) + **Ctrl+Alt+I** / **Cmd+Alt+I** keybinding to open the drawer and focus the capture input.
+- **Right-side panel**: paper-style note cards in yellow / blue / green / pink / gray, search box, color chip picker, Cmd/Ctrl+Enter to save, archive (soft) / restore / hard delete, click-outside or Escape to close.
+- **Persists to `<outputFolder>/ideas/<id>.md`** as YAML frontmatter + body markdown. Same project-folder pattern as the artifact store, so ideas travel with the project across machines.
+- **Refuses to save when no project is active** — yellow banner replaces the capture form, **Add** is disabled, and the **Open / create project** button routes to the existing project picker. The extension also blocks the save as a backstop and surfaces the reason as a red toast.
+- **Two new LM tools** (`agileagentcanvas_list_ideas`, `agileagentcanvas_read_idea`) so the chat participant can list, search, and read captured ideas. Path-traversal guard on `read_idea` strips every path separator and re-checks against the allowed-roots allowlist before reading.
+- **New command `agileagentcanvas.newIdea`** mirrors the `askAgent` broadcast pattern (sidebar + every open pop-out panel).
+- Idea data is routed through both the sidebar canvas view-provider and the pop-out panel — neither path silently drops messages.
+
+### Fixed
+
+- **Pop-out panel silently dropped idea messages.** `openCanvasPanel`'s switch in `extension.ts` had no handlers for `createIdea` / `updateIdea` / `archiveIdea` / `restoreIdea` / `deleteIdea`, so messages from the drawer disappeared. The sidebar's canvas-view-provider handled them, but the pop-out is the default canvas surface, so most users never saw their ideas get saved. All 5 cases now route through `ideaStore` from both hosts, with multi-panel fan-out on every change.
+- **Drawer didn't close on outside click.** Added a transparent scrim + document mousedown listener (drawer ref-guards so internal clicks don't fire) and a global Escape listener.
+- **Top of the drawer hidden behind the canvas toolbar FAB.** Toolbar container is at `z-index: 100`; the drawer was at `z:51`. Drawer now drops to `top: 56px` with a `height: calc(100vh - 56px)` and a `border-radius: 8px 0 0 8px` so it reads as a sheet below the toolbar.
+
 ## 0.5.6
 
 ### Fixed: Windows reserved-name files blocked VSIX packaging

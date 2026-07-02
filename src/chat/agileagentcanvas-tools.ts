@@ -2,6 +2,7 @@ import { createLogger } from '../utils/logger';
 const logger = createLogger('agileagentcanvas-tools');
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs';
 
 import { ArtifactStore, BmadArtifacts } from '../state/artifact-store';
 import { BmadArtifactChange, BmadArtifactTypeMap } from '../types';
@@ -1633,6 +1634,136 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
     );
 
     logger.debug('[AgileAgentCanvasTools] Registered 25 language model tools');
+
+    // ── agileagentcanvas_list_ideas ─────────────────────────────────────────────────
+    // Reads from the IdeaStore singleton (separate from ArtifactStore). Lazy-lookup
+    // the store each call so a workspace switch in extension.ts is reflected without
+    // re-registering tools. Ponytail: keep the lazy pattern consistent with the rest
+    // of this file — never duplicate tool registration on lifecycle changes.
+    disposables.push(
+        vscode.lm.registerTool<{ includeArchived?: boolean; search?: string }>(
+            'agileagentcanvas_list_ideas',
+            wrapToolWithDynamicTracing({
+                async invoke(request, _token) {
+                    return trackToolCall('agileagentcanvas_list_ideas', async () => {
+                        // Context-bound output path resolves the active ideas folder.
+                        const ideasRoot = ctx.outputPath ? `${ctx.outputPath}/ideas` : '';
+                        if (!ideasRoot) {
+                            return new vscode.LanguageModelToolResult([
+                                new vscode.LanguageModelTextPart('No active project folder (outputPath is empty).')
+                            ]);
+                        }
+                        try {
+                            let files: [string, vscode.FileType][];
+                            try {
+                                files = await vscode.workspace.fs.readDirectory(vscode.Uri.file(ideasRoot));
+                            } catch {
+                                // No ideas folder yet — return empty list cleanly.
+                                return new vscode.LanguageModelToolResult([
+                                    new vscode.LanguageModelTextPart('[]')
+                                ]);
+                            }
+                            const all = files.filter(([n, t]) => t === vscode.FileType.File && n.endsWith('.md'));
+                            const includeArchived = Boolean(request.input.includeArchived);
+                            const search = (request.input.search ?? '').trim().toLowerCase();
+                            const results: Array<{ id: string; title: string; color: string; createdAt: string; updatedAt: string; archivedAt?: string; bodyPreview: string }> = [];
+                            for (const [name] of all) {
+                                const raw = await fs.promises.readFile(`${ideasRoot}/${name}`, 'utf-8');
+                                const fm = raw.match(/^---\n([\s\S]*?)\n---\n*([\s\S]*)$/);
+                                const meta: Record<string, string> = {};
+                                if (fm) {
+                                    for (const line of fm[1].split('\n')) {
+                                        const kv = line.match(/^([a-zA-Z]+):\s*"(.*)"\s*$/);
+                                        if (kv) meta[kv[1]] = kv[2].replace(/\\"/g, '"');
+                                    }
+                                }
+                                const id = meta.id || name.replace(/\.md$/, '');
+                                const archivedAt = meta.archivedAt;
+                                if (archivedAt && !includeArchived) continue;
+                                const title = meta.title || 'Untitled idea';
+                                const body = fm ? fm[2].trim() : raw.trim();
+                                if (search) {
+                                    const hit = title.toLowerCase().includes(search) || body.toLowerCase().includes(search);
+                                    if (!hit) continue;
+                                }
+                                results.push({
+                                    id,
+                                    title,
+                                    color: meta.color || 'yellow',
+                                    createdAt: meta.createdAt || '',
+                                    updatedAt: meta.updatedAt || '',
+                                    archivedAt,
+                                    bodyPreview: body.slice(0, 200),
+                                });
+                            }
+                            results.sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+                            return new vscode.LanguageModelToolResult([
+                                new vscode.LanguageModelTextPart(JSON.stringify(results, null, 2))
+                            ]);
+                        } catch (err: any) {
+                            const msg = `list_ideas error: ${err?.message ?? err}`;
+                            logger.debug(`[agileagentcanvas_list_ideas] ${msg}`);
+                            return new vscode.LanguageModelToolResult([
+                                new vscode.LanguageModelTextPart(msg)
+                            ]);
+                        }
+                    });
+                }
+            }, 'agileagentcanvas_list_ideas')
+        )
+    );
+
+    // ── agileagentcanvas_read_idea ──────────────────────────────────────────────────
+    disposables.push(
+        vscode.lm.registerTool<{ id: string }>(
+            'agileagentcanvas_read_idea',
+            wrapToolWithDynamicTracing({
+                async invoke(request, _token) {
+                    return trackToolCall('agileagentcanvas_read_idea', async () => {
+                        const id = String(request.input.id || '').trim();
+                        if (!id) {
+                            return new vscode.LanguageModelToolResult([
+                                new vscode.LanguageModelTextPart('read_idea requires an id.')
+                            ]);
+                        }
+                        const ideasRoot = ctx.outputPath ? `${ctx.outputPath}/ideas` : '';
+                        if (!ideasRoot) {
+                            return new vscode.LanguageModelToolResult([
+                                new vscode.LanguageModelTextPart('No active project folder (outputPath is empty).')
+                            ]);
+                        }
+                        // ponytail: ID is interpolated into a path — guard against
+                        // traversal by stripping every path separator before use.
+                        const safeId = id.replace(/[/\\<>:"|?*\x00-\x1f]/g, '');
+                        if (safeId !== id) {
+                            return new vscode.LanguageModelToolResult([
+                                new vscode.LanguageModelTextPart(`Invalid idea id: "${id}".`)
+                            ]);
+                        }
+                        const file = vscode.Uri.file(`${ideasRoot}/${safeId}.md`);
+                        if (!isPathAllowed(file.fsPath, getAllowedRoots(ctx))) {
+                            return new vscode.LanguageModelToolResult([
+                                new vscode.LanguageModelTextPart(`Idea id "${safeId}" resolves outside the allowed project root.`)
+                            ]);
+                        }
+                        try {
+                            const text = await vscode.workspace.fs.readFile(file);
+                            return new vscode.LanguageModelToolResult([
+                                new vscode.LanguageModelTextPart(Buffer.from(text).toString('utf-8'))
+                            ]);
+                        } catch (err: any) {
+                            const msg = `read_idea error: ${err?.message ?? err}`;
+                            logger.debug(`[agileagentcanvas_read_idea] ${msg}`);
+                            return new vscode.LanguageModelToolResult([
+                                new vscode.LanguageModelTextPart(msg)
+                            ]);
+                        }
+                    });
+                }
+            }, 'agileagentcanvas_read_idea')
+        )
+    );
+
     return disposables;
 }
 

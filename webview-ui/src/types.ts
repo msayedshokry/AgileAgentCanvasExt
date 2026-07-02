@@ -1670,3 +1670,21 @@ export {
     type TraceBreakdownRow,
     type TraceBreakdownMessage,
 } from '../../src/types/trace-breakdown';
+
+// =============================================================================
+// Idea / Note Types (extension-only; NOT a BMAD artifact type — Ideas live
+// outside the schema-validated BmadArtifacts union).
+// =============================================================================
+
+export type IdeaColor = 'yellow' | 'blue' | 'green' | 'pink' | 'gray';
+
+export interface Idea {
+  id: string;
+  title: string;
+  body: string;
+  color: IdeaColor;
+  createdAt: string;
+  updatedAt: string;
+  archivedAt?: string;
+}
+

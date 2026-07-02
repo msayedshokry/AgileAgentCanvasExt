@@ -23,8 +23,9 @@ import { SearchBox } from './components/SearchBox';
 import { CatalogueModal } from './components/CatalogueModal';
 import { ProviderSelector } from './components/ProviderSelector';
 import { Icon } from './components/Icon';
+import { IdeasDrawer } from './components/IdeasDrawer';
 import { vscode } from './vscodeApi';
-import type { Artifact, AICursorState, ElicitationMethod, BmmWorkflow } from './types';
+import type { Artifact, AICursorState, ElicitationMethod, BmmWorkflow, Idea } from './types';
 
 // Read injected mode/id globals (set by the extension for detail-tab mode)
 // The extension injects <script>window.__AC_MODE__='detail'; window.__AC_DETAIL_ID__='...';</script>
@@ -141,6 +142,14 @@ function App() {
 
   // Schema validation errors surfaced from extension on save
   const [validationErrors, setValidationErrors] = useState<{ artifactType: string; artifactId: string; errors: string[] } | null>(null);
+
+  // Ideas drawer state — simple, lightweight, independent from BMAD artifact flow
+  const [ideasOpen, setIdeasOpen] = useState(false);
+  const [ideasFocus, setIdeasFocus] = useState<'capture' | 'list' | undefined>(undefined);
+  const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [ideasArchived, setIdeasArchived] = useState<Idea[]>([]);
+  const [ideasProjectReady, setIdeasProjectReady] = useState<boolean>(false);
+  const [ideasError, setIdeasError] = useState<string | null>(null);
 
   // Schema issues detected on project load (files that don't match expected schemas)
   const [schemaIssues, setSchemaIssues] = useState<{ file: string; type: string; errors: string[] }[]>([]);
@@ -571,6 +580,24 @@ function App() {
       case 'openAskModal':
         // Extension command (e.g. Ctrl+Shift+A) requests the Ask modal
         setAskOpen(true);
+        break;
+      case 'openIdeasDrawer':
+        // Extension command (Ctrl+Alt+I) requests the Ideas drawer
+        setIdeasOpen(true);
+        setIdeasFocus((message as any).focus === 'capture' ? 'capture' : 'list');
+        break;
+      case 'ideasList':
+        // Bulk payload: active + archived lists, replaced atomically on each push
+        setIdeas(Array.isArray(message.ideas) ? message.ideas : []);
+        setIdeasArchived(Array.isArray(message.archived) ? message.archived : []);
+        if (typeof message.projectReady === 'boolean') setIdeasProjectReady(message.projectReady);
+        break;
+      case 'ideaError':
+        if (message.error) {
+          setIdeasError(message.error);
+          // auto-dismiss after 6s
+          setTimeout(() => setIdeasError(null), 6000);
+        }
         break;
       case 'showGraphifyModal':
         setGraphifyModalOpen(true);
@@ -1264,6 +1291,9 @@ function App() {
           schemaFixing={schemaFixing}
   onCatalogue={handleOpenCatalogue}
   onGeneratePlan={handleGenerateVisualPlan}
+  onToggleIdeas={() => setIdeasOpen(o => !o)}
+  ideasOpen={ideasOpen}
+  ideasCount={ideas.length}
 />
       </div>
 
@@ -1376,6 +1406,17 @@ function App() {
       {askOpen && (
         <AskModal onSubmit={handleAskSubmit} onClose={handleCloseAsk} />
       )}
+      <IdeasDrawer
+        open={ideasOpen}
+        ideas={ideas}
+        archived={ideasArchived}
+        initialFocus={ideasFocus}
+        projectReady={ideasProjectReady}
+        error={ideasError}
+        onDismissError={() => setIdeasError(null)}
+        onOpenProject={() => vscode.postMessage({ type: 'switchProject' })}
+        onClose={() => { setIdeasOpen(false); setIdeasFocus(undefined); }}
+      />
       {showSprintView && (
         <SprintPlanningView
           data={sprintData}

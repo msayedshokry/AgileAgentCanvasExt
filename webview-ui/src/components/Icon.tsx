@@ -63,7 +63,8 @@ export type IconName =
   | 'trash'           // delete / remove
   | 'package'         // package / repo / module
   | 'catalogue'       // skill & agent catalogue (was 🗂️)
-  | 'code';           // source code brackets <> (was 💻)
+  | 'code'            // source code brackets <> (was 💻)
+  | 'idea';           // lightbulb — Ideas drawer / quick note
 
 interface IconProps {
   name: IconName;
@@ -480,6 +481,20 @@ const paths: Record<IconName, JSX.Element> = {
       <polyline points="16 18 22 12 16 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       <polyline points="8 6 2 12 8 18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       <line x1="14" y1="4" x2="10" y2="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </>
+  ),
+  'idea': (
+    // Lightbulb — Ideas drawer / quick note
+    <>
+      <path d="M9 18h6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M10 21h4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path
+        d="M12 2a7 7 0 0 0-4 12.7c.6.4 1 1 1 1.7V17h6v-.6c0-.7.4-1.3 1-1.7A7 7 0 0 0 12 2z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
     </>
   ),
 };

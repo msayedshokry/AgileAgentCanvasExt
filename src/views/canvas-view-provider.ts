@@ -10,6 +10,7 @@ import { loadSampleProject } from '../commands/project-commands';
 import { handleCommonWebviewMessage, handleCatalogueWebviewMessage } from './webview-message-handler';
 import { handleAgenticKanbanMessage } from './agentic-kanban-message-handler';
 import { buildArtifacts } from '../canvas/artifact-transformer';
+import { IdeaStore } from '../state/idea-store';
 
 /**
  * Webview provider for the AgileAgentCanvas - Full panel view
@@ -26,11 +27,15 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
 
     constructor(
         private readonly extensionUri: vscode.Uri,
-        store: ArtifactStore
+        store: ArtifactStore,
+        // Optional: pop-out panel canvas constructs without an IdeaStore.
+        // When undefined, idea message handlers respond with a project-not-ready
+        // error; sidebar canvas always passes a real instance.
+        private readonly ideaStore?: IdeaStore,
     ) {
         this.store = store;
         logger.debug('[CanvasProvider] Constructor called');
-        
+
         // Register store listener in constructor so it's always active
         // This way we catch artifact changes even before the view is opened
         this.store.onDidChangeArtifacts(() => {
@@ -39,7 +44,25 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
             this.sendArtifactsToDetailTabs();
         });
 
+        // Forward idea changes to the webview (drawer subscribes for free).
+        if (this.ideaStore) {
+            this.ideaStore.onDidChange(() => {
+                this.sendIdeas();
+            });
+        }
 
+    }
+
+    /** Send the full ideas payload (active + archived) to the webview. */
+    public sendIdeas(): void {
+        if (!this._view) return;
+        if (!this.ideaStore) return;
+        this._view.webview.postMessage({
+            type: 'ideasList',
+            ideas: this.ideaStore.list(),
+            archived: this.ideaStore.listArchived(),
+            projectReady: this.ideaStore.hasFolder(),
+        });
     }
 
     resolveWebviewView(
@@ -123,7 +146,73 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
                             this._view?.webview.postMessage({ type: 'schemaIssues', issues });
                         }
                     }
+                    // Send initial ideas list (active + archived)
+                    this.sendIdeas();
                     break;
+                case 'newIdea': {
+                    // Host-handled: focus the drawer's quick-capture input.
+                    if (this._view) {
+                        this._view.webview.postMessage({ type: 'openIdeasDrawer', focus: 'capture' });
+                    }
+                    break;
+                }
+                case 'createIdea': {
+                    if (!this.ideaStore) {
+                        this._view?.webview.postMessage({ type: 'ideaError', error: 'Ideas store unavailable in this view.' });
+                        return;
+                    }
+                    if (!this.ideaStore.hasFolder()) {
+                        this._view?.webview.postMessage({ type: 'ideaError', error: 'No active project folder. Open or create a project first — ideas save to <project>/ideas/.' });
+                        return;
+                    }
+                    const draft = {
+                        title: String(message.title ?? 'Untitled idea'),
+                        body:  String(message.body  ?? ''),
+                        color: (message.color ?? 'yellow') as any,
+                    };
+                    await this.ideaStore.create(draft);
+                    break;
+                }
+                case 'updateIdea': {
+                    if (!this.ideaStore) return;
+                    if (!this.ideaStore.hasFolder()) {
+                        this._view?.webview.postMessage({ type: 'ideaError', error: 'No active project folder.' });
+                        return;
+                    }
+                    await this.ideaStore.update(String(message.id), {
+                        title: message.title,
+                        body:  message.body,
+                        color: message.color,
+                    });
+                    break;
+                }
+                case 'archiveIdea': {
+                    if (!this.ideaStore) return;
+                    if (!this.ideaStore.hasFolder()) {
+                        this._view?.webview.postMessage({ type: 'ideaError', error: 'No active project folder.' });
+                        return;
+                    }
+                    await this.ideaStore.archive(String(message.id));
+                    break;
+                }
+                case 'restoreIdea': {
+                    if (!this.ideaStore) return;
+                    if (!this.ideaStore.hasFolder()) {
+                        this._view?.webview.postMessage({ type: 'ideaError', error: 'No active project folder.' });
+                        return;
+                    }
+                    await this.ideaStore.restore(String(message.id));
+                    break;
+                }
+                case 'deleteIdea': {
+                    if (!this.ideaStore) return;
+                    if (!this.ideaStore.hasFolder()) {
+                        this._view?.webview.postMessage({ type: 'ideaError', error: 'No active project folder.' });
+                        return;
+                    }
+                    await this.ideaStore.delete(String(message.id));
+                    break;
+                }
                 case 'addArtifact':
                     await this.handleAddArtifact(message.artifactType, message.parentId);
                     break;

@@ -1,0 +1,318 @@
+/* ── Ideas Drawer ──────────────────────────────────────────────────────────
+   Sits flush-right of the canvas view as a paper-style overlay. Distinct
+   visual treatment so ideas don't compete with formal BMAD artifact cards. */
+
+.ideas-drawer {
+  position: fixed;
+  /* Drop below the canvas toolbar (z:100) so the drawer's header / banner
+     are not occluded by the FAB. 56px clears a 28px-tall toolbar button row
+     with breathing room on each side. */
+  top: 56px;
+  right: 0;
+  width: 340px;
+  max-width: 90vw;
+  height: calc(100vh - 56px);
+  background: var(--vscode-editor-background);
+  border-left: 1px solid var(--vscode-editorWidget-border);
+  border-radius: 8px 0 0 8px;
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  z-index: 51;
+  font-family: var(--vscode-font-family, 'Segoe UI', system-ui);
+  font-size: 13px;
+  color: var(--vscode-foreground);
+  animation: ideas-slide-in 180ms ease;
+}
+
+/* Transparent scrim that captures outside-clicks without dimming the canvas. */
+.ideas-drawer-scrim {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  z-index: 50;
+  cursor: default;
+}
+
+/* Error toast — pinned under the header, auto-dismissable. */
+.ideas-drawer-toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin: 8px 12px 0;
+  border-radius: 4px;
+  background: var(--vscode-inputValidation-errorBackground, rgba(255, 80, 80, 0.18));
+  border: 1px solid var(--vscode-inputValidation-errorBorder, #f48771);
+  color: var(--vscode-inputValidation-errorForeground, #f48771);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.ideas-drawer-toast-text { flex: 1; word-break: break-word; }
+.ideas-drawer-toast-close {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* Empty-project banner — replaces the form when no project is active. */
+.ideas-drawer-banner {
+  margin: 10px 12px 6px;
+  padding: 12px;
+  border-radius: 6px;
+  background: var(--vscode-textBlockQuote-background, rgba(212, 185, 65, 0.12));
+  border: 1px dashed var(--vscode-editorWidget-border);
+  border-left: 3px solid #d4b941;
+}
+.ideas-drawer-banner-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.ideas-drawer-banner-body {
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  opacity: 0.9;
+}
+.ideas-drawer-banner-body code {
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 11px;
+  padding: 1px 4px;
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 2px;
+}
+
+@keyframes ideas-slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+.ideas-drawer-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border);
+  background: var(--vscode-sideBar-background, var(--vscode-editorWidget-background));
+}
+
+.ideas-drawer-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ideas-drawer-icon { font-size: 15px; }
+
+.ideas-drawer-search {
+  flex: 1;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, var(--vscode-editorWidget-border));
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.ideas-drawer-close {
+  background: transparent;
+  border: 0;
+  color: var(--vscode-foreground);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 6px;
+  border-radius: 3px;
+  line-height: 1;
+}
+.ideas-drawer-close:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+
+/* ── Quick capture form ──────────────────────────────────────────────────── */
+
+.ideas-capture {
+  padding: 10px 12px;
+  border-bottom: 1px dashed var(--vscode-editorWidget-border);
+  background: rgba(251, 243, 196, 0.05);
+}
+
+.ideas-capture-title,
+.ideas-capture-body {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, var(--vscode-editorWidget-border));
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.ideas-capture-title { font-weight: 600; }
+
+.ideas-capture-body {
+  resize: vertical;
+  min-height: 60px;
+  line-height: 1.45;
+}
+
+.ideas-capture-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.ideas-color-row { display: flex; gap: 4px; }
+
+.ideas-color-chip {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  padding: 0;
+}
+.ideas-color-chip.yellow { background: #fbf3c4; }
+.ideas-color-chip.blue   { background: #d9e6ff; }
+.ideas-color-chip.green  { background: #dff7dc; }
+.ideas-color-chip.pink   { background: #ffd9e2; }
+.ideas-color-chip.gray   { background: #ececec; }
+.ideas-color-chip.selected { box-shadow: 0 0 0 2px var(--vscode-focusBorder); }
+
+.ideas-capture-buttons { display: flex; gap: 6px; }
+
+.ideas-capture-buttons .btn-small { padding: 4px 10px; font-size: 12px; }
+.ideas-capture-buttons kbd {
+  font-family: monospace;
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-left: 4px;
+  opacity: 0.85;
+}
+
+/* ── List + cards ────────────────────────────────────────────────────────── */
+
+.ideas-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 12px;
+}
+
+.ideas-empty {
+  margin: 24px 8px;
+  text-align: center;
+  color: var(--vscode-descriptionForeground);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.ideas-card {
+  /* paper note treatment */
+  background: var(--vscode-editorWidget-background);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-left: 3px solid #d4b941;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+  transition: transform 80ms ease, box-shadow 80ms ease;
+  position: relative;
+}
+
+.ideas-card:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12); }
+.ideas-card.editing { box-shadow: 0 0 0 2px var(--vscode-focusBorder); }
+
+.ideas-card.yellow { background: rgba(251, 243, 196, 0.6); border-left-color: #d4b941; }
+.ideas-card.blue   { background: rgba(217, 230, 255, 0.6); border-left-color: #4d7fd1; }
+.ideas-card.green  { background: rgba(223, 247, 220, 0.6); border-left-color: #4da44b; }
+.ideas-card.pink   { background: rgba(255, 217, 226, 0.6); border-left-color: #d44d6e; }
+.ideas-card.gray   { background: rgba(236, 236, 236, 0.5); border-left-color: #8a8a8a; opacity: 0.85; }
+.ideas-card.archived { opacity: 0.65; }
+
+.ideas-card-row1 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ideas-card-title { flex: 1; word-break: break-word; }
+.ideas-card-time {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  white-space: nowrap;
+}
+.ideas-card-color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.ideas-card-color-dot.yellow { background: #d4b941; }
+.ideas-card-color-dot.blue   { background: #4d7fd1; }
+.ideas-card-color-dot.green  { background: #4da44b; }
+.ideas-card-color-dot.pink   { background: #d44d6e; }
+.ideas-card-color-dot.gray   { background: #8a8a8a; }
+
+.ideas-card-preview {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--vscode-foreground);
+  opacity: 0.78;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.ideas-card-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+.ideas-card-action {
+  background: transparent;
+  border: 1px solid var(--vscode-editorWidget-border);
+  border-radius: 3px;
+  padding: 2px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--vscode-foreground);
+}
+.ideas-card-action:hover { background: var(--vscode-toolbar-hoverBackground); }
+.ideas-card-action.danger { color: var(--vscode-errorForeground); }
+
+/* ── Archived section ───────────────────────────────────────────────────── */
+
+.ideas-archived-section {
+  border-top: 1px solid var(--vscode-editorWidget-border);
+  padding: 6px 12px 12px;
+  max-height: 35vh;
+  overflow-y: auto;
+}
+
+.ideas-archived-toggle {
+  background: transparent;
+  border: 0;
+  color: var(--vscode-descriptionForeground);
+  font-size: 11px;
+  padding: 6px 0;
+  cursor: pointer;
+  font-family: inherit;
+  width: 100%;
+  text-align: left;
+}
+.ideas-archived-toggle:hover { color: var(--vscode-foreground); }

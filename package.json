@@ -2,7 +2,7 @@
   "name": "agileagentcanvas",
   "displayName": "Agile Agent Canvas",
   "description": "Visual AI-assisted product development with BMAD methodology - Design epics, stories, and requirements collaboratively with interactive AI chat workflows",
-  "version": "0.5.6",
+  "version": "0.5.7",
   "publisher": "msayedshokry",
   "license": "MIT",
   "repository": {
@@ -506,6 +506,43 @@
         }
       },
       {
+        "name": "agileagentcanvas_list_ideas",
+        "displayName": "Agile Agent Canvas List Ideas",
+        "modelDescription": "List free-form ideas/notes the user has captured for the active project. Ideas live in <outputFolder>/ideas/*.md and are separate from formal BMAD artifacts. Use this when the user asks \"what ideas did I jot down about X\" or wants to retrieve a thought they captured earlier.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "includeArchived": {
+              "type": "boolean",
+              "description": "Set true to include archived (soft-deleted) ideas.",
+              "default": false
+            },
+            "search": {
+              "type": "string",
+              "description": "Optional case-insensitive substring filter on title + body."
+            }
+          },
+          "required": []
+        }
+      },
+      {
+        "name": "agileagentcanvas_read_idea",
+        "displayName": "Agile Agent Canvas Read Idea",
+        "modelDescription": "Read a single captured idea/note by its id (from agileagentcanvas_list_ideas). Returns the full body so the AI can quote or summarize it. Use when the user asks to expand a specific idea, or after listing ideas to pull content for refinement.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "The idea id (e.g. 'idea-lxyz-ab12'). Get this from agileagentcanvas_list_ideas."
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      {
         "name": "agileagentcanvas_schema_from_json",
         "displayName": "Agile Agent Canvas Schema From JSON",
         "modelDescription": "Infer a JSON schema from one or more sample JSON objects. The more samples provided, the more accurate the schema. Use this when you have JSON output but no schema — avoids hand-rolling a schema.",
@@ -948,6 +985,11 @@
         "command": "agileagentcanvas.suggestTool",
         "title": "Suggest New Tool",
         "category": "Agile Agent Canvas"
+      },
+      {
+        "command": "agileagentcanvas.newIdea",
+        "title": "Agile Agent Canvas: New Idea",
+        "category": "Agile Agent Canvas"
       }
     ],
     "keybindings": [
@@ -955,6 +997,11 @@
         "command": "agileagentcanvas.askAgent",
         "key": "ctrl+shift+a",
         "mac": "cmd+shift+a"
+      },
+      {
+        "command": "agileagentcanvas.newIdea",
+        "key": "ctrl+alt+i",
+        "mac": "cmd+alt+i"
       }
     ],
     "viewsContainers": {

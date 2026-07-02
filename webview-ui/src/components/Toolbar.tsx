@@ -27,6 +27,9 @@ interface ToolbarProps {
   graphifyReady?: boolean;
   onCatalogue?: () => void;
   onGeneratePlan?: () => void;
+  onToggleIdeas?: () => void;
+  ideasOpen?: boolean;
+  ideasCount?: number;
 }
 
 /** All artifact types that can be created via the Add menu. */
@@ -72,7 +75,7 @@ const ROOT_TYPES: Set<Artifact['type']> = new Set([
   'epic', 'requirement', 'prd', 'architecture', 'vision', 'product-brief',
 ]);
 
-export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhance, onElicit, themeOverride, onToggleTheme, onSwitchProject, activeFolderName, onExport, onImport, onHelp, onAsk, schemaIssueCount, onFixSchemas, onValidateSchemas, schemaValidating, schemaFixing, onSprintView, onJira, onGraphify, graphifyReady, onCatalogue, onGeneratePlan }: ToolbarProps) {
+export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhance, onElicit, themeOverride, onToggleTheme, onSwitchProject, activeFolderName, onExport, onImport, onHelp, onAsk, schemaIssueCount, onFixSchemas, onValidateSchemas, schemaValidating, schemaFixing, onSprintView, onJira, onGraphify, graphifyReady, onCatalogue, onGeneratePlan, onToggleIdeas, ideasOpen, ideasCount }: ToolbarProps) {
   const [open, setOpen] = useState(false);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -196,6 +199,22 @@ export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhanc
           title="Ask Agile Agent Canvas a question"
         >
           <Icon name="chat" size={16} />
+        </button>
+      )}
+
+      {/* Ideas button — toggle the Ideas drawer. Always visible; primary capture gesture. */}
+      {onToggleIdeas && (
+        <button
+          className={`toolbar-ideas-btn${ideasOpen ? ' open' : ''}`}
+          onClick={onToggleIdeas}
+          title="Ideas & notes (Ctrl+Alt+I)"
+          aria-label="Toggle ideas drawer"
+          aria-expanded={!!ideasOpen}
+        >
+          <Icon name="idea" size={16} />
+          {typeof ideasCount === 'number' && ideasCount > 0 && (
+            <span className="toolbar-ideas-badge">{ideasCount}</span>
+          )}
         </button>
       )}
 

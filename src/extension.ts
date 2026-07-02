@@ -5,6 +5,7 @@ import { ArtifactsTreeProvider } from './views/artifacts-tree-provider';
 import { WizardStepsProvider } from './views/wizard-steps-provider';
 import { AgenticKanbanViewProvider } from './views/agentic-kanban-view-provider';
 import { AgentSessionsViewProvider } from './views/agent-sessions-view-provider';
+import { AgileAgentCanvasViewProvider } from './views/canvas-view-provider';
 import { ArtifactStore } from './state/artifact-store';
 import { WorkspaceResolver } from './state/workspace-resolver';
 import { getWorkflowExecutor } from './workflow/workflow-executor';
@@ -72,15 +73,18 @@ import { autoScheduler } from './workflow/auto-scheduler';
 import { initialiseCatalogueService } from './state/catalogue-service';
 import { initialiseSkillRepoManager } from './state/skill-repo-manager';
 import { USER_CATALOGUE_SETTING } from './state/constants';
+import { IdeaStore } from './state/idea-store';
 
 const logger = createLogger('extension');
 
 let artifactStore: ArtifactStore;
+let ideaStore: IdeaStore;
 let workspaceResolver: WorkspaceResolver;
 let fileWatcher: vscode.FileSystemWatcher | undefined;
 let folderDeleteCheckTimer: ReturnType<typeof setTimeout> | undefined;
 const openCanvasPanels: vscode.WebviewPanel[] = [];
 const detailTabs = new Map<string, vscode.WebviewPanel>();
+const sidebarCanvasProvider = { current: undefined as unknown as AgileAgentCanvasViewProvider | undefined };
 
 // Output channel for AgileAgentCanvas logs (visible in Output panel)
 export const acOutput = vscode.window.createOutputChannel('Agile Agent Canvas');
@@ -92,6 +96,13 @@ export const acOutput = vscode.window.createOutputChannel('Agile Agent Canvas');
  */
 export function getWorkspaceResolver(): WorkspaceResolver {
     return workspaceResolver;
+}
+
+/** Singleton accessor for the sidebar canvas view provider (so the
+ *  `newIdea` command can broadcast to it the same way `askAgent` does to
+ *  open canvas panels). Returns undefined if the sidebar hasn't mounted. */
+export function getCanvasViewProvider(): AgileAgentCanvasViewProvider | undefined {
+    return sidebarCanvasProvider.current;
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -109,6 +120,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Initialize the artifact store (shared state)
     artifactStore = new ArtifactStore(context);
+
+    // Initialize the lightweight Ideas scratchpad (separate from ArtifactStore)
+    ideaStore = new IdeaStore();
 
     // ── Skill Catalogue & Repo Manager ──────────────────────────────────────
     const catalogueService = initialiseCatalogueService(context, context.extensionPath);
@@ -173,6 +187,13 @@ export function activate(context: vscode.ExtensionContext) {
             AgenticKanbanViewProvider.viewType,
             agenticKanbanProvider
         ),
+        // Sidebar canvas view — held by reference so command handlers can
+        // post messages to it (mirrors openCanvasPanels[] for the pop-out panel).
+        (() => {
+            const p = new AgileAgentCanvasViewProvider(context.extensionUri, artifactStore, ideaStore);
+            sidebarCanvasProvider.current = p;
+            return vscode.window.registerWebviewViewProvider(AgileAgentCanvasViewProvider.viewType, p);
+        })(),
         vscode.window.registerWebviewViewProvider(
             AgentSessionsViewProvider.viewType,
             agentSessionsProvider
@@ -452,6 +473,23 @@ export function activate(context: vscode.ExtensionContext) {
                 });
             }
         }),
+        // New Idea — open the Ideas drawer and focus the quick-capture input
+        // (triggered by Ctrl+Alt+I). Mirrors askAgent's broadcast pattern.
+        vscode.commands.registerCommand('agileagentcanvas.newIdea', async () => {
+            const post = () => {
+                const sidebar = sidebarCanvasProvider.current;
+                sidebar?.postMessage({ type: 'openIdeasDrawer', focus: 'capture' });
+                openCanvasPanels.forEach(panel => {
+                    panel.webview.postMessage({ type: 'openIdeasDrawer', focus: 'capture' });
+                });
+            };
+            if (openCanvasPanels.length === 0 && !sidebarCanvasProvider.current) {
+                await openCanvasPanel(context, artifactStore);
+                setTimeout(post, 500);
+            } else {
+                post();
+            }
+        }),
         // Migration commands — extract inline stories to files
         vscode.commands.registerCommand('agileagentcanvas.migrateToRefArch', async () => {
             const confirm = await vscode.window.showWarningMessage(
@@ -548,6 +586,10 @@ export function activate(context: vscode.ExtensionContext) {
     // then auto-load artifacts from the resolved folder.
     workspaceResolver.initialize().then(async () => {
         const outputUri = workspaceResolver.getActiveOutputUri();
+        // Seed the Ideas store with whatever project is active at activation.
+        if (outputUri) {
+            await ideaStore.setFolder(outputUri);
+        }
         if (outputUri) {
             try {
                 await vscode.workspace.fs.stat(outputUri);
@@ -635,6 +677,10 @@ export function activate(context: vscode.ExtensionContext) {
             } catch {
                 logger.info(`[WorkspaceResolver] New project folder doesn't exist yet: ${project.outputUri.fsPath}`);
             }
+
+            // Point the Ideas store at the same project folder — single source of truth
+            // for "where files live today" across artifacts and ideas.
+            await ideaStore.setFolder(project.outputUri);
 
             // Set context key on project switch
             vscode.commands.executeCommand('setContext', 'agileagentcanvas.hasProject', true);
@@ -888,6 +934,13 @@ async function openCanvasPanel(context: vscode.ExtensionContext, store: Artifact
                             panel.webview.postMessage({ type: 'schemaIssues', issues });
                         }
                     }
+                    // Send initial ideas list (active + archived)
+                    panel.webview.postMessage({
+                        type: 'ideasList',
+                        ideas: ideaStore.list(),
+                        archived: ideaStore.listArchived(),
+                        projectReady: ideaStore.hasFolder(),
+                    });
                     break;
                 case 'addArtifact':
                     // Handle adding new artifacts - create, select, and open in edit mode
@@ -904,6 +957,55 @@ async function openCanvasPanel(context: vscode.ExtensionContext, store: Artifact
                         store.clearSelection();
                     }
                     break;
+
+                // ── Ideas drawer messages — parallel to canvas-view-provider's switch.
+                // Shared singleton `ideaStore` ensures both code paths see the same data,
+                // and IdeaStore fires onDidChange which fans out to all open panels.
+                case 'createIdea': {
+                    if (!ideaStore.hasFolder()) {
+                        panel.webview.postMessage({
+                            type: 'ideaError',
+                            error: 'No active project folder. Open or create a project first — ideas save to <project>/ideas/.',
+                        });
+                        break;
+                    }
+                    await ideaStore.create({
+                        title: String(message.title ?? 'Untitled idea'),
+                        body:  String(message.body  ?? ''),
+                        color: (message.color ?? 'yellow') as any,
+                    });
+                    // Fire to ALL open panels so multi-panel setups stay in sync.
+                    openCanvasPanels.forEach(p => p.webview.postMessage({
+                        type: 'ideasList',
+                        ideas: ideaStore.list(),
+                        archived: ideaStore.listArchived(),
+                        projectReady: ideaStore.hasFolder(),
+                    }));
+                    break;
+                }
+                case 'updateIdea':
+                case 'archiveIdea':
+                case 'restoreIdea':
+                case 'deleteIdea': {
+                    if (!ideaStore.hasFolder()) {
+                        panel.webview.postMessage({ type: 'ideaError', error: 'No active project folder.' });
+                        break;
+                    }
+                    const map = {
+                        updateIdea:  (id: string) => ideaStore.update(id, { title: message.title, body: message.body, color: message.color }),
+                        archiveIdea: (id: string) => ideaStore.archive(id),
+                        restoreIdea: (id: string) => ideaStore.restore(id),
+                        deleteIdea:  (id: string) => ideaStore.delete(id),
+                    } as const;
+                    await map[message.type as 'updateIdea'](String(message.id));
+                    openCanvasPanels.forEach(p => p.webview.postMessage({
+                        type: 'ideasList',
+                        ideas: ideaStore.list(),
+                        archived: ideaStore.listArchived(),
+                        projectReady: ideaStore.hasFolder(),
+                    }));
+                    break;
+                }
                 case 'reloadArtifacts':
                     await reloadArtifactsFromDisk(store);
                     break;
