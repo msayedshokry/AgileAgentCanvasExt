@@ -202,16 +202,16 @@ export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhanc
         </button>
       )}
 
-      {/* Ideas button — toggle the Ideas drawer. Always visible; primary capture gesture. */}
+      {/* Notes button — toggle the Notes drawer. Always visible; primary capture gesture. */}
       {onToggleIdeas && (
         <button
           className={`toolbar-ideas-btn${ideasOpen ? ' open' : ''}`}
           onClick={onToggleIdeas}
-          title="Ideas & notes (Ctrl+Alt+I)"
-          aria-label="Toggle ideas drawer"
+          title="Toggle notes drawer (Ctrl+Alt+I)"
+          aria-label="Toggle notes drawer"
           aria-expanded={!!ideasOpen}
         >
-          <Icon name="idea" size={16} />
+          <Icon name="note" size={16} />
           {typeof ideasCount === 'number' && ideasCount > 0 && (
             <span className="toolbar-ideas-badge">{ideasCount}</span>
           )}

@@ -50,14 +50,22 @@ describe('computeMindmapLayout — empty input', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('computeMindmapLayout — single artifact', () => {
-  it('positions a single artifact at the root location', () => {
+  it('positions a single artifact under a phase header', () => {
+    // With always-on phase headers, a single vision gets a Discovery phase
+    // node at ROOT_X, and the vision is one level to the right.
     const artifacts = [makeArtifact({ id: 'v1', type: 'vision', title: 'Vision' })];
     const result = computeMindmapLayout(artifacts);
 
-    expect(result).toHaveLength(1);
-    const node = result[0];
-    expect(node.position.x).toBe(ROOT_X);
-    expect(node.position.y).toBe(ROOT_Y);
+    expect(result).toHaveLength(2);
+    const phase = findById(result, '__phase_discovery')!;
+    expect(phase).toBeDefined();
+    expect(phase.position.x).toBe(ROOT_X);
+    expect(phase.position.y).toBe(ROOT_Y);
+    expect(phase.size.width).toBe(NODE_W);
+    expect(phase.size.height).toBe(NODE_H);
+
+    const node = findById(result, 'v1')!;
+    expect(node.position.x).toBe(ROOT_X + NODE_W + H_GAP);
     expect(node.size.width).toBe(NODE_W);
     expect(node.size.height).toBe(NODE_H);
   });
@@ -82,7 +90,8 @@ describe('computeMindmapLayout — parent-child hierarchy', () => {
     ];
     const result = computeMindmapLayout(artifacts);
 
-    expect(result).toHaveLength(2);
+    // With always-on phase headers: __phase_implementation + epic1 + story1
+    expect(result).toHaveLength(3);
     const parent = findById(result, 'epic1')!;
     const child = findById(result, 'story1')!;
 
@@ -211,8 +220,14 @@ describe('computeMindmapLayout — orphan artifacts', () => {
     ];
     const result = computeMindmapLayout(artifacts);
 
-    expect(result).toHaveLength(1);
-    expect(result[0].position.x).toBe(ROOT_X);
+    // Orphan story is a root → grouped under Implementation phase header
+    expect(result).toHaveLength(2);
+ const phase = findById(result, '__phase_implementation')!;
+    expect(phase).toBeDefined();
+    expect(phase.position.x).toBe(ROOT_X);
+
+    const orphan = findById(result, 'a1')!;
+    expect(orphan.position.x).toBe(ROOT_X + NODE_W + H_GAP);
   });
 });
 
@@ -245,16 +260,23 @@ describe('computeMindmapLayout — multiple roots with phase grouping', () => {
     expect(vb.position.x).toBe(ROOT_X + NODE_W + H_GAP);
   });
 
-  it('does not create a virtual node when only one root exists in a phase', () => {
+  it('always creates phase headers even for single-root phases', () => {
+    // With always-on phase headers, each root gets its phase header regardless
+    // of how many roots are in that phase.
     const artifacts = [
       makeArtifact({ id: 'v1', type: 'vision', title: 'Vision' }),
       makeArtifact({ id: 'e1', type: 'epic', title: 'Epic' }),
     ];
     const result = computeMindmapLayout(artifacts);
 
-    // No virtual phase nodes should appear; both are single roots in their phases
+    // Both phases get virtual nodes: Discovery + Implementation
     const phaseNodes = result.filter((a) => a.id.startsWith('__phase_'));
-    expect(phaseNodes).toHaveLength(0);
+    expect(phaseNodes).toHaveLength(2);
+
+    const discoveryPhase = findById(result, '__phase_discovery')!;
+    const implPhase = findById(result, '__phase_implementation')!;
+    expect(discoveryPhase).toBeDefined();
+    expect(implPhase).toBeDefined();
 
     // Vision (Discovery) should be above Epic (Implementation) since Discovery comes first
     const v = findById(result, 'v1')!;
@@ -278,11 +300,11 @@ describe('computeMindmapLayout — multiple roots with phase grouping', () => {
     const discoveryPhase = findById(result, '__phase_discovery');
     expect(discoveryPhase).toBeDefined();
 
-    // Planning and Solutioning have 1 root each → no virtual nodes
+    // Planning and Solutioning have 1 root each → still get virtual nodes now
     const planningPhase = findById(result, '__phase_planning');
     const solutioningPhase = findById(result, '__phase_solutioning');
-    expect(planningPhase).toBeUndefined();
-    expect(solutioningPhase).toBeUndefined();
+    expect(planningPhase).toBeDefined();
+    expect(solutioningPhase).toBeDefined();
   });
 
   it('places unknown artifact types in Implementation phase', () => {
@@ -304,7 +326,9 @@ describe('computeMindmapLayout — multiple roots with phase grouping', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('computeMindmapLayout — single root with children', () => {
-  it('uses the single root directly (no virtual nodes)', () => {
+  it('wraps a single root in a phase header', () => {
+    // With always-on phase headers, a single PRD root gets a Planning phase
+    // header. The PRD is one level to the right of the phase node.
     const artifacts = [
       makeArtifact({ id: 'prd1', type: 'prd', title: 'PRD' }),
       makeArtifact({ id: 'req1', type: 'requirement', title: 'Req 1', parentId: 'prd1' }),
@@ -312,14 +336,17 @@ describe('computeMindmapLayout — single root with children', () => {
     ];
     const result = computeMindmapLayout(artifacts);
 
-    // No virtual phase nodes
+    // One virtual phase node (Planning) + PRD + 2 reqs = 4
     const virtualNodes = result.filter((a) => a.id.startsWith('__phase_'));
-    expect(virtualNodes).toHaveLength(0);
+    expect(virtualNodes).toHaveLength(1);
 
-    // Root at ROOT_X, children at ROOT_X + NODE_W + H_GAP
+    const phase = findById(result, '__phase_planning')!;
+    expect(phase.position.x).toBe(ROOT_X);
+
+    // PRD is one level right of the phase header
     const root = findById(result, 'prd1')!;
-    expect(root.position.x).toBe(ROOT_X);
-    expect(result).toHaveLength(3);
+    expect(root.position.x).toBe(ROOT_X + NODE_W + H_GAP);
+    expect(result).toHaveLength(4);
   });
 });
 
@@ -369,7 +396,8 @@ describe('computeMindmapLayout — wide tree with many siblings', () => {
     }
     const result = computeMindmapLayout(artifacts);
 
-    expect(result).toHaveLength(count + 1);
+    // count + 1 for the root + 1 for the Implementation phase header
+    expect(result).toHaveLength(count + 2);
   });
 
   it('no two siblings overlap vertically', () => {
@@ -471,13 +499,16 @@ describe('computeMindmapLayout — data preservation', () => {
     });
     const result = computeMindmapLayout([original]);
 
-    expect(result[0].id).toBe('v1');
-    expect(result[0].type).toBe('vision');
-    expect(result[0].title).toBe('My Vision');
-    expect(result[0].description).toBe('A detailed description');
-    expect(result[0].status).toBe('approved');
-    expect(result[0].dependencies).toEqual(['dep1']);
-    expect(result[0].metadata).toEqual({ productName: 'Test Product' });
+    // Find the original artifact by id (phase header is also in the result now)
+    const node = findById(result, 'v1')!;
+    expect(node).toBeDefined();
+    expect(node.id).toBe('v1');
+    expect(node.type).toBe('vision');
+    expect(node.title).toBe('My Vision');
+    expect(node.description).toBe('A detailed description');
+    expect(node.status).toBe('approved');
+    expect(node.dependencies).toEqual(['dep1']);
+    expect(node.metadata).toEqual({ productName: 'Test Product' });
   });
 
   it('returns new array (does not modify input array)', () => {
@@ -524,7 +555,7 @@ describe('computeMindmapLayout — edge cases', () => {
     }
     const result = computeMindmapLayout(artifacts);
 
-    // Should have 100 stories + 1 virtual Implementation phase node (since >1 root in same phase)
+    // Should have 100 stories + 1 virtual Implementation phase node
     expect(result.length).toBe(101);
   });
 
@@ -536,12 +567,12 @@ describe('computeMindmapLayout — edge cases', () => {
     ];
     const result = computeMindmapLayout(artifacts);
 
-    // All 3 should be in the result. 'root' is a root, 'child' is under root, 'orphan' is a root too.
-    // Since we now have 2 roots (root: prd, orphan: story), they go to different phases:
-    // prd → Planning, story → Implementation, each has only 1 root → no virtual nodes
+    // All 3 original artifacts should be in the result, plus 2 phase headers
+    // (Planning for prd, Implementation for story) = 5 total.
+    // 'root' is a root, 'child' is under root, 'orphan' is a root too.
     const virtualNodes = result.filter((a) => a.id.startsWith('__phase_'));
-    expect(virtualNodes).toHaveLength(0);
-    expect(result).toHaveLength(3);
+    expect(virtualNodes).toHaveLength(2);
+    expect(result).toHaveLength(5);
   });
 
   it('handles all known artifact types in DEPTH_ORDER', () => {

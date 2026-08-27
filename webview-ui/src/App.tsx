@@ -1326,6 +1326,7 @@ function App() {
               screenshotFormat={screenshotFormat}
               onScreenshotReady={handleScreenshotReady}
               onScreenshotError={handleScreenshotError}
+              hasCustomMindmapView={canvasViewByMode.mindmap.zoom !== 1 || canvasViewByMode.mindmap.pan.x !== 0 || canvasViewByMode.mindmap.pan.y !== 0}
               initialCanvasView={canvasViewByMode[layoutMode]}
               onCanvasViewChange={handleCanvasViewChange}
               childPlanMap={childPlanMap}

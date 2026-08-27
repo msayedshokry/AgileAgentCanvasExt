@@ -64,7 +64,7 @@ export type IconName =
   | 'package'         // package / repo / module
   | 'catalogue'       // skill & agent catalogue (was 🗂️)
   | 'code'            // source code brackets <> (was 💻)
-  | 'idea';           // lightbulb — Ideas drawer / quick note
+  | 'note';           // flat sticky note / quick capture (Notes drawer)
 
 interface IconProps {
   name: IconName;
@@ -483,18 +483,16 @@ const paths: Record<IconName, JSX.Element> = {
       <line x1="14" y1="4" x2="10" y2="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </>
   ),
-  'idea': (
-    // Lightbulb — Ideas drawer / quick note
+  'note': (
+    // Flat sticky note / quick capture — Notes drawer.
+    // Outlined rect with three text-rule lines gives a flat, single-color
+    // silhouette that reads at 16px and stays distinct from `prd` (page fold)
+    // and `story` (document + pencil).
     <>
-      <path d="M9 18h6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <path d="M10 21h4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <path
-        d="M12 2a7 7 0 0 0-4 12.7c.6.4 1 1 1 1.7V17h6v-.6c0-.7.4-1.3 1-1.7A7 7 0 0 0 12 2z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
+      <path d="M5 4h14v16H5z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <line x1="8" y1="9"  x2="16" y2="9"  stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <line x1="8" y1="13" x2="16" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <line x1="8" y1="17" x2="13" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </>
   ),
 };

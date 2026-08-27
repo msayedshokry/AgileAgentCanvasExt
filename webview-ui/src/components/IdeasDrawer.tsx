@@ -17,7 +17,7 @@ interface IdeasDrawerProps {
 
 const COLORS: { id: IdeaColor; label: string; hex: string }[] = [
   { id: 'yellow', label: 'Draft',     hex: '#fbf3c4' },
-  { id: 'blue',   label: 'Idea',      hex: '#d9e6ff' },
+  { id: 'blue',   label: 'Note',      hex: '#d9e6ff' },
   { id: 'green',  label: 'Resolved',  hex: '#dff7dc' },
   { id: 'pink',   label: 'Important', hex: '#ffd9e2' },
   { id: 'gray',   label: 'Archived',  hex: '#ececec' },
@@ -67,7 +67,7 @@ export function IdeasDrawer({ open, ideas, archived, initialFocus, projectReady,
     if (!projectReady) {
       // Defensive: drawer banner should already gate this, but block at the
       // source-of-truth click as well so we never post a doomed message.
-      setError?.('No active project folder. Open or create one to save ideas.');
+      setError?.('No active project folder. Open or create one to save notes.');
       return;
     }
     if (editingId) {
@@ -184,7 +184,7 @@ export function IdeasDrawer({ open, ideas, archived, initialFocus, projectReady,
         ref={drawerRef}
         className="ideas-drawer"
         role="complementary"
-        aria-label="Ideas and notes"
+        aria-label="Notes"
       >
       {/* Toast: extension-side error (e.g. save refused) */}
       {error && (
@@ -199,7 +199,7 @@ export function IdeasDrawer({ open, ideas, archived, initialFocus, projectReady,
         <div className="ideas-drawer-banner" role="status">
           <div className="ideas-drawer-banner-title">No project folder active</div>
           <p className="ideas-drawer-banner-body">
-            Ideas save to <code>&lt;project&gt;/ideas/</code>. Open or create one to capture notes.
+            Notes save to <code>&lt;project&gt;/ideas/</code>. Open or create one to capture them.
           </p>
           <button className="btn btn-primary btn-small" onClick={onOpenProject}>
             Open / create project
@@ -209,24 +209,23 @@ export function IdeasDrawer({ open, ideas, archived, initialFocus, projectReady,
 
       <header className="ideas-drawer-header">
         <div className="ideas-drawer-title">
-          <span className="ideas-drawer-icon" aria-hidden>💡</span>
-          <span>Ideas</span>
+          <span>Notes</span>
         </div>
         <input
           className="ideas-drawer-search"
-          placeholder="Search ideas"
+          placeholder="Search notes"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          aria-label="Search ideas"
+          aria-label="Search notes"
         />
-        <button className="ideas-drawer-close" onClick={onClose} aria-label="Close ideas drawer">×</button>
+        <button className="ideas-drawer-close" onClick={onClose} aria-label="Close notes drawer">×</button>
       </header>
 
       <section className="ideas-capture" onKeyDown={handleKeyDown}>
         <input
           ref={titleRef}
           className="ideas-capture-title"
-          placeholder={editingId ? 'Edit title' : 'New idea title'}
+          placeholder={editingId ? 'Edit title' : 'New note title'}
           value={title}
           onChange={e => setTitle(e.target.value)}
         />
@@ -258,7 +257,7 @@ export function IdeasDrawer({ open, ideas, archived, initialFocus, projectReady,
               className="btn btn-primary btn-small"
               onClick={handleSave}
               disabled={(!title.trim() && !body.trim()) || !projectReady}
-              title={!projectReady ? 'Open or create a project to save ideas' : undefined}
+              title={!projectReady ? 'Open or create a project to save notes' : undefined}
             >
               {editingId ? 'Save' : 'Add'} <kbd>⌘↵</kbd>
             </button>
@@ -269,11 +268,11 @@ export function IdeasDrawer({ open, ideas, archived, initialFocus, projectReady,
       <section className="ideas-list">
         {filteredIdeas.length === 0 && ideas.length === 0 ? (
           <p className="ideas-empty">
-            <em>No ideas yet.</em><br />
-            Jot notes here. They save with the project and the AI can read them.
+            <em>No notes yet.</em><br />
+            Jot them here. They save with the project and the AI can read them.
           </p>
         ) : filteredIdeas.length === 0 ? (
-          <p className="ideas-empty"><em>No ideas match "{search}".</em></p>
+          <p className="ideas-empty"><em>No notes match "{search}".</em></p>
         ) : (
           filteredIdeas.map(idea => (
             <article
@@ -294,13 +293,13 @@ export function IdeasDrawer({ open, ideas, archived, initialFocus, projectReady,
                   className="ideas-card-action"
                   onClick={(e) => handleArchive(idea.id, e)}
                   title="Archive"
-                  aria-label="Archive idea"
+                  aria-label="Archive note"
                 >Archive</button>
                 <button
                   className="ideas-card-action danger"
                   onClick={(e) => handleDelete(idea.id, e)}
                   title="Delete permanently"
-                  aria-label="Delete idea"
+                  aria-label="Delete note"
                 >Delete</button>
               </div>
             </article>
@@ -330,13 +329,13 @@ export function IdeasDrawer({ open, ideas, archived, initialFocus, projectReady,
                   className="ideas-card-action"
                   onClick={(e) => handleRestore(idea.id, e)}
                   title="Restore"
-                  aria-label="Restore idea"
+                  aria-label="Restore note"
                 >Restore</button>
                 <button
                   className="ideas-card-action danger"
                   onClick={(e) => handleDelete(idea.id, e)}
                   title="Delete permanently"
-                  aria-label="Delete idea"
+                  aria-label="Delete note"
                 >Delete</button>
               </div>
             </article>

@@ -28,9 +28,9 @@ import type { Artifact } from '../types';
 // (exported below) rather than duplicating locally, so any change here
 // propagates to the test assertions automatically — no more drift.
 const NODE_W = 170;       // card width
-const NODE_H = 50;        // card height
+const NODE_H = 72;        // card height (matches actual compact card render height)
 const H_GAP  = 70;        // horizontal gap between depth levels
-const V_GAP  = 28;        // vertical gap between sibling nodes
+const V_GAP  = 40;        // vertical gap between sibling nodes
 const ROOT_X = 40;        // left margin for root
 const ROOT_Y = 40;        // top margin
 
@@ -265,10 +265,10 @@ export function computeMindmapLayout(artifacts: Artifact[]): Artifact[] {
   // If there are multiple roots, create virtual phase grouping nodes.
   let treeRoots: TreeNode[];
 
-  if (rootNodes.length === 1) {
-    treeRoots = rootNodes;
-  } else {
-    // Group roots into phase clusters
+  // Always group roots into phase clusters so the top-to-bottom flow
+  // (Discovery → Planning → Solutioning → Implementation) is consistent
+  // regardless of how many roots each phase contains.
+  {
     const phases: { label: string; types: Set<string>; nodes: TreeNode[] }[] = [
       { label: 'Discovery',      types: new Set(['product-brief', 'vision']), nodes: [] },
       { label: 'Planning',       types: new Set(['prd', 'requirement', 'nfr', 'additional-req', 'risk']), nodes: [] },
@@ -285,31 +285,29 @@ export function computeMindmapLayout(artifacts: Artifact[]): Artifact[] {
       }
     }
 
-    // Build phase group nodes
+    // Build phase group nodes — always create a virtual phase node
+    // (even for phases with only 1 root) so the top-to-bottom flow
+    // has consistent headers across all four phases.
     const phaseNodes: TreeNode[] = [];
     for (const phase of phases) {
       if (phase.nodes.length === 0) continue;
-      if (phase.nodes.length === 1) {
-        phaseNodes.push(phase.nodes[0]);
-      } else {
-        const virtualArtifact: Artifact = {
-          id: `__phase_${phase.label.toLowerCase()}`,
-          type: 'vision',
-          title: phase.label,
-          description: '',
-          status: 'approved',
-          position: { x: 0, y: 0 },
-          size: { width: NODE_W, height: NODE_H },
-          dependencies: [],
-          metadata: {},
-        };
-        phaseNodes.push({
-          artifact: virtualArtifact,
-          children: phase.nodes,
-          subtreeHeight: 0,
-          subtreeWidth: 0,
-        });
-      }
+      const virtualArtifact: Artifact = {
+        id: `__phase_${phase.label.toLowerCase()}`,
+        type: 'vision',
+        title: phase.label,
+        description: '',
+        status: 'approved',
+        position: { x: 0, y: 0 },
+        size: { width: NODE_W, height: NODE_H },
+        dependencies: [],
+        metadata: {},
+      };
+      phaseNodes.push({
+        artifact: virtualArtifact,
+        children: phase.nodes,
+        subtreeHeight: 0,
+        subtreeWidth: 0,
+      });
     }
 
     treeRoots = phaseNodes;

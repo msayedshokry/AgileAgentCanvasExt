@@ -75,6 +75,13 @@ interface CanvasProps {
    */
   initialLayoutMode?: LayoutMode;
   /**
+   * When true, the mindmap slot in canvasViewByMode has a non-default
+   * custom view (zoom !== 1 or pan !== {0,0}).  Used to skip the one-shot
+   * auto-fit on first mount so the user returns to their saved view after
+   * a VS Code restart instead of having it overwritten.
+   */
+  hasCustomMindmapView?: boolean;
+  /**
    * Reports every layout-mode change back to the parent for persistence.
    * Canvas fires this from a useEffect that watches `layoutMode` so the call
    * is decoupled from the individual key / click handlers. Stable identity
@@ -195,7 +202,7 @@ const TREE_PLAN_SCALE       = 0.85; // height multiplier (= plan.size.height * 0
 const TREE_PLAN_OFFSET_Y    = 8;   // vertical gap below the parent card
 const TREE_PLAN_BAND_PAD    = 8;   // extra padding below tree-nested plan card inside row band
 const BAND_V_INSET          = 6;   // vertical inset for epic row band (matched in JSX render)
-export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpand, expandedIds, expandedCategories, onToggleCategoryExpand, onRefineWithAI, onElicit, onExpandLane, onCollapseLane, centerOnId, onCentered, onOpenSearch, searchMatchIds, screenshotTrigger, screenshotFormat, onScreenshotReady, onScreenshotError, onOpenDetail, initialCanvasView, onCanvasViewChange, childPlanMap, onShowPlan, initialLayoutMode, onLayoutModeChange }: CanvasProps) {
+export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpand, expandedIds, expandedCategories, onToggleCategoryExpand, onRefineWithAI, onElicit, onExpandLane, onCollapseLane, centerOnId, onCentered, onOpenSearch, searchMatchIds, screenshotTrigger, screenshotFormat, onScreenshotReady, onScreenshotError, onOpenDetail, initialCanvasView, onCanvasViewChange, childPlanMap, onShowPlan, initialLayoutMode, onLayoutModeChange, hasCustomMindmapView }: CanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   // Seed pan/zoom from props.initialCanvasView so a layout-mode switch +
@@ -1765,12 +1772,16 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
       return ids;
     }
 
-    // Only create group boxes for non-virtual artifacts that have children
-    const groups: { id: string; depth: number; x: number; y: number; w: number; h: number }[] = [];
+    // Only create group boxes for non-virtual artifacts at depth 0 or 1
+    // that have children. Deeper groups are skipped to avoid the nested
+    // overlapping-box noise that made the mindmap hard to read.
+    const groups: { id: string; depth: number; x: number; y: number; w: number; h: number; label: string }[] = [];
     const PAD = 14; // padding around the group
 
     for (const a of finalArtifacts) {
       if (a.id.startsWith('__phase_')) continue;
+      const depth = depthOf.get(a.id) ?? 0;
+      if (depth > 1) continue; // only render group boxes for top 2 depth levels
       const kids = childrenMap.get(a.id);
       if (!kids || kids.length === 0) continue;
 
@@ -1797,6 +1808,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
         y: minY - PAD,
         w: maxX - minX + PAD * 2,
         h: maxY - minY + PAD * 2,
+        label: a.title,
       });
     }
 
@@ -1804,45 +1816,56 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
   }, [layoutMode, finalArtifacts]);
 
   // Auto fit-to-view when entering mindmap mode.
-  // Disabled: the canvas view is persisted through vscode.setState so the
-  // user returns to the same pan/zoom across layout-mode swaps. Re-enable
-  // here only if we ever need to force-fit on first entry (e.g. for a
-  // "fit to view" toolbar button); until then, preserve view state.
-  /*
+  // Runs exactly ONCE per component mount — the first time the user
+  // enters mindmap mode.  On subsequent re-entries (e.g. cycling
+  // lanes → mindmap → corpus3d → lanes → mindmap) the restore effect
+  // (initialCanvasView prop) handles bringing back the saved view so
+  // the user's manual zoom/pan is never lost to an auto-fit reset.
+  const hasAutoFittedRef = useRef(hasCustomMindmapView ?? false);
   useEffect(() => {
-    if (layoutMode !== 'mindmap' || finalArtifacts.length === 0) return;
+    if (layoutMode !== 'mindmap') return;
+    if (hasAutoFittedRef.current) return;
+    if (finalArtifacts.length === 0) return;
     const el = canvasRef.current;
     if (!el) return;
     const vpW = el.clientWidth;
     const vpH = el.clientHeight;
     if (vpW === 0 || vpH === 0) return;
 
+    hasAutoFittedRef.current = true;
+
     let minX = Infinity, minY = Infinity, maxX = 0, maxY = 0;
     for (const a of finalArtifacts) {
       const ax = a.position?.x ?? 0;
       const ay = a.position?.y ?? 0;
       const aw = a.size?.width ?? 170;
-      const ah = a.size?.height ?? 50;
+      const ah = a.size?.height ?? 72;
       if (ax < minX) minX = ax;
       if (ay < minY) minY = ay;
       if (ax + aw > maxX) maxX = ax + aw;
       if (ay + ah > maxY) maxY = ay + ah;
     }
+    // Include group boxes in the bounding box so they're not clipped
+    for (const box of mindmapGroupBoxes) {
+      if (box.x < minX) minX = box.x;
+      if (box.y < minY) minY = box.y;
+      if (box.x + box.w > maxX) maxX = box.x + box.w;
+      if (box.y + box.h > maxY) maxY = box.y + box.h;
+    }
     const contentW = maxX - minX;
     const contentH = maxY - minY;
     if (contentW === 0 || contentH === 0) return;
-    const FIT_PADDING = 60;
+    const FIT_PADDING = 80;
     const fitZoomW = (vpW - FIT_PADDING * 2) / contentW;
     const fitZoomH = (vpH - FIT_PADDING * 2) / contentH;
-    const fitZoom = Math.max(0.3, Math.min(1, Math.min(fitZoomW, fitZoomH)));
+    const fitZoom = Math.max(0.25, Math.min(1, Math.min(fitZoomW, fitZoomH)));
     const centerX = (minX + maxX) / 2;
     const centerY = (minY + maxY) / 2;
     const panX = vpW / 2 - centerX * fitZoom;
     const panY = vpH / 2 - centerY * fitZoom;
     setZoom(fitZoom);
     setPan({ x: panX, y: panY });
-  }, [layoutMode, finalArtifacts]);
-  */
+  }, [layoutMode, finalArtifacts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // In focus mode use the tree for arrow highlighting; otherwise use single-hop connectedIds
   const arrowHighlightIds = focusTreeIds ?? connectedIds;
@@ -1927,7 +1950,9 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
               width: box.w,
               height: box.h,
             }}
-          />
+          >
+            <span className={`mindmap-group-box-label group-depth-${box.depth}`}>{box.label}</span>
+          </div>
         ))}
 
         {/* Dependency arrows layer - only for displayed artifacts */}

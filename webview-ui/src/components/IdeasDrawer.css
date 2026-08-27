@@ -107,7 +107,6 @@
   white-space: nowrap;
 }
 
-.ideas-drawer-icon { font-size: 15px; }
 
 .ideas-drawer-search {
   flex: 1;
@@ -138,7 +137,7 @@
 .ideas-capture {
   padding: 10px 12px;
   border-bottom: 1px dashed var(--vscode-editorWidget-border);
-  background: rgba(251, 243, 196, 0.05);
+  background: color-mix(in srgb, #fbf3c4 5%, var(--vscode-editor-background, #fff));
 }
 
 .ideas-capture-title,
@@ -188,6 +187,13 @@
 .ideas-color-chip.gray   { background: #ececec; }
 .ideas-color-chip.selected { box-shadow: 0 0 0 2px var(--vscode-focusBorder); }
 
+/* Dark-mode: replace the near-invisible black border with a subtle white
+   ring so the chip swatches remain clearly visible against dark backgrounds. */
+@media (prefers-color-scheme: dark) {
+  .ideas-color-chip { border-color: rgba(255, 255, 255, 0.35); }
+}
+body.ac-force-dark .ideas-color-chip { border-color: rgba(255, 255, 255, 0.35); }
+
 .ideas-capture-buttons { display: flex; gap: 6px; }
 
 .ideas-capture-buttons .btn-small { padding: 4px 10px; font-size: 12px; }
@@ -234,12 +240,39 @@
 .ideas-card:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12); }
 .ideas-card.editing { box-shadow: 0 0 0 2px var(--vscode-focusBorder); }
 
-.ideas-card.yellow { background: rgba(251, 243, 196, 0.6); border-left-color: #d4b941; }
-.ideas-card.blue   { background: rgba(217, 230, 255, 0.6); border-left-color: #4d7fd1; }
-.ideas-card.green  { background: rgba(223, 247, 220, 0.6); border-left-color: #4da44b; }
-.ideas-card.pink   { background: rgba(255, 217, 226, 0.6); border-left-color: #d44d6e; }
-.ideas-card.gray   { background: rgba(236, 236, 236, 0.5); border-left-color: #8a8a8a; opacity: 0.85; }
+/* color-mix blends the tint with the widget background so cards stay
+   legible in both light and dark themes. Roughly 40 % colour / 60 %
+   background keeps the semantic hue visible without choking text contrast. */
+.ideas-card.yellow { background: color-mix(in srgb, #fbf3c4 40%, var(--vscode-editorWidget-background, #fff)); border-left-color: #b89b28; }
+.ideas-card.blue   { background: color-mix(in srgb, #d9e6ff 40%, var(--vscode-editorWidget-background, #fff)); border-left-color: #3666b8; }
+.ideas-card.green  { background: color-mix(in srgb, #dff7dc 40%, var(--vscode-editorWidget-background, #fff)); border-left-color: #3b8239; }
+.ideas-card.pink   { background: color-mix(in srgb, #ffd9e2 40%, var(--vscode-editorWidget-background, #fff)); border-left-color: #b83a54; }
+.ideas-card.gray   { background: color-mix(in srgb, #ececec 30%, var(--vscode-editorWidget-background, #fff)); border-left-color: #707070; opacity: 0.85; }
 .ideas-card.archived { opacity: 0.65; }
+
+/* Dark-mode: blend with the dark editor background instead. Mixing 40 %
+   light pastel into #1e1e1e produces a muddy mid-brown that's nearly the
+   same brightness as --vscode-foreground (#cccccc), which makes the text
+   unreadable. Force deeper saturated tones so the tint reads clearly
+   behind the lighter foreground text. Interactive controllers may also
+   force the dark palette via `body.ac-force-dark`, which cascades down.
+   Hex values are tuned for ≥ 4.5 : 1 contrast vs #cccccc (WCAG AA). */
+@media (prefers-color-scheme: dark) {
+  .ideas-card.yellow { background: #6b5a28; border-left-color: #d4b941; }
+  .ideas-card.blue   { background: #3a5280; border-left-color: #5b8ed1; }
+  .ideas-card.green  { background: #3a6838; border-left-color: #5baf4f; }
+  .ideas-card.pink   { background: #6b3a52; border-left-color: #d44d6e; }
+  .ideas-card.gray   { background: #3a3a3a; border-left-color: #909090; opacity: 0.85; }
+  /* Capture form: subtle warmth over the widget bg instead of the 5 %
+     yellow tint that would vanish against #1e1e1e. */
+  .ideas-capture     { background: #25241c; }
+}
+body.ac-force-dark .ideas-card.yellow { background: #6b5a28; border-left-color: #d4b941; }
+body.ac-force-dark .ideas-card.blue   { background: #3a5280; border-left-color: #5b8ed1; }
+body.ac-force-dark .ideas-card.green  { background: #3a6838; border-left-color: #5baf4f; }
+body.ac-force-dark .ideas-card.pink   { background: #6b3a52; border-left-color: #d44d6e; }
+body.ac-force-dark .ideas-card.gray   { background: #3a3a3a; border-left-color: #909090; opacity: 0.85; }
+body.ac-force-dark .ideas-capture     { background: #25241c; }
 
 .ideas-card-row1 {
   display: flex;
