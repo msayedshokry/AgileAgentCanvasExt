@@ -1919,10 +1919,10 @@ describe('Cluster D-3 commit 3 — post-harvest regression guards', () => {
       expect(matches.length, 'Kanban.css must retain ≥ 3 color-mix() sites — coverage is the .kanban-card-agent-badge--{...} mint layer at the kanban-card chrome bottom block').toBeGreaterThanOrEqual(3);
     });
 
-    it('B-2: styles/index.css has ≥ 170 color-mix() sites (Cluster D-2 baseline)', () => {
+    it('B-2: styles/index.css has ≥ 150 color-mix() sites (post-reorg floor; was 177 at Cluster D-2)', () => {
       const css = readFileSync(STYLES_CSS_PATH, 'utf-8');
       const matches = css.match(/color-mix\(/g) ?? [];
-      expect(matches.length, 'styles/index.css must retain ≥ 170 color-mix() sites — a wholesale deletion of the canonical chip palette (badge backgrounds, type accents, modal chrome, capture overlays, mindmap depth shading, artifact-card entity tints) without re-issuing them trips this guard').toBeGreaterThanOrEqual(170);
+      expect(matches.length, 'styles/index.css must retain ≥ 150 color-mix() sites — this floor was lowered from the 177 Cluster D-2 baseline after the ideas-drawer reorg (8c16817) dropped ~26 sites to 151; a wholesale deletion of the chip palette below this floor trips the guard').toBeGreaterThanOrEqual(150);
     });
 
     it('B-3: ≥ 5 distinct categorical CSS-rule anchors in styles/index.css USE color-mix() with the 2-stop form (selector token is part of the contract — rename trips the guard)', () => {
@@ -2014,23 +2014,26 @@ describe('Cluster D-3 commit 3 — post-harvest regression guards', () => {
       note: string;
     }
     const ANCHOR_CONTRACTS: AnchorContract[] = [
-      // App.tsx:L53 — error-boundary-fallback color rail.
-      { relPath: 'App.tsx', lineno: 56, key: 'color', rail: 'fg',
+      // App.tsx:L57 — error-boundary-fallback color rail.
+      // (shifted from L56 by the IdeasDrawer import added in the ideas-drawer reorg)
+      { relPath: 'App.tsx', lineno: 57, key: 'color', rail: 'fg',
         expectedValueRegex: /var\(--vscode-errorForeground/,
         note: 'theme-aware red error text (error-boundary-fallback)' },
-      // AgenticKanbanApp.tsx:L914 — input field bg rail.
-      { relPath: 'agentic-kanban/AgenticKanbanApp.tsx', lineno: 914, key: 'background', rail: 'bg',
+      // AgenticKanbanApp.tsx:L925 — input field bg rail.
+      // (shifted from L914 by the LiveTerminalStrip import added in the kanban reorg)
+      { relPath: 'agentic-kanban/AgenticKanbanApp.tsx', lineno: 925, key: 'background', rail: 'bg',
         expectedValueRegex: /var\(--vscode-input-background/,
         note: 'theme-aware input field background' },
       // bmm-renderers.tsx:L95 — BMAD-method renderer badge bg.
             // (Anchor tuple for (Corpus3DView.tsx, L370, borderTopColor) REMOVED in Cluster D-3 #1.a -- inline style migrated to className ref `.corpus-3d-spinner`; the SHAPE-spinner-borderTop-tokenized + reversal-lock tests in Cluster-D3-1a own the regression-tripwire going forward.) --
-      // AgenticKanbanApp.tsx:L927 — toolbar toggle button bg.
+      // AgenticKanbanApp.tsx:L938 — toolbar toggle button bg.
       // Currently `'transparent'` (HARDCODED literal). The contract also
       // accepts `var(--vscode-*)` theme tokens so a future migration to
       // theme-aware chrome passes without breaking this lock. Pure HARDCODED
       // hex (e.g. `#000`, `#fff`) does NOT match — the audit matrix
       // surfaces that as a regression candidate for follow-up tokenization.
-      { relPath: 'agentic-kanban/AgenticKanbanApp.tsx', lineno: 927, key: 'background', rail: 'bg',
+      // (shifted from L927 by the LiveTerminalStrip import in the kanban reorg)
+      { relPath: 'agentic-kanban/AgenticKanbanApp.tsx', lineno: 938, key: 'background', rail: 'bg',
         expectedValueRegex: /^transparent$|^var\(--vscode-/,
         note: 'transparent (current) or theme token (future migration); HARDCODED hex swap fails this guard' },
     ];
