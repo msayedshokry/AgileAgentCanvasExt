@@ -9,12 +9,16 @@
 import { createLogger } from '../utils/logger';
 const logger = createLogger('terminal-executor');
 import * as vscode from 'vscode';
-// `os` import dropped: temp-file+stdin branch was removed (claude `-p`,
-// codex `exec`, opencode `run` all require the prompt as a
-// positional arg value and do NOT read it from stdin). The rationale for
-// dropping the long-prompt stdin-redirect path is documented at the
-// `terminal.sendText` call site in `executeTerminalWorkflow`.
+// `os` is used by the long-prompt stdin staging (stagePromptFile): prompts
+// over LONG_PROMPT_INLINE_LIMIT are written to a temp file and piped into the
+// CLI's stdin instead of being inlined as an argv value. The OLD temp-file
+// branch was removed because it fed the file to stdin of CLIs that ignore
+// stdin — but claude `-p`, codex `exec -`, opencode `run` and pi `-p` DO
+// read the prompt from stdin (verified 2026-08-28: piping a prompt into
+// `pi --no-session -p` prints the model reply end-to-end). See the
+// "Long-prompt stdin staging" section for the full rationale.
 import * as path from 'path';
+import * as os from 'os';
 import * as fs from 'fs';
 import * as cp from 'child_process';
 import { promisify } from 'util';
@@ -165,6 +169,8 @@ export interface TerminalSession {
   lastOutputAt?: number;
   /** Gap #23: prompt length in characters for terminal cost estimation. */
   promptLength?: number;
+  /** Temp file holding a staged long prompt; deleted when the session ends. */
+  promptFile?: string;
   /** True when the session runs via node-pty (Option B) instead of a VS Code terminal. */
   isPty?: boolean;
 }
@@ -343,10 +349,10 @@ function buildCliCommand(provider: ChatProviderId, prompt: string): string[] {
       // ponytail: `--format json` dropped — streamed NDJSON events to stdout
       // that obscured the actual response. Default `--format default` is
       // human-readable.
+      // Trust opencode's own local config — no `--model` override.
       return [
         'opencode',
         'run',
-        '--model', 'auto',
         prompt,
       ];
     case 'pi':
@@ -363,6 +369,113 @@ function buildCliCommand(provider: ChatProviderId, prompt: string): string[] {
     default:
       return cmd.terminalLaunch(prompt);
   }
+}
+
+// ─── Long-prompt stdin staging ──────────────────────────────────────────────
+
+/**
+ * Prompts larger than this are staged to a temp file and fed to the CLI's
+ * STDIN instead of being inlined as a positional argv value.
+ *
+ * Why inline argv is unsafe for long prompts (empirically verified
+ * 2026-08-28 on win32):
+ *
+ *  1. Windows PowerShell 5.1 mangles multi-line argv values. When a string
+ *     argument contains embedded double quotes, native argument passing
+ *     splits it into MULTIPLE argv entries and strips the embedded quotes
+ *     (verified: a 400-char BMAD-style prompt arrived as 8 broken argv
+ *     pieces). PS 7 and bash round-trip the same prompt byte-perfectly.
+ *  2. VS Code `terminal.sendText` of a multi-KB string can drop/mangle
+ *     characters in the ConPTY paste buffer (the historical "garbled
+ *     prompt" bug) and risks the ~32 KB ARG_MAX ceiling.
+ *
+ * All four headless CLIs have a VERIFIED stdin prompt contract:
+ *   claude  `-p` with piped stdin (documented headless usage)
+ *   codex   `exec -` (the `-` placeholder reads the prompt from stdin)
+ *   opencode `run`  with piped stdin (verified: launched its model)
+ *   pi      `-p`     with piped stdin (verified end-to-end: replied "PONG")
+ *
+ * The staged command line is short (< ~300 chars), so nothing is at the
+ * mercy of the paste buffer or argv limits.
+ */
+const LONG_PROMPT_INLINE_LIMIT = 8 * 1024;
+
+/**
+ * Build the stdin variant of the headless CLI invocation: same flags as
+ * `buildCliCommand`, but the prompt is read from stdin (no positional value).
+ * Returns undefined for providers without a verified stdin contract — those
+ * fall back to the inline argv shape regardless of prompt length.
+ */
+export function buildStdinCliCommand(provider: ChatProviderId): string[] | undefined {
+  switch (provider) {
+    case 'claude':
+      return [
+        'claude',
+        '--permission-mode', 'bypassPermissions',
+        '--dangerously-skip-permissions',
+        '-p',
+      ];
+    case 'codex':
+      return [
+        'codex',
+        'exec',
+        '--ask-for-approval', 'never',
+        '--sandbox', 'workspace-write',
+        '-', // `-` placeholder: read the prompt from stdin
+      ];
+    case 'opencode':
+      return ['opencode', 'run'];
+    case 'pi':
+      return ['pi', '--no-session', '--approve', '-p'];
+    default:
+      return undefined;
+  }
+}
+
+/** Single-quote a path for POSIX shells (bash/zsh): '...' with '\'' escaping. */
+function posixQuotePath(p: string): string {
+  return "'" + p.replace(/'/g, "'\\''") + "'";
+}
+
+/** Single-quote a path for PowerShell: '...' with '' escaping. */
+function psQuotePath(p: string): string {
+  return "'" + p.replace(/'/g, "''") + "'";
+}
+
+/**
+ * Build the shell command line that feeds the staged prompt file to the
+ * CLI's stdin.
+ *
+ * POSIX: plain `<` redirect — the file bytes reach the CLI untouched.
+ * PowerShell: `Get-Content -Raw | cli` — with $OutputEncoding pinned to
+ * UTF-8, because PS 5.1 defaults to ASCII and would corrupt non-ASCII
+ * prompt text (emoji, em-dashes) crossing the pipe. The assignment lives
+ * inside a script block so the user's session state is untouched.
+ * (Verified: PS 5.1, PS 7 and bash round-trip a shell-hostile prompt
+ * byte-perfectly through these shapes.)
+ */
+export function buildStdinCommandLine(args: string[], promptFile: string): string {
+  const forwardSlashed = promptFile.replace(/\\/g, '/');
+  if (isPowerShell()) {
+    return `& { $OutputEncoding=[System.Text.UTF8Encoding]::new(); Get-Content -Raw -Encoding UTF8 ${psQuotePath(forwardSlashed)} | ${args.join(' ')} }`;
+  }
+  return `${args.join(' ')} < ${posixQuotePath(forwardSlashed)}`;
+}
+
+/** Write the prompt to a unique temp file; returns its path. */
+function stagePromptFile(prompt: string, artifactId: string): string {
+  const file = path.join(
+    os.tmpdir(),
+    `aac-prompt-${sanitizeId(artifactId)}-${process.pid}-${Date.now()}.txt`,
+  );
+  fs.writeFileSync(file, prompt, 'utf-8');
+  return file;
+}
+
+/** Best-effort temp-file cleanup at session end. */
+function disposePromptFile(file?: string): void {
+  if (!file) return;
+  try { fs.unlinkSync(file); } catch { /* already gone */ }
 }
 
 // ─── Shell detection + quoting ───────────────────────────────────────────────
@@ -484,9 +597,41 @@ export class TerminalExecutor implements vscode.Disposable {
     const prompt = buildTerminalPrompt(workflowId, artifact, outputFolder, options?.skillContent);
 
     const termName = `AAC: ${workflowId} ${artifactId}`;
-    const args = buildCliCommand(provider, prompt);
-    const cmdLine = isPowerShell()
-        ? `$null | ${args.map((a) => shellQuote(a)).join(' ')}`
+
+    // Long prompts are staged to a temp file and fed via stdin (see
+    // LONG_PROMPT_INLINE_LIMIT for why inline argv is unsafe). Providers
+    // without a verified stdin contract fall back to the inline shape.
+    const stdinArgs = buildStdinCliCommand(provider);
+    let promptFile: string | undefined;
+    let args: string[];
+    if (prompt.length > LONG_PROMPT_INLINE_LIMIT && stdinArgs) {
+      try {
+        promptFile = stagePromptFile(prompt, artifactId);
+        args = stdinArgs;
+      } catch (err) {
+        logger.warn(
+          `[TerminalExecutor] Failed to stage prompt file — falling back to inline prompt: ${errMsg(err)}`,
+        );
+        args = buildCliCommand(provider, prompt);
+      }
+    } else {
+      args = buildCliCommand(provider, prompt);
+    }
+
+    // ponytail: on PowerShell DON'T wrap in `$null |`. The BMAD prompt is a
+    // multi-KB multiline blob; shellQuote keeps its newlines literal inside
+    // double quotes, so `$null | opencode run "...\n...\n..."` is sent as ONE
+    // logical line that PowerShell RENDERS as N wrapped lines, each with a
+    // `>> ` continuation prompt. PowerShell's paste buffer then drops/
+    // mangles characters across those wrapped lines (the garbled prompt you
+    // see, and opencode hanging because the line never terminates with a
+    // clean CR). sendText(cmdLine, true) already appends the CR that submits
+    // the single logical line, so the pipeline wrapper is only there to
+    // satisfy a stale-stdin prompt — not worth corrupting a 5KB prompt over.
+    const cmdLine = promptFile
+      ? buildStdinCommandLine(args, promptFile)
+      : isPowerShell()
+        ? args.map((a) => shellQuote(a)).join(' ')
         : `${args.map((a) => shellQuote(a)).join(' ')} < /dev/null`;
 
     // ── Branch: embedded pty vs VS Code terminal ────────────────────────────
@@ -534,6 +679,7 @@ export class TerminalExecutor implements vscode.Disposable {
         accumulatedData,
         dataListener: ptyDisposable,
         promptLength: prompt.length,
+        promptFile,
         isPty: true,
       };
       this.activeTerminals.set(artifactId, session);
@@ -653,12 +799,10 @@ export class TerminalExecutor implements vscode.Disposable {
     // because `-p` has no positional value, leaving the CLI to fail with
     // a usage error. The fix: always include `q` in args via shellQuote.
     //
-    // Trade-off: prompts > ~32 KB may exceed Windows cmd.exe ARG_MAX. The
-    // BMAD workflow prompts generated by `buildTerminalPrompt` are bounded
-    // by the artifact JSON + skill content (typically 5–15 KB); well under
-    // the limit. Revisit only if we start shipping flows with ≥32 KB
-    // prompts — at that point we can plumb a separate `terminalLaunchLong`
-    // hook per provider instead of dropping-in the stdin path inline.
+    // Trade-off note: prompts > LONG_PROMPT_INLINE_LIMIT never reach this
+    // call as an inline argv value — they are staged to a temp file and fed
+    // to the CLI's stdin via buildStdinCommandLine, so neither the Windows
+    // ARG_MAX ceiling nor the ConPTY paste buffer can corrupt them.
     try {
       terminal.sendText(cmdLine, true);
     } catch (err) {
@@ -684,6 +828,7 @@ export class TerminalExecutor implements vscode.Disposable {
       accumulatedData,
       dataListener,
       promptLength: prompt.length,
+      promptFile,
     };
     this.activeTerminals.set(artifactId, session);
 
@@ -1049,6 +1194,7 @@ export class TerminalExecutor implements vscode.Disposable {
       `[TerminalExecutor] Pty session exited for ${artifactId} — cleaning up tracking`,
     );
     this.activeTerminals.delete(artifactId);
+    disposePromptFile(session.promptFile);
 
     this.persistSessionMetadata();
     this.clearLockTimeout(artifactId);
@@ -1085,6 +1231,7 @@ export class TerminalExecutor implements vscode.Disposable {
           `[TerminalExecutor] Terminal closed for ${artifactId} — cleaning up tracking`
         );
         this.activeTerminals.delete(artifactId);
+        disposePromptFile(session.promptFile);
 
         // Update persisted metadata after terminal close.
         this.persistSessionMetadata();

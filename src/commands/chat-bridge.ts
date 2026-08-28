@@ -59,7 +59,7 @@ export type ChatProviderId =
  *   - codex      → `codex exec --ask-for-approval never --sandbox workspace-write <prompt>`
  *                  (https://developers.openai.com/codex/cli/reference)
  *   - aider      → `aider --message <prompt>`   (https://aider.chat/docs/scripting: one-shot, exit after reply)
- *   - opencode   → `opencode run --model auto <prompt>` (default `--format default`)
+ *   - opencode   → `opencode run <prompt>` (trusting the user's local model config)
  *                  (https://opencode.ai/docs/cli/)
  *   - pi         → `pi --no-session --approve -p <prompt>` (default `--mode text`; JSON mode dropped for readability — verdict loop reads the file, not stdout)
  *   - terminal   → sentinel `echo`; handled in sendToTerminal
@@ -207,7 +207,14 @@ export const CHAT_COMMANDS: Record<ChatProviderId | 'copilot-fallback', ChatComm
         ide: 'aider',
         label: 'Aider',
         hint: 'launches `aider` in the terminal',
-        terminalLaunch: (q) => ['aider', '--message', q],
+        // Interactive canvas launch — `--message` is one-shot (exit after
+        // reply). In headless/kanban mode aider can stall on interactive
+        // confirmations (e.g. "Open documentation url…?"); --yes
+        // auto-approves so the CLI agent runs unattended. OPENAI_API_KEY must
+        // still be set (aider requires it for the openai provider), even when
+        // pointing at a local llama-server that ignores it — the user's
+        // .aider.conf.yml sets openai-api-base to their local Qwen/ornith model.
+        terminalLaunch: (q) => ['aider', '--message', q, '--yes'],
     },
     'opencode': {
         ide: 'opencode',
@@ -218,7 +225,7 @@ export const CHAT_COMMANDS: Record<ChatProviderId | 'copilot-fallback', ChatComm
         // `--model auto` and `--format json` are not headless flags (the user
         // confirmed the full command works). Kanban headless flags are applied
         // by terminal-executor.ts buildCliCommand.
-        terminalLaunch: (q) => ['opencode', 'run', '--model', 'auto', '--format', 'json', q],
+        terminalLaunch: (q) => ['opencode', 'run', q],
     },
     'pi': {
         ide: 'pi',

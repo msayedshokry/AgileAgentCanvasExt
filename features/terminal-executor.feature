@@ -81,24 +81,33 @@ Feature: Terminal Executor - Windows Shell Compatibility and Headless CLI Flags
     Then the quoted result should be "''"
 
   # ─── Headless Flags (Long Prompt) ─────────────────────────────────────────
-  # Headless CLIs (claude -p, codex exec, opencode run) require the
-  # prompt as a positional arg value and DO NOT read it from stdin. The prompt
-  # is therefore always sent inline via shellQuote, regardless of length.
+  # Prompts > 8 KiB are staged to a temp file and fed to the CLI's STDIN
+  # (claude -p, codex exec -, opencode run, pi -p all read the prompt from
+  # stdin — verified 2026-08-28). Inline argv is unsafe for long prompts:
+  # Windows PowerShell 5.1 splits multi-line arguments containing embedded
+  # quotes into multiple broken argv entries, and sendText of a multi-KB
+  # string risks ConPTY paste-buffer mangling. Short prompts keep the
+  # inline positional shape.
 
   @windows @command @headless
-  Scenario: PowerShell terminal command emits headless flags inline (long prompt)
+  Scenario: PowerShell terminal command stages long prompt via stdin temp file
     Given the VS Code shell is "powershell.exe"
     When I execute a terminal workflow with a long prompt
     Then sendText should have been called
-    And the sent command should contain "$null |"
-    And the sent command should contain "claude"
+    # The staged command is short: pipe the temp file into the CLI's stdin
+    # with $OutputEncoding pinned to UTF-8 (PS 5.1 defaults to ASCII and
+    # would corrupt non-ASCII prompt text crossing the pipe).
+    And the sent command should contain "Get-Content -Raw -Encoding UTF8"
+    And the sent command should contain "$OutputEncoding"
+    And the sent command should contain "| claude"
     And the sent command should contain "--permission-mode"
     And the sent command should contain "bypassPermissions"
     And the sent command should contain "--dangerously-skip-permissions"
     And the sent command should not contain "--output-format"
+    And the sent command should not contain "$null |"
     And the sent command should not contain "<"
-    And the sent command should not contain "Get-Content"
     And the sent command should not contain "--bare"
+    And the sent command should not contain "BBBBBBBB"
 
   @windows @command @headless
   Scenario: PowerShell terminal command keeps headless shape with custom CLI args
@@ -106,19 +115,21 @@ Feature: Terminal Executor - Windows Shell Compatibility and Headless CLI Flags
     And the chat-bridge returns CLI args for claude
     When I execute a terminal workflow with a long prompt
     Then the sent command should contain "--permission-mode"
+    And the sent command should contain "Get-Content -Raw -Encoding UTF8"
     And the sent command should not contain "<"
-    And the sent command should not contain "Get-Content"
 
   @windows @command @headless
-  Scenario: Bash terminal command emits headless flags inline (long prompt)
+  Scenario: Bash terminal command stages long prompt via stdin temp file
     Given the VS Code shell is "/bin/bash"
     When I execute a terminal workflow with a long prompt
     Then sendText should have been called
     And the sent command should start with "claude"
     And the sent command should contain "--permission-mode"
-    And the sent command should contain "< /dev/null"
+    And the sent command should contain "< '"
+    And the sent command should not contain "/dev/null"
     And the sent command should not contain "Get-Content"
     And the sent command should not contain "--bare"
+    And the sent command should not contain "BBBBBBBB"
 
   @windows @command @headless
   Scenario: Bash terminal command keeps headless shape with custom CLI args
@@ -126,7 +137,7 @@ Feature: Terminal Executor - Windows Shell Compatibility and Headless CLI Flags
     And the chat-bridge returns CLI args for claude
     When I execute a terminal workflow with a long prompt
     Then the sent command should start with "claude"
-    And the sent command should contain "< /dev/null"
+    And the sent command should contain "< '"
 
   # ─── Headless Flags (Other Providers) ─────────────────────────────────────
 
@@ -141,20 +152,22 @@ Feature: Terminal Executor - Windows Shell Compatibility and Headless CLI Flags
     And the sent command should contain "--ask-for-approval"
     And the sent command should contain "never"
     And the sent command should contain "--sandbox"
-    And the sent command should contain "< /dev/null"
+    And the sent command should contain "- < '"
     And the sent command should not contain "Get-Content"
 
   @windows @command @headless @opencode
-  Scenario: OpenCode run launches with headless flags inline
+  Scenario: OpenCode run launches trusting local model config (no gateway flag)
     Given the VS Code shell is "/bin/bash"
     And the terminal provider is "opencode"
     When I execute a terminal workflow with a long prompt
     Then sendText should have been called
     And the sent command should start with "opencode"
     And the sent command should contain "run"
-    And the sent command should contain "--model"
+    # No --model: opencode reads its own .opencode/opencode.json model so each
+    # CLI trusts its local provider key instead of a shared Upstash gateway.
+    And the sent command should not contain "--model"
     And the sent command should not contain "--format"
-    And the sent command should contain "< /dev/null"
+    And the sent command should contain "< '"
     And the sent command should not contain "Get-Content"
 
   @windows @command @headless @pi
@@ -167,7 +180,7 @@ Feature: Terminal Executor - Windows Shell Compatibility and Headless CLI Flags
     And the sent command should contain "--no-session"
     And the sent command should contain "--approve"
     And the sent command should contain "-p"
-    And the sent command should contain "< /dev/null"
+    And the sent command should contain "< '"
     And the sent command should not contain "Get-Content"
     And the sent command should not contain "--mode"
 
@@ -179,7 +192,8 @@ Feature: Terminal Executor - Windows Shell Compatibility and Headless CLI Flags
     And the prompt length is short (< 8192 chars)
     When I execute a terminal workflow with a short prompt
     Then sendText should have been called
-    And the sent command should contain "$null |"
+    # ponytail: no `$null |` wrapper on PowerShell (avoids `>> ` wrap/mangle).
+    And the sent command should not contain "$null |"
     And the sent command should contain "claude"
     And the sent command should not contain "<"
     And the sent command should not contain "Get-Content"

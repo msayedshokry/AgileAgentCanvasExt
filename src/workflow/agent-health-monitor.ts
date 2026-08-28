@@ -49,8 +49,16 @@ export interface SessionHealthState {
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-/** Number of consecutive unhealthy results before marking a session as dead. */
-const DEAD_AFTER_CONSECUTIVE = 3;
+// NOTE: There is deliberately NO "dead after N consecutive degraded results"
+// escalation here. A degraded-only session (e.g. a headless CLI agent that is
+// silently thinking/executing tools for minutes with no terminal output) is
+// ALIVE — its shell process is running — and force-promoting it to 'dead'
+// made AutoRecovery kill healthy runs ~2–3 minutes in (the "minutes of
+// nothing then failure" bug). 'dead' is now produced exclusively by checks
+// with real ground truth: process-liveness (shell exited) or checks with
+// their own explicit dead thresholds (chat 3× stall/timeout). A merely quiet
+// session stays 'degraded' and is reaped by the verdict timeout (20 min)
+// instead of being killed mid-work.
 
 // ── Health Monitor ───────────────────────────────────────────────────────────
 
@@ -198,16 +206,15 @@ export class AgentHealthMonitor extends EventEmitter {
     }
 
     // Transition logic.
+    // consecutiveUnhealthy is tracked for observability only — it no longer
+    // escalates 'degraded' sessions to 'dead' (see the constants block above).
+    // Killing on silence murdered headless CLI agents that were legitimately
+    // working without terminal output.
     const oldState = session.currentState;
     if (worstResult === 'healthy') {
       session.consecutiveUnhealthy = 0;
     } else {
       session.consecutiveUnhealthy++;
-    }
-
-    // Dead after N consecutive unhealthy results.
-    if (session.consecutiveUnhealthy >= DEAD_AFTER_CONSECUTIVE) {
-      worstResult = 'dead';
     }
 
     if (worstResult !== oldState) {

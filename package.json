@@ -1393,7 +1393,7 @@
           },
           "agileagentcanvas.kanban.autoAdvance": {
             "type": "boolean",
-            "default": false,
+            "default": true,
             "description": "When enabled, dropping a story into the In-Progress column on the Agentic Kanban runs the autonomous loop (implement → review → done), re-implementing on review failures until approved or the iteration cap is reached. When disabled, the card runs its single workflow and you move it between columns manually. Also toggleable from the Agentic Kanban toolbar."
           },
           "agileagentcanvas.kanban.maxIterations": {

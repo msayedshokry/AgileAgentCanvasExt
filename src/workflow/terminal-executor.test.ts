@@ -18,11 +18,64 @@
 // PONYTAIL-bearing assertions will fail — that's the regression guard
 // doing its job, not a bug in the test.
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { PONYTAIL_HEURISTICS } from '../chat/ponytail-heuristics';
-import { captureWorkspaceSnapshot, diffWorkspaceSnapshots } from './terminal-executor';
+import {
+    captureWorkspaceSnapshot,
+    diffWorkspaceSnapshots,
+    TerminalExecutor,
+    buildStdinCliCommand,
+    buildStdinCommandLine,
+} from './terminal-executor';
+import { window, workspace } from 'vscode';
+
+// ── Additional module mocks for the long-prompt staging tests ────────────────
+// The e2e staging test drives executeTerminalWorkflow, which pulls in the
+// chat-bridge provider resolution + observability modules. Mock them so the
+// test is hermetic and provider selection is deterministic ('pi').
+
+// Mutable holder so tests can flip the shell flavor per test.
+const chatBridgeMockState = vi.hoisted(() => ({ isPowerShell: false }));
+
+// NOTE: chat-bridge and trace-recorder live OUTSIDE src/workflow — mock paths
+// must be resolved from this test file (src/workflow/…) as '../commands/…' and
+// '../trace/…'. Wrong-path vi.mock() silently no-ops, which made earlier
+// versions of these tests run against the real modules.
+vi.mock('../commands/chat-bridge', () => ({
+    getSelectedProvider: () => 'pi',
+    listAvailableProviders: async () => [{ id: 'pi', available: true, name: 'Pi' }],
+    shellQuote: (s: string) => (/^[A-Za-z0-9_\-./:=]+$/.test(s) ? s : "'" + s.replace(/'/g, "'\\''") + "'"),
+    isPowerShell: () => chatBridgeMockState.isPowerShell,
+    CHAT_COMMANDS: {
+        pi: { terminalLaunch: (q: string) => ['pi', q] },
+        claude: { terminalLaunch: (q: string) => ['claude', 'q', q] },
+    },
+}));
+vi.mock('../trace/trace-recorder', () => ({
+    getTraceRecorder: () => ({ record: vi.fn(), flushAll: vi.fn() }),
+}));
+vi.mock('./agent-health-monitor', () => ({
+    agentHealthMonitor: { registerCheck: vi.fn(), deregisterCheck: vi.fn() },
+}));
+vi.mock('./terminal-health-checks', () => ({
+    createTerminalHealthChecks: () => [],
+}));
+vi.mock('./concurrency-queue', () => ({
+    concurrencyQueue: {
+        release: vi.fn(),
+        tryAcquire: vi.fn(() => true),
+        isLocked: vi.fn(() => false),
+    },
+}));
+vi.mock('./kanban-verdict', () => ({
+    sanitizeId: (id: string) => id.replace(/[^A-Za-z0-9._-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, ''),
+    resultFilePath: (folder: string, artifactId: string, workflowId: string) =>
+        `${folder}/_terminal-output/${artifactId}-${workflowId}-result.json`,
+    readVerdictFile: () => undefined,
+    getOutputFolder: () => '.agileagentcanvas-context',
+}));
 
 // ── Module mocks ─────────────────────────────────────────────────────────────
 
@@ -394,7 +447,7 @@ describe('TerminalExecutor — VS Code terminal race guard (structural)', () => 
 // executeAndAwaitVerdict observes file-system state and synthesizes
 // COMPLETED from a real file diff. Asserts both directions.
 
-import { mkdtempSync, writeFileSync, utimesSync, rmSync, mkdirSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, utimesSync, rmSync, mkdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -504,6 +557,172 @@ describe('synthetic verdict from workspace file diff', () => {
             expect(changed).toContain('src.ts');
         } finally {
             rmSync(dir, { recursive: true, force: true });
+        }
+    });
+});
+
+// ─── Long-prompt stdin staging ───────────────────────────────────────────────
+// Regression for the "kanban run dies after minutes of nothing" bug chain:
+//
+//  1. Windows PowerShell 5.1 SPLITS multi-line argv values containing
+//     embedded double quotes into multiple argv entries and strips the
+//     quotes — the BMAD prompt (markdown fences + JSON) is mangled before
+//     the CLI even starts, leaving the shell waiting at a `>>` continuation
+//     prompt forever.
+//  2. VS Code sendText of a multi-KB string can drop/mangle characters in
+//     the ConPTY paste buffer and risks the ~32 KB ARG_MAX ceiling.
+//
+// Fix: prompts > 8 KiB are staged to a temp file; the terminal receives a
+// short command that pipes the file into the CLI's stdin (verified stdin
+// contract: claude -p, codex exec -, opencode run, pi -p).
+
+describe('buildStdinCliCommand — verified stdin contracts per provider', () => {
+    it('pi: keeps headless flags, prompt arrives via stdin (no positional)', () => {
+        expect(buildStdinCliCommand('pi')).toEqual(['pi', '--no-session', '--approve', '-p']);
+    });
+
+    it('claude: bypassPermissions flags + bare -p', () => {
+        expect(buildStdinCliCommand('claude')).toEqual([
+            'claude', '--permission-mode', 'bypassPermissions',
+            '--dangerously-skip-permissions', '-p',
+        ]);
+    });
+
+    it('codex: exec with `-` stdin placeholder', () => {
+        expect(buildStdinCliCommand('codex')).toEqual([
+            'codex', 'exec', '--ask-for-approval', 'never',
+            '--sandbox', 'workspace-write', '-',
+        ]);
+    });
+
+    it('opencode: run with no positional', () => {
+        expect(buildStdinCliCommand('opencode')).toEqual(['opencode', 'run']);
+    });
+
+    it('providers without a verified stdin contract fall back to undefined (inline)', () => {
+        expect(buildStdinCliCommand('aider')).toBeUndefined();
+        expect(buildStdinCliCommand('copilot')).toBeUndefined();
+    });
+});
+
+describe('buildStdinCommandLine — shell-aware stdin wiring', () => {
+    afterEach(() => {
+        chatBridgeMockState.isPowerShell = false;
+    });
+
+    it('POSIX: short `< \'file\'` redirect, no prompt text in the command line', () => {
+        const line = buildStdinCommandLine(
+            ['pi', '--no-session', '--approve', '-p'],
+            'C:/Users/test/Temp/aac-prompt-EPIC-1-123.txt',
+        );
+        expect(line).toBe("pi --no-session --approve -p < 'C:/Users/test/Temp/aac-prompt-EPIC-1-123.txt'");
+        expect(line).not.toContain('Get-Content');
+        expect(line.length).toBeLessThan(200);
+    });
+
+    it('PowerShell: pipes via Get-Content with UTF-8 output encoding, scoped in a script block', () => {
+        chatBridgeMockState.isPowerShell = true;
+        const line = buildStdinCommandLine(
+            ['pi', '--no-session', '--approve', '-p'],
+            'C:/Users/test/Temp/aac-prompt-EPIC-1-123.txt',
+        );
+        expect(line).toContain('& { $OutputEncoding=[System.Text.UTF8Encoding]::new();');
+        expect(line).toContain("Get-Content -Raw -Encoding UTF8 'C:/Users/test/Temp/aac-prompt-EPIC-1-123.txt'");
+        expect(line).toContain('| pi --no-session --approve -p }');
+        expect(line).not.toContain('<');
+        expect(line.length).toBeLessThan(400);
+    });
+
+    it('POSIX: escapes single quotes in the file path', () => {
+        const line = buildStdinCommandLine(['pi', '-p'], "/tmp/aac'weird.txt");
+        expect(line).toBe("pi -p < '/tmp/aac'\\''weird.txt'");
+    });
+});
+
+describe('executeTerminalWorkflow — long prompts staged to temp file (e2e)', () => {
+    it('stages a >8KiB prompt, sends a SHORT stdin command, and cleans up the temp file on close', async () => {
+        const wsDir = mkdtempSync(join(tmpdir(), 'aac-termx-'));
+        const originalFolders = (workspace as any).workspaceFolders;
+        (workspace as any).workspaceFolders = [{ uri: { fsPath: wsDir }, name: 't', index: 0 }];
+
+        // Capture the terminal the executor creates so we can grab sendText
+        // and simulate the terminal closing.
+        const sendTextMock = vi.fn();
+        const terminalObj = {
+            name: 'AAC: test',
+            show: vi.fn(),
+            sendText: sendTextMock,
+            dispose: vi.fn(),
+            processId: Promise.resolve(4242),
+            onDidWriteData: vi.fn(() => ({ dispose: vi.fn() })),
+        };
+        vi.mocked(window.createTerminal).mockImplementationOnce(() => terminalObj as any);
+
+        const executor = new TerminalExecutor();
+        const longBody = 'B'.repeat(9000); // > 8 KiB staging threshold
+        const artifact = { id: 'EPIC-LONG', type: 'epic', title: 'Long', description: longBody };
+
+        try {
+            await executor.executeTerminalWorkflow('epic-enhancement', artifact, {});
+
+            // The terminal received ONE short command — not a multi-KB blob.
+            expect(sendTextMock).toHaveBeenCalledTimes(1);
+            const cmd = sendTextMock.mock.calls[0][0] as string;
+            expect(cmd.length).toBeLessThan(1000);
+            expect(cmd).toContain("< '");
+            expect(cmd).not.toContain(longBody.slice(0, 100));
+
+            // The prompt WAS staged intact to the temp file.
+            const session = executor.getTerminalSession('EPIC-LONG');
+            expect(session?.promptFile).toBeTruthy();
+            const staged = readFileSync(session!.promptFile!, 'utf-8');
+            expect(staged).toContain(longBody);
+            expect(staged).toContain('verdict'); // verdict contract intact
+
+            // Session end → temp file cleaned up.
+            (executor as any).onDidCloseTerminal(terminalObj);
+            expect(existsSync(session!.promptFile!)).toBe(false);
+        } finally {
+            (workspace as any).workspaceFolders = originalFolders;
+            rmSync(wsDir, { recursive: true, force: true });
+        }
+    });
+
+    it('keeps short prompts inline (unchanged behavior)', async () => {
+        const wsDir = mkdtempSync(join(tmpdir(), 'aac-termx-'));
+        const originalFolders = (workspace as any).workspaceFolders;
+        (workspace as any).workspaceFolders = [{ uri: { fsPath: wsDir }, name: 't', index: 0 }];
+
+        const sendTextMock = vi.fn();
+        const terminalObj = {
+            name: 'AAC: test',
+            show: vi.fn(),
+            sendText: sendTextMock,
+            dispose: vi.fn(),
+            processId: Promise.resolve(4242),
+            onDidWriteData: vi.fn(() => ({ dispose: vi.fn() })),
+        };
+        vi.mocked(window.createTerminal).mockImplementationOnce(() => terminalObj as any);
+
+        const executor = new TerminalExecutor();
+        const artifact = { id: 'STORY-SHORT', type: 'story', title: 'Short', description: 'tiny' };
+
+        try {
+            await executor.executeTerminalWorkflow('dev-story', artifact, {});
+
+            const cmd = sendTextMock.mock.calls[0][0] as string;
+            // Inline shape: the full BMAD prompt travels as ONE quoted
+            // positional arg, closed with the /dev/null stdin guard (POSIX).
+            // The artifact description ('tiny') is embedded mid-prompt, so the
+            // bare substring — not a quoted token — is the right assertion.
+            expect(cmd).toContain('tiny');
+            expect(cmd).toContain('< /dev/null');
+            expect(cmd).not.toContain('aac-prompt-'); // nothing was staged
+            const session = executor.getTerminalSession('STORY-SHORT');
+            expect(session?.promptFile).toBeUndefined();
+        } finally {
+            (workspace as any).workspaceFolders = originalFolders;
+            rmSync(wsDir, { recursive: true, force: true });
         }
     });
 });
