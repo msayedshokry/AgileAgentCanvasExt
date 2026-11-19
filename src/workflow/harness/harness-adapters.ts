@@ -167,6 +167,9 @@ const cursorAgent: HarnessAdapter = {
   }),
 };
 
+/** OpenCode permission policy for the sandboxed posture. */
+export const OPENCODE_SANDBOX_PERMISSION = JSON.stringify({ edit: 'allow', bash: 'deny', webfetch: 'deny' });
+
 const opencode: HarnessAdapter = {
   id: 'opencode',
   label: 'OpenCode',
@@ -175,13 +178,17 @@ const opencode: HarnessAdapter = {
   installHint: 'Install OpenCode: https://opencode.ai/docs/',
   postures: ['sandboxed', 'full'],
   postureNotes: {
-    sandboxed: 'Uses the permission rules in your opencode config.',
+    sandboxed: 'File edits allowed, shell commands and web fetches denied (OPENCODE_PERMISSION).',
     full: 'Auto-approves every permission not explicitly denied (--auto).',
   },
   // opencode 1.19: `run` with piped stdin; `--auto` is its yolo switch.
-  buildLaunch: ({ binary, posture }) => ({
-    args: posture === 'full' ? [binary, 'run', '--auto'] : [binary, 'run'],
-  }),
+  // Headless runs have nobody to answer an "ask" permission, which OpenCode
+  // then rejects, so sandboxed runs could never write the verdict file
+  // (verified against a local model, 2026-11-19). The run-scoped
+  // OPENCODE_PERMISSION policy allows edits and denies shell and web.
+  buildLaunch: ({ binary, posture }) => posture === 'full'
+    ? { args: [binary, 'run', '--auto'] }
+    : { args: [binary, 'run'], env: { OPENCODE_PERMISSION: OPENCODE_SANDBOX_PERMISSION } },
 };
 
 const aider: HarnessAdapter = {
@@ -245,7 +252,8 @@ export function buildHarnessLaunch(adapter: HarnessAdapter, ctx: LaunchContext):
     throw new Error(`${adapter.label} cannot run with the "${ctx.posture}" permission posture`);
   }
   const spec = adapter.buildLaunch(ctx);
-  return adapter.delivery === 'stdin' ? { args: spec.args, stdinFile: ctx.promptFile } : { args: spec.args };
+  const env = spec.env ? { env: spec.env } : {};
+  return adapter.delivery === 'stdin' ? { args: spec.args, stdinFile: ctx.promptFile, ...env } : { args: spec.args, ...env };
 }
 
 /**

@@ -32,7 +32,7 @@ const m = prompt.match(/RESULT_PATH=(.+)\\n/);
 const d = prompt.match(/DIGEST=([0-9a-f]+)\\n/);
 const body = prompt.slice(prompt.indexOf('BODY<') + 5, prompt.lastIndexOf('>BODY'));
 const ok = d && require('crypto').createHash('sha256').update(body, 'utf8').digest('hex') === d[1];
-fs.writeFileSync(m[1], JSON.stringify({ verdict: ok ? 'COMPLETED' : 'BLOCKED', argv: args }));
+fs.writeFileSync(m[1], JSON.stringify({ verdict: ok ? 'COMPLETED' : 'BLOCKED', argv: args, permission: process.env.OPENCODE_PERMISSION || null }));
 `;
 
 const HOSTILE = `He said "it's \`fine\`" & | ; > < $HOME $(whoami) %PATH% !x! * ? [a] {b} #c ~ ^ — ✓ 漢字 🚀\r\n` +
@@ -84,7 +84,8 @@ function main(): number {
         try {
           const v = JSON.parse(fs.readFileSync(resultPath, 'utf-8'));
           verdict = v.verdict;
-          argvOk = JSON.stringify(v.argv) === JSON.stringify(spec.args.slice(1));
+          argvOk = JSON.stringify(v.argv) === JSON.stringify(spec.args.slice(1))
+            && v.permission === (spec.env?.OPENCODE_PERMISSION ?? null);
         } catch { /* missing */ }
         if (verdict === 'COMPLETED' && argvOk) {
           passes++;

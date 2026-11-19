@@ -33,7 +33,7 @@ const m = prompt.match(/RESULT_PATH=(.+)\\n/);
 const d = prompt.match(/DIGEST=([0-9a-f]+)\\n/);
 const body = prompt.slice(prompt.indexOf('BODY<') + 5, prompt.lastIndexOf('>BODY'));
 const ok = d && require('crypto').createHash('sha256').update(body, 'utf8').digest('hex') === d[1];
-fs.writeFileSync(m[1], JSON.stringify({ verdict: ok ? 'COMPLETED' : 'BLOCKED', argv: args }));
+fs.writeFileSync(m[1], JSON.stringify({ verdict: ok ? 'COMPLETED' : 'BLOCKED', argv: args, permission: process.env.OPENCODE_PERMISSION || null }));
 `;
 
 interface ShellUnderTest { kind: ShellKind; exe: string; argv: (line: string) => string[]; verbatim?: boolean }
@@ -113,6 +113,7 @@ describe.each(shellsForPlatform())('harness contract via $exe', (shell) => {
       const verdict = JSON.parse(fs.readFileSync(resultPath, 'utf-8'));
       expect(verdict.verdict, `prompt corrupted in transit.\n$ ${line}\nstderr: ${res.stderr}`).toBe('COMPLETED');
       expect(verdict.argv).toEqual(spec.args.slice(1));
+      expect(verdict.permission).toBe(spec.env?.OPENCODE_PERMISSION ?? null);
     },
     60_000,
   );

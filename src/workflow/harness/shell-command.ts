@@ -19,6 +19,32 @@ export interface LaunchSpec {
   readonly args: readonly string[];
   /** When set, this file's contents are fed to the process on stdin. */
   readonly stdinFile?: string;
+  /** Extra environment variables for the CLI (e.g. a permission policy). */
+  readonly env?: Readonly<Record<string, string>>;
+}
+
+const ENV_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+/** Shell statement(s) that set `env` for the command that follows. */
+function envPrefix(env: Readonly<Record<string, string>> | undefined, kind: ShellKind): string {
+  const entries = Object.entries(env ?? {});
+  for (const [name] of entries) {
+    if (!ENV_NAME.test(name)) throw new Error(`Invalid environment variable name: ${JSON.stringify(name)}`);
+  }
+  return entries.map(([name, value]) => {
+    switch (kind) {
+      case 'powershell':
+        return `$env:${name}=${"'" + value.replace(/'/g, "''") + "'"}; `;
+      case 'cmd':
+        // set "N=V" protects the value; cmd still expands %VAR% and !VAR!.
+        if (/[%!&|<>^\r\n]/.test(value)) {
+          throw new Error(`Environment value cannot be safely set in cmd.exe: ${JSON.stringify(value)}`);
+        }
+        return `set "${name}=${value}" && `;
+      default:
+        return `${name}=${quoteArg(value, kind)} `;
+    }
+  }).join('');
 }
 
 // Deliberately excludes `,` and `@`: PowerShell turns `a,b` into an array
@@ -80,15 +106,19 @@ export function buildCommandLine(spec: LaunchSpec, kind: ShellKind): string {
     ? `& ${quoteArg(exe, kind)}`
     : quoteArg(exe, kind);
   const argv = [invoke, ...rest.map((a) => quoteArg(a, kind))].join(' ');
-  if (!spec.stdinFile) return argv;
+  const env = envPrefix(spec.env, kind);
+  if (!spec.stdinFile) {
+    // PowerShell needs a script block so the assignments and the call form one line.
+    return env && kind === 'powershell' ? `& { ${env}${argv} }` : `${env}${argv}`;
+  }
 
   const file = normalizePath(spec.stdinFile);
   switch (kind) {
     case 'powershell':
-      return `& { $OutputEncoding=[System.Text.UTF8Encoding]::new(); Get-Content -Raw -Encoding UTF8 ${quoteArg(file, kind)} | ${argv} }`;
+      return `& { ${env}$OutputEncoding=[System.Text.UTF8Encoding]::new(); Get-Content -Raw -Encoding UTF8 ${quoteArg(file, kind)} | ${argv} }`;
     case 'cmd':
-      return `${argv} < ${quoteArg(file, kind)}`;
+      return `${env}${argv} < ${quoteArg(file, kind)}`;
     default:
-      return `${argv} < ${quoteArg(file, kind)}`;
+      return `${env}${argv} < ${quoteArg(file, kind)}`;
   }
 }
