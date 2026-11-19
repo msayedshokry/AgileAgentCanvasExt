@@ -14,7 +14,7 @@ import { HARNESS_ADAPTERS, buildHarnessLaunch, type PermissionPosture } from '..
 import { buildCommandLine, detectShellKind } from '../../src/workflow/harness/shell-command';
 import { stagePromptFile } from '../../src/workflow/harness/prompt-staging';
 
-const TIMEOUT_MS = 4 * 60 * 1000;
+const TIMEOUT_MS = Number(process.env.AAC_SMOKE_TIMEOUT_MS) || 4 * 60 * 1000;
 
 function onPath(bin: string): boolean {
   return cp.spawnSync(process.platform === 'win32' ? 'where' : 'which', [bin], { windowsHide: true }).status === 0;
@@ -47,7 +47,17 @@ function main(): number {
       '{"verdict":"COMPLETED","summary":"smoke test"}\n' +
       'Do not create or modify any other file. Then stop.\n';
     const promptFile = stagePromptFile(outputFolder, 'SMOKE-1', 'run', prompt);
-    const line = buildCommandLine(buildHarnessLaunch(adapter, { binary, promptFile, resultPath, posture }), shell.kind);
+    const launch = buildHarnessLaunch(adapter, { binary, promptFile, resultPath, posture });
+    // Test-only: AAC_SMOKE_EXTRA_<ID> (JSON string array) adds flags such as a
+    // model override, placed after the subcommand ("exec"/"run") so trailing
+    // stdin markers ("-", "-p") stay last. The adapters themselves are unchanged.
+    const extra = process.env[`AAC_SMOKE_EXTRA_${adapter.id.replace(/-/g, '_').toUpperCase()}`];
+    const args = [...launch.args];
+    if (extra) {
+      const at = args[1] === 'exec' || args[1] === 'run' ? 2 : 1;
+      args.splice(at, 0, ...(JSON.parse(extra) as string[]));
+    }
+    const line = buildCommandLine({ ...launch, args }, shell.kind);
 
     const started = Date.now();
     const res = cp.spawnSync(shell.exe, shell.argv(line), { cwd: ws, encoding: 'utf-8', timeout: TIMEOUT_MS, windowsHide: true });
