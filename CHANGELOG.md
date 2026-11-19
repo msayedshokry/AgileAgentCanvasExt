@@ -30,6 +30,14 @@ The Agentic Kanban now runs on whichever coding agent you already have installed
 - **Agile Agent Canvas: Show Agent Run History** lists every board run with harness, verdict and summary.
 - **Failing stories back off and pause after 3 failed runs in a row.** The circuit breaker now counts runs that end without a verdict.
 
+### Feature: The board tells you what's wrong and how to fix it
+
+- **Agent strip at the top of the board:** shows which agent runs it, its version and whether it's signed in, with **Sign in**, **Use** and **How to install** per agent. The agent and permission level can be switched from the toolbar.
+- **Stopped cards say why in plain words** (signed out, missing key, model not available, quota, not installed…) and offer the fix: **Sign in**, **Switch agent**, **Retry**, **Show output** or **Move back**.
+- **Status-bar "needs you" count** for cards waiting on you: stopped runs, approvals, and stories paused after repeated failures. Clicking it opens the card.
+- **Card detail additions:** **Preview prompt** shows exactly what the agent will be told, without running it. Each card also has a run timeline, and agent commits can be reverted in one click (it asks first).
+- **Measured costs for Claude Code and Codex runs:** usage now comes from their own session logs instead of an estimate.
+
 ### Security
 
 - **AI API key in secure storage:** it now lives in VS Code's OS-keychain-backed secure storage (**Set AI API Key**) and is moved out of settings automatically. The Gemini key is no longer sent in the URL.

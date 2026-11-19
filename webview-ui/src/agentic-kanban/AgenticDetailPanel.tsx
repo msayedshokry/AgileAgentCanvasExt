@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import type { KanbanItem } from '../components/kanban/KanbanTypes';
 import { vscode } from '../vscodeApi';
 import { useEvent } from './useEvent';
+import { RunInsights } from './RunInsights';
 import {
   AgentInfo,
   getInterruptionMessage,
@@ -285,6 +286,9 @@ export function AgenticDetailPanel({
           </p>
         </section>
       ) : null}
+
+      {/* ── Why it stopped + fixes, prompt preview, run timeline ── */}
+      <RunInsights item={item} />
 
       {/* ── Status chips — workflow / provider / started / lock / trace ── */}
       <div className="agentic-chips">

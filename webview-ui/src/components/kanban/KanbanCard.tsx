@@ -236,8 +236,13 @@ export function KanbanCard({ item, index, draggable, onDragStart, onClick, class
         </span>
       )}
       {isInterrupted && (
-        <span className="kanban-card-agent-badge kanban-card-agent-badge--interrupted">
-          Interrupted — {item.agentState?.agentRole ?? 'Agent'}
+        <span
+          className="kanban-card-agent-badge kanban-card-agent-badge--interrupted"
+          title={item.agentState?.failure?.detail}
+        >
+          {item.agentState?.failure
+            ? `⚠ ${item.agentState.failure.title}`
+            : `Interrupted — ${item.agentState?.agentRole ?? 'Agent'}`}
         </span>
       )}
       {hasTerminal && (

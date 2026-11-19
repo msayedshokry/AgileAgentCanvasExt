@@ -947,7 +947,15 @@ export class AutonomyLifecycle extends EventEmitter {
         report: (o) => {
           const id = o.record.artifactId;
           if (o.kind === 'interrupted') {
-            this.broadcast({ type: 'agentStateUpdated', artifactId: id, agentState: { status: 'interrupted', interruptionReason: 'window-reloaded' } });
+            this.broadcast({
+              type: 'agentStateUpdated',
+              artifactId: id,
+              agentState: {
+                status: 'interrupted',
+                interruptionReason: 'window-reloaded',
+                failure: { kind: 'aborted', title: 'Interrupted when VS Code reloaded', detail: `${o.record.workflowId} via ${o.record.harness}`, actions: ['retry', 'move-back'] },
+              },
+            });
             lines.push(`${id} (${o.record.workflowId}) was interrupted${o.reverted ? ` and moved back to ${o.record.revertTo}` : ''}`);
           } else if (o.kind === 'finished') {
             lines.push(`${id} (${o.record.workflowId}) finished while VS Code was closed: ${o.verdict.verdict}`);

@@ -4,6 +4,7 @@ import { AgileAgentCanvasChatParticipant } from './chat/chat-participant';
 import { ArtifactsTreeProvider } from './views/artifacts-tree-provider';
 import { WizardStepsProvider } from './views/wizard-steps-provider';
 import { AgenticKanbanViewProvider } from './views/agentic-kanban-view-provider';
+import { registerNeedsYou } from './views/needs-you';
 import { AgentSessionsViewProvider } from './views/agent-sessions-view-provider';
 import { AgileAgentCanvasViewProvider } from './views/canvas-view-provider';
 import { ArtifactStore } from './state/artifact-store';
@@ -173,6 +174,8 @@ export function activate(context: vscode.ExtensionContext) {
     const artifactsTreeProvider = new ArtifactsTreeProvider(artifactStore);
     const wizardStepsProvider = new WizardStepsProvider(artifactStore);
     const agenticKanbanProvider = new AgenticKanbanViewProvider(context.extensionUri, artifactStore);
+    // Status-bar count of cards waiting on the user (stopped runs, approvals, paused stories).
+    registerNeedsYou(context, (artifactId) => agenticKanbanProvider.broadcast({ type: 'kanban:focusCard', artifactId }));
     const agentSessionsProvider = new AgentSessionsViewProvider(context.extensionUri);
     // Push the provider itself so its timer + singleton listeners are
     // cleared on extension deactivation (otherwise the 30 s heartbeat can

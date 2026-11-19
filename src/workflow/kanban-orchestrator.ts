@@ -30,6 +30,7 @@ import { autoRetryEngine } from './auto-retry-engine';
 import { autonomousGit } from './autonomous-git';
 import { TerminalExecutor } from './terminal-executor';
 import { runViaLanguageModel } from './harness/headless-lm-run';
+import { classifyAgentFailure, type AgentFailure } from './harness/agent-failure';
 import { agentHealthMonitor } from './agent-health-monitor';
 import {
   ChatProgressTracker,
@@ -105,6 +106,8 @@ export interface KanbanProgressEvent {
     status: 'running' | 'completed' | 'failed' | 'interrupted' | 'idle';
     agentRole?: string;
     workflowId?: string;
+    /** Why the run stopped, in plain words, with the actions that fix it. */
+    failure?: AgentFailure;
   };
 }
 
@@ -687,7 +690,14 @@ export class KanbanOrchestrator {
       }
     }
 
-    this.emit(id, 'interrupted');
+    try {
+      kanbanProgress.fire({
+        artifactId: id,
+        agentState: { status: 'interrupted', failure: classifyAgentFailure(`${verdict?.summary ?? ''}\n${reason}`) },
+      });
+    } catch {
+      // emitter may be disposed
+    }
     try {
       vscode.window.showWarningMessage(
         `Autonomous run stopped for ${id}: ${detail}${diagnosticHint}${revertMessage}`

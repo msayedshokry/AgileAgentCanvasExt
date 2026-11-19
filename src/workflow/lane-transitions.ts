@@ -26,7 +26,8 @@ import { readVerdictFile, resultFilePath, getOutputFolder } from './kanban-verdi
 import type { KanbanVerdict } from './kanban-verdict';
 import { getA2AOutboundClient } from '../acp/agent-bus/a2a-outbound-client';
 import { isKanbanAutoAdvanceEnabled } from './kanban-settings';
-import { kanbanOrchestrator } from './kanban-orchestrator';
+import { kanbanOrchestrator, kanbanProgress } from './kanban-orchestrator';
+import { classifyAgentFailure } from './harness/agent-failure';
 
 import { errMsg } from '../utils/error';
 
@@ -345,6 +346,14 @@ export class LaneTransitionEngine {
       }
 
       const summary = verdict.summary ?? `Agent exited with ${verdict.verdict}`;
+      try {
+        kanbanProgress.fire({
+          artifactId,
+          agentState: { status: 'interrupted', workflowId, failure: classifyAgentFailure(summary) },
+        });
+      } catch {
+        // emitter may be disposed
+      }
       const currentStatus: string | undefined = this.store.findArtifactById(artifactId)?.artifact?.status;
       logger.warn(
         `[E2] ${artifactId} (${workflowId}) non-success verdict ${verdict.verdict} ` +

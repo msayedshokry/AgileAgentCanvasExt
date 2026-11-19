@@ -106,7 +106,7 @@ The board drives the coding agent you already have. It picks, in order:
 | Pi | `pi -p` |
 | Aider | `aider --message-file` |
 
-Run **Check Agent Harnesses** to see what's installed and run a smoke test.
+The strip at the top of the board shows the agent in use and whether it's signed in, with one-click sign-in and switching. When a run stops, the card says why and offers the fix. **Check Agent Harnesses** runs a real smoke test.
 
 **Permissions.** `agileagentcanvas.agents.permissionPosture` defaults to `sandboxed`: agents edit workspace files but get no unrestricted shell where the CLI supports it. `full` auto-approves every tool, and needs a trusted workspace and a one-time confirmation.
 

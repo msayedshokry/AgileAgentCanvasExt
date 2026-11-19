@@ -27,6 +27,7 @@ import { budgetEnforcer } from '../workflow/budget-enforcer';
 import { circuitBreaker } from '../workflow/circuit-breaker';
 
 import { kanbanOrchestrator } from '../workflow/kanban-orchestrator';
+import { handleAgentUxMessage } from './agent-ux-messages';
 
 import { isTerminalInbound } from './terminal-protocol';
 import { TerminalSessionRouter } from './terminal-session-router';
@@ -335,6 +336,8 @@ export async function handleAgenticKanbanMessage(
     }
     return true;
   }
+
+  if (await handleAgentUxMessage(message, store, webview)) return true;
 
   switch (message.type) {
     case 'kanban:statusChanged': {

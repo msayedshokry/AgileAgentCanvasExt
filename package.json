@@ -808,6 +808,11 @@
         "icon": "$(pulse)"
       },
       {
+        "command": "agileagentcanvas.showNeedsYou",
+        "title": "Agile Agent Canvas: Show Cards That Need You",
+        "icon": "$(bell-dot)"
+      },
+      {
         "command": "agileagentcanvas.showRunHistory",
         "title": "Agile Agent Canvas: Show Agent Run History",
         "icon": "$(history)"

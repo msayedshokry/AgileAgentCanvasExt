@@ -1,0 +1,304 @@
+/* ─── Agent usability surfaces: readiness strip, fix-it, run timeline ───────
+ * Semantic colour only: green = can run, amber = will fail until fixed,
+ * red = nothing can run. Everything else stays on the editor's neutrals so
+ * the board itself remains the focus. */
+
+.agent-ux,
+.agent-status,
+.agent-insights {
+  --agent-ok: var(--vscode-testing-iconPassed, #2ea043);
+  --agent-warn: var(--vscode-editorWarning-foreground, #cca700);
+  --agent-error: var(--vscode-editorError-foreground, #f14c4c);
+  --agent-muted: var(--vscode-descriptionForeground);
+  --agent-border: var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.25));
+  --agent-radius: 4px;
+  --agent-gap: 8px;
+  --agent-fast: 120ms;
+}
+
+/* ── Readiness strip ─────────────────────────────────────────────────────── */
+
+.agent-status {
+  border-bottom: 1px solid var(--agent-border);
+  padding: 6px 10px;
+  font-size: 12px;
+  border-left: 3px solid transparent;
+}
+.agent-status--ok { border-left-color: var(--agent-ok); }
+.agent-status--warn { border-left-color: var(--agent-warn); }
+.agent-status--error { border-left-color: var(--agent-error); }
+.agent-status--loading { color: var(--agent-muted); }
+
+.agent-status-row {
+  display: flex;
+  align-items: center;
+  gap: var(--agent-gap);
+  flex-wrap: wrap;
+}
+
+.agent-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+.agent-status-dot--ok { background: var(--agent-ok); }
+.agent-status-dot--warn { background: var(--agent-warn); }
+.agent-status-dot--error { background: var(--agent-error); }
+
+.agent-status-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.agent-status-caption {
+  color: var(--agent-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.agent-status-field select {
+  background: var(--vscode-dropdown-background);
+  color: var(--vscode-dropdown-foreground);
+  border: 1px solid var(--vscode-dropdown-border, var(--agent-border));
+  border-radius: var(--agent-radius);
+  padding: 2px 6px;
+  font-size: 12px;
+}
+
+.agent-status-summary {
+  color: var(--agent-muted);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1 1 160px;
+}
+
+.agent-status-actions {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.agent-status-link {
+  background: none;
+  border: none;
+  color: var(--vscode-textLink-foreground);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 4px;
+  border-radius: var(--agent-radius);
+}
+.agent-status-link:hover { text-decoration: underline; }
+.agent-status-link:disabled { color: var(--agent-muted); cursor: default; text-decoration: none; }
+
+.agent-status-blocker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--agent-gap);
+  flex-wrap: wrap;
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-radius: var(--agent-radius);
+  background: color-mix(in srgb, var(--agent-warn) 12%, transparent);
+}
+.agent-status--error .agent-status-blocker {
+  background: color-mix(in srgb, var(--agent-error) 12%, transparent);
+}
+.agent-status-blocker-actions { display: inline-flex; gap: 6px; }
+
+.agent-status-table {
+  width: 100%;
+  margin-top: 8px;
+  border-collapse: collapse;
+}
+.agent-status-table th,
+.agent-status-table td {
+  text-align: left;
+  padding: 4px 6px;
+  border-top: 1px solid var(--agent-border);
+  font-weight: normal;
+}
+.agent-status-table thead th {
+  color: var(--agent-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-top: none;
+}
+.agent-status-table tbody th { font-weight: 600; }
+.agent-status-current th::after {
+  content: ' · in use';
+  font-weight: normal;
+  color: var(--agent-ok);
+}
+.agent-status-row-actions { text-align: right; white-space: nowrap; }
+.agent-status-row-actions .agent-btn + .agent-btn { margin-left: 4px; }
+
+/* ── Buttons and pills ───────────────────────────────────────────────────── */
+
+.agent-btn {
+  background: var(--vscode-button-secondaryBackground, transparent);
+  color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
+  border: 1px solid var(--vscode-button-border, var(--agent-border));
+  border-radius: var(--agent-radius);
+  padding: 3px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: opacity var(--agent-fast) ease, transform var(--agent-fast) ease;
+}
+.agent-btn:hover { opacity: 0.85; }
+.agent-btn:active { transform: translateY(1px); }
+.agent-btn:focus-visible,
+.agent-status-link:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 1px;
+}
+.agent-btn--primary {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border-color: transparent;
+}
+.agent-btn--danger {
+  color: var(--agent-error);
+  border-color: color-mix(in srgb, var(--agent-error) 50%, transparent);
+  background: transparent;
+}
+
+.agent-pill {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  border: 1px solid var(--agent-border);
+  white-space: nowrap;
+}
+.agent-pill--ready,
+.agent-pill--verdict-completed,
+.agent-pill--verdict-approved { color: var(--agent-ok); border-color: color-mix(in srgb, var(--agent-ok) 50%, transparent); }
+.agent-pill--signed-out,
+.agent-pill--verdict-blocked { color: var(--agent-error); border-color: color-mix(in srgb, var(--agent-error) 50%, transparent); }
+.agent-pill--configured,
+.agent-pill--verdict-needs_fixes,
+.agent-pill--verdict-unknown { color: var(--agent-warn); border-color: color-mix(in srgb, var(--agent-warn) 50%, transparent); }
+.agent-pill--unknown { color: var(--agent-muted); }
+
+.agent-muted { color: var(--agent-muted); }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── Fix-it panel (detail panel) ─────────────────────────────────────────── */
+
+.agent-insights {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.agent-fixit {
+  border: 1px solid color-mix(in srgb, var(--agent-warn) 45%, transparent);
+  border-left-width: 3px;
+  border-left-color: var(--agent-warn);
+  border-radius: var(--agent-radius);
+  padding: 10px 12px;
+}
+.agent-fixit-title {
+  margin: 0 0 6px;
+  font-weight: 600;
+}
+.agent-fixit-detail {
+  margin: 0 0 8px;
+  padding: 6px 8px;
+  background: var(--vscode-textCodeBlock-background, rgba(127, 127, 127, 0.1));
+  border-radius: var(--agent-radius);
+  font-family: var(--vscode-editor-font-family);
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 8em;
+  overflow: auto;
+}
+.agent-fixit-actions,
+.agent-insights-tools {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* ── Run timeline ────────────────────────────────────────────────────────── */
+
+.agent-timeline-heading {
+  margin: 4px 0 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--agent-muted);
+}
+
+.agent-timeline-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 10px;
+  border-left: 1px solid var(--agent-border);
+}
+.agent-timeline-item {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  padding: 4px 0;
+  font-size: 12px;
+}
+.agent-timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -14px;
+  top: 9px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--agent-muted);
+}
+.agent-timeline-item--completed::before,
+.agent-timeline-item--approved::before { background: var(--agent-ok); }
+.agent-timeline-item--blocked::before { background: var(--agent-error); }
+.agent-timeline-item--needs_fixes::before,
+.agent-timeline-item--unknown::before { background: var(--agent-warn); }
+.agent-timeline-what { font-weight: 600; }
+.agent-timeline-why { flex-basis: 100%; color: var(--agent-warn); font-size: 11px; }
+
+.agent-commit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.agent-commit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 12px;
+}
+.agent-commit code { font-family: var(--vscode-editor-font-family); }
+.agent-commit-subject {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-btn { transition: none; }
+}

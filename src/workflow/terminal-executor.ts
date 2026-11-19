@@ -41,6 +41,8 @@ import { errMsg } from '../utils/error';
 import { inferRoleFromWorkflow } from '../harness/role-inference';
 import { PONYTAIL_HEURISTICS } from '../chat/ponytail-heuristics';
 import { budgetEnforcer } from './budget-enforcer';
+import { costTracker } from '../chat/cost-tracker';
+import { readCliUsage } from './harness/cli-usage';
 
 const execAsync = promisify(cp.exec);
 
@@ -800,7 +802,7 @@ export class TerminalExecutor implements vscode.Disposable {
         // Gap #23: record terminal CLI costs so the budget gauge reflects
         // CLI spend. Uses the captured prompt length (safe even if the
         // session was cleaned up).
-        this.recordTerminalCost(artifactId, sessionId, v, capturedPromptLength);
+        this.recordTerminalCost(artifactId, sessionId, v, capturedPromptLength, harnessId, startedAtMs);
         history(sessionId, harnessId, v);
         resolve(v);
       };
@@ -1189,9 +1191,29 @@ export class TerminalExecutor implements vscode.Disposable {
     sessionId: string,
     verdict: KanbanVerdict,
     capturedPromptLength: number,
+    harnessId?: string,
+    startedAtMs?: number,
   ): void {
-    // Only record meaningful spend — skip UNKNOWN/launch-failure verdicts
     if (!verdict) return;
+    // Measured usage first: Claude Code and Codex log exact token counts locally.
+    const cwd = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath;
+    if (harnessId && cwd && startedAtMs) {
+      const usage = readCliUsage(harnessId, cwd, startedAtMs);
+      if (usage) {
+        try {
+          costTracker.record(sessionId, usage.model, {
+            inputTokens: usage.inputTokens,
+            outputTokens: usage.outputTokens,
+            cacheReadTokens: usage.cacheReadTokens,
+            cacheCreationTokens: usage.cacheCreationTokens,
+          }, artifactId, 'api');
+          logger.debug(`[TerminalExecutor] Recorded measured ${harnessId} usage for ${artifactId}: ${usage.inputTokens}+${usage.outputTokens} tokens`);
+          return;
+        } catch (err) {
+          logger.debug(`[TerminalExecutor] Failed to record measured usage: ${errMsg(err)}`);
+        }
+      }
+    }
     try {
       // Best-effort: lookup session for accumulated output (may be cleaned up).
       // The captured prompt length is always available — the session was alive
