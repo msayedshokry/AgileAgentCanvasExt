@@ -274,7 +274,8 @@ export function AgenticDetailPanel({
             </details>
           )}
         </section>
-      ) : isInterrupted ? (
+      ) : isInterrupted && !item.agentState?.failure ? (
+        // With a classified failure, RunInsights below states the real reason.
         <section className="agentic-tldr agentic-tldr--interrupted">
           <p className="agentic-tldr-summary">{getInterruptionMessage(item.agentState?.interruptionReason)}</p>
           {isResuming && <p className="agentic-tldr-status"><span className="agentic-resume-spinner" /> Reconnecting…</p>}

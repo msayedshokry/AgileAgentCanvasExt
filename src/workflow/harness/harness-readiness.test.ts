@@ -23,7 +23,7 @@ describe('probeReadiness', () => {
         'codex --version': { output: 'codex-cli 0.163.0', code: 0 },
       },
     }));
-    expect(byId(list, 'claude')).toMatchObject({ installed: true, version: '2.1.294 (Claude Code)', auth: 'signed-out' });
+    expect(byId(list, 'claude')).toMatchObject({ installed: true, version: '2.1.294', auth: 'signed-out' });
     expect(byId(list, 'codex')).toMatchObject({ auth: 'ready', authDetail: 'Signed in' });
   });
 

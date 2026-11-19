@@ -103,6 +103,8 @@ export interface ReadinessDeps {
 }
 
 const firstLine = (s: string): string => s.split(/\r?\n/).map((l) => l.trim()).find(Boolean)?.slice(0, 80) ?? '';
+/** "2.1.294 (Claude Code)" → "2.1.294": the label is already shown next to it. */
+const versionOnly = (s: string): string => firstLine(s).replace(/\s*\([^)]*\)\s*$/, '');
 
 async function authFor(adapter: HarnessAdapter, binary: string, deps: ReadinessDeps): Promise<{ auth: AuthState; detail: string }> {
   const spec = AUTH_SPECS[adapter.id];
@@ -131,7 +133,7 @@ export async function probeReadiness(deps: ReadinessDeps): Promise<HarnessReadin
       return { ...base, installed: false, auth: 'unknown', authDetail: 'Not installed' };
     }
     const [{ output }, auth] = await Promise.all([deps.run(binary, ['--version']), authFor(adapter, binary, deps)]);
-    return { ...base, installed: true, binary, version: firstLine(output) || undefined, auth: auth.auth, authDetail: auth.detail };
+    return { ...base, installed: true, binary, version: versionOnly(output) || undefined, auth: auth.auth, authDetail: auth.detail };
   }));
 }
 
