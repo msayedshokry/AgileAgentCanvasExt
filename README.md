@@ -110,6 +110,10 @@ The strip at the top of the board shows the agent in use and whether it's signed
 
 **Permissions.** `agileagentcanvas.agents.permissionPosture` defaults to `sandboxed`: agents edit workspace files but get no unrestricted shell where the CLI supports it. `full` auto-approves every tool, and needs a trusted workspace and a one-time confirmation.
 
+**From card to merged code.** Each autonomous card runs on its own git branch and working copy next to your repo. The project's tests run after every implement step, and failures go back to the agent. Approval merges the branch, or opens a pull request whose review comments the agent can address. `project-context.md` tells agents your build, lint and test commands and conventions.
+
+**Developer hub commands.** **Sync GitHub Issues**, **Show Engineering Metrics**, **Generate Release Notes**, and a CodeLens linking files to the stories that changed them.
+
 **Limits.** Agents never run in Restricted Mode. Spend caps default to $5 per story and $25 per day (`agileagentcanvas.budget.*`). **Stop All Agents** stops everything immediately, and **Show Agent Run History** lists what ran and how it ended.
 
 ### Visual Plan

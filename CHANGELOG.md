@@ -38,6 +38,16 @@ The Agentic Kanban now runs on whichever coding agent you already have installed
 - **Card detail additions:** **Preview prompt** shows exactly what the agent will be told, without running it. Each card also has a run timeline, and agent commits can be reverted in one click (it asks first).
 - **Measured costs for Claude Code and Codex runs:** usage now comes from their own session logs instead of an estimate.
 
+### Feature: From card to merged code
+
+- **Every autonomous card gets its own git branch and working copy,** next to your repo. Parallel cards no longer touch the same files, and your checkout is never switched. When a card is approved, its branch is merged back. If the merge conflicts, the run stops and the branch is kept for you (`agileagentcanvas.agents.isolation`).
+- **Tests are a real gate:** after each implement step, the project's test command runs on the card's code. Failures go straight back to the agent as fix requests (`agileagentcanvas.agents.verifyCommand`).
+- **Pull requests:** with `agileagentcanvas.agents.openPullRequests` on, an approved card becomes a pull request. The card shows its CI checks and review state, and **Address review comments** sends feedback and failing checks back to the agent.
+- **Project context:** `project-context.md` detects your build, lint and test commands and convention files. It's injected into every agent prompt and is yours to edit (**Refresh Project Context**).
+- **Story ↔ code:** cards list the files each agent commit changed, and a CodeLens at the top of a file shows which stories changed it.
+- **New commands:** **Sync GitHub Issues** (two-way, via the GitHub CLI, previewed before applying), **Show Engineering Metrics** (success rate per agent, fix cycles, lead time, cost per story) and **Generate Release Notes**.
+- **Fix:** auto-commit and auto-PR never ran, because no git runner was connected. Agent commits are now made, so the diff review and **Revert** have something to work with.
+
 ### Security
 
 - **AI API key in secure storage:** it now lives in VS Code's OS-keychain-backed secure storage (**Set AI API Key**) and is moved out of settings automatically. The Gemini key is no longer sent in the URL.

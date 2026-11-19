@@ -798,6 +798,31 @@
     ],
     "commands": [
       {
+        "command": "agileagentcanvas.refreshProjectContext",
+        "title": "Agile Agent Canvas: Refresh Project Context",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "agileagentcanvas.showEngineeringMetrics",
+        "title": "Agile Agent Canvas: Show Engineering Metrics",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "agileagentcanvas.generateReleaseNotes",
+        "title": "Agile Agent Canvas: Generate Release Notes",
+        "icon": "$(notebook)"
+      },
+      {
+        "command": "agileagentcanvas.syncGitHubIssues",
+        "title": "Agile Agent Canvas: Sync GitHub Issues",
+        "icon": "$(github)"
+      },
+      {
+        "command": "agileagentcanvas.openStoryOnBoard",
+        "title": "Agile Agent Canvas: Open Story on Board",
+        "icon": "$(project)"
+      },
+      {
         "command": "agileagentcanvas.setApiKey",
         "title": "Agile Agent Canvas: Set AI API Key",
         "icon": "$(key)"
@@ -1484,6 +1509,45 @@
               "Every tool is auto-approved (the CLI's bypass/yolo mode). Requires a trusted workspace and a one-time confirmation"
             ],
             "markdownDescription": "What headless agents may do without asking. `sandboxed` (default) lets agents edit workspace files but withholds unrestricted shell access where the harness supports it. `full` auto-approves every tool, including shell commands. Only use it in repositories you trust; it needs a trusted workspace and a one-time confirmation."
+          },
+          "agileagentcanvas.agents.isolation": {
+            "type": "string",
+            "default": "worktree",
+            "enum": [
+              "worktree",
+              "none"
+            ],
+            "enumDescriptions": [
+              "Each autonomous card runs in its own git worktree and branch (next to the repo); approval merges it back or opens a PR",
+              "Agents work directly in your checkout (cards running at the same time can collide)"
+            ],
+            "markdownDescription": "Where autonomous agents work. `worktree` (default, git repositories only) gives every card its own branch and working copy, so parallel cards never share files and your checkout is never switched."
+          },
+          "agileagentcanvas.agents.verifyAfterImplement": {
+            "type": "boolean",
+            "default": true,
+            "markdownDescription": "After each implement step, run the project's test command (`agents.verifyCommand`, else the **test** command in project-context.md). Failures go back to the agent as fix requests before review."
+          },
+          "agileagentcanvas.agents.verifyCommand": {
+            "type": "string",
+            "default": "",
+            "markdownDescription": "Command that verifies an agent's work, run in the card's working copy (e.g. `npm test`). Empty: use the **test** command from project-context.md."
+          },
+          "agileagentcanvas.agents.verifyTimeoutMinutes": {
+            "type": "number",
+            "default": 15,
+            "minimum": 1,
+            "description": "Maximum time for the verify command before it is stopped and counted as failed."
+          },
+          "agileagentcanvas.agents.openPullRequests": {
+            "type": "boolean",
+            "default": false,
+            "markdownDescription": "When a card is approved, push its branch and open a pull request with the GitHub CLI (`gh`) instead of merging it into your current branch. Review comments and failing checks can then be sent back to the agent from the card."
+          },
+          "agileagentcanvas.agents.storyCodeLens": {
+            "type": "boolean",
+            "default": true,
+            "markdownDescription": "Show which stories' agent commits changed a file, as a CodeLens at the top of the file."
           },
           "agileagentcanvas.agents.synthesizeVerdictFromChanges": {
             "type": "boolean",
