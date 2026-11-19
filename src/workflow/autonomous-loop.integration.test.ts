@@ -200,7 +200,7 @@ describe('Autonomous loop: KanbanOrchestrator + terminal executor integration', 
       expect(terminalExecutor.executeAndAwaitVerdict).toHaveBeenCalledTimes(2);
       // First call: dev workflow with artifact + store
       expect(terminalExecutor.executeAndAwaitVerdict).toHaveBeenNthCalledWith(
-        1, 'aac-kanban-dev-executor', story, store,
+        1, 'aac-kanban-dev-executor', story, store, expect.objectContaining({ lmRunner: expect.any(Function) }),
       );
 
       // Chat path NOT called
@@ -690,10 +690,10 @@ describe('Autonomous loop: AutoScheduler + orchestrator wiring', () => {
 
       // First call and third call are dev workflow calls (S-1 and S-2)
       expect(terminalExecutor.executeAndAwaitVerdict).toHaveBeenNthCalledWith(
-        1, 'aac-kanban-dev-executor', story1, store,
+        1, 'aac-kanban-dev-executor', story1, store, expect.objectContaining({ lmRunner: expect.any(Function) }),
       );
       expect(terminalExecutor.executeAndAwaitVerdict).toHaveBeenNthCalledWith(
-        3, 'aac-kanban-dev-executor', story2, store,
+        3, 'aac-kanban-dev-executor', story2, store, expect.objectContaining({ lmRunner: expect.any(Function) }),
       );
 
       // Chat path not used

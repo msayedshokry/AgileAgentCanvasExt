@@ -170,6 +170,7 @@ function jsonToMarkdown(title: string, obj: any, depth: number = 1): string {
 }
 
 import { errMsg } from '../utils/error';
+import { checkWritablePath, type WriteCheck } from './write-guard';
 
 // ─── Dynamic tracing wrapper ──────────────────────────────────────────────────
 /**
@@ -411,9 +412,15 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         // Write operations are restricted to outputPath and workspace folders.
                         // bmadPath (resources/_aac/) is read-only framework code — never writable.
                         const allowedRoots = getAllowedRoots(ctx).filter(r => r !== ctx.bmadPath);
+                        // Model-chosen paths: resolve symlinks and refuse files that run
+                        // code later (git hooks, tasks, npm scripts, CI) — see write-guard.ts.
+                        // No writes at all in Restricted Mode.
+                        const guard: WriteCheck = vscode.workspace.isTrusted === false
+                            ? { ok: false, reason: 'File writes by agents are disabled in Restricted Mode.' }
+                            : checkWritablePath(filePath, allowedRoots);
 
-                        if (!isPathAllowed(filePath, allowedRoots)) {
-                            const msg = `Access denied: "${filePath}" is outside the allowed AgileAgentCanvas paths.`;
+                        if (!guard.ok) {
+                            const msg = `Access denied: ${guard.reason}`;
                             logger.debug(`[agileagentcanvas_write_file] ${msg}`);
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(msg)

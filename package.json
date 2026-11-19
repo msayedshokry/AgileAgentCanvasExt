@@ -48,6 +48,25 @@
     "onStartupFinished"
   ],
   "main": "./dist/extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "In Restricted Mode, Agile Agent Canvas shows the canvas read-only: coding agents, the AI file-write tool, and remote A2A calls are disabled, and agent settings come only from user settings.",
+      "restrictedConfigurations": [
+        "agileagentcanvas.agents.harness",
+        "agileagentcanvas.agents.permissionPosture",
+        "agileagentcanvas.outputFolder",
+        "agileagentcanvas.apiKey",
+        "agileagentcanvas.aiProvider",
+        "agileagentcanvas.budget.perStoryUsd",
+        "agileagentcanvas.budget.dailyUsd"
+      ]
+    },
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "Agents and artifact storage need a local file system."
+    }
+  },
   "contributes": {
     "languageModelTools": [
       {
@@ -778,6 +797,16 @@
     ],
     "commands": [
       {
+        "command": "agileagentcanvas.checkHarnesses",
+        "title": "Agile Agent Canvas: Check Agent Harnesses",
+        "icon": "$(pulse)"
+      },
+      {
+        "command": "agileagentcanvas.stopAllAgents",
+        "title": "Agile Agent Canvas: Stop All Agents",
+        "icon": "$(debug-stop)"
+      },
+      {
         "command": "agileagentcanvas.openCanvas",
         "title": "Agile Agent Canvas: Open Visual Canvas",
         "icon": "$(layout)"
@@ -1391,9 +1420,63 @@
             "default": false,
             "description": "Enable YOLO (autonomous) mode. When enabled, the AI may skip interactive checkpoints and proceed autonomously through workflow steps without waiting for user confirmation at each prompt."
           },
+          "agileagentcanvas.agents.harness": {
+            "type": "string",
+            "default": "auto",
+            "enum": [
+              "auto",
+              "vscode-lm",
+              "claude",
+              "codex",
+              "gemini",
+              "copilot-cli",
+              "cursor-agent",
+              "opencode",
+              "pi",
+              "aider"
+            ],
+            "enumDescriptions": [
+              "Use the CLI matching the chat-provider dropdown if installed, else the first installed CLI, else the VS Code language model (e.g. GitHub Copilot Chat)",
+              "Always run board steps through the VS Code language model API",
+              "Claude Code CLI (claude -p)",
+              "OpenAI Codex CLI (codex exec)",
+              "Gemini CLI (gemini -p)",
+              "GitHub Copilot CLI (copilot -p)",
+              "Cursor CLI (cursor-agent / agent -p)",
+              "OpenCode (opencode run)",
+              "Pi CLI (pi -p)",
+              "Aider (aider --message-file)"
+            ],
+            "markdownDescription": "Which coding-agent harness runs Agentic Kanban steps. An explicitly chosen harness that is not installed blocks the run with an install hint; it is never swapped for another CLI. Run **Agile Agent Canvas: Check Agent Harnesses** to see what is installed."
+          },
+          "agileagentcanvas.agents.permissionPosture": {
+            "type": "string",
+            "default": "sandboxed",
+            "enum": [
+              "sandboxed",
+              "full"
+            ],
+            "enumDescriptions": [
+              "Agents may read and edit workspace files; unrestricted shell access is withheld where the harness supports it",
+              "Every tool is auto-approved (the CLI's bypass/yolo mode). Requires a trusted workspace and a one-time confirmation"
+            ],
+            "markdownDescription": "What headless agents may do without asking. `sandboxed` (default) lets agents edit workspace files but withholds unrestricted shell access where the harness supports it. `full` auto-approves every tool, including shell commands. Only use it in repositories you trust; it needs a trusted workspace and a one-time confirmation."
+          },
+          "agileagentcanvas.budget.perStoryUsd": {
+            "type": "number",
+            "default": 5,
+            "minimum": 0,
+            "markdownDescription": "Spend cap per story in USD across all agent runs. Runs are blocked once it is reached. `0` disables the cap. CLI runs are estimated from prompt and output size unless the harness reports usage."
+          },
+          "agileagentcanvas.budget.dailyUsd": {
+            "type": "number",
+            "default": 25,
+            "minimum": 0,
+            "markdownDescription": "Spend cap per day (UTC) in USD across all agent runs. Autonomous runs pause once it is reached. `0` disables the cap."
+          },
           "agileagentcanvas.kanban.autoAdvance": {
             "type": "boolean",
-            "default": true,
+            "default": false,
             "description": "When enabled, dropping a story into the In-Progress column on the Agentic Kanban runs the autonomous loop (implement → review → done), re-implementing on review failures until approved or the iteration cap is reached. When disabled, the card runs its single workflow and you move it between columns manually. Also toggleable from the Agentic Kanban toolbar."
           },
           "agileagentcanvas.kanban.maxIterations": {

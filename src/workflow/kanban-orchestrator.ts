@@ -29,6 +29,7 @@ import { budgetEnforcer } from './budget-enforcer';
 import { autoRetryEngine } from './auto-retry-engine';
 import { autonomousGit } from './autonomous-git';
 import { TerminalExecutor } from './terminal-executor';
+import { runViaLanguageModel } from './harness/headless-lm-run';
 import { agentHealthMonitor } from './agent-health-monitor';
 import {
   ChatProgressTracker,
@@ -116,6 +117,17 @@ const REVIEW_WORKFLOW = 'aac-kanban-review-guard';
 export class KanbanOrchestrator {
   // #26: Per-artifact abort controllers for cancel/abort.
   private abortControllers = new Map<string, AbortController>();
+
+  /**
+   * Language-model fallback for machines with no CLI harness: runs the step
+   * through executeLaneTransition with a headless stream, cancelled with the run.
+   */
+  private lmRunnerFor(workflowId: string, artifact: unknown, artifactId: string): () => Promise<KanbanVerdict> {
+    return () => runViaLanguageModel(this.executor, workflowId, artifact, this.store, {
+      signal: this.abortControllers.get(artifactId)?.signal,
+      sessionId: `lm-${workflowId}-${artifactId}-${Date.now()}`,
+    });
+  }
   // Audit gap #50 — per-story pause resolvers. When pauseStory() is called
   // for a story that's currently mid-flight, the loop awaits the resolve
   // function at the next iteration boundary (does NOT abort, does NOT kill
@@ -138,6 +150,15 @@ export class KanbanOrchestrator {
    *  Gap #46: previously only signalled the AbortController — the terminal
    *  kept running, the lock stayed held, and the verdict file could be
    *  written orphaned. Now we kill the terminal first, then signal. */
+  /** Abort every active autonomous run (Stop All Agents). Returns how many were signalled. */
+  abortAll(): number {
+    let count = 0;
+    for (const artifactId of Array.from(this.abortControllers.keys())) {
+      if (this.abort(artifactId)) count++;
+    }
+    return count;
+  }
+
   abort(artifactId: string): boolean {
     // Kill the running terminal so the CLI agent stops immediately.
     // Idempotent — killTerminal is a no-op if no terminal is active.
@@ -443,7 +464,7 @@ export class KanbanOrchestrator {
       } else {
         // ── Terminal path (headless CLI) ──────────────────────────────────
         const verdict = await this.terminalExecutor.executeAndAwaitVerdict(
-          workflowId, artifact, this.store,
+          workflowId, artifact, this.store, { lmRunner: this.lmRunnerFor(workflowId, artifact, id) },
         );
         captured = verdict;
       }
@@ -487,7 +508,7 @@ export class KanbanOrchestrator {
             }
           } else {
             captured = await this.terminalExecutor.executeAndAwaitVerdict(
-              workflowId, artifact, this.store,
+              workflowId, artifact, this.store, { lmRunner: this.lmRunnerFor(workflowId, artifact, id) },
             );
           }
           if (captured && (captured.verdict === 'COMPLETED' || captured.verdict === 'APPROVED')) {

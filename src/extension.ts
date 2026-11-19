@@ -20,6 +20,8 @@ import { handoffNegotiation } from './acp/agent-bus/handoff-negotiation';
 import { initializeTraceRecorder, getTraceRecorder } from './trace/trace-recorder';
 import { registerTraceCommands } from './commands/trace-commands';
 import { registerA2ACommands } from './commands/a2a-commands';
+import { registerHarnessCommands } from './commands/harness-commands';
+import { sweepStalePromptFiles } from './workflow/harness/prompt-staging';
 import { harnessEngine } from './harness/policy-engine';
 import { loadUserPolicies } from './harness/policy-loader';
 import { sendArtifactsToPanel, buildArtifacts } from './canvas/artifact-transformer';
@@ -74,6 +76,7 @@ import { initialiseCatalogueService } from './state/catalogue-service';
 import { initialiseSkillRepoManager } from './state/skill-repo-manager';
 import { USER_CATALOGUE_SETTING } from './state/constants';
 import { IdeaStore } from './state/idea-store';
+import { errMsg } from './utils/error';
 
 const logger = createLogger('extension');
 
@@ -220,6 +223,13 @@ export function activate(context: vscode.ExtensionContext) {
     initializeTraceRecorder(tracesOutputPath);
     registerTraceCommands(context);
     registerA2ACommands(context);
+    registerHarnessCommands(context);
+    try {
+        const swept = sweepStalePromptFiles(tracesOutputPath);
+        if (swept > 0) logger.info(`Removed ${swept} stale staged prompt file(s)`);
+    } catch (err) {
+        logger.warn(`Prompt sweep failed: ${errMsg(err)}`);
+    }
     logger.info('Trace Recorder and A2A Commands initialized');
 
     // ── Harness Policy Engine initialization (Epic 4) ─────────────────────

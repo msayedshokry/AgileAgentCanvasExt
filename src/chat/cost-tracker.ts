@@ -176,6 +176,9 @@ export class CostTracker {
   /** Override the log file path (e.g., for the extension's output folder). */
   setLogPath(logPath: string): void {
     this.logPath = logPath;
+    // Reload so daily/per-story spend survives a VS Code restart instead of
+    // starting from the (unrelated) default temp-file history.
+    this.entries = this.loadExisting();
   }
 
   /**
