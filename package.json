@@ -1462,6 +1462,11 @@
             ],
             "markdownDescription": "What headless agents may do without asking. `sandboxed` (default) lets agents edit workspace files but withholds unrestricted shell access where the harness supports it. `full` auto-approves every tool, including shell commands. Only use it in repositories you trust; it needs a trusted workspace and a one-time confirmation."
           },
+          "agileagentcanvas.agents.synthesizeVerdictFromChanges": {
+            "type": "boolean",
+            "default": false,
+            "markdownDescription": "When an agent exits without writing its verdict file but changed files, treat the step as COMPLETED. Off by default: concurrent agents or your own edits can make a failed run look successful. When off, the card stops and shows the agent's last output."
+          },
           "agileagentcanvas.budget.perStoryUsd": {
             "type": "number",
             "default": 5,

@@ -39,6 +39,9 @@ import {
 
 import { errMsg } from '../utils/error';
 
+/** A pending approval checkpoint is denied after this long (webview closed, user away). */
+export const APPROVAL_TIMEOUT_MS = 30 * 60 * 1000;
+
 /**
  * Wrap a `vscode.ChatResponseStream` so that every chunk-emitter also
  * ticks a {@link ChatProgressTracker}. We only proxy the streaming
@@ -288,6 +291,9 @@ export class KanbanOrchestrator {
         await this.setStatus(type, id, 'in-progress');
         this.emit(id, 'running', 'Crafter', DEV_WORKFLOW);
         const dev = await this.runStepGuarded(DEV_WORKFLOW, type, id, ctx);
+        if (ac.signal.aborted) {
+          return await this.stop(id, 'Aborted by user');
+        }
 
         if (dev.verdict !== 'COMPLETED') {
           return await this.stop(id, `Dev gate returned ${dev.verdict}`, dev);
@@ -308,6 +314,9 @@ export class KanbanOrchestrator {
         await this.setStatus(type, id, 'review');
         this.emit(id, 'running', 'Reviewer', REVIEW_WORKFLOW);
         const review = await this.runStepGuarded(REVIEW_WORKFLOW, type, id, ctx);
+        if (ac.signal.aborted) {
+          return await this.stop(id, 'Aborted by user');
+        }
 
         if (review.verdict === 'APPROVED') {
           await this.setStatus(type, id, 'done');
@@ -464,7 +473,7 @@ export class KanbanOrchestrator {
       } else {
         // ── Terminal path (headless CLI) ──────────────────────────────────
         const verdict = await this.terminalExecutor.executeAndAwaitVerdict(
-          workflowId, artifact, this.store, { lmRunner: this.lmRunnerFor(workflowId, artifact, id) },
+          workflowId, artifact, this.store, { lmRunner: this.lmRunnerFor(workflowId, artifact, id), signal: this.abortControllers.get(id)?.signal },
         );
         captured = verdict;
       }
@@ -487,7 +496,7 @@ export class KanbanOrchestrator {
     // didn't throw — the verdict IS the result. We give it ONE more
     // attempt with a fresh terminal before surfacing to the orchestrator.
     if (retryResult.succeeded && captured) {
-      if (captured.verdict === 'UNKNOWN') {
+      if (captured.verdict === 'UNKNOWN' && !this.abortControllers.get(id)?.signal.aborted) {
         logger.warn(`[Orchestrator] ${id}: UNKNOWN verdict on first attempt — retrying once`);
         try {
           if (useChatPath) {
@@ -508,7 +517,7 @@ export class KanbanOrchestrator {
             }
           } else {
             captured = await this.terminalExecutor.executeAndAwaitVerdict(
-              workflowId, artifact, this.store, { lmRunner: this.lmRunnerFor(workflowId, artifact, id) },
+              workflowId, artifact, this.store, { lmRunner: this.lmRunnerFor(workflowId, artifact, id), signal: this.abortControllers.get(id)?.signal },
             );
           }
           if (captured && (captured.verdict === 'COMPLETED' || captured.verdict === 'APPROVED')) {
@@ -519,6 +528,12 @@ export class KanbanOrchestrator {
         } catch (retryErr) {
           logger.warn(`[Orchestrator] ${id}: UNKNOWN retry threw: ${errMsg(retryErr)}`);
         }
+      }
+      // Repeated "no verdict" runs are an infrastructure failure (CLI not
+      // signed in, crashing, ignoring the contract): feed the circuit breaker
+      // so the board stops relaunching it. Aborts are not failures.
+      if (captured.verdict === 'UNKNOWN' && !this.abortControllers.get(id)?.signal.aborted) {
+        circuitBreaker.recordFailure(workflowId, captured.summary ?? 'no verdict');
       }
       return captured;
     }
@@ -569,7 +584,18 @@ export class KanbanOrchestrator {
     }
 
     return new Promise<boolean>(resolve => {
-      this.approvalResolvers.set(id, resolve);
+      const timer = setTimeout(() => {
+        if (this.approvalResolvers.get(id) === settle) {
+          logger.warn(`[Orchestrator] ${id}: approval request timed out — treating as denied`);
+          this.approvalResolvers.delete(id);
+          resolve(false);
+        }
+      }, APPROVAL_TIMEOUT_MS);
+      const settle = (approved: boolean) => {
+        clearTimeout(timer);
+        resolve(approved);
+      };
+      this.approvalResolvers.set(id, settle);
     });
   }
 

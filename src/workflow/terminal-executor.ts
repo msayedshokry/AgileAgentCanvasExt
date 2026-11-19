@@ -28,6 +28,7 @@ import {
   sanitizeId as sanitizeResultId,
   resultFilePath,
   readVerdictFile,
+  verdictMatchesRun,
   getOutputFolder,
   type KanbanVerdict,
 } from './kanban-verdict';
@@ -58,7 +59,7 @@ const INTERNAL_STATE_PREFIXES = [
   '.agileagentcanvas-context/terminal-sessions.json',
   '.agileagentcanvas-context/traces/',
 ];
-type WorkspaceSnapshot = Map<string, number>;
+export type WorkspaceSnapshot = Map<string, number>;
 
 export function captureWorkspaceSnapshot(rootDir?: string): WorkspaceSnapshot {
   const cwd = rootDir ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
@@ -210,7 +211,8 @@ export function buildTerminalPrompt(
   workflowId: string,
   artifact: any,
   outputFolder: string,
-  skillContent?: string
+  skillContent?: string,
+  runId?: string,
 ): string {
   const artifactType = artifact?.type || 'unknown';
   const artifactId = artifact?.id || 'unknown';
@@ -239,7 +241,7 @@ You are running as a non-interactive headless agent. Before you do ANY other wor
 - The file MUST contain valid JSON with a top-level \`"verdict"\` field, one of:
   \`COMPLETED\` · \`APPROVED\` · \`NEEDS_FIXES\` · \`BLOCKED\`
 - For \`NEEDS_FIXES\`, include a top-level \`"fix_requests"\` array describing each failing criterion.
-- If the file does NOT exist or has no \`"verdict"\` field, the card stays stuck in \`in-progress\` forever. The orchestrator will NOT advance without it.
+${runId ? `- Include \`"run_id": "${runId}"\` in the JSON so the orchestrator can match it to this run.\n` : ''}- If the file does NOT exist or has no \`"verdict"\` field, the card stays stuck in \`in-progress\` forever. The orchestrator will NOT advance without it.
 - This file write is MANDATORY — do not skip it even if the rest of the work succeeded.
 
 If parent directory \`_terminal-output/\` does not exist, create it first.
@@ -288,6 +290,21 @@ ${PONYTAIL_HEURISTICS}
 `;
 }
 
+// ─── Output tail ─────────────────────────────────────────────────────────────
+
+const ANSI_PATTERN = /\u001b\[[0-9;?]*[ -/]*[@-~]|\u001b\][^\u0007]*(\u0007|\u001b\\)/g;
+const TAIL_LINES = 8;
+const TAIL_CHARS = 800;
+
+/** Last few meaningful lines of terminal output, ANSI codes removed. */
+export function outputTail(text: string | undefined): string {
+  if (!text) return '';
+  const lines = text.slice(-20_000).replace(ANSI_PATTERN, '').split(/\r?\n/)
+    .map((l) => l.trimEnd()).filter((l) => l.trim().length > 0);
+  const tail = lines.slice(-TAIL_LINES).join('\n');
+  return tail.length > TAIL_CHARS ? '…' + tail.slice(-TAIL_CHARS) : tail;
+}
+
 // ─── Filename sanitization ───────────────────────────────────────────────────
 
 /**
@@ -301,6 +318,8 @@ export const sanitizeId = sanitizeResultId;
 
 export class TerminalExecutor implements vscode.Disposable {
   private activeTerminals = new Map<string, TerminalSession>();
+  /** Tail of each finished session's output, so a missing verdict can say why. */
+  private lastOutput = new Map<string, string>();
   private disposables: vscode.Disposable[] = [];
   /** Webview streaming callbacks keyed by artifactId */
   private webviewStreams = new Map<string, (data: string) => void>();
@@ -371,6 +390,7 @@ export class TerminalExecutor implements vscode.Disposable {
     if (trustBlock) return { kind: 'blocked', verdict: blocked(trustBlock) };
 
     const resolution = options?.resolution ?? await this.resolveHarness();
+    this.lastOutput.delete(artifactId);
     if (resolution.kind === 'none') {
       logger.warn(`[TerminalExecutor] No harness for ${artifactId}: ${resolution.message}`);
       return { kind: 'blocked', verdict: blocked(resolution.message) };
@@ -391,7 +411,7 @@ export class TerminalExecutor implements vscode.Disposable {
     const outputFolder = getOutputFolder();
     const resultPath = resultFilePath(outputFolder, artifactId, workflowId);
 
-    const prompt = buildTerminalPrompt(workflowId, artifact, outputFolder, options?.skillContent);
+    const prompt = buildTerminalPrompt(workflowId, artifact, outputFolder, options?.skillContent, sessionId);
     let promptFile: string;
     try {
       fs.mkdirSync(path.dirname(resultPath), { recursive: true });
@@ -673,7 +693,7 @@ export class TerminalExecutor implements vscode.Disposable {
     workflowId: string,
     artifact: any,
     store: any,
-    options?: HarnessRunOptions & { timeoutMs?: number; pollIntervalMs?: number }
+    options?: HarnessRunOptions & { timeoutMs?: number; pollIntervalMs?: number; signal?: AbortSignal }
   ): Promise<KanbanVerdict> {
     const artifactId = artifact?.id;
     if (!artifactId) {
@@ -704,6 +724,10 @@ export class TerminalExecutor implements vscode.Disposable {
     if (launch.kind === 'blocked') return launch.verdict;
     if (launch.kind === 'lm') return launch.verdict;
     const sessionId = launch.sessionId;
+    if (options?.signal?.aborted) {
+      await this.killTerminal(artifactId);
+      return { verdict: 'UNKNOWN', summary: 'Run aborted' };
+    }
 
     // Gap #23: capture the prompt length now while the session is
     // guaranteed to still be alive. The session may be cleaned up by
@@ -718,64 +742,92 @@ export class TerminalExecutor implements vscode.Disposable {
     const startedAt = Date.now();
 
     return await new Promise<KanbanVerdict>((resolve) => {
+      let done = false;
       const finish = (v: KanbanVerdict) => {
+        if (done) return;
+        done = true;
         clearInterval(timer);
+        options?.signal?.removeEventListener('abort', onAbort);
         // Gap #23: record terminal CLI costs so the budget gauge reflects
-        // Claude Code / Codex / Gemini / Aider / OpenCode spend. Uses the
-        // captured prompt length (safe even if the session was cleaned up).
+        // CLI spend. Uses the captured prompt length (safe even if the
+        // session was cleaned up).
         this.recordTerminalCost(artifactId, sessionId, v, capturedPromptLength);
         resolve(v);
       };
+      // Abort (Stop / Stop All Agents): kill the agent first so it cannot
+      // keep writing, then report — nothing downstream commits or advances.
+      const onAbort = () => {
+        void this.killTerminal(artifactId).finally(() => finish({ verdict: 'UNKNOWN', summary: 'Run aborted' }));
+      };
+      options?.signal?.addEventListener('abort', onAbort, { once: true });
+
+      /** A verdict from THIS run; a different run_id means a stale/zombie writer. */
+      const readOwnVerdict = (): KanbanVerdict | undefined => {
+        const v = readVerdictFile(resultPath);
+        if (!v) return undefined;
+        if (!verdictMatchesRun(v, sessionId)) {
+          logger.warn(`[TerminalExecutor] ${artifactId}: ignoring verdict from run ${v.runId} (expected ${sessionId})`);
+          return undefined;
+        }
+        return v;
+      };
 
       const timer = setInterval(() => {
-        // 1. Result file present → parse and finish.
-        const verdict = readVerdictFile(resultPath);
-        if (verdict) {
+        const stillRunning = this.activeTerminals.has(artifactId);
+        // 1. Result file present → parse and finish. A file without a valid
+        //    verdict (e.g. "{}" written early) is only final once the agent exits.
+        const verdict = readOwnVerdict();
+        if (verdict && (verdict.verdict !== 'UNKNOWN' || !stillRunning)) {
           finish(verdict);
           return;
         }
 
-        // 2. Terminal closed without producing a file → one last read, else UNKNOWN.
-        const stillRunning = this.activeTerminals.has(artifactId);
+        // 2. Terminal closed without producing a verdict.
         if (!stillRunning) {
-          const late = readVerdictFile(resultPath);
-          if (late) {
-            finish(late);
-            return;
-          }
-          // ponytail: synthesize COMPLETED from a workspace file diff. The
-          // agent did the work but didn't write the verdict JSON — the
-          // orchestrator should still advance the card so the review gate
-          // can evaluate. Logs the synthesized verdict so the user can see
-          // it in the output panel.
-          try {
-            const finalSnapshot = captureWorkspaceSnapshot();
-            const changed = diffWorkspaceSnapshots(baselineSnapshot, finalSnapshot);
-            if (changed.length > 0) {
-              const summary =
-                `Synthesized COMPLETED: agent ran, modified ${changed.length} file(s), ` +
-                `did not write verdict JSON. Examples: ${changed.slice(0, 3).join(', ')}.`;
-              logger.warn(`[TerminalExecutor] ${artifactId} (${workflowId}) ${summary}`);
-              finish({
-                verdict: 'COMPLETED',
-                summary,
-                raw: { synthesized: true, changedFiles: changed.slice(0, 50) },
-              });
-              return;
-            }
-          } catch (err) {
-            logger.warn(`[TerminalExecutor] ${artifactId} snapshot diff failed: ${errMsg(err)}`);
-          }
-          finish({ verdict: 'UNKNOWN', summary: 'Terminal closed without a verdict file' });
+          finish(this.verdictWithoutFile(artifactId, workflowId, baselineSnapshot));
           return;
         }
 
-        // 3. Timeout.
+        // 3. Timeout: stop the agent before giving up so it cannot keep
+        //    writing after the lock is released and a retry starts.
         if (Date.now() - startedAt >= timeoutMs) {
-          finish({ verdict: 'UNKNOWN', summary: `No verdict within ${Math.round(timeoutMs / 60000)}m` });
+          void this.killTerminal(artifactId).finally(() =>
+            finish({ verdict: 'UNKNOWN', summary: `No verdict within ${Math.round(timeoutMs / 60000)}m — agent stopped` }));
         }
       }, pollIntervalMs);
     });
+  }
+
+  /**
+   * The agent exited without a verdict file. By default that is UNKNOWN (the
+   * orchestrator stops and asks the human). Inferring COMPLETED from changed
+   * files is opt-in: concurrent agents or the user editing files make it
+   * unreliable.
+   */
+  private verdictWithoutFile(artifactId: string, workflowId: string, baseline: WorkspaceSnapshot): KanbanVerdict {
+    let changed: string[] = [];
+    try {
+      changed = diffWorkspaceSnapshots(baseline, captureWorkspaceSnapshot());
+    } catch (err) {
+      logger.warn(`[TerminalExecutor] ${artifactId} snapshot diff failed: ${errMsg(err)}`);
+    }
+    const synthesize = vscode.workspace
+      .getConfiguration('agileagentcanvas')
+      .get<boolean>('agents.synthesizeVerdictFromChanges', false);
+    if (synthesize && changed.length > 0) {
+      const summary =
+        `Synthesized COMPLETED: agent modified ${changed.length} file(s) without writing a verdict. ` +
+        `Examples: ${changed.slice(0, 3).join(', ')}.`;
+      logger.warn(`[TerminalExecutor] ${artifactId} (${workflowId}) ${summary}`);
+      return { verdict: 'COMPLETED', summary, raw: { synthesized: true, changedFiles: changed.slice(0, 50) } };
+    }
+    const base = changed.length > 0
+      ? `Agent exited without writing a verdict file after changing ${changed.length} file(s) (e.g. ${changed.slice(0, 3).join(', ')}). Review the changes and move the card manually.`
+      : 'Agent exited without writing a verdict file.';
+    // The CLI's own last words usually name the cause (expired sign-in,
+    // missing API key, unsupported model) — surface them instead of guessing.
+    const tail = this.lastOutput.get(artifactId);
+    return { verdict: 'UNKNOWN', summary: tail ? `${base} Last output:\n${tail}` : base };
   }
 
   /**
@@ -971,6 +1023,7 @@ export class TerminalExecutor implements vscode.Disposable {
       `[TerminalExecutor] Pty session exited for ${artifactId} — cleaning up tracking`,
     );
     this.activeTerminals.delete(artifactId);
+    this.lastOutput.set(artifactId, outputTail(session.accumulatedData));
     disposeStagedPrompt(session.promptFile, (e) => logger.warn(`[TerminalExecutor] prompt cleanup failed: ${errMsg(e)}`));
 
     this.persistSessionMetadata();
@@ -1008,6 +1061,7 @@ export class TerminalExecutor implements vscode.Disposable {
           `[TerminalExecutor] Terminal closed for ${artifactId} — cleaning up tracking`
         );
         this.activeTerminals.delete(artifactId);
+        this.lastOutput.set(artifactId, outputTail(session.accumulatedData));
         disposeStagedPrompt(session.promptFile, (e) => logger.warn(`[TerminalExecutor] prompt cleanup failed: ${errMsg(e)}`));
 
         // Update persisted metadata after terminal close.
@@ -1054,7 +1108,8 @@ export class TerminalExecutor implements vscode.Disposable {
   private scheduleLockTimeout(artifactId: string): void {
     this.clearLockTimeout(artifactId);
     const timeout = setTimeout(() => {
-      logger.warn(`[TerminalExecutor] Lock timeout reached for ${artifactId} — force-releasing lock`);
+      logger.warn(`[TerminalExecutor] Lock timeout reached for ${artifactId} — stopping agent and releasing lock`);
+      void this.killTerminal(artifactId);
       concurrencyQueue.release(artifactId);
       this.lockTimeouts.delete(artifactId);
     }, TerminalExecutor.LOCK_TIMEOUT_MS);
@@ -1084,7 +1139,7 @@ export class TerminalExecutor implements vscode.Disposable {
     capturedPromptLength: number,
   ): void {
     // Only record meaningful spend — skip UNKNOWN/launch-failure verdicts
-    if (!verdict || verdict.verdict === 'UNKNOWN') return;
+    if (!verdict) return;
     try {
       // Best-effort: lookup session for accumulated output (may be cleaned up).
       // The captured prompt length is always available — the session was alive

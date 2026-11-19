@@ -10,6 +10,7 @@ import { join } from 'node:path';
 import {
   normalizeVerdict,
   extractVerdictFromText,
+  verdictMatchesRun,
   sanitizeId,
   resultFilePath,
   readVerdictFile,
@@ -68,5 +69,31 @@ describe('kanban-verdict', () => {
     const v = readVerdictFile(resultPath);
     expect(v?.verdict).toBe('COMPLETED');
     expect(v?.summary).toBe('epic broken into 5 stories');
+  });
+});
+
+describe('verdict hardening (untrusted agent output)', () => {
+  it('extracts a verdict whose fix_requests contain nested objects', () => {
+    const text = 'done.\n{"verdict":"NEEDS_FIXES","fix_requests":[{"failing_criterion":"AC1 {x}","files_involved":["a.ts"]}]}\ntrailing';
+    const v = extractVerdictFromText(text)!;
+    expect(v.verdict).toBe('NEEDS_FIXES');
+    expect(v.fixRequests).toEqual([
+      { failing_criterion: 'AC1 {x}', reproduction: undefined, minimal_change: undefined, files_involved: ['a.ts'], reverify_with: undefined },
+    ]);
+  });
+
+  it('drops malformed fix requests, caps their count and field length', () => {
+    const many = Array.from({ length: 80 }, () => ({ failing_criterion: 'x'.repeat(10_000) }));
+    const v = normalizeVerdict({ verdict: 'NEEDS_FIXES', fix_requests: [42, null, ['a'], ...many] });
+    expect(v.fixRequests).toHaveLength(50);
+    expect(v.fixRequests![0].failing_criterion!.length).toBeLessThanOrEqual(4001);
+  });
+
+  it('reads run_id and rejects a verdict from a different run', () => {
+    const v = normalizeVerdict({ verdict: 'COMPLETED', run_id: 'run-old' });
+    expect(v.runId).toBe('run-old');
+    expect(verdictMatchesRun(v, 'run-new')).toBe(false);
+    expect(verdictMatchesRun(v, 'run-old')).toBe(true);
+    expect(verdictMatchesRun(normalizeVerdict({ verdict: 'COMPLETED' }), 'run-new')).toBe(true);
   });
 });

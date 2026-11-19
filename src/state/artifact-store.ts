@@ -1652,7 +1652,16 @@ export class ArtifactStore {
         return this.repairer.fixAndSyncToFiles();
     }
 
+    /** Serialises syncs: concurrent agents and UI edits must not interleave file writes. */
+    private _syncChain: Promise<void> = Promise.resolve();
+
     async syncToFiles(): Promise<void> {
+        const run = this._syncChain.then(() => this.syncToFilesOnce());
+        this._syncChain = run.catch(() => undefined);
+        return run;
+    }
+
+    private async syncToFilesOnce(): Promise<void> {
         logDebug('syncToFiles called, sourceFolder:', this.sourceFolder?.fsPath);
 
         // L4: Skip sync if nothing changed since last write
@@ -1926,8 +1935,11 @@ export class ArtifactStore {
         } catch (e) { errors.push(`designThinking: ${e}`); }
 
         if (errors.length > 0) {
-            storeLogger.debug(`[ArtifactStore] syncToFiles completed with ${errors.length} error(s):`);
-            errors.forEach(err => storeLogger.debug(`  - ${err}`));
+            // Re-dirty so the next sync retries the failed writes instead of
+            // silently dropping them, and say so at warn level.
+            this._dirty = true;
+            storeLogger.warn(`[ArtifactStore] syncToFiles failed to write ${errors.length} artifact(s); will retry on next sync:`);
+            errors.forEach(err => storeLogger.warn(`  - ${err}`));
         }
         
         // ─── Persist requirements to standalone file ──────────────────────

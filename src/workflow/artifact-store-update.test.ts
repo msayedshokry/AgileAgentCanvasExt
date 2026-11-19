@@ -185,3 +185,30 @@ describe('updateArtifact — bad payloads rejected at runtime', () => {
         ).rejects.toThrow('Blocked by policies: epic-status-valid-lane, epic-required-title');
     });
 });
+
+describe('syncToFiles — serialised writes', () => {
+    it('never runs two syncs at once (concurrent agents and UI edits)', async () => {
+        const store = new ArtifactStore({ subscriptions: [] } as unknown as vscode.ExtensionContext);
+        let active = 0;
+        let maxActive = 0;
+        (store as any).syncToFilesOnce = async () => {
+            active++;
+            maxActive = Math.max(maxActive, active);
+            await new Promise((r) => setTimeout(r, 5));
+            active--;
+        };
+        await Promise.all([store.syncToFiles(), store.syncToFiles(), store.syncToFiles()]);
+        expect(maxActive).toBe(1);
+    });
+
+    it('a failed sync rejects for its caller but does not block the next one', async () => {
+        const store = new ArtifactStore({ subscriptions: [] } as unknown as vscode.ExtensionContext);
+        const once = vi.fn()
+            .mockRejectedValueOnce(new Error('disk full'))
+            .mockResolvedValueOnce(undefined);
+        (store as any).syncToFilesOnce = once;
+        await expect(store.syncToFiles()).rejects.toThrow('disk full');
+        await expect(store.syncToFiles()).resolves.toBeUndefined();
+        expect(once).toHaveBeenCalledTimes(2);
+    });
+});

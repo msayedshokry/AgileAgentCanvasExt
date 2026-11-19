@@ -26,6 +26,7 @@ import {
     captureWorkspaceSnapshot,
     diffWorkspaceSnapshots,
     TerminalExecutor,
+    outputTail,
 } from './terminal-executor';
 import { window, workspace } from 'vscode';
 
@@ -686,5 +687,15 @@ describe('executeTerminalWorkflow — workspace trust', () => {
         expect(verdict).toEqual({ verdict: 'BLOCKED', summary: 'Agent runs are disabled in Restricted Mode.' });
         expect(lmRunner).not.toHaveBeenCalled();
         expect(window.createTerminal).not.toHaveBeenCalled();
+    });
+});
+
+describe('outputTail', () => {
+    it('keeps the last lines without ANSI colour codes, so a missing verdict can say why', async () => {
+
+        const raw = 'noise\n'.repeat(50) + '\u001b[91m\u001b[1mError: \u001b[0mThis API key has expired.\r\n\r\n';
+        expect(outputTail(raw).endsWith('Error: This API key has expired.')).toBe(true);
+        expect(outputTail(raw)).not.toContain('\u001b');
+        expect(outputTail(undefined)).toBe('');
     });
 });

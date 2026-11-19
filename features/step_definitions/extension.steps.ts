@@ -3,7 +3,7 @@
  * Cucumber step definitions for testing extension activation and commands
  */
 
-import { Given, When, Then } from '@cucumber/cucumber';
+import { Before, Given, When, Then } from '@cucumber/cucumber';
 import * as assert from 'assert';
 import { BmadWorld } from '../support/world';
 
@@ -502,7 +502,13 @@ Then('window createWebviewPanel should have been called with {string}', function
   assert.ok(call, `Expected createWebviewPanel("${panelType}"). Calls: ${JSON.stringify(createWebviewPanelCalls.map(c => c.type))}`);
 });
 
-Then('workspace createFileSystemWatcher should have been called', function(this: BmadWorld) {
+Then('workspace createFileSystemWatcher should have been called', async function(this: BmadWorld) {
+  // The watcher is created at the end of activation's async init chain, which
+  // is not awaited by activate(): wait for it instead of racing one tick.
+  const deadline = Date.now() + 3000;
+  while (createFileSystemWatcherCalls.length === 0 && Date.now() < deadline) {
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
   assert.ok(createFileSystemWatcherCalls.length > 0, 'Expected createFileSystemWatcher to have been called');
 });
 
@@ -601,6 +607,23 @@ Then('the failure classifier should be importable', function(this: BmadWorld) {
 });
 
 let systemicIssueBroadcasts: Array<{ patterns: any[] }> = [];
+// Policies this scenario emitted. Real harness evaluations triggered by
+// activation can add unrelated patterns asynchronously, so pattern-count
+// assertions only consider the policies the scenario itself drove.
+let emittedPolicyIds = new Set<string>();
+Before(function () {
+  emittedPolicyIds = new Set<string>();
+  // The lifecycle is a module singleton and activation may not restart it,
+  // so clear its cross-artifact accumulator between scenarios.
+  // Only touch it if a previous scenario already loaded it: requiring it here
+  // would load it before this scenario installs its vscode mocks.
+  const modPath = require.resolve('../../src/workflow/autonomy-lifecycle');
+  const lifecycle = require.cache[modPath]?.exports?.autonomyLifecycle as any;
+  if (lifecycle) {
+    lifecycle.accumulatedFindings = [];
+    lifecycle.lastSystemicFingerprint = null;
+  }
+});
 
 Then('the harness engine should have a findings listener for cross-artifact detection', function(this: BmadWorld) {
   const { harnessEngine } = require('../../src/harness/policy-engine');
@@ -625,6 +648,7 @@ When('the harness engine emits findings for policy {string} on {int} different a
   };
   lifecycle.on('broadcast', onBroadcast);
 
+  emittedPolicyIds.add(policyId);
   // Emit findings on the same policyId for count different artifacts
   for (let i = 0; i < count; i++) {
     harnessEngine.emit('findings', {
@@ -645,10 +669,11 @@ Then('the systemicIssue webview broadcast should have been sent with pattern cou
   );
   const last = systemicIssueBroadcasts[systemicIssueBroadcasts.length - 1];
   assert.ok(last.patterns, 'Expected systemicIssue broadcast to have patterns');
+  const own = emittedPolicyIds.size === 0 ? last.patterns : last.patterns.filter((p: any) => emittedPolicyIds.has(p.policyId));
   assert.strictEqual(
-    last.patterns.length,
+    own.length,
     expectedCount,
-    `Expected ${expectedCount} pattern(s) in systemicIssue broadcast, got ${last.patterns.length}`,
+    `Expected ${expectedCount} pattern(s) for ${[...emittedPolicyIds].join(', ')} in systemicIssue broadcast, got ${own.length} (all: ${last.patterns.map((p: any) => p.policyId).join(', ')})`,
   );
 });
 

@@ -901,8 +901,8 @@ describe('Autonomous loop: AbortController mid-run cancellation (#26)', () => {
     // Resolve review as NEEDS_FIXES so the loop advances to the next iteration.
     resolveReview({ verdict: 'NEEDS_FIXES', summary: 'Needs work', fixRequests: [{ failing_criterion: 'Add more tests' }] });
 
-    // The orchestrator should check ac.signal.aborted at the top of iteration 2
-    // and return blocked.
+    // The orchestrator checks ac.signal.aborted as soon as the review step
+    // returns and stops before acting on its verdict.
     const result = await runPromise;
 
     expect(result.ok).toBe(false);
@@ -912,9 +912,10 @@ describe('Autonomous loop: AbortController mid-run cancellation (#26)', () => {
     // Only dev + review called (2 total), no further iterations
     expect(terminalExecutor.executeAndAwaitVerdict).toHaveBeenCalledTimes(2);
 
-    // Fix requests were attached during the NEEDS_FIXES handling
+    // The run stops as soon as the in-flight step returns after an abort:
+    // the late NEEDS_FIXES result is NOT applied to the artifact.
     const metadataCalls = vi.mocked(store.updateArtifact).mock.calls.filter((c: any[]) => c[2]?.metadata);
-    expect(metadataCalls.length).toBeGreaterThanOrEqual(1);
+    expect(metadataCalls).toHaveLength(0);
 
     // Abort controller cleaned up
     const secondAbort = orch.abort(story.id);
