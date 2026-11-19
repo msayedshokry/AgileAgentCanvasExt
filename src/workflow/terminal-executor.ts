@@ -9,16 +9,9 @@
 import { createLogger } from '../utils/logger';
 const logger = createLogger('terminal-executor');
 import * as vscode from 'vscode';
-// `os` is used by the long-prompt stdin staging (stagePromptFile): prompts
-// over LONG_PROMPT_INLINE_LIMIT are written to a temp file and piped into the
-// CLI's stdin instead of being inlined as an argv value. The OLD temp-file
-// branch was removed because it fed the file to stdin of CLIs that ignore
-// stdin — but claude `-p`, codex `exec -`, opencode `run` and pi `-p` DO
-// read the prompt from stdin (verified 2026-08-28: piping a prompt into
-// `pi --no-session -p` prints the model reply end-to-end). See the
-// "Long-prompt stdin staging" section for the full rationale.
+// Prompts are staged to private files and delivered per harness adapter
+// (stdin, pointer argument, or --message-file); see ./harness/.
 import * as path from 'path';
-import * as os from 'os';
 import * as fs from 'fs';
 import * as cp from 'child_process';
 import { promisify } from 'util';
@@ -26,18 +19,18 @@ import { getTraceRecorder } from '../trace/trace-recorder';
 import { concurrencyQueue } from './concurrency-queue';
 import { agentHealthMonitor } from './agent-health-monitor';
 import { createTerminalHealthChecks } from './terminal-health-checks';
-import {
-  getSelectedProvider,
-  listAvailableProviders,
-  CHAT_COMMANDS,
-  shellQuote,
-  isPowerShell,
-  type ChatProviderId,
-} from '../commands/chat-bridge';
+import { buildHarnessLaunch, type HarnessId } from './harness/harness-adapters';
+import { type HarnessResolution } from './harness/harness-resolver';
+import { agentRunBlockReason, resolveBoardHarness, resolveEffectivePosture } from './harness/board-harness';
+import { buildCommandLine, detectShellKind, type ShellKind } from './harness/shell-command';
+import { stagePromptFile, disposePromptFile as disposeStagedPrompt } from './harness/prompt-staging';
+import { RunJournal } from './harness/run-journal';
+import { appendRunHistory, type RunHistoryEntry } from './harness/run-history';
 import {
   sanitizeId as sanitizeResultId,
   resultFilePath,
   readVerdictFile,
+  verdictMatchesRun,
   getOutputFolder,
   type KanbanVerdict,
 } from './kanban-verdict';
@@ -48,6 +41,21 @@ import { errMsg } from '../utils/error';
 import { inferRoleFromWorkflow } from '../harness/role-inference';
 import { PONYTAIL_HEURISTICS } from '../chat/ponytail-heuristics';
 import { budgetEnforcer } from './budget-enforcer';
+import { costTracker } from '../chat/cost-tracker';
+import { readCliUsage } from './harness/cli-usage';
+import { ensureProjectContext, readProjectContext } from './harness/project-context';
+
+/** Create project-context.md on first use and return its text (never throws). */
+function loadProjectContext(outputFolder: string): string | undefined {
+  try {
+    const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (root) ensureProjectContext(root, outputFolder);
+    return readProjectContext(outputFolder) || undefined;
+  } catch (err) {
+    logger.debug(`[TerminalExecutor] project context unavailable: ${errMsg(err)}`);
+    return undefined;
+  }
+}
 
 const execAsync = promisify(cp.exec);
 
@@ -68,7 +76,7 @@ const INTERNAL_STATE_PREFIXES = [
   '.agileagentcanvas-context/terminal-sessions.json',
   '.agileagentcanvas-context/traces/',
 ];
-type WorkspaceSnapshot = Map<string, number>;
+export type WorkspaceSnapshot = Map<string, number>;
 
 export function captureWorkspaceSnapshot(rootDir?: string): WorkspaceSnapshot {
   const cwd = rootDir ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
@@ -157,7 +165,7 @@ export interface TerminalSession {
   artifactId: string;
   artifactType: string;
   agentRole: string;
-  provider: ChatProviderId;
+  provider: HarnessId;
   startedAt: string;
   /** Accumulated terminal output for webview modal display */
   accumulatedData: string;
@@ -180,44 +188,52 @@ interface WritableTerminal extends vscode.Terminal {
   onDidWriteData: (callback: (data: string) => void) => vscode.Disposable;
 }
 
-// ─── Provider resolution ─────────────────────────────────────────────────────
+// ─── Harness resolution ──────────────────────────────────────────────────────
+// Which CLI runs a board step is decided by ./harness/harness-resolver.ts
+// (explicit setting → chat-provider match → first installed CLI → VS Code LM
+// → BLOCKED). There is no silent fallback to a CLI that is not installed.
 
-/** CLI-only providers suitable for agentic (non-interactive) execution. */
-const AGENTIC_CLI_PROVIDERS: ChatProviderId[] = [
-  'claude', 'codex', 'aider', 'opencode', 'pi',
-];
+/** Runs the step through a language model when no CLI harness is available. */
+export type LanguageModelRunner = () => Promise<KanbanVerdict>;
 
-/** Fallback CLI provider when the user's selected provider is panel-only. */
-const FALLBACK_AGENTIC_PROVIDER: ChatProviderId = 'claude';
+export interface HarnessRunOptions {
+  skillContent?: string;
+  /** Required for the VS Code LM fallback; without it an LM resolution is BLOCKED. */
+  lmRunner?: LanguageModelRunner;
+  /** Pre-resolved harness (callers that already resolved avoid a second PATH probe). */
+  resolution?: HarnessResolution;
+  /** Column to return the card to if this run is lost to a reload or crash. */
+  revertStatusOnInterrupt?: string;
+  /** Working copy the agent runs in (the card's git worktree); defaults to the workspace. */
+  cwd?: string;
+}
 
-/**
- * Resolve which terminal CLI to use for agentic execution.
- * If the user's selected provider is a CLI, use it. If it's a panel-only
- * provider (copilot, cursor, windsurf, antigravity, omp, terminal), try
- * to find an available CLI on PATH. Falls back to 'claude'.
- */
-async function resolveAgenticProvider(): Promise<ChatProviderId> {
-  const selected = getSelectedProvider();
+/** Output folder for a run: inside the card's worktree when it has one, so sandboxed agents may write there. */
+export function runOutputFolder(cwd?: string): string {
+  const configured = vscode.workspace.getConfiguration('agileagentcanvas').get<string>('outputFolder', '.agileagentcanvas-context') ?? '.agileagentcanvas-context';
+  return !cwd || path.isAbsolute(configured) ? getOutputFolder() : path.join(cwd, configured);
+}
 
-  // If the user explicitly chose a CLI provider, use it
-  if (AGENTIC_CLI_PROVIDERS.includes(selected)) {
-    return selected;
-  }
+/** Prefix a pty command line with a change of directory (VS Code terminals take cwd directly). */
+function withCwd(cmdLine: string, cwd: string | undefined, kind: ShellKind): string {
+  if (!cwd) return cmdLine;
+  const dir = cwd.replace(/\\/g, '/');
+  if (kind === 'powershell') return `Set-Location -LiteralPath '${dir.replace(/'/g, "''")}'; ${cmdLine}`;
+  if (kind === 'cmd') return `cd /d "${dir}" && ${cmdLine}`;
+  return `cd '${dir.replace(/'/g, "'\\''")}' && ${cmdLine}`;
+}
 
-  // Try to find an available CLI on PATH
-  try {
-    const available = await listAvailableProviders();
-    for (const prov of AGENTIC_CLI_PROVIDERS) {
-      const entry = available.find(a => a.id === prov);
-      if (entry?.available) {
-        return prov;
-      }
-    }
-  } catch {
-    // Ignore — fall through to fallback
-  }
+/** Launch outcome for a single harness run. */
+export type HarnessLaunch =
+  | { kind: 'cli'; sessionId: string }
+  | { kind: 'lm'; verdict: Promise<KanbanVerdict> }
+  | { kind: 'blocked'; verdict: KanbanVerdict };
 
-  return FALLBACK_AGENTIC_PROVIDER;
+/** Minimal artifact shape the launcher reads; the full artifact is serialised into the prompt. */
+export type HarnessArtifact = { id?: string; type?: string } & Record<string, unknown>;
+
+function blocked(summary: string): KanbanVerdict {
+  return { verdict: 'BLOCKED', summary };
 }
 
 // ─── Prompt building ─────────────────────────────────────────────────────────
@@ -231,7 +247,9 @@ export function buildTerminalPrompt(
   workflowId: string,
   artifact: any,
   outputFolder: string,
-  skillContent?: string
+  skillContent?: string,
+  runId?: string,
+  projectContext?: string,
 ): string {
   const artifactType = artifact?.type || 'unknown';
   const artifactId = artifact?.id || 'unknown';
@@ -242,6 +260,11 @@ export function buildTerminalPrompt(
   // agent enforces the gates instead of having to discover the file itself.
   const skillSection = skillContent
     ? `## Workflow Definition (authoritative — follow exactly)\n\`\`\`markdown\n${skillContent}\n\`\`\`\n\n`
+    : '';
+  // Project commands + convention files (project-context.md), so the agent
+  // uses the repo's own test/build commands instead of guessing.
+  const contextSection = projectContext
+    ? `## Project Context (from the team — follow it)\n${projectContext}\n\n`
     : '';
 
   // ponytail: the verdict contract is the FIRST instruction the model sees,
@@ -260,7 +283,7 @@ You are running as a non-interactive headless agent. Before you do ANY other wor
 - The file MUST contain valid JSON with a top-level \`"verdict"\` field, one of:
   \`COMPLETED\` · \`APPROVED\` · \`NEEDS_FIXES\` · \`BLOCKED\`
 - For \`NEEDS_FIXES\`, include a top-level \`"fix_requests"\` array describing each failing criterion.
-- If the file does NOT exist or has no \`"verdict"\` field, the card stays stuck in \`in-progress\` forever. The orchestrator will NOT advance without it.
+${runId ? `- Include \`"run_id": "${runId}"\` in the JSON so the orchestrator can match it to this run.\n` : ''}- If the file does NOT exist or has no \`"verdict"\` field, the card stays stuck in \`in-progress\` forever. The orchestrator will NOT advance without it.
 - This file write is MANDATORY — do not skip it even if the rest of the work succeeded.
 
 If parent directory \`_terminal-output/\` does not exist, create it first.
@@ -276,7 +299,7 @@ You are executing a BMAD methodology workflow as a headless terminal agent.
 - **Artifact Type:** ${artifactType}
 - **Artifact ID:** ${artifactId}
 
-${skillSection}## Artifact Context
+${skillSection}${contextSection}## Artifact Context
 \`\`\`json
 ${artifactJson}
 \`\`\`
@@ -309,181 +332,20 @@ ${PONYTAIL_HEURISTICS}
 `;
 }
 
-// ─── CLI-specific command building ───────────────────────────────────────────
+// ─── Output tail ─────────────────────────────────────────────────────────────
 
-/**
- * Build the terminal command line for a specific CLI provider.
- * Returns [command, ...args] suitable for terminal.sendText().
- */
-function buildCliCommand(provider: ChatProviderId, prompt: string): string[] {
-  const cmd = CHAT_COMMANDS[provider];
-  if (!cmd?.terminalLaunch) {
-    // Fallback — write prompt to temp file and echo instructions
-    return ['echo', `No CLI found for ${provider}. See terminal output.`];
-  }
-  // For headless (agentic/kanban) execution, inject provider-specific
-  // flags that suppress the TUI and auto-approve tool calls. The
-  // CHAT_COMMANDS.terminalLaunch definitions are for interactive canvas
-  // use (open the TUI without -p flags). The kanban path needs headless
-  // flags to write verdict files unattended.
-  switch (provider) {
-    case 'claude':
-      // ponytail: `--permission-mode acceptEdits` only auto-approves Edit on
-      // existing files. The verdict file is a fresh path each run, so the
-      // model has to Write — which `acceptEdits` does NOT auto-approve.
-      // Verified 2026-06-30 via scripts/_demo/check-headless-providers.ts:
-      //   `claude --permission-mode bypassPermissions --dangerously-skip-permissions -p <prompt>`
-      // writes the file. Either flag alone does not (model reports the
-      // action but skips the tool call, see scripts/_demo/check-headless-claude.ts).
-      // ponytail: `--output-format json` dropped — it spawned a single
-      // final-JSON line that buried the assistant's response from the user.
-      // The verdict loop reads the file from disk (kanban-verdict.ts), not
-      // stdout, so dropping the JSON flag has no functional cost.
-      return [
-        'claude',
-        '--permission-mode', 'bypassPermissions',
-        '--dangerously-skip-permissions',
-        '-p', prompt,
-      ];
-    case 'opencode':
-      // ponytail: `--format json` dropped — streamed NDJSON events to stdout
-      // that obscured the actual response. Default `--format default` is
-      // human-readable.
-      // Trust opencode's own local config — no `--model` override.
-      return [
-        'opencode',
-        'run',
-        prompt,
-      ];
-    case 'pi':
-      // ponytail: `--mode json` dropped — pi streamed NDJSON session events
-      // to stdout (one event per line) which appeared as a wall of XML-like
-      // text. Default `--mode text` is human-readable. The verdict loop
-      // reads the file from disk; stdout is cosmetic.
-      return [
-        'pi',
-        '--no-session',
-        '--approve',
-        '-p', prompt,
-      ];
-    default:
-      return cmd.terminalLaunch(prompt);
-  }
+const ANSI_PATTERN = /\u001b\[[0-9;?]*[ -/]*[@-~]|\u001b\][^\u0007]*(\u0007|\u001b\\)/g;
+const TAIL_LINES = 8;
+const TAIL_CHARS = 800;
+
+/** Last few meaningful lines of terminal output, ANSI codes removed. */
+export function outputTail(text: string | undefined): string {
+  if (!text) return '';
+  const lines = text.slice(-20_000).replace(ANSI_PATTERN, '').split(/\r?\n/)
+    .map((l) => l.trimEnd()).filter((l) => l.trim().length > 0);
+  const tail = lines.slice(-TAIL_LINES).join('\n');
+  return tail.length > TAIL_CHARS ? '…' + tail.slice(-TAIL_CHARS) : tail;
 }
-
-// ─── Long-prompt stdin staging ──────────────────────────────────────────────
-
-/**
- * Prompts larger than this are staged to a temp file and fed to the CLI's
- * STDIN instead of being inlined as a positional argv value.
- *
- * Why inline argv is unsafe for long prompts (empirically verified
- * 2026-08-28 on win32):
- *
- *  1. Windows PowerShell 5.1 mangles multi-line argv values. When a string
- *     argument contains embedded double quotes, native argument passing
- *     splits it into MULTIPLE argv entries and strips the embedded quotes
- *     (verified: a 400-char BMAD-style prompt arrived as 8 broken argv
- *     pieces). PS 7 and bash round-trip the same prompt byte-perfectly.
- *  2. VS Code `terminal.sendText` of a multi-KB string can drop/mangle
- *     characters in the ConPTY paste buffer (the historical "garbled
- *     prompt" bug) and risks the ~32 KB ARG_MAX ceiling.
- *
- * All four headless CLIs have a VERIFIED stdin prompt contract:
- *   claude  `-p` with piped stdin (documented headless usage)
- *   codex   `exec -` (the `-` placeholder reads the prompt from stdin)
- *   opencode `run`  with piped stdin (verified: launched its model)
- *   pi      `-p`     with piped stdin (verified end-to-end: replied "PONG")
- *
- * The staged command line is short (< ~300 chars), so nothing is at the
- * mercy of the paste buffer or argv limits.
- */
-const LONG_PROMPT_INLINE_LIMIT = 8 * 1024;
-
-/**
- * Build the stdin variant of the headless CLI invocation: same flags as
- * `buildCliCommand`, but the prompt is read from stdin (no positional value).
- * Returns undefined for providers without a verified stdin contract — those
- * fall back to the inline argv shape regardless of prompt length.
- */
-export function buildStdinCliCommand(provider: ChatProviderId): string[] | undefined {
-  switch (provider) {
-    case 'claude':
-      return [
-        'claude',
-        '--permission-mode', 'bypassPermissions',
-        '--dangerously-skip-permissions',
-        '-p',
-      ];
-    case 'codex':
-      return [
-        'codex',
-        'exec',
-        '--ask-for-approval', 'never',
-        '--sandbox', 'workspace-write',
-        '-', // `-` placeholder: read the prompt from stdin
-      ];
-    case 'opencode':
-      return ['opencode', 'run'];
-    case 'pi':
-      return ['pi', '--no-session', '--approve', '-p'];
-    default:
-      return undefined;
-  }
-}
-
-/** Single-quote a path for POSIX shells (bash/zsh): '...' with '\'' escaping. */
-function posixQuotePath(p: string): string {
-  return "'" + p.replace(/'/g, "'\\''") + "'";
-}
-
-/** Single-quote a path for PowerShell: '...' with '' escaping. */
-function psQuotePath(p: string): string {
-  return "'" + p.replace(/'/g, "''") + "'";
-}
-
-/**
- * Build the shell command line that feeds the staged prompt file to the
- * CLI's stdin.
- *
- * POSIX: plain `<` redirect — the file bytes reach the CLI untouched.
- * PowerShell: `Get-Content -Raw | cli` — with $OutputEncoding pinned to
- * UTF-8, because PS 5.1 defaults to ASCII and would corrupt non-ASCII
- * prompt text (emoji, em-dashes) crossing the pipe. The assignment lives
- * inside a script block so the user's session state is untouched.
- * (Verified: PS 5.1, PS 7 and bash round-trip a shell-hostile prompt
- * byte-perfectly through these shapes.)
- */
-export function buildStdinCommandLine(args: string[], promptFile: string): string {
-  const forwardSlashed = promptFile.replace(/\\/g, '/');
-  if (isPowerShell()) {
-    return `& { $OutputEncoding=[System.Text.UTF8Encoding]::new(); Get-Content -Raw -Encoding UTF8 ${psQuotePath(forwardSlashed)} | ${args.join(' ')} }`;
-  }
-  return `${args.join(' ')} < ${posixQuotePath(forwardSlashed)}`;
-}
-
-/** Write the prompt to a unique temp file; returns its path. */
-function stagePromptFile(prompt: string, artifactId: string): string {
-  const file = path.join(
-    os.tmpdir(),
-    `aac-prompt-${sanitizeId(artifactId)}-${process.pid}-${Date.now()}.txt`,
-  );
-  fs.writeFileSync(file, prompt, 'utf-8');
-  return file;
-}
-
-/** Best-effort temp-file cleanup at session end. */
-function disposePromptFile(file?: string): void {
-  if (!file) return;
-  try { fs.unlinkSync(file); } catch { /* already gone */ }
-}
-
-// ─── Shell detection + quoting ───────────────────────────────────────────────
-// Both `isPowerShell()` and `shellQuote()` are imported from chat-bridge.ts
-// (the canonical home). terminal-executor used to carry its own PowerShell-
-// aware copies; they duplicated the logic without adding value, so they
-// were collapsed to a single import in chat-bridge.ts. The import block
-// at the top of this file brings them into the local scope.
 
 // ─── Filename sanitization ───────────────────────────────────────────────────
 
@@ -498,6 +360,8 @@ export const sanitizeId = sanitizeResultId;
 
 export class TerminalExecutor implements vscode.Disposable {
   private activeTerminals = new Map<string, TerminalSession>();
+  /** Tail of each finished session's output, so a missing verdict can say why. */
+  private lastOutput = new Map<string, string>();
   private disposables: vscode.Disposable[] = [];
   /** Webview streaming callbacks keyed by artifactId */
   private webviewStreams = new Map<string, (data: string) => void>();
@@ -519,123 +383,121 @@ export class TerminalExecutor implements vscode.Disposable {
     );
   }
 
+  /** Resolve which harness runs the next board step (see harness-resolver.ts). */
+  resolveHarness(): Promise<HarnessResolution> {
+    return resolveBoardHarness();
+  }
+
   /**
-   * Launch a terminal-based workflow execution for an artifact.
-   * Returns the trace session ID for observability.
+   * Single-shot launch used by manual lane drags. Returns the session id of
+   * the CLI run, an `lm-…` id when the step runs through a language model,
+   * or undefined when no harness can run it (the user is told why).
    */
   async executeTerminalWorkflow(
     workflowId: string,
-    artifact: any,
-    store: any,
-    options?: { skillContent?: string }
+    artifact: HarnessArtifact,
+    store: unknown,
+    options?: HarnessRunOptions,
   ): Promise<string | undefined> {
+    const launch = await this.launchHarness(workflowId, artifact, store, options);
+    switch (launch.kind) {
+      case 'cli':
+        return launch.sessionId;
+      case 'lm':
+        return `lm-${workflowId}-${artifact?.id}-${Date.now()}`;
+      default:
+        void vscode.window.showWarningMessage(`Agile Agent Canvas: ${launch.verdict.summary}`);
+        return undefined;
+    }
+  }
+
+  /**
+   * Resolve a harness and start the run. CLI runs return their session id
+   * (the verdict arrives via the result file); LM runs return the verdict
+   * promise; when nothing can run, a BLOCKED verdict says what to install.
+   */
+  async launchHarness(
+    workflowId: string,
+    artifact: HarnessArtifact,
+    store: unknown,
+    options?: HarnessRunOptions,
+  ): Promise<HarnessLaunch> {
     const artifactId = artifact?.id;
     if (!artifactId) {
       logger.warn('[TerminalExecutor] Cannot execute — no artifact ID');
-      return undefined;
+      return { kind: 'blocked', verdict: blocked('Artifact has no id') };
     }
 
-    const provider = await resolveAgenticProvider();
+    const trustBlock = agentRunBlockReason();
+    if (trustBlock) return { kind: 'blocked', verdict: blocked(trustBlock) };
 
-    // ── Gap #48: pre-flight CLI-availability check ─────────────────────────
-    // resolveAgenticProvider() falls back to 'claude' even when no CLI is
-    // on PATH. Without this check, the terminal launches and immediately
-    // fails with "command not found" → closes → executeAndAwaitVerdict
-    // returns UNKNOWN after the 3s poll interval. The user sees a
-    // misleading toast: "Terminal closed without a verdict file."
-    //
-    // We now verify that the resolved CLI binary is actually available
-    // (listAvailableProviders does a `which`/`where` PATH scan) and
-    // return undefined immediately if not — the caller surfaces a clear
-    // BLOCKED verdict with actionable instructions.
-    try {
-      const available = await listAvailableProviders();
-      const entry = available.find(a => a.id === provider);
-      if (entry && !entry.available) {
-        logger.warn(
-          `[TerminalExecutor] ${provider} not found on PATH — cannot launch terminal`,
-        );
-        return undefined;
+    const resolution = options?.resolution ?? await this.resolveHarness();
+    this.lastOutput.delete(artifactId);
+    if (resolution.kind === 'none') {
+      logger.warn(`[TerminalExecutor] No harness for ${artifactId}: ${resolution.message}`);
+      return { kind: 'blocked', verdict: blocked(resolution.message) };
+    }
+    if (resolution.kind === 'lm') {
+      if (!options?.lmRunner) {
+        return { kind: 'blocked', verdict: blocked('No CLI harness installed and this action cannot use the VS Code language model.') };
       }
-    } catch {
-      // PATH scan itself failed — proceed optimistically (the terminal
-      // will surface the error if the binary really is missing).
+      logger.info(`[TerminalExecutor] ${artifactId} → VS Code language model (${resolution.reason})`);
+      return { kind: 'lm', verdict: options.lmRunner() };
     }
 
+    const { adapter, binary } = resolution;
+    const posture = await resolveEffectivePosture();
+    const provider: HarnessId = adapter.id;
     const agentRole = inferRoleFromWorkflow(workflowId);
     const sessionId = `term-${workflowId}-${artifactId}-${Date.now()}`;
+    const outputFolder = runOutputFolder(options?.cwd);
+    const resultPath = resultFilePath(outputFolder, artifactId, workflowId);
 
-    // Generate trace entry for the terminal execution
-    const executionMode = getActivePtyBackend() ? 'pty' : 'vscode-terminal';
+    const projectContext = loadProjectContext(outputFolder);
+    const prompt = buildTerminalPrompt(workflowId, artifact, outputFolder, options?.skillContent, sessionId, projectContext);
+    let promptFile: string;
+    try {
+      fs.mkdirSync(path.dirname(resultPath), { recursive: true });
+      promptFile = stagePromptFile(outputFolder, artifactId, sessionId, prompt);
+    } catch (err) {
+      return { kind: 'blocked', verdict: blocked(`Could not stage the prompt file: ${errMsg(err)}`) };
+    }
+
+    const ptyBackend = getActivePtyBackend();
+    // The embedded pty spawns powershell.exe on Windows and bash elsewhere
+    // (node-pty-terminal-backend.ts); VS Code terminals use the user's default shell.
+    const shellKind: ShellKind = ptyBackend
+      ? detectShellKind(undefined, process.platform)
+      : detectShellKind(vscode.env.shell, process.platform);
+    let cmdLine: string;
+    try {
+      const spec = buildHarnessLaunch(adapter, { binary, promptFile, resultPath, posture });
+      cmdLine = buildCommandLine(spec, shellKind);
+    } catch (err) {
+      disposeStagedPrompt(promptFile);
+      return { kind: 'blocked', verdict: blocked(errMsg(err)) };
+    }
+
+    const executionMode = ptyBackend ? 'pty' : 'vscode-terminal';
     try {
       getTraceRecorder().record({
         sessionId,
         type: 'decision',
         agent: `terminal-${provider}`,
         data: {
-          decision: `started ${workflowId} via ${executionMode} (${provider})`,
+          decision: `started ${workflowId} via ${executionMode} (${provider}, ${posture})`,
           artifactId,
           artifactType: artifact?.type || 'unknown',
-          rationale: `Terminal-based agentic execution using ${provider} (mode: ${executionMode})`,
+          rationale: `Harness ${adapter.label} chosen: ${resolution.reason}; shell ${shellKind}`,
         },
       });
     } catch {
       // Trace recorder may not be initialized
     }
 
-    // Build prompt and write to temp file for long prompts
-    const workspaceFolders = vscode.workspace.workspaceFolders;
-    const outputFolder = workspaceFolders?.[0]
-      ? path.join(
-          workspaceFolders[0].uri.fsPath,
-          vscode.workspace
-            .getConfiguration('agileagentcanvas')
-            .get<string>('outputFolder', '.agileagentcanvas-context')
-        )
-      : '.agileagentcanvas-context';
-
-    const prompt = buildTerminalPrompt(workflowId, artifact, outputFolder, options?.skillContent);
-
     const termName = `AAC: ${workflowId} ${artifactId}`;
 
-    // Long prompts are staged to a temp file and fed via stdin (see
-    // LONG_PROMPT_INLINE_LIMIT for why inline argv is unsafe). Providers
-    // without a verified stdin contract fall back to the inline shape.
-    const stdinArgs = buildStdinCliCommand(provider);
-    let promptFile: string | undefined;
-    let args: string[];
-    if (prompt.length > LONG_PROMPT_INLINE_LIMIT && stdinArgs) {
-      try {
-        promptFile = stagePromptFile(prompt, artifactId);
-        args = stdinArgs;
-      } catch (err) {
-        logger.warn(
-          `[TerminalExecutor] Failed to stage prompt file — falling back to inline prompt: ${errMsg(err)}`,
-        );
-        args = buildCliCommand(provider, prompt);
-      }
-    } else {
-      args = buildCliCommand(provider, prompt);
-    }
-
-    // ponytail: on PowerShell DON'T wrap in `$null |`. The BMAD prompt is a
-    // multi-KB multiline blob; shellQuote keeps its newlines literal inside
-    // double quotes, so `$null | opencode run "...\n...\n..."` is sent as ONE
-    // logical line that PowerShell RENDERS as N wrapped lines, each with a
-    // `>> ` continuation prompt. PowerShell's paste buffer then drops/
-    // mangles characters across those wrapped lines (the garbled prompt you
-    // see, and opencode hanging because the line never terminates with a
-    // clean CR). sendText(cmdLine, true) already appends the CR that submits
-    // the single logical line, so the pipeline wrapper is only there to
-    // satisfy a stale-stdin prompt — not worth corrupting a 5KB prompt over.
-    const cmdLine = promptFile
-      ? buildStdinCommandLine(args, promptFile)
-      : isPowerShell()
-        ? args.map((a) => shellQuote(a)).join(' ')
-        : `${args.map((a) => shellQuote(a)).join(' ')} < /dev/null`;
-
     // ── Branch: embedded pty vs VS Code terminal ────────────────────────────
-    const ptyBackend = getActivePtyBackend();
 
     if (ptyBackend) {
       // ── Option B: embedded pty (bidirectional, no VS Code terminal) ──
@@ -662,7 +524,7 @@ export class TerminalExecutor implements vscode.Disposable {
 
       // Write the CLI command to the shell via pty
       try {
-        ptyBackend.write(artifactId, cmdLine + '\n');
+        ptyBackend.write(artifactId, withCwd(cmdLine, options?.cwd, shellKind) + '\n');
       } catch (err) {
         logger.error(`[TerminalExecutor] Failed to write command to pty: ${errMsg(err)}`);
       }
@@ -710,7 +572,8 @@ export class TerminalExecutor implements vscode.Disposable {
         `[TerminalExecutor] Launched pty session "${termName}" (${provider}) for ${artifactId}`,
       );
 
-      return sessionId;
+      this.journalRun({ sessionId, artifactId, artifactType: artifact?.type || 'unknown', workflowId, harness: provider, terminalName: termName, resultPath, revertTo: options?.revertStatusOnInterrupt });
+      return { kind: 'cli', sessionId };
     }
 
     // ── Option A: VS Code terminal (existing path) ─────────────────────────
@@ -718,6 +581,7 @@ export class TerminalExecutor implements vscode.Disposable {
       name: termName,
       message: `${agentRole} executing ${workflowId} on ${artifactId}`,
       location: vscode.TerminalLocation.Panel,
+      ...(options?.cwd ? { cwd: options.cwd } : {}),
     };
 
     const terminal = vscode.window.createTerminal(termOptions);
@@ -785,24 +649,10 @@ export class TerminalExecutor implements vscode.Disposable {
       logger.warn(`[TerminalExecutor] processId await failed: ${errMsg(err)}`);
     }
 
-    // Send the command to the terminal.
-    //
-    // Headless CLIs (claude -p, codex exec, opencode run) all
-    // REQUIRE the prompt as a positional arg value — they do NOT read it
-    // from stdin. The previous long-prompt branch wrote the prompt to a
-    // temp file and fed it via `< file` (bash) / `Get-Content | & cmd`
-    // (PowerShell), which only worked because the old `terminalLaunch`
-    // returned plain `[claude, q]` — Claude at that point still accepted
-    // `claude < /tmp/prompt.md` as "run a fresh interactive session with
-    // whatever comes from stdin". With the new headless invocations
-    // (`claude -p`, `codex exec`, …) stdin piped to `-p` would be ignored
-    // because `-p` has no positional value, leaving the CLI to fail with
-    // a usage error. The fix: always include `q` in args via shellQuote.
-    //
-    // Trade-off note: prompts > LONG_PROMPT_INLINE_LIMIT never reach this
-    // call as an inline argv value — they are staged to a temp file and fed
-    // to the CLI's stdin via buildStdinCommandLine, so neither the Windows
-    // ARG_MAX ceiling nor the ConPTY paste buffer can corrupt them.
+    // Send the command line. The prompt never travels on it: it is staged to
+    // a private file and piped to stdin or referenced by path (harness/
+    // harness-adapters.ts), so ConPTY paste limits and PS 5.1 argv mangling
+    // cannot corrupt it.
     try {
       terminal.sendText(cmdLine, true);
     } catch (err) {
@@ -873,7 +723,38 @@ export class TerminalExecutor implements vscode.Disposable {
       `[TerminalExecutor] Launched terminal "${termName}" (${provider}) for ${artifactId}`
     );
 
-    return sessionId;
+    this.journalRun({ sessionId, artifactId, artifactType: artifact?.type || 'unknown', workflowId, harness: provider, terminalName: termName, resultPath, revertTo: options?.revertStatusOnInterrupt });
+    return { kind: 'cli', sessionId };
+  }
+
+  /** Append to the user-visible run history (Show Agent Run History). Never throws. */
+  private recordHistory(entry: RunHistoryEntry): void {
+    try {
+      appendRunHistory(getOutputFolder(), entry);
+    } catch (err) {
+      logger.warn(`[TerminalExecutor] Could not record run history: ${errMsg(err)}`);
+    }
+  }
+
+  /** Record the run so a reload mid-run can be resolved (see harness/run-recovery.ts). */
+  private journalRun(r: { sessionId: string; artifactId: string; artifactType: string; workflowId: string; harness: string; terminalName: string; resultPath: string; revertTo?: string }): void {
+    try {
+      RunJournal.inFolder(getOutputFolder()).add({
+        runId: r.sessionId, artifactId: r.artifactId, artifactType: r.artifactType, workflowId: r.workflowId,
+        harness: r.harness, terminalName: r.terminalName, resultPath: r.resultPath, startedAt: Date.now(),
+        ...(r.revertTo ? { revertTo: r.revertTo } : {}),
+      });
+    } catch (err) {
+      logger.warn(`[TerminalExecutor] Could not journal run ${r.sessionId}: ${errMsg(err)}`);
+    }
+  }
+
+  private unjournalRun(runId: string): void {
+    try {
+      RunJournal.inFolder(getOutputFolder()).remove(runId);
+    } catch (err) {
+      logger.warn(`[TerminalExecutor] Could not clear journaled run ${runId}: ${errMsg(err)}`);
+    }
   }
 
   /**
@@ -888,14 +769,14 @@ export class TerminalExecutor implements vscode.Disposable {
     workflowId: string,
     artifact: any,
     store: any,
-    options?: { skillContent?: string; timeoutMs?: number; pollIntervalMs?: number }
+    options?: HarnessRunOptions & { timeoutMs?: number; pollIntervalMs?: number; signal?: AbortSignal }
   ): Promise<KanbanVerdict> {
     const artifactId = artifact?.id;
     if (!artifactId) {
       return { verdict: 'UNKNOWN', summary: 'No artifact id' };
     }
 
-    const outputFolder = getOutputFolder();
+    const outputFolder = runOutputFolder(options?.cwd);
     const resultPath = resultFilePath(outputFolder, artifactId, workflowId);
 
     // Remove any stale result so we only react to THIS run's output.
@@ -909,30 +790,32 @@ export class TerminalExecutor implements vscode.Disposable {
     // verdict-poll loop can synthesize a verdict from a real file diff if the
     // agent does the work but never writes the verdict JSON. Ground truth —
     // independent of model cooperation with the verdict-write contract.
-    const baselineSnapshot = captureWorkspaceSnapshot();
+    const baselineSnapshot = captureWorkspaceSnapshot(options?.cwd);
 
-    const sessionId = await this.executeTerminalWorkflow(workflowId, artifact, store, {
+    const launch = await this.launchHarness(workflowId, artifact, store, {
       skillContent: options?.skillContent,
+      lmRunner: options?.lmRunner,
+      resolution: options?.resolution,
+      revertStatusOnInterrupt: options?.revertStatusOnInterrupt,
+      cwd: options?.cwd,
     });
-    if (!sessionId) {
-      // Gap #48: distinguish "no CLI on PATH" from other launch failures.
-      // When the pre-flight check caught a missing binary, the message
-      // tells the user exactly what to install instead of the generic
-      // "Terminal failed to launch".
-      const provider = await resolveAgenticProvider();
-      try {
-        const available = await listAvailableProviders();
-        const entry = available.find(a => a.id === provider);
-        if (entry && !entry.available) {
-          return {
-            verdict: 'BLOCKED',
-            summary: `No headless CLI available on PATH. Install ${provider === 'claude' ? 'Claude Code (docs.claude.com)' : provider === 'codex' ? 'OpenAI Codex CLI (developers.openai.com/codex)' : provider === 'aider' ? 'Aider (aider.chat)' : provider === 'opencode' ? 'OpenCode (opencode.ai)' : provider === 'pi' ? 'Pi CLI (pi-mono)' : provider} or configure another in VS Code settings → agileagentcanvas.chatProvider.`,
-          };
-        }
-      } catch {
-        // PATH scan itself failed — use the generic message.
-      }
-      return { verdict: 'UNKNOWN', summary: 'Terminal failed to launch' };
+    const startedAtMs = Date.now();
+    const history = (runId: string, harness: string, v: KanbanVerdict) =>
+      this.recordHistory({ runId, artifactId, workflowId, harness, verdict: v.verdict, summary: v.summary, startedAt: startedAtMs, finishedAt: Date.now() });
+    if (launch.kind === 'blocked') {
+      history(`blocked-${startedAtMs}`, 'none', launch.verdict);
+      return launch.verdict;
+    }
+    if (launch.kind === 'lm') {
+      const v = await launch.verdict;
+      history(`lm-${workflowId}-${artifactId}-${startedAtMs}`, 'vscode-lm', v);
+      return v;
+    }
+    const sessionId = launch.sessionId;
+    const harnessId = this.activeTerminals.get(artifactId)?.provider ?? 'unknown';
+    if (options?.signal?.aborted) {
+      await this.killTerminal(artifactId);
+      return { verdict: 'UNKNOWN', summary: 'Run aborted' };
     }
 
     // Gap #23: capture the prompt length now while the session is
@@ -948,64 +831,94 @@ export class TerminalExecutor implements vscode.Disposable {
     const startedAt = Date.now();
 
     return await new Promise<KanbanVerdict>((resolve) => {
+      let done = false;
       const finish = (v: KanbanVerdict) => {
+        if (done) return;
+        done = true;
         clearInterval(timer);
+        this.unjournalRun(sessionId);
+        options?.signal?.removeEventListener('abort', onAbort);
         // Gap #23: record terminal CLI costs so the budget gauge reflects
-        // Claude Code / Codex / Gemini / Aider / OpenCode spend. Uses the
-        // captured prompt length (safe even if the session was cleaned up).
-        this.recordTerminalCost(artifactId, sessionId, v, capturedPromptLength);
+        // CLI spend. Uses the captured prompt length (safe even if the
+        // session was cleaned up).
+        this.recordTerminalCost(artifactId, sessionId, v, capturedPromptLength, harnessId, startedAtMs);
+        history(sessionId, harnessId, v);
         resolve(v);
+      };
+      // Abort (Stop / Stop All Agents): kill the agent first so it cannot
+      // keep writing, then report — nothing downstream commits or advances.
+      const onAbort = () => {
+        void this.killTerminal(artifactId).finally(() => finish({ verdict: 'UNKNOWN', summary: 'Run aborted' }));
+      };
+      options?.signal?.addEventListener('abort', onAbort, { once: true });
+
+      /** A verdict from THIS run; a different run_id means a stale/zombie writer. */
+      const readOwnVerdict = (): KanbanVerdict | undefined => {
+        const v = readVerdictFile(resultPath);
+        if (!v) return undefined;
+        if (!verdictMatchesRun(v, sessionId)) {
+          logger.warn(`[TerminalExecutor] ${artifactId}: ignoring verdict from run ${v.runId} (expected ${sessionId})`);
+          return undefined;
+        }
+        return v;
       };
 
       const timer = setInterval(() => {
-        // 1. Result file present → parse and finish.
-        const verdict = readVerdictFile(resultPath);
-        if (verdict) {
+        const stillRunning = this.activeTerminals.has(artifactId);
+        // 1. Result file present → parse and finish. A file without a valid
+        //    verdict (e.g. "{}" written early) is only final once the agent exits.
+        const verdict = readOwnVerdict();
+        if (verdict && (verdict.verdict !== 'UNKNOWN' || !stillRunning)) {
           finish(verdict);
           return;
         }
 
-        // 2. Terminal closed without producing a file → one last read, else UNKNOWN.
-        const stillRunning = this.activeTerminals.has(artifactId);
+        // 2. Terminal closed without producing a verdict.
         if (!stillRunning) {
-          const late = readVerdictFile(resultPath);
-          if (late) {
-            finish(late);
-            return;
-          }
-          // ponytail: synthesize COMPLETED from a workspace file diff. The
-          // agent did the work but didn't write the verdict JSON — the
-          // orchestrator should still advance the card so the review gate
-          // can evaluate. Logs the synthesized verdict so the user can see
-          // it in the output panel.
-          try {
-            const finalSnapshot = captureWorkspaceSnapshot();
-            const changed = diffWorkspaceSnapshots(baselineSnapshot, finalSnapshot);
-            if (changed.length > 0) {
-              const summary =
-                `Synthesized COMPLETED: agent ran, modified ${changed.length} file(s), ` +
-                `did not write verdict JSON. Examples: ${changed.slice(0, 3).join(', ')}.`;
-              logger.warn(`[TerminalExecutor] ${artifactId} (${workflowId}) ${summary}`);
-              finish({
-                verdict: 'COMPLETED',
-                summary,
-                raw: { synthesized: true, changedFiles: changed.slice(0, 50) },
-              });
-              return;
-            }
-          } catch (err) {
-            logger.warn(`[TerminalExecutor] ${artifactId} snapshot diff failed: ${errMsg(err)}`);
-          }
-          finish({ verdict: 'UNKNOWN', summary: 'Terminal closed without a verdict file' });
+          finish(this.verdictWithoutFile(artifactId, workflowId, baselineSnapshot));
           return;
         }
 
-        // 3. Timeout.
+        // 3. Timeout: stop the agent before giving up so it cannot keep
+        //    writing after the lock is released and a retry starts.
         if (Date.now() - startedAt >= timeoutMs) {
-          finish({ verdict: 'UNKNOWN', summary: `No verdict within ${Math.round(timeoutMs / 60000)}m` });
+          void this.killTerminal(artifactId).finally(() =>
+            finish({ verdict: 'UNKNOWN', summary: `No verdict within ${Math.round(timeoutMs / 60000)}m — agent stopped` }));
         }
       }, pollIntervalMs);
     });
+  }
+
+  /**
+   * The agent exited without a verdict file. By default that is UNKNOWN (the
+   * orchestrator stops and asks the human). Inferring COMPLETED from changed
+   * files is opt-in: concurrent agents or the user editing files make it
+   * unreliable.
+   */
+  private verdictWithoutFile(artifactId: string, workflowId: string, baseline: WorkspaceSnapshot): KanbanVerdict {
+    let changed: string[] = [];
+    try {
+      changed = diffWorkspaceSnapshots(baseline, captureWorkspaceSnapshot());
+    } catch (err) {
+      logger.warn(`[TerminalExecutor] ${artifactId} snapshot diff failed: ${errMsg(err)}`);
+    }
+    const synthesize = vscode.workspace
+      .getConfiguration('agileagentcanvas')
+      .get<boolean>('agents.synthesizeVerdictFromChanges', false);
+    if (synthesize && changed.length > 0) {
+      const summary =
+        `Synthesized COMPLETED: agent modified ${changed.length} file(s) without writing a verdict. ` +
+        `Examples: ${changed.slice(0, 3).join(', ')}.`;
+      logger.warn(`[TerminalExecutor] ${artifactId} (${workflowId}) ${summary}`);
+      return { verdict: 'COMPLETED', summary, raw: { synthesized: true, changedFiles: changed.slice(0, 50) } };
+    }
+    const base = changed.length > 0
+      ? `Agent exited without writing a verdict file after changing ${changed.length} file(s) (e.g. ${changed.slice(0, 3).join(', ')}). Review the changes and move the card manually.`
+      : 'Agent exited without writing a verdict file.';
+    // The CLI's own last words usually name the cause (expired sign-in,
+    // missing API key, unsupported model) — surface them instead of guessing.
+    const tail = this.lastOutput.get(artifactId);
+    return { verdict: 'UNKNOWN', summary: tail ? `${base} Last output:\n${tail}` : base };
   }
 
   /**
@@ -1083,6 +996,13 @@ export class TerminalExecutor implements vscode.Disposable {
     } catch (err) {
       logger.warn(`[TerminalExecutor] Failed to kill terminal for ${artifactId}: ${errMsg(err)}`);
     }
+  }
+
+  /** Kill every running agent terminal (Stop All Agents). Returns how many were killed. */
+  async killAllTerminals(): Promise<number> {
+    const ids = Array.from(this.activeTerminals.keys());
+    await Promise.all(ids.map((id) => this.killTerminal(id)));
+    return ids.length;
   }
 
   /**
@@ -1194,7 +1114,9 @@ export class TerminalExecutor implements vscode.Disposable {
       `[TerminalExecutor] Pty session exited for ${artifactId} — cleaning up tracking`,
     );
     this.activeTerminals.delete(artifactId);
-    disposePromptFile(session.promptFile);
+    this.lastOutput.set(artifactId, outputTail(session.accumulatedData));
+    this.unjournalRun(session.sessionId);
+    disposeStagedPrompt(session.promptFile, (e) => logger.warn(`[TerminalExecutor] prompt cleanup failed: ${errMsg(e)}`));
 
     this.persistSessionMetadata();
     this.clearLockTimeout(artifactId);
@@ -1231,7 +1153,9 @@ export class TerminalExecutor implements vscode.Disposable {
           `[TerminalExecutor] Terminal closed for ${artifactId} — cleaning up tracking`
         );
         this.activeTerminals.delete(artifactId);
-        disposePromptFile(session.promptFile);
+        this.lastOutput.set(artifactId, outputTail(session.accumulatedData));
+        this.unjournalRun(session.sessionId);
+        disposeStagedPrompt(session.promptFile, (e) => logger.warn(`[TerminalExecutor] prompt cleanup failed: ${errMsg(e)}`));
 
         // Update persisted metadata after terminal close.
         this.persistSessionMetadata();
@@ -1277,7 +1201,8 @@ export class TerminalExecutor implements vscode.Disposable {
   private scheduleLockTimeout(artifactId: string): void {
     this.clearLockTimeout(artifactId);
     const timeout = setTimeout(() => {
-      logger.warn(`[TerminalExecutor] Lock timeout reached for ${artifactId} — force-releasing lock`);
+      logger.warn(`[TerminalExecutor] Lock timeout reached for ${artifactId} — stopping agent and releasing lock`);
+      void this.killTerminal(artifactId);
       concurrencyQueue.release(artifactId);
       this.lockTimeouts.delete(artifactId);
     }, TerminalExecutor.LOCK_TIMEOUT_MS);
@@ -1305,9 +1230,29 @@ export class TerminalExecutor implements vscode.Disposable {
     sessionId: string,
     verdict: KanbanVerdict,
     capturedPromptLength: number,
+    harnessId?: string,
+    startedAtMs?: number,
   ): void {
-    // Only record meaningful spend — skip UNKNOWN/launch-failure verdicts
-    if (!verdict || verdict.verdict === 'UNKNOWN') return;
+    if (!verdict) return;
+    // Measured usage first: Claude Code and Codex log exact token counts locally.
+    const cwd = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath;
+    if (harnessId && cwd && startedAtMs) {
+      const usage = readCliUsage(harnessId, cwd, startedAtMs);
+      if (usage) {
+        try {
+          costTracker.record(sessionId, usage.model, {
+            inputTokens: usage.inputTokens,
+            outputTokens: usage.outputTokens,
+            cacheReadTokens: usage.cacheReadTokens,
+            cacheCreationTokens: usage.cacheCreationTokens,
+          }, artifactId, 'api');
+          logger.debug(`[TerminalExecutor] Recorded measured ${harnessId} usage for ${artifactId}: ${usage.inputTokens}+${usage.outputTokens} tokens`);
+          return;
+        } catch (err) {
+          logger.debug(`[TerminalExecutor] Failed to record measured usage: ${errMsg(err)}`);
+        }
+      }
+    }
     try {
       // Best-effort: lookup session for accumulated output (may be cleaned up).
       // The captured prompt length is always available — the session was alive
@@ -1352,6 +1297,6 @@ export const terminalExecutor = new TerminalExecutor();
  * canonical home, the tests broke because proxyquire.noCallThru() doesn't
  * follow imports — it only sees what the module directly exports.
  */
-export { isPowerShell, shellQuote };
+export { isPowerShell, shellQuote } from '../commands/chat-bridge';
 
 /** Infer a display-friendly agent role name from a workflow ID. */

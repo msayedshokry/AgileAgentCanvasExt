@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import type { KanbanItem } from '../components/kanban/KanbanTypes';
 import { vscode } from '../vscodeApi';
 import { useEvent } from './useEvent';
+import { RunInsights } from './RunInsights';
 import {
   AgentInfo,
   getInterruptionMessage,
@@ -273,7 +274,8 @@ export function AgenticDetailPanel({
             </details>
           )}
         </section>
-      ) : isInterrupted ? (
+      ) : isInterrupted && !item.agentState?.failure ? (
+        // With a classified failure, RunInsights below states the real reason.
         <section className="agentic-tldr agentic-tldr--interrupted">
           <p className="agentic-tldr-summary">{getInterruptionMessage(item.agentState?.interruptionReason)}</p>
           {isResuming && <p className="agentic-tldr-status"><span className="agentic-resume-spinner" /> Reconnecting…</p>}
@@ -285,6 +287,9 @@ export function AgenticDetailPanel({
           </p>
         </section>
       ) : null}
+
+      {/* ── Why it stopped + fixes, prompt preview, run timeline ── */}
+      <RunInsights item={item} />
 
       {/* ── Status chips — workflow / provider / started / lock / trace ── */}
       <div className="agentic-chips">

@@ -107,12 +107,25 @@ vi.mock('./agent-health-monitor', () => ({
   },
 }));
 
+// Card isolation / verify gate: controllable per test (default: no worktree, no verify command).
+const isolation = vi.hoisted(() => ({
+  worktree: undefined as undefined | { artifactId: string; branch: string; path: string },
+  verifyResults: [] as Array<{ passed: boolean; command: string; exitCode: number | null; timedOut: boolean; durationMs: number; tail: string }>,
+  finish: { ok: true, message: 'Merged' } as { ok: boolean; message: string },
+}));
+vi.mock('./harness/card-isolation', () => ({
+  prepareCardWorkspace: vi.fn(async () => isolation.worktree),
+  verifyCard: vi.fn(async () => isolation.verifyResults.shift()),
+  finishApprovedCard: vi.fn(async () => isolation.finish),
+}));
+
 // ── Imports (after mocks are established) ───────────────────────────────────
 
 import { KanbanOrchestrator, kanbanProgress } from './kanban-orchestrator';
 import { autoScheduler } from './auto-scheduler';
 import { concurrencyQueue } from './concurrency-queue';
 import { autonomousGit } from './autonomous-git';
+import { finishApprovedCard } from './harness/card-isolation';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -200,7 +213,7 @@ describe('Autonomous loop: KanbanOrchestrator + terminal executor integration', 
       expect(terminalExecutor.executeAndAwaitVerdict).toHaveBeenCalledTimes(2);
       // First call: dev workflow with artifact + store
       expect(terminalExecutor.executeAndAwaitVerdict).toHaveBeenNthCalledWith(
-        1, 'aac-kanban-dev-executor', story, store,
+        1, 'aac-kanban-dev-executor', story, store, expect.objectContaining({ lmRunner: expect.any(Function) }),
       );
 
       // Chat path NOT called
@@ -690,10 +703,10 @@ describe('Autonomous loop: AutoScheduler + orchestrator wiring', () => {
 
       // First call and third call are dev workflow calls (S-1 and S-2)
       expect(terminalExecutor.executeAndAwaitVerdict).toHaveBeenNthCalledWith(
-        1, 'aac-kanban-dev-executor', story1, store,
+        1, 'aac-kanban-dev-executor', story1, store, expect.objectContaining({ lmRunner: expect.any(Function) }),
       );
       expect(terminalExecutor.executeAndAwaitVerdict).toHaveBeenNthCalledWith(
-        3, 'aac-kanban-dev-executor', story2, store,
+        3, 'aac-kanban-dev-executor', story2, store, expect.objectContaining({ lmRunner: expect.any(Function) }),
       );
 
       // Chat path not used
@@ -901,8 +914,8 @@ describe('Autonomous loop: AbortController mid-run cancellation (#26)', () => {
     // Resolve review as NEEDS_FIXES so the loop advances to the next iteration.
     resolveReview({ verdict: 'NEEDS_FIXES', summary: 'Needs work', fixRequests: [{ failing_criterion: 'Add more tests' }] });
 
-    // The orchestrator should check ac.signal.aborted at the top of iteration 2
-    // and return blocked.
+    // The orchestrator checks ac.signal.aborted as soon as the review step
+    // returns and stops before acting on its verdict.
     const result = await runPromise;
 
     expect(result.ok).toBe(false);
@@ -912,9 +925,10 @@ describe('Autonomous loop: AbortController mid-run cancellation (#26)', () => {
     // Only dev + review called (2 total), no further iterations
     expect(terminalExecutor.executeAndAwaitVerdict).toHaveBeenCalledTimes(2);
 
-    // Fix requests were attached during the NEEDS_FIXES handling
+    // The run stops as soon as the in-flight step returns after an abort:
+    // the late NEEDS_FIXES result is NOT applied to the artifact.
     const metadataCalls = vi.mocked(store.updateArtifact).mock.calls.filter((c: any[]) => c[2]?.metadata);
-    expect(metadataCalls.length).toBeGreaterThanOrEqual(1);
+    expect(metadataCalls).toHaveLength(0);
 
     // Abort controller cleaned up
     const secondAbort = orch.abort(story.id);
@@ -961,5 +975,68 @@ describe('Autonomous loop: AbortController mid-run cancellation (#26)', () => {
     // The runPromise will never resolve (reviewPromise never resolves), but
     // the test doesn't need to await it — the finally block in runAutonomous
     // handles cleanup.
+  });
+});
+
+describe('Autonomous loop: worktree isolation + verify gate', () => {
+  afterEach(() => {
+    isolation.worktree = undefined;
+    isolation.verifyResults = [];
+    isolation.finish = { ok: true, message: 'Merged' };
+  });
+
+  it('runs every step in the card worktree and merges it on approval', async () => {
+    const { epics, story } = makeStories();
+    const store = createTestStore(epics);
+    isolation.worktree = { artifactId: 'S-1', branch: 'aac/story-S-1', path: '/repo.aac-worktrees/S-1' };
+    const terminalExecutor = {
+      killTerminal: vi.fn(),
+      executeAndAwaitVerdict: vi.fn()
+        .mockResolvedValueOnce({ verdict: 'COMPLETED' })
+        .mockResolvedValueOnce({ verdict: 'APPROVED' }),
+    } as any;
+    const result = await new KanbanOrchestrator(store, {} as any, terminalExecutor).runAutonomous(story, {});
+    expect(result.status).toBe('complete');
+    for (const call of terminalExecutor.executeAndAwaitVerdict.mock.calls) {
+      expect(call[3]).toMatchObject({ cwd: '/repo.aac-worktrees/S-1' });
+    }
+
+    expect(finishApprovedCard).toHaveBeenCalledWith(isolation.worktree, 'Implement login');
+  });
+
+  it('failing tests send the card back to implement with the test output as a fix request', async () => {
+    const { epics, story } = makeStories();
+    const store = createTestStore(epics);
+    isolation.verifyResults = [
+      { passed: false, command: 'npm test', exitCode: 1, timedOut: false, durationMs: 10, tail: '1 failing: login rejects bad password' },
+      { passed: true, command: 'npm test', exitCode: 0, timedOut: false, durationMs: 10, tail: 'ok' },
+    ];
+    const terminalExecutor = {
+      killTerminal: vi.fn(),
+      executeAndAwaitVerdict: vi.fn()
+        .mockResolvedValueOnce({ verdict: 'COMPLETED' })   // dev 1 → tests fail
+        .mockResolvedValueOnce({ verdict: 'COMPLETED' })   // dev 2 → tests pass
+        .mockResolvedValueOnce({ verdict: 'APPROVED' }),   // review
+    } as any;
+    const result = await new KanbanOrchestrator(store, {} as any, terminalExecutor).runAutonomous(story, {});
+    expect(result.status).toBe('complete');
+    expect(terminalExecutor.executeAndAwaitVerdict).toHaveBeenCalledTimes(3);
+    const fixCall = vi.mocked(store.updateArtifact).mock.calls.find((c: any[]) => c[2]?.metadata?.fixRequests);
+    expect(JSON.stringify(fixCall?.[2])).toContain('1 failing: login rejects bad password');
+  });
+
+  it('a merge conflict on approval stops the run instead of marking it done', async () => {
+    const { epics, story } = makeStories();
+    const store = createTestStore(epics);
+    isolation.worktree = { artifactId: 'S-1', branch: 'aac/story-S-1', path: '/wt' };
+    isolation.finish = { ok: false, message: 'Merging aac/story-S-1 conflicts with your current branch.' };
+    const terminalExecutor = {
+      killTerminal: vi.fn(),
+      executeAndAwaitVerdict: vi.fn().mockResolvedValueOnce({ verdict: 'COMPLETED' }).mockResolvedValueOnce({ verdict: 'APPROVED' }),
+    } as any;
+    const result = await new KanbanOrchestrator(store, {} as any, terminalExecutor).runAutonomous(story, {});
+    expect(result.ok).toBe(false);
+    expect(result.blockedBy?.[0]).toMatch(/conflicts/);
+    expect(vi.mocked(store.updateArtifact).mock.calls.some((c: any[]) => c[2]?.status === 'done')).toBe(false);
   });
 });

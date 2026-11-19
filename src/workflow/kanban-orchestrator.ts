@@ -29,6 +29,11 @@ import { budgetEnforcer } from './budget-enforcer';
 import { autoRetryEngine } from './auto-retry-engine';
 import { autonomousGit } from './autonomous-git';
 import { TerminalExecutor } from './terminal-executor';
+import { runViaLanguageModel } from './harness/headless-lm-run';
+import { classifyAgentFailure, type AgentFailure } from './harness/agent-failure';
+import { finishApprovedCard, prepareCardWorkspace, verifyCard } from './harness/card-isolation';
+import { verifyFixRequest } from './harness/verify-gate';
+import type { CardWorktree } from './harness/card-worktree';
 import { agentHealthMonitor } from './agent-health-monitor';
 import {
   ChatProgressTracker,
@@ -37,6 +42,9 @@ import {
 } from './terminal-health-checks';
 
 import { errMsg } from '../utils/error';
+
+/** A pending approval checkpoint is denied after this long (webview closed, user away). */
+export const APPROVAL_TIMEOUT_MS = 30 * 60 * 1000;
 
 /**
  * Wrap a `vscode.ChatResponseStream` so that every chunk-emitter also
@@ -101,6 +109,8 @@ export interface KanbanProgressEvent {
     status: 'running' | 'completed' | 'failed' | 'interrupted' | 'idle';
     agentRole?: string;
     workflowId?: string;
+    /** Why the run stopped, in plain words, with the actions that fix it. */
+    failure?: AgentFailure;
   };
 }
 
@@ -116,6 +126,21 @@ const REVIEW_WORKFLOW = 'aac-kanban-review-guard';
 export class KanbanOrchestrator {
   // #26: Per-artifact abort controllers for cancel/abort.
   private abortControllers = new Map<string, AbortController>();
+  /** Column each active run started from (where a lost run returns the card). */
+  private runStartStatus = new Map<string, string>();
+  /** Card worktree each active run works in (absent = the workspace itself). */
+  private runWorktree = new Map<string, CardWorktree>();
+
+  /**
+   * Language-model fallback for machines with no CLI harness: runs the step
+   * through executeLaneTransition with a headless stream, cancelled with the run.
+   */
+  private lmRunnerFor(workflowId: string, artifact: unknown, artifactId: string): () => Promise<KanbanVerdict> {
+    return () => runViaLanguageModel(this.executor, workflowId, artifact, this.store, {
+      signal: this.abortControllers.get(artifactId)?.signal,
+      sessionId: `lm-${workflowId}-${artifactId}-${Date.now()}`,
+    });
+  }
   // Audit gap #50 — per-story pause resolvers. When pauseStory() is called
   // for a story that's currently mid-flight, the loop awaits the resolve
   // function at the next iteration boundary (does NOT abort, does NOT kill
@@ -138,6 +163,15 @@ export class KanbanOrchestrator {
    *  Gap #46: previously only signalled the AbortController — the terminal
    *  kept running, the lock stayed held, and the verdict file could be
    *  written orphaned. Now we kill the terminal first, then signal. */
+  /** Abort every active autonomous run (Stop All Agents). Returns how many were signalled. */
+  abortAll(): number {
+    let count = 0;
+    for (const artifactId of Array.from(this.abortControllers.keys())) {
+      if (this.abort(artifactId)) count++;
+    }
+    return count;
+  }
+
   abort(artifactId: string): boolean {
     // Kill the running terminal so the CLI agent stops immediately.
     // Idempotent — killTerminal is a no-op if no terminal is active.
@@ -223,6 +257,7 @@ export class KanbanOrchestrator {
     // #26: Create an abort controller so kanban:abandonExecution can stop the loop.
     const ac = new AbortController();
     this.abortControllers.set(id, ac);
+    this.runStartStatus.set(id, (artifact?.status as string) || 'ready-for-dev');
 
     try {
       // ── Pre-flight guardrails ──────────────────────────────────────────
@@ -238,9 +273,14 @@ export class KanbanOrchestrator {
         return await this.stop(id, `Budget exceeded: ${status.bannerMessage ?? 'cap hit'}`);
       }
 
-      // ── Auto-git: create a branch before dev work ───────────────────────
-      const cwd = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath ?? process.cwd();
-      await autonomousGit.maybeBranch(id, cwd);
+      // ── Isolation: each card works in its own git worktree + branch, so
+      //    parallel cards never share files and the user's checkout is never
+      //    switched. Falls back to the workspace (legacy auto-branch) without git.
+      const workspaceCwd = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath ?? process.cwd();
+      const worktree = await prepareCardWorkspace(id);
+      if (worktree) this.runWorktree.set(id, worktree);
+      else await autonomousGit.maybeBranch(id, workspaceCwd);
+      const cwd = worktree?.path ?? workspaceCwd;
 
       for (let iter = 1; iter <= maxIter; iter++) {
         // #26: Check abort signal before each iteration.
@@ -267,9 +307,27 @@ export class KanbanOrchestrator {
         await this.setStatus(type, id, 'in-progress');
         this.emit(id, 'running', 'Crafter', DEV_WORKFLOW);
         const dev = await this.runStepGuarded(DEV_WORKFLOW, type, id, ctx);
+        if (ac.signal.aborted) {
+          return await this.stop(id, 'Aborted by user');
+        }
 
         if (dev.verdict !== 'COMPLETED') {
           return await this.stop(id, `Dev gate returned ${dev.verdict}`, dev);
+        }
+
+        // ── Verify gate: the project's own tests, not the agent's word ──
+        const verify = await verifyCard(cwd, ac.signal);
+        if (ac.signal.aborted) {
+          return await this.stop(id, 'Aborted by user');
+        }
+        if (verify && !verify.passed) {
+          logger.info(`[Orchestrator] ${id} verification failed (${verify.command}) → re-implement`);
+          await this.attachFixRequests(type, id, [verifyFixRequest(verify)]);
+          if (iter === maxIter) {
+            return await this.stop(id, `Tests still failing after ${maxIter} attempt(s): ${verify.command}`,
+              { verdict: 'BLOCKED', summary: verify.tail.slice(-1500) });
+          }
+          continue;
         }
 
         // ── Auto-git: commit after successful dev ────────────────────
@@ -287,8 +345,21 @@ export class KanbanOrchestrator {
         await this.setStatus(type, id, 'review');
         this.emit(id, 'running', 'Reviewer', REVIEW_WORKFLOW);
         const review = await this.runStepGuarded(REVIEW_WORKFLOW, type, id, ctx);
+        if (ac.signal.aborted) {
+          return await this.stop(id, 'Aborted by user');
+        }
 
         if (review.verdict === 'APPROVED') {
+          // Bring the card's branch home: merge, or push + PR when configured.
+          const wt = this.runWorktree.get(id);
+          if (wt) {
+            const finished = await finishApprovedCard(wt, (artifact?.title as string) || id);
+            if (!finished.ok) {
+              return await this.stop(id, finished.message);
+            }
+            logger.info(`[Orchestrator] ${id}: ${finished.message}`);
+            this.runWorktree.delete(id);
+          }
           await this.setStatus(type, id, 'done');
           this.emit(id, 'completed', 'Reviewer', REVIEW_WORKFLOW);
           logger.info(`[Orchestrator] ${id} APPROVED → done (iteration ${iter})`);
@@ -297,7 +368,7 @@ export class KanbanOrchestrator {
           //     checks config.autoPR and returns null if disabled).
           const title = (artifact?.title as string) || id;
           const body = `Autonomous run completed: ${DEV_WORKFLOW} → ${REVIEW_WORKFLOW} (${iter} iteration(s))`;
-          await autonomousGit.maybePR(id, title, body, cwd);
+          if (!wt) await autonomousGit.maybePR(id, title, body, cwd);
 
           return { ok: true, workflowLaunched: true, status: 'complete' };
         }
@@ -322,6 +393,8 @@ export class KanbanOrchestrator {
     } finally {
       // #26: Clean up the abort controller.
       this.abortControllers.delete(id);
+      this.runStartStatus.delete(id);
+      this.runWorktree.delete(id);
       // Audit gap #50 — clean up any outstanding pause resolver so a future
       // runAutonomous() for the same artifactId doesn't inherit stale state.
       this.pausedResolvers.delete(id);
@@ -443,7 +516,7 @@ export class KanbanOrchestrator {
       } else {
         // ── Terminal path (headless CLI) ──────────────────────────────────
         const verdict = await this.terminalExecutor.executeAndAwaitVerdict(
-          workflowId, artifact, this.store,
+          workflowId, artifact, this.store, { lmRunner: this.lmRunnerFor(workflowId, artifact, id), signal: this.abortControllers.get(id)?.signal, revertStatusOnInterrupt: this.runStartStatus.get(id), cwd: this.runWorktree.get(id)?.path },
         );
         captured = verdict;
       }
@@ -466,7 +539,7 @@ export class KanbanOrchestrator {
     // didn't throw — the verdict IS the result. We give it ONE more
     // attempt with a fresh terminal before surfacing to the orchestrator.
     if (retryResult.succeeded && captured) {
-      if (captured.verdict === 'UNKNOWN') {
+      if (captured.verdict === 'UNKNOWN' && !this.abortControllers.get(id)?.signal.aborted) {
         logger.warn(`[Orchestrator] ${id}: UNKNOWN verdict on first attempt — retrying once`);
         try {
           if (useChatPath) {
@@ -487,7 +560,7 @@ export class KanbanOrchestrator {
             }
           } else {
             captured = await this.terminalExecutor.executeAndAwaitVerdict(
-              workflowId, artifact, this.store,
+              workflowId, artifact, this.store, { lmRunner: this.lmRunnerFor(workflowId, artifact, id), signal: this.abortControllers.get(id)?.signal, revertStatusOnInterrupt: this.runStartStatus.get(id), cwd: this.runWorktree.get(id)?.path },
             );
           }
           if (captured && (captured.verdict === 'COMPLETED' || captured.verdict === 'APPROVED')) {
@@ -498,6 +571,12 @@ export class KanbanOrchestrator {
         } catch (retryErr) {
           logger.warn(`[Orchestrator] ${id}: UNKNOWN retry threw: ${errMsg(retryErr)}`);
         }
+      }
+      // Repeated "no verdict" runs are an infrastructure failure (CLI not
+      // signed in, crashing, ignoring the contract): feed the circuit breaker
+      // so the board stops relaunching it. Aborts are not failures.
+      if (captured.verdict === 'UNKNOWN' && !this.abortControllers.get(id)?.signal.aborted) {
+        circuitBreaker.recordFailure(workflowId, captured.summary ?? 'no verdict');
       }
       return captured;
     }
@@ -548,7 +627,18 @@ export class KanbanOrchestrator {
     }
 
     return new Promise<boolean>(resolve => {
-      this.approvalResolvers.set(id, resolve);
+      const timer = setTimeout(() => {
+        if (this.approvalResolvers.get(id) === settle) {
+          logger.warn(`[Orchestrator] ${id}: approval request timed out — treating as denied`);
+          this.approvalResolvers.delete(id);
+          resolve(false);
+        }
+      }, APPROVAL_TIMEOUT_MS);
+      const settle = (approved: boolean) => {
+        clearTimeout(timer);
+        resolve(approved);
+      };
+      this.approvalResolvers.set(id, settle);
     });
   }
 
@@ -636,7 +726,14 @@ export class KanbanOrchestrator {
       }
     }
 
-    this.emit(id, 'interrupted');
+    try {
+      kanbanProgress.fire({
+        artifactId: id,
+        agentState: { status: 'interrupted', failure: classifyAgentFailure(`${verdict?.summary ?? ''}\n${reason}`) },
+      });
+    } catch {
+      // emitter may be disposed
+    }
     try {
       vscode.window.showWarningMessage(
         `Autonomous run stopped for ${id}: ${detail}${diagnosticHint}${revertMessage}`

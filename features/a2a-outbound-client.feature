@@ -62,28 +62,28 @@ Feature: A2A Outbound Client
     When I call fetchAgentCard with "https://example.com/agent-card.json"
     Then an A2ANetworkError should be thrown
 
-  @a2a @card @ssrf @wip
+  @a2a @card @ssrf
   Scenario: fetchAgentCard rejects private IP 127.0.0.1 without explicit allow
     Given a fresh A2A outbound client with allowed hosts:
       | host |
     When I call fetchAgentCard with "https://127.0.0.1/agent-card.json"
     Then an A2ANetworkError should be thrown with "Refusing to fetch private"
 
-  @a2a @card @ssrf @wip
+  @a2a @card @ssrf
   Scenario: fetchAgentCard rejects cloud metadata 169.254.169.254
     Given a fresh A2A outbound client with allowed hosts:
       | host |
     When I call fetchAgentCard with "https://169.254.169.254/latest/meta-data"
     Then an A2ANetworkError should be thrown with "Refusing to fetch private"
 
-  @a2a @card @ssrf @wip
+  @a2a @card @ssrf
   Scenario: fetchAgentCard rejects file:// scheme
     Given a fresh A2A outbound client with allowed hosts:
       | host |
     When I call fetchAgentCard with "file:///etc/passwd"
     Then an A2ANetworkError should be thrown with "protocol"
 
-  @a2a @card @ssrf @wip
+  @a2a @card @ssrf
   Scenario: fetchAgentCard rejects malformed URL
     Given a fresh A2A outbound client with allowed hosts:
       | host |
@@ -101,7 +101,7 @@ Feature: A2A Outbound Client
     When I call fetchAgentCard with "https://my-agent.dev/agent-card.json"
     Then the result should be a valid A2A agent card
 
-  @a2a @card @ssrf @wip
+  @a2a @card @ssrf
   Scenario: fetchAgentCard rejects non-allowlisted external host
     Given a fresh A2A outbound client with allowed hosts:
       | host         |
@@ -109,7 +109,7 @@ Feature: A2A Outbound Client
     When I call fetchAgentCard with "https://evil.example.org/agent-card.json"
     Then an A2ANetworkError should be thrown with "not in"
 
-  @a2a @card @size @wip
+  @a2a @card @size
   Scenario: fetchAgentCard rejects response with Content-Length > 1 MB
     Given a mock fetch that returns:
       | status | body                                                                                       | contentLength |

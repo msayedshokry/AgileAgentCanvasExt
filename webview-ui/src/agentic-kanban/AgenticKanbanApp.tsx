@@ -17,6 +17,7 @@ import { VisualPlanSections } from '../visual-plan/VisualPlanSections';
 import type { VisualPlan } from '../visual-plan/types';
 import { ApprovalBanner, type ApprovalRequest } from './ApprovalBanner';
 import { GoalDecomposerModal } from './GoalDecomposerModal';
+import { AgentStatusBar } from './AgentStatusBar';
 import type { TraceBreakdownMessage } from '../types';
 import './Autonomy.css';
 import type { DependencyBadge } from './kanban-helpers';
@@ -353,6 +354,15 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
       }
       case 'terminal:capabilities': {
         setTerminalInteractive(!!message.supportsInput);
+        break;
+      }
+      case 'kanban:focusCard': {
+        // From the "needs you" status bar: open this card's detail panel.
+        if (typeof message.artifactId === 'string') {
+          setView('board');
+          setSelectedIds(new Set([message.artifactId]));
+          setAnchorId(message.artifactId);
+        }
         break;
       }
       case 'agentStateUpdated': {
@@ -984,6 +994,8 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
           </button>
         </div>
       </header>
+
+      <AgentStatusBar />
 
       <AutonomyBar
         schedulerState={schedulerState}

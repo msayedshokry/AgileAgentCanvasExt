@@ -37,6 +37,56 @@ export interface KanbanVerdict {
   summary?: string;
   /** The raw parsed JSON, for tracing/debugging. */
   raw?: unknown;
+  /** Run id the agent echoed back (`run_id`), when the prompt asked for one. */
+  runId?: string;
+}
+
+/** Caps on agent-supplied fix requests (they are persisted into artifact metadata). */
+const MAX_FIX_REQUESTS = 50;
+const MAX_FIX_FIELD_CHARS = 4000;
+
+function clip(value: unknown): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  const text = typeof value === 'string' ? value : JSON.stringify(value);
+  return text.length > MAX_FIX_FIELD_CHARS ? text.slice(0, MAX_FIX_FIELD_CHARS) + '…' : text;
+}
+
+/**
+ * Keep only well-formed fix requests: objects, known fields coerced to
+ * bounded strings, at most MAX_FIX_REQUESTS. Agent output is untrusted.
+ */
+export function sanitizeFixRequests(value: unknown): KanbanFixRequest[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const out: KanbanFixRequest[] = [];
+  for (const item of value) {
+    if (out.length >= MAX_FIX_REQUESTS) break;
+    if (typeof item === 'string') {
+      out.push({ failing_criterion: clip(item) });
+      continue;
+    }
+    if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+    const r = item as Record<string, unknown>;
+    const files = Array.isArray(r.files_involved)
+      ? r.files_involved.filter((x): x is string => typeof x === 'string').slice(0, 50).map((x) => x.slice(0, 500))
+      : undefined;
+    out.push({
+      failing_criterion: clip(r.failing_criterion),
+      reproduction: clip(r.reproduction),
+      minimal_change: clip(r.minimal_change),
+      files_involved: files,
+      reverify_with: clip(r.reverify_with),
+    });
+  }
+  return out;
+}
+
+/**
+ * True unless the verdict carries a run id that differs from `runId`.
+ * A verdict without `run_id` is accepted (agents may omit it); a mismatching
+ * one was written by a different (stale or zombie) run and must be ignored.
+ */
+export function verdictMatchesRun(verdict: KanbanVerdict, runId: string | undefined): boolean {
+  return !runId || !verdict.runId || verdict.runId === runId;
 }
 
 /**
@@ -106,11 +156,7 @@ export function normalizeVerdict(parsed: unknown): KanbanVerdict {
     ? (rawVerdict as KanbanVerdictKind)
     : 'UNKNOWN');
 
-  const fixRequests = Array.isArray(obj.fix_requests)
-    ? (obj.fix_requests as KanbanFixRequest[])
-    : Array.isArray(obj.fixRequests)
-      ? (obj.fixRequests as KanbanFixRequest[])
-      : undefined;
+  const fixRequests = sanitizeFixRequests(obj.fix_requests ?? obj.fixRequests);
 
   const summary = typeof obj.summary === 'string'
     ? obj.summary
@@ -118,7 +164,9 @@ export function normalizeVerdict(parsed: unknown): KanbanVerdict {
       ? obj.detail
       : undefined;
 
-  return { verdict, fixRequests, summary, raw: parsed };
+  const runId = typeof obj.run_id === 'string' ? obj.run_id : typeof obj.runId === 'string' ? obj.runId : undefined;
+
+  return { verdict, fixRequests, summary, raw: parsed, ...(runId ? { runId } : {}) };
 }
 
 /**
@@ -129,9 +177,9 @@ export function normalizeVerdict(parsed: unknown): KanbanVerdict {
  */
 export function extractVerdictFromText(text: string): KanbanVerdict | undefined {
   if (!text) return undefined;
-  // Find candidate JSON objects; prefer the last one mentioning "verdict".
-  const matches = text.match(/\{[\s\S]*?\}/g);
-  if (!matches) return undefined;
+  // Find balanced top-level JSON objects (nested fix_requests included);
+  // prefer the last one mentioning "verdict".
+  const matches = balancedObjects(text);
   for (let i = matches.length - 1; i >= 0; i--) {
     if (!/verdict/i.test(matches[i])) continue;
     try {
@@ -144,4 +192,31 @@ export function extractVerdictFromText(text: string): KanbanVerdict | undefined 
     }
   }
   return undefined;
+}
+
+/** Top-level `{…}` spans with balanced braces, ignoring braces inside JSON strings. */
+function balancedObjects(text: string): string[] {
+  const spans: string[] = [];
+  let depth = 0;
+  let start = -1;
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === '\\') escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"' && depth > 0) inString = true;
+    else if (ch === '{') {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (ch === '}' && depth > 0) {
+      depth--;
+      if (depth === 0) spans.push(text.slice(start, i + 1));
+    }
+  }
+  return spans;
 }

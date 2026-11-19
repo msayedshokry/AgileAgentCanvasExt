@@ -33,6 +33,7 @@ vi.mock('../acp/agent-bus/a2a-outbound-client', () => ({
 const mocks = vi.hoisted(() => ({
   terminal: {
     executeTerminalWorkflow: vi.fn(),
+    launchHarness: vi.fn(),
     getTerminalSession: vi.fn(),
     getTerminalOutput: vi.fn(() => ''),
     jumpToTerminal: vi.fn(() => false),
@@ -79,6 +80,7 @@ describe('LaneTransitionEngine', () => {
     mocks.verdict.current = undefined;
     mocks.verdict.calls = 0;
     mocks.terminal.executeTerminalWorkflow.mockReset();
+    mocks.terminal.launchHarness.mockReset();
     mocks.terminal.getTerminalSession.mockReset();
   });
 
@@ -105,7 +107,7 @@ describe('LaneTransitionEngine', () => {
   // terminal" bug. The watcher must revert UNKNOWN/BLOCKED/NEEDS_FIXES verdicts
   // to the pre-drag column. COMPLETED/APPROVED must NOT trigger a revert.
   it('single-shot terminal path: UNKNOWN verdict reverts card to pre-drag status', async () => {
-    mocks.terminal.executeTerminalWorkflow.mockResolvedValue('session-1');
+    mocks.terminal.launchHarness.mockResolvedValue({ kind: 'cli', sessionId: 'session-1' });
     // Session is "alive" then closes without writing a verdict.
     mocks.terminal.getTerminalSession
       .mockReturnValueOnce({} as any)
@@ -134,7 +136,7 @@ describe('LaneTransitionEngine', () => {
   });
 
   it('single-shot terminal path: COMPLETED verdict does NOT revert the card', async () => {
-    mocks.terminal.executeTerminalWorkflow.mockResolvedValue('session-1');
+    mocks.terminal.launchHarness.mockResolvedValue({ kind: 'cli', sessionId: 'session-1' });
     mocks.terminal.getTerminalSession.mockReturnValue(undefined);
     mocks.verdict.current = { verdict: 'COMPLETED', summary: 'agent done' };
 

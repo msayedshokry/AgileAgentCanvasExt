@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { redactTraceData } from './redact';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { createLogger } from '../utils/logger';
@@ -81,7 +82,8 @@ export class TraceRecorder implements vscode.Disposable {
   }
 
   record(entry: Omit<TraceEntry, 'timestamp'>): void {
-    const fullEntry: TraceEntry = { ...entry, timestamp: new Date().toISOString() };
+    // Redact before buffering: traces live in the workspace for weeks.
+    const fullEntry: TraceEntry = { ...entry, data: redactTraceData(entry.data), timestamp: new Date().toISOString() } as TraceEntry;
 
     // Enforce per-session buffer limit — drop oldest entry if exceeded
     let sessionBuffer = this.buffers.get(entry.sessionId);
@@ -301,6 +303,14 @@ export class TraceRecorder implements vscode.Disposable {
     const cutoffMs = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
     let deleted = 0;
 
+    // Traces never belong in version control.
+    try {
+      await fs.writeFile(path.join(this.outputFolder, '.gitignore'), '*\n', { flag: 'wx' });
+    } catch {
+      // already present
+    }
+
+    const kept: Array<{ filePath: string; size: number; mtimeMs: number }> = [];
     for (const file of files) {
       if (!file.endsWith('.jsonl')) continue;
       try {
@@ -309,9 +319,27 @@ export class TraceRecorder implements vscode.Disposable {
         if (stat.mtimeMs < cutoffMs) {
           await fs.unlink(filePath);
           deleted++;
+        } else {
+          kept.push({ filePath, size: stat.size, mtimeMs: stat.mtimeMs });
         }
       } catch {
         // Skip files that can't be read or deleted
+      }
+    }
+
+    // Size cap on top of age: oldest files go first.
+    const maxBytes = Math.max(0, Number(config.get('trace.maxTotalMB', 200))) * 1024 * 1024;
+    let total = kept.reduce((sum, k) => sum + k.size, 0);
+    if (maxBytes > 0 && total > maxBytes) {
+      for (const k of kept.sort((a, b) => a.mtimeMs - b.mtimeMs)) {
+        if (total <= maxBytes) break;
+        try {
+          await fs.unlink(k.filePath);
+          total -= k.size;
+          deleted++;
+        } catch {
+          // in use — try the next one
+        }
       }
     }
 

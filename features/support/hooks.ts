@@ -52,9 +52,18 @@ AfterAll(function() {
   }
 });
 
+// Lifecycle state the extension persists under the (cwd-relative, because
+// the test workspace has no folders) output folder. Left over from one
+// scenario it is restored by the next, making scenarios order-dependent
+// (e.g. harness findings re-hydrated into the systemicIssue dedup check).
+const PERSISTED_STATE_FILES = ['harness-findings.json', 'scheduler-state.json', 'agent-runs.json', 'agent-run-history.jsonl'];
+
 Before(function(this: BmadWorld) {
   // Reset world state before each scenario
   this.resetMocks();
+  for (const name of PERSISTED_STATE_FILES) {
+    fs.rmSync(path.join(process.cwd(), '.agileagentcanvas-context', name), { force: true });
+  }
 });
 
 After(function(this: BmadWorld, scenario) {

@@ -50,19 +50,10 @@ export type ChatProviderId =
  * The prompt is piped to the CLI via stdin redirect (temp file) so the
  * user sees the prompt as TUI input without needing to type it manually.
  *
- * Canonical headless reference (for kanban, NOT canvas):
- *   - claude     → `claude --permission-mode bypassPermissions --dangerously-skip-permissions -p <prompt>`
- *                  (https://code.claude.com/docs/en/headless)
- *                  ponytail: `acceptEdits` was wrong — it only auto-approves Edit on existing
- *                  files; the kanban verdict file path is fresh each run so the model
- *                  has to Write. Verified via scripts/_demo/check-headless-claude.ts.
- *   - codex      → `codex exec --ask-for-approval never --sandbox workspace-write <prompt>`
- *                  (https://developers.openai.com/codex/cli/reference)
- *   - aider      → `aider --message <prompt>`   (https://aider.chat/docs/scripting: one-shot, exit after reply)
- *   - opencode   → `opencode run <prompt>` (trusting the user's local model config)
- *                  (https://opencode.ai/docs/cli/)
- *   - pi         → `pi --no-session --approve -p <prompt>` (default `--mode text`; JSON mode dropped for readability — verdict loop reads the file, not stdout)
- *   - terminal   → sentinel `echo`; handled in sendToTerminal
+ * Headless (Agentic Kanban) invocations are NOT defined here: each CLI has an
+ * adapter in src/workflow/harness/harness-adapters.ts with flags verified
+ * against the CLI's own help, per permission posture.
+ * The `terminal` provider is a sentinel `echo` handled in sendToTerminal.
  */
 interface ChatCommand {
     /** Public provider id — must match a ChatProviderId (or 'copilot' for fallback) */
@@ -179,29 +170,11 @@ export const CHAT_COMMANDS: Record<ChatProviderId | 'copilot-fallback', ChatComm
         ide: 'codex',
         label: 'Codex (CLI)',
         hint: 'launches `codex` in the terminal',
-        // OpenAI Codex CLI headless invocation:
-        //   exec                  → non-interactive one-shot subcommand (without
-        //                           `exec`, `codex` launches its full TUI).
-        //   --ask-for-approval    → `never` skips manual approval prompts so the
-        //                           agent can run end-to-end without user input.
-        //   --sandbox             → `workspace-write` allows file writes inside the
-        //                           cwd (the verdict file lives under
-        //                           `.agileagentcanvas-context/_terminal-output/`).
-        //                           NOTE: `workspace-write` restricts writes to the
-        //                           workspace root. If a user configures
-        //                           `agileagentcanvas.outputFolder` to an absolute
-        //                           path outside the workspace, codex will reject the
-        //                           verdict-file write. The default output folder
-        //                           (`.agileagentcanvas-context`) is always workspace-
-        //                           relative, so the bound is safe in practice.
-        // Spec: https://developers.openai.com/codex/cli/reference
-        terminalLaunch: (q) => [
-            'codex',
-            'exec',
-            '--ask-for-approval', 'never',
-            '--sandbox', 'workspace-write',
-            q,
-        ],
+        // Interactive canvas launch: `codex <prompt>` opens the Codex TUI with
+        // the prompt pre-submitted so the user approves actions as they come.
+        // (The old `exec --ask-for-approval never` form is rejected by codex
+        // 0.163 and was headless anyway; Kanban runs use harness-adapters.ts.)
+        terminalLaunch: (q) => ['codex', q],
     },
     'aider': {
         ide: 'aider',

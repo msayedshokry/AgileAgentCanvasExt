@@ -57,6 +57,21 @@ const CCR_CAP = 1000;                  // cross-call-remember store cap
 const CCR_CONTENT_PREVIEW_LEN = 200;   // first-N-char content preview stored alongside each CCR entry
 const REQUEST_TIMEOUT_MS = 5000;
 
+/**
+ * The proxy serves local CLI/SDK clients only. Browsers always send an Origin
+ * on cross-site requests, and a DNS-rebinding page reaches us with its own
+ * host name in Host, so both are refused (the proxy keeps recent prompt
+ * previews that a web page must never read).
+ */
+export function localRequestRefusal(headers: http.IncomingHttpHeaders): string | undefined {
+    if (headers.origin) return 'Browser requests are not allowed';
+    const host = String(headers.host ?? '').toLowerCase().replace(/:\d+$/, '').replace(/^\[|\]$/g, '');
+    if (host && host !== '127.0.0.1' && host !== 'localhost' && host !== '::1') {
+        return `Unexpected Host header "${headers.host}"`;
+    }
+    return undefined;
+}
+
 /** Public-facing aggregate stats from the in-process proxy. */
 interface ManagedProxyStats {
     totalCalls: number;
@@ -115,6 +130,11 @@ export function startInProcessProxy(): { dispose(): void } {
     const server = http.createServer((req, res) => {
         // Per-request safety: cap body read time so a slow client can't pin the loop.
         res.setTimeout(REQUEST_TIMEOUT_MS);
+        const refusal = localRequestRefusal(req.headers);
+        if (refusal) {
+            _sendJson(res, 403, { error: { type: 'forbidden', message: refusal } });
+            return;
+        }
         _handleRequest(req, res).catch(err => {
             logger.warn(`In-process proxy request error: ${err?.message ?? err}`);
             if (!res.headersSent) {
