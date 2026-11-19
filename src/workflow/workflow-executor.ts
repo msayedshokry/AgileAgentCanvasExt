@@ -16,6 +16,7 @@ import { orchestrateAntigravityWorkflow, ExecutionHints } from '../antigravity/a
 import { parseFrontmatter } from './frontmatter';
 import { AgentTeamOrchestrator } from '../acp/team-orchestrator';
 import { AcpSessionResult } from '../acp/types';
+import { readProjectContext } from './harness/project-context';
 import { getTraceRecorder } from '../trace/trace-recorder';
 // Audit follow-up to gap #20/#42 (chat-side workflow attribution in trace metadata).
 import { sharedToolContext } from '../chat/agileagentcanvas-tools';
@@ -3770,7 +3771,8 @@ Instructions: Return ONLY a \`\`\`json code block containing the artifact JSON. 
                     ` — it MUST include a top-level "verdict" (one of COMPLETED, APPROVED, NEEDS_FIXES, BLOCKED)` +
                     ` and a "fix_requests" array when the verdict is NEEDS_FIXES —` +
                     ` to EXACTLY this path: ${resultPath}` +
-                    skillSection;
+                    skillSection +
+                    projectContextSection(outputFolder);
 
                 await this.executeWithTools(
                     model,
@@ -3900,4 +3902,17 @@ export function getWorkflowExecutor(): WorkflowExecutor {
         executorInstance = new WorkflowExecutor();
     }
     return executorInstance;
+}
+
+/** Project commands + conventions (project-context.md) for in-chat/LM runs; empty when absent. */
+function projectContextSection(outputFolder: string): string {
+    try {
+        const text = readProjectContext(outputFolder);
+        return text ? `
+
+## Project Context (from the team — follow it)
+${text}` : '';
+    } catch {
+        return '';
+    }
 }

@@ -115,3 +115,26 @@ describe('RunInsights', () => {
     expect(posted).toContainEqual({ type: 'kanban:previewPrompt', artifactId: 'S-1' });
   });
 });
+
+describe('RunInsights — pull request + story ↔ code', () => {
+  it('shows PR checks and sends review feedback back to the agent; lists files per agent commit', () => {
+    render(<RunInsights item={{ ...ITEM, agentState: undefined }} />);
+    deliver({
+      type: 'kanban:runTimeline',
+      artifactId: 'S-1',
+      runs: [],
+      commits: [{ sha: 'abcdef1234567890', subject: 'agent: x completed S-1', date: '2026-11-19T10:00:00Z', files: ['src/login.ts', 'src/login.test.ts'] }],
+      pr: {
+        url: 'https://github.com/o/r/pull/7', number: 7, state: 'OPEN', reviewDecision: 'CHANGES_REQUESTED',
+        checks: [{ name: 'test', state: 'fail' }, { name: 'build', state: 'pass' }],
+        feedback: [{ author: 'alice', body: 'Handle empty password.' }],
+      },
+    });
+    expect(screen.getByText('PR #7')).toBeTruthy();
+    expect(screen.getByText('1 failing: test')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Address 2 review items' }));
+    expect(posted).toContainEqual({ type: 'kanban:addressReview', artifactId: 'S-1' });
+    expect(screen.getByText('2 files')).toBeTruthy();
+    expect(screen.getByText('src/login.ts')).toBeTruthy();
+  });
+});

@@ -45,6 +45,7 @@ import { harnessEngine, type HarnessFindingsEvent } from '../harness/policy-engi
 import { kanbanOrchestrator, type OrchestratorContext } from './kanban-orchestrator';
 import { isKanbanAutoAdvanceEnabled } from './kanban-settings';
 import { RunJournal, type RunRecord } from './harness/run-journal';
+import { createGitCliRunner } from './harness/git-cli';
 import { recoverRuns } from './harness/run-recovery';
 import { readVerdictFile, verdictMatchesRun, type KanbanVerdict } from './kanban-verdict';
 
@@ -377,8 +378,15 @@ export class AutonomyLifecycle extends EventEmitter {
     //     events to the webview. The git runner is injected by extension.ts
     //     via hooks.gitRunner. The KanbanOrchestrator now calls maybeBranch(),
     //     maybeCommit(), and maybePR() during autonomous runs.
-    autonomousGit.setConfig({ autoBranch: true, autoCommit: true, autoPR: false });
-    if (this.hooks.gitRunner) autonomousGit.setRunner(this.hooks.gitRunner);
+    // Branches come from per-card worktrees (harness/card-isolation.ts), never
+    // from `git checkout -b` in the user's own checkout; PRs are opt-in.
+    autonomousGit.setConfig({
+      autoBranch: false,
+      autoCommit: true,
+      autoPR: vscode.workspace.getConfiguration('agileagentcanvas').get<boolean>('agents.openPullRequests', false),
+    });
+    // A real git/gh runner (none was wired before, so auto-commit/PR were no-ops).
+    autonomousGit.setRunner(this.hooks.gitRunner ?? createGitCliRunner(() => vscode.workspace.workspaceFolders?.[0]?.uri.fsPath));
     autonomousGit.setHooks({
       onBranch: (storyId, branchName) => this.broadcast({ type: 'gitBranch', storyId, branchName }),
       onCommit: (storyId, sha) => this.broadcast({ type: 'gitCommit', storyId, sha }),

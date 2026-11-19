@@ -22,6 +22,9 @@ import { classifyAgentFailure, type AgentFixAction } from '../workflow/harness/a
 import { buildTerminalPrompt, terminalExecutor } from '../workflow/terminal-executor';
 import { getOutputFolder, resultFilePath } from '../workflow/kanban-verdict';
 import { laneTransitionEngine } from '../workflow/lane-transitions';
+import { kanbanOrchestrator } from '../workflow/kanban-orchestrator';
+import { execTool } from '../workflow/harness/git-cli';
+import { getCardPullRequest, prFixRequests } from '../workflow/harness/pull-request';
 import { createLogger } from '../utils/logger';
 import { errMsg } from '../utils/error';
 
@@ -216,7 +219,7 @@ async function previewPrompt(artifactId: string, store: ArtifactStore): Promise<
 
 // ── Run timeline + revert ────────────────────────────────────────────────────
 
-interface AgentCommit { sha: string; subject: string; date: string }
+interface AgentCommit { sha: string; subject: string; date: string; files?: string[] }
 
 function gitCommitsFor(artifactId: string, cwd: string): Promise<AgentCommit[]> {
   return new Promise((resolve) => {
@@ -236,7 +239,13 @@ async function postTimeline(artifactId: string, post: Post): Promise<void> {
   const runs = readRunHistory(getOutputFolder(), 500).filter((e) => e.artifactId === artifactId).slice(0, 30)
     .map((e) => ({ ...e, failure: e.verdict === 'COMPLETED' || e.verdict === 'APPROVED' ? undefined : classifyAgentFailure(e.summary) }));
   const commits = cwd ? await gitCommitsFor(artifactId, cwd) : [];
-  post({ type: 'kanban:runTimeline', artifactId, runs, commits });
+  // Story → code: the files each agent commit touched.
+  await Promise.all(commits.slice(0, 10).map(async (c) => {
+    const r = await execTool('git', ['show', '--name-only', '--format=', c.sha], cwd);
+    if (r.code === 0) c.files = r.stdout.split('\n').map((l) => l.trim()).filter(Boolean).slice(0, 50);
+  }));
+  const pr = cwd ? await getCardPullRequest(artifactId, cwd) : undefined;
+  post({ type: 'kanban:runTimeline', artifactId, runs, commits, pr });
 }
 
 async function revertCommit(artifactId: string, sha: string, post: Post): Promise<void> {
@@ -256,11 +265,32 @@ async function revertCommit(artifactId: string, sha: string, post: Post): Promis
   await postTimeline(artifactId, post);
 }
 
+/** Send PR review feedback + failing checks back to the implement agent. */
+async function addressReview(artifactId: string, store: ArtifactStore, post: Post): Promise<void> {
+  const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  const pr = cwd ? await getCardPullRequest(artifactId, cwd) : undefined;
+  if (!pr) {
+    void vscode.window.showWarningMessage(`No pull request found for ${artifactId} (needs GitHub CLI and a PR on its branch).`);
+    return;
+  }
+  const fixes = prFixRequests(pr);
+  if (fixes.length === 0) {
+    void vscode.window.showInformationMessage(`${pr.url} has no review comments or failing checks to address.`);
+    return;
+  }
+  const found = store.findArtifactById(artifactId);
+  if (!found) return;
+  await store.updateArtifact(found.type, artifactId, { metadata: { fixRequests: fixes }, status: 'ready-for-dev' } as ArtifactChanges);
+  void vscode.window.showInformationMessage(`Sending ${fixes.length} review item(s) from ${pr.url} back to the agent.`);
+  const fresh = store.findArtifactById(artifactId)?.artifact ?? found.artifact;
+  void kanbanOrchestrator.runAutonomous(fresh, {}).then(() => postTimeline(artifactId, post));
+}
+
 // ── Router ───────────────────────────────────────────────────────────────────
 
 const HANDLED = new Set([
   'harness:getStatus', 'harness:select', 'harness:setPosture', 'harness:signIn', 'harness:install', 'harness:smoke', 'harness:pick',
-  'kanban:fixAction', 'kanban:previewPrompt', 'kanban:getRunTimeline', 'kanban:revertRun', 'kanban:showOutput',
+  'kanban:fixAction', 'kanban:previewPrompt', 'kanban:getRunTimeline', 'kanban:revertRun', 'kanban:showOutput', 'kanban:addressReview',
 ]);
 
 /** Returns true when the message was one of ours. */
@@ -317,6 +347,9 @@ export async function handleAgentUxMessage(
         break;
       case 'kanban:getRunTimeline':
         if (artifactId) await postTimeline(artifactId, post);
+        break;
+      case 'kanban:addressReview':
+        if (artifactId) await addressReview(artifactId, store, post);
         break;
       case 'kanban:revertRun':
         if (artifactId && typeof message.sha === 'string') await revertCommit(artifactId, message.sha, post);

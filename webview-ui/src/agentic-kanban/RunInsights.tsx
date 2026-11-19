@@ -19,7 +19,49 @@ interface TimelineRun {
   failure?: AgentFailureInfo;
 }
 
-interface AgentCommit { sha: string; subject: string; date: string }
+interface AgentCommit { sha: string; subject: string; date: string; files?: string[] }
+
+interface CardPullRequest {
+  url: string;
+  number: number;
+  state: string;
+  reviewDecision: string;
+  checks: Array<{ name: string; state: 'pass' | 'fail' | 'pending' }>;
+  feedback: Array<{ author: string; body: string }>;
+}
+
+function PullRequestPanel({ artifactId, pr }: { artifactId: string; pr: CardPullRequest }) {
+  const failing = pr.checks.filter((c) => c.state === 'fail');
+  const pending = pr.checks.filter((c) => c.state === 'pending');
+  const actionable = pr.feedback.length + failing.length;
+  return (
+    <section className="agent-pr" aria-label="Pull request">
+      <div className="agent-pr-head">
+        <a href={pr.url} className="agent-pr-link">PR #{pr.number}</a>
+        <span className={`agent-pill agent-pill--pr-${pr.state.toLowerCase()}`}>{pr.state.toLowerCase()}</span>
+        {pr.reviewDecision && <span className="agent-muted">{pr.reviewDecision.replace(/_/g, ' ').toLowerCase()}</span>}
+      </div>
+      {pr.checks.length > 0 && (
+        <p className="agent-pr-checks">
+          {failing.length > 0
+            ? <span className="agent-pr-fail">{failing.length} failing: {failing.map((c) => c.name).join(', ')}</span>
+            : pending.length > 0
+              ? <span className="agent-muted">{pending.length} check{pending.length === 1 ? '' : 's'} running</span>
+              : <span className="agent-pr-pass">All {pr.checks.length} checks pass</span>}
+        </p>
+      )}
+      {pr.state === 'OPEN' && actionable > 0 && (
+        <button
+          className="agent-btn agent-btn--primary"
+          onClick={() => vscode.postMessage({ type: 'kanban:addressReview', artifactId })}
+          title="Send review comments and failing checks back to the agent"
+        >
+          Address {actionable} review item{actionable === 1 ? '' : 's'}
+        </button>
+      )}
+    </section>
+  );
+}
 
 const WORKFLOW_LABEL: Record<string, string> = {
   'aac-kanban-dev-executor': 'Implement',
@@ -55,6 +97,7 @@ export function FixItPanel({ artifactId, failure }: { artifactId: string; failur
 export function RunInsights({ item }: { item: KanbanItem }) {
   const [runs, setRuns] = useState<TimelineRun[] | null>(null);
   const [commits, setCommits] = useState<AgentCommit[]>([]);
+  const [pr, setPr] = useState<CardPullRequest | undefined>();
 
   useEffect(() => {
     setRuns(null);
@@ -63,6 +106,7 @@ export function RunInsights({ item }: { item: KanbanItem }) {
       if (msg?.type === 'kanban:runTimeline' && msg.artifactId === item.id) {
         setRuns(msg.runs ?? []);
         setCommits(msg.commits ?? []);
+        setPr(msg.pr ?? undefined);
       }
     };
     window.addEventListener('message', onMessage);
@@ -89,6 +133,8 @@ export function RunInsights({ item }: { item: KanbanItem }) {
           Last output
         </button>
       </div>
+
+      {pr && <PullRequestPanel artifactId={item.id} pr={pr} />}
 
       <section className="agent-timeline" aria-label="Agent runs for this card">
         <h4 className="agent-timeline-heading">Runs</h4>
@@ -120,6 +166,12 @@ export function RunInsights({ item }: { item: KanbanItem }) {
                   <code>{c.sha.slice(0, 8)}</code>
                   <span className="agent-commit-subject">{c.subject}</span>
                   <span className="agent-muted">{new Date(c.date).toLocaleString()}</span>
+                  {c.files && c.files.length > 0 && (
+                    <details className="agent-commit-files">
+                      <summary>{c.files.length} file{c.files.length === 1 ? '' : 's'}</summary>
+                      <ul>{c.files.map((file) => <li key={file}><code>{file}</code></li>)}</ul>
+                    </details>
+                  )}
                   <button
                     className="agent-btn agent-btn--danger"
                     onClick={() => vscode.postMessage({ type: 'kanban:revertRun', artifactId: item.id, sha: c.sha })}

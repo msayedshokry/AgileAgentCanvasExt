@@ -31,6 +31,9 @@ import { autonomousGit } from './autonomous-git';
 import { TerminalExecutor } from './terminal-executor';
 import { runViaLanguageModel } from './harness/headless-lm-run';
 import { classifyAgentFailure, type AgentFailure } from './harness/agent-failure';
+import { finishApprovedCard, prepareCardWorkspace, verifyCard } from './harness/card-isolation';
+import { verifyFixRequest } from './harness/verify-gate';
+import type { CardWorktree } from './harness/card-worktree';
 import { agentHealthMonitor } from './agent-health-monitor';
 import {
   ChatProgressTracker,
@@ -125,6 +128,8 @@ export class KanbanOrchestrator {
   private abortControllers = new Map<string, AbortController>();
   /** Column each active run started from (where a lost run returns the card). */
   private runStartStatus = new Map<string, string>();
+  /** Card worktree each active run works in (absent = the workspace itself). */
+  private runWorktree = new Map<string, CardWorktree>();
 
   /**
    * Language-model fallback for machines with no CLI harness: runs the step
@@ -268,9 +273,14 @@ export class KanbanOrchestrator {
         return await this.stop(id, `Budget exceeded: ${status.bannerMessage ?? 'cap hit'}`);
       }
 
-      // ── Auto-git: create a branch before dev work ───────────────────────
-      const cwd = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath ?? process.cwd();
-      await autonomousGit.maybeBranch(id, cwd);
+      // ── Isolation: each card works in its own git worktree + branch, so
+      //    parallel cards never share files and the user's checkout is never
+      //    switched. Falls back to the workspace (legacy auto-branch) without git.
+      const workspaceCwd = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath ?? process.cwd();
+      const worktree = await prepareCardWorkspace(id);
+      if (worktree) this.runWorktree.set(id, worktree);
+      else await autonomousGit.maybeBranch(id, workspaceCwd);
+      const cwd = worktree?.path ?? workspaceCwd;
 
       for (let iter = 1; iter <= maxIter; iter++) {
         // #26: Check abort signal before each iteration.
@@ -305,6 +315,21 @@ export class KanbanOrchestrator {
           return await this.stop(id, `Dev gate returned ${dev.verdict}`, dev);
         }
 
+        // ── Verify gate: the project's own tests, not the agent's word ──
+        const verify = await verifyCard(cwd, ac.signal);
+        if (ac.signal.aborted) {
+          return await this.stop(id, 'Aborted by user');
+        }
+        if (verify && !verify.passed) {
+          logger.info(`[Orchestrator] ${id} verification failed (${verify.command}) → re-implement`);
+          await this.attachFixRequests(type, id, [verifyFixRequest(verify)]);
+          if (iter === maxIter) {
+            return await this.stop(id, `Tests still failing after ${maxIter} attempt(s): ${verify.command}`,
+              { verdict: 'BLOCKED', summary: verify.tail.slice(-1500) });
+          }
+          continue;
+        }
+
         // ── Auto-git: commit after successful dev ────────────────────
         await autonomousGit.maybeCommit(id, DEV_WORKFLOW, cwd);
 
@@ -325,6 +350,16 @@ export class KanbanOrchestrator {
         }
 
         if (review.verdict === 'APPROVED') {
+          // Bring the card's branch home: merge, or push + PR when configured.
+          const wt = this.runWorktree.get(id);
+          if (wt) {
+            const finished = await finishApprovedCard(wt, (artifact?.title as string) || id);
+            if (!finished.ok) {
+              return await this.stop(id, finished.message);
+            }
+            logger.info(`[Orchestrator] ${id}: ${finished.message}`);
+            this.runWorktree.delete(id);
+          }
           await this.setStatus(type, id, 'done');
           this.emit(id, 'completed', 'Reviewer', REVIEW_WORKFLOW);
           logger.info(`[Orchestrator] ${id} APPROVED → done (iteration ${iter})`);
@@ -333,7 +368,7 @@ export class KanbanOrchestrator {
           //     checks config.autoPR and returns null if disabled).
           const title = (artifact?.title as string) || id;
           const body = `Autonomous run completed: ${DEV_WORKFLOW} → ${REVIEW_WORKFLOW} (${iter} iteration(s))`;
-          await autonomousGit.maybePR(id, title, body, cwd);
+          if (!wt) await autonomousGit.maybePR(id, title, body, cwd);
 
           return { ok: true, workflowLaunched: true, status: 'complete' };
         }
@@ -359,6 +394,7 @@ export class KanbanOrchestrator {
       // #26: Clean up the abort controller.
       this.abortControllers.delete(id);
       this.runStartStatus.delete(id);
+      this.runWorktree.delete(id);
       // Audit gap #50 — clean up any outstanding pause resolver so a future
       // runAutonomous() for the same artifactId doesn't inherit stale state.
       this.pausedResolvers.delete(id);
@@ -480,7 +516,7 @@ export class KanbanOrchestrator {
       } else {
         // ── Terminal path (headless CLI) ──────────────────────────────────
         const verdict = await this.terminalExecutor.executeAndAwaitVerdict(
-          workflowId, artifact, this.store, { lmRunner: this.lmRunnerFor(workflowId, artifact, id), signal: this.abortControllers.get(id)?.signal, revertStatusOnInterrupt: this.runStartStatus.get(id) },
+          workflowId, artifact, this.store, { lmRunner: this.lmRunnerFor(workflowId, artifact, id), signal: this.abortControllers.get(id)?.signal, revertStatusOnInterrupt: this.runStartStatus.get(id), cwd: this.runWorktree.get(id)?.path },
         );
         captured = verdict;
       }
@@ -524,7 +560,7 @@ export class KanbanOrchestrator {
             }
           } else {
             captured = await this.terminalExecutor.executeAndAwaitVerdict(
-              workflowId, artifact, this.store, { lmRunner: this.lmRunnerFor(workflowId, artifact, id), signal: this.abortControllers.get(id)?.signal, revertStatusOnInterrupt: this.runStartStatus.get(id) },
+              workflowId, artifact, this.store, { lmRunner: this.lmRunnerFor(workflowId, artifact, id), signal: this.abortControllers.get(id)?.signal, revertStatusOnInterrupt: this.runStartStatus.get(id), cwd: this.runWorktree.get(id)?.path },
             );
           }
           if (captured && (captured.verdict === 'COMPLETED' || captured.verdict === 'APPROVED')) {

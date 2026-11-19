@@ -43,6 +43,19 @@ import { PONYTAIL_HEURISTICS } from '../chat/ponytail-heuristics';
 import { budgetEnforcer } from './budget-enforcer';
 import { costTracker } from '../chat/cost-tracker';
 import { readCliUsage } from './harness/cli-usage';
+import { ensureProjectContext, readProjectContext } from './harness/project-context';
+
+/** Create project-context.md on first use and return its text (never throws). */
+function loadProjectContext(outputFolder: string): string | undefined {
+  try {
+    const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (root) ensureProjectContext(root, outputFolder);
+    return readProjectContext(outputFolder) || undefined;
+  } catch (err) {
+    logger.debug(`[TerminalExecutor] project context unavailable: ${errMsg(err)}`);
+    return undefined;
+  }
+}
 
 const execAsync = promisify(cp.exec);
 
@@ -191,6 +204,23 @@ export interface HarnessRunOptions {
   resolution?: HarnessResolution;
   /** Column to return the card to if this run is lost to a reload or crash. */
   revertStatusOnInterrupt?: string;
+  /** Working copy the agent runs in (the card's git worktree); defaults to the workspace. */
+  cwd?: string;
+}
+
+/** Output folder for a run: inside the card's worktree when it has one, so sandboxed agents may write there. */
+export function runOutputFolder(cwd?: string): string {
+  const configured = vscode.workspace.getConfiguration('agileagentcanvas').get<string>('outputFolder', '.agileagentcanvas-context') ?? '.agileagentcanvas-context';
+  return !cwd || path.isAbsolute(configured) ? getOutputFolder() : path.join(cwd, configured);
+}
+
+/** Prefix a pty command line with a change of directory (VS Code terminals take cwd directly). */
+function withCwd(cmdLine: string, cwd: string | undefined, kind: ShellKind): string {
+  if (!cwd) return cmdLine;
+  const dir = cwd.replace(/\\/g, '/');
+  if (kind === 'powershell') return `Set-Location -LiteralPath '${dir.replace(/'/g, "''")}'; ${cmdLine}`;
+  if (kind === 'cmd') return `cd /d "${dir}" && ${cmdLine}`;
+  return `cd '${dir.replace(/'/g, "'\\''")}' && ${cmdLine}`;
 }
 
 /** Launch outcome for a single harness run. */
@@ -219,6 +249,7 @@ export function buildTerminalPrompt(
   outputFolder: string,
   skillContent?: string,
   runId?: string,
+  projectContext?: string,
 ): string {
   const artifactType = artifact?.type || 'unknown';
   const artifactId = artifact?.id || 'unknown';
@@ -229,6 +260,11 @@ export function buildTerminalPrompt(
   // agent enforces the gates instead of having to discover the file itself.
   const skillSection = skillContent
     ? `## Workflow Definition (authoritative — follow exactly)\n\`\`\`markdown\n${skillContent}\n\`\`\`\n\n`
+    : '';
+  // Project commands + convention files (project-context.md), so the agent
+  // uses the repo's own test/build commands instead of guessing.
+  const contextSection = projectContext
+    ? `## Project Context (from the team — follow it)\n${projectContext}\n\n`
     : '';
 
   // ponytail: the verdict contract is the FIRST instruction the model sees,
@@ -263,7 +299,7 @@ You are executing a BMAD methodology workflow as a headless terminal agent.
 - **Artifact Type:** ${artifactType}
 - **Artifact ID:** ${artifactId}
 
-${skillSection}## Artifact Context
+${skillSection}${contextSection}## Artifact Context
 \`\`\`json
 ${artifactJson}
 \`\`\`
@@ -414,10 +450,11 @@ export class TerminalExecutor implements vscode.Disposable {
     const provider: HarnessId = adapter.id;
     const agentRole = inferRoleFromWorkflow(workflowId);
     const sessionId = `term-${workflowId}-${artifactId}-${Date.now()}`;
-    const outputFolder = getOutputFolder();
+    const outputFolder = runOutputFolder(options?.cwd);
     const resultPath = resultFilePath(outputFolder, artifactId, workflowId);
 
-    const prompt = buildTerminalPrompt(workflowId, artifact, outputFolder, options?.skillContent, sessionId);
+    const projectContext = loadProjectContext(outputFolder);
+    const prompt = buildTerminalPrompt(workflowId, artifact, outputFolder, options?.skillContent, sessionId, projectContext);
     let promptFile: string;
     try {
       fs.mkdirSync(path.dirname(resultPath), { recursive: true });
@@ -487,7 +524,7 @@ export class TerminalExecutor implements vscode.Disposable {
 
       // Write the CLI command to the shell via pty
       try {
-        ptyBackend.write(artifactId, cmdLine + '\n');
+        ptyBackend.write(artifactId, withCwd(cmdLine, options?.cwd, shellKind) + '\n');
       } catch (err) {
         logger.error(`[TerminalExecutor] Failed to write command to pty: ${errMsg(err)}`);
       }
@@ -544,6 +581,7 @@ export class TerminalExecutor implements vscode.Disposable {
       name: termName,
       message: `${agentRole} executing ${workflowId} on ${artifactId}`,
       location: vscode.TerminalLocation.Panel,
+      ...(options?.cwd ? { cwd: options.cwd } : {}),
     };
 
     const terminal = vscode.window.createTerminal(termOptions);
@@ -738,7 +776,7 @@ export class TerminalExecutor implements vscode.Disposable {
       return { verdict: 'UNKNOWN', summary: 'No artifact id' };
     }
 
-    const outputFolder = getOutputFolder();
+    const outputFolder = runOutputFolder(options?.cwd);
     const resultPath = resultFilePath(outputFolder, artifactId, workflowId);
 
     // Remove any stale result so we only react to THIS run's output.
@@ -752,13 +790,14 @@ export class TerminalExecutor implements vscode.Disposable {
     // verdict-poll loop can synthesize a verdict from a real file diff if the
     // agent does the work but never writes the verdict JSON. Ground truth —
     // independent of model cooperation with the verdict-write contract.
-    const baselineSnapshot = captureWorkspaceSnapshot();
+    const baselineSnapshot = captureWorkspaceSnapshot(options?.cwd);
 
     const launch = await this.launchHarness(workflowId, artifact, store, {
       skillContent: options?.skillContent,
       lmRunner: options?.lmRunner,
       resolution: options?.resolution,
       revertStatusOnInterrupt: options?.revertStatusOnInterrupt,
+      cwd: options?.cwd,
     });
     const startedAtMs = Date.now();
     const history = (runId: string, harness: string, v: KanbanVerdict) =>

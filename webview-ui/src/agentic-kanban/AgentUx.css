@@ -297,6 +297,29 @@
   white-space: nowrap;
 }
 
+/* ── Pull request + story ↔ code ─────────────────────────────────────────── */
+
+.agent-pr {
+  border: 1px solid var(--agent-border);
+  border-radius: var(--agent-radius);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+.agent-pr-head { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.agent-pr-link { font-weight: 600; color: var(--vscode-textLink-foreground); }
+.agent-pr-checks { margin: 0; font-size: 12px; }
+.agent-pr-fail { color: var(--agent-error); }
+.agent-pr-pass { color: var(--agent-ok); }
+.agent-pill--pr-open { color: var(--agent-ok); }
+.agent-pill--pr-merged { color: var(--vscode-charts-purple, var(--agent-ok)); }
+.agent-pill--pr-closed { color: var(--agent-muted); }
+.agent-commit { flex-wrap: wrap; }
+.agent-commit-files { flex-basis: 100%; font-size: 11px; color: var(--agent-muted); }
+.agent-commit-files ul { margin: 4px 0 0; padding-left: 16px; }
+
 @media (prefers-reduced-motion: reduce) {
   .agent-btn { transition: none; }
 }
