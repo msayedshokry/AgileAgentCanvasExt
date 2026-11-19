@@ -25,6 +25,7 @@ import { agentRunBlockReason, resolveBoardHarness, resolveEffectivePosture } fro
 import { buildCommandLine, detectShellKind, type ShellKind } from './harness/shell-command';
 import { stagePromptFile, disposePromptFile as disposeStagedPrompt } from './harness/prompt-staging';
 import { RunJournal } from './harness/run-journal';
+import { appendRunHistory, type RunHistoryEntry } from './harness/run-history';
 import {
   sanitizeId as sanitizeResultId,
   resultFilePath,
@@ -686,6 +687,15 @@ export class TerminalExecutor implements vscode.Disposable {
     return { kind: 'cli', sessionId };
   }
 
+  /** Append to the user-visible run history (Show Agent Run History). Never throws. */
+  private recordHistory(entry: RunHistoryEntry): void {
+    try {
+      appendRunHistory(getOutputFolder(), entry);
+    } catch (err) {
+      logger.warn(`[TerminalExecutor] Could not record run history: ${errMsg(err)}`);
+    }
+  }
+
   /** Record the run so a reload mid-run can be resolved (see harness/run-recovery.ts). */
   private journalRun(r: { sessionId: string; artifactId: string; artifactType: string; workflowId: string; harness: string; terminalName: string; resultPath: string; revertTo?: string }): void {
     try {
@@ -748,9 +758,20 @@ export class TerminalExecutor implements vscode.Disposable {
       resolution: options?.resolution,
       revertStatusOnInterrupt: options?.revertStatusOnInterrupt,
     });
-    if (launch.kind === 'blocked') return launch.verdict;
-    if (launch.kind === 'lm') return launch.verdict;
+    const startedAtMs = Date.now();
+    const history = (runId: string, harness: string, v: KanbanVerdict) =>
+      this.recordHistory({ runId, artifactId, workflowId, harness, verdict: v.verdict, summary: v.summary, startedAt: startedAtMs, finishedAt: Date.now() });
+    if (launch.kind === 'blocked') {
+      history(`blocked-${startedAtMs}`, 'none', launch.verdict);
+      return launch.verdict;
+    }
+    if (launch.kind === 'lm') {
+      const v = await launch.verdict;
+      history(`lm-${workflowId}-${artifactId}-${startedAtMs}`, 'vscode-lm', v);
+      return v;
+    }
     const sessionId = launch.sessionId;
+    const harnessId = this.activeTerminals.get(artifactId)?.provider ?? 'unknown';
     if (options?.signal?.aborted) {
       await this.killTerminal(artifactId);
       return { verdict: 'UNKNOWN', summary: 'Run aborted' };
@@ -780,6 +801,7 @@ export class TerminalExecutor implements vscode.Disposable {
         // CLI spend. Uses the captured prompt length (safe even if the
         // session was cleaned up).
         this.recordTerminalCost(artifactId, sessionId, v, capturedPromptLength);
+        history(sessionId, harnessId, v);
         resolve(v);
       };
       // Abort (Stop / Stop All Agents): kill the agent first so it cannot

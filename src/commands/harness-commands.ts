@@ -25,6 +25,7 @@ import { terminalExecutor } from '../workflow/terminal-executor';
 import { buildCommandLine, detectShellKind } from '../workflow/harness/shell-command';
 import { stagePromptFile, disposePromptFile } from '../workflow/harness/prompt-staging';
 import { getOutputFolder, readVerdictFile } from '../workflow/kanban-verdict';
+import { readRunHistory, type RunHistoryEntry } from '../workflow/harness/run-history';
 import { createLogger } from '../utils/logger';
 import { errMsg } from '../utils/error';
 
@@ -181,6 +182,52 @@ export async function stopAllAgents(): Promise<{ aborted: number; killed: number
   return { aborted, killed };
 }
 
+const VERDICT_ICON: Record<string, string> = {
+  COMPLETED: '$(pass)', APPROVED: '$(pass-filled)', NEEDS_FIXES: '$(tools)', BLOCKED: '$(error)', UNKNOWN: '$(question)',
+};
+
+function describeRun(e: RunHistoryEntry): string {
+  const secs = Math.max(0, Math.round((e.finishedAt - e.startedAt) / 1000));
+  return [
+    `# ${e.artifactId} · ${e.workflowId}`,
+    '',
+    `| | |`,
+    `|---|---|`,
+    `| Verdict | **${e.verdict}** |`,
+    `| Harness | ${e.harness} |`,
+    `| Started | ${new Date(e.startedAt).toLocaleString()} |`,
+    `| Duration | ${secs}s |`,
+    `| Run id | \`${e.runId}\` |`,
+    '',
+    '## Summary',
+    '',
+    '```',
+    e.summary ?? '(none)',
+    '```',
+  ].join('\n');
+}
+
+/** Recent board runs, newest first; picking one opens its details. */
+async function showRunHistory(): Promise<void> {
+  const entries = readRunHistory(getOutputFolder(), 200);
+  if (entries.length === 0) {
+    void vscode.window.showInformationMessage('No agent runs recorded yet in this workspace.');
+    return;
+  }
+  const pick = await vscode.window.showQuickPick(
+    entries.map((e) => ({
+      label: `${VERDICT_ICON[e.verdict] ?? '$(circle)'} ${e.artifactId} · ${e.workflowId}`,
+      description: `${e.verdict} · ${e.harness} · ${new Date(e.finishedAt).toLocaleString()}`,
+      detail: e.summary?.split('\n')[0],
+      entry: e,
+    })),
+    { title: 'Agent run history', matchOnDescription: true, matchOnDetail: true },
+  );
+  if (!pick) return;
+  const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content: describeRun(pick.entry) });
+  await vscode.window.showTextDocument(doc, { preview: true });
+}
+
 function applyBudgetSettings(): void {
   budgetEnforcer.setConfig(readBudgetSettings());
 }
@@ -190,6 +237,7 @@ export function registerHarnessCommands(context: vscode.ExtensionContext): void 
   applyBudgetSettings();
   context.subscriptions.push(
     vscode.commands.registerCommand('agileagentcanvas.checkHarnesses', () => checkHarnesses()),
+    vscode.commands.registerCommand('agileagentcanvas.showRunHistory', () => showRunHistory()),
     vscode.commands.registerCommand('agileagentcanvas.stopAllAgents', async () => {
       const { aborted, killed } = await stopAllAgents();
       void vscode.window.showInformationMessage(

@@ -21,6 +21,7 @@ import { initializeTraceRecorder, getTraceRecorder } from './trace/trace-recorde
 import { registerTraceCommands } from './commands/trace-commands';
 import { registerA2ACommands } from './commands/a2a-commands';
 import { registerHarnessCommands } from './commands/harness-commands';
+import { initApiKeyStore } from './chat/api-key-store';
 import { sweepStalePromptFiles } from './workflow/harness/prompt-staging';
 import { harnessEngine } from './harness/policy-engine';
 import { loadUserPolicies } from './harness/policy-loader';
@@ -224,6 +225,7 @@ export function activate(context: vscode.ExtensionContext) {
     registerTraceCommands(context);
     registerA2ACommands(context);
     registerHarnessCommands(context);
+    void initApiKeyStore(context);
     try {
         const swept = sweepStalePromptFiles(tracesOutputPath);
         if (swept > 0) logger.info(`Removed ${swept} stale staged prompt file(s)`);

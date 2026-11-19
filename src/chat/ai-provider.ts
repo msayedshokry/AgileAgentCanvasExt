@@ -7,6 +7,7 @@ import { sendSimplePrompt } from '../antigravity/antigravity-orchestrator';
 import { schemaValidator } from '../state/schema-validator';
 import { compressMessages } from '../integrations/headroom';
 import { costTracker, estimateTokens, TokenUsage } from './cost-tracker';
+import { getApiKey } from './api-key-store';
 
 /**
  * Unified AI provider abstraction for AgileAgentCanvas.
@@ -193,7 +194,7 @@ async function tryVsCodeLm(): Promise<vscode.LanguageModelChat | null> {
 export async function selectModel(): Promise<BmadModel | null> {
     const cfg = getConfig();
     const provider = cfg.get<ProviderType>('aiProvider', 'auto');
-    const apiKey = cfg.get<string>('apiKey', '');
+    const apiKey = getApiKey();
 
     // ── Explicit provider requested ──────────────────────────────────────────
     if (provider === 'antigravity') {
@@ -531,7 +532,7 @@ async function streamOpenAI(
     opts: ProviderStructuredOptions
 ): Promise<{ text: string; usage?: { inputTokens?: number; outputTokens?: number } }> {
     const cfg = getConfig();
-    const apiKey = cfg.get<string>('apiKey', '');
+    const apiKey = getApiKey();
     const modelId = cfg.get<string>('modelId', '') || 'gpt-4o';
     const baseUrl = cfg.get<string>('baseUrl', '') || 'https://api.openai.com';
 
@@ -609,7 +610,7 @@ async function streamAnthropic(
     opts: ProviderStructuredOptions
 ): Promise<{ text: string; usage?: { inputTokens?: number; outputTokens?: number; cacheReadTokens?: number } }> {
     const cfg = getConfig();
-    const apiKey = cfg.get<string>('apiKey', '');
+    const apiKey = getApiKey();
     const modelId = cfg.get<string>('modelId', '') || 'claude-sonnet-4-5';
 
     // Separate system messages from conversation
@@ -703,7 +704,7 @@ async function streamGemini(
     opts: ProviderStructuredOptions
 ): Promise<{ text: string; usage?: { inputTokens?: number; outputTokens?: number; cacheReadTokens?: number } }> {
     const cfg = getConfig();
-    const apiKey = cfg.get<string>('apiKey', '');
+    const apiKey = getApiKey();
     const modelId = cfg.get<string>('modelId', '') || 'gemini-2.0-flash';
 
     // Convert to Gemini format: merge system into first user turn
@@ -718,7 +719,8 @@ async function streamGemini(
         return { role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text }] };
     });
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?alt=sse&key=${apiKey}`;
+    // Key in a header, not the URL: URLs end up in proxy logs and error messages.
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelId)}:streamGenerateContent?alt=sse`;
     const body: Record<string, unknown> = {
         contents,
         generationConfig: {
@@ -740,7 +742,7 @@ async function streamGemini(
     // `thoughtsTokenCount` (reasoning budget) is billed as OUTPUT — add to outputTokens.
     let apiUsage: { inputTokens?: number; outputTokens?: number; cacheReadTokens?: number } | undefined;
     try {
-        const result = await httpsPostStream(url, {}, JSON.stringify(body),
+        const result = await httpsPostStream(url, { 'x-goog-api-key': apiKey }, JSON.stringify(body),
             text => { if (!token.isCancellationRequested) { stream.markdown(text); full += text; } },
             line => {
                 if (!line.startsWith('data: ')) return null;
@@ -934,7 +936,7 @@ async function sendToOmp(
 export function getNoModelMessage(): string {
     const cfg = getConfig();
     const provider = cfg.get<ProviderType>('aiProvider', 'auto');
-    const apiKey = cfg.get<string>('apiKey', '');
+    const apiKey = getApiKey();
     if (provider === 'auto' && !apiKey) {
         return `**AI not available**
 
@@ -943,7 +945,7 @@ No AI provider was found. Configure one in settings (**Ctrl+,** → search "Agil
 | Setting | Value |
 |---|---|
 | \`agileagentcanvas.aiProvider\` | \`openai\`, \`anthropic\`, \`gemini\`, \`ollama\`, \`antigravity\`, or \`omp\` |
-| \`agileagentcanvas.apiKey\` | Your API key (not needed for Ollama/Antigravity/OMP) |
+| **Set AI API Key** command | Your API key, kept in secure storage (not needed for Ollama/Antigravity/OMP) |
 | \`agileagentcanvas.modelId\` | Optional — defaults to the provider's recommended model |
 | \`agileagentcanvas.baseUrl\` | Optional — only needed for Ollama or a custom endpoint |
 
@@ -960,10 +962,10 @@ Or install **GitHub Copilot** to use it automatically via the VS Code LM API.`;
     }
 
     if (!apiKey) {
-        return `**API key missing**\n\nSet \`agileagentcanvas.apiKey\` in settings for the \`${provider}\` provider.`;
+        return `**API key missing**\n\nRun **Agile Agent Canvas: Set AI API Key** to store a key for the \`${provider}\` provider (kept in your OS keychain).`;
     }
 
-    return `**AI provider error**\n\nCould not connect to \`${provider}\`. Check your \`agileagentcanvas.apiKey\` and \`agileagentcanvas.modelId\` settings.`;
+    return `**AI provider error**\n\nCould not connect to \`${provider}\`. Check your API key (**Set AI API Key** command) and the \`agileagentcanvas.modelId\` setting.`;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

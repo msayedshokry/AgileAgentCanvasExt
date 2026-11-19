@@ -59,7 +59,8 @@
         "agileagentcanvas.apiKey",
         "agileagentcanvas.aiProvider",
         "agileagentcanvas.budget.perStoryUsd",
-        "agileagentcanvas.budget.dailyUsd"
+        "agileagentcanvas.budget.dailyUsd",
+        "agileagentcanvas.a2a.allowedHosts"
       ]
     },
     "virtualWorkspaces": {
@@ -797,9 +798,19 @@
     ],
     "commands": [
       {
+        "command": "agileagentcanvas.setApiKey",
+        "title": "Agile Agent Canvas: Set AI API Key",
+        "icon": "$(key)"
+      },
+      {
         "command": "agileagentcanvas.checkHarnesses",
         "title": "Agile Agent Canvas: Check Agent Harnesses",
         "icon": "$(pulse)"
+      },
+      {
+        "command": "agileagentcanvas.showRunHistory",
+        "title": "Agile Agent Canvas: Show Agent Run History",
+        "icon": "$(history)"
       },
       {
         "command": "agileagentcanvas.stopAllAgents",
@@ -1162,7 +1173,8 @@
           "agileagentcanvas.apiKey": {
             "type": "string",
             "default": "",
-            "description": "API key for the selected AI provider (OpenAI, Anthropic, or Gemini). Leave empty when using Copilot, Ollama, Antigravity, or OMP."
+            "markdownDescription": "Deprecated: run **Agile Agent Canvas: Set AI API Key** instead. A key entered here is moved into VS Code secure storage (your OS keychain) on startup and removed from settings.",
+            "markdownDeprecationMessage": "Use the **Agile Agent Canvas: Set AI API Key** command; keys are kept in secure storage, not settings."
           },
           "agileagentcanvas.modelId": {
             "type": "string",
@@ -1391,6 +1403,12 @@
             "default": true,
             "description": "Enable execution tracing. When enabled, all agent tool calls and decisions are recorded to trace session files."
           },
+          "agileagentcanvas.trace.maxTotalMB": {
+            "type": "number",
+            "default": 200,
+            "minimum": 0,
+            "markdownDescription": "Upper bound on the total size of trace files. The oldest traces are deleted first once it is exceeded. `0` disables the size cap (age-based cleanup still applies)."
+          },
           "agileagentcanvas.trace.retentionDays": {
             "type": "number",
             "default": 30,
@@ -1466,6 +1484,14 @@
             "type": "boolean",
             "default": false,
             "markdownDescription": "When an agent exits without writing its verdict file but changed files, treat the step as COMPLETED. Off by default: concurrent agents or your own edits can make a failed run look successful. When off, the card stops and shows the agent's last output."
+          },
+          "agileagentcanvas.a2a.allowedHosts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "markdownDescription": "Hosts that A2A remote-agent calls may reach (e.g. `agents.example.com`, `*.example.com`). Empty allows any public host. Private, loopback and cloud-metadata addresses are always refused unless their host is listed here."
           },
           "agileagentcanvas.budget.perStoryUsd": {
             "type": "number",
