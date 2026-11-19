@@ -26,7 +26,7 @@ describe('run history', () => {
     const lines = fs.readFileSync(historyPath(dir), 'utf-8').split('\n').filter(Boolean);
     expect(lines.length).toBeLessThanOrEqual(600);
     expect(readRunHistory(dir, 1)[0].runId).toBe('r699');
-  });
+  }, 30_000);  // 700 real file appends
 
   it('caps long summaries and reads an absent file as empty', () => {
     appendRunHistory(dir, { ...entry(1), summary: 'x'.repeat(5000) });

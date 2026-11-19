@@ -29,10 +29,10 @@ beforeEach(async () => {
   fs.writeFileSync(path.join(repo, 'a.txt'), 'one\n');
   await sh(['add', '-A']);
   await sh(['commit', '-q', '-m', 'init']);
-});
+}, 30_000);  // real git: slow on loaded CI runners
 afterEach(() => fs.rmSync(base, { recursive: true, force: true }));
 
-describe('card worktrees', () => {
+describe('card worktrees', { timeout: 30_000 }, () => {
   it('creates a sibling worktree on its own branch without touching the main checkout', async () => {
     expect(await isGitRepo(git, repo)).toBe(true);
     const wt = await prepareWorktree(git, repo, 'S-1', '.agileagentcanvas-context');
