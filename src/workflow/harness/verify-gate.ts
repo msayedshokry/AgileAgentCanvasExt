@@ -33,27 +33,52 @@ export function runVerifyCommand(
   return new Promise((resolve) => {
     let output = '';
     let timedOut = false;
-    const child = cp.spawn(command, { cwd, shell: true, windowsHide: true, env: { ...process.env, CI: '1', FORCE_COLOR: '0' } });
+    let killed = false;
+    let done = false;
+    const isWindows = process.platform === 'win32';
+    // POSIX: own process group, so a kill reaches the test runner the shell
+    // started (killing only `sh` leaves it running with our pipes open).
+    const child = cp.spawn(command, {
+      cwd, shell: true, windowsHide: true, detached: !isWindows,
+      env: { ...process.env, CI: '1', FORCE_COLOR: '0' },
+    });
     const append = (chunk: Buffer) => {
       output = (output + chunk.toString('utf-8')).slice(-TAIL_CHARS * 4);
     };
     child.stdout?.on('data', append);
     child.stderr?.on('data', append);
-    const kill = () => {
+    const signalTree = (sig: NodeJS.Signals) => {
+      if (!child.pid) return;
       try {
-        if (process.platform === 'win32' && child.pid) cp.spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true });
-        else child.kill('SIGTERM');
+        if (isWindows) cp.spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true });
+        else process.kill(-child.pid, sig);
       } catch { /* already gone */ }
+    };
+    let forceTimer: ReturnType<typeof setTimeout> | undefined;
+    const finish = (code: number | null) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      if (forceTimer) clearTimeout(forceTimer);
+      signal?.removeEventListener('abort', onAbort);
+      const tail = output.replace(ANSI_SGR, '').trim().slice(-TAIL_CHARS);
+      resolve({ passed: code === 0 && !timedOut && !killed, command, exitCode: code, timedOut, durationMs: Date.now() - started, tail });
+    };
+    const kill = () => {
+      if (killed || done) return;
+      killed = true;
+      signalTree('SIGTERM');
+      // Escalate, then stop waiting for streams a stubborn grandchild may hold.
+      forceTimer = setTimeout(() => {
+        signalTree('SIGKILL');
+        child.stdout?.destroy();
+        child.stderr?.destroy();
+        finish(null);
+      }, 2000);
     };
     const timer = setTimeout(() => { timedOut = true; kill(); }, timeoutMs);
     const onAbort = () => kill();
     signal?.addEventListener('abort', onAbort, { once: true });
-    const finish = (code: number | null) => {
-      clearTimeout(timer);
-      signal?.removeEventListener('abort', onAbort);
-      const tail = output.replace(ANSI_SGR, '').trim().slice(-TAIL_CHARS);
-      resolve({ passed: code === 0 && !timedOut, command, exitCode: code, timedOut, durationMs: Date.now() - started, tail });
-    };
     child.on('error', (err) => { output += `\n${err.message}`; finish(null); });
     child.on('close', (code) => finish(code));
   });
