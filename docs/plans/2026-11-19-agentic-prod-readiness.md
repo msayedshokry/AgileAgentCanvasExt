@@ -1,6 +1,6 @@
 # Agentic runtime: production-readiness plan
 
-> Status: **proposed**, awaiting approval (2026-11-19). Baseline: `main` @ `4733513` (0.5.7 + 3 unreleased commits).
+> Status: **implemented** on branch `claude/project-state-20e3d8` (2026-11-19), one commit per phase. Baseline: `main` @ `4733513`. See "Outcome" at the end for what was and wasn't verified.
 
 ## Goal
 
@@ -95,3 +95,16 @@ Each phase ships as its own PR off `main`, test-first, and ends green on `check-
 1. Default `permissionPosture`: `sandboxed` (recommended) vs `full`. Sandboxed runs may stall on CLIs whose only headless mode is "approve everything". The adapter must then report `headless: requires-full` and the board asks once.
 2. Is Copilot coverage via the **Copilot CLI**, the **VS Code LM API**, or both (recommended: both)?
 3. Should lint debt (1315 errors) be a separate track (recommended), not mixed into these PRs?
+
+## Outcome (2026-11-19)
+
+Decisions taken: `sandboxed` is the default posture; Copilot is covered both through the Copilot CLI and the VS Code LM fallback; lint debt stays a separate track.
+
+| Exit criterion | Result |
+|---|---|
+| Contract matrix across shells/OSes | Windows verified locally: PowerShell 5.1, pwsh 7 and cmd, all 8 adapters × 2 postures. macOS/Linux run in the new `harness-contract` CI job; it hasn't run yet. |
+| Real-CLI smoke run | `scripts/_demo/smoke-harnesses.ts` launched all 6 CLIs installed on the dev machine (claude, codex, gemini, opencode, pi, aider) with the production command lines. Each received the prompt, but none finished: every one failed on account state (expired OAuth, expired keys, retired Gemini client, missing `OPENAI_API_KEY`, unsupported Codex model). **End-to-end success with a real model is not yet verified.** |
+| Abort / reload / hung agent / stale verdict / no harness | Covered by vitest unit and integration tests (orchestrator, executor, run-recovery). Not exercised in a live VS Code window. |
+| No open CRITICAL/HIGH audit item | Addressed in phases 1 to 5, except the CLI cost estimate (still chars/4, now labelled and counted for UNKNOWN runs) and the embedded-pty liveness check. |
+
+Not done: real token usage parsing from CLI output, a run-history webview (a command plus a document is shipped instead), and the lint debt.

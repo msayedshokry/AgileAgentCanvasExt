@@ -84,7 +84,33 @@ A sidebar execution board that turns canvas artifacts into a live, drag-and-drop
 | **Review** | Completed work awaiting review |
 | **Done** | Finished and verified |
 
-Cards show live **agent badges** (running/completed/failed), **dependency badges** (blocked-by counts), and **priority indicators**. Auto-advance mode drives cards through the implement → review → done loop automatically; an approval banner pauses execution when a required policy gate is hit. A toggleable terminal grid shows live agent output in real time.
+Cards show live **agent badges** (running/completed/failed), **dependency badges** (blocked-by counts), and **priority indicators**. Auto-advance mode (off by default) drives cards through the implement → review → done loop automatically; an approval banner pauses execution when a required policy gate is hit. A toggleable terminal grid shows live agent output in real time.
+
+#### Which agent runs the board
+
+The board drives the coding agent you already have. It picks, in order:
+
+1. The harness set in `agileagentcanvas.agents.harness`. If that harness isn't installed, the run is blocked with install instructions; it is never swapped for another CLI.
+2. The CLI matching your chat-provider pick.
+3. The first installed CLI.
+4. The VS Code language model (for example GitHub Copilot Chat).
+
+| Harness | Command used |
+|---|---|
+| Claude Code | `claude -p` |
+| OpenAI Codex CLI | `codex exec` |
+| Gemini CLI | `gemini -p` |
+| GitHub Copilot CLI | `copilot -p` |
+| Cursor CLI | `cursor-agent -p` / `agent -p` |
+| OpenCode | `opencode run` |
+| Pi | `pi -p` |
+| Aider | `aider --message-file` |
+
+Run **Check Agent Harnesses** to see what's installed and run a smoke test.
+
+**Permissions.** `agileagentcanvas.agents.permissionPosture` defaults to `sandboxed`: agents edit workspace files but get no unrestricted shell where the CLI supports it. `full` auto-approves every tool, and needs a trusted workspace and a one-time confirmation.
+
+**Limits.** Agents never run in Restricted Mode. Spend caps default to $5 per story and $25 per day (`agileagentcanvas.budget.*`). **Stop All Agents** stops everything immediately, and **Show Agent Run History** lists what ran and how it ended.
 
 ### Visual Plan
 
@@ -114,12 +140,14 @@ Set `agileagentcanvas.aiProvider` in VS Code settings:
 |---|---|
 | **auto** (default) | Detects the best available provider automatically |
 | **copilot** | GitHub Copilot via VS Code Language Model API |
-| **openai** | `agileagentcanvas.apiKey`; default `gpt-4o` |
-| **anthropic** | `agileagentcanvas.apiKey`; default `claude-sonnet-4-5` |
-| **gemini** | `agileagentcanvas.apiKey`; default `gemini-2.0-flash` |
+| **openai** | **Set AI API Key** command; default `gpt-4o` |
+| **anthropic** | **Set AI API Key** command; default `claude-sonnet-4-5` |
+| **gemini** | **Set AI API Key** command; default `gemini-2.0-flash` |
 | **ollama** | `agileagentcanvas.baseUrl` (e.g. `http://localhost:11434`); default `llama3` |
 | **antigravity** | Google Antigravity chat panel |
 | **omp** | Oh My Pi harness — writes to `.omp/inbox.md` or invokes the OMP extension |
+
+API keys are kept in VS Code secure storage (your OS keychain), never in settings.
 
 Chat-provider routing is independent and configurable via `agileagentcanvas.chatProvider` (auto, copilot, claude, cursor, windsurf, antigravity, omp, codex, aider, opencode, pi, terminal).
 
@@ -132,6 +160,10 @@ Chat-provider routing is independent and configurable via `agileagentcanvas.chat
 | `agileagentcanvas.outputFolder` | `.agileagentcanvas-context` | Where artifacts are written |
 | `agileagentcanvas.aiProvider` | `auto` | AI provider (see table above) |
 | `agileagentcanvas.chatProvider` | `auto` | Chat surface for canvas actions |
+| `agileagentcanvas.agents.harness` | `auto` | Coding agent that runs board steps |
+| `agileagentcanvas.agents.permissionPosture` | `sandboxed` | What agents may do without asking |
+| `agileagentcanvas.budget.perStoryUsd` / `dailyUsd` | `5` / `25` | Spend caps (`0` disables) |
+| `agileagentcanvas.kanban.autoAdvance` | `false` | Run implement → review → done automatically |
 | `agileagentcanvas.defaultTemperature` | `0.2` | Sampling temperature (0–2); lower = more deterministic JSON |
 | `agileagentcanvas.headroom.enabled` | `true` | Transparent chat-message compression |
 | `agileagentcanvas.autoSync` | `true` | Auto-save canvas changes to disk |
@@ -146,6 +178,8 @@ The full list of 30+ settings lives in VS Code Settings under **Extensions → A
 Run any from the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`):
 
 - **Open Visual Canvas** — open the canvas in an editor tab
+- **Check Agent Harnesses** / **Stop All Agents** / **Show Agent Run History**
+- **Set AI API Key** — store the direct-provider API key in secure storage
 - **New Project** / **Load Existing Project** / **Switch Project**
 - **Install Framework to IDE** — install the skill/agent bundle into VS Code Copilot, Claude Code, Cursor, Antigravity, or OpenCode
 - **Fetch from Jira** / **Set Jira API Token** / **Clear Jira API Token**

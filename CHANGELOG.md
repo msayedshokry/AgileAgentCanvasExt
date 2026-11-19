@@ -1,5 +1,45 @@
 # Changelog
 
+## Unreleased
+
+### Highlights
+
+The Agentic Kanban now runs on whichever coding agent you already have installed, with safe defaults for any repository. Runs stop cleanly, survive a window reload, and tell you why when an agent fails.
+
+### Feature: Use the agent you already have
+
+- **Eight harnesses supported:** Claude Code, Codex CLI, Gemini CLI, GitHub Copilot CLI, Cursor CLI, OpenCode, Pi and Aider. Each one launches headless with flags checked against its current CLI.
+- **No CLI installed?** Board steps run through the VS Code language model (for example GitHub Copilot Chat).
+- **Never a silent fallback:** a harness you pick but haven't installed blocks the run with install instructions instead of switching to another CLI.
+- **Agile Agent Canvas: Check Agent Harnesses** shows what's installed, which harness the board will use and with what permissions, and runs a real smoke test.
+- **Prompts never travel on the command line.** They go through a private file, so long or unusual prompts work the same in PowerShell 5.1, PowerShell 7, cmd and bash.
+
+### Feature: Safe by default
+
+- **New setting `agileagentcanvas.agents.permissionPosture`:** defaults to `sandboxed`, where agents edit workspace files but get no unrestricted shell where the CLI supports it. `full` needs a trusted workspace and a one-time confirmation.
+- **Restricted Mode:** agents, the AI file-write tool and remote agent calls are disabled in untrusted workspaces.
+- **Real spend caps:** $5 per story and $25 per day by default (`agileagentcanvas.budget.*`). Spend survives a restart.
+- **Agile Agent Canvas: Stop All Agents** stops every running agent and pauses the scheduler.
+- **Auto-advance is off by default** for new users. The AI file-write tool refuses git hooks, `.vscode`, npm manifests, `.env` files and CI workflows.
+
+### Feature: Runs you can trust and inspect
+
+- **Stopping a run stops the agent.** Nothing is committed or reviewed afterwards, and a timed-out agent is stopped before a retry starts.
+- **A run left in flight by a reload or crash is resolved on the next start:** finished, re-attached if its terminal survived, or interrupted, with the card moved back to its previous column.
+- **When an agent exits without a verdict, the card shows the agent's last output** (expired sign-in, missing API key…) instead of guessing that the work succeeded.
+- **Agile Agent Canvas: Show Agent Run History** lists every board run with harness, verdict and summary.
+- **Failing stories back off and pause after 3 failed runs in a row.** The circuit breaker now counts runs that end without a verdict.
+
+### Security
+
+- **AI API key in secure storage:** it now lives in VS Code's OS-keychain-backed secure storage (**Set AI API Key**) and is moved out of settings automatically. The Gemini key is no longer sent in the URL.
+- **Remote agent (A2A) calls:** private, loopback and cloud-metadata addresses and redirects are refused, an optional host allow-list is available, and responses are capped at 1 MB.
+- **Traces:** secrets and large file bodies are removed from traces, which are now size-capped and excluded from git. The local Headroom proxy rejects browser requests.
+
+### Fixed: Codex board runs failed to launch
+
+- **Codex never launched:** Codex CLI 0.163 rejects `--ask-for-approval`, so every Codex board run and card action failed to start.
+
 ## 0.5.7
 
 ### Highlights
