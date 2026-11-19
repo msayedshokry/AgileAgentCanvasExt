@@ -22,11 +22,10 @@
   border-bottom: 1px solid var(--agent-border);
   padding: 6px 10px;
   font-size: 12px;
-  border-left: 3px solid transparent;
 }
-.agent-status--ok { border-left-color: var(--agent-ok); }
-.agent-status--warn { border-left-color: var(--agent-warn); }
-.agent-status--error { border-left-color: var(--agent-error); }
+/* State is carried by the dot and, when something is wrong, a faint tint. */
+.agent-status--warn { background: color-mix(in srgb, var(--agent-warn) 5%, transparent); }
+.agent-status--error { background: color-mix(in srgb, var(--agent-error) 6%, transparent); }
 .agent-status--loading { color: var(--agent-muted); }
 
 .agent-status-row {
@@ -206,9 +205,8 @@
 }
 
 .agent-fixit {
-  border: 1px solid color-mix(in srgb, var(--agent-warn) 45%, transparent);
-  border-left-width: 3px;
-  border-left-color: var(--agent-warn);
+  border: 1px solid color-mix(in srgb, var(--agent-warn) 35%, transparent);
+  background: color-mix(in srgb, var(--agent-warn) 7%, transparent);
   border-radius: var(--agent-radius);
   padding: 10px 12px;
 }
