@@ -244,6 +244,7 @@ export class LaneTransitionEngine {
             this.store,
             {
               lmRunner: () => runViaLanguageModel(this.executor, terminalWorkflowId, found.artifact, this.store),
+              revertStatusOnInterrupt: fromStatus,
             },
           );
           if (launch.kind === 'blocked') {

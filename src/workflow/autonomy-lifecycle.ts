@@ -44,6 +44,9 @@ import { crossArtifactHarnessDetector } from '../harness/cross-artifact-detector
 import { harnessEngine, type HarnessFindingsEvent } from '../harness/policy-engine';
 import { kanbanOrchestrator, type OrchestratorContext } from './kanban-orchestrator';
 import { isKanbanAutoAdvanceEnabled } from './kanban-settings';
+import { RunJournal, type RunRecord } from './harness/run-journal';
+import { recoverRuns } from './harness/run-recovery';
+import { readVerdictFile, verdictMatchesRun, type KanbanVerdict } from './kanban-verdict';
 
 const logger = createLogger('autonomy-lifecycle');
 
@@ -409,6 +412,11 @@ export class AutonomyLifecycle extends EventEmitter {
     );
     this.concurrencyPersistence.restore();
     setupConcurrencyAutoSave(this.concurrencyPersistence);
+
+    // 15b) Resolve runs that were in flight when the window last closed or
+    //      crashed: finished, re-adopted (agent terminal survived) or
+    //      interrupted (card returned to its pre-run column).
+    void this.recoverInterruptedRuns();
 
     // 16) Cross-artifact harness pattern detector — subscribe to harness
     //     engine findings, accumulate them (capped sliding window), and
@@ -916,6 +924,60 @@ export class AutonomyLifecycle extends EventEmitter {
     }
   }
 
+  /** See harness/run-recovery.ts. Never throws: recovery problems are logged. */
+  private async recoverInterruptedRuns(): Promise<void> {
+    if (!this.hooks?.outputFolder) return;
+    const journal = RunJournal.inFolder(this.hooks.outputFolder);
+    const lines: string[] = [];
+    try {
+      await recoverRuns({
+        journal,
+        readVerdict: (r) => {
+          const v = readVerdictFile(r.resultPath);
+          return v && verdictMatchesRun(v, r.runId) ? v : undefined;
+        },
+        isTerminalAlive: (r) => vscode.window.terminals.some((t) => t.name === r.terminalName),
+        acquireLock: (r) => !!concurrencyQueue.tryAcquire(r.artifactId, `recovered-${r.harness}`, r.runId),
+        releaseLock: (id) => concurrencyQueue.release(id),
+        getStatus: (r) => (this.store?.findArtifactById(r.artifactId)?.artifact as { status?: string } | undefined)?.status,
+        setStatus: async (r, status) => {
+          await this.store?.updateArtifact(r.artifactType, r.artifactId, { status } as ArtifactChanges);
+        },
+        watch: (r, done) => this.watchRecoveredRun(r, done),
+        report: (o) => {
+          const id = o.record.artifactId;
+          if (o.kind === 'interrupted') {
+            this.broadcast({ type: 'agentStateUpdated', artifactId: id, agentState: { status: 'interrupted', interruptionReason: 'window-reloaded' } });
+            lines.push(`${id} (${o.record.workflowId}) was interrupted${o.reverted ? ` and moved back to ${o.record.revertTo}` : ''}`);
+          } else if (o.kind === 'finished') {
+            lines.push(`${id} (${o.record.workflowId}) finished while VS Code was closed: ${o.verdict.verdict}`);
+          } else {
+            lines.push(`${id} (${o.record.workflowId}) is still running and was re-attached`);
+          }
+        },
+      });
+    } catch (err) {
+      logger.warn(`Run recovery failed: ${errMsg(err)}`);
+    }
+    if (lines.length > 0) {
+      void vscode.window.showInformationMessage(`Agent runs from your last session: ${lines.join('; ')}.`);
+    }
+  }
+
+  /** Wait for a re-adopted run's verdict or for its terminal to close (max 20 min). */
+  private watchRecoveredRun(record: RunRecord, done: (v: KanbanVerdict | undefined) => void): void {
+    const deadline = record.startedAt + 20 * 60 * 1000;
+    const timer = setInterval(() => {
+      const v = readVerdictFile(record.resultPath);
+      const own = v && verdictMatchesRun(v, record.runId) ? v : undefined;
+      const alive = vscode.window.terminals.some((t) => t.name === record.terminalName);
+      if (own || !alive || Date.now() > deadline) {
+        clearInterval(timer);
+        done(own);
+      }
+    }, 5000);
+  }
+
   // #43: Persist/restore harness findings across restarts.
   private static readonly HARNESS_FINDINGS_FILE = 'harness-findings.json';
 
@@ -935,13 +997,18 @@ export class AutonomyLifecycle extends EventEmitter {
     try {
       const filePath = path.join(this.hooks.outputFolder, AutonomyLifecycle.HARNESS_FINDINGS_FILE);
       if (!fs.existsSync(filePath)) return;
-      const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      const data: unknown = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
       if (Array.isArray(data)) {
-        this.accumulatedFindings = data;
-        logger.info('Restored harness findings', { count: data.length });
+        // Hand-edited or older files may contain junk; keep well-formed findings only.
+        const valid = data.filter((f): f is HarnessFindingsEvent['findings'][number] =>
+          !!f && typeof f === 'object'
+          && typeof (f as { policyId?: unknown }).policyId === 'string'
+          && typeof (f as { artifactId?: unknown }).artifactId === 'string');
+        this.accumulatedFindings = valid.slice(-AutonomyLifecycle.MAX_ACCUMULATED_FINDINGS);
+        logger.info('Restored harness findings', { count: valid.length, dropped: data.length - valid.length });
       }
     } catch (err) {
-      logger.debug(`Failed to restore harness findings: ${errMsg(err)}`);
+      logger.warn(`Failed to restore harness findings: ${errMsg(err)}`);
     }
   }
 

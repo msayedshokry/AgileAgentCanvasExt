@@ -120,6 +120,8 @@ const REVIEW_WORKFLOW = 'aac-kanban-review-guard';
 export class KanbanOrchestrator {
   // #26: Per-artifact abort controllers for cancel/abort.
   private abortControllers = new Map<string, AbortController>();
+  /** Column each active run started from (where a lost run returns the card). */
+  private runStartStatus = new Map<string, string>();
 
   /**
    * Language-model fallback for machines with no CLI harness: runs the step
@@ -247,6 +249,7 @@ export class KanbanOrchestrator {
     // #26: Create an abort controller so kanban:abandonExecution can stop the loop.
     const ac = new AbortController();
     this.abortControllers.set(id, ac);
+    this.runStartStatus.set(id, (artifact?.status as string) || 'ready-for-dev');
 
     try {
       // ── Pre-flight guardrails ──────────────────────────────────────────
@@ -352,6 +355,7 @@ export class KanbanOrchestrator {
     } finally {
       // #26: Clean up the abort controller.
       this.abortControllers.delete(id);
+      this.runStartStatus.delete(id);
       // Audit gap #50 — clean up any outstanding pause resolver so a future
       // runAutonomous() for the same artifactId doesn't inherit stale state.
       this.pausedResolvers.delete(id);
@@ -473,7 +477,7 @@ export class KanbanOrchestrator {
       } else {
         // ── Terminal path (headless CLI) ──────────────────────────────────
         const verdict = await this.terminalExecutor.executeAndAwaitVerdict(
-          workflowId, artifact, this.store, { lmRunner: this.lmRunnerFor(workflowId, artifact, id), signal: this.abortControllers.get(id)?.signal },
+          workflowId, artifact, this.store, { lmRunner: this.lmRunnerFor(workflowId, artifact, id), signal: this.abortControllers.get(id)?.signal, revertStatusOnInterrupt: this.runStartStatus.get(id) },
         );
         captured = verdict;
       }
@@ -517,7 +521,7 @@ export class KanbanOrchestrator {
             }
           } else {
             captured = await this.terminalExecutor.executeAndAwaitVerdict(
-              workflowId, artifact, this.store, { lmRunner: this.lmRunnerFor(workflowId, artifact, id), signal: this.abortControllers.get(id)?.signal },
+              workflowId, artifact, this.store, { lmRunner: this.lmRunnerFor(workflowId, artifact, id), signal: this.abortControllers.get(id)?.signal, revertStatusOnInterrupt: this.runStartStatus.get(id) },
             );
           }
           if (captured && (captured.verdict === 'COMPLETED' || captured.verdict === 'APPROVED')) {

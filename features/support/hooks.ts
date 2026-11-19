@@ -56,7 +56,7 @@ AfterAll(function() {
 // the test workspace has no folders) output folder. Left over from one
 // scenario it is restored by the next, making scenarios order-dependent
 // (e.g. harness findings re-hydrated into the systemicIssue dedup check).
-const PERSISTED_STATE_FILES = ['harness-findings.json', 'scheduler-state.json'];
+const PERSISTED_STATE_FILES = ['harness-findings.json', 'scheduler-state.json', 'agent-runs.json'];
 
 Before(function(this: BmadWorld) {
   // Reset world state before each scenario

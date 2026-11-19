@@ -24,6 +24,7 @@ import { type HarnessResolution } from './harness/harness-resolver';
 import { agentRunBlockReason, resolveBoardHarness, resolveEffectivePosture } from './harness/board-harness';
 import { buildCommandLine, detectShellKind, type ShellKind } from './harness/shell-command';
 import { stagePromptFile, disposePromptFile as disposeStagedPrompt } from './harness/prompt-staging';
+import { RunJournal } from './harness/run-journal';
 import {
   sanitizeId as sanitizeResultId,
   resultFilePath,
@@ -185,6 +186,8 @@ export interface HarnessRunOptions {
   lmRunner?: LanguageModelRunner;
   /** Pre-resolved harness (callers that already resolved avoid a second PATH probe). */
   resolution?: HarnessResolution;
+  /** Column to return the card to if this run is lost to a reload or crash. */
+  revertStatusOnInterrupt?: string;
 }
 
 /** Launch outcome for a single harness run. */
@@ -529,6 +532,7 @@ export class TerminalExecutor implements vscode.Disposable {
         `[TerminalExecutor] Launched pty session "${termName}" (${provider}) for ${artifactId}`,
       );
 
+      this.journalRun({ sessionId, artifactId, artifactType: artifact?.type || 'unknown', workflowId, harness: provider, terminalName: termName, resultPath, revertTo: options?.revertStatusOnInterrupt });
       return { kind: 'cli', sessionId };
     }
 
@@ -678,7 +682,29 @@ export class TerminalExecutor implements vscode.Disposable {
       `[TerminalExecutor] Launched terminal "${termName}" (${provider}) for ${artifactId}`
     );
 
+    this.journalRun({ sessionId, artifactId, artifactType: artifact?.type || 'unknown', workflowId, harness: provider, terminalName: termName, resultPath, revertTo: options?.revertStatusOnInterrupt });
     return { kind: 'cli', sessionId };
+  }
+
+  /** Record the run so a reload mid-run can be resolved (see harness/run-recovery.ts). */
+  private journalRun(r: { sessionId: string; artifactId: string; artifactType: string; workflowId: string; harness: string; terminalName: string; resultPath: string; revertTo?: string }): void {
+    try {
+      RunJournal.inFolder(getOutputFolder()).add({
+        runId: r.sessionId, artifactId: r.artifactId, artifactType: r.artifactType, workflowId: r.workflowId,
+        harness: r.harness, terminalName: r.terminalName, resultPath: r.resultPath, startedAt: Date.now(),
+        ...(r.revertTo ? { revertTo: r.revertTo } : {}),
+      });
+    } catch (err) {
+      logger.warn(`[TerminalExecutor] Could not journal run ${r.sessionId}: ${errMsg(err)}`);
+    }
+  }
+
+  private unjournalRun(runId: string): void {
+    try {
+      RunJournal.inFolder(getOutputFolder()).remove(runId);
+    } catch (err) {
+      logger.warn(`[TerminalExecutor] Could not clear journaled run ${runId}: ${errMsg(err)}`);
+    }
   }
 
   /**
@@ -720,6 +746,7 @@ export class TerminalExecutor implements vscode.Disposable {
       skillContent: options?.skillContent,
       lmRunner: options?.lmRunner,
       resolution: options?.resolution,
+      revertStatusOnInterrupt: options?.revertStatusOnInterrupt,
     });
     if (launch.kind === 'blocked') return launch.verdict;
     if (launch.kind === 'lm') return launch.verdict;
@@ -747,6 +774,7 @@ export class TerminalExecutor implements vscode.Disposable {
         if (done) return;
         done = true;
         clearInterval(timer);
+        this.unjournalRun(sessionId);
         options?.signal?.removeEventListener('abort', onAbort);
         // Gap #23: record terminal CLI costs so the budget gauge reflects
         // CLI spend. Uses the captured prompt length (safe even if the
@@ -1024,6 +1052,7 @@ export class TerminalExecutor implements vscode.Disposable {
     );
     this.activeTerminals.delete(artifactId);
     this.lastOutput.set(artifactId, outputTail(session.accumulatedData));
+    this.unjournalRun(session.sessionId);
     disposeStagedPrompt(session.promptFile, (e) => logger.warn(`[TerminalExecutor] prompt cleanup failed: ${errMsg(e)}`));
 
     this.persistSessionMetadata();
@@ -1062,6 +1091,7 @@ export class TerminalExecutor implements vscode.Disposable {
         );
         this.activeTerminals.delete(artifactId);
         this.lastOutput.set(artifactId, outputTail(session.accumulatedData));
+        this.unjournalRun(session.sessionId);
         disposeStagedPrompt(session.promptFile, (e) => logger.warn(`[TerminalExecutor] prompt cleanup failed: ${errMsg(e)}`));
 
         // Update persisted metadata after terminal close.

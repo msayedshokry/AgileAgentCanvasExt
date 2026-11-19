@@ -699,3 +699,19 @@ describe('outputTail', () => {
         expect(outputTail(undefined)).toBe('');
     });
 });
+
+describe('executeTerminalWorkflow — run journal', () => {
+    it('journals a CLI run at launch (with its revert column) and clears it when the terminal ends', async () => {
+        await withWorkspace(async (outputFolder) => {
+            const { terminalObj } = makeTerminal();
+            const executor = new TerminalExecutor();
+            await executor.executeTerminalWorkflow('dev-story', { id: 'S-J', type: 'story' }, {}, { revertStatusOnInterrupt: 'ready-for-dev' });
+            const journalFile = join(outputFolder, 'agent-runs.json');
+            const records = JSON.parse(readFileSync(journalFile, 'utf-8'));
+            expect(records).toEqual([expect.objectContaining({ artifactId: 'S-J', workflowId: 'dev-story', revertTo: 'ready-for-dev', terminalName: 'AAC: dev-story S-J' })]);
+
+            (executor as any).onDidCloseTerminal(terminalObj);
+            expect(JSON.parse(readFileSync(journalFile, 'utf-8'))).toEqual([]);
+        });
+    });
+});
