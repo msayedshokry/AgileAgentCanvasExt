@@ -38,6 +38,10 @@ function main(): number {
     if (!binary) { console.log(`- ${adapter.id}: not installed, skipped`); continue; }
 
     const ws = fs.mkdtempSync(path.join(os.tmpdir(), `aac-smoke-${adapter.id}-`));
+    // Real board workspaces are git repos; some CLIs (OpenCode) treat paths
+    // outside a detected project as external and refuse to write there.
+    cp.spawnSync('git', ['init', '-q', ws], { windowsHide: true });
+    cp.spawnSync('git', ['-C', ws, '-c', 'user.name=aac-smoke', '-c', 'user.email=aac-smoke@example.invalid', 'commit', '-q', '--allow-empty', '-m', 'smoke workspace'], { windowsHide: true });
     const outputFolder = path.join(ws, '.agileagentcanvas-context');
     const resultPath = path.join(outputFolder, '_terminal-output', 'SMOKE-1-dev-result.json');
     fs.mkdirSync(path.dirname(resultPath), { recursive: true });
@@ -47,7 +51,7 @@ function main(): number {
       '{"verdict":"COMPLETED","summary":"smoke test"}\n' +
       'Do not create or modify any other file. Then stop.\n';
     const promptFile = stagePromptFile(outputFolder, 'SMOKE-1', 'run', prompt);
-    const launch = buildHarnessLaunch(adapter, { binary, promptFile, resultPath, posture });
+    const launch = buildHarnessLaunch(adapter, { binary, promptFile, resultPath, posture, workspaceDir: ws });
     // Test-only: AAC_SMOKE_EXTRA_<ID> (JSON string array) adds flags such as a
     // model override, placed after the subcommand ("exec"/"run") so trailing
     // stdin markers ("-", "-p") stay last. The adapters themselves are unchanged.
@@ -60,7 +64,8 @@ function main(): number {
     const line = buildCommandLine({ ...launch, args }, shell.kind);
 
     const started = Date.now();
-    const res = cp.spawnSync(shell.exe, shell.argv(line), { cwd: ws, encoding: 'utf-8', timeout: TIMEOUT_MS, windowsHide: true });
+    // PWD as a terminal opened in the workspace would have it (bash exports a stale one otherwise).
+    const res = cp.spawnSync(shell.exe, shell.argv(line), { cwd: ws, env: { ...process.env, PWD: ws }, encoding: 'utf-8', timeout: TIMEOUT_MS, windowsHide: true });
     const secs = Math.round((Date.now() - started) / 1000);
     let verdict = '';
     try { verdict = JSON.parse(fs.readFileSync(resultPath, 'utf-8')).verdict; } catch { /* missing */ }

@@ -432,7 +432,8 @@ export class TerminalExecutor implements vscode.Disposable {
       : detectShellKind(vscode.env.shell, process.platform);
     let cmdLine: string;
     try {
-      const spec = buildHarnessLaunch(adapter, { binary, promptFile, resultPath, posture });
+      const workspaceDir = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+      const spec = buildHarnessLaunch(adapter, { binary, promptFile, resultPath, posture, workspaceDir });
       cmdLine = buildCommandLine(spec, shellKind);
     } catch (err) {
       disposeStagedPrompt(promptFile);

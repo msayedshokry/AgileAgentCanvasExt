@@ -41,6 +41,8 @@ export interface LaunchContext {
   /** Absolute path where the agent must write its verdict JSON. */
   readonly resultPath: string;
   readonly posture: PermissionPosture;
+  /** Workspace root the agent works in (for CLIs that need it named explicitly). */
+  readonly workspaceDir?: string;
 }
 
 export interface HarnessAdapter {
@@ -186,9 +188,16 @@ const opencode: HarnessAdapter = {
   // then rejects, so sandboxed runs could never write the verdict file
   // (verified against a local model, 2026-11-19). The run-scoped
   // OPENCODE_PERMISSION policy allows edits and denies shell and web.
-  buildLaunch: ({ binary, posture }) => posture === 'full'
-    ? { args: [binary, 'run', '--auto'] }
-    : { args: [binary, 'run'], env: { OPENCODE_PERMISSION: OPENCODE_SANDBOX_PERMISSION } },
+  // OpenCode takes its project root from the inherited PWD variable, which can
+  // point anywhere (VS Code launched from another shell); writes under the
+  // real workspace then count as "external_directory" and are rejected.
+  // --dir names the workspace explicitly.
+  buildLaunch: ({ binary, posture, workspaceDir }) => {
+    const dir = workspaceDir ? ['--dir', workspaceDir.replace(/\\/g, '/')] : [];
+    return posture === 'full'
+      ? { args: [binary, 'run', ...dir, '--auto'] }
+      : { args: [binary, 'run', ...dir], env: { OPENCODE_PERMISSION: OPENCODE_SANDBOX_PERMISSION } };
+  },
 };
 
 const aider: HarnessAdapter = {

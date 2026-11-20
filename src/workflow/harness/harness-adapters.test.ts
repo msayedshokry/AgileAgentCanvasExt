@@ -95,6 +95,14 @@ describe('per-harness flags (verified against CLI help/docs 2026-11-19)', () => 
     expect(launch('opencode', 'full').env).toBeUndefined();
   });
 
+  it('opencode: names the workspace with --dir when it is known', () => {
+    const adapter = getHarnessAdapter('opencode')!;
+    const spec = buildHarnessLaunch(adapter, { ...ctx('sandboxed', 'opencode'), workspaceDir: 'C:\\ws\\proj' });
+    expect(spec.args).toEqual(['opencode', 'run', '--dir', 'C:/ws/proj']);
+    expect(buildHarnessLaunch(adapter, { ...ctx('full', 'opencode'), workspaceDir: '/ws' }).args)
+      .toEqual(['opencode', 'run', '--dir', '/ws', '--auto']);
+  });
+
   it('cursor-agent only adds --force for full', () => {
     expect(launch('cursor-agent', 'sandboxed').args).not.toContain('--force');
     expect(launch('cursor-agent', 'full').args).toContain('--force');
