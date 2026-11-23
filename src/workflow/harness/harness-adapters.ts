@@ -98,16 +98,20 @@ const codex: HarnessAdapter = {
   installHint: 'Install Codex CLI: npm i -g @openai/codex',
   postures: ['sandboxed', 'full'],
   postureNotes: {
-    sandboxed: 'workspace-write sandbox: edits and commands confined to the workspace, no network.',
+    sandboxed: 'workspace-write sandbox (unelevated on Windows): edits and commands confined to the workspace, no network.',
     full: 'No sandbox and no approvals (--dangerously-bypass-approvals-and-sandbox).',
   },
   // codex-cli 0.163: `exec` is non-interactive and never prompts; it no longer
   // accepts --ask-for-approval. `-` reads the prompt from stdin.
   // --skip-git-repo-check: exec refuses to run outside a git repo otherwise.
+  // windows.sandbox=unelevated: on Windows, codex silently downgrades
+  // workspace-write to read-only unless a Windows sandbox mode is configured,
+  // so every shell write is "rejected: blocked by policy". The key is ignored
+  // on other platforms. Unquoted so it stays a SAFE_ARG in every shell.
   buildLaunch: ({ binary, posture }) => ({
     args: posture === 'full'
       ? [binary, 'exec', '--dangerously-bypass-approvals-and-sandbox', '--skip-git-repo-check', '-']
-      : [binary, 'exec', '--sandbox', 'workspace-write', '--skip-git-repo-check', '-'],
+      : [binary, 'exec', '--sandbox', 'workspace-write', '-c', 'windows.sandbox=unelevated', '--skip-git-repo-check', '-'],
   }),
 };
 

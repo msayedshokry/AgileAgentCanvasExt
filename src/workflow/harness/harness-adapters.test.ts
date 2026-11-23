@@ -75,6 +75,9 @@ describe('per-harness flags (verified against CLI help/docs 2026-11-19)', () => 
       expect(launch('codex', p).args.at(-1)).toBe('-');
     }
     expect(launch('codex', 'sandboxed').args).toContain('workspace-write');
+    // Without a Windows sandbox mode codex downgrades workspace-write to read-only.
+    const sandboxed = launch('codex', 'sandboxed').args;
+    expect(sandboxed[sandboxed.indexOf('-c') + 1]).toBe('windows.sandbox=unelevated');
     expect(launch('codex', 'full').args).toContain('--dangerously-bypass-approvals-and-sandbox');
   });
 
