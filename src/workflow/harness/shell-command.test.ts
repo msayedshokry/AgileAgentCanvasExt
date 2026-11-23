@@ -72,3 +72,29 @@ describe('buildCommandLine', () => {
     expect(() => buildCommandLine({ args: [] }, 'posix')).toThrow();
   });
 });
+
+describe('buildCommandLine — per-run environment', () => {
+  const env = { OPENCODE_PERMISSION: '{"edit":"allow","bash":"deny"}' };
+
+  it('POSIX: VAR=value prefix applies to the command only', () => {
+    expect(buildCommandLine({ args: ['opencode', 'run'], stdinFile: '/p.md', env }, 'posix'))
+      .toBe(`OPENCODE_PERMISSION='{"edit":"allow","bash":"deny"}' opencode run < /p.md`);
+  });
+
+  it('PowerShell: $env assignment inside the script block', () => {
+    expect(buildCommandLine({ args: ['opencode', 'run'], env }, 'powershell'))
+      .toBe(`& { $env:OPENCODE_PERMISSION='{"edit":"allow","bash":"deny"}'; opencode run }`);
+    expect(buildCommandLine({ args: ['opencode', 'run'], stdinFile: 'C:/p.md', env }, 'powershell'))
+      .toMatch(/^& \{ \$env:OPENCODE_PERMISSION='.*'; \$OutputEncoding=/);
+  });
+
+  it('cmd: set "VAR=value" && command, refusing values cmd would expand', () => {
+    expect(buildCommandLine({ args: ['opencode', 'run'], stdinFile: 'C:/p.md', env }, 'cmd'))
+      .toBe('set "OPENCODE_PERMISSION={"edit":"allow","bash":"deny"}" && opencode run < C:/p.md');
+    expect(() => buildCommandLine({ args: ['x'], env: { A: '100%' } }, 'cmd')).toThrow(/cmd\.exe/);
+  });
+
+  it('rejects invalid variable names', () => {
+    expect(() => buildCommandLine({ args: ['x'], env: { 'A;rm': '1' } }, 'posix')).toThrow(/Invalid environment variable name/);
+  });
+});

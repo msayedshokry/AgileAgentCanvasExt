@@ -41,6 +41,8 @@ export interface LaunchContext {
   /** Absolute path where the agent must write its verdict JSON. */
   readonly resultPath: string;
   readonly posture: PermissionPosture;
+  /** Workspace root the agent works in (for CLIs that need it named explicitly). */
+  readonly workspaceDir?: string;
 }
 
 export interface HarnessAdapter {
@@ -167,6 +169,9 @@ const cursorAgent: HarnessAdapter = {
   }),
 };
 
+/** OpenCode permission policy for the sandboxed posture. */
+export const OPENCODE_SANDBOX_PERMISSION = JSON.stringify({ edit: 'allow', bash: 'deny', webfetch: 'deny' });
+
 const opencode: HarnessAdapter = {
   id: 'opencode',
   label: 'OpenCode',
@@ -175,13 +180,24 @@ const opencode: HarnessAdapter = {
   installHint: 'Install OpenCode: https://opencode.ai/docs/',
   postures: ['sandboxed', 'full'],
   postureNotes: {
-    sandboxed: 'Uses the permission rules in your opencode config.',
+    sandboxed: 'File edits allowed, shell commands and web fetches denied (OPENCODE_PERMISSION).',
     full: 'Auto-approves every permission not explicitly denied (--auto).',
   },
   // opencode 1.19: `run` with piped stdin; `--auto` is its yolo switch.
-  buildLaunch: ({ binary, posture }) => ({
-    args: posture === 'full' ? [binary, 'run', '--auto'] : [binary, 'run'],
-  }),
+  // Headless runs have nobody to answer an "ask" permission, which OpenCode
+  // then rejects, so sandboxed runs could never write the verdict file
+  // (verified against a local model, 2026-11-19). The run-scoped
+  // OPENCODE_PERMISSION policy allows edits and denies shell and web.
+  // OpenCode takes its project root from the inherited PWD variable, which can
+  // point anywhere (VS Code launched from another shell); writes under the
+  // real workspace then count as "external_directory" and are rejected.
+  // --dir names the workspace explicitly.
+  buildLaunch: ({ binary, posture, workspaceDir }) => {
+    const dir = workspaceDir ? ['--dir', workspaceDir.replace(/\\/g, '/')] : [];
+    return posture === 'full'
+      ? { args: [binary, 'run', ...dir, '--auto'] }
+      : { args: [binary, 'run', ...dir], env: { OPENCODE_PERMISSION: OPENCODE_SANDBOX_PERMISSION } };
+  },
 };
 
 const aider: HarnessAdapter = {
@@ -245,7 +261,8 @@ export function buildHarnessLaunch(adapter: HarnessAdapter, ctx: LaunchContext):
     throw new Error(`${adapter.label} cannot run with the "${ctx.posture}" permission posture`);
   }
   const spec = adapter.buildLaunch(ctx);
-  return adapter.delivery === 'stdin' ? { args: spec.args, stdinFile: ctx.promptFile } : { args: spec.args };
+  const env = spec.env ? { env: spec.env } : {};
+  return adapter.delivery === 'stdin' ? { args: spec.args, stdinFile: ctx.promptFile, ...env } : { args: spec.args, ...env };
 }
 
 /**

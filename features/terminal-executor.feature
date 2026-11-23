@@ -150,12 +150,16 @@ Feature: Terminal Executor - Windows Shell Compatibility and Headless CLI Flags
     And the sent command should contain "- < "
 
   @windows @command @headless @opencode
-  Scenario: OpenCode run trusts the local model config
+  Scenario: OpenCode run trusts the local model config, with a run-scoped edit-only permission policy
     Given the VS Code shell is "/bin/bash"
     And the terminal provider is "opencode"
     When I execute a terminal workflow with a long prompt
     Then sendText should have been called
-    And the sent command should start with "opencode run"
+    # Headless OpenCode rejects "ask" permissions, so sandboxed runs carry
+    # OPENCODE_PERMISSION (edits allowed, shell and web denied).
+    And the sent command should start with "OPENCODE_PERMISSION="
+    And the sent command should contain "deny"
+    And the sent command should contain " opencode run"
     And the sent command should not contain "--model"
     And the sent command should not contain "--auto"
     And the sent command should contain " < "
