@@ -54,3 +54,22 @@ development_status:
   4-2-slack-integration-dnd-sync: backlog
   4-3-cli-tool-for-developers: backlog
   epic-4-retrospective: optional
+
+# Action items committed during retrospectives (section created by the retrospective workflow)
+action_items:
+  - epic: 1
+    action: "Add database schema review to story grooming template"
+    owner: "Sarah Chen"
+    status: open
+  - epic: 1
+    action: "Complete ECR image caching migration for CI/CD"
+    owner: "Marcus Rodriguez"
+    status: in-progress
+  - epic: 1
+    action: "Refactor OAuth token refresh to exponential backoff"
+    owner: "Backend Team"
+    status: open
+  - epic: 1
+    action: "Update architecture documentation with optimistic update pattern ADR"
+    owner: "Marcus Rodriguez"
+    status: open
