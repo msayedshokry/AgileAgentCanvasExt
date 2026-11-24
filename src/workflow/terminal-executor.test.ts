@@ -28,7 +28,7 @@ import {
     TerminalExecutor,
     outputTail,
 } from './terminal-executor';
-import { window, workspace } from 'vscode';
+import { window } from 'vscode';
 
 // ── Additional module mocks for the long-prompt staging tests ────────────────
 // The e2e staging test drives executeTerminalWorkflow, which pulls in the

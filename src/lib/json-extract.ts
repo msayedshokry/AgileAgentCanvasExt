@@ -7,7 +7,6 @@
  * malformed input.
  */
 
-import type { BmadModel } from '../chat/ai-provider';
 
 /**
  * Result of a successful JSON extraction.

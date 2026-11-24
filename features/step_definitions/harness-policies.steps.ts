@@ -57,7 +57,7 @@ function createEngine(world: BmadWorld): any {
     },
     '../state/schema-validator': {
       schemaValidator: {
-        validateChanges: (type: string, data: any) => {
+        validateChanges: (_type: string, data: any) => {
           if (data && data.title && data.status === 'totally-invalid') {
             return { valid: false, errors: ['Invalid status value'] };
           }
@@ -80,7 +80,7 @@ function createEngine(world: BmadWorld): any {
       },
     },
     '../state/schema-repair-engine': {
-      repairDataWithSchema: (data: any, schema: any) => {
+      repairDataWithSchema: (data: any, _schema: any) => {
         if (data && data.id === 'repairable') {
           return { changed: true, data: { ...data, status: 'in-progress', title: 'Fixed' } };
         }
@@ -153,7 +153,7 @@ Given('the artifact store has a source folder without a policies directory', fun
   // Handled by loadUserPolicies — returns empty when no policies dir
 });
 
-Given('a policies directory with a yaml file containing:', function (this: BmadWorld, docString: string) {
+Given('a policies directory with a yaml file containing:', function (this: BmadWorld, _docString: string) {
   // This is set up so loadUserPolicies can read it
 });
 
@@ -216,7 +216,7 @@ When('I get policy {string}', function (this: BmadWorld, policyId: string) {
 });
 
 When('I evaluate {string} as {string} with artifact:', function (
-  this: BmadWorld, policyId: string, phase: string, dataTable: any
+  this: BmadWorld, policyId: string, _phase: string, dataTable: any
 ) {
   const ctx = getCtx(this);
   // The data table is formatted as key-value pairs (one key per row), so use
@@ -251,7 +251,7 @@ When('I evaluate {string} as {string} with artifact:', function (
   }
 });
 
-When('I evaluate {string} as {string} with null artifact', function (this: BmadWorld, policyId: string, phase: string) {
+When('I evaluate {string} as {string} with null artifact', function (this: BmadWorld, policyId: string, _phase: string) {
   const ctx = getCtx(this);
   const policy = ctx.engine.policies.find((p: any) => p.id === policyId);
   if (policy) {
@@ -268,7 +268,7 @@ When('I evaluate {string} as {string} with null artifact', function (this: BmadW
   }
 });
 
-When('I evaluate {string} as {string} with a repairable artifact', function (this: BmadWorld, policyId: string, phase: string) {
+When('I evaluate {string} as {string} with a repairable artifact', function (this: BmadWorld, _policyId: string, phase: string) {
   const ctx = getCtx(this);
   const artifact = { id: 'repairable', title: 'Test', type: 'story', status: 'totally-invalid' };
   const context = { artifactType: 'story', artifactId: 'repairable', artifact };
@@ -280,7 +280,7 @@ When('I evaluate {string} as {string} with a repairable artifact', function (thi
 });
 
 When('I evaluate {string} as {string} with story artifact containing:', function (
-  this: BmadWorld, policyId: string, phase: string, dataTable: any
+  this: BmadWorld, policyId: string, _phase: string, dataTable: any
 ) {
   const ctx = getCtx(this);
   // The data table is formatted as key-value pairs (one key per row), so use
@@ -346,7 +346,7 @@ When('I evaluate {string} as {string} with epic artifact', async function (this:
 
 
 When('I evaluate {string} as {string} with epic containing stories:', function (
-  this: BmadWorld, policyId: string, phase: string, dataTable: any
+  this: BmadWorld, policyId: string, _phase: string, dataTable: any
 ) {
   const ctx = getCtx(this);
   const rows = dataTable.hashes();
@@ -370,7 +370,7 @@ When('I evaluate {string} as {string} with epic containing stories:', function (
   }
 });
 
-When('I evaluate {string} as {string} with epic having no stories', function (this: BmadWorld, policyId: string, phase: string) {
+When('I evaluate {string} as {string} with epic having no stories', function (this: BmadWorld, policyId: string, _phase: string) {
   const ctx = getCtx(this);
   const artifact = { id: 'EPIC-1', title: 'Empty Epic', type: 'epic', stories: [] };
 
@@ -389,7 +389,7 @@ When('I evaluate {string} as {string} with epic having no stories', function (th
   }
 });
 
-When('I evaluate {string} as {string} with story artifact', function (this: BmadWorld, policyId: string, phase: string) {
+When('I evaluate {string} as {string} with story artifact', function (this: BmadWorld, policyId: string, _phase: string) {
   const ctx = getCtx(this);
   const artifact = { id: 'S-1', title: 'Test Story', type: 'story', storyPoints: 5 };
 
@@ -646,7 +646,6 @@ Then('the re-evaluated artifact should pass', function (this: BmadWorld) {
 Then('the failures should contain {string}', function (this: BmadWorld, expected: string) {
   const ctx = getCtx(this);
   assert.ok(ctx.lastEvalResults.length > 0, 'Expected evaluation results');
-  const allFailures = (ctx.lastEvalResults[0]?.failures || []).join(' ');
   // Also check if there are multiple result entries
   const allFailuresCombined = ctx.lastEvalResults.map((r: any) => (r.failures || []).join(' ')).join(' ');
   assert.ok(allFailuresCombined.toLowerCase().includes(expected.toLowerCase()),
@@ -735,7 +734,7 @@ Then(/^the results should not include "([^"]+)" \(artifactType: ([^)]+)\)$/, fun
   assert.ok(!ids.includes(expected), `Expected results to NOT include "${expected}" for artifactType: ${artifactType}`);
 });
 
-Then('a harness {string} trace entry should have been recorded', function (this: BmadWorld, entryType: string) {
+Then('a harness {string} trace entry should have been recorded', function (this: BmadWorld, _entryType: string) {
   const ctx = getCtx(this);
   assert.strictEqual(ctx.traceRecorded, true, 'Expected trace to have been recorded');
 });
@@ -795,7 +794,7 @@ Then('if the fix succeeds, fixed should be true', function (this: BmadWorld) {
 });
 
 Then(/^the policy evaluation should return null \(LLM not supported\)$/, function (this: BmadWorld) {
-  const ctx = getCtx(this);
+  getCtx(this);
   // Policies without regex or evaluate functions return null for unsupported LLM mode
   assert.ok(true, 'Policy without evaluate function returns null for LLM-unsupported mode');
 });

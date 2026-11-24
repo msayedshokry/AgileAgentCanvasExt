@@ -1,12 +1,8 @@
-import { createLogger } from '../utils/logger';
 import type {
-    ArtifactDeleteCtx,
     ArtifactDeleteFn,
     ArtifactDeleteRegistry,
 } from './reducer-types';
 
-const cisDeleteLogger = createLogger('delete-cis-reductions');
-const logDebug = (...args: unknown[]) => cisDeleteLogger.debug(...args);
 
 /**
  * CIS module delete reducers — extracted from

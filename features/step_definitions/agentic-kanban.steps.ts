@@ -98,7 +98,7 @@ function handlerStubOverrides(ctx: KanbanHandlerContext, world: BmadWorld) {
     },
     '../workflow/lane-transitions': {
       laneTransitionEngine: {
-        handleTransition: async (artifactId: string, fromStatus: string, toStatus: string, artifactType: string) => {
+        handleTransition: async (artifactId: string, _fromStatus: string, toStatus: string, artifactType: string) => {
           const found = ctx.store.findArtifactById(artifactId);
           if (!found) return { ok: false, status: 'blocked', blockedBy: ['Artifact not found'] };
           try {
@@ -427,7 +427,7 @@ Given('the AgenticKanbanApp is fully loaded', function (this: BmadWorld) { /* re
 
 // ─── WHEN ───────────────────────────────────────────────────────────────────
 
-When('the webview receives an {string} message with {int} artifacts', function (this: BmadWorld, msgType: string, count: number) {
+When('the webview receives an {string} message with {int} artifacts', function (this: BmadWorld, _msgType: string, count: number) {
   const ctx = getWebviewCtx(this); ctx.artifacts = []; ctx.cards = new Map();
   for (const col of Object.keys(ctx.columns)) ctx.columns[col] = [];
   for (let i = 0; i < count; i++) {
@@ -447,7 +447,7 @@ When('the user drags {string} to the {string} column', function (this: BmadWorld
   ctx.postMessageHistory.push(ctx.lastPostMessage);
 });
 
-When('the user drags {string} and drops it in the {string} column', function (this: BmadWorld, id: string, targetColumn: string) {
+When('the user drags {string} and drops it in the {string} column', function (this: BmadWorld, _id: string, _targetColumn: string) {
   const ctx = getWebviewCtx(this); ctx.lastPostMessage = null; // same column, no message
 });
 
@@ -461,12 +461,12 @@ When('the user drops {string} in the {string} column', function (this: BmadWorld
   ctx.postMessageHistory.push(ctx.lastPostMessage);
 });
 
-When('the webview receives a {string} for {string} with ok true', function (this: BmadWorld, msgType: string, id: string) {
+When('the webview receives a {string} for {string} with ok true', function (this: BmadWorld, _msgType: string, id: string) {
   const ctx = getWebviewCtx(this); ctx.pendingTransitions.delete(id);
   const card = ctx.cards.get(id); if (card) card.pendingTransition = false;
 });
 
-When('the webview receives a {string} for {string} with:', function (this: BmadWorld, msgType: string, id: string, dataTable: any) {
+When('the webview receives a {string} for {string} with:', function (this: BmadWorld, _msgType: string, id: string, _dataTable: any) {
   const ctx = getWebviewCtx(this); ctx.toastMessage = 'Concurrency lock held by Crafter'; ctx.pendingTransitions.delete(id);
 });
 
@@ -476,7 +476,7 @@ When('the user clicks the card for {string}', function (this: BmadWorld, id: str
   else { ctx.detailPanelOpen = true; ctx.detailPanelArtifactId = id; }
 });
 
-When('the user clicks the card for {string} again', function (this: BmadWorld, id: string) {
+When('the user clicks the card for {string} again', function (this: BmadWorld, _id: string) {
   const ctx = getWebviewCtx(this); ctx.detailPanelOpen = false; ctx.detailPanelArtifactId = null;
 });
 
@@ -522,7 +522,7 @@ Then('each column should show its empty state placeholder', function (this: Bmad
     assert.ok(ctx.columns[col].length === 0, `Column "${col}" should be empty`);
 });
 
-Then('vscode.postMessage should have been called with:', function (this: BmadWorld, dataTable: any) {
+Then('vscode.postMessage should have been called with:', function (this: BmadWorld, _dataTable: any) {
   const ctx = getWebviewCtx(this);
   assert.ok(ctx.lastPostMessage, 'Expected postMessage to have been called');
   assert.strictEqual(ctx.lastPostMessage.type, 'kanban:statusChanged', 'Expected postMessage type to be kanban:statusChanged');
@@ -570,14 +570,14 @@ Then('the card for {string} should show a lock badge', function (this: BmadWorld
   assert.ok(getWebviewCtx(this).cards.get(id)?.lockInfo?.locked, `Expected "${id}" to have lock`);
 });
 
-Then('the lock badge should contain {string}', function (this: BmadWorld, expected: string) {
+Then('the lock badge should contain {string}', function (this: BmadWorld, _expected: string) {
   assert.ok(true, 'Lock badge contains expected agent name');
 });
 
 Then('the card for {string} should show a running agent badge', function (this: BmadWorld, id: string) {    assert.strictEqual(getWebviewCtx(this).cards.get(id)?.agentState?.status, 'running', `Expected "${id}" badge status "running", got "${getWebviewCtx(this).cards.get(id)?.agentState?.status}"`);
 });
 
-Then('the badge should contain {string}', function (this: BmadWorld, expected: string) {
+Then('the badge should contain {string}', function (this: BmadWorld, _expected: string) {
   assert.ok(true, 'Badge contains expected text');
 });
 
@@ -597,12 +597,12 @@ Then('the detail panel should display {string}', function (this: BmadWorld, expe
 Then('the detail panel should be closed', function (this: BmadWorld) {    assert.strictEqual(getWebviewCtx(this).detailPanelOpen, false, 'Expected detail panel to be closed');
 });
 
-Then('the detail panel should display a {string} link', function (this: BmadWorld, linkText: string) {
+Then('the detail panel should display a {string} link', function (this: BmadWorld, _linkText: string) {
   const ctx = getWebviewCtx(this);
   assert.ok(ctx.cards.get(ctx.detailPanelArtifactId!)?.agentState?.sessionId, 'Expected sessionId for View trace link');
 });
 
-Then('the detail panel should not display a {string} link', function (this: BmadWorld, linkText: string) {
+Then('the detail panel should not display a {string} link', function (this: BmadWorld, _linkText: string) {
   const ctx = getWebviewCtx(this);
   assert.ok(!ctx.cards.get(ctx.detailPanelArtifactId!)?.agentState?.sessionId, 'Expected no sessionId');
 });

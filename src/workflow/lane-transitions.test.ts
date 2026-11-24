@@ -85,7 +85,6 @@ describe('LaneTransitionEngine', () => {
   });
 
   it('happy: findRule picks the right rule for backlog → ready-for-dev', () => {
-    const engine = new LaneTransitionEngine(fakeStore('backlog'), fakeExecutor());
     // findRule is already exported as part of TRANSITION_RULES; test the
     // public surface by looking the rule up directly.
     const rule = TRANSITION_RULES.find(r =>

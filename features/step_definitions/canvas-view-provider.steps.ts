@@ -40,7 +40,7 @@ function buildModules(world: BmadWorld) {
   // Instrument executeCommand
   vsc.commands = {
     ...world.vscode.commands,
-    executeCommand: (cmd: string, ...args: any[]) => {
+    executeCommand: (cmd: string, ..._args: any[]) => {
       executeCommandCalls.push(cmd);
       return Promise.resolve();
     }
@@ -54,7 +54,7 @@ function buildModules(world: BmadWorld) {
     './artifact-file-io': {
       resolveArtifactTargetUri: async (opts: any) => vsc.Uri.file(`/test/${opts.fileName}`),
       writeJsonFile: async () => {},
-      writeMarkdownCompanion: async (jsonUri: any, mdFilename: string) => vsc.Uri.file(`/test/${mdFilename}`)
+      writeMarkdownCompanion: async (_jsonUri: any, mdFilename: string) => vsc.Uri.file(`/test/${mdFilename}`)
     },
     '../harness/policy-engine': {
       harnessEngine: { evaluate: async () => [] },
@@ -236,7 +236,7 @@ function buildMockWebviewView(): any {
     },
     visible: true,
     viewType: 'agileagentcanvas.canvasView',
-    onDidChangeVisibility: (handler: any) => ({ dispose: () => {} }),
+    onDidChangeVisibility: (_handler: any) => ({ dispose: () => {} }),
     onDidDispose: () => {},
     show: () => {}
   };

@@ -11,7 +11,6 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { toolTelemetry } from '../chat/tool-telemetry';
-import { detectAntiPatterns } from './anti-pattern-detector';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('waste-report');

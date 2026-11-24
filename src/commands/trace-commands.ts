@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { getTraceRecorder, TraceEntry } from '../trace/trace-recorder';
+import { getTraceRecorder } from '../trace/trace-recorder';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('trace-commands');

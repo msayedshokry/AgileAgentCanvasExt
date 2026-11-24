@@ -115,7 +115,7 @@ function parseUserStory(summary: string): Story['userStory'] {
 /** Prefix used to identify artifacts that were originally imported from Jira */
 export const JIRA_ID_PREFIX = 'JIRA:';
 
-export function jiraStoryToBmad(js: JiraStory, epicIndex: number, storyIndex: number): Story {
+export function jiraStoryToBmad(js: JiraStory, _epicIndex: number, _storyIndex: number): Story {
     const id = `${JIRA_ID_PREFIX}${js.key}`;
     return {
         id,

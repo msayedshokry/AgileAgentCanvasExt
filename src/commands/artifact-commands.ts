@@ -113,7 +113,7 @@ export async function handleAddArtifact(
 export async function handleAIAction(
     action: string,
     context: any,
-    panel: vscode.WebviewPanel,
+    _panel: vscode.WebviewPanel,
     store: ArtifactStore
 ): Promise<void> {
     const artifact = context?.artifact;
@@ -636,7 +636,6 @@ export function loadElicitationMethods(extensionUri: vscode.Uri): ElicitationMet
             // description and output_pattern are the remaining parts
             // output_pattern is the LAST segment after the last comma in original line
             // We know there are exactly 5 columns; join parts 3..N-1 for description, parts[N] for output_pattern
-            const lastCommaIdx = line.lastIndexOf(',');
             const firstThreeCommas = line.indexOf(',', line.indexOf(',', line.indexOf(',') + 1) + 1);
             const afterThree = line.slice(firstThreeCommas + 1); // "description,output_pattern"
             const descCommaIdx = afterThree.lastIndexOf(',');

@@ -201,7 +201,7 @@ Given('recent trace sessions exist', function (this: BmadWorld) {
 });
 
 Given('no trace sessions exist', function (this: BmadWorld) {
-  const ctx = getCtx(this);
+  getCtx(this);
   // Don't record any entries
 });
 
@@ -500,7 +500,7 @@ When('I wrap the tool with tracing for session {string} and agent {string} and t
     });
 
     const mockTool = {
-      invoke: async (inputs: any, token: any) => {
+      invoke: async (inputs: any, _token: any) => {
         if (ctx.toolError) throw ctx.toolError;
         return { result: `Processed ${JSON.stringify(inputs)}` };
       },

@@ -1,5 +1,4 @@
 import type { ArtifactChanges } from '../types';
-import type { BmadMetadata, Story } from '../types';
 // ─── Autonomy Lifecycle Orchestrator ──────────────────────────────────────────
 // Single entry point that wires all 17 autonomy modules into the extension
 // activation lifecycle. Called from extension.ts after artifacts are loaded
@@ -29,15 +28,12 @@ import { visualPlanStore } from '../state/visual-plan-store';
 import { getVisualPlanMode } from '../utils/visual-plan-config';
 import { VisualPlanGenerator } from './visual-plan-generator';
 import type { PlanTask } from '../types/visual-plan';
-import { parseFrontmatter } from './frontmatter';
-import { extractJson } from '../lib/json-extract';
 import { dependencyAutoResume } from './dependency-auto-resume';
 import { terminalSessionRecovery } from './terminal-recovery';
 import { kanbanDependencyVisualizer, StoryWithTitle } from './kanban-dep-visualizer';
 import { dependencyGraph, type StoryRef } from './dependency-graph';
 import { autoRetryEngine } from './auto-retry-engine';
 import { autonomousGit, type GitRunner } from './autonomous-git';
-import { failureClassifier } from './failure-classifier';
 import { costTracker } from '../chat/cost-tracker';
 import { ConcurrencyQueuePersistence, setupAutoSave as setupConcurrencyAutoSave } from './concurrency-queue-persistence';
 import { crossArtifactHarnessDetector } from '../harness/cross-artifact-detector';
@@ -328,6 +324,7 @@ export class AutonomyLifecycle extends EventEmitter {
             isAlive: () => checkProcessAlive(pid),
             getLastOutputTime: () => Date.now(),
           };
+          // eslint-disable-next-line @typescript-eslint/no-var-requires -- intentional lazy load: avoids a load-order cycle and keeps it off the activation path
           const { createTerminalHealthChecks } = require('./terminal-health-checks');
           for (const check of createTerminalHealthChecks(adapter, { lastModified: Date.now(), getLastModifiedTime: () => Date.now() })) {
             agentHealthMonitor.registerCheck(orphan.sessionId, check);
@@ -677,6 +674,7 @@ export class AutonomyLifecycle extends EventEmitter {
         // Try to use the active chat session (model + stream + token) first.
         // Fall back to vscode.lm when no chat session is open.
         try {
+          // eslint-disable-next-line @typescript-eslint/no-var-requires -- intentional lazy load: avoids a load-order cycle and keeps it off the activation path
           const { getActiveChatSession } = require('../chat/active-session');
           const activeSession = getActiveChatSession();
           if (activeSession?.model && activeSession?.stream && activeSession?.token) {

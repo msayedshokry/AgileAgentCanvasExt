@@ -14,7 +14,7 @@ import {
     addEpic,
     addStory,
 } from './artifact-factory';
-import type { Epic, Story } from '../types';
+import type { Epic } from '../types';
 
 /** Build a minimal artifacts Map pre-seeded with the default state shape. */
 function fakeArtifacts(): Map<string, any> {

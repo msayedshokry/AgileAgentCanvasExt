@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import { createLogger } from '../utils/logger';
-import type { BmadArtifacts } from '../types';
 import { ArtifactFileWriter } from './artifact-file-writer';
 import { writeMarkdownCompanion } from './artifact-file-io';
 
@@ -42,7 +41,6 @@ export class ArtifactMigrator {
             }
 
             let totalMigrated = 0;
-            let totalSkipped = 0;
 
             for (const [epicDirName, epicType] of epicEntries) {
                 if (epicType !== vscode.FileType.Directory) { continue; }
@@ -147,7 +145,6 @@ export class ArtifactMigrator {
                 }
 
                 totalMigrated += migratedCount;
-                totalSkipped += skippedCount;
             }
 
             if (totalMigrated > 0) {

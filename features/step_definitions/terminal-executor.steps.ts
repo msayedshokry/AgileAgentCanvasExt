@@ -102,7 +102,7 @@ function buildMockVscode(world: BmadWorld): any {
         const mockTerminal = {
           name: options?.name || 'test-terminal',
           show: () => {},
-          sendText: (text: string, addNewLine?: boolean) => {
+          sendText: (text: string, _addNewLine?: boolean) => {
             ctx.sendTextCalls.push(text);
           },
           dispose: () => {},
@@ -125,7 +125,7 @@ function buildMockVscode(world: BmadWorld): any {
           index: 0,
         },
       ],
-      getConfiguration: (section?: string) => {
+      getConfiguration: (_section?: string) => {
         const cfg: any = {
           get: (key: string, defaultValue?: any) => {
             if (key === 'outputFolder') return '.agileagentcanvas-context';

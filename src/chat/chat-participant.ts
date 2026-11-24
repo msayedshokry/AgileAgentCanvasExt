@@ -1,13 +1,12 @@
 import * as vscode from 'vscode';
-import type { ArtifactChanges } from '../types';
 import * as path from 'path';
 import { ArtifactStore, Epic } from '../state/artifact-store';
-import { getWorkflowExecutor, WorkflowExecutor } from '../workflow/workflow-executor';
+import { getWorkflowExecutor } from '../workflow/workflow-executor';
 import { sharedToolContext, getToolDefinitions } from './agileagentcanvas-tools';
 import { TOOL_FEW_SHOT } from './tool-examples';
 import { BmadModel, selectModel, streamChatResponse, getNoModelMessage as providerNoModelMessage, ChatMessage } from './ai-provider';
 import { extractJson } from '../lib/json-extract';
-import { getPersonaForArtifactType, formatFullAgentForPrompt, loadAgentPersona, clearPersonaCache, AgentPersona, loadAllAgentPersonas, formatAgentRoster } from './agent-personas';
+import { getPersonaForArtifactType, formatFullAgentForPrompt, loadAgentPersona, AgentPersona, loadAllAgentPersonas, formatAgentRoster } from './agent-personas';
 import { PONYTAIL_HEURISTICS } from './ponytail-heuristics';
 import { JiraClient } from '../integrations/jira-client';
 import type {
@@ -550,7 +549,7 @@ export class AgileAgentCanvasChatParticipant {
      */
     private async handleVisionCommand(
         prompt: string,
-        context: vscode.ChatContext,
+        _context: vscode.ChatContext,
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
@@ -637,7 +636,7 @@ export class AgileAgentCanvasChatParticipant {
      */
     private async handleRequirementsCommand(
         prompt: string,
-        context: vscode.ChatContext,
+        _context: vscode.ChatContext,
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
@@ -699,7 +698,7 @@ export class AgileAgentCanvasChatParticipant {
      */
     private async handleEpicsCommand(
         prompt: string,
-        context: vscode.ChatContext,
+        _context: vscode.ChatContext,
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
@@ -776,7 +775,7 @@ export class AgileAgentCanvasChatParticipant {
      */
     private async handleStoriesCommand(
         prompt: string,
-        context: vscode.ChatContext,
+        _context: vscode.ChatContext,
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
@@ -865,7 +864,7 @@ Requirements covered: ${targetEpic.functionalRequirements?.join(', ') || 'None'}
      */
     private async handleEnhanceCommand(
         prompt: string,
-        context: vscode.ChatContext,
+        _context: vscode.ChatContext,
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
@@ -957,7 +956,6 @@ Requirements covered: ${targetEpic.functionalRequirements?.join(', ') || 'None'}
                 : 'all details (use cases, fit criteria, success metrics, risks, definition of done)';
 
             // Route to the most relevant supporting workflow; for "all" fall back to epic-enhancement step
-            const supportingBase = path.join(executor.getBmadPath(), 'skills', 'aac-create-epics-and-stories');
             const enhancementStep = path.join(executor.getBmadPath(), 'skills', 'aac-create-epics-and-stories', 'SKILL.md');
             const workflowPath = enhancementStep;
 
@@ -986,7 +984,7 @@ Stories: ${targetEpic.stories?.map((s: any) => s.title).join(', ') || 'None'}`;
      */
     private async handleRefineCommand(
         prompt: string,
-        context: vscode.ChatContext,
+        _context: vscode.ChatContext,
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
@@ -1157,7 +1155,7 @@ Stories: ${targetEpic.stories?.map((s: any) => s.title).join(', ') || 'None'}`;
      */
     private async handleDevCommand(
         prompt: string,
-        context: vscode.ChatContext,
+        _context: vscode.ChatContext,
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
@@ -1594,7 +1592,7 @@ ${PONYTAIL_HEURISTICS}
 
         if (session.userInputs.length > 0) {
             stream.markdown('### User Inputs\n\n');
-            session.userInputs.slice(-5).forEach((input, i) => {
+            session.userInputs.slice(-5).forEach((input, _i) => {
                 const stepName = input.step.split('/').pop() || input.step;
                 stream.markdown(`- **${stepName}:** ${input.input.substring(0, 50)}${input.input.length > 50 ? '...' : ''}\n`);
             });
@@ -1621,10 +1619,10 @@ ${PONYTAIL_HEURISTICS}
      * This is called after /refine when user says "apply" or uses /apply
      */
     private async handleApplyCommand(
-        prompt: string,
-        context: vscode.ChatContext,
+        _prompt: string,
+        _context: vscode.ChatContext,
         stream: vscode.ChatResponseStream,
-        token: vscode.CancellationToken
+        _token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
         
         stream.markdown('## Applying Refinements\n\n');
@@ -2117,7 +2115,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
      */
     private async handleSprintCommand(
         prompt: string,
-        context: vscode.ChatContext,
+        _context: vscode.ChatContext,
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
@@ -2253,7 +2251,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
      */
     private async handleUxCommand(
         prompt: string,
-        context: vscode.ChatContext,
+        _context: vscode.ChatContext,
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
@@ -2367,7 +2365,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
      */
     private async handleReadinessCommand(
         prompt: string,
-        context: vscode.ChatContext,
+        _context: vscode.ChatContext,
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
@@ -2476,7 +2474,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
      */
     private async handlePartyCommand(
         prompt: string,
-        context: vscode.ChatContext,
+        _context: vscode.ChatContext,
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
@@ -2586,7 +2584,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
      */
     private async handleDocumentCommand(
         prompt: string,
-        context: vscode.ChatContext,
+        _context: vscode.ChatContext,
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
@@ -2660,7 +2658,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
      */
     private async handleReviewCodeCommand(
         prompt: string,
-        context: vscode.ChatContext,
+        _context: vscode.ChatContext,
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
@@ -2702,7 +2700,6 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
         ];
 
         // Provide sprint/story context if available
-        const state = this.store.getState();
         const epics = this.store.getEpics();
         if (epics.length > 0) {
             const storyCount = epics.reduce((sum, e) => sum + (e.stories?.length || 0), 0);
@@ -2745,7 +2742,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
      */
     private async handleCiCommand(
         prompt: string,
-        context: vscode.ChatContext,
+        _context: vscode.ChatContext,
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
@@ -2819,7 +2816,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
      */
     private async handleQuickCommand(
         prompt: string,
-        context: vscode.ChatContext,
+        _context: vscode.ChatContext,
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
@@ -2906,7 +2903,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
      */
     private async handleDesignThinkingCommand(
         prompt: string,
-        context: vscode.ChatContext,
+        _context: vscode.ChatContext,
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
@@ -2985,7 +2982,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
      */
     private async handleInnovateCommand(
         prompt: string,
-        context: vscode.ChatContext,
+        _context: vscode.ChatContext,
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
@@ -3063,7 +3060,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
      */
     private async handleSolveCommand(
         prompt: string,
-        context: vscode.ChatContext,
+        _context: vscode.ChatContext,
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
@@ -3142,7 +3139,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
      */
     private async handleStoryCraftCommand(
         prompt: string,
-        context: vscode.ChatContext,
+        _context: vscode.ChatContext,
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
@@ -3374,10 +3371,10 @@ Always end the interaction by either saving confirmed changes or acknowledging t
      * /review command - Validate artifacts
      */
     private async handleReviewCommand(
-        prompt: string,
-        context: vscode.ChatContext,
+        _prompt: string,
+        _context: vscode.ChatContext,
         stream: vscode.ChatResponseStream,
-        token: vscode.CancellationToken
+        _token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
         stream.markdown('## ✅ Artifact Review\n\n');
         
@@ -3866,7 +3863,7 @@ Output ONLY the JSON, no explanation.`;
     private async handleWorkflowsCommand(
         prompt: string,
         stream: vscode.ChatResponseStream,
-        token: vscode.CancellationToken
+        _token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
         
         stream.markdown('## BMAD Workflow Catalog\n\n');
@@ -4833,7 +4830,6 @@ Output ONLY the JSON, no explanation.`;
     ): Promise<vscode.ChatResult> {
         const parts = prompt.trim().split(/\s+/);
         const sub = (parts[0] ?? '').toLowerCase();
-        const arg = parts.slice(1).join(' ');
 
         const { CodeburnCommands } = await import('../commands/codeburn-commands.js');
         const cb = new CodeburnCommands();
@@ -4987,6 +4983,7 @@ Output ONLY the JSON, no explanation.`;
         // With a prompt — load the catalogue manifest and ask the LLM to pick the best matches
         let manifest: Array<{ name: string; folderName: string; description: string; isAgent: boolean; enabled: boolean }> = [];
         try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires -- intentional lazy load: avoids a load-order cycle and keeps it off the activation path
             const { getCatalogueService } = require('../state/catalogue-service');
             manifest = (getCatalogueService().getSkillManifest() as Array<{ name: string; folderName: string; description: string; isAgent: boolean; enabled: boolean }>)
                 .filter(e => e.enabled);
@@ -5134,7 +5131,7 @@ Output ONLY the JSON, no explanation.`;
      */
     private async handlePonytailReviewCommand(
         prompt: string,
-        context: vscode.ChatContext,
+        _context: vscode.ChatContext,
         stream: vscode.ChatResponseStream,
         token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
@@ -5255,7 +5252,7 @@ Output ONLY the JSON, no explanation.`;
     private async handleVisualPlanCommand(
         prompt: string,
         stream: vscode.ChatResponseStream,
-        token: vscode.CancellationToken
+        _token: vscode.CancellationToken
     ): Promise<vscode.ChatResult> {
 
         stream.markdown('## Visual Plan\n\n');

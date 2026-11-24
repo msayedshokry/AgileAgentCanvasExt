@@ -1,4 +1,3 @@
-import * as vscode from 'vscode';
 import { createLogger } from '../utils/logger';
 import type { Epic, Story, FunctionalRequirement, UseCase, ProductBrief, PRD, Architecture, TestCase, TestStrategy } from '../types';
 

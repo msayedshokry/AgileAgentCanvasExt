@@ -1,3 +1,4 @@
+import * as path from 'path';
 import * as vscode from 'vscode';
 
 import { BMAD_RESOURCE_DIR } from './constants';
@@ -14,9 +15,8 @@ import { ArtifactRepairer } from './artifact-repair';
 import { ArtifactReducerDispatcher } from './reducer-registry';
 import type { ArtifactReducerCtx, ArtifactChanges, ArtifactDeleteCtx, ArtifactLoadCtx, WritableChanges } from './reducer-types';
 import { exportArtifacts } from './artifact-exporter';
-import { mapSchemaEpicToInternal, mergeEpicDuplicate, extractStoryId, mapSchemaStoryToInternal, mapStatus, mapSchemaRequirement, mapSchemaNonFunctionalRequirement, mapSchemaAdditionalRequirement } from './schema-mappers';
+import { mapSchemaEpicToInternal, mergeEpicDuplicate, mapSchemaStoryToInternal, mapSchemaRequirement } from './schema-mappers';
 import { generateAllArtifactsMarkdown } from './artifact-markdown-generator';
-import { repairArtifactData } from './schema-artifact-mapper';
 import { writeMarkdownCompanion, normalizeLegacyArtifact } from './artifact-file-io';
 import { schemaValidator } from './schema-validator';
 import { harnessEngine } from '../harness/policy-engine';
@@ -1018,12 +1018,11 @@ export class ArtifactStore {
                     this.loadEpicStoryRefs(epic, epicData, fileUri),
                 perIdKey: ArtifactStore.perIdKey,
             };
-            let allEpics = ctx.allEpics;
-            let standaloneStories = ctx.standaloneStories;
-            let pendingUseCases = ctx.pendingUseCases;
-            let unresolvedUseCases = ctx.unresolvedUseCases;
-            let requirements = ctx.requirements;
-            let standaloneReqsLoaded = ctx.standaloneReqsLoaded;
+            const allEpics = ctx.allEpics;
+            const standaloneStories = ctx.standaloneStories;
+            const pendingUseCases = ctx.pendingUseCases;
+            const unresolvedUseCases = ctx.unresolvedUseCases;
+            const requirements = ctx.requirements;
             const normalizeEpicId = ctx.normalizeEpicId;
             const epicIdFromUseCaseId = ctx.epicIdFromUseCaseId;
 
@@ -1036,7 +1035,7 @@ export class ArtifactStore {
                 try {
                     const bmadPath = vscode.Uri.joinPath(
                         vscode.Uri.file(
-                            require('path').join(
+                            path.join(
                                 (vscode.extensions.getExtension('msayedshokry.agileagentcanvas')?.extensionUri ??
                                  vscode.Uri.file(__dirname + '/../..')).fsPath,
                                 'resources', BMAD_RESOURCE_DIR
@@ -1168,7 +1167,6 @@ export class ArtifactStore {
                     // Skip if already present (by ID or title)
                     if (allExistingIds.has(story.id) || allExistingTitles.has(story.title.toLowerCase().trim())) {
                         // Merge enrichment fields into existing inline story
-                        const sourceEpicId = story._sourceEpicId;
                         let existingStory: Story | undefined;
                         for (const epic of allEpics) {
                             existingStory = epic.stories.find((s: Story) =>
@@ -1688,6 +1686,7 @@ export class ArtifactStore {
             // Wrapped in try/catch because in test environments the require
             // may resolve to a mock that doesn't export getWorkspaceResolver.
             try {
+                // eslint-disable-next-line @typescript-eslint/no-var-requires -- intentional lazy load: avoids a load-order cycle and keeps it off the activation path
                 const { getWorkspaceResolver } = require('../extension');
                 const resolver = getWorkspaceResolver();
                 baseUri = resolver?.getActiveOutputUri() ?? null;
@@ -2280,7 +2279,7 @@ export class ArtifactStore {
      * Set the currently selected artifact
      * This triggers the workflow progress panel to update
      */
-    setSelectedArtifact(type: string, id: string): void {
+    setSelectedArtifact(_type: string, id: string): void {
         const found = this.findArtifactById(id);
         if (found) {
             // Use the authoritative type from findArtifactById; the caller may

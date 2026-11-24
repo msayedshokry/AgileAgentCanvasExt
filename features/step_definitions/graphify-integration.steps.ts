@@ -6,11 +6,8 @@
  * filesystem or subprocess calls.
  */
 
-import { Given, When, Then, Before } from '@cucumber/cucumber';
+import { Given, When, Then } from '@cucumber/cucumber';
 import * as assert from 'assert';
-import * as path from 'path';
-import * as os from 'os';
-import * as fs from 'fs';
 import { BmadWorld } from '../support/world';
 
 const proxyquire = require('proxyquire').noCallThru();

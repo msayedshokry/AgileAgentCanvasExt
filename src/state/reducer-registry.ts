@@ -10,7 +10,6 @@ import type {
     ArtifactReducerCtx,
     ArtifactReducerFn,
     ArtifactReducerRegistry,
-    BmadArtifactTypeMap,
 } from './reducer-types';
 import { registerL1Reducers, L1_REGISTERED_TYPES } from './l1-reductions';
 import { registerTeaReducers, TEA_REGISTERED_TYPES } from './tea-reductions';

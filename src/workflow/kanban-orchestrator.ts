@@ -768,6 +768,7 @@ export function initializeKanbanOrchestrator(
 ): void {
   // Import terminalExecutor lazily if not provided (backward compat for tests)
   if (!terminalExecutor) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires -- intentional lazy load: avoids a load-order cycle and keeps it off the activation path
     const { terminalExecutor: te } = require('./terminal-executor');
     kanbanOrchestrator = new KanbanOrchestrator(store, executor, te);
   } else {

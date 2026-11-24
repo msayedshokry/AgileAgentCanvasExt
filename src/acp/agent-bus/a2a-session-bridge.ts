@@ -12,8 +12,6 @@
 //   const task = bridge.getA2ATask('handoff-abc123');
 //   const allTasks = bridge.listA2ATasks();
 
-import { createLogger } from '../../utils/logger';
-const logger = createLogger('a2a-session-bridge');
 
 import { handoffNegotiation } from './handoff-negotiation';
 import type { HandoffSession, HandoffStatus } from './types';

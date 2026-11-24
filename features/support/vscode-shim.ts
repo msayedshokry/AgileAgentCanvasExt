@@ -29,6 +29,7 @@
  * Loaded via `cucumber.js` `require:` list (before step files).
  */
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires -- test shim hooks Node's module loader
 const Module = require('module') as { _load: (request: string, parent: unknown, isMain: boolean) => unknown };
 const originalLoad = Module._load;
 

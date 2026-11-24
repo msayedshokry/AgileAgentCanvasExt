@@ -391,7 +391,7 @@ describe('Autonomous loop: AutoScheduler + orchestrator wiring', () => {
   });
 
   it('scheduler picks ready-for-dev story and orchestrator runs it to done', async () => {
-    const { epics, story } = makeStories();
+    const { epics } = makeStories();
     const store = createTestStore(epics);
 
     // Script terminal verdicts: COMPLETED → APPROVED
@@ -512,7 +512,7 @@ describe('Autonomous loop: AutoScheduler + orchestrator wiring', () => {
   });
 
   it('full pipeline: scheduler → orchestrator → terminal → git commit + PR', async () => {
-    const { epics, story } = makeStories();
+    const { epics } = makeStories();
     const store = createTestStore(epics);
 
     // Override git mocks to return success values
@@ -775,7 +775,7 @@ describe('Autonomous loop: AutoScheduler + orchestrator wiring', () => {
     // should pick the story without waiting for the poll timer.
     mockBudgetEnforcer.isPaused.mockReturnValue(true);
 
-    const { epics, story } = makeStories();
+    const { epics } = makeStories();
     const store = createTestStore(epics);
     const terminalExecutor = {
       killTerminal: vi.fn().mockResolvedValue(undefined),
@@ -955,7 +955,7 @@ describe('Autonomous loop: AbortController mid-run cancellation (#26)', () => {
     const orch = new KanbanOrchestrator(store, {} as any, terminalExecutor);
 
     // Start the run
-    const runPromise = orch.runAutonomous(story, {});
+    void orch.runAutonomous(story, {});
 
     // Wait for dev to finish
     await vi.waitFor(

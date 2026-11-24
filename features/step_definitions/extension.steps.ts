@@ -10,7 +10,7 @@ import { BmadWorld } from '../support/world';
 const proxyquire = require('proxyquire').noCallThru();
 
 // Module-level state
-let registeredCommands: Map<string, Function> = new Map();
+let registeredCommands: Map<string, (...args: any[]) => any> = new Map();
 let executeCommandCalls: Array<{ cmd: string; options?: any }> = [];
 let showInfoCalls: string[] = [];
 let showWarnCalls: string[] = [];
@@ -23,7 +23,7 @@ let createTreeViewCalls: Array<string> = [];
 let registerWebviewViewProviderCalls: Array<string> = [];
 let createChatParticipantCalls: Array<string> = [];
 let createFileSystemWatcherCalls: Array<any> = [];
-let extensionModule: any = null;
+let _extensionModule: any = null;
 let mockInputBoxReturn: string | undefined = undefined;
 let mockQuickPickReturn: any = undefined;
 let mockOpenDialogReturn: any = undefined;
@@ -62,7 +62,7 @@ function getExtensionSetup(world: BmadWorld): { context: any; vscode: any } {
     // Build instrumented vscode mock
     const vsc = { ...world.vscode };
     vsc.commands = {
-      registerCommand: (name: string, handler: Function) => {
+      registerCommand: (name: string, handler: (...args: any[]) => any) => {
         registeredCommands.set(name, handler);
         return { dispose: () => {} };
       },
@@ -74,11 +74,11 @@ function getExtensionSetup(world: BmadWorld): { context: any; vscode: any } {
     };
     vsc.window = {
       ...world.vscode.window,
-      showInformationMessage: (msg: string, ...buttons: any[]) => {
+      showInformationMessage: (msg: string, ..._buttons: any[]) => {
         showInfoCalls.push(msg);
         return Promise.resolve(undefined);
       },
-      showWarningMessage: (msg: string, ...args: any[]) => {
+      showWarningMessage: (msg: string, ..._args: any[]) => {
         showWarnCalls.push(msg);
         return Promise.resolve(mockWarnReturn);
       },
@@ -121,7 +121,7 @@ function getExtensionSetup(world: BmadWorld): { context: any; vscode: any } {
           active: true,
         };
       },
-      createTreeView: (id: string, opts: any) => {
+      createTreeView: (id: string, _opts: any) => {
         createTreeViewCalls.push(id);
         return {
           onDidChangeSelection: () => {},
@@ -131,7 +131,7 @@ function getExtensionSetup(world: BmadWorld): { context: any; vscode: any } {
           dispose: () => {},
         };
       },
-      registerWebviewViewProvider: (id: string, provider: any) => {
+      registerWebviewViewProvider: (id: string, _provider: any) => {
         registerWebviewViewProviderCalls.push(id);
         return { dispose: () => {} };
       },
@@ -147,7 +147,7 @@ function getExtensionSetup(world: BmadWorld): { context: any; vscode: any } {
       withProgress: async (_opts: any, task: any) => task({ report: () => {} }),
     };
     vsc.chat = {
-      createChatParticipant: (id: string, handler: Function) => {
+      createChatParticipant: (id: string, _handler: (...args: any[]) => any) => {
         createChatParticipantCalls.push(id);
         return { iconPath: undefined, onDidReceiveFeedback: () => {}, dispose: () => {} };
       }
@@ -183,7 +183,7 @@ function loadExtensionModule(world: BmadWorld): any {
       './artifact-file-io': {
         resolveArtifactTargetUri: async (opts: any) => vsc.Uri.file(`/test/${opts.fileName}`),
         writeJsonFile: async () => {},
-        writeMarkdownCompanion: async (jsonUri: any, mdFilename: string) => vsc.Uri.file(`/test/${mdFilename}`)
+        writeMarkdownCompanion: async (_jsonUri: any, mdFilename: string) => vsc.Uri.file(`/test/${mdFilename}`)
       },
       '../harness/policy-engine': {
         harnessEngine: { evaluate: async () => [] },
@@ -318,7 +318,7 @@ function loadExtensionModule(world: BmadWorld): any {
       },
     });
     (world as any)._extModule = mod;
-    extensionModule = mod;
+    _extensionModule = mod;
   }
   return (world as any)._extModule;
 }
@@ -331,7 +331,7 @@ Given('a fresh extension activation', function(this: BmadWorld) {
   (this as any)._extSetup = null;
   (this as any)._extModule = null;
   (this as any)._activated = false;
-  extensionModule = null;
+  _extensionModule = null;
   mockInputBoxReturn = undefined;
   mockQuickPickReturn = undefined;
   mockOpenDialogReturn = undefined;
@@ -594,7 +594,7 @@ Then('the cost tracker log path should be set', function(this: BmadWorld) {
   );
 });
 
-Then('the cross-artifact harness detector threshold should be {int}', function(this: BmadWorld, expected: number) {
+Then('the cross-artifact harness detector threshold should be {int}', function(this: BmadWorld, _expected: number) {
   const { crossArtifactHarnessDetector } = require('../../src/harness/cross-artifact-detector');
   const mod = crossArtifactHarnessDetector as any;
   assert.ok(mod.threshold !== undefined, 'Expected crossArtifactHarnessDetector threshold to be set');

@@ -2,9 +2,7 @@ import * as cp from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
-import { createLogger } from '../../utils/logger';
 
-const logger = createLogger('codeburn-detector');
 
 export type CodeburnCliForm = 'cli' | 'npx' | 'local' | 'unavailable';
 

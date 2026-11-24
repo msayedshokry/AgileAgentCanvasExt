@@ -444,70 +444,7 @@ const loadVision: ArtifactLoadFn = (ctx) => {
     }
 };
 
-// ─── product-brief ──────────────────────────────────────────────────────
-
-const loadProductBrief: ArtifactLoadFn = (ctx) => {
-    const { data, fileUri, artifacts, projectName } = ctx;
-    sourceFilesSetEpicsCompat(ctx, fileUri);  // see helper below
-    const pbData = data.content || data;
-    artifacts.set('productBrief', pbData);
-    if (!projectName) ctx.projectName = pbData.productName || data.metadata?.projectName || '';
-    logDebug(`Loaded product-brief: ${pbData.productName || '(unnamed)'}`);
-};
-
-// ─── prd ────────────────────────────────────────────────────────────────
-
-const loadPrd: ArtifactLoadFn = (ctx) => {
-    const { data, fileUri, artifacts, projectName, requirements, standaloneReqsLoaded } = ctx;
-    sourceFilesSetEpicsCompat(ctx, fileUri);  // see helper below
-    const prdData = data.content || data;
-    artifacts.set('prd', prdData);
-    if (!projectName) {
-        ctx.projectName = prdData.productOverview?.productName || data.metadata?.projectName || '';
-    }
-    logDebug(`Loaded PRD: ${prdData.productOverview?.productName || '(unnamed)'}`);
-
-    // PRD is the seed source for NFR and additional requirements.
-    // Standalone requirements.json (if exists) takes priority per category.
-    const prdReqs = prdData.requirements;
-    if (prdReqs) {
-        if (!standaloneReqsLoaded.nonFunctional
-            && Array.isArray(prdReqs.nonFunctional) && prdReqs.nonFunctional.length > 0) {
-            requirements.nonFunctional.push(
-                ...prdReqs.nonFunctional.map((nfr: any) => mapSchemaNonFunctionalRequirement(nfr)),
-            );
-            logDebug(`Extracted ${prdReqs.nonFunctional.length} non-functional requirements from PRD`);
-        } else if (standaloneReqsLoaded.nonFunctional) {
-            logDebug(`Skipped PRD NFR extraction (standalone requirements.json takes priority)`);
-        }
-        if (!standaloneReqsLoaded.additional
-            && Array.isArray(prdReqs.additional) && prdReqs.additional.length > 0) {
-            requirements.additional.push(
-                ...prdReqs.additional.map((ar: any) => mapSchemaAdditionalRequirement(ar)),
-            );
-            logDebug(`Extracted ${prdReqs.additional.length} additional requirements from PRD`);
-        } else if (standaloneReqsLoaded.additional) {
-            logDebug(`Skipped PRD additional extraction (standalone requirements.json takes priority)`);
-        }
-    }
-};
-
-// ─── architecture ───────────────────────────────────────────────────────
-
-const loadArchitecture: ArtifactLoadFn = (ctx) => {
-    const { data, fileUri, artifacts } = ctx;
-    sourceFilesSetEpicsCompat(ctx, fileUri);
-    const archData = data.content || data;
-    artifacts.set('architecture', archData);
-    logDebug(`Loaded architecture: ${archData.overview?.projectName || '(unnamed)'}`);
-};
-
-// Inline helper for the simple singletons above (DRY: same sourceFiles.set(...) pattern)
-function sourceFilesSetEpicsCompat(_ctx: ArtifactLoadCtx, _fileUri: vscode.Uri) {
-    // origin: each case did `this.sourceFiles.set('<key>', fileUri)`.  We dispatch
-    // on artifactType below so each case sets its own key.
-    // (Kept as a no-op stub; the actual set is inline in each loader for clarity.)
-}
+// product-brief, prd and architecture loaders: see the *Final versions below.
 
 // ─── test-case / test-cases (file may have single TC or array) ───────────
 
