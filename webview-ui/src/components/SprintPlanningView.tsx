@@ -518,9 +518,11 @@ interface SprintPlanningViewProps {
   data: SprintData;
   onClose: () => void;
   onRunSprintPlanning: () => void;
+  /** Starts a recommended skill from the sprint health strip. */
+  onRunSkill?: (recommendation: NonNullable<SprintHealth['recommendation']>) => void;
 }
 
-export function SprintPlanningView({ data, onClose, onRunSprintPlanning }: SprintPlanningViewProps) {
+export function SprintPlanningView({ data, onClose, onRunSprintPlanning, onRunSkill }: SprintPlanningViewProps) {
   const [activeSprintId, setActiveSprintId] = useState<string | null>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -606,7 +608,7 @@ export function SprintPlanningView({ data, onClose, onRunSprintPlanning }: Sprin
       return (
         <>
           <SprintMeta data={data} />
-          {data.health && <SprintHealthStrip health={data.health} />}
+          {data.health && <SprintHealthStrip health={data.health} onRunNext={onRunSkill} />}
           <div className="sprint-no-sprints-notice">
             <Icon name="sprint" size={14} />
             No sprint groupings found — showing all items. Re-run <strong>sprint-planning</strong> to generate goal-based sprints.
@@ -649,7 +651,7 @@ export function SprintPlanningView({ data, onClose, onRunSprintPlanning }: Sprin
     return (
       <>
         <SprintMeta data={data} />
-        {data.health && <SprintHealthStrip health={data.health} />}
+        {data.health && <SprintHealthStrip health={data.health} onRunNext={onRunSkill} />}
 
         {/* Sprint tab bar with scroll arrows */}
         <div className={`sprint-tabs-wrapper${canScrollLeft ? ' can-scroll-left' : ''}${canScrollRight ? ' can-scroll-right' : ''}`}>

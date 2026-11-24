@@ -736,6 +736,17 @@ function App() {
     });
   });
 
+  const handleRunRecommendedSkill = useEvent((rec: NonNullable<SprintHealth['recommendation']>) => {
+    setShowSprintView(false);
+    vscode.postMessage({
+      type: 'launchWorkflow',
+      workflow: {
+        triggerPhrase: rec.story_key ? `${rec.skill} for story ${rec.story_key}` : rec.skill,
+        skillId: rec.skill,
+      },
+    });
+  });
+
   const handleAskSubmit = useEvent((text: string) => {
     setAskOpen(false);
     vscode.postMessage({ type: 'askAgent', text });
@@ -1452,6 +1463,7 @@ function App() {
           data={sprintData}
           onClose={handleCloseSprintView}
           onRunSprintPlanning={handleRunSprintPlanning}
+          onRunSkill={handleRunRecommendedSkill}
         />
       )}
       {/* Search box — positioned to the left of the Workflow FAB */}

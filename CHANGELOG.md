@@ -58,7 +58,8 @@ Content ported from upstream BMB v2.2.2, CIS v0.3.2 and TEA v1.27.2 (TEA's last 
 - **`aac-sprint-planning` uses it for generate, status and validate.** A `--dry-run` shows the drift before writing, and renamed stories are reported with their old statuses instead of silently dropped. A `generate --fresh --set key=status` repair path is the only way to downgrade a status. The skill falls back to manual steps if Node is unavailable.
 - **The status view** reports counts, risks (stale file, orphaned stories, stories waiting for review), open retrospective action items and the next skill to run.
 - **Works with canvas projects.** The script reads the canvas's own `epics.json` (`content.epics[].stories[]`, ids like `EPIC-1` / `S-1.1`), using a story's recorded status as a floor, not just markdown epic headings. Before this it found no epics in a canvas project.
-- **Sprint health on the Sprint Planning view.** A strip under the project details shows the next skill to run and for which story, any risks (stale file, orphaned stories, stories waiting for review), and the open retrospective action items, which expand on click.
+- **Sprint health on the Sprint Planning view.** A strip under the project details shows the next skill to run and for which story, any risks (stale file, orphaned stories, stories waiting for review), and the open retrospective action items, which expand on click. Clicking the next step starts that skill in chat for the named story.
+- **The sample project's `sprint-status.yaml` is regenerated** from its `epics.json`. It had two stale keys and covered only 2 of 4 epics.
 - **Board runs now resolve `{bmad-path}`** in the skill text they inject, so script and step paths work outside chat too.
 
 ### Code review: a clean "no gaps" result is checked

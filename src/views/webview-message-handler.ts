@@ -29,6 +29,7 @@ import { loadArchIndex } from '../integrations/graphify/graph-loader';
 import { runGraphify } from '../integrations/graphify/graphify-runner';
 import { GFY } from '../integrations/graphify/graphify-commands';
 import { buildSprintHealth } from '../sprint/sprint-health';
+import { resolveBundledSkillPath } from './skill-launch';
 import {
     getJiraConfig,
     formatEpicsAsMarkdown,
@@ -206,7 +207,11 @@ export async function handleCommonWebviewMessage(
 
         case 'launchWorkflow':
             if (message.workflow?.triggerPhrase) {
-                await launchBmmWorkflow(message.workflow.triggerPhrase, store, message.workflow.workflowFilePath);
+                // A bundled skill id (sent by the sprint health strip) resolves to
+                // its SKILL.md here; the webview never sees extension paths.
+                const workflowFilePath = message.workflow.workflowFilePath
+                    ?? resolveBundledSkillPath(extensionUri.fsPath, message.workflow.skillId);
+                await launchBmmWorkflow(message.workflow.triggerPhrase, store, workflowFilePath);
             }
             return true;
 

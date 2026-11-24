@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SprintHealthStrip } from './SprintHealthStrip';
 import type { SprintHealth } from './SprintPlanningView';
@@ -40,6 +40,18 @@ describe('SprintHealthStrip', () => {
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(screen.getByText('Add a lint rule')).toBeTruthy();
     expect(screen.getByText(/Charlie/)).toBeTruthy();
+  });
+
+  it('launches the recommended skill when the Next action is clicked', () => {
+    const onRunNext = vi.fn();
+    render(<SprintHealthStrip health={base} onRunNext={onRunNext} />);
+    fireEvent.click(screen.getByRole('button', { name: /Run aac-code-review for 1-2-signup/ }));
+    expect(onRunNext).toHaveBeenCalledWith(base.recommendation);
+  });
+
+  it('shows the Next action as plain text when there is no launcher', () => {
+    render(<SprintHealthStrip health={base} />);
+    expect(screen.queryByRole('button', { name: /Run aac-code-review/ })).toBeNull();
   });
 
   it('renders nothing extra when there are no risks or action items', () => {

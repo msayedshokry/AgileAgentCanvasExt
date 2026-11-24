@@ -5,13 +5,17 @@ import { useState } from 'react';
 import { Icon } from './Icon';
 import type { SprintHealth } from './SprintPlanningView';
 
+type Recommendation = NonNullable<SprintHealth['recommendation']>;
+
 interface SprintHealthStripProps {
   health: SprintHealth;
+  /** Starts the recommended skill; without it the Next action is plain text. */
+  onRunNext?: (recommendation: Recommendation) => void;
 }
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
-export function SprintHealthStrip({ health }: SprintHealthStripProps) {
+export function SprintHealthStrip({ health, onRunNext }: SprintHealthStripProps) {
   const [itemsOpen, setItemsOpen] = useState(false);
   const { recommendation, allDone, risks, openActionItems } = health;
   const itemCount = openActionItems.length;
@@ -22,8 +26,23 @@ export function SprintHealthStrip({ health }: SprintHealthStripProps) {
         {recommendation ? (
           <>
             <span className="sprint-health-label">Next</span>
-            <code className="sprint-health-skill">{recommendation.skill}</code>
-            {recommendation.story_key && <span className="sprint-health-story">{recommendation.story_key}</span>}
+            {onRunNext ? (
+              <button
+                type="button"
+                className="sprint-health-run"
+                aria-label={`Run ${recommendation.skill}${recommendation.story_key ? ` for ${recommendation.story_key}` : ''}`}
+                onClick={() => onRunNext(recommendation)}
+              >
+                <code className="sprint-health-skill">{recommendation.skill}</code>
+                {recommendation.story_key && <span className="sprint-health-story">{recommendation.story_key}</span>}
+                <Icon name="chevron-right" size={12} />
+              </button>
+            ) : (
+              <>
+                <code className="sprint-health-skill">{recommendation.skill}</code>
+                {recommendation.story_key && <span className="sprint-health-story">{recommendation.story_key}</span>}
+              </>
+            )}
             <span className="sprint-health-reason">— {recommendation.reason}</span>
           </>
         ) : allDone ? (
