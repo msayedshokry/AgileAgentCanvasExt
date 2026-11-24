@@ -19,23 +19,22 @@
   &.rr-bg-done { background: var(--badge-done-bg, #2ecc71); }
   &.rr-bg-editor { background: var(--vscode-editor-background); }
   &.rr-bg-error { background: var(--vscode-inputValidation-errorBackground); }
-  &.rr-bg-subtle { background: var(--vscode-editor-inactiveSelectionBackground); }
   &.rr-bg-warning { background: var(--vscode-inputValidation-warningBackground, rgba(255, 200, 0, 0.1)); }
   &.rr-border-b { border-bottom: 1px solid var(--vscode-widget-border); }
   &.rr-border-b-panel { border-bottom: 1px solid var(--vscode-panel-border, #333); }
-  &.rr-accent-border { border-left: 2px solid var(--vscode-widget-border); }
-  &.rr-accent-error { border-left: 2px solid var(--vscode-errorForeground); }
-  &.rr-accent-link { border-left: 2px solid var(--vscode-textLink-foreground); }
-  &.rr-accent-orange { border-left: 2px solid var(--vscode-charts-orange); }
-  &.rr-accent-passed { border-left: 2px solid var(--vscode-testing-iconPassed); }
-  &.rr-accent-strong-blue { border-left: 3px solid var(--vscode-terminal-ansiBlue); }
-  &.rr-accent-strong-error { border-left: 3px solid var(--vscode-errorForeground); }
-  &.rr-accent-strong-focus { border-left: 3px solid var(--vscode-focusBorder); }
-  &.rr-accent-strong-link { border-left: var(--vscode-textLink-foreground, #3794ff); }
-  &.rr-accent-strong-passed { border-left: 3px solid var(--vscode-testing-iconPassed); }
-  &.rr-accent-strong-risk { border-left: 3px solid var(--badge-risk-bg, #e74c3c); }
-  &.rr-accent-strong-warning { border-left: 3px solid var(--vscode-editorWarning-foreground); }
-  &.rr-accent-warning { border-left: 2px solid var(--vscode-editorWarning-foreground); }
+  &.rr-accent-border { --tick: var(--vscode-widget-border); }
+  &.rr-accent-error { --tick: var(--vscode-errorForeground); }
+  &.rr-accent-link { --tick: var(--vscode-textLink-foreground); }
+  &.rr-accent-orange { --tick: var(--vscode-charts-orange); }
+  &.rr-accent-passed { --tick: var(--vscode-testing-iconPassed); }
+  &.rr-accent-strong-blue { --tick: var(--vscode-terminal-ansiBlue); --tick-width: 3px; }
+  &.rr-accent-strong-error { --tick: var(--vscode-errorForeground); --tick-width: 3px; }
+  &.rr-accent-strong-focus { --tick: var(--vscode-focusBorder); --tick-width: 3px; }
+  &.rr-accent-strong-link { --tick: var(--vscode-textLink-foreground, #3794ff); --tick-width: 3px; }
+  &.rr-accent-strong-passed { --tick: var(--vscode-testing-iconPassed); --tick-width: 3px; }
+  &.rr-accent-strong-risk { --tick: var(--badge-risk-bg, #e74c3c); --tick-width: 3px; }
+  &.rr-accent-strong-warning { --tick: var(--vscode-editorWarning-foreground); --tick-width: 3px; }
+  &.rr-accent-warning { --tick: var(--vscode-editorWarning-foreground); }
   &.rr-border-l { border-left: 1px solid var(--vscode-widget-border); }
   &.rr-basis-100 { flex: 1 1 100px; }
   &.rr-basis-120 { flex: 1 1 120px; }
@@ -135,4 +134,18 @@
   &.rr-w-80 { width: 80px; }
   &.rr-w-full { width: 100%; }
   &.rr-border-blocks { border-color: var(--badge-blocks-bg, orange); }
+
+  /* Margin-note accent: a 1px hairline with a short coloured tick at the
+   * top, replacing the 2–3px coloured side bars. --tick is set per class. */
+  &[class*='rr-accent-'] {
+    border-left: var(--rule-width) solid var(--rule);
+    background-image: linear-gradient(var(--tick), var(--tick));
+    background-origin: border-box;
+    background-repeat: no-repeat;
+    background-position: 0 0.45em;
+    background-size: var(--tick-width, 2px) 1em;
+  }
+
+  /* List item: unfilled, separated from its neighbour by a hairline. */
+  &.rr-item { border-top: var(--rule-width) solid var(--rule); border-radius: 0; }
 }

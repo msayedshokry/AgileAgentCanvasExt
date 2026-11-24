@@ -3216,37 +3216,36 @@ body.vscode-light .minimap-viewport {
   min-width: 320px;
   max-width: 600px;
   height: 100%;
-  background: var(--vscode-editor-background);
-  border-left: 1px solid var(--vscode-editorWidget-border);
+  background: var(--paper);
+  border-left: var(--rule-width) solid var(--rule-strong);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   flex-shrink: 0;
-  animation: slideInRight 0.25s ease-out;
-  box-shadow: -6px 0 18px rgba(0, 0, 0, 0.12);
+  animation: slideInRight var(--dur-base) var(--ease-out);
   z-index: 950;
   position: relative;
 }
 
 /* ── Per-type accent color mapping ── */
-.detail-panel.type-vision            { --accent: var(--vscode-charts-purple); }
-.detail-panel.type-product-brief     { --accent: var(--vscode-charts-purple); }
-.detail-panel.type-prd               { --accent: var(--vscode-charts-red); }
-.detail-panel.type-requirement       { --accent: var(--vscode-charts-blue); }
-.detail-panel.type-nfr               { --accent: color-mix(in srgb, var(--vscode-charts-blue) 70%, var(--vscode-charts-purple)); }
-.detail-panel.type-additional-req    { --accent: color-mix(in srgb, var(--vscode-charts-blue) 50%, var(--vscode-charts-purple)); }
-.detail-panel.type-architecture      { --accent: var(--vscode-charts-cyan); }
-.detail-panel.type-architecture-decision { --accent: color-mix(in srgb, var(--vscode-charts-cyan) 70%, var(--vscode-charts-green)); }
-.detail-panel.type-system-component  { --accent: color-mix(in srgb, var(--vscode-charts-cyan) 60%, var(--vscode-charts-orange)); }
-.detail-panel.type-epic              { --accent: var(--vscode-charts-green); }
-.detail-panel.type-story             { --accent: var(--vscode-charts-yellow); }
-.detail-panel.type-use-case          { --accent: var(--vscode-charts-orange); }
-.detail-panel.type-test-case         { --accent: var(--vscode-charts-red); }
-.detail-panel.type-test-strategy     { --accent: var(--vscode-charts-blue); }
-.detail-panel.type-risk              { --accent: color-mix(in srgb, var(--vscode-charts-red) 80%, var(--vscode-charts-yellow)); }
-.detail-panel.type-task              { --accent: color-mix(in srgb, var(--vscode-charts-yellow) 70%, var(--vscode-charts-green)); }
+.detail-panel.type-vision            { --type-color: var(--vscode-charts-purple); }
+.detail-panel.type-product-brief     { --type-color: var(--vscode-charts-purple); }
+.detail-panel.type-prd               { --type-color: var(--vscode-charts-red); }
+.detail-panel.type-requirement       { --type-color: var(--vscode-charts-blue); }
+.detail-panel.type-nfr               { --type-color: color-mix(in srgb, var(--vscode-charts-blue) 70%, var(--vscode-charts-purple)); }
+.detail-panel.type-additional-req    { --type-color: color-mix(in srgb, var(--vscode-charts-blue) 50%, var(--vscode-charts-purple)); }
+.detail-panel.type-architecture      { --type-color: var(--vscode-charts-cyan); }
+.detail-panel.type-architecture-decision { --type-color: color-mix(in srgb, var(--vscode-charts-cyan) 70%, var(--vscode-charts-green)); }
+.detail-panel.type-system-component  { --type-color: color-mix(in srgb, var(--vscode-charts-cyan) 60%, var(--vscode-charts-orange)); }
+.detail-panel.type-epic              { --type-color: var(--vscode-charts-green); }
+.detail-panel.type-story             { --type-color: var(--vscode-charts-yellow); }
+.detail-panel.type-use-case          { --type-color: var(--vscode-charts-orange); }
+.detail-panel.type-test-case         { --type-color: var(--vscode-charts-red); }
+.detail-panel.type-test-strategy     { --type-color: var(--vscode-charts-blue); }
+.detail-panel.type-risk              { --type-color: color-mix(in srgb, var(--vscode-charts-red) 80%, var(--vscode-charts-yellow)); }
+.detail-panel.type-task              { --type-color: color-mix(in srgb, var(--vscode-charts-yellow) 70%, var(--vscode-charts-green)); }
 /* Fallback for types not explicitly listed */
-.detail-panel                        { --accent: var(--vscode-focusBorder); }
+.detail-panel                        { --type-color: var(--ink-3); }
 
 /* Drag-to-resize handle on the left edge */
 .detail-panel-resize-handle {
@@ -3265,91 +3264,58 @@ body.vscode-light .minimap-viewport {
   opacity: 0.5;
 }
 
+/* Masthead: kicker (type), display title, status line, view tabs —
+ * closed by a strong rule. No gradient, no accent strip. */
 .detail-panel-header {
-  padding: 16px;
-  padding-top: 20px;
-  border-bottom: 1px solid var(--vscode-editorWidget-border);
-  background: linear-gradient(180deg,
-    color-mix(in srgb, var(--accent) 8%, var(--vscode-titleBar-activeBackground)),
-    var(--vscode-editor-background));
+  padding: var(--space-5) var(--space-5) 0;
+  border-bottom: var(--rule-width) solid var(--rule-strong);
+  background: var(--paper);
   position: relative;
-}
-
-/* Colored accent strip at the top of the header */
-.detail-panel-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--accent);
-  border-radius: 0 0 2px 2px;
 }
 
 .detail-panel-title {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
 .detail-type-icon {
-  font-size: 18px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--accent) 15%, transparent);
-  color: var(--accent);
+  color: var(--type-color);
   flex-shrink: 0;
 }
 
 .detail-type {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--accent);
   flex: 1;
-  opacity: 0.9;
-  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: var(--text-kicker);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-kicker);
+  color: var(--ink-3);
 }
 
-.close-btn {
-  background: none;
-  border: none;
-  color: var(--vscode-foreground);
-  font-size: 16px;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  opacity: 0.7;
-  transition: opacity var(--transition-fast), background var(--transition-fast);
-}
-
-.close-btn:hover {
-  background: var(--vscode-toolbar-hoverBackground);
-  opacity: 1;
-}
-
+.close-btn,
 .popout-btn {
   background: none;
   border: none;
-  color: var(--vscode-foreground);
-  font-size: 14px;
-  cursor: pointer;
-  padding: 4px 6px;
-  border-radius: 4px;
-  opacity: 0.7;
+  color: var(--ink-2);
+  font-size: 16px;
   line-height: 1;
-  transition: opacity var(--transition-fast), background var(--transition-fast);
+  cursor: pointer;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius);
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 
+.popout-btn { font-size: 14px; }
+
+.close-btn:hover,
 .popout-btn:hover {
-  background: var(--vscode-toolbar-hoverBackground);
-  opacity: 1;
+  background: var(--paper-wash);
+  color: var(--ink);
 }
 
 /* Standalone detail panel (pop-out tab) — fills the full editor tab */
@@ -3511,162 +3477,173 @@ body.vscode-light .minimap-viewport {
 }
 
 .detail-panel-name h3 {
-  margin: 0 0 8px 0;
-  font-size: 16px;
-  font-weight: 600;
+  margin: 0 0 var(--space-3) 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-display);
+  font-weight: var(--weight-strong);
+  line-height: var(--leading-display);
+  letter-spacing: -0.01em;
+  color: var(--ink);
 }
 
 .detail-panel-name .title-input {
   width: 100%;
-  padding: 6px 10px;
-  font-size: 16px;
-  font-weight: 600;
-  border: 1px solid var(--vscode-input-border);
-  border-radius: 4px;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-display);
+  font-weight: var(--weight-strong);
+  line-height: var(--leading-display);
+  border: var(--rule-width) solid var(--rule-strong);
+  border-radius: var(--radius);
   background: var(--vscode-input-background);
   color: var(--vscode-input-foreground);
   font-family: inherit;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: border-color var(--dur-fast) var(--ease-out);
 }
 
 .detail-panel-name .title-input:focus {
   outline: none;
-  border-color: var(--vscode-focusBorder);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--vscode-focusBorder) 30%, transparent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 
+/* Status line: "STATUS  ● In progress" in kicker + ink. */
 .detail-panel-status {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
 }
 
 .status-label {
-  font-size: 12px;
-  color: var(--vscode-descriptionForeground);
+  font-family: var(--font-mono);
+  font-size: var(--text-kicker);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-kicker);
+  color: var(--ink-3);
 }
 
 .status-badge {
-  font-size: 11px;
-  padding: 4px 10px 4px 8px;
-  border-radius: 999px;
-  font-weight: 600;
-  text-transform: capitalize;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  font-size: var(--text-small);
+  font-weight: var(--weight-strong);
+  text-transform: capitalize;
+  color: var(--ink);
+  --status-color: var(--ink-3);
 }
 
-/* Status dot indicator */
 .status-badge::before {
   content: '';
   display: inline-block;
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: currentColor;
+  background: var(--status-color);
   flex-shrink: 0;
 }
 
 .status-select {
-  padding: 4px 8px;
-  border: 1px solid var(--vscode-dropdown-border);
-  border-radius: 4px;
+  padding: var(--space-1) var(--space-2);
+  border: var(--rule-width) solid var(--rule-strong);
+  border-radius: var(--radius);
   background: var(--vscode-dropdown-background);
   color: var(--vscode-dropdown-foreground);
-  font-size: 12px;
+  font-size: var(--text-small);
   font-family: inherit;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: border-color var(--dur-fast) var(--ease-out);
 }
 
 .status-select:focus {
   outline: none;
-  border-color: var(--vscode-focusBorder);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--vscode-focusBorder) 30%, transparent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 
-/* Detail Panel Content */
+/* Detail Panel Content — the article body. Sections are numbered by a
+ * CSS counter, separated by hairlines, never boxed. */
 .detail-panel-content {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: var(--space-2) var(--space-5) var(--space-6);
   scroll-behavior: smooth;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
+  counter-reset: detail-section;
 }
 
-.detail-panel-content section + section {
-  margin-top: 16px;
-}
-
+/* Summary stats row: label over value, divided by hairlines. */
 .detail-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  align-items: flex-start;
+  align-items: stretch;
+  gap: 0;
+  margin: var(--space-3) 0;
+  border-top: var(--rule-width) solid var(--rule);
+  border-bottom: var(--rule-width) solid var(--rule);
 }
 
 .detail-row .detail-section {
-  margin-bottom: 0;
+  margin: 0;
 }
 
 .detail-row .detail-section.inline {
-  gap: 8px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4) var(--space-3) 0;
+  margin-right: var(--space-4);
+  border-right: var(--rule-width) solid var(--rule);
+}
+
+.detail-row .detail-section.inline:last-child {
+  border-right: none;
+  margin-right: 0;
 }
 
 .count-badge {
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 28px;
-  height: 24px;
-  padding: 0 8px;
-  border-radius: 999px;
-  background: var(--vscode-badge-background);
-  color: var(--vscode-badge-foreground);
-  font-size: 12px;
-  font-weight: 600;
+  align-items: baseline;
+  font-family: var(--font-mono);
+  font-size: var(--text-title);
+  font-weight: 400;
+  color: var(--ink);
 }
 
 .detail-section {
-  margin-bottom: 16px;
-  animation: slideInUp 0.2s ease-out;
-  animation-fill-mode: backwards;
-  background: color-mix(in srgb, var(--vscode-textBlockQuote-background) 50%, transparent);
-  border-radius: 8px;
-  padding: 12px;
-  border: 1px solid color-mix(in srgb, var(--vscode-editorWidget-border) 40%, transparent);
-  transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
+  margin: 0;
+  padding: var(--space-4) 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  animation: fadeIn var(--dur-base) var(--ease-out) backwards;
 }
 
-.detail-section:hover {
-  border-color: color-mix(in srgb, var(--vscode-editorWidget-border) 70%, transparent);
+.detail-panel-content > .detail-section + .detail-section,
+.detail-panel-content section + section {
+  border-top: var(--rule-width) solid var(--rule);
+  margin-top: 0;
 }
-
-.detail-section:nth-child(1) { animation-delay: 0.05s; }
-.detail-section:nth-child(2) { animation-delay: 0.1s; }
-.detail-section:nth-child(3) { animation-delay: 0.15s; }
-.detail-section:nth-child(4) { animation-delay: 0.2s; }
-.detail-section:nth-child(5) { animation-delay: 0.25s; }
 
 .detail-section.inline {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .detail-section h4 {
-  margin: 0 0 10px 0;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--vscode-descriptionForeground);
-  padding-bottom: 6px;
-  border-bottom: 1px solid color-mix(in srgb, var(--vscode-editorWidget-border) 50%, transparent);
   display: flex;
-  align-items: center;
-  gap: 6px;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3) 0;
+  padding: 0;
+  border: none;
+  font-family: var(--font-ui);
+  font-size: var(--text-kicker);
+  font-weight: var(--weight-strong);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-kicker);
+  color: var(--ink-2);
 }
 
 .detail-section.inline h4 {
@@ -3674,36 +3651,41 @@ body.vscode-light .minimap-viewport {
 }
 
 /* ================================================
-   COLLAPSIBLE SECTIONS
+   COLLAPSIBLE SECTIONS — "01  WHAT WENT WELL ········ (2)"
    ================================================ */
+
+.detail-section.collapsible {
+  counter-increment: detail-section;
+}
 
 .detail-section.collapsible > h4.collapsible-header {
   cursor: pointer;
   user-select: none;
-  transition: color var(--transition-fast);
-  margin-bottom: 10px;
-  border-bottom-color: transparent;
+  margin-bottom: var(--space-3);
+  transition: color var(--dur-fast) var(--ease-out);
 }
 
-.detail-section.collapsible:not(.collapsed) > h4.collapsible-header {
-  border-bottom-color: color-mix(in srgb, var(--vscode-editorWidget-border) 50%, transparent);
-}
-
-/* Left accent bar on expanded collapsible sections */
-.detail-section.collapsible:not(.collapsed) {
-  border-left: 3px solid color-mix(in srgb, var(--accent) 60%, transparent);
+.detail-section.collapsible > h4.collapsible-header::before {
+  content: counter(detail-section, decimal-leading-zero);
+  font-family: var(--font-mono);
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--type-color, var(--ink-3));
+  min-width: 2ch;
 }
 
 .detail-section.collapsible > h4.collapsible-header:hover {
-  color: var(--accent);
+  color: var(--ink);
 }
 
 .collapse-chevron {
+  order: 3;
   display: inline-block;
-  font-size: 10px;
-  transition: transform var(--transition-normal);
+  font-size: 9px;
+  color: var(--ink-3);
+  transition: transform var(--dur-base) var(--ease-out);
   flex-shrink: 0;
-  width: 14px;
+  width: 12px;
   text-align: center;
   line-height: 1;
 }
@@ -3713,46 +3695,41 @@ body.vscode-light .minimap-viewport {
 }
 
 .collapsible-title {
+  order: 1;
   flex: 1;
 }
 
 .section-count {
+  order: 2;
+  font-family: var(--font-mono);
   font-weight: 400;
-  opacity: 0.7;
-  font-size: 11px;
+  letter-spacing: 0;
+  color: var(--ink-3);
 }
 
 .collapsible-content {
   overflow: hidden;
-  transition: max-height 0.25s ease, opacity 0.2s ease;
-  max-height: 5000px;
+  transition: opacity var(--dur-base) var(--ease-out);
   opacity: 1;
 }
 
 .collapsible-content.hidden {
-  max-height: 0;
-  opacity: 0;
-  margin: 0;
+  display: none;
 }
 
-/* Collapsed section takes less vertical space */
 .detail-section.collapsible.collapsed {
-  margin-bottom: 8px;
-  padding: 8px 12px;
-  background: color-mix(in srgb, var(--vscode-textBlockQuote-background) 30%, transparent);
+  padding: var(--space-3) 0;
 }
 
 .detail-section.collapsible.collapsed > h4.collapsible-header {
   margin-bottom: 0;
-  padding-bottom: 0;
-  border-bottom-color: transparent;
 }
 
 /* Focus-visible for keyboard users */
 .collapsible-header:focus-visible {
-  outline: 2px solid var(--vscode-focusBorder);
-  outline-offset: 2px;
-  border-radius: 2px;
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: var(--radius);
 }
 
 .detail-section p {
@@ -3941,18 +3918,37 @@ body.vscode-light .minimap-viewport {
   gap: 6px;
 }
 
+/* Tag: a hairline-outlined label, not a filled pill. Static — tags aren't
+ * interactive, so no hover lift. */
 .tag {
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: 4px;
-  background: rgba(128, 128, 128, 0.15);
-  color: var(--vscode-foreground);
-  transition: transform var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--text-small);
+  line-height: 1.4;
+  padding: 1px var(--space-2);
+  border: var(--rule-width) solid var(--rule-strong);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink);
 }
 
-.tag:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+/* Nested record (risk, action item, test step…): unboxed, hairline-separated. */
+.nested-card {
+  padding: var(--space-3) 0;
+  border-top: var(--rule-width) solid var(--rule);
+}
+
+.nested-card:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.nested-card-header {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  margin-bottom: var(--space-1);
 }
 
 .tag.requirement-tag {
@@ -4237,31 +4233,17 @@ body.vscode-light .minimap-viewport {
 
 /* Detail Panel Actions */
 .detail-panel-actions {
-  padding: 14px 16px;
-  border-top: 1px solid var(--vscode-editorWidget-border);
+  padding: var(--space-3) var(--space-5);
+  border-top: var(--rule-width) solid var(--rule-strong);
   display: flex;
-  gap: 8px;
-  background: linear-gradient(0deg,
-    color-mix(in srgb, var(--vscode-titleBar-activeBackground) 80%, var(--accent) 20%),
-    transparent);
+  gap: var(--space-1);
+  background: var(--paper);
   align-items: center;
   flex-wrap: wrap;
   position: relative;
 }
 
 /* Subtle top separator gradient */
-.detail-panel-actions::before {
-  content: '';
-  position: absolute;
-  top: -1px;
-  left: 16px;
-  right: 16px;
-  height: 1px;
-  background: linear-gradient(90deg,
-    transparent,
-    color-mix(in srgb, var(--accent) 30%, transparent),
-    transparent);
-}
 
 /* Separator between action groups (edit/view) */
 .detail-panel-actions .btn + .btn-ai,
@@ -4271,19 +4253,16 @@ body.vscode-light .minimap-viewport {
 .detail-panel-actions .btn-dev + .btn-danger,
 .detail-panel-actions .btn-elicit + .btn-danger,
 .detail-panel-actions .btn-ai + .btn-danger {
-  margin-left: 4px;
-  padding-left: 12px;
-  border-left: 1px solid color-mix(in srgb, var(--vscode-editorWidget-border) 50%, transparent);
+  margin-left: 0;
 }
 
 .delete-confirm {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: 6px;
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius);
+  border: var(--rule-width) solid var(--danger);
 }
 
 .delete-confirm-text {
@@ -4305,11 +4284,10 @@ body.vscode-light .minimap-viewport {
 }
 
 .discard-dialog {
-  background: var(--vscode-editor-background);
-  border: 1px solid var(--vscode-editorWidget-border);
-  border-radius: 8px;
-  padding: 20px 24px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  background: var(--paper-raised);
+  border: var(--rule-width) solid var(--rule-strong);
+  border-radius: var(--radius);
+  padding: var(--space-5);
   max-width: 280px;
   text-align: center;
 }
@@ -4342,89 +4320,71 @@ body.vscode-light .minimap-viewport {
 }
 
 .detail-panel.edit-mode .detail-panel-header {
-  background: linear-gradient(180deg,
-    color-mix(in srgb, var(--accent) 12%, var(--vscode-titleBar-activeBackground)),
-    var(--vscode-editor-background));
+  border-bottom-color: var(--accent);
 }
 
 /* Subtle glow on the accent strip in edit mode */
-.detail-panel.edit-mode .detail-panel-header::before {
-  height: 3px;
-  box-shadow: 0 1px 8px color-mix(in srgb, var(--accent) 40%, transparent);
-}
 
 /* Hover lift for badges in the detail panel */
-.detail-panel .story-points-badge:hover,
-.detail-panel .person-badge:hover,
-.detail-panel .effort-badge:hover,
-.detail-panel .count-badge:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-}
 
 /* Better scrollbar accent on detail panel content */
-.detail-panel .detail-panel-content::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--accent) 30%, var(--vscode-scrollbarSlider-background));
-  border-radius: 4px;
-}
-
-.detail-panel .detail-panel-content::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in srgb, var(--accent) 50%, var(--vscode-scrollbarSlider-hoverBackground));
-}
 
 /* ================================================ */
 
 .btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
+  padding: 6px var(--space-3);
+  border: var(--rule-width) solid transparent;
+  border-radius: var(--radius);
+  font-family: var(--font-ui);
+  font-size: var(--text-small);
+  font-weight: var(--weight-strong);
+  letter-spacing: 0.01em;
   cursor: pointer;
-  transition: 
-    background var(--transition-fast),
-    transform var(--transition-fast),
-    box-shadow var(--transition-fast),
-    color var(--transition-fast),
-    border-color var(--transition-fast);
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
 }
 
 .btn:active {
-  transform: scale(0.98);
+  transform: translateY(1px);
 }
 
 .btn:focus-visible {
-  outline: 2px solid var(--vscode-focusBorder);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
 .btn-primary {
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
+  background: var(--accent-fill);
+  color: var(--accent-ink);
+  border-color: var(--accent-fill);
 }
 
 .btn-primary:hover {
   background: var(--vscode-button-hoverBackground);
-  box-shadow: 0 2px 8px rgba(0, 120, 215, 0.3);
+  border-color: var(--vscode-button-hoverBackground);
 }
 
 .btn-secondary {
-  background: var(--vscode-button-secondaryBackground);
-  color: var(--vscode-button-secondaryForeground);
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--rule-strong);
 }
 
 .btn-secondary:hover {
-  background: var(--vscode-button-secondaryHoverBackground);
+  background: var(--paper-wash);
 }
 
 .btn-danger {
-  background: rgba(239, 68, 68, 0.16);
-  color: var(--vscode-errorForeground);
-  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: transparent;
+  color: var(--danger);
+  border-color: transparent;
 }
 
 .btn-danger:hover {
-  background: rgba(239, 68, 68, 0.24);
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
 }
 
 /* Save feedback */
@@ -4817,32 +4777,32 @@ body.vscode-light .minimap-viewport {
 
 /* AI Refine Button (DetailPanel) */
 .btn-ai {
-  background: rgba(139, 92, 246, 0.14);
-  color: var(--vscode-charts-purple, #a855f7);
-  border: 1px solid rgba(139, 92, 246, 0.35);
+  background: transparent;
+  color: var(--ink);
+  border: var(--rule-width) solid transparent;
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
 .btn-ai:hover {
-  background: rgba(139, 92, 246, 0.24);
-  border-color: rgba(139, 92, 246, 0.5);
+  background: var(--paper-wash);
+  border-color: var(--rule);
 }
 
 /* Start Dev Button (DetailPanel) */
 .btn-dev {
-  background: rgba(40, 167, 69, 0.14);
-  color: var(--vscode-charts-green, #28a745);
-  border: 1px solid rgba(40, 167, 69, 0.35);
+  background: transparent;
+  color: var(--ink);
+  border: var(--rule-width) solid transparent;
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
 .btn-dev:hover {
-  background: rgba(40, 167, 69, 0.24);
-  border-color: rgba(40, 167, 69, 0.5);
+  background: var(--paper-wash);
+  border-color: var(--rule);
 }
 
 .dev-icon {
@@ -6106,17 +6066,17 @@ body.vscode-light .minimap-viewport {
    ================================================ */
 
 .btn-elicit {
-  background: rgba(6, 182, 212, 0.14);
-  color: var(--vscode-charts-cyan, #06b6d4);
-  border: 1px solid rgba(6, 182, 212, 0.35);
-  display: flex;
+  background: transparent;
+  color: var(--ink);
+  border: var(--rule-width) solid transparent;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
 .btn-elicit:hover {
-  background: rgba(6, 182, 212, 0.24);
-  border-color: rgba(6, 182, 212, 0.5);
+  background: var(--paper-wash);
+  border-color: var(--rule);
 }
 
 .elicit-icon {
@@ -6129,33 +6089,33 @@ body.vscode-light .minimap-viewport {
 
 .detail-view-toggle {
   display: flex;
-  gap: 2px;
-  margin: 6px 0 2px;
+  gap: var(--space-4);
+  margin: 0;
 }
 
 .detail-view-toggle button {
-  padding: 2px 10px;
-  border-radius: 3px;
-  border: 1px solid var(--vscode-panel-border);
+  padding: var(--space-1) 0 var(--space-2);
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
   background: transparent;
-  color: var(--vscode-foreground);
-  opacity: 0.55;
+  color: var(--ink-3);
   cursor: pointer;
-  font-size: 11px;
-  font-family: var(--vscode-font-family);
-  transition: opacity 0.15s, background 0.15s, border-color 0.15s;
+  font-family: var(--font-mono);
+  font-size: var(--text-kicker);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-kicker);
+  margin-bottom: -1px;
+  transition: color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
 
 .detail-view-toggle button:hover {
-  opacity: 0.85;
-  background: var(--vscode-toolbar-hoverBackground);
+  color: var(--ink);
 }
 
 .detail-view-toggle button.active {
-  opacity: 1;
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  border-color: transparent;
+  color: var(--ink);
+  border-bottom-color: var(--ink);
 }
 
 /* ================================================
@@ -6185,17 +6145,17 @@ body.vscode-light .minimap-viewport {
    ================================================ */
 
 .btn-export-md {
-  background: rgba(20, 184, 166, 0.1);
-  color: var(--vscode-charts-green, #14b8a6);
-  border: 1px solid rgba(20, 184, 166, 0.3);
-  display: flex;
+  background: transparent;
+  color: var(--ink);
+  border: var(--rule-width) solid transparent;
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
 
 .btn-export-md:hover {
-  background: rgba(20, 184, 166, 0.2);
-  border-color: rgba(20, 184, 166, 0.5);
+  background: var(--paper-wash);
+  border-color: var(--rule);
 }
 
 /* ================================================

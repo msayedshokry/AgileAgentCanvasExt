@@ -148,7 +148,7 @@ export function renderDefinitionOfDoneDetails(props: RendererProps) {
       <CollapsibleSection title="Quality Gates" count={qualityGates.length} sectionId="dod-quality-gates">
         {qualityGates.length > 0 ? (
           qualityGates.map((gate: any, i: number) => (
-            <div key={i} className="editable-item-header rr-wrap rr-p-8 rr-rounded rr-bg-subtle rr-mb-6">
+            <div key={i} className="editable-item-header rr-wrap rr-p-8 rr-rounded rr-item rr-mb-6">
               <div className="rr-flex rr-gap-8 rr-w-full rr-items-center">
                 <span className="rr-text-lg">{gate.passed ? '\u2705' : '\u26D4'}</span>
                 <strong className="rr-flex-1">{gate.id ? `${gate.id}: ` : ''}{gate.gate || `Gate ${i + 1}`}</strong>
@@ -649,7 +649,7 @@ export function renderRetrospectiveDetails(props: RendererProps) {
       <CollapsibleSection title="What Went Well" count={whatWentWell.length} sectionId="retro-well">
         {whatWentWell.length > 0 ? (
           whatWentWell.map((item: any, i: number) => (
-            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
+            <div key={i} className="rr-p-6-8 rr-rounded rr-item rr-mb-6">
               <strong>{item.item || `Item ${i + 1}`}</strong>
               {item.impact && <div><strong>Impact:</strong> {item.impact}</div>}
               {item.recommendation && <div><em>Recommendation: {item.recommendation}</em></div>}
@@ -665,7 +665,7 @@ export function renderRetrospectiveDetails(props: RendererProps) {
       <CollapsibleSection title="What Did Not Go Well" count={whatDidNotGoWell.length} sectionId="retro-bad">
         {whatDidNotGoWell.length > 0 ? (
           whatDidNotGoWell.map((item: any, i: number) => (
-            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
+            <div key={i} className="rr-p-6-8 rr-rounded rr-item rr-mb-6">
               <strong>{item.item || `Item ${i + 1}`}</strong>
               {item.impact && <div><strong>Impact:</strong> {item.impact}</div>}
               {item.rootCause && <div><strong>Root Cause:</strong> {item.rootCause}</div>}
@@ -682,7 +682,7 @@ export function renderRetrospectiveDetails(props: RendererProps) {
       <CollapsibleSection title="Lessons Learned" count={lessonsLearned.length} sectionId="retro-lessons">
         {lessonsLearned.length > 0 ? (
           lessonsLearned.map((item: any, i: number) => (
-            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
+            <div key={i} className="rr-p-6-8 rr-rounded rr-item rr-mb-6">
               <div className="rr-flex rr-gap-8 rr-items-center">
                 <strong className="rr-flex-1">{item.id ? `${item.id}: ` : ''}{item.lesson || `Lesson ${i + 1}`}</strong>
                 {item.category && <span className="tag">{item.category}</span>}
@@ -714,7 +714,7 @@ export function renderRetrospectiveDetails(props: RendererProps) {
       <CollapsibleSection title="Action Items" count={actionItems.length} sectionId="retro-actions">
         {actionItems.length > 0 ? (
           actionItems.map((item: any, i: number) => (
-            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
+            <div key={i} className="rr-p-6-8 rr-rounded rr-item rr-mb-6">
               <div className="rr-flex rr-gap-8 rr-items-center">
                 <strong className="rr-flex-1">{item.id ? `${item.id}: ` : ''}{item.action || `Action ${i + 1}`}</strong>
                 {item.priority && <span className={`tag risk-${item.priority}`}>{item.priority}</span>}
@@ -755,7 +755,7 @@ export function renderRetrospectiveDetails(props: RendererProps) {
       {storyAnalysis.length > 0 && (
         <CollapsibleSection title="Story Analysis" count={storyAnalysis.length} sectionId="retro-stories">
           {storyAnalysis.map((s: any, i: number) => (
-            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
+            <div key={i} className="rr-p-6-8 rr-rounded rr-item rr-mb-6">
               <div className="rr-flex rr-gap-8 rr-items-center">
                 {s.storyId && <span className="tag">{s.storyId}</span>}
                 <strong className="rr-flex-1">{s.storyTitle || `Story ${i + 1}`}</strong>
@@ -968,7 +968,7 @@ export function renderSprintStatusDetails(props: RendererProps) {
       {storyStatus.length > 0 && (
         <CollapsibleSection title="Story Status" count={storyStatus.length} sectionId="sprint-stories">
           {storyStatus.map((s: any, i: number) => (
-            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
+            <div key={i} className="rr-p-6-8 rr-rounded rr-item rr-mb-6">
               <div className="rr-flex rr-gap-8 rr-items-center">
                 {s.storyId && <span className="tag">{s.storyId}</span>}
                 <strong className="rr-flex-1">{s.title || `Story ${i + 1}`}</strong>
@@ -1492,7 +1492,7 @@ export function renderChangeProposalDetails(props: RendererProps) {
         {options.length > 0 && (
           <><h4>Options Considered</h4>
           {options.map((opt: any, i: number) => (
-            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
+            <div key={i} className="rr-p-6-8 rr-rounded rr-item rr-mb-6">
               <div className="rr-flex rr-gap-8 rr-items-center">
                 <strong className="rr-flex-1">{opt.optionId ? `${opt.optionId}: ` : ''}{opt.description || `Option ${i + 1}`}</strong>
                 {opt.recommended && <span className="tag tag-success">Recommended</span>}
@@ -1636,7 +1636,7 @@ export function renderRisksDetails(props: RendererProps) {
       {/* Risks List */}
       <CollapsibleSection title="Risks" count={risksList.length} sectionId="risks-list">
         {risksList.length > 0 ? risksList.map((risk: any, i: number) => (
-          <div key={i} className="rr-p-8 rr-rounded rr-bg-subtle rr-mb-6">
+          <div key={i} className="rr-p-8 rr-rounded rr-item rr-mb-6">
             <div className="rr-flex rr-gap-8 rr-items-center rr-wrap">
               {risk.id && <span className="tag">{risk.id}</span>}
               <strong className="rr-flex-1">{risk.risk || `Risk ${i + 1}`}</strong>
@@ -1960,7 +1960,7 @@ export function renderReadinessReportDetails(props: RendererProps) {
       {(editMode || blockers.length > 0) && (
         <CollapsibleSection title="Blockers" count={blockers.length} sectionId="rr-blockers">
           {blockers.length > 0 ? blockers.map((b: any, i: number) => (
-            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
+            <div key={i} className="rr-p-6-8 rr-rounded rr-item rr-mb-6">
               <div className="rr-flex rr-gap-8 rr-items-center">
                 {b.id && <span className="tag">{b.id}</span>}
                 <strong className="rr-flex-1">{b.blocker}</strong>
@@ -2339,7 +2339,7 @@ export function renderResearchDetails(props: RendererProps) {
       {technicalFindings.length > 0 && (
         <CollapsibleSection title="Technical Findings" count={technicalFindings.length} sectionId="research-tech">
           {technicalFindings.map((tf: any, i: number) => (
-            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
+            <div key={i} className="rr-p-6-8 rr-rounded rr-item rr-mb-6">
               {tf.topic && <h4>{tf.topic}</h4>}
               {tf.finding && <Md text={tf.finding} />}
               {tf.feasibility && <span className="tag">{tf.feasibility}</span>}
@@ -2407,7 +2407,7 @@ export function renderResearchDetails(props: RendererProps) {
       {appendices.length > 0 && (
         <CollapsibleSection title="Appendices" count={appendices.length} sectionId="research-appendices">
           {appendices.map((a: any, i: number) => (
-            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
+            <div key={i} className="rr-p-6-8 rr-rounded rr-item rr-mb-6">
               <div className="rr-flex rr-gap-8 rr-items-center">
                 <strong className="rr-flex-1">{a.title || `Appendix ${i + 1}`}</strong>
                 {a.type && <span className="tag">{a.type}</span>}
@@ -3255,7 +3255,7 @@ export function renderUxDesignDetails(props: RendererProps) {
       {designDecisions.length > 0 && (
         <CollapsibleSection title="Design Decisions" count={designDecisions.length} sectionId="ux-decisions">
           {designDecisions.map((dd: any, i: number) => (
-            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
+            <div key={i} className="rr-p-6-8 rr-rounded rr-item rr-mb-6">
               <div className="rr-flex rr-gap-8 rr-items-center">
                 <strong className="rr-flex-1">{dd.decision || `Decision ${i + 1}`}</strong>
                 {dd.date && <span className="tag">{dd.date}</span>}
@@ -3926,7 +3926,7 @@ export function renderTechSpecDetails(props: RendererProps) {
       {securityConsiderations.length > 0 && (
         <CollapsibleSection title="Security Considerations" count={securityConsiderations.length} sectionId="ts-security">
           {securityConsiderations.map((s: any, i: number) => (
-            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
+            <div key={i} className="rr-p-6-8 rr-rounded rr-item rr-mb-6">
               <strong>{s.area || `Security ${i + 1}`}</strong>
               {s.approach && <div className="rr-mt-2"><Md text={s.approach} /></div>}
               {s.threats && <div className="rr-text-sm"><strong>Threats:</strong> {s.threats}</div>}
@@ -4142,7 +4142,7 @@ export function renderProjectOverviewDetails(props: RendererProps) {
       {projectRisks.length > 0 && (
         <CollapsibleSection title="Risks" count={projectRisks.length} sectionId="po-risks">
           {projectRisks.map((r: any, i: number) => (
-            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
+            <div key={i} className="rr-p-6-8 rr-rounded rr-item rr-mb-6">
               <strong>{r.risk || r.title || `Risk ${i + 1}`}</strong>
               <div className="rr-flex rr-gap-12 rr-wrap rr-mt-2">
                 {(r.likelihood || r.probability) && <span><strong>P:</strong> {r.likelihood || r.probability}</span>}

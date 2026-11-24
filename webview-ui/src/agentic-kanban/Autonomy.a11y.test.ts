@@ -1918,8 +1918,12 @@ describe('Cluster D-3 commit 3 — post-harvest regression guards', () => {
       expect(HARVEST.filesScanned, 'introspector must scan exactly 9 files (the 9 INLINE_TSX_TARGETS set; matches scripts/a11y-surface-sweep.mjs INLINE_TSX_TARGETS)').toBe(9);
     });
 
-    it('A-2: harvest produces ≥ 100 color-bearing rows (Cluster D-3 commit 2 baseline: 109)', () => {
-      expect(HARVEST.rows.length + RENDERERS_ROW_COUNT, 'introspector must produce ≥100 color-bearing rows (109 baseline + ~8 from renderers.css className/decl rows post Cluster-D3-#1.b / #3 migrations = 97 actual; floor 90 catches silent introspector regressions losing ≥10 rows)').toBeGreaterThanOrEqual(90);
+    it('A-2: harvest produces ≥ 62 color-bearing rows (editorial redesign baseline: 69)', () => {
+      // Re-baselined 2026-11-24 for the editorial redesign: filled renderer
+      // list blocks (rr-bg-subtle) became hairline-separated rr-item rows,
+      // removing 19 coloured surfaces on purpose (97 → 69). Floor sits ~10%
+      // under the new count so a silent introspector regression still trips.
+      expect(HARVEST.rows.length + RENDERERS_ROW_COUNT, 'introspector must produce ≥62 color-bearing rows (69 after the editorial redesign; floor catches silent introspector regressions losing ≥8 rows)').toBeGreaterThanOrEqual(62);
     });
 
     it('A-3: per-file coverage — ≥ 8 of 9 harvested files contribute ≥ 1 row (≤ 1 layout-only zero-contributor permitted)', () => {
@@ -1955,10 +1959,15 @@ describe('Cluster D-3 commit 3 — post-harvest regression guards', () => {
       expect(matches.length, 'Kanban.css must retain ≥ 3 color-mix() sites — coverage is the .kanban-card-agent-badge--{...} mint layer at the kanban-card chrome bottom block').toBeGreaterThanOrEqual(3);
     });
 
-    it('B-2: styles/index.css has ≥ 150 color-mix() sites (post-reorg floor; was 177 at Cluster D-2)', () => {
-      const css = readFileSync(STYLES_CSS_PATH, 'utf-8');
+    it('B-2: styles/index.css + tokens.css have ≥ 105 color-mix() sites (editorial redesign baseline: 116)', () => {
+      // Re-baselined 2026-11-24 for the editorial redesign: per-selector
+      // tints were removed and theme-derived colour moved into tokens.css,
+      // so both files are counted. History: 177 (Cluster D-2) → 151 after the
+      // ideas-drawer reorg (8c16817) → 116 after the redesign.
+      const css = readFileSync(STYLES_CSS_PATH, 'utf-8')
+        + readFileSync(path.resolve(process.cwd(), 'src/styles', 'tokens.css'), 'utf-8');
       const matches = css.match(/color-mix\(/g) ?? [];
-      expect(matches.length, 'styles/index.css must retain ≥ 150 color-mix() sites — this floor was lowered from the 177 Cluster D-2 baseline after the ideas-drawer reorg (8c16817) dropped ~26 sites to 151; a wholesale deletion of the chip palette below this floor trips the guard').toBeGreaterThanOrEqual(150);
+      expect(matches.length, 'index.css + tokens.css must retain ≥ 105 color-mix() sites (116 after the editorial redesign); a wholesale deletion of the theme-derived palette below this floor trips the guard').toBeGreaterThanOrEqual(105);
     });
 
     it('B-3: ≥ 5 distinct categorical CSS-rule anchors in styles/index.css USE color-mix() with the 2-stop form (selector token is part of the contract — rename trips the guard)', () => {

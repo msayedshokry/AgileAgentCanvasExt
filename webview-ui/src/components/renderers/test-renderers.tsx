@@ -95,7 +95,7 @@ export function renderTestDesignDetails(props: RendererProps) {
   const testTypes = ['functional', 'regression', 'smoke', 'sanity', 'exploratory'];
 
   const renderCoverageItem = (item: any, i: number, priorityKey: string, items: any[]) => (
-    <div key={i} className="editable-item-header rr-wrap rr-p-8 rr-rounded rr-bg-subtle rr-mb-6">
+    <div key={i} className="editable-item-header rr-wrap rr-p-8 rr-rounded rr-item rr-mb-6">
       <div className="rr-flex rr-gap-8 rr-w-full rr-items-center">
         <strong className="rr-flex-1">{item.id || `Item ${i + 1}`}</strong>
         {item.testLevel && <span className="tag">{item.testLevel}</span>}
@@ -567,7 +567,7 @@ export function renderTestDesignDetails(props: RendererProps) {
                 <>
                   <h4 className="rr-mt-12">Medium Priority Risks</h4>
                   {mediumPriorityRisks.map((r: any, i: number) => (
-                    <div key={i} className="rr-p-6 rr-rounded rr-bg-subtle rr-mb-4">
+                    <div key={i} className="rr-p-6 rr-rounded rr-item rr-mb-4">
                       <strong>{r.riskId || `Risk ${i + 1}`}</strong>: {r.description}
                       <div className="detail-row">
                         {r.probability && <span className="tag">P: {r.probability}</span>}
@@ -582,7 +582,7 @@ export function renderTestDesignDetails(props: RendererProps) {
                 <>
                   <h4 className="rr-mt-12">Low Priority Risks</h4>
                   {lowPriorityRisks.map((r: any, i: number) => (
-                    <div key={i} className="rr-p-6 rr-rounded rr-bg-subtle rr-mb-4">
+                    <div key={i} className="rr-p-6 rr-rounded rr-item rr-mb-4">
                       <strong>{r.riskId || `Risk ${i + 1}`}</strong>: {r.description}
                       <div className="detail-row">
                         {r.probability && <span className="tag">P: {r.probability}</span>}
@@ -1010,7 +1010,7 @@ export function renderTestDesignDetails(props: RendererProps) {
       {d.mitigationPlans?.length > 0 && !editMode && (
         <CollapsibleSection title="Mitigation Plans" count={d.mitigationPlans.length} sectionId="testdesign-mitigation">
           {d.mitigationPlans.map((mp: any, i: number) => (
-            <div key={i} className="rr-p-6 rr-rounded rr-bg-subtle rr-mb-6">
+            <div key={i} className="rr-p-6 rr-rounded rr-item rr-mb-6">
               <div className="rr-flex rr-gap-8 rr-items-center">
                 {mp.riskId && <span className="tag">{mp.riskId}</span>}
                 <strong>{mp.risk || `Plan ${i + 1}`}</strong>
@@ -1868,7 +1868,7 @@ export function renderTestReviewDetails(props: RendererProps) {
           ) : (
             <>
               {recommendations.map((rec: any, i: number) => (
-                <div key={i} className="rr-p-6 rr-rounded rr-bg-subtle rr-mb-6">
+                <div key={i} className="rr-p-6 rr-rounded rr-item rr-mb-6">
                   {editMode ? (
                     <div className="rr-flex rr-col rr-gap-4">
                       <div className="rr-flex rr-gap-8">
@@ -1919,7 +1919,7 @@ export function renderTestReviewDetails(props: RendererProps) {
       {findings.length > 0 && criticalIssues.length === 0 && (
         <CollapsibleSection title="Findings" count={findings.length} sectionId="testreview-findings">
           {findings.map((f: any, i: number) => (
-            <div key={i} className="rr-p-6 rr-rounded rr-bg-subtle rr-mb-4">
+            <div key={i} className="rr-p-6 rr-rounded rr-item rr-mb-4">
               <strong>{f.id || f.title || `Finding ${i + 1}`}</strong>
               {f.severity && <span className="tag rr-ml-8">{f.severity}</span>}
               {f.description && <div className="rr-mt-4">{f.description}</div>}
@@ -2426,7 +2426,7 @@ export function renderTestFrameworkDetails(props: RendererProps) {
       {fixtures.length > 0 && (
         <CollapsibleSection title="Fixtures" count={fixtures.length} sectionId="testfwk-fixtures">
           {fixtures.map((f: any, i: number) => (
-            <div key={i} className="rr-p-6 rr-rounded rr-bg-subtle rr-mb-4">
+            <div key={i} className="rr-p-6 rr-rounded rr-item rr-mb-4">
               <div className="rr-flex rr-gap-8 rr-items-center">
                 <strong>{f.name}</strong>
                 {f.scope && <span className="tag">{f.scope}</span>}
@@ -2443,7 +2443,7 @@ export function renderTestFrameworkDetails(props: RendererProps) {
       {helpers.length > 0 && (
         <CollapsibleSection title="Helpers" count={helpers.length} sectionId="testfwk-helpers">
           {helpers.map((h: any, i: number) => (
-            <div key={i} className="rr-p-6 rr-rounded rr-bg-subtle rr-mb-4">
+            <div key={i} className="rr-p-6 rr-rounded rr-item rr-mb-4">
               <strong>{h.name}</strong>
               {h.filePath && <div><code>{h.filePath}</code></div>}
               {h.purpose && <div className="muted">{h.purpose}</div>}
@@ -2466,7 +2466,7 @@ export function renderTestFrameworkDetails(props: RendererProps) {
       {pageObjects.length > 0 && (
         <CollapsibleSection title="Page Objects" count={pageObjects.length} sectionId="testfwk-pages">
           {pageObjects.map((po: any, i: number) => (
-            <div key={i} className="rr-p-6 rr-rounded rr-bg-subtle rr-mb-4">
+            <div key={i} className="rr-p-6 rr-rounded rr-item rr-mb-4">
               <strong>{po.name}</strong>
               {po.page && <span className="tag rr-ml-8">{po.page}</span>}
               {po.filePath && <div><code>{po.filePath}</code></div>}
@@ -2662,7 +2662,7 @@ export function renderTestSummaryDetails(props: RendererProps) {
       {isBmmReport && testsByType.length > 0 && !editMode && (
         <CollapsibleSection title="Tests by Type" count={testsByType.length} sectionId="testsummary-bytype">
           {testsByType.map((t: any, i: number) => (
-            <div key={i} className="rr-p-6 rr-rounded rr-bg-subtle rr-mb-4">
+            <div key={i} className="rr-p-6 rr-rounded rr-item rr-mb-4">
               <div className="rr-flex rr-justify-between rr-items-center">
                 <strong>{t.type || `Type ${i + 1}`}</strong>
                 <div className="rr-flex rr-gap-6">
@@ -2705,7 +2705,7 @@ export function renderTestSummaryDetails(props: RendererProps) {
       {isBmmReport && coverageByPackage.length > 0 && !editMode && (
         <CollapsibleSection title="Coverage by Package" count={coverageByPackage.length} sectionId="testsummary-covpkg">
           {coverageByPackage.map((pkg: any, i: number) => (
-            <div key={i} className="rr-p-6 rr-rounded rr-bg-subtle rr-mb-4">
+            <div key={i} className="rr-p-6 rr-rounded rr-item rr-mb-4">
               <strong>{pkg.package || `Package ${i + 1}`}</strong>
               <div className="detail-row rr-mt-4">
                 {pkg.lineCoverage != null && <section className="detail-section inline"><h4>Line</h4><span className="tag">{pkg.lineCoverage}%</span></section>}
@@ -2722,7 +2722,7 @@ export function renderTestSummaryDetails(props: RendererProps) {
       {isBmmReport && defectsFound.length > 0 && !editMode && (
         <CollapsibleSection title="Defects Found" count={defectsFound.length} sectionId="testsummary-defects">
           {defectsFound.map((bug: any, i: number) => (
-            <div key={i} className="rr-p-6 rr-rounded rr-bg-subtle rr-mb-4">
+            <div key={i} className="rr-p-6 rr-rounded rr-item rr-mb-4">
               <div className="rr-flex rr-justify-between rr-items-center">
                 <span><strong>{bug.id || `Bug ${i + 1}`}</strong> {bug.title}</span>
                 <div className="rr-flex rr-gap-4">
@@ -2961,7 +2961,7 @@ export function renderTestSummaryDetails(props: RendererProps) {
       {testPatterns.length > 0 && (
         <CollapsibleSection title="Test Patterns" count={testPatterns.length} sectionId="testsummary-patterns">
           {testPatterns.map((p: any, i: number) => (
-            <div key={i} className="rr-p-6 rr-rounded rr-bg-subtle rr-mb-4">
+            <div key={i} className="rr-p-6 rr-rounded rr-item rr-mb-4">
               <div className="rr-flex rr-justify-between">
                 <strong>{p.pattern}</strong>
                 {p.usageCount != null && <span className="tag">Used {p.usageCount}x</span>}
