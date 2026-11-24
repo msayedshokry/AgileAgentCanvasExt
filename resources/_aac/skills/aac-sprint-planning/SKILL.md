@@ -95,6 +95,20 @@ Activation is complete. Begin the workflow below.
 
 **Fuzzy matching**: Be flexible with document names - users may use variations like `epics.md`, `bmm-epics.md`, `user-stories.md`, etc.
 
+### Deterministic script (preferred)
+
+Discovery above is your judgment. Everything after it — parsing headings, key derivation, ordering, story-file detection, the never-downgrade merge, `action_items` carry-over, atomic writes and post-write validation — is owned by a bundled script. Run it instead of doing steps 1–4 by hand:
+
+`sprint_plan` = `node "{bmad-path}/../../dist/sprint-plan.js"` (the extension's `dist/` folder, a sibling of `resources/`; it needs only Node).
+
+- **Generate or refresh:** `{sprint_plan} generate --epic-file <file> [--epic-file <file2> ...] --status-file "{status_file}" --stories-dir "{story_location_absolute}" --project "{project_name}" --date "<YYYY-MM-DD HH:MM>"`. Run it with `--dry-run` first: it reports `new_entries`, `dropped_orphans`, `illegal`, `legacy_mapped` and `in_sync` without writing. Show the user the drift, then run without `--dry-run`.
+- **Orphans:** `dropped_orphans` lists keys (with their old statuses) that no longer match an epic heading — usually a renamed story. Ask the user before writing; transplant a status onto its renamed key with `--set <new-key>=<status>`.
+- **Repair a broken or drifted file:** gather evidence of each story's real state, confirm the proposed statuses with the user, then run `generate --fresh --set key=status ...`. This is the only path allowed to downgrade a status.
+- **Status view:** `{sprint_plan} status --status-file "{status_file}" --date "<now>"` returns counts, risks (stale file, orphans, stories waiting for review), open action items and the next recommended skill.
+- **Validate:** `{sprint_plan} validate --status-file "{status_file}"` reports structural problems without writing.
+
+The script prints exactly one JSON object. `"ok": false` (exit 1) carries an `error`; an argument error exits 2. Report warnings to the user verbatim. If `node` is unavailable or the script path fails, fall back to steps 1–4 below and say so.
+
 <workflow>
 
 <step n="1" goal="Parse epic files and extract all work items">

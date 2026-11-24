@@ -15,6 +15,7 @@ The main verification gap shapes are:
 
 ## Evidence Rules
 
+- Judge against the tests in the tree under review, not the newest tree. Reviewing a commit, read and search that commit's tests (`git show <commit>:<path>`, `git grep <symbol> <commit> -- <test globs>`); a test added later does not cover it.
 - Read a test before claiming what it covers, runs, asserts, or misses.
 - Before claiming no test exists, search the whole repo by the symbol under test and by import references; expected file locations are not enough.
 - Never assert what you did not verify. If a finding cannot be grounded, drop it.

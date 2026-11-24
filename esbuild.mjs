@@ -24,6 +24,18 @@ const buildOptions = {
 };
 
 /**
+ * Standalone sprint-planning CLI (src/sprint/sprint-plan-cli.ts). Skills run
+ * it with plain `node` from any harness, so it bundles its own dependencies.
+ * @type {import('esbuild').BuildOptions}
+ */
+const sprintPlanCliOptions = {
+    ...buildOptions,
+    entryPoints: ['src/sprint/sprint-plan-cli.ts'],
+    outfile: 'dist/sprint-plan.js',
+    external: [],
+};
+
+/**
  * Copy pdfkit font data files (.afm) to dist/data/ so they can be found
  * at runtime.  PDFKit's built-in font loader reads:
  *   fs.readFileSync(__dirname + '/data/Helvetica.afm', 'utf8')
@@ -70,9 +82,12 @@ async function main() {
     if (watch) {
         const ctx = await esbuild.context(buildOptions);
         await ctx.watch();
+        const cliCtx = await esbuild.context(sprintPlanCliOptions);
+        await cliCtx.watch();
         console.log('[esbuild] Watching for changes...');
     } else {
         await esbuild.build(buildOptions);
+        await esbuild.build(sprintPlanCliOptions);
         copyPdfkitFontData();
         copyHeadroomAi();
         copyNodePty();

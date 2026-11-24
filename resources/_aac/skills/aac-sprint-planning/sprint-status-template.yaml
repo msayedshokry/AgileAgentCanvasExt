@@ -27,11 +27,17 @@
 #   - optional: Can be completed but not required
 #   - done: Retrospective has been completed
 #
+# Action Item Status:
+#   - open: Committed during a retrospective, not yet addressed
+#   - in-progress: Actively being worked on
+#   - done: Completed
+#
 # WORKFLOW NOTES:
 # ===============
 # - Mark epic as 'in-progress' when starting work on its first story
 # - Developer typically creates next story ONLY after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then Dev runs code-review (fresh context, ideally different LLM)
+# - Retrospective appends its action items to action_items; the status view surfaces open ones
 
 generated: 2026-06-05 14:30
 last_updated: 2026-06-05 14:30

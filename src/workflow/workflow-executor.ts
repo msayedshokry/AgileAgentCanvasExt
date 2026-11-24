@@ -3844,7 +3844,10 @@ Instructions: Return ONLY a \`\`\`json code block containing the artifact JSON. 
             if (!def) return undefined;
             const p = resolveWorkflowPath(this.context.bmadPath, def.path);
             if (!fs.existsSync(p)) return undefined;
-            return fs.readFileSync(p, 'utf-8');
+            // Board runs get this text without the prompt's variable table, so
+            // resolve {bmad-path} here; otherwise script and step paths dangle.
+            const bmadPath = this.context.bmadPath.replace(/\\/g, '/');
+            return fs.readFileSync(p, 'utf-8').replace(/\{bmad-path\}/g, bmadPath);
         } catch {
             return undefined;
         }

@@ -228,3 +228,16 @@ describe('WorkflowExecutor sessionId threading (issue #42)', () => {
     expect(src).toContain('sessionId');
   });
 });
+
+describe('getWorkflowSkillContent', () => {
+  it('resolves {bmad-path} so board runs get usable paths', async () => {
+    const path = await import('path');
+    const bmadPath = path.resolve(__dirname, '..', '..', 'resources', '_aac');
+    const executor = new WorkflowExecutor();
+    (executor as unknown as { context: { bmadPath: string } }).context.bmadPath = bmadPath;
+    const content = executor.getWorkflowSkillContent('sprint-planning');
+    expect(content).toBeDefined();
+    expect(content).not.toContain('{bmad-path}');
+    expect(content).toContain(`${bmadPath.split(path.sep).join('/')}/../../dist/sprint-plan.js`);
+  });
+});

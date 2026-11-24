@@ -20,7 +20,7 @@
 
    Convert all to a unified list where each finding has:
    - `id` -- sequential integer
-   - `source` -- the originating layer id: `blind-hunter`, `edge-case-hunter`, `verification-gap`, or `acceptance-auditor`
+   - `source` -- the originating layer id: `blind-hunter`, `edge-case-hunter`, `verification-gap`, `acceptance-auditor`, or `verification-gap-spotcheck` (added by triage itself, see below)
    - `title` -- one-line summary
    - `detail` -- full description
    - `location` -- file and line reference (if available)
@@ -28,7 +28,14 @@
 2. Once every layer has reported -- and not before -- render a verdict on each finding, ahead of any deduplication or grouping. Disregard any severity a reviewing subagent assigned -- they lack the context to grade.
 
    For each finding:
-   - A gap finding from the Verification Gap layer arrives pre-verified -- that layer's evidence rules made it read the tests and run the searches it cites. Skip re-verification, render the verdict from the filed evidence, and weigh its filed disposition when routing. Its `Other findings` are verified like everything else.
+   - A gap finding from the Verification Gap layer arrives pre-verified -- that layer's evidence rules made it read the tests and run the searches it cites. Skip re-verification (the **Verify the finding's claim** bullet below does not apply to it), render the verdict from the filed evidence, and weigh its filed disposition when routing. Grade a gap by the impact of the regression in its Demonstration, not by the missing test itself. Its `Other findings` are verified like everything else.
+   - A **clean** Verification Gap result (`No verification gaps found.`) is a claim, not evidence. It never refutes another layer's finding that a changed behavior is untested; verify that finding normally by searching the tests yourself. And spot-check once per review — also owed when the layer filed only `Other findings`, and when its gaps leave some changed behavior unnamed — when the diff changes deterministic behavior (a branch, limit, default, error path, or data shape):
+     1. List the changed deterministic behaviors not already named by a gap finding, and pick the one whose regression would hurt users most. On a tie, prefer one not pinned by a test added in the same diff. Name the alternatives you considered.
+     2. Search the tests **in the tree under review** — for a commit, `git grep <symbol> <commit> -- <test globs>`; a test added in a later commit does not count. Search by the behavior's symbol, then by the public entry point that drives it (prop, command, export), and read the hits before concluding; zero hits on an internal name alone proves nothing.
+     3. Decide by reading the tests' setup and assertions whether one would fail if the behavior regressed. Running a mutation is optional.
+     4. If none would, add a finding with `source` = `verification-gap-spotcheck` naming the behavior, the searches and their hit counts, and grade it like any other.
+
+     One spot-check per review; do not re-run the layer.
    - **Verify the finding's claim.** At the cited file and line, does the bad outcome the reviewer describes actually occur? Read beyond the changed lines -- follow callers, guards upstream, etc. -- until you can answer yes or no. Never grade from the diff hunk alone. A different finding about nearby code does not settle this one. Judge whether the problem is real, not whether the proposed fix is plausible. Code that loudly fails on a situation you never showed the program can reach is correct behavior, not a defect.
    - **Render exactly one verdict** from what verification established -- the verdict is the whole triage decision:
      - `high` (intolerable), `medium` (tolerable), `low` (cosmetic or negligible) -- the bad outcome is real. Grade by how much it hurts end users or developers. For developer-only problems (inconsistent design, eroded invariants, duplicated sources of truth), name where it will cause trouble -- which caller will diverge, which rule will break. A vague "this is messy" with no named harm is not a severity grade; use `false` or `maybe-false` instead. When the harm is real but you cannot tell how bad, pick the higher grade.
