@@ -9,9 +9,16 @@
  * themes swap hairlines for the theme's contrastBorder (bottom of file).
  *
  * Imported before index.css (main.tsx) so every stylesheet can use them.
+ *
+ * Declared on body as well as :root: the in-app theme toggle
+ * (body.ac-force-light / .ac-force-dark) redefines the --vscode-* variables
+ * on <body>, and a custom property resolves its var() references on the
+ * element that declares it. Declaring only on :root would freeze the tokens
+ * to the editor theme and ignore the toggle.
  */
 
-:root {
+:root,
+body {
   /* ── Ink: text colours, strongest to faintest ───────────────────────── */
   --ink: var(--vscode-foreground);
   --ink-2: color-mix(in srgb, var(--vscode-foreground) 78%, transparent);
@@ -96,7 +103,8 @@ body.vscode-high-contrast-light {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :root {
+  :root,
+  body {
     --dur-fast: 0ms;
     --dur-base: 0ms;
   }

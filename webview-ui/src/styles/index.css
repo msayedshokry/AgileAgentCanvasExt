@@ -2995,13 +2995,24 @@ body.vscode-high-contrast-light .canvas {
   z-index: 0;
 }
 
-/* Lanes: no fill, no box — a strong top rule under the lane head and a
- * hairline down the left edge separating one phase from the next. */
+/* Lanes: each phase is identifiable at a glance — a faint wash of the phase
+ * colour plus a 2px phase-coloured top rule. Cards stay on paper, so they
+ * lift off the tinted lane without needing shadows. */
 .swim-lane {
   position: absolute;
-  border-top: var(--rule-width) solid var(--rule-strong);
-  border-left: var(--rule-width) solid var(--rule);
+  --phase: var(--ink-3);
+  background: color-mix(in srgb, var(--phase) 6%, transparent);
+  border-top: 2px solid var(--phase);
 }
+
+.swim-lane.discovery      { --phase: var(--phase-discovery); }
+.swim-lane.planning       { --phase: var(--phase-planning); }
+.swim-lane.solutioning    { --phase: var(--phase-solutioning); }
+.swim-lane.implementation { --phase: var(--phase-implementation); }
+.swim-lane.details        { --phase: var(--phase-details); }
+
+/* Lane label picks up its phase colour too, so header and lane read as one. */
+.column-header .column-header-label { color: var(--phase); }
 
 /* Horizontal epic row bands */
 .epic-row-band {
