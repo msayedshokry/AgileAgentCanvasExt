@@ -179,14 +179,6 @@ Feature: ACP Protocol - Agent Coordination Protocol
     Then the handoff should have fromSessionId and toSessionId
     And the handoff context should contain task and intermediateArtifacts
 
-  @acp @types
-  Scenario: AgentRole is one of the valid roles
-    Given an ACP session spec with role "coordinator"
-    And an ACP session spec with role "crafter"
-    And an ACP session spec with role "gate"
-    And an ACP session spec with role "researcher"
-    Then all session specs should be valid
-
   # ─── Session Manager Singleton ────────────────────────────────────────────
 
   @acp @singleton

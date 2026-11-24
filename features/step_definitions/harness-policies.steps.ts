@@ -93,18 +93,28 @@ function createEngine(world: BmadWorld): any {
           const ctx = getCtx(world);
           ctx.traceRecorded = true;
           ctx.traceAgent = entry.agent;
+          ((ctx as any).traceEntries ??= []).push(entry);
         },
       }),
     },
   });
 
   // Create a fresh engine (not the module singleton to avoid cross-test contamination)
+  (getCtx(world) as any).harnessModule = module;
   const engine = new module.HarnessEngine();
   const builtinPolicies = module.HarnessEngine.builtInPolicies();
   for (const p of builtinPolicies) {
     engine.registerPolicy(p);
   }
   return engine;
+}
+
+/** The registered policy with this id; fails if it is missing or runs in a different phase. */
+function policyFor(ctx: any, policyId: string, phase: string): any {
+  const policy = ctx.engine.policies.find((p: any) => p.id === policyId);
+  assert.ok(policy, `No policy "${policyId}" is registered`);
+  assert.strictEqual(policy.type, phase, `Policy "${policyId}" runs as ${policy.type}, not ${phase}`);
+  return policy;
 }
 
 // ─── GIVEN ──────────────────────────────────────────────────────────────────
@@ -151,10 +161,6 @@ Given('the harness trace recorder is initialized', function (this: BmadWorld) {
 
 Given('the artifact store has a source folder without a policies directory', function (this: BmadWorld) {
   // Handled by loadUserPolicies — returns empty when no policies dir
-});
-
-Given('a policies directory with a yaml file containing:', function (this: BmadWorld, _docString: string) {
-  // This is set up so loadUserPolicies can read it
 });
 
 Given('a user policy with regex {string}', function (this: BmadWorld, regex: string) {
@@ -216,7 +222,7 @@ When('I get policy {string}', function (this: BmadWorld, policyId: string) {
 });
 
 When('I evaluate {string} as {string} with artifact:', function (
-  this: BmadWorld, policyId: string, _phase: string, dataTable: any
+  this: BmadWorld, policyId: string, phase: string, dataTable: any
 ) {
   const ctx = getCtx(this);
   // The data table is formatted as key-value pairs (one key per row), so use
@@ -236,7 +242,7 @@ When('I evaluate {string} as {string} with artifact:', function (
     artifact,
   };
 
-  const policy = ctx.engine.policies.find((p: any) => p.id === policyId);
+  const policy = policyFor(ctx, policyId, phase);
   if (policy) {
     return policy.evaluate(context).then((failures: string[] | null) => {
       ctx.lastEvalResults = [{
@@ -251,9 +257,9 @@ When('I evaluate {string} as {string} with artifact:', function (
   }
 });
 
-When('I evaluate {string} as {string} with null artifact', function (this: BmadWorld, policyId: string, _phase: string) {
+When('I evaluate {string} as {string} with null artifact', function (this: BmadWorld, policyId: string, phase: string) {
   const ctx = getCtx(this);
-  const policy = ctx.engine.policies.find((p: any) => p.id === policyId);
+  const policy = policyFor(ctx, policyId, phase);
   if (policy) {
     return policy.evaluate({ artifactType: 'story', artifactId: 'null-artifact', artifact: null }).then((failures: string[] | null) => {
       ctx.lastEvalResults = [{
@@ -268,19 +274,21 @@ When('I evaluate {string} as {string} with null artifact', function (this: BmadW
   }
 });
 
-When('I evaluate {string} as {string} with a repairable artifact', function (this: BmadWorld, _policyId: string, phase: string) {
+When('I evaluate {string} as {string} with a repairable artifact', function (this: BmadWorld, policyId: string, phase: string) {
   const ctx = getCtx(this);
+  policyFor(ctx, policyId, phase);
   const artifact = { id: 'repairable', title: 'Test', type: 'story', status: 'totally-invalid' };
   const context = { artifactType: 'story', artifactId: 'repairable', artifact };
 
   return ctx.engine.evaluate(context, phase as 'pre-flight' | 'post-flight').then((r: any[]) => {
+    assert.ok(r.some((x: any) => x.policyId === policyId), `"${policyId}" did not run in ${phase}`);
     ctx.lastEvalResults = r;
     ctx.autoFixAttempted = true;
   });
 });
 
 When('I evaluate {string} as {string} with story artifact containing:', function (
-  this: BmadWorld, policyId: string, _phase: string, dataTable: any
+  this: BmadWorld, policyId: string, phase: string, dataTable: any
 ) {
   const ctx = getCtx(this);
   // The data table is formatted as key-value pairs (one key per row), so use
@@ -304,7 +312,7 @@ When('I evaluate {string} as {string} with story artifact containing:', function
     }
   }
 
-  const policy = ctx.engine.policies.find((p: any) => p.id === policyId);
+  const policy = policyFor(ctx, policyId, phase);
   if (policy) {
     return policy.evaluate({ artifactType: 'story', artifactId: 'story-1', artifact }).then((failures: string[] | null) => {
       ctx.lastEvalResults = [{
@@ -334,7 +342,7 @@ When('I evaluate {string} as {string} with epic artifact', async function (this:
     '../trace/trace-recorder': { getTraceRecorder: () => ({ record: () => {} }) },
   }).HarnessEngine;
   const filteredEngine = new Engine();
-  const policy = ctx.engine.policies.find((p: any) => p.id === policyId);
+  const policy = policyFor(ctx, policyId, phase);
   if (policy) { filteredEngine.registerPolicy(policy); }
   const artifact = { id: 'EPIC-1', title: 'Test Epic', type: 'epic' };
   ctx.lastEvalResults = await filteredEngine.evaluate(
@@ -346,7 +354,7 @@ When('I evaluate {string} as {string} with epic artifact', async function (this:
 
 
 When('I evaluate {string} as {string} with epic containing stories:', function (
-  this: BmadWorld, policyId: string, _phase: string, dataTable: any
+  this: BmadWorld, policyId: string, phase: string, dataTable: any
 ) {
   const ctx = getCtx(this);
   const rows = dataTable.hashes();
@@ -355,7 +363,7 @@ When('I evaluate {string} as {string} with epic containing stories:', function (
   }));
   const artifact = { id: 'EPIC-1', title: 'Test Epic', type: 'epic', stories };
 
-  const policy = ctx.engine.policies.find((p: any) => p.id === policyId);
+  const policy = policyFor(ctx, policyId, phase);
   if (policy) {
     return policy.evaluate({ artifactType: 'epic', artifactId: 'EPIC-1', artifact }).then((failures: string[] | null) => {
       ctx.lastEvalResults = [{
@@ -370,11 +378,11 @@ When('I evaluate {string} as {string} with epic containing stories:', function (
   }
 });
 
-When('I evaluate {string} as {string} with epic having no stories', function (this: BmadWorld, policyId: string, _phase: string) {
+When('I evaluate {string} as {string} with epic having no stories', function (this: BmadWorld, policyId: string, phase: string) {
   const ctx = getCtx(this);
   const artifact = { id: 'EPIC-1', title: 'Empty Epic', type: 'epic', stories: [] };
 
-  const policy = ctx.engine.policies.find((p: any) => p.id === policyId);
+  const policy = policyFor(ctx, policyId, phase);
   if (policy) {
     return policy.evaluate({ artifactType: 'epic', artifactId: 'EPIC-1', artifact }).then((failures: string[] | null) => {
       ctx.lastEvalResults = [{
@@ -389,11 +397,11 @@ When('I evaluate {string} as {string} with epic having no stories', function (th
   }
 });
 
-When('I evaluate {string} as {string} with story artifact', function (this: BmadWorld, policyId: string, _phase: string) {
+When('I evaluate {string} as {string} with story artifact', function (this: BmadWorld, policyId: string, phase: string) {
   const ctx = getCtx(this);
   const artifact = { id: 'S-1', title: 'Test Story', type: 'story', storyPoints: 5 };
 
-  const policy = ctx.engine.policies.find((p: any) => p.id === policyId);
+  const policy = policyFor(ctx, policyId, phase);
   if (policy) {
     return policy.evaluate({ artifactType: 'story', artifactId: 'S-1', artifact }).then((failures: string[] | null) => {
       ctx.lastEvalResults = [{
@@ -734,9 +742,12 @@ Then(/^the results should not include "([^"]+)" \(artifactType: ([^)]+)\)$/, fun
   assert.ok(!ids.includes(expected), `Expected results to NOT include "${expected}" for artifactType: ${artifactType}`);
 });
 
-Then('a harness {string} trace entry should have been recorded', function (this: BmadWorld, _entryType: string) {
-  const ctx = getCtx(this);
-  assert.strictEqual(ctx.traceRecorded, true, 'Expected trace to have been recorded');
+Then('a harness {string} trace entry should have been recorded', function (this: BmadWorld, entryType: string) {
+  const entries: any[] = (getCtx(this) as any).traceEntries ?? [];
+  assert.ok(
+    entries.some(e => e.type === entryType),
+    `Expected a "${entryType}" trace entry, got types: [${entries.map(e => e.type).join(', ')}]`,
+  );
 });
 
 Then('the trace entry agent should be {string}', function (this: BmadWorld, expected: string) {
@@ -793,10 +804,11 @@ Then('if the fix succeeds, fixed should be true', function (this: BmadWorld) {
   }
 });
 
-Then(/^the policy evaluation should return null \(LLM not supported\)$/, function (this: BmadWorld) {
-  getCtx(this);
-  // Policies without regex or evaluate functions return null for unsupported LLM mode
-  assert.ok(true, 'Policy without evaluate function returns null for LLM-unsupported mode');
+Then(/^the policy evaluation should return null \(LLM not supported\)$/, async function (this: BmadWorld) {
+  const [policy] = getCtx(this).loadedPolicies;
+  assert.ok(policy, 'Expected the user policy to be loaded');
+  const result = await policy.evaluate({ artifactType: 'story', artifactId: 'S-1', artifact: { title: 'anything' } });
+  assert.strictEqual(result, null, 'A policy without regex should be skipped (null), not evaluated');
 });
 
 Then('the new policy should be in the policies list', function (this: BmadWorld) {
@@ -806,6 +818,8 @@ Then('the new policy should be in the policies list', function (this: BmadWorld)
 });
 
 Then('the policies should be auto-registered via the module-level loop', function (this: BmadWorld) {
-  // Built-in policies are auto-registered at module level in policy-engine.ts
-  assert.ok(true);
+  const mod = (getCtx(this) as any).harnessModule;
+  const builtIn = mod.HarnessEngine.builtInPolicies().map((p: any) => p.id);
+  const registered = mod.harnessEngine.policies.map((p: any) => p.id);
+  assert.deepStrictEqual(registered, builtIn, 'The module singleton should register every built-in policy');
 });

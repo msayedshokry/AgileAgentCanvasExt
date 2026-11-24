@@ -125,7 +125,6 @@ Feature: Trace Recorder - Execution Trace Recording and Viewing
     When I get the session trace for "session-unknown"
     Then I should receive an empty array
 
-  @wip
   @trace @retrieve
   Scenario: getSessionTrace handles corrupt file gracefully
     Given a valid session with 2 entries exists
@@ -222,7 +221,6 @@ Feature: Trace Recorder - Execution Trace Recording and Viewing
     And the trace entry data should contain toolName "my_tool"
     And the trace entry should have a durationMs
 
-  @wip
   @trace @wrappertool
   Scenario: wrapToolWithTracing records error on failure
     Given a mock language model tool that throws
@@ -246,14 +244,12 @@ Feature: Trace Recorder - Execution Trace Recording and Viewing
     Then a webview panel should have been created
     And the panel title should contain "session-001"
 
-  @wip
   @trace @commands
   Scenario: openTraceViewer shows info when no sessions
     Given no trace sessions exist
-    When I execute the command "agileagentcanvas.openTraceViewer"
+    When I execute the trace command "agileagentcanvas.openTraceViewer"
     Then trace showInformationMessage should have been called with "No trace sessions found"
 
-  @wip
   @trace @commands
   Scenario: openTraceViewer does nothing when picker cancelled
     Given recent trace sessions exist
@@ -268,7 +264,6 @@ Feature: Trace Recorder - Execution Trace Recording and Viewing
     Then files older than 30 days should have been deleted
     And a confirmation message should have been shown with deleted count
 
-  @wip
   @trace @commands
   Scenario: clearOldTraces shows info when nothing to clear
     Given no trace files are older than 30 days

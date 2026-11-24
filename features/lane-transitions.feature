@@ -88,6 +88,7 @@ Feature: Lane Transitions - Kanban Card Movement Orchestration
     And the user will confirm the workflow prompt
     When I handle transition for "S-1" from "backlog" to "ready-for-dev" with type "story"
     Then the transition result workflowLaunched should be true
+    And the user should have been prompted for confirmation
     And the workflow executor executeLaneTransition should have been called
 
   @transitions @handle
@@ -158,14 +159,30 @@ Feature: Lane Transitions - Kanban Card Movement Orchestration
     Then the user should not have been prompted for confirmation
     And the transition result workflowLaunched should be true
 
-  # ─── Pre-flight Validation (E4 Stub) ───────────────────────────────────────
+  # ─── Pre-flight Validation ────────────────────────────────────────────────
 
   @transitions @harness
-  Scenario: Pre-flight validation is skipped until harness engine is built
+  Scenario: Pre-flight harness check runs before a story starts and lets it through
     Given the store has a story with id "S-1" and status "ready-for-dev"
     When I handle transition for "S-1" from "ready-for-dev" to "in-progress" with type "story"
     Then the transition result ok should be true
-    And the harness pre-flight stub should have logged a debug message
+    And the pre-flight harness check should have run for "S-1"
+
+  @transitions @harness
+  Scenario: A blocking pre-flight failure stops the transition
+    Given the store has a story with id "S-1" and status "ready-for-dev"
+    And the pre-flight harness check will report a blocking failure
+    When I handle transition for "S-1" from "ready-for-dev" to "in-progress" with type "story"
+    Then the transition result ok should be false
+    And the transition result status should be "blocked"
+    And the transition result blockedBy should contain "test-blocking-policy"
+    And the story "S-1" status should be "ready-for-dev"
+
+  @transitions @harness
+  Scenario: Transitions without pre-flight validation skip the harness check
+    Given the store has a story with id "S-1" and status "backlog"
+    When I handle transition for "S-1" from "backlog" to "ready-for-dev" with type "story"
+    Then no pre-flight harness check should have run
 
   # ─── Error Handling ───────────────────────────────────────────────────────
 

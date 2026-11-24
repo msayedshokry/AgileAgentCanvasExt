@@ -27,6 +27,10 @@ interface TraceTestContext {
   flushTimerCount: number;
   outputFolder: string;
   recordCount: number;
+  /** Real-command runs: info messages shown, quick-pick items offered, whether the user cancels. */
+  infoMessages: string[];
+  quickPickItems: any[] | null;
+  pickAnswer: 'first' | 'cancel';
 }
 
 const contexts = new WeakMap<BmadWorld, TraceTestContext>();
@@ -49,6 +53,9 @@ function getCtx(world: BmadWorld): TraceTestContext {
       flushTimerCount: 0,
       outputFolder: '',
       recordCount: 0,
+      infoMessages: [],
+      quickPickItems: null,
+      pickAnswer: 'first',
     };
     contexts.set(world, ctx);
   }
@@ -206,20 +213,27 @@ Given('no trace sessions exist', function (this: BmadWorld) {
 });
 
 Given('the trace user cancels the quick pick', function (this: BmadWorld) {
-  // This is handled by the VS Code mock — showQuickPick returns undefined
-  (this.vscode as any).window.showQuickPick = async () => undefined;
+  getCtx(this).pickAnswer = 'cancel';
 });
+
+/** Write a session JSONL file whose single entry is `ageDays` old. */
+function writeSessionFile(ctx: TraceTestContext, sessionId: string, ageDays: number): string {
+  const dir = ctx.recorder.getOutputFolder();
+  fs.mkdirSync(dir, { recursive: true });
+  const timestamp = new Date(Date.now() - ageDays * 24 * 60 * 60 * 1000).toISOString();
+  const file = path.join(dir, `session-${sessionId}.jsonl`);
+  fs.writeFileSync(file, JSON.stringify({ sessionId, type: 'tool_call', agent: 'analyst', data: {}, timestamp }) + '\n');
+  return file;
+}
 
 Given('trace files exist with various ages', function (this: BmadWorld) {
   const ctx = getCtx(this);
-  // Record entries that will be flushed to files
-  ctx.recorder.record({ sessionId: 'old-session', type: 'tool_call', agent: 'analyst', data: {} });
-  ctx.recorder.record({ sessionId: 'new-session', type: 'tool_call', agent: 'analyst', data: {} });
-  ctx.recordCount += 2;
+  writeSessionFile(ctx, 'old-session', 40);
+  writeSessionFile(ctx, 'new-session', 1);
 });
 
 Given('no trace files are older than 30 days', function (this: BmadWorld) {
-  // All files are recent — no cleanup needed
+  writeSessionFile(getCtx(this), 'new-session', 1);
 });
 
 Given('the JSONL file has a corrupt line appended', function (this: BmadWorld) {
@@ -236,11 +250,14 @@ Given('a mock language model tool', function (this: BmadWorld) {
   const ctx = getCtx(this);
   ctx.toolResult = null;
   ctx.toolError = null;
+  (ctx as any).toolFailure = null;
 });
 
 Given('a mock language model tool that throws', function (this: BmadWorld) {
   const ctx = getCtx(this);
-  ctx.toolError = new Error('Mock tool error');
+  ctx.toolError = null;
+  // What the mock throws; ctx.toolError only records what the caller caught.
+  (ctx as any).toolFailure = new Error('Mock tool error');
 });
 
 Given('the trace recorder is initialized', function (this: BmadWorld) {
@@ -454,8 +471,9 @@ When('I dispose the trace recorder', function (this: BmadWorld) {
 });
 
 When('I initialize the trace recorder with path {string}', function (this: BmadWorld, outputPath: string) {
-  const ctx = getCtx(this);
-  const module = proxyquire('../../src/trace/trace-recorder', {
+  const ctx = getCtx(this) as TraceTestContext & { traceModule?: any; initialized?: Array<{ recorder: any; disposed: boolean }> };
+  // One module instance per scenario, so a second initialize sees the first instance.
+  ctx.traceModule ??= proxyquire('../../src/trace/trace-recorder', {
     vscode: { Disposable: class { dispose() {} } },
     '../utils/logger': {
       createLogger: () => ({
@@ -463,8 +481,12 @@ When('I initialize the trace recorder with path {string}', function (this: BmadW
       }),
     },
   });
-  module.initializeTraceRecorder(outputPath);
-  ctx.recorder = module.getTraceRecorder();
+  ctx.traceModule.initializeTraceRecorder(outputPath);
+  ctx.recorder = ctx.traceModule.getTraceRecorder();
+  const record = { recorder: ctx.recorder, disposed: false };
+  const dispose = ctx.recorder.dispose.bind(ctx.recorder);
+  ctx.recorder.dispose = () => { record.disposed = true; dispose(); };
+  (ctx.initialized ??= []).push(record);
 });
 
 When('I call getTraceRecorder', function (this: BmadWorld) {
@@ -501,7 +523,7 @@ When('I wrap the tool with tracing for session {string} and agent {string} and t
 
     const mockTool = {
       invoke: async (inputs: any, _token: any) => {
-        if (ctx.toolError) throw ctx.toolError;
+        if ((ctx as any).toolFailure) throw (ctx as any).toolFailure;
         return { result: `Processed ${JSON.stringify(inputs)}` };
       },
     };
@@ -542,22 +564,56 @@ When(/^I invoke the wrapped tool with inputs { key: "value" }$/, async function 
 });
 
 
-When('I execute the trace command {string}', function (this: BmadWorld, commandId: string) {
-  const ctx = getCtx(this);
-  if (commandId === 'agileagentcanvas.openTraceViewer') {
-    // Simulate behavior
-    ctx.panelCreated = true;
-    ctx.panelTitle = 'Trace Viewer - session-001';
-  }
+/** Register the real trace commands against a recording VS Code stub and run one. */
+async function runTraceCommand(world: BmadWorld, commandId: string, ...args: unknown[]): Promise<void> {
+  const ctx = getCtx(world);
+  await ctx.recorder.flushAll();
+  const commands = new Map<string, (...a: unknown[]) => Promise<void>>();
+  const vscodeStub = {
+    ...world.vscode,
+    ViewColumn: { Beside: -2 },
+    commands: {
+      registerCommand: (id: string, fn: (...a: unknown[]) => Promise<void>) => {
+        commands.set(id, fn);
+        return { dispose: () => {} };
+      },
+    },
+    workspace: { ...(world.vscode as any).workspace, getConfiguration: () => ({ get: (_k: string, d: unknown) => d }) },
+    window: {
+      ...(world.vscode as any).window,
+      createWebviewPanel: (_type: string, title: string) => {
+        ctx.panelCreated = true;
+        ctx.panelTitle = title;
+        return { webview: { html: '' } };
+      },
+      showQuickPick: async (items: any[]) => {
+        ctx.quickPickItems = items;
+        return ctx.pickAnswer === 'cancel' ? undefined : items[0];
+      },
+      showInformationMessage: async (msg: string) => {
+        ctx.infoMessages.push(msg);
+        return undefined;
+      },
+    },
+  };
+  const mod = proxyquire('../../src/commands/trace-commands', {
+    vscode: vscodeStub,
+    '../trace/trace-recorder': { getTraceRecorder: () => ctx.recorder },
+    '../utils/logger': { createLogger: () => ({ info: () => {}, error: () => {}, debug: () => {}, warn: () => {} }) },
+  });
+  mod.registerTraceCommands({ subscriptions: [] });
+  const command = commands.get(commandId);
+  assert.ok(command, `Command ${commandId} was not registered`);
+  await command(...args);
+}
+
+When('I execute the trace command {string}', async function (this: BmadWorld, commandId: string) {
+  await runTraceCommand(this, commandId);
 });
 
 When('I execute the trace command {string} with session {string}',
-  function (this: BmadWorld, commandId: string, sessionId: string) {
-    const ctx = getCtx(this);
-    if (commandId === 'agileagentcanvas.openTraceViewer') {
-      ctx.panelCreated = true;
-      ctx.panelTitle = `Trace Viewer - ${sessionId}`;
-    }
+  async function (this: BmadWorld, commandId: string, sessionId: string) {
+    await runTraceCommand(this, commandId, sessionId);
   }
 );
 
@@ -568,9 +624,14 @@ Then('the trace should have been recorded without error', function (this: BmadWo
   assert.ok(ctx.recordCount > 0, 'Expected at least one trace entry recorded');
 });
 
-Then('the trace entry should have a timestamp', function (this: BmadWorld) {
-  // Entries always have timestamps from the recorder
-  assert.ok(true);
+Then('the trace entry should have a timestamp', async function (this: BmadWorld) {
+  const ctx = getCtx(this);
+  await ctx.recorder.flushAll();
+  const entries = await ctx.recorder.getSessionTrace(ctx.lastEntry.sessionId);
+  const last = entries[entries.length - 1];
+  assert.ok(last, `No entry was written for session ${ctx.lastEntry.sessionId}`);
+  assert.ok(!Number.isNaN(Date.parse(last.timestamp)), `Expected an ISO timestamp, got ${last.timestamp}`);
+  assert.ok(Math.abs(Date.now() - Date.parse(last.timestamp)) < 60_000, 'Timestamp should be the time of recording');
 });
 
 Then('the trace entry data should contain the prompt and response', function (this: BmadWorld) {
@@ -681,12 +742,14 @@ Then('I should receive an empty array', function (this: BmadWorld) {
 
 Then('valid entries should still be returned', function (this: BmadWorld) {
   const ctx = getCtx(this);
-  assert.ok(ctx.lastEntries.length > 0, 'Should return valid entries');
+  // The session has two valid entries plus one corrupt line, which must be skipped.
+  assert.strictEqual(ctx.lastEntries.length, 2, `Expected the 2 valid entries, got ${ctx.lastEntries.length}`);
 });
 
 Then('a tool error should have been thrown', function (this: BmadWorld) {
   const ctx = getCtx(this);
-  assert.ok(ctx.toolError, 'Expected an error to have been thrown by the tool tracer');
+  assert.ok(ctx.toolError, 'Expected the wrapped tool to re-throw');
+  assert.strictEqual(ctx.toolError, (ctx as any).toolFailure, 'Expected the original error to be re-thrown');
 });
 
 Then('an error should not be thrown', function (this: BmadWorld) {
@@ -785,8 +848,11 @@ Then('the output folder should be {string}', function (this: BmadWorld, expected
 });
 
 Then('the first instance should have been disposed', function (this: BmadWorld) {
-  // initializeTraceRecorder calls dispose() on the old instance
-  assert.ok(true);
+  const initialized = (getCtx(this) as any).initialized as Array<{ recorder: any; disposed: boolean }>;
+  assert.ok(initialized?.length >= 2, 'Expected the recorder to be initialized twice');
+  assert.strictEqual(initialized[0].disposed, true, 'The first instance should be disposed when replaced');
+  assert.notStrictEqual(initialized[1].recorder, initialized[0].recorder, 'Expected a new instance');
+  assert.strictEqual(initialized[1].disposed, false, 'The new instance should stay live');
 });
 
 Then('an error should be thrown with message containing {string}', function (this: BmadWorld, expected: string) {
@@ -843,7 +909,8 @@ Then('the error trace entry should contain the error message', function (this: B
   const allEntries = Array.from(ctx.recorder.buffers.values()).flat();
   const entry = allEntries.find((e: any) => e.type === 'error') as any;
   assert.ok(entry, 'Expected an error trace entry');
-  assert.ok(entry.data?.error || entry.data?.errorMessage, 'Expected error trace entry to contain error message');
+  const message = entry.data?.error ?? entry.data?.errorMessage;
+  assert.ok(String(message).includes('Mock tool error'), `Expected the error message in the trace entry, got ${JSON.stringify(entry.data)}`);
 });
 
 Then('an {string} trace entry should have been recorded', function (this: BmadWorld, entryType: string) {
@@ -854,9 +921,10 @@ Then('an {string} trace entry should have been recorded', function (this: BmadWo
 });
 
 Then('a quick pick should have been shown with session options', function (this: BmadWorld) {
-  // Captured via VS Code mock
-  const calls = (this as any).getMockCalls?.('window.showQuickPick') || [];
-  assert.ok(calls.length > 0 || true, 'Quick pick should have been shown');
+  const items = getCtx(this).quickPickItems;
+  assert.ok(items, 'Expected a quick pick to be shown');
+  const ids = items.map((i: any) => i.sessionId).sort();
+  assert.deepStrictEqual(ids, ['session-001', 'session-002'], `Quick pick offered ${JSON.stringify(ids)}`);
 });
 
 Then('a webview panel should have been created', function (this: BmadWorld) {
@@ -870,11 +938,11 @@ Then('the panel title should contain {string}', function (this: BmadWorld, expec
 });
 
 Then('trace showInformationMessage should have been called with {string}', function (this: BmadWorld, expected: string) {
-  const calls = (this as any).getMockCalls?.('window.showInformationMessage') || [];
-  const found = calls.some((call: any[]) =>
-    call.some((arg: any) => typeof arg === 'string' && arg.includes(expected))
+  const { infoMessages } = getCtx(this);
+  assert.ok(
+    infoMessages.some(m => m.includes(expected)),
+    `Expected an info message with "${expected}", got ${JSON.stringify(infoMessages)}`,
   );
-  assert.ok(found, `Expected showInformationMessage with "${expected}"`);
 });
 
 Then('no webview panel should have been created', function (this: BmadWorld) {
@@ -883,10 +951,15 @@ Then('no webview panel should have been created', function (this: BmadWorld) {
 });
 
 Then('files older than 30 days should have been deleted', function (this: BmadWorld) {
-  // Cleanup command behavior — verified by integration test
-  assert.ok(true);
+  const dir = getCtx(this).recorder.getOutputFolder();
+  assert.ok(!fs.existsSync(path.join(dir, 'session-old-session.jsonl')), 'The 40-day-old session file should be deleted');
+  assert.ok(fs.existsSync(path.join(dir, 'session-new-session.jsonl')), 'The 1-day-old session file should be kept');
 });
 
 Then('a confirmation message should have been shown with deleted count', function (this: BmadWorld) {
-  assert.ok(true);
+  const { infoMessages } = getCtx(this);
+  assert.ok(
+    infoMessages.some(m => /Cleared 1 trace session\(s\) older than 30 days/.test(m)),
+    `Got: ${JSON.stringify(infoMessages)}`,
+  );
 });

@@ -18,6 +18,8 @@ interface TeamTestContext {
   lastError: Error | null;
   streamMessages: string[];
   spawnedSessionIds: string[];
+  /** Every session the orchestrator spawned, in order, with what it was given and returned. */
+  spawned: Array<{ id: string; role: string; artifact: any; parentSessionId: string | undefined; output?: any }>;
 }
 
 const contexts = new WeakMap<BmadWorld, TeamTestContext>();
@@ -34,6 +36,7 @@ function getCtx(world: BmadWorld): TeamTestContext {
       lastError: null,
       streamMessages: [],
       spawnedSessionIds: [],
+      spawned: [],
     };
     contexts.set(world, ctx);
   }
@@ -64,6 +67,8 @@ const TEAM_REGISTRY_MOCK = {
 function createOrchestrator(world: BmadWorld): any {
   // Shared session store so spawn and execute can coordinate roles
   const spawnedSessions = new Map<string, any>();
+  const ctx = getCtx(world);
+  ctx.spawned = [];
 
   const module = proxyquire('../../src/acp/team-orchestrator', {
     vscode: world.vscode,
@@ -91,17 +96,21 @@ function createOrchestrator(world: BmadWorld): any {
             dispose: () => {},
           };
           spawnedSessions.set(id, session);
+          ctx.spawned.push({ id, role: spec.role, artifact: spec.context?.artifact, parentSessionId: spec.context?.parentSessionId });
           return session;
         },
         execute: async (sessionId: string, _model: any, _store: any, _stream: any, _token: any) => {
           // Look up the session to determine the correct role
           const session = spawnedSessions.get(sessionId);
           const role = session?.spec?.role || 'crafter';
+          const output = { status: 'done', data: `Output for ${sessionId}` };
+          const record = ctx.spawned.find(s => s.id === sessionId);
+          if (record) record.output = output;
           return {
             sessionId,
             role,
             status: 'completed',
-            output: { status: 'done', data: `Output for ${sessionId}` },
+            output,
             toolCalls: 3,
             startedAt: new Date().toISOString(),
             completedAt: new Date().toISOString(),
@@ -498,19 +507,32 @@ Then('the gate should have been spawned third', function (this: BmadWorld) {
   assert.strictEqual(ctx.lastResults[2].role, 'gate', `Expected third result role "gate", got "${ctx.lastResults[2].role}"`);
 });
 
+function spawnedAs(ctx: TeamTestContext, role: string) {
+  const s = ctx.spawned.find(x => x.role === role);
+  assert.ok(s, `No ${role} session was spawned (spawned: ${ctx.spawned.map(x => x.role).join(', ')})`);
+  return s;
+}
+
 Then('the coordinator should have received the initial artifact', function (this: BmadWorld) {
-  // The artifact is passed to the first session spawn — verified by result chain
-  assert.ok(true);
+  const ctx = getCtx(this);
+  const got = spawnedAs(ctx, 'coordinator').artifact;
+  assert.deepStrictEqual(got, (ctx as any).initialArtifact, `Coordinator got ${JSON.stringify(got)}`);
 });
 
 Then('the crafter should have received the coordinator output', function (this: BmadWorld) {
-  // Output from coordinator is passed as artifact to crafter
-  assert.ok(true);
+  const ctx = getCtx(this);
+  const coordinator = spawnedAs(ctx, 'coordinator');
+  assert.ok(coordinator.output, 'Coordinator produced no output');
+  const got = spawnedAs(ctx, 'crafter').artifact;
+  assert.strictEqual(got, coordinator.output, `Crafter got ${JSON.stringify(got)}, not the coordinator output`);
 });
 
 Then('the gate should have received the crafter output', function (this: BmadWorld) {
-  // Output from crafter is passed as artifact to gate
-  assert.ok(true);
+  const ctx = getCtx(this);
+  const crafter = spawnedAs(ctx, 'crafter');
+  assert.ok(crafter.output, 'Crafter produced no output');
+  const got = spawnedAs(ctx, 'gate').artifact;
+  assert.strictEqual(got, crafter.output, `Gate got ${JSON.stringify(got)}, not the crafter output`);
 });
 
 Then('the returned results should have {int} entries', function (this: BmadWorld, count: number) {
@@ -626,11 +648,14 @@ Then('the member order should be {int}', function (this: BmadWorld, expected: nu
 });
 
 Then('the second spawned session parentSessionId should be the first session ID', function (this: BmadWorld) {
-  // This validation is inherent in the team execution logic but can't be directly
-  // observed from results — the orchestrator sets parentSessionId internally
-  assert.ok(true);
+  const { spawned } = getCtx(this);
+  assert.ok(spawned.length >= 2, `Expected at least 2 spawned sessions, got ${spawned.length}`);
+  assert.strictEqual(spawned[0].parentSessionId, undefined, 'The first session should have no parent');
+  assert.strictEqual(spawned[1].parentSessionId, spawned[0].id, `Second parent is "${spawned[1].parentSessionId}", expected "${spawned[0].id}"`);
 });
 
 Then('the third spawned session parentSessionId should be the second session ID', function (this: BmadWorld) {
-  assert.ok(true);
+  const { spawned } = getCtx(this);
+  assert.ok(spawned.length >= 3, `Expected at least 3 spawned sessions, got ${spawned.length}`);
+  assert.strictEqual(spawned[2].parentSessionId, spawned[1].id, `Third parent is "${spawned[2].parentSessionId}", expected "${spawned[1].id}"`);
 });
