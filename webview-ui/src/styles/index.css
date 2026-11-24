@@ -695,19 +695,11 @@ body.ac-force-dark {
   flex: 1;
   position: relative;
   overflow: hidden;
+  /* Shared paper + dot-grid texture (tokens.css); the Kanban root uses the same. */
   background-color: var(--paper);
-  /* Faint 24px dot grid — paper texture, derived from the theme ink. */
-  background-image:
-    radial-gradient(circle, var(--rule) 1px, transparent 1px);
-  background-size: 24px 24px;
+  background-image: var(--paper-texture);
+  background-size: var(--paper-texture-size);
   cursor: grab;
-}
-
-/* High contrast: --rule is the solid contrast border, so the texture would
- * be a field of full-strength dots. Plain paper instead. */
-body.vscode-high-contrast .canvas,
-body.vscode-high-contrast-light .canvas {
-  background-image: none;
 }
 
 .canvas.panning {

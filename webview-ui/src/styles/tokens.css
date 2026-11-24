@@ -31,6 +31,9 @@ body {
   --paper-raised: var(--vscode-editorWidget-background, var(--vscode-editor-background));
   /* Barely-there wash for hover rows and pressed states. */
   --paper-wash: color-mix(in srgb, var(--vscode-foreground) 5%, transparent);
+  /* Shared view background texture (canvas, Kanban): faint 24px dot grid. */
+  --paper-texture: radial-gradient(circle, color-mix(in srgb, var(--vscode-foreground) 14%, transparent) 1px, transparent 1px);
+  --paper-texture-size: 24px 24px;
 
   /* ── Rules: the only structural line ─────────────────────────────────── */
   --rule: color-mix(in srgb, var(--vscode-foreground) 14%, transparent);
@@ -100,6 +103,8 @@ body.vscode-high-contrast-light {
   --rule-strong: var(--vscode-contrastActiveBorder, var(--vscode-contrastBorder, currentColor));
   --ink-2: var(--vscode-foreground);
   --ink-3: var(--vscode-foreground);
+  /* Solid contrast borders would turn the dot grid into noise. */
+  --paper-texture: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

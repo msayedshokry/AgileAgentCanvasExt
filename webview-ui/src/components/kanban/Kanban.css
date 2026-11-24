@@ -619,6 +619,11 @@
   min-width: 0;
   height: 100%;
   overflow: hidden;
+  /* Same paper + texture as the canvas (tokens.css), so both views match
+   * even when the board is hosted in its own panel webview. */
+  background-color: var(--paper);
+  background-image: var(--paper-texture);
+  background-size: var(--paper-texture-size);
 }
 
 /* ── Agentic Kanban Header ── */
