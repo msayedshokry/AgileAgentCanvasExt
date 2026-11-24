@@ -8,6 +8,8 @@ import { handleCommonWebviewMessage } from './webview-message-handler';
 import { getActiveChatSession } from '../chat/active-session';
 import { kanbanProgress } from '../workflow/kanban-orchestrator';
 import { getKanbanWipLimits } from '../workflow/kanban-settings';
+import { harnessEngine, type HarnessEvaluatedEvent } from '../harness/policy-engine';
+import { HarnessCardResults } from './harness-card-results';
 
 import { errMsg } from '../utils/error';
 
@@ -26,6 +28,8 @@ export class AgenticKanbanViewProvider implements vscode.WebviewViewProvider {
   private store: ArtifactStore;
   /** Pending agent states pushed before the webview was ready (keyed by artifactId) */
   private pendingAgentStates = new Map<string, { agentState: any; lockInfo?: any }>();
+  /** Latest harness outcome per card; replayed when the webview (re)opens. */
+  private harnessResults = new HarnessCardResults();
 
   constructor(
     private readonly extensionUri: vscode.Uri,
@@ -44,6 +48,18 @@ export class AgenticKanbanViewProvider implements vscode.WebviewViewProvider {
     kanbanProgress.event((evt) => {
       this.sendAgentState(evt.artifactId, evt.agentState);
     });
+
+    // Every harness evaluation (pre-flight, post-flight, continuous) updates
+    // the card's policy badge and the detail panel's policy list.
+    harnessEngine.on('evaluated', (evt: HarnessEvaluatedEvent) => {
+      this.sendHarnessResults(evt);
+    });
+  }
+
+  /** Merge an evaluation into the card's results and push them to the webview. */
+  sendHarnessResults(evt: HarnessEvaluatedEvent): void {
+    const results = this.harnessResults.record(evt);
+    this.broadcast({ type: 'harnessResults', artifactId: evt.artifactId, harnessResults: results });
   }
 
   /**
@@ -179,6 +195,9 @@ export class AgenticKanbanViewProvider implements vscode.WebviewViewProvider {
         agentState,
         lockInfo,
       });
+    }
+    for (const [artifactId, harnessResults] of this.harnessResults.entries()) {
+      this._view.webview.postMessage({ type: 'harnessResults', artifactId, harnessResults });
     }
 
     // P1 #14: prune terminal + cap non-terminal entries so the buffer
