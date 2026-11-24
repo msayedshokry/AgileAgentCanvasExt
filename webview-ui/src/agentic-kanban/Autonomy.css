@@ -3,12 +3,12 @@
 .autonomy-bar {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 6px 10px;
-  background: var(--vscode-editorGroupHeader-tabsBackground, rgba(127, 127, 127, 0.1));
-  border-bottom: 1px solid var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.2));
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-5);
+  background: transparent;
+  border-bottom: var(--rule-width) solid var(--rule);
   flex-wrap: wrap;
-  font-size: 12px;
+  font-size: var(--text-small);
 }
 
 .autonomy-bar-group {
@@ -33,22 +33,23 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 10px;
-  background: var(--vscode-badge-background, rgba(127, 127, 127, 0.2));
-  color: var(--vscode-foreground);
-  border: 1px solid var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.25));
-  border-radius: 14px;
-  font-size: 12px;
-  font-weight: 500;
+  height: 26px;
+  padding: 0 var(--space-2);
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--rule-width) solid var(--rule);
+  border-radius: var(--radius);
+  font-size: var(--text-small);
+  font-weight: var(--weight-strong);
   cursor: pointer;
   font-family: inherit;
-  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
   position: relative;
 }
 
 .autonomy-inbox-btn:hover {
-  background: var(--vscode-list-hoverBackground, rgba(127, 127, 127, 0.2));
-  border-color: var(--vscode-focusBorder, #007acc);
+  background: var(--paper-wash);
+  border-color: var(--rule-strong);
 }
 
 .autonomy-inbox-btn--open {
