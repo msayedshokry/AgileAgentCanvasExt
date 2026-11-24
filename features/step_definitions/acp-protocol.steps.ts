@@ -146,16 +146,6 @@ Given('I spawn and execute an ACP session successfully', async function (this: B
   ctx.lastResult = result;
 });
 
-Given('an ACP session spec with role {string}', function (this: BmadWorld, role: string) {
-  const ctx = getCtx(this);
-  const spec = {
-    role,
-    personaId: `bmad-agent-${role}`,
-    context: { task: `Test ${role}` },
-  };
-  ctx.lastSession = { spec, valid: true };
-});
-
 Given('an ACP session spec with:', function (this: BmadWorld, dataTable: any) {
   const ctx = getCtx(this);
   // Use rowsHash() for vertical key|value tables
@@ -434,17 +424,14 @@ Then('the ACP session status should be {string}', function (this: BmadWorld, exp
   assert.strictEqual(session?.status, expected, `Expected ACP session status "${expected}", got "${session?.status}"`);
 });
 
-Then('the ACP session ID should match pattern {string}', function (this: BmadWorld, _pattern: string) {
+Then('the ACP session ID should match pattern {string}', function (this: BmadWorld, pattern: string) {
   const ctx = getCtx(this);
   const session = ctx.lastSession || ctx.spawnedSessions[ctx.spawnedSessions.length - 1];
   const id = session?.id || '';
   assert.ok(id, 'No session ID available');
-  // ACP session IDs are auto-generated: acp-{timestamp}-{random}
-  assert.ok(id.startsWith('acp-'), `Session ID "${id}" should start with "acp-"`);
-  const parts = id.split('-');
-  assert.ok(parts.length >= 3, `Session ID "${id}" should have format acp-{timestamp}-{random}`);
-  assert.ok(/^\d+$/.test(parts[1]), `Session ID "${id}" timestamp part should be digits`);
-  assert.ok(/^[a-z0-9]+$/.test(parts[2]), `Session ID "${id}" random part should be alphanumeric`);
+  // Gherkin keeps "\\d" as two backslashes; collapse them to a regex escape.
+  const re = new RegExp(`^${pattern.replace(/\\\\/g, '\\')}$`);
+  assert.match(id, re, `Session ID "${id}" should match ${re}`);
 });
 
 Then('the session result status should be {string}', function (this: BmadWorld, expected: string) {
@@ -511,9 +498,11 @@ Then('the subscriber should have received a {string} event', function (this: Bma
 });
 
 Then('the disposable should be a no-op', function (this: BmadWorld) {
-  // A disposable from an unknown session just returns { dispose: () => {} }
-  // which should not throw when disposed
-  assert.ok(true);
+  const ctx = getCtx(this);
+  const disposable = ctx.disposables[ctx.disposables.length - 1];
+  assert.ok(disposable && typeof disposable.dispose === 'function', 'Expected a disposable back');
+  assert.doesNotThrow(() => disposable.dispose());
+  assert.strictEqual(ctx.subscribedEvents.length, 0, 'No events should reach a subscriber of an unknown session');
 });
 
 Then('no sessions should be retrievable', function (this: BmadWorld) {
@@ -571,10 +560,6 @@ Then('the handoff context should contain task and intermediateArtifacts', functi
   assert.ok(handoff?.context?.intermediateArtifacts, 'Handoff context should have intermediateArtifacts');
 });
 
-Then('all session specs should be valid', function (this: BmadWorld) {
-  // All specs created with valid roles should be valid
-  assert.ok(true);
-});
 
 Then('the ACP session manager singleton should be defined', function (this: BmadWorld) {
   const ctx = getCtx(this);

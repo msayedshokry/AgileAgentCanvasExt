@@ -594,10 +594,10 @@ Then('the cost tracker log path should be set', function(this: BmadWorld) {
   );
 });
 
-Then('the cross-artifact harness detector threshold should be {int}', function(this: BmadWorld, _expected: number) {
+Then('the cross-artifact harness detector threshold should be {int}', function(this: BmadWorld, expected: number) {
   const { crossArtifactHarnessDetector } = require('../../src/harness/cross-artifact-detector');
   const mod = crossArtifactHarnessDetector as any;
-  assert.ok(mod.threshold !== undefined, 'Expected crossArtifactHarnessDetector threshold to be set');
+  assert.strictEqual(mod.threshold, expected, `Expected detector threshold ${expected}, got ${mod.threshold}`);
 });
 
 Then('the failure classifier should be importable', function(this: BmadWorld) {

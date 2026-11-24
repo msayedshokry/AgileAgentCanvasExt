@@ -19,6 +19,17 @@ interface LaneTestContext {
   lastFoundRule: any;
   lastError: Error | null;
   _concurrencyQueue: any;
+  /** What the engine actually did, recorded by the stubs in createEngine(). */
+  calls: {
+    acquired: string[];
+    released: string[];
+    executeLaneTransition: Array<{ workflowId: string; artifactId: string }>;
+    prompts: number;
+    preFlight: Array<{ artifactId: string; phase: string }>;
+  };
+  promptAnswer: boolean;
+  executorThrows: boolean;
+  preFlightIssues: Array<{ policyId: string; passed: boolean; severity: string }>;
 }
 
 const contexts = new WeakMap<BmadWorld, LaneTestContext>();
@@ -38,6 +49,10 @@ export function getCtx(world: BmadWorld): LaneTestContext {
       lastFoundRule: null,
       lastError: null,
       _concurrencyQueue: null,
+      calls: { acquired: [], released: [], executeLaneTransition: [], prompts: 0, preFlight: [] },
+      promptAnswer: true,
+      executorThrows: false,
+      preFlightIssues: [],
     };
     contexts.set(world, ctx);
   }
@@ -55,9 +70,11 @@ function createEngine(world: BmadWorld): any {
       if (this.locks.has(artifactId)) return null;
       const entry = { artifactId, agentName, lockedAt: new Date(), acquiredBy: requestId };
       this.locks.set(artifactId, entry);
+      ctx.calls.acquired.push(artifactId);
       return entry;
     },
     release(artifactId: string) {
+      ctx.calls.released.push(artifactId);
       this.locks.delete(artifactId);
       this.queue.delete(artifactId);
     },
@@ -100,6 +117,15 @@ function createEngine(world: BmadWorld): any {
         attachWebviewStream: () => ({ dispose: () => {} }),
       },
     },
+    // Record pre-flight checks; scenarios choose what the harness reports.
+    '../harness/policy-engine': {
+      harnessEngine: {
+        evaluate: async (input: { artifactId: string }, phase: string) => {
+          ctx.calls.preFlight.push({ artifactId: input.artifactId, phase });
+          return ctx.preFlightIssues;
+        },
+      },
+    },
     './concurrency-queue': {
       ConcurrencyQueue: class {
         locks = mockConcurrencyQueue.locks;
@@ -139,17 +165,27 @@ function createEngine(world: BmadWorld): any {
     getArtifactMaps: () => ctx.store.artifacts,
   };
 
+  ctx.calls = { acquired: [], released: [], executeLaneTransition: [], prompts: 0, preFlight: [] };
+  ctx.promptAnswer = true;
+  ctx.executorThrows = false;
+  ctx.preFlightIssues = [];
+
   ctx.executor = {
-    executeLaneTransition: async () => {},
+    executeLaneTransition: async (workflowId: string, artifact: { id: string }) => {
+      ctx.calls.executeLaneTransition.push({ workflowId, artifactId: artifact?.id });
+      if (ctx.executorThrows) throw new Error('Workflow execution error');
+    },
   };
 
   // Cache TRANSITION_RULES to avoid empty proxyquire calls in When/Then steps
   ctx.allTransitionRules = module.TRANSITION_RULES || [];
 
   const engine = new module.LaneTransitionEngine(ctx.store, ctx.executor);
-  // Default to auto-confirming workflow prompts in tests.
-  // Individual scenarios can override via Given('the user will decline the workflow prompt')
-  engine.promptUser = async () => true;
+  // Auto-confirm workflow prompts by default; scenarios flip ctx.promptAnswer.
+  engine.promptUser = async () => {
+    ctx.calls.prompts++;
+    return ctx.promptAnswer;
+  };
   return engine;
 }
 
@@ -175,15 +211,15 @@ Given('the store has a story with id {string} and status {string}', function (th
 });
 
 Given('the user will confirm the workflow prompt', function (this: BmadWorld) {
-  const ctx = getCtx(this);
-  // Override promptUser to return true (confirmed)
-  ctx.engine.promptUser = async () => true;
+  getCtx(this).promptAnswer = true;
 });
 
 Given('the user will decline the workflow prompt', function (this: BmadWorld) {
-  const ctx = getCtx(this);
-  // Override promptUser to return false (declined)
-  ctx.engine.promptUser = async () => false;
+  getCtx(this).promptAnswer = false;
+});
+
+Given('the pre-flight harness check will report a blocking failure', function (this: BmadWorld) {
+  getCtx(this).preFlightIssues = [{ policyId: 'test-blocking-policy', passed: false, severity: 'blocking' }];
 });
 
 Given('a lock is held on {string}', function (this: BmadWorld, artifactId: string) {
@@ -205,10 +241,7 @@ Given('a lock is held on {string}', function (this: BmadWorld, artifactId: strin
 // active context is lane-transitions or agentic-kanban.
 
 Given('the workflow executor will throw during transition', function (this: BmadWorld) {
-  const ctx = getCtx(this);
-  ctx.executor.executeLaneTransition = async () => {
-    throw new Error('Workflow execution error');
-  };
+  getCtx(this).executorThrows = true;
 });
 
 Given('YOLO mode is enabled', function (this: BmadWorld) {
@@ -516,29 +549,41 @@ Then('the story {string} status should be {string}', function (this: BmadWorld, 
 // active context is lane-transitions or agentic-kanban.
 
 Then('the workflow executor executeLaneTransition should have been called', function (this: BmadWorld) {
-  // This is asserted implicitly by workflowLaunched being true
-  assert.ok(true);
+  const calls = getCtx(this).calls.executeLaneTransition;
+  assert.strictEqual(calls.length, 1, `Expected one executeLaneTransition call, got ${calls.length}`);
+});
+
+Then('the user should have been prompted for confirmation', function (this: BmadWorld) {
+  assert.strictEqual(getCtx(this).calls.prompts, 1, 'Expected exactly one confirmation prompt');
 });
 
 Then('the user should not have been prompted for confirmation', function (this: BmadWorld) {
-  // In YOLO mode, promptUser is never called — verified by workflowLaunched being true
-  assert.ok(true);
+  const ctx = getCtx(this);
+  assert.strictEqual(ctx.calls.prompts, 0, `Expected no confirmation prompt, got ${ctx.calls.prompts}`);
+  // Skipping the prompt must still launch the workflow.
+  assert.strictEqual(ctx.calls.executeLaneTransition.length, 1, 'Expected the workflow to launch without a prompt');
 });
 
-Then('the concurrency lock for {string} should have been acquired', function (this: BmadWorld, _artifactId: string) {
-  // Lock is acquired during handleTransition — if transition completes without
-  // "blocked: concurrency" error, lock was successfully acquired
-  assert.ok(true);
+Then('the concurrency lock for {string} should have been acquired', function (this: BmadWorld, artifactId: string) {
+  const { acquired } = getCtx(this).calls;
+  assert.ok(acquired.includes(artifactId), `Expected a lock on "${artifactId}", acquired: [${acquired.join(', ')}]`);
 });
 
-Then('the concurrency lock for {string} should have been released', function (this: BmadWorld, _artifactId: string) {
-  // Lock is released in the finally block — if no error about stale locks, it was released
-  assert.ok(true);
+Then('the concurrency lock for {string} should have been released', function (this: BmadWorld, artifactId: string) {
+  const ctx = getCtx(this);
+  assert.ok(ctx.calls.released.includes(artifactId), `Expected the lock on "${artifactId}" to be released`);
+  assert.ok(!ctx._concurrencyQueue.isLocked(artifactId), `"${artifactId}" is still locked`);
 });
 
-Then('the harness pre-flight stub should have logged a debug message', function (this: BmadWorld) {
-  // Harness pre-flight is currently stubbed (E4) — just logs a debug message
-  assert.ok(true);
+Then('the pre-flight harness check should have run for {string}', function (this: BmadWorld, artifactId: string) {
+  // The engine also runs a 'continuous' check after the move; only pre-flight matters here.
+  const preFlight = getCtx(this).calls.preFlight.filter(c => c.phase === 'pre-flight');
+  assert.deepStrictEqual(preFlight, [{ artifactId, phase: 'pre-flight' }], `Pre-flight checks: ${JSON.stringify(preFlight)}`);
+});
+
+Then('no pre-flight harness check should have run', function (this: BmadWorld) {
+  const preFlight = getCtx(this).calls.preFlight.filter(c => c.phase === 'pre-flight');
+  assert.deepStrictEqual(preFlight, [], `Expected no pre-flight check, got ${JSON.stringify(preFlight)}`);
 });
 
 Then('the lane transition engine singleton should be defined', function (this: BmadWorld) {
