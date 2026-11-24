@@ -7,6 +7,7 @@ import { KanbanCard } from './kanban/KanbanCard';
 import { KanbanColumn } from './kanban/KanbanColumn';
 import { KANBAN_COLUMNS } from './kanban/KanbanTypes';
 import type { KanbanItem, KanbanColumnDef, KanbanColumnKey } from './kanban/KanbanTypes';
+import { SprintHealthStrip } from './SprintHealthStrip';
 import './kanban/Kanban.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -35,6 +36,17 @@ export interface SprintStatusLoaded {
   storyLocation?: string;
   items: SprintItem[];
   sprints?: SprintGroup[]; // undefined = no sprints section → flat mode
+  /** Computed by the extension from sprint-status.yaml; null when there is no file. */
+  health?: SprintHealth | null;
+}
+
+/** Mirrors `SprintHealth` in src/sprint/sprint-health.ts (sent over postMessage). */
+export interface SprintHealth {
+  recommendation: { skill: string; story_key: string | null; reason: string } | null;
+  allDone: boolean;
+  risks: string[];
+  openActionItems: { epic: unknown; action: unknown; owner: unknown; status: unknown }[];
+  warnings: string[];
 }
 
 export type SprintData = SprintStatusData | SprintStatusLoaded;
@@ -594,6 +606,7 @@ export function SprintPlanningView({ data, onClose, onRunSprintPlanning }: Sprin
       return (
         <>
           <SprintMeta data={data} />
+          {data.health && <SprintHealthStrip health={data.health} />}
           <div className="sprint-no-sprints-notice">
             <Icon name="sprint" size={14} />
             No sprint groupings found — showing all items. Re-run <strong>sprint-planning</strong> to generate goal-based sprints.
@@ -636,6 +649,7 @@ export function SprintPlanningView({ data, onClose, onRunSprintPlanning }: Sprin
     return (
       <>
         <SprintMeta data={data} />
+        {data.health && <SprintHealthStrip health={data.health} />}
 
         {/* Sprint tab bar with scroll arrows */}
         <div className={`sprint-tabs-wrapper${canScrollLeft ? ' can-scroll-left' : ''}${canScrollRight ? ' can-scroll-right' : ''}`}>

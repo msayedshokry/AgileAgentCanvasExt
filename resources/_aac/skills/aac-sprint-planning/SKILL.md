@@ -67,14 +67,14 @@ Activation is complete. Begin the workflow below.
 - `story_location` = `{implementation_artifacts}`
 - `story_location_absolute` = `{implementation_artifacts}`
 - `epics_location` = `{planning_artifacts}`
-- `epics_pattern` = `*epic*.md`
+- `epics_pattern` = `*epic*.md` or `*epic*.json` (Agile Agent Canvas stores epics as `epics.json`)
 - `status_file` = `{implementation_artifacts}/sprint-status.yaml`
 
 ## Input Files
 
 | Input | Path | Load Strategy |
 |-------|------|---------------|
-| Epics | `{planning_artifacts}/*epic*.md` (whole) or `{planning_artifacts}/*epic*/*.md` (sharded) | FULL_LOAD |
+| Epics | `{planning_artifacts}/*epic*.json` (canvas), `{planning_artifacts}/*epic*.md` (whole) or `{planning_artifacts}/*epic*/*.md` (sharded) | FULL_LOAD |
 
 ## Execution
 
@@ -84,14 +84,15 @@ Activation is complete. Begin the workflow below.
 
 **Epic Discovery Process:**
 
-1. **Search for whole document first** - Look for `epics.md`, `bmm-epics.md`, or any `*epic*.md` file
-2. **Check for sharded version** - If whole document not found, look for `epics/index.md`
-3. **If sharded version found**:
+1. **Canvas JSON first** - If `epics.json` (or any `*epic*.json` artifact) exists, use it: it is the canvas's source of truth, and the script reads its `content.epics[].stories[]` directly, using recorded statuses as a floor
+2. **Search for whole document** - Look for `epics.md`, `bmm-epics.md`, or any `*epic*.md` file
+3. **Check for sharded version** - If whole document not found, look for `epics/index.md`
+4. **If sharded version found**:
    - Read `index.md` to understand the document structure
    - Read ALL epic section files listed in the index (e.g., `epic-1.md`, `epic-2.md`, etc.)
    - Process all epics and their stories from the combined content
    - This ensures complete sprint status coverage
-4. **Priority**: If both whole and sharded versions exist, use the whole document
+5. **Priority**: canvas JSON, then the whole document, then the sharded version. Never pass both the JSON and a markdown copy of the same epics
 
 **Fuzzy matching**: Be flexible with document names - users may use variations like `epics.md`, `bmm-epics.md`, `user-stories.md`, etc.
 

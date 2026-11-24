@@ -12,6 +12,8 @@ export interface PlanEntry {
   readonly key: string;
   readonly kind: EntryKind;
   readonly epicNum: number;
+  /** Status recorded in a canvas epics.json; a floor, like a story file on disk. */
+  readonly statusHint?: string;
 }
 
 export interface EpicSource {
@@ -127,26 +129,80 @@ export function isLegalStatus(kind: EntryKind, status: unknown): status is strin
   return typeof status === 'string' && Object.prototype.hasOwnProperty.call(RANKS[kind], status);
 }
 
-/** Parse epic files into ordered entries (epic, its stories, its retrospective). */
+interface EpicGroup {
+  stories: string[];
+  hints: Map<string, string>;
+}
+
+const groupFor = (epics: Map<number, EpicGroup>, num: number): EpicGroup => {
+  const existing = epics.get(num);
+  if (existing) return existing;
+  const created: EpicGroup = { stories: [], hints: new Map() };
+  epics.set(num, created);
+  return created;
+};
+
+/** First integer in an id like `EPIC-3` or `3`; undefined when there is none. */
+const leadingNumber = (id: unknown): number | undefined => {
+  const m = /(\d+)/.exec(String(id ?? ''));
+  return m ? Number(m[1]) : undefined;
+};
+
+/**
+ * Agile Agent Canvas stores epics as JSON (`content.epics[].stories[]`, ids
+ * like `EPIC-1` / `S-1.1`). Statuses recorded there become hints.
+ */
+function parseJsonEpics(path: string, text: string, epics: Map<number, EpicGroup>, warnings: string[]): void {
+  let doc: unknown;
+  try {
+    doc = JSON.parse(text);
+  } catch (err) {
+    throw new Error(`epic file ${path} is not valid JSON: ${(err as Error).message}`);
+  }
+  const root = doc as { content?: { epics?: unknown }; epics?: unknown };
+  const list = Array.isArray(root?.content?.epics) ? root.content.epics : Array.isArray(root?.epics) ? root.epics : [];
+  (list as Record<string, unknown>[]).forEach((epic, i) => {
+    const epicNum = leadingNumber(epic.id) ?? i + 1;
+    const group = groupFor(epics, epicNum);
+    if (typeof epic.status === 'string') group.hints.set(`epic-${epicNum}`, epic.status);
+    const stories = Array.isArray(epic.stories) ? (epic.stories as Record<string, unknown>[]) : [];
+    stories.forEach((story, j) => {
+      const m = /(\d+)\.(\d+[a-z]?)/.exec(String(story.id ?? ''));
+      if (m && Number(m[1]) !== epicNum) warnings.push(`story ${String(story.id)} sits under epic ${String(epic.id)} in ${path}`);
+      const key = `${epicNum}-${m ? m[2] : j + 1}-${slug(String(story.title ?? story.id ?? ''))}`;
+      if (group.stories.includes(key)) {
+        warnings.push(`duplicate story '${key}' in ${path}`);
+        return;
+      }
+      group.stories.push(key);
+      if (typeof story.status === 'string') group.hints.set(key, story.status);
+    });
+  });
+}
+
+/** Parse epic files (markdown headings or canvas epics.json) into ordered entries. */
 export function parseEpics(sources: readonly EpicSource[]): { entries: PlanEntry[]; warnings: string[] } {
-  const epics = new Map<number, string[]>();
+  const epics = new Map<number, EpicGroup>();
   const warnings: string[] = [];
   for (const { path, text } of sources) {
+    if (/\.json$/i.test(path)) {
+      parseJsonEpics(path, text, epics, warnings);
+      continue;
+    }
     let inFence = false;
     text.split(/\r?\n/).forEach((line, i) => {
       if (FENCE_RE.test(line)) { inFence = !inFence; return; }
       if (inFence) return;
       const epic = EPIC_RE.exec(line);
       if (epic) {
-        if (!epics.has(Number(epic[1]))) epics.set(Number(epic[1]), []);
+        groupFor(epics, Number(epic[1]));
         return;
       }
       const story = STORY_RE.exec(line);
       if (story) {
         const epicNum = Number(story[1]);
         const key = `${epicNum}-${story[2]}-${slug(story[3])}`;
-        const stories = epics.get(epicNum) ?? [];
-        epics.set(epicNum, stories);
+        const { stories } = groupFor(epics, epicNum);
         if (stories.includes(key)) warnings.push(`duplicate story heading '${key}' at ${path}:${i + 1}`);
         else stories.push(key);
         return;
@@ -156,8 +212,10 @@ export function parseEpics(sources: readonly EpicSource[]): { entries: PlanEntry
   }
   const entries: PlanEntry[] = [];
   for (const epicNum of [...epics.keys()].sort((a, b) => a - b)) {
-    entries.push({ key: `epic-${epicNum}`, kind: 'epic', epicNum });
-    for (const key of epics.get(epicNum) ?? []) entries.push({ key, kind: 'story', epicNum });
+    const group = groupFor(epics, epicNum);
+    const hint = (key: string) => (group.hints.has(key) ? { statusHint: group.hints.get(key) } : {});
+    entries.push({ key: `epic-${epicNum}`, kind: 'epic', epicNum, ...hint(`epic-${epicNum}`) });
+    for (const key of group.stories) entries.push({ key, kind: 'story', epicNum, ...hint(key) });
     entries.push({ key: `epic-${epicNum}-retrospective`, kind: 'retro', epicNum });
   }
   return { entries, warnings };
@@ -190,8 +248,10 @@ export function buildStatus(
     droppedOrphans: [], legacyMapped: [], illegal: [], inSync: false,
   };
   const status = new Map<string, string>();
-  for (const { key, kind } of entries) {
-    const computed = kind === 'story' && storyFiles.has(`${key}.md`) ? 'ready-for-dev' : DEFAULT_STATUS[kind];
+  for (const { key, kind, statusHint } of entries) {
+    const fromDisk = kind === 'story' && storyFiles.has(`${key}.md`) ? 'ready-for-dev' : DEFAULT_STATUS[kind];
+    const hint = normalizeStatus(statusHint).status;
+    const computed = isLegalStatus(kind, hint) && RANKS[kind][hint] > RANKS[kind][fromDisk] ? hint : fromDisk;
     const has = Object.prototype.hasOwnProperty.call(existing, key);
     const raw = has ? existing[key] : undefined;
     let merged = computed;
@@ -208,7 +268,7 @@ export function buildStatus(
     if (!has) report.newEntries.push(key);
     else if (merged === normalizeStatus(raw).status) report.preserved++;
     else report.changed++;
-    if (kind === 'story' && computed === 'ready-for-dev' && (raw === undefined || raw === null || raw === 'backlog')) {
+    if (kind === 'story' && fromDisk === 'ready-for-dev' && (raw === undefined || raw === null || raw === 'backlog')) {
       report.upgradedFromDisk.push(key);
     }
     status.set(key, merged);

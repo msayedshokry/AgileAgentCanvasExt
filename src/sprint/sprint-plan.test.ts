@@ -352,3 +352,58 @@ describe('validate', () => {
     expect(run('- a\n- b\n').problems.some((p: string) => p.includes('not a mapping'))).toBe(true);
   });
 });
+
+describe('canvas JSON epics', () => {
+  const EPICS_JSON = JSON.stringify({
+    metadata: { artifactType: 'epics' },
+    content: {
+      epics: [
+        { id: 'EPIC-1', title: 'Core', status: 'in-progress', stories: [
+          { id: 'S-1.1', title: 'Task CRUD API & Data Model', status: 'done' },
+          { id: 'S-1.2', title: 'Board UI', status: 'draft' },
+        ] },
+        { id: 'EPIC-2', title: 'AI', status: 'draft', stories: [{ id: 'S-2.1', title: 'Scoring', status: 'in-progress' }] },
+      ],
+    },
+  });
+
+  const runJson = (existing?: string) => {
+    const epicFile = path.join(tmp, 'epics.json');
+    fs.writeFileSync(epicFile, EPICS_JSON);
+    const statusFile = path.join(tmp, 'sprint-status.yaml');
+    if (existing !== undefined) fs.writeFileSync(statusFile, existing);
+    const res = cli(['generate', '--epic-file', epicFile, '--status-file', statusFile, '--stories-dir', tmp, '--project', 'P', '--date', DATE]);
+    return { ...res, data: res.code === 0 ? load(statusFile) : undefined };
+  };
+
+  it('parses epics and stories from the canvas epics.json', () => {
+    const { out, data } = runJson();
+    expect(out).toMatchObject({ ok: true, epics: 2, stories: 3 });
+    expect(Object.keys(data.development_status)).toEqual([
+      'epic-1', '1-1-task-crud-api-data-model', '1-2-board-ui', 'epic-1-retrospective',
+      'epic-2', '2-1-scoring', 'epic-2-retrospective',
+    ]);
+  });
+
+  it('uses legal JSON statuses as a floor and ignores the rest', () => {
+    const { data } = runJson();
+    expect(data.development_status['epic-1']).toBe('in-progress');
+    expect(data.development_status['1-1-task-crud-api-data-model']).toBe('done');
+    expect(data.development_status['1-2-board-ui']).toBe('backlog');
+    expect(data.development_status['epic-2']).toBe('backlog');
+    expect(data.development_status['2-1-scoring']).toBe('in-progress');
+  });
+
+  it('never lets a JSON status downgrade the file', () => {
+    const { data } = runJson('generated: 01-01-2026 09:00\nlast_updated: 01-01-2026 09:00\nproject: P\ndevelopment_status:\n  2-1-scoring: done\n');
+    expect(data.development_status['2-1-scoring']).toBe('done');
+  });
+
+  it('reports invalid JSON as an error instead of parsing it as markdown', () => {
+    const epicFile = path.join(tmp, 'epics.json');
+    fs.writeFileSync(epicFile, '{ not json');
+    const { code, out } = cli(['generate', '--epic-file', epicFile, '--status-file', path.join(tmp, 's.yaml'), '--stories-dir', tmp, '--project', 'P', '--date', DATE]);
+    expect(code).toBe(1);
+    expect(out.error).toContain('not valid JSON');
+  });
+});

@@ -28,6 +28,7 @@ import { detectGraphify, clearGraphifyCache } from '../integrations/graphify/gra
 import { loadArchIndex } from '../integrations/graphify/graph-loader';
 import { runGraphify } from '../integrations/graphify/graphify-runner';
 import { GFY } from '../integrations/graphify/graphify-commands';
+import { buildSprintHealth } from '../sprint/sprint-health';
 import {
     getJiraConfig,
     formatEpicsAsMarkdown,
@@ -595,6 +596,8 @@ export async function handleCommonWebviewMessage(
                     found: epics.length > 0 || content !== null,
                     content: content ?? null,
                     epics,
+                    // Next step, risks and open action items from the sprint-plan port.
+                    health: content ? buildSprintHealth(content, new Date()) : null,
                 });
             }
             return true;

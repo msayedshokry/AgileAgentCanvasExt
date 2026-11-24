@@ -7493,6 +7493,124 @@ body.ac-force-dark {
   white-space: nowrap;
 }
 
+/* Sprint health — next step, risks, open retro action items (from the extension's sprint-plan port) */
+.sprint-health {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 24px;
+  padding: 8px 18px;
+  font-size: 11.5px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+  background: color-mix(in srgb, var(--vscode-editor-background) 92%, var(--vscode-textLink-foreground));
+  flex-shrink: 0;
+}
+
+.sprint-health-next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.sprint-health-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--vscode-descriptionForeground);
+}
+
+.sprint-health-label--warn {
+  color: var(--vscode-editorWarning-foreground, #cca700);
+}
+
+.sprint-health-skill {
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 11px;
+  color: var(--vscode-textLink-foreground);
+  background: var(--vscode-textCodeBlock-background, rgba(128, 128, 128, 0.15));
+}
+
+.sprint-health-story {
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-weight: 600;
+  color: var(--vscode-foreground);
+}
+
+.sprint-health-reason,
+.sprint-health-item-meta {
+  color: var(--vscode-descriptionForeground);
+}
+
+.sprint-health-done {
+  font-weight: 600;
+  color: var(--vscode-testing-iconPassed, var(--vscode-foreground));
+}
+
+.sprint-health-risks {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.sprint-health-risks ul,
+.sprint-health-items-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sprint-health-risks li {
+  display: inline;
+  color: var(--vscode-foreground);
+}
+
+.sprint-health-risks li + li::before {
+  content: " · ";
+  color: var(--vscode-descriptionForeground);
+}
+
+.sprint-health-items {
+  flex-basis: 100%;
+}
+
+.sprint-health-items-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  margin-left: -4px;
+  border: none;
+  border-radius: 3px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  background: transparent;
+  cursor: pointer;
+}
+
+.sprint-health-items-toggle:hover {
+  background: var(--vscode-toolbar-hoverBackground, rgba(128, 128, 128, 0.15));
+}
+
+.sprint-health-items-toggle:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 1px;
+}
+
+.sprint-health-items-list {
+  margin-top: 4px;
+  padding-left: 18px;
+}
+
+.sprint-health-items-list li {
+  padding: 1px 0;
+}
+
 /* Kanban board */
 .sprint-board {
   display: flex;

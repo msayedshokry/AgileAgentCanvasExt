@@ -2006,5 +2006,32 @@ describe('Canvas', () => {
 
       expect((document.querySelector('.canvas-content') as HTMLElement).style.transform).toBe(latestTransform);
     });
+
+    it('restores a mode view it reported earlier once the layout mode has changed', () => {
+      const onCanvasViewChange = vi.fn();
+      const renderWith = (view: { zoom: number; pan: { x: number; y: number } }) => (
+        <Canvas {...defaultProps} initialCanvasView={view} onCanvasViewChange={onCanvasViewChange} />
+      );
+      const { rerender } = render(renderWith({ zoom: 1, pan: { x: 0, y: 0 } }));
+      const zoomIn = () =>
+        fireEvent.wheel(document.querySelector('.canvas')!, { deltaY: -100, ctrlKey: true, clientX: 200, clientY: 200 });
+      const toggleMode = () => fireEvent.click(document.querySelector('.mindmap-toggle')!);
+
+      // Lanes: Canvas reports view V, so V's key enters the echo-suppression set.
+      zoomIn();
+      const [, lanesZoom, lanesPan] = onCanvasViewChange.mock.lastCall!;
+
+      // Mindmap: a different view, then on through corpus3d back to lanes.
+      toggleMode();
+      rerender(renderWith({ zoom: 0.5, pan: { x: 10, y: 10 } }));
+      zoomIn();
+      toggleMode();
+      toggleMode();
+
+      // App restores the saved lanes view V. The mode change must have cleared
+      // the set, or V is mistaken for a stale echo and lanes keeps the wrong view.
+      rerender(renderWith({ zoom: lanesZoom, pan: { ...lanesPan } }));
+      expect((document.querySelector('.canvas-content') as HTMLElement).style.transform).toContain(`scale(${lanesZoom})`);
+    });
   });
 });

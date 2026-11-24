@@ -15,7 +15,7 @@ import { AskModal } from './components/AskModal';
 import { JiraModal } from './components/JiraModal';
 import { GraphifyModal } from './components/GraphifyModal';
 import { SprintPlanningView, parseSprintStatusYaml } from './components/SprintPlanningView';
-import type { SprintData } from './components/SprintPlanningView';
+import type { SprintData, SprintHealth } from './components/SprintPlanningView';
 import { AgenticKanbanApp } from './agentic-kanban/AgenticKanbanApp';
 import { AgentSessionsPanel } from './components/AgentSessionsPanel';
 import { VisualPlanApp } from './visual-plan/VisualPlanApp';
@@ -624,7 +624,7 @@ function App() {
             message.content as string | null | undefined,
             (message.epics as any[]) ?? []
           );
-          setSprintData({ found: true, ...parsed });
+          setSprintData({ found: true, ...parsed, health: (message.health as SprintHealth | null | undefined) ?? null });
         } else {
           setSprintData({ found: false });
         }
