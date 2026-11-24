@@ -235,7 +235,9 @@
    No `@media` override required. */
 .kanban-card--epic {
   border-left: 4px solid var(--vscode-charts-purple, #8b5cf6);
-  --type-color: var(--vscode-charts-green);
+  /* Band matches the a11y-locked purple bar and EPIC chip so the card
+   * reads as one colour. */
+  --type-color: var(--vscode-charts-purple, #8b5cf6);
 }
 
 .kanban-card--locked {
