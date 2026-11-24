@@ -384,11 +384,11 @@
 }
 
 .autonomy-bar-label {
-  color: var(--vscode-descriptionForeground);
-  font-weight: 500;
-  font-size: 11px;
+  font-family: var(--font-mono);
+  font-size: var(--text-kicker);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: var(--tracking-kicker);
+  color: var(--ink-3);
 }
 
 .autonomy-bar-state {
@@ -400,28 +400,42 @@
 .autonomy-bar-state--idle { color: var(--vscode-descriptionForeground); }
 
 .autonomy-bar-btn {
-  background: var(--vscode-button-secondaryBackground);
-  color: var(--vscode-button-secondaryForeground);
-  border: 1px solid var(--vscode-button-border, transparent);
-  border-radius: 3px;
-  padding: 3px 8px;
-  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0 var(--space-2);
+  background: var(--paper);
+  color: var(--ink-2);
+  border: var(--rule-width) solid var(--rule);
+  border-radius: var(--radius);
+  font-family: var(--font-ui);
+  font-size: var(--text-small);
+  font-weight: var(--weight-strong);
+  white-space: nowrap;
   cursor: pointer;
-  font-family: inherit;
+  box-shadow: none;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
 .autonomy-bar-btn:hover:not(:disabled) {
-  background: var(--vscode-button-secondaryHoverBackground);
+  background: var(--paper-wash);
+  color: var(--ink);
+  border-color: var(--rule-strong);
 }
 .autonomy-bar-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .autonomy-bar-btn--toggle { padding: 3px 6px; }
 .autonomy-bar-btn--danger { color: var(--vscode-errorForeground); }
 .autonomy-bar-btn--primary {
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  font-weight: 600;
+  background: var(--accent-fill);
+  color: var(--accent-ink);
+  border-color: var(--accent-fill);
+  font-weight: var(--weight-strong);
 }
 .autonomy-bar-btn--primary:hover:not(:disabled) {
   background: var(--vscode-button-hoverBackground);
+  border-color: var(--vscode-button-hoverBackground);
 }
 .autonomy-bar-btn--accent {
   background: var(--vscode-charts-blue, #6366f1);
@@ -431,10 +445,11 @@
 .autonomy-bar-btn-icon {
   background: transparent;
   border: none;
-  color: var(--vscode-descriptionForeground);
+  color: var(--ink-3);
   cursor: pointer;
   padding: 2px 6px;
   font-size: 14px;
+  border-radius: var(--radius);
 }
 .autonomy-bar-btn-icon:hover { color: var(--vscode-foreground); }
 
@@ -545,14 +560,16 @@
 
 /* Goal input */
 .autonomy-bar-goal-input {
+  height: 28px;
+  box-sizing: border-box;
+  padding: 0 var(--space-2);
   background: var(--vscode-input-background);
   color: var(--vscode-input-foreground);
-  border: 1px solid var(--vscode-input-border, rgba(127, 127, 127, 0.3));
-  border-radius: 3px;
-  padding: 3px 8px;
-  font-size: 12px;
-  width: 240px;
+  border: var(--rule-width) solid var(--rule);
+  border-radius: var(--radius);
   font-family: inherit;
+  font-size: var(--text-small);
+  width: 260px;
 }
 .autonomy-bar-goal-input:focus {
   outline: 1px solid var(--vscode-focusBorder);

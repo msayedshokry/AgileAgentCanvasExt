@@ -926,12 +926,12 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
           <button
             onClick={() => setView(v => v === 'terminals' ? 'board' : 'terminals')}
             style={{
-              background: view === 'terminals' ? 'var(--vscode-button-background)' : 'transparent',
-              color: view === 'terminals' ? 'var(--vscode-button-foreground)' : 'var(--vscode-descriptionForeground)',
-              border: '1px solid var(--vscode-button-border, var(--vscode-panel-border))',
-              borderRadius: '4px',
-              padding: '4px 8px',
-              fontSize: '12px',
+              background: view === 'terminals' ? 'var(--paper-wash)' : 'var(--paper)',
+              color: view === 'terminals' ? 'var(--ink)' : 'var(--ink-2)',
+              border: view === 'terminals' ? '1px solid var(--ink)' : '1px solid var(--rule)',
+              borderRadius: 'var(--radius)',
+              padding: '0 8px', height: '28px',
+              fontSize: '12px', fontWeight: 600,
               cursor: 'pointer',
             }}
             title="Watch all running agent terminals live"
@@ -950,11 +950,11 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
             style={{
               background: 'var(--vscode-input-background)',
               color: 'var(--vscode-input-foreground)',
-              border: '1px solid var(--vscode-input-border)',
-              borderRadius: '4px',
-              padding: '4px 8px',
+              border: '1px solid var(--rule)',
+              borderRadius: 'var(--radius)',
+              padding: '0 8px', height: '28px', boxSizing: 'border-box',
               fontSize: '12px',
-              width: '140px',
+              width: '160px',
             }}
           />
           {searchQuery && (
