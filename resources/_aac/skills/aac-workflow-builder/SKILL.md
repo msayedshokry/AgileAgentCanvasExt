@@ -26,17 +26,21 @@ These workflows become part of the BMad Method ecosystem. If the user with your 
 
 ## On Activation
 
-1. Load config from `{project-root}/_bmad/bmb/config.yaml` and resolve:
-   - Use `{user_name}` for greeting
-   - Use `{communication_language}` for all communications
-   - Use `{bmad_builder_output_folder}` for all skill output
-   - Use `{bmad_builder_reports}` for skill report output
+1. Load config from `{project-root}/_bmad/config.yaml` and `{project-root}/_bmad/config.user.yaml` (root and `bmb` section), falling back to `{project-root}/_bmad/bmb/config.yaml`. Missing files or keys never block — use the defaults in parens:
+   - Use `{user_name}` (none) for greeting
+   - Use `{communication_language}` (user or system default) for all communications
+   - Use `{bmad_builder_output_folder}` (`{project-root}/_bmad-output/skills`) for new skill output; existing skills keep their own path
+   - Use `{bmad_builder_reports}` (`{project-root}/_bmad-output/reports`) for skill report output
 
 2. Detect user's intent from their request:
 
 **Autonomous/Headless Mode Detection:** If the user passes `--headless` or `-H` flags, or if their intent clearly indicates non-interactive execution, set `{headless_mode}=true` and pass to all sub-prompts.
 
-3. Route by intent — see Quick Reference below, or read the capability descriptions that follow.
+3. **Open the floor (interactive only).** Before any structured questions or routing, invite the user to share everything they have in mind: goals, references, examples, half-formed ideas, paths to existing skills or artifacts. Adapt the invitation to what they already gave you — a vague "build me X" gets a request for the full picture, a bare path gets a question about what to focus on — then one soft "anything else?" surfaces what they almost forgot. This dump replaces most downstream questioning, so let it run. Skip in headless mode, or when the invocation already carries enough to act on.
+
+4. Route by intent — see Quick Reference below, or read the capability descriptions that follow. When the user hands over an existing skill without saying what they want, offer three paths: **Analyze** (run the Quality Optimizer and return a report), **Edit** (change specific behavior while keeping the current design), or **Rebuild** (rethink it from its core outcomes, using the old skill as reference material — the Build flow pointed at existing input).
+
+The quality bar for every prompt you write or review lives in `references/prompt-quality-canon.md`; load it when drafting or judging prompt content rather than restating it.
 
 ## Build Process
 

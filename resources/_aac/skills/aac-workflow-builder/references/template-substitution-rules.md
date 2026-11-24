@@ -24,20 +24,21 @@ When building the workflow/skill, you MUST apply these conditional blocks to the
 ### For Module-Based Skills
 - `{if-module}` ... `{/if-module}` → Keep the content inside
 - `{if-standalone}` ... `{/if-standalone}` → Remove the entire block including markers
-- `{module-code-or-empty}` → Replace with module code (e.g., `bmb-`)
+- `{module-code-or-empty}` → Replace with module code plus trailing dash (e.g., `bmb-`)
+- `{module-code}` → Module code without dash (e.g., `bmb`)
 
 ### For Standalone Skills
 - `{if-module}` ... `{/if-module}` → Remove the entire block including markers
 - `{if-standalone}` ... `{/if-standalone}` → Keep the content inside
 - `{module-code-or-empty}` → Empty string
 
-## aac-init Conditional
+## Config Loading Conditional
 
-### Uses aac-init (default)
-- `{if-aac-init}` ... `{/if-aac-init}` → Keep the content inside
+### Loads config (default)
+- `{if-config}` ... `{/if-config}` → Keep the content inside
 
-### Opted out of aac-init (standalone utilities only)
-- `{if-aac-init}` ... `{/if-aac-init}` → Remove the entire block including markers
+### Opted out of config loading (standalone utilities only)
+- `{if-config}` ... `{/if-config}` → Remove the entire block including markers
 
 ## Feature Conditionals
 
@@ -57,7 +58,7 @@ When building the workflow/skill, you MUST apply these conditional blocks to the
 - `{if-external-skills}` ... `{/if-external-skills}` → Keep if skill uses external skills, otherwise remove
 - `{external-skills-list}` → Replace with bulleted list of exact skill names:
   ```markdown
-  - `aac-skill-name` — Description
+  - `skill-name` — Description
   ```
 
 ## Frontmatter Placeholders

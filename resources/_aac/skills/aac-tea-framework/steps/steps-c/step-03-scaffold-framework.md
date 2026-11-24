@@ -2,7 +2,7 @@
 name: 'step-03-scaffold-framework'
 description: 'Create directory structure, config, fixtures, factories, and sample tests'
 nextStepFile: './step-04-docs-and-scripts.md'
-knowledgeIndex: '{bmad-path}/tea/testarch/tea-index.csv'
+knowledgeIndex: '{bmad-path}/skills/aac-agent-tea/testarch/tea-index.csv'
 outputFile: '{test_artifacts}/framework-setup-progress.md'
 ---
 

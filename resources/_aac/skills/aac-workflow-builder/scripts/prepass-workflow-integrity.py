@@ -109,12 +109,8 @@ def parse_frontmatter(content: str) -> tuple[dict | None, list[dict]]:
             'severity': 'high', 'category': 'frontmatter',
             'issue': f'Name "{name}" is not kebab-case',
         })
-    elif not name.startswith('bmad-'):
-        findings.append({
-            'file': 'SKILL.md', 'line': 1,
-            'severity': 'medium', 'category': 'frontmatter',
-            'issue': f'Name "{name}" does not follow bmad-* naming convention',
-        })
+    # No prefix is enforced: user-created skills use {module-code}-{name} or a bare
+    # {name}; the bmad-/aac- prefixes are reserved for bundled skills.
 
     # description check
     desc = fm.get('description')
@@ -409,7 +405,7 @@ def scan_workflow_integrity(skill_path: Path) -> dict:
     all_findings.extend(prompt_findings)
 
     # Manifest check
-    manifest_path = skill_path / 'bmad-manifest.json'
+    manifest_path = skill_path / 'aac-manifest.json'
     has_manifest = manifest_path.exists()
 
     # Build severity summary

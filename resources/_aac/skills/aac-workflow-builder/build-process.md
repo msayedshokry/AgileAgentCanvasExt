@@ -19,7 +19,7 @@ Understand their vision before diving into specifics. Let them describe what the
 - Code, documentation, API specs → extract intent and requirements
 - Non-BMad skill/tool → convert to BMad-compliant structure
 
-If editing/converting an existing skill: read it, analyze what exists vs what's missing, ensure BMad standard conformance.
+If editing/converting an existing skill: treat it as reference material, not a template — read it, analyze what exists vs what's missing, ensure BMad standard conformance. For an **Edit**, change the specific behavior asked for and preserve the rest of the design; for a **Rebuild**, rethink from the skill's core outcomes and carry over only what still earns its place.
 
 Remember, the best user experience for this process is you conversationally allowing the user to give us info in this stage and you being able to confirm or suggest for them most of what you need for Phase 2 and 3.
 For Phase 2 and 3 that follow, adapt to what you already know that the user has given you so far, since they just brain dumped and gave you a lot of information
@@ -29,7 +29,7 @@ For Phase 2 and 3 that follow, adapt to what you already know that the user has 
 Ask upfront:
 - Will this be part of a module? If yes:
    - What's the module code? (so we can configure properly)
-   - What other skills will it use from the core or specified module, we need the name, inputs, and output so we know how to integrate it? (aac-init is default unless explicitly opted out, other skills should be either core skills or skills that will be part of the module)
+   - What other skills will it use from the core or specified module, we need the name, inputs, and output so we know how to integrate it? (standard config loading is the default unless explicitly opted out, other skills should be either core skills or skills that will be part of the module)
    - What are the variable names it will have access to that it needs to use? (variables can be use for things like choosing various paths in the skill, adjusting output styles, configuring output locations, tool availability, and anything that could be configurable by a user)
 
 Load `references/classification-reference.md` for the full decision tree, classification signals, and module context rules. Use it to classify:
@@ -49,7 +49,7 @@ Present classification with reasoning. This determines template and structure.
 Work through conversationally, adapted per skill type, so you can either glean from the user or suggest based on their narrative.
 
 **All types — Common fields:**
-- **Name:** kebab-case. If module: `aac-{modulecode}-{skillname}`. If standalone: `aac-{skillname}`
+- **Name:** kebab-case. If module: `{modulecode}-{skillname}`. If standalone: `{skillname}`. The `aac-` prefix is reserved for skills bundled with Agile Agent Canvas — do not give user-created skills that prefix (it risks colliding with a bundled skill). When editing an existing skill, keep its current name unless the user asks for a rename.
 - **Description:** Two parts: [5-8 word summary of what it does]. [Use when user says 'specific phrase' or 'specific phrase'.] — Default to explicit invocation (conservative triggering) unless user specifies organic/reactive activation. See `references/standard-fields.md` for format details and examples.
 - **Overview:** 3-part formula (What/How/Why-Outcome). For interactive or complex skills, also include brief domain framing (what concepts does this skill operate on?) and theory of mind (who is the user and what might they not know?). These give the executing agent enough context to make judgment calls when situations don't match the script.
 - **Role guidance:** Brief "Act as a [role/expert]" statement to prime the model for the right domain expertise and tone
@@ -79,7 +79,7 @@ Work through conversationally, adapted per skill type, so you can either glean f
 **Simple Utility additional fields:**
 - **Input format:** What does it accept?
 - **Output format:** What does it return?
-- **Standalone?** Opt out of aac-init? (Makes it a truly standalone building block)
+- **Standalone?** Opt out of config loading? (Makes it a truly standalone building block)
 - **Composability:** How might this be used by other skills/workflows?
 - **Script needs:** What scripts does the utility require?
 
@@ -107,16 +107,19 @@ For each capability, confirm these with the user — they determine how the modu
 
 **Path conventions (CRITICAL):**
 - Skill-internal files use bare relative paths: `references/`, `scripts/`, and prompt files at root
-- Only `_bmad` paths get `{project-root}` prefix: `{project-root}/_bmad/...`
-- Config variables used directly — they already contain `{project-root}` (no double-prefix)
+- Project-scope paths get the `{project-root}` prefix: `{project-root}/_bmad/...`, `{project-root}/docs/report.md`
+- Config variables used directly — they already contain `{project-root}` (no double-prefix: `{project-root}/{output_folder}` is wrong)
 
 ## Phase 4: Draft & Refine
 
 Once you have a cohesive idea, think one level deeper, clarify with the user any gaps in logic or understanding. Create and present a plan. Point out vague areas. Ask what else is needed. Iterate until they say they're ready.
 
+**Pruning check:** Before building, walk the plan against `references/prompt-quality-canon.md`. For each planned section, stage, or question bank, ask whether a capable model would do it correctly without being told. Write the destination (stance, outcome, consumer, bar, non-inferables) rather than scripting the route; cut or truncate whatever cannot name the failure it prevents, and tell the user what you dropped and why.
+
 ## Phase 5: Build
 
 **Always load these before building:**
+- Load `references/prompt-quality-canon.md` — the shared quality bar every prompt line must pass
 - Load `references/standard-fields.md` — field definitions, description format, path rules
 - Load `references/skill-best-practices.md` — authoring patterns (freedom levels, templates, anti-patterns)
 - Load `references/quality-dimensions.md` — quick mental checklist for build quality

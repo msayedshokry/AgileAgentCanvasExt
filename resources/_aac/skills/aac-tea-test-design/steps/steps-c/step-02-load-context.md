@@ -2,7 +2,7 @@
 name: 'step-02-load-context'
 description: 'Load documents, configuration, and knowledge fragments for the chosen mode'
 nextStepFile: './step-03-risk-and-testability.md'
-knowledgeIndex: '{bmad-path}/tea/testarch/tea-index.csv'
+knowledgeIndex: '{bmad-path}/skills/aac-agent-tea/testarch/tea-index.csv'
 outputFile: '{test_artifacts}/test-design-progress.md'
 ---
 
@@ -120,43 +120,11 @@ Store artifacts under `{test_artifacts}/exploration/`
 
 ---
 
-### Tiered Knowledge Loading
+### Deterministic Knowledge Selection
 
-Load fragments based on their `tier` classification in `tea-index.csv`:
+The fragment list for this step is a closed set. Start empty, evaluate the complete conditions under **Load Knowledge Base Fragments**, and add every fragment from each matching list. A config flag opens a branch only when every stack, runner, package, and relevance condition on that branch also matches. Do not add fragments from tier labels, index descriptions, nearby mentions, general usefulness, or possible future need. Deduplicate while preserving the order below. Identical facts and config must produce an identical list.
 
-1. **Core tier** (always load): Foundational fragments required for this workflow
-2. **Extended tier** (load on-demand): Load when deeper analysis is needed or when the user's context requires it
-3. **Specialized tier** (load only when relevant): Load only when the specific use case matches (e.g., contract-testing only for microservices, email-auth only for email flows)
-
-> **Context Efficiency**: Loading only core fragments reduces context usage by 40-50% compared to loading all fragments.
-
-### Playwright Utils Loading Profiles
-
-**If `tea_use_playwright_utils` is enabled**, select the appropriate loading profile:
-
-- **API-only profile** (when `{detected_stack}` is `backend` or no `page.goto`/`page.locator` found in test files):
-  Load: `overview`, `api-request`, `auth-session`, `recurse` (~1,800 lines)
-
-- **Full UI+API profile** (when `{detected_stack}` is `frontend`/`fullstack` or browser tests detected):
-  Load: all Playwright Utils core fragments (~4,500 lines)
-
-**Detection**: Scan `{test_dir}` for files containing `page.goto` or `page.locator`. If none found, use API-only profile.
-
-### Pact.js Utils Loading
-
-**If `tea_use_pactjs_utils` is enabled** (and `{detected_stack}` is `backend` or `fullstack`, or microservices indicators detected):
-
-Load: `pactjs-utils-overview.md`, `pactjs-utils-consumer-helpers.md`, `pactjs-utils-provider-verifier.md`, `pactjs-utils-request-filter.md`
-
-**If `tea_use_pactjs_utils` is disabled** but contract testing is relevant:
-
-Load: `contract-testing.md`
-
-### Pact MCP Loading
-
-**If `tea_pact_mcp` is `"mcp"`:**
-
-Load: `pact-mcp.md` — enables agent to use SmartBear MCP "Fetch Provider States" and "Matrix" tools to understand existing contract landscape during test design.
+Contract testing is relevant only when repository facts show existing Pact artifacts, dependencies, configuration, or broker variables, or when the task explicitly requests contract testing. A service count or target-state architecture alone does not open a contract branch.
 
 ## 4. Load Knowledge Base Fragments
 
@@ -165,6 +133,7 @@ Use `{knowledgeIndex}` to select and load only relevant fragments.
 ### System-Level Mode (Required)
 
 - `adr-quality-readiness-checklist.md`
+- `nfr-criteria.md`
 - `test-levels-framework.md`
 - `risk-governance.md`
 - `test-quality.md`
@@ -176,6 +145,11 @@ Use `{knowledgeIndex}` to select and load only relevant fragments.
 - `test-levels-framework.md`
 - `test-priorities-matrix.md`
 
+**Epic-Level NFR Loading:**
+
+- Load `nfr-criteria.md` when the epic/story includes security, performance, reliability, scalability, compliance, maintainability, or operational requirements.
+- Use prior system-level NFR planning from `test-design-architecture.md` or `test-design-qa.md` if present.
+
 **Playwright CLI (if `tea_browser_automation` is "cli" or "auto"):**
 
 - `playwright-cli.md`
@@ -184,15 +158,15 @@ Use `{knowledgeIndex}` to select and load only relevant fragments.
 
 - (existing MCP-related fragments, if any are added in future)
 
-**Pact.js Utils (if enabled — both System-Level and Epic-Level):**
+**Pact.js Utils (if enabled, `@seontechnologies/pactjs-utils` is in `package.json`, and contract testing is relevant, in either mode):**
 
-- `pactjs-utils-overview.md`, `pactjs-utils-consumer-helpers.md`, `pactjs-utils-provider-verifier.md`, `pactjs-utils-request-filter.md`
+- `pactjs-utils-mandate.md`, `pactjs-utils-overview.md`, `pactjs-utils-consumer-helpers.md`, `pactjs-utils-provider-verifier.md`, `pactjs-utils-request-filter.md`
 
-**Contract Testing (if pactjs-utils disabled but relevant):**
+**Contract Testing (if Pact.js Utils is disabled or not installed, and contract testing is relevant):**
 
 - `contract-testing.md`
 
-**Pact MCP (if tea_pact_mcp is "mcp"):**
+**Pact MCP (if tea_pact_mcp is "mcp" and contract testing is relevant):**
 
 - `pact-mcp.md`
 

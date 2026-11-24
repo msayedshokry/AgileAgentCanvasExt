@@ -5,7 +5,7 @@ Extracts dependency graph data and execution patterns from a BMad agent skill
 so the LLM scanner can evaluate efficiency from compact structured data.
 
 Covers:
-- Dependency graph from bmad-manifest.json (bmad-requires, bmad-prefer-after)
+- Dependency graph from aac-manifest.json (bmad-requires, bmad-prefer-after)
 - Circular dependency detection
 - Transitive dependency redundancy
 - Parallelizable stage groups (independent nodes)
@@ -199,13 +199,13 @@ def scan_sequential_patterns(filepath: Path, rel_path: str) -> list[dict]:
 
 def scan_execution_deps(skill_path: Path) -> dict:
     """Run all deterministic execution efficiency checks."""
-    # Parse bmad-manifest.json for dependency graph
+    # Parse aac-manifest.json for dependency graph
     dep_graph: dict[str, list[str]] = {}
     prefer_after: dict[str, list[str]] = {}
     all_stages: set[str] = set()
     manifest_found = False
 
-    manifest_path = skill_path / 'bmad-manifest.json'
+    manifest_path = skill_path / 'aac-manifest.json'
     if manifest_path.exists():
         manifest_found = True
         try:

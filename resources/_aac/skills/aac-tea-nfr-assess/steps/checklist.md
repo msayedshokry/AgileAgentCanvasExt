@@ -394,9 +394,9 @@ Note: `nfr-assess` evaluates existing evidence; it does not run tests or CI work
 
 **Next Actions:**
 
-- If PASS ✅: Proceed to `*gate` workflow or release
-- If CONCERNS ⚠️: Address HIGH/CRITICAL issues, re-run `*nfr-assess`
-- If FAIL ❌: Resolve FAIL status NFRs, re-run `*nfr-assess`
+- If PASS ✅: Run `/aac-tea-trace` Phase 2 for the release gate decision, or release
+- If CONCERNS ⚠️: Address HIGH/CRITICAL issues, re-run `/aac-tea-nfr-assess`
+- If FAIL ❌: Resolve FAIL status NFRs, re-run `/aac-tea-nfr-assess`
 
 **Critical Issues:** {COUNT}
 **High Priority Issues:** {COUNT}

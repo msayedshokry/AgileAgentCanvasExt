@@ -1,5 +1,5 @@
 ---
-name: aac-{module-code-or-empty}{skill-name}
+name: {module-code-or-empty}{skill-name}
 description: {skill-description} # Format: [5-8 word summary]. [trigger phrase, e.g. Use when user says "create xyz"]
 ---
 
@@ -8,6 +8,13 @@ description: {skill-description} # Format: [5-8 word summary]. [trigger phrase, 
 ## Overview
 
 {overview-template}
+
+## Conventions
+
+- Bare paths (e.g. `references/guide.md`) resolve from the skill root.
+- `{skill-root}` resolves to this skill's installed directory.
+- `{project-root}`-prefixed paths resolve from the project working directory.
+- `{skill-name}` resolves to the skill directory's basename.
 
 {if-simple-utility}
 ## Input
@@ -28,14 +35,14 @@ Act as {role-guidance}.
 
 ## On Activation
 
-{if-aac-init}
-1. **Load config via aac-init skill** — Store all returned vars for use:
+{if-config}
+1. **Load config** — Read `{project-root}/_bmad/config.yaml` and `{project-root}/_bmad/config.user.yaml` if present{if-module} (root level and the `{module-code}` section, falling back to `{project-root}/_bmad/{module-code}/config.yaml`){/if-module}. Missing files or keys never block — use sensible defaults. Store all resolved vars for use:
    - Use `{user_name}` from config for greeting
    - Use `{communication_language}` for all communications
    {if-creates-docs}- Use `{document_output_language}` for output documents{/if-creates-docs}
 
 2. **Greet user** as `{user_name}`, speaking in `{communication_language}`
-{/if-aac-init}
+{/if-config}
 
 3. **Proceed to workflow steps below**
 
@@ -69,15 +76,15 @@ Act as {role-guidance}.
 
 ## On Activation
 
-{if-aac-init}
-1. **Load config via aac-init skill** — Store all returned vars for use:
+{if-config}
+1. **Load config** — Read `{project-root}/_bmad/config.yaml` and `{project-root}/_bmad/config.user.yaml` if present{if-module} (root level and the `{module-code}` section, falling back to `{project-root}/_bmad/{module-code}/config.yaml`){/if-module}. Missing files or keys never block — use sensible defaults. Store all resolved vars for use:
    - Use `{user_name}` from config for greeting
    - Use `{communication_language}` for all communications
    {if-creates-docs}- Use `{document_output_language}` for output documents{/if-creates-docs}
    - Store any other config variables as `{var-name}` and use appropriately
 
 2. **Greet user** as `{user_name}`, speaking in `{communication_language}`
-{/if-aac-init}
+{/if-config}
 
 3. **Check if workflow in progress:**
    - If output doc exists (user specifies path or we prompt):

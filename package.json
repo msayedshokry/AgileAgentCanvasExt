@@ -1739,7 +1739,7 @@
     "ajv": "^6.14.0",
     "deepmerge": "^4.3.1",
     "gpt-tokenizer": "^3.4.0",
-    "headroom-ai": "^0.22.4",
+    "headroom-ai": "^0.45.0",
     "microdiff": "^1.5.0",
     "pdfkit": "^0.17.2",
     "simple-git": "^3.36.0",

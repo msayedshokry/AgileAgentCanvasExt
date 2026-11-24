@@ -1,4 +1,4 @@
-﻿# Workflow customization for aac-cis-design-thinking (CIS module)
+# Workflow customization for aac-cis-design-thinking (CIS module)
 
 [workflow]
 activation_steps_prepend = []

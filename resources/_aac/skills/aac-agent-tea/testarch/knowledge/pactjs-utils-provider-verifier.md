@@ -2,7 +2,7 @@
 
 ## Principle
 
-Use `buildVerifierOptions`, `buildMessageVerifierOptions`, `handlePactBrokerUrlAndSelectors`, and `getProviderVersionTags` from `@seontechnologies/pactjs-utils` to assemble complete provider verification configuration in a single call. These utilities handle local/remote flow detection, broker URL resolution, consumer version selector strategy, and CI-aware version tagging. The caller controls breaking change behavior via the required `includeMainAndDeployed` parameter.
+Use `buildVerifierOptions`, `buildMessageVerifierOptions`, `handlePactBrokerUrlAndSelectors`, `getProviderVersionTags`, and `isBreakingChangeTolerantBranch` from `@seontechnologies/pactjs-utils` to assemble provider verification and classify coordinated breaking-change branches. These utilities handle local/remote flow detection, broker URL resolution, consumer version selector strategy, named consumer branches, and CI-aware version tagging. The caller controls breaking change behavior via the required `includeMainAndDeployed` parameter.
 
 ## Rationale
 
@@ -12,6 +12,7 @@ Use `buildVerifierOptions`, `buildMessageVerifierOptions`, `handlePactBrokerUrlA
 - **Environment variable logic**: Different env vars for local vs remote, CI vs local dev, breaking change vs normal flow
 - **Consumer version selector complexity**: Choosing between `mainBranch`, `deployedOrReleased`, `matchingBranch`, and `includeMainAndDeployed` requires understanding Pact Broker semantics
 - **Breaking change coordination**: When a provider intentionally breaks a contract, manual selector switching is error-prone
+- **Short-lived branch mismatch**: `matchingBranch` cannot find a consumer pact when the provider and consumer branch names differ
 - **Cross-execution protection**: `PACT_PAYLOAD_URL` webhook payloads need special handling to verify only the triggering pact
 
 ### Solutions
@@ -20,6 +21,9 @@ Use `buildVerifierOptions`, `buildMessageVerifierOptions`, `handlePactBrokerUrlA
 - **`buildMessageVerifierOptions`**: Same as above for message/Kafka provider verification
 - **`handlePactBrokerUrlAndSelectors`**: Pure function for broker URL + selector resolution (used internally, also exported for advanced use)
 - **`getProviderVersionTags`**: Extracts CI branch/tag info from environment for provider version tagging
+- **`consumerBranch`**: Adds one explicitly named consumer branch without removing matching, main, or deployed selectors
+- **`isBreakingChangeTolerantBranch`**: Classifies only `main`, `master`, and
+  `release/**` for an explicitly enabled breaking-change tolerance policy
 
 ## Pattern Examples
 
@@ -48,6 +52,8 @@ const stateHandlers: StateHandlers = {
 // - PACT_BROKER_BASE_URL (broker URL)
 // - PACT_BROKER_TOKEN (broker auth)
 // - PACT_PAYLOAD_URL (webhook trigger — cross-execution protection)
+// - PACT_CONSUMER_BRANCH (optional named consumer branch for mismatched PR branches)
+// - PACT_PROVIDER_VERSION / PACT_PROVIDER_BRANCH (webhook-selected provider revision)
 // - PACT_BREAKING_CHANGE (if "true", uses includeMainAndDeployed selectors)
 // - GITHUB_SHA (provider version)
 // - CI (publish verification results if "true")
@@ -74,7 +80,40 @@ await new Verifier(opts).verifyProvider();
 - `params` in state handlers correspond to the `JsonMap` from consumer's `createProviderState`
 - Verification results are published by default (`publishVerificationResult` defaults to `true`)
 
-### Example 2: Local Flow (Monorepo, No Broker)
+### Example 2: Verify a Named Consumer Branch
+
+When the provider and consumer PR branch names differ, set both `consumer` and
+`consumerBranch`. The builder adds the explicit branch selector to the normal
+selector set; it does not replace the safety selectors.
+
+```typescript
+const opts = buildVerifierOptions({
+  provider: 'SampleMoviesAPI',
+  port: '3001',
+  includeMainAndDeployed: true,
+  consumer: 'SampleAppConsumer',
+  consumerBranch: process.env.PACT_CONSUMER_BRANCH,
+  stateHandlers,
+});
+```
+
+With `PACT_CONSUMER_BRANCH=feature/new-movie-client`, the selectors are:
+
+```typescript
+[
+  { consumer: 'SampleAppConsumer', matchingBranch: true },
+  { consumer: 'SampleAppConsumer', branch: 'feature/new-movie-client' },
+  { consumer: 'SampleAppConsumer', mainBranch: true },
+  { consumer: 'SampleAppConsumer', deployedOrReleased: true },
+];
+```
+
+`consumerBranch` requires `consumer`. The utility throws when an explicit branch
+is unscoped because `{ branch: name }` could select that branch from every
+consumer of the provider. `buildMessageVerifierOptions` has the same parameter,
+default, and guard.
+
+### Example 3: Local Flow (Monorepo, No Broker)
 
 ```typescript
 import { Verifier } from '@pact-foundation/pact';
@@ -98,7 +137,7 @@ const opts = buildVerifierOptions({
 await new Verifier(opts).verifyProvider();
 ```
 
-### Example 3: Message Provider Verification (Kafka/Async)
+### Example 4: Message Provider Verification (Kafka/Async)
 
 ```typescript
 import { Verifier } from '@pact-foundation/pact';
@@ -138,7 +177,7 @@ await new Verifier(opts).verifyProvider();
 - State handlers work the same as HTTP verification
 - Broker integration works identically (same env vars)
 
-### Example 4: Breaking Change Coordination
+### Example 5: Breaking Change Coordination
 
 ```typescript
 // When a provider intentionally introduces a breaking change:
@@ -165,13 +204,13 @@ const opts = buildVerifierOptions({
     /* ... */
   },
 });
-// When includeMainAndDeployed is false (breaking change):
+// When includeMainAndDeployed is false and consumerBranch is unset:
 //   selectors = [{ matchingBranch: true }]
 // When includeMainAndDeployed is true (normal):
 //   selectors = [{ matchingBranch: true }, { mainBranch: true }, { deployedOrReleased: true }]
 ```
 
-### Example 5: handlePactBrokerUrlAndSelectors (Advanced)
+### Example 6: handlePactBrokerUrlAndSelectors (Advanced)
 
 ```typescript
 import { handlePactBrokerUrlAndSelectors } from '@seontechnologies/pactjs-utils';
@@ -188,6 +227,7 @@ handlePactBrokerUrlAndSelectors({
   pactBrokerUrl: process.env.PACT_BROKER_BASE_URL,
   consumer: undefined, // or specific consumer name
   includeMainAndDeployed: true,
+  consumerBranch: undefined, // requires consumer when set
   options, // mutated in-place: sets pactBrokerUrl, consumerVersionSelectors, or pactUrls
 });
 
@@ -199,7 +239,7 @@ handlePactBrokerUrlAndSelectors({
 
 **Note**: `handlePactBrokerUrlAndSelectors` is called internally by `buildVerifierOptions`. You rarely need it directly — use it only for advanced custom verifier assembly.
 
-### Example 6: getProviderVersionTags
+### Example 7: getProviderVersionTags
 
 ```typescript
 import { getProviderVersionTags } from '@seontechnologies/pactjs-utils';
@@ -208,7 +248,7 @@ import { getProviderVersionTags } from '@seontechnologies/pactjs-utils';
 const tags = getProviderVersionTags();
 
 // In GitHub Actions on branch "feature/add-movies" (non-breaking):
-//   tags = ['dev', 'feature/add-movies']
+//   tags = ['feature/add-movies']
 //
 // In GitHub Actions on main branch (non-breaking):
 //   tags = ['dev', 'main']
@@ -220,33 +260,125 @@ const tags = getProviderVersionTags();
 //   tags = ['local']
 ```
 
+Only `main` and `master` receive the legacy `dev` tag. Feature and `release/**`
+branches receive only their branch tag, so a PR verification cannot masquerade
+as the version deployed in `dev`.
+
+### Breaking-Change Tolerant Branch Classification
+
+`isBreakingChangeTolerantBranch(branch)` returns `true` for `main`, `master`,
+and names starting with `release/`. It returns `false` for feature branches and
+for lookalikes such as `releases/week-32`.
+
+Use it only when repository policy deliberately tolerates a provider
+verification failure while `PACT_BREAKING_CHANGE=true`:
+
+```typescript
+import { isBreakingChangeTolerantBranch } from '@seontechnologies/pactjs-utils';
+
+try {
+  await verifier.verifyProvider();
+} catch (error) {
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  const noPactsFound = message.includes('no pacts found') || message.includes('no pacts were found');
+
+  // A hand-typed consumer branch that selects nothing is always a failed check.
+  if (noPactsFound && process.env.PACT_CONSUMER_BRANCH) throw error;
+
+  const tolerated = process.env.PACT_BREAKING_CHANGE === 'true' && isBreakingChangeTolerantBranch(process.env.GITHUB_BRANCH ?? '');
+
+  if (!tolerated) throw error;
+}
+```
+
+The explicit-consumer-branch guard must run first. Otherwise a typo in
+`PACT_CONSUMER_BRANCH` becomes a false green whenever breaking-change tolerance
+is active. This tolerance is a visible coordination policy, not a default:
+without `PACT_BREAKING_CHANGE=true`, every verification failure still fails the
+build.
+
+### Example 8: Provider Vitest Configuration (Required for Multi-File Verification)
+
+**Context**: The Pact Rust FFI that powers the JS `Verifier` holds process-wide state (native handles for messages, matchers, mocks). Vitest's default parallel file workers each spin up their own FFI instance and quickly corrupt that state — causing `MessagePact`/`Verifier` errors like `"Unable to get the MessageHandle"`, or non-deterministic verification passes/fails — as soon as you have more than one provider `.spec.ts` file.
+
+**Rule**: Provider verification suites **must** run in a single fork. Use Vitest's `forks` pool with `singleFork: true` in `vitest.config.contract.ts` (or equivalent).
+
+```typescript
+// vitest.config.contract.ts — provider verification config
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    environment: 'node',
+    include: ['tests/contract/**/*.spec.ts'],
+    testTimeout: 60000,
+    // MANDATORY for multi-file provider verification.
+    // The Pact Rust FFI backing the Verifier holds process-wide state; parallel workers corrupt it
+    // and produce flaky verification results / "Unable to get the MessageHandle" errors.
+    // This is especially important for message providers (Kafka/async) where verifier construction
+    // allocates native handles per file — singleFork keeps them in one process so state is coherent.
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
+  },
+});
+```
+
+**Key Points**:
+
+- **Required for message providers** (`buildMessageVerifierOptions`) — the message-handle FFI state is almost guaranteed to corrupt under parallel workers.
+- **Required for HTTP providers with multiple contract test files** — even if each file works in isolation, running them together in parallel produces intermittent failures.
+- `pool: 'forks'` (rather than `threads`) + `singleFork: true` is the exact combo that keeps all verifier runs in a single child process with a single FFI instance.
+- Treat `pool: 'forks'` + `singleFork: true` as the required baseline for all provider suites, including single-file HTTP-only ones. A suite that works today with one file will flake the moment a second file is added, and removing the setting later introduces a regression window.
+- **The same `pool: 'forks'` + `singleFork: true` rule applies on the consumer side.** Consumer `vitest.config.pact.ts` sets it alongside `fileParallelism: false` — see `pact-consumer-framework-setup.md` Example 2. The rule is needed on either side wherever more than one pact test file exists per consumer+provider pair.
+- Use a dedicated `vitest.config.contract.ts` so unit tests still get full parallelism — only contract tests pay the serialization cost.
+- Related `package.json` entry:
+
+  ```json
+  {
+    "scripts": {
+      "test:pact:provider": "vitest run --config vitest.config.contract.ts"
+    }
+  }
+  ```
+
 ## Environment Variables Reference
 
-| Variable               | Required        | Description                                                                                                                           | Default     |
-| ---------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| `PACT_BROKER_BASE_URL` | For remote flow | Pact Broker / PactFlow URL                                                                                                            | —           |
-| `PACT_BROKER_TOKEN`    | For remote flow | API token for broker authentication                                                                                                   | —           |
-| `GITHUB_SHA`           | Recommended     | Provider version for verification result publishing (auto-set by GitHub Actions)                                                      | `'unknown'` |
-| `GITHUB_BRANCH`        | Recommended     | Branch name for provider version branch and version tags (**not auto-set** — define as `${{ github.head_ref \|\| github.ref_name }}`) | `'main'`    |
-| `PACT_PAYLOAD_URL`     | Optional        | Webhook payload URL — triggers verification of specific pact only                                                                     | —           |
-| `PACT_BREAKING_CHANGE` | Optional        | Set to `"true"` to use breaking change selector strategy                                                                              | `'false'`   |
-| `CI`                   | Auto-detected   | When `"true"`, enables verification result publishing                                                                                 | —           |
+| Variable                | Required        | Description                                                                                                                           | Default     |
+| ----------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| `PACT_BROKER_BASE_URL`  | For remote flow | Pact Broker / PactFlow URL                                                                                                            | —           |
+| `PACT_BROKER_TOKEN`     | For remote flow | API token for broker authentication                                                                                                   | —           |
+| `PACT_PROVIDER_VERSION` | Webhook flow    | Exact provider revision selected by webhook checkout; takes precedence over `GITHUB_SHA`                                              | —           |
+| `PACT_PROVIDER_BRANCH`  | Branch override | Provider branch selected by webhook checkout; takes precedence over `GITHUB_BRANCH`                                                   | —           |
+| `PACT_CONSUMER_BRANCH`  | Optional        | Named consumer branch to add to selectors; requires a specific `consumer`                                                             | —           |
+| `GITHUB_SHA`            | Recommended     | Provider version for verification result publishing (auto-set by GitHub Actions)                                                      | `'unknown'` |
+| `GITHUB_BRANCH`         | Recommended     | Branch name for provider version branch and version tags (**not auto-set** — define as `${{ github.head_ref \|\| github.ref_name }}`) | `'main'`    |
+| `PACT_PAYLOAD_URL`      | Optional        | Webhook payload URL — triggers verification of specific pact only                                                                     | —           |
+| `PACT_BREAKING_CHANGE`  | Optional        | Set to `"true"` to use breaking change selector strategy                                                                              | `'false'`   |
+| `CI`                    | Auto-detected   | When `"true"`, enables verification result publishing                                                                                 | —           |
 
 ## Key Points
 
 - **Flow auto-detection**: If `PACT_BROKER_BASE_URL` is set → remote flow; otherwise → local flow (requires `pactUrls`)
 - **`port` is a string**: Pass port number as string (e.g., `'3001'`); function builds `http://localhost:${port}` internally
-- **`includeMainAndDeployed` is required**: `true` = verify matchingBranch + mainBranch + deployedOrReleased; `false` = verify matchingBranch only (for breaking changes)
+- **`includeMainAndDeployed` is required**: `true` includes mainBranch + deployedOrReleased; `false` removes those two for breaking changes. `matchingBranch` always remains, and a configured `consumerBranch` remains additive in either mode.
 - **Selector strategy**: Normal flow (`includeMainAndDeployed: true`) includes all selectors; breaking change flow (`false`) includes only `matchingBranch`
+- **Named consumer branch**: `consumerBranch` adds `{ consumer, branch }`; it requires `consumer` and remains additive to the other selectors
 - **Webhook support**: `PACT_PAYLOAD_URL` takes precedence — verifies only the specific pact that triggered the webhook
 - **State handler types**: Both `async (params) => void` and `{ setup: async (params) => void, teardown: async () => void }` are supported
 - **Version publishing**: Verification results are published by default (`publishVerificationResult` defaults to `true`)
+- **Provider Vitest config is MANDATORY for multi-file suites**: Set `pool: 'forks'` + `poolOptions.forks.singleFork: true` in `vitest.config.contract.ts`. Without this the Rust FFI corrupts under parallel workers (see Example 8).
 
 ## Related Fragments
 
 - `pactjs-utils-overview.md` — installation, decision tree, design philosophy
-- `pactjs-utils-consumer-helpers.md` — consumer-side state parameter creation
+- `pactjs-utils-consumer-helpers.md` — consumer-side state parameter creation, **one-interaction-per-`it()` rule**
 - `pactjs-utils-request-filter.md` — auth injection for provider verification
+- `pact-consumer-framework-setup.md` — consumer-side framework setup, Vitest `fileParallelism: false`, CI wiring
+- `pact-broker-webhooks.md` — PactFlow → GitHub webhook auth/staleness for webhook-triggered provider verification (`contract_requiring_verification_published`)
 - `contract-testing.md` — foundational patterns with raw Pact.js
 
 ## Anti-Patterns
@@ -312,4 +444,59 @@ const opts = buildVerifierOptions({
 // Selectors chosen automatically based on environment
 ```
 
-_Source: @seontechnologies/pactjs-utils provider-verifier module, pact-js-example-provider CI workflows_
+### Wrong: Unscoped Explicit Consumer Branch
+
+```typescript
+// ❌ A branch name can exist on several consumers
+handlePactBrokerUrlAndSelectors({
+  consumerBranch: 'release/week-32',
+  consumer: undefined,
+  /* ... */
+});
+```
+
+### Right: Pair Consumer and Branch
+
+```typescript
+// ✅ The explicit branch applies to one pacticipant
+buildVerifierOptions({
+  provider: 'my-api',
+  port: '3001',
+  includeMainAndDeployed: true,
+  consumer: 'my-web',
+  consumerBranch: process.env.PACT_CONSUMER_BRANCH,
+});
+```
+
+### Wrong: Parallel Vitest workers for provider verification
+
+```typescript
+// ❌ vitest.config.contract.ts — uses default parallel workers
+import { defineConfig } from 'vitest/config';
+export default defineConfig({
+  test: {
+    environment: 'node',
+    include: ['tests/contract/**/*.spec.ts'],
+    // NO pool/singleFork config — defaults to parallel file workers
+  },
+});
+// Symptoms: "Unable to get the MessageHandle", non-deterministic verification pass/fail,
+// green locally on single-file run but red in CI with multiple files
+```
+
+### Right: Single fork for provider verification
+
+```typescript
+// ✅ vitest.config.contract.ts — serializes provider verification files
+import { defineConfig } from 'vitest/config';
+export default defineConfig({
+  test: {
+    environment: 'node',
+    include: ['tests/contract/**/*.spec.ts'],
+    pool: 'forks',
+    poolOptions: { forks: { singleFork: true } },
+  },
+});
+```
+
+_Source: @seontechnologies/pactjs-utils provider-verifier module, pact-js-example-provider CI workflows._

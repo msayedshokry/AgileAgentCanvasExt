@@ -5,7 +5,7 @@ Extracts dependency graph data and execution patterns from a BMad skill
 so the LLM scanner can evaluate efficiency from compact structured data.
 
 Covers:
-- Dependency graph from bmad-manifest.json (after, before arrays)
+- Dependency graph from aac-manifest.json (after, before arrays)
 - Circular dependency detection
 - Transitive dependency redundancy
 - Parallelizable stage groups (independent nodes)
@@ -167,7 +167,7 @@ def scan_execution_deps(skill_path: Path) -> dict:
     manifest_found = False
 
     for manifest_path in [
-        skill_path / 'bmad-manifest.json',
+        skill_path / 'aac-manifest.json',
     ]:
         if manifest_path.exists():
             manifest_found = True

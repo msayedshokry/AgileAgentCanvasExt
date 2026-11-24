@@ -2,21 +2,24 @@
 
 ## Principle
 
-Use `createProviderState` and `toJsonMap` from `@seontechnologies/pactjs-utils` to build type-safe provider state tuples for consumer contract tests. These helpers eliminate manual `JsonMap` casting and ensure consistent parameter serialization across all consumer pact interactions.
+Use `createProviderState`, `toJsonMap`, `setJsonContent`, and `setJsonBody` from `@seontechnologies/pactjs-utils` to build type-safe provider state tuples and reusable PactV4 JSON callbacks for consumer contract tests. These helpers eliminate manual `JsonMap` casting and repetitive inline builder lambdas.
 
 ## Rationale
 
-### Problems with raw provider state handling
+### Problems with raw consumer helper handling
 
 - **JsonMap requirement**: Pact's `.given(stateName, params)` requires `params` to be `JsonMap` — a flat object where every value must be `string | number | boolean | null`
 - **Type gymnastics**: Complex params (Date objects, nested objects, null values) require manual casting that TypeScript can't verify
 - **Inconsistent serialization**: Different developers serialize the same data differently (e.g., dates as ISO strings vs timestamps)
 - **Verbose `.given()` calls**: Repeating state name and params inline makes consumer tests harder to read
+- **Repeated interaction callbacks**: PactV4 interactions duplicate inline `(builder) => { ... }` blocks for body/query/header setup
 
 ### Solutions
 
 - **`createProviderState`**: Returns a `[string, JsonMap]` tuple that spreads directly into `.given()` — one function handles name and params
 - **`toJsonMap`**: Explicit coercion rules documented and tested — Date→ISO string, null→"null" string, nested objects→JSON string
+- **`setJsonContent`**: Curried callback helper for request/response builders — set `query`, `headers`, and/or `body` from one reusable function
+- **`setJsonBody`**: Body-only shorthand for `setJsonContent({ body })` — ideal for concise `.willRespondWith(...)` bodies
 
 ## Pattern Examples
 
@@ -147,6 +150,120 @@ await provider
   });
 ```
 
+### Example 5: When to Use setJsonBody vs setJsonContent
+
+```typescript
+import { MatchersV3 } from '@pact-foundation/pact';
+import { setJsonBody, setJsonContent } from '@seontechnologies/pactjs-utils';
+
+const { integer, string } = MatchersV3;
+
+await pact
+  .addInteraction()
+  .given('movie exists')
+  .uponReceiving('a request to get movie by name')
+  .withRequest(
+    'GET',
+    '/movies',
+    setJsonContent({
+      query: { name: 'Inception' },
+      headers: { Accept: 'application/json' },
+    }),
+  )
+  .willRespondWith(
+    200,
+    setJsonBody({
+      status: 200,
+      data: { id: integer(1), name: string('Inception') },
+    }),
+  );
+```
+
+**Key Points**:
+
+- Use `setJsonContent` when the interaction needs `query`, `headers`, and/or `body` in one callback (most request builders)
+- Use `setJsonBody` when you only need `jsonBody` and want the shorter `.willRespondWith(status, setJsonBody(...))` form
+- `setJsonBody` is equivalent to `setJsonContent({ body: ... })`
+
+### Example 6: One `addInteraction()` per `it()` Block (PactV4 Determinism Rule)
+
+**Context**: PactV4's `pact.addInteraction()` feeds the Rust FFI layer that writes interactions to the pact JSON. Chaining multiple `.addInteraction()...executeTest()` blocks inside a single `it()` — or otherwise registering multiple interactions before a single `executeTest` — causes the FFI to **non-deterministically drop whole interactions** (not individual fields) in roughly 1 out of N runs. The pattern passes locally, then fails intermittently in CI or at publish time with `Cannot change pact content for already published pact` once the dropped interaction reappears on a re-run.
+
+**Rule**: Exactly one `pact.addInteraction()` per `it()` block. For N interactions, write N `it()` blocks, or use `it.each(...)`.
+
+```typescript
+// ❌ WRONG — two addInteraction() inside one it() — FFI non-deterministically drops one
+it('handles movie lookup scenarios', async () => {
+  await pact
+    .addInteraction()
+    .given('movie exists')
+    .uponReceiving('a request to get movie by id')
+    .withRequest('GET', '/movies/1')
+    .willRespondWith(200, setJsonBody({ id: integer(1), name: string('The Matrix') }))
+    .executeTest(async (mockServer) => {
+      /* ... */
+    });
+
+  // Sometimes this second interaction never makes it to the pact JSON:
+  await pact
+    .addInteraction()
+    .given('no movies exist')
+    .uponReceiving('a request for an empty list')
+    .withRequest('GET', '/movies')
+    .willRespondWith(200, setJsonBody([]))
+    .executeTest(async (mockServer) => {
+      /* ... */
+    });
+});
+
+// ✅ RIGHT — one addInteraction() per it()
+it('gets a movie by id', async () => {
+  await pact
+    .addInteraction()
+    .given('movie exists')
+    .uponReceiving('a request to get movie by id')
+    .withRequest('GET', '/movies/1')
+    .willRespondWith(200, setJsonBody({ id: integer(1), name: string('The Matrix') }))
+    .executeTest(async (mockServer) => {
+      /* ... */
+    });
+});
+
+it('returns empty list when no movies exist', async () => {
+  await pact
+    .addInteraction()
+    .given('no movies exist')
+    .uponReceiving('a request for an empty list')
+    .withRequest('GET', '/movies')
+    .willRespondWith(200, setJsonBody([]))
+    .executeTest(async (mockServer) => {
+      /* ... */
+    });
+});
+
+// ✅ RIGHT — parameterized via it.each for data-driven coverage
+it.each([
+  { id: 1, name: 'The Matrix' },
+  { id: 2, name: 'Inception' },
+])('gets movie $id', async ({ id, name }) => {
+  await pact
+    .addInteraction()
+    .given('movie exists', { id, name })
+    .uponReceiving(`a request to get movie ${id}`)
+    .withRequest('GET', `/movies/${id}`)
+    .willRespondWith(200, setJsonBody({ id: integer(id), name: string(name) }))
+    .executeTest(async (mockServer) => {
+      /* ... */
+    });
+});
+```
+
+**Key Points**:
+
+- **This rule stacks with two MANDATORY vitest settings and one file-organization rule. All four address different failure modes; none substitutes for the others**: (1) `fileParallelism: false` — prevents parallel workers racing on the shared pact JSON file; (2) `pool: 'forks'` with `singleFork: true` — required for pact JSON write safety across multiple files; (3) **one `.pacttest.ts` per consumer+provider pair** — `singleFork: true` keeps all files in one process, so two files for the same pair produce an FFI handle collision ("request was expected but not received" on Linux CI, sporadic); (4) one-interaction-per-`it()` (this rule) — prevents the FFI from dropping interactions within a single test body. See `pact-consumer-framework-setup.md` Example 10 for the file-organization ✅/❌ pattern.
+- Symptom of violating this rule: the pact file is byte-different between otherwise-identical runs; PactFlow rejects a republish with `Cannot change pact content`.
+- The rule applies to both HTTP consumer pacts (`PactV4`) and message consumer pacts (`MessageConsumerPact`).
+
 ## Key Points
 
 - **Spread pattern**: Always use `...createProviderState()` — the tuple spreads into `.given(stateName, params)`
@@ -156,11 +273,17 @@ await provider
 - **No nested objects in JsonMap**: Nested objects are JSON-stringified — provider state handlers must parse them
 - **Array serialization is lossy**: Arrays are converted via `String()` (e.g., `[1,2,3]` → `"1,2,3"`) — prefer passing arrays as JSON-stringified objects for round-trip safety
 - **Message pacts**: Works identically with `MessageConsumerPact` — same `.given()` API
+- **Builder reuse**: `setJsonContent` works for both `.withRequest(...)` and `.willRespondWith(...)` callbacks (query is ignored on response builders)
+- **Body shorthand**: `setJsonBody` keeps body-only responses concise and readable
+- **Matchers check type, not value**: `string('My movie')` means "any string", `integer(1)` means "any integer". The example values are arbitrary — the provider can return different values and verification still passes as long as the type matches. Use matchers only in `.willRespondWith()` (responses), never in `.withRequest()` (requests) — Postel's Law applies.
+- **Reuse test values across files**: Interactions are uniquely identified by `uponReceiving` + `.given()`, not by placeholder values. Two test files can both use `testId: 100` without conflicting. On the provider side, shared values simplify state handlers — idempotent handlers (check if exists, create if not) only need to ensure one record exists. Use different values only when testing different states of the same entity type (e.g., `movieExists(100)` for happy paths vs. `movieNotFound(999)` for error paths).
+- **One `addInteraction()` per `it()` block (MANDATORY for PactV4)**: Multiple interactions inside one `it()` cause the Rust FFI to non-deterministically drop interactions. Use one `it()` per interaction or `it.each(...)` for parameterized cases. See Example 6.
 
 ## Related Fragments
 
 - `pactjs-utils-overview.md` — installation, decision tree, design philosophy
-- `pactjs-utils-provider-verifier.md` — provider-side state handler implementation
+- `pactjs-utils-provider-verifier.md` — provider-side state handler implementation; same `pool: 'forks'` + `singleFork: true` rule as consumer
+- `pact-consumer-framework-setup.md` — Vitest `fileParallelism: false` + `pool: 'forks'` + `singleFork: true` config and CI wiring
 - `contract-testing.md` — foundational patterns with raw Pact.js
 
 ## Anti-Patterns
@@ -208,4 +331,49 @@ const STATES = {
 provider.given(...createProviderState({ name: STATES.USER_EXISTS, params: { id: 1 } }));
 ```
 
-_Source: @seontechnologies/pactjs-utils consumer-helpers module, pactjs-utils sample-app consumer tests_
+### Wrong: Repeating inline builder lambdas everywhere
+
+```typescript
+// ❌ Repetitive callback boilerplate in every interaction
+.willRespondWith(200, (builder) => {
+  builder.jsonBody({ status: 200 });
+});
+```
+
+### Right: Use setJsonBody / setJsonContent
+
+```typescript
+// ✅ Reusable callbacks with less boilerplate
+.withRequest('GET', '/movies', setJsonContent({ query: { name: 'Inception' } }))
+.willRespondWith(200, setJsonBody({ status: 200 }));
+```
+
+### Wrong: Multiple `addInteraction()` in a single `it()`
+
+```typescript
+// ❌ PactV4 FFI non-deterministically drops one of these interactions ~1/N runs
+it('handles both success and empty list', async () => {
+  await pact.addInteraction().uponReceiving('get movie').withRequest(/* ... */).executeTest(/* ... */);
+  await pact.addInteraction().uponReceiving('empty list').withRequest(/* ... */).executeTest(/* ... */);
+});
+```
+
+### Right: One `addInteraction()` per `it()` (or use `it.each`)
+
+```typescript
+// ✅ Deterministic pact JSON — FFI receives one interaction per test
+it('gets a movie', async () => {
+  await pact
+    .addInteraction() /* ... */
+    .executeTest(/* ... */);
+});
+it('returns empty list', async () => {
+  await pact
+    .addInteraction() /* ... */
+    .executeTest(/* ... */);
+});
+```
+
+See Example 6 above for the full rationale.
+
+_Source: @seontechnologies/pactjs-utils consumer-helpers module, pactjs-utils sample-app consumer tests._

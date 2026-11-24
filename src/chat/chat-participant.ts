@@ -3175,7 +3175,7 @@ After refinement, use \`@agileagentcanvas /apply\` to save changes to the JSON f
         const workflowPath = path.join(bmadPath, 'skills', 'aac-cis-storytelling', 'SKILL.md');
 
         const contextParts: string[] = [
-            'Start the storytelling workflow. You are Caravaggio, the Visual Communication + Presentation Expert.',
+            'Start the storytelling workflow. You are Sophia, the Master Storyteller.',
             'Help the user craft compelling narratives using storytelling frameworks.',
             'Use the story types and frameworks from the workflow to structure the narrative.',
         ];

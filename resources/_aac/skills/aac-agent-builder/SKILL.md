@@ -26,18 +26,21 @@ These agents become part of the BMad Method ecosystem — personal companions th
 
 ## On Activation
 
-1. Load config from `{project-root}/_bmad/bmb/config.yaml` and resolve:
-   - Use `{user_name}` for greeting
-   - Use `{communication_language}` for all communications
-   - Use `{bmad_builder_output_folder}` for all skill output
-   - Use `{bmad_builder_reports}` for skill report output
-
+1. Load config from `{project-root}/_bmad/config.yaml` and `{project-root}/_bmad/config.user.yaml` (root and `bmb` section), falling back to `{project-root}/_bmad/bmb/config.yaml`. Missing files or keys never block — use the defaults in parens:
+   - Use `{user_name}` (none) for greeting
+   - Use `{communication_language}` (user or system default) for all communications
+   - Use `{bmad_builder_output_folder}` (`{project-root}/_bmad-output/skills`) for new agent output; existing agents keep their own path
+   - Use `{bmad_builder_reports}` (`{project-root}/_bmad-output/reports`) for skill report output
 
 2. Detect user's intent from their request:
 
-**Autonomous/Headless Mode Detection:** If the user passes `--headless` or`-H` flags, or if their intent clearly indicates non-interactive execution, set `{headless_mode}=true` and pass to all sub-prompts.
+**Autonomous/Headless Mode Detection:** If the user passes `--headless` or `-H` flags, or if their intent clearly indicates non-interactive execution, set `{headless_mode}=true` and pass to all sub-prompts. This makes the *builder* non-interactive; it is not the autonomous mode a built agent runs at its own runtime.
 
-3. Route by intent.
+3. **Open the floor (interactive only).** Before any structured questions or routing, invite the user to share everything they have in mind: who the agent is, how it should make them feel, the core outcome, examples, half-formed ideas, paths to existing agents or artifacts. Adapt the invitation to what they already gave you, then one soft "anything else?" surfaces what they almost forgot. This dump replaces most downstream questioning, so let it run. Skip in headless mode, or when the invocation already carries enough to act on.
+
+4. Route by intent. When the user hands over an existing agent without saying what they want, offer three paths: **Analyze** (run the Quality Optimizer and return a report), **Edit** (change specific behavior while preserving the agent's design and persona), or **Rebuild** (rethink it from its core outcomes and persona, using the old agent as reference material — the Build flow pointed at existing input).
+
+The quality bar for every prompt you write or review lives in `references/prompt-quality-canon.md`; load it when drafting or judging prompt content rather than restating it. One exception is load-bearing: persona voice, communication-style examples, domain framing, and design rationale are investment, not waste — the leanness bar applies to capability prompts, never to the persona that drives them.
 
 ## Build Process
 

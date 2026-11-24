@@ -2,9 +2,9 @@
 """Deterministic path standards scanner for BMad skills.
 
 Validates all .md files against BMad path conventions:
-1. {project-root} only valid before /_bmad
+1. {project-root} for any project-scope path (not just _bmad)
 2. Bare _bmad references must have {project-root} prefix
-3. Config variables used directly (no double-prefix)
+3. Config variables used directly — no double-prefix with {project-root}
 4. No ./ or ../ relative prefixes
 5. No absolute paths
 """
@@ -24,8 +24,8 @@ from pathlib import Path
 
 
 # Patterns to detect
-# {project-root} NOT followed by /_bmad
-PROJECT_ROOT_NOT_BMAD_RE = re.compile(r'\{project-root\}/(?!_bmad)')
+# Double-prefix: {project-root}/{config-variable} — config vars already contain project-root
+DOUBLE_PREFIX_RE = re.compile(r'\{project-root\}/\{[^}]+\}')
 # Bare _bmad without {project-root} prefix — match _bmad at word boundary
 # but not when preceded by {project-root}/
 BARE_BMAD_RE = re.compile(r'(?<!\{project-root\}/)_bmad[/\s]')
@@ -59,8 +59,8 @@ def scan_file(filepath: Path, skip_fenced: bool = True) -> list[dict]:
     rel_path = filepath.name
 
     checks = [
-        (PROJECT_ROOT_NOT_BMAD_RE, 'project-root-not-bmad', 'critical',
-         '{project-root} used for non-_bmad path — only valid use is {project-root}/_bmad/...'),
+        (DOUBLE_PREFIX_RE, 'double-prefix', 'critical',
+         'Double-prefix: {project-root}/{variable} — config variables already contain {project-root} at runtime'),
         (ABSOLUTE_PATH_RE, 'absolute-path', 'high',
          'Absolute path found — not portable across machines'),
         (HOME_PATH_RE, 'absolute-path', 'high',
@@ -137,7 +137,6 @@ def scan_skill(skill_path: Path, skip_fenced: bool = True) -> dict:
     # Build summary
     by_severity = {'critical': 0, 'high': 0, 'medium': 0, 'low': 0}
     by_category = {
-        'project_root_not_bmad': 0,
         'bare_bmad': 0,
         'double_prefix': 0,
         'absolute_path': 0,
@@ -155,7 +154,7 @@ def scan_skill(skill_path: Path, skip_fenced: bool = True) -> dict:
     return {
         'scanner': 'path-standards',
         'script': 'scan-path-standards.py',
-        'version': '1.0.0',
+        'version': '1.1.0',
         'skill_path': str(skill_path),
         'timestamp': datetime.now(timezone.utc).isoformat(),
         'files_scanned': files_scanned,

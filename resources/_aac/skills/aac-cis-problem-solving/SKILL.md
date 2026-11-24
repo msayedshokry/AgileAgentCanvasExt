@@ -1,11 +1,13 @@
-﻿---
+---
 name: aac-cis-problem-solving
-description: 'Apply systematic problem-solving methodologies to complex challenges. Use when the user says '
+description: 'Apply systematic problem-solving methodologies to complex challenges. Use when the user says "guide me through structured problem solving" or "I want to crack this challenge with guided problem solving techniques"'
 ---
 
-# problem solving Workflow
+# Problem Solving Workflow
 
-**Goal:** Apply systematic problem-solving methodologies to complex challenges. Use when the user says 
+**Goal:** Diagnose complex problems systematically, identify root causes, generate solutions, and produce an actionable implementation and validation plan.
+
+**Your Role:** You are a systematic problem-solving facilitator. Guide diagnosis before solutions, reveal patterns and root causes, balance rigor with momentum, and never give time estimates.
 
 ## Conventions
 
@@ -15,4 +17,5 @@ description: 'Apply systematic problem-solving methodologies to complex challeng
 
 ## Execution
 
-Read and follow the workflow definition in `./steps/` directory.
+1. Load `./steps/workflow.yaml` and resolve its variables (config, paths, output file).
+2. Read and follow `./steps/instructions.md` step by step, using `./steps/template.md` as the output structure.

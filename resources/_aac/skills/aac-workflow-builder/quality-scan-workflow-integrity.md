@@ -27,7 +27,7 @@ Find and read:
 
 | Check | Why It Matters |
 |-------|----------------|
-| `name` MUST match the folder name AND follows pattern `aac-{code}-{skillname}` or `aac-{skillname}` | Naming convention identifies module affiliation |
+| `name` MUST match the folder name AND follows pattern `{code}-{skillname}` or `{skillname}` (the `aac-` prefix is reserved for bundled Agile Agent Canvas skills; existing prefixed names are acceptable) | Naming convention identifies module affiliation |
 | `description` follows two-part format: [5-8 word summary]. [trigger clause] | Description is PRIMARY trigger mechanism — wrong format causes over-triggering or under-triggering |
 | Trigger clause uses quoted specific phrases: `Use when user says 'create a PRD' or 'edit a PRD'` | Quoted phrases prevent accidental triggering on casual keyword mentions |
 | Trigger clause is conservative (explicit invocation) unless organic activation is clearly intentional | Most skills should NOT fire on passing mentions — only on direct requests |
@@ -72,13 +72,13 @@ Workflows may include Identity, Communication Style, or Principles sections if p
 | No orphaned `{if-simple-utility}` conditionals | Should have been resolved during skill creation |
 | No bare placeholders like `{displayName}`, `{skillName}` | Should have been replaced with actual values |
 | No other template fragments (`{if-module}`, `{if-headless}`, etc.) | Conditional blocks should be removed, not left as text |
-| Variables from `aac-init` are OK | `{user_name}`, `{communication_language}`, `{document_output_language}` are intentional runtime variables |
+| Core config variables are OK | `{user_name}`, `{communication_language}`, `{document_output_language}` are intentional runtime variables |
 
 ### Config Integration
 
 | Check | Why It Matters |
 |-------|----------------|
-| aac-init config loading present in On Activation | Config provides user preferences, language settings, project context |
+| Config loading present in On Activation (unless a standalone utility opted out) | Config provides user preferences, language settings, project context |
 | Config values used where appropriate | Hardcoded values that should come from config cause inflexibility |
 
 ---
@@ -128,7 +128,7 @@ Determine workflow type from SKILL.md before applying type-specific checks:
 |-------|----------------|
 | Each stage prompt has config header specifying Language | AI needs to know what language to communicate in |
 | Stage prompts that create documents specify Output Language | Document language may differ from communication language |
-| Config header uses aac-init variables correctly | `{communication_language}`, `{document_output_language}` |
+| Config header uses config variables correctly | `{communication_language}`, `{document_output_language}` |
 
 ### Simple Workflow
 

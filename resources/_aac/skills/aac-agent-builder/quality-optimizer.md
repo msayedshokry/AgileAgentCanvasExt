@@ -75,7 +75,7 @@ These run instantly, cost zero tokens, and produce structured JSON:
 
 | # | Script | Focus | Temp Filename |
 |---|--------|-------|---------------|
-| S1 | `scripts/scan-path-standards.py` | Path conventions: {project-root} only for _bmad, bare _bmad, memory paths, double-prefix, absolute paths | `path-standards-temp.json` |
+| S1 | `scripts/scan-path-standards.py` | Path conventions: bare _bmad, memory paths, double-prefix, absolute paths | `path-standards-temp.json` |
 | S2 | `scripts/scan-scripts.py` | Script portability, PEP 723, agentic design, unit tests | `scripts-temp.json` |
 
 ### Pre-Pass Scripts (Feed LLM Scanners)

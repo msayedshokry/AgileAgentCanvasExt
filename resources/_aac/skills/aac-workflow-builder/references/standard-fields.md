@@ -16,7 +16,7 @@
 |-------|-------------|---------|
 | `input-format` | What it accepts | JSON file path, stdin text |
 | `output-format` | What it returns | Validated JSON, error report |
-| `standalone` | Opts out of aac-init? | true/false |
+| `standalone` | Opts out of config loading? | true/false |
 | `composability` | How other skills use it | "Called by quality scanners for validation" |
 
 ## Simple Workflow Fields
@@ -98,7 +98,7 @@ This provides quick prompt priming for expertise and tone. Workflows may also us
 
 ## Path Rules
 
-Only use `{project-root}` for `_bmad` paths.
+Use `{project-root}` for any project-scope path — `_bmad` paths and other project files alike.
 
 ### Skill-Internal Files
 Use bare relative paths (no prefix):
@@ -106,9 +106,10 @@ Use bare relative paths (no prefix):
 - `01-discover.md`
 - `scripts/validate.py`
 
-### Project `_bmad` Paths
-Use `{project-root}/_bmad/...`:
+### Project-Scope Paths
+Use `{project-root}/...`:
 - `{project-root}/_bmad/planning/prd.md`
+- `{project-root}/docs/report.md`
 - `{project-root}/_bmad/_memory/{skillName}-sidecar/`
 
 ### Config Variables

@@ -14,7 +14,7 @@ Covers:
 - Config header and progression condition presence per prompt
 - File-level token estimates (chars / 4 rough approximation)
 - Prompt frontmatter validation (name, description, menu-code)
-- Manifest alignment check (frontmatter vs bmad-manifest.json entries)
+- Manifest alignment check (frontmatter vs aac-manifest.json entries)
 - Wall-of-text detection
 - Suggestive loading grep
 """
@@ -198,7 +198,7 @@ def parse_prompt_frontmatter(filepath: Path) -> dict:
 
 
 def check_manifest_alignment(skill_path: Path, prompt_frontmatters: dict[str, dict]) -> dict:
-    """Compare prompt frontmatter against bmad-manifest.json entries."""
+    """Compare prompt frontmatter against aac-manifest.json entries."""
     alignment = {
         'manifest_found': False,
         'mismatches': [],
@@ -206,7 +206,7 @@ def check_manifest_alignment(skill_path: Path, prompt_frontmatters: dict[str, di
         'prompt_only': [],
     }
 
-    manifest_path = skill_path / 'bmad-manifest.json'
+    manifest_path = skill_path / 'aac-manifest.json'
     if not manifest_path.exists():
         return alignment
 
@@ -359,7 +359,7 @@ def scan_prompt_metrics(skill_path: Path) -> dict:
 
     # Prompt files at skill root — also extract frontmatter
     prompt_frontmatters: dict[str, dict] = {}
-    skip_files = {'SKILL.md', 'bmad-manifest.json', 'bmad-skill-manifest.yaml'}
+    skip_files = {'SKILL.md', 'aac-manifest.json', 'bmad-skill-manifest.yaml'}
 
     for f in sorted(skill_path.iterdir()):
         if f.is_file() and f.suffix == '.md' and f.name not in skip_files and f.name != 'SKILL.md':

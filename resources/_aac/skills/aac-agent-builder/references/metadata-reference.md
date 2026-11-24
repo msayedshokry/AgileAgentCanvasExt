@@ -15,7 +15,7 @@ Every BMad skill has a `aac-manifest.json` at its root. This is the unified form
 
 ```yaml
 ---
-name: aac-{modulecode}-{skillname}
+name: {modulecode}-{skillname}
 description: [5-8 word summary]. [Use when user says 'X' or 'Y'.]
 ---
 ```
@@ -61,7 +61,7 @@ description: [5-8 word summary]. [Use when user says 'X' or 'Y'.]
 | Field | Type | Required | Purpose |
 |-------|------|----------|---------|
 | `module-code` | string | If module | Short code for namespacing (e.g., `bmb`, `cis`) |
-| `replaces-skill` | string | No | Registered skill name this replaces. Inherits metadata during aac-init. |
+| `replaces-skill` | string | No | Registered skill name this replaces. Inherits metadata at install/registration time. |
 | `persona` | string | Agents only | Succinct distillation of the agent's essence. **Presence = this is an agent.** |
 | `has-memory` | boolean | No | Whether state persists across sessions via sidecar memory |
 
@@ -89,7 +89,7 @@ description: [5-8 word summary]. [Use when user says 'X' or 'Y'.]
 
 ### The `replaces-skill` Field
 
-When set, the skill inherits metadata from the replaced skill during `aac-init`. Explicit fields in the new manifest override inherited values.
+When set, the skill inherits metadata from the replaced skill at install/registration time. Explicit fields in the new manifest override inherited values.
 
 ## Agent vs Workflow vs Skill
 
@@ -99,15 +99,15 @@ No type field needed — inferred from content:
 
 ## Config Loading
 
-All module skills MUST use the `aac-init` skill at startup.
+All module skills load config on activation from `{project-root}/_bmad/config.yaml` (+ `config.user.yaml`), falling back to `{project-root}/_bmad/{module-code}/config.yaml`, with defaults for anything missing.
 
 ## Path Construction Rules — CRITICAL
 
-Only use `{project-root}` for `_bmad` paths.
+Use `{project-root}` for any project-scope path — `_bmad` paths and other project files alike.
 
 **Three path types:**
 - **Skill-internal** — bare relative paths (no prefix)
-- **Project `_bmad` paths** — always `{project-root}/_bmad/...`
+- **Project-scope paths** — always `{project-root}/...` (e.g. `{project-root}/_bmad/...`, `{project-root}/docs/report.md`)
 - **Config variables** — used directly, already contain `{project-root}` in their resolved values
 
 **Correct:**

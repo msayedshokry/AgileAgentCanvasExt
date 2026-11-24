@@ -6,9 +6,9 @@ can use instead of reading all files itself. Covers:
 - Frontmatter parsing and validation
 - Section inventory (H2/H3 headers)
 - Template artifact detection
-- Agent name validation (bmad-{code}-agent-{name} or bmad-agent-{name})
+- Agent name validation (agent-{name} or {code}-agent-{name})
 - Required agent sections (Overview, Identity, Communication Style, Principles, On Activation)
-- bmad-manifest.json validation (persona field for agent detection, capabilities)
+- aac-manifest.json validation (persona field for agent detection, capabilities)
 - Capability cross-referencing with prompt files at skill root
 - Memory path consistency checking
 - Language/directness pattern grep
@@ -115,12 +115,13 @@ def parse_frontmatter(content: str) -> tuple[dict | None, list[dict]]:
             'severity': 'high', 'category': 'frontmatter',
             'issue': f'Name "{name}" is not kebab-case',
         })
-    elif not (re.match(r'^bmad-[a-z0-9]+-agent-[a-z0-9]+(-[a-z0-9]+)*$', name)
-              or re.match(r'^bmad-agent-[a-z0-9]+(-[a-z0-9]+)*$', name)):
+    # User-created agents: agent-{name} or {code}-agent-{name}. Legacy names with a
+    # reserved prefix (bmad-/aac-) in front of either form are still accepted.
+    elif not re.match(r'^(?:[a-z0-9]+-){0,2}agent-[a-z0-9]+(-[a-z0-9]+)*$', name):
         findings.append({
             'file': 'SKILL.md', 'line': 1,
             'severity': 'medium', 'category': 'frontmatter',
-            'issue': f'Name "{name}" does not follow bmad-{{code}}-agent-{{name}} or bmad-agent-{{name}} pattern',
+            'issue': f'Name "{name}" does not follow agent-{{name}} or {{code}}-agent-{{name}} pattern',
         })
 
     # description check
@@ -215,7 +216,7 @@ def find_template_artifacts(filepath: Path, rel_path: str) -> list[dict]:
 
 
 def validate_manifest(skill_path: Path) -> tuple[dict, list[dict]]:
-    """Validate bmad-manifest.json for agent requirements."""
+    """Validate aac-manifest.json for agent requirements."""
     findings = []
     validation = {
         'found': False,
@@ -228,12 +229,12 @@ def validate_manifest(skill_path: Path) -> tuple[dict, list[dict]]:
         'capability_issues': [],
     }
 
-    manifest_path = skill_path / 'bmad-manifest.json'
+    manifest_path = skill_path / 'aac-manifest.json'
     if not manifest_path.exists():
         findings.append({
-            'file': 'bmad-manifest.json', 'line': 0,
+            'file': 'aac-manifest.json', 'line': 0,
             'severity': 'high', 'category': 'manifest',
-            'issue': 'bmad-manifest.json not found at skill root',
+            'issue': 'aac-manifest.json not found at skill root',
         })
         return validation, findings
 
@@ -243,9 +244,9 @@ def validate_manifest(skill_path: Path) -> tuple[dict, list[dict]]:
         data = json.loads(manifest_path.read_text(encoding='utf-8'))
     except json.JSONDecodeError as e:
         findings.append({
-            'file': 'bmad-manifest.json', 'line': 0,
+            'file': 'aac-manifest.json', 'line': 0,
             'severity': 'critical', 'category': 'manifest',
-            'issue': f'Invalid JSON in bmad-manifest.json: {e}',
+            'issue': f'Invalid JSON in aac-manifest.json: {e}',
         })
         return validation, findings
 
@@ -256,7 +257,7 @@ def validate_manifest(skill_path: Path) -> tuple[dict, list[dict]]:
     validation['is_agent'] = has_persona
     if not has_persona:
         findings.append({
-            'file': 'bmad-manifest.json', 'line': 0,
+            'file': 'aac-manifest.json', 'line': 0,
             'severity': 'high', 'category': 'manifest',
             'issue': 'Missing "persona" field — agents are identified by having a persona field',
         })
@@ -265,7 +266,7 @@ def validate_manifest(skill_path: Path) -> tuple[dict, list[dict]]:
     capabilities = data.get('capabilities')
     if capabilities is None:
         findings.append({
-            'file': 'bmad-manifest.json', 'line': 0,
+            'file': 'aac-manifest.json', 'line': 0,
             'severity': 'high', 'category': 'manifest',
             'issue': 'Missing "capabilities" field',
         })
@@ -273,7 +274,7 @@ def validate_manifest(skill_path: Path) -> tuple[dict, list[dict]]:
 
     if not isinstance(capabilities, list):
         findings.append({
-            'file': 'bmad-manifest.json', 'line': 0,
+            'file': 'aac-manifest.json', 'line': 0,
             'severity': 'high', 'category': 'manifest',
             'issue': '"capabilities" is not an array',
         })
@@ -289,7 +290,7 @@ def validate_manifest(skill_path: Path) -> tuple[dict, list[dict]]:
     for i, cap in enumerate(capabilities):
         if not isinstance(cap, dict):
             findings.append({
-                'file': 'bmad-manifest.json', 'line': 0,
+                'file': 'aac-manifest.json', 'line': 0,
                 'severity': 'high', 'category': 'manifest',
                 'issue': f'Capability at index {i} is not an object',
             })
@@ -299,7 +300,7 @@ def validate_manifest(skill_path: Path) -> tuple[dict, list[dict]]:
         if missing:
             cap_name = cap.get('name', f'index-{i}')
             findings.append({
-                'file': 'bmad-manifest.json', 'line': 0,
+                'file': 'aac-manifest.json', 'line': 0,
                 'severity': 'high', 'category': 'manifest',
                 'issue': f'Capability "{cap_name}" missing required fields: {", ".join(sorted(missing))}',
             })
@@ -321,7 +322,7 @@ def validate_manifest(skill_path: Path) -> tuple[dict, list[dict]]:
     if dupes:
         validation['duplicate_menu_codes'] = sorted(dupes)
         findings.append({
-            'file': 'bmad-manifest.json', 'line': 0,
+            'file': 'aac-manifest.json', 'line': 0,
             'severity': 'high', 'category': 'manifest',
             'issue': f'Duplicate menu codes: {", ".join(sorted(dupes))}',
         })
@@ -338,7 +339,7 @@ def cross_reference_capabilities(skill_path: Path) -> tuple[dict, list[dict]]:
         'orphaned_prompt_files': [],
     }
 
-    manifest_path = skill_path / 'bmad-manifest.json'
+    manifest_path = skill_path / 'aac-manifest.json'
 
     if not manifest_path.exists():
         return crossref, findings
@@ -363,7 +364,7 @@ def cross_reference_capabilities(skill_path: Path) -> tuple[dict, list[dict]]:
 
     # Get actual prompt files (at skill root, excluding SKILL.md and non-prompt files)
     actual_prompts = set()
-    skip_files = {'SKILL.md', 'bmad-manifest.json', 'bmad-skill-manifest.yaml'}
+    skip_files = {'SKILL.md', 'aac-manifest.json', 'bmad-skill-manifest.yaml'}
     for f in skill_path.iterdir():
         if f.is_file() and f.suffix == '.md' and f.name not in skip_files:
                 actual_prompts.add(f.stem)
@@ -373,7 +374,7 @@ def cross_reference_capabilities(skill_path: Path) -> tuple[dict, list[dict]]:
     for name in sorted(missing):
         crossref['missing_prompt_files'].append(name)
         findings.append({
-            'file': 'bmad-manifest.json', 'line': 0,
+            'file': 'aac-manifest.json', 'line': 0,
             'severity': 'high', 'category': 'capability-crossref',
             'issue': f'Prompt capability "{name}" has no matching file {name}.md at skill root',
         })
@@ -449,7 +450,7 @@ def check_prompt_basics(skill_path: Path) -> tuple[list[dict], list[dict]]:
     """Check each prompt file for config header and progression conditions."""
     findings = []
     prompt_details = []
-    skip_files = {'SKILL.md', 'bmad-manifest.json', 'bmad-skill-manifest.yaml'}
+    skip_files = {'SKILL.md', 'aac-manifest.json', 'bmad-skill-manifest.yaml'}
 
     prompt_files = [f for f in sorted(skill_path.iterdir())
                     if f.is_file() and f.suffix == '.md' and f.name not in skip_files]

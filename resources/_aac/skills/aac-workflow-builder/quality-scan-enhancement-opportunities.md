@@ -188,8 +188,8 @@ Use EXACTLY these field names: `file`, `line`, `severity`, `category`, `title`, 
       "severity": "high-opportunity",
       "category": "experience-gap",
       "title": "First-time user with no project config hits a dead end at stage 2",
-      "detail": "Stage 2 assumes aac-init has been run and a config exists. A first-timer who invokes this skill directly gets a cryptic error with no guidance on how to recover. This would frustrate new users and create abandonment.",
-      "action": "Add a graceful fallback in stage 2: detect missing config, explain what aac-init does, and offer to proceed with defaults."
+      "detail": "Stage 2 assumes a BMad config file exists. A first-timer who invokes this skill directly gets a cryptic error with no guidance on how to recover. This would frustrate new users and create abandonment.",
+      "action": "Add a graceful fallback in stage 2: detect missing config, explain what the config provides, and offer to proceed with defaults."
     }
   ],
   "assessments": {

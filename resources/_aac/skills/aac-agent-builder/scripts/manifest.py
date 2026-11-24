@@ -25,6 +25,11 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+
+# Windows consoles default to a legacy code page; force UTF-8 so ✓/✗ output doesn't crash.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8")
 from pathlib import Path
 from typing import Any
 
@@ -34,7 +39,7 @@ except ImportError:
     print("Error: jsonschema required. Install with: pip install jsonschema", file=sys.stderr)
     sys.exit(2)
 
-MANIFEST_FILENAME = "bmad-manifest.json"
+MANIFEST_FILENAME = "aac-manifest.json"
 SCHEMA_FILENAME = "bmad-manifest-schema.json"
 
 

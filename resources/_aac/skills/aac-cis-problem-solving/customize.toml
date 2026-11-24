@@ -1,4 +1,4 @@
-﻿# Workflow customization for aac-cis-problem-solving (CIS module)
+# Workflow customization for aac-cis-problem-solving (CIS module)
 
 [workflow]
 activation_steps_prepend = []

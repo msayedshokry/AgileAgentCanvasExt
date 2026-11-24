@@ -13,13 +13,13 @@ Build AI agents through six phases of conversational discovery. Act as an archit
 
 Understand their vision before diving into specifics. Ask what they want to build and encourage detail.
 
-If editing/converting an existing agent: read it, analyze what exists vs what's missing, understand what needs changing and specifically ensure it conforms to our standard with building new agents upon completion.
+If editing/converting an existing agent: treat it as reference material, not a template — read it, analyze what exists vs what's missing, understand what needs changing and specifically ensure it conforms to our standard with building new agents upon completion. For an **Edit**, change the specific behavior asked for and preserve the agent's design and persona; for a **Rebuild**, rethink from its core outcomes and persona and carry over only what still earns its place.
 
 ## Phase 2: Capabilities Strategy
 
 Early check: internal capabilities only, external skills, both, or unclear?
 
-**If external skills involved:** Suggest `aac-module-builder` to bundle agents + skills into a cohesive module. Modules are the heart of the BMad ecosystem — shareable packages for any domain.
+**If external skills involved:** Suggest `aac-bmb-module` (the module builder) to bundle agents + skills into a cohesive module. Modules are the heart of the BMad ecosystem — shareable packages for any domain.
 
 **Script Opportunity Discovery** (active probing — do not skip):
 Walk through each planned capability with the user and apply these filters:
@@ -55,7 +55,7 @@ Work through these conversationally:
   - **Why/Outcome** — Value delivered or quality standard
   - *Example:* "This skill provides a {role} who helps users {outcome}. Act as {name} — {key quality}."
 - **Identity:** Who is this agent? How do they communicate? What guides their decisions?
-- **Module context:** Standalone (`aac-agent-{name}`) or part of a module (`aac-{modulecode}-agent-{name}`)
+- **Module context:** Standalone (`agent-{name}`) or part of a module (`{modulecode}-agent-{name}`). The `aac-` prefix is reserved for agents bundled with Agile Agent Canvas — do not give user-created agents that prefix. When editing an existing agent, keep its current name unless the user asks for a rename.
 - **Activation modes:**
   - **Interactive only** — User invokes the agent directly
   - **Interactive + Autonomous** — Also runs on schedule/cron for background tasks
@@ -66,7 +66,7 @@ Work through these conversationally:
   - **Save triggers:** After which interactions should memory be updated?
 - **Capabilities:**
   - **Internal prompts:** Capabilities the agent knows itself (each will get its own prompt file)
-  - **External skills:** Skills the agent invokes (ask for **exact registered skill names** — e.g., `aac-init`, `skill-creator`)
+  - **External skills:** Skills the agent invokes (ask for **exact registered skill names** — e.g., `aac-brainstorming`, `skill-creator`)
     - Note: Skills may exist now or be created later
 - **First-run:** What should it ask on first activation? (standalone only; module-based gets config from module's config.yaml)
 
@@ -86,7 +86,7 @@ Work through these conversationally:
 
 - **Path Conventions** (CRITICAL for reliable agent behavior):
   - **Memory location:** `{project-root}/_bmad/_memory/{skillName}-sidecar/`
-  - **Project artifacts:** `{project-root}/_bmad/...` when referencing project-level files
+  - **Project artifacts:** `{project-root}/...` for any project-scope path (`{project-root}/_bmad/...`, `{project-root}/docs/...`)
   - **Skill-internal files:** Use relative paths (`references/`, `scripts/`)
   - **Config variables:** Use directly — they already contain full paths (NO `{project-root}` prefix)
     - Correct: `{output_folder}/file.md`
@@ -97,9 +97,12 @@ Work through these conversationally:
 
 Once you have a cohesive idea, think one level deeper. Once you have done this, present a draft outline. Point out vague areas. Ask what else is needed. Iterate until they say they're ready.
 
+**Pruning check:** Before building, walk each planned capability prompt against `references/prompt-quality-canon.md`: would a capable model, already holding this persona, do it correctly without being told? State what success looks like and let the persona supply the rest; cut or truncate procedure that cannot name the failure it prevents. Persona voice, communication-style examples, and domain framing are exempt — they are what makes the agent itself.
+
 ## Phase 5: Build
 
 **Always load these before building:**
+- Load `references/prompt-quality-canon.md` — the shared quality bar every capability prompt must pass
 - Load `references/standard-fields.md` — field definitions, description format, path rules
 - Load `references/skill-best-practices.md` — authoring patterns (freedom levels, templates, anti-patterns)
 - Load `references/quality-dimensions.md` — quick mental checklist for build quality
@@ -196,4 +199,4 @@ Ask: *"Build is done. Would you like to run a Quality Scan to optimize the agent
 
 If yes, load `quality-optimizer.md` with `{scan_mode}=full` and the agent path.
 
-Remind them: BMad module system compliant. Use `aac-init` skill to integrate into a project.
+Remind them: the agent is BMad module system compliant — use standalone, or bundle it with other skills into a module via `aac-bmb-module`.

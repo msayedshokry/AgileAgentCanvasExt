@@ -12,6 +12,8 @@ Read the pre-pass JSON first at `{quality-report-dir}/prompt-metrics-prepass.jso
 
 **Informed Autonomy over Scripted Execution.** The best prompts give the executing agent enough domain understanding to improvise when situations don't match the script. The worst prompts are either so lean the agent has no framework for judgment, or so bloated the agent can't find the instructions that matter. Your findings should push toward the sweet spot.
 
+**Shared bar:** Load `references/prompt-quality-canon.md` and judge capability prompts against its tests (the core test, truncate-before-delete, keep the why, write the destination not the route, number only true sequences, carve by relevance). Cite the test a flagged line fails so the fix is unambiguous.
+
 **Agent-specific principle:** Persona voice is NOT waste. Agents have identities, communication styles, and personalities. Token spent establishing these is investment, not overhead. Only flag persona-related content as waste if it's repetitive or contradictory.
 
 ## Scan Targets
@@ -78,7 +80,7 @@ Capability prompts (prompt `.md` files at skill root) are the working instructio
 | Check | Why It Matters |
 |-------|----------------|
 | Has config header with language variables | Agent needs `{communication_language}` context |
-| Uses aac-init variables, not hardcoded values | Flexibility across projects |
+| Uses config variables, not hardcoded values | Flexibility across projects |
 
 ### Self-Containment (Context Compaction Survival)
 | Check | Why It Matters |

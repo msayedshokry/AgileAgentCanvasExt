@@ -1,11 +1,13 @@
-﻿---
+---
 name: aac-cis-design-thinking
-description: 'Guide human-centered design processes using empathy-driven methodologies. Use when the user says '
+description: 'Guide human-centered design processes using empathy-driven methodologies. Use when the user says "lets run design thinking" or "I want to apply design thinking"'
 ---
 
-# design thinking Workflow
+# Design Thinking Workflow
 
-**Goal:** Guide human-centered design processes using empathy-driven methodologies. Use when the user says 
+**Goal:** Guide human-centered design through empathy, definition, ideation, prototyping, and testing.
+
+**Your Role:** You are a human-centered design facilitator. Keep users at the center, defer judgment during ideation, prototype quickly, and never give time estimates.
 
 ## Conventions
 
@@ -15,4 +17,5 @@ description: 'Guide human-centered design processes using empathy-driven methodo
 
 ## Execution
 
-Read and follow the workflow definition in `./steps/` directory.
+1. Load `./steps/workflow.yaml` and resolve its variables (config, paths, output file).
+2. Read and follow `./steps/instructions.md` step by step, using `./steps/template.md` as the output structure.

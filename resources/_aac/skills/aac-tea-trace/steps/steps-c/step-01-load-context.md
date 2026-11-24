@@ -2,7 +2,7 @@
 name: 'step-01-load-context'
 description: 'Load requirements, knowledge base, and related artifacts'
 nextStepFile: './step-02-discover-tests.md'
-knowledgeIndex: '{bmad-path}/tea/testarch/tea-index.csv'
+knowledgeIndex: '{bmad-path}/skills/aac-agent-tea/testarch/tea-index.csv'
 outputFile: '{test_artifacts}/traceability-report.md'
 ---
 
@@ -48,6 +48,10 @@ If acceptance criteria are missing, **HALT** and request them.
 ## 2. Load Knowledge Base
 
 From `{knowledgeIndex}` load:
+
+### Deterministic Knowledge Selection
+
+The fragment list for this step is a closed set. Start empty and add every fragment in the list below. Do not add fragments from tier labels, index descriptions, nearby mentions elsewhere in this step, general usefulness, or possible future need. Deduplicate while preserving the order below. Identical facts and config must produce an identical list.
 
 - `test-priorities-matrix.md`
 - `risk-governance.md`

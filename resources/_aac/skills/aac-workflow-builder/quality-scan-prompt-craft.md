@@ -12,6 +12,8 @@ Read every prompt in the skill and evaluate craft quality with this core princip
 
 **Informed Autonomy over Scripted Execution.** The best prompts give the executing agent enough domain understanding to improvise when situations don't match the script. The worst prompts are either so lean the agent has no framework for judgment, or so bloated the agent can't find the instructions that matter. Your findings should push toward the sweet spot.
 
+**Shared bar:** Load `references/prompt-quality-canon.md` and judge prompts against its tests (the core test, truncate-before-delete, keep the why, write the destination not the route, number only true sequences, carve by relevance). Cite the test a flagged line fails so the fix is unambiguous.
+
 ## Scan Targets
 
 Find and read:
@@ -123,7 +125,7 @@ Stage prompts (prompt `*.md` files at skill root) are the working instructions f
 | Check | Why It Matters |
 |-------|----------------|
 | Has config header establishing language and output settings | Agent needs `{communication_language}` and output format context |
-| Uses aac-init variables, not hardcoded values | Flexibility across projects and users |
+| Uses config variables, not hardcoded values | Flexibility across projects and users |
 
 ### Progression Conditions
 

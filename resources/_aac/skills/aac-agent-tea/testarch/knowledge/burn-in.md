@@ -136,7 +136,7 @@ jobs:
 
 **Scenario:**
 
-```
+```text
 Git diff finds: 21 changed files
 ├─ Step 1: Skip patterns filter
 │  Removed: 6 files (*.md, config/*, *types*)
@@ -232,7 +232,7 @@ jobs:
 
 ## Integration with CI Workflow
 
-When setting up CI with `*ci` workflow, recommend burn-in for:
+When setting up CI with the `/aac-tea-ci` workflow, recommend burn-in for:
 
 - Pull request validation
 - Pre-merge checks

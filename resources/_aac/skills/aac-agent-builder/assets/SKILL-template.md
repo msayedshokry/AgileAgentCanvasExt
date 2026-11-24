@@ -1,5 +1,5 @@
 ---
-name: aac-{module-code-or-empty}-agent-{agent-name}
+name: {module-code-or-empty}agent-{agent-name}
 description: {skill-description} # Format: [4-6 word summary]. [trigger: "User wants to talk to or ask {displayName}" or "{title}" or "{role}"]
 ---
 
@@ -28,10 +28,10 @@ description: {skill-description} # Format: [4-6 word summary]. [trigger: "User w
 **Example headless activation:**
 ```bash
 # Autonomous - default wake
-/aac-{agent-skill-name} --headless
+/{agent-skill-name} --headless
 
 # Autonomous - specific task
-/aac-{agent-skill-name} --headless:refine-memories
+/{agent-skill-name} --headless:refine-memories
 ```
 {/if-headless}
 
@@ -48,14 +48,21 @@ description: {skill-description} # Format: [4-6 word summary]. [trigger: "User w
 
 {if-sidecar}
 ## Sidecar
-Memory location: `_bmad/_memory/{skillName}-sidecar/`
+Memory location: `{project-root}/_bmad/_memory/{skillName}-sidecar/`
 
 Load `references/memory-system.md` for memory discipline and structure.
 {/if-sidecar}
 
+## Conventions
+
+- Bare paths (e.g. `references/guide.md`) resolve from the skill root.
+- `{skill-root}` resolves to this skill's installed directory.
+- `{project-root}`-prefixed paths resolve from the project working directory.
+- `{skill-name}` resolves to the skill directory's basename.
+
 ## On Activation
 
-1. **Load config via aac-init skill** — Store all returned vars for use:
+1. **Load config** — Read `{project-root}/_bmad/config.yaml` and `{project-root}/_bmad/config.user.yaml` if present{if-module} (root level and the `{module-code}` section, falling back to `{project-root}/_bmad/{module-code}/config.yaml`){/if-module}. Missing files or keys never block — use sensible defaults:
    - Use `{user_name}` from config for greeting
    - Use `{communication_language}` from config for all communications
    - Store any other config variables as `{var-name}` and use appropriately
@@ -68,9 +75,9 @@ Load `references/memory-system.md` for memory discipline and structure.
 {if-no-autonomous}
 2. **Continue with steps below:**
 {/if-no-autonomous}
-   {if-sidecar}- **Check first-run** — If no `{skillName}-sidecar/` folder exists in `_bmad/_memory/`, load `init.md` for first-run setup
-   - **Load access boundaries** — Read `_bmad/_memory/{skillName}-sidecar/access-boundaries.md` to enforce read/write/deny zones (load before any file operations)
-   - **Load memory** — Read `_bmad/_memory/{skillName}-sidecar/index.md` for essential context and previous session{/if-sidecar}
+   {if-sidecar}- **Check first-run** — If `{project-root}/_bmad/_memory/{skillName}-sidecar/` does not exist, load `init.md` for first-run setup
+   - **Load access boundaries** — Read `{project-root}/_bmad/_memory/{skillName}-sidecar/access-boundaries.md` to enforce read/write/deny zones (load before any file operations)
+   - **Load memory** — Read `{project-root}/_bmad/_memory/{skillName}-sidecar/index.md` for essential context and previous session{/if-sidecar}
    - **Load manifest** — Read `aac-manifest.json` to set `{capabilities}` list of actions the agent can perform (internal prompts and available skills)
    - **Greet the user** — Welcome `{user_name}`, speaking in `{communication_language}` and applying your persona and principles throughout the session
    {if-sidecar}- **Check for autonomous updates** — Briefly check if autonomous tasks ran since last session and summarize any changes{/if-sidecar}

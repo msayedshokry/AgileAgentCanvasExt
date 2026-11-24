@@ -16,6 +16,35 @@ Review and prompt improvements from upstream BMAD v6.10–v6.12.4 are ported int
 - **Two new elicitation methods:** Subtraction and Map Is Not the Territory.
 - **`aac-create-epics-and-stories` keeps `status: draft`** until every final validation check passes.
 
+### BMAD module updates: Builder, Creative Intelligence, Test Architect
+
+Content ported from upstream BMB v2.2.2, CIS v0.3.2 and TEA v1.27.2 (TEA's last BMAD-v6 release). Upstream installer, `uv` and layered-config machinery was left out.
+
+**Test Architect (Murat)**
+- **Knowledge fragments now actually load.** Every TEA workflow pointed at a knowledge index path that didn't exist, so ATDD, automate, CI, framework, NFR, test-design, test-review and trace ran without their knowledge base.
+- **The knowledge base grew from 40 to 59 fragments.** New ones cover Playwright Utils and Pact.js Utils mandates, evidence integrity, a confidence gate, webhook testing, and mobile/Maestro guidance. Fragment selection is now a fixed list driven by what the repo contains.
+- **Test design** ties every risk to evidence in the epic, links coverage rows to exact risk IDs, and sets priorities by business impact rather than risk score alone.
+- **CI generation** guards against script injection through workflow inputs, requires quality gates that can actually fail, and adds Pact determinism and staleness checks.
+- **Validation runs** write a separate timestamped report per scope instead of overwriting the last one.
+- **Murat** uses your configured test libraries by default, and asks one focused question when a request could go to several workflows.
+
+**Creative Intelligence agents**
+- **CIS agents introduce themselves by name** (Carson, Maya, Victor, Dr. Quinn, Caravaggio, Sophia) instead of by job title, with richer personas and a capabilities menu.
+- **The Presentation Master's seven capabilities** (slide decks, explainers, pitch decks, talks, infographics, visual metaphors, concept visuals) now run real guided prompts instead of placeholders. It also has its own 🎬 icon.
+- **Fixed the four CIS workflow skills**, whose descriptions were cut off mid-sentence and which carried a byte-order mark that broke frontmatter parsing.
+- **Fixed the storytelling chat prompt**, which introduced the agent as Caravaggio instead of Sophia.
+
+**Agent and Workflow Builders**
+- **Skills you build now load config from `_bmad/config.yaml`** instead of calling an `aac-init` skill that doesn't exist. The agent builder no longer recommends a nonexistent `aac-module-builder`.
+- **Builders draft against a shared prompt-quality reference**, run a pruning check before building, start by asking you to share everything you have, and offer Analyze / Edit / Rebuild when handed an existing skill.
+- **User-created skills are named `{module}-{name}` / `agent-{name}`.** The `aac-` prefix is reserved for bundled skills, and the name checks no longer flag valid user names.
+- **Path scanner fixes:** valid `{project-root}/…` paths are no longer flagged as critical, and real double-prefix paths are now caught. Agent templates include `{project-root}` in memory paths, so newly built agents pass their own checks.
+- **Skill manifests are consistently named `aac-manifest.json`.** The docs and the scripts disagreed. Manifest validation also no longer crashes on Windows consoles when printing ✓.
+
+### Dependencies
+
+- **`headroom-ai` 0.22.4 → 0.45.0.** Every compression API the extension uses was smoke-tested against the new version and behaves the same. The upstream breaking changes in 0.40, 0.43 and 0.44 only affect the Python proxy packaging.
+
 ## 0.6.0
 
 ### Highlights

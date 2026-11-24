@@ -84,7 +84,7 @@
 
 ### Execution Strategy
 
-**CRITICAL: Keep execution strategy simple, avoid redundancy**
+**CRITICAL: Keep execution strategy simple, avoid redundancy.**
 
 - [ ] **Simple structure**: PR / Nightly / Weekly (NOT complex smoke/P0/P1/P2 tiers)
 - [ ] **PR execution**: All functional tests unless significant infrastructure overhead
@@ -95,7 +95,7 @@
 
 ### Resource Estimates
 
-**CRITICAL: Use intervals/ranges, NOT exact numbers**
+**CRITICAL: Use intervals/ranges, NOT exact numbers.**
 
 - [ ] P0 effort provided as interval range (e.g., "~25-40 hours" NOT "36 hours")
 - [ ] P1 effort provided as interval range (e.g., "~20-35 hours" NOT "27 hours")
@@ -134,16 +134,17 @@
 
 ### Priority Assignment Accuracy
 
-**CRITICAL: Priority classification is separate from execution timing**
+**CRITICAL: Priority classification is separate from execution timing.**
 
 - [ ] **Priority sections (P0/P1/P2/P3) do NOT include execution context** (e.g., no "Run on every commit" in headers)
 - [ ] **Priority sections have only "Criteria" and "Purpose"** (no "Execution:" field)
 - [ ] **Execution Strategy section** is separate and handles timing based on infrastructure overhead
-- [ ] P0: Truly blocks core functionality + High-risk (≥6) + No workaround
-- [ ] P1: Important features + Medium-risk (3-4) + Common workflows
-- [ ] P2: Secondary features + Low-risk (1-2) + Edge cases
-- [ ] P3: Nice-to-have + Exploratory + Benchmarks
-- [ ] **Note at top of Test Coverage Plan**: Clarifies P0/P1/P2/P3 = priority/risk, NOT execution timing
+- [ ] P0: Critical business, security, data-integrity, or compliance impact + no safe workaround
+- [ ] P1: Core, frequent, or complex behavior + material user reach + limited workaround
+- [ ] P2: Secondary behavior + narrower user reach + an acceptable workaround
+- [ ] P3: Rare, cosmetic, or experimental behavior + minimal impact + an easy workaround
+- [ ] Risk score is supporting evidence and is not a mandatory condition for any priority
+- [ ] **Note at top of Test Coverage Plan**: Clarifies P0/P1/P2/P3 = priority, NOT execution timing
 
 ### Test Level Selection
 
@@ -171,8 +172,8 @@
 
 ### Workflow Dependencies
 
-- [ ] Can proceed to `*atdd` workflow with P0 scenarios
-- [ ] `*atdd` is a separate workflow and must be run explicitly (not auto-run)
+- [ ] Can proceed to `/aac-tea-atdd` workflow with P0 scenarios
+- [ ] `/aac-tea-atdd` is a separate workflow and must be run explicitly (not auto-run)
 - [ ] Can proceed to `automate` workflow with full coverage plan
 - [ ] Risk assessment informs `gate` workflow criteria
 - [ ] Integrates with `ci` workflow execution order
@@ -276,8 +277,9 @@
   - [ ] Backend/Architecture dependencies listed (what QA needs from other teams)
   - [ ] QA infrastructure setup listed (factories, fixtures, environments)
   - [ ] Code example with playwright-utils if config.tea_use_playwright_utils is true
-  - [ ] Test from '@seontechnologies/playwright-utils/api-request/fixtures'
+  - [ ] Test from '@seontechnologies/playwright-utils/api-request/fixtures', or from the project's merged-fixtures module
   - [ ] Expect from '@playwright/test' (playwright-utils does not re-export expect)
+  - [ ] No vanilla equivalent in any example when the flag is true: no raw `request.<method>`, no `page.route` on an application endpoint, no `page.waitForTimeout`, no `console.log` (per `playwright-utils-mandate.md`)
   - [ ] Code examples include assertions (no unused imports)
 - [ ] **Risk Assessment** section (brief, references Architecture doc)
   - [ ] High-priority risks table
@@ -329,7 +331,7 @@
 
 ### Document Quality (Anti-Bloat Check)
 
-**CRITICAL: Check for bloat and repetition across BOTH documents**
+**CRITICAL: Check for bloat and repetition across BOTH documents.**
 
 - [ ] **No repeated notes 10+ times** (e.g., "Timing is pessimistic until R-005 fixed" on every section)
 - [ ] **Repeated information consolidated** (write once at top, reference briefly if needed)
@@ -347,7 +349,7 @@
 
 ### Architecture Doc Structure (Actionable-First Principle)
 
-**CRITICAL: Validate structure follows actionable-first, FYI-last principle**
+**CRITICAL: Validate structure follows actionable-first, FYI-last principle.**
 
 - [ ] **Actionable sections at TOP:**
   - [ ] Quick Guide (🚨 BLOCKERS first, then ⚠️ HIGH PRIORITY, then 📋 INFO ONLY last)
@@ -393,7 +395,7 @@
 1. [ ] Review risk assessment with team
 2. [ ] Prioritize mitigation for high-priority risks (score ≥6)
 3. [ ] Allocate resources per estimates
-4. [ ] Run `*atdd` workflow to generate P0 tests (separate workflow; not auto-run)
+4. [ ] Run `/aac-tea-atdd` workflow to generate P0 tests (separate workflow; not auto-run)
 5. [ ] Set up test data factories and fixtures
 6. [ ] Schedule team review of test design document
 

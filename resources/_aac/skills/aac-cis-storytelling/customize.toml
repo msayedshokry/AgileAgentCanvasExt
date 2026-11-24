@@ -1,4 +1,4 @@
-﻿# Workflow customization for aac-cis-storytelling (CIS module)
+# Workflow customization for aac-cis-storytelling (CIS module)
 
 [workflow]
 activation_steps_prepend = []

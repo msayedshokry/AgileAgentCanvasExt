@@ -2,7 +2,7 @@
 name: 'step-01-load-context'
 description: 'Load knowledge base, determine scope, and gather context'
 nextStepFile: './step-02-discover-tests.md'
-knowledgeIndex: '{bmad-path}/tea/testarch/tea-index.csv'
+knowledgeIndex: '{bmad-path}/skills/aac-agent-tea/testarch/tea-index.csv'
 outputFile: '{test_artifacts}/test-review.md'
 ---
 
@@ -57,43 +57,9 @@ Read `test_stack_type` from `{config_source}`. If `"auto"` or not configured, in
 
 ---
 
-### Tiered Knowledge Loading
+### Deterministic Knowledge Selection
 
-Load fragments based on their `tier` classification in `tea-index.csv`:
-
-1. **Core tier** (always load): Foundational fragments required for this workflow
-2. **Extended tier** (load on-demand): Load when deeper analysis is needed or when the user's context requires it
-3. **Specialized tier** (load only when relevant): Load only when the specific use case matches (e.g., contract-testing only for microservices, email-auth only for email flows)
-
-> **Context Efficiency**: Loading only core fragments reduces context usage by 40-50% compared to loading all fragments.
-
-### Playwright Utils Loading Profiles
-
-**If `tea_use_playwright_utils` is enabled**, select the appropriate loading profile:
-
-- **API-only profile** (when `{detected_stack}` is `backend` or no `page.goto`/`page.locator` found in test files):
-  Load: `overview`, `api-request`, `auth-session`, `recurse` (~1,800 lines)
-
-- **Full UI+API profile** (when `{detected_stack}` is `frontend`/`fullstack` or browser tests detected):
-  Load: all Playwright Utils core fragments (~4,500 lines)
-
-**Detection**: Scan `{test_dir}` for files containing `page.goto` or `page.locator`. If none found, use API-only profile.
-
-### Pact.js Utils Loading
-
-**If `tea_use_pactjs_utils` is enabled** (and contract tests detected in review scope):
-
-Load: `pactjs-utils-overview.md`, `pactjs-utils-provider-verifier.md`, `pactjs-utils-request-filter.md` (the 3 most relevant for reviewing provider verification tests)
-
-**If `tea_use_pactjs_utils` is disabled** but contract tests are in review scope:
-
-Load: `contract-testing.md`
-
-### Pact MCP Loading
-
-**If `tea_pact_mcp` is `"mcp"`:**
-
-Load: `pact-mcp.md` — enables agent to use SmartBear MCP "Review Pact Tests" tool for automated best-practice feedback during test review.
+The fragment list for this step is a closed set. Start empty, evaluate the complete conditions under **Load Knowledge Base**, and add every fragment from each matching list. A config flag opens a branch only when every stack, runner, package, and relevance condition on that branch also matches. Do not add fragments from tier labels, index descriptions, nearby mentions, general usefulness, or possible future need. Deduplicate while preserving the order below. Identical facts and config must produce an identical list.
 
 ## 2. Load Knowledge Base
 
@@ -108,14 +74,20 @@ Read `{config_source}` and check `tea_use_playwright_utils`, `tea_use_pactjs_uti
 - `test-levels-framework.md`
 - `selective-testing.md`
 - `test-healing-patterns.md`
-- `selector-resilience.md`
+- `selector-resilience.md` (skip for mobile reviews: Maestro uses native accessibility IDs, not DOM selectors)
 - `timing-debugging.md`
 
-**If Playwright Utils enabled:**
+**If the review set contains a Maestro flow (`.yaml`/`.yml` under `maestro/` or `.maestro/`, or `*.flow.yaml` or `*.flow.yml`):**
 
+- `maestro-flows.md`: required to judge flows against Maestro syntax and semantics (determinism, isolation, assertions that can fail)
+- `mobile-test-strategy.md`: required to judge whether a flow belongs at the device level at all
+
+**If Playwright Utils is enabled, installed, and the reviewed files run on the Playwright runner:**
+
+- `playwright-utils-mandate.md`: required to flag hand-rolled code that duplicates an installed playwright-utils capability without a stated deviation
 - `overview.md`, `api-request.md`, `network-recorder.md`, `auth-session.md`, `intercept-network-call.md`, `recurse.md`, `log.md`, `file-utils.md`, `burn-in.md`, `network-error-monitor.md`, `fixtures-composition.md`
 
-**If disabled:**
+**If Playwright Utils is disabled and the reviewed files run on the Playwright runner:**
 
 - `fixture-architecture.md`
 - `network-first.md`
@@ -123,7 +95,7 @@ Read `{config_source}` and check `tea_use_playwright_utils`, `tea_use_pactjs_uti
 - `component-tdd.md`
 - `ci-burn-in.md`
 
-**Playwright CLI (if `tea_browser_automation` is "cli" or "auto"):**
+**Playwright CLI (if `tea_browser_automation` is "cli" or "auto" and the reviewed files run on the Playwright runner):**
 
 - `playwright-cli.md`
 
@@ -131,15 +103,15 @@ Read `{config_source}` and check `tea_use_playwright_utils`, `tea_use_pactjs_uti
 
 - (existing MCP-related fragments, if any are added in future)
 
-**Pact.js Utils (if enabled and contract tests in review scope):**
+**Pact.js Utils (if enabled, `@seontechnologies/pactjs-utils` is in `package.json`, and contract tests are in review scope):**
 
-- `pactjs-utils-overview.md`, `pactjs-utils-provider-verifier.md`, `pactjs-utils-request-filter.md`
+- `pactjs-utils-overview.md`, `pactjs-utils-consumer-helpers.md`, `pactjs-utils-provider-verifier.md`, `pactjs-utils-request-filter.md`, `pact-consumer-di.md`, `pact-consumer-framework-setup.md`, `pact-broker-webhooks.md`
 
-**Contract Testing (if pactjs-utils disabled but contract tests in review scope):**
+**Contract Testing (if Pact.js Utils is disabled or not installed, and contract tests are in review scope):**
 
 - `contract-testing.md`
 
-**Pact MCP (if tea_pact_mcp is "mcp"):**
+**Pact MCP (if tea_pact_mcp is "mcp" and contract tests are in review scope):**
 
 - `pact-mcp.md`
 

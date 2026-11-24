@@ -6,8 +6,8 @@ Classify the skill type based on user requirements. This table is for internal u
 
 | Type | Description | Structure | When to Use |
 |------|-------------|-----------|-------------|
-| **Simple Utility** | Input/output building block. Headless, composable, often has scripts. May opt out of aac-init for true standalone use. | Single SKILL.md + scripts/ | Composable building block with clear input/output, single-purpose |
-| **Simple Workflow** | Multi-step process contained in a single SKILL.md. Uses aac-init. Minimal or no prompt files. | SKILL.md + optional references/ | Multi-step process that fits in one file, no progressive disclosure needed |
+| **Simple Utility** | Input/output building block. Headless, composable, often has scripts. May opt out of config loading for true standalone use. | Single SKILL.md + scripts/ | Composable building block with clear input/output, single-purpose |
+| **Simple Workflow** | Multi-step process contained in a single SKILL.md. Loads config. Minimal or no prompt files. | SKILL.md + optional references/ | Multi-step process that fits in one file, no progressive disclosure needed |
 | **Complex Workflow** | Multi-stage with progressive disclosure, numbered prompt files at root, config integration. May support headless mode. | SKILL.md (routing) + prompt stages at root + references/ | Multiple stages, long-running process, progressive disclosure, routing logic |
 
 ## Decision Tree
@@ -55,7 +55,7 @@ Classify the skill type based on user requirements. This table is for internal u
 ## Module Context (Orthogonal)
 
 Module context is asked for ALL types:
-- **Module-based:** Part of a BMad module. Uses `aac-{modulecode}-{skillname}` naming. Has aac-manifest.json.
-- **Standalone:** Independent skill. Uses `aac-{skillname}` naming.
+- **Module-based:** Part of a BMad module. Uses `{modulecode}-{skillname}` naming. Has aac-manifest.json.
+- **Standalone:** Independent skill. Uses `{skillname}` naming. (The `aac-` prefix is reserved for skills bundled with Agile Agent Canvas.)
 
-All workflows use `aac-init` by default unless explicitly opted out (truly standalone utilities).
+All workflows load config on activation by default unless explicitly opted out (truly standalone utilities).

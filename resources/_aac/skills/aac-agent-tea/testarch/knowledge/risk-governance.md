@@ -120,6 +120,15 @@ export function assessTestFailureRisk(failure: {
 
 ### Example 2: Gate Decision Engine with Traceability Validation
 
+> **Illustrative only. The coverage gate is authoritative.** This example teaches a risk-driven
+> decision keyed directly on risk scores. TEA executes
+> `skills/aac-tea-trace/steps/steps-c/step-05-gate-decision.md`. That gate evaluates
+> coverage only when `allow_gate` is true and `collection_status` is `COLLECTED`; otherwise its
+> outcome is `NOT_EVALUATED`. Eligible coverage produces `PASS`, `CONCERNS`, or `FAIL` from P0,
+> P1, and overall percentages. Coverage resting only on recorded live verification cannot produce
+> `PASS` and is capped at `CONCERNS`. `WAIVED` remains a human override with its own approval
+> contract. When answering "how does the gate decide", use that coverage engine.
+
 **Context**: Automated gate decision based on risk scores and test coverage
 
 **Implementation**:
@@ -260,6 +269,7 @@ console.log(gateResult.recommendations);
 - **Clear criteria**: FAIL = critical risks or gaps, CONCERNS = high risks with plans, PASS = low risks
 - **Actionable output**: Recommendations drive next steps
 - **Audit trail**: Timestamp, decision, and context for compliance
+- **Not the executed gate**: see the callout above; `step-05-gate-decision.md` is the rule set that runs
 
 ---
 
@@ -612,4 +622,4 @@ Before deploying to production, ensure:
 - **Related fragments**: `probability-impact.md` (scoring definitions), `test-priorities-matrix.md` (P0-P3 classification), `nfr-criteria.md` (non-functional risks)
 - **Tools**: Risk tracking dashboards (Jira, Linear), gate automation (CI/CD), traceability reports (Markdown, Confluence)
 
-_Source: Murat risk governance notes, gate schema guidance, SEON production gate workflows, ISO 31000 risk management standards_
+_Source: Murat risk governance notes, gate schema guidance, enterprise production gate workflows, ISO 31000 risk management standards._

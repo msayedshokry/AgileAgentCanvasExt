@@ -30,43 +30,29 @@ Which would you prefer?
 
 ## Config Reading and Integration
 
-Workflows MUST read config values using the `aac-init` skill.
+Workflows read config directly from the project's BMad config files — there is no separate init skill to invoke.
 
 ### Config Loading Pattern
 
-**Invoke the skill with parameters:**
-```
-Use aac-init skill:
-- module: {aac-module-code}
-- vars: user_name:BMad,communication_language:English,document_output_language:English,output_folder:{project-root}/_aac-output,{output-location-variable}:{default-output-path}
-```
-
-The skill returns JSON with config values. Store in memory as `{var_name}` for use in prompts.
+On activation, read `{project-root}/_bmad/config.yaml` and `{project-root}/_bmad/config.user.yaml` if present (root level plus the module's own section), falling back to the legacy per-module `{project-root}/_bmad/{module-code}/config.yaml`. Store resolved values as `{var_name}` for use in prompts. Missing files or keys never block activation — apply sensible defaults and keep going.
 
 ### Required Core Variables
 
-**Every module workflow MUST load these core variables:**
-- `user_name:BMad`
-- `communication_language:English`
-- `output_folder:{project-root}/_aac-output`
+**Every module workflow resolves these core variables (defaults in parens):**
+- `user_name` (none)
+- `communication_language` (user or system default)
+- `output_folder` (`{project-root}/_bmad-output`)
 
 **Conditionally include:**
-- `document_output_language:English` — ONLY if workflow creates documents (check capability `output-location` field)
+- `document_output_language` (same as `communication_language`) — ONLY if workflow creates documents (check capability `output-location` field)
 - Output location variable from capability `output-location` — ONLY if specified in metadata
 
-**Example for BMB workflow (creates documents, has output var):**
+**Example activation step for a workflow that creates documents and has its own output variable:**
 ```
-vars: user_name:BMad,communication_language:English,document_output_language:English,output_folder:{project-root}/_aac-output,bmad_builder_output_folder:{project-root}/aac-builder-creations/
-```
-
-**Example for analysis workflow (no documents, has output var):**
-```
-vars: user_name:BMad,communication_language:English,output_folder:{project-root}/_aac-output,analysis_output_folder:{project-root}/_aac-output/analysis/
-```
-
-**Example for processing workflow (no documents, no output var):**
-```
-vars: user_name:BMad,communication_language:English,output_folder:{project-root}/_aac-output
+1. Load config from {project-root}/_bmad/config.yaml (+ config.user.yaml if present; `mm` section,
+   falling back to {project-root}/_bmad/mm/config.yaml). Resolve {user_name}, {communication_language},
+   {document_output_language}, {output_folder}, {analysis_output_folder} ({output_folder}/analysis).
+   Missing keys → defaults; never block.
 ```
 
 ### Using Config Values in Prompts
@@ -419,13 +405,13 @@ my-module-workflow/
 **SKILL.md** (minimal routing):
 ```yaml
 ---
-name: aac-mymodule-workflow
+name: mymodule-workflow
 description: Complex multi-stage workflow for my module. Use when user requests to 'run my module workflow' or 'create analysis report'.
 ---
 
 ## Workflow Entry
 
-1. Use aac-init skill (module: mm) — loads user_name, communication_language, document_output_language, output_folder, my_output_folder
+1. Load config (`{project-root}/_bmad/config.yaml` + `config.user.yaml`, `mm` section) — resolves user_name, communication_language, document_output_language, output_folder, my_output_folder
 
 2. Ask user for output document path (or suggest {my_output_folder}/analysis-{timestamp}.md)
 

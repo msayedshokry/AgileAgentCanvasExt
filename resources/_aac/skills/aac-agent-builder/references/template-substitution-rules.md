@@ -8,6 +8,7 @@ When building the agent, you MUST apply these conditional blocks to the template
 - `{if-standalone}` ... `{/if-standalone}` → Remove the entire block including markers
 - `{custom-config-properties}` → Replace with comma-separated custom property names (e.g., `journal_folder, adventure_logs_folder`) or remove line if none
 - `{module-code-or-empty}` → Replace with module code (e.g., `cis-`) or empty string for standalone
+- `{module-code}` → Module code without dash (e.g., `cis`)
 
 ## For Standalone Agents
 
@@ -32,8 +33,8 @@ When building the agent, you MUST apply these conditional blocks to the template
 - `{if-external-skills}` ... `{/if-external-skills}` → Keep if agent uses external skills, otherwise remove entire block
 - `{external-skills-list}` → Replace with bulleted list of exact skill names:
   ```markdown
-  - `aac-skill-name-one` — Description
-  - `aac-skill-name-two` — Description
+  - `skill-name-one` — Description
+  - `skill-name-two` — Description
   ```
 
 ## Custom Init Questions
