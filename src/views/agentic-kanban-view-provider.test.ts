@@ -116,6 +116,7 @@ vi.mock('../workflow/kanban-settings', () => ({
 // Now import the module under test (after mocks are established).
 import * as vscode from 'vscode';
 import { AgenticKanbanViewProvider } from './agentic-kanban-view-provider';
+import { harnessEngine, type HarnessEvaluatedEvent } from '../harness/policy-engine';
 
 interface MockMessageHandler {
     dispose(): void;
@@ -289,4 +290,58 @@ describe('AgenticKanbanViewProvider — message dispatch (regression: all card a
         expect(callArgs[3]).toBe('[AgenticKanban]');
     });
 
+});
+
+describe('AgenticKanbanViewProvider — harness results reach the board', () => {
+    function newProvider(): AgenticKanbanViewProvider {
+        const fakeStore = { onDidChangeArtifacts: () => ({ dispose: () => undefined }) };
+        return new AgenticKanbanViewProvider(vscode.Uri.file('/mock/uri'), fakeStore as never);
+    }
+
+    function evaluatedFor(artifactId: string, passed: boolean): HarnessEvaluatedEvent {
+        return {
+            artifactId,
+            artifactType: 'story',
+            phase: 'pre-flight',
+            results: [{
+                policyId: 'required-fields',
+                passed,
+                failures: passed ? [] : ['Missing acceptance criteria'],
+                fixed: false,
+                severity: 'blocking',
+                timestamp: '2026-11-24T00:00:00.000Z',
+            }],
+        };
+    }
+
+    function harnessMessages(view: ReturnType<typeof makeFakeWebviewView>, artifactId: string): unknown[] {
+        return view.webview.postMessage.mock.calls
+            .map(([m]) => m as { type: string; artifactId?: string })
+            .filter(m => m.type === 'harnessResults' && m.artifactId === artifactId);
+    }
+
+    it('posts the card results when the harness engine evaluates an artifact', () => {
+        const provider = newProvider();
+        const view = makeFakeWebviewView();
+        provider.resolveWebviewView(view as never, {} as never, {} as never);
+
+        harnessEngine.emit('evaluated', evaluatedFor('HR-LIVE', false));
+
+        expect(harnessMessages(view, 'HR-LIVE')).toEqual([{
+            type: 'harnessResults',
+            artifactId: 'HR-LIVE',
+            harnessResults: [{ policyId: 'required-fields', passed: false, severity: 'blocking', failures: ['Missing acceptance criteria'] }],
+        }]);
+    });
+
+    it('replays results recorded before the board opened', async () => {
+        const provider = newProvider();
+        harnessEngine.emit('evaluated', evaluatedFor('HR-EARLY', false));
+
+        const view = makeFakeWebviewView();
+        provider.resolveWebviewView(view as never, {} as never, {} as never);
+        await view._send({ type: 'agenticKanbanReady' });
+
+        expect(harnessMessages(view, 'HR-EARLY')).toHaveLength(1);
+    });
 });
