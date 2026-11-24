@@ -568,21 +568,6 @@ body.vscode-light .epic-row-progress-fill {
   background: rgba(17, 138, 62, 0.50);
 }
 
-/* Detail panel */
-
-/* Canvas hint overlay – light theme */
-
-/* Toolbar */
-body.ac-force-light .toolbar,
-body.vscode-light .toolbar {
-  background: #ffffff;
-  border-color: #d0d4dc;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-}
-
-/* Zoom controls */
-
-/* Workflow FAB + Provider selector (match .kanban-toggle-fab light styling) */
 
 /* SearchBox — light theme */
 body.ac-force-light .sb-container,
@@ -809,6 +794,13 @@ body.ac-force-dark {
     radial-gradient(circle, var(--rule) 1px, transparent 1px);
   background-size: 24px 24px;
   cursor: grab;
+}
+
+/* High contrast: --rule is the solid contrast border, so the texture would
+ * be a field of full-strength dots. Plain paper instead. */
+body.vscode-high-contrast .canvas,
+body.vscode-high-contrast-light .canvas {
+  background-image: none;
 }
 
 .canvas.panning {
@@ -1152,7 +1144,6 @@ body.ac-force-dark {
   border-radius: var(--radius);
   line-height: 1.4;
 }
-
 /* Artifact Card */
 /* Card: paper with a hairline — no shadow, no fill tint, no top bar.
  * Hierarchy comes from type: kicker row, title, then muted body copy. */
@@ -1984,8 +1975,6 @@ body.ac-force-dark {
   height: 100%;
   z-index: 2;
 }
-
-/* Zoom Controls */
 /* ─── Focus Mode ──────────────────────────────────────────────────────── */
 
 .canvas.focus-mode {
@@ -2813,8 +2802,6 @@ body.ac-force-dark {
   width: 14px;
   height: 14px;
 }
-
-/* Light theme adjustments */
 
 /* AI Cursor */
 .ai-cursor {
@@ -4204,8 +4191,6 @@ body.ac-force-dark {
   position: relative;
 }
 
-/* Subtle top separator gradient */
-
 /* Separator between action groups (edit/view) */
 .detail-panel-actions .btn + .btn-ai,
 .detail-panel-actions .btn + .btn-elicit,
@@ -4283,12 +4268,6 @@ body.ac-force-dark {
 .detail-panel.edit-mode .detail-panel-header {
   border-bottom-color: var(--accent);
 }
-
-/* Subtle glow on the accent strip in edit mode */
-
-/* Hover lift for badges in the detail panel */
-
-/* Better scrollbar accent on detail panel content */
 
 /* ================================================ */
 
@@ -6136,8 +6115,6 @@ body.ac-force-dark {
    Mirrors the docs/elicit/dev card-action pattern with a
    distinct rose accent so it reads as a sibling action.
    ================================================ */
-
-/* Show Plan button (view existing visual-plan child) */
 
 /* =============================================================================
    Workflow Launcher FAB
@@ -9326,8 +9303,6 @@ body.ac-force-dark {
   padding-right: 40px; /* room for absolute close button */
   word-break: break-word;
 }
-
-/* status badge inline in header (reuses kanban-agent-status from .css) */
 
 /* ── Zone 3: TL;DR — verdict / interrupted / blocked banner ── */
 .agentic-tldr {
