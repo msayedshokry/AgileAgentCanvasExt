@@ -734,12 +734,12 @@
 /* ── Detail Panel: Warning & Actions ── */
 .agentic-detail-warning {
   font-size: 12px;
-  color: #f97316;
+  color: var(--ink);
   margin: 12px 0 8px;
-  padding: 8px;
-  background: rgba(249, 115, 22, 0.1);
-  border-radius: 4px;
-  border-left: 3px solid #f97316;
+  padding: var(--space-2) var(--space-3);
+  background: color-mix(in srgb, var(--vscode-charts-orange, #f97316) 12%, var(--surface-card));
+  border: var(--rule-width) solid color-mix(in srgb, var(--vscode-charts-orange, #f97316) 40%, transparent);
+  border-radius: var(--radius-card);
 }
 
 .agentic-detail-actions {
@@ -1012,14 +1012,13 @@
 }
 
 .kanban-skeleton-column {
-  background: var(--vscode-editor-lineHighlightBackground);
-  border: 1px solid var(--vscode-panel-border);
-  border-radius: 8px;
-  padding: 12px;
+  background: color-mix(in srgb, var(--kanban-col-accent, var(--ink-3)) 7%, transparent);
+  border: none;
+  border-radius: var(--radius-zone);
+  padding: var(--space-3);
   display: flex;
   flex-direction: column;
   gap: 10px;
-  border-top: 3px solid var(--kanban-col-accent, var(--vscode-descriptionForeground));
 }
 
 .kanban-skeleton-header {

@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "webview-ui/src/components/kanban/Kanban.css"
+        ],
+        "createdAt": "2026-11-24T23:39:03.224Z",
+        "reason": "a11y-locked: Autonomy.a11y.test.ts KANBAN_CARD_CHROME_SHAPE_LOCKS requires .kanban-card--epic border-left 4px var(--vscode-charts-purple); the remaining side-tab in this file was replaced 2026-11-25"
+      }
+    ]
+  }
+}
