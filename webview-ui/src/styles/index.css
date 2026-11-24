@@ -7500,9 +7500,10 @@ body.ac-force-dark {
   align-items: baseline;
   gap: 6px 24px;
   padding: 8px 18px;
-  font-size: 11.5px;
-  border-bottom: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
-  background: color-mix(in srgb, var(--vscode-editor-background) 92%, var(--vscode-textLink-foreground));
+  font-size: var(--text-small);
+  line-height: var(--leading-body);
+  border-bottom: var(--rule-width) solid var(--rule);
+  background: var(--paper-wash);
   flex-shrink: 0;
 }
 
@@ -7515,30 +7516,32 @@ body.ac-force-dark {
 }
 
 .sprint-health-label {
-  font-size: 10px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: var(--text-kicker);
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--tracking-kicker);
   text-transform: uppercase;
   color: var(--vscode-descriptionForeground);
 }
 
 .sprint-health-label--warn {
-  color: var(--vscode-editorWarning-foreground, #cca700);
+  color: var(--vscode-editorWarning-foreground, var(--phase-details));
 }
 
 .sprint-health-skill {
   padding: 1px 6px;
-  border-radius: 3px;
-  font-family: var(--vscode-editor-font-family, monospace);
-  font-size: 11px;
-  color: var(--vscode-textLink-foreground);
-  background: var(--vscode-textCodeBlock-background, rgba(128, 128, 128, 0.15));
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  color: var(--ink);
+  background: var(--surface-card);
+  box-shadow: inset 0 0 0 var(--rule-width) var(--card-edge);
 }
 
 .sprint-health-story {
-  font-family: var(--vscode-editor-font-family, monospace);
-  font-weight: 600;
-  color: var(--vscode-foreground);
+  font-family: var(--font-mono);
+  font-weight: var(--weight-strong);
+  color: var(--ink);
 }
 
 .sprint-health-reason,
@@ -7547,8 +7550,8 @@ body.ac-force-dark {
 }
 
 .sprint-health-done {
-  font-weight: 600;
-  color: var(--vscode-testing-iconPassed, var(--vscode-foreground));
+  font-weight: var(--weight-strong);
+  color: var(--phase-implementation);
 }
 
 .sprint-health-risks {
@@ -7566,7 +7569,7 @@ body.ac-force-dark {
 
 .sprint-health-risks li {
   display: inline;
-  color: var(--vscode-foreground);
+  color: var(--ink);
 }
 
 .sprint-health-risks li + li::before {
@@ -7585,20 +7588,21 @@ body.ac-force-dark {
   padding: 2px 4px;
   margin-left: -4px;
   border: none;
-  border-radius: 3px;
+  border-radius: var(--radius);
   font: inherit;
-  font-weight: 600;
-  color: var(--vscode-foreground);
+  font-weight: var(--weight-strong);
+  color: var(--ink);
   background: transparent;
   cursor: pointer;
+  transition: background var(--transition-fast);
 }
 
 .sprint-health-items-toggle:hover {
-  background: var(--vscode-toolbar-hoverBackground, rgba(128, 128, 128, 0.15));
+  background: var(--paper-wash);
 }
 
 .sprint-health-items-toggle:focus-visible {
-  outline: 1px solid var(--vscode-focusBorder);
+  outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 
