@@ -116,6 +116,10 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
   // Keyed by story id; merged into displayItems so the KanbanCard badge
   // (🔗/⛔ Blocked by N) stays in sync with the live dependency graph.
   const [depBadges, setDepBadges] = useState<Map<string, DependencyBadge>>(() => new Map());
+  // Latest harness policy results per card, pushed by the extension after
+  // every evaluation. Drives the card's "Policy failed" badge and the detail
+  // panel's policy list.
+  const [harnessById, setHarnessById] = useState<Map<string, NonNullable<KanbanItem['harnessResults']>>>(() => new Map());
 
   // ── In-canvas diff review (P0 #3) ──────────────────────────────────────
   // Holds the latest agent commit diff pushed by the extension. The panel
@@ -352,6 +356,15 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
         setDepBadges(new Map(incoming.map(b => [b.id, b])));
         break;
       }
+      case 'harnessResults': {
+        // The extension sends the card's full, merged policy list each time;
+        // keyed separately so results arriving before the card still apply.
+        if (typeof message.artifactId === 'string' && Array.isArray(message.harnessResults)) {
+          const results = message.harnessResults as NonNullable<KanbanItem['harnessResults']>;
+          setHarnessById(prev => new Map(prev).set(message.artifactId, results));
+        }
+        break;
+      }
       case 'terminal:capabilities': {
         setTerminalInteractive(!!message.supportsInput);
         break;
@@ -539,9 +552,11 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
   // ── Derived: enriched items + search dimming ──────────────────────────────
   const { displayItems, dimmedIds } = useMemo<{ displayItems: KanbanItem[]; dimmedIds: Set<string> }>(() => {
     const enriched: KanbanItem[] = items.map(item => {
-      const queued = pendingTransitions.has(item.id)
+      const base = pendingTransitions.has(item.id)
         ? { ...item, agentState: { ...item.agentState, status: 'queued' as const, agentRole: item.agentState?.agentRole } }
         : item;
+      const harnessResults = harnessById.get(item.id);
+      const queued = harnessResults ? { ...base, harnessResults } : base;
       // Merge dep badges from the extension's autonomy lifecycle into the
       // card so the KanbanCard "Blocked by N" badge stays in sync with the
       // live dependency graph. Cards without a badge entry show no badge.
@@ -565,7 +580,7 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
       }
     }
     return { displayItems: enriched, dimmedIds: dimmed };
-  }, [items, pendingTransitions, searchQuery, depBadges]);
+  }, [items, pendingTransitions, searchQuery, depBadges, harnessById]);
 
   // ── TerminalGrid sessions derived from agent state ───────────────────────
   const terminalSessions = useMemo<TerminalGridSession[]>(() =>

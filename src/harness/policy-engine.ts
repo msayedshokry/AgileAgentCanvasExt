@@ -74,6 +74,14 @@ export interface HarnessFindingsEvent {
   }>;
 }
 
+/** Payload emitted on the 'evaluated' event: every result of one evaluate() call. */
+export interface HarnessEvaluatedEvent {
+  artifactId: string;
+  artifactType: string;
+  phase: 'pre-flight' | 'post-flight' | 'continuous';
+  results: EvaluationResult[];
+}
+
 export class HarnessEngine extends EventEmitter {
   private policies: HarnessPolicy[] = [];
 
@@ -160,6 +168,16 @@ export class HarnessEngine extends EventEmitter {
       } catch {
         // Trace recorder may not be initialized yet — silently skip
       }
+    }
+
+    // Let UI surfaces (the Agentic Kanban cards) show the latest outcome.
+    if (results.length > 0) {
+      this.emit('evaluated', {
+        artifactId: context.artifactId,
+        artifactType: context.artifactType,
+        phase,
+        results,
+      } satisfies HarnessEvaluatedEvent);
     }
 
     return results;
