@@ -54,6 +54,11 @@ The Agentic Kanban now runs on whichever coding agent you already have installed
 - **New commands:** **Sync GitHub Issues** (two-way, via the GitHub CLI, previewed before applying), **Show Engineering Metrics** (success rate per agent, fix cycles, lead time, cost per story) and **Generate Release Notes**.
 - **Fix:** auto-commit and auto-PR never ran, because no git runner was connected. Agent commits are now made, so the diff review and **Revert** have something to work with.
 
+### Feature: Guided tour of the canvas
+
+- **A short tour runs the first time a project loads.** It highlights the lanes, **Add**, **Ask**, **Workflows**, the AI tool picker, **Kanban** and **More actions** one at a time, with **End Tour**, **Back** and **Next**. Arrow keys move between steps and Esc closes it.
+- **Replay it any time** from **More actions → Take the Tour**. Steps for controls that aren't on screen are skipped.
+
 ### Security
 
 - **AI API key in secure storage:** it now lives in VS Code's OS-keychain-backed secure storage (**Set AI API Key**) and is moved out of settings automatically. The Gemini key is no longer sent in the URL.
