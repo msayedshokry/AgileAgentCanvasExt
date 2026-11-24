@@ -379,3 +379,47 @@ describe('AgenticKanbanApp — autonomy messages', () => {
     expect(toast()).toHaveTextContent('Branch created: aac/story-S-1');
   });
 });
+
+// ── Harness policy results ──────────────────────────────────────────────────
+
+describe('AgenticKanbanApp — harness policy results', () => {
+  const blockingFailure = [
+    { policyId: 'required-fields', passed: false, severity: 'blocking', failures: ['Missing acceptance criteria'] },
+    { policyId: 'no-placeholders', passed: true, severity: 'advisory', failures: [] },
+  ];
+
+  it('shows "Policy failed" on a card with a blocking failure and lists policies in the detail panel', () => {
+    renderBoard([story('story-h', 'ready-for-dev', 'Checked Story'), story('story-ok', 'backlog', 'Clean Story')]);
+    send({ type: 'harnessResults', artifactId: 'story-h', harnessResults: blockingFailure });
+
+    expect(within(card('Checked Story')).getByText('Policy failed')).toBeInTheDocument();
+    expect(within(card('Clean Story')).queryByText('Policy failed')).not.toBeInTheDocument();
+
+    fireEvent.click(card('Checked Story'));
+    expect(screen.getByText('1 failing')).toBeInTheDocument();
+    expect(screen.getAllByText('required-fields').length).toBeGreaterThan(0);
+    expect(screen.getByText('no-placeholders')).toBeInTheDocument();
+  });
+
+  it('applies results that arrive before the card does', () => {
+    render(<AgenticKanbanApp />);
+    send({ type: 'harnessResults', artifactId: 'story-late', harnessResults: blockingFailure });
+    send({ type: 'updateArtifacts', artifacts: [story('story-late', 'backlog', 'Late Story')] });
+    expect(within(card('Late Story')).getByText('Policy failed')).toBeInTheDocument();
+  });
+
+  it('does not show the badge for advisory-only failures, and clears it once the policy passes', () => {
+    renderBoard([story('story-a', 'review', 'Advisory Story')]);
+    send({ type: 'harnessResults', artifactId: 'story-a', harnessResults: [
+      { policyId: 'no-placeholders', passed: false, severity: 'advisory', failures: ['TODO found'] },
+    ] });
+    expect(within(card('Advisory Story')).queryByText('Policy failed')).not.toBeInTheDocument();
+
+    send({ type: 'harnessResults', artifactId: 'story-a', harnessResults: blockingFailure });
+    expect(within(card('Advisory Story')).getByText('Policy failed')).toBeInTheDocument();
+    send({ type: 'harnessResults', artifactId: 'story-a', harnessResults: [
+      { policyId: 'required-fields', passed: true, severity: 'blocking', failures: [] },
+    ] });
+    expect(within(card('Advisory Story')).queryByText('Policy failed')).not.toBeInTheDocument();
+  });
+});

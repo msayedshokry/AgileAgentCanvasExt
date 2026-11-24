@@ -865,3 +865,33 @@ describe('HarnessEngine.evaluate — trace recording', () => {
     expect(results[0].passed).toBe(true);
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 'evaluated' event (drives the Agentic Kanban policy badge)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('HarnessEngine.evaluate — evaluated event', () => {
+  it('emits every result of the run with the artifact and phase', async () => {
+    const engine = new HarnessEngine();
+    engine.registerPolicy(makePassingPolicy({ id: 'ok' }));
+    engine.registerPolicy(makeFailingPolicy({ id: 'bad' }));
+    const events: unknown[] = [];
+    engine.on('evaluated', e => events.push(e));
+
+    const results = await engine.evaluate(makeContext({ artifactId: 'S-9' }), 'pre-flight');
+
+    expect(events).toEqual([{ artifactId: 'S-9', artifactType: 'story', phase: 'pre-flight', results }]);
+    expect(results.map(r => [r.policyId, r.passed])).toEqual([['ok', true], ['bad', false]]);
+  });
+
+  it('emits nothing when no policy applies to the phase', async () => {
+    const engine = new HarnessEngine();
+    engine.registerPolicy(makeFailingPolicy({ type: 'post-flight' }));
+    const listener = vi.fn();
+    engine.on('evaluated', listener);
+
+    await engine.evaluate(makeContext(), 'pre-flight');
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+});
