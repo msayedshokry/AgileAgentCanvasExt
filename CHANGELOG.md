@@ -1,11 +1,5 @@
 # Changelog
 
-## Unreleased
-
-### Fixed: Canvas flickered when zooming or panning
-
-- **The canvas no longer flickers or jumps back while you zoom or pan.** Fast scrolling or dragging made the view bounce between two positions. In the mind map it could keep bouncing until the canvas froze. The view now stays where you put it in lanes and mind map, and each layout still remembers its own position when you switch.
-
 ## 0.6.0
 
 ### Highlights
@@ -73,6 +67,10 @@ The Agentic Kanban now runs on whichever coding agent you already have installed
 ### Fixed: Policy failures never showed on cards
 
 - **Harness policy results now reach the board.** When a policy check fails on a story or epic, its card shows the **Policy failed** badge with the failing policy and reason. Before, results stayed inside the extension and the badge never appeared. Results are kept when the board is closed and reopened.
+
+### Fixed: Canvas flickered when zooming or panning
+
+- **The canvas no longer flickers or jumps back while you zoom or pan.** Fast scrolling or dragging made the view bounce between two positions. In the mind map it could keep bouncing until the canvas froze. The view now stays where you put it in lanes and mind map, and each layout still remembers its own position when you switch.
 
 ### Under the hood
 
