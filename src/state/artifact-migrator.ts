@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { createLogger } from '../utils/logger';
 import { ArtifactFileWriter } from './artifact-file-writer';
 import { writeMarkdownCompanion } from './artifact-file-io';
+import { errMsg } from '../utils/error';
 
 const migratorLogger = createLogger('artifact-migrator');
 const logDebug = (...args: unknown[]) => migratorLogger.debug(...args);
@@ -303,8 +304,8 @@ export class ArtifactMigrator {
             logDebug(`[Migration] ${summary}`);
             return { success: true, summary };
 
-        } catch (err: any) {
-            const msg = `Migration failed: ${err?.message ?? err}`;
+        } catch (err: unknown) {
+            const msg = `Migration failed: ${errMsg(err)}`;
             logDebug(`[Migration] ${msg}`);
             return { success: false, summary: msg };
         }
@@ -336,10 +337,10 @@ export class ArtifactMigrator {
                 success: true,
                 summary: `Restored epics.json from pre-migration backup.\nNote: Extracted story files in epics/epic-{N}/stories/ were NOT deleted.\nYou can delete them manually if needed.`,
             };
-        } catch (err: any) {
+        } catch (err: unknown) {
             return {
                 success: false,
-                summary: `Restore failed: ${err?.message ?? err}\nBackup file may not exist at: ${backupUri.fsPath}`,
+                summary: `Restore failed: ${errMsg(err)}\nBackup file may not exist at: ${backupUri.fsPath}`,
             };
         }
     }

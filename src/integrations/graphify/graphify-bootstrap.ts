@@ -6,6 +6,7 @@ import { runGraphify } from './graphify-runner';
 import { GFY } from './graphify-commands';
 import { detectGraphify, clearGraphifyCache, resetCliFormCache } from './graphify-detector';
 import { buildGraphIntegrated } from './graphify-lm-extractor';
+import { errMsg } from '../../utils/error';
 
 const logger = createLogger('graphify-bootstrap');
 
@@ -120,8 +121,8 @@ export async function bootstrapGraphify(workspaceRoot: string, extensionPath: st
                     const template = fs.readFileSync(templatePath, 'utf-8');
                     fs.writeFileSync(ignorePath, template, 'utf-8');
                     step('.graphifyignore created.', 20);
-                } catch (err: any) {
-                    logger.warn('Could not copy .graphifyignore template:', err.message);
+                } catch (err: unknown) {
+                    logger.warn('Could not copy .graphifyignore template:', errMsg(err));
                     progress.report({ increment: 20, message: '.graphifyignore skipped.' });
                 }
             } else {
@@ -386,7 +387,7 @@ Full report: \`graphify-out/GRAPH_REPORT.md\`
             fs.writeFileSync(instructionsPath, existing + block, 'utf-8');
             logger.info('Appended graphify block to copilot-instructions.md');
         }
-    } catch (err: any) {
-        logger.warn('Could not update copilot-instructions.md:', err.message);
+    } catch (err: unknown) {
+        logger.warn('Could not update copilot-instructions.md:', errMsg(err));
     }
 }

@@ -10,6 +10,7 @@
 import * as vscode from 'vscode';
 import { createLogger } from '../../utils/logger';
 import { toolTelemetry } from '../../chat/tool-telemetry';
+import { errMsg } from '../../utils/error';
 
 /** Subset of headroom-ai HeadroomClient used by the compressor.
  *  Module-level import is avoided to preserve the silent-by-default contract:
@@ -281,8 +282,8 @@ export async function compressMessages(
             saved: result.tokensSaved,
             ratio: result.compressionRatio,
         };
-    } catch (err: any) {
-        logger.debug(`Compression failed (falling back to uncompressed): ${err?.message ?? err}`);
+    } catch (err: unknown) {
+        logger.debug(`Compression failed (falling back to uncompressed): ${errMsg(err)}`);
         return { messages, saved: 0, ratio: 0 };
     }
 }
@@ -336,8 +337,8 @@ export async function retrieveFromCCR(
     if (!_client) { return null; }
     try {
         return await _client.retrieve(hash, query ? { query } : undefined);
-    } catch (err: any) {
-        logger.debug(`CCR retrieve failed for hash ${hash}: ${err?.message ?? err}`);
+    } catch (err: unknown) {
+        logger.debug(`CCR retrieve failed for hash ${hash}: ${errMsg(err)}`);
         return null;
     }
 }
@@ -350,8 +351,8 @@ export async function getCCRStats(): Promise<Record<string, any> | null> {
     if (!_client) { return null; }
     try {
         return await _client.getCCRStats();
-    } catch (err: any) {
-        logger.debug(`CCR stats fetch failed: ${err?.message ?? err}`);
+    } catch (err: unknown) {
+        logger.debug(`CCR stats fetch failed: ${errMsg(err)}`);
         return null;
     }
 }
@@ -388,8 +389,8 @@ export async function simulateMessages(
             transforms: sim.transforms,
             wasteSignals: sim.wasteSignals,
         };
-    } catch (err: any) {
-        logger.debug(`Simulate failed: ${err?.message ?? err}`);
+    } catch (err: unknown) {
+        logger.debug(`Simulate failed: ${errMsg(err)}`);
         return null;
     }
 }

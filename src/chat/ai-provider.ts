@@ -8,6 +8,7 @@ import { schemaValidator } from '../state/schema-validator';
 import { compressMessages } from '../integrations/headroom';
 import { costTracker, estimateTokens, TokenUsage } from './cost-tracker';
 import { getApiKey } from './api-key-store';
+import { errMsg } from '../utils/error';
 
 /**
  * Unified AI provider abstraction for AgileAgentCanvas.
@@ -399,8 +400,8 @@ async function streamVsCodeLm(
             response = await lm.sendRequest(vsMessages, {
                 responseFormat: { type: 'json_object' } as unknown as undefined,
             } as vscode.LanguageModelChatRequestOptions, token);
-        } catch (e: any) {
-            const msg = String(e?.message ?? e ?? '');
+        } catch (e: unknown) {
+            const msg = errMsg(e);
             if (msg.includes('Unsupported') || msg.includes('unsupported') ||
                 msg.includes('responseFormat') || msg.includes('not supported')) {
                 console.warn('[aac] responseFormat not supported, falling back:', e);

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { createLogger } from '../utils/logger';
 import type { Epic, Story } from '../types';
+import { errMsg } from '../utils/error';
 
 const syncLogger = createLogger('sprint-status-sync');
 const logDebug = (...args: unknown[]) => syncLogger.debug(...args);
@@ -246,8 +247,8 @@ export class SprintStatusSync {
         await vscode.workspace.fs.writeFile(yamlUri, Buffer.from(lines.join('\n'), 'utf-8'));
         logDebug(`[SprintStatusSync] Synced ${type} ${id} → ${yamlStatus} in ${yamlUri.fsPath}`);
       }
-    } catch (err: any) {
-      logDebug(`[SprintStatusSync] Failed to sync ${type} status to YAML: ${err?.message ?? err}`);
+    } catch (err: unknown) {
+      logDebug(`[SprintStatusSync] Failed to sync ${type} status to YAML: ${errMsg(err)}`);
     }
   }
 
@@ -348,8 +349,8 @@ export class SprintStatusSync {
         await vscode.workspace.fs.writeFile(fileUri, Buffer.from(JSON.stringify(data, null, 2), 'utf-8'));
         logDebug(`[SprintStatusSync] Patched epic ${epicId} status on disk: ${oldStatus} → ${newStatus}`);
       }
-    } catch (err: any) {
-      logDebug(`[SprintStatusSync] Failed to patch epic ${epicId} on disk: ${err?.message ?? err}`);
+    } catch (err: unknown) {
+      logDebug(`[SprintStatusSync] Failed to patch epic ${epicId} on disk: ${errMsg(err)}`);
     }
 
     if (!skipYamlSync) {
@@ -411,8 +412,8 @@ export class SprintStatusSync {
         await vscode.workspace.fs.writeFile(fileUri, Buffer.from(JSON.stringify(data, null, 2), 'utf-8'));
         logDebug(`[SprintStatusSync] Patched story ${storyId} status on disk → ${newStatus}`);
       }
-    } catch (err: any) {
-      logDebug(`[SprintStatusSync] Failed to patch story ${storyId} on disk: ${err?.message ?? err}`);
+    } catch (err: unknown) {
+      logDebug(`[SprintStatusSync] Failed to patch story ${storyId} on disk: ${errMsg(err)}`);
     }
 
     if (!skipYamlSync) {

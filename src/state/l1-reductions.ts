@@ -3,6 +3,7 @@ import { createLogger } from '../utils/logger';
 import { ArtifactFileWriter } from './artifact-file-writer';
 import { writeMarkdownCompanion } from './artifact-file-io';
 import { pickChanges } from './reducer-helpers';
+import { errMsg } from '../utils/error';
 import type {
     ArtifactReducerFn,
     ArtifactReducerRegistry,
@@ -336,8 +337,8 @@ const reduceStory: ArtifactReducerFn<'story'> = async (ctx, artifactId, changes)
                     await writeMarkdownCompanion(fileUri, storyMdName, storyMd);
                 }
                 l1Logger.debug(`[l1-reductions] Wrote standalone story file: ${fileName}`);
-            } catch (err: any) {
-                l1Logger.debug(`[l1-reductions] Failed to write standalone story file: ${err?.message ?? err}`);
+            } catch (err: unknown) {
+                l1Logger.debug(`[l1-reductions] Failed to write standalone story file: ${errMsg(err)}`);
             }
         }
     }

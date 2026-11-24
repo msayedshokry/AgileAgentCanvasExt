@@ -18,6 +18,7 @@ import * as path from 'path';
 import { createLogger } from '../../utils/logger';
 import { selectModel, BmadModel } from '../../chat/ai-provider';
 import { getGraphifyOutputChannel } from './graphify-runner';
+import { errMsg } from '../../utils/error';
 
 const logger = createLogger('graphify-lm-extractor');
 
@@ -240,8 +241,8 @@ async function callLmForExtraction(
             logger.warn('Semantic extraction requires VS Code LM API; non-LM providers not yet supported for graphify');
             return null;
         }
-    } catch (err: any) {
-        logger.error('LM extraction error:', err.message);
+    } catch (err: unknown) {
+        logger.error('LM extraction error:', errMsg(err));
         return null;
     }
 }

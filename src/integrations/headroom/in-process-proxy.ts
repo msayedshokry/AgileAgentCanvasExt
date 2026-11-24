@@ -43,6 +43,7 @@ import { createHash } from 'node:crypto';
 import { countTokens } from 'gpt-tokenizer';
 import { createLogger } from '../../utils/logger';
 import { setLocalProxyState, getLocalProxyState } from './proxy-state';
+import { errMsg } from '../../utils/error';
 
 const logger = createLogger('headroom-in-process-proxy');
 
@@ -447,9 +448,9 @@ async function _handleRequest(req: http.IncomingMessage, res: http.ServerRespons
             let payload: { messages?: any[] };
             try {
                 payload = body ? JSON.parse(body) : {};
-            } catch (parseErr: any) {
+            } catch (parseErr: unknown) {
                 _sendJson(res, 400, {
-                    error: { type: 'invalid_request', message: `Malformed JSON in /v1/compress body: ${parseErr?.message ?? parseErr}` },
+                    error: { type: 'invalid_request', message: `Malformed JSON in /v1/compress body: ${errMsg(parseErr)}` },
                 });
                 return;
             }
@@ -493,9 +494,9 @@ async function _handleRequest(req: http.IncomingMessage, res: http.ServerRespons
             let payload: { hash?: string };
             try {
                 payload = body ? JSON.parse(body) : {};
-            } catch (parseErr: any) {
+            } catch (parseErr: unknown) {
                 _sendJson(res, 400, {
-                    error: { type: 'invalid_request', message: `Malformed JSON in /v1/retrieve body: ${parseErr?.message ?? parseErr}` },
+                    error: { type: 'invalid_request', message: `Malformed JSON in /v1/retrieve body: ${errMsg(parseErr)}` },
                 });
                 return;
             }
@@ -529,11 +530,11 @@ async function _handleRequest(req: http.IncomingMessage, res: http.ServerRespons
         // surprised.
         logger.debug(`In-process proxy: no route for ${method} ${url}`);
         _sendJson(res, 404, { error: { type: 'not_found', message: `No route for ${method} ${url}` } });
-    } catch (err: any) {
+    } catch (err: unknown) {
         // Genuinely unexpected — not a client-input error, not a known route.
-        logger.warn(`In-process proxy unhandled error: ${err?.message ?? err}`);
+        logger.warn(`In-process proxy unhandled error: ${errMsg(err)}`);
         if (!res.headersSent) {
-            _sendJson(res, 500, { error: { type: 'internal', message: err?.message ?? 'internal error' } });
+            _sendJson(res, 500, { error: { type: 'internal', message: err instanceof Error ? err.message : 'internal error' } });
         }
     }
 }

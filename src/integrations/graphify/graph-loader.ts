@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { createLogger } from '../../utils/logger';
 import { ArchIndex, GraphCommunity, GraphJson } from './graph-types';
+import { errMsg } from '../../utils/error';
 
 const logger = createLogger('graph-loader');
 
@@ -47,8 +48,8 @@ export function loadGraph(workspaceRoot: string): GraphJson | null {
         _cache.set(workspaceRoot, { mtime, graph, communities, report: '' });
         logger.info(`Loaded graph.json (${graph.nodes?.length ?? 0} nodes, ${graph.edges?.length ?? 0} edges)`);
         return graph;
-    } catch (err: any) {
-        logger.error('Failed to load graph.json:', err.message);
+    } catch (err: unknown) {
+        logger.error('Failed to load graph.json:', errMsg(err));
         return null;
     }
 }
@@ -169,8 +170,8 @@ export function loadReport(workspaceRoot: string): string | null {
 
     try {
         return fs.readFileSync(reportPath, 'utf-8');
-    } catch (err: any) {
-        logger.error('Failed to read GRAPH_REPORT.md:', err.message);
+    } catch (err: unknown) {
+        logger.error('Failed to read GRAPH_REPORT.md:', errMsg(err));
         return null;
     }
 }
@@ -211,8 +212,8 @@ export function loadArchIndex(workspaceRoot: string): ArchIndex | null {
         _archCache.set(workspaceRoot, { mtime, index });
         logger.info(`Loaded ARCH_INDEX.json (${index.stats?.communities ?? '?'} communities)`);
         return index;
-    } catch (err: any) {
-        logger.error('Failed to load ARCH_INDEX.json:', err.message);
+    } catch (err: unknown) {
+        logger.error('Failed to load ARCH_INDEX.json:', errMsg(err));
         return null;
     }
 }
@@ -227,8 +228,8 @@ export function loadArchIndexMarkdown(workspaceRoot: string): string | null {
 
     try {
         return fs.readFileSync(mdPath, 'utf-8');
-    } catch (err: any) {
-        logger.error('Failed to read ARCH_INDEX.md:', err.message);
+    } catch (err: unknown) {
+        logger.error('Failed to read ARCH_INDEX.md:', errMsg(err));
         return null;
     }
 }

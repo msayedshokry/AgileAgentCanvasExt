@@ -8,6 +8,7 @@ type AjvValidateFunction = ReturnType<AjvInstance['compile']>;
 type AjvErrorObject = NonNullable<AjvValidateFunction['errors']>[number];
 
 import { createLogger } from '../utils/logger';
+import { errMsg } from '../utils/error';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -197,8 +198,8 @@ export class SchemaValidator {
                 }
 
                 this.ajv.addSchema(schema);
-            } catch (err: any) {
-                const msg = `Failed to load schema ${filePath}: ${err?.message ?? err}`;
+            } catch (err: unknown) {
+                const msg = `Failed to load schema ${filePath}: ${errMsg(err)}`;
                 this.schemaLoadErrors.push(msg);
                 logger.error(msg);
             }
@@ -464,9 +465,9 @@ export class SchemaValidator {
             delete schema.$id;
 
             return schema;
-        } catch (err: any) {
+        } catch (err: unknown) {
             logger.error(
-                `Failed to load raw schema for "${artifactType}": ${err?.message ?? err}`
+                `Failed to load raw schema for "${artifactType}": ${errMsg(err)}`
             );
             return undefined;
         }
@@ -512,9 +513,9 @@ export class SchemaValidator {
             this.stripRuntimeFields(schema);
 
             return JSON.stringify(schema, null, 2);
-        } catch (err: any) {
+        } catch (err: unknown) {
             logger.error(
-                `Failed to load schema content for "${artifactType}": ${err?.message ?? err}`
+                `Failed to load schema content for "${artifactType}": ${errMsg(err)}`
             );
             return undefined;
         }
@@ -780,10 +781,10 @@ export class SchemaValidator {
 
                 const validateFn = this.ajv.compile(relaxed);
                 this.relaxedValidators.set(schemaId, validateFn);
-            } catch (err: any) {
+            } catch (err: unknown) {
                 logger.error(
                     `Failed to build relaxed validator for ` +
-                    `"${schemaId}": ${err?.message ?? err}`
+                    `"${schemaId}": ${errMsg(err)}`
                 );
             }
         }
