@@ -23,7 +23,7 @@ import {
   VERIFICATION_METHOD_OPTIONS,
 } from '../../types';
 
-import { RendererProps, Md, CollapsibleSection, ArtifactPicker } from './shared';
+import { RendererProps, Md, CollapsibleSection, ArtifactPicker, toDisplayText } from './shared';
 
 // ==========================================================================
 // SHARED HELPERS
@@ -225,7 +225,7 @@ export function renderStoryDetails(props: RendererProps) {
               onChange={(e) => handleFieldChange('storyPoints', e.target.value ? Number(e.target.value) : undefined)}
               min="0"
               placeholder="Points"
-              style={{ width: '60px' }}
+              className="rr-w-60"
             />
           ) : (
             <span>{editedData.storyPoints ?? <span className="empty-message">Not estimated</span>}</span>
@@ -241,7 +241,7 @@ export function renderStoryDetails(props: RendererProps) {
                 value={editedData.estimatedEffort || ''}
                 onChange={(e) => handleFieldChange('estimatedEffort', e.target.value)}
                 placeholder="S/M/L/XL or days"
-                style={{ width: '80px' }}
+                className="rr-w-80"
               />
             ) : (
               <span className="tag">{editedData.estimatedEffort}</span>
@@ -279,7 +279,7 @@ export function renderStoryDetails(props: RendererProps) {
                 value={editedData.assignee || ''}
                 onChange={(e) => handleFieldChange('assignee', e.target.value)}
                 placeholder="Assignee..."
-                style={{ width: '120px' }}
+                className="rr-w-120"
               />
             ) : (
               <span>{editedData.assignee}</span>
@@ -499,7 +499,7 @@ export function renderStoryDetails(props: RendererProps) {
                     value={task.acReference || ''}
                     onChange={(e) => updateArrayItem('tasks', i, { ...task, acReference: e.target.value })}
                     placeholder="AC ref (e.g. AC-1)"
-                    style={{ width: '100px' }}
+                    className="rr-w-100"
                   />
                   <input
                     type="number"
@@ -508,7 +508,7 @@ export function renderStoryDetails(props: RendererProps) {
                     placeholder="Hours"
                     min="0"
                     step="0.5"
-                    style={{ width: '70px' }}
+                    className="rr-w-70"
                   />
                   <label>
                     <input
@@ -623,7 +623,7 @@ export function renderStoryDetails(props: RendererProps) {
                   <div className="tags-list">{dependencies.blocks.map((d: any, i: number) => {
                     const id = typeof d === 'string' ? d : d.storyId || '';
                     const title = typeof d === 'object' ? d.title : undefined;
-                    return <span key={i} className="tag dep-tag" style={{ borderColor: 'var(--badge-blocks-bg, orange)' }}>{id}{title ? ` — ${title}` : ''}</span>;
+                    return <span key={i} className="tag dep-tag rr-border-blocks">{id}{title ? ` — ${title}` : ''}</span>;
                   })}</div>
                 </div>
               ) : null}
@@ -1016,21 +1016,21 @@ export function renderStoryDetails(props: RendererProps) {
           {editMode ? (
             <div className="editable-list">
               {uxReferences.map((ref: any, i: number) => (
-                <div key={i} className="editable-list-item" style={{ flexDirection: 'column', gap: '4px', alignItems: 'stretch' }}>
-                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                <div key={i} className="editable-list-item rr-col rr-gap-4 rr-items-stretch">
+                  <div className="rr-flex rr-gap-4 rr-items-center">
                     <input
                       type="text"
                       value={typeof ref === 'string' ? ref : ref.type || ''}
                       onChange={(e) => updateArrayItem('uxReferences', i, typeof ref === 'string' ? e.target.value : { ...ref, type: e.target.value })}
                       placeholder="Type (e.g., wireframe, mockup)"
-                      style={{ width: '120px' }}
+                      className="rr-w-120"
                     />
                     <input
                       type="text"
                       value={typeof ref === 'string' ? '' : ref.reference || ''}
                       onChange={(e) => updateArrayItem('uxReferences', i, { ...(typeof ref === 'string' ? { type: ref } : ref), reference: e.target.value })}
                       placeholder="Reference URL or path..."
-                      style={{ flex: 1 }}
+                      className="rr-flex-1"
                     />
                     <button className="remove-btn" onClick={() => removeFromArray('uxReferences', i)}>×</button>
                   </div>
@@ -1067,21 +1067,21 @@ export function renderStoryDetails(props: RendererProps) {
           {editMode ? (
             <div className="editable-list">
               {references.map((ref: any, i: number) => (
-                <div key={i} className="editable-list-item" style={{ flexDirection: 'column', gap: '4px', alignItems: 'stretch' }}>
-                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                <div key={i} className="editable-list-item rr-col rr-gap-4 rr-items-stretch">
+                  <div className="rr-flex rr-gap-4 rr-items-center">
                     <input
                       type="text"
                       value={typeof ref === 'string' ? ref : ref.source || ''}
                       onChange={(e) => updateArrayItem('references', i, typeof ref === 'string' ? e.target.value : { ...ref, source: e.target.value })}
                       placeholder="Source document..."
-                      style={{ flex: 1 }}
+                      className="rr-flex-1"
                     />
                     <input
                       type="text"
                       value={typeof ref === 'string' ? '' : ref.section || ''}
                       onChange={(e) => updateArrayItem('references', i, { ...(typeof ref === 'string' ? { source: ref } : ref), section: e.target.value })}
                       placeholder="Section..."
-                      style={{ width: '120px' }}
+                      className="rr-w-120"
                     />
                     <button className="remove-btn" onClick={() => removeFromArray('references', i)}>×</button>
                   </div>
@@ -1123,7 +1123,7 @@ export function renderStoryDetails(props: RendererProps) {
               value={editedData.reviewer || ''}
               onChange={(e) => handleFieldChange('reviewer', e.target.value)}
               placeholder="Code reviewer..."
-              style={{ width: '200px' }}
+              className="rr-w-200"
             />
           ) : (
             <span>{editedData.reviewer}</span>
@@ -1212,15 +1212,15 @@ export function renderStoryDetails(props: RendererProps) {
         <CollapsibleSection title="History" count={history.length} sectionId="story-history">
           <div className="history-list">
             {history.map((entry: any, i: number) => (
-              <div key={i} className="history-entry" style={{ marginBottom: '8px', padding: '4px 0', borderBottom: '1px solid var(--vscode-panel-border, #333)' }}>
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <div key={i} className="history-entry rr-mb-8 rr-p-4-0 rr-border-b-panel">
+                <div className="rr-flex rr-gap-6 rr-wrap rr-items-center">
                   {entry.fromStatus && <span className={`tag tag-${entry.fromStatus}`}>{entry.fromStatus}</span>}
                   {(entry.fromStatus || entry.toStatus) && <span>→</span>}
                   {entry.toStatus && <span className={`tag tag-${entry.toStatus}`}>{entry.toStatus}</span>}
                   {entry.changedBy && <span className="muted">by {entry.changedBy}</span>}
                   {entry.timestamp && <span className="muted">{entry.timestamp}</span>}
                 </div>
-                {entry.notes && <p className="muted" style={{ marginTop: '2px' }}>{entry.notes}</p>}
+                {entry.notes && <p className="muted rr-mt-2">{entry.notes}</p>}
               </div>
             ))}
           </div>
@@ -1282,7 +1282,7 @@ export function renderEpicDetails(props: RendererProps) {
                 onChange={(e) => handleFieldChange('effortEstimate', { ...effortEstimate, totalSprints: e.target.value ? Number(e.target.value) : undefined })}
                 min="0"
                 placeholder="Sprints"
-                style={{ width: '60px' }}
+                className="rr-w-60"
               />
             ) : (
               <span>{effortEstimate.totalSprints}</span>
@@ -1300,7 +1300,7 @@ export function renderEpicDetails(props: RendererProps) {
                 onChange={(e) => handleFieldChange('effortEstimate', { ...effortEstimate, totalDays: e.target.value ? Number(e.target.value) : undefined })}
                 min="0"
                 placeholder="Days"
-                style={{ width: '60px' }}
+                className="rr-w-60"
               />
             ) : (
               <span>{effortEstimate.totalDays}</span>
@@ -1471,7 +1471,7 @@ export function renderEpicDetails(props: RendererProps) {
                   <strong>Downstream (enables):</strong>
                   <div className="tags-list">{epicDependencies.downstream.map((d: any, i: number) => {
                     const id = typeof d === 'string' ? d : d.epicId || '';
-                    return <span key={i} className="tag dep-tag" style={{ borderColor: 'var(--badge-blocks-bg, orange)' }}>{id}{d.reason ? ` — ${d.reason}` : ''}</span>;
+                    return <span key={i} className="tag dep-tag rr-border-blocks">{id}{d.reason ? ` — ${d.reason}` : ''}</span>;
                   })}</div>
                 </div>
               ) : null}
@@ -1552,8 +1552,8 @@ export function renderEpicDetails(props: RendererProps) {
       {editedData.useCases?.length > 0 && (
         <CollapsibleSection title="Use Cases" count={editedData.useCases.length} sectionId="epic-use-cases">
           {editedData.useCases.map((uc: any, i: number) => (
-            <div key={uc.id || i} className="use-case-item" style={{ marginBottom: '16px', padding: '8px', borderLeft: '3px solid var(--vscode-textLink-foreground, #3794ff)', paddingLeft: '12px' }}>
-              <div style={{ display: 'flex', gap: '6px', alignItems: 'baseline', marginBottom: '4px' }}>
+            <div key={uc.id || i} className="use-case-item rr-mb-16 rr-p-8 rr-accent-strong-link rr-pl-12">
+              <div className="rr-flex rr-gap-6 rr-items-baseline rr-mb-4">
                 {uc.id && <span className="tag">{uc.id}</span>}
                 <strong>{uc.title || 'Untitled Use Case'}</strong>
               </div>
@@ -1561,7 +1561,7 @@ export function renderEpicDetails(props: RendererProps) {
               {uc.primaryActor && <p><strong>Actor:</strong> <span className="person-badge">{uc.primaryActor}</span></p>}
               {uc.trigger && <p><strong>Trigger:</strong> {uc.trigger}</p>}
               {uc.scenario && (
-                <div style={{ marginTop: '4px' }}>
+                <div className="rr-mt-4">
                   {uc.scenario.context && <p><strong>Context:</strong> {uc.scenario.context}</p>}
                   {uc.scenario.before && <p><strong>Before:</strong> {uc.scenario.before}</p>}
                   {uc.scenario.after && <p><strong>After:</strong> {uc.scenario.after}</p>}
@@ -1569,7 +1569,7 @@ export function renderEpicDetails(props: RendererProps) {
                 </div>
               )}
               {uc.mainFlow?.length > 0 && (
-                <div style={{ marginTop: '4px' }}>
+                <div className="rr-mt-4">
                   <strong>Main Flow:</strong>
                   <ol>{uc.mainFlow.map((step: any, si: number) => (
                     <li key={si}>
@@ -1604,12 +1604,12 @@ export function renderEpicDetails(props: RendererProps) {
               <div className="devnote-group">
                 <h5>Functional ({fcFunctional.length})</h5>
                 <ul>{fcFunctional.map((fc: any, i: number) => (
-                  <li key={i} style={{ marginBottom: '4px' }}>
+                  <li key={i} className="rr-mb-4">
                     {fc.id && <span className="tag">{fc.id}</span>} {fc.criterion}
-                    {fc.verified && <span className="tag" style={{ background: 'var(--badge-done-bg, #2ecc71)', color: '#fff', marginLeft: '4px' }}>verified</span>}
+                    {fc.verified && <span className="tag rr-bg-done rr-fg-white rr-ml-4">verified</span>}
                     {fc.verificationMethod && <span className="muted"> ({fc.verificationMethod})</span>}
                     {fc.relatedRequirement && <span className="muted"> [Req: {fc.relatedRequirement}]</span>}
-                    {fc.notes && <p className="muted" style={{ marginTop: '2px' }}>{fc.notes}</p>}
+                    {fc.notes && <p className="muted rr-mt-2">{fc.notes}</p>}
                   </li>
                 ))}</ul>
               </div>
@@ -1618,15 +1618,15 @@ export function renderEpicDetails(props: RendererProps) {
               <div className="devnote-group">
                 <h5>Non-Functional ({fcNonFunctional.length})</h5>
                 <ul>{fcNonFunctional.map((fc: any, i: number) => (
-                  <li key={i} style={{ marginBottom: '4px' }}>
+                  <li key={i} className="rr-mb-4">
                     {fc.id && <span className="tag">{fc.id}</span>}
                     {fc.category && <span className="tag">{fc.category}</span>}
                     {' '}{fc.criterion}
                     {fc.metric && (
                       <span className="muted"> (Target: {fc.metric.target}{fc.metric.unit ? ` ${fc.metric.unit}` : ''}{fc.metric.threshold ? `, Threshold: ${fc.metric.threshold}` : ''})</span>
                     )}
-                    {fc.verified && <span className="tag" style={{ background: 'var(--badge-done-bg, #2ecc71)', color: '#fff', marginLeft: '4px' }}>verified</span>}
-                    {fc.notes && <p className="muted" style={{ marginTop: '2px' }}>{fc.notes}</p>}
+                    {fc.verified && <span className="tag rr-bg-done rr-fg-white rr-ml-4">verified</span>}
+                    {fc.notes && <p className="muted rr-mt-2">{fc.notes}</p>}
                   </li>
                 ))}</ul>
               </div>
@@ -1635,13 +1635,13 @@ export function renderEpicDetails(props: RendererProps) {
               <div className="devnote-group">
                 <h5>Security &amp; Compliance ({fcSecurity.length})</h5>
                 <ul>{fcSecurity.map((fc: any, i: number) => (
-                  <li key={i} style={{ marginBottom: '4px' }}>
+                  <li key={i} className="rr-mb-4">
                     {fc.id && <span className="tag">{fc.id}</span>}
                     {fc.category && <span className="tag">{fc.category}</span>}
                     {' '}{fc.criterion}
                     {fc.complianceStandard && <span className="tag">{fc.complianceStandard}</span>}
-                    {fc.verified && <span className="tag" style={{ background: 'var(--badge-done-bg, #2ecc71)', color: '#fff', marginLeft: '4px' }}>verified</span>}
-                    {fc.notes && <p className="muted" style={{ marginTop: '2px' }}>{fc.notes}</p>}
+                    {fc.verified && <span className="tag rr-bg-done rr-fg-white rr-ml-4">verified</span>}
+                    {fc.notes && <p className="muted rr-mt-2">{fc.notes}</p>}
                   </li>
                 ))}</ul>
               </div>
@@ -1671,14 +1671,14 @@ export function renderEpicDetails(props: RendererProps) {
                 <div key={key} className="devnote-group">
                   <h5>{label} ({items.length})</h5>
                   <ul>{items.map((m: any, i: number) => (
-                    <li key={i} style={{ marginBottom: '4px' }}>
+                    <li key={i} className="rr-mb-4">
                       {m.id && <span className="tag">{m.id}</span>} {m.metric}
                       {m.target && <span className="muted"> — Target: {m.target}</span>}
                       {m.measurement && <span className="muted"> [Measurement: {m.measurement}]</span>}
                       {m.baseline && <span className="muted"> [Baseline: {m.baseline}]</span>}
                       {m.actualValue && <span className="muted"> [Actual: {m.actualValue}]</span>}
-                      {m.achieved && <span className="tag" style={{ background: 'var(--badge-done-bg, #2ecc71)', color: '#fff', marginLeft: '4px' }}>achieved</span>}
-                      {m.notes && <p className="muted" style={{ marginTop: '2px' }}>{m.notes}</p>}
+                      {m.achieved && <span className="tag rr-bg-done rr-fg-white rr-ml-4">achieved</span>}
+                      {m.notes && <p className="muted rr-mt-2">{m.notes}</p>}
                     </li>
                   ))}</ul>
                 </div>
@@ -1699,17 +1699,17 @@ export function renderEpicDetails(props: RendererProps) {
             {dodItems.length > 0 && (
               <div className="devnote-group">
                 <h5>Checklist ({dodItems.length})</h5>
-                <ul style={{ listStyleType: 'none', paddingLeft: '4px' }}>{dodItems.map((item: any, i: number) => (
-                  <li key={i} style={{ marginBottom: '4px' }}>
-                    <span style={{ marginRight: '6px' }}>{item.completed ? '☑' : '☐'}</span>
+                <ul className="rr-list-none rr-pl-4">{dodItems.map((item: any, i: number) => (
+                  <li key={i} className="rr-mb-4">
+                    <span className="rr-mr-6">{item.completed ? '☑' : '☐'}</span>
                     {item.id && <span className="tag">{item.id}</span>}
                     {item.category && <span className="tag">{item.category}</span>}
                     {' '}{item.item}
                     {item.required === false && <span className="muted"> (optional)</span>}
                     {item.completedBy && <span className="muted"> — by {item.completedBy}</span>}
                     {item.completedAt && <span className="muted"> at {item.completedAt}</span>}
-                    {item.evidence && <p className="muted" style={{ marginTop: '2px' }}>Evidence: {item.evidence}</p>}
-                    {item.notes && <p className="muted" style={{ marginTop: '2px' }}>{item.notes}</p>}
+                    {item.evidence && <p className="muted rr-mt-2">Evidence: {item.evidence}</p>}
+                    {item.notes && <p className="muted rr-mt-2">{item.notes}</p>}
                   </li>
                 ))}</ul>
               </div>
@@ -1718,10 +1718,10 @@ export function renderEpicDetails(props: RendererProps) {
               <div className="devnote-group">
                 <h5>Quality Gates ({qualityGates.length})</h5>
                 <ul>{qualityGates.map((gate: any, i: number) => (
-                  <li key={i} style={{ marginBottom: '6px' }}>
+                  <li key={i} className="rr-mb-6">
                     {gate.id && <span className="tag">{gate.id}</span>}
                     {' '}<strong>{gate.gate}</strong>
-                    {gate.passed && <span className="tag" style={{ background: 'var(--badge-done-bg, #2ecc71)', color: '#fff', marginLeft: '4px' }}>passed</span>}
+                    {gate.passed && <span className="tag rr-bg-done rr-fg-white rr-ml-4">passed</span>}
                     {gate.approver && <span className="muted"> — approved by {gate.approver}</span>}
                     {gate.passedAt && <span className="muted"> at {gate.passedAt}</span>}
                     {gate.criteria?.length > 0 && (
@@ -1757,11 +1757,11 @@ export function renderEpicDetails(props: RendererProps) {
                   <input type="text" value={item.phase || ''} onChange={(e) => {
                     const updated = [...(effortEstimate.breakdown || [])]; updated[i] = { ...item, phase: e.target.value };
                     handleFieldChange('effortEstimate', { ...effortEstimate, breakdown: updated });
-                  }} placeholder="Phase..." style={{ flex: 1 }} />
+                  }} placeholder="Phase..." className="rr-flex-1" />
                   <input type="text" value={item.effort || item.duration || ''} onChange={(e) => {
                     const updated = [...(effortEstimate.breakdown || [])]; updated[i] = { ...item, effort: e.target.value, duration: e.target.value };
                     handleFieldChange('effortEstimate', { ...effortEstimate, breakdown: updated });
-                  }} placeholder="Duration/Effort..." style={{ width: '80px' }} />
+                  }} placeholder="Duration/Effort..." className="rr-w-80" />
                   <button className="remove-btn" onClick={() => {
                     const updated = [...(effortEstimate.breakdown || [])]; updated.splice(i, 1);
                     handleFieldChange('effortEstimate', { ...effortEstimate, breakdown: updated });
@@ -1784,8 +1784,8 @@ export function renderEpicDetails(props: RendererProps) {
       {(editedData.risks?.length > 0) && (
         <CollapsibleSection title="Risks" count={editedData.risks.length} sectionId="epic-risks">
           {editedData.risks.map((risk: any, i: number) => (
-            <div key={risk.id || i} className="risk-item" style={{ marginBottom: '12px', padding: '8px', borderLeft: '3px solid var(--badge-risk-bg, #e74c3c)', paddingLeft: '12px' }}>
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '4px' }}>
+            <div key={risk.id || i} className="risk-item rr-mb-12 rr-p-8 rr-accent-strong-risk rr-pl-12">
+              <div className="rr-flex rr-gap-6 rr-wrap rr-mb-4">
                 {risk.id && <span className="tag">{risk.id}</span>}
                 {risk.category && <span className="tag">{risk.category}</span>}
                 {risk.probability && <span className="tag">P: {risk.probability}</span>}
@@ -1794,16 +1794,16 @@ export function renderEpicDetails(props: RendererProps) {
               </div>
               <Md text={risk.description || risk.risk || risk.title || 'No description'} />
               {risk.mitigation && (
-                <div style={{ marginTop: '4px' }}>
+                <div className="rr-mt-4">
                   <strong>Mitigation:</strong> <Md text={risk.mitigation} />
                 </div>
               )}
               {risk.testStrategy && (
-                <div style={{ marginTop: '4px' }}>
+                <div className="rr-mt-4">
                   <strong>Test Strategy:</strong> <Md text={risk.testStrategy} />
                 </div>
               )}
-              {risk.owner && <div style={{ marginTop: '4px' }}><strong>Owner:</strong> {risk.owner}</div>}
+              {risk.owner && <div className="rr-mt-4"><strong>Owner:</strong> {risk.owner}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -1974,9 +1974,9 @@ export function renderRequirementDetails(props: RendererProps) {
           {editMode ? (
             <div className="editable-list">
               {acceptanceCriteria.map((ac: any, i: number) => (
-                <div key={i} className="editable-list-item" style={{ flexDirection: 'column', gap: '4px', alignItems: 'stretch' }}>
-                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                    <strong style={{ minWidth: '30px' }}>{ac.id || `AC-${i + 1}`}</strong>
+                <div key={i} className="editable-list-item rr-col rr-gap-4 rr-items-stretch">
+                  <div className="rr-flex rr-gap-4 rr-items-center">
+                    <strong className="rr-min-w-30">{ac.id || `AC-${i + 1}`}</strong>
                     <input
                       type="text"
                       value={ac.title || ''}
@@ -1986,7 +1986,7 @@ export function renderRequirementDetails(props: RendererProps) {
                         handleFieldChange('acceptanceCriteria', updated);
                       }}
                       placeholder="AC title..."
-                      style={{ flex: 1 }}
+                      className="rr-flex-1"
                     />
                     <button className="remove-btn" onClick={() => {
                       handleFieldChange('acceptanceCriteria', acceptanceCriteria.filter((_: any, idx: number) => idx !== i));
@@ -2070,7 +2070,7 @@ export function renderRequirementDetails(props: RendererProps) {
                 const butArr = Array.isArray(ac.but) ? ac.but : (ac.but ? [ac.but] : []);
                 return (
                   <div key={i} className="structured-list-item">
-                    <div style={{ display: 'flex', gap: '6px', alignItems: 'baseline', marginBottom: '4px' }}>
+                    <div className="rr-flex rr-gap-6 rr-items-baseline rr-mb-4">
                       {ac.id && <span className="tag">{ac.id}</span>}
                       {ac.title && <strong>{ac.title}</strong>}
                       {ac.priority && <span className={`priority-badge priority-${ac.priority}`}>{ac.priority}</span>}
@@ -2094,7 +2094,7 @@ export function renderRequirementDetails(props: RendererProps) {
                       ))}
                     </div>
                     {ac.testIds?.length > 0 && (
-                      <div className="tags-list" style={{ marginTop: '4px' }}>
+                      <div className="tags-list rr-mt-4">
                         <span className="muted">Tests:</span>
                         {ac.testIds.map((tid: string, ti: number) => (
                           <span key={ti} className="tag">{tid}</span>
@@ -2930,9 +2930,9 @@ export function renderTestStrategyDetails(props: RendererProps) {
   const { editedData, editMode, handleFieldChange, updateArrayItem, removeFromArray, addToArray, artifact } = props;
   const meta = artifact.metadata as TestStrategyMetadata | undefined;
   // Normalize: sample uses 'testLevels', renderer schema uses 'testTypes'
-  const testTypes: string[] = editedData.testTypes || editedData.testLevels || meta?.testTypes || (meta as any)?.testLevels || [];
+  const testTypes: string[] = (editedData.testTypes || editedData.testLevels || meta?.testTypes || (meta as any)?.testLevels || []).map(toDisplayText);
   // Normalize: sample uses 'tools', renderer schema uses 'tooling'
-  const tooling: string[] = editedData.tooling || editedData.tools || meta?.tooling || (meta as any)?.tools || [];
+  const tooling: string[] = (editedData.tooling || editedData.tools || meta?.tooling || (meta as any)?.tools || []).map(toDisplayText);
   // Normalize: sample uses object {unit: "85%", ...}, renderer expects [{area, target}]
   const rawCoverage = editedData.coverageTargets || meta?.coverageTargets;
   const coverageTargets: any[] = Array.isArray(rawCoverage)
@@ -2950,7 +2950,9 @@ export function renderTestStrategyDetails(props: RendererProps) {
       ? Object.entries(rawCoverage).map(([area, target]) => ({ area, target: typeof target === 'string' ? target : JSON.stringify(target) }))
       : [];
   // Normalize: sample uses 'riskBasedPriority', renderer schema uses 'riskAreas'
-  const riskAreas: string[] = editedData.riskAreas || editedData.riskBasedPriority || meta?.riskAreas || (meta as any)?.riskBasedPriority || [];
+  const riskAreas: string[] = (editedData.riskAreas || editedData.riskBasedPriority || meta?.riskAreas || (meta as any)?.riskBasedPriority || []).map(toDisplayText);
+  const scopeText = toDisplayText(editedData.scope || meta?.scope);
+  const approachText = toDisplayText(editedData.approach || meta?.approach);
   // Environments (not in original renderer but present in sample data)
   const environments: any[] = editedData.environments || (meta as any)?.environments || [];
 
@@ -2960,13 +2962,13 @@ export function renderTestStrategyDetails(props: RendererProps) {
       <CollapsibleSection title="Scope" sectionId="teststrategy-scope">
         {editMode ? (
           <textarea
-            value={editedData.scope || ''}
+            value={toDisplayText(editedData.scope)}
             onChange={(e) => handleFieldChange('scope', e.target.value)}
             rows={3}
             placeholder="Define the scope of testing..."
           />
         ) : (
-          (editedData.scope || meta?.scope) ? <Md text={editedData.scope || meta?.scope} /> : <p className="empty-message">No scope defined</p>
+          scopeText ? <Md text={scopeText} /> : <p className="empty-message">No scope defined</p>
         )}
       </CollapsibleSection>
 
@@ -2974,13 +2976,13 @@ export function renderTestStrategyDetails(props: RendererProps) {
       <CollapsibleSection title="Approach" sectionId="teststrategy-approach">
         {editMode ? (
           <textarea
-            value={editedData.approach || ''}
+            value={toDisplayText(editedData.approach)}
             onChange={(e) => handleFieldChange('approach', e.target.value)}
             rows={3}
             placeholder="Describe the testing approach..."
           />
         ) : (
-          (editedData.approach || meta?.approach) ? <Md text={editedData.approach || meta?.approach} /> : <p className="empty-message">No approach defined</p>
+          approachText ? <Md text={approachText} /> : <p className="empty-message">No approach defined</p>
         )}
       </CollapsibleSection>
 
@@ -3035,7 +3037,7 @@ export function renderTestStrategyDetails(props: RendererProps) {
             {environments.map((env: any, i: number) => (
               <div key={i} className="structured-list-item">
                 <strong>{typeof env === 'string' ? env : env.name || `Environment ${i + 1}`}</strong>
-                {typeof env === 'object' && env.purpose && <div style={{ opacity: 0.8 }}>{env.purpose}</div>}
+                {typeof env === 'object' && env.purpose && <div className="rr-subtle">{env.purpose}</div>}
               </div>
             ))}
           </div>
@@ -3054,14 +3056,14 @@ export function renderTestStrategyDetails(props: RendererProps) {
                     value={ct.area || ''}
                     onChange={(e) => updateArrayItem('coverageTargets', i, { ...ct, area: e.target.value })}
                     placeholder="Area (e.g. Unit Tests)"
-                    style={{ flex: 1 }}
+                    className="rr-flex-1"
                   />
                   <input
                     type="text"
                     value={ct.target || ''}
                     onChange={(e) => updateArrayItem('coverageTargets', i, { ...ct, target: e.target.value })}
                     placeholder="Target (e.g. 80%)"
-                    style={{ width: '120px' }}
+                    className="rr-w-120"
                   />
                   <button className="remove-btn" onClick={() => removeFromArray('coverageTargets', i)}>×</button>
                 </div>
@@ -3192,11 +3194,11 @@ export function renderArchitectureDecisionDetails(props: RendererProps) {
         {alternatives.length > 0 ? (
           <div className="alternatives-list">
             {alternatives.map((alt: any, i: number) => (
-              <div key={i} className="alternative-item" style={{ marginBottom: '8px', padding: '8px', borderRadius: '4px', background: 'var(--vscode-editor-background)' }}>
+              <div key={i} className="alternative-item rr-mb-8 rr-p-8 rr-rounded rr-bg-editor">
                 <strong>{alt.title || alt.option || `Option ${i + 1}`}</strong>
-                {alt.pros && <div style={{ marginTop: '4px', color: 'var(--vscode-charts-green)' }}>Pros: {Array.isArray(alt.pros) ? alt.pros.join(', ') : alt.pros}</div>}
-                {alt.cons && <div style={{ color: 'var(--vscode-charts-red)' }}>Cons: {Array.isArray(alt.cons) ? alt.cons.join(', ') : alt.cons}</div>}
-                {alt.rationale && <div style={{ marginTop: '4px', opacity: 0.8 }}>{alt.rationale}</div>}
+                {alt.pros && <div className="rr-mt-4 rr-fg-green">Pros: {Array.isArray(alt.pros) ? alt.pros.join(', ') : alt.pros}</div>}
+                {alt.cons && <div className="rr-fg-red">Cons: {Array.isArray(alt.cons) ? alt.cons.join(', ') : alt.cons}</div>}
+                {alt.rationale && <div className="rr-mt-4 rr-subtle">{alt.rationale}</div>}
               </div>
             ))}
           </div>
@@ -3340,11 +3342,11 @@ export function renderSystemComponentDetails(props: RendererProps) {
         {interfaces.length > 0 ? (
           <div className="interfaces-list">
             {interfaces.map((iface: any, i: number) => (
-              <div key={i} style={{ marginBottom: '8px', padding: '8px', borderRadius: '4px', background: 'var(--vscode-editor-background)' }}>
+              <div key={i} className="rr-mb-8 rr-p-8 rr-rounded rr-bg-editor">
                 <strong>{iface.name || `Interface ${i + 1}`}</strong>
-                {iface.type && <span className="tag" style={{ marginLeft: '8px' }}>{iface.type}</span>}
-                {iface.description && <div style={{ marginTop: '4px', opacity: 0.8 }}>{iface.description}</div>}
-                {iface.protocol && <div style={{ marginTop: '2px' }}>Protocol: {iface.protocol}</div>}
+                {iface.type && <span className="tag rr-ml-8">{iface.type}</span>}
+                {iface.description && <div className="rr-mt-4 rr-subtle">{iface.description}</div>}
+                {iface.protocol && <div className="rr-mt-2">Protocol: {iface.protocol}</div>}
               </div>
             ))}
           </div>
@@ -3416,7 +3418,7 @@ export function renderTaskDetails(props: RendererProps) {
               placeholder="Hours"
               min="0"
               step="0.5"
-              style={{ width: '80px' }}
+              className="rr-w-80"
             />
           ) : (
             editedData.estimatedHours != null ? (
@@ -3458,7 +3460,7 @@ export function renderTaskDetails(props: RendererProps) {
                 <span style={{ textDecoration: subDone ? 'line-through' : 'none' }}>
                   {st.title || st.description || `Subtask ${i + 1}`}
                 </span>
-                {subDone && <span className="tag" style={{ marginLeft: '6px', fontSize: '0.75em' }}>Done</span>}
+                {subDone && <span className="tag rr-ml-6 rr-text-xs">Done</span>}
               </li>
             );})}
           </ul>
@@ -3679,7 +3681,7 @@ export function renderRiskDetails(props: RendererProps) {
           {editMode ? (
             <div className="editable-list">
               {mitigationStrategies.map((ms: any, i: number) => (
-                <div key={i} className="editable-list-item" style={{ flexDirection: 'column', gap: '4px', alignItems: 'stretch' }}>
+                <div key={i} className="editable-list-item rr-col rr-gap-4 rr-items-stretch">
                   <input
                     type="text"
                     value={ms.strategy || ''}
@@ -3690,7 +3692,7 @@ export function renderRiskDetails(props: RendererProps) {
                     }}
                     placeholder="Strategy..."
                   />
-                  <div style={{ display: 'flex', gap: '4px' }}>
+                  <div className="rr-flex rr-gap-4">
                     <input
                       type="text"
                       value={ms.owner || ''}
@@ -3700,7 +3702,7 @@ export function renderRiskDetails(props: RendererProps) {
                         handleFieldChange('mitigationStrategies', updated);
                       }}
                       placeholder="Owner..."
-                      style={{ flex: 1 }}
+                      className="rr-flex-1"
                     />
                     <select
                       value={ms.status || ''}
@@ -3734,7 +3736,7 @@ export function renderRiskDetails(props: RendererProps) {
               {mitigationStrategies.map((ms: any, i: number) => (
                 <div key={i} className="structured-list-item">
                   <Md text={ms.strategy || 'No strategy description'} />
-                  <div className="tags-list" style={{ marginTop: '4px' }}>
+                  <div className="tags-list rr-mt-4">
                     {ms.owner && <span className="tag">Owner: {ms.owner}</span>}
                     {ms.status && <span className={`status-badge status-${ms.status}`}>{ms.status}</span>}
                   </div>
@@ -4115,14 +4117,14 @@ export function renderUseCaseDetails(props: RendererProps) {
                       value={item.action || ''}
                       onChange={(e) => updateArrayItem('mainFlow', i, { ...item, step: i + 1, action: e.target.value })}
                       placeholder="Action step..."
-                      style={{ flex: 2 }}
+                      className="rr-flex-2"
                     />
                     <input
                       type="text"
                       value={item.actor || ''}
                       onChange={(e) => updateArrayItem('mainFlow', i, { ...item, step: i + 1, actor: e.target.value || undefined })}
                       placeholder="Actor"
-                      style={{ width: '100px' }}
+                      className="rr-w-100"
                     />
                     <button className="remove-btn" onClick={() => removeFromArray('mainFlow', i)}>×</button>
                   </div>
@@ -4255,20 +4257,20 @@ export function renderUseCaseDetails(props: RendererProps) {
         {editMode ? (
           <div className="exception-flow-edit">
             {alternativeFlows.map((af: { id?: string; name?: string; branchPoint?: string; steps?: string[] }, i: number) => (
-              <div key={i} className="editable-item-header" style={{ flexWrap: 'wrap' }}>
+              <div key={i} className="editable-item-header rr-wrap">
                 <input
                   type="text"
                   value={af.name || ''}
                   onChange={(e) => updateArrayItem('alternativeFlows', i, { ...af, name: e.target.value })}
                   placeholder="Flow name"
-                  style={{ flex: 1 }}
+                  className="rr-flex-1"
                 />
                 <input
                   type="text"
                   value={af.id || ''}
                   onChange={(e) => updateArrayItem('alternativeFlows', i, { ...af, id: e.target.value })}
                   placeholder="ID"
-                  style={{ width: '80px' }}
+                  className="rr-w-80"
                 />
                 <button className="remove-btn" onClick={() => removeFromArray('alternativeFlows', i)}>×</button>
                 <input
@@ -4276,12 +4278,12 @@ export function renderUseCaseDetails(props: RendererProps) {
                   value={af.branchPoint || ''}
                   onChange={(e) => updateArrayItem('alternativeFlows', i, { ...af, branchPoint: e.target.value })}
                   placeholder="Branch point (e.g. after step 3)"
-                  style={{ width: '100%' }}
+                  className="rr-w-full"
                 />
-                <div style={{ width: '100%' }}>
-                  <label className="field-label" style={{ fontSize: '0.75rem', opacity: 0.7, marginBottom: '4px' }}>Steps</label>
+                <div className="rr-w-full">
+                  <label className="field-label rr-text-xs rr-muted rr-mb-4">Steps</label>
                   {(af.steps || []).map((step: string, si: number) => (
-                    <div key={si} className="editable-list-item" style={{ marginBottom: '2px' }}>
+                    <div key={si} className="editable-list-item rr-mb-2">
                       <input
                         type="text"
                         value={step}
@@ -4300,8 +4302,7 @@ export function renderUseCaseDetails(props: RendererProps) {
                     </div>
                   ))}
                   <button
-                    className="btn btn-secondary btn-small"
-                    style={{ marginTop: '4px' }}
+                    className="btn btn-secondary btn-small rr-mt-4"
                     onClick={() => updateArrayItem('alternativeFlows', i, { ...af, steps: [...(af.steps || []), ''] })}
                   >+ Add Step</button>
                 </div>
@@ -4318,7 +4319,7 @@ export function renderUseCaseDetails(props: RendererProps) {
                   <strong>{af.name || af.id || `Alt Flow ${i + 1}`}</strong>
                   {af.branchPoint && <span> (branches at: {af.branchPoint})</span>}
                   {af.steps && af.steps.length > 0 && (
-                    <ol style={{ marginTop: '4px' }}>
+                    <ol className="rr-mt-4">
                       {af.steps.map((step, si) => <li key={si}>{step}</li>)}
                     </ol>
                   )}
@@ -4336,20 +4337,20 @@ export function renderUseCaseDetails(props: RendererProps) {
             {editMode ? (
               <div className="exception-flow-edit">
                 {exceptionFlows.map((ef: { id?: string; name?: string; trigger?: string; handling?: string }, i: number) => (
-                  <div key={i} className="editable-item-header" style={{ flexWrap: 'wrap' }}>
+                  <div key={i} className="editable-item-header rr-wrap">
                     <input
                       type="text"
                       value={ef.name || ''}
                       onChange={(e) => updateArrayItem('exceptionFlows', i, { ...ef, name: e.target.value })}
                       placeholder="Exception name"
-                      style={{ flex: 1 }}
+                      className="rr-flex-1"
                     />
                     <input
                       type="text"
                       value={ef.id || ''}
                       onChange={(e) => updateArrayItem('exceptionFlows', i, { ...ef, id: e.target.value })}
                       placeholder="ID"
-                      style={{ width: '80px' }}
+                      className="rr-w-80"
                     />
                     <button className="remove-btn" onClick={() => removeFromArray('exceptionFlows', i)}>×</button>
                     <input
@@ -4357,14 +4358,14 @@ export function renderUseCaseDetails(props: RendererProps) {
                       value={ef.trigger || ''}
                       onChange={(e) => updateArrayItem('exceptionFlows', i, { ...ef, trigger: e.target.value })}
                       placeholder="Trigger condition"
-                      style={{ width: '100%' }}
+                      className="rr-w-full"
                     />
                     <textarea
                       value={ef.handling || ''}
                       onChange={(e) => updateArrayItem('exceptionFlows', i, { ...ef, handling: e.target.value })}
                       rows={2}
                       placeholder="How to handle this exception..."
-                      style={{ width: '100%' }}
+                      className="rr-w-full"
                     />
                   </div>
                 ))}
@@ -5030,10 +5031,10 @@ export function renderPRDDetails(props: RendererProps) {
                     rows={2}
                     placeholder="Notes..."
                   />
-                  <div style={{ marginTop: '4px' }}>
+                  <div className="rr-mt-4">
                     <span className="field-label">Steps</span>
                     {(journey.steps || []).map((step: any, si: number) => (
-                      <div key={si} className="editable-list-item" style={{ marginBottom: '2px' }}>
+                      <div key={si} className="editable-list-item rr-mb-2">
                         <span className="step-number">{si + 1}.</span>
                         <input
                           type="text"
@@ -5044,7 +5045,7 @@ export function renderPRDDetails(props: RendererProps) {
                             updateArrayItem('userJourneys', i, { ...journey, steps: newSteps });
                           }}
                           placeholder={`Step ${si + 1} action...`}
-                          style={{ flex: 1 }}
+                          className="rr-flex-1"
                         />
                         <button className="remove-btn" onClick={() => {
                           const newSteps = [...(journey.steps || [])];
@@ -5054,8 +5055,7 @@ export function renderPRDDetails(props: RendererProps) {
                       </div>
                     ))}
                     <button
-                      className="btn btn-secondary btn-small"
-                      style={{ marginTop: '4px' }}
+                      className="btn btn-secondary btn-small rr-mt-4"
                       onClick={() => updateArrayItem('userJourneys', i, { ...journey, steps: [...(journey.steps || []), { action: '' }] })}
                     >+ Add Step</button>
                   </div>
@@ -6583,7 +6583,7 @@ export function renderArchitectureDetails(props: RendererProps) {
                     value={adr.date || ''}
                     onChange={(e) => updateArrayItem('decisions', i, { ...adr, date: e.target.value })}
                     placeholder="Date (e.g., 2025-01-15)"
-                    style={{ width: '140px' }}
+                    className="rr-w-140"
                   />
                 </div>
                 <textarea
@@ -7906,7 +7906,7 @@ export function renderProductBriefDetails(props: RendererProps) {
               value={editedData.version || ''}
               onChange={(e) => handleFieldChange('version', e.target.value)}
               placeholder="Version (e.g., 1.0.0)"
-              style={{ width: '120px' }}
+              className="rr-w-120"
             />
           </div>
         ) : (

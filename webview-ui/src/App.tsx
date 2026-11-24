@@ -1462,29 +1462,28 @@ function App() {
         onSelectResult={handleSearchSelect}
         onMatchesChange={setSearchMatchIds}
       />
-      {/* Workflow Launcher FAB */}
-      <button
-        className="workflow-fab"
-        title="Launch Workflow"
-        onClick={handleOpenWorkflowLauncher}
-        aria-label="Launch Workflow"
-      >
-        <span className="workflow-fab-icon"><Icon name="workflow" size={18} /></span>
-        <span className="workflow-fab-label">Workflows</span>
-      </button>
-
-      {/* Kanban toggle FAB — sits to the left of the Provider Selector */}
-      <button
-        className="kanban-toggle-fab"
-        onClick={handleToggleKanban}
-        title={showKanban ? 'Switch to Canvas view' : 'Switch to Agentic Kanban view'}
-        aria-label={showKanban ? 'Switch to Canvas' : 'Switch to Kanban'}
-      >
-        <Icon name={showKanban ? 'workflow' : 'sprint'} size={16} />
-        <span className="kanban-toggle-label">{showKanban ? 'Canvas' : 'Kanban'}</span>
-      </button>
-      {/* Provider Selector FAB — sits to the left of the Workflows FAB */}
-      <ProviderSelector />
+      {/* Top-right actions, in visual (and tab) order: Kanban · Provider · Workflows */}
+      <div className="top-actions">
+        <button
+          className="kanban-toggle-fab"
+          onClick={handleToggleKanban}
+          title={showKanban ? 'Switch to Canvas view' : 'Switch to Agentic Kanban view'}
+          aria-label={showKanban ? 'Switch to Canvas' : 'Switch to Kanban'}
+        >
+          <Icon name={showKanban ? 'workflow' : 'sprint'} size={16} />
+          <span className="kanban-toggle-label">{showKanban ? 'Canvas' : 'Kanban'}</span>
+        </button>
+        <ProviderSelector />
+        <button
+          className="workflow-fab"
+          title="Launch Workflow"
+          onClick={handleOpenWorkflowLauncher}
+          aria-label="Launch Workflow"
+        >
+          <span className="workflow-fab-icon"><Icon name="workflow" size={18} /></span>
+          <span className="workflow-fab-label">Workflows</span>
+        </button>
+      </div>
       {artifacts.length === 0 && (
         <div className="empty-state">
           <div className="empty-state-icon"><Icon name="empty-canvas" size={48} /></div>

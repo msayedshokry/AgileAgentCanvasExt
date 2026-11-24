@@ -5,6 +5,7 @@ import { useState, useCallback, useMemo, useRef, type ReactNode } from 'react';
 import type { Artifact } from '../../types';
 import { vscode } from '../../vscodeApi';
 import { marked } from 'marked';
+import './renderer-utilities.css';
 
 // Configure marked for safe, inline-friendly rendering
 marked.setOptions({
@@ -25,6 +26,33 @@ export interface RendererProps {
   addToArray: (field: string, defaultItem: any) => void;
   artifact: Artifact;
   allArtifacts: Artifact[];
+}
+
+// ==========================================================================
+// DISPLAY TEXT — coerce schema-off values (objects where strings belong)
+// ==========================================================================
+
+const LABEL_KEYS = ['name', 'title', 'label', 'type', 'area', 'id'] as const;
+
+/**
+ * Turns any artifact field value into display text. AI-generated artifacts
+ * sometimes put objects where the schema expects strings; rendering those
+ * directly crashes React ("Objects are not valid as a React child").
+ */
+export function toDisplayText(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) return value.map(toDisplayText).filter(Boolean).join(', ');
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    const labelKey = LABEL_KEYS.find((k) => typeof record[k] === 'string' && record[k] !== '');
+    if (labelKey) return record[labelKey] as string;
+    return Object.entries(record)
+      .map(([k, v]) => `${k}: ${toDisplayText(v)}`)
+      .join('; ');
+  }
+  return String(value);
 }
 
 // ==========================================================================

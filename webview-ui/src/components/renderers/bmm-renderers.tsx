@@ -94,7 +94,7 @@ export function renderDefinitionOfDoneDetails(props: RendererProps) {
         {items.length > 0 ? (
           items.map((item: any, i: number) => (
             <div key={i} className="editable-item-header" style={{ flexWrap: 'wrap', padding: '8px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '6px', opacity: item.completed ? 0.7 : 1 }}>
-              <div style={{ display: 'flex', gap: '8px', width: '100%', alignItems: 'center' }}>
+              <div className="rr-flex rr-gap-8 rr-w-full rr-items-center">
                 {editMode ? (
                   <input type="checkbox" checked={!!item.completed} onChange={(e) => {
                     const updated = [...items];
@@ -102,7 +102,7 @@ export function renderDefinitionOfDoneDetails(props: RendererProps) {
                     handleFieldChange('items', updated);
                   }} />
                 ) : (
-                  <span style={{ fontSize: '1.1em' }}>{item.completed ? '\u2611' : '\u2610'}</span>
+                  <span className="rr-text-lg">{item.completed ? '\u2611' : '\u2610'}</span>
                 )}
                 <strong style={{ flex: 1, textDecoration: item.completed ? 'line-through' : 'none' }}>
                   {item.id ? `${item.id}: ` : ''}{item.item || `Item ${i + 1}`}
@@ -111,12 +111,12 @@ export function renderDefinitionOfDoneDetails(props: RendererProps) {
                 {item.category && <span className="tag">{item.category}</span>}
               </div>
               {editMode && (
-                <div style={{ width: '100%', marginTop: '4px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div className="rr-w-full rr-mt-4 rr-flex rr-gap-8 rr-items-center">
                   <input type="text" value={item.item || ''} onChange={(e) => {
                     const updated = [...items];
                     updated[i] = { ...item, item: e.target.value };
                     handleFieldChange('items', updated);
-                  }} placeholder="DoD item text..." style={{ flex: 1 }} />
+                  }} placeholder="DoD item text..." className="rr-flex-1" />
                   <select value={item.category || ''} onChange={(e) => {
                     const updated = [...items];
                     updated[i] = { ...item, category: e.target.value };
@@ -128,12 +128,12 @@ export function renderDefinitionOfDoneDetails(props: RendererProps) {
                   <button className="icon-button" onClick={() => { const updated = items.filter((_: any, idx: number) => idx !== i); handleFieldChange('items', updated); }} title="Remove item">{'\u2715'}</button>
                 </div>
               )}
-              {item.verification && <div style={{ width: '100%', marginTop: '4px' }}><strong>Verification:</strong> {item.verification}</div>}
-              {item.evidence && <div style={{ width: '100%', marginTop: '4px' }}><strong>Evidence:</strong> {item.evidence}</div>}
-              {item.completedBy && <div style={{ width: '100%' }}><strong>Completed by:</strong> {item.completedBy}</div>}
-              {item.completedAt && <div style={{ width: '100%' }}><strong>Completed at:</strong> {item.completedAt}</div>}
-              {item.status && <div style={{ width: '100%', marginTop: '2px' }}><span className={`status-badge status-${item.status}`}>{item.status}</span></div>}
-              {item.notes && <div style={{ width: '100%', marginTop: '2px' }}><em>{item.notes}</em></div>}
+              {item.verification && <div className="rr-w-full rr-mt-4"><strong>Verification:</strong> {item.verification}</div>}
+              {item.evidence && <div className="rr-w-full rr-mt-4"><strong>Evidence:</strong> {item.evidence}</div>}
+              {item.completedBy && <div className="rr-w-full"><strong>Completed by:</strong> {item.completedBy}</div>}
+              {item.completedAt && <div className="rr-w-full"><strong>Completed at:</strong> {item.completedAt}</div>}
+              {item.status && <div className="rr-w-full rr-mt-2"><span className={`status-badge status-${item.status}`}>{item.status}</span></div>}
+              {item.notes && <div className="rr-w-full rr-mt-2"><em>{item.notes}</em></div>}
             </div>
           ))
         ) : (
@@ -148,16 +148,16 @@ export function renderDefinitionOfDoneDetails(props: RendererProps) {
       <CollapsibleSection title="Quality Gates" count={qualityGates.length} sectionId="dod-quality-gates">
         {qualityGates.length > 0 ? (
           qualityGates.map((gate: any, i: number) => (
-            <div key={i} className="editable-item-header" style={{ flexWrap: 'wrap', padding: '8px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '6px' }}>
-              <div style={{ display: 'flex', gap: '8px', width: '100%', alignItems: 'center' }}>
-                <span style={{ fontSize: '1.1em' }}>{gate.passed ? '\u2705' : '\u26D4'}</span>
-                <strong style={{ flex: 1 }}>{gate.id ? `${gate.id}: ` : ''}{gate.gate || `Gate ${i + 1}`}</strong>
+            <div key={i} className="editable-item-header rr-wrap rr-p-8 rr-rounded rr-bg-subtle rr-mb-6">
+              <div className="rr-flex rr-gap-8 rr-w-full rr-items-center">
+                <span className="rr-text-lg">{gate.passed ? '\u2705' : '\u26D4'}</span>
+                <strong className="rr-flex-1">{gate.id ? `${gate.id}: ` : ''}{gate.gate || `Gate ${i + 1}`}</strong>
                 {gate.passed && <span className="tag tag-success">Passed</span>}
                 {gate.passedAt && <span className="tag">{gate.passedAt}</span>}
                 {gate.approver && <span className="tag">{gate.approver}</span>}
               </div>
               {gate.criteria && gate.criteria.length > 0 && (
-                <ul style={{ width: '100%', margin: '4px 0 0 16px', padding: 0, listStyleType: 'disc' }}>
+                <ul className="rr-w-full rr-m-4-0-0-16 rr-p-0 rr-list-disc">
                   {gate.criteria.map((c: string, ci: number) => <li key={ci}>{c}</li>)}
                 </ul>
               )}
@@ -252,7 +252,7 @@ export function renderFitCriteriaDetails(props: RendererProps) {
 
   const renderCriterionItem = (item: any, i: number, listKey: string, verMethods: string[], catOptions?: string[]) => (
     <div key={i} className="editable-item-header" style={{ flexWrap: 'wrap', padding: '8px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '6px', opacity: item.verified ? 0.7 : 1 }}>
-      <div style={{ display: 'flex', gap: '8px', width: '100%', alignItems: 'center' }}>
+      <div className="rr-flex rr-gap-8 rr-w-full rr-items-center">
         {editMode ? (
           <input type="checkbox" checked={!!item.verified} onChange={(e) => {
             const list = d[listKey] || [];
@@ -261,7 +261,7 @@ export function renderFitCriteriaDetails(props: RendererProps) {
             handleFieldChange(listKey, updated);
           }} />
         ) : (
-          <span style={{ fontSize: '1.1em' }}>{item.verified ? '\u2611' : '\u2610'}</span>
+          <span className="rr-text-lg">{item.verified ? '\u2611' : '\u2610'}</span>
         )}
         <strong style={{ flex: 1, textDecoration: item.verified ? 'line-through' : 'none' }}>
           {item.id ? `${item.id}: ` : ''}{item.criterion || `Criterion ${i + 1}`}
@@ -270,13 +270,13 @@ export function renderFitCriteriaDetails(props: RendererProps) {
         {item.verificationMethod && <span className="tag">{item.verificationMethod}</span>}
       </div>
       {editMode && (
-        <div style={{ width: '100%', marginTop: '4px', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="rr-w-full rr-mt-4 rr-flex rr-gap-8 rr-items-center rr-wrap">
           <input type="text" value={item.criterion || ''} onChange={(e) => {
             const list = d[listKey] || [];
             const updated = [...list];
             updated[i] = { ...item, criterion: e.target.value };
             handleFieldChange(listKey, updated);
-          }} placeholder="Criterion statement..." style={{ flex: 1, minWidth: '200px' }} />
+          }} placeholder="Criterion statement..." className="rr-flex-1 rr-min-w-200" />
           {catOptions && (
             <select value={item.category || ''} onChange={(e) => {
               const list = d[listKey] || [];
@@ -303,17 +303,17 @@ export function renderFitCriteriaDetails(props: RendererProps) {
           }} title="Remove">{'\u2715'}</button>
         </div>
       )}
-      {item.relatedRequirement && <div style={{ width: '100%', marginTop: '2px' }}><strong>Related:</strong> <span className="tag">{item.relatedRequirement}</span></div>}
-      {item.complianceStandard && <div style={{ width: '100%', marginTop: '2px' }}><strong>Standard:</strong> <span className="tag">{item.complianceStandard}</span></div>}
+      {item.relatedRequirement && <div className="rr-w-full rr-mt-2"><strong>Related:</strong> <span className="tag">{item.relatedRequirement}</span></div>}
+      {item.complianceStandard && <div className="rr-w-full rr-mt-2"><strong>Standard:</strong> <span className="tag">{item.complianceStandard}</span></div>}
       {item.metric && (item.metric.measure || item.metric.target) && (
-        <div style={{ width: '100%', marginTop: '4px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+        <div className="rr-w-full rr-mt-4 rr-flex rr-gap-12 rr-wrap">
           {item.metric.measure && <span><strong>Measure:</strong> {item.metric.measure}</span>}
           {item.metric.target && <span><strong>Target:</strong> {item.metric.target}</span>}
           {item.metric.threshold && <span><strong>Threshold:</strong> {item.metric.threshold}</span>}
           {item.metric.unit && <span><strong>Unit:</strong> {item.metric.unit}</span>}
         </div>
       )}
-      {item.notes && <div style={{ width: '100%', marginTop: '2px' }}><em>{item.notes}</em></div>}
+      {item.notes && <div className="rr-w-full rr-mt-2"><em>{item.notes}</em></div>}
     </div>
   );
 
@@ -413,7 +413,7 @@ export function renderSuccessMetricsDetails(props: RendererProps) {
 
   const renderMetricItem = (item: any, i: number, listKey: string, showActualValue?: boolean) => (
     <div key={i} className="editable-item-header" style={{ flexWrap: 'wrap', padding: '8px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '6px', opacity: item.achieved ? 0.7 : 1 }}>
-      <div style={{ display: 'flex', gap: '8px', width: '100%', alignItems: 'center' }}>
+      <div className="rr-flex rr-gap-8 rr-w-full rr-items-center">
         {editMode ? (
           <input type="checkbox" checked={!!item.achieved} onChange={(e) => {
             const list = d[listKey] || [];
@@ -422,39 +422,39 @@ export function renderSuccessMetricsDetails(props: RendererProps) {
             handleFieldChange(listKey, updated);
           }} />
         ) : (
-          <span style={{ fontSize: '1.1em' }}>{item.achieved ? '\u2611' : '\u2610'}</span>
+          <span className="rr-text-lg">{item.achieved ? '\u2611' : '\u2610'}</span>
         )}
         <strong style={{ flex: 1, textDecoration: item.achieved ? 'line-through' : 'none' }}>
           {item.id ? `${item.id}: ` : ''}{item.metric || `Metric ${i + 1}`}
         </strong>
       </div>
       {editMode && (
-        <div style={{ width: '100%', marginTop: '4px', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="rr-w-full rr-mt-4 rr-flex rr-gap-8 rr-items-center rr-wrap">
           <input type="text" value={item.metric || ''} onChange={(e) => {
             const list = d[listKey] || [];
             const updated = [...list];
             updated[i] = { ...item, metric: e.target.value };
             handleFieldChange(listKey, updated);
-          }} placeholder="Metric description..." style={{ flex: 1, minWidth: '200px' }} />
+          }} placeholder="Metric description..." className="rr-flex-1 rr-min-w-200" />
           <input type="text" value={item.target || ''} onChange={(e) => {
             const list = d[listKey] || [];
             const updated = [...list];
             updated[i] = { ...item, target: e.target.value };
             handleFieldChange(listKey, updated);
-          }} placeholder="Target value..." style={{ width: '150px' }} />
+          }} placeholder="Target value..." className="rr-w-150" />
           <button className="icon-button" onClick={() => {
             const list = d[listKey] || [];
             handleFieldChange(listKey, list.filter((_: any, idx: number) => idx !== i));
           }} title="Remove">{'\u2715'}</button>
         </div>
       )}
-      <div style={{ width: '100%', marginTop: '4px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+      <div className="rr-w-full rr-mt-4 rr-flex rr-gap-12 rr-wrap">
         {item.target && <span><strong>Target:</strong> {item.target}</span>}
         {item.baseline && <span><strong>Baseline:</strong> {item.baseline}</span>}
         {item.measurement && <span><strong>Measurement:</strong> {item.measurement}</span>}
         {showActualValue && item.actualValue && <span><strong>Actual:</strong> <span className="tag tag-success">{item.actualValue}</span></span>}
       </div>
-      {item.notes && <div style={{ width: '100%', marginTop: '2px' }}><em>{item.notes}</em></div>}
+      {item.notes && <div className="rr-w-full rr-mt-2"><em>{item.notes}</em></div>}
     </div>
   );
 
@@ -635,7 +635,7 @@ export function renderRetrospectiveDetails(props: RendererProps) {
             <><h4>Main Challenges</h4><ul>{summary.mainChallenges.map((c: string, i: number) => <li key={i}>{c}</li>)}</ul></>
           )}
           {(velocityAnalysis.estimatedEffort || velocityAnalysis.actualEffort) && (
-            <div className="detail-row" style={{ marginTop: '8px' }}>
+            <div className="detail-row rr-mt-8">
               {velocityAnalysis.estimatedEffort && <section className="detail-section inline"><h4>Estimated</h4><span>{velocityAnalysis.estimatedEffort}</span></section>}
               {velocityAnalysis.actualEffort && <section className="detail-section inline"><h4>Actual</h4><span>{velocityAnalysis.actualEffort}</span></section>}
               {velocityAnalysis.variance && <section className="detail-section inline"><h4>Variance</h4><span className="tag">{velocityAnalysis.variance}</span></section>}
@@ -649,7 +649,7 @@ export function renderRetrospectiveDetails(props: RendererProps) {
       <CollapsibleSection title="What Went Well" count={whatWentWell.length} sectionId="retro-well">
         {whatWentWell.length > 0 ? (
           whatWentWell.map((item: any, i: number) => (
-            <div key={i} style={{ padding: '6px 8px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '6px' }}>
+            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
               <strong>{item.item || `Item ${i + 1}`}</strong>
               {item.impact && <div><strong>Impact:</strong> {item.impact}</div>}
               {item.recommendation && <div><em>Recommendation: {item.recommendation}</em></div>}
@@ -665,7 +665,7 @@ export function renderRetrospectiveDetails(props: RendererProps) {
       <CollapsibleSection title="What Did Not Go Well" count={whatDidNotGoWell.length} sectionId="retro-bad">
         {whatDidNotGoWell.length > 0 ? (
           whatDidNotGoWell.map((item: any, i: number) => (
-            <div key={i} style={{ padding: '6px 8px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '6px' }}>
+            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
               <strong>{item.item || `Item ${i + 1}`}</strong>
               {item.impact && <div><strong>Impact:</strong> {item.impact}</div>}
               {item.rootCause && <div><strong>Root Cause:</strong> {item.rootCause}</div>}
@@ -682,17 +682,17 @@ export function renderRetrospectiveDetails(props: RendererProps) {
       <CollapsibleSection title="Lessons Learned" count={lessonsLearned.length} sectionId="retro-lessons">
         {lessonsLearned.length > 0 ? (
           lessonsLearned.map((item: any, i: number) => (
-            <div key={i} style={{ padding: '6px 8px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '6px' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <strong style={{ flex: 1 }}>{item.id ? `${item.id}: ` : ''}{item.lesson || `Lesson ${i + 1}`}</strong>
+            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
+              <div className="rr-flex rr-gap-8 rr-items-center">
+                <strong className="rr-flex-1">{item.id ? `${item.id}: ` : ''}{item.lesson || `Lesson ${i + 1}`}</strong>
                 {item.category && <span className="tag">{item.category}</span>}
                 {item.actionable && <span className="tag tag-success">Actionable</span>}
               </div>
               {editMode && (
-                <div style={{ marginTop: '4px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div className="rr-mt-4 rr-flex rr-gap-8 rr-items-center">
                   <input type="text" value={item.lesson || ''} onChange={(e) => {
                     const updated = [...lessonsLearned]; updated[i] = { ...item, lesson: e.target.value }; handleFieldChange('lessonsLearned', updated);
-                  }} placeholder="Lesson..." style={{ flex: 1 }} />
+                  }} placeholder="Lesson..." className="rr-flex-1" />
                   <select value={item.category || ''} onChange={(e) => {
                     const updated = [...lessonsLearned]; updated[i] = { ...item, category: e.target.value }; handleFieldChange('lessonsLearned', updated);
                   }} className="status-select">
@@ -701,7 +701,7 @@ export function renderRetrospectiveDetails(props: RendererProps) {
                   </select>
                 </div>
               )}
-              {item.appliesTo?.length > 0 && <div style={{ marginTop: '2px' }}><strong>Applies to:</strong> {item.appliesTo.map((a: string, ai: number) => <span key={ai} className="tag" style={{ marginRight: '4px' }}>{a}</span>)}</div>}
+              {item.appliesTo?.length > 0 && <div className="rr-mt-2"><strong>Applies to:</strong> {item.appliesTo.map((a: string, ai: number) => <span key={ai} className="tag rr-mr-4">{a}</span>)}</div>}
             </div>
           ))
         ) : <p className="empty-message">No lessons recorded</p>}
@@ -714,20 +714,20 @@ export function renderRetrospectiveDetails(props: RendererProps) {
       <CollapsibleSection title="Action Items" count={actionItems.length} sectionId="retro-actions">
         {actionItems.length > 0 ? (
           actionItems.map((item: any, i: number) => (
-            <div key={i} style={{ padding: '6px 8px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '6px' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <strong style={{ flex: 1 }}>{item.id ? `${item.id}: ` : ''}{item.action || `Action ${i + 1}`}</strong>
+            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
+              <div className="rr-flex rr-gap-8 rr-items-center">
+                <strong className="rr-flex-1">{item.id ? `${item.id}: ` : ''}{item.action || `Action ${i + 1}`}</strong>
                 {item.priority && <span className={`tag risk-${item.priority}`}>{item.priority}</span>}
                 {item.status && <span className={`status-badge status-${item.status}`}>{item.status}</span>}
               </div>
               {editMode && (
-                <div style={{ marginTop: '4px', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div className="rr-mt-4 rr-flex rr-gap-8 rr-items-center rr-wrap">
                   <input type="text" value={item.action || ''} onChange={(e) => {
                     const updated = [...actionItems]; updated[i] = { ...item, action: e.target.value }; handleFieldChange('actionItems', updated);
-                  }} placeholder="Action..." style={{ flex: 1, minWidth: '200px' }} />
+                  }} placeholder="Action..." className="rr-flex-1 rr-min-w-200" />
                   <input type="text" value={item.owner || ''} onChange={(e) => {
                     const updated = [...actionItems]; updated[i] = { ...item, owner: e.target.value }; handleFieldChange('actionItems', updated);
-                  }} placeholder="Owner" style={{ width: '120px' }} />
+                  }} placeholder="Owner" className="rr-w-120" />
                   <select value={item.priority || ''} onChange={(e) => {
                     const updated = [...actionItems]; updated[i] = { ...item, priority: e.target.value }; handleFieldChange('actionItems', updated);
                   }} className="status-select">
@@ -755,10 +755,10 @@ export function renderRetrospectiveDetails(props: RendererProps) {
       {storyAnalysis.length > 0 && (
         <CollapsibleSection title="Story Analysis" count={storyAnalysis.length} sectionId="retro-stories">
           {storyAnalysis.map((s: any, i: number) => (
-            <div key={i} style={{ padding: '6px 8px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '6px' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
+              <div className="rr-flex rr-gap-8 rr-items-center">
                 {s.storyId && <span className="tag">{s.storyId}</span>}
-                <strong style={{ flex: 1 }}>{s.storyTitle || `Story ${i + 1}`}</strong>
+                <strong className="rr-flex-1">{s.storyTitle || `Story ${i + 1}`}</strong>
                 {s.outcome && <span className={`status-badge status-${s.outcome}`}>{s.outcome}</span>}
               </div>
               {s.timeSpent && <div><strong>Time:</strong> {s.timeSpent}</div>}
@@ -775,7 +775,7 @@ export function renderRetrospectiveDetails(props: RendererProps) {
           {debtIntroduced.length > 0 && (
             <><h4>Introduced</h4>
             {debtIntroduced.map((item: any, i: number) => (
-              <div key={i} style={{ padding: '4px 8px', marginBottom: '4px' }}>
+              <div key={i} className="rr-p-4-8 rr-mb-4">
                 <strong>{item.description}</strong>
                 {item.severity && <span className={`tag risk-${item.severity}`} style={{ marginLeft: '6px' }}>{item.severity}</span>}
                 {item.reason && <div><strong>Reason:</strong> {item.reason}</div>}
@@ -786,7 +786,7 @@ export function renderRetrospectiveDetails(props: RendererProps) {
           {debtAddressed.length > 0 && (
             <><h4>Addressed</h4>
             {debtAddressed.map((item: any, i: number) => (
-              <div key={i} style={{ padding: '4px 8px', marginBottom: '4px' }}>
+              <div key={i} className="rr-p-4-8 rr-mb-4">
                 <strong>{item.description}</strong>
                 {item.resolution && <div><strong>Resolution:</strong> {item.resolution}</div>}
               </div>
@@ -802,13 +802,13 @@ export function renderRetrospectiveDetails(props: RendererProps) {
             <><h4>Next Epic Impacts</h4><ul>{impactOnFutureWork.nextEpicImpacts.map((item: any, i: number) => <li key={i}><strong>{item.epicId}:</strong> {item.impact}{item.recommendation && <em> — {item.recommendation}</em>}</li>)}</ul></>
           )}
           {impactOnFutureWork.architectureChanges?.length > 0 && (
-            <><h4>Architecture Changes</h4><ul>{impactOnFutureWork.architectureChanges.map((item: any, i: number) => <li key={i}><strong>{item.decision}</strong> — {item.rationale}{item.documentationUpdate && <div style={{ fontSize: '0.9em', opacity: 0.8 }}><strong>Doc Update:</strong> {item.documentationUpdate}</div>}</li>)}</ul></>
+            <><h4>Architecture Changes</h4><ul>{impactOnFutureWork.architectureChanges.map((item: any, i: number) => <li key={i}><strong>{item.decision}</strong> — {item.rationale}{item.documentationUpdate && <div className="rr-text-sm rr-subtle"><strong>Doc Update:</strong> {item.documentationUpdate}</div>}</li>)}</ul></>
           )}
           {impactOnFutureWork.newDiscoveries?.length > 0 && (
-            <><h4>New Discoveries</h4><ul>{impactOnFutureWork.newDiscoveries.map((item: any, i: number) => <li key={i}><strong>{item.discovery}</strong> — {item.implication}{item.action && <div style={{ fontSize: '0.9em', opacity: 0.8 }}><strong>Action:</strong> {item.action}</div>}</li>)}</ul></>
+            <><h4>New Discoveries</h4><ul>{impactOnFutureWork.newDiscoveries.map((item: any, i: number) => <li key={i}><strong>{item.discovery}</strong> — {item.implication}{item.action && <div className="rr-text-sm rr-subtle"><strong>Action:</strong> {item.action}</div>}</li>)}</ul></>
           )}
           {impactOnFutureWork.suggestedBacklogChanges?.length > 0 && (
-            <><h4>Suggested Backlog Changes</h4><ul>{impactOnFutureWork.suggestedBacklogChanges.map((item: any, i: number) => <li key={i}>[{item.changeType}] <strong>{item.targetItem}:</strong> {item.description}{item.rationale && <div style={{ fontSize: '0.9em', opacity: 0.8 }}><strong>Rationale:</strong> {item.rationale}</div>}</li>)}</ul></>
+            <><h4>Suggested Backlog Changes</h4><ul>{impactOnFutureWork.suggestedBacklogChanges.map((item: any, i: number) => <li key={i}>[{item.changeType}] <strong>{item.targetItem}:</strong> {item.description}{item.rationale && <div className="rr-text-sm rr-subtle"><strong>Rationale:</strong> {item.rationale}</div>}</li>)}</ul></>
           )}
         </CollapsibleSection>
       )}
@@ -922,7 +922,7 @@ export function renderSprintStatusDetails(props: RendererProps) {
 
       {/* Velocity Metrics (BMM) */}
       {(velocityMetrics.planned != null || velocityMetrics.completed != null) && (
-        <div className="detail-row" style={{ marginTop: '8px' }}>
+        <div className="detail-row rr-mt-8">
           {velocityMetrics.planned != null && <section className="detail-section inline"><h4>Planned</h4><span className="tag">{velocityMetrics.planned} pts</span></section>}
           {velocityMetrics.completed != null && <section className="detail-section inline"><h4>Completed</h4><span className="tag tag-success">{velocityMetrics.completed} pts</span></section>}
           {velocityMetrics.remaining != null && <section className="detail-section inline"><h4>Remaining</h4><span className="tag tag-warning">{velocityMetrics.remaining} pts</span></section>}
@@ -955,7 +955,7 @@ export function renderSprintStatusDetails(props: RendererProps) {
 
       {/* Summary (dashboard shape) */}
       {(summary.totalEpics != null || summary.totalStories != null) && (
-        <div className="detail-row" style={{ marginTop: '8px' }}>
+        <div className="detail-row rr-mt-8">
           {summary.totalEpics != null && <section className="detail-section inline"><h4>Epics</h4><span className="tag">{summary.completedEpics || 0}/{summary.totalEpics} done</span></section>}
           {summary.inProgressEpics != null && <section className="detail-section inline"><h4>In Progress</h4><span className="tag">{summary.inProgressEpics}</span></section>}
           {summary.totalStories != null && <section className="detail-section inline"><h4>Stories</h4><span className="tag">{summary.completedStories || 0}/{summary.totalStories} done</span></section>}
@@ -968,23 +968,23 @@ export function renderSprintStatusDetails(props: RendererProps) {
       {storyStatus.length > 0 && (
         <CollapsibleSection title="Story Status" count={storyStatus.length} sectionId="sprint-stories">
           {storyStatus.map((s: any, i: number) => (
-            <div key={i} style={{ padding: '6px 8px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '6px' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
+              <div className="rr-flex rr-gap-8 rr-items-center">
                 {s.storyId && <span className="tag">{s.storyId}</span>}
-                <strong style={{ flex: 1 }}>{s.title || `Story ${i + 1}`}</strong>
+                <strong className="rr-flex-1">{s.title || `Story ${i + 1}`}</strong>
                 {s.status && <span className={`status-badge status-${s.status}`}>{s.status}</span>}
                 {s.completionPercentage != null && <span className="tag">{s.completionPercentage}%</span>}
               </div>
               {s.assignee && <div><strong>Assignee:</strong> {s.assignee}</div>}
-              {s.notes && <div style={{ marginTop: '2px' }}><em>{s.notes}</em></div>}
+              {s.notes && <div className="rr-mt-2"><em>{s.notes}</em></div>}
               {s.blockers?.length > 0 && (
-                <div style={{ marginTop: '4px' }}>
+                <div className="rr-mt-4">
                   <strong>Blockers:</strong>
                   {s.blockers.map((b: any, bi: number) => (
-                    <div key={bi} style={{ marginLeft: '8px', marginTop: '2px', padding: '4px', background: 'var(--vscode-inputValidation-warningBackground, rgba(255,200,0,0.1))', borderRadius: '3px' }}>
+                    <div key={bi} className="rr-ml-8 rr-mt-2 rr-p-4 rr-bg-warning rr-rounded-sm">
                       <div>{typeof b === 'string' ? b : b.blocker}</div>
-                      {b.impact && <div style={{ fontSize: '0.9em' }}><strong>Impact:</strong> {b.impact}</div>}
-                      {b.resolution && <div style={{ fontSize: '0.9em' }}><strong>Resolution:</strong> {b.resolution}</div>}
+                      {b.impact && <div className="rr-text-sm"><strong>Impact:</strong> {b.impact}</div>}
+                      {b.resolution && <div className="rr-text-sm"><strong>Resolution:</strong> {b.resolution}</div>}
                     </div>
                   ))}
                 </div>
@@ -1003,26 +1003,26 @@ export function renderSprintStatusDetails(props: RendererProps) {
                 <section className="detail-section inline"><h4>Status</h4><span className={`status-badge status-${epic.status}`}>{epic.status}</span></section>
               </div>
               {epic.stories?.length > 0 && (
-                <div style={{ marginTop: '8px' }}>
+                <div className="rr-mt-8">
                   <h4>Stories ({epic.stories.length})</h4>
                   {epic.stories.map((s: any, si: number) => (
-                    <div key={si} style={{ padding: '4px 8px', display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '2px', flexWrap: 'wrap' }}>
+                    <div key={si} className="rr-p-4-8 rr-flex rr-gap-8 rr-items-center rr-mb-2 rr-wrap">
                       <span className="tag">{s.storyKey || s.storyId || `S-${si + 1}`}</span>
-                      <span style={{ flex: 1 }}>{s.title}</span>
+                      <span className="rr-flex-1">{s.title}</span>
                       <span className={`status-badge status-${s.status}`}>{s.status}</span>
                       {s.assignee && <span className="tag">{s.assignee}</span>}
-                      {s.filePath && <div style={{ width: '100%' }}><code style={{ fontSize: '0.85em', opacity: 0.7 }}>{s.filePath}</code></div>}
-                      {s.startedAt && <div style={{ width: '100%', fontSize: '0.85em', opacity: 0.7 }}><strong>Started:</strong> {s.startedAt}</div>}
-                      {s.completedAt && <div style={{ width: '100%', fontSize: '0.85em', opacity: 0.7 }}><strong>Completed:</strong> {s.completedAt}</div>}
+                      {s.filePath && <div className="rr-w-full"><code className="rr-text-sm rr-muted">{s.filePath}</code></div>}
+                      {s.startedAt && <div className="rr-w-full rr-text-sm rr-muted"><strong>Started:</strong> {s.startedAt}</div>}
+                      {s.completedAt && <div className="rr-w-full rr-text-sm rr-muted"><strong>Completed:</strong> {s.completedAt}</div>}
                     </div>
                   ))}
                 </div>
               )}
               {epic.retrospective && epic.retrospective.status && (
-                <div style={{ marginTop: '6px' }}>
+                <div className="rr-mt-6">
                   <strong>Retrospective:</strong> <span className={`status-badge status-${epic.retrospective.status}`}>{epic.retrospective.status}</span>
-                  {epic.retrospective.filePath && <div><code style={{ fontSize: '0.85em', opacity: 0.7 }}>{epic.retrospective.filePath}</code></div>}
-                  {epic.retrospective.completedAt && <div style={{ fontSize: '0.85em', opacity: 0.7 }}><strong>Completed:</strong> {epic.retrospective.completedAt}</div>}
+                  {epic.retrospective.filePath && <div><code className="rr-text-sm rr-muted">{epic.retrospective.filePath}</code></div>}
+                  {epic.retrospective.completedAt && <div className="rr-text-sm rr-muted"><strong>Completed:</strong> {epic.retrospective.completedAt}</div>}
                 </div>
               )}
             </CollapsibleSection>
@@ -1034,10 +1034,10 @@ export function renderSprintStatusDetails(props: RendererProps) {
       {riskUpdates.length > 0 && (
         <CollapsibleSection title="Risk Updates" count={riskUpdates.length} sectionId="sprint-risk-updates">
           {riskUpdates.map((r: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+            <div key={i} className="rr-p-4-8 rr-mb-4 rr-flex rr-gap-8 rr-items-start">
               {r.riskId && <span className="tag">{r.riskId}</span>}
               {r.status && <span className={`status-badge status-${r.status}`}>{r.status}</span>}
-              <span style={{ flex: 1 }}>{r.update}</span>
+              <span className="rr-flex-1">{r.update}</span>
             </div>
           ))}
         </CollapsibleSection>
@@ -1047,7 +1047,7 @@ export function renderSprintStatusDetails(props: RendererProps) {
       {blockers.length > 0 && (
         <CollapsibleSection title="Blockers" count={blockers.length} sectionId="sprint-blockers">
           {blockers.map((b: any, i: number) => (
-            <div key={i} style={{ padding: '6px 8px', borderRadius: '4px', background: 'var(--vscode-inputValidation-warningBackground, rgba(255,200,0,0.1))', marginBottom: '6px' }}>
+            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-warning rr-mb-6">
               <strong>{b.description}</strong>
               {b.impact && <div><strong>Impact:</strong> {b.impact}</div>}
               {b.owner && <div><strong>Owner:</strong> {b.owner}</div>}
@@ -1080,10 +1080,10 @@ export function renderSprintStatusDetails(props: RendererProps) {
       {stakeholderActions.length > 0 && (
         <CollapsibleSection title="Stakeholder Actions" count={stakeholderActions.length} sectionId="sprint-stakeholder-actions">
           {stakeholderActions.map((a: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px' }}>
+            <div key={i} className="rr-p-4-8 rr-mb-4">
               <strong>{a.action}</strong>
-              {a.owner && <span className="tag" style={{ marginLeft: '8px' }}>{a.owner}</span>}
-              {a.dueDate && <span style={{ marginLeft: '8px' }}><em>Due: {a.dueDate}</em></span>}
+              {a.owner && <span className="tag rr-ml-8">{a.owner}</span>}
+              {a.dueDate && <span className="rr-ml-8"><em>Due: {a.dueDate}</em></span>}
             </div>
           ))}
         </CollapsibleSection>
@@ -1093,8 +1093,8 @@ export function renderSprintStatusDetails(props: RendererProps) {
       {devStatusEntries.length > 0 && (
         <CollapsibleSection title="Development Status" count={devStatusEntries.length} sectionId="sprint-dev-status">
           {devStatusEntries.map(([key, val]: [string, any], i: number) => (
-            <div key={i} style={{ padding: '2px 8px', display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <code style={{ flex: 1 }}>{key}</code>
+            <div key={i} className="rr-p-2-8 rr-flex rr-gap-8 rr-items-center">
+              <code className="rr-flex-1">{key}</code>
               <span className={`status-badge status-${val}`}>{String(val)}</span>
             </div>
           ))}
@@ -1157,12 +1157,12 @@ export function renderCodeReviewDetails(props: RendererProps) {
         </div>
       )}
       {storyRef.storyFilePath && (
-        <div style={{ marginTop: '4px' }}><strong>Story File:</strong> <code style={{ fontSize: '0.85em' }}>{storyRef.storyFilePath}</code></div>
+        <div className="rr-mt-4"><strong>Story File:</strong> <code className="rr-text-sm">{storyRef.storyFilePath}</code></div>
       )}
 
       {/* Review Summary */}
       {(reviewSummary.overallVerdict || reviewSummary.totalFindings != null) && (
-        <div className="detail-row" style={{ marginTop: '8px' }}>
+        <div className="detail-row rr-mt-8">
           {reviewSummary.overallVerdict && (
             <section className="detail-section inline">
               <h4>Verdict</h4>
@@ -1209,18 +1209,18 @@ export function renderCodeReviewDetails(props: RendererProps) {
               </div>
               {f.description && <p><Md text={f.description} /></p>}
               {f.location && (
-                <div style={{ marginTop: '4px' }}>
+                <div className="rr-mt-4">
                   {f.location.filePath && <code>{f.location.filePath}{f.location.lineNumber ? `:${f.location.lineNumber}` : ''}</code>}
-                  {f.location.lineRange && <span style={{ marginLeft: '8px' }}><strong>Lines:</strong> {f.location.lineRange.start}–{f.location.lineRange.end}</span>}
-                  {f.location.functionName && <span style={{ marginLeft: '8px' }}><strong>fn:</strong> {f.location.functionName}</span>}
-                  {f.location.componentName && <span style={{ marginLeft: '8px' }}><strong>Component:</strong> {f.location.componentName}</span>}
+                  {f.location.lineRange && <span className="rr-ml-8"><strong>Lines:</strong> {f.location.lineRange.start}–{f.location.lineRange.end}</span>}
+                  {f.location.functionName && <span className="rr-ml-8"><strong>fn:</strong> {f.location.functionName}</span>}
+                  {f.location.componentName && <span className="rr-ml-8"><strong>Component:</strong> {f.location.componentName}</span>}
                 </div>
               )}
-              {f.codeSnippet && <pre style={{ background: 'var(--vscode-textCodeBlock-background)', padding: '8px', borderRadius: '4px', overflow: 'auto', fontSize: '0.85em', marginTop: '4px' }}>{f.codeSnippet}</pre>}
-              {f.recommendation && <div style={{ marginTop: '4px' }}><strong>Recommendation:</strong> <Md text={f.recommendation} /></div>}
-              {f.suggestedFix && <div style={{ marginTop: '4px' }}><strong>Suggested Fix:</strong> <pre style={{ background: 'var(--vscode-textCodeBlock-background)', padding: '8px', borderRadius: '4px', overflow: 'auto', fontSize: '0.85em' }}>{f.suggestedFix}</pre></div>}
+              {f.codeSnippet && <pre className="rr-bg-code rr-p-8 rr-rounded rr-overflow-auto rr-text-sm rr-mt-4">{f.codeSnippet}</pre>}
+              {f.recommendation && <div className="rr-mt-4"><strong>Recommendation:</strong> <Md text={f.recommendation} /></div>}
+              {f.suggestedFix && <div className="rr-mt-4"><strong>Suggested Fix:</strong> <pre className="rr-bg-code rr-p-8 rr-rounded rr-overflow-auto rr-text-sm">{f.suggestedFix}</pre></div>}
               {f.references?.length > 0 && (
-                <div style={{ marginTop: '4px' }}><strong>References:</strong><ul>{f.references.map((ref: any, ri: number) => <li key={ri}>{typeof ref === 'string' ? ref : ref.title || ref.url || `Ref ${ri + 1}`}</li>)}</ul></div>
+                <div className="rr-mt-4"><strong>References:</strong><ul>{f.references.map((ref: any, ri: number) => <li key={ri}>{typeof ref === 'string' ? ref : ref.title || ref.url || `Ref ${ri + 1}`}</li>)}</ul></div>
               )}
             </CollapsibleSection>
           ))
@@ -1231,12 +1231,12 @@ export function renderCodeReviewDetails(props: RendererProps) {
       {acVerification.length > 0 && (
         <CollapsibleSection title="AC Verification" count={acVerification.length} sectionId="cr-ac">
           {acVerification.map((ac: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginBottom: '2px' }}>
+            <div key={i} className="rr-p-4-8 rr-flex rr-wrap rr-gap-8 rr-items-center rr-mb-2">
               <span className="tag">{ac.acId || `AC-${i + 1}`}</span>
-              <span style={{ flex: 1 }}>{ac.acDescription || ''}</span>
+              <span className="rr-flex-1">{ac.acDescription || ''}</span>
               <span className={`status-badge status-${ac.status === 'verified' ? 'complete' : ac.status === 'partial' ? 'in-progress' : 'draft'}`}>{ac.status}</span>
-              {ac.notes && <div style={{ width: '100%', marginTop: '2px' }}><em>{ac.notes}</em></div>}
-              {ac.evidenceLocations?.length > 0 && <div style={{ width: '100%', marginTop: '2px' }}><strong>Evidence:</strong> {ac.evidenceLocations.map((loc: string, li: number) => <code key={li} style={{ marginRight: '4px' }}>{loc}</code>)}</div>}
+              {ac.notes && <div className="rr-w-full rr-mt-2"><em>{ac.notes}</em></div>}
+              {ac.evidenceLocations?.length > 0 && <div className="rr-w-full rr-mt-2"><strong>Evidence:</strong> {ac.evidenceLocations.map((loc: string, li: number) => <code key={li} className="rr-mr-4">{loc}</code>)}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -1252,7 +1252,7 @@ export function renderCodeReviewDetails(props: RendererProps) {
             <><h4>Uncovered Areas</h4><ul>{testCoverage.uncoveredAreas.map((a: string, i: number) => <li key={i}>{a}</li>)}</ul></>
           )}
           {testCoverage.missingTestTypes?.length > 0 && (
-            <div><strong>Missing Test Types:</strong> {testCoverage.missingTestTypes.map((t: string, i: number) => <span key={i} className="tag" style={{ marginRight: '4px' }}>{t}</span>)}</div>
+            <div><strong>Missing Test Types:</strong> {testCoverage.missingTestTypes.map((t: string, i: number) => <span key={i} className="tag rr-mr-4">{t}</span>)}</div>
           )}
           {testCoverage.testQualityNotes && <p><em>{testCoverage.testQualityNotes}</em></p>}
         </CollapsibleSection>
@@ -1286,7 +1286,7 @@ export function renderCodeReviewDetails(props: RendererProps) {
           </div>
           {archCompliance.violations?.length > 0 && (
             <>{archCompliance.violations.map((v: any, i: number) => (
-              <div key={i} style={{ padding: '4px 8px', marginBottom: '4px' }}>
+              <div key={i} className="rr-p-4-8 rr-mb-4">
                 <strong>{v.rule}:</strong> {v.violation}
                 {v.location && <div><code>{v.location}</code></div>}
               </div>
@@ -1300,10 +1300,10 @@ export function renderCodeReviewDetails(props: RendererProps) {
       {nextSteps.length > 0 && (
         <CollapsibleSection title="Next Steps" count={nextSteps.length} sectionId="cr-next">
           {nextSteps.map((step: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginBottom: '2px' }}>
-              <span style={{ flex: 1 }}>{step.action}</span>
+            <div key={i} className="rr-p-4-8 rr-flex rr-wrap rr-gap-8 rr-items-center rr-mb-2">
+              <span className="rr-flex-1">{step.action}</span>
               {step.priority && <span className={`tag risk-${step.priority === 'required' ? 'high' : step.priority === 'recommended' ? 'medium' : 'low'}`}>{step.priority}</span>}
-              {step.relatedFindingIds?.length > 0 && <div style={{ width: '100%', marginTop: '2px' }}>{step.relatedFindingIds.map((id: string, fi: number) => <span key={fi} className="tag" style={{ marginRight: '4px' }}>{id}</span>)}</div>}
+              {step.relatedFindingIds?.length > 0 && <div className="rr-w-full rr-mt-2">{step.relatedFindingIds.map((id: string, fi: number) => <span key={fi} className="tag rr-mr-4">{id}</span>)}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -1380,7 +1380,7 @@ export function renderChangeProposalDetails(props: RendererProps) {
             {changeRequest.id && <div className="detail-row"><section className="detail-section inline"><h4>ID</h4><span className="tag">{changeRequest.id}</span></section></div>}
             {changeRequest.title && <h4>{changeRequest.title}</h4>}
             {changeRequest.description && <Md text={changeRequest.description} />}
-            <div className="detail-row" style={{ marginTop: '8px' }}>
+            <div className="detail-row rr-mt-8">
               {changeRequest.requestedBy && <section className="detail-section inline"><h4>Requested By</h4><span>{changeRequest.requestedBy}</span></section>}
               {changeRequest.changeType && <section className="detail-section inline"><h4>Type</h4><span className="tag">{changeRequest.changeType}</span></section>}
               {changeRequest.urgency && <section className="detail-section inline"><h4>Urgency</h4><span className={`tag risk-${changeRequest.urgency}`}>{changeRequest.urgency}</span></section>}
@@ -1407,23 +1407,23 @@ export function renderChangeProposalDetails(props: RendererProps) {
         {affectedEpics.length > 0 && (
           <><h4>Affected Epics ({affectedEpics.length})</h4>
           {affectedEpics.map((e: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+            <div key={i} className="rr-p-4-8 rr-mb-4 rr-flex rr-wrap rr-gap-8 rr-items-center">
               {e.epicId && <span className="tag">{e.epicId}</span>}
-              <span style={{ flex: 1 }}>{e.epicTitle || ''}</span>
+              <span className="rr-flex-1">{e.epicTitle || ''}</span>
               {e.impactType && <span className="tag">{e.impactType}</span>}
-              {e.impactDescription && <div style={{ width: '100%', marginTop: '2px' }}><em>{e.impactDescription}</em></div>}
+              {e.impactDescription && <div className="rr-w-full rr-mt-2"><em>{e.impactDescription}</em></div>}
             </div>
           ))}</>
         )}
         {affectedStories.length > 0 && (
           <><h4>Affected Stories ({affectedStories.length})</h4>
           {affectedStories.map((s: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+            <div key={i} className="rr-p-4-8 rr-mb-4 rr-flex rr-wrap rr-gap-8 rr-items-center">
               {s.storyId && <span className="tag">{s.storyId}</span>}
-              <span style={{ flex: 1 }}>{s.storyTitle || ''}</span>
+              <span className="rr-flex-1">{s.storyTitle || ''}</span>
               {s.currentStatus && <span className={`status-badge status-${s.currentStatus}`}>{s.currentStatus}</span>}
               {s.impactType && <span className="tag">{s.impactType}</span>}
-              {s.impactDescription && <div style={{ width: '100%', marginTop: '2px' }}><em>{s.impactDescription}</em></div>}
+              {s.impactDescription && <div className="rr-w-full rr-mt-2"><em>{s.impactDescription}</em></div>}
             </div>
           ))}</>
         )}
@@ -1432,7 +1432,7 @@ export function renderChangeProposalDetails(props: RendererProps) {
         )}
         {impactAnalysis.timelineImpact?.milestoneEffects?.length > 0 && (
           <><h4>Milestone Effects</h4>
-          <table style={{ width: '100%', fontSize: '0.85em' }}>
+          <table className="rr-w-full rr-text-sm">
             <thead><tr><th>Milestone</th><th>Original Date</th><th>New Date</th></tr></thead>
             <tbody>
               {impactAnalysis.timelineImpact.milestoneEffects.map((m: any, i: number) => (
@@ -1446,7 +1446,7 @@ export function renderChangeProposalDetails(props: RendererProps) {
             <h4>Architecture Impact</h4>
             {impactAnalysis.architectureImpact.description && <Md text={impactAnalysis.architectureImpact.description} />}
             {impactAnalysis.architectureImpact.affectedComponents?.length > 0 && (
-              <div style={{ marginTop: '4px' }}><strong>Affected Components:</strong><ul>{impactAnalysis.architectureImpact.affectedComponents.map((c: string, i: number) => <li key={i}>{c}</li>)}</ul></div>
+              <div className="rr-mt-4"><strong>Affected Components:</strong><ul>{impactAnalysis.architectureImpact.affectedComponents.map((c: string, i: number) => <li key={i}>{c}</li>)}</ul></div>
             )}
             {impactAnalysis.architectureImpact.requiresArchitectureUpdate && <div><span className="tag risk-high">Requires Architecture Update</span></div>}
           </>
@@ -1460,10 +1460,10 @@ export function renderChangeProposalDetails(props: RendererProps) {
         {riskAssessment.length > 0 && (
           <><h4>Risk Assessment</h4>
           {riskAssessment.map((r: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px' }}>
+            <div key={i} className="rr-p-4-8 rr-mb-4">
               <strong>{r.risk}</strong>
-              {r.likelihood && <span className="tag" style={{ marginLeft: '6px' }}>P: {r.likelihood}</span>}
-              {r.impact && <span className="tag" style={{ marginLeft: '4px' }}>I: {r.impact}</span>}
+              {r.likelihood && <span className="tag rr-ml-6">P: {r.likelihood}</span>}
+              {r.impact && <span className="tag rr-ml-4">I: {r.impact}</span>}
               {r.mitigation && <div><em>Mitigation: {r.mitigation}</em></div>}
             </div>
           ))}</>
@@ -1492,9 +1492,9 @@ export function renderChangeProposalDetails(props: RendererProps) {
         {options.length > 0 && (
           <><h4>Options Considered</h4>
           {options.map((opt: any, i: number) => (
-            <div key={i} style={{ padding: '6px 8px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '6px' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <strong style={{ flex: 1 }}>{opt.optionId ? `${opt.optionId}: ` : ''}{opt.description || `Option ${i + 1}`}</strong>
+            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
+              <div className="rr-flex rr-gap-8 rr-items-center">
+                <strong className="rr-flex-1">{opt.optionId ? `${opt.optionId}: ` : ''}{opt.description || `Option ${i + 1}`}</strong>
                 {opt.recommended && <span className="tag tag-success">Recommended</span>}
                 {opt.effort && <span className="tag">{opt.effort}</span>}
               </div>
@@ -1529,12 +1529,12 @@ export function renderChangeProposalDetails(props: RendererProps) {
           {approval.approvedBy && <section className="detail-section inline"><h4>By</h4><span>{approval.approvedBy}</span></section>}
           {approval.approvalDate && <section className="detail-section inline"><h4>Date</h4><span>{typeof approval.approvalDate === 'string' ? approval.approvalDate.split('T')[0] : approval.approvalDate}</span></section>}
         </div>
-        {approval.approvalNotes && <div style={{ marginTop: '4px' }}><strong>Notes:</strong> <Md text={approval.approvalNotes} /></div>}
+        {approval.approvalNotes && <div className="rr-mt-4"><strong>Notes:</strong> <Md text={approval.approvalNotes} /></div>}
         {approval.conditions?.length > 0 && (
-          <div style={{ marginTop: '4px' }}><strong>Conditions:</strong><ul>{approval.conditions.map((c: string, i: number) => <li key={i}>{c}</li>)}</ul></div>
+          <div className="rr-mt-4"><strong>Conditions:</strong><ul>{approval.conditions.map((c: string, i: number) => <li key={i}>{c}</li>)}</ul></div>
         )}
         {(implementation.status || implementation.implementedBy) && (
-          <div style={{ marginTop: '8px' }}>
+          <div className="rr-mt-8">
             <h4>Implementation</h4>
             <div className="detail-row">
               {implementation.status && (
@@ -1550,7 +1550,7 @@ export function renderChangeProposalDetails(props: RendererProps) {
               {implementation.startedAt && <section className="detail-section inline"><h4>Started</h4><span>{typeof implementation.startedAt === 'string' ? implementation.startedAt.split('T')[0] : implementation.startedAt}</span></section>}
               {implementation.completedAt && <section className="detail-section inline"><h4>Completed</h4><span>{typeof implementation.completedAt === 'string' ? implementation.completedAt.split('T')[0] : implementation.completedAt}</span></section>}
             </div>
-            {implementation.notes && <div style={{ marginTop: '4px' }}><Md text={implementation.notes} /></div>}
+            {implementation.notes && <div className="rr-mt-4"><Md text={implementation.notes} /></div>}
           </div>
         )}
       </CollapsibleSection>
@@ -1636,16 +1636,16 @@ export function renderRisksDetails(props: RendererProps) {
       {/* Risks List */}
       <CollapsibleSection title="Risks" count={risksList.length} sectionId="risks-list">
         {risksList.length > 0 ? risksList.map((risk: any, i: number) => (
-          <div key={i} style={{ padding: '8px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '6px' }}>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div key={i} className="rr-p-8 rr-rounded rr-bg-subtle rr-mb-6">
+            <div className="rr-flex rr-gap-8 rr-items-center rr-wrap">
               {risk.id && <span className="tag">{risk.id}</span>}
-              <strong style={{ flex: 1 }}>{risk.risk || `Risk ${i + 1}`}</strong>
+              <strong className="rr-flex-1">{risk.risk || `Risk ${i + 1}`}</strong>
               {risk.riskScore && <span className={`tag risk-${risk.riskScore}`}>{risk.riskScore}</span>}
               {risk.status && <span className={`status-badge status-${risk.status}`}>{risk.status}</span>}
             </div>
             {editMode && (
-              <div style={{ marginTop: '4px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <input type="text" value={risk.risk || ''} onChange={(e) => { const u = [...risksList]; u[i] = { ...risk, risk: e.target.value }; handleFieldChange('risks', u); }} placeholder="Risk..." style={{ flex: 1, minWidth: '200px' }} />
+              <div className="rr-mt-4 rr-flex rr-gap-8 rr-wrap">
+                <input type="text" value={risk.risk || ''} onChange={(e) => { const u = [...risksList]; u[i] = { ...risk, risk: e.target.value }; handleFieldChange('risks', u); }} placeholder="Risk..." className="rr-flex-1 rr-min-w-200" />
                 <select value={risk.category || ''} onChange={(e) => { const u = [...risksList]; u[i] = { ...risk, category: e.target.value }; handleFieldChange('risks', u); }}>
                   <option value="">Category</option>
                   {categories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -1665,30 +1665,30 @@ export function renderRisksDetails(props: RendererProps) {
                 <button className="icon-button" onClick={() => handleFieldChange('risks', risksList.filter((_: any, idx: number) => idx !== i))} title="Remove">{'\u2715'}</button>
               </div>
             )}
-            <div style={{ marginTop: '4px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <div className="rr-mt-4 rr-flex rr-gap-12 rr-wrap">
               {risk.category && <span><strong>Category:</strong> {risk.category}</span>}
               {risk.probability && <span><strong>P:</strong> {risk.probability}</span>}
               {risk.impact && <span><strong>I:</strong> {risk.impact}</span>}
               {risk.owner && <span><strong>Owner:</strong> {risk.owner}</span>}
               {risk.residualRisk && <span><strong>Residual:</strong> {risk.residualRisk}</span>}
             </div>
-            {risk.description && <div style={{ marginTop: '2px', opacity: 0.9 }}>{risk.description}</div>}
-            {risk.impactDescription && <div style={{ marginTop: '2px' }}>{risk.impactDescription}</div>}
-            {risk.mitigation && <div style={{ marginTop: '2px' }}><strong>Mitigation:</strong> {risk.mitigation}</div>}
+            {risk.description && <div className="rr-mt-2 rr-subtle">{risk.description}</div>}
+            {risk.impactDescription && <div className="rr-mt-2">{risk.impactDescription}</div>}
+            {risk.mitigation && <div className="rr-mt-2"><strong>Mitigation:</strong> {risk.mitigation}</div>}
             {risk.contingencyPlan && <div><strong>Contingency:</strong> {risk.contingencyPlan}</div>}
             {risk.triggers?.length > 0 && <div><strong>Triggers:</strong> {risk.triggers.join(', ')}</div>}
             {risk.relatedRequirements?.length > 0 && <div><strong>Related Requirements:</strong> {risk.relatedRequirements.join(', ')}</div>}
-            {risk.notes && <div style={{ marginTop: '2px' }}><Md text={risk.notes} /></div>}
+            {risk.notes && <div className="rr-mt-2"><Md text={risk.notes} /></div>}
             {(risk.identifiedDate || risk.lastReviewDate) && (
-              <div style={{ marginTop: '2px', display: 'flex', gap: '12px', flexWrap: 'wrap', opacity: 0.8, fontSize: '0.9em' }}>
+              <div className="rr-mt-2 rr-flex rr-gap-12 rr-wrap rr-subtle rr-text-sm">
                 {risk.identifiedDate && <span><strong>Identified:</strong> {risk.identifiedDate}</span>}
                 {risk.lastReviewDate && <span><strong>Last Review:</strong> {risk.lastReviewDate}</span>}
               </div>
             )}
             {risk.mitigationStrategies?.length > 0 && (
-              <div style={{ marginTop: '4px' }}><strong>Strategies:</strong>
+              <div className="rr-mt-4"><strong>Strategies:</strong>
                 <ul>{risk.mitigationStrategies.map((s: any, si: number) => (
-                  <li key={si}>{s.strategy}{s.owner && ` (${s.owner})`}{s.status && <span className="tag" style={{ marginLeft: '4px' }}>{s.status}</span>}</li>
+                  <li key={si}>{s.strategy}{s.owner && ` (${s.owner})`}{s.status && <span className="tag rr-ml-4">{s.status}</span>}</li>
                 ))}</ul>
               </div>
             )}
@@ -1703,11 +1703,11 @@ export function renderRisksDetails(props: RendererProps) {
       {(editMode || assumptions.length > 0) && (
         <CollapsibleSection title="Assumptions" count={assumptions.length} sectionId="risks-assumptions">
           {assumptions.length > 0 ? assumptions.map((a: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div key={i} className="rr-p-4-8 rr-mb-4">
+              <div className="rr-flex rr-gap-8 rr-items-center">
                 {a.id && <span className="tag">{a.id}</span>}
-                <span style={{ fontSize: '1.1em' }}>{a.validated ? '\u2611' : '\u2610'}</span>
-                <strong style={{ flex: 1 }}>{a.assumption}</strong>
+                <span className="rr-text-lg">{a.validated ? '\u2611' : '\u2610'}</span>
+                <strong className="rr-flex-1">{a.assumption}</strong>
               </div>
               {a.ifFalse && <div><strong>If false:</strong> {a.ifFalse}</div>}
               {a.validationMethod && <div><em>Validation: {a.validationMethod}</em></div>}
@@ -1720,12 +1720,12 @@ export function renderRisksDetails(props: RendererProps) {
       {(editMode || dependencies.length > 0) && (
         <CollapsibleSection title="Dependencies" count={dependencies.length} sectionId="risks-deps">
           {dependencies.length > 0 ? dependencies.map((dep: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div key={i} className="rr-p-4-8 rr-mb-4 rr-flex rr-gap-8 rr-items-center rr-wrap">
               {dep.id && <span className="tag">{dep.id}</span>}
-              <strong style={{ flex: 1 }}>{dep.dependency}</strong>
+              <strong className="rr-flex-1">{dep.dependency}</strong>
               {dep.type && <span className="tag">{dep.type}</span>}
-              {dep.risk && <div style={{ width: '100%' }}><strong>Risk:</strong> {dep.risk}</div>}
-              {dep.mitigation && <div style={{ width: '100%' }}><em>Mitigation: {dep.mitigation}</em></div>}
+              {dep.risk && <div className="rr-w-full"><strong>Risk:</strong> {dep.risk}</div>}
+              {dep.mitigation && <div className="rr-w-full"><em>Mitigation: {dep.mitigation}</em></div>}
             </div>
           )) : <p className="empty-message">No dependencies</p>}
         </CollapsibleSection>
@@ -1806,9 +1806,9 @@ export function renderReadinessReportDetails(props: RendererProps) {
               {area.summary && <Md text={area.summary} />}
               {area.findings?.length > 0 && (
                 <>{area.findings.map((f: any, i: number) => (
-                  <div key={i} style={{ padding: '4px 8px', marginBottom: '4px' }}>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <strong style={{ flex: 1 }}>{f.finding || f.gap || ''}</strong>
+                  <div key={i} className="rr-p-4-8 rr-mb-4">
+                    <div className="rr-flex rr-gap-8 rr-items-center">
+                      <strong className="rr-flex-1">{f.finding || f.gap || ''}</strong>
                       {(f.type || f.category) && <span className="tag">{f.type || f.category}</span>}
                       {f.severity && <span className={`tag risk-${f.severity}`}>{f.severity}</span>}
                     </div>
@@ -1819,7 +1819,7 @@ export function renderReadinessReportDetails(props: RendererProps) {
               )}
               {area.gaps?.length > 0 && (
                 <><h4>Gaps</h4>{area.gaps.map((g: any, i: number) => (
-                  <div key={i} style={{ padding: '4px 8px', marginBottom: '4px' }}>
+                  <div key={i} className="rr-p-4-8 rr-mb-4">
                     <strong>{g.gap || g.requirementTitle || ''}</strong>
                     {g.severity && <span className={`tag risk-${g.severity}`} style={{ marginLeft: '6px' }}>{g.severity}</span>}
                     {g.impact && <div><strong>Impact:</strong> {g.impact}</div>}
@@ -1892,9 +1892,9 @@ export function renderReadinessReportDetails(props: RendererProps) {
               const field = eq[key];
               if (!field) return null;
               return (
-                <div key={key} style={{ padding: '4px 8px', marginBottom: '6px', borderLeft: '2px solid var(--vscode-widget-border)' }}>
+                <div key={key} className="rr-p-4-8 rr-mb-6 rr-accent-border">
                   <strong>{title}</strong>
-                  {field.rating && <span className="tag" style={{ marginLeft: '6px' }}>{field.rating}</span>}
+                  {field.rating && <span className="tag rr-ml-6">{field.rating}</span>}
                   {field.details && <div><Md text={field.details} /></div>}
                   {field.issues?.length > 0 && <div><strong>Issues:</strong><ul>{field.issues.map((issue: string, ii: number) => <li key={ii}>{issue}</li>)}</ul></div>}
                   {field.concerns?.length > 0 && <div><strong>Concerns:</strong><ul>{field.concerns.map((c: string, ci: number) => <li key={ci}>{c}</li>)}</ul></div>}
@@ -1918,19 +1918,19 @@ export function renderReadinessReportDetails(props: RendererProps) {
       {(editMode || risks.length > 0) && (
         <CollapsibleSection title="Risks" count={risks.length} sectionId="rr-risks">
           {risks.length > 0 ? risks.map((r: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div key={i} className="rr-p-4-8 rr-mb-4">
+              <div className="rr-flex rr-gap-8 rr-items-center">
                 {r.id && <span className="tag">{r.id}</span>}
-                <strong style={{ flex: 1 }}>{r.risk}</strong>
+                <strong className="rr-flex-1">{r.risk}</strong>
                 {r.probability && <span className="tag">P: {r.probability}</span>}
                 {r.impact && <span className={`tag risk-${r.impact}`}>I: {r.impact}</span>}
                 {r.riskScore != null && <span className="tag">Score: {r.riskScore}</span>}
               </div>
-              {r.category && <div style={{ fontSize: '0.85em' }}><span className="tag">{r.category}</span></div>}
+              {r.category && <div className="rr-text-sm"><span className="tag">{r.category}</span></div>}
               {r.mitigation && <div><em>Mitigation: {r.mitigation}</em></div>}
-              {r.contingency && <div style={{ fontSize: '0.85em', opacity: 0.8 }}><strong>Contingency:</strong> {r.contingency}</div>}
-              {r.owner && <div style={{ fontSize: '0.85em', opacity: 0.7 }}><strong>Owner:</strong> {r.owner}</div>}
-              {r.triggers?.length > 0 && <div style={{ fontSize: '0.85em', opacity: 0.7 }}><strong>Triggers:</strong> {r.triggers.join('; ')}</div>}
+              {r.contingency && <div className="rr-text-sm rr-subtle"><strong>Contingency:</strong> {r.contingency}</div>}
+              {r.owner && <div className="rr-text-sm rr-muted"><strong>Owner:</strong> {r.owner}</div>}
+              {r.triggers?.length > 0 && <div className="rr-text-sm rr-muted"><strong>Triggers:</strong> {r.triggers.join('; ')}</div>}
             </div>
           )) : <p className="empty-message">No risks identified</p>}
         </CollapsibleSection>
@@ -1940,17 +1940,17 @@ export function renderReadinessReportDetails(props: RendererProps) {
       {(editMode || recommendations.length > 0) && (
         <CollapsibleSection title="Recommendations" count={recommendations.length} sectionId="rr-recs">
           {recommendations.length > 0 ? recommendations.map((r: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div key={i} className="rr-p-4-8 rr-mb-4">
+              <div className="rr-flex rr-gap-8 rr-items-center">
                 {r.id && <span className="tag">{r.id}</span>}
-                <strong style={{ flex: 1 }}>{r.recommendation}</strong>
+                <strong className="rr-flex-1">{r.recommendation}</strong>
                 {r.priority && <span className={`tag risk-${r.priority === 'must-do' ? 'high' : r.priority === 'should-do' ? 'medium' : 'low'}`}>{r.priority}</span>}
                 {r.effort && <span className="tag">Effort: {r.effort}</span>}
               </div>
-              {r.category && <div style={{ fontSize: '0.85em' }}><span className="tag">{r.category}</span></div>}
+              {r.category && <div className="rr-text-sm"><span className="tag">{r.category}</span></div>}
               {r.impact && <div><strong>Impact:</strong> {r.impact}</div>}
               {r.owner && <span><strong>Owner:</strong> {r.owner}</span>}
-              {r.deadline && <span style={{ marginLeft: '8px' }}><strong>Deadline:</strong> {r.deadline}</span>}
+              {r.deadline && <span className="rr-ml-8"><strong>Deadline:</strong> {r.deadline}</span>}
             </div>
           )) : <p className="empty-message">No recommendations</p>}
         </CollapsibleSection>
@@ -1960,10 +1960,10 @@ export function renderReadinessReportDetails(props: RendererProps) {
       {(editMode || blockers.length > 0) && (
         <CollapsibleSection title="Blockers" count={blockers.length} sectionId="rr-blockers">
           {blockers.length > 0 ? blockers.map((b: any, i: number) => (
-            <div key={i} style={{ padding: '6px 8px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '6px' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
+              <div className="rr-flex rr-gap-8 rr-items-center">
                 {b.id && <span className="tag">{b.id}</span>}
-                <strong style={{ flex: 1 }}>{b.blocker}</strong>
+                <strong className="rr-flex-1">{b.blocker}</strong>
                 {b.severity && <span className={`tag risk-${b.severity}`}>{b.severity}</span>}
                 {b.status && <span className={`status-badge status-${b.status}`}>{b.status}</span>}
               </div>
@@ -1971,7 +1971,7 @@ export function renderReadinessReportDetails(props: RendererProps) {
               {b.impact && <div><strong>Impact:</strong> {b.impact}</div>}
               {b.resolution && <div><strong>Resolution:</strong> {b.resolution}</div>}
               {b.owner && <div><strong>Owner:</strong> {b.owner}</div>}
-              {b.estimatedEffort && <div style={{ fontSize: '0.85em', opacity: 0.7 }}><strong>Estimated Effort:</strong> {b.estimatedEffort}</div>}
+              {b.estimatedEffort && <div className="rr-text-sm rr-muted"><strong>Estimated Effort:</strong> {b.estimatedEffort}</div>}
             </div>
           )) : <p className="empty-message">No blockers</p>}
         </CollapsibleSection>
@@ -1985,10 +1985,10 @@ export function renderReadinessReportDetails(props: RendererProps) {
             <>
               <h4>External Dependencies</h4>
               {dependencyAnalysis.externalDependencies.map((dep: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+                <div key={i} className="rr-p-2-8 rr-mb-2">
                   <strong>{dep.dependency}</strong>
-                  {dep.status && <div style={{ fontSize: '0.85em', opacity: 0.85 }}>Status: {dep.status}</div>}
-                  {dep.risk && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Risk: {dep.risk}</div>}
+                  {dep.status && <div className="rr-text-sm rr-subtle">Status: {dep.status}</div>}
+                  {dep.risk && <div className="rr-text-sm rr-muted">Risk: {dep.risk}</div>}
                 </div>
               ))}
             </>
@@ -1997,9 +1997,9 @@ export function renderReadinessReportDetails(props: RendererProps) {
             <>
               <h4>Internal Dependencies</h4>
               {dependencyAnalysis.internalDependencies.map((dep: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+                <div key={i} className="rr-p-2-8 rr-mb-2">
                   <strong>{dep.dependency}</strong>
-                  {dep.status && <div style={{ fontSize: '0.85em', opacity: 0.85 }}>Status: {dep.status}</div>}
+                  {dep.status && <div className="rr-text-sm rr-subtle">Status: {dep.status}</div>}
                 </div>
               ))}
             </>
@@ -2017,21 +2017,21 @@ export function renderReadinessReportDetails(props: RendererProps) {
       {(resourceAssessment.summary || resourceAssessment.teamReadiness || resourceAssessment.skillGaps?.length > 0) && (
         <CollapsibleSection title="Resource Assessment" sectionId="rr-resources">
           {resourceAssessment.summary && <Md text={resourceAssessment.summary} />}
-          {resourceAssessment.teamReadiness && <div style={{ marginTop: '4px' }}><strong>Team Readiness:</strong> {resourceAssessment.teamReadiness}</div>}
+          {resourceAssessment.teamReadiness && <div className="rr-mt-4"><strong>Team Readiness:</strong> {resourceAssessment.teamReadiness}</div>}
           {resourceAssessment.skillGaps?.length > 0 && (
             <>
               <h4>Skill Gaps</h4>
               {resourceAssessment.skillGaps.map((sg: any, i: number) => (
-                <div key={i} style={{ padding: '4px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-editorWarning-foreground)' }}>
+                <div key={i} className="rr-p-4-8 rr-mb-4 rr-accent-warning">
                   <strong>{sg.skill}</strong>
-                  {sg.gap && <div style={{ opacity: 0.85 }}>{sg.gap}</div>}
-                  {sg.mitigation && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Mitigation: {sg.mitigation}</div>}
+                  {sg.gap && <div className="rr-subtle">{sg.gap}</div>}
+                  {sg.mitigation && <div className="rr-text-sm rr-muted">Mitigation: {sg.mitigation}</div>}
                 </div>
               ))}
             </>
           )}
-          {resourceAssessment.toolsReadiness && <div style={{ marginTop: '4px' }}><strong>Tools Readiness:</strong> {resourceAssessment.toolsReadiness}</div>}
-          {resourceAssessment.environmentReadiness && <div style={{ marginTop: '4px' }}><strong>Environment Readiness:</strong> {resourceAssessment.environmentReadiness}</div>}
+          {resourceAssessment.toolsReadiness && <div className="rr-mt-4"><strong>Tools Readiness:</strong> {resourceAssessment.toolsReadiness}</div>}
+          {resourceAssessment.environmentReadiness && <div className="rr-mt-4"><strong>Environment Readiness:</strong> {resourceAssessment.environmentReadiness}</div>}
         </CollapsibleSection>
       )}
 
@@ -2039,14 +2039,14 @@ export function renderReadinessReportDetails(props: RendererProps) {
       {nextSteps.length > 0 && (
         <CollapsibleSection title="Next Steps" count={nextSteps.length} sectionId="rr-next">
           {nextSteps.map((s: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '2px' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div key={i} className="rr-p-4-8 rr-mb-2">
+              <div className="rr-flex rr-gap-8 rr-items-center">
                 {s.step != null && <span className="tag">#{s.step}</span>}
-                <span style={{ flex: 1 }}>{s.action}</span>
+                <span className="rr-flex-1">{s.action}</span>
                 {s.owner && <span className="tag">{s.owner}</span>}
                 {s.deadline && <span className="tag">{s.deadline}</span>}
               </div>
-              {s.dependencies?.length > 0 && <div style={{ fontSize: '0.85em', opacity: 0.7, marginLeft: '8px' }}>Depends on: {s.dependencies.join(', ')}</div>}
+              {s.dependencies?.length > 0 && <div className="rr-text-sm rr-muted rr-ml-8">Depends on: {s.dependencies.join(', ')}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -2056,10 +2056,10 @@ export function renderReadinessReportDetails(props: RendererProps) {
       {appendices.length > 0 && (
         <CollapsibleSection title="Appendices" count={appendices.length} sectionId="rr-appendices">
           {appendices.map((a: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-widget-border)' }}>
+            <div key={i} className="rr-p-4-8 rr-mb-4 rr-accent-border">
               <strong>{a.title || `Appendix ${i + 1}`}</strong>
-              {a.type && <span className="tag" style={{ marginLeft: '6px' }}>{a.type}</span>}
-              {a.content && <div style={{ marginTop: '2px' }}><Md text={a.content} /></div>}
+              {a.type && <span className="tag rr-ml-6">{a.type}</span>}
+              {a.content && <div className="rr-mt-2"><Md text={a.content} /></div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -2181,7 +2181,7 @@ export function renderResearchDetails(props: RendererProps) {
           {d.userResearch.overview && <Md text={d.userResearch.overview} />}
           {d.userResearch.personas?.length > 0 && (
             <><h4>Personas</h4>{d.userResearch.personas.map((p: any, i: number) => (
-              <div key={i} style={{ padding: '4px 8px', marginBottom: '6px', borderLeft: '2px solid var(--vscode-widget-border)' }}>
+              <div key={i} className="rr-p-4-8 rr-mb-6 rr-accent-border">
                 <strong>{p.name}</strong>
                 {p.description && <div><Md text={p.description} /></div>}
                 {p.goals?.length > 0 && <div><strong>Goals:</strong> {p.goals.join(', ')}</div>}
@@ -2199,9 +2199,9 @@ export function renderResearchDetails(props: RendererProps) {
       {d.risks?.length > 0 && (
         <CollapsibleSection title="Risks" count={d.risks.length} sectionId="research-risks">
           {d.risks.map((r: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <strong style={{ flex: 1 }}>{r.risk}</strong>
+            <div key={i} className="rr-p-4-8 rr-mb-4">
+              <div className="rr-flex rr-gap-8 rr-items-center">
+                <strong className="rr-flex-1">{r.risk}</strong>
                 {r.category && <span className="tag">{r.category}</span>}
                 {r.probability && <span className="tag">P: {r.probability}</span>}
                 {r.impact && <span className={'tag risk-' + r.impact}>I: {r.impact}</span>}
@@ -2226,7 +2226,7 @@ export function renderResearchDetails(props: RendererProps) {
       {goals.length > 0 && (
         <CollapsibleSection title="Goals" count={goals.length} sectionId="research-goals">
           {goals.map((g: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px' }}>
+            <div key={i} className="rr-p-4-8 rr-mb-4">
               <strong>{g.goal}</strong>
               {g.rationale && <div><em>{g.rationale}</em></div>}
               {g.successCriteria && <div><strong>Success:</strong> {g.successCriteria}</div>}
@@ -2239,13 +2239,13 @@ export function renderResearchDetails(props: RendererProps) {
       {questions.length > 0 && (
         <CollapsibleSection title="Questions" count={questions.length} sectionId="research-questions">
           {questions.map((q: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <span style={{ fontSize: '1.1em' }}>{q.answered ? '\u2611' : '\u2610'}</span>
-                <strong style={{ flex: 1 }}>{q.question}</strong>
+            <div key={i} className="rr-p-4-8 rr-mb-4">
+              <div className="rr-flex rr-gap-8 rr-items-center">
+                <span className="rr-text-lg">{q.answered ? '\u2611' : '\u2610'}</span>
+                <strong className="rr-flex-1">{q.question}</strong>
                 {q.priority && <span className="tag">{q.priority}</span>}
               </div>
-              {q.answer && <div style={{ marginTop: '4px', paddingLeft: '24px' }}><Md text={q.answer} /></div>}
+              {q.answer && <div className="rr-mt-4 rr-pl-24"><Md text={q.answer} /></div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -2258,11 +2258,11 @@ export function renderResearchDetails(props: RendererProps) {
           {methodology.webResearchEnabled != null && <p><strong>Web Research:</strong> {methodology.webResearchEnabled ? 'Enabled' : 'Disabled'}</p>}
           {methodology.toolsUsed?.length > 0 && <><h4>Tools Used</h4><ul>{methodology.toolsUsed.map((t: string, i: number) => <li key={i}>{t}</li>)}</ul></>}
           {methodology.methods?.length > 0 && (
-            <><h4>Methods</h4><ul>{methodology.methods.map((m: any, i: number) => <li key={i}><strong>{m.method}</strong>{m.description && `: ${m.description}`}{m.rationale && <div style={{ fontSize: '0.85em', opacity: 0.7 }}><em>Rationale: {m.rationale}</em></div>}</li>)}</ul></>
+            <><h4>Methods</h4><ul>{methodology.methods.map((m: any, i: number) => <li key={i}><strong>{m.method}</strong>{m.description && `: ${m.description}`}{m.rationale && <div className="rr-text-sm rr-muted"><em>Rationale: {m.rationale}</em></div>}</li>)}</ul></>
           )}
           {methodology.sources?.length > 0 && (
             <><h4>Sources</h4><ul>{methodology.sources.map((s: any, i: number) => (
-              <li key={i}>{s.source}{s.type && <span className="tag" style={{ marginLeft: '4px' }}>{s.type}</span>}{s.credibility && <span className="tag" style={{ marginLeft: '4px' }}>{s.credibility}</span>}{s.notes && <div style={{ fontSize: '0.85em', opacity: 0.7 }}><em>{s.notes}</em></div>}</li>
+              <li key={i}>{s.source}{s.type && <span className="tag rr-ml-4">{s.type}</span>}{s.credibility && <span className="tag rr-ml-4">{s.credibility}</span>}{s.notes && <div className="rr-text-sm rr-muted"><em>{s.notes}</em></div>}</li>
             ))}</ul></>
           )}
           {methodology.limitations?.length > 0 && <><h4>Limitations</h4><ul>{methodology.limitations.map((l: string, i: number) => <li key={i}>{l}</li>)}</ul></>}
@@ -2274,7 +2274,7 @@ export function renderResearchDetails(props: RendererProps) {
         {findings.length > 0 ? findings.map((f: any, i: number) => (
           <CollapsibleSection key={i} title={`${f.id || `F-${i + 1}`}: ${(f.finding || '').slice(0, 80)}`} sectionId={`research-finding-${i}`}>
             {f.category && <span className="tag">{f.category}</span>}
-            {f.confidence && <span className="tag" style={{ marginLeft: '4px' }}>{f.confidence}</span>}
+            {f.confidence && <span className="tag rr-ml-4">{f.confidence}</span>}
             <Md text={f.finding || ''} />
             {f.details && <Md text={f.details} />}
             {f.evidence?.length > 0 && (
@@ -2282,7 +2282,7 @@ export function renderResearchDetails(props: RendererProps) {
             )}
             {f.implications?.length > 0 && (
               <><h4>Implications</h4><ul>{f.implications.map((im: any, ii: number) => (
-                <li key={ii}>{im.implication}{im.area && <span className="tag" style={{ marginLeft: '4px' }}>{im.area}</span>}{im.severity && <span className={`tag risk-${im.severity}`} style={{ marginLeft: '4px' }}>{im.severity}</span>}</li>
+                <li key={ii}>{im.implication}{im.area && <span className="tag rr-ml-4">{im.area}</span>}{im.severity && <span className={`tag risk-${im.severity}`} style={{ marginLeft: '4px' }}>{im.severity}</span>}</li>
               ))}</ul></>
             )}
             {f.actionItems?.length > 0 && <><h4>Actions</h4><ul>{f.actionItems.map((a: string, ai: number) => <li key={ai}>{a}</li>)}</ul></>}
@@ -2320,16 +2320,16 @@ export function renderResearchDetails(props: RendererProps) {
       {trends.length > 0 && (
         <CollapsibleSection title="Trends" count={trends.length} sectionId="research-trends">
           {trends.map((t: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <strong style={{ flex: 1 }}>{t.trend}</strong>
+            <div key={i} className="rr-p-4-8 rr-mb-4">
+              <div className="rr-flex rr-gap-8 rr-items-center">
+                <strong className="rr-flex-1">{t.trend}</strong>
                 {t.timeframe && <span className="tag">{t.timeframe}</span>}
                 {t.impact && <span className={`tag risk-${t.impact}`}>{t.impact}</span>}
               </div>
               {t.relevance && <div><em>{t.relevance}</em></div>}
-              {t.category && <div style={{ fontSize: '0.85em' }}><span className="tag">{t.category}</span></div>}
-              {t.evidence?.length > 0 && <div style={{ fontSize: '0.85em' }}><strong>Evidence:</strong> {t.evidence.join('; ')}</div>}
-              {t.implications?.length > 0 && <div style={{ fontSize: '0.85em' }}><strong>Implications:</strong> {t.implications.join('; ')}</div>}
+              {t.category && <div className="rr-text-sm"><span className="tag">{t.category}</span></div>}
+              {t.evidence?.length > 0 && <div className="rr-text-sm"><strong>Evidence:</strong> {t.evidence.join('; ')}</div>}
+              {t.implications?.length > 0 && <div className="rr-text-sm"><strong>Implications:</strong> {t.implications.join('; ')}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -2339,13 +2339,13 @@ export function renderResearchDetails(props: RendererProps) {
       {technicalFindings.length > 0 && (
         <CollapsibleSection title="Technical Findings" count={technicalFindings.length} sectionId="research-tech">
           {technicalFindings.map((tf: any, i: number) => (
-            <div key={i} style={{ padding: '6px 8px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '6px' }}>
+            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
               {tf.topic && <h4>{tf.topic}</h4>}
               {tf.finding && <Md text={tf.finding} />}
               {tf.feasibility && <span className="tag">{tf.feasibility}</span>}
               {tf.risks?.length > 0 && <div><strong>Risks:</strong> {tf.risks.join(', ')}</div>}
               {tf.recommendations?.length > 0 && <div><strong>Recs:</strong> {tf.recommendations.join(', ')}</div>}
-              {tf.details && <div style={{ marginTop: '4px' }}><Md text={tf.details} /></div>}
+              {tf.details && <div className="rr-mt-4"><Md text={tf.details} /></div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -2355,19 +2355,19 @@ export function renderResearchDetails(props: RendererProps) {
       {recommendations.length > 0 && (
         <CollapsibleSection title="Recommendations" count={recommendations.length} sectionId="research-recs">
           {recommendations.map((r: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div key={i} className="rr-p-4-8 rr-mb-4">
+              <div className="rr-flex rr-gap-8 rr-items-center">
                 {r.id && <span className="tag">{r.id}</span>}
-                <strong style={{ flex: 1 }}>{r.recommendation}</strong>
+                <strong className="rr-flex-1">{r.recommendation}</strong>
                 {r.priority && <span className={`tag risk-${r.priority}`}>{r.priority}</span>}
               </div>
               {r.rationale && <div><em>{r.rationale}</em></div>}
-              {r.category && <div style={{ fontSize: '0.85em' }}><span className="tag">{r.category}</span></div>}
-              {r.supportingFindings?.length > 0 && <div style={{ fontSize: '0.85em' }}><strong>Supporting Findings:</strong> {r.supportingFindings.join(', ')}</div>}
-              {r.effort && <span className="tag" style={{ marginRight: '4px' }}>Effort: {r.effort}</span>}
+              {r.category && <div className="rr-text-sm"><span className="tag">{r.category}</span></div>}
+              {r.supportingFindings?.length > 0 && <div className="rr-text-sm"><strong>Supporting Findings:</strong> {r.supportingFindings.join(', ')}</div>}
+              {r.effort && <span className="tag rr-mr-4">Effort: {r.effort}</span>}
               {r.impact && <span className="tag">Impact: {r.impact}</span>}
-              {r.risks?.length > 0 && <div style={{ fontSize: '0.85em' }}><strong>Risks:</strong> {r.risks.join('; ')}</div>}
-              {r.nextSteps?.length > 0 && <div style={{ fontSize: '0.85em' }}><strong>Next Steps:</strong><ul>{r.nextSteps.map((ns: string, ni: number) => <li key={ni}>{ns}</li>)}</ul></div>}
+              {r.risks?.length > 0 && <div className="rr-text-sm"><strong>Risks:</strong> {r.risks.join('; ')}</div>}
+              {r.nextSteps?.length > 0 && <div className="rr-text-sm"><strong>Next Steps:</strong><ul>{r.nextSteps.map((ns: string, ni: number) => <li key={ni}>{ns}</li>)}</ul></div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -2388,16 +2388,16 @@ export function renderResearchDetails(props: RendererProps) {
       {references.length > 0 && (
         <CollapsibleSection title="References" count={references.length} sectionId="research-refs">
           {references.map((r: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-2">
               <strong>{r.title || r.source || `Ref ${i + 1}`}</strong>
-              {r.type && <span className="tag" style={{ marginLeft: '4px' }}>{r.type}</span>}
+              {r.type && <span className="tag rr-ml-4">{r.type}</span>}
               {r.author && <span> — {r.author}</span>}
               {r.url && <span> <a href={r.url} target="_blank" rel="noopener noreferrer">Link</a></span>}
-              {r.publication && <span style={{ fontSize: '0.85em', opacity: 0.7 }}> ({r.publication})</span>}
-              {r.date && <span style={{ fontSize: '0.85em', opacity: 0.7 }}> [{r.date}]</span>}
-              {r.accessDate && <span style={{ fontSize: '0.85em', opacity: 0.7 }}> Accessed: {r.accessDate}</span>}
-              {r.relevance && <div style={{ fontSize: '0.85em' }}><em>Relevance: {r.relevance}</em></div>}
-              {r.notes && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>{r.notes}</div>}
+              {r.publication && <span className="rr-text-sm rr-muted"> ({r.publication})</span>}
+              {r.date && <span className="rr-text-sm rr-muted"> [{r.date}]</span>}
+              {r.accessDate && <span className="rr-text-sm rr-muted"> Accessed: {r.accessDate}</span>}
+              {r.relevance && <div className="rr-text-sm"><em>Relevance: {r.relevance}</em></div>}
+              {r.notes && <div className="rr-text-sm rr-muted">{r.notes}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -2407,13 +2407,13 @@ export function renderResearchDetails(props: RendererProps) {
       {appendices.length > 0 && (
         <CollapsibleSection title="Appendices" count={appendices.length} sectionId="research-appendices">
           {appendices.map((a: any, i: number) => (
-            <div key={i} style={{ padding: '6px 8px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '6px' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <strong style={{ flex: 1 }}>{a.title || `Appendix ${i + 1}`}</strong>
+            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
+              <div className="rr-flex rr-gap-8 rr-items-center">
+                <strong className="rr-flex-1">{a.title || `Appendix ${i + 1}`}</strong>
                 {a.type && <span className="tag">{a.type}</span>}
               </div>
-              {a.content && <div style={{ marginTop: '4px' }}><Md text={a.content} /></div>}
-              {a.reference && <div style={{ fontSize: '0.85em', opacity: 0.7 }}><strong>Reference:</strong> {a.reference}</div>}
+              {a.content && <div className="rr-mt-4"><Md text={a.content} /></div>}
+              {a.reference && <div className="rr-text-sm rr-muted"><strong>Reference:</strong> {a.reference}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -2571,8 +2571,8 @@ export function renderUxDesignDetails(props: RendererProps) {
           ) : (
             <>
               {overview.productName && <div><strong>Product:</strong> {overview.productName} {overview.version && <span className="tag">{overview.version}</span>}</div>}
-              {overview.designPhilosophy && <div style={{ marginTop: '4px' }}><Md text={overview.designPhilosophy} /></div>}
-              {overview.targetExperience && <div style={{ marginTop: '4px' }}><strong>Target Experience:</strong> <Md text={overview.targetExperience} /></div>}
+              {overview.designPhilosophy && <div className="rr-mt-4"><Md text={overview.designPhilosophy} /></div>}
+              {overview.targetExperience && <div className="rr-mt-4"><strong>Target Experience:</strong> <Md text={overview.targetExperience} /></div>}
             </>
           )}
         </CollapsibleSection>
@@ -2582,10 +2582,10 @@ export function renderUxDesignDetails(props: RendererProps) {
       {overview.designPrinciples?.length > 0 && (
         <CollapsibleSection title="Design Principles" count={overview.designPrinciples.length} sectionId="ux-principles">
           {overview.designPrinciples.map((p: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-textLink-foreground)' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-4 rr-accent-link">
               <strong>{p.principle || `Principle ${i + 1}`}</strong>
-              {p.description && <div style={{ opacity: 0.85 }}><Md text={p.description} /></div>}
-              {p.examples?.length > 0 && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>{p.examples.join(', ')}</div>}
+              {p.description && <div className="rr-subtle"><Md text={p.description} /></div>}
+              {p.examples?.length > 0 && <div className="rr-text-sm rr-muted">{p.examples.join(', ')}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -2595,10 +2595,10 @@ export function renderUxDesignDetails(props: RendererProps) {
       {overview.designGoals?.length > 0 && (
         <CollapsibleSection title="Design Goals" count={overview.designGoals.length} sectionId="ux-goals">
           {overview.designGoals.map((g: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-2">
               <strong>{g.goal || `Goal ${i + 1}`}</strong>
-              {g.metrics && <span className="tag" style={{ marginLeft: '4px' }}>{g.metrics}</span>}
-              {g.rationale && <div style={{ opacity: 0.7, fontSize: '0.85em' }}>{g.rationale}</div>}
+              {g.metrics && <span className="tag rr-ml-4">{g.metrics}</span>}
+              {g.rationale && <div className="rr-muted rr-text-sm">{g.rationale}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -2617,7 +2617,7 @@ export function renderUxDesignDetails(props: RendererProps) {
           ) : (
             <>
               {coreExperience.primaryValue && <div><strong>Primary Value:</strong> <Md text={coreExperience.primaryValue} /></div>}
-              {coreExperience.userFlowSummary && <div style={{ marginTop: '4px' }}><Md text={coreExperience.userFlowSummary} /></div>}
+              {coreExperience.userFlowSummary && <div className="rr-mt-4"><Md text={coreExperience.userFlowSummary} /></div>}
             </>
           )}
         </CollapsibleSection>
@@ -2627,10 +2627,10 @@ export function renderUxDesignDetails(props: RendererProps) {
       {coreExperience.keyInteractions?.length > 0 && (
         <CollapsibleSection title="Key Interactions" count={coreExperience.keyInteractions.length} sectionId="ux-interactions-core">
           {coreExperience.keyInteractions.map((k: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-2">
               <strong>{k.interaction || `Interaction ${i + 1}`}</strong>
-              {k.frequency && <span className="tag" style={{ marginLeft: '4px' }}>{k.frequency}</span>}
-              {k.purpose && <div style={{ opacity: 0.7, fontSize: '0.85em' }}>{k.purpose}</div>}
+              {k.frequency && <span className="tag rr-ml-4">{k.frequency}</span>}
+              {k.purpose && <div className="rr-muted rr-text-sm">{k.purpose}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -2640,10 +2640,10 @@ export function renderUxDesignDetails(props: RendererProps) {
       {coreExperience.emotionalGoals?.length > 0 && (
         <CollapsibleSection title="Emotional Goals" count={coreExperience.emotionalGoals.length} sectionId="ux-emotions">
           {coreExperience.emotionalGoals.map((e: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-2">
               <strong>{e.emotion || `Emotion ${i + 1}`}</strong>
-              {e.description && <span style={{ opacity: 0.85 }}> — {e.description}</span>}
-              {e.triggers?.length > 0 && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Triggers: {e.triggers.join(', ')}</div>}
+              {e.description && <span className="rr-subtle"> — {e.description}</span>}
+              {e.triggers?.length > 0 && <div className="rr-text-sm rr-muted">Triggers: {e.triggers.join(', ')}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -2653,12 +2653,12 @@ export function renderUxDesignDetails(props: RendererProps) {
       {designInspiration.length > 0 && (
         <CollapsibleSection title="Design Inspiration" count={designInspiration.length} sectionId="ux-inspiration">
           {designInspiration.map((ins: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-textLink-foreground)' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-4 rr-accent-link">
               <strong>{ins.source || `Inspiration ${i + 1}`}</strong>
               {ins.url && <span> <a href={ins.url} target="_blank" rel="noopener noreferrer">Link</a></span>}
-              {ins.aspect && <div style={{ opacity: 0.85 }}><strong>Aspect:</strong> {ins.aspect}</div>}
-              {ins.application && <div style={{ opacity: 0.85 }}><strong>Application:</strong> {ins.application}</div>}
-              {ins.screenshots?.length > 0 && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Screenshots: {ins.screenshots.map((s: string, si: number) => <a key={si} href={s} target="_blank" rel="noopener noreferrer" style={{ marginRight: '4px' }}>{s}</a>)}</div>}
+              {ins.aspect && <div className="rr-subtle"><strong>Aspect:</strong> {ins.aspect}</div>}
+              {ins.application && <div className="rr-subtle"><strong>Application:</strong> {ins.application}</div>}
+              {ins.screenshots?.length > 0 && <div className="rr-text-sm rr-muted">Screenshots: {ins.screenshots.map((s: string, si: number) => <a key={si} href={s} target="_blank" rel="noopener noreferrer" className="rr-mr-4">{s}</a>)}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -2674,16 +2674,16 @@ export function renderUxDesignDetails(props: RendererProps) {
       {/* Design System - Color Palette */}
       {designSystem.colorPalette && (
         <CollapsibleSection title="Color Palette" sectionId="ux-colors">
-          {designSystem.colorPalette.description && <div style={{ marginBottom: '4px' }}><Md text={designSystem.colorPalette.description} /></div>}
+          {designSystem.colorPalette.description && <div className="rr-mb-4"><Md text={designSystem.colorPalette.description} /></div>}
           {designSystem.colorPalette.primary?.length > 0 && (
             <>
               <h4>Primary Colors</h4>
               {designSystem.colorPalette.primary.map((c: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div key={i} className="rr-p-2-8 rr-flex rr-items-center rr-gap-8">
                   {c.value && <span style={{ width: '16px', height: '16px', borderRadius: '3px', backgroundColor: c.value, display: 'inline-block', border: '1px solid var(--vscode-widget-border)' }} />}
                   <strong>{c.name || c.value}</strong>
                   {c.value && <code>{c.value}</code>}
-                  {c.usage && <span style={{ opacity: 0.7 }}> — {c.usage}</span>}
+                  {c.usage && <span className="rr-muted"> — {c.usage}</span>}
                 </div>
               ))}
             </>
@@ -2692,10 +2692,10 @@ export function renderUxDesignDetails(props: RendererProps) {
             <>
               <h4>Secondary Colors</h4>
               {designSystem.colorPalette.secondary.map((c: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div key={i} className="rr-p-2-8 rr-flex rr-items-center rr-gap-8">
                   {c.value && <span style={{ width: '16px', height: '16px', borderRadius: '3px', backgroundColor: c.value, display: 'inline-block', border: '1px solid var(--vscode-widget-border)' }} />}
                   <strong>{c.name || c.value}</strong>
-                  {c.usage && <span style={{ opacity: 0.7 }}> — {c.usage}</span>}
+                  {c.usage && <span className="rr-muted"> — {c.usage}</span>}
                 </div>
               ))}
             </>
@@ -2706,11 +2706,11 @@ export function renderUxDesignDetails(props: RendererProps) {
               {['success', 'warning', 'error', 'info'].map(key => {
                 const sc = designSystem.colorPalette.semantic[key];
                 return sc ? (
-                  <div key={key} style={{ padding: '2px 8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div key={key} className="rr-p-2-8 rr-flex rr-items-center rr-gap-8">
                     {sc.value && <span style={{ width: '16px', height: '16px', borderRadius: '3px', backgroundColor: sc.value, display: 'inline-block', border: '1px solid var(--vscode-widget-border)' }} />}
                     <strong>{key}</strong>
                     {sc.value && <code>{sc.value}</code>}
-                    {sc.usage && <span style={{ opacity: 0.7 }}> — {sc.usage}</span>}
+                    {sc.usage && <span className="rr-muted"> — {sc.usage}</span>}
                   </div>
                 ) : null;
               })}
@@ -2720,17 +2720,17 @@ export function renderUxDesignDetails(props: RendererProps) {
             <>
               <h4>Neutral Colors</h4>
               {designSystem.colorPalette.neutral.map((c: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div key={i} className="rr-p-2-8 rr-flex rr-items-center rr-gap-8">
                   {c.value && <span style={{ width: '16px', height: '16px', borderRadius: '3px', backgroundColor: c.value, display: 'inline-block', border: '1px solid var(--vscode-widget-border)' }} />}
                   <strong>{c.name || c.value}</strong>
                   {c.value && <code>{c.value}</code>}
-                  {c.usage && <span style={{ opacity: 0.7 }}> — {c.usage}</span>}
+                  {c.usage && <span className="rr-muted"> — {c.usage}</span>}
                 </div>
               ))}
             </>
           )}
           {designSystem.colorPalette.darkMode && (
-            <div style={{ marginTop: '4px' }}>
+            <div className="rr-mt-4">
               <h4>Dark Mode</h4>
               {typeof designSystem.colorPalette.darkMode === 'string' ? (
                 <div>{designSystem.colorPalette.darkMode}</div>
@@ -2738,9 +2738,9 @@ export function renderUxDesignDetails(props: RendererProps) {
                 <>
                   {designSystem.colorPalette.darkMode.approach && <div>{designSystem.colorPalette.darkMode.approach}</div>}
                   {designSystem.colorPalette.darkMode.overrides?.length > 0 && (
-                    <div style={{ marginTop: '2px' }}>
+                    <div className="rr-mt-2">
                       {designSystem.colorPalette.darkMode.overrides.map((o: any, i: number) => (
-                        <div key={i} style={{ padding: '1px 8px', fontSize: '0.85em' }}>
+                        <div key={i} className="rr-p-1-8 rr-text-sm">
                           <strong>{o.name || o.token}:</strong> <code>{o.value || o.darkValue}</code>
                         </div>
                       ))}
@@ -2754,13 +2754,13 @@ export function renderUxDesignDetails(props: RendererProps) {
             <>
               <h4>Border Widths</h4>
               {designSystem.borders.widths.map((w: any, i: number) => (
-                <div key={i} style={{ padding: '1px 8px' }}>
-                  <code>{w.name}</code>: <code>{w.value}</code> {w.usage && <span style={{ opacity: 0.7 }}> — {w.usage}</span>}
+                <div key={i} className="rr-p-1-8">
+                  <code>{w.name}</code>: <code>{w.value}</code> {w.usage && <span className="rr-muted"> — {w.usage}</span>}
                 </div>
               ))}
             </>
           )}
-          {designSystem.borders?.description && <div style={{ marginTop: '4px' }}><Md text={designSystem.borders.description} /></div>}
+          {designSystem.borders?.description && <div className="rr-mt-4"><Md text={designSystem.borders.description} /></div>}
         </CollapsibleSection>
       )}
 
@@ -2768,10 +2768,10 @@ export function renderUxDesignDetails(props: RendererProps) {
       {designSystem.shadows?.length > 0 && (
         <CollapsibleSection title="Shadows" count={designSystem.shadows.length} sectionId="ux-shadows">
           {designSystem.shadows.map((s: any, i: number) => (
-            <div key={i} style={{ padding: '1px 8px' }}>
+            <div key={i} className="rr-p-1-8">
               <code>{s.name || `Shadow ${i + 1}`}</code>
-              {s.value && <span style={{ opacity: 0.7 }}> — <code>{s.value}</code></span>}
-              {s.usage && <span style={{ opacity: 0.7 }}> — {s.usage}</span>}
+              {s.value && <span className="rr-muted"> — <code>{s.value}</code></span>}
+              {s.usage && <span className="rr-muted"> — {s.usage}</span>}
             </div>
           ))}
         </CollapsibleSection>
@@ -2780,17 +2780,17 @@ export function renderUxDesignDetails(props: RendererProps) {
       {/* Design System - Typography */}
       {designSystem.typography && (
         <CollapsibleSection title="Typography" sectionId="ux-typography">
-          {designSystem.typography.description && <div style={{ marginBottom: '4px' }}><Md text={designSystem.typography.description} /></div>}
+          {designSystem.typography.description && <div className="rr-mb-4"><Md text={designSystem.typography.description} /></div>}
           {designSystem.typography.fontFamilies?.length > 0 && (
             <>
               <h4>Font Families</h4>
               {designSystem.typography.fontFamilies.map((f: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+                <div key={i} className="rr-p-2-8 rr-mb-2">
                   <strong>{f.name}</strong>
-                  {f.source && <span className="tag" style={{ marginLeft: '4px' }}>{f.source}</span>}
-                  {f.usage && <div style={{ opacity: 0.7, fontSize: '0.85em' }}>{f.usage}</div>}
-                  {f.weights?.length > 0 && <div style={{ fontSize: '0.85em' }}>Weights: {f.weights.join(', ')}</div>}
-                  {f.fallbacks?.length > 0 && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Fallbacks: {f.fallbacks.join(', ')}</div>}
+                  {f.source && <span className="tag rr-ml-4">{f.source}</span>}
+                  {f.usage && <div className="rr-muted rr-text-sm">{f.usage}</div>}
+                  {f.weights?.length > 0 && <div className="rr-text-sm">Weights: {f.weights.join(', ')}</div>}
+                  {f.fallbacks?.length > 0 && <div className="rr-text-sm rr-muted">Fallbacks: {f.fallbacks.join(', ')}</div>}
                 </div>
               ))}
             </>
@@ -2798,7 +2798,7 @@ export function renderUxDesignDetails(props: RendererProps) {
           {designSystem.typography.scale?.length > 0 && (
             <>
               <h4>Type Scale</h4>
-              <table style={{ width: '100%', fontSize: '0.85em' }}>
+              <table className="rr-w-full rr-text-sm">
                 <thead><tr><th>Name</th><th>Size</th><th>Weight</th><th>Line Height</th><th>Usage</th></tr></thead>
                 <tbody>
                   {designSystem.typography.scale.map((s: any, i: number) => (
@@ -2807,7 +2807,7 @@ export function renderUxDesignDetails(props: RendererProps) {
                       <td><code>{s.size}</code></td>
                       <td>{s.weight}</td>
                       <td>{s.lineHeight}</td>
-                      <td style={{ opacity: 0.7 }}>{s.usage}</td>
+                      <td className="rr-muted">{s.usage}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -2818,12 +2818,12 @@ export function renderUxDesignDetails(props: RendererProps) {
             <>
               <h4>Text Styles</h4>
               {designSystem.typography.textStyles.map((ts: any, i: number) => (
-                <div key={i} style={{ padding: '1px 8px' }}>
+                <div key={i} className="rr-p-1-8">
                   <strong>{ts.name || `Style ${i + 1}`}</strong>
-                  {ts.font && <span style={{ opacity: 0.7 }}> — {ts.font}</span>}
-                  {ts.size && <code style={{ marginLeft: '4px' }}>{ts.size}</code>}
-                  {ts.weight && <span style={{ opacity: 0.7 }}> / {ts.weight}</span>}
-                  {ts.usage && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>{ts.usage}</div>}
+                  {ts.font && <span className="rr-muted"> — {ts.font}</span>}
+                  {ts.size && <code className="rr-ml-4">{ts.size}</code>}
+                  {ts.weight && <span className="rr-muted"> / {ts.weight}</span>}
+                  {ts.usage && <div className="rr-text-sm rr-muted">{ts.usage}</div>}
                 </div>
               ))}
             </>
@@ -2840,8 +2840,8 @@ export function renderUxDesignDetails(props: RendererProps) {
             <>
               <h4>Spacing Scale</h4>
               {designSystem.spacing.scale.map((s: any, i: number) => (
-                <div key={i} style={{ padding: '1px 8px' }}>
-                  <code>{s.name}</code>: <code>{s.value}</code> {s.usage && <span style={{ opacity: 0.7 }}> — {s.usage}</span>}
+                <div key={i} className="rr-p-1-8">
+                  <code>{s.name}</code>: <code>{s.value}</code> {s.usage && <span className="rr-muted"> — {s.usage}</span>}
                 </div>
               ))}
             </>
@@ -2850,8 +2850,8 @@ export function renderUxDesignDetails(props: RendererProps) {
             <>
               <h4>Border Radii</h4>
               {designSystem.borders.radii.map((r: any, i: number) => (
-                <div key={i} style={{ padding: '1px 8px' }}>
-                  <code>{r.name}</code>: <code>{r.value}</code> {r.usage && <span style={{ opacity: 0.7 }}> — {r.usage}</span>}
+                <div key={i} className="rr-p-1-8">
+                  <code>{r.name}</code>: <code>{r.value}</code> {r.usage && <span className="rr-muted"> — {r.usage}</span>}
                 </div>
               ))}
             </>
@@ -2869,8 +2869,8 @@ export function renderUxDesignDetails(props: RendererProps) {
             <>
               <h4>Durations</h4>
               {designSystem.animation.durations.map((d: any, i: number) => (
-                <div key={i} style={{ padding: '1px 8px' }}>
-                  <code>{d.name}</code>: <code>{d.value}</code> {d.usage && <span style={{ opacity: 0.7 }}> — {d.usage}</span>}
+                <div key={i} className="rr-p-1-8">
+                  <code>{d.name}</code>: <code>{d.value}</code> {d.usage && <span className="rr-muted"> — {d.usage}</span>}
                 </div>
               ))}
             </>
@@ -2879,8 +2879,8 @@ export function renderUxDesignDetails(props: RendererProps) {
             <>
               <h4>Easings</h4>
               {designSystem.animation.easings.map((e: any, i: number) => (
-                <div key={i} style={{ padding: '1px 8px' }}>
-                  <code>{e.name}</code>: <code>{e.value}</code> {e.usage && <span style={{ opacity: 0.7 }}> — {e.usage}</span>}
+                <div key={i} className="rr-p-1-8">
+                  <code>{e.name}</code>: <code>{e.value}</code> {e.usage && <span className="rr-muted"> — {e.usage}</span>}
                 </div>
               ))}
             </>
@@ -2894,9 +2894,9 @@ export function renderUxDesignDetails(props: RendererProps) {
           {designSystem.iconography.library && <div><strong>Library:</strong> {designSystem.iconography.library}</div>}
           {designSystem.iconography.style && <div><strong>Style:</strong> {designSystem.iconography.style}</div>}
           {designSystem.iconography.sizes?.length > 0 && (
-            <div style={{ marginTop: '4px' }}>
+            <div className="rr-mt-4">
               {designSystem.iconography.sizes.map((s: any, i: number) => (
-                <span key={i} className="tag" style={{ marginRight: '4px' }}>{s.name}: {s.value}</span>
+                <span key={i} className="tag rr-mr-4">{s.name}: {s.value}</span>
               ))}
             </div>
           )}
@@ -2904,10 +2904,10 @@ export function renderUxDesignDetails(props: RendererProps) {
             <>
               <h4>Custom Icons</h4>
               {designSystem.iconography.customIcons.map((ic: any, i: number) => (
-                <div key={i} style={{ padding: '1px 8px' }}>
+                <div key={i} className="rr-p-1-8">
                   <strong>{ic.name || `Icon ${i + 1}`}</strong>
-                  {ic.usage && <span style={{ opacity: 0.7 }}> — {ic.usage}</span>}
-                  {ic.path && <code style={{ marginLeft: '4px' }}>{ic.path}</code>}
+                  {ic.usage && <span className="rr-muted"> — {ic.usage}</span>}
+                  {ic.path && <code className="rr-ml-4">{ic.path}</code>}
                 </div>
               ))}
             </>
@@ -2920,30 +2920,30 @@ export function renderUxDesignDetails(props: RendererProps) {
         <CollapsibleSection title="User Journeys" count={userJourneys.length} sectionId="ux-journeys">
           {userJourneys.map((j: any, i: number) => (
             <CollapsibleSection key={i} title={j.name || `Journey ${i + 1}`} sectionId={`ux-journey-${i}`}>
-              {j.id && <div style={{ fontSize: '0.85em', opacity: 0.6 }}>ID: <code>{j.id}</code></div>}
+              {j.id && <div className="rr-text-sm rr-muted">ID: <code>{j.id}</code></div>}
               {j.persona && <div><strong>Persona:</strong> {j.persona}</div>}
               {j.goal && <div><strong>Goal:</strong> {j.goal}</div>}
               {j.trigger && <div><strong>Trigger:</strong> {j.trigger}</div>}
-              {j.description && <div style={{ marginTop: '4px' }}><Md text={j.description} /></div>}
+              {j.description && <div className="rr-mt-4"><Md text={j.description} /></div>}
               {j.stages?.length > 0 && (
                 <>
                   <h4>Stages</h4>
                   {j.stages.map((s: any, si: number) => (
-                    <div key={si} style={{ padding: '4px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-textLink-foreground)' }}>
+                    <div key={si} className="rr-p-4-8 rr-mb-4 rr-accent-link">
                       <strong>{s.stage || `Stage ${si + 1}`}</strong>
-                      {s.emotions && <span className="tag" style={{ marginLeft: '4px' }}>{s.emotions}</span>}
-                      {s.emotionScore != null && <span className="tag" style={{ marginLeft: '4px' }}>Score: {s.emotionScore}</span>}
-                      {s.description && <div style={{ opacity: 0.85 }}>{s.description}</div>}
-                      {s.thoughts && <div style={{ fontSize: '0.85em', fontStyle: 'italic', opacity: 0.7 }}>Thoughts: {s.thoughts}</div>}
-                      {s.actions?.length > 0 && <div style={{ fontSize: '0.85em' }}>Actions: {s.actions.map((a: any) => a.action || a).join(', ')}</div>}
-                      {s.painPoints?.length > 0 && <div style={{ fontSize: '0.85em', color: 'var(--vscode-errorForeground)' }}>Pain points: {s.painPoints.join(', ')}</div>}
-                      {s.opportunities?.length > 0 && <div style={{ fontSize: '0.85em', color: 'var(--vscode-testing-iconPassed)' }}>Opportunities: {s.opportunities.join(', ')}</div>}
+                      {s.emotions && <span className="tag rr-ml-4">{s.emotions}</span>}
+                      {s.emotionScore != null && <span className="tag rr-ml-4">Score: {s.emotionScore}</span>}
+                      {s.description && <div className="rr-subtle">{s.description}</div>}
+                      {s.thoughts && <div className="rr-text-sm rr-italic rr-muted">Thoughts: {s.thoughts}</div>}
+                      {s.actions?.length > 0 && <div className="rr-text-sm">Actions: {s.actions.map((a: any) => a.action || a).join(', ')}</div>}
+                      {s.painPoints?.length > 0 && <div className="rr-text-sm rr-fg-error">Pain points: {s.painPoints.join(', ')}</div>}
+                      {s.opportunities?.length > 0 && <div className="rr-text-sm rr-fg-passed">Opportunities: {s.opportunities.join(', ')}</div>}
                     </div>
                   ))}
                 </>
               )}
-              {j.successCriteria?.length > 0 && <div style={{ marginTop: '4px' }}><strong>Success Criteria:</strong><ul>{j.successCriteria.map((c: string, ci: number) => <li key={ci}>{c}</li>)}</ul></div>}
-              {j.metrics?.length > 0 && <div>{j.metrics.map((m: any, mi: number) => <span key={mi} className="tag" style={{ marginRight: '4px' }}>{m.metric}: {m.target}</span>)}</div>}
+              {j.successCriteria?.length > 0 && <div className="rr-mt-4"><strong>Success Criteria:</strong><ul>{j.successCriteria.map((c: string, ci: number) => <li key={ci}>{c}</li>)}</ul></div>}
+              {j.metrics?.length > 0 && <div>{j.metrics.map((m: any, mi: number) => <span key={mi} className="tag rr-mr-4">{m.metric}: {m.target}</span>)}</div>}
             </CollapsibleSection>
           ))}
         </CollapsibleSection>
@@ -2953,23 +2953,23 @@ export function renderUxDesignDetails(props: RendererProps) {
       {wireframes.length > 0 && (
         <CollapsibleSection title="Wireframes" count={wireframes.length} sectionId="ux-wireframes">
           {wireframes.map((w: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-widget-border)' }}>
+            <div key={i} className="rr-p-4-8 rr-mb-4 rr-accent-border">
               <strong>{w.name || `Wireframe ${i + 1}`}</strong>
-              {w.id && <span style={{ fontSize: '0.85em', opacity: 0.6, marginLeft: '4px' }}>({w.id})</span>}
-              {w.type && <span className="tag" style={{ marginLeft: '4px' }}>{w.type}</span>}
-              {w.fidelity && <span className="tag" style={{ marginLeft: '4px' }}>{w.fidelity}</span>}
-              {w.description && <div style={{ opacity: 0.85 }}>{w.description}</div>}
-              {w.notes && <div style={{ fontSize: '0.85em', opacity: 0.7 }}><em>{w.notes}</em></div>}
+              {w.id && <span className="rr-text-sm rr-muted rr-ml-4">({w.id})</span>}
+              {w.type && <span className="tag rr-ml-4">{w.type}</span>}
+              {w.fidelity && <span className="tag rr-ml-4">{w.fidelity}</span>}
+              {w.description && <div className="rr-subtle">{w.description}</div>}
+              {w.notes && <div className="rr-text-sm rr-muted"><em>{w.notes}</em></div>}
               {w.screens?.length > 0 && (
-                <div style={{ marginTop: '2px', fontSize: '0.85em' }}>
+                <div className="rr-mt-2 rr-text-sm">
                   {w.screens.map((s: any, si: number) => (
-                    <div key={si} style={{ marginLeft: '8px' }}>
-                      <strong>{s.name}</strong> {s.description && <span style={{ opacity: 0.7 }}>— {s.description}</span>}
+                    <div key={si} className="rr-ml-8">
+                      <strong>{s.name}</strong> {s.description && <span className="rr-muted">— {s.description}</span>}
                     </div>
                   ))}
                 </div>
               )}
-              {w.reference && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Ref: {w.reference}</div>}
+              {w.reference && <div className="rr-text-sm rr-muted">Ref: {w.reference}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -2978,23 +2978,23 @@ export function renderUxDesignDetails(props: RendererProps) {
       {/* Component Strategy */}
       {(componentStrategy.overview || componentStrategy.customComponents?.length > 0) && (
         <CollapsibleSection title="Component Strategy" count={componentStrategy.customComponents?.length} sectionId="ux-components">
-          {componentStrategy.overview && <div style={{ marginBottom: '4px' }}><Md text={componentStrategy.overview} /></div>}
+          {componentStrategy.overview && <div className="rr-mb-4"><Md text={componentStrategy.overview} /></div>}
           {componentStrategy.componentLibrary && <div><strong>Library:</strong> {componentStrategy.componentLibrary}</div>}
           {componentStrategy.customizationApproach && <div><strong>Customization:</strong> {componentStrategy.customizationApproach}</div>}
           {componentStrategy.customComponents?.map((c: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginTop: '4px', borderLeft: '2px solid var(--vscode-textLink-foreground)' }}>
+            <div key={i} className="rr-p-4-8 rr-mt-4 rr-accent-link">
               <strong>{c.name || `Component ${i + 1}`}</strong>
-              {c.purpose && <div style={{ opacity: 0.85 }}>{c.purpose}</div>}
+              {c.purpose && <div className="rr-subtle">{c.purpose}</div>}
               {c.description && <div><Md text={c.description} /></div>}
               {c.props?.length > 0 && (
-                <div style={{ fontSize: '0.85em', marginTop: '2px' }}>
+                <div className="rr-text-sm rr-mt-2">
                   Props: {c.props.map((p: any) => `${p.name}${p.required ? '*' : ''}: ${p.type}`).join(', ')}
                 </div>
               )}
-              {c.states?.length > 0 && <div style={{ fontSize: '0.85em' }}>States: {c.states.map((s: any) => s.state).join(', ')}</div>}
-              {c.variants?.length > 0 && <div style={{ fontSize: '0.85em' }}>Variants: {c.variants.map((v: any) => v.variant).join(', ')}</div>}
+              {c.states?.length > 0 && <div className="rr-text-sm">States: {c.states.map((s: any) => s.state).join(', ')}</div>}
+              {c.variants?.length > 0 && <div className="rr-text-sm">Variants: {c.variants.map((v: any) => v.variant).join(', ')}</div>}
               {c.accessibility && (
-                <div style={{ fontSize: '0.85em', opacity: 0.7 }}>
+                <div className="rr-text-sm rr-muted">
                   A11y: {c.accessibility.role && `role="${c.accessibility.role}"`} {c.accessibility.keyboardInteraction && `| ${c.accessibility.keyboardInteraction}`}
                 </div>
               )}
@@ -3007,14 +3007,14 @@ export function renderUxDesignDetails(props: RendererProps) {
       {pageLayouts.length > 0 && (
         <CollapsibleSection title="Page Layouts" count={pageLayouts.length} sectionId="ux-layouts">
           {pageLayouts.map((l: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '4px' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-4">
               <strong>{l.name || `Layout ${i + 1}`}</strong>
-              {l.type && <span className="tag" style={{ marginLeft: '4px' }}>{l.type}</span>}
-              {l.description && <div style={{ opacity: 0.85 }}>{l.description}</div>}
-              {l.responsiveBehavior && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Responsive: {l.responsiveBehavior}</div>}
-              {l.components?.length > 0 && <div style={{ fontSize: '0.85em' }}>Components: {l.components.join(', ')}</div>}
+              {l.type && <span className="tag rr-ml-4">{l.type}</span>}
+              {l.description && <div className="rr-subtle">{l.description}</div>}
+              {l.responsiveBehavior && <div className="rr-text-sm rr-muted">Responsive: {l.responsiveBehavior}</div>}
+              {l.components?.length > 0 && <div className="rr-text-sm">Components: {l.components.join(', ')}</div>}
               {l.structure && (
-                <div style={{ fontSize: '0.85em', marginTop: '2px' }}>
+                <div className="rr-text-sm rr-mt-2">
                   {l.structure.header && <div><strong>Header:</strong> {typeof l.structure.header === 'string' ? l.structure.header : JSON.stringify(l.structure.header)}</div>}
                   {l.structure.sidebar && <div><strong>Sidebar:</strong> {typeof l.structure.sidebar === 'string' ? l.structure.sidebar : JSON.stringify(l.structure.sidebar)}</div>}
                   {l.structure.main && <div><strong>Main:</strong> {typeof l.structure.main === 'string' ? l.structure.main : JSON.stringify(l.structure.main)}</div>}
@@ -3032,7 +3032,7 @@ export function renderUxDesignDetails(props: RendererProps) {
           {editMode ? (
             <>
               {uxPatterns.map((p: any, i: number) => (
-                <div key={i} style={{ padding: '4px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-widget-border)' }}>
+                <div key={i} className="rr-p-4-8 rr-mb-4 rr-accent-border">
                   <div className="edit-grid">
                     <label>Pattern</label>
                     <input value={p.pattern || ''} onChange={(e) => updateArrayItem('uxPatterns', i, { ...p, pattern: e.target.value })} />
@@ -3053,13 +3053,13 @@ export function renderUxDesignDetails(props: RendererProps) {
             </>
           ) : (
             uxPatterns.map((p: any, i: number) => (
-              <div key={i} style={{ padding: '2px 8px', marginBottom: '4px' }}>
+              <div key={i} className="rr-p-2-8 rr-mb-4">
                 <strong>{p.pattern || `Pattern ${i + 1}`}</strong>
-                {p.category && <span className="tag" style={{ marginLeft: '4px' }}>{p.category}</span>}
-                {p.usage && <div style={{ opacity: 0.85 }}>{p.usage}</div>}
-                {p.implementation && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Impl: {p.implementation}</div>}
-                {p.rationale && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Why: {p.rationale}</div>}
-                {p.examples?.length > 0 && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Examples: {p.examples.join(', ')}</div>}
+                {p.category && <span className="tag rr-ml-4">{p.category}</span>}
+                {p.usage && <div className="rr-subtle">{p.usage}</div>}
+                {p.implementation && <div className="rr-text-sm rr-muted">Impl: {p.implementation}</div>}
+                {p.rationale && <div className="rr-text-sm rr-muted">Why: {p.rationale}</div>}
+                {p.examples?.length > 0 && <div className="rr-text-sm rr-muted">Examples: {p.examples.join(', ')}</div>}
               </div>
             ))
           )}
@@ -3073,7 +3073,7 @@ export function renderUxDesignDetails(props: RendererProps) {
           {responsive.breakpoints?.length > 0 && (
             <>
               <h4>Breakpoints</h4>
-              <table style={{ width: '100%', fontSize: '0.85em' }}>
+              <table className="rr-w-full rr-text-sm">
                 <thead><tr><th>Name</th><th>Min</th><th>Max</th><th>Description</th></tr></thead>
                 <tbody>
                   {responsive.breakpoints.map((b: any, i: number) => (
@@ -3081,7 +3081,7 @@ export function renderUxDesignDetails(props: RendererProps) {
                       <td><strong>{b.name}</strong></td>
                       <td><code>{b.minWidth || '—'}</code></td>
                       <td><code>{b.maxWidth || '—'}</code></td>
-                      <td style={{ opacity: 0.7 }}>{b.description}</td>
+                      <td className="rr-muted">{b.description}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -3092,7 +3092,7 @@ export function renderUxDesignDetails(props: RendererProps) {
             <>
               <h4>Adaptive Elements</h4>
               {responsive.adaptiveElements.map((e: any, i: number) => (
-                <div key={i} style={{ padding: '1px 8px' }}><strong>{e.element}:</strong> {e.behavior}</div>
+                <div key={i} className="rr-p-1-8"><strong>{e.element}:</strong> {e.behavior}</div>
               ))}
             </>
           )}
@@ -3103,12 +3103,12 @@ export function renderUxDesignDetails(props: RendererProps) {
       {(accessibility.standard || accessibility.requirements?.length > 0) && (
         <CollapsibleSection title="Accessibility" count={accessibility.requirements?.length} sectionId="ux-a11y">
           {accessibility.standard && <div><strong>Standard:</strong> {accessibility.standard}</div>}
-          {accessibility.overview && <div style={{ marginTop: '4px' }}><Md text={accessibility.overview} /></div>}
+          {accessibility.overview && <div className="rr-mt-4"><Md text={accessibility.overview} /></div>}
           {accessibility.requirements?.map((r: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-2">
               <strong>{r.requirement || `Req ${i + 1}`}</strong>
-              {r.category && <span className="tag" style={{ marginLeft: '4px' }}>{r.category}</span>}
-              {r.implementation && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Impl: {r.implementation}</div>}
+              {r.category && <span className="tag rr-ml-4">{r.category}</span>}
+              {r.implementation && <div className="rr-text-sm rr-muted">Impl: {r.implementation}</div>}
             </div>
           ))}
           {accessibility.keyboardNavigation && (
@@ -3116,25 +3116,25 @@ export function renderUxDesignDetails(props: RendererProps) {
               <h4>Keyboard Navigation</h4>
               {accessibility.keyboardNavigation.strategy && <div>{accessibility.keyboardNavigation.strategy}</div>}
               {accessibility.keyboardNavigation.shortcuts?.length > 0 && (
-                <div style={{ marginTop: '2px' }}>
+                <div className="rr-mt-2">
                   {accessibility.keyboardNavigation.shortcuts.map((s: any, i: number) => (
-                    <div key={i} style={{ padding: '1px 8px' }}><kbd>{s.keys}</kbd>: {s.action}</div>
+                    <div key={i} className="rr-p-1-8"><kbd>{s.keys}</kbd>: {s.action}</div>
                   ))}
                 </div>
               )}
             </>
           )}
           {accessibility.colorContrast && (
-            <div style={{ marginTop: '4px' }}>
+            <div className="rr-mt-4">
               <strong>Color Contrast:</strong> Min {accessibility.colorContrast.minimumRatio} | Large text {accessibility.colorContrast.largeTextRatio}
             </div>
           )}
           {accessibility.screenReaderSupport && (
-            <div style={{ marginTop: '4px' }}>
+            <div className="rr-mt-4">
               <h4>Screen Reader Support</h4>
               {accessibility.screenReaderSupport.approach && <div>{accessibility.screenReaderSupport.approach}</div>}
               {accessibility.screenReaderSupport.announcements?.length > 0 && (
-                <div style={{ marginTop: '2px' }}>
+                <div className="rr-mt-2">
                   <strong>Announcements:</strong>
                   <ul>{accessibility.screenReaderSupport.announcements.map((a: string, i: number) => <li key={i}>{a}</li>)}</ul>
                 </div>
@@ -3148,13 +3148,13 @@ export function renderUxDesignDetails(props: RendererProps) {
       {interactions.length > 0 && (
         <CollapsibleSection title="Interactions" count={interactions.length} sectionId="ux-interactions">
           {interactions.map((inter: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-2">
               <strong>{inter.name || `Interaction ${i + 1}`}</strong>
-              {inter.trigger && <span style={{ opacity: 0.7 }}> — Trigger: {inter.trigger}</span>}
-              {inter.response && <div style={{ opacity: 0.85 }}>{inter.response}</div>}
-              {inter.feedback && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Feedback: {inter.feedback}</div>}
-              {inter.animation && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Animation: {inter.animation}</div>}
-              {inter.states?.length > 0 && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>States: {inter.states.map((s: any) => typeof s === 'string' ? s : s.state || s.name).join(', ')}</div>}
+              {inter.trigger && <span className="rr-muted"> — Trigger: {inter.trigger}</span>}
+              {inter.response && <div className="rr-subtle">{inter.response}</div>}
+              {inter.feedback && <div className="rr-text-sm rr-muted">Feedback: {inter.feedback}</div>}
+              {inter.animation && <div className="rr-text-sm rr-muted">Animation: {inter.animation}</div>}
+              {inter.states?.length > 0 && <div className="rr-text-sm rr-muted">States: {inter.states.map((s: any) => typeof s === 'string' ? s : s.state || s.name).join(', ')}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -3167,10 +3167,10 @@ export function renderUxDesignDetails(props: RendererProps) {
             <>
               <h4>Error States</h4>
               {errorStates.map((e: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px' }}>
+                <div key={i} className="rr-p-2-8">
                   <strong>{e.errorType || `Error ${i + 1}`}</strong>
-                  {e.message && <span style={{ opacity: 0.85 }}> — {e.message}</span>}
-                  {e.recovery && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Recovery: {e.recovery}</div>}
+                  {e.message && <span className="rr-subtle"> — {e.message}</span>}
+                  {e.recovery && <div className="rr-text-sm rr-muted">Recovery: {e.recovery}</div>}
                 </div>
               ))}
             </>
@@ -3179,10 +3179,10 @@ export function renderUxDesignDetails(props: RendererProps) {
             <>
               <h4>Empty States</h4>
               {emptyStates.map((e: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px' }}>
+                <div key={i} className="rr-p-2-8">
                   <strong>{e.context || `Empty ${i + 1}`}</strong>
-                  {e.message && <span style={{ opacity: 0.85 }}> — {e.message}</span>}
-                  {e.action && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Action: {e.action}</div>}
+                  {e.message && <span className="rr-subtle"> — {e.message}</span>}
+                  {e.action && <div className="rr-text-sm rr-muted">Action: {e.action}</div>}
                 </div>
               ))}
             </>
@@ -3191,10 +3191,10 @@ export function renderUxDesignDetails(props: RendererProps) {
             <>
               <h4>Loading States</h4>
               {loadingStates.map((l: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px' }}>
+                <div key={i} className="rr-p-2-8">
                   <strong>{l.context || `Loading ${i + 1}`}</strong>
-                  {l.type && <span className="tag" style={{ marginLeft: '4px' }}>{l.type}</span>}
-                  {l.description && <span style={{ opacity: 0.7 }}> — {l.description}</span>}
+                  {l.type && <span className="tag rr-ml-4">{l.type}</span>}
+                  {l.description && <span className="rr-muted"> — {l.description}</span>}
                 </div>
               ))}
             </>
@@ -3213,11 +3213,11 @@ export function renderUxDesignDetails(props: RendererProps) {
       {references.length > 0 && (
         <CollapsibleSection title="References" count={references.length} sectionId="ux-refs">
           {references.map((r: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px' }}>
+            <div key={i} className="rr-p-2-8">
               <strong>{r.title || `Ref ${i + 1}`}</strong>
-              {r.type && <span className="tag" style={{ marginLeft: '4px' }}>{r.type}</span>}
+              {r.type && <span className="tag rr-ml-4">{r.type}</span>}
               {r.url && <span> <a href={r.url} target="_blank" rel="noopener noreferrer">Link</a></span>}
-              {r.description && <div style={{ opacity: 0.7, fontSize: '0.85em' }}>{r.description}</div>}
+              {r.description && <div className="rr-muted rr-text-sm">{r.description}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -3226,18 +3226,18 @@ export function renderUxDesignDetails(props: RendererProps) {
       {/* Usability Testing Plan */}
       {(usabilityTestingPlan.approach || usabilityTestingPlan.rounds?.length > 0 || usabilityTestingPlan.keyFindings?.length > 0) && (
         <CollapsibleSection title="Usability Testing" sectionId="ux-testing">
-          {usabilityTestingPlan.approach && <div style={{ marginBottom: '4px' }}><Md text={usabilityTestingPlan.approach} /></div>}
+          {usabilityTestingPlan.approach && <div className="rr-mb-4"><Md text={usabilityTestingPlan.approach} /></div>}
           {usabilityTestingPlan.rounds?.length > 0 && (
             <>
               <h4>Rounds</h4>
               {usabilityTestingPlan.rounds.map((r: any, i: number) => (
-                <div key={i} style={{ padding: '4px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-widget-border)' }}>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <strong style={{ flex: 1 }}>{r.round || `Round ${i + 1}`}</strong>
+                <div key={i} className="rr-p-4-8 rr-mb-4 rr-accent-border">
+                  <div className="rr-flex rr-gap-8 rr-items-center">
+                    <strong className="rr-flex-1">{r.round || `Round ${i + 1}`}</strong>
                     {r.status && <span className={`status-badge status-${r.status}`}>{r.status}</span>}
                     {r.participants && <span className="tag">{r.participants} participants</span>}
                   </div>
-                  {r.focus && <div style={{ opacity: 0.85 }}>{r.focus}</div>}
+                  {r.focus && <div className="rr-subtle">{r.focus}</div>}
                 </div>
               ))}
             </>
@@ -3255,14 +3255,14 @@ export function renderUxDesignDetails(props: RendererProps) {
       {designDecisions.length > 0 && (
         <CollapsibleSection title="Design Decisions" count={designDecisions.length} sectionId="ux-decisions">
           {designDecisions.map((dd: any, i: number) => (
-            <div key={i} style={{ padding: '6px 8px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '6px' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <strong style={{ flex: 1 }}>{dd.decision || `Decision ${i + 1}`}</strong>
+            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
+              <div className="rr-flex rr-gap-8 rr-items-center">
+                <strong className="rr-flex-1">{dd.decision || `Decision ${i + 1}`}</strong>
                 {dd.date && <span className="tag">{dd.date}</span>}
               </div>
-              {dd.rationale && <div style={{ marginTop: '2px' }}><strong>Rationale:</strong> {dd.rationale}</div>}
+              {dd.rationale && <div className="rr-mt-2"><strong>Rationale:</strong> {dd.rationale}</div>}
               {dd.alternatives?.length > 0 && (
-                <div style={{ marginTop: '2px', fontSize: '0.85em', opacity: 0.7 }}>
+                <div className="rr-mt-2 rr-text-sm rr-muted">
                   <strong>Alternatives considered:</strong> {dd.alternatives.join(', ')}
                 </div>
               )}
@@ -3375,18 +3375,18 @@ export function renderTechSpecDetails(props: RendererProps) {
   return (
     <>
       {/* Title */}
-      {d.title && <h3 style={{ margin: '0 0 4px 0' }}>{d.title}</h3>}
+      {d.title && <h3 className="rr-m-0-0-4-0">{d.title}</h3>}
 
       {/* Status / Version / Slug */}
       {(d.version || d.slug || d.status) && (
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+        <div className="rr-flex rr-gap-8 rr-wrap rr-mb-4">
           {d.status && (editMode ? (
             <select value={d.status} onChange={(e) => handleFieldChange('status', e.target.value)}>
               {specStatuses.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           ) : <span className="tag">{d.status}</span>)}
           {d.version && <span className="tag">v{d.version}</span>}
-          {d.slug && <span style={{ opacity: 0.6, fontSize: '0.85em' }}>/{d.slug}</span>}
+          {d.slug && <span className="rr-muted rr-text-sm">/{d.slug}</span>}
         </div>
       )}
 
@@ -3407,11 +3407,11 @@ export function renderTechSpecDetails(props: RendererProps) {
           ) : (
             <>
               {overview.summary && <div><Md text={overview.summary} /></div>}
-              {overview.problemStatement && <div style={{ marginTop: '4px' }}><strong>Problem:</strong> <Md text={overview.problemStatement} /></div>}
-              {overview.background && <div style={{ marginTop: '4px' }}><strong>Background:</strong> <Md text={overview.background} /></div>}
-              {overview.proposedSolution && <div style={{ marginTop: '4px' }}><strong>Proposed Solution:</strong> <Md text={overview.proposedSolution} /></div>}
+              {overview.problemStatement && <div className="rr-mt-4"><strong>Problem:</strong> <Md text={overview.problemStatement} /></div>}
+              {overview.background && <div className="rr-mt-4"><strong>Background:</strong> <Md text={overview.background} /></div>}
+              {overview.proposedSolution && <div className="rr-mt-4"><strong>Proposed Solution:</strong> <Md text={overview.proposedSolution} /></div>}
               {overview.relatedDocuments?.length > 0 && (
-                <div style={{ marginTop: '4px' }}>
+                <div className="rr-mt-4">
                   <strong>Related Documents:</strong>
                   <ul>{overview.relatedDocuments.map((doc: any, i: number) => <li key={i}>{typeof doc === 'string' ? doc : doc.title || doc.name || `Document ${i + 1}`}{doc.url && <span> <a href={doc.url} target="_blank" rel="noopener noreferrer">Link</a></span>}</li>)}</ul>
                 </div>
@@ -3425,10 +3425,10 @@ export function renderTechSpecDetails(props: RendererProps) {
       {overview.goals?.length > 0 && (
         <CollapsibleSection title="Goals" count={overview.goals.length} sectionId="ts-goals">
           {overview.goals.map((g: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-2">
               <strong>{g.goal || `Goal ${i + 1}`}</strong>
-              {g.priority && <span className="tag" style={{ marginLeft: '4px' }}>{g.priority}</span>}
-              {g.successCriteria && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Success: {g.successCriteria}</div>}
+              {g.priority && <span className="tag rr-ml-4">{g.priority}</span>}
+              {g.successCriteria && <div className="rr-text-sm rr-muted">Success: {g.successCriteria}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -3444,14 +3444,14 @@ export function renderTechSpecDetails(props: RendererProps) {
       {/* Scope */}
       {(overview.scope || overview.scopeDescription) && (
         <CollapsibleSection title="Scope" sectionId="ts-scope">
-          {overview.scopeDescription && <div style={{ marginBottom: '4px' }}><Md text={overview.scopeDescription} /></div>}
+          {overview.scopeDescription && <div className="rr-mb-4"><Md text={overview.scopeDescription} /></div>}
           {overview.scope.inScope?.length > 0 && (
             <>
               <h4>In Scope</h4>
               {overview.scope.inScope.map((s: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px' }}>
+                <div key={i} className="rr-p-2-8">
                   <strong>{s.item || `Item ${i + 1}`}</strong>
-                  {s.rationale && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>{s.rationale}</div>}
+                  {s.rationale && <div className="rr-text-sm rr-muted">{s.rationale}</div>}
                 </div>
               ))}
             </>
@@ -3460,9 +3460,9 @@ export function renderTechSpecDetails(props: RendererProps) {
             <>
               <h4>Out of Scope</h4>
               {overview.scope.outOfScope.map((s: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px' }}>
+                <div key={i} className="rr-p-2-8">
                   <strong>{s.item || `Item ${i + 1}`}</strong>
-                  {s.reason && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>{s.reason}</div>}
+                  {s.reason && <div className="rr-text-sm rr-muted">{s.reason}</div>}
                 </div>
               ))}
             </>
@@ -3474,15 +3474,15 @@ export function renderTechSpecDetails(props: RendererProps) {
       {(context.overview || context.existingArchitecture) && (
         <CollapsibleSection title="Development Context" sectionId="ts-context">
           {context.overview && <div><Md text={context.overview} /></div>}
-          {context.existingArchitecture && <div style={{ marginTop: '4px' }}><strong>Existing Architecture:</strong> <Md text={context.existingArchitecture} /></div>}
+          {context.existingArchitecture && <div className="rr-mt-4"><strong>Existing Architecture:</strong> <Md text={context.existingArchitecture} /></div>}
           {context.codebasePatterns?.length > 0 && (
             <>
               <h4>Codebase Patterns</h4>
               {context.codebasePatterns.map((p: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px' }}>
+                <div key={i} className="rr-p-2-8">
                   <strong>{p.pattern || `Pattern ${i + 1}`}</strong>
-                  {p.location && <span style={{ opacity: 0.7 }}> — {p.location}</span>}
-                  {p.example && <pre style={{ fontSize: '0.85em', margin: '2px 0' }}>{p.example}</pre>}
+                  {p.location && <span className="rr-muted"> — {p.location}</span>}
+                  {p.example && <pre className="rr-text-sm rr-m-2-0">{p.example}</pre>}
                 </div>
               ))}
             </>
@@ -3491,10 +3491,10 @@ export function renderTechSpecDetails(props: RendererProps) {
             <>
               <h4>Technical Decisions</h4>
               {context.technicalDecisions.map((td: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-textLink-foreground)' }}>
+                <div key={i} className="rr-p-2-8 rr-mb-4 rr-accent-link">
                   <strong>{td.decision || `Decision ${i + 1}`}</strong>
-                  {td.rationale && <div style={{ opacity: 0.85 }}>{td.rationale}</div>}
-                  {td.alternatives?.length > 0 && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Alternatives: {td.alternatives.map((a: any) => a.alternative).join(', ')}</div>}
+                  {td.rationale && <div className="rr-subtle">{td.rationale}</div>}
+                  {td.alternatives?.length > 0 && <div className="rr-text-sm rr-muted">Alternatives: {td.alternatives.map((a: any) => a.alternative).join(', ')}</div>}
                 </div>
               ))}
             </>
@@ -3503,10 +3503,10 @@ export function renderTechSpecDetails(props: RendererProps) {
             <>
               <h4>Constraints</h4>
               {context.constraints.map((c: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px' }}>
+                <div key={i} className="rr-p-2-8">
                   <strong>{c.constraint || `Constraint ${i + 1}`}</strong>
-                  {c.impact && <span style={{ opacity: 0.7 }}> — Impact: {c.impact}</span>}
-                  {c.workaround && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Workaround: {c.workaround}</div>}
+                  {c.impact && <span className="rr-muted"> — Impact: {c.impact}</span>}
+                  {c.workaround && <div className="rr-text-sm rr-muted">Workaround: {c.workaround}</div>}
                 </div>
               ))}
             </>
@@ -3515,9 +3515,9 @@ export function renderTechSpecDetails(props: RendererProps) {
             <>
               <h4>Files to Reference</h4>
               {context.filesToReference.map((f: any, i: number) => (
-                <div key={i} style={{ padding: '1px 8px' }}>
+                <div key={i} className="rr-p-1-8">
                   <code>{typeof f === 'string' ? f : f.path || f.file}</code>
-                  {f.reason && <span style={{ opacity: 0.7 }}> — {f.reason}</span>}
+                  {f.reason && <span className="rr-muted"> — {f.reason}</span>}
                 </div>
               ))}
             </>
@@ -3531,7 +3531,7 @@ export function renderTechSpecDetails(props: RendererProps) {
           {editMode ? (
             <>
               {techStack.map((t: any, i: number) => (
-                <div key={i} style={{ padding: '4px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-widget-border)' }}>
+                <div key={i} className="rr-p-4-8 rr-mb-4 rr-accent-border">
                   <div className="edit-grid">
                     <label>Technology</label>
                     <input value={t.technology || ''} onChange={(e) => updateArrayItem('techStack', i, { ...t, technology: e.target.value })} />
@@ -3546,14 +3546,14 @@ export function renderTechSpecDetails(props: RendererProps) {
               <button className="add-btn" onClick={() => addToArray('techStack', { technology: '', version: '', purpose: '' })}>+ Add Technology</button>
             </>
           ) : (
-            <table style={{ width: '100%', fontSize: '0.85em' }}>
+            <table className="rr-w-full rr-text-sm">
               <thead><tr><th>Technology</th><th>Version</th><th>Purpose</th></tr></thead>
               <tbody>
                 {techStack.map((t: any, i: number) => (
                   <tr key={i}>
                     <td><strong>{t.technology}</strong></td>
                     <td><code>{t.version}</code></td>
-                    <td style={{ opacity: 0.7 }}>{t.purpose}</td>
+                    <td className="rr-muted">{t.purpose}</td>
                   </tr>
                 ))}
               </tbody>
@@ -3565,13 +3565,13 @@ export function renderTechSpecDetails(props: RendererProps) {
       {/* Data Model */}
       {(dataModel.overview || dataModel.entities?.length > 0) && (
         <CollapsibleSection title="Data Model" count={dataModel.entities?.length} sectionId="ts-data">
-          {dataModel.overview && <div style={{ marginBottom: '4px' }}><Md text={dataModel.overview} /></div>}
+          {dataModel.overview && <div className="rr-mb-4"><Md text={dataModel.overview} /></div>}
           {dataModel.entities?.map((e: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-textLink-foreground)' }}>
+            <div key={i} className="rr-p-4-8 rr-mb-4 rr-accent-link">
               <strong>{e.name || `Entity ${i + 1}`}</strong>
-              {e.description && <div style={{ opacity: 0.85 }}>{e.description}</div>}
+              {e.description && <div className="rr-subtle">{e.description}</div>}
               {e.fields?.length > 0 && (
-                <table style={{ width: '100%', fontSize: '0.85em', marginTop: '2px' }}>
+                <table className="rr-w-full rr-text-sm rr-mt-2">
                   <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
                   <tbody>
                     {e.fields.map((f: any, fi: number) => (
@@ -3579,30 +3579,30 @@ export function renderTechSpecDetails(props: RendererProps) {
                         <td><code>{f.name}</code></td>
                         <td><code>{f.type}</code></td>
                         <td>{f.required ? 'Yes' : 'No'}</td>
-                        <td style={{ opacity: 0.7 }}>{f.description}</td>
+                        <td className="rr-muted">{f.description}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               )}
-              {e.relationships?.length > 0 && <div style={{ fontSize: '0.85em', marginTop: '2px' }}>Relations: {e.relationships.map((r: any) => `${r.entity} (${r.type})`).join(', ')}</div>}
+              {e.relationships?.length > 0 && <div className="rr-text-sm rr-mt-2">Relations: {e.relationships.map((r: any) => `${r.entity} (${r.type})`).join(', ')}</div>}
             </div>
           ))}
           {dataModel.indexesNote && (
             <>
               <h4>Indexes</h4>
-              <pre style={{ fontSize: '0.85em', whiteSpace: 'pre-wrap' }}>{dataModel.indexesNote}</pre>
+              <pre className="rr-text-sm rr-pre-wrap">{dataModel.indexesNote}</pre>
             </>
           )}
           {dataModel.migrations?.length > 0 && (
             <>
               <h4>Migrations</h4>
               {dataModel.migrations.map((m: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+                <div key={i} className="rr-p-2-8 rr-mb-2">
                   <strong>{m.name || m.version || `Migration ${i + 1}`}</strong>
-                  {m.type && <span className="tag" style={{ marginLeft: '4px' }}>{m.type}</span>}
-                  {m.description && <div style={{ opacity: 0.85 }}>{m.description}</div>}
-                  {m.sql && <pre style={{ fontSize: '0.85em', margin: '2px 0' }}>{m.sql}</pre>}
+                  {m.type && <span className="tag rr-ml-4">{m.type}</span>}
+                  {m.description && <div className="rr-subtle">{m.description}</div>}
+                  {m.sql && <pre className="rr-text-sm rr-m-2-0">{m.sql}</pre>}
                 </div>
               ))}
             </>
@@ -3613,14 +3613,14 @@ export function renderTechSpecDetails(props: RendererProps) {
       {/* API Changes */}
       {(apiChanges.overview || apiChanges.newEndpoints?.length > 0 || apiChanges.modifiedEndpoints?.length > 0) && (
         <CollapsibleSection title="API Changes" count={(apiChanges.newEndpoints?.length || 0) + (apiChanges.modifiedEndpoints?.length || 0)} sectionId="ts-api">
-          {apiChanges.overview && <div style={{ marginBottom: '4px' }}><Md text={apiChanges.overview} /></div>}
+          {apiChanges.overview && <div className="rr-mb-4"><Md text={apiChanges.overview} /></div>}
           {apiChanges.newEndpoints?.length > 0 && (
             <>
               <h4>New Endpoints</h4>
               {apiChanges.newEndpoints.map((ep: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-testing-iconPassed)' }}>
+                <div key={i} className="rr-p-2-8 rr-mb-4 rr-accent-passed">
                   <code><strong>{ep.method}</strong> {ep.path}</code>
-                  {ep.description && <div style={{ opacity: 0.85 }}>{ep.description}</div>}
+                  {ep.description && <div className="rr-subtle">{ep.description}</div>}
                 </div>
               ))}
             </>
@@ -3629,10 +3629,10 @@ export function renderTechSpecDetails(props: RendererProps) {
             <>
               <h4>Modified Endpoints</h4>
               {apiChanges.modifiedEndpoints.map((ep: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+                <div key={i} className="rr-p-2-8 rr-mb-2">
                   <code>{ep.path}</code>
-                  {ep.changes && <div style={{ opacity: 0.85 }}>{ep.changes}</div>}
-                  {ep.backwardCompatibility && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Backward compat: {ep.backwardCompatibility}</div>}
+                  {ep.changes && <div className="rr-subtle">{ep.changes}</div>}
+                  {ep.backwardCompatibility && <div className="rr-text-sm rr-muted">Backward compat: {ep.backwardCompatibility}</div>}
                 </div>
               ))}
             </>
@@ -3647,9 +3647,9 @@ export function renderTechSpecDetails(props: RendererProps) {
             <>
               <h4>Files to Modify</h4>
               {filesToModify.map((f: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px' }}>
+                <div key={i} className="rr-p-2-8">
                   <code>{f.path}</code>
-                  {f.changes && <span style={{ opacity: 0.7 }}> — {f.changes}</span>}
+                  {f.changes && <span className="rr-muted"> — {f.changes}</span>}
                 </div>
               ))}
             </>
@@ -3658,9 +3658,9 @@ export function renderTechSpecDetails(props: RendererProps) {
             <>
               <h4>Files to Create</h4>
               {filesToCreate.map((f: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px' }}>
+                <div key={i} className="rr-p-2-8">
                   <code>{f.path}</code>
-                  {f.purpose && <span style={{ opacity: 0.7 }}> — {f.purpose}</span>}
+                  {f.purpose && <span className="rr-muted"> — {f.purpose}</span>}
                 </div>
               ))}
             </>
@@ -3675,10 +3675,10 @@ export function renderTechSpecDetails(props: RendererProps) {
             <>
               <h4>Code Patterns</h4>
               {codePatterns.map((p: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+                <div key={i} className="rr-p-2-8 rr-mb-2">
                   <strong>{p.pattern || `Pattern ${i + 1}`}</strong>
-                  {p.rationale && <span style={{ opacity: 0.7 }}> — {p.rationale}</span>}
-                  {p.example && <pre style={{ fontSize: '0.85em', margin: '2px 0' }}>{p.example}</pre>}
+                  {p.rationale && <span className="rr-muted"> — {p.rationale}</span>}
+                  {p.example && <pre className="rr-text-sm rr-m-2-0">{p.example}</pre>}
                 </div>
               ))}
             </>
@@ -3687,10 +3687,10 @@ export function renderTechSpecDetails(props: RendererProps) {
             <>
               <h4>Test Patterns</h4>
               {testPatterns.map((p: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+                <div key={i} className="rr-p-2-8 rr-mb-2">
                   <strong>{p.pattern || `Pattern ${i + 1}`}</strong>
-                  {p.coverage && <span className="tag" style={{ marginLeft: '4px' }}>{p.coverage}</span>}
-                  {p.example && <pre style={{ fontSize: '0.85em', margin: '2px 0' }}>{p.example}</pre>}
+                  {p.coverage && <span className="tag rr-ml-4">{p.coverage}</span>}
+                  {p.example && <pre className="rr-text-sm rr-m-2-0">{p.example}</pre>}
                 </div>
               ))}
             </>
@@ -3701,16 +3701,16 @@ export function renderTechSpecDetails(props: RendererProps) {
       {/* Implementation Plan */}
       {(implementationPlan.overview || implementationPlan.tasks?.length > 0 || implementationPlan.phases?.length > 0) && (
         <CollapsibleSection title="Implementation Plan" count={implementationPlan.tasks?.length} sectionId="ts-impl">
-          {implementationPlan.overview && <div style={{ marginBottom: '4px' }}><Md text={implementationPlan.overview} /></div>}
+          {implementationPlan.overview && <div className="rr-mb-4"><Md text={implementationPlan.overview} /></div>}
           {implementationPlan.phases?.length > 0 && (
             <>
               <h4>Phases</h4>
               {implementationPlan.phases.map((p: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-textLink-foreground)' }}>
+                <div key={i} className="rr-p-2-8 rr-mb-4 rr-accent-link">
                   <strong>{p.phase || `Phase ${i + 1}`}</strong>
-                  {p.description && <div style={{ opacity: 0.85 }}>{p.description}</div>}
+                  {p.description && <div className="rr-subtle">{p.description}</div>}
                   {p.tasks?.length > 0 && <ul>{p.tasks.map((t: string, ti: number) => <li key={ti}>{t}</li>)}</ul>}
-                  {p.deliverables?.length > 0 && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Deliverables: {p.deliverables.join(', ')}</div>}
+                  {p.deliverables?.length > 0 && <div className="rr-text-sm rr-muted">Deliverables: {p.deliverables.join(', ')}</div>}
                 </div>
               ))}
             </>
@@ -3719,14 +3719,14 @@ export function renderTechSpecDetails(props: RendererProps) {
             <>
               <h4>Tasks</h4>
               {implementationPlan.tasks.map((t: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-widget-border)' }}>
-                  {t.id && <span className="tag" style={{ marginRight: '4px' }}>{t.id}</span>}
+                <div key={i} className="rr-p-2-8 rr-mb-4 rr-accent-border">
+                  {t.id && <span className="tag rr-mr-4">{t.id}</span>}
                   <strong>{t.description || `Task ${i + 1}`}</strong>
-                  {t.priority != null && <span className="tag" style={{ marginLeft: '4px' }}>P{t.priority}</span>}
-                  {t.estimatedEffort && <span className="tag" style={{ marginLeft: '4px' }}>{t.estimatedEffort}</span>}
-                  {t.details && <div style={{ opacity: 0.85 }}>{t.details}</div>}
-                  {t.files?.length > 0 && <div style={{ fontSize: '0.85em' }}>Files: {t.files.map((f: string) => <code key={f} style={{ marginRight: '4px' }}>{f}</code>)}</div>}
-                  {t.subtasks?.length > 0 && <ul style={{ marginTop: '2px' }}>{t.subtasks.map((st: any, si: number) => <li key={si}>{st.task || st}{st.details ? ` — ${st.details}` : ''}</li>)}</ul>}
+                  {t.priority != null && <span className="tag rr-ml-4">P{t.priority}</span>}
+                  {t.estimatedEffort && <span className="tag rr-ml-4">{t.estimatedEffort}</span>}
+                  {t.details && <div className="rr-subtle">{t.details}</div>}
+                  {t.files?.length > 0 && <div className="rr-text-sm">Files: {t.files.map((f: string) => <code key={f} className="rr-mr-4">{f}</code>)}</div>}
+                  {t.subtasks?.length > 0 && <ul className="rr-mt-2">{t.subtasks.map((st: any, si: number) => <li key={si}>{st.task || st}{st.details ? ` — ${st.details}` : ''}</li>)}</ul>}
                 </div>
               ))}
             </>
@@ -3735,9 +3735,9 @@ export function renderTechSpecDetails(props: RendererProps) {
             <>
               <h4>Milestones</h4>
               {implementationPlan.milestones.map((m: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px' }}>
+                <div key={i} className="rr-p-2-8">
                   <strong>{m.milestone || `Milestone ${i + 1}`}</strong>
-                  {m.criteria && <span style={{ opacity: 0.7 }}> — {m.criteria}</span>}
+                  {m.criteria && <span className="rr-muted"> — {m.criteria}</span>}
                 </div>
               ))}
             </>
@@ -3756,23 +3756,23 @@ export function renderTechSpecDetails(props: RendererProps) {
       {/* Testing Strategy */}
       {(testingStrategy.overview || testingStrategy.unitTests || testingStrategy.integrationTests) && (
         <CollapsibleSection title="Testing Strategy" sectionId="ts-testing">
-          {testingStrategy.overview && <div style={{ marginBottom: '4px' }}><Md text={testingStrategy.overview} /></div>}
+          {testingStrategy.overview && <div className="rr-mb-4"><Md text={testingStrategy.overview} /></div>}
           {testingStrategy.unitTests && (
-            <div style={{ marginBottom: '4px' }}>
+            <div className="rr-mb-4">
               <h4>Unit Tests</h4>
               {testingStrategy.unitTests.approach && <div>{testingStrategy.unitTests.approach}</div>}
-              {testingStrategy.unitTests.coverage && <div style={{ opacity: 0.7 }}>Coverage: {testingStrategy.unitTests.coverage}</div>}
+              {testingStrategy.unitTests.coverage && <div className="rr-muted">Coverage: {testingStrategy.unitTests.coverage}</div>}
             </div>
           )}
           {testingStrategy.integrationTests && (
-            <div style={{ marginBottom: '4px' }}>
+            <div className="rr-mb-4">
               <h4>Integration Tests</h4>
               {testingStrategy.integrationTests.approach && <div>{testingStrategy.integrationTests.approach}</div>}
               {testingStrategy.integrationTests.scenarios?.length > 0 && <ul>{testingStrategy.integrationTests.scenarios.map((s: string, i: number) => <li key={i}>{s}</li>)}</ul>}
             </div>
           )}
           {testingStrategy.e2eTests && (
-            <div style={{ marginBottom: '4px' }}>
+            <div className="rr-mb-4">
               <h4>E2E Tests</h4>
               {testingStrategy.e2eTests.approach && <div>{testingStrategy.e2eTests.approach}</div>}
               {testingStrategy.e2eTests.flows?.length > 0 && <ul>{testingStrategy.e2eTests.flows.map((f: string, i: number) => <li key={i}>{f}</li>)}</ul>}
@@ -3790,7 +3790,7 @@ export function renderTechSpecDetails(props: RendererProps) {
           {editMode ? (
             <>
               {risks.map((r: any, i: number) => (
-                <div key={i} style={{ padding: '4px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-widget-border)' }}>
+                <div key={i} className="rr-p-4-8 rr-mb-4 rr-accent-border">
                   <div className="edit-grid">
                     <label>Risk</label>
                     <textarea rows={2} value={r.risk || ''} onChange={(e) => updateArrayItem('risks', i, { ...r, risk: e.target.value })} />
@@ -3814,11 +3814,11 @@ export function renderTechSpecDetails(props: RendererProps) {
             </>
           ) : (
             risks.map((r: any, i: number) => (
-              <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+              <div key={i} className="rr-p-2-8 rr-mb-2">
                 <strong>{r.risk || `Risk ${i + 1}`}</strong>
                 {r.probability && <span className="tag" style={{ marginLeft: '4px', backgroundColor: r.probability === 'high' ? 'var(--vscode-errorForeground)' : undefined }}>{r.probability}</span>}
-                {r.impact && <span className="tag" style={{ marginLeft: '4px' }}>Impact: {r.impact}</span>}
-                {r.mitigation && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Mitigation: {r.mitigation}</div>}
+                {r.impact && <span className="tag rr-ml-4">Impact: {r.impact}</span>}
+                {r.mitigation && <div className="rr-text-sm rr-muted">Mitigation: {r.mitigation}</div>}
               </div>
             ))
           )}
@@ -3848,10 +3848,10 @@ export function renderTechSpecDetails(props: RendererProps) {
             <>
               <h4>Open Questions</h4>
               {additionalContext.openQuestions.map((q: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px' }}>
+                <div key={i} className="rr-p-2-8">
                   <strong>{q.question || `Q${i + 1}`}</strong>
-                  {q.owner && <span className="tag" style={{ marginLeft: '4px' }}>{q.owner}</span>}
-                  {q.status && <span className="tag" style={{ marginLeft: '4px' }}>{q.status}</span>}
+                  {q.owner && <span className="tag rr-ml-4">{q.owner}</span>}
+                  {q.status && <span className="tag rr-ml-4">{q.status}</span>}
                 </div>
               ))}
             </>
@@ -3860,10 +3860,10 @@ export function renderTechSpecDetails(props: RendererProps) {
             <>
               <h4>Dependencies</h4>
               {additionalContext.dependencies.map((dep: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px' }}>
+                <div key={i} className="rr-p-2-8">
                   <strong>{dep.dependency || `Dep ${i + 1}`}</strong>
-                  {dep.type && <span className="tag" style={{ marginLeft: '4px' }}>{dep.type}</span>}
-                  {dep.status && <span className="tag" style={{ marginLeft: '4px' }}>{dep.status}</span>}
+                  {dep.type && <span className="tag rr-ml-4">{dep.type}</span>}
+                  {dep.status && <span className="tag rr-ml-4">{dep.status}</span>}
                 </div>
               ))}
             </>
@@ -3875,14 +3875,14 @@ export function renderTechSpecDetails(props: RendererProps) {
             <>
               <h4>References</h4>
               {additionalContext.references.map((ref: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px' }}>
+                <div key={i} className="rr-p-2-8">
                   {typeof ref === 'string' ? (
                     <span>{ref}</span>
                   ) : (
                     <>
                       <strong>{ref.title || `Reference ${i + 1}`}</strong>
                       {ref.url && <span> <a href={ref.url} target="_blank" rel="noopener noreferrer">Link</a></span>}
-                      {ref.description && <div style={{ opacity: 0.7, fontSize: '0.85em' }}>{ref.description}</div>}
+                      {ref.description && <div className="rr-muted rr-text-sm">{ref.description}</div>}
                     </>
                   )}
                 </div>
@@ -3898,7 +3898,7 @@ export function renderTechSpecDetails(props: RendererProps) {
           {editMode ? (
             <>
               {reviewers.map((r: any, i: number) => (
-                <div key={i} style={{ padding: '4px 8px', marginBottom: '4px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div key={i} className="rr-p-4-8 rr-mb-4 rr-flex rr-gap-8 rr-items-center">
                   <input value={r.name || ''} placeholder="Name" onChange={(e) => updateArrayItem('reviewers', i, { ...r, name: e.target.value })} />
                   <input value={r.role || ''} placeholder="Role" onChange={(e) => updateArrayItem('reviewers', i, { ...r, role: e.target.value })} />
                   <select value={r.status || ''} onChange={(e) => updateArrayItem('reviewers', i, { ...r, status: e.target.value })}>
@@ -3912,9 +3912,9 @@ export function renderTechSpecDetails(props: RendererProps) {
             </>
           ) : (
             reviewers.map((r: any, i: number) => (
-              <div key={i} style={{ padding: '2px 8px' }}>
+              <div key={i} className="rr-p-2-8">
                 <strong>{r.name || `Reviewer ${i + 1}`}</strong>
-                {r.role && <span style={{ opacity: 0.7 }}> ({r.role})</span>}
+                {r.role && <span className="rr-muted"> ({r.role})</span>}
                 {r.status && <span className={`tag agent-renderer-tag ${r.status === 'approved' ? 'agent-renderer-tag--success' : r.status === 'changes-requested' ? 'agent-renderer-tag--error' : ''}`} style={{ marginLeft: '4px' }}>{r.status}</span>}
               </div>
             ))
@@ -3926,11 +3926,11 @@ export function renderTechSpecDetails(props: RendererProps) {
       {securityConsiderations.length > 0 && (
         <CollapsibleSection title="Security Considerations" count={securityConsiderations.length} sectionId="ts-security">
           {securityConsiderations.map((s: any, i: number) => (
-            <div key={i} style={{ padding: '6px 8px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '6px' }}>
+            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
               <strong>{s.area || `Security ${i + 1}`}</strong>
-              {s.approach && <div style={{ marginTop: '2px' }}><Md text={s.approach} /></div>}
-              {s.threats && <div style={{ fontSize: '0.85em' }}><strong>Threats:</strong> {s.threats}</div>}
-              {s.mitigations && <div style={{ fontSize: '0.85em' }}><strong>Mitigations:</strong> {s.mitigations}</div>}
+              {s.approach && <div className="rr-mt-2"><Md text={s.approach} /></div>}
+              {s.threats && <div className="rr-text-sm"><strong>Threats:</strong> {s.threats}</div>}
+              {s.mitigations && <div className="rr-text-sm"><strong>Mitigations:</strong> {s.mitigations}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -3939,14 +3939,14 @@ export function renderTechSpecDetails(props: RendererProps) {
       {/* Performance Targets */}
       {performanceTargets.length > 0 && (
         <CollapsibleSection title="Performance Targets" count={performanceTargets.length} sectionId="ts-perf">
-          <table style={{ width: '100%', fontSize: '0.85em' }}>
+          <table className="rr-w-full rr-text-sm">
             <thead><tr><th>Metric</th><th>Target</th><th>Measurement</th></tr></thead>
             <tbody>
               {performanceTargets.map((p: any, i: number) => (
                 <tr key={i}>
                   <td><strong>{p.metric}</strong></td>
                   <td>{p.target}</td>
-                  <td style={{ opacity: 0.7 }}>{p.measurement}</td>
+                  <td className="rr-muted">{p.measurement}</td>
                 </tr>
               ))}
             </tbody>
@@ -4026,7 +4026,7 @@ export function renderProjectOverviewDetails(props: RendererProps) {
               {projectInfo.name && <div><strong>{projectInfo.name}</strong> {projectInfo.version && <span className="tag">{projectInfo.version}</span>}</div>}
               {projectInfo.type && <div><strong>Type:</strong> {projectInfo.type}</div>}
               {projectInfo.architecturePattern && <div><strong>Architecture:</strong> {projectInfo.architecturePattern}</div>}
-              {projectInfo.description && <div style={{ marginTop: '4px' }}><Md text={projectInfo.description} /></div>}
+              {projectInfo.description && <div className="rr-mt-4"><Md text={projectInfo.description} /></div>}
               {projectInfo.repository && <div><strong>Repo:</strong> <a href={projectInfo.repository} target="_blank" rel="noopener noreferrer">{projectInfo.repository}</a></div>}
               {projectInfo.license && <div><strong>License:</strong> {projectInfo.license}</div>}
             </>
@@ -4038,7 +4038,7 @@ export function renderProjectOverviewDetails(props: RendererProps) {
       {d.executiveSummary && (
         <CollapsibleSection title="Executive Summary" sectionId="po-exec">
           {editMode ? (
-            <textarea rows={5} value={d.executiveSummary || ''} style={{ width: '100%' }} onChange={(e) => handleFieldChange('executiveSummary', e.target.value)} />
+            <textarea rows={5} value={d.executiveSummary || ''} className="rr-w-full" onChange={(e) => handleFieldChange('executiveSummary', e.target.value)} />
           ) : (
             <Md text={d.executiveSummary} />
           )}
@@ -4074,19 +4074,19 @@ export function renderProjectOverviewDetails(props: RendererProps) {
       {(timeline.startDate || timeline.phases?.length > 0) && (
         <CollapsibleSection title="Timeline" sectionId="po-timeline">
           {(timeline.startDate || timeline.targetLaunchDate) && (
-            <div style={{ marginBottom: '4px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <div className="rr-mb-4 rr-flex rr-gap-12 rr-wrap">
               {timeline.startDate && <span><strong>Start:</strong> {timeline.startDate}</span>}
               {timeline.targetLaunchDate && <span><strong>Target Launch:</strong> {timeline.targetLaunchDate}</span>}
             </div>
           )}
           {timeline.phases?.length > 0 && timeline.phases.map((p: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-textLink-foreground)' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <strong style={{ flex: 1 }}>{p.phase || `Phase ${i + 1}`}</strong>
+            <div key={i} className="rr-p-4-8 rr-mb-4 rr-accent-link">
+              <div className="rr-flex rr-gap-8 rr-items-center">
+                <strong className="rr-flex-1">{p.phase || `Phase ${i + 1}`}</strong>
                 {p.status && <span className={`status-badge status-${p.status}`}>{p.status}</span>}
               </div>
               {(p.startDate || p.endDate) && (
-                <div style={{ fontSize: '0.85em', opacity: 0.7 }}>
+                <div className="rr-text-sm rr-muted">
                   {p.startDate && <span>{p.startDate}</span>}
                   {p.endDate && <span> — {p.endDate}</span>}
                 </div>
@@ -4099,14 +4099,14 @@ export function renderProjectOverviewDetails(props: RendererProps) {
       {/* Team */}
       {(team.size || team.roles?.length > 0) && (
         <CollapsibleSection title="Team" count={team.roles?.length} sectionId="po-team">
-          {team.size && <div style={{ marginBottom: '4px' }}><strong>Team Size:</strong> {team.size}</div>}
+          {team.size && <div className="rr-mb-4"><strong>Team Size:</strong> {team.size}</div>}
           {team.roles?.map((r: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-widget-border)' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div key={i} className="rr-p-4-8 rr-mb-4 rr-accent-border">
+              <div className="rr-flex rr-gap-8 rr-items-center">
                 <strong>{r.role}</strong>
-                {r.name && <span style={{ opacity: 0.85 }}> — {r.name}</span>}
+                {r.name && <span className="rr-subtle"> — {r.name}</span>}
               </div>
-              {r.responsibilities && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>{r.responsibilities}</div>}
+              {r.responsibilities && <div className="rr-text-sm rr-muted">{r.responsibilities}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -4116,10 +4116,10 @@ export function renderProjectOverviewDetails(props: RendererProps) {
       {stakeholders.length > 0 && (
         <CollapsibleSection title="Stakeholders" count={stakeholders.length} sectionId="po-stakeholders">
           {stakeholders.map((s: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-widget-border)' }}>
+            <div key={i} className="rr-p-4-8 rr-mb-4 rr-accent-border">
               <strong>{s.name || `Stakeholder ${i + 1}`}</strong>
-              {s.interest && <div style={{ opacity: 0.85 }}>{s.interest}</div>}
-              {s.communicationFrequency && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>{s.communicationFrequency}</div>}
+              {s.interest && <div className="rr-subtle">{s.interest}</div>}
+              {s.communicationFrequency && <div className="rr-text-sm rr-muted">{s.communicationFrequency}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -4129,10 +4129,10 @@ export function renderProjectOverviewDetails(props: RendererProps) {
       {successCriteria.length > 0 && (
         <CollapsibleSection title="Success Criteria" count={successCriteria.length} sectionId="po-success">
           {successCriteria.map((c: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px' }}>
+            <div key={i} className="rr-p-4-8 rr-mb-4">
               <strong>{typeof c === 'string' ? c : c.criterion || `Criterion ${i + 1}`}</strong>
-              {c.metric && <div style={{ fontSize: '0.85em' }}><strong>Metric:</strong> {c.metric}</div>}
-              {c.target && <div style={{ fontSize: '0.85em', opacity: 0.7 }}><strong>Target:</strong> {c.target}</div>}
+              {c.metric && <div className="rr-text-sm"><strong>Metric:</strong> {c.metric}</div>}
+              {c.target && <div className="rr-text-sm rr-muted"><strong>Target:</strong> {c.target}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -4142,13 +4142,13 @@ export function renderProjectOverviewDetails(props: RendererProps) {
       {projectRisks.length > 0 && (
         <CollapsibleSection title="Risks" count={projectRisks.length} sectionId="po-risks">
           {projectRisks.map((r: any, i: number) => (
-            <div key={i} style={{ padding: '6px 8px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '6px' }}>
+            <div key={i} className="rr-p-6-8 rr-rounded rr-bg-subtle rr-mb-6">
               <strong>{r.risk || r.title || `Risk ${i + 1}`}</strong>
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '2px' }}>
+              <div className="rr-flex rr-gap-12 rr-wrap rr-mt-2">
                 {(r.likelihood || r.probability) && <span><strong>P:</strong> {r.likelihood || r.probability}</span>}
                 {r.impact && <span><strong>I:</strong> {r.impact}</span>}
               </div>
-              {r.mitigation && <div style={{ marginTop: '2px' }}><strong>Mitigation:</strong> {r.mitigation}</div>}
+              {r.mitigation && <div className="rr-mt-2"><strong>Mitigation:</strong> {r.mitigation}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -4157,13 +4157,13 @@ export function renderProjectOverviewDetails(props: RendererProps) {
       {/* Classification */}
       {(projectClassification.repositoryType || projectClassification.maturityLevel) && (
         <CollapsibleSection title="Classification" sectionId="po-class">
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <div className="rr-flex rr-gap-8 rr-wrap">
             {projectClassification.repositoryType && <span className="tag">{projectClassification.repositoryType}</span>}
             {projectClassification.maturityLevel && <span className="tag">{projectClassification.maturityLevel}</span>}
             {projectClassification.complexity && <span className="tag">{projectClassification.complexity}</span>}
             {projectClassification.architecturePattern && <span className="tag">{projectClassification.architecturePattern}</span>}
           </div>
-          {projectClassification.primaryLanguages?.length > 0 && <div style={{ marginTop: '4px' }}><strong>Primary:</strong> {projectClassification.primaryLanguages.join(', ')}</div>}
+          {projectClassification.primaryLanguages?.length > 0 && <div className="rr-mt-4"><strong>Primary:</strong> {projectClassification.primaryLanguages.join(', ')}</div>}
           {projectClassification.secondaryLanguages?.length > 0 && <div><strong>Secondary:</strong> {projectClassification.secondaryLanguages.join(', ')}</div>}
           {projectClassification.projectTypes?.length > 0 && <div><strong>Types:</strong> {projectClassification.projectTypes.join(', ')}</div>}
         </CollapsibleSection>
@@ -4173,13 +4173,13 @@ export function renderProjectOverviewDetails(props: RendererProps) {
       {multiPartStructure.length > 0 && (
         <CollapsibleSection title="Multi-Part Structure" count={multiPartStructure.length} sectionId="po-parts">
           {multiPartStructure.map((p: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-textLink-foreground)' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-4 rr-accent-link">
               <strong>{p.name || p.partId || `Part ${i + 1}`}</strong>
-              {p.path && <code style={{ marginLeft: '4px' }}>{p.path}</code>}
-              {p.techStack && <span className="tag" style={{ marginLeft: '4px' }}>{p.techStack}</span>}
-              {p.description && <div style={{ opacity: 0.85 }}>{p.description}</div>}
-              {p.entryPoints?.length > 0 && <div style={{ fontSize: '0.85em' }}>Entry: {p.entryPoints.join(', ')}</div>}
-              {p.dependencies?.length > 0 && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Dependencies: {p.dependencies.join(', ')}</div>}
+              {p.path && <code className="rr-ml-4">{p.path}</code>}
+              {p.techStack && <span className="tag rr-ml-4">{p.techStack}</span>}
+              {p.description && <div className="rr-subtle">{p.description}</div>}
+              {p.entryPoints?.length > 0 && <div className="rr-text-sm">Entry: {p.entryPoints.join(', ')}</div>}
+              {p.dependencies?.length > 0 && <div className="rr-text-sm rr-muted">Dependencies: {p.dependencies.join(', ')}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -4188,30 +4188,30 @@ export function renderProjectOverviewDetails(props: RendererProps) {
       {/* Tech Stack Summary */}
       {techStackSummary.overview && (
         <CollapsibleSection title="Tech Stack" sectionId="po-tech">
-          <div style={{ marginBottom: '4px' }}><Md text={techStackSummary.overview} /></div>
+          <div className="rr-mb-4"><Md text={techStackSummary.overview} /></div>
           {['frontend', 'backend', 'database', 'infrastructure', 'testing'].map(cat => {
             const items: any[] = techStackSummary[cat] || [];
             return items.length > 0 ? (
-              <div key={cat} style={{ marginBottom: '4px' }}>
-                <h4 style={{ textTransform: 'capitalize' }}>{cat}</h4>
+              <div key={cat} className="rr-mb-4">
+                <h4 className="rr-capitalize">{cat}</h4>
                 {items.map((t: any, i: number) => (
-                  <div key={i} style={{ padding: '1px 8px' }}>
+                  <div key={i} className="rr-p-1-8">
                     <strong>{t.technology || t.tool}</strong>
-                    {t.version && <code style={{ marginLeft: '4px' }}>{t.version}</code>}
-                    {t.purpose && <span style={{ opacity: 0.7 }}> — {t.purpose}</span>}
+                    {t.version && <code className="rr-ml-4">{t.version}</code>}
+                    {t.purpose && <span className="rr-muted"> — {t.purpose}</span>}
                   </div>
                 ))}
               </div>
             ) : null;
           })}
           {techStackSummary.devTools?.length > 0 && (
-            <div style={{ marginBottom: '4px' }}>
+            <div className="rr-mb-4">
               <h4>Dev Tools</h4>
               {techStackSummary.devTools.map((t: any, i: number) => (
-                <div key={i} style={{ padding: '1px 8px' }}>
+                <div key={i} className="rr-p-1-8">
                   <strong>{typeof t === 'string' ? t : t.technology || t.tool || t.name}</strong>
-                  {t.version && <code style={{ marginLeft: '4px' }}>{t.version}</code>}
-                  {t.purpose && <span style={{ opacity: 0.7 }}> — {t.purpose}</span>}
+                  {t.version && <code className="rr-ml-4">{t.version}</code>}
+                  {t.purpose && <span className="rr-muted"> — {t.purpose}</span>}
                 </div>
               ))}
             </div>
@@ -4223,10 +4223,10 @@ export function renderProjectOverviewDetails(props: RendererProps) {
       {keyFeatures.length > 0 && (
         <CollapsibleSection title="Key Features" count={keyFeatures.length} sectionId="po-features">
           {keyFeatures.map((f: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px' }}>
+            <div key={i} className="rr-p-2-8">
               <strong>{f.feature || `Feature ${i + 1}`}</strong>
               {f.status && <span className={`tag agent-renderer-tag ${f.status === 'implemented' ? 'agent-renderer-tag--success' : ''}`} style={{ marginLeft: '4px' }}>{f.status}</span>}
-              {f.location && <code style={{ marginLeft: '4px', fontSize: '0.85em' }}>{f.location}</code>}
+              {f.location && <code className="rr-ml-4 rr-text-sm">{f.location}</code>}
             </div>
           ))}
         </CollapsibleSection>
@@ -4236,10 +4236,10 @@ export function renderProjectOverviewDetails(props: RendererProps) {
       {architectureHighlights.length > 0 && (
         <CollapsibleSection title="Architecture Highlights" count={architectureHighlights.length} sectionId="po-arch">
           {architectureHighlights.map((h: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-2">
               <strong>{h.highlight || `Highlight ${i + 1}`}</strong>
-              {h.category && <span className="tag" style={{ marginLeft: '4px' }}>{h.category}</span>}
-              {h.details && <div style={{ opacity: 0.7, fontSize: '0.85em' }}>{h.details}</div>}
+              {h.category && <span className="tag rr-ml-4">{h.category}</span>}
+              {h.details && <div className="rr-muted rr-text-sm">{h.details}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -4250,7 +4250,7 @@ export function renderProjectOverviewDetails(props: RendererProps) {
         <CollapsibleSection title="Codebase Analysis" sectionId="po-codebase">
           {codebaseAnalysis.totalFiles != null && <div><strong>Files:</strong> {codebaseAnalysis.totalFiles} {codebaseAnalysis.totalLines && <span>| <strong>Lines:</strong> {codebaseAnalysis.totalLines.toLocaleString()}</span>}</div>}
           {codebaseAnalysis.languageBreakdown?.length > 0 && (
-            <table style={{ width: '100%', fontSize: '0.85em', marginTop: '4px' }}>
+            <table className="rr-w-full rr-text-sm rr-mt-4">
               <thead><tr><th>Language</th><th>Files</th><th>%</th></tr></thead>
               <tbody>
                 {codebaseAnalysis.languageBreakdown.map((l: any, i: number) => (
@@ -4260,7 +4260,7 @@ export function renderProjectOverviewDetails(props: RendererProps) {
             </table>
           )}
           {codebaseAnalysis.codeQuality && (
-            <div style={{ marginTop: '4px' }}>
+            <div className="rr-mt-4">
               {codebaseAnalysis.codeQuality.testCoverage && <div><strong>Test Coverage:</strong> {codebaseAnalysis.codeQuality.testCoverage}</div>}
               {codebaseAnalysis.codeQuality.documentationLevel && <div><strong>Docs:</strong> {codebaseAnalysis.codeQuality.documentationLevel}</div>}
               {codebaseAnalysis.codeQuality.technicalDebt && <div><strong>Tech Debt:</strong> {codebaseAnalysis.codeQuality.technicalDebt}</div>}
@@ -4268,7 +4268,7 @@ export function renderProjectOverviewDetails(props: RendererProps) {
             </div>
           )}
           {codebaseAnalysis.patterns && (
-            <div style={{ marginTop: '4px' }}>
+            <div className="rr-mt-4">
               <strong>Patterns:</strong>
               {Array.isArray(codebaseAnalysis.patterns) ? (
                 <ul>{codebaseAnalysis.patterns.map((p: any, i: number) => <li key={i}>{typeof p === 'string' ? p : p.pattern || p.name || JSON.stringify(p)}</li>)}</ul>
@@ -4287,10 +4287,10 @@ export function renderProjectOverviewDetails(props: RendererProps) {
             <>
               <h4>Prerequisites</h4>
               {development.prerequisites.map((p: any, i: number) => (
-                <div key={i} style={{ padding: '1px 8px' }}>
+                <div key={i} className="rr-p-1-8">
                   <strong>{p.prerequisite || `Prereq ${i + 1}`}</strong>
-                  {p.version && <code style={{ marginLeft: '4px' }}>{p.version}</code>}
-                  {p.installation && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Install: <code>{p.installation}</code></div>}
+                  {p.version && <code className="rr-ml-4">{p.version}</code>}
+                  {p.installation && <div className="rr-text-sm rr-muted">Install: <code>{p.installation}</code></div>}
                 </div>
               ))}
             </>
@@ -4302,8 +4302,8 @@ export function renderProjectOverviewDetails(props: RendererProps) {
                 {development.gettingStarted.map((s: any, i: number) => (
                   <li key={i}>
                     {s.description}
-                    {s.command && <code style={{ display: 'block', margin: '2px 0' }}>{s.command}</code>}
-                    {s.notes && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>{s.notes}</div>}
+                    {s.command && <code className="rr-block rr-m-2-0">{s.command}</code>}
+                    {s.notes && <div className="rr-text-sm rr-muted">{s.notes}</div>}
                   </li>
                 ))}
               </ol>
@@ -4313,9 +4313,9 @@ export function renderProjectOverviewDetails(props: RendererProps) {
             <>
               <h4>Key Commands</h4>
               {development.keyCommands.map((c: any, i: number) => (
-                <div key={i} style={{ padding: '1px 8px' }}>
+                <div key={i} className="rr-p-1-8">
                   <code>{c.command}</code> — {c.description}
-                  {c.usage && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>{c.usage}</div>}
+                  {c.usage && <div className="rr-text-sm rr-muted">{c.usage}</div>}
                 </div>
               ))}
             </>
@@ -4324,10 +4324,10 @@ export function renderProjectOverviewDetails(props: RendererProps) {
             <>
               <h4>Environment Variables</h4>
               {development.environmentVariables.map((ev: any, i: number) => (
-                <div key={i} style={{ padding: '1px 8px' }}>
+                <div key={i} className="rr-p-1-8">
                   <code>{typeof ev === 'string' ? ev : ev.name || ev.variable}</code>
-                  {ev.description && <span style={{ opacity: 0.7 }}> — {ev.description}</span>}
-                  {ev.required != null && <span className="tag" style={{ marginLeft: '4px' }}>{ev.required ? 'required' : 'optional'}</span>}
+                  {ev.description && <span className="rr-muted"> — {ev.description}</span>}
+                  {ev.required != null && <span className="tag rr-ml-4">{ev.required ? 'required' : 'optional'}</span>}
                 </div>
               ))}
             </>
@@ -4336,9 +4336,9 @@ export function renderProjectOverviewDetails(props: RendererProps) {
             <>
               <h4>Configuration Files</h4>
               {development.configurationFiles.map((cf: any, i: number) => (
-                <div key={i} style={{ padding: '1px 8px' }}>
+                <div key={i} className="rr-p-1-8">
                   <code>{typeof cf === 'string' ? cf : cf.path || cf.file}</code>
-                  {cf.purpose && <span style={{ opacity: 0.7 }}> — {cf.purpose}</span>}
+                  {cf.purpose && <span className="rr-muted"> — {cf.purpose}</span>}
                 </div>
               ))}
             </>
@@ -4350,11 +4350,11 @@ export function renderProjectOverviewDetails(props: RendererProps) {
       {repositoryStructure.length > 0 && (
         <CollapsibleSection title="Repository Structure" count={repositoryStructure.length} sectionId="po-repo">
           {repositoryStructure.map((r: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px' }}>
+            <div key={i} className="rr-p-2-8">
               <code>{r.path}</code>
-              {r.importance && <span className="tag" style={{ marginLeft: '4px' }}>{r.importance}</span>}
-              {r.purpose && <span style={{ opacity: 0.7 }}> — {r.purpose}</span>}
-              {r.contents && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>{r.contents}</div>}
+              {r.importance && <span className="tag rr-ml-4">{r.importance}</span>}
+              {r.purpose && <span className="rr-muted"> — {r.purpose}</span>}
+              {r.contents && <div className="rr-text-sm rr-muted">{r.contents}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -4364,10 +4364,10 @@ export function renderProjectOverviewDetails(props: RendererProps) {
       {entryPoints.length > 0 && (
         <CollapsibleSection title="Entry Points" count={entryPoints.length} sectionId="po-entry">
           {entryPoints.map((e: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px' }}>
+            <div key={i} className="rr-p-2-8">
               <code>{e.path}</code>
-              {e.type && <span className="tag" style={{ marginLeft: '4px' }}>{e.type}</span>}
-              {e.description && <span style={{ opacity: 0.7 }}> — {e.description}</span>}
+              {e.type && <span className="tag rr-ml-4">{e.type}</span>}
+              {e.description && <span className="rr-muted"> — {e.description}</span>}
             </div>
           ))}
         </CollapsibleSection>
@@ -4377,10 +4377,10 @@ export function renderProjectOverviewDetails(props: RendererProps) {
       {dataFlows.length > 0 && (
         <CollapsibleSection title="Data Flows" count={dataFlows.length} sectionId="po-flows">
           {dataFlows.map((f: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-2">
               <strong>{f.name || `Flow ${i + 1}`}</strong>
-              {f.description && <div style={{ opacity: 0.85 }}>{f.description}</div>}
-              {f.components?.length > 0 && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>{f.components.join(' → ')}</div>}
+              {f.description && <div className="rr-subtle">{f.description}</div>}
+              {f.components?.length > 0 && <div className="rr-text-sm rr-muted">{f.components.join(' → ')}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -4390,11 +4390,11 @@ export function renderProjectOverviewDetails(props: RendererProps) {
       {integrations.length > 0 && (
         <CollapsibleSection title="Integrations" count={integrations.length} sectionId="po-integrations">
           {integrations.map((int: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px' }}>
+            <div key={i} className="rr-p-2-8">
               <strong>{int.name || `Integration ${i + 1}`}</strong>
-              {int.type && <span className="tag" style={{ marginLeft: '4px' }}>{int.type}</span>}
-              {int.status && <span className="tag" style={{ marginLeft: '4px' }}>{int.status}</span>}
-              {int.description && <div style={{ opacity: 0.7, fontSize: '0.85em' }}>{int.description}</div>}
+              {int.type && <span className="tag rr-ml-4">{int.type}</span>}
+              {int.status && <span className="tag rr-ml-4">{int.status}</span>}
+              {int.description && <div className="rr-muted rr-text-sm">{int.description}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -4404,11 +4404,11 @@ export function renderProjectOverviewDetails(props: RendererProps) {
       {knownIssues.length > 0 && (
         <CollapsibleSection title="Known Issues" count={knownIssues.length} sectionId="po-issues">
           {knownIssues.map((iss: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-2">
               <strong>{iss.issue || `Issue ${i + 1}`}</strong>
               {iss.severity && <span className="tag" style={{ marginLeft: '4px', backgroundColor: iss.severity === 'critical' ? 'var(--vscode-errorForeground)' : iss.severity === 'high' ? 'var(--vscode-editorWarning-foreground)' : undefined }}>{iss.severity}</span>}
-              {iss.location && <code style={{ marginLeft: '4px', fontSize: '0.85em' }}>{iss.location}</code>}
-              {iss.workaround && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Workaround: {iss.workaround}</div>}
+              {iss.location && <code className="rr-ml-4 rr-text-sm">{iss.location}</code>}
+              {iss.workaround && <div className="rr-text-sm rr-muted">Workaround: {iss.workaround}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -4418,11 +4418,11 @@ export function renderProjectOverviewDetails(props: RendererProps) {
       {recommendations.length > 0 && (
         <CollapsibleSection title="Recommendations" count={recommendations.length} sectionId="po-recs">
           {recommendations.map((r: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-2">
               <strong>{r.recommendation || `Rec ${i + 1}`}</strong>
-              {r.priority && <span className="tag" style={{ marginLeft: '4px' }}>{r.priority}</span>}
-              {r.effort && <span className="tag" style={{ marginLeft: '4px' }}>Effort: {r.effort}</span>}
-              {r.impact && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>{r.impact}</div>}
+              {r.priority && <span className="tag rr-ml-4">{r.priority}</span>}
+              {r.effort && <span className="tag rr-ml-4">Effort: {r.effort}</span>}
+              {r.impact && <div className="rr-text-sm rr-muted">{r.impact}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -4432,11 +4432,11 @@ export function renderProjectOverviewDetails(props: RendererProps) {
       {documentationMap.length > 0 && (
         <CollapsibleSection title="Documentation" count={documentationMap.length} sectionId="po-docs">
           {documentationMap.map((doc: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px' }}>
+            <div key={i} className="rr-p-2-8">
               <strong>{doc.title || `Doc ${i + 1}`}</strong>
-              {doc.status && <span className="tag" style={{ marginLeft: '4px' }}>{doc.status}</span>}
-              {doc.path && <code style={{ marginLeft: '4px', fontSize: '0.85em' }}>{doc.path}</code>}
-              {doc.description && <div style={{ opacity: 0.7, fontSize: '0.85em' }}>{doc.description}</div>}
+              {doc.status && <span className="tag rr-ml-4">{doc.status}</span>}
+              {doc.path && <code className="rr-ml-4 rr-text-sm">{doc.path}</code>}
+              {doc.description && <div className="rr-muted rr-text-sm">{doc.description}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -4600,7 +4600,7 @@ export function renderProjectContextDetails(props: RendererProps) {
             <>
               {projectInfo.name && <div><strong>{projectInfo.name}</strong> {projectInfo.version && <span className="tag">{projectInfo.version}</span>}</div>}
               {projectInfo.type && <div><strong>Type:</strong> {projectInfo.type}</div>}
-              {projectInfo.description && <div style={{ marginTop: '4px' }}><Md text={projectInfo.description} /></div>}
+              {projectInfo.description && <div className="rr-mt-4"><Md text={projectInfo.description} /></div>}
               {projectInfo.repository && <div><strong>Repo:</strong> <a href={projectInfo.repository} target="_blank" rel="noopener noreferrer">{projectInfo.repository}</a></div>}
             </>
           )}
@@ -4622,9 +4622,9 @@ export function renderProjectContextDetails(props: RendererProps) {
           ) : (
             <>
               {overview.summary && <div><Md text={overview.summary} /></div>}
-              {overview.architecture && <div style={{ marginTop: '4px' }}><strong>Architecture:</strong> <Md text={overview.architecture} /></div>}
+              {overview.architecture && <div className="rr-mt-4"><strong>Architecture:</strong> <Md text={overview.architecture} /></div>}
               {overview.currentState && <div><strong>Current State:</strong> {overview.currentState}</div>}
-              {overview.keyFeatures?.length > 0 && <div style={{ marginTop: '4px' }}><strong>Key Features:</strong><ul>{overview.keyFeatures.map((f: string, i: number) => <li key={i}>{f}</li>)}</ul></div>}
+              {overview.keyFeatures?.length > 0 && <div className="rr-mt-4"><strong>Key Features:</strong><ul>{overview.keyFeatures.map((f: string, i: number) => <li key={i}>{f}</li>)}</ul></div>}
             </>
           )}
         </CollapsibleSection>
@@ -4633,18 +4633,18 @@ export function renderProjectContextDetails(props: RendererProps) {
       {/* Tech Stack */}
       {techStack.overview && (
         <CollapsibleSection title="Tech Stack" sectionId="pc-tech">
-          <div style={{ marginBottom: '4px' }}><Md text={techStack.overview} /></div>
+          <div className="rr-mb-4"><Md text={techStack.overview} /></div>
           {['languages', 'frameworks', 'libraries', 'tools', 'infrastructure'].map(cat => {
             const items: any[] = techStack[cat] || [];
             return items.length > 0 ? (
-              <div key={cat} style={{ marginBottom: '4px' }}>
-                <h4 style={{ textTransform: 'capitalize' }}>{cat}</h4>
+              <div key={cat} className="rr-mb-4">
+                <h4 className="rr-capitalize">{cat}</h4>
                 {items.map((t: any, i: number) => (
-                  <div key={i} style={{ padding: '1px 8px' }}>
+                  <div key={i} className="rr-p-1-8">
                     <strong>{t.name}</strong>
-                    {t.version && <code style={{ marginLeft: '4px' }}>{t.version}</code>}
-                    {t.category && <span className="tag" style={{ marginLeft: '4px' }}>{t.category}</span>}
-                    {(t.purpose || t.usage) && <span style={{ opacity: 0.7 }}> — {t.purpose || t.usage}</span>}
+                    {t.version && <code className="rr-ml-4">{t.version}</code>}
+                    {t.category && <span className="tag rr-ml-4">{t.category}</span>}
+                    {(t.purpose || t.usage) && <span className="rr-muted"> — {t.purpose || t.usage}</span>}
                   </div>
                 ))}
               </div>
@@ -4659,7 +4659,7 @@ export function renderProjectContextDetails(props: RendererProps) {
           {editMode ? (
             <>
               {implementationRules.map((r: any, i: number) => (
-                <div key={i} style={{ padding: '4px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-widget-border)' }}>
+                <div key={i} className="rr-p-4-8 rr-mb-4 rr-accent-border">
                   <div className="edit-grid">
                     <label>Rule</label>
                     <textarea rows={2} value={r.rule || ''} onChange={(e) => updateArrayItem('implementationRules', i, { ...r, rule: e.target.value })} />
@@ -4684,14 +4684,14 @@ export function renderProjectContextDetails(props: RendererProps) {
           ) : (
             implementationRules.map((r: any, i: number) => (
               <div key={i} style={{ padding: '2px 8px', marginBottom: '4px', borderLeft: `2px solid ${r.severity === 'must' ? 'var(--vscode-errorForeground)' : r.severity === 'should' ? 'var(--vscode-editorWarning-foreground)' : 'var(--vscode-widget-border)'}` }}>
-                {r.id && <span className="tag" style={{ marginRight: '4px' }}>{r.id}</span>}
+                {r.id && <span className="tag rr-mr-4">{r.id}</span>}
                 <strong>{r.rule || `Rule ${i + 1}`}</strong>
-                {r.category && <span className="tag" style={{ marginLeft: '4px' }}>{r.category}</span>}
-                {r.severity && <span className="tag" style={{ marginLeft: '4px' }}>{r.severity}</span>}
-                {r.rationale && <div style={{ opacity: 0.7, fontSize: '0.85em' }}>{r.rationale}</div>}
-                {r.enforcedBy && <div style={{ fontSize: '0.85em', opacity: 0.6 }}>Enforced by: {r.enforcedBy}</div>}
-                {r.examples?.good?.length > 0 && <div style={{ fontSize: '0.85em', color: 'var(--vscode-testing-iconPassed)' }}>Good: {r.examples.good.join('; ')}</div>}
-                {r.examples?.bad?.length > 0 && <div style={{ fontSize: '0.85em', color: 'var(--vscode-errorForeground)' }}>Bad: {r.examples.bad.join('; ')}</div>}
+                {r.category && <span className="tag rr-ml-4">{r.category}</span>}
+                {r.severity && <span className="tag rr-ml-4">{r.severity}</span>}
+                {r.rationale && <div className="rr-muted rr-text-sm">{r.rationale}</div>}
+                {r.enforcedBy && <div className="rr-text-sm rr-muted">Enforced by: {r.enforcedBy}</div>}
+                {r.examples?.good?.length > 0 && <div className="rr-text-sm rr-fg-passed">Good: {r.examples.good.join('; ')}</div>}
+                {r.examples?.bad?.length > 0 && <div className="rr-text-sm rr-fg-error">Bad: {r.examples.bad.join('; ')}</div>}
               </div>
             ))
           )}
@@ -4701,14 +4701,14 @@ export function renderProjectContextDetails(props: RendererProps) {
       {/* Code Patterns */}
       {patterns.codePatterns?.length > 0 && (
         <CollapsibleSection title="Code Patterns" count={patterns.codePatterns.length} sectionId="pc-patterns">
-          {patterns.overview && <div style={{ marginBottom: '4px' }}><Md text={patterns.overview} /></div>}
+          {patterns.overview && <div className="rr-mb-4"><Md text={patterns.overview} /></div>}
           {patterns.codePatterns.map((p: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-textLink-foreground)' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-4 rr-accent-link">
               <strong>{p.name || `Pattern ${i + 1}`}</strong>
-              {p.description && <div style={{ opacity: 0.85 }}>{p.description}</div>}
-              {p.usage && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>When: {p.usage}</div>}
-              {p.location && <div style={{ fontSize: '0.85em' }}>Location: <code>{p.location}</code></div>}
-              {p.example && <pre style={{ fontSize: '0.85em', margin: '2px 0' }}>{p.example}</pre>}
+              {p.description && <div className="rr-subtle">{p.description}</div>}
+              {p.usage && <div className="rr-text-sm rr-muted">When: {p.usage}</div>}
+              {p.location && <div className="rr-text-sm">Location: <code>{p.location}</code></div>}
+              {p.example && <pre className="rr-text-sm rr-m-2-0">{p.example}</pre>}
             </div>
           ))}
         </CollapsibleSection>
@@ -4718,11 +4718,11 @@ export function renderProjectContextDetails(props: RendererProps) {
       {patterns.namingConventions?.length > 0 && (
         <CollapsibleSection title="Naming Conventions" count={patterns.namingConventions.length} sectionId="pc-naming">
           {patterns.namingConventions.map((n: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-2">
               <strong>{n.type || `Convention ${i + 1}`}</strong>
-              {n.convention && <span style={{ opacity: 0.85 }}> — {n.convention}</span>}
-              {n.pattern && <code style={{ marginLeft: '4px' }}>{n.pattern}</code>}
-              {n.example && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>e.g. {n.example}</div>}
+              {n.convention && <span className="rr-subtle"> — {n.convention}</span>}
+              {n.pattern && <code className="rr-ml-4">{n.pattern}</code>}
+              {n.example && <div className="rr-text-sm rr-muted">e.g. {n.example}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -4732,12 +4732,12 @@ export function renderProjectContextDetails(props: RendererProps) {
       {forbiddenPatterns.length > 0 && (
         <CollapsibleSection title="Forbidden Patterns" count={forbiddenPatterns.length} sectionId="pc-forbidden">
           {forbiddenPatterns.map((fp: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-errorForeground)' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-4 rr-accent-error">
               <strong>{fp.pattern || `Forbidden ${i + 1}`}</strong>
               {fp.severity && <span className="tag" style={{ marginLeft: '4px', backgroundColor: fp.severity === 'error' ? 'var(--vscode-errorForeground)' : undefined }}>{fp.severity}</span>}
-              {fp.reason && <div style={{ opacity: 0.85 }}>{fp.reason}</div>}
-              {fp.alternative && <div style={{ fontSize: '0.85em', color: 'var(--vscode-testing-iconPassed)' }}>Instead: {fp.alternative}</div>}
-              {fp.detection && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Detection: {fp.detection}</div>}
+              {fp.reason && <div className="rr-subtle">{fp.reason}</div>}
+              {fp.alternative && <div className="rr-text-sm rr-fg-passed">Instead: {fp.alternative}</div>}
+              {fp.detection && <div className="rr-text-sm rr-muted">Detection: {fp.detection}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -4747,11 +4747,11 @@ export function renderProjectContextDetails(props: RendererProps) {
       {keyFiles.length > 0 && (
         <CollapsibleSection title="Key Files" count={keyFiles.length} sectionId="pc-files">
           {keyFiles.map((f: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-2">
               <code>{f.path}</code>
-              {f.importance && <span className="tag" style={{ marginLeft: '4px' }}>{f.importance}</span>}
-              {f.purpose && <span style={{ opacity: 0.7 }}> — {f.purpose}</span>}
-              {f.notes && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>{f.notes}</div>}
+              {f.importance && <span className="tag rr-ml-4">{f.importance}</span>}
+              {f.purpose && <span className="rr-muted"> — {f.purpose}</span>}
+              {f.notes && <div className="rr-text-sm rr-muted">{f.notes}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -4761,11 +4761,11 @@ export function renderProjectContextDetails(props: RendererProps) {
       {entryPoints.length > 0 && (
         <CollapsibleSection title="Entry Points" count={entryPoints.length} sectionId="pc-entry">
           {entryPoints.map((e: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px' }}>
+            <div key={i} className="rr-p-2-8">
               <code>{e.path}</code>
-              {e.type && <span className="tag" style={{ marginLeft: '4px' }}>{e.type}</span>}
-              {e.description && <span style={{ opacity: 0.7 }}> — {e.description}</span>}
-              {e.exports?.length > 0 && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Exports: {e.exports.join(', ')}</div>}
+              {e.type && <span className="tag rr-ml-4">{e.type}</span>}
+              {e.description && <span className="rr-muted"> — {e.description}</span>}
+              {e.exports?.length > 0 && <div className="rr-text-sm rr-muted">Exports: {e.exports.join(', ')}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -4781,21 +4781,21 @@ export function renderProjectContextDetails(props: RendererProps) {
             <>
               <h4>Commands</h4>
               {devWorkflow.commands.map((c: any, i: number) => (
-                <div key={i} style={{ padding: '1px 8px' }}>
+                <div key={i} className="rr-p-1-8">
                   <code>{c.command}</code> — {c.description}
                 </div>
               ))}
             </>
           )}
           {devWorkflow.testing && (
-            <div style={{ marginTop: '4px' }}>
+            <div className="rr-mt-4">
               <h4>Testing</h4>
               {devWorkflow.testing.framework && <div>Framework: {devWorkflow.testing.framework}</div>}
               {devWorkflow.testing.command && <div>Command: <code>{devWorkflow.testing.command}</code></div>}
             </div>
           )}
           {devWorkflow.linting && (
-            <div style={{ marginTop: '4px' }}>
+            <div className="rr-mt-4">
               <h4>Linting</h4>
               {devWorkflow.linting.tools?.length > 0 && <div>Tools: {devWorkflow.linting.tools.join(', ')}</div>}
               {devWorkflow.linting.command && <div>Command: <code>{devWorkflow.linting.command}</code></div>}
@@ -4809,17 +4809,17 @@ export function renderProjectContextDetails(props: RendererProps) {
         <CollapsibleSection title="Error Handling" sectionId="pc-errors">
           {errorHandling.strategy && <div><Md text={errorHandling.strategy} /></div>}
           {errorHandling.patterns?.map((p: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-2">
               <strong>{p.type || `Pattern ${i + 1}`}</strong>
-              {p.handling && <div style={{ opacity: 0.85 }}>{p.handling}</div>}
-              {p.recovery && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Recovery: {p.recovery}</div>}
-              {p.example && <pre style={{ fontSize: '0.85em', margin: '2px 0' }}>{p.example}</pre>}
+              {p.handling && <div className="rr-subtle">{p.handling}</div>}
+              {p.recovery && <div className="rr-text-sm rr-muted">Recovery: {p.recovery}</div>}
+              {p.example && <pre className="rr-text-sm rr-m-2-0">{p.example}</pre>}
             </div>
           ))}
           {errorHandling.logging && (
-            <div style={{ marginTop: '4px' }}>
+            <div className="rr-mt-4">
               <strong>Logging:</strong> {errorHandling.logging.approach}
-              {errorHandling.logging.levels?.length > 0 && <span style={{ opacity: 0.7 }}> ({errorHandling.logging.levels.join(', ')})</span>}
+              {errorHandling.logging.levels?.length > 0 && <span className="rr-muted"> ({errorHandling.logging.levels.join(', ')})</span>}
             </div>
           )}
         </CollapsibleSection>
@@ -4830,18 +4830,18 @@ export function renderProjectContextDetails(props: RendererProps) {
         <CollapsibleSection title="State Management" sectionId="pc-state">
           <div><Md text={stateManagement.overview} /></div>
           {stateManagement.globalState && (
-            <div style={{ marginTop: '4px' }}>
+            <div className="rr-mt-4">
               <h4>Global State</h4>
               {stateManagement.globalState.approach && <div>{stateManagement.globalState.approach}</div>}
-              {stateManagement.globalState.location && <div style={{ opacity: 0.7 }}>Location: <code>{stateManagement.globalState.location}</code></div>}
-              {stateManagement.globalState.patterns?.length > 0 && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Patterns: {stateManagement.globalState.patterns.join(', ')}</div>}
+              {stateManagement.globalState.location && <div className="rr-muted">Location: <code>{stateManagement.globalState.location}</code></div>}
+              {stateManagement.globalState.patterns?.length > 0 && <div className="rr-text-sm rr-muted">Patterns: {stateManagement.globalState.patterns.join(', ')}</div>}
             </div>
           )}
           {stateManagement.localState && (
-            <div style={{ marginTop: '4px' }}>
+            <div className="rr-mt-4">
               <h4>Local State</h4>
               {stateManagement.localState.approach && <div>{stateManagement.localState.approach}</div>}
-              {stateManagement.localState.patterns?.length > 0 && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Patterns: {stateManagement.localState.patterns.join(', ')}</div>}
+              {stateManagement.localState.patterns?.length > 0 && <div className="rr-text-sm rr-muted">Patterns: {stateManagement.localState.patterns.join(', ')}</div>}
             </div>
           )}
         </CollapsibleSection>
@@ -4855,9 +4855,9 @@ export function renderProjectContextDetails(props: RendererProps) {
           {apiInteraction.client && <div><strong>Client:</strong> {apiInteraction.client}</div>}
           {apiInteraction.errorHandling && <div><strong>Error Handling:</strong> {apiInteraction.errorHandling}</div>}
           {apiInteraction.patterns?.length > 0 && (
-            <div style={{ marginTop: '4px' }}>
+            <div className="rr-mt-4">
               {apiInteraction.patterns.map((p: any, i: number) => (
-                <div key={i} style={{ padding: '1px 8px' }}><strong>{p.pattern}:</strong> {p.usage}</div>
+                <div key={i} className="rr-p-1-8"><strong>{p.pattern}:</strong> {p.usage}</div>
               ))}
             </div>
           )}
@@ -4868,11 +4868,11 @@ export function renderProjectContextDetails(props: RendererProps) {
       {securityConsiderations.length > 0 && (
         <CollapsibleSection title="Security Considerations" count={securityConsiderations.length} sectionId="pc-security">
           {securityConsiderations.map((s: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-2">
               <strong>{s.consideration || `Item ${i + 1}`}</strong>
-              {s.category && <span className="tag" style={{ marginLeft: '4px' }}>{s.category}</span>}
-              {s.implementation && <div style={{ opacity: 0.85, fontSize: '0.85em' }}>{s.implementation}</div>}
-              {s.validation && <div style={{ opacity: 0.7, fontSize: '0.85em' }}>Validation: {s.validation}</div>}
+              {s.category && <span className="tag rr-ml-4">{s.category}</span>}
+              {s.implementation && <div className="rr-subtle rr-text-sm">{s.implementation}</div>}
+              {s.validation && <div className="rr-muted rr-text-sm">Validation: {s.validation}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -4882,11 +4882,11 @@ export function renderProjectContextDetails(props: RendererProps) {
       {performanceConsiderations.length > 0 && (
         <CollapsibleSection title="Performance Considerations" count={performanceConsiderations.length} sectionId="pc-perf">
           {performanceConsiderations.map((p: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-2">
               <strong>{p.consideration || `Item ${i + 1}`}</strong>
-              {p.target && <span className="tag" style={{ marginLeft: '4px' }}>{p.target}</span>}
-              {p.implementation && <div style={{ opacity: 0.85, fontSize: '0.85em' }}>{p.implementation}</div>}
-              {p.measurement && <div style={{ opacity: 0.7, fontSize: '0.85em' }}>Measurement: {p.measurement}</div>}
+              {p.target && <span className="tag rr-ml-4">{p.target}</span>}
+              {p.implementation && <div className="rr-subtle rr-text-sm">{p.implementation}</div>}
+              {p.measurement && <div className="rr-muted rr-text-sm">Measurement: {p.measurement}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -4896,12 +4896,12 @@ export function renderProjectContextDetails(props: RendererProps) {
       {knownIssues.length > 0 && (
         <CollapsibleSection title="Known Issues" count={knownIssues.length} sectionId="pc-issues">
           {knownIssues.map((iss: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-2">
               <strong>{iss.issue || `Issue ${i + 1}`}</strong>
-              {iss.status && <span className="tag" style={{ marginLeft: '4px' }}>{iss.status}</span>}
-              {iss.severity && <span className="tag" style={{ marginLeft: '4px' }}>{iss.severity}</span>}
-              {iss.impact && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Impact: {iss.impact}</div>}
-              {iss.workaround && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Workaround: {iss.workaround}</div>}
+              {iss.status && <span className="tag rr-ml-4">{iss.status}</span>}
+              {iss.severity && <span className="tag rr-ml-4">{iss.severity}</span>}
+              {iss.impact && <div className="rr-text-sm rr-muted">Impact: {iss.impact}</div>}
+              {iss.workaround && <div className="rr-text-sm rr-muted">Workaround: {iss.workaround}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -4911,11 +4911,11 @@ export function renderProjectContextDetails(props: RendererProps) {
       {keyDecisions.length > 0 && (
         <CollapsibleSection title="Key Decisions" count={keyDecisions.length} sectionId="pc-decisions">
           {keyDecisions.map((kd: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-textLink-foreground)' }}>
+            <div key={i} className="rr-p-4-8 rr-mb-4 rr-accent-link">
               <strong>{kd.decision || `Decision ${i + 1}`}</strong>
-              {kd.status && <span className="tag" style={{ marginLeft: '6px' }}>{kd.status}</span>}
-              {kd.date && <span style={{ opacity: 0.6, fontSize: '0.85em', marginLeft: '6px' }}>{kd.date}</span>}
-              {kd.rationale && <div style={{ opacity: 0.85, fontSize: '0.9em', marginTop: '2px' }}>{kd.rationale}</div>}
+              {kd.status && <span className="tag rr-ml-6">{kd.status}</span>}
+              {kd.date && <span className="rr-muted rr-text-sm rr-ml-6">{kd.date}</span>}
+              {kd.rationale && <div className="rr-subtle rr-text-sm rr-mt-2">{kd.rationale}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -5026,15 +5026,15 @@ export function renderSourceTreeDetails(props: RendererProps) {
             <>
               {overview.projectName && <div><strong>{overview.projectName}</strong></div>}
               {overview.rootPath && <div><code>{overview.rootPath}</code></div>}
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
+              <div className="rr-flex rr-gap-8 rr-wrap rr-mt-4">
                 {overview.primaryLanguage && <span className="tag">{overview.primaryLanguage}</span>}
                 {packageManager && <span className="tag">{packageManager}</span>}
                 {overview.totalFiles != null && <span className="tag">{overview.totalFiles} files</span>}
                 {overview.totalDirectories != null && <span className="tag">{overview.totalDirectories} dirs</span>}
                 {overview.totalSize && <span className="tag">{overview.totalSize}</span>}
               </div>
-              {overview.analysisDate && <div style={{ fontSize: '0.85em', opacity: 0.6 }}>Analyzed: {overview.analysisDate}</div>}
-              {overview.summary && <div style={{ marginTop: '4px' }}><Md text={overview.summary} /></div>}
+              {overview.analysisDate && <div className="rr-text-sm rr-muted">Analyzed: {overview.analysisDate}</div>}
+              {overview.summary && <div className="rr-mt-4"><Md text={overview.summary} /></div>}
             </>
           )}
         </CollapsibleSection>
@@ -5044,7 +5044,7 @@ export function renderSourceTreeDetails(props: RendererProps) {
       {(statistics.byLanguage?.length > 0 || statistics.byFileType?.length > 0 || statistics.totalFiles != null) && (
         <CollapsibleSection title="Statistics" sectionId="st-stats">
           {(statistics.totalFiles != null || statistics.totalLines != null) && (
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+            <div className="rr-flex rr-gap-8 rr-wrap rr-mb-4">
               {statistics.totalFiles != null && <span className="tag">{statistics.totalFiles} files</span>}
               {statistics.totalLines != null && <span className="tag">{statistics.totalLines.toLocaleString()} lines</span>}
               {statistics.totalDirectories != null && <span className="tag">{statistics.totalDirectories} dirs</span>}
@@ -5053,7 +5053,7 @@ export function renderSourceTreeDetails(props: RendererProps) {
           {statistics.byLanguage?.length > 0 && (
             <>
               <h4>By Language</h4>
-              <table style={{ width: '100%', fontSize: '0.85em' }}>
+              <table className="rr-w-full rr-text-sm">
                 <thead><tr><th>Language</th><th>Files</th><th>Lines</th><th>%</th></tr></thead>
                 <tbody>
                   {statistics.byLanguage.map((l: any, i: number) => (
@@ -5066,7 +5066,7 @@ export function renderSourceTreeDetails(props: RendererProps) {
           {statistics.byFileType?.length > 0 && (
             <>
               <h4>By File Type</h4>
-              <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+              <div className="rr-flex rr-gap-4 rr-wrap">
                 {statistics.byFileType.map((ft: any, i: number) => (
                   <span key={i} className="tag">{ft.extension}: {ft.count} ({ft.percentage}%)</span>
                 ))}
@@ -5077,7 +5077,7 @@ export function renderSourceTreeDetails(props: RendererProps) {
             <>
               <h4>Largest Files</h4>
               {statistics.largestFiles.map((f: any, i: number) => (
-                <div key={i} style={{ padding: '1px 8px' }}>
+                <div key={i} className="rr-p-1-8">
                   <code>{f.path}</code> — {f.size} {f.lines && <span>({f.lines} lines)</span>}
                 </div>
               ))}
@@ -5090,18 +5090,18 @@ export function renderSourceTreeDetails(props: RendererProps) {
       {multiPartStructure.length > 0 && (
         <CollapsibleSection title="Multi-Part Structure" count={multiPartStructure.length} sectionId="st-parts">
           {multiPartStructure.map((p: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '4px' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-4">
               <strong>{p.name || p.partId || `Part ${i + 1}`}</strong>
-              {p.path && p.path !== p.name && <code style={{ marginLeft: '4px' }}>{p.path}</code>}
-              {p.files != null && <span className="tag" style={{ marginLeft: '4px' }}>{p.files} entries</span>}
-              {p.description && <div style={{ opacity: 0.7, fontSize: '0.85em' }}>{p.description}</div>}
-              {p.dependencies?.length > 0 && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Dependencies: {p.dependencies.join(', ')}</div>}
+              {p.path && p.path !== p.name && <code className="rr-ml-4">{p.path}</code>}
+              {p.files != null && <span className="tag rr-ml-4">{p.files} entries</span>}
+              {p.description && <div className="rr-muted rr-text-sm">{p.description}</div>}
+              {p.dependencies?.length > 0 && <div className="rr-text-sm rr-muted">Dependencies: {p.dependencies.join(', ')}</div>}
               {p._childEntries?.length > 0 && (
-                <div style={{ marginLeft: '16px', marginTop: '2px' }}>
+                <div className="rr-ml-16 rr-mt-2">
                   {p._childEntries.map((ce: any, ci: number) => (
-                    <div key={ci} style={{ padding: '1px 0', fontSize: '0.85em' }}>
+                    <div key={ci} className="rr-p-1-0 rr-text-sm">
                       <code>{ce.path}</code>
-                      {ce.description && <span style={{ opacity: 0.7 }}> — {ce.description}</span>}
+                      {ce.description && <span className="rr-muted"> — {ce.description}</span>}
                     </div>
                   ))}
                 </div>
@@ -5115,10 +5115,10 @@ export function renderSourceTreeDetails(props: RendererProps) {
       {keyFiles.length > 0 && (
         <CollapsibleSection title="Key Files" count={keyFiles.length} sectionId="st-keyfiles">
           {keyFiles.map((f: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-2">
               <code>{f.path}</code>
-              {f.importance && <span className="tag" style={{ marginLeft: '4px' }}>{f.importance}</span>}
-              {(f.purpose || f.description) && <span style={{ opacity: 0.7 }}> — {f.purpose || f.description}</span>}
+              {f.importance && <span className="tag rr-ml-4">{f.importance}</span>}
+              {(f.purpose || f.description) && <span className="rr-muted"> — {f.purpose || f.description}</span>}
             </div>
           ))}
         </CollapsibleSection>
@@ -5133,15 +5133,15 @@ export function renderSourceTreeDetails(props: RendererProps) {
                 {dir.type === 'directory' ? '📁 ' : '📄 '}
               </span>
               <code>{dir.name || dir.path}</code>
-              {dir.fileCount != null && <span className="tag" style={{ marginLeft: '4px' }}>{dir.fileCount}</span>}
-              {dir.purpose && <span style={{ opacity: 0.7, fontSize: '0.85em' }}> — {dir.purpose}</span>}
+              {dir.fileCount != null && <span className="tag rr-ml-4">{dir.fileCount}</span>}
+              {dir.purpose && <span className="rr-muted rr-text-sm"> — {dir.purpose}</span>}
               {dir.children?.length > 0 && (
-                <div style={{ marginLeft: '16px', marginTop: '2px' }}>
+                <div className="rr-ml-16 rr-mt-2">
                   {dir.children.map((child: any, ci: number) => (
-                    <div key={ci} style={{ padding: '1px 0', fontSize: '0.85em' }}>
-                      <span style={{ opacity: 0.7 }}>{child.type === 'directory' ? '📁 ' : '📄 '}</span>
+                    <div key={ci} className="rr-p-1-0 rr-text-sm">
+                      <span className="rr-muted">{child.type === 'directory' ? '📁 ' : '📄 '}</span>
                       <code>{child.name || child.path}</code>
-                      {child.purpose && <span style={{ opacity: 0.7 }}> — {child.purpose}</span>}
+                      {child.purpose && <span className="rr-muted"> — {child.purpose}</span>}
                     </div>
                   ))}
                 </div>
@@ -5155,21 +5155,21 @@ export function renderSourceTreeDetails(props: RendererProps) {
       {criticalDirectories.length > 0 && (
         <CollapsibleSection title="Critical Directories" count={criticalDirectories.length} sectionId="st-critical">
           {criticalDirectories.map((cd: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-errorForeground)' }}>
+            <div key={i} className="rr-p-4-8 rr-mb-4 rr-accent-error">
               <code><strong>{cd.path}</strong></code>
-              {cd.purpose && <div style={{ opacity: 0.85 }}>{cd.purpose}</div>}
-              {cd.contents && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>{cd.contents}</div>}
+              {cd.purpose && <div className="rr-subtle">{cd.purpose}</div>}
+              {cd.contents && <div className="rr-text-sm rr-muted">{cd.contents}</div>}
               {cd.keyFiles?.length > 0 && (
-                <div style={{ fontSize: '0.85em', marginTop: '2px' }}>
+                <div className="rr-text-sm rr-mt-2">
                   Key files: {cd.keyFiles.map((kf: any, ki: number) => (
-                    <div key={ki} style={{ marginLeft: '8px' }}>
+                    <div key={ki} className="rr-ml-8">
                       <code>{kf.file || kf}</code>
-                      {kf.purpose && <span style={{ opacity: 0.7 }}> — {kf.purpose}</span>}
+                      {kf.purpose && <span className="rr-muted"> — {kf.purpose}</span>}
                     </div>
                   ))}
                 </div>
               )}
-              {cd.dependencies?.length > 0 && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Deps: {cd.dependencies.join(', ')}</div>}
+              {cd.dependencies?.length > 0 && <div className="rr-text-sm rr-muted">Deps: {cd.dependencies.join(', ')}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -5179,11 +5179,11 @@ export function renderSourceTreeDetails(props: RendererProps) {
       {entryPoints.length > 0 && (
         <CollapsibleSection title="Entry Points" count={entryPoints.length} sectionId="st-entry">
           {entryPoints.map((e: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px' }}>
+            <div key={i} className="rr-p-2-8">
               <code>{e.path}</code>
-              {e.type && <span className="tag" style={{ marginLeft: '4px' }}>{e.type}</span>}
-              {e.description && <span style={{ opacity: 0.7 }}> — {e.description}</span>}
-              {e.exports?.length > 0 && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Exports: {e.exports.join(', ')}</div>}
+              {e.type && <span className="tag rr-ml-4">{e.type}</span>}
+              {e.description && <span className="rr-muted"> — {e.description}</span>}
+              {e.exports?.length > 0 && <div className="rr-text-sm rr-muted">Exports: {e.exports.join(', ')}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -5193,11 +5193,11 @@ export function renderSourceTreeDetails(props: RendererProps) {
       {fileOrgPatterns.length > 0 && (
         <CollapsibleSection title="File Organization Patterns" count={fileOrgPatterns.length} sectionId="st-org">
           {fileOrgPatterns.map((p: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-textLink-foreground)' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-4 rr-accent-link">
               <strong>{p.pattern || `Pattern ${i + 1}`}</strong>
-              {p.description && <div style={{ opacity: 0.85 }}>{p.description}</div>}
-              {p.locations?.length > 0 && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Locations: {p.locations.join(', ')}</div>}
-              {p.rationale && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Why: {p.rationale}</div>}
+              {p.description && <div className="rr-subtle">{p.description}</div>}
+              {p.locations?.length > 0 && <div className="rr-text-sm rr-muted">Locations: {p.locations.join(', ')}</div>}
+              {p.rationale && <div className="rr-text-sm rr-muted">Why: {p.rationale}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -5207,11 +5207,11 @@ export function renderSourceTreeDetails(props: RendererProps) {
       {namingConventions.length > 0 && (
         <CollapsibleSection title="Naming Conventions" count={namingConventions.length} sectionId="st-naming">
           {namingConventions.map((n: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-2">
               <strong>{n.type || `Convention ${i + 1}`}</strong>
-              {n.convention && <span style={{ opacity: 0.85 }}> — {n.convention}</span>}
-              {n.pattern && <code style={{ marginLeft: '4px' }}>{n.pattern}</code>}
-              {n.examples?.length > 0 && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>{n.examples.join(', ')}</div>}
+              {n.convention && <span className="rr-subtle"> — {n.convention}</span>}
+              {n.pattern && <code className="rr-ml-4">{n.pattern}</code>}
+              {n.examples?.length > 0 && <div className="rr-text-sm rr-muted">{n.examples.join(', ')}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -5221,10 +5221,10 @@ export function renderSourceTreeDetails(props: RendererProps) {
       {keyFileTypes.length > 0 && (
         <CollapsibleSection title="Key File Types" count={keyFileTypes.length} sectionId="st-filetypes">
           {keyFileTypes.map((ft: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px' }}>
+            <div key={i} className="rr-p-2-8">
               <code><strong>{ft.extension}</strong></code>
-              {ft.count != null && <span className="tag" style={{ marginLeft: '4px' }}>{ft.count}</span>}
-              {ft.purpose && <span style={{ opacity: 0.7 }}> — {ft.purpose}</span>}
+              {ft.count != null && <span className="tag rr-ml-4">{ft.count}</span>}
+              {ft.purpose && <span className="rr-muted"> — {ft.purpose}</span>}
             </div>
           ))}
         </CollapsibleSection>
@@ -5234,12 +5234,12 @@ export function renderSourceTreeDetails(props: RendererProps) {
       {assetLocations.length > 0 && (
         <CollapsibleSection title="Asset Locations" count={assetLocations.length} sectionId="st-assets">
           {assetLocations.map((a: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px' }}>
+            <div key={i} className="rr-p-2-8">
               <strong>{a.type || `Asset ${i + 1}`}</strong>
-              {a.path && <code style={{ marginLeft: '4px' }}>{a.path}</code>}
-              {a.count != null && <span className="tag" style={{ marginLeft: '4px' }}>{a.count}</span>}
-              {a.description && <div style={{ opacity: 0.7, fontSize: '0.85em' }}>{a.description}</div>}
-              {a.formats?.length > 0 && <div style={{ fontSize: '0.85em' }}>Formats: {a.formats.join(', ')}</div>}
+              {a.path && <code className="rr-ml-4">{a.path}</code>}
+              {a.count != null && <span className="tag rr-ml-4">{a.count}</span>}
+              {a.description && <div className="rr-muted rr-text-sm">{a.description}</div>}
+              {a.formats?.length > 0 && <div className="rr-text-sm">Formats: {a.formats.join(', ')}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -5249,12 +5249,12 @@ export function renderSourceTreeDetails(props: RendererProps) {
       {configFiles.length > 0 && (
         <CollapsibleSection title="Configuration Files" count={configFiles.length} sectionId="st-config">
           {configFiles.map((cf: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-2">
               <code>{cf.path}</code>
-              {cf.format && <span className="tag" style={{ marginLeft: '4px' }}>{cf.format}</span>}
-              {cf.purpose && <span style={{ opacity: 0.7 }}> — {cf.purpose}</span>}
+              {cf.format && <span className="tag rr-ml-4">{cf.format}</span>}
+              {cf.purpose && <span className="rr-muted"> — {cf.purpose}</span>}
               {cf.keySettings?.length > 0 && (
-                <div style={{ fontSize: '0.85em', opacity: 0.7, marginLeft: '8px' }}>
+                <div className="rr-text-sm rr-muted rr-ml-8">
                   {cf.keySettings.map((ks: any, ki: number) => <div key={ki}>{ks.setting}: {ks.description}</div>)}
                 </div>
               )}
@@ -5267,9 +5267,9 @@ export function renderSourceTreeDetails(props: RendererProps) {
       {(buildArtifacts.outputDirectory || buildArtifacts.cacheDirectories?.length > 0) && (
         <CollapsibleSection title="Build Artifacts" sectionId="st-build">
           {buildArtifacts.outputDirectory && <div><strong>Output:</strong> <code>{buildArtifacts.outputDirectory}</code></div>}
-          {buildArtifacts.intermediateDirectories?.length > 0 && <div><strong>Intermediate:</strong> {buildArtifacts.intermediateDirectories.map((d: string) => <code key={d} style={{ marginRight: '4px' }}>{d}</code>)}</div>}
-          {buildArtifacts.cacheDirectories?.length > 0 && <div><strong>Cache:</strong> {buildArtifacts.cacheDirectories.map((d: string) => <code key={d} style={{ marginRight: '4px' }}>{d}</code>)}</div>}
-          {buildArtifacts.gitIgnored?.length > 0 && <div><strong>Git-ignored:</strong> {buildArtifacts.gitIgnored.map((d: string) => <code key={d} style={{ marginRight: '4px' }}>{d}</code>)}</div>}
+          {buildArtifacts.intermediateDirectories?.length > 0 && <div><strong>Intermediate:</strong> {buildArtifacts.intermediateDirectories.map((d: string) => <code key={d} className="rr-mr-4">{d}</code>)}</div>}
+          {buildArtifacts.cacheDirectories?.length > 0 && <div><strong>Cache:</strong> {buildArtifacts.cacheDirectories.map((d: string) => <code key={d} className="rr-mr-4">{d}</code>)}</div>}
+          {buildArtifacts.gitIgnored?.length > 0 && <div><strong>Git-ignored:</strong> {buildArtifacts.gitIgnored.map((d: string) => <code key={d} className="rr-mr-4">{d}</code>)}</div>}
         </CollapsibleSection>
       )}
 
@@ -5280,11 +5280,11 @@ export function renderSourceTreeDetails(props: RendererProps) {
             <>
               <h4>Tests</h4>
               {testLocations.map((t: any, i: number) => (
-                <div key={i} style={{ padding: '1px 8px' }}>
+                <div key={i} className="rr-p-1-8">
                   <code>{t.path}</code>
-                  {t.type && <span className="tag" style={{ marginLeft: '4px' }}>{t.type}</span>}
-                  {t.pattern && <span style={{ opacity: 0.7 }}> — {t.pattern}</span>}
-                  {t.count != null && <span className="tag" style={{ marginLeft: '4px' }}>{t.count}</span>}
+                  {t.type && <span className="tag rr-ml-4">{t.type}</span>}
+                  {t.pattern && <span className="rr-muted"> — {t.pattern}</span>}
+                  {t.count != null && <span className="tag rr-ml-4">{t.count}</span>}
                 </div>
               ))}
             </>
@@ -5293,10 +5293,10 @@ export function renderSourceTreeDetails(props: RendererProps) {
             <>
               <h4>Documentation</h4>
               {docLocations.map((doc: any, i: number) => (
-                <div key={i} style={{ padding: '1px 8px' }}>
+                <div key={i} className="rr-p-1-8">
                   <code>{doc.path}</code>
-                  {doc.type && <span className="tag" style={{ marginLeft: '4px' }}>{doc.type}</span>}
-                  {doc.description && <span style={{ opacity: 0.7 }}> — {doc.description}</span>}
+                  {doc.type && <span className="tag rr-ml-4">{doc.type}</span>}
+                  {doc.description && <span className="rr-muted"> — {doc.description}</span>}
                 </div>
               ))}
             </>
@@ -5307,25 +5307,25 @@ export function renderSourceTreeDetails(props: RendererProps) {
       {/* Module Graph */}
       {(moduleGraph.rootModules?.length > 0 || moduleGraph.dependencies?.length > 0 || moduleGraph.summary) && (
         <CollapsibleSection title="Module Graph" sectionId="st-graph">
-          {moduleGraph.summary && <div style={{ marginBottom: '4px' }}><Md text={moduleGraph.summary} /></div>}
-          {moduleGraph.rootModules?.length > 0 && <div><strong>Root Modules:</strong> {moduleGraph.rootModules.map((m: string) => <code key={m} style={{ marginRight: '4px' }}>{m}</code>)}</div>}
+          {moduleGraph.summary && <div className="rr-mb-4"><Md text={moduleGraph.summary} /></div>}
+          {moduleGraph.rootModules?.length > 0 && <div><strong>Root Modules:</strong> {moduleGraph.rootModules.map((m: string) => <code key={m} className="rr-mr-4">{m}</code>)}</div>}
           {moduleGraph.dependencies?.length > 0 && (
             <>
               <h4>Dependencies ({moduleGraph.dependencies.length})</h4>
               {moduleGraph.dependencies.slice(0, 20).map((dep: any, i: number) => (
-                <div key={i} style={{ padding: '1px 8px', fontSize: '0.85em' }}>
+                <div key={i} className="rr-p-1-8 rr-text-sm">
                   <code>{dep.from}</code> → <code>{dep.to}</code>
-                  {dep.type && <span className="tag" style={{ marginLeft: '4px' }}>{dep.type}</span>}
+                  {dep.type && <span className="tag rr-ml-4">{dep.type}</span>}
                 </div>
               ))}
-              {moduleGraph.dependencies.length > 20 && <div style={{ opacity: 0.6 }}>...and {moduleGraph.dependencies.length - 20} more</div>}
+              {moduleGraph.dependencies.length > 20 && <div className="rr-muted">...and {moduleGraph.dependencies.length - 20} more</div>}
             </>
           )}
           {moduleGraph.circularDependencies?.length > 0 && (
             <>
-              <h4 style={{ color: 'var(--vscode-errorForeground)' }}>Circular Dependencies ({moduleGraph.circularDependencies.length})</h4>
+              <h4 className="rr-fg-error">Circular Dependencies ({moduleGraph.circularDependencies.length})</h4>
               {moduleGraph.circularDependencies.map((cycle: string[], i: number) => (
-                <div key={i} style={{ padding: '1px 8px', fontSize: '0.85em', color: 'var(--vscode-errorForeground)' }}>
+                <div key={i} className="rr-p-1-8 rr-text-sm rr-fg-error">
                   {cycle.join(' → ')} → {cycle[0]}
                 </div>
               ))}
@@ -5338,10 +5338,10 @@ export function renderSourceTreeDetails(props: RendererProps) {
       {devNotes.length > 0 && (
         <CollapsibleSection title="Development Notes" count={devNotes.length} sectionId="st-notes">
           {devNotes.map((n: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-2">
               <strong>{n.note || `Note ${i + 1}`}</strong>
               {n.importance && <span className="tag" style={{ marginLeft: '4px', backgroundColor: n.importance === 'critical' ? 'var(--vscode-errorForeground)' : undefined }}>{n.importance}</span>}
-              {n.category && <span className="tag" style={{ marginLeft: '4px' }}>{n.category}</span>}
+              {n.category && <span className="tag rr-ml-4">{n.category}</span>}
             </div>
           ))}
         </CollapsibleSection>
@@ -5351,10 +5351,10 @@ export function renderSourceTreeDetails(props: RendererProps) {
       {recommendations.length > 0 && (
         <CollapsibleSection title="Recommendations" count={recommendations.length} sectionId="st-recs">
           {recommendations.map((r: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-2">
               <strong>{r.recommendation || `Rec ${i + 1}`}</strong>
-              {r.rationale && <div style={{ opacity: 0.7, fontSize: '0.85em' }}>{r.rationale}</div>}
-              {r.impact && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Impact: {r.impact}</div>}
+              {r.rationale && <div className="rr-muted rr-text-sm">{r.rationale}</div>}
+              {r.impact && <div className="rr-text-sm rr-muted">Impact: {r.impact}</div>}
             </div>
           ))}
         </CollapsibleSection>

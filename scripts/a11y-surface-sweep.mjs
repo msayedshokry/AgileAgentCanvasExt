@@ -1058,11 +1058,40 @@ const FG_KEYS = new Set(['color']);
 const STYLE_BODY_RE = /style=\{\{([\s\S]*?)\}\}/g;
 const KV_QUOTED_RE = /([\w-]+)\s*:\s*(['"`])([^'"`]*?)\2/g;
 
+// Static renderer styles became rr-* utility classes (renderer-utilities.css).
+// A colour-bearing utility class on an element is the same audit surface the
+// inline style was, so each usage is harvested with the class's declared value.
+// Mirrored by webview-ui/src/agentic-kanban/Autonomy.a11y.test.ts.
+const UTILITY_RULE_RE = /&\.(rr-[\w-]+)\s*\{\s*([\w-]+)\s*:\s*([^;]+);/g;
+const CLASSNAME_RE = /className="([^"]*)"/g;
+
+function loadColorUtilities(webviewSrcDir) {
+  const css = readFileSync(
+    path.join(webviewSrcDir, 'components', 'renderers', 'renderer-utilities.css'),
+    'utf-8',
+  );
+  const map = new Map();
+  UTILITY_RULE_RE.lastIndex = 0;
+  let m;
+  while ((m = UTILITY_RULE_RE.exec(css)) !== null) {
+    const key = m[2].replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    if (COLOR_KEYS.has(key)) map.set(m[1], { key, value: m[3].trim() });
+  }
+  return map;
+}
+
+function surfaceRow(key, value, label) {
+  return FG_KEYS.has(key)
+    ? { cat: 'inline-tsx', source: 'inline-tsx', s: label, parent: '--vscode-editor-background', fg: value, bg: 'inherit' }
+    : { cat: 'inline-tsx', source: 'inline-tsx', s: label, parent: '--vscode-editor-background', fg: 'var(--vscode-foreground)', bg: value };
+}
+
 function harvestInlineTsxSurfaces() {
   const rows = [];
   const webviewSrcDir = path.resolve(
     __dirname, '..', 'webview-ui', 'src',
   );
+  const colorUtilities = loadColorUtilities(webviewSrcDir);
   let filesScanned = 0;
   for (const relPath of INLINE_TSX_TARGETS) {
     const fullPath = path.join(webviewSrcDir, relPath);
@@ -1081,25 +1110,19 @@ function harvestInlineTsxSurfaces() {
         const key = kv[1];
         const value = kv[3];
         if (!COLOR_KEYS.has(key)) continue;
-        if (FG_KEYS.has(key)) {
-          rows.push({
-            cat: 'inline-tsx',
-            source: 'inline-tsx',
-            s: `inline-style ${key} @ ${relPath}:L${lineNum}`,
-            parent: '--vscode-editor-background',
-            fg: value,
-            bg: 'inherit',
-          });
-        } else {
-          rows.push({
-            cat: 'inline-tsx',
-            source: 'inline-tsx',
-            s: `inline-bg ${key} @ ${relPath}:L${lineNum}`,
-            parent: '--vscode-editor-background',
-            fg: 'var(--vscode-foreground)',
-            bg: value,
-          });
-        }
+        const kind = FG_KEYS.has(key) ? 'inline-style' : 'inline-bg';
+        rows.push(surfaceRow(key, value, `${kind} ${key} @ ${relPath}:L${lineNum}`));
+      }
+    }
+    CLASSNAME_RE.lastIndex = 0;
+    let cnMatch;
+    while ((cnMatch = CLASSNAME_RE.exec(content)) !== null) {
+      const lineNum = content.slice(0, cnMatch.index).split('\n').length;
+      for (const cls of cnMatch[1].split(/\s+/)) {
+        const util = colorUtilities.get(cls);
+        if (!util) continue;
+        const kind = FG_KEYS.has(util.key) ? 'utility-style' : 'utility-bg';
+        rows.push(surfaceRow(util.key, util.value, `${kind} ${util.key} (.${cls}) @ ${relPath}:L${lineNum}`));
       }
     }
   }

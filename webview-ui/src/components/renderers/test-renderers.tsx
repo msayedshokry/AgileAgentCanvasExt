@@ -95,9 +95,9 @@ export function renderTestDesignDetails(props: RendererProps) {
   const testTypes = ['functional', 'regression', 'smoke', 'sanity', 'exploratory'];
 
   const renderCoverageItem = (item: any, i: number, priorityKey: string, items: any[]) => (
-    <div key={i} className="editable-item-header" style={{ flexWrap: 'wrap', padding: '8px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '6px' }}>
-      <div style={{ display: 'flex', gap: '8px', width: '100%', alignItems: 'center' }}>
-        <strong style={{ flex: 1 }}>{item.id || `Item ${i + 1}`}</strong>
+    <div key={i} className="editable-item-header rr-wrap rr-p-8 rr-rounded rr-bg-subtle rr-mb-6">
+      <div className="rr-flex rr-gap-8 rr-w-full rr-items-center">
+        <strong className="rr-flex-1">{item.id || `Item ${i + 1}`}</strong>
         {item.testLevel && <span className="tag">{item.testLevel}</span>}
         {item.testType && <span className="tag">{item.testType}</span>}
         {item.automatable !== undefined && <span className="tag">{item.automatable ? 'Automatable' : 'Manual'}</span>}
@@ -109,18 +109,18 @@ export function renderTestDesignDetails(props: RendererProps) {
         )}
       </div>
       {editMode ? (
-        <div style={{ width: '100%', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
+        <div className="rr-w-full rr-mt-4 rr-flex rr-col rr-gap-4">
+          <div className="rr-flex rr-gap-8">
             <input type="text" value={item.id || ''} onChange={(e) => {
               const updated = [...items]; updated[i] = { ...item, id: e.target.value };
               handleFieldChange('coveragePlan', { ...coveragePlan, [priorityKey]: updated });
-            }} placeholder="ID" style={{ width: '100px' }} />
+            }} placeholder="ID" className="rr-w-100" />
             <input type="text" value={item.requirement || ''} onChange={(e) => {
               const updated = [...items]; updated[i] = { ...item, requirement: e.target.value };
               handleFieldChange('coveragePlan', { ...coveragePlan, [priorityKey]: updated });
-            }} placeholder="Requirement" style={{ flex: 1 }} />
+            }} placeholder="Requirement" className="rr-flex-1" />
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div className="rr-flex rr-gap-8">
             <select value={item.testLevel || ''} onChange={(e) => {
               const updated = [...items]; updated[i] = { ...item, testLevel: e.target.value };
               handleFieldChange('coveragePlan', { ...coveragePlan, [priorityKey]: updated });
@@ -135,7 +135,7 @@ export function renderTestDesignDetails(props: RendererProps) {
               <option value="">Test Type</option>
               {testTypes.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <label className="rr-flex rr-items-center rr-gap-4">
               <input type="checkbox" checked={!!item.automatable} onChange={(e) => {
                 const updated = [...items]; updated[i] = { ...item, automatable: e.target.checked };
                 handleFieldChange('coveragePlan', { ...coveragePlan, [priorityKey]: updated });
@@ -145,16 +145,16 @@ export function renderTestDesignDetails(props: RendererProps) {
           <input type="text" value={item.testApproach || ''} onChange={(e) => {
             const updated = [...items]; updated[i] = { ...item, testApproach: e.target.value };
             handleFieldChange('coveragePlan', { ...coveragePlan, [priorityKey]: updated });
-          }} placeholder="Test approach..." style={{ width: '100%' }} />
+          }} placeholder="Test approach..." className="rr-w-full" />
         </div>
       ) : (
         <>
-          {item.requirement && <div style={{ width: '100%', marginTop: '4px' }}><strong>Requirement:</strong> {item.requirement}</div>}
-          {item.requirementId && <div style={{ width: '100%' }}><strong>Req ID:</strong> <span className="tag">{item.requirementId}</span></div>}
-          {item.riskLink && <div style={{ width: '100%' }}><strong>Risk:</strong> {item.riskLink}</div>}
-          {item.testApproach && <div style={{ width: '100%' }}><strong>Approach:</strong> {item.testApproach}</div>}
-          {item.testCount && <div style={{ width: '100%' }}><strong>Test Count:</strong> {item.testCount}</div>}
-          {item.owner && <div style={{ width: '100%' }}><strong>Owner:</strong> {item.owner}</div>}
+          {item.requirement && <div className="rr-w-full rr-mt-4"><strong>Requirement:</strong> {item.requirement}</div>}
+          {item.requirementId && <div className="rr-w-full"><strong>Req ID:</strong> <span className="tag">{item.requirementId}</span></div>}
+          {item.riskLink && <div className="rr-w-full"><strong>Risk:</strong> {item.riskLink}</div>}
+          {item.testApproach && <div className="rr-w-full"><strong>Approach:</strong> {item.testApproach}</div>}
+          {item.testCount && <div className="rr-w-full"><strong>Test Count:</strong> {item.testCount}</div>}
+          {item.owner && <div className="rr-w-full"><strong>Owner:</strong> {item.owner}</div>}
         </>
       )}
     </div>
@@ -180,31 +180,31 @@ export function renderTestDesignDetails(props: RendererProps) {
       {hasEpicInfo && (
         <CollapsibleSection title="Epic Info" sectionId="testdesign-epicinfo">
           {editMode ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <div style={{ flex: 1 }}>
+            <div className="rr-flex rr-col rr-gap-8">
+              <div className="rr-flex rr-gap-8">
+                <div className="rr-flex-1">
                   <label className="field-label">Epic ID</label>
                   <input type="text" value={epicInfo.epicId || ''} onChange={(e) => handleFieldChange('epicInfo', { ...epicInfo, epicId: e.target.value })} placeholder="Epic ID" />
                 </div>
-                <div style={{ flex: 1 }}>
+                <div className="rr-flex-1">
                   <label className="field-label">Story Count</label>
                   <input type="number" value={epicInfo.storyCount ?? ''} onChange={(e) => handleFieldChange('epicInfo', { ...epicInfo, storyCount: e.target.value ? parseInt(e.target.value) : undefined })} placeholder="Stories" />
                 </div>
               </div>
               <div>
                 <label className="field-label">Epic Title</label>
-                <input type="text" value={epicInfo.epicTitle || ''} onChange={(e) => handleFieldChange('epicInfo', { ...epicInfo, epicTitle: e.target.value })} placeholder="Epic title" style={{ width: '100%' }} />
+                <input type="text" value={epicInfo.epicTitle || ''} onChange={(e) => handleFieldChange('epicInfo', { ...epicInfo, epicTitle: e.target.value })} placeholder="Epic title" className="rr-w-full" />
               </div>
               <div>
                 <label className="field-label">Epic Goal</label>
-                <textarea value={epicInfo.epicGoal || ''} onChange={(e) => handleFieldChange('epicInfo', { ...epicInfo, epicGoal: e.target.value })} placeholder="Epic goal" rows={2} style={{ width: '100%' }} />
+                <textarea value={epicInfo.epicGoal || ''} onChange={(e) => handleFieldChange('epicInfo', { ...epicInfo, epicGoal: e.target.value })} placeholder="Epic goal" rows={2} className="rr-w-full" />
               </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <div style={{ flex: 1 }}>
+              <div className="rr-flex rr-gap-8">
+                <div className="rr-flex-1">
                   <label className="field-label">PRD Reference</label>
                   <input type="text" value={epicInfo.prdReference || ''} onChange={(e) => handleFieldChange('epicInfo', { ...epicInfo, prdReference: e.target.value })} placeholder="PRD ref" />
                 </div>
-                <div style={{ flex: 1 }}>
+                <div className="rr-flex-1">
                   <label className="field-label">Architecture Reference</label>
                   <input type="text" value={epicInfo.architectureReference || ''} onChange={(e) => handleFieldChange('epicInfo', { ...epicInfo, architectureReference: e.target.value })} placeholder="Arch ref" />
                 </div>
@@ -239,20 +239,20 @@ export function renderTestDesignDetails(props: RendererProps) {
       {hasFeatureInfo && (
         <CollapsibleSection title="Feature Info" sectionId="testdesign-featureinfo">
           {editMode ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <div style={{ flex: 1 }}>
+            <div className="rr-flex rr-col rr-gap-8">
+              <div className="rr-flex rr-gap-8">
+                <div className="rr-flex-1">
                   <label className="field-label">Feature ID</label>
                   <input type="text" value={featureInfo.featureId || ''} onChange={(e) => handleFieldChange('featureInfo', { ...featureInfo, featureId: e.target.value })} />
                 </div>
-                <div style={{ flex: 1 }}>
+                <div className="rr-flex-1">
                   <label className="field-label">Feature Name</label>
                   <input type="text" value={featureInfo.featureName || ''} onChange={(e) => handleFieldChange('featureInfo', { ...featureInfo, featureName: e.target.value })} />
                 </div>
               </div>
               <div>
                 <label className="field-label">Feature Scope</label>
-                <textarea value={featureInfo.featureScope || ''} onChange={(e) => handleFieldChange('featureInfo', { ...featureInfo, featureScope: e.target.value })} rows={3} style={{ width: '100%' }} />
+                <textarea value={featureInfo.featureScope || ''} onChange={(e) => handleFieldChange('featureInfo', { ...featureInfo, featureScope: e.target.value })} rows={3} className="rr-w-full" />
               </div>
             </div>
           ) : (
@@ -269,31 +269,31 @@ export function renderTestDesignDetails(props: RendererProps) {
       {(hasSummary || editMode) && (
         <CollapsibleSection title="Summary" sectionId="testdesign-summary">
           {editMode ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div className="rr-flex rr-col rr-gap-8">
               <div>
                 <label className="field-label">Scope</label>
-                <textarea value={summary.scope || ''} onChange={(e) => handleFieldChange('summary', { ...summary, scope: e.target.value })} rows={2} style={{ width: '100%' }} />
+                <textarea value={summary.scope || ''} onChange={(e) => handleFieldChange('summary', { ...summary, scope: e.target.value })} rows={2} className="rr-w-full" />
               </div>
               <div>
                 <label className="field-label">Approach</label>
-                <textarea value={summary.approach || ''} onChange={(e) => handleFieldChange('summary', { ...summary, approach: e.target.value })} rows={2} style={{ width: '100%' }} />
+                <textarea value={summary.approach || ''} onChange={(e) => handleFieldChange('summary', { ...summary, approach: e.target.value })} rows={2} className="rr-w-full" />
               </div>
               <div>
                 <label className="field-label">Coverage Summary</label>
-                <textarea value={summary.coverageSummary || ''} onChange={(e) => handleFieldChange('summary', { ...summary, coverageSummary: e.target.value })} rows={2} style={{ width: '100%' }} />
+                <textarea value={summary.coverageSummary || ''} onChange={(e) => handleFieldChange('summary', { ...summary, coverageSummary: e.target.value })} rows={2} className="rr-w-full" />
               </div>
               <div>
                 <label className="field-label">Risk Summary</label>
-                <textarea value={summary.riskSummary || ''} onChange={(e) => handleFieldChange('summary', { ...summary, riskSummary: e.target.value })} rows={2} style={{ width: '100%' }} />
+                <textarea value={summary.riskSummary || ''} onChange={(e) => handleFieldChange('summary', { ...summary, riskSummary: e.target.value })} rows={2} className="rr-w-full" />
               </div>
               <div>
                 <label className="field-label">Objectives</label>
                 {(summary.objectives || []).map((o: string, i: number) => (
-                  <div key={i} style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
+                  <div key={i} className="rr-flex rr-gap-4 rr-mb-4">
                     <input type="text" value={o} onChange={(e) => {
                       const objs = [...(summary.objectives || [])]; objs[i] = e.target.value;
                       handleFieldChange('summary', { ...summary, objectives: objs });
-                    }} style={{ flex: 1 }} />
+                    }} className="rr-flex-1" />
                     <button className="icon-button" onClick={() => {
                       const objs = (summary.objectives || []).filter((_: any, idx: number) => idx !== i);
                       handleFieldChange('summary', { ...summary, objectives: objs });
@@ -305,11 +305,11 @@ export function renderTestDesignDetails(props: RendererProps) {
               <div>
                 <label className="field-label">Key Decisions</label>
                 {(summary.keyDecisions || []).map((kd: string, i: number) => (
-                  <div key={i} style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
+                  <div key={i} className="rr-flex rr-gap-4 rr-mb-4">
                     <input type="text" value={kd} onChange={(e) => {
                       const kds = [...(summary.keyDecisions || [])]; kds[i] = e.target.value;
                       handleFieldChange('summary', { ...summary, keyDecisions: kds });
-                    }} style={{ flex: 1 }} />
+                    }} className="rr-flex-1" />
                     <button className="icon-button" onClick={() => {
                       const kds = (summary.keyDecisions || []).filter((_: any, idx: number) => idx !== i);
                       handleFieldChange('summary', { ...summary, keyDecisions: kds });
@@ -341,7 +341,7 @@ export function renderTestDesignDetails(props: RendererProps) {
                 <>
                   <h4>Test Levels</h4>
                   {summary.testLevels.map((tl: any, i: number) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid var(--vscode-widget-border)' }}>
+                    <div key={i} className="rr-flex rr-justify-between rr-p-4-0 rr-border-b">
                       <span className="tag">{typeof tl === 'string' ? tl : tl.level || JSON.stringify(tl)}</span>
                       {tl.purpose && <span>{tl.purpose}</span>}
                       {tl.coverage && <span className="muted">{tl.coverage}</span>}
@@ -365,15 +365,15 @@ export function renderTestDesignDetails(props: RendererProps) {
       {hasCoveragePlan && (
         <CollapsibleSection title="Coverage Plan" count={allCoverageItems.length} sectionId="testdesign-coverageplan">
           {editMode ? (
-            <div style={{ marginBottom: '8px' }}>
+            <div className="rr-mb-8">
               <label className="field-label">Overview</label>
-              <textarea value={coveragePlan.overview || ''} onChange={(e) => handleFieldChange('coveragePlan', { ...coveragePlan, overview: e.target.value })} rows={2} style={{ width: '100%' }} />
+              <textarea value={coveragePlan.overview || ''} onChange={(e) => handleFieldChange('coveragePlan', { ...coveragePlan, overview: e.target.value })} rows={2} className="rr-w-full" />
             </div>
           ) : (
             coveragePlan.overview && <Md text={coveragePlan.overview} />
           )}
           {coveragePlan.coverageGoals && !editMode && (
-            <div style={{ marginBottom: '12px' }}>
+            <div className="rr-mb-12">
               <h4>Coverage Goals</h4>
               <div className="detail-row">
                 {coveragePlan.coverageGoals.codeStatement && <section className="detail-section inline"><h4>Statement</h4><span className="tag">{coveragePlan.coverageGoals.codeStatement}</span></section>}
@@ -384,11 +384,11 @@ export function renderTestDesignDetails(props: RendererProps) {
             </div>
           )}
           {editMode && (
-            <div style={{ marginBottom: '12px' }}>
+            <div className="rr-mb-12">
               <h4>Coverage Goals</h4>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <div className="rr-flex rr-gap-8 rr-wrap">
                 {['codeStatement', 'codeBranch', 'requirementCoverage', 'riskCoverage'].map(goalKey => (
-                  <div key={goalKey} style={{ flex: '1 1 200px' }}>
+                  <div key={goalKey} className="rr-basis-200">
                     <label className="field-label">{goalKey.replace(/([A-Z])/g, ' $1').replace(/^./, (s: string) => s.toUpperCase())}</label>
                     <input type="text" value={(coveragePlan.coverageGoals || {})[goalKey] || ''} onChange={(e) => {
                       const goals = { ...(coveragePlan.coverageGoals || {}), [goalKey]: e.target.value };
@@ -416,23 +416,23 @@ export function renderTestDesignDetails(props: RendererProps) {
               sectionId={`testdesign-tc-${tc.id || i}`}
             >
               {editMode ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <div style={{ flex: 1 }}>
+                <div className="rr-flex rr-col rr-gap-6">
+                  <div className="rr-flex rr-gap-8">
+                    <div className="rr-flex-1">
                       <label className="field-label">ID</label>
                       <input type="text" value={tc.id || ''} onChange={(e) => {
                         const updated = [...testCases]; updated[i] = { ...tc, id: e.target.value };
                         handleFieldChange('testCases', updated);
                       }} />
                     </div>
-                    <div style={{ flex: 2 }}>
+                    <div className="rr-flex-2">
                       <label className="field-label">Title</label>
                       <input type="text" value={tc.title || ''} onChange={(e) => {
                         const updated = [...testCases]; updated[i] = { ...tc, title: e.target.value };
                         handleFieldChange('testCases', updated);
                       }} />
                     </div>
-                    <button className="icon-button" style={{ alignSelf: 'flex-end' }} onClick={() => {
+                    <button className="icon-button rr-self-end" onClick={() => {
                       handleFieldChange('testCases', testCases.filter((_: any, idx: number) => idx !== i));
                     }} title="Remove test case">{'\u2715'}</button>
                   </div>
@@ -441,9 +441,9 @@ export function renderTestDesignDetails(props: RendererProps) {
                     <textarea value={tc.description || ''} onChange={(e) => {
                       const updated = [...testCases]; updated[i] = { ...tc, description: e.target.value };
                       handleFieldChange('testCases', updated);
-                    }} rows={2} style={{ width: '100%' }} />
+                    }} rows={2} className="rr-w-full" />
                   </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div className="rr-flex rr-gap-8">
                     <div>
                       <label className="field-label">Priority</label>
                       <select value={tc.priority || ''} onChange={(e) => {
@@ -502,23 +502,23 @@ export function renderTestDesignDetails(props: RendererProps) {
       {(riskAssessment.overview || highPriorityRisks.length > 0 || editMode) && (
         <CollapsibleSection title="Risk Assessment" count={highPriorityRisks.length} sectionId="testdesign-riskassessment">
           {editMode ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div className="rr-flex rr-col rr-gap-8">
               <div>
                 <label className="field-label">Overview</label>
-                <textarea value={riskAssessment.overview || ''} onChange={(e) => handleFieldChange('riskAssessment', { ...riskAssessment, overview: e.target.value })} rows={2} style={{ width: '100%' }} />
+                <textarea value={riskAssessment.overview || ''} onChange={(e) => handleFieldChange('riskAssessment', { ...riskAssessment, overview: e.target.value })} rows={2} className="rr-w-full" />
               </div>
               <h4>High Priority Risks</h4>
               {highPriorityRisks.map((r: any, i: number) => (
-                <div key={i} style={{ padding: '8px', borderRadius: '4px', background: 'var(--vscode-inputValidation-warningBackground)', marginBottom: '4px' }}>
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
+                <div key={i} className="rr-p-8 rr-rounded rr-bg-warning rr-mb-4">
+                  <div className="rr-flex rr-gap-8 rr-mb-4">
                     <input type="text" value={r.riskId || ''} onChange={(e) => {
                       const updated = [...highPriorityRisks]; updated[i] = { ...r, riskId: e.target.value };
                       handleFieldChange('riskAssessment', { ...riskAssessment, highPriority: updated });
-                    }} placeholder="Risk ID" style={{ width: '100px' }} />
+                    }} placeholder="Risk ID" className="rr-w-100" />
                     <input type="text" value={r.description || ''} onChange={(e) => {
                       const updated = [...highPriorityRisks]; updated[i] = { ...r, description: e.target.value };
                       handleFieldChange('riskAssessment', { ...riskAssessment, highPriority: updated });
-                    }} placeholder="Description" style={{ flex: 1 }} />
+                    }} placeholder="Description" className="rr-flex-1" />
                     <select value={r.probability || ''} onChange={(e) => {
                       const updated = [...highPriorityRisks]; updated[i] = { ...r, probability: e.target.value };
                       handleFieldChange('riskAssessment', { ...riskAssessment, highPriority: updated });
@@ -540,7 +540,7 @@ export function renderTestDesignDetails(props: RendererProps) {
                   <input type="text" value={r.mitigation || ''} onChange={(e) => {
                     const updated = [...highPriorityRisks]; updated[i] = { ...r, mitigation: e.target.value };
                     handleFieldChange('riskAssessment', { ...riskAssessment, highPriority: updated });
-                  }} placeholder="Mitigation strategy" style={{ width: '100%' }} />
+                  }} placeholder="Mitigation strategy" className="rr-w-full" />
                 </div>
               ))}
               <button className="add-item-button" onClick={() => {
@@ -551,44 +551,44 @@ export function renderTestDesignDetails(props: RendererProps) {
             <>
               {riskAssessment.overview && <Md text={riskAssessment.overview} />}
               {highPriorityRisks.map((r: any, i: number) => (
-                <div key={i} style={{ padding: '6px', borderRadius: '4px', background: 'var(--vscode-inputValidation-warningBackground)', marginBottom: '4px' }}>
+                <div key={i} className="rr-p-6 rr-rounded rr-bg-warning rr-mb-4">
                   <strong>{r.riskId || `Risk ${i + 1}`}</strong>: {r.description}
                   <div className="detail-row">
                     {r.probability && <span className="tag">P: {r.probability}</span>}
                     {r.impact && <span className="tag">I: {r.impact}</span>}
                     {r.category && <span className="tag">{r.category}</span>}
                   </div>
-                  {r.mitigation && <div className="muted" style={{ marginTop: '4px' }}>Mitigation: {r.mitigation}</div>}
+                  {r.mitigation && <div className="muted rr-mt-4">Mitigation: {r.mitigation}</div>}
                   {r.testStrategy && <div className="muted">Test Strategy: {r.testStrategy}</div>}
                   {r.owner && <div className="muted">Owner: {r.owner}</div>}
                 </div>
               ))}
               {mediumPriorityRisks.length > 0 && (
                 <>
-                  <h4 style={{ marginTop: '12px' }}>Medium Priority Risks</h4>
+                  <h4 className="rr-mt-12">Medium Priority Risks</h4>
                   {mediumPriorityRisks.map((r: any, i: number) => (
-                    <div key={i} style={{ padding: '6px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '4px' }}>
+                    <div key={i} className="rr-p-6 rr-rounded rr-bg-subtle rr-mb-4">
                       <strong>{r.riskId || `Risk ${i + 1}`}</strong>: {r.description}
                       <div className="detail-row">
                         {r.probability && <span className="tag">P: {r.probability}</span>}
                         {r.impact && <span className="tag">I: {r.impact}</span>}
                       </div>
-                      {r.mitigation && <div className="muted" style={{ marginTop: '4px' }}>Mitigation: {r.mitigation}</div>}
+                      {r.mitigation && <div className="muted rr-mt-4">Mitigation: {r.mitigation}</div>}
                     </div>
                   ))}
                 </>
               )}
               {lowPriorityRisks.length > 0 && (
                 <>
-                  <h4 style={{ marginTop: '12px' }}>Low Priority Risks</h4>
+                  <h4 className="rr-mt-12">Low Priority Risks</h4>
                   {lowPriorityRisks.map((r: any, i: number) => (
-                    <div key={i} style={{ padding: '6px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '4px' }}>
+                    <div key={i} className="rr-p-6 rr-rounded rr-bg-subtle rr-mb-4">
                       <strong>{r.riskId || `Risk ${i + 1}`}</strong>: {r.description}
                       <div className="detail-row">
                         {r.probability && <span className="tag">P: {r.probability}</span>}
                         {r.impact && <span className="tag">I: {r.impact}</span>}
                       </div>
-                      {r.mitigation && <div className="muted" style={{ marginTop: '4px' }}>Mitigation: {r.mitigation}</div>}
+                      {r.mitigation && <div className="muted rr-mt-4">Mitigation: {r.mitigation}</div>}
                     </div>
                   ))}
                 </>
@@ -602,18 +602,18 @@ export function renderTestDesignDetails(props: RendererProps) {
       {(qualityGateCriteria.length > 0 || editMode) && (
         <CollapsibleSection title="Quality Gate Criteria" count={qualityGateCriteria.length} sectionId="testdesign-qualitygate">
           {qualityGateCriteria.map((qg: any, i: number) => (
-            <div key={i} style={{ padding: '4px 0' }}>
+            <div key={i} className="rr-p-4-0">
               {editMode ? (
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div className="rr-flex rr-gap-8 rr-items-center">
                   <input type="text" value={qg.criterion || ''} onChange={(e) => {
                     const updated = [...qualityGateCriteria]; updated[i] = { ...qg, criterion: e.target.value };
                     handleFieldChange('qualityGateCriteria', updated);
-                  }} placeholder="Criterion" style={{ flex: 2 }} />
+                  }} placeholder="Criterion" className="rr-flex-2" />
                   <input type="text" value={qg.threshold || ''} onChange={(e) => {
                     const updated = [...qualityGateCriteria]; updated[i] = { ...qg, threshold: e.target.value };
                     handleFieldChange('qualityGateCriteria', updated);
-                  }} placeholder="Threshold" style={{ flex: 1 }} />
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
+                  }} placeholder="Threshold" className="rr-flex-1" />
+                  <label className="rr-flex rr-items-center rr-gap-4 rr-nowrap">
                     <input type="checkbox" checked={!!qg.mandatory} onChange={(e) => {
                       const updated = [...qualityGateCriteria]; updated[i] = { ...qg, mandatory: e.target.checked };
                       handleFieldChange('qualityGateCriteria', updated);
@@ -625,7 +625,7 @@ export function renderTestDesignDetails(props: RendererProps) {
                 <>
                   <strong>{qg.criterion}</strong>
                   {qg.threshold && <span> — Threshold: {qg.threshold}</span>}
-                  {qg.mandatory && <span className="tag" style={{ marginLeft: '8px' }}>Mandatory</span>}
+                  {qg.mandatory && <span className="tag rr-ml-8">Mandatory</span>}
                 </>
               )}
             </div>
@@ -647,13 +647,13 @@ export function renderTestDesignDetails(props: RendererProps) {
       {!executionOrderIsArray && executionOrderObj.phases?.length > 0 && (
         <CollapsibleSection title="Execution Order" count={executionOrderObj.phases.length} sectionId="testdesign-executionorder">
           {executionOrderObj.phases.map((phase: any, i: number) => (
-            <div key={i} style={{ padding: '6px 0', borderBottom: '1px solid var(--vscode-widget-border)' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div key={i} className="rr-p-6-0 rr-border-b">
+              <div className="rr-flex rr-gap-8 rr-items-center">
                 <strong>{typeof phase === 'string' ? phase : (phase.phase || phase.name || `Phase ${i + 1}`)}</strong>
                 {phase.parallel && <span className="tag">Parallel</span>}
               </div>
               {phase.tests?.length > 0 && (
-                <div className="tags-list" style={{ marginTop: '4px' }}>
+                <div className="tags-list rr-mt-4">
                   {phase.tests.map((t: string, ti: number) => <span key={ti} className="tag">{t}</span>)}
                 </div>
               )}
@@ -691,7 +691,7 @@ export function renderTestDesignDetails(props: RendererProps) {
             </>
           )}
           {executionOrderObj.parallelization && (
-            <div style={{ marginTop: '8px' }}>
+            <div className="rr-mt-8">
               <h4>Parallelization</h4>
               {executionOrderObj.parallelization.strategy && <p><strong>Strategy:</strong> {executionOrderObj.parallelization.strategy}</p>}
               {executionOrderObj.parallelization.maxParallel != null && <p><strong>Max Parallel:</strong> {executionOrderObj.parallelization.maxParallel}</p>}
@@ -707,19 +707,19 @@ export function renderTestDesignDetails(props: RendererProps) {
       {hasExecutionStrategy && (
         <CollapsibleSection title="Execution Strategy" sectionId="testdesign-execstrategy">
           {editMode ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div className="rr-flex rr-col rr-gap-8">
               <div>
                 <label className="field-label">Approach</label>
-                <textarea value={executionStrategy.approach || ''} onChange={(e) => handleFieldChange('executionStrategy', { ...executionStrategy, approach: e.target.value })} rows={2} style={{ width: '100%' }} />
+                <textarea value={executionStrategy.approach || ''} onChange={(e) => handleFieldChange('executionStrategy', { ...executionStrategy, approach: e.target.value })} rows={2} className="rr-w-full" />
               </div>
               <div>
                 <label className="field-label">Environments</label>
                 {(executionStrategy.environments || []).map((env: string, i: number) => (
-                  <div key={i} style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
+                  <div key={i} className="rr-flex rr-gap-4 rr-mb-4">
                     <input type="text" value={env} onChange={(e) => {
                       const envs = [...(executionStrategy.environments || [])]; envs[i] = e.target.value;
                       handleFieldChange('executionStrategy', { ...executionStrategy, environments: envs });
-                    }} style={{ flex: 1 }} />
+                    }} className="rr-flex-1" />
                     <button className="icon-button" onClick={() => {
                       handleFieldChange('executionStrategy', { ...executionStrategy, environments: (executionStrategy.environments || []).filter((_: any, idx: number) => idx !== i) });
                     }}>{'\u2715'}</button>
@@ -758,7 +758,7 @@ export function renderTestDesignDetails(props: RendererProps) {
       {hasTestability && (
         <CollapsibleSection title="Testability Assessment" sectionId="testdesign-testability">
           {editMode ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div className="rr-flex rr-col rr-gap-8">
               <div>
                 <label className="field-label">Score</label>
                 <input type="text" value={testabilityAssessment.score || ''} onChange={(e) => handleFieldChange('testabilityAssessment', { ...testabilityAssessment, score: e.target.value })} placeholder="Score" />
@@ -766,11 +766,11 @@ export function renderTestDesignDetails(props: RendererProps) {
               <div>
                 <label className="field-label">Strengths</label>
                 {(testabilityAssessment.strengths || []).map((s: string, i: number) => (
-                  <div key={i} style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
+                  <div key={i} className="rr-flex rr-gap-4 rr-mb-4">
                     <input type="text" value={s} onChange={(e) => {
                       const arr = [...(testabilityAssessment.strengths || [])]; arr[i] = e.target.value;
                       handleFieldChange('testabilityAssessment', { ...testabilityAssessment, strengths: arr });
-                    }} style={{ flex: 1 }} />
+                    }} className="rr-flex-1" />
                     <button className="icon-button" onClick={() => {
                       handleFieldChange('testabilityAssessment', { ...testabilityAssessment, strengths: (testabilityAssessment.strengths || []).filter((_: any, idx: number) => idx !== i) });
                     }}>{'\u2715'}</button>
@@ -781,11 +781,11 @@ export function renderTestDesignDetails(props: RendererProps) {
               <div>
                 <label className="field-label">Weaknesses</label>
                 {(testabilityAssessment.weaknesses || []).map((w: string, i: number) => (
-                  <div key={i} style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
+                  <div key={i} className="rr-flex rr-gap-4 rr-mb-4">
                     <input type="text" value={w} onChange={(e) => {
                       const arr = [...(testabilityAssessment.weaknesses || [])]; arr[i] = e.target.value;
                       handleFieldChange('testabilityAssessment', { ...testabilityAssessment, weaknesses: arr });
-                    }} style={{ flex: 1 }} />
+                    }} className="rr-flex-1" />
                     <button className="icon-button" onClick={() => {
                       handleFieldChange('testabilityAssessment', { ...testabilityAssessment, weaknesses: (testabilityAssessment.weaknesses || []).filter((_: any, idx: number) => idx !== i) });
                     }}>{'\u2715'}</button>
@@ -796,11 +796,11 @@ export function renderTestDesignDetails(props: RendererProps) {
               <div>
                 <label className="field-label">Recommendations</label>
                 {(testabilityAssessment.recommendations || []).map((r: string, i: number) => (
-                  <div key={i} style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
+                  <div key={i} className="rr-flex rr-gap-4 rr-mb-4">
                     <input type="text" value={r} onChange={(e) => {
                       const arr = [...(testabilityAssessment.recommendations || [])]; arr[i] = e.target.value;
                       handleFieldChange('testabilityAssessment', { ...testabilityAssessment, recommendations: arr });
-                    }} style={{ flex: 1 }} />
+                    }} className="rr-flex-1" />
                     <button className="icon-button" onClick={() => {
                       handleFieldChange('testabilityAssessment', { ...testabilityAssessment, recommendations: (testabilityAssessment.recommendations || []).filter((_: any, idx: number) => idx !== i) });
                     }}>{'\u2715'}</button>
@@ -861,10 +861,10 @@ export function renderTestDesignDetails(props: RendererProps) {
       {(d.notInScope?.length > 0) && !editMode && (
         <CollapsibleSection title="Not In Scope" count={d.notInScope.length} sectionId="testdesign-notinscope">
           {d.notInScope.map((item: any, i: number) => (
-            <div key={i} style={{ padding: '4px 0', borderBottom: '1px solid var(--vscode-widget-border)' }}>
+            <div key={i} className="rr-p-4-0 rr-border-b">
               <strong>{typeof item === 'string' ? item : item.item || JSON.stringify(item)}</strong>
               {item.reason && <div className="muted">Reason: {item.reason}</div>}
-              {item.riskAccepted != null && <span className="tag" style={{ marginTop: '2px' }}>{item.riskAccepted ? 'Risk Accepted' : 'Risk Not Accepted'}</span>}
+              {item.riskAccepted != null && <span className="tag rr-mt-2">{item.riskAccepted ? 'Risk Accepted' : 'Risk Not Accepted'}</span>}
             </div>
           ))}
         </CollapsibleSection>
@@ -877,9 +877,9 @@ export function renderTestDesignDetails(props: RendererProps) {
             <>
               <h4>Entry Criteria</h4>
               {d.entryExitCriteria.entry.map((c: any, i: number) => (
-                <div key={i} style={{ padding: '4px 0' }}>
+                <div key={i} className="rr-p-4-0">
                   <span>{typeof c === 'string' ? c : c.criterion || JSON.stringify(c)}</span>
-                  {c.mandatory && <span className="tag" style={{ marginLeft: '8px' }}>Mandatory</span>}
+                  {c.mandatory && <span className="tag rr-ml-8">Mandatory</span>}
                   {c.verification && <div className="muted">Verification: {c.verification}</div>}
                 </div>
               ))}
@@ -889,9 +889,9 @@ export function renderTestDesignDetails(props: RendererProps) {
             <>
               <h4>Exit Criteria</h4>
               {d.entryExitCriteria.exit.map((c: any, i: number) => (
-                <div key={i} style={{ padding: '4px 0' }}>
+                <div key={i} className="rr-p-4-0">
                   <span>{typeof c === 'string' ? c : c.criterion || JSON.stringify(c)}</span>
-                  {c.mandatory && <span className="tag" style={{ marginLeft: '8px' }}>Mandatory</span>}
+                  {c.mandatory && <span className="tag rr-ml-8">Mandatory</span>}
                   {c.threshold && <span className="muted"> — Threshold: {c.threshold}</span>}
                   {c.measurement && <div className="muted">Measurement: {c.measurement}</div>}
                 </div>
@@ -917,14 +917,14 @@ export function renderTestDesignDetails(props: RendererProps) {
       {d.projectTeam?.length > 0 && !editMode && (
         <CollapsibleSection title="Project Team" count={d.projectTeam.length} sectionId="testdesign-team">
           {d.projectTeam.map((member: any, i: number) => (
-            <div key={i} style={{ padding: '6px 0', borderBottom: '1px solid var(--vscode-widget-border)' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div key={i} className="rr-p-6-0 rr-border-b">
+              <div className="rr-flex rr-gap-8 rr-items-center">
                 <strong>{member.name || `Member ${i + 1}`}</strong>
                 {member.role && <span className="tag">{member.role}</span>}
                 {member.availability && <span className="muted">{member.availability}</span>}
               </div>
-              {member.responsibilities && <div style={{ marginTop: '2px' }}>{member.responsibilities}</div>}
-              {member.skills?.length > 0 && <div className="tags-list" style={{ marginTop: '4px' }}>{member.skills.map((s: string, si: number) => <span key={si} className="tag">{s}</span>)}</div>}
+              {member.responsibilities && <div className="rr-mt-2">{member.responsibilities}</div>}
+              {member.skills?.length > 0 && <div className="tags-list rr-mt-4">{member.skills.map((s: string, si: number) => <span key={si} className="tag">{s}</span>)}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -937,7 +937,7 @@ export function renderTestDesignDetails(props: RendererProps) {
             <>
               <h4>Environments</h4>
               {d.testEnvironment.environments.map((env: any, i: number) => (
-                <div key={i} style={{ padding: '4px 0' }}>
+                <div key={i} className="rr-p-4-0">
                   <strong>{env.name || `Env ${i + 1}`}</strong>
                   {env.purpose && <span className="muted"> — {env.purpose}</span>}
                   {env.configuration && <div className="muted">Config: {env.configuration}</div>}
@@ -960,10 +960,10 @@ export function renderTestDesignDetails(props: RendererProps) {
             <>
               <h4>Tools</h4>
               {d.testEnvironment.tools.map((t: any, i: number) => (
-                <div key={i} style={{ padding: '2px 0' }}>
+                <div key={i} className="rr-p-2-0">
                   <strong>{typeof t === 'string' ? t : t.tool || JSON.stringify(t)}</strong>
                   {t.purpose && <span className="muted"> — {t.purpose}</span>}
-                  {t.version && <span className="tag" style={{ marginLeft: '4px' }}>{t.version}</span>}
+                  {t.version && <span className="tag rr-ml-4">{t.version}</span>}
                 </div>
               ))}
             </>
@@ -979,9 +979,9 @@ export function renderTestDesignDetails(props: RendererProps) {
             <>
               <h4>Breakdown</h4>
               {d.resourceEstimates.breakdown.map((b: any, i: number) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid var(--vscode-widget-border)' }}>
+                <div key={i} className="rr-flex rr-justify-between rr-p-4-0 rr-border-b">
                   <span>{b.activity || `Activity ${i + 1}`}</span>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div className="rr-flex rr-gap-8">
                     {b.effort && <span className="tag">{b.effort}</span>}
                     {b.resources != null && <span className="muted">{b.resources} resources</span>}
                     {b.duration && <span className="muted">{b.duration}</span>}
@@ -994,11 +994,11 @@ export function renderTestDesignDetails(props: RendererProps) {
             <>
               <h4>Timeline</h4>
               {d.resourceEstimates.timeline.map((t: any, i: number) => (
-                <div key={i} style={{ padding: '4px 0' }}>
+                <div key={i} className="rr-p-4-0">
                   <strong>{t.phase || `Phase ${i + 1}`}</strong>
                   {t.startDate && <span className="muted"> {t.startDate}</span>}
                   {t.endDate && <span className="muted"> — {t.endDate}</span>}
-                  {t.deliverables?.length > 0 && <div className="tags-list" style={{ marginTop: '2px' }}>{t.deliverables.map((d2: string, di: number) => <span key={di} className="tag">{d2}</span>)}</div>}
+                  {t.deliverables?.length > 0 && <div className="tags-list rr-mt-2">{t.deliverables.map((d2: string, di: number) => <span key={di} className="tag">{d2}</span>)}</div>}
                 </div>
               ))}
             </>
@@ -1010,15 +1010,15 @@ export function renderTestDesignDetails(props: RendererProps) {
       {d.mitigationPlans?.length > 0 && !editMode && (
         <CollapsibleSection title="Mitigation Plans" count={d.mitigationPlans.length} sectionId="testdesign-mitigation">
           {d.mitigationPlans.map((mp: any, i: number) => (
-            <div key={i} style={{ padding: '6px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '6px' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div key={i} className="rr-p-6 rr-rounded rr-bg-subtle rr-mb-6">
+              <div className="rr-flex rr-gap-8 rr-items-center">
                 {mp.riskId && <span className="tag">{mp.riskId}</span>}
                 <strong>{mp.risk || `Plan ${i + 1}`}</strong>
                 {mp.owner && <span className="muted">Owner: {mp.owner}</span>}
               </div>
-              {mp.plan && <div style={{ marginTop: '4px' }}><strong>Plan:</strong> {mp.plan}</div>}
-              {mp.contingency && <div className="muted" style={{ marginTop: '2px' }}>Contingency: {mp.contingency}</div>}
-              {mp.triggers?.length > 0 && <div className="tags-list" style={{ marginTop: '4px' }}>{mp.triggers.map((t: string, ti: number) => <span key={ti} className="tag">{t}</span>)}</div>}
+              {mp.plan && <div className="rr-mt-4"><strong>Plan:</strong> {mp.plan}</div>}
+              {mp.contingency && <div className="muted rr-mt-2">Contingency: {mp.contingency}</div>}
+              {mp.triggers?.length > 0 && <div className="tags-list rr-mt-4">{mp.triggers.map((t: string, ti: number) => <span key={ti} className="tag">{t}</span>)}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -1031,7 +1031,7 @@ export function renderTestDesignDetails(props: RendererProps) {
             <>
               <h4>Assumptions</h4>
               {d.assumptionsAndDependencies.assumptions.map((a: any, i: number) => (
-                <div key={i} style={{ padding: '4px 0' }}>
+                <div key={i} className="rr-p-4-0">
                   <span>{typeof a === 'string' ? a : a.assumption || JSON.stringify(a)}</span>
                   {a.risk && <div className="muted">Risk: {a.risk}</div>}
                   {a.validation && <div className="muted">Validation: {a.validation}</div>}
@@ -1043,11 +1043,11 @@ export function renderTestDesignDetails(props: RendererProps) {
             <>
               <h4>Dependencies</h4>
               {d.assumptionsAndDependencies.dependencies.map((dep: any, i: number) => (
-                <div key={i} style={{ padding: '4px 0' }}>
+                <div key={i} className="rr-p-4-0">
                   <strong>{typeof dep === 'string' ? dep : dep.dependency || JSON.stringify(dep)}</strong>
-                  {dep.type && <span className="tag" style={{ marginLeft: '8px' }}>{dep.type}</span>}
-                  {dep.status && <span className="tag" style={{ marginLeft: '4px' }}>{dep.status}</span>}
-                  {dep.owner && <span className="muted" style={{ marginLeft: '4px' }}>Owner: {dep.owner}</span>}
+                  {dep.type && <span className="tag rr-ml-8">{dep.type}</span>}
+                  {dep.status && <span className="tag rr-ml-4">{dep.status}</span>}
+                  {dep.owner && <span className="muted rr-ml-4">Owner: {dep.owner}</span>}
                 </div>
               ))}
             </>
@@ -1063,7 +1063,7 @@ export function renderTestDesignDetails(props: RendererProps) {
             <>
               <h4>Severity Definitions</h4>
               {d.defectManagement.severityDefinitions.map((sd: any, i: number) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid var(--vscode-widget-border)' }}>
+                <div key={i} className="rr-flex rr-justify-between rr-p-4-0 rr-border-b">
                   <strong>{sd.severity}</strong>
                   <span>{sd.definition}</span>
                   {sd.sla && <span className="tag">{sd.sla}</span>}
@@ -1079,12 +1079,12 @@ export function renderTestDesignDetails(props: RendererProps) {
       {d.approval?.approvers?.length > 0 && !editMode && (
         <CollapsibleSection title="Approval" sectionId="testdesign-approval">
           {d.approval.approvers.map((a: any, i: number) => (
-            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid var(--vscode-widget-border)' }}>
+            <div key={i} className="rr-flex rr-justify-between rr-p-4-0 rr-border-b">
               <div>
                 <strong>{a.name || `Approver ${i + 1}`}</strong>
                 {a.role && <span className="muted"> ({a.role})</span>}
               </div>
-              <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+              <div className="rr-flex rr-gap-4 rr-items-center">
                 {a.status && <span className={`tag ${a.status === 'approved' ? 'tag-success' : a.status === 'rejected' ? 'tag-danger' : ''}`}>{a.status}</span>}
                 {a.date && <span className="muted">{a.date}</span>}
               </div>
@@ -1138,8 +1138,8 @@ export function renderTestDesignDetails(props: RendererProps) {
                     {typeof dep === 'string' ? dep : (
                       <>
                         <strong>{dep.name || dep.dependency || `Dependency ${i + 1}`}</strong>
-                        {dep.status && <span className="tag" style={{ marginLeft: '4px' }}>{dep.status}</span>}
-                        {dep.description && <div style={{ opacity: 0.7, fontSize: '0.85em' }}>{dep.description}</div>}
+                        {dep.status && <span className="tag rr-ml-4">{dep.status}</span>}
+                        {dep.description && <div className="rr-muted rr-text-sm">{dep.description}</div>}
                       </>
                     )}
                   </li>
@@ -1156,10 +1156,10 @@ export function renderTestDesignDetails(props: RendererProps) {
                     {typeof b === 'string' ? b : (
                       <>
                         <strong>{b.name || b.blocker || `Blocker ${i + 1}`}</strong>
-                        {b.severity && <span className="tag" style={{ marginLeft: '4px' }}>{b.severity}</span>}
-                        {b.status && <span className="tag" style={{ marginLeft: '4px' }}>{b.status}</span>}
-                        {b.description && <div style={{ opacity: 0.7, fontSize: '0.85em' }}>{b.description}</div>}
-                        {b.mitigation && <div style={{ fontSize: '0.85em', color: 'var(--vscode-textLink-foreground)' }}>Mitigation: {b.mitigation}</div>}
+                        {b.severity && <span className="tag rr-ml-4">{b.severity}</span>}
+                        {b.status && <span className="tag rr-ml-4">{b.status}</span>}
+                        {b.description && <div className="rr-muted rr-text-sm">{b.description}</div>}
+                        {b.mitigation && <div className="rr-text-sm rr-fg-link">Mitigation: {b.mitigation}</div>}
                       </>
                     )}
                   </li>
@@ -1173,7 +1173,7 @@ export function renderTestDesignDetails(props: RendererProps) {
       {/* Test Data */}
       {d.testData && !editMode && (
         <CollapsibleSection title="Test Data" sectionId="testdesign-qa-testdata">
-          {d.testData.strategy && <div style={{ marginBottom: '4px' }}><strong>Strategy:</strong> {d.testData.strategy}</div>}
+          {d.testData.strategy && <div className="rr-mb-4"><strong>Strategy:</strong> {d.testData.strategy}</div>}
           {d.testData.sources?.length > 0 && (
             <>
               <strong>Sources</strong>
@@ -1185,7 +1185,7 @@ export function renderTestDesignDetails(props: RendererProps) {
             </>
           )}
           {d.testData.generation && (
-            <div style={{ marginTop: '4px' }}>
+            <div className="rr-mt-4">
               <strong>Generation:</strong>
               {typeof d.testData.generation === 'string' ? (
                 <span> {d.testData.generation}</span>
@@ -1208,16 +1208,16 @@ export function renderTestDesignDetails(props: RendererProps) {
                 {d.qaEffortEstimate.breakdown.map((b: any, i: number) => (
                   <li key={i}>
                     <strong>{b.activity || b.task || `Item ${i + 1}`}</strong>
-                    {b.hours != null && <span className="tag" style={{ marginLeft: '4px' }}>{b.hours}h</span>}
-                    {b.percentage != null && <span className="tag" style={{ marginLeft: '4px' }}>{b.percentage}%</span>}
-                    {b.notes && <div style={{ opacity: 0.7, fontSize: '0.85em' }}>{b.notes}</div>}
+                    {b.hours != null && <span className="tag rr-ml-4">{b.hours}h</span>}
+                    {b.percentage != null && <span className="tag rr-ml-4">{b.percentage}%</span>}
+                    {b.notes && <div className="rr-muted rr-text-sm">{b.notes}</div>}
                   </li>
                 ))}
               </ul>
             </>
           )}
           {d.qaEffortEstimate.timeline && (
-            <div style={{ marginTop: '4px' }}>
+            <div className="rr-mt-4">
               <strong>Timeline:</strong>{' '}
               {typeof d.qaEffortEstimate.timeline === 'string'
                 ? d.qaEffortEstimate.timeline
@@ -1244,7 +1244,7 @@ export function renderTestDesignDetails(props: RendererProps) {
                 </ul>
               )}
               {d.sprintPlanningHandoff.sprintCapacity && <div><strong>Sprint Capacity:</strong> {d.sprintPlanningHandoff.sprintCapacity}</div>}
-              {d.sprintPlanningHandoff.notes && <div style={{ marginTop: '4px' }}><Md text={d.sprintPlanningHandoff.notes} /></div>}
+              {d.sprintPlanningHandoff.notes && <div className="rr-mt-4"><Md text={d.sprintPlanningHandoff.notes} /></div>}
             </>
           )}
         </CollapsibleSection>
@@ -1262,8 +1262,8 @@ export function renderTestDesignDetails(props: RendererProps) {
                     {typeof t === 'string' ? t : (
                       <>
                         <strong>{t.name || t.tool || `Tool ${i + 1}`}</strong>
-                        {t.purpose && <span style={{ opacity: 0.7 }}> — {t.purpose}</span>}
-                        {t.version && <span className="tag" style={{ marginLeft: '4px' }}>{t.version}</span>}
+                        {t.purpose && <span className="rr-muted"> — {t.purpose}</span>}
+                        {t.version && <span className="tag rr-ml-4">{t.version}</span>}
                       </>
                     )}
                   </li>
@@ -1280,8 +1280,8 @@ export function renderTestDesignDetails(props: RendererProps) {
                     {typeof a === 'string' ? a : (
                       <>
                         <strong>{a.resource || a.name || `Requirement ${i + 1}`}</strong>
-                        {a.status && <span className="tag" style={{ marginLeft: '4px' }}>{a.status}</span>}
-                        {a.owner && <span style={{ opacity: 0.7 }}> — Owner: {a.owner}</span>}
+                        {a.status && <span className="tag rr-ml-4">{a.status}</span>}
+                        {a.owner && <span className="rr-muted"> — Owner: {a.owner}</span>}
                       </>
                     )}
                   </li>
@@ -1296,13 +1296,13 @@ export function renderTestDesignDetails(props: RendererProps) {
       {d.environmentRequirements?.length > 0 && !editMode && (
         <CollapsibleSection title="Environment Requirements" count={d.environmentRequirements.length} sectionId="testdesign-qa-envreqs">
           {d.environmentRequirements.map((env: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-textLink-foreground)' }}>
+            <div key={i} className="rr-p-4-8 rr-mb-4 rr-accent-link">
               <strong>{env.name || env.environment || `Environment ${i + 1}`}</strong>
-              {env.type && <span className="tag" style={{ marginLeft: '4px' }}>{env.type}</span>}
-              {env.status && <span className="tag" style={{ marginLeft: '4px' }}>{env.status}</span>}
-              {env.description && <div style={{ opacity: 0.7, fontSize: '0.85em' }}>{env.description}</div>}
-              {env.url && <div style={{ fontSize: '0.85em' }}><code>{env.url}</code></div>}
-              {env.configuration && <div style={{ fontSize: '0.85em' }}><strong>Config:</strong> {typeof env.configuration === 'string' ? env.configuration : JSON.stringify(env.configuration)}</div>}
+              {env.type && <span className="tag rr-ml-4">{env.type}</span>}
+              {env.status && <span className="tag rr-ml-4">{env.status}</span>}
+              {env.description && <div className="rr-muted rr-text-sm">{env.description}</div>}
+              {env.url && <div className="rr-text-sm"><code>{env.url}</code></div>}
+              {env.configuration && <div className="rr-text-sm"><strong>Config:</strong> {typeof env.configuration === 'string' ? env.configuration : JSON.stringify(env.configuration)}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -1312,7 +1312,7 @@ export function renderTestDesignDetails(props: RendererProps) {
       {d.interworkingAndRegression && !editMode && (
         <CollapsibleSection title="Interworking & Regression" sectionId="testdesign-qa-interworking">
           {d.interworkingAndRegression.interworkingScope && (
-            <div style={{ marginBottom: '8px' }}>
+            <div className="rr-mb-8">
               <strong>Interworking Scope</strong>
               {typeof d.interworkingAndRegression.interworkingScope === 'string' ? (
                 <Md text={d.interworkingAndRegression.interworkingScope} />
@@ -1355,12 +1355,12 @@ export function renderTestDesignDetails(props: RendererProps) {
             <>
               <strong>Required Approvers</strong>
               {d.approvals.requiredApprovers.map((a: any, i: number) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid var(--vscode-widget-border)' }}>
+                <div key={i} className="rr-flex rr-justify-between rr-p-4-0 rr-border-b">
                   <div>
                     <strong>{a.name || `Approver ${i + 1}`}</strong>
                     {a.role && <span className="muted"> ({a.role})</span>}
                   </div>
-                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                  <div className="rr-flex rr-gap-4 rr-items-center">
                     {a.status && <span className={`tag ${a.status === 'approved' ? 'tag-success' : a.status === 'rejected' ? 'tag-danger' : ''}`}>{a.status}</span>}
                     {a.date && <span className="muted">{a.date}</span>}
                   </div>
@@ -1368,8 +1368,8 @@ export function renderTestDesignDetails(props: RendererProps) {
               ))}
             </>
           )}
-          {d.approvals.status && <div style={{ marginTop: '4px' }}><strong>Status:</strong> <span className="tag">{d.approvals.status}</span></div>}
-          {d.approvals.comments && <div style={{ marginTop: '4px' }}><Md text={d.approvals.comments} /></div>}
+          {d.approvals.status && <div className="rr-mt-4"><strong>Status:</strong> <span className="tag">{d.approvals.status}</span></div>}
+          {d.approvals.comments && <div className="rr-mt-4"><Md text={d.approvals.comments} /></div>}
         </CollapsibleSection>
       )}
 
@@ -1383,9 +1383,9 @@ export function renderTestDesignDetails(props: RendererProps) {
               {d.appendix.glossary?.length > 0 && (
                 <CollapsibleSection title="Glossary" count={d.appendix.glossary.length} sectionId="testdesign-qa-appendix-glossary">
                   {d.appendix.glossary.map((g: any, i: number) => (
-                    <div key={i} style={{ padding: '2px 8px' }}>
+                    <div key={i} className="rr-p-2-8">
                       <strong>{g.term || `Term ${i + 1}`}</strong>
-                      {g.definition && <span style={{ opacity: 0.7 }}> — {g.definition}</span>}
+                      {g.definition && <span className="rr-muted"> — {g.definition}</span>}
                     </div>
                   ))}
                 </CollapsibleSection>
@@ -1399,7 +1399,7 @@ export function renderTestDesignDetails(props: RendererProps) {
                   </ul>
                 </CollapsibleSection>
               )}
-              {d.appendix.additionalNotes && <div style={{ marginTop: '4px' }}><Md text={d.appendix.additionalNotes} /></div>}
+              {d.appendix.additionalNotes && <div className="rr-mt-4"><Md text={d.appendix.additionalNotes} /></div>}
             </>
           )}
         </CollapsibleSection>
@@ -1412,7 +1412,7 @@ export function renderTestDesignDetails(props: RendererProps) {
       {/* Executive Summary (Architecture variant — object) */}
       {typeof d.executiveSummary === 'object' && d.executiveSummary && !editMode && (
         <CollapsibleSection title="Executive Summary" sectionId="testdesign-arch-execsummary">
-          {d.executiveSummary.assessment && <div style={{ marginBottom: '4px' }}><strong>Assessment:</strong> <Md text={d.executiveSummary.assessment} /></div>}
+          {d.executiveSummary.assessment && <div className="rr-mb-4"><strong>Assessment:</strong> <Md text={d.executiveSummary.assessment} /></div>}
           {d.executiveSummary.keyFindings?.length > 0 && (
             <>
               <strong>Key Findings</strong>
@@ -1439,7 +1439,7 @@ export function renderTestDesignDetails(props: RendererProps) {
       {/* Quick Guide */}
       {d.quickGuide && !editMode && (
         <CollapsibleSection title="Quick Guide" sectionId="testdesign-arch-quickguide">
-          {d.quickGuide.tldr && <div style={{ marginBottom: '8px' }}><strong>TL;DR:</strong> <Md text={d.quickGuide.tldr} /></div>}
+          {d.quickGuide.tldr && <div className="rr-mb-8"><strong>TL;DR:</strong> <Md text={d.quickGuide.tldr} /></div>}
           {d.quickGuide.criticalTestGaps?.length > 0 && (
             <>
               <strong>Critical Test Gaps</strong>
@@ -1451,7 +1451,7 @@ export function renderTestDesignDetails(props: RendererProps) {
             </>
           )}
           {d.quickGuide.suggestedApproach && (
-            <div style={{ marginTop: '4px' }}>
+            <div className="rr-mt-4">
               <strong>Suggested Approach:</strong>
               {typeof d.quickGuide.suggestedApproach === 'string' ? (
                 <Md text={d.quickGuide.suggestedApproach} />
@@ -1471,13 +1471,13 @@ export function renderTestDesignDetails(props: RendererProps) {
       {d.testabilityConcerns?.length > 0 && !editMode && (
         <CollapsibleSection title="Testability Concerns" count={d.testabilityConcerns.length} sectionId="testdesign-arch-testability">
           {d.testabilityConcerns.map((c: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-editorWarning-foreground)' }}>
+            <div key={i} className="rr-p-4-8 rr-mb-4 rr-accent-warning">
               <strong>{c.concern || c.title || `Concern ${i + 1}`}</strong>
-              {c.severity && <span className="tag" style={{ marginLeft: '4px' }}>{c.severity}</span>}
-              {c.component && <span className="tag" style={{ marginLeft: '4px' }}>{c.component}</span>}
-              {c.description && <div style={{ opacity: 0.7, fontSize: '0.85em' }}>{c.description}</div>}
-              {c.impact && <div style={{ fontSize: '0.85em' }}>Impact: {c.impact}</div>}
-              {c.recommendation && <div style={{ fontSize: '0.85em', color: 'var(--vscode-textLink-foreground)' }}>Rec: {c.recommendation}</div>}
+              {c.severity && <span className="tag rr-ml-4">{c.severity}</span>}
+              {c.component && <span className="tag rr-ml-4">{c.component}</span>}
+              {c.description && <div className="rr-muted rr-text-sm">{c.description}</div>}
+              {c.impact && <div className="rr-text-sm">Impact: {c.impact}</div>}
+              {c.recommendation && <div className="rr-text-sm rr-fg-link">Rec: {c.recommendation}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -1487,12 +1487,12 @@ export function renderTestDesignDetails(props: RendererProps) {
       {d.riskMitigationPlans?.length > 0 && !editMode && (
         <CollapsibleSection title="Risk Mitigation Plans" count={d.riskMitigationPlans.length} sectionId="testdesign-arch-riskmitigation">
           {d.riskMitigationPlans.map((p: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-charts-orange)' }}>
+            <div key={i} className="rr-p-4-8 rr-mb-4 rr-accent-orange">
               <strong>{p.risk || p.title || `Risk ${i + 1}`}</strong>
-              {p.severity && <span className="tag" style={{ marginLeft: '4px' }}>{p.severity}</span>}
-              {p.likelihood && <span className="tag" style={{ marginLeft: '4px' }}>Likelihood: {p.likelihood}</span>}
-              {p.mitigation && <div style={{ fontSize: '0.85em' }}><strong>Mitigation:</strong> {p.mitigation}</div>}
-              {p.owner && <div style={{ opacity: 0.7, fontSize: '0.85em' }}>Owner: {p.owner}</div>}
+              {p.severity && <span className="tag rr-ml-4">{p.severity}</span>}
+              {p.likelihood && <span className="tag rr-ml-4">Likelihood: {p.likelihood}</span>}
+              {p.mitigation && <div className="rr-text-sm"><strong>Mitigation:</strong> {p.mitigation}</div>}
+              {p.owner && <div className="rr-muted rr-text-sm">Owner: {p.owner}</div>}
               {p.status && <div><span className="tag">{p.status}</span></div>}
             </div>
           ))}
@@ -1503,12 +1503,12 @@ export function renderTestDesignDetails(props: RendererProps) {
       {d.architecturalRecommendations?.length > 0 && !editMode && (
         <CollapsibleSection title="Architectural Recommendations" count={d.architecturalRecommendations.length} sectionId="testdesign-arch-recs">
           {d.architecturalRecommendations.map((r: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px', borderLeft: '2px solid var(--vscode-textLink-foreground)' }}>
+            <div key={i} className="rr-p-4-8 rr-mb-4 rr-accent-link">
               <strong>{r.recommendation || r.title || `Recommendation ${i + 1}`}</strong>
-              {r.priority && <span className="tag" style={{ marginLeft: '4px' }}>{r.priority}</span>}
-              {r.effort && <span className="tag" style={{ marginLeft: '4px' }}>Effort: {r.effort}</span>}
-              {r.rationale && <div style={{ opacity: 0.7, fontSize: '0.85em' }}>{r.rationale}</div>}
-              {r.impact && <div style={{ fontSize: '0.85em' }}>Impact: {r.impact}</div>}
+              {r.priority && <span className="tag rr-ml-4">{r.priority}</span>}
+              {r.effort && <span className="tag rr-ml-4">Effort: {r.effort}</span>}
+              {r.rationale && <div className="rr-muted rr-text-sm">{r.rationale}</div>}
+              {r.impact && <div className="rr-text-sm">Impact: {r.impact}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -1518,12 +1518,12 @@ export function renderTestDesignDetails(props: RendererProps) {
       {d.nextSteps?.length > 0 && !editMode && (
         <CollapsibleSection title="Next Steps" count={d.nextSteps.length} sectionId="testdesign-arch-nextsteps">
           {d.nextSteps.map((s: any, i: number) => (
-            <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+            <div key={i} className="rr-p-2-8 rr-mb-2">
               <strong>{typeof s === 'string' ? s : s.step || s.action || s.title || `Step ${i + 1}`}</strong>
-              {typeof s === 'object' && s.owner && <span className="tag" style={{ marginLeft: '4px' }}>{s.owner}</span>}
-              {typeof s === 'object' && s.priority && <span className="tag" style={{ marginLeft: '4px' }}>{s.priority}</span>}
-              {typeof s === 'object' && s.dueDate && <span className="muted" style={{ marginLeft: '4px' }}>{s.dueDate}</span>}
-              {typeof s === 'object' && s.description && <div style={{ opacity: 0.7, fontSize: '0.85em' }}>{s.description}</div>}
+              {typeof s === 'object' && s.owner && <span className="tag rr-ml-4">{s.owner}</span>}
+              {typeof s === 'object' && s.priority && <span className="tag rr-ml-4">{s.priority}</span>}
+              {typeof s === 'object' && s.dueDate && <span className="muted rr-ml-4">{s.dueDate}</span>}
+              {typeof s === 'object' && s.description && <div className="rr-muted rr-text-sm">{s.description}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -1534,9 +1534,9 @@ export function renderTestDesignDetails(props: RendererProps) {
         <CollapsibleSection title="Sign Off" sectionId="testdesign-arch-signoff">
           {d.signOff.architect && <div><strong>Architect:</strong> {d.signOff.architect}</div>}
           {d.signOff.status && <div><strong>Status:</strong> <span className="tag">{d.signOff.status}</span></div>}
-          {d.signOff.date && <div style={{ opacity: 0.7 }}>{d.signOff.date}</div>}
+          {d.signOff.date && <div className="rr-muted">{d.signOff.date}</div>}
           {d.signOff.conditions?.length > 0 && (
-            <div style={{ marginTop: '4px' }}>
+            <div className="rr-mt-4">
               <strong>Conditions:</strong>
               <ul>
                 {d.signOff.conditions.map((c: any, i: number) => (
@@ -1582,21 +1582,21 @@ export function renderTestReviewDetails(props: RendererProps) {
       {/* Review Info */}
       <CollapsibleSection title="Review Info" sectionId="testreview-info">
         {editMode ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <div style={{ flex: '1 1 120px' }}>
+          <div className="rr-flex rr-col rr-gap-8">
+            <div className="rr-flex rr-gap-8 rr-wrap">
+              <div className="rr-basis-120">
                 <label className="field-label">Quality Score</label>
                 <input type="number" min={0} max={100} value={reviewInfo.qualityScore ?? ''} onChange={(e) => handleFieldChange('reviewInfo', { ...reviewInfo, qualityScore: e.target.value ? parseFloat(e.target.value) : undefined })} placeholder="0-100" />
               </div>
-              <div style={{ flex: '1 1 150px' }}>
+              <div className="rr-basis-150">
                 <label className="field-label">Review Date</label>
                 <input type="date" value={reviewInfo.reviewDate || ''} onChange={(e) => handleFieldChange('reviewInfo', { ...reviewInfo, reviewDate: e.target.value })} />
               </div>
-              <div style={{ flex: '1 1 150px' }}>
+              <div className="rr-basis-150">
                 <label className="field-label">Reviewer</label>
                 <input type="text" value={reviewInfo.reviewer || ''} onChange={(e) => handleFieldChange('reviewInfo', { ...reviewInfo, reviewer: e.target.value })} placeholder="Reviewer" />
               </div>
-              <div style={{ flex: '1 1 150px' }}>
+              <div className="rr-basis-150">
                 <label className="field-label">Review Type</label>
                 <select value={reviewInfo.reviewType || ''} onChange={(e) => handleFieldChange('reviewInfo', { ...reviewInfo, reviewType: e.target.value })} className="status-select">
                   <option value="">Select type</option>
@@ -1606,7 +1606,7 @@ export function renderTestReviewDetails(props: RendererProps) {
             </div>
             <div>
               <label className="field-label">Scope</label>
-              <textarea value={reviewInfo.scope || ''} onChange={(e) => handleFieldChange('reviewInfo', { ...reviewInfo, scope: e.target.value })} rows={2} style={{ width: '100%' }} />
+              <textarea value={reviewInfo.scope || ''} onChange={(e) => handleFieldChange('reviewInfo', { ...reviewInfo, scope: e.target.value })} rows={2} className="rr-w-full" />
             </div>
           </div>
         ) : (
@@ -1665,16 +1665,16 @@ export function renderTestReviewDetails(props: RendererProps) {
       {(executiveSummary.assessment || executiveSummary.recommendation || editMode) && (
         <CollapsibleSection title="Executive Summary" sectionId="testreview-execsummary">
           {editMode ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <div style={{ flex: 1 }}>
+            <div className="rr-flex rr-col rr-gap-8">
+              <div className="rr-flex rr-gap-8">
+                <div className="rr-flex-1">
                   <label className="field-label">Recommendation</label>
                   <select value={executiveSummary.recommendation || ''} onChange={(e) => handleFieldChange('executiveSummary', { ...executiveSummary, recommendation: e.target.value })} className="status-select">
                     <option value="">Select</option>
                     {verdictOptions.map(v => <option key={v} value={v}>{v}</option>)}
                   </select>
                 </div>
-                <div style={{ flex: 1 }}>
+                <div className="rr-flex-1">
                   <label className="field-label">Risk Level</label>
                   <select value={executiveSummary.riskLevel || ''} onChange={(e) => handleFieldChange('executiveSummary', { ...executiveSummary, riskLevel: e.target.value })} className="status-select">
                     <option value="">Select</option>
@@ -1684,7 +1684,7 @@ export function renderTestReviewDetails(props: RendererProps) {
               </div>
               <div>
                 <label className="field-label">Assessment</label>
-                <textarea value={executiveSummary.assessment || ''} onChange={(e) => handleFieldChange('executiveSummary', { ...executiveSummary, assessment: e.target.value })} rows={3} style={{ width: '100%' }} />
+                <textarea value={executiveSummary.assessment || ''} onChange={(e) => handleFieldChange('executiveSummary', { ...executiveSummary, assessment: e.target.value })} rows={3} className="rr-w-full" />
               </div>
             </div>
           ) : (
@@ -1725,9 +1725,9 @@ export function renderTestReviewDetails(props: RendererProps) {
       {Object.keys(qualityScoreBreakdown).length > 0 && (
         <CollapsibleSection title="Quality Score Breakdown" sectionId="testreview-scorebreakdown">
           {Object.entries(qualityScoreBreakdown).map(([key, val]: [string, any]) => (
-            <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid var(--vscode-widget-border)' }}>
+            <div key={key} className="rr-flex rr-justify-between rr-p-4-0 rr-border-b">
               <span>{key.replace(/([A-Z])/g, ' $1').replace(/^./, (s: string) => s.toUpperCase())}</span>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div className="rr-flex rr-gap-8">
                 {val?.score != null && <span className="tag">{val.score}/10</span>}
                 {val?.weight != null && <span className="muted">w:{val.weight}</span>}
                 {val?.contribution != null && <span className="tag">{val.contribution}</span>}
@@ -1743,16 +1743,16 @@ export function renderTestReviewDetails(props: RendererProps) {
           {criteria.map((c: any, i: number) => (
             <CollapsibleSection key={i} title={`${c.criterion || `Criterion ${i + 1}`} — ${c.score ?? '?'}/10`} sectionId={`testreview-crit-${i}`}>
               {editMode ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <div style={{ flex: 2 }}>
+                <div className="rr-flex rr-col rr-gap-6">
+                  <div className="rr-flex rr-gap-8">
+                    <div className="rr-flex-2">
                       <label className="field-label">Criterion</label>
                       <input type="text" value={c.criterion || ''} onChange={(e) => {
                         const updated = [...criteria]; updated[i] = { ...c, criterion: e.target.value };
                         handleFieldChange('qualityAssessment', { ...qualityAssessment, criteria: updated });
                       }} />
                     </div>
-                    <div style={{ flex: 1 }}>
+                    <div className="rr-flex-1">
                       <label className="field-label">Score (0-10)</label>
                       <input type="number" min={0} max={10} value={c.score ?? ''} onChange={(e) => {
                         const updated = [...criteria]; updated[i] = { ...c, score: e.target.value ? parseFloat(e.target.value) : undefined };
@@ -1765,26 +1765,26 @@ export function renderTestReviewDetails(props: RendererProps) {
                     <textarea value={c.findings || ''} onChange={(e) => {
                       const updated = [...criteria]; updated[i] = { ...c, findings: e.target.value };
                       handleFieldChange('qualityAssessment', { ...qualityAssessment, criteria: updated });
-                    }} rows={2} style={{ width: '100%' }} />
+                    }} rows={2} className="rr-w-full" />
                   </div>
                 </div>
               ) : (
                 <>
                   {c.findings && <Md text={c.findings} />}
                   {c.evidence?.length > 0 && (
-                    <div style={{ marginTop: '8px' }}>
+                    <div className="rr-mt-8">
                       <h4>Evidence</h4>
                       {c.evidence.map((ev: any, ei: number) => (
-                        <div key={ei} style={{ padding: '4px 0' }}>
+                        <div key={ei} className="rr-p-4-0">
                           <span className={`tag ${ev.type === 'positive' ? 'tag-success' : ev.type === 'negative' ? 'tag-danger' : ''}`}>{ev.type}</span>
-                          <span style={{ marginLeft: '8px' }}>{ev.description}</span>
+                          <span className="rr-ml-8">{ev.description}</span>
                           {ev.location && <span className="muted"> ({ev.location})</span>}
                         </div>
                       ))}
                     </div>
                   )}
                   {c.recommendations?.length > 0 && (
-                    <div style={{ marginTop: '8px' }}>
+                    <div className="rr-mt-8">
                       <h4>Recommendations</h4>
                       <ul>{c.recommendations.map((r: string, ri: number) => <li key={ri}>{r}</li>)}</ul>
                     </div>
@@ -1800,7 +1800,7 @@ export function renderTestReviewDetails(props: RendererProps) {
       {Object.keys(scores).length > 0 && criteria.length === 0 && (
         <CollapsibleSection title="Quality Scores" sectionId="testreview-scores">
           {Object.entries(scores).map(([key, val]: [string, any]) => (
-            <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
+            <div key={key} className="rr-flex rr-justify-between rr-p-4-0">
               <span>{key.replace(/([A-Z])/g, ' $1').replace(/^./, (s: string) => s.toUpperCase())}</span>
               <span className="tag">{typeof val === 'object' ? JSON.stringify(val) : String(val)}</span>
             </div>
@@ -1812,14 +1812,14 @@ export function renderTestReviewDetails(props: RendererProps) {
       {(criticalIssues.length > 0 || editMode) && (
         <CollapsibleSection title="Critical Issues" count={criticalIssues.length} sectionId="testreview-critical">
           {criticalIssues.map((issue: any, i: number) => (
-            <div key={i} style={{ padding: '8px', borderRadius: '4px', background: 'var(--vscode-inputValidation-errorBackground)', marginBottom: '6px' }}>
+            <div key={i} className="rr-p-8 rr-rounded rr-bg-error rr-mb-6">
               {editMode ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                <div className="rr-flex rr-col rr-gap-4">
+                  <div className="rr-flex rr-gap-8">
                     <input type="text" value={issue.issue || ''} onChange={(e) => {
                       const updated = [...criticalIssues]; updated[i] = { ...issue, issue: e.target.value };
                       handleFieldChange('criticalIssues', updated);
-                    }} placeholder="Issue description" style={{ flex: 1 }} />
+                    }} placeholder="Issue description" className="rr-flex-1" />
                     <select value={issue.priority || ''} onChange={(e) => {
                       const updated = [...criticalIssues]; updated[i] = { ...issue, priority: e.target.value };
                       handleFieldChange('criticalIssues', updated);
@@ -1832,24 +1832,24 @@ export function renderTestReviewDetails(props: RendererProps) {
                   <input type="text" value={issue.location || ''} onChange={(e) => {
                     const updated = [...criticalIssues]; updated[i] = { ...issue, location: e.target.value };
                     handleFieldChange('criticalIssues', updated);
-                  }} placeholder="Location" style={{ width: '100%' }} />
+                  }} placeholder="Location" className="rr-w-full" />
                   <textarea value={issue.recommendation || ''} onChange={(e) => {
                     const updated = [...criticalIssues]; updated[i] = { ...issue, recommendation: e.target.value };
                     handleFieldChange('criticalIssues', updated);
-                  }} placeholder="Recommendation" rows={2} style={{ width: '100%' }} />
+                  }} placeholder="Recommendation" rows={2} className="rr-w-full" />
                 </div>
               ) : (
                 <>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="rr-flex rr-justify-between rr-items-center">
                     <strong>{issue.id || `Issue ${i + 1}`}: {issue.issue}</strong>
-                    <div style={{ display: 'flex', gap: '4px' }}>
+                    <div className="rr-flex rr-gap-4">
                       {issue.priority && <span className="tag">{issue.priority}</span>}
                       {issue.effort && <span className="tag">{issue.effort}</span>}
                     </div>
                   </div>
                   {issue.location && <div className="muted">Location: {issue.location}</div>}
-                  {issue.impact && <div style={{ marginTop: '4px' }}><strong>Impact:</strong> {issue.impact}</div>}
-                  {issue.recommendation && <div style={{ marginTop: '4px' }}><strong>Fix:</strong> {issue.recommendation}</div>}
+                  {issue.impact && <div className="rr-mt-4"><strong>Impact:</strong> {issue.impact}</div>}
+                  {issue.recommendation && <div className="rr-mt-4"><strong>Fix:</strong> {issue.recommendation}</div>}
                 </>
               )}
             </div>
@@ -1868,14 +1868,14 @@ export function renderTestReviewDetails(props: RendererProps) {
           ) : (
             <>
               {recommendations.map((rec: any, i: number) => (
-                <div key={i} style={{ padding: '6px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '6px' }}>
+                <div key={i} className="rr-p-6 rr-rounded rr-bg-subtle rr-mb-6">
                   {editMode ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <div style={{ display: 'flex', gap: '8px' }}>
+                    <div className="rr-flex rr-col rr-gap-4">
+                      <div className="rr-flex rr-gap-8">
                         <input type="text" value={rec.recommendation || ''} onChange={(e) => {
                           const updated = [...recommendations]; updated[i] = { ...rec, recommendation: e.target.value };
                           handleFieldChange('recommendations', updated);
-                        }} placeholder="Recommendation" style={{ flex: 1 }} />
+                        }} placeholder="Recommendation" className="rr-flex-1" />
                         <select value={rec.priority || ''} onChange={(e) => {
                           const updated = [...recommendations]; updated[i] = { ...rec, priority: e.target.value };
                           handleFieldChange('recommendations', updated);
@@ -1895,14 +1895,14 @@ export function renderTestReviewDetails(props: RendererProps) {
                     </div>
                   ) : (
                     <>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div className="rr-flex rr-justify-between rr-items-center">
                         <strong>{rec.recommendation || rec}</strong>
-                        <div style={{ display: 'flex', gap: '4px' }}>
+                        <div className="rr-flex rr-gap-4">
                           {rec.priority && <span className="tag">{rec.priority}</span>}
                           {rec.category && <span className="tag">{rec.category}</span>}
                         </div>
                       </div>
-                      {rec.impact && <div className="muted" style={{ marginTop: '4px' }}>Impact: {rec.impact}</div>}
+                      {rec.impact && <div className="muted rr-mt-4">Impact: {rec.impact}</div>}
                     </>
                   )}
                 </div>
@@ -1919,11 +1919,11 @@ export function renderTestReviewDetails(props: RendererProps) {
       {findings.length > 0 && criticalIssues.length === 0 && (
         <CollapsibleSection title="Findings" count={findings.length} sectionId="testreview-findings">
           {findings.map((f: any, i: number) => (
-            <div key={i} style={{ padding: '6px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '4px' }}>
+            <div key={i} className="rr-p-6 rr-rounded rr-bg-subtle rr-mb-4">
               <strong>{f.id || f.title || `Finding ${i + 1}`}</strong>
-              {f.severity && <span className="tag" style={{ marginLeft: '8px' }}>{f.severity}</span>}
-              {f.description && <div style={{ marginTop: '4px' }}>{f.description}</div>}
-              {f.recommendation && <div className="muted" style={{ marginTop: '4px' }}>Recommendation: {f.recommendation}</div>}
+              {f.severity && <span className="tag rr-ml-8">{f.severity}</span>}
+              {f.description && <div className="rr-mt-4">{f.description}</div>}
+              {f.recommendation && <div className="muted rr-mt-4">Recommendation: {f.recommendation}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -1944,9 +1944,9 @@ export function renderTestReviewDetails(props: RendererProps) {
             <>
               <h4>Coverage by Area</h4>
               {coverageAnalysis.coverageByArea.map((a: any, i: number) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid var(--vscode-widget-border)' }}>
+                <div key={i} className="rr-flex rr-justify-between rr-p-4-0 rr-border-b">
                   <span><strong>{a.area || `Area ${i + 1}`}</strong></span>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <div className="rr-flex rr-gap-8 rr-items-center">
                     {a.coverage != null && <span className="tag">{a.coverage}%</span>}
                     {a.gaps?.length > 0 && <span className="muted">Gaps: {a.gaps.join(', ')}</span>}
                   </div>
@@ -1958,7 +1958,7 @@ export function renderTestReviewDetails(props: RendererProps) {
             <>
               <h4>Uncovered Areas</h4>
               {coverageAnalysis.uncoveredAreas.map((a: any, i: number) => (
-                <div key={i} style={{ padding: '4px 0' }}>
+                <div key={i} className="rr-p-4-0">
                   <strong>{a.area}</strong>
                   {a.risk && <span className="muted"> — Risk: {a.risk}</span>}
                   {a.recommendation && <div className="muted">Fix: {a.recommendation}</div>}
@@ -1973,16 +1973,16 @@ export function renderTestReviewDetails(props: RendererProps) {
       {(decision.verdict || editMode) && (
         <CollapsibleSection title="Decision" sectionId="testreview-decision">
           {editMode ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <div style={{ flex: 1 }}>
+            <div className="rr-flex rr-col rr-gap-8">
+              <div className="rr-flex rr-gap-8">
+                <div className="rr-flex-1">
                   <label className="field-label">Verdict</label>
                   <select value={decision.verdict || ''} onChange={(e) => handleFieldChange('decision', { ...decision, verdict: e.target.value })} className="status-select">
                     <option value="">Select verdict</option>
                     {verdictOptions.map(v => <option key={v} value={v}>{v}</option>)}
                   </select>
                 </div>
-                <div style={{ flex: 1 }}>
+                <div className="rr-flex-1">
                   <label className="field-label">Follow-up Required</label>
                   <select value={decision.followUpRequired ? 'yes' : 'no'} onChange={(e) => handleFieldChange('decision', { ...decision, followUpRequired: e.target.value === 'yes' })} className="status-select">
                     <option value="no">No</option>
@@ -1992,7 +1992,7 @@ export function renderTestReviewDetails(props: RendererProps) {
               </div>
               <div>
                 <label className="field-label">Comments</label>
-                <textarea value={decision.comments || ''} onChange={(e) => handleFieldChange('decision', { ...decision, comments: e.target.value })} rows={3} style={{ width: '100%' }} />
+                <textarea value={decision.comments || ''} onChange={(e) => handleFieldChange('decision', { ...decision, comments: e.target.value })} rows={3} className="rr-w-full" />
               </div>
             </div>
           ) : (
@@ -2019,7 +2019,7 @@ export function renderTestReviewDetails(props: RendererProps) {
               {decision.blockers?.length > 0 && (
                 <>
                   <h4>Blockers</h4>
-                  <ul>{decision.blockers.map((b: string, i: number) => <li key={i} style={{ color: 'var(--vscode-testing-iconFailed, #f44336)' }}>{b}</li>)}</ul>
+                  <ul>{decision.blockers.map((b: string, i: number) => <li key={i} className="rr-fg-failed">{b}</li>)}</ul>
                 </>
               )}
             </>
@@ -2031,8 +2031,8 @@ export function renderTestReviewDetails(props: RendererProps) {
       {nextSteps.length > 0 && (
         <CollapsibleSection title="Next Steps" count={nextSteps.length} sectionId="testreview-nextsteps">
           {nextSteps.map((ns: any, i: number) => (
-            <div key={i} style={{ padding: '4px 0', borderBottom: '1px solid var(--vscode-widget-border)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <div key={i} className="rr-p-4-0 rr-border-b">
+              <div className="rr-flex rr-justify-between">
                 <strong>{ns.priority ? `#${ns.priority}` : ''} {ns.step}</strong>
                 {ns.timeline && <span className="tag">{ns.timeline}</span>}
               </div>
@@ -2071,11 +2071,11 @@ export function renderTestReviewDetails(props: RendererProps) {
                     <>
                       <h4>Examples</h4>
                       {sub.examples.map((ex: any, ei: number) => (
-                        <div key={ei} style={{ padding: '4px 0' }}>
+                        <div key={ei} className="rr-p-4-0">
                           {ex.type && <span className={`tag ${ex.type === 'good' ? 'tag-success' : 'tag-danger'}`}>{ex.type}</span>}
-                          {ex.location && <span className="muted" style={{ marginLeft: '4px' }}>{ex.location}</span>}
-                          {ex.comment && <span style={{ marginLeft: '8px' }}>{ex.comment}</span>}
-                          {ex.code && <pre style={{ margin: '4px 0', fontSize: '0.85em', overflow: 'auto' }}>{ex.code}</pre>}
+                          {ex.location && <span className="muted rr-ml-4">{ex.location}</span>}
+                          {ex.comment && <span className="rr-ml-8">{ex.comment}</span>}
+                          {ex.code && <pre className="rr-m-4-0 rr-text-sm rr-overflow-auto">{ex.code}</pre>}
                         </div>
                       ))}
                     </>
@@ -2084,9 +2084,9 @@ export function renderTestReviewDetails(props: RendererProps) {
                     <>
                       <h4>Instances</h4>
                       {sub.instances.map((inst: any, ii: number) => (
-                        <div key={ii} style={{ padding: '4px 0' }}>
+                        <div key={ii} className="rr-p-4-0">
                           {inst.location && <strong>{inst.location}</strong>}
-                          {inst.duration && <span className="tag" style={{ marginLeft: '4px' }}>{inst.duration}</span>}
+                          {inst.duration && <span className="tag rr-ml-4">{inst.duration}</span>}
                           {inst.recommendation && <div className="muted">{inst.recommendation}</div>}
                         </div>
                       ))}
@@ -2096,7 +2096,7 @@ export function renderTestReviewDetails(props: RendererProps) {
                     <>
                       <h4>Flaky Tests</h4>
                       {sub.flakyTests.map((ft: any, fi: number) => (
-                        <div key={fi} style={{ padding: '4px 0' }}>
+                        <div key={fi} className="rr-p-4-0">
                           <strong>{ft.test || ft.location || `Test ${fi + 1}`}</strong>
                           {ft.reason && <div className="muted">Reason: {ft.reason}</div>}
                           {ft.recommendation && <div className="muted">Fix: {ft.recommendation}</div>}
@@ -2108,7 +2108,7 @@ export function renderTestReviewDetails(props: RendererProps) {
                     <>
                       <h4>Shared State Issues</h4>
                       {sub.sharedStateIssues.map((si: any, sii: number) => (
-                        <div key={sii} style={{ padding: '4px 0' }}>
+                        <div key={sii} className="rr-p-4-0">
                           <strong>{si.issue}</strong>
                           {si.location && <span className="muted"> ({si.location})</span>}
                           {si.impact && <div className="muted">Impact: {si.impact}</div>}
@@ -2127,7 +2127,7 @@ export function renderTestReviewDetails(props: RendererProps) {
                     <>
                       <h4>Anti-Patterns</h4>
                       {sub.antiPatterns.map((ap: any, ai: number) => (
-                        <div key={ai} style={{ padding: '4px 0' }}>
+                        <div key={ai} className="rr-p-4-0">
                           <strong>{typeof ap === 'string' ? ap : ap.pattern || JSON.stringify(ap)}</strong>
                           {ap.location && <span className="muted"> ({ap.location})</span>}
                           {ap.recommendation && <div className="muted">{ap.recommendation}</div>}
@@ -2163,7 +2163,7 @@ export function renderTestReviewDetails(props: RendererProps) {
       {d.bestPracticesFound?.length > 0 && !editMode && (
         <CollapsibleSection title="Best Practices Found" count={d.bestPracticesFound.length} sectionId="testreview-bestpractices">
           {d.bestPracticesFound.map((bp: any, i: number) => (
-            <div key={i} style={{ padding: '6px 0', borderBottom: '1px solid var(--vscode-widget-border)' }}>
+            <div key={i} className="rr-p-6-0 rr-border-b">
               <strong>{typeof bp === 'string' ? bp : bp.practice || JSON.stringify(bp)}</strong>
               {bp.location && <span className="muted"> ({bp.location})</span>}
               {bp.recommendation && <div className="muted">{bp.recommendation}</div>}
@@ -2185,10 +2185,10 @@ export function renderTestReviewDetails(props: RendererProps) {
                 <>
                   <h4>Issues</h4>
                   {tf.issues.map((issue: any, ii: number) => (
-                    <div key={ii} style={{ padding: '2px 0' }}>
+                    <div key={ii} className="rr-p-2-0">
                       {issue.severity && <span className={`tag ${issue.severity === 'critical' ? 'tag-danger' : issue.severity === 'major' ? 'tag-warning' : ''}`}>{issue.severity}</span>}
-                      {issue.line != null && <span className="muted" style={{ marginLeft: '4px' }}>L{issue.line}</span>}
-                      <span style={{ marginLeft: '8px' }}>{issue.issue}</span>
+                      {issue.line != null && <span className="muted rr-ml-4">L{issue.line}</span>}
+                      <span className="rr-ml-8">{issue.issue}</span>
                     </div>
                   ))}
                 </>
@@ -2231,10 +2231,10 @@ export function renderTestReviewDetails(props: RendererProps) {
       {d.knowledgeBaseReferences?.length > 0 && !editMode && (
         <CollapsibleSection title="Knowledge Base References" count={d.knowledgeBaseReferences.length} sectionId="testreview-kbrefs">
           {d.knowledgeBaseReferences.map((kb: any, i: number) => (
-            <div key={i} style={{ padding: '4px 0', borderBottom: '1px solid var(--vscode-widget-border)' }}>
+            <div key={i} className="rr-p-4-0 rr-border-b">
               <strong>{typeof kb === 'string' ? kb : kb.reference || JSON.stringify(kb)}</strong>
               {kb.relevance && <div className="muted">{kb.relevance}</div>}
-              {kb.findingsRelated?.length > 0 && <div className="tags-list" style={{ marginTop: '2px' }}>{kb.findingsRelated.map((f: string, fi: number) => <span key={fi} className="tag">{f}</span>)}</div>}
+              {kb.findingsRelated?.length > 0 && <div className="tags-list rr-mt-2">{kb.findingsRelated.map((f: string, fi: number) => <span key={fi} className="tag">{f}</span>)}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -2253,8 +2253,8 @@ export function renderTestReviewDetails(props: RendererProps) {
                 {app.codeExamples.map((ce: any, i: number) => (
                   <CollapsibleSection key={i} title={ce.title || `Example ${i + 1}`} sectionId={`testreview-codeex-${i}`}>
                     {ce.context && <p className="muted">{ce.context}</p>}
-                    {ce.before && <><h4>Before</h4><pre style={{ fontSize: '0.85em', overflow: 'auto' }}>{ce.before}</pre></>}
-                    {ce.after && <><h4>After</h4><pre style={{ fontSize: '0.85em', overflow: 'auto' }}>{ce.after}</pre></>}
+                    {ce.before && <><h4>Before</h4><pre className="rr-text-sm rr-overflow-auto">{ce.before}</pre></>}
+                    {ce.after && <><h4>After</h4><pre className="rr-text-sm rr-overflow-auto">{ce.after}</pre></>}
                   </CollapsibleSection>
                 ))}
               </>
@@ -2263,9 +2263,9 @@ export function renderTestReviewDetails(props: RendererProps) {
               <>
                 <h4>Tool Output</h4>
                 {app.toolOutput.map((to: any, i: number) => (
-                  <div key={i} style={{ padding: '4px 0' }}>
+                  <div key={i} className="rr-p-4-0">
                     {to.tool && <strong>{to.tool}</strong>}
-                    {to.output && <pre style={{ fontSize: '0.85em', overflow: 'auto', margin: '4px 0' }}>{to.output}</pre>}
+                    {to.output && <pre className="rr-text-sm rr-overflow-auto rr-m-4-0">{to.output}</pre>}
                   </div>
                 ))}
               </>
@@ -2311,23 +2311,23 @@ export function renderTestFrameworkDetails(props: RendererProps) {
       {/* Framework Info */}
       <CollapsibleSection title="Framework" sectionId="testfwk-info">
         {editMode ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <div style={{ flex: 1 }}>
+          <div className="rr-flex rr-col rr-gap-8">
+            <div className="rr-flex rr-gap-8">
+              <div className="rr-flex-1">
                 <label className="field-label">Name</label>
                 <select value={framework.name || ''} onChange={(e) => handleFieldChange('framework', { ...framework, name: e.target.value })} className="status-select">
                   <option value="">Select</option>
                   {frameworkNames.map(n => <option key={n} value={n}>{n}</option>)}
                 </select>
               </div>
-              <div style={{ flex: 1 }}>
+              <div className="rr-flex-1">
                 <label className="field-label">Version</label>
                 <input type="text" value={framework.version || ''} onChange={(e) => handleFieldChange('framework', { ...framework, version: e.target.value })} placeholder="Version" />
               </div>
             </div>
             <div>
               <label className="field-label">Selection Rationale</label>
-              <textarea value={framework.selectionRationale || ''} onChange={(e) => handleFieldChange('framework', { ...framework, selectionRationale: e.target.value })} rows={2} style={{ width: '100%' }} />
+              <textarea value={framework.selectionRationale || ''} onChange={(e) => handleFieldChange('framework', { ...framework, selectionRationale: e.target.value })} rows={2} className="rr-w-full" />
             </div>
           </div>
         ) : (
@@ -2343,7 +2343,7 @@ export function renderTestFrameworkDetails(props: RendererProps) {
               <>
                 <h4>Alternatives Considered</h4>
                 {framework.alternatives.map((alt: any, i: number) => (
-                  <div key={i} style={{ padding: '2px 0' }}>
+                  <div key={i} className="rr-p-2-0">
                     <strong>{alt.name}</strong>
                     {alt.reason && <span className="muted"> — {alt.reason}</span>}
                   </div>
@@ -2365,30 +2365,30 @@ export function renderTestFrameworkDetails(props: RendererProps) {
       {(Object.keys(configuration).length > 0 || editMode) && (
         <CollapsibleSection title="Configuration" sectionId="testfwk-config">
           {editMode ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <div style={{ flex: 1 }}>
+            <div className="rr-flex rr-col rr-gap-8">
+              <div className="rr-flex rr-gap-8">
+                <div className="rr-flex-1">
                   <label className="field-label">Config File</label>
                   <input type="text" value={configuration.configFile || ''} onChange={(e) => handleFieldChange('configuration', { ...configuration, configFile: e.target.value })} placeholder="e.g. playwright.config.ts" />
                 </div>
-                <div style={{ flex: 1 }}>
+                <div className="rr-flex-1">
                   <label className="field-label">Base URL</label>
                   <input type="text" value={configuration.baseUrl || ''} onChange={(e) => handleFieldChange('configuration', { ...configuration, baseUrl: e.target.value })} placeholder="Base URL" />
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <div className="rr-flex rr-gap-8">
+                <label className="rr-flex rr-items-center rr-gap-4">
                   <input type="checkbox" checked={!!configuration.typescript} onChange={(e) => handleFieldChange('configuration', { ...configuration, typescript: e.target.checked })} /> TypeScript
                 </label>
               </div>
               <div>
                 <label className="field-label">Reporters</label>
                 {(configuration.reporters || []).map((r: string, i: number) => (
-                  <div key={i} style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
+                  <div key={i} className="rr-flex rr-gap-4 rr-mb-4">
                     <input type="text" value={r} onChange={(e) => {
                       const arr = [...(configuration.reporters || [])]; arr[i] = e.target.value;
                       handleFieldChange('configuration', { ...configuration, reporters: arr });
-                    }} style={{ flex: 1 }} />
+                    }} className="rr-flex-1" />
                     <button className="icon-button" onClick={() => handleFieldChange('configuration', { ...configuration, reporters: (configuration.reporters || []).filter((_: any, idx: number) => idx !== i) })}>{'\u2715'}</button>
                   </div>
                 ))}
@@ -2398,9 +2398,9 @@ export function renderTestFrameworkDetails(props: RendererProps) {
           ) : (
             <>
               {Object.entries(configuration).map(([key, val]: [string, any]) => (
-                <div key={key} style={{ padding: '4px 0' }}>
+                <div key={key} className="rr-p-4-0">
                   <strong>{key}:</strong>{' '}
-                  {typeof val === 'boolean' ? (val ? 'Yes' : 'No') : typeof val === 'string' ? val : <code style={{ fontSize: '0.85em' }}>{JSON.stringify(val, null, 2)}</code>}
+                  {typeof val === 'boolean' ? (val ? 'Yes' : 'No') : typeof val === 'string' ? val : <code className="rr-text-sm">{JSON.stringify(val, null, 2)}</code>}
                 </div>
               ))}
             </>
@@ -2413,10 +2413,10 @@ export function renderTestFrameworkDetails(props: RendererProps) {
         <CollapsibleSection title="Directory Structure" sectionId="testfwk-dirs">
           {directoryStructure.rootDir && <p><strong>Root:</strong> <code>{directoryStructure.rootDir}</code></p>}
           {directoryStructure.directories.map((dir: any, i: number) => (
-            <div key={i} style={{ padding: '4px 0' }}>
+            <div key={i} className="rr-p-4-0">
               <code>{dir.path}</code>
               {dir.purpose && <span className="muted"> — {dir.purpose}</span>}
-              {dir.contents?.length > 0 && <div className="tags-list" style={{ marginTop: '2px' }}>{dir.contents.map((c: string, ci: number) => <span key={ci} className="tag">{c}</span>)}</div>}
+              {dir.contents?.length > 0 && <div className="tags-list rr-mt-2">{dir.contents.map((c: string, ci: number) => <span key={ci} className="tag">{c}</span>)}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -2426,14 +2426,14 @@ export function renderTestFrameworkDetails(props: RendererProps) {
       {fixtures.length > 0 && (
         <CollapsibleSection title="Fixtures" count={fixtures.length} sectionId="testfwk-fixtures">
           {fixtures.map((f: any, i: number) => (
-            <div key={i} style={{ padding: '6px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '4px' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div key={i} className="rr-p-6 rr-rounded rr-bg-subtle rr-mb-4">
+              <div className="rr-flex rr-gap-8 rr-items-center">
                 <strong>{f.name}</strong>
                 {f.scope && <span className="tag">{f.scope}</span>}
               </div>
               {f.purpose && <div className="muted">{f.purpose}</div>}
               {f.filePath && <div><code>{f.filePath}</code></div>}
-              {f.dependencies?.length > 0 && <div className="tags-list" style={{ marginTop: '2px' }}>{f.dependencies.map((dep: string, di: number) => <span key={di} className="tag">{dep}</span>)}</div>}
+              {f.dependencies?.length > 0 && <div className="tags-list rr-mt-2">{f.dependencies.map((dep: string, di: number) => <span key={di} className="tag">{dep}</span>)}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -2443,14 +2443,14 @@ export function renderTestFrameworkDetails(props: RendererProps) {
       {helpers.length > 0 && (
         <CollapsibleSection title="Helpers" count={helpers.length} sectionId="testfwk-helpers">
           {helpers.map((h: any, i: number) => (
-            <div key={i} style={{ padding: '6px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '4px' }}>
+            <div key={i} className="rr-p-6 rr-rounded rr-bg-subtle rr-mb-4">
               <strong>{h.name}</strong>
               {h.filePath && <div><code>{h.filePath}</code></div>}
               {h.purpose && <div className="muted">{h.purpose}</div>}
               {h.functions?.length > 0 && (
-                <div style={{ marginTop: '4px' }}>
+                <div className="rr-mt-4">
                   {h.functions.map((fn: any, fi: number) => (
-                    <div key={fi} style={{ padding: '2px 0' }}>
+                    <div key={fi} className="rr-p-2-0">
                       <code>{fn.signature || fn.name}</code>
                       {fn.description && <span className="muted"> — {fn.description}</span>}
                     </div>
@@ -2466,9 +2466,9 @@ export function renderTestFrameworkDetails(props: RendererProps) {
       {pageObjects.length > 0 && (
         <CollapsibleSection title="Page Objects" count={pageObjects.length} sectionId="testfwk-pages">
           {pageObjects.map((po: any, i: number) => (
-            <div key={i} style={{ padding: '6px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '4px' }}>
+            <div key={i} className="rr-p-6 rr-rounded rr-bg-subtle rr-mb-4">
               <strong>{po.name}</strong>
-              {po.page && <span className="tag" style={{ marginLeft: '8px' }}>{po.page}</span>}
+              {po.page && <span className="tag rr-ml-8">{po.page}</span>}
               {po.filePath && <div><code>{po.filePath}</code></div>}
               {po.elements?.length > 0 && <div><strong>Elements:</strong> {po.elements.join(', ')}</div>}
               {po.actions?.length > 0 && <div><strong>Actions:</strong> {po.actions.join(', ')}</div>}
@@ -2490,7 +2490,7 @@ export function renderTestFrameworkDetails(props: RendererProps) {
             <>
               <h4>Mock Files</h4>
               {mocking.mockFiles.map((mf: any, i: number) => (
-                <div key={i} style={{ padding: '2px 0' }}>
+                <div key={i} className="rr-p-2-0">
                   <code>{mf.path}</code>
                   {mf.purpose && <span className="muted"> — {mf.purpose}</span>}
                 </div>
@@ -2504,7 +2504,7 @@ export function renderTestFrameworkDetails(props: RendererProps) {
       {scripts.length > 0 && (
         <CollapsibleSection title="Scripts" count={scripts.length} sectionId="testfwk-scripts">
           {scripts.map((s: any, i: number) => (
-            <div key={i} style={{ padding: '4px 0' }}>
+            <div key={i} className="rr-p-4-0">
               <code>{s.name}: {s.command}</code>
               {s.purpose && <div className="muted">{s.purpose}</div>}
             </div>
@@ -2525,9 +2525,9 @@ export function renderTestFrameworkDetails(props: RendererProps) {
             <>
               <h4>Production</h4>
               {deps.production.map((dep: any, i: number) => (
-                <div key={i} style={{ padding: '2px 0' }}>
+                <div key={i} className="rr-p-2-0">
                   <span className="tag">{dep.name}{dep.version ? `@${dep.version}` : ''}</span>
-                  {dep.purpose && <span className="muted" style={{ marginLeft: '8px' }}>{dep.purpose}</span>}
+                  {dep.purpose && <span className="muted rr-ml-8">{dep.purpose}</span>}
                 </div>
               ))}
             </>
@@ -2536,9 +2536,9 @@ export function renderTestFrameworkDetails(props: RendererProps) {
             <>
               <h4>Development</h4>
               {deps.development.map((dep: any, i: number) => (
-                <div key={i} style={{ padding: '2px 0' }}>
+                <div key={i} className="rr-p-2-0">
                   <span className="tag">{dep.name}{dep.version ? `@${dep.version}` : ''}</span>
-                  {dep.purpose && <span className="muted" style={{ marginLeft: '8px' }}>{dep.purpose}</span>}
+                  {dep.purpose && <span className="muted rr-ml-8">{dep.purpose}</span>}
                 </div>
               ))}
             </>
@@ -2565,7 +2565,7 @@ export function renderTestFrameworkDetails(props: RendererProps) {
             <>
               <h4>Run Commands</h4>
               {setupInstructions.runCommands.map((cmd: any, i: number) => (
-                <div key={i} style={{ padding: '4px 0' }}>
+                <div key={i} className="rr-p-4-0">
                   <code>{cmd.command}</code>
                   {cmd.description && <span className="muted"> — {cmd.description}</span>}
                 </div>
@@ -2579,7 +2579,7 @@ export function renderTestFrameworkDetails(props: RendererProps) {
       {bestPractices.length > 0 && (
         <CollapsibleSection title="Best Practices" count={bestPractices.length} sectionId="testfwk-bestpractices">
           {bestPractices.map((bp: any, i: number) => (
-            <div key={i} style={{ padding: '4px 0' }}>
+            <div key={i} className="rr-p-4-0">
               <strong>{bp.practice}</strong>
               {bp.implementation && <div className="muted">{bp.implementation}</div>}
               {bp.reference && <div className="muted"><em>Ref: {bp.reference}</em></div>}
@@ -2662,17 +2662,17 @@ export function renderTestSummaryDetails(props: RendererProps) {
       {isBmmReport && testsByType.length > 0 && !editMode && (
         <CollapsibleSection title="Tests by Type" count={testsByType.length} sectionId="testsummary-bytype">
           {testsByType.map((t: any, i: number) => (
-            <div key={i} style={{ padding: '6px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '4px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div key={i} className="rr-p-6 rr-rounded rr-bg-subtle rr-mb-4">
+              <div className="rr-flex rr-justify-between rr-items-center">
                 <strong>{t.type || `Type ${i + 1}`}</strong>
-                <div style={{ display: 'flex', gap: '6px' }}>
+                <div className="rr-flex rr-gap-6">
                   {t.total != null && <span className="tag">{t.total} total</span>}
                   {t.passed != null && <span className="tag">{t.passed} pass</span>}
                   {t.failed != null && t.failed > 0 && <span className="tag tag-danger">{t.failed} fail</span>}
                   {t.passRate != null && <span className="tag">{t.passRate}%</span>}
                 </div>
               </div>
-              {t.notes && <div className="muted" style={{ marginTop: '2px' }}>{t.notes}</div>}
+              {t.notes && <div className="muted rr-mt-2">{t.notes}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -2684,16 +2684,16 @@ export function renderTestSummaryDetails(props: RendererProps) {
           {testsByEpic.map((e: any, i: number) => (
             <CollapsibleSection key={i} title={e.epic || `Epic ${i + 1}`} sectionId={`testsummary-epic-${i}`}>
               {e.stories?.map((s: any, si: number) => (
-                <div key={si} style={{ padding: '4px 0', borderBottom: '1px solid var(--vscode-widget-border)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div key={si} className="rr-p-4-0 rr-border-b">
+                  <div className="rr-flex rr-justify-between rr-items-center">
                     <span><strong>{s.storyId}</strong> {s.storyTitle}</span>
-                    <div style={{ display: 'flex', gap: '6px' }}>
+                    <div className="rr-flex rr-gap-6">
                       {s.totalTests != null && <span className="tag">{s.totalTests} tests</span>}
                       {s.passRate != null && <span className="tag">{s.passRate}%</span>}
                       {s.failed != null && s.failed > 0 && <span className="tag tag-danger">{s.failed} fail</span>}
                     </div>
                   </div>
-                  {s.notes && <div className="muted" style={{ marginTop: '2px' }}>{s.notes}</div>}
+                  {s.notes && <div className="muted rr-mt-2">{s.notes}</div>}
                 </div>
               ))}
             </CollapsibleSection>
@@ -2705,14 +2705,14 @@ export function renderTestSummaryDetails(props: RendererProps) {
       {isBmmReport && coverageByPackage.length > 0 && !editMode && (
         <CollapsibleSection title="Coverage by Package" count={coverageByPackage.length} sectionId="testsummary-covpkg">
           {coverageByPackage.map((pkg: any, i: number) => (
-            <div key={i} style={{ padding: '6px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '4px' }}>
+            <div key={i} className="rr-p-6 rr-rounded rr-bg-subtle rr-mb-4">
               <strong>{pkg.package || `Package ${i + 1}`}</strong>
-              <div className="detail-row" style={{ marginTop: '4px' }}>
+              <div className="detail-row rr-mt-4">
                 {pkg.lineCoverage != null && <section className="detail-section inline"><h4>Line</h4><span className="tag">{pkg.lineCoverage}%</span></section>}
                 {pkg.branchCoverage != null && <section className="detail-section inline"><h4>Branch</h4><span className="tag">{pkg.branchCoverage}%</span></section>}
                 {pkg.functionCoverage != null && <section className="detail-section inline"><h4>Function</h4><span className="tag">{pkg.functionCoverage}%</span></section>}
               </div>
-              {pkg.uncoveredAreas?.length > 0 && <div className="muted" style={{ marginTop: '2px' }}>Gaps: {pkg.uncoveredAreas.join(', ')}</div>}
+              {pkg.uncoveredAreas?.length > 0 && <div className="muted rr-mt-2">Gaps: {pkg.uncoveredAreas.join(', ')}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -2722,10 +2722,10 @@ export function renderTestSummaryDetails(props: RendererProps) {
       {isBmmReport && defectsFound.length > 0 && !editMode && (
         <CollapsibleSection title="Defects Found" count={defectsFound.length} sectionId="testsummary-defects">
           {defectsFound.map((bug: any, i: number) => (
-            <div key={i} style={{ padding: '6px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '4px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div key={i} className="rr-p-6 rr-rounded rr-bg-subtle rr-mb-4">
+              <div className="rr-flex rr-justify-between rr-items-center">
                 <span><strong>{bug.id || `Bug ${i + 1}`}</strong> {bug.title}</span>
-                <div style={{ display: 'flex', gap: '4px' }}>
+                <div className="rr-flex rr-gap-4">
                   {bug.severity && <span className={`tag ${bug.severity === 'critical' || bug.severity === 'high' ? 'tag-danger' : ''}`}>{bug.severity}</span>}
                   {bug.status && <span className="tag">{bug.status}</span>}
                 </div>
@@ -2745,37 +2745,37 @@ export function renderTestSummaryDetails(props: RendererProps) {
       {/* Summary */}
       <CollapsibleSection title="Summary" sectionId="testsummary-summary">
         {editMode ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <div style={{ flex: 1 }}>
+          <div className="rr-flex rr-col rr-gap-8">
+            <div className="rr-flex rr-gap-8">
+              <div className="rr-flex-1">
                 <label className="field-label">Framework</label>
                 <input type="text" value={summary.frameworkUsed || ''} onChange={(e) => handleFieldChange('summary', { ...summary, frameworkUsed: e.target.value })} placeholder="e.g. Jest, Playwright" />
               </div>
-              <div style={{ flex: 1 }}>
+              <div className="rr-flex-1">
                 <label className="field-label">Tests Generated</label>
                 <input type="number" value={summary.totalTestsGenerated ?? ''} onChange={(e) => handleFieldChange('summary', { ...summary, totalTestsGenerated: e.target.value ? parseInt(e.target.value) : undefined })} />
               </div>
-              <div style={{ flex: 1 }}>
+              <div className="rr-flex-1">
                 <label className="field-label">Files Created</label>
                 <input type="number" value={summary.totalFilesCreated ?? ''} onChange={(e) => handleFieldChange('summary', { ...summary, totalFilesCreated: e.target.value ? parseInt(e.target.value) : undefined })} />
               </div>
             </div>
             <div>
               <label className="field-label">Scope</label>
-              <textarea value={summary.scope || ''} onChange={(e) => handleFieldChange('summary', { ...summary, scope: e.target.value })} rows={2} style={{ width: '100%' }} />
+              <textarea value={summary.scope || ''} onChange={(e) => handleFieldChange('summary', { ...summary, scope: e.target.value })} rows={2} className="rr-w-full" />
             </div>
             <div>
               <label className="field-label">Testing Approach</label>
-              <textarea value={summary.testingApproach || ''} onChange={(e) => handleFieldChange('summary', { ...summary, testingApproach: e.target.value })} rows={2} style={{ width: '100%' }} />
+              <textarea value={summary.testingApproach || ''} onChange={(e) => handleFieldChange('summary', { ...summary, testingApproach: e.target.value })} rows={2} className="rr-w-full" />
             </div>
             <div>
               <label className="field-label">Target Features</label>
               {(summary.targetFeatures || []).map((f: string, i: number) => (
-                <div key={i} style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
+                <div key={i} className="rr-flex rr-gap-4 rr-mb-4">
                   <input type="text" value={f} onChange={(e) => {
                     const arr = [...(summary.targetFeatures || [])]; arr[i] = e.target.value;
                     handleFieldChange('summary', { ...summary, targetFeatures: arr });
-                  }} style={{ flex: 1 }} />
+                  }} className="rr-flex-1" />
                   <button className="icon-button" onClick={() => handleFieldChange('summary', { ...summary, targetFeatures: (summary.targetFeatures || []).filter((_: any, idx: number) => idx !== i) })}>{'\u2715'}</button>
                 </div>
               ))}
@@ -2812,11 +2812,11 @@ export function renderTestSummaryDetails(props: RendererProps) {
       {(coverageAnalysis.priorCoverage || coverageAnalysis.targetCoverage || coverageAnalysis.gapsIdentified?.length || editMode) && (
         <CollapsibleSection title="Coverage Analysis" sectionId="testsummary-coverage">
           {editMode ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div className="rr-flex rr-col rr-gap-8">
               <h4>Prior Coverage</h4>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div className="rr-flex rr-gap-8">
                 {['statement', 'branch', 'function', 'line'].map(key => (
-                  <div key={key} style={{ flex: 1 }}>
+                  <div key={key} className="rr-flex-1">
                     <label className="field-label">{key}</label>
                     <input type="text" value={(coverageAnalysis.priorCoverage || {})[key] || ''} onChange={(e) => {
                       handleFieldChange('coverageAnalysis', { ...coverageAnalysis, priorCoverage: { ...(coverageAnalysis.priorCoverage || {}), [key]: e.target.value } });
@@ -2825,9 +2825,9 @@ export function renderTestSummaryDetails(props: RendererProps) {
                 ))}
               </div>
               <h4>Target Coverage</h4>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div className="rr-flex rr-gap-8">
                 {['statement', 'branch', 'function', 'line'].map(key => (
-                  <div key={key} style={{ flex: 1 }}>
+                  <div key={key} className="rr-flex-1">
                     <label className="field-label">{key}</label>
                     <input type="text" value={(coverageAnalysis.targetCoverage || {})[key] || ''} onChange={(e) => {
                       handleFieldChange('coverageAnalysis', { ...coverageAnalysis, targetCoverage: { ...(coverageAnalysis.targetCoverage || {}), [key]: e.target.value } });
@@ -2839,7 +2839,7 @@ export function renderTestSummaryDetails(props: RendererProps) {
           ) : (
             <>
               {coverageAnalysis.priorCoverage && (
-                <div style={{ marginBottom: '8px' }}>
+                <div className="rr-mb-8">
                   <h4>Prior Coverage</h4>
                   <div className="detail-row">
                     {Object.entries(coverageAnalysis.priorCoverage).map(([k, v]: [string, any]) => (
@@ -2849,7 +2849,7 @@ export function renderTestSummaryDetails(props: RendererProps) {
                 </div>
               )}
               {coverageAnalysis.targetCoverage && (
-                <div style={{ marginBottom: '8px' }}>
+                <div className="rr-mb-8">
                   <h4>Target Coverage</h4>
                   <div className="detail-row">
                     {Object.entries(coverageAnalysis.targetCoverage).map(([k, v]: [string, any]) => (
@@ -2862,9 +2862,9 @@ export function renderTestSummaryDetails(props: RendererProps) {
                 <>
                   <h4>Gaps Identified</h4>
                   {coverageAnalysis.gapsIdentified.map((g: any, i: number) => (
-                    <div key={i} style={{ padding: '4px 0' }}>
+                    <div key={i} className="rr-p-4-0">
                       <strong>{g.area}</strong>
-                      {g.priority && <span className="tag" style={{ marginLeft: '8px' }}>{g.priority}</span>}
+                      {g.priority && <span className="tag rr-ml-8">{g.priority}</span>}
                       {g.description && <div className="muted">{g.description}</div>}
                     </div>
                   ))}
@@ -2885,25 +2885,25 @@ export function renderTestSummaryDetails(props: RendererProps) {
               sectionId={`testsummary-test-${i}`}
             >
               {editMode ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <div style={{ flex: 1 }}>
+                <div className="rr-flex rr-col rr-gap-6">
+                  <div className="rr-flex rr-gap-8">
+                    <div className="rr-flex-1">
                       <label className="field-label">File Path</label>
                       <input type="text" value={t.filePath || ''} onChange={(e) => {
                         const updated = [...generatedTests]; updated[i] = { ...t, filePath: e.target.value };
                         handleFieldChange('generatedTests', updated);
                       }} />
                     </div>
-                    <div style={{ flex: 1 }}>
+                    <div className="rr-flex-1">
                       <label className="field-label">Target File</label>
                       <input type="text" value={t.targetFile || ''} onChange={(e) => {
                         const updated = [...generatedTests]; updated[i] = { ...t, targetFile: e.target.value };
                         handleFieldChange('generatedTests', updated);
                       }} />
                     </div>
-                    <button className="icon-button" style={{ alignSelf: 'flex-end' }} onClick={() => handleFieldChange('generatedTests', generatedTests.filter((_: any, idx: number) => idx !== i))} title="Remove">{'\u2715'}</button>
+                    <button className="icon-button rr-self-end" onClick={() => handleFieldChange('generatedTests', generatedTests.filter((_: any, idx: number) => idx !== i))} title="Remove">{'\u2715'}</button>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div className="rr-flex rr-gap-8">
                     <div>
                       <label className="field-label">Test Type</label>
                       <select value={t.testType || ''} onChange={(e) => {
@@ -2934,14 +2934,14 @@ export function renderTestSummaryDetails(props: RendererProps) {
                       <ul>{t.testCases.map((tc: any, tci: number) => (
                         <li key={tci}>
                           <strong>{tc.name}</strong>
-                          {tc.category && <span className="tag" style={{ marginLeft: '8px' }}>{tc.category}</span>}
+                          {tc.category && <span className="tag rr-ml-8">{tc.category}</span>}
                           {tc.description && <div className="muted">{tc.description}</div>}
                         </li>
                       ))}</ul>
                     </>
                   )}
                   {t.patternsUsed?.length > 0 && (
-                    <div className="tags-list" style={{ marginTop: '8px' }}>
+                    <div className="tags-list rr-mt-8">
                       {t.patternsUsed.map((p: string, pi: number) => <span key={pi} className="tag">{p}</span>)}
                     </div>
                   )}
@@ -2961,13 +2961,13 @@ export function renderTestSummaryDetails(props: RendererProps) {
       {testPatterns.length > 0 && (
         <CollapsibleSection title="Test Patterns" count={testPatterns.length} sectionId="testsummary-patterns">
           {testPatterns.map((p: any, i: number) => (
-            <div key={i} style={{ padding: '6px', borderRadius: '4px', background: 'var(--vscode-editor-inactiveSelectionBackground)', marginBottom: '4px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <div key={i} className="rr-p-6 rr-rounded rr-bg-subtle rr-mb-4">
+              <div className="rr-flex rr-justify-between">
                 <strong>{p.pattern}</strong>
                 {p.usageCount != null && <span className="tag">Used {p.usageCount}x</span>}
               </div>
               {p.description && <div className="muted">{p.description}</div>}
-              {p.examples?.length > 0 && <div style={{ fontSize: '0.85em', opacity: 0.7 }}>Examples: {p.examples.join(', ')}</div>}
+              {p.examples?.length > 0 && <div className="rr-text-sm rr-muted">Examples: {p.examples.join(', ')}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -2977,10 +2977,10 @@ export function renderTestSummaryDetails(props: RendererProps) {
       {recommendations.length > 0 && (
         <CollapsibleSection title="Recommendations" count={recommendations.length} sectionId="testsummary-recs">
           {recommendations.map((r: any, i: number) => (
-            <div key={i} style={{ padding: '4px 0', borderBottom: '1px solid var(--vscode-widget-border)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <div key={i} className="rr-p-4-0 rr-border-b">
+              <div className="rr-flex rr-justify-between">
                 <strong>{r.area || r.recommendation}</strong>
-                <div style={{ display: 'flex', gap: '4px' }}>
+                <div className="rr-flex rr-gap-4">
                   {r.priority && <span className="tag">{r.priority}</span>}
                   {r.effort && <span className="tag">{r.effort}</span>}
                 </div>
@@ -3032,31 +3032,31 @@ export function renderTestCoverageDetails(props: RendererProps) {
       {/* Coverage Summary */}
       <CollapsibleSection title="Coverage Summary" sectionId="tc-cov-summary" defaultCollapsed={false}>
         {editMode ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <div style={{ flex: '1 1 100px' }}>
+          <div className="rr-flex rr-col rr-gap-8">
+            <div className="rr-flex rr-gap-8 rr-wrap">
+              <div className="rr-basis-100">
                 <label className="field-label">Total</label>
                 <input type="number" value={d.totalCount ?? ''} onChange={(e) => handleFieldChange('totalCount', e.target.value ? parseInt(e.target.value) : undefined)} />
               </div>
-              <div style={{ flex: '1 1 100px' }}>
+              <div className="rr-basis-100">
                 <label className="field-label">Pass</label>
                 <input type="number" value={d.passCount ?? ''} onChange={(e) => handleFieldChange('passCount', e.target.value ? parseInt(e.target.value) : undefined)} />
               </div>
-              <div style={{ flex: '1 1 100px' }}>
+              <div className="rr-basis-100">
                 <label className="field-label">Fail</label>
                 <input type="number" value={d.failCount ?? ''} onChange={(e) => handleFieldChange('failCount', e.target.value ? parseInt(e.target.value) : undefined)} />
               </div>
-              <div style={{ flex: '1 1 100px' }}>
+              <div className="rr-basis-100">
                 <label className="field-label">Draft</label>
                 <input type="number" value={d.draftCount ?? ''} onChange={(e) => handleFieldChange('draftCount', e.target.value ? parseInt(e.target.value) : undefined)} />
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <div style={{ flex: 1 }}>
+            <div className="rr-flex rr-gap-8">
+              <div className="rr-flex-1">
                 <label className="field-label">Story ID</label>
                 <input type="text" value={d.storyId || ''} onChange={(e) => handleFieldChange('storyId', e.target.value)} placeholder="Story ID" />
               </div>
-              <div style={{ flex: 1 }}>
+              <div className="rr-flex-1">
                 <label className="field-label">Epic ID</label>
                 <input type="text" value={d.epicId || ''} onChange={(e) => handleFieldChange('epicId', e.target.value)} placeholder="Epic ID" />
               </div>
@@ -3064,7 +3064,7 @@ export function renderTestCoverageDetails(props: RendererProps) {
           </div>
         ) : (
           <>
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '8px' }}>
+            <div className="rr-flex rr-gap-12 rr-wrap rr-mb-8">
               <span className="tag">{totalCount} total</span>
               <span className="tag agent-renderer-tag agent-renderer-tag--success">{passCount} pass</span>
               <span className="tag agent-renderer-tag agent-renderer-tag--error">{failCount} fail</span>
@@ -3094,26 +3094,26 @@ export function renderTestCoverageDetails(props: RendererProps) {
                 sectionId={`tc-cov-case-${tc.id || i}`}
               >
                 {editMode ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <div style={{ flex: 1 }}>
+                  <div className="rr-flex rr-col rr-gap-6">
+                    <div className="rr-flex rr-gap-8">
+                      <div className="rr-flex-1">
                         <label className="field-label">ID</label>
                         <input type="text" value={tc.id || ''} onChange={(e) => {
                           const updated = [...testCases]; updated[i] = { ...tc, id: e.target.value };
                           handleFieldChange('testCases', updated);
                         }} />
                       </div>
-                      <div style={{ flex: 2 }}>
+                      <div className="rr-flex-2">
                         <label className="field-label">Title</label>
                         <input type="text" value={tc.title || ''} onChange={(e) => {
                           const updated = [...testCases]; updated[i] = { ...tc, title: e.target.value };
                           handleFieldChange('testCases', updated);
                         }} />
                       </div>
-                      <button className="icon-button" style={{ alignSelf: 'flex-end' }} onClick={() => handleFieldChange('testCases', testCases.filter((_: any, idx: number) => idx !== i))} title="Remove">{'\u2715'}</button>
+                      <button className="icon-button rr-self-end" onClick={() => handleFieldChange('testCases', testCases.filter((_: any, idx: number) => idx !== i))} title="Remove">{'\u2715'}</button>
                     </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <div style={{ flex: 1 }}>
+                    <div className="rr-flex rr-gap-8">
+                      <div className="rr-flex-1">
                         <label className="field-label">Status</label>
                         <select value={tc.status || ''} onChange={(e) => {
                           const updated = [...testCases]; updated[i] = { ...tc, status: e.target.value };
@@ -3123,14 +3123,14 @@ export function renderTestCoverageDetails(props: RendererProps) {
                           {['draft', 'in-progress', 'passed', 'failed', 'blocked'].map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                       </div>
-                      <div style={{ flex: 1 }}>
+                      <div className="rr-flex-1">
                         <label className="field-label">Type</label>
                         <input type="text" value={tc.type || ''} onChange={(e) => {
                           const updated = [...testCases]; updated[i] = { ...tc, type: e.target.value };
                           handleFieldChange('testCases', updated);
                         }} placeholder="Type" />
                       </div>
-                      <div style={{ flex: 1 }}>
+                      <div className="rr-flex-1">
                         <label className="field-label">Priority</label>
                         <input type="text" value={tc.priority || ''} onChange={(e) => {
                           const updated = [...testCases]; updated[i] = { ...tc, priority: e.target.value };
@@ -3143,7 +3143,7 @@ export function renderTestCoverageDetails(props: RendererProps) {
                       <textarea value={tc.description || ''} onChange={(e) => {
                         const updated = [...testCases]; updated[i] = { ...tc, description: e.target.value };
                         handleFieldChange('testCases', updated);
-                      }} rows={2} style={{ width: '100%' }} />
+                      }} rows={2} className="rr-w-full" />
                     </div>
                   </div>
                 ) : (
@@ -3184,7 +3184,7 @@ export function renderTestCoverageDetails(props: RendererProps) {
                       <p><strong>Tags:</strong> {tc.tags.map((t: string, ti: number) => <span key={ti} className="tag">{t}</span>)}</p>
                     )}
                     {tc.relatedRequirements && tc.relatedRequirements.length > 0 && (
-                      <p><strong>Related Reqs:</strong> {tc.relatedRequirements.map((r: string, ri: number) => <code key={ri} style={{ marginRight: '4px' }}>{r}</code>)}</p>
+                      <p><strong>Related Reqs:</strong> {tc.relatedRequirements.map((r: string, ri: number) => <code key={ri} className="rr-mr-4">{r}</code>)}</p>
                     )}
                   </>
                 )}

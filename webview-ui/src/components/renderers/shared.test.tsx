@@ -5,7 +5,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
-import { Md, CollapsibleSection, ArtifactPicker } from './shared';
+import { Md, CollapsibleSection, ArtifactPicker, toDisplayText } from './shared';
 import { mockVsCodeApi } from '../../test/setup';
 import type { Artifact } from '../../types';
 
@@ -22,6 +22,33 @@ function makeArtifact(overrides: Partial<Artifact> & { id: string; type: Artifac
     ...overrides,
   };
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// toDisplayText — schema-off value coercion
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('toDisplayText', () => {
+  it('returns strings unchanged and stringifies primitives', () => {
+    expect(toDisplayText('unit')).toBe('unit');
+    expect(toDisplayText(3)).toBe('3');
+    expect(toDisplayText(false)).toBe('false');
+  });
+
+  it('returns empty string for null and undefined', () => {
+    expect(toDisplayText(null)).toBe('');
+    expect(toDisplayText(undefined)).toBe('');
+  });
+
+  it('prefers a label-like key on objects', () => {
+    expect(toDisplayText({ type: 'unit', tools: ['vitest'] })).toBe('unit');
+    expect(toDisplayText({ name: 'playwright', type: 'e2e' })).toBe('playwright');
+  });
+
+  it('falls back to key: value pairs for objects without a label key', () => {
+    expect(toDisplayText({ inScope: ['Checkout', 'Cart'], outOfScope: 'Admin' }))
+      .toBe('inScope: Checkout, Cart; outOfScope: Admin');
+  });
+});
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Md — Markdown renderer

@@ -1830,9 +1830,32 @@ interface HarvestRow {
   label: string;       // pre-formatted audit-script row substring
 }
 
+// Static renderer styles became rr-* utility classes (renderer-utilities.css).
+// A colour-bearing utility class on an element is the same audit surface the
+// inline style was, so the harvest maps class → (key, value) and counts each
+// usage. Mirrors scripts/a11y-surface-sweep.mjs UTILITY_* exactly.
+const UTILITY_RULE_RE = /&\.(rr-[\w-]+)\s*\{\s*([\w-]+)\s*:\s*([^;]+);/g;
+const CLASSNAME_RE = /className="([^"]*)"/g;
+
+function loadColorUtilities(): Map<string, { key: string; value: string }> {
+  const css = readFileSync(
+    path.resolve(COMPONENTS_DIR, 'renderers', 'renderer-utilities.css'),
+    'utf-8',
+  );
+  const map = new Map<string, { key: string; value: string }>();
+  UTILITY_RULE_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = UTILITY_RULE_RE.exec(css)) !== null) {
+    const key = m[2].replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
+    if (INLINE_COLOR_KEYS.has(key)) map.set(m[1], { key, value: m[3].trim() });
+  }
+  return map;
+}
+
 function harvestInlineTsx(): { rows: HarvestRow[]; filesScanned: number; zeroContributionFiles: string[] } {
   const STYLE_BODY_RE = /style=\{\{([\s\S]*?)\}\}/g;
   const KV_QUOTED_RE = /([\w-]+)\s*:\s*(['"`])([^'"`]*?)\2/g;
+  const colorUtilities = loadColorUtilities();
   const rows: HarvestRow[] = [];
   const fileContribution = new Map<string, number>();
   let filesScanned = 0;
@@ -1856,6 +1879,19 @@ function harvestInlineTsx(): { rows: HarvestRow[]; filesScanned: number; zeroCon
         const rail: 'fg' | 'bg' = INLINE_FG_KEYS.has(key) ? 'fg' : 'bg';
         const label = `inline-${rail === 'fg' ? 'style' : 'bg'} ${key} @ ${rel}:L${lineNum}`;
         rows.push({ key, value, relPath: rel, lineNum, rail, label });
+        fileContribution.set(rel, (fileContribution.get(rel) ?? 0) + 1);
+      }
+    }
+    CLASSNAME_RE.lastIndex = 0;
+    let cnMatch: RegExpExecArray | null;
+    while ((cnMatch = CLASSNAME_RE.exec(content)) !== null) {
+      const lineNum = content.slice(0, cnMatch.index).split('\n').length;
+      for (const cls of cnMatch[1].split(/\s+/)) {
+        const util = colorUtilities.get(cls);
+        if (!util) continue;
+        const rail: 'fg' | 'bg' = INLINE_FG_KEYS.has(util.key) ? 'fg' : 'bg';
+        const label = `utility-${rail === 'fg' ? 'style' : 'bg'} ${util.key} (.${cls}) @ ${rel}:L${lineNum}`;
+        rows.push({ key: util.key, value: util.value, relPath: rel, lineNum, rail, label });
         fileContribution.set(rel, (fileContribution.get(rel) ?? 0) + 1);
       }
     }

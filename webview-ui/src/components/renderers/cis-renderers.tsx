@@ -106,20 +106,20 @@ export function renderStorytellingDetails(props: RendererProps) {
                 {targetAudience.secondary && <><span className="label">Secondary</span><span>{targetAudience.secondary}</span></>}
               </div>
               {audienceProfile.demographics && (
-                <div className="detail-grid" style={{ marginTop: 8 }}>
+                <div className="detail-grid rr-mt-8">
                   {audienceProfile.demographics && <><span className="label">Demographics</span><span>{audienceProfile.demographics}</span></>}
                   {audienceProfile.psychographics && <><span className="label">Psychographics</span><span>{audienceProfile.psychographics}</span></>}
                   {audienceProfile.knowledgeLevel && <><span className="label">Knowledge Level</span><span>{audienceProfile.knowledgeLevel}</span></>}
                 </div>
               )}
               {(audienceProfile.painPoints?.length > 0 || audienceProfile.aspirations?.length > 0) && (
-                <div style={{ marginTop: 8 }}>
+                <div className="rr-mt-8">
                   {audienceProfile.painPoints?.length > 0 && <div><strong>Pain Points:</strong> {audienceProfile.painPoints.join(', ')}</div>}
                   {audienceProfile.aspirations?.length > 0 && <div><strong>Aspirations:</strong> {audienceProfile.aspirations.join(', ')}</div>}
                 </div>
               )}
               {(stateChange.currentState || stateChange.desiredState) && (
-                <div className="detail-grid" style={{ marginTop: 8 }}>
+                <div className="detail-grid rr-mt-8">
                   {stateChange.currentState && <><span className="label">Current State</span><span>{stateChange.currentState}</span></>}
                   {stateChange.desiredState && <><span className="label">Desired State</span><span>{stateChange.desiredState}</span></>}
                 </div>
@@ -146,12 +146,12 @@ export function renderStorytellingDetails(props: RendererProps) {
                 {strategicContext.callToAction && <><span className="label">Call to Action</span><span>{strategicContext.callToAction}</span></>}
               </div>
               {strategicKeyMessages.length > 0 && (
-                <div style={{ marginTop: 8 }}><strong>Key Messages:</strong>
+                <div className="rr-mt-8"><strong>Key Messages:</strong>
                   <ul className="compact-list">{strategicKeyMessages.map((m: string, i: number) => <li key={i}>{m}</li>)}</ul>
                 </div>
               )}
               {constraints.length > 0 && (
-                <div style={{ marginTop: 8 }}><strong>Constraints:</strong>
+                <div className="rr-mt-8"><strong>Constraints:</strong>
                   <ul className="compact-list">{constraints.map((c: string, i: number) => <li key={i}>{c}</li>)}</ul>
                 </div>
               )}
@@ -170,11 +170,11 @@ export function renderStorytellingDetails(props: RendererProps) {
             </div>
           ) : (
             <>
-              {frameworkApplication.frameworkNotes && <div style={{ marginBottom: 8 }}><Md text={frameworkApplication.frameworkNotes} /></div>}
+              {frameworkApplication.frameworkNotes && <div className="rr-mb-8"><Md text={frameworkApplication.frameworkNotes} /></div>}
               {frameworkElements.map((el: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div className="nested-card-header">{el.element || `Element ${i + 1}`}</div>
-                  {el.content && <div style={{ marginBottom: 4 }}><Md text={el.content} /></div>}
+                  {el.content && <div className="rr-mb-4"><Md text={el.content} /></div>}
                   <div className="detail-grid">
                     {el.purpose && <><span className="label">Purpose</span><span>{el.purpose}</span></>}
                     {el.emotionalGoal && <><span className="label">Emotional Goal</span><span>{el.emotionalGoal}</span></>}
@@ -210,7 +210,7 @@ export function renderStorytellingDetails(props: RendererProps) {
                 <div className="nested-card">
                   <div className="nested-card-header">Opening Hook</div>
                   <Md text={openingHook.text} />
-                  <div className="detail-grid" style={{ marginTop: 4 }}>
+                  <div className="detail-grid rr-mt-4">
                     {openingHook.technique && <><span className="label">Technique</span><span className="badge">{openingHook.technique}</span></>}
                     {openingHook.emotionalTrigger && <><span className="label">Emotional Trigger</span><span>{openingHook.emotionalTrigger}</span></>}
                   </div>
@@ -221,7 +221,7 @@ export function renderStorytellingDetails(props: RendererProps) {
                   <div className="nested-card-header">Setup</div>
                   <Md text={setup.text} />
                   {(setup.worldBuilding || setup.stakesEstablished) && (
-                    <div className="detail-grid" style={{ marginTop: 4 }}>
+                    <div className="detail-grid rr-mt-4">
                       {setup.worldBuilding && <><span className="label">World Building</span><span>{setup.worldBuilding}</span></>}
                       {setup.stakesEstablished && <><span className="label">Stakes</span><span>{setup.stakesEstablished}</span></>}
                     </div>
@@ -238,7 +238,7 @@ export function renderStorytellingDetails(props: RendererProps) {
                 <div key={i} className="nested-card">
                   <div className="nested-card-header">Beat {beat.beatNumber || i + 1}</div>
                   {beat.beat && <Md text={beat.beat} />}
-                  <div className="detail-grid" style={{ marginTop: 4 }}>
+                  <div className="detail-grid rr-mt-4">
                     {beat.purpose && <><span className="label">Purpose</span><span>{beat.purpose}</span></>}
                     {beat.emotion && <><span className="label">Emotion</span><span>{beat.emotion}</span></>}
                     {beat.transition && <><span className="label">Transition</span><span>{beat.transition}</span></>}
@@ -251,7 +251,7 @@ export function renderStorytellingDetails(props: RendererProps) {
                   {conflict.mainConflict && <div><Md text={conflict.mainConflict} /></div>}
                   {conflict.stakes && <div className="detail-grid"><span className="label">Stakes</span><span>{conflict.stakes}</span></div>}
                   {conflict.obstacles?.length > 0 && (
-                    <div style={{ marginTop: 4 }}><strong>Obstacles:</strong>
+                    <div className="rr-mt-4"><strong>Obstacles:</strong>
                       <ul className="compact-list">{conflict.obstacles.map((o: string, i: number) => <li key={i}>{o}</li>)}</ul>
                     </div>
                   )}
@@ -261,7 +261,7 @@ export function renderStorytellingDetails(props: RendererProps) {
                 <div className="nested-card">
                   <div className="nested-card-header">Resolution</div>
                   <Md text={resolution.text} />
-                  <div className="detail-grid" style={{ marginTop: 4 }}>
+                  <div className="detail-grid rr-mt-4">
                     {resolution.transformation && <><span className="label">Transformation</span><span>{resolution.transformation}</span></>}
                     {resolution.callToAction && <><span className="label">Call to Action</span><span>{resolution.callToAction}</span></>}
                     {resolution.lingeringEmotion && <><span className="label">Lingering Emotion</span><span>{resolution.lingeringEmotion}</span></>}
@@ -285,14 +285,14 @@ export function renderStorytellingDetails(props: RendererProps) {
             </div>
           ) : (
             <>
-              {emotionalArc.description && <div style={{ marginBottom: 8 }}><Md text={emotionalArc.description} /></div>}
+              {emotionalArc.description && <div className="rr-mb-8"><Md text={emotionalArc.description} /></div>}
               {arcPoints.length > 0 && arcPoints.map((ap: any, i: number) => (
-                <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
+                <div key={i} className="rr-flex rr-gap-8 rr-items-center rr-mb-4">
                   <span className="badge" style={{ background: ap.intensity === 'peak' ? 'var(--vscode-errorForeground)' : ap.intensity === 'high' ? 'var(--vscode-editorWarning-foreground)' : undefined }}>{ap.intensity || 'medium'}</span>
                   <span><strong>{ap.point}</strong> — {ap.emotion}</span>
                 </div>
               ))}
-              {emotionalArc.climax && <div style={{ marginTop: 8 }}><strong>Climax:</strong> {emotionalArc.climax}</div>}
+              {emotionalArc.climax && <div className="rr-mt-8"><strong>Climax:</strong> {emotionalArc.climax}</div>}
             </>
           )}
         </CollapsibleSection>
@@ -302,7 +302,7 @@ export function renderStorytellingDetails(props: RendererProps) {
       {d.completeStory && (
         <CollapsibleSection title="Complete Story" sectionId="st-complete">
           {editMode ? (
-            <textarea rows={12} style={{ width: '100%' }} value={d.completeStory || ''} onChange={(e) => handleFieldChange('completeStory', e.target.value)} />
+            <textarea rows={12} className="rr-w-full" value={d.completeStory || ''} onChange={(e) => handleFieldChange('completeStory', e.target.value)} />
           ) : (
             <Md text={d.completeStory} />
           )}
@@ -316,7 +316,7 @@ export function renderStorytellingDetails(props: RendererProps) {
             <div key={i} className="nested-card">
               <div className="nested-card-header">
                 {ch.name || `Character ${i + 1}`}
-                {ch.role && <span className="badge" style={{ marginLeft: 8 }}>{ch.role}</span>}
+                {ch.role && <span className="badge rr-ml-8">{ch.role}</span>}
               </div>
               {editMode ? (
                 <div className="edit-grid">
@@ -329,7 +329,7 @@ export function renderStorytellingDetails(props: RendererProps) {
                 </div>
               ) : (
                 <>
-                  {ch.description && <div style={{ marginBottom: 4 }}><Md text={ch.description} /></div>}
+                  {ch.description && <div className="rr-mb-4"><Md text={ch.description} /></div>}
                   <div className="detail-grid">
                     {ch.motivation && <><span className="label">Motivation</span><span>{ch.motivation}</span></>}
                     {ch.arc && <><span className="label">Arc</span><span>{ch.arc}</span></>}
@@ -406,7 +406,7 @@ export function renderStorytellingDetails(props: RendererProps) {
         <CollapsibleSection title="Memorable Lines" count={memorableLines.length} sectionId="st-lines">
           {memorableLines.map((ml: any, i: number) => (
             <div key={i} className="nested-card">
-              <div style={{ fontStyle: 'italic', marginBottom: 4 }}>"{ml.line}"</div>
+              <div className="rr-italic rr-mb-4">"{ml.line}"</div>
               <div className="detail-grid">
                 {ml.context && <><span className="label">Context</span><span>{ml.context}</span></>}
                 {ml.useCase && <><span className="label">Use Case</span><span>{ml.useCase}</span></>}
@@ -432,11 +432,11 @@ export function renderStorytellingDetails(props: RendererProps) {
               <div key={v.key} className="nested-card">
                 <div className="nested-card-header">{v.label}</div>
                 {editMode ? (
-                  <textarea rows={4} style={{ width: '100%' }} value={v.data.text || v.data.script || ''} onChange={(e) => handleFieldChange('variations', { ...variations, [v.key]: { ...v.data, [v.key === 'video' ? 'script' : 'text']: e.target.value } })} />
+                  <textarea rows={4} className="rr-w-full" value={v.data.text || v.data.script || ''} onChange={(e) => handleFieldChange('variations', { ...variations, [v.key]: { ...v.data, [v.key === 'video' ? 'script' : 'text']: e.target.value } })} />
                 ) : (
                   <>
                     <Md text={v.data.text || v.data.script || ''} />
-                    <div className="detail-grid" style={{ marginTop: 4 }}>
+                    <div className="detail-grid rr-mt-4">
                       {v.data.wordCount && <><span className="label">Words</span><span>{v.data.wordCount}</span></>}
                       {v.data.characterCount && <><span className="label">Characters</span><span>{v.data.characterCount}</span></>}
                       {v.data.duration && <><span className="label">Duration</span><span>{v.data.duration}</span></>}
@@ -444,7 +444,7 @@ export function renderStorytellingDetails(props: RendererProps) {
                       {v.data.platform && <><span className="label">Platform</span><span>{v.data.platform}</span></>}
                     </div>
                     {v.data.slideNotes?.length > 0 && (
-                      <div style={{ marginTop: 8 }}><strong>Slide Notes:</strong>
+                      <div className="rr-mt-8"><strong>Slide Notes:</strong>
                         {v.data.slideNotes.map((sn: any, j: number) => (
                           <div key={j} className="nested-card">
                             <div className="detail-grid">
@@ -457,7 +457,7 @@ export function renderStorytellingDetails(props: RendererProps) {
                       </div>
                     )}
                     {v.data.visualNotes?.length > 0 && (
-                      <div style={{ marginTop: 8 }}><strong>Visual Notes:</strong>
+                      <div className="rr-mt-8"><strong>Visual Notes:</strong>
                         <ul className="compact-list">{v.data.visualNotes.map((vn: string, j: number) => <li key={j}>{vn}</li>)}</ul>
                       </div>
                     )}
@@ -505,10 +505,10 @@ export function renderStorytellingDetails(props: RendererProps) {
             </div>
           ) : (
             <>
-              {usageGuidelines.audienceConsiderations && <div style={{ marginBottom: 8 }}><strong>Audience Considerations:</strong> <Md text={usageGuidelines.audienceConsiderations} /></div>}
-              {usageGuidelines.toneNotes && <div style={{ marginBottom: 8 }}><strong>Tone Notes:</strong> <Md text={usageGuidelines.toneNotes} /></div>}
+              {usageGuidelines.audienceConsiderations && <div className="rr-mb-8"><strong>Audience Considerations:</strong> <Md text={usageGuidelines.audienceConsiderations} /></div>}
+              {usageGuidelines.toneNotes && <div className="rr-mb-8"><strong>Tone Notes:</strong> <Md text={usageGuidelines.toneNotes} /></div>}
               {bestChannels.length > 0 && (
-                <div style={{ marginBottom: 8 }}><strong>Best Channels:</strong>
+                <div className="rr-mb-8"><strong>Best Channels:</strong>
                   {bestChannels.map((ch: any, i: number) => (
                     <div key={i} className="nested-card">
                       <div className="detail-grid">
@@ -520,15 +520,15 @@ export function renderStorytellingDetails(props: RendererProps) {
                   ))}
                 </div>
               )}
-              {deliveryTips.length > 0 && <div style={{ marginBottom: 8 }}><strong>Delivery Tips:</strong><ul className="compact-list">{deliveryTips.map((t: string, i: number) => <li key={i}>{t}</li>)}</ul></div>}
+              {deliveryTips.length > 0 && <div className="rr-mb-8"><strong>Delivery Tips:</strong><ul className="compact-list">{deliveryTips.map((t: string, i: number) => <li key={i}>{t}</li>)}</ul></div>}
               {adaptationSuggestions.length > 0 && (
-                <div style={{ marginBottom: 8 }}><strong>Adaptation Suggestions:</strong>
+                <div className="rr-mb-8"><strong>Adaptation Suggestions:</strong>
                   {adaptationSuggestions.map((a: any, i: number) => (
                     <div key={i} className="nested-card"><strong>{a.scenario}:</strong> {a.suggestion}</div>
                   ))}
                 </div>
               )}
-              {doNotChange.length > 0 && <div style={{ marginBottom: 8 }}><strong>Do Not Change:</strong><ul className="compact-list">{doNotChange.map((d: string, i: number) => <li key={i}>{d}</li>)}</ul></div>}
+              {doNotChange.length > 0 && <div className="rr-mb-8"><strong>Do Not Change:</strong><ul className="compact-list">{doNotChange.map((d: string, i: number) => <li key={i}>{d}</li>)}</ul></div>}
               {flexibleElements.length > 0 && <div><strong>Flexible Elements:</strong><ul className="compact-list">{flexibleElements.map((f: string, i: number) => <li key={i}>{f}</li>)}</ul></div>}
             </>
           )}
@@ -538,7 +538,7 @@ export function renderStorytellingDetails(props: RendererProps) {
       {/* Testing & Feedback */}
       {(testing.testingPlan || feedback.length > 0 || metrics.length > 0) && (
         <CollapsibleSection title="Testing & Feedback" sectionId="st-testing">
-          {testing.testingPlan && <div style={{ marginBottom: 8 }}><strong>Testing Plan:</strong> <Md text={testing.testingPlan} /></div>}
+          {testing.testingPlan && <div className="rr-mb-8"><strong>Testing Plan:</strong> <Md text={testing.testingPlan} /></div>}
           {feedback.length > 0 && feedback.map((fb: any, i: number) => (
             <div key={i} className="nested-card">
               <div className="detail-grid">
@@ -572,7 +572,7 @@ export function renderStorytellingDetails(props: RendererProps) {
           ) : (
             <>
               {refinementOpportunities.length > 0 && (
-                <div style={{ marginBottom: 8 }}><strong>Refinement Opportunities:</strong>
+                <div className="rr-mb-8"><strong>Refinement Opportunities:</strong>
                   {refinementOpportunities.map((r: any, i: number) => (
                     <div key={i} className="nested-card">
                       <div className="detail-grid">
@@ -585,7 +585,7 @@ export function renderStorytellingDetails(props: RendererProps) {
                 </div>
               )}
               {additionalVersionsNeeded.length > 0 && (
-                <div style={{ marginBottom: 8 }}><strong>Additional Versions Needed:</strong>
+                <div className="rr-mb-8"><strong>Additional Versions Needed:</strong>
                   {additionalVersionsNeeded.map((v: any, i: number) => (
                     <div key={i} className="nested-card">
                       <div className="detail-grid">
@@ -597,8 +597,8 @@ export function renderStorytellingDetails(props: RendererProps) {
                   ))}
                 </div>
               )}
-              {nextSteps.distributionPlan && <div style={{ marginBottom: 8 }}><strong>Distribution Plan:</strong> <Md text={nextSteps.distributionPlan} /></div>}
-              {nextSteps.feedbackPlan && <div style={{ marginBottom: 8 }}><strong>Feedback Plan:</strong> <Md text={nextSteps.feedbackPlan} /></div>}
+              {nextSteps.distributionPlan && <div className="rr-mb-8"><strong>Distribution Plan:</strong> <Md text={nextSteps.distributionPlan} /></div>}
+              {nextSteps.feedbackPlan && <div className="rr-mb-8"><strong>Feedback Plan:</strong> <Md text={nextSteps.feedbackPlan} /></div>}
               {relatedStories.length > 0 && <div><strong>Related Stories:</strong><ul className="compact-list">{relatedStories.map((s: string, i: number) => <li key={i}>{s}</li>)}</ul></div>}
             </>
           )}
@@ -689,9 +689,9 @@ export function renderProblemSolvingDetails(props: RendererProps) {
                 {sessionInfo.duration && <><span className="label">Duration</span><span>{sessionInfo.duration}</span></>}
               </div>
               {participants.length > 0 && (
-                <div style={{ marginTop: 8 }}>
+                <div className="rr-mt-8">
                   <strong>Participants:</strong>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                  <div className="rr-flex rr-wrap rr-gap-4 rr-mt-4">
                     {participants.map((p: any, i: number) => (
                       <span key={i} className="badge" title={p.expertise}>{p.name} ({p.role})</span>
                     ))}
@@ -726,23 +726,23 @@ export function renderProblemSolvingDetails(props: RendererProps) {
           ) : (
             <>
               {problemDef.refinedStatement && (
-                <div className="nested-card" style={{ borderLeft: '3px solid var(--vscode-focusBorder)' }}>
+                <div className="nested-card rr-accent-strong-focus">
                   <div className="nested-card-header">Refined Problem Statement</div>
                   <Md text={problemDef.refinedStatement} />
                 </div>
               )}
               {problemDef.initialStatement && problemDef.initialStatement !== problemDef.refinedStatement && (
-                <div style={{ marginTop: 8, opacity: 0.8 }}><strong>Initial Statement:</strong> <Md text={problemDef.initialStatement} /></div>
+                <div className="rr-mt-8 rr-subtle"><strong>Initial Statement:</strong> <Md text={problemDef.initialStatement} /></div>
               )}
-              {problemDef.context && <div style={{ marginTop: 8 }}><strong>Context:</strong> <Md text={problemDef.context} /></div>}
+              {problemDef.context && <div className="rr-mt-8"><strong>Context:</strong> <Md text={problemDef.context} /></div>}
               {problemDef.urgency && (
-                <div style={{ marginTop: 8 }}>
+                <div className="rr-mt-8">
                   <span className="label">Urgency:</span>{' '}
                   <span className="badge" style={{ color: urgencyColor(problemDef.urgency) }}>{problemDef.urgency}</span>
                 </div>
               )}
               {(impact.businessImpact || impact.financialImpact || impact.operationalImpact || impact.customerImpact) && (
-                <div className="detail-grid" style={{ marginTop: 8 }}>
+                <div className="detail-grid rr-mt-8">
                   {impact.businessImpact && <><span className="label">Business Impact</span><span>{impact.businessImpact}</span></>}
                   {impact.financialImpact && <><span className="label">Financial Impact</span><span>{impact.financialImpact}</span></>}
                   {impact.operationalImpact && <><span className="label">Operational Impact</span><span>{impact.operationalImpact}</span></>}
@@ -797,28 +797,28 @@ export function renderProblemSolvingDetails(props: RendererProps) {
             </div>
           ) : (
             <>
-              {rootCauseAnalysis.method && <div style={{ marginBottom: 8 }}><strong>Method:</strong> <span className="badge">{rootCauseAnalysis.method}</span></div>}
-              {rootCauseAnalysis.analysis && <div style={{ marginBottom: 8 }}><Md text={rootCauseAnalysis.analysis} /></div>}
+              {rootCauseAnalysis.method && <div className="rr-mb-8"><strong>Method:</strong> <span className="badge">{rootCauseAnalysis.method}</span></div>}
+              {rootCauseAnalysis.analysis && <div className="rr-mb-8"><Md text={rootCauseAnalysis.analysis} /></div>}
               {rootCauses.length > 0 && rootCauses.map((rc: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div><strong>{rc.cause}</strong></div>
-                  <div className="detail-grid" style={{ marginTop: 4 }}>
+                  <div className="detail-grid rr-mt-4">
                     {rc.category && <><span className="label">Category</span><span className="badge">{rc.category}</span></>}
                     {rc.confidence && <><span className="label">Confidence</span><span className="badge">{rc.confidence}</span></>}
                     {rc.evidence && <><span className="label">Evidence</span><span>{rc.evidence}</span></>}
                   </div>
                 </div>
               ))}
-              {rootCauseAnalysis.fishboneDiagram && <div style={{ marginTop: 8 }}><Md text={rootCauseAnalysis.fishboneDiagram} /></div>}
+              {rootCauseAnalysis.fishboneDiagram && <div className="rr-mt-8"><Md text={rootCauseAnalysis.fishboneDiagram} /></div>}
               {(diagnosis.dataCollection?.sources?.length > 0 || diagnosis.dataCollection?.keyData?.length > 0) && (
-                <div style={{ marginTop: 12 }}><strong>Data Collection:</strong>
+                <div className="rr-mt-12"><strong>Data Collection:</strong>
                   {diagnosis.dataCollection?.sources?.length > 0 && (
-                    <div style={{ marginTop: 4 }}><strong>Sources:</strong>
+                    <div className="rr-mt-4"><strong>Sources:</strong>
                       <ul className="compact-list">{diagnosis.dataCollection.sources.map((s: string, j: number) => <li key={j}>{s}</li>)}</ul>
                     </div>
                   )}
                   {diagnosis.dataCollection?.keyData?.length > 0 && (
-                    <div style={{ marginTop: 4 }}><strong>Key Data:</strong>
+                    <div className="rr-mt-4"><strong>Key Data:</strong>
                       {diagnosis.dataCollection.keyData.map((kd: any, j: number) => (
                         <div key={j} className="nested-card">
                           <div className="detail-grid">
@@ -832,7 +832,7 @@ export function renderProblemSolvingDetails(props: RendererProps) {
                   )}
                 </div>
               )}
-              {diagnosis.systemDynamics && <div style={{ marginTop: 8 }}><strong>System Dynamics:</strong> <Md text={diagnosis.systemDynamics} /></div>}
+              {diagnosis.systemDynamics && <div className="rr-mt-8"><strong>System Dynamics:</strong> <Md text={diagnosis.systemDynamics} /></div>}
             </>
           )}
         </CollapsibleSection>
@@ -842,11 +842,11 @@ export function renderProblemSolvingDetails(props: RendererProps) {
       {(isItems.length > 0 || isNotItems.length > 0) && (
         <CollapsibleSection title="Problem Boundaries" sectionId="ps-boundaries">
           {isItems.length > 0 && (
-            <div style={{ marginBottom: 8 }}><strong>IS (Part of the problem):</strong>
+            <div className="rr-mb-8"><strong>IS (Part of the problem):</strong>
               {isItems.map((item: any, i: number) => (
                 <div key={i} className="nested-card">
                   <span>{item.item}</span>
-                  {item.evidence && <span style={{ opacity: 0.7 }}> — {item.evidence}</span>}
+                  {item.evidence && <span className="rr-muted"> — {item.evidence}</span>}
                 </div>
               ))}
             </div>
@@ -856,7 +856,7 @@ export function renderProblemSolvingDetails(props: RendererProps) {
               {isNotItems.map((item: any, i: number) => (
                 <div key={i} className="nested-card">
                   <span>{item.item}</span>
-                  {item.rationale && <span style={{ opacity: 0.7 }}> — {item.rationale}</span>}
+                  {item.rationale && <span className="rr-muted"> — {item.rationale}</span>}
                 </div>
               ))}
             </div>
@@ -870,7 +870,7 @@ export function renderProblemSolvingDetails(props: RendererProps) {
           {contributingFactors.map((cf: any, i: number) => (
             <div key={i} className="nested-card">
               <div><strong>{cf.factor}</strong></div>
-              <div className="detail-grid" style={{ marginTop: 4 }}>
+              <div className="detail-grid rr-mt-4">
                 {cf.influence && <><span className="label">Influence</span><span>{cf.influence}</span></>}
                 {cf.addressable !== undefined && <><span className="label">Addressable</span><span className="badge">{cf.addressable ? 'Yes' : 'No'}</span></>}
               </div>
@@ -898,27 +898,27 @@ export function renderProblemSolvingDetails(props: RendererProps) {
       {(drivingForces.length > 0 || restrainingForces.length > 0) && (
         <CollapsibleSection title="Force Field Analysis" sectionId="ps-forces">
           {drivingForces.length > 0 && (
-            <div style={{ marginBottom: 12 }}><strong style={{ color: 'var(--vscode-testing-iconPassed)' }}>Driving Forces:</strong>
+            <div className="rr-mb-12"><strong className="rr-fg-passed">Driving Forces:</strong>
               {drivingForces.map((f: any, i: number) => (
                 <div key={i} className="nested-card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <div className="rr-flex rr-justify-between">
                     <span>{f.force}</span>
                     {f.strength && <span className="badge">Strength: {f.strength}/5</span>}
                   </div>
-                  {f.leverageStrategy && <div style={{ opacity: 0.7, marginTop: 4 }}>Leverage: {f.leverageStrategy}</div>}
+                  {f.leverageStrategy && <div className="rr-muted rr-mt-4">Leverage: {f.leverageStrategy}</div>}
                 </div>
               ))}
             </div>
           )}
           {restrainingForces.length > 0 && (
-            <div><strong style={{ color: 'var(--vscode-errorForeground)' }}>Restraining Forces:</strong>
+            <div><strong className="rr-fg-error">Restraining Forces:</strong>
               {restrainingForces.map((f: any, i: number) => (
                 <div key={i} className="nested-card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <div className="rr-flex rr-justify-between">
                     <span>{f.force}</span>
                     {f.strength && <span className="badge">Strength: {f.strength}/5</span>}
                   </div>
-                  {f.mitigationStrategy && <div style={{ opacity: 0.7, marginTop: 4 }}>Mitigation: {f.mitigationStrategy}</div>}
+                  {f.mitigationStrategy && <div className="rr-muted rr-mt-4">Mitigation: {f.mitigationStrategy}</div>}
                 </div>
               ))}
             </div>
@@ -930,11 +930,11 @@ export function renderProblemSolvingDetails(props: RendererProps) {
       {(analysisConstraints.length > 0 || keyInsights.length > 0 || assumptions.length > 0) && (
         <CollapsibleSection title="Analysis Insights" sectionId="ps-insights">
           {keyInsights.length > 0 && (
-            <div style={{ marginBottom: 12 }}><strong>Key Insights:</strong>
+            <div className="rr-mb-12"><strong>Key Insights:</strong>
               {keyInsights.map((ki: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div><strong>{ki.insight}</strong></div>
-                  <div className="detail-grid" style={{ marginTop: 4 }}>
+                  <div className="detail-grid rr-mt-4">
                     {ki.source && <><span className="label">Source</span><span>{ki.source}</span></>}
                     {ki.implication && <><span className="label">Implication</span><span>{ki.implication}</span></>}
                   </div>
@@ -943,7 +943,7 @@ export function renderProblemSolvingDetails(props: RendererProps) {
             </div>
           )}
           {analysisConstraints.length > 0 && (
-            <div style={{ marginBottom: 12 }}><strong>Constraints:</strong>
+            <div className="rr-mb-12"><strong>Constraints:</strong>
               {analysisConstraints.map((c: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div className="detail-grid">
@@ -976,7 +976,7 @@ export function renderProblemSolvingDetails(props: RendererProps) {
       {(generatedSolutions.length > 0 || solutionGen.methodsUsed?.length > 0 || solutionGen.creativeAlternatives?.length > 0) && (
         <CollapsibleSection title="Generated Solutions" count={generatedSolutions.length} sectionId="ps-solutions">
           {solutionGen.methodsUsed?.length > 0 && (
-            <div style={{ marginBottom: 12 }}><strong>Methods Used:</strong>
+            <div className="rr-mb-12"><strong>Methods Used:</strong>
               {solutionGen.methodsUsed.map((m: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div className="detail-grid">
@@ -989,7 +989,7 @@ export function renderProblemSolvingDetails(props: RendererProps) {
             </div>
           )}
           {solutionGen.creativeAlternatives?.length > 0 && (
-            <div style={{ marginBottom: 12 }}><strong>Creative Alternatives:</strong>
+            <div className="rr-mb-12"><strong>Creative Alternatives:</strong>
               {solutionGen.creativeAlternatives.map((ca: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div className="detail-grid">
@@ -1004,13 +1004,13 @@ export function renderProblemSolvingDetails(props: RendererProps) {
           {generatedSolutions.map((sol: any, i: number) => (
             <div key={i} className="nested-card">
               <div className="nested-card-header">{sol.title || sol.id || `Solution ${i + 1}`}</div>
-              {sol.description && <div style={{ marginBottom: 4 }}><Md text={sol.description} /></div>}
+              {sol.description && <div className="rr-mb-4"><Md text={sol.description} /></div>}
               <div className="detail-grid">
                 {sol.approach && <><span className="label">Approach</span><span>{sol.approach}</span></>}
                 {sol.contributor && <><span className="label">Contributor</span><span>{sol.contributor}</span></>}
               </div>
               {sol.rootCausesAddressed?.length > 0 && (
-                <div style={{ marginTop: 4 }}><strong>Addresses:</strong> {sol.rootCausesAddressed.join(', ')}</div>
+                <div className="rr-mt-4"><strong>Addresses:</strong> {sol.rootCausesAddressed.join(', ')}</div>
               )}
             </div>
           ))}
@@ -1021,8 +1021,8 @@ export function renderProblemSolvingDetails(props: RendererProps) {
       {solutionAnalysis.length > 0 && (
         <CollapsibleSection title="Solution Evaluation" sectionId="ps-evaluation">
           {evaluationCriteria.length > 0 && (
-            <div style={{ marginBottom: 12 }}><strong>Evaluation Criteria:</strong>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+            <div className="rr-mb-12"><strong>Evaluation Criteria:</strong>
+              <div className="rr-flex rr-wrap rr-gap-4 rr-mt-4">
                 {evaluationCriteria.map((ec: any, i: number) => (
                   <span key={i} className="badge" title={ec.rationale}>{ec.criterion} (w: {ec.weight})</span>
                 ))}
@@ -1033,13 +1033,13 @@ export function renderProblemSolvingDetails(props: RendererProps) {
             <div key={i} className="nested-card">
               <div className="nested-card-header">
                 {sa.solutionId || `Solution ${i + 1}`}
-                {sa.totalScore !== undefined && <span className="badge" style={{ marginLeft: 8 }}>Score: {sa.totalScore}</span>}
+                {sa.totalScore !== undefined && <span className="badge rr-ml-8">Score: {sa.totalScore}</span>}
                 {sa.recommendation && <span className="badge" style={{ marginLeft: 4, color: sa.recommendation === 'recommended' ? 'var(--vscode-testing-iconPassed)' : sa.recommendation === 'not-recommended' ? 'var(--vscode-errorForeground)' : undefined }}>{sa.recommendation}</span>}
               </div>
               {sa.pros?.length > 0 && <div><strong>Pros:</strong><ul className="compact-list">{sa.pros.map((p: string, j: number) => <li key={j}>{p}</li>)}</ul></div>}
               {sa.cons?.length > 0 && <div><strong>Cons:</strong><ul className="compact-list">{sa.cons.map((c: string, j: number) => <li key={j}>{c}</li>)}</ul></div>}
               {sa.criteriaScores?.length > 0 && (
-                <div style={{ marginTop: 4 }}><strong>Criteria Scores:</strong>
+                <div className="rr-mt-4"><strong>Criteria Scores:</strong>
                   {sa.criteriaScores.map((cs: any, j: number) => (
                     <div key={j} className="nested-card">
                       <div className="detail-grid">
@@ -1052,7 +1052,7 @@ export function renderProblemSolvingDetails(props: RendererProps) {
                 </div>
               )}
               {sa.risks?.length > 0 && (
-                <div style={{ marginTop: 4 }}><strong>Risks:</strong>
+                <div className="rr-mt-4"><strong>Risks:</strong>
                   {sa.risks.map((r: any, j: number) => (
                     <div key={j} className="nested-card">
                       <div className="detail-grid">
@@ -1067,7 +1067,7 @@ export function renderProblemSolvingDetails(props: RendererProps) {
               )}
             </div>
           ))}
-          {solutionEval.comparisonMatrix && <div style={{ marginTop: 8 }}><Md text={solutionEval.comparisonMatrix} /></div>}
+          {solutionEval.comparisonMatrix && <div className="rr-mt-8"><Md text={solutionEval.comparisonMatrix} /></div>}
         </CollapsibleSection>
       )}
 
@@ -1085,14 +1085,14 @@ export function renderProblemSolvingDetails(props: RendererProps) {
             </div>
           ) : (
             <>
-              <div className="nested-card" style={{ borderLeft: '3px solid var(--vscode-testing-iconPassed)' }}>
+              <div className="nested-card rr-accent-strong-passed">
                 <div className="nested-card-header">{recommended.title}</div>
-                {recommended.solutionId && <div style={{ marginBottom: 4 }}><span className="label">Solution ID:</span> <span className="badge">{recommended.solutionId}</span></div>}
+                {recommended.solutionId && <div className="rr-mb-4"><span className="label">Solution ID:</span> <span className="badge">{recommended.solutionId}</span></div>}
                 {recommended.description && <Md text={recommended.description} />}
-                {recommended.rationale && <div style={{ marginTop: 8 }}><strong>Rationale:</strong> <Md text={recommended.rationale} /></div>}
+                {recommended.rationale && <div className="rr-mt-8"><strong>Rationale:</strong> <Md text={recommended.rationale} /></div>}
               </div>
               {rootCausesAddressed.length > 0 && (
-                <div style={{ marginTop: 8 }}><strong>Root Causes Addressed:</strong>
+                <div className="rr-mt-8"><strong>Root Causes Addressed:</strong>
                   {rootCausesAddressed.map((rc: any, i: number) => (
                     <div key={i} className="nested-card">
                       <div className="detail-grid">
@@ -1104,7 +1104,7 @@ export function renderProblemSolvingDetails(props: RendererProps) {
                 </div>
               )}
               {expectedOutcomes.length > 0 && (
-                <div style={{ marginTop: 8 }}><strong>Expected Outcomes:</strong>
+                <div className="rr-mt-8"><strong>Expected Outcomes:</strong>
                   {expectedOutcomes.map((eo: any, i: number) => (
                     <div key={i} className="nested-card">
                       <div className="detail-grid">
@@ -1117,7 +1117,7 @@ export function renderProblemSolvingDetails(props: RendererProps) {
                   ))}
                 </div>
               )}
-              {tradeoffs.length > 0 && <div style={{ marginTop: 8 }}><strong>Tradeoffs:</strong><ul className="compact-list">{tradeoffs.map((t: string, i: number) => <li key={i}>{t}</li>)}</ul></div>}
+              {tradeoffs.length > 0 && <div className="rr-mt-8"><strong>Tradeoffs:</strong><ul className="compact-list">{tradeoffs.map((t: string, i: number) => <li key={i}>{t}</li>)}</ul></div>}
             </>
           )}
         </CollapsibleSection>
@@ -1137,21 +1137,21 @@ export function renderProblemSolvingDetails(props: RendererProps) {
             </div>
           ) : (
             <>
-              {implPlan.approach && <div style={{ marginBottom: 8 }}><Md text={implPlan.approach} /></div>}
-              {implPlan.timeline && <div style={{ marginBottom: 8 }}><strong>Timeline:</strong> {implPlan.timeline}</div>}
+              {implPlan.approach && <div className="rr-mb-8"><Md text={implPlan.approach} /></div>}
+              {implPlan.timeline && <div className="rr-mb-8"><strong>Timeline:</strong> {implPlan.timeline}</div>}
               {phases.length > 0 && phases.map((ph: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div className="nested-card-header">{ph.phase || `Phase ${i + 1}`}</div>
-                  {ph.objective && <div style={{ marginBottom: 4 }}>{ph.objective}</div>}
+                  {ph.objective && <div className="rr-mb-4">{ph.objective}</div>}
                   <div className="detail-grid">
                     {ph.duration && <><span className="label">Duration</span><span>{ph.duration}</span></>}
                   </div>
-                  {ph.deliverables?.length > 0 && <div style={{ marginTop: 4 }}><strong>Deliverables:</strong> {ph.deliverables.join(', ')}</div>}
-                  {ph.dependencies?.length > 0 && <div style={{ marginTop: 4 }}><strong>Dependencies:</strong><ul className="compact-list">{ph.dependencies.map((dep: string, j: number) => <li key={j}>{dep}</li>)}</ul></div>}
+                  {ph.deliverables?.length > 0 && <div className="rr-mt-4"><strong>Deliverables:</strong> {ph.deliverables.join(', ')}</div>}
+                  {ph.dependencies?.length > 0 && <div className="rr-mt-4"><strong>Dependencies:</strong><ul className="compact-list">{ph.dependencies.map((dep: string, j: number) => <li key={j}>{dep}</li>)}</ul></div>}
                 </div>
               ))}
               {actionSteps.length > 0 && (
-                <div style={{ marginTop: 8 }}><strong>Action Steps:</strong>
+                <div className="rr-mt-8"><strong>Action Steps:</strong>
                   {actionSteps.map((as: any, i: number) => (
                     <div key={i} className="nested-card">
                       <div className="detail-grid">
@@ -1160,13 +1160,13 @@ export function renderProblemSolvingDetails(props: RendererProps) {
                         {as.deadline && <><span className="label">Deadline</span><span>{as.deadline}</span></>}
                         {as.status && <><span className="label">Status</span><span className="badge">{as.status}</span></>}
                       </div>
-                      {as.dependencies?.length > 0 && <div style={{ marginTop: 4 }}><strong>Dependencies:</strong><ul className="compact-list">{as.dependencies.map((dep: string, j: number) => <li key={j}>{dep}</li>)}</ul></div>}
+                      {as.dependencies?.length > 0 && <div className="rr-mt-4"><strong>Dependencies:</strong><ul className="compact-list">{as.dependencies.map((dep: string, j: number) => <li key={j}>{dep}</li>)}</ul></div>}
                     </div>
                   ))}
                 </div>
               )}
               {resourcesNeeded.length > 0 && (
-                <div style={{ marginTop: 8 }}><strong>Resources Needed:</strong>
+                <div className="rr-mt-8"><strong>Resources Needed:</strong>
                   {resourcesNeeded.map((r: any, i: number) => (
                     <div key={i} className="nested-card">
                       <div className="detail-grid">
@@ -1180,7 +1180,7 @@ export function renderProblemSolvingDetails(props: RendererProps) {
                 </div>
               )}
               {implPlan.responsibleParties?.length > 0 && (
-                <div style={{ marginTop: 8 }}><strong>Responsible Parties:</strong>
+                <div className="rr-mt-8"><strong>Responsible Parties:</strong>
                   {implPlan.responsibleParties.map((rp: any, i: number) => (
                     <div key={i} className="nested-card">
                       <div className="detail-grid">
@@ -1192,8 +1192,8 @@ export function renderProblemSolvingDetails(props: RendererProps) {
                   ))}
                 </div>
               )}
-              {implPlan.communicationPlan && <div style={{ marginTop: 8 }}><strong>Communication Plan:</strong> <Md text={implPlan.communicationPlan} /></div>}
-              {implPlan.changeManagement && <div style={{ marginTop: 8 }}><strong>Change Management:</strong> <Md text={implPlan.changeManagement} /></div>}
+              {implPlan.communicationPlan && <div className="rr-mt-8"><strong>Communication Plan:</strong> <Md text={implPlan.communicationPlan} /></div>}
+              {implPlan.changeManagement && <div className="rr-mt-8"><strong>Change Management:</strong> <Md text={implPlan.changeManagement} /></div>}
             </>
           )}
         </CollapsibleSection>
@@ -1202,9 +1202,9 @@ export function renderProblemSolvingDetails(props: RendererProps) {
       {/* Monitoring */}
       {(monitorMetrics.length > 0 || monitoring.validationPlan || checkpoints.length > 0) && (
         <CollapsibleSection title="Monitoring & Validation" sectionId="ps-monitoring">
-          {monitoring.validationPlan && <div style={{ marginBottom: 8 }}><strong>Validation Plan:</strong> <Md text={monitoring.validationPlan} /></div>}
+          {monitoring.validationPlan && <div className="rr-mb-8"><strong>Validation Plan:</strong> <Md text={monitoring.validationPlan} /></div>}
           {monitorMetrics.length > 0 && (
-            <div style={{ marginBottom: 8 }}><strong>Success Metrics:</strong>
+            <div className="rr-mb-8"><strong>Success Metrics:</strong>
               {monitorMetrics.map((m: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div className="detail-grid">
@@ -1219,7 +1219,7 @@ export function renderProblemSolvingDetails(props: RendererProps) {
             </div>
           )}
           {checkpoints.length > 0 && (
-            <div style={{ marginBottom: 8 }}><strong>Checkpoints:</strong>
+            <div className="rr-mb-8"><strong>Checkpoints:</strong>
               {checkpoints.map((cp: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div className="detail-grid">
@@ -1246,7 +1246,7 @@ export function renderProblemSolvingDetails(props: RendererProps) {
             </div>
           )}
           {monitoring.adjustmentTriggers?.length > 0 && (
-            <div style={{ marginTop: 8 }}><strong>Adjustment Triggers:</strong>
+            <div className="rr-mt-8"><strong>Adjustment Triggers:</strong>
               {monitoring.adjustmentTriggers.map((at: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div className="detail-grid">
@@ -1258,7 +1258,7 @@ export function renderProblemSolvingDetails(props: RendererProps) {
               ))}
             </div>
           )}
-          {monitoring.escalationPath && <div style={{ marginTop: 8 }}><strong>Escalation Path:</strong> {monitoring.escalationPath}</div>}
+          {monitoring.escalationPath && <div className="rr-mt-8"><strong>Escalation Path:</strong> {monitoring.escalationPath}</div>}
         </CollapsibleSection>
       )}
 
@@ -1268,16 +1268,16 @@ export function renderProblemSolvingDetails(props: RendererProps) {
           {keyLearnings.length > 0 && keyLearnings.map((kl: any, i: number) => (
             <div key={i} className="nested-card">
               <div><strong>{kl.learning}</strong></div>
-              <div className="detail-grid" style={{ marginTop: 4 }}>
+              <div className="detail-grid rr-mt-4">
                 {kl.context && <><span className="label">Context</span><span>{kl.context}</span></>}
                 {kl.applicability && <><span className="label">Applicability</span><span>{kl.applicability}</span></>}
               </div>
             </div>
           ))}
-          {lessonsLearned.whatWorked?.length > 0 && <div style={{ marginTop: 8 }}><strong style={{ color: 'var(--vscode-testing-iconPassed)' }}>What Worked:</strong><ul className="compact-list">{lessonsLearned.whatWorked.map((w: string, i: number) => <li key={i}>{w}</li>)}</ul></div>}
-          {lessonsLearned.whatToAvoid?.length > 0 && <div style={{ marginTop: 8 }}><strong style={{ color: 'var(--vscode-errorForeground)' }}>What to Avoid:</strong><ul className="compact-list">{lessonsLearned.whatToAvoid.map((a: string, i: number) => <li key={i}>{a}</li>)}</ul></div>}
-          {lessonsLearned.processImprovements?.length > 0 && <div style={{ marginTop: 8 }}><strong>Process Improvements:</strong><ul className="compact-list">{lessonsLearned.processImprovements.map((p: string, i: number) => <li key={i}>{p}</li>)}</ul></div>}
-          {lessonsLearned.knowledgeSharing && <div style={{ marginTop: 8 }}><strong>Knowledge Sharing:</strong> <Md text={lessonsLearned.knowledgeSharing} /></div>}
+          {lessonsLearned.whatWorked?.length > 0 && <div className="rr-mt-8"><strong className="rr-fg-passed">What Worked:</strong><ul className="compact-list">{lessonsLearned.whatWorked.map((w: string, i: number) => <li key={i}>{w}</li>)}</ul></div>}
+          {lessonsLearned.whatToAvoid?.length > 0 && <div className="rr-mt-8"><strong className="rr-fg-error">What to Avoid:</strong><ul className="compact-list">{lessonsLearned.whatToAvoid.map((a: string, i: number) => <li key={i}>{a}</li>)}</ul></div>}
+          {lessonsLearned.processImprovements?.length > 0 && <div className="rr-mt-8"><strong>Process Improvements:</strong><ul className="compact-list">{lessonsLearned.processImprovements.map((p: string, i: number) => <li key={i}>{p}</li>)}</ul></div>}
+          {lessonsLearned.knowledgeSharing && <div className="rr-mt-8"><strong>Knowledge Sharing:</strong> <Md text={lessonsLearned.knowledgeSharing} /></div>}
         </CollapsibleSection>
       )}
     </>
@@ -1360,12 +1360,12 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
                 {sessionInfo.duration && <><span className="label">Duration</span><span>{sessionInfo.duration}</span></>}
               </div>
               {sessionInfo.frameworksUsed?.length > 0 && (
-                <div style={{ marginTop: 8 }}><strong>Frameworks:</strong>{' '}
-                  {sessionInfo.frameworksUsed.map((f: string, i: number) => <span key={i} className="badge" style={{ marginRight: 4 }}>{f}</span>)}
+                <div className="rr-mt-8"><strong>Frameworks:</strong>{' '}
+                  {sessionInfo.frameworksUsed.map((f: string, i: number) => <span key={i} className="badge rr-mr-4">{f}</span>)}
                 </div>
               )}
               {sessionInfo.participants?.length > 0 && (
-                <div style={{ marginTop: 8 }}>
+                <div className="rr-mt-8">
                   <strong>Participants:</strong>
                   {sessionInfo.participants.map((p: any, i: number) => (
                     <div key={i} className="nested-card">
@@ -1397,15 +1397,15 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
             </div>
           ) : (
             <>
-              {strategicContext.currentSituation && <div style={{ marginBottom: 8 }}><strong>Current Situation:</strong> <Md text={strategicContext.currentSituation} /></div>}
-              {strategicContext.strategicChallenge && <div style={{ marginBottom: 8 }}><strong>Strategic Challenge:</strong> <Md text={strategicContext.strategicChallenge} /></div>}
-              {strategicContext.visionStatement && <div style={{ marginBottom: 8 }}><strong>Vision:</strong> {strategicContext.visionStatement}</div>}
+              {strategicContext.currentSituation && <div className="rr-mb-8"><strong>Current Situation:</strong> <Md text={strategicContext.currentSituation} /></div>}
+              {strategicContext.strategicChallenge && <div className="rr-mb-8"><strong>Strategic Challenge:</strong> <Md text={strategicContext.strategicChallenge} /></div>}
+              {strategicContext.visionStatement && <div className="rr-mb-8"><strong>Vision:</strong> {strategicContext.visionStatement}</div>}
               {strategicObjectives.length > 0 && (
-                <div style={{ marginTop: 8 }}><strong>Strategic Objectives:</strong>
+                <div className="rr-mt-8"><strong>Strategic Objectives:</strong>
                   {strategicObjectives.map((obj: any, i: number) => (
                     <div key={i} className="nested-card">
                       <div>{obj.objective}</div>
-                      <div className="detail-grid" style={{ marginTop: 4 }}>
+                      <div className="detail-grid rr-mt-4">
                         {obj.timeframe && <><span className="label">Timeframe</span><span>{obj.timeframe}</span></>}
                         {obj.metrics?.length > 0 && <><span className="label">Metrics</span><span>{obj.metrics.join(', ')}</span></>}
                       </div>
@@ -1413,7 +1413,7 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
                   ))}
                 </div>
               )}
-              {keyQuestions.length > 0 && <div style={{ marginTop: 8 }}><strong>Key Questions:</strong><ul className="compact-list">{keyQuestions.map((q: string, i: number) => <li key={i}>{q}</li>)}</ul></div>}
+              {keyQuestions.length > 0 && <div className="rr-mt-8"><strong>Key Questions:</strong><ul className="compact-list">{keyQuestions.map((q: string, i: number) => <li key={i}>{q}</li>)}</ul></div>}
             </>
           )}
         </CollapsibleSection>
@@ -1422,9 +1422,9 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
       {/* Market Landscape */}
       {(marketLandscape.overview || keyTrends.length > 0 || marketSize.tam) && (
         <CollapsibleSection title="Market Landscape" sectionId="is-market">
-          {marketLandscape.overview && <div style={{ marginBottom: 8 }}><Md text={marketLandscape.overview} /></div>}
+          {marketLandscape.overview && <div className="rr-mb-8"><Md text={marketLandscape.overview} /></div>}
           {(marketSize.tam || marketSize.sam || marketSize.som) && (
-            <div className="detail-grid" style={{ marginBottom: 8 }}>
+            <div className="detail-grid rr-mb-8">
               {marketSize.tam && <><span className="label">TAM</span><span>{marketSize.tam}</span></>}
               {marketSize.sam && <><span className="label">SAM</span><span>{marketSize.sam}</span></>}
               {marketSize.som && <><span className="label">SOM</span><span>{marketSize.som}</span></>}
@@ -1440,23 +1440,23 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
               </div>
             </div>
           ))}
-          {marketLandscape.regulatoryEnvironment && <div style={{ marginTop: 8 }}><strong>Regulatory:</strong> <Md text={marketLandscape.regulatoryEnvironment} /></div>}
+          {marketLandscape.regulatoryEnvironment && <div className="rr-mt-8"><strong>Regulatory:</strong> <Md text={marketLandscape.regulatoryEnvironment} /></div>}
         </CollapsibleSection>
       )}
 
       {/* Competitive Dynamics */}
       {(compDynamics.overview || competitors.length > 0) && (
         <CollapsibleSection title="Competitive Dynamics" count={competitors.length} sectionId="is-competitors">
-          {compDynamics.overview && <div style={{ marginBottom: 8 }}><Md text={compDynamics.overview} /></div>}
-          {compDynamics.threatLevel && <div style={{ marginBottom: 8 }}><strong>Threat Level:</strong> <span className="badge">{compDynamics.threatLevel}</span></div>}
+          {compDynamics.overview && <div className="rr-mb-8"><Md text={compDynamics.overview} /></div>}
+          {compDynamics.threatLevel && <div className="rr-mb-8"><strong>Threat Level:</strong> <span className="badge">{compDynamics.threatLevel}</span></div>}
           {competitors.map((c: any, i: number) => (
             <div key={i} className="nested-card">
               <div className="nested-card-header">
                 {c.name}
-                {c.type && <span className="badge" style={{ marginLeft: 8 }}>{c.type}</span>}
-                {c.marketShare && <span style={{ marginLeft: 8, opacity: 0.7 }}>{c.marketShare}</span>}
+                {c.type && <span className="badge rr-ml-8">{c.type}</span>}
+                {c.marketShare && <span className="rr-ml-8 rr-muted">{c.marketShare}</span>}
               </div>
-              {c.strategy && <div style={{ marginBottom: 4 }}>{c.strategy}</div>}
+              {c.strategy && <div className="rr-mb-4">{c.strategy}</div>}
               <div className="detail-grid">
                 {c.strengths?.length > 0 && <><span className="label">Strengths</span><span>{c.strengths.join(', ')}</span></>}
                 {c.weaknesses?.length > 0 && <><span className="label">Weaknesses</span><span>{c.weaknesses.join(', ')}</span></>}
@@ -1465,7 +1465,7 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
             </div>
           ))}
           {competitiveAdvantages.length > 0 && (
-            <div style={{ marginTop: 12 }}><strong>Our Competitive Advantages:</strong>
+            <div className="rr-mt-12"><strong>Our Competitive Advantages:</strong>
               {competitiveAdvantages.map((ca: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div className="detail-grid">
@@ -1483,29 +1483,29 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
       {/* SWOT Analysis */}
       {(swot.strengths?.length > 0 || swot.weaknesses?.length > 0 || swot.opportunities?.length > 0 || swot.threats?.length > 0) && (
         <CollapsibleSection title="SWOT Analysis" sectionId="is-swot">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <div className="rr-grid rr-grid-2 rr-gap-8">
             {swot.strengths?.length > 0 && (
-              <div className="nested-card" style={{ borderLeft: '3px solid var(--vscode-testing-iconPassed)' }}>
-                <div className="nested-card-header" style={{ color: 'var(--vscode-testing-iconPassed)' }}>Strengths</div>
-                {swot.strengths.map((s: any, i: number) => <div key={i}>{s.strength}{s.leverage && <span style={{ opacity: 0.7 }}> — {s.leverage}</span>}</div>)}
+              <div className="nested-card rr-accent-strong-passed">
+                <div className="nested-card-header rr-fg-passed">Strengths</div>
+                {swot.strengths.map((s: any, i: number) => <div key={i}>{s.strength}{s.leverage && <span className="rr-muted"> — {s.leverage}</span>}</div>)}
               </div>
             )}
             {swot.weaknesses?.length > 0 && (
-              <div className="nested-card" style={{ borderLeft: '3px solid var(--vscode-errorForeground)' }}>
-                <div className="nested-card-header" style={{ color: 'var(--vscode-errorForeground)' }}>Weaknesses</div>
-                {swot.weaknesses.map((w: any, i: number) => <div key={i}>{w.weakness}{w.mitigation && <span style={{ opacity: 0.7 }}> — {w.mitigation}</span>}</div>)}
+              <div className="nested-card rr-accent-strong-error">
+                <div className="nested-card-header rr-fg-error">Weaknesses</div>
+                {swot.weaknesses.map((w: any, i: number) => <div key={i}>{w.weakness}{w.mitigation && <span className="rr-muted"> — {w.mitigation}</span>}</div>)}
               </div>
             )}
             {swot.opportunities?.length > 0 && (
-              <div className="nested-card" style={{ borderLeft: '3px solid var(--vscode-terminal-ansiBlue)' }}>
-                <div className="nested-card-header" style={{ color: 'var(--vscode-terminal-ansiBlue)' }}>Opportunities</div>
-                {swot.opportunities.map((o: any, i: number) => <div key={i}>{o.opportunity}{o.captureStrategy && <span style={{ opacity: 0.7 }}> — {o.captureStrategy}</span>}</div>)}
+              <div className="nested-card rr-accent-strong-blue">
+                <div className="nested-card-header rr-fg-blue">Opportunities</div>
+                {swot.opportunities.map((o: any, i: number) => <div key={i}>{o.opportunity}{o.captureStrategy && <span className="rr-muted"> — {o.captureStrategy}</span>}</div>)}
               </div>
             )}
             {swot.threats?.length > 0 && (
-              <div className="nested-card" style={{ borderLeft: '3px solid var(--vscode-editorWarning-foreground)' }}>
-                <div className="nested-card-header" style={{ color: 'var(--vscode-editorWarning-foreground)' }}>Threats</div>
-                {swot.threats.map((t: any, i: number) => <div key={i}>{t.threat}{t.response && <span style={{ opacity: 0.7 }}> — {t.response}</span>}</div>)}
+              <div className="nested-card rr-accent-strong-warning">
+                <div className="nested-card-header rr-fg-warning">Threats</div>
+                {swot.threats.map((t: any, i: number) => <div key={i}>{t.threat}{t.response && <span className="rr-muted"> — {t.response}</span>}</div>)}
               </div>
             )}
           </div>
@@ -1518,13 +1518,13 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
           {marketOpps.map((mo: any, i: number) => (
             <div key={i} className="nested-card">
               <div><strong>{mo.opportunity}</strong></div>
-              <div className="detail-grid" style={{ marginTop: 4 }}>
+              <div className="detail-grid rr-mt-4">
                 {mo.size && <><span className="label">Size</span><span>{mo.size}</span></>}
                 {mo.timing && <><span className="label">Timing</span><span className="badge">{mo.timing}</span></>}
                 {mo.fitWithCapabilities && <><span className="label">Fit</span><span className="badge">{mo.fitWithCapabilities}</span></>}
               </div>
-              {mo.barriers?.length > 0 && <div style={{ marginTop: 4 }}><strong>Barriers:</strong> {mo.barriers.join(', ')}</div>}
-              {mo.requiredCapabilities?.length > 0 && <div style={{ marginTop: 4 }}><strong>Required Capabilities:</strong><ul className="compact-list">{mo.requiredCapabilities.map((rc: string, j: number) => <li key={j}>{rc}</li>)}</ul></div>}
+              {mo.barriers?.length > 0 && <div className="rr-mt-4"><strong>Barriers:</strong> {mo.barriers.join(', ')}</div>}
+              {mo.requiredCapabilities?.length > 0 && <div className="rr-mt-4"><strong>Required Capabilities:</strong><ul className="compact-list">{mo.requiredCapabilities.map((rc: string, j: number) => <li key={j}>{rc}</li>)}</ul></div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -1536,7 +1536,7 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
           {criticalInsights.map((ci: any, i: number) => (
             <div key={i} className="nested-card">
               <div><strong>{ci.insight}</strong></div>
-              <div className="detail-grid" style={{ marginTop: 4 }}>
+              <div className="detail-grid rr-mt-4">
                 {ci.source && <><span className="label">Source</span><span>{ci.source}</span></>}
                 {ci.strategicImplication && <><span className="label">Implication</span><span>{ci.strategicImplication}</span></>}
               </div>
@@ -1548,9 +1548,9 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
       {/* Business Model Analysis */}
       {(businessModelAnalysis.currentBusinessModel || businessModelCanvas.valuePropositions?.length > 0) && (
         <CollapsibleSection title="Business Model" sectionId="is-bmodel">
-          {businessModelAnalysis.currentBusinessModel && <div style={{ marginBottom: 8 }}><Md text={businessModelAnalysis.currentBusinessModel} /></div>}
-          {businessModelAnalysis.valueProposition && <div style={{ marginBottom: 8 }}><strong>Value Proposition:</strong> <Md text={businessModelAnalysis.valueProposition} /></div>}
-          {businessModelAnalysis.revenueCostStructure && <div style={{ marginBottom: 8 }}><strong>Revenue & Cost Structure:</strong> <Md text={businessModelAnalysis.revenueCostStructure} /></div>}
+          {businessModelAnalysis.currentBusinessModel && <div className="rr-mb-8"><Md text={businessModelAnalysis.currentBusinessModel} /></div>}
+          {businessModelAnalysis.valueProposition && <div className="rr-mb-8"><strong>Value Proposition:</strong> <Md text={businessModelAnalysis.valueProposition} /></div>}
+          {businessModelAnalysis.revenueCostStructure && <div className="rr-mb-8"><strong>Revenue & Cost Structure:</strong> <Md text={businessModelAnalysis.revenueCostStructure} /></div>}
           {businessModelCanvas.valuePropositions?.length > 0 && (
             <div className="detail-grid">
               {businessModelCanvas.valuePropositions?.length > 0 && <><span className="label">Value Props</span><span>{businessModelCanvas.valuePropositions.join(', ')}</span></>}
@@ -1565,12 +1565,12 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
             </div>
           )}
           {businessModelAnalysis.modelStrengths?.length > 0 && (
-            <div style={{ marginTop: 8 }}><strong>Strengths:</strong>
+            <div className="rr-mt-8"><strong>Strengths:</strong>
               <ul className="compact-list">{businessModelAnalysis.modelStrengths.map((s: string, i: number) => <li key={i}>{s}</li>)}</ul>
             </div>
           )}
           {modelWeaknesses.length > 0 && (
-            <div style={{ marginTop: 8 }}><strong>Weaknesses:</strong>
+            <div className="rr-mt-8"><strong>Weaknesses:</strong>
               {modelWeaknesses.map((w: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div className="detail-grid">
@@ -1589,11 +1589,11 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
       {(disruptionVectors.length > 0 || unmetJobs.length > 0 || technologyEnablers.length > 0) && (
         <CollapsibleSection title="Disruption Opportunities" sectionId="is-disruption">
           {disruptionVectors.length > 0 && (
-            <div style={{ marginBottom: 12 }}><strong>Disruption Vectors:</strong>
+            <div className="rr-mb-12"><strong>Disruption Vectors:</strong>
               {disruptionVectors.map((dv: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div><strong>{dv.vector}</strong></div>
-                  <div className="detail-grid" style={{ marginTop: 4 }}>
+                  <div className="detail-grid rr-mt-4">
                     {dv.type && <><span className="label">Type</span><span className="badge">{dv.type}</span></>}
                     {dv.likelihood && <><span className="label">Likelihood</span><span className="badge">{dv.likelihood}</span></>}
                     {dv.timeframe && <><span className="label">Timeframe</span><span>{dv.timeframe}</span></>}
@@ -1604,21 +1604,21 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
             </div>
           )}
           {unmetJobs.length > 0 && (
-            <div style={{ marginBottom: 12 }}><strong>Unmet Jobs-to-be-Done:</strong>
+            <div className="rr-mb-12"><strong>Unmet Jobs-to-be-Done:</strong>
               {unmetJobs.map((j: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div><strong>{j.job}</strong></div>
-                  <div className="detail-grid" style={{ marginTop: 4 }}>
+                  <div className="detail-grid rr-mt-4">
                     {j.currentSolutions && <><span className="label">Current</span><span>{j.currentSolutions}</span></>}
                     {j.opportunity && <><span className="label">Opportunity</span><span>{j.opportunity}</span></>}
                   </div>
-                  {j.gaps?.length > 0 && <div style={{ marginTop: 4 }}><strong>Gaps:</strong> {j.gaps.join(', ')}</div>}
+                  {j.gaps?.length > 0 && <div className="rr-mt-4"><strong>Gaps:</strong> {j.gaps.join(', ')}</div>}
                 </div>
               ))}
             </div>
           )}
           {technologyEnablers.length > 0 && (
-            <div style={{ marginBottom: 12 }}><strong>Technology Enablers:</strong>
+            <div className="rr-mb-12"><strong>Technology Enablers:</strong>
               {technologyEnablers.map((te: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div className="detail-grid">
@@ -1631,7 +1631,7 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
               ))}
             </div>
           )}
-          {disruption.strategicWhitespace && <div style={{ marginBottom: 12 }}><strong>Strategic Whitespace:</strong> <Md text={disruption.strategicWhitespace} /></div>}
+          {disruption.strategicWhitespace && <div className="rr-mb-12"><strong>Strategic Whitespace:</strong> <Md text={disruption.strategicWhitespace} /></div>}
           {blueOcean.length > 0 && (
             <div><strong>Blue Ocean Opportunities:</strong>
               {blueOcean.map((bo: any, i: number) => (
@@ -1657,42 +1657,42 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
             <div key={i} className="nested-card">
               <div className="nested-card-header">
                 {ii.name || ii.id || `Initiative ${i + 1}`}
-                {ii.innovationType && <span className="badge" style={{ marginLeft: 8 }}>{ii.innovationType}</span>}
+                {ii.innovationType && <span className="badge rr-ml-8">{ii.innovationType}</span>}
               </div>
-              {ii.description && <div style={{ marginBottom: 4 }}><Md text={ii.description} /></div>}
+              {ii.description && <div className="rr-mb-4"><Md text={ii.description} /></div>}
               <div className="detail-grid">
                 {ii.impact && <><span className="label">Impact</span><span>{ii.impact}</span></>}
                 {ii.effort && <><span className="label">Effort</span><span className="badge">{ii.effort}</span></>}
                 {ii.timeToValue && <><span className="label">Time to Value</span><span>{ii.timeToValue}</span></>}
               </div>
-              {ii.risks?.length > 0 && <div style={{ marginTop: 4 }}><strong>Risks:</strong> {ii.risks.join(', ')}</div>}
-              {ii.requiredCapabilities?.length > 0 && <div style={{ marginTop: 4 }}><strong>Required Capabilities:</strong><ul className="compact-list">{ii.requiredCapabilities.map((rc: string, j: number) => <li key={j}>{rc}</li>)}</ul></div>}
-              {ii.dependencies?.length > 0 && <div style={{ marginTop: 4 }}><strong>Dependencies:</strong><ul className="compact-list">{ii.dependencies.map((dep: string, j: number) => <li key={j}>{dep}</li>)}</ul></div>}
+              {ii.risks?.length > 0 && <div className="rr-mt-4"><strong>Risks:</strong> {ii.risks.join(', ')}</div>}
+              {ii.requiredCapabilities?.length > 0 && <div className="rr-mt-4"><strong>Required Capabilities:</strong><ul className="compact-list">{ii.requiredCapabilities.map((rc: string, j: number) => <li key={j}>{rc}</li>)}</ul></div>}
+              {ii.dependencies?.length > 0 && <div className="rr-mt-4"><strong>Dependencies:</strong><ul className="compact-list">{ii.dependencies.map((dep: string, j: number) => <li key={j}>{dep}</li>)}</ul></div>}
             </div>
           ))}
           {(innovationPortfolio.core || innovationPortfolio.adjacent || innovationPortfolio.transformational) && (
-            <div style={{ marginTop: 12 }}><strong>Innovation Portfolio Balance:</strong>
-              <div className="detail-grid" style={{ marginTop: 4 }}>
+            <div className="rr-mt-12"><strong>Innovation Portfolio Balance:</strong>
+              <div className="detail-grid rr-mt-4">
                 {innovationPortfolio.core?.allocation && <><span className="label">Core</span><span>{innovationPortfolio.core.allocation}</span></>}
                 {innovationPortfolio.adjacent?.allocation && <><span className="label">Adjacent</span><span>{innovationPortfolio.adjacent.allocation}</span></>}
                 {innovationPortfolio.transformational?.allocation && <><span className="label">Transformational</span><span>{innovationPortfolio.transformational.allocation}</span></>}
               </div>
               {innovationPortfolio.core?.initiatives?.length > 0 && (
-                <div style={{ marginTop: 4 }}><strong>Core Initiatives:</strong><ul className="compact-list">{innovationPortfolio.core.initiatives.map((init: string, j: number) => <li key={j}>{init}</li>)}</ul></div>
+                <div className="rr-mt-4"><strong>Core Initiatives:</strong><ul className="compact-list">{innovationPortfolio.core.initiatives.map((init: string, j: number) => <li key={j}>{init}</li>)}</ul></div>
               )}
               {innovationPortfolio.adjacent?.initiatives?.length > 0 && (
-                <div style={{ marginTop: 4 }}><strong>Adjacent Initiatives:</strong><ul className="compact-list">{innovationPortfolio.adjacent.initiatives.map((init: string, j: number) => <li key={j}>{init}</li>)}</ul></div>
+                <div className="rr-mt-4"><strong>Adjacent Initiatives:</strong><ul className="compact-list">{innovationPortfolio.adjacent.initiatives.map((init: string, j: number) => <li key={j}>{init}</li>)}</ul></div>
               )}
               {innovationPortfolio.transformational?.initiatives?.length > 0 && (
-                <div style={{ marginTop: 4 }}><strong>Transformational Initiatives:</strong><ul className="compact-list">{innovationPortfolio.transformational.initiatives.map((init: string, j: number) => <li key={j}>{init}</li>)}</ul></div>
+                <div className="rr-mt-4"><strong>Transformational Initiatives:</strong><ul className="compact-list">{innovationPortfolio.transformational.initiatives.map((init: string, j: number) => <li key={j}>{init}</li>)}</ul></div>
               )}
             </div>
           )}
           {(innovationOpps.businessModelInnovation?.overview || innovationOpps.businessModelInnovation?.opportunities?.length > 0) && (
-            <div style={{ marginTop: 12 }}><strong>Business Model Innovation:</strong>
-              {innovationOpps.businessModelInnovation?.overview && <div style={{ marginTop: 4 }}><Md text={innovationOpps.businessModelInnovation.overview} /></div>}
+            <div className="rr-mt-12"><strong>Business Model Innovation:</strong>
+              {innovationOpps.businessModelInnovation?.overview && <div className="rr-mt-4"><Md text={innovationOpps.businessModelInnovation.overview} /></div>}
               {innovationOpps.businessModelInnovation?.opportunities?.length > 0 && (
-                <div style={{ marginTop: 4 }}>
+                <div className="rr-mt-4">
                   {innovationOpps.businessModelInnovation.opportunities.map((opp: any, j: number) => (
                     <div key={j} className="nested-card">
                       <div className="detail-grid">
@@ -1713,7 +1713,7 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
       {(valueChainOpps.length > 0 || partnershipOpps.length > 0) && (
         <CollapsibleSection title="Value Chain & Partnerships" sectionId="is-valuechain">
           {valueChainOpps.length > 0 && (
-            <div style={{ marginBottom: 12 }}><strong>Value Chain Opportunities:</strong>
+            <div className="rr-mb-12"><strong>Value Chain Opportunities:</strong>
               {valueChainOpps.map((vc: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div className="detail-grid">
@@ -1736,7 +1736,7 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
                     {po.valueExchange && <><span className="label">Value Exchange</span><span>{po.valueExchange}</span></>}
                     {po.potentialPartners?.length > 0 && <><span className="label">Partners</span><span>{po.potentialPartners.join(', ')}</span></>}
                   </div>
-                  {po.risks?.length > 0 && <div style={{ marginTop: 4 }}><strong>Risks:</strong><ul className="compact-list">{po.risks.map((r: string, j: number) => <li key={j}>{r}</li>)}</ul></div>}
+                  {po.risks?.length > 0 && <div className="rr-mt-4"><strong>Risks:</strong><ul className="compact-list">{po.risks.map((r: string, j: number) => <li key={j}>{r}</li>)}</ul></div>}
                 </div>
               ))}
             </div>
@@ -1751,18 +1751,18 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
             <div key={i} className="nested-card">
               <div className="nested-card-header">
                 {so.name || so.id || `Option ${i + 1}`}
-                {so.riskLevel && <span className="badge" style={{ marginLeft: 8 }}>{so.riskLevel} risk</span>}
+                {so.riskLevel && <span className="badge rr-ml-8">{so.riskLevel} risk</span>}
               </div>
-              {so.description && <div style={{ marginBottom: 4 }}><Md text={so.description} /></div>}
-              {so.strategicRationale && <div style={{ marginBottom: 4, opacity: 0.8 }}>{so.strategicRationale}</div>}
+              {so.description && <div className="rr-mb-4"><Md text={so.description} /></div>}
+              {so.strategicRationale && <div className="rr-mb-4 rr-subtle">{so.strategicRationale}</div>}
               <div className="detail-grid">
                 {so.timeframe && <><span className="label">Timeframe</span><span>{so.timeframe}</span></>}
                 {so.expectedReturn && <><span className="label">Expected Return</span><span>{so.expectedReturn}</span></>}
                 {so.resourceRequirements && <><span className="label">Resources</span><span>{so.resourceRequirements}</span></>}
               </div>
-              {so.pros?.length > 0 && <div style={{ marginTop: 4 }}><strong>Pros:</strong><ul className="compact-list">{so.pros.map((p: any, j: number) => <li key={j}>{p.pro}{p.significance && <span className="badge" style={{ marginLeft: 4 }}>{p.significance}</span>}</li>)}</ul></div>}
-              {so.cons?.length > 0 && <div style={{ marginTop: 4 }}><strong>Cons:</strong><ul className="compact-list">{so.cons.map((c: any, j: number) => <li key={j}>{c.con}{c.severity && <span className="badge" style={{ marginLeft: 4 }}>{c.severity}</span>}{c.mitigation && <span style={{ opacity: 0.7 }}> — {c.mitigation}</span>}</li>)}</ul></div>}
-              {so.keyAssumptions?.length > 0 && <div style={{ marginTop: 4 }}><strong>Key Assumptions:</strong><ul className="compact-list">{so.keyAssumptions.map((a: string, j: number) => <li key={j}>{a}</li>)}</ul></div>}
+              {so.pros?.length > 0 && <div className="rr-mt-4"><strong>Pros:</strong><ul className="compact-list">{so.pros.map((p: any, j: number) => <li key={j}>{p.pro}{p.significance && <span className="badge rr-ml-4">{p.significance}</span>}</li>)}</ul></div>}
+              {so.cons?.length > 0 && <div className="rr-mt-4"><strong>Cons:</strong><ul className="compact-list">{so.cons.map((c: any, j: number) => <li key={j}>{c.con}{c.severity && <span className="badge rr-ml-4">{c.severity}</span>}{c.mitigation && <span className="rr-muted"> — {c.mitigation}</span>}</li>)}</ul></div>}
+              {so.keyAssumptions?.length > 0 && <div className="rr-mt-4"><strong>Key Assumptions:</strong><ul className="compact-list">{so.keyAssumptions.map((a: string, j: number) => <li key={j}>{a}</li>)}</ul></div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -1782,19 +1782,19 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
             </div>
           ) : (
             <>
-              <div className="nested-card" style={{ borderLeft: '3px solid var(--vscode-testing-iconPassed)' }}>
+              <div className="nested-card rr-accent-strong-passed">
                 <div className="nested-card-header">Strategic Direction</div>
-                {recommended.strategicOptionId && <div style={{ marginBottom: 4 }}><span className="label">Option ID:</span> <span className="badge">{recommended.strategicOptionId}</span></div>}
+                {recommended.strategicOptionId && <div className="rr-mb-4"><span className="label">Option ID:</span> <span className="badge">{recommended.strategicOptionId}</span></div>}
                 <Md text={recommended.direction} />
               </div>
-              {recommended.strategicThesis && <div style={{ marginTop: 8 }}><strong>Strategic Thesis:</strong> <Md text={recommended.strategicThesis} /></div>}
-              {recommended.competitiveMoat && <div style={{ marginTop: 8 }}><strong>Competitive Moat:</strong> <Md text={recommended.competitiveMoat} /></div>}
+              {recommended.strategicThesis && <div className="rr-mt-8"><strong>Strategic Thesis:</strong> <Md text={recommended.strategicThesis} /></div>}
+              {recommended.competitiveMoat && <div className="rr-mt-8"><strong>Competitive Moat:</strong> <Md text={recommended.competitiveMoat} /></div>}
               {keyHypotheses.length > 0 && (
-                <div style={{ marginTop: 8 }}><strong>Key Hypotheses:</strong>
+                <div className="rr-mt-8"><strong>Key Hypotheses:</strong>
                   {keyHypotheses.map((h: any, i: number) => (
                     <div key={i} className="nested-card">
                       <div>{h.hypothesis}</div>
-                      <div className="detail-grid" style={{ marginTop: 4 }}>
+                      <div className="detail-grid rr-mt-4">
                         {h.validationApproach && <><span className="label">Validation</span><span>{h.validationApproach}</span></>}
                         {h.validationTimeline && <><span className="label">Timeline</span><span>{h.validationTimeline}</span></>}
                       </div>
@@ -1803,7 +1803,7 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
                 </div>
               )}
               {criticalSuccessFactors.length > 0 && (
-                <div style={{ marginTop: 8 }}><strong>Critical Success Factors:</strong>
+                <div className="rr-mt-8"><strong>Critical Success Factors:</strong>
                   {criticalSuccessFactors.map((csf: any, i: number) => (
                     <div key={i} className="nested-card">
                       <div className="detail-grid">
@@ -1812,15 +1812,15 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
                         {csf.requiredState && <><span className="label">Required</span><span>{csf.requiredState}</span></>}
                         {csf.gap && <><span className="label">Gap</span><span>{csf.gap}</span></>}
                       </div>
-                      {csf.actions?.length > 0 && <div style={{ marginTop: 4 }}><strong>Actions:</strong><ul className="compact-list">{csf.actions.map((a: string, j: number) => <li key={j}>{a}</li>)}</ul></div>}
+                      {csf.actions?.length > 0 && <div className="rr-mt-4"><strong>Actions:</strong><ul className="compact-list">{csf.actions.map((a: string, j: number) => <li key={j}>{a}</li>)}</ul></div>}
                     </div>
                   ))}
                 </div>
               )}
               {strategicPriorities.length > 0 && (
-                <div style={{ marginTop: 8 }}><strong>Strategic Priorities:</strong>
+                <div className="rr-mt-8"><strong>Strategic Priorities:</strong>
                   <ol className="compact-list">{strategicPriorities.sort((a: any, b: any) => (a.priority || 0) - (b.priority || 0)).map((sp: any, i: number) => (
-                    <li key={i}><strong>{sp.description}</strong>{sp.rationale && <span style={{ opacity: 0.7 }}> — {sp.rationale}</span>}</li>
+                    <li key={i}><strong>{sp.description}</strong>{sp.rationale && <span className="rr-muted"> — {sp.rationale}</span>}</li>
                   ))}</ol>
                 </div>
               )}
@@ -1832,9 +1832,9 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
       {/* Execution Roadmap */}
       {(roadmap.overview || roadmapPhases.length > 0) && (
         <CollapsibleSection title="Execution Roadmap" sectionId="is-roadmap">
-          {roadmap.overview && <div style={{ marginBottom: 8 }}><Md text={roadmap.overview} /></div>}
+          {roadmap.overview && <div className="rr-mb-8"><Md text={roadmap.overview} /></div>}
           {quickWins.length > 0 && (
-            <div style={{ marginBottom: 12 }}><strong>Quick Wins:</strong>
+            <div className="rr-mb-12"><strong>Quick Wins:</strong>
               {quickWins.map((qw: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div className="detail-grid">
@@ -1849,17 +1849,17 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
           {roadmapPhases.map((ph: any, i: number) => (
             <div key={i} className="nested-card">
               <div className="nested-card-header">Phase {ph.phaseNumber || i + 1}: {ph.name}</div>
-              {ph.description && <div style={{ marginBottom: 4 }}><Md text={ph.description} /></div>}
+              {ph.description && <div className="rr-mb-4"><Md text={ph.description} /></div>}
               <div className="detail-grid">
                 {ph.objective && <><span className="label">Objective</span><span>{ph.objective}</span></>}
                 {ph.duration && <><span className="label">Duration</span><span>{ph.duration}</span></>}
                 {ph.startTrigger && <><span className="label">Trigger</span><span>{ph.startTrigger}</span></>}
               </div>
-              {ph.deliverables?.length > 0 && <div style={{ marginTop: 4 }}><strong>Deliverables:</strong> {ph.deliverables.join(', ')}</div>}
-              {ph.resourceRequirements?.length > 0 && <div style={{ marginTop: 4 }}><strong>Resource Requirements:</strong><ul className="compact-list">{ph.resourceRequirements.map((r: string, j: number) => <li key={j}>{r}</li>)}</ul></div>}
-              {ph.dependencies?.length > 0 && <div style={{ marginTop: 4 }}><strong>Dependencies:</strong><ul className="compact-list">{ph.dependencies.map((dep: string, j: number) => <li key={j}>{dep}</li>)}</ul></div>}
+              {ph.deliverables?.length > 0 && <div className="rr-mt-4"><strong>Deliverables:</strong> {ph.deliverables.join(', ')}</div>}
+              {ph.resourceRequirements?.length > 0 && <div className="rr-mt-4"><strong>Resource Requirements:</strong><ul className="compact-list">{ph.resourceRequirements.map((r: string, j: number) => <li key={j}>{r}</li>)}</ul></div>}
+              {ph.dependencies?.length > 0 && <div className="rr-mt-4"><strong>Dependencies:</strong><ul className="compact-list">{ph.dependencies.map((dep: string, j: number) => <li key={j}>{dep}</li>)}</ul></div>}
               {ph.risks?.length > 0 && (
-                <div style={{ marginTop: 4 }}><strong>Risks:</strong>
+                <div className="rr-mt-4"><strong>Risks:</strong>
                   {ph.risks.map((r: any, j: number) => (
                     <div key={j} className="nested-card">
                       <div className="detail-grid">
@@ -1871,11 +1871,11 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
                 </div>
               )}
               {ph.keyMilestones?.length > 0 && (
-                <div style={{ marginTop: 4 }}><strong>Milestones:</strong>
+                <div className="rr-mt-4"><strong>Milestones:</strong>
                   {ph.keyMilestones.map((m: any, j: number) => (
-                    <div key={j} style={{ display: 'flex', gap: 8 }}>
+                    <div key={j} className="rr-flex rr-gap-8">
                       <span className="badge">{m.targetDate}</span> <span>{m.milestone}</span>
-                      {m.criteria && <span style={{ opacity: 0.7 }}> — {m.criteria}</span>}
+                      {m.criteria && <span className="rr-muted"> — {m.criteria}</span>}
                     </div>
                   ))}
                 </div>
@@ -1883,7 +1883,7 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
             </div>
           ))}
           {capabilityBuild.length > 0 && (
-            <div style={{ marginTop: 12 }}><strong>Capability Build Plan:</strong>
+            <div className="rr-mt-12"><strong>Capability Build Plan:</strong>
               {capabilityBuild.map((cb: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div className="detail-grid">
@@ -1903,7 +1903,7 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
       {(northStar.metric || leadingIndicators.length > 0 || laggingIndicators.length > 0) && (
         <CollapsibleSection title="Success Metrics" sectionId="is-metrics">
           {northStar.metric && (
-            <div className="nested-card" style={{ borderLeft: '3px solid var(--vscode-focusBorder)' }}>
+            <div className="nested-card rr-accent-strong-focus">
               <div className="nested-card-header">North Star Metric</div>
               <div className="detail-grid">
                 <span className="label">Metric</span><span>{northStar.metric}</span>
@@ -1914,7 +1914,7 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
             </div>
           )}
           {leadingIndicators.length > 0 && (
-            <div style={{ marginTop: 8 }}><strong>Leading Indicators:</strong>
+            <div className="rr-mt-8"><strong>Leading Indicators:</strong>
               {leadingIndicators.map((li: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div className="detail-grid">
@@ -1928,7 +1928,7 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
             </div>
           )}
           {laggingIndicators.length > 0 && (
-            <div style={{ marginTop: 8 }}><strong>Lagging Indicators:</strong>
+            <div className="rr-mt-8"><strong>Lagging Indicators:</strong>
               {laggingIndicators.map((li: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div className="detail-grid">
@@ -1942,7 +1942,7 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
             </div>
           )}
           {decisionGates.length > 0 && (
-            <div style={{ marginTop: 8 }}><strong>Decision Gates:</strong>
+            <div className="rr-mt-8"><strong>Decision Gates:</strong>
               {decisionGates.map((dg: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div className="detail-grid">
@@ -1964,9 +1964,9 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
           {keyRisks.map((r: any, i: number) => (
             <div key={i} className="nested-card">
               <div className="nested-card-header">
-                {r.id && <span className="badge" style={{ marginRight: 8 }}>{r.id}</span>}
+                {r.id && <span className="badge rr-mr-8">{r.id}</span>}
                 {r.risk}
-                {r.category && <span className="badge" style={{ marginLeft: 8 }}>{r.category}</span>}
+                {r.category && <span className="badge rr-ml-8">{r.category}</span>}
               </div>
               <div className="detail-grid">
                 {r.likelihood && <><span className="label">Likelihood</span><span className="badge">{r.likelihood}</span></>}
@@ -1974,11 +1974,11 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
                 {r.riskScore && <><span className="label">Score</span><span>{r.riskScore}</span></>}
                 {r.owner && <><span className="label">Owner</span><span>{r.owner}</span></>}
               </div>
-              {r.triggers?.length > 0 && <div style={{ marginTop: 4 }}><strong>Triggers:</strong> {r.triggers.join(', ')}</div>}
+              {r.triggers?.length > 0 && <div className="rr-mt-4"><strong>Triggers:</strong> {r.triggers.join(', ')}</div>}
             </div>
           ))}
           {mitigationStrategies.length > 0 && (
-            <div style={{ marginTop: 12 }}><strong>Mitigation Strategies:</strong>
+            <div className="rr-mt-12"><strong>Mitigation Strategies:</strong>
               {mitigationStrategies.map((ms: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div className="detail-grid">
@@ -1987,13 +1987,13 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
                     {ms.owner && <><span className="label">Owner</span><span>{ms.owner}</span></>}
                     {ms.status && <><span className="label">Status</span><span className="badge">{ms.status}</span></>}
                   </div>
-                  {ms.actions?.length > 0 && <div style={{ marginTop: 4 }}><strong>Actions:</strong><ul className="compact-list">{ms.actions.map((a: string, j: number) => <li key={j}>{a}</li>)}</ul></div>}
+                  {ms.actions?.length > 0 && <div className="rr-mt-4"><strong>Actions:</strong><ul className="compact-list">{ms.actions.map((a: string, j: number) => <li key={j}>{a}</li>)}</ul></div>}
                 </div>
               ))}
             </div>
           )}
           {contingencyPlans.length > 0 && (
-            <div style={{ marginTop: 12 }}><strong>Contingency Plans:</strong>
+            <div className="rr-mt-12"><strong>Contingency Plans:</strong>
               {contingencyPlans.map((cp: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div className="detail-grid">
@@ -2023,9 +2023,9 @@ export function renderInnovationStrategyDetails(props: RendererProps) {
       {/* Appendix */}
       {(d.appendix?.dataSources || d.appendix?.analysisDetails || d.appendix?.competitorProfiles) && (
         <CollapsibleSection title="Appendix" sectionId="is-appendix" defaultCollapsed>
-          {d.appendix?.dataSources && <div style={{ marginBottom: 8 }}><strong>Data Sources:</strong> <Md text={d.appendix.dataSources} /></div>}
-          {d.appendix?.analysisDetails && <div style={{ marginBottom: 8 }}><strong>Analysis Details:</strong> <Md text={d.appendix.analysisDetails} /></div>}
-          {d.appendix?.competitorProfiles && <div style={{ marginBottom: 8 }}><strong>Competitor Profiles:</strong> <Md text={d.appendix.competitorProfiles} /></div>}
+          {d.appendix?.dataSources && <div className="rr-mb-8"><strong>Data Sources:</strong> <Md text={d.appendix.dataSources} /></div>}
+          {d.appendix?.analysisDetails && <div className="rr-mb-8"><strong>Analysis Details:</strong> <Md text={d.appendix.analysisDetails} /></div>}
+          {d.appendix?.competitorProfiles && <div className="rr-mb-8"><strong>Competitor Profiles:</strong> <Md text={d.appendix.competitorProfiles} /></div>}
         </CollapsibleSection>
       )}
     </>
@@ -2093,22 +2093,22 @@ export function renderDesignThinkingDetails(props: RendererProps) {
             </div>
           ) : (
             <>
-              {d.projectName && <div style={{ marginBottom: 8 }}><strong>{d.projectName}</strong></div>}
+              {d.projectName && <div className="rr-mb-8"><strong>{d.projectName}</strong></div>}
               {d.designChallenge && (
-                <div className="nested-card" style={{ borderLeft: '3px solid var(--vscode-focusBorder)' }}>
+                <div className="nested-card rr-accent-strong-focus">
                   <Md text={d.designChallenge} />
                 </div>
               )}
-              <div className="detail-grid" style={{ marginTop: 8 }}>
+              <div className="detail-grid rr-mt-8">
                 {sessionInfo.facilitator && <><span className="label">Facilitator</span><span>{sessionInfo.facilitator}</span></>}
                 {sessionInfo.date && <><span className="label">Date</span><span>{sessionInfo.date}</span></>}
                 {sessionInfo.duration && <><span className="label">Duration</span><span>{sessionInfo.duration}</span></>}
                 {sessionInfo.location && <><span className="label">Location</span><span>{sessionInfo.location}</span></>}
               </div>
               {participants.length > 0 && (
-                <div style={{ marginTop: 8 }}>
+                <div className="rr-mt-8">
                   <strong>Participants:</strong>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                  <div className="rr-flex rr-wrap rr-gap-4 rr-mt-4">
                     {participants.map((p: any, i: number) => (
                       <span key={i} className="badge" title={p.expertise}>{p.name} ({p.role})</span>
                     ))}
@@ -2126,7 +2126,7 @@ export function renderDesignThinkingDetails(props: RendererProps) {
           {researchMethods.map((rm: any, i: number) => (
             <div key={i} className="nested-card">
               <div className="nested-card-header">{rm.method}</div>
-              {rm.description && <div style={{ marginBottom: 4 }}>{rm.description}</div>}
+              {rm.description && <div className="rr-mb-4">{rm.description}</div>}
               <div className="detail-grid">
                 {rm.participantCount && <><span className="label">Participants</span><span>{rm.participantCount}</span></>}
                 {rm.duration && <><span className="label">Duration</span><span>{rm.duration}</span></>}
@@ -2141,9 +2141,9 @@ export function renderDesignThinkingDetails(props: RendererProps) {
         <CollapsibleSection title="Empathize: User Profiles" count={userProfiles.length} sectionId="dt-profiles">
           {userProfiles.map((up: any, i: number) => (
             <div key={i} className="nested-card">
-              <div className="nested-card-header">{up.name || `User ${i + 1}`}{up.role && <span className="badge" style={{ marginLeft: 8 }}>{up.role}</span>}</div>
-              {up.demographics && <div style={{ marginBottom: 4, opacity: 0.8 }}>{up.demographics}</div>}
-              {up.context && <div style={{ marginBottom: 4 }}><Md text={up.context} /></div>}
+              <div className="nested-card-header">{up.name || `User ${i + 1}`}{up.role && <span className="badge rr-ml-8">{up.role}</span>}</div>
+              {up.demographics && <div className="rr-mb-4 rr-subtle">{up.demographics}</div>}
+              {up.context && <div className="rr-mb-4"><Md text={up.context} /></div>}
               {up.goals?.length > 0 && <div><strong>Goals:</strong><ul className="compact-list">{up.goals.map((g: string, j: number) => <li key={j}>{g}</li>)}</ul></div>}
               {up.painPoints?.length > 0 && <div><strong>Pain Points:</strong><ul className="compact-list">{up.painPoints.map((p: string, j: number) => <li key={j}>{p}</li>)}</ul></div>}
             </div>
@@ -2157,9 +2157,9 @@ export function renderDesignThinkingDetails(props: RendererProps) {
           {userInsights.map((ui: any, i: number) => (
             <div key={i} className="nested-card">
               <div><strong>{ui.insight}</strong></div>
-              <div className="detail-grid" style={{ marginTop: 4 }}>
+              <div className="detail-grid rr-mt-4">
                 {ui.source && <><span className="label">Source</span><span>{ui.source}</span></>}
-                {ui.evidence && <><span className="label">Evidence</span><span style={{ fontStyle: 'italic' }}>"{ui.evidence}"</span></>}
+                {ui.evidence && <><span className="label">Evidence</span><span className="rr-italic">"{ui.evidence}"</span></>}
                 {ui.significance && <><span className="label">Significance</span><span>{ui.significance}</span></>}
               </div>
             </div>
@@ -2173,7 +2173,7 @@ export function renderDesignThinkingDetails(props: RendererProps) {
           {keyObservations.map((ko: any, i: number) => (
             <div key={i} className="nested-card">
               <div><strong>{ko.observation}</strong></div>
-              <div className="detail-grid" style={{ marginTop: 4 }}>
+              <div className="detail-grid rr-mt-4">
                 {ko.context && <><span className="label">Context</span><span>{ko.context}</span></>}
                 {ko.frequency && <><span className="label">Frequency</span><span>{ko.frequency}</span></>}
                 {ko.implications && <><span className="label">Implications</span><span>{ko.implications}</span></>}
@@ -2186,30 +2186,30 @@ export function renderDesignThinkingDetails(props: RendererProps) {
       {/* EMPATHIZE - Empathy Map */}
       {(empathyMap.says?.length > 0 || empathyMap.thinks?.length > 0 || empathyMap.does?.length > 0 || empathyMap.feels?.length > 0) && (
         <CollapsibleSection title="Empathize: Empathy Map" sectionId="dt-empathy-map">
-          {empathyMap.targetUser && <div style={{ marginBottom: 8 }}><strong>Target User:</strong> {empathyMap.targetUser}</div>}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          {empathyMap.targetUser && <div className="rr-mb-8"><strong>Target User:</strong> {empathyMap.targetUser}</div>}
+          <div className="rr-grid rr-grid-2 rr-gap-8">
             {empathyMap.says?.length > 0 && (
               <div className="nested-card">
                 <div className="nested-card-header">Says</div>
-                {empathyMap.says.map((s: any, i: number) => <div key={i} style={{ fontStyle: 'italic' }}>"{s.quote}"{s.context && <span style={{ opacity: 0.7 }}> — {s.context}</span>}</div>)}
+                {empathyMap.says.map((s: any, i: number) => <div key={i} className="rr-italic">"{s.quote}"{s.context && <span className="rr-muted"> — {s.context}</span>}</div>)}
               </div>
             )}
             {empathyMap.thinks?.length > 0 && (
               <div className="nested-card">
                 <div className="nested-card-header">Thinks</div>
-                {empathyMap.thinks.map((t: any, i: number) => <div key={i}>{t.thought}{t.evidence && <span style={{ opacity: 0.7 }}> — {t.evidence}</span>}</div>)}
+                {empathyMap.thinks.map((t: any, i: number) => <div key={i}>{t.thought}{t.evidence && <span className="rr-muted"> — {t.evidence}</span>}</div>)}
               </div>
             )}
             {empathyMap.does?.length > 0 && (
               <div className="nested-card">
                 <div className="nested-card-header">Does</div>
-                {empathyMap.does.map((d: any, i: number) => <div key={i}>{d.action}{d.frequency && <span className="badge" style={{ marginLeft: 4 }}>{d.frequency}</span>}{d.context && <span style={{ opacity: 0.7 }}> — {d.context}</span>}</div>)}
+                {empathyMap.does.map((d: any, i: number) => <div key={i}>{d.action}{d.frequency && <span className="badge rr-ml-4">{d.frequency}</span>}{d.context && <span className="rr-muted"> — {d.context}</span>}</div>)}
               </div>
             )}
             {empathyMap.feels?.length > 0 && (
               <div className="nested-card">
                 <div className="nested-card-header">Feels</div>
-                {empathyMap.feels.map((f: any, i: number) => <div key={i}>{f.emotion}{f.intensity && <span className="badge" style={{ marginLeft: 4 }}>{f.intensity}</span>}{f.trigger && <span style={{ opacity: 0.7 }}> — {f.trigger}</span>}</div>)}
+                {empathyMap.feels.map((f: any, i: number) => <div key={i}>{f.emotion}{f.intensity && <span className="badge rr-ml-4">{f.intensity}</span>}{f.trigger && <span className="rr-muted"> — {f.trigger}</span>}</div>)}
               </div>
             )}
           </div>
@@ -2222,7 +2222,7 @@ export function renderDesignThinkingDetails(props: RendererProps) {
           {journeyStages.map((stage: any, i: number) => (
             <div key={i} className="nested-card">
               <div className="nested-card-header">{stage.stage || `Stage ${i + 1}`}</div>
-              {stage.emotions && <div style={{ marginBottom: 4 }}>Emotions: {stage.emotions}</div>}
+              {stage.emotions && <div className="rr-mb-4">Emotions: {stage.emotions}</div>}
               {stage.actions?.length > 0 && <div><strong>Actions:</strong> {stage.actions.join(', ')}</div>}
               {stage.thoughts?.length > 0 && <div><strong>Thoughts:</strong> {stage.thoughts.join(', ')}</div>}
               {stage.painPoints?.length > 0 && <div><strong>Pain Points:</strong> {stage.painPoints.join(', ')}</div>}
@@ -2244,27 +2244,27 @@ export function renderDesignThinkingDetails(props: RendererProps) {
             </div>
           ) : (
             <>
-              {define.synthesisProcess && <div style={{ marginBottom: 8 }}><strong>Synthesis:</strong> <Md text={define.synthesisProcess} /></div>}
+              {define.synthesisProcess && <div className="rr-mb-8"><strong>Synthesis:</strong> <Md text={define.synthesisProcess} /></div>}
               {define.povStatement && (
-                <div className="nested-card" style={{ borderLeft: '3px solid var(--vscode-focusBorder)' }}>
+                <div className="nested-card rr-accent-strong-focus">
                   <div className="nested-card-header">Point of View</div>
                   <Md text={define.povStatement} />
                 </div>
               )}
               {define.povVariations?.length > 0 && (
-                <div style={{ marginTop: 8 }}><strong>POV Variations:</strong>
+                <div className="rr-mt-8"><strong>POV Variations:</strong>
                   <ul className="compact-list">{define.povVariations.map((v: string, i: number) => <li key={i}>{v}</li>)}</ul>
                 </div>
               )}
               {hmwQuestions.length > 0 && (
-                <div style={{ marginTop: 12 }}><strong>How Might We Questions:</strong>
+                <div className="rr-mt-12"><strong>How Might We Questions:</strong>
                   {hmwQuestions.map((q: any, i: number) => (
                     <div key={i} className="nested-card">
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                      <div className="rr-flex rr-gap-8 rr-items-start">
                         {q.priority && <span className="badge">{q.priority}</span>}
                         <span>{q.question}</span>
                       </div>
-                      {q.rationale && <div style={{ opacity: 0.7, marginTop: 4 }}>{q.rationale}</div>}
+                      {q.rationale && <div className="rr-muted rr-mt-4">{q.rationale}</div>}
                     </div>
                   ))}
                 </div>
@@ -2280,8 +2280,8 @@ export function renderDesignThinkingDetails(props: RendererProps) {
           {problemInsights.map((pi: any, i: number) => (
             <div key={i} className="nested-card">
               <div><strong>{pi.insight}</strong></div>
-              {pi.supportingEvidence?.length > 0 && <div style={{ marginTop: 4 }}><strong>Evidence:</strong> {pi.supportingEvidence.join(', ')}</div>}
-              {pi.designImplications && <div style={{ marginTop: 4, opacity: 0.8 }}>{pi.designImplications}</div>}
+              {pi.supportingEvidence?.length > 0 && <div className="rr-mt-4"><strong>Evidence:</strong> {pi.supportingEvidence.join(', ')}</div>}
+              {pi.designImplications && <div className="rr-mt-4 rr-subtle">{pi.designImplications}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -2291,11 +2291,11 @@ export function renderDesignThinkingDetails(props: RendererProps) {
       {(designPrinciples.length > 0 || defineConstraints.length > 0) && (
         <CollapsibleSection title="Define: Principles & Constraints" sectionId="dt-principles">
           {designPrinciples.length > 0 && (
-            <div style={{ marginBottom: 12 }}><strong>Design Principles:</strong>
+            <div className="rr-mb-12"><strong>Design Principles:</strong>
               {designPrinciples.map((dp: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div><strong>{dp.principle}</strong></div>
-                  {dp.rationale && <div style={{ opacity: 0.7 }}>{dp.rationale}</div>}
+                  {dp.rationale && <div className="rr-muted">{dp.rationale}</div>}
                 </div>
               ))}
             </div>
@@ -2320,8 +2320,8 @@ export function renderDesignThinkingDetails(props: RendererProps) {
       {(selectedMethods.length > 0 || generatedIdeas.length > 0) && (
         <CollapsibleSection title="Ideate: Generated Ideas" count={generatedIdeas.length} sectionId="dt-ideate">
           {selectedMethods.length > 0 && (
-            <div style={{ marginBottom: 12 }}><strong>Methods Used:</strong>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+            <div className="rr-mb-12"><strong>Methods Used:</strong>
+              <div className="rr-flex rr-wrap rr-gap-4 rr-mt-4">
                 {selectedMethods.map((m: any, i: number) => (
                   <span key={i} className="badge" title={m.description}>{m.method}{m.duration ? ` (${m.duration})` : ''}{m.ideasGenerated ? ` — ${m.ideasGenerated} ideas` : ''}</span>
                 ))}
@@ -2332,10 +2332,10 @@ export function renderDesignThinkingDetails(props: RendererProps) {
             <div key={i} className="nested-card">
               <div className="nested-card-header">
                 {idea.title || idea.id || `Idea ${i + 1}`}
-                {idea.category && <span className="badge" style={{ marginLeft: 8 }}>{idea.category}</span>}
-                {idea.votes !== undefined && <span className="badge" style={{ marginLeft: 4 }}>{idea.votes} votes</span>}
+                {idea.category && <span className="badge rr-ml-8">{idea.category}</span>}
+                {idea.votes !== undefined && <span className="badge rr-ml-4">{idea.votes} votes</span>}
               </div>
-              {idea.description && <div style={{ marginBottom: 4 }}><Md text={idea.description} /></div>}
+              {idea.description && <div className="rr-mb-4"><Md text={idea.description} /></div>}
               <div className="detail-grid">
                 {idea.hmwQuestion && <><span className="label">HMW</span><span>{idea.hmwQuestion}</span></>}
                 {idea.feasibility && <><span className="label">Feasibility</span><span className="badge">{idea.feasibility}</span></>}
@@ -2345,18 +2345,18 @@ export function renderDesignThinkingDetails(props: RendererProps) {
             </div>
           ))}
           {ideaClustering.length > 0 && (
-            <div style={{ marginTop: 12 }}><strong>Idea Clusters:</strong>
+            <div className="rr-mt-12"><strong>Idea Clusters:</strong>
               {ideaClustering.map((cl: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div className="nested-card-header">{cl.clusterName}</div>
                   {cl.theme && <div>{cl.theme}</div>}
-                  {cl.ideaIds?.length > 0 && <div style={{ opacity: 0.7 }}>Ideas: {cl.ideaIds.join(', ')}</div>}
+                  {cl.ideaIds?.length > 0 && <div className="rr-muted">Ideas: {cl.ideaIds.join(', ')}</div>}
                 </div>
               ))}
             </div>
           )}
           {ideate.selectionCriteria?.length > 0 && (
-            <div style={{ marginTop: 8 }}><strong>Selection Criteria:</strong> {ideate.selectionCriteria.join(', ')}</div>
+            <div className="rr-mt-8"><strong>Selection Criteria:</strong> {ideate.selectionCriteria.join(', ')}</div>
           )}
         </CollapsibleSection>
       )}
@@ -2367,14 +2367,14 @@ export function renderDesignThinkingDetails(props: RendererProps) {
           {topConcepts.map((tc: any, i: number) => (
             <div key={i} className="nested-card">
               <div className="nested-card-header">{tc.name || tc.conceptId || `Concept ${i + 1}`}</div>
-              {tc.description && <div style={{ marginBottom: 4 }}><Md text={tc.description} /></div>}
-              {tc.rationale && <div style={{ marginBottom: 4, opacity: 0.8 }}>{tc.rationale}</div>}
+              {tc.description && <div className="rr-mb-4"><Md text={tc.description} /></div>}
+              {tc.rationale && <div className="rr-mb-4 rr-subtle">{tc.rationale}</div>}
               <div className="detail-grid">
                 {tc.userBenefit && <><span className="label">User Benefit</span><span>{tc.userBenefit}</span></>}
                 {tc.technicalConsiderations && <><span className="label">Technical</span><span>{tc.technicalConsiderations}</span></>}
               </div>
-              {tc.sourceIdeas?.length > 0 && <div style={{ marginTop: 4 }}><strong>Source Ideas:</strong> {tc.sourceIdeas.join(', ')}</div>}
-              {tc.risks?.length > 0 && <div style={{ marginTop: 4 }}><strong>Risks:</strong> {tc.risks.join(', ')}</div>}
+              {tc.sourceIdeas?.length > 0 && <div className="rr-mt-4"><strong>Source Ideas:</strong> {tc.sourceIdeas.join(', ')}</div>}
+              {tc.risks?.length > 0 && <div className="rr-mt-4"><strong>Risks:</strong> {tc.risks.join(', ')}</div>}
             </div>
           ))}
         </CollapsibleSection>
@@ -2401,25 +2401,25 @@ export function renderDesignThinkingDetails(props: RendererProps) {
             </div>
           ) : (
             <>
-              {prototype.prototypeApproach && <div style={{ marginBottom: 8 }}><Md text={prototype.prototypeApproach} /></div>}
-              {prototype.prototypeType && <div style={{ marginBottom: 8 }}><strong>Type:</strong> <span className="badge">{prototype.prototypeType}</span></div>}
+              {prototype.prototypeApproach && <div className="rr-mb-8"><Md text={prototype.prototypeApproach} /></div>}
+              {prototype.prototypeType && <div className="rr-mb-8"><strong>Type:</strong> <span className="badge">{prototype.prototypeType}</span></div>}
               {prototypes.map((p: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div className="nested-card-header">
                     {p.name || `Prototype ${i + 1}`}
-                    {p.fidelity && <span className="badge" style={{ marginLeft: 8 }}>{p.fidelity} fidelity</span>}
+                    {p.fidelity && <span className="badge rr-ml-8">{p.fidelity} fidelity</span>}
                   </div>
-                  {p.description && <div style={{ marginBottom: 4 }}><Md text={p.description} /></div>}
+                  {p.description && <div className="rr-mb-4"><Md text={p.description} /></div>}
                   <div className="detail-grid">
                     {p.conceptId && <><span className="label">Concept</span><span>{p.conceptId}</span></>}
                     {p.timeToCreate && <><span className="label">Time to Create</span><span>{p.timeToCreate}</span></>}
                   </div>
-                  {p.materials?.length > 0 && <div style={{ marginTop: 4 }}><strong>Materials:</strong> {p.materials.join(', ')}</div>}
-                  {p.artifacts?.length > 0 && <div style={{ marginTop: 4 }}><strong>Artifacts:</strong><ul className="compact-list">{p.artifacts.map((a: string, j: number) => <li key={j}>{a}</li>)}</ul></div>}
+                  {p.materials?.length > 0 && <div className="rr-mt-4"><strong>Materials:</strong> {p.materials.join(', ')}</div>}
+                  {p.artifacts?.length > 0 && <div className="rr-mt-4"><strong>Artifacts:</strong><ul className="compact-list">{p.artifacts.map((a: string, j: number) => <li key={j}>{a}</li>)}</ul></div>}
                 </div>
               ))}
               {featuresToTest.length > 0 && (
-                <div style={{ marginTop: 12 }}><strong>Features to Test:</strong>
+                <div className="rr-mt-12"><strong>Features to Test:</strong>
                   {featuresToTest.map((ft: any, i: number) => (
                     <div key={i} className="nested-card">
                       <div className="detail-grid">
@@ -2431,7 +2431,7 @@ export function renderDesignThinkingDetails(props: RendererProps) {
                   ))}
                 </div>
               )}
-              {prototype.limitations?.length > 0 && <div style={{ marginTop: 8 }}><strong>Limitations:</strong><ul className="compact-list">{prototype.limitations.map((l: string, i: number) => <li key={i}>{l}</li>)}</ul></div>}
+              {prototype.limitations?.length > 0 && <div className="rr-mt-8"><strong>Limitations:</strong><ul className="compact-list">{prototype.limitations.map((l: string, i: number) => <li key={i}>{l}</li>)}</ul></div>}
             </>
           )}
         </CollapsibleSection>
@@ -2440,9 +2440,9 @@ export function renderDesignThinkingDetails(props: RendererProps) {
       {/* TEST - Sessions & Feedback */}
       {(test.testingPlan || testSessions.length > 0 || userFeedback.length > 0) && (
         <CollapsibleSection title="Test: User Feedback" count={userFeedback.length} sectionId="dt-test">
-          {test.testingPlan && <div style={{ marginBottom: 8 }}><strong>Testing Plan:</strong> <Md text={test.testingPlan} /></div>}
+          {test.testingPlan && <div className="rr-mb-8"><strong>Testing Plan:</strong> <Md text={test.testingPlan} /></div>}
           {testSessions.length > 0 && (
-            <div style={{ marginBottom: 12 }}><strong>Sessions:</strong>
+            <div className="rr-mb-12"><strong>Sessions:</strong>
               {testSessions.map((ts: any, i: number) => (
                 <div key={i} className="nested-card">
                   <div className="detail-grid">
@@ -2452,19 +2452,19 @@ export function renderDesignThinkingDetails(props: RendererProps) {
                     {ts.participantProfile && <><span className="label">Participant</span><span>{ts.participantProfile}</span></>}
                     {ts.prototype && <><span className="label">Prototype</span><span>{ts.prototype}</span></>}
                   </div>
-                  {ts.tasks?.length > 0 && <div style={{ marginTop: 4 }}><strong>Tasks:</strong> {ts.tasks.join(', ')}</div>}
+                  {ts.tasks?.length > 0 && <div className="rr-mt-4"><strong>Tasks:</strong> {ts.tasks.join(', ')}</div>}
                 </div>
               ))}
             </div>
           )}
           {userFeedback.map((fb: any, i: number) => (
             <div key={i} className="nested-card">
-              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+              <div className="rr-flex rr-gap-8 rr-items-start">
                 {fb.sentiment && <span className="badge" style={{ color: sentimentColor(fb.sentiment) }}>{fb.sentiment}</span>}
                 {fb.priority && <span className="badge">{fb.priority}</span>}
-                <span style={{ flex: 1 }}><strong>{fb.feedback}</strong></span>
+                <span className="rr-flex-1"><strong>{fb.feedback}</strong></span>
               </div>
-              <div className="detail-grid" style={{ marginTop: 4 }}>
+              <div className="detail-grid rr-mt-4">
                 {fb.user && <><span className="label">User</span><span>{fb.user}</span></>}
                 {fb.feature && <><span className="label">Feature</span><span>{fb.feature}</span></>}
                 {fb.actionability && <><span className="label">Actionability</span><span className="badge">{fb.actionability}</span></>}
@@ -2479,11 +2479,11 @@ export function renderDesignThinkingDetails(props: RendererProps) {
         <CollapsibleSection title="Test: Usability Issues" count={usabilityIssues.length} sectionId="dt-usability">
           {usabilityIssues.map((ui: any, i: number) => (
             <div key={i} className="nested-card">
-              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+              <div className="rr-flex rr-gap-8 rr-items-start">
                 {ui.severity && <span className="badge" style={{ color: ui.severity === 'critical' ? 'var(--vscode-errorForeground)' : ui.severity === 'major' ? 'var(--vscode-editorWarning-foreground)' : undefined }}>{ui.severity}</span>}
                 <span>{ui.issue}</span>
               </div>
-              <div className="detail-grid" style={{ marginTop: 4 }}>
+              <div className="detail-grid rr-mt-4">
                 {ui.frequency && <><span className="label">Frequency</span><span>{ui.frequency}</span></>}
                 {ui.recommendation && <><span className="label">Recommendation</span><span>{ui.recommendation}</span></>}
               </div>
@@ -2498,7 +2498,7 @@ export function renderDesignThinkingDetails(props: RendererProps) {
           {keyLearnings.map((kl: any, i: number) => (
             <div key={i} className="nested-card">
               <div><strong>{kl.learning}</strong></div>
-              <div className="detail-grid" style={{ marginTop: 4 }}>
+              <div className="detail-grid rr-mt-4">
                 {kl.evidence && <><span className="label">Evidence</span><span>{kl.evidence}</span></>}
                 {kl.implication && <><span className="label">Implication</span><span>{kl.implication}</span></>}
                 {kl.action && <><span className="label">Action</span><span>{kl.action}</span></>}
@@ -2513,7 +2513,7 @@ export function renderDesignThinkingDetails(props: RendererProps) {
         <CollapsibleSection title="Test: Hypothesis Validation" count={hypothesisValidation.length} sectionId="dt-hypotheses">
           {hypothesisValidation.map((hv: any, i: number) => (
             <div key={i} className="nested-card">
-              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+              <div className="rr-flex rr-gap-8 rr-items-start">
                 <span className="badge" style={{
                   color: hv.status === 'validated' ? 'var(--vscode-testing-iconPassed)'
                     : hv.status === 'invalidated' ? 'var(--vscode-errorForeground)'
@@ -2522,7 +2522,7 @@ export function renderDesignThinkingDetails(props: RendererProps) {
                 }}>{hv.status}</span>
                 <span>{hv.hypothesis}</span>
               </div>
-              <div className="detail-grid" style={{ marginTop: 4 }}>
+              <div className="detail-grid rr-mt-4">
                 {hv.evidence && <><span className="label">Evidence</span><span>{hv.evidence}</span></>}
                 {hv.nextSteps && <><span className="label">Next Steps</span><span>{hv.nextSteps}</span></>}
               </div>
@@ -2543,9 +2543,9 @@ export function renderDesignThinkingDetails(props: RendererProps) {
             </div>
           ) : (
             <>
-              {nextSteps.iterationPlan && <div style={{ marginBottom: 8 }}><strong>Iteration Plan:</strong> <Md text={nextSteps.iterationPlan} /></div>}
+              {nextSteps.iterationPlan && <div className="rr-mb-8"><strong>Iteration Plan:</strong> <Md text={nextSteps.iterationPlan} /></div>}
               {refinementsNeeded.length > 0 && (
-                <div style={{ marginBottom: 12 }}><strong>Refinements Needed:</strong>
+                <div className="rr-mb-12"><strong>Refinements Needed:</strong>
                   {refinementsNeeded.map((r: any, i: number) => (
                     <div key={i} className="nested-card">
                       <div className="detail-grid">
@@ -2559,7 +2559,7 @@ export function renderDesignThinkingDetails(props: RendererProps) {
                 </div>
               )}
               {actionItems.length > 0 && (
-                <div style={{ marginBottom: 12 }}><strong>Action Items:</strong>
+                <div className="rr-mb-12"><strong>Action Items:</strong>
                   {actionItems.map((ai: any, i: number) => (
                     <div key={i} className="nested-card">
                       <div className="detail-grid">
@@ -2568,13 +2568,13 @@ export function renderDesignThinkingDetails(props: RendererProps) {
                         {ai.dueDate && <><span className="label">Due</span><span>{ai.dueDate}</span></>}
                         {ai.status && <><span className="label">Status</span><span className="badge">{ai.status}</span></>}
                       </div>
-                      {ai.dependencies?.length > 0 && <div style={{ marginTop: 4 }}><strong>Dependencies:</strong><ul className="compact-list">{ai.dependencies.map((dep: string, j: number) => <li key={j}>{dep}</li>)}</ul></div>}
+                      {ai.dependencies?.length > 0 && <div className="rr-mt-4"><strong>Dependencies:</strong><ul className="compact-list">{ai.dependencies.map((dep: string, j: number) => <li key={j}>{dep}</li>)}</ul></div>}
                     </div>
                   ))}
                 </div>
               )}
               {successMetricsArr.length > 0 && (
-                <div style={{ marginBottom: 12 }}><strong>Success Metrics:</strong>
+                <div className="rr-mb-12"><strong>Success Metrics:</strong>
                   {successMetricsArr.map((m: any, i: number) => (
                     <div key={i} className="nested-card">
                       <div className="detail-grid">

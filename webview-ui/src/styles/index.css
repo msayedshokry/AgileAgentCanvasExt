@@ -705,13 +705,22 @@ body.vscode-light .zoom-controls {
   border-color: #d0d4dc;
 }
 
-/* Workflow FAB */
+/* Workflow FAB + Provider selector (match .kanban-toggle-fab light styling) */
 body.ac-force-light .workflow-fab,
-body.vscode-light .workflow-fab {
+body.vscode-light .workflow-fab,
+body.ac-force-light .provider-selector-trigger,
+body.vscode-light .provider-selector-trigger {
   background: #ffffff;
   color: var(--vscode-foreground, #1a1d23);
   border: 1px solid #d0d4dc;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+body.ac-force-light .provider-selector-trigger:hover,
+body.vscode-light .provider-selector-trigger:hover,
+body.ac-force-light .provider-selector.open .provider-selector-trigger,
+body.vscode-light .provider-selector.open .provider-selector-trigger {
+  background: #f5f6f8;
 }
 
 /* SearchBox — light theme */
@@ -1057,21 +1066,29 @@ body.ac-force-dark {
   justify-content: center;
   width: 20px;
   height: 20px;
-  border: 1px solid currentColor;
+  /* Borderless at rest so the chevron reads as an icon, not an empty checkbox. */
+  border: 1px solid transparent;
   border-radius: 4px;
   background: transparent;
   color: inherit;
   cursor: pointer;
-  opacity: 0.35;
+  opacity: 0.55;
   padding: 0;
   margin-left: auto;
-  transition: opacity 0.15s, background 0.15s;
+  transition: opacity 0.15s, background 0.15s, border-color 0.15s;
   pointer-events: all;
 }
 
-.lane-hide-btn:hover {
+.lane-hide-btn:hover,
+.lane-hide-btn:focus-visible {
   opacity: 0.9;
+  border-color: currentColor;
   background: rgba(255, 255, 255, 0.1);
+}
+
+.lane-hide-btn:focus-visible {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: 1px;
 }
 
 /* Hidden lane collapsed tab indicator */
@@ -1189,6 +1206,8 @@ body.ac-force-dark {
   position: absolute;
   bottom: 16px;
   left: 16px;
+  /* Leave room for the zoom-controls bar (~280px) on the right; items wrap. */
+  max-width: calc(100% - 330px);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -2867,7 +2886,7 @@ body.ac-force-dark {
 
 .minimap {
   position: absolute;
-  bottom: 54px;          /* sits above zoom-controls */
+  bottom: 70px;          /* zoom-controls: 16px offset + 46px tall + 8px gap */
   right: 16px;
   width: 240px;
   height: 160px;
@@ -6556,10 +6575,6 @@ body.vscode-light .minimap-viewport {
    ============================================================================= */
 
 .workflow-fab {
-  position: absolute;
-  top: 12px;
-  right: 16px;
-  z-index: 900;
   display: flex;
   align-items: center;
   gap: 5px;
@@ -6586,10 +6601,6 @@ body.vscode-light .minimap-viewport {
 
 .workflow-fab:active {
   box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-}
-
-.app.with-detail-panel .workflow-fab {
-  right: 396px; /* 380px panel width + 16px margin */
 }
 
 .workflow-fab-label {
@@ -7798,10 +7809,12 @@ body.vscode-light .minimap-viewport {
 .artifact-id {
   font-family: var(--vscode-editor-font-family, monospace);
   font-size: 10px;
-  opacity: 0.6;
   margin-right: 6px;
-  background: var(--vscode-badge-background, rgba(128, 128, 128, 0.15));
-  color: var(--vscode-badge-foreground, var(--vscode-foreground));
+  /* Muted by mixing the theme foreground, not opacity: opacity 0.6 on badge
+   * colours dropped the chip to ~1.5:1 in Light+. 75% foreground on an 8%
+   * tint stays ≥5:1 in Light+ and Dark+. */
+  background: color-mix(in srgb, var(--vscode-foreground) 8%, transparent);
+  color: color-mix(in srgb, var(--vscode-foreground) 75%, transparent);
   padding: 1px 4px;
   border-radius: 3px;
 }
@@ -8329,16 +8342,6 @@ body.vscode-light .minimap-viewport {
   background: rgba(245, 158, 11, 0.1);
   color: #d97706;
   border: 1px solid rgba(245, 158, 11, 0.25);
-}
-
-/* =============================================================================
-   Jira FAB button — inherits .workflow-fab colours; only overrides position
-   ============================================================================= */
-.jira-fab {
-  right: 138px; /* sits to the left of the workflow-fab (~120px) + 8px gap */
-}
-.app.with-detail-panel .jira-fab {
-  right: calc(396px + 138px);
 }
 
 /* =============================================================================
@@ -9227,17 +9230,10 @@ body.vscode-light .minimap-viewport {
 /* ─── Chat Provider Selector (FAB — matches .workflow-fab styling) ─────── */
 
 .provider-selector {
-  position: absolute;
-  top: 12px;
-  right: 138px; /* sits to the left of the .workflow-fab + 8px gap */
-  z-index: 900;
+  position: relative; /* anchors .provider-selector-menu */
   display: inline-flex;
   align-items: center;
   margin: 0;
-}
-
-.app.with-detail-panel .provider-selector {
-  right: calc(396px + 138px);
 }
 
 .provider-selector-trigger {
@@ -9395,12 +9391,34 @@ body.vscode-light .minimap-viewport {
   max-width: 80px;
 }
 
-/* --- Kanban Toggle FAB (sits to the left of Provider Selector) --- */
-.kanban-toggle-fab {
+/* --- Top-right action group: Kanban toggle · Provider selector · Workflows ---
+ * One flex row instead of three absolutely positioned buttons with hand-tuned
+ * right offsets, which collided with the left toolbar when the detail panel
+ * opened. */
+.top-actions {
   position: absolute;
   top: 12px;
-  right: 260px;
+  right: 16px;
   z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app.with-detail-panel .top-actions {
+  right: 396px; /* 380px panel + 16px margin */
+}
+
+/* Narrow canvas beside the detail panel: drop text labels, keep icons. */
+@media (max-width: 1280px) {
+  .app.with-detail-panel .kanban-toggle-label,
+  .app.with-detail-panel .workflow-fab-label,
+  .app.with-detail-panel .provider-selector-label {
+    display: none;
+  }
+}
+
+.kanban-toggle-fab {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -9432,8 +9450,9 @@ body.vscode-light .minimap-viewport {
 }
 
 .kanban-toggle-label {
-  font-weight: 500;
-  font-size: 12px;
+  /* Match .workflow-fab-label so the action row reads as one set. */
+  font-weight: 600;
+  font-size: 11px;
 }
 
 body.ac-force-light .kanban-toggle-fab,
@@ -9447,10 +9466,6 @@ body.vscode-light .kanban-toggle-fab {
 body.ac-force-light .kanban-toggle-fab:hover,
 body.vscode-light .kanban-toggle-fab:hover {
   background: #f5f6f8;
-}
-
-.app.with-detail-panel .kanban-toggle-fab {
-  right: 640px;
 }
 
 /* ─── Terminal Modal (Agentic Kanban) ──────────────────────────────────── */

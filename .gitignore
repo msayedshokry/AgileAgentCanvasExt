@@ -12,6 +12,8 @@ coverage/
 reports/
 webview-ui/coverage/
 webview-ui/coverage-*.txt
+webview-ui/test_*.txt
+webview-ui/test_report*.json
 *test_errors*
 cucumber-output.txt
 cucumber-output.json

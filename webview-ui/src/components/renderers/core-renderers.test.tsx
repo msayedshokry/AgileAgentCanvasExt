@@ -219,6 +219,23 @@ describe('core-renderers smoke tests', () => {
     expect(container.textContent).toContain('Full system');
   });
 
+  it('renderTestStrategyDetails — renders labels instead of crashing when list entries are objects', () => {
+    // AI-generated strategies sometimes emit objects where the schema says strings.
+    const { container } = render(
+      <>{renderTestStrategyDetails(makeProps('test-strategy', {
+        scope: { inScope: ['Checkout'], outOfScope: ['Admin'] },
+        testTypes: [{ type: 'unit', tools: ['vitest'] }, 'e2e'],
+        tooling: [{ name: 'playwright' }],
+        riskAreas: [{ area: 'Payments' }],
+      }))}</>
+    );
+    expect(container.textContent).toContain('unit');
+    expect(container.textContent).toContain('e2e');
+    expect(container.textContent).toContain('playwright');
+    expect(container.textContent).toContain('Payments');
+    expect(container.textContent).toContain('Checkout');
+  });
+
   it('renderArchitectureDecisionDetails — empty metadata', () => {
     const { container } = render(<>{renderArchitectureDecisionDetails(makeProps('architecture-decision'))}</>);
     expect(container.firstChild).toBeTruthy();

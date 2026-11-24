@@ -1,0 +1,138 @@
+/* webview-ui/src/components/renderers/renderer-utilities.css
+ *
+ * Utility classes for the DetailPanel renderers (rr-*). These replaced ~1,700
+ * static inline style={{…}} objects so spacing, type scale, and accent colours
+ * live in one place. Data-driven styles (status colours, computed widths) stay
+ * inline in the renderers.
+ *
+ * Precedence: the classes previously were inline styles, which beat every
+ * stylesheet rule. Nesting them under a never-matching :not(#id) raises their
+ * specificity to (1,1,0), which keeps that precedence over the class-based
+ * rules in index.css (none of which use ID selectors).
+ *
+ * Order matters: shorthands (margin, padding, flex, border-left…) come first so
+ * longhands later in the sheet win when an element carries both.
+ */
+
+:not(#rr-utilities) {
+  &.rr-bg-code { background: var(--vscode-textCodeBlock-background); }
+  &.rr-bg-done { background: var(--badge-done-bg, #2ecc71); }
+  &.rr-bg-editor { background: var(--vscode-editor-background); }
+  &.rr-bg-error { background: var(--vscode-inputValidation-errorBackground); }
+  &.rr-bg-subtle { background: var(--vscode-editor-inactiveSelectionBackground); }
+  &.rr-bg-warning { background: var(--vscode-inputValidation-warningBackground, rgba(255, 200, 0, 0.1)); }
+  &.rr-border-b { border-bottom: 1px solid var(--vscode-widget-border); }
+  &.rr-border-b-panel { border-bottom: 1px solid var(--vscode-panel-border, #333); }
+  &.rr-accent-border { border-left: 2px solid var(--vscode-widget-border); }
+  &.rr-accent-error { border-left: 2px solid var(--vscode-errorForeground); }
+  &.rr-accent-link { border-left: 2px solid var(--vscode-textLink-foreground); }
+  &.rr-accent-orange { border-left: 2px solid var(--vscode-charts-orange); }
+  &.rr-accent-passed { border-left: 2px solid var(--vscode-testing-iconPassed); }
+  &.rr-accent-strong-blue { border-left: 3px solid var(--vscode-terminal-ansiBlue); }
+  &.rr-accent-strong-error { border-left: 3px solid var(--vscode-errorForeground); }
+  &.rr-accent-strong-focus { border-left: 3px solid var(--vscode-focusBorder); }
+  &.rr-accent-strong-link { border-left: var(--vscode-textLink-foreground, #3794ff); }
+  &.rr-accent-strong-passed { border-left: 3px solid var(--vscode-testing-iconPassed); }
+  &.rr-accent-strong-risk { border-left: 3px solid var(--badge-risk-bg, #e74c3c); }
+  &.rr-accent-strong-warning { border-left: 3px solid var(--vscode-editorWarning-foreground); }
+  &.rr-accent-warning { border-left: 2px solid var(--vscode-editorWarning-foreground); }
+  &.rr-border-l { border-left: 1px solid var(--vscode-widget-border); }
+  &.rr-basis-100 { flex: 1 1 100px; }
+  &.rr-basis-120 { flex: 1 1 120px; }
+  &.rr-basis-150 { flex: 1 1 150px; }
+  &.rr-basis-200 { flex: 1 1 200px; }
+  &.rr-flex-1 { flex: 1; }
+  &.rr-flex-2 { flex: 2; }
+  &.rr-m-0-0-4-0 { margin: 0 0 4px 0; }
+  &.rr-m-2-0 { margin: 2px 0; }
+  &.rr-m-4-0 { margin: 4px 0; }
+  &.rr-m-4-0-0-16 { margin: 4px 0 0 16px; }
+  &.rr-p-0 { padding: 0; }
+  &.rr-p-1-0 { padding: 1px 0; }
+  &.rr-p-1-8 { padding: 1px 8px; }
+  &.rr-p-2-0 { padding: 2px 0; }
+  &.rr-p-2-8 { padding: 2px 8px; }
+  &.rr-p-4 { padding: 4px; }
+  &.rr-p-4-0 { padding: 4px 0; }
+  &.rr-p-4-8 { padding: 4px 8px; }
+  &.rr-p-6 { padding: 6px; }
+  &.rr-p-6-0 { padding: 6px 0; }
+  &.rr-p-6-8 { padding: 6px 8px; }
+  &.rr-p-8 { padding: 8px; }
+  &.rr-items-baseline { align-items: baseline; }
+  &.rr-items-center { align-items: center; }
+  &.rr-items-start { align-items: flex-start; }
+  &.rr-items-stretch { align-items: stretch; }
+  &.rr-self-end { align-self: flex-end; }
+  &.rr-bg-error-solid { background-color: var(--vscode-errorForeground); }
+  &.rr-rounded { border-radius: 4px; }
+  &.rr-rounded-sm { border-radius: 3px; }
+  &.rr-fg-blue { color: var(--vscode-terminal-ansiBlue); }
+  &.rr-fg-error { color: var(--vscode-errorForeground); }
+  &.rr-fg-failed { color: var(--vscode-testing-iconFailed, #f44336); }
+  &.rr-fg-green { color: var(--vscode-charts-green); }
+  &.rr-fg-link { color: var(--vscode-textLink-foreground); }
+  &.rr-fg-passed { color: var(--vscode-testing-iconPassed); }
+  &.rr-fg-red { color: var(--vscode-charts-red); }
+  &.rr-fg-warning { color: var(--vscode-editorWarning-foreground); }
+  &.rr-fg-white { color: #fff; }
+  &.rr-block { display: block; }
+  &.rr-flex { display: flex; }
+  &.rr-grid { display: grid; }
+  &.rr-col { flex-direction: column; }
+  &.rr-wrap { flex-wrap: wrap; }
+  &.rr-text-lg { font-size: 1.1em; }
+  &.rr-text-sm { font-size: 0.85em; }
+  &.rr-text-xl { font-size: 1.2em; }
+  &.rr-text-xs { font-size: 0.75em; }
+  &.rr-italic { font-style: italic; }
+  &.rr-bold { font-weight: bold; }
+  &.rr-gap-12 { gap: 12px; }
+  &.rr-gap-4 { gap: 4px; }
+  &.rr-gap-6 { gap: 6px; }
+  &.rr-gap-8 { gap: 8px; }
+  &.rr-grid-2 { grid-template-columns: 1fr 1fr; }
+  &.rr-justify-between { justify-content: space-between; }
+  &.rr-list-disc { list-style-type: disc; }
+  &.rr-list-none { list-style-type: none; }
+  &.rr-mb-12 { margin-bottom: 12px; }
+  &.rr-mb-16 { margin-bottom: 16px; }
+  &.rr-mb-2 { margin-bottom: 2px; }
+  &.rr-mb-4 { margin-bottom: 4px; }
+  &.rr-mb-6 { margin-bottom: 6px; }
+  &.rr-mb-8 { margin-bottom: 8px; }
+  &.rr-ml-16 { margin-left: 16px; }
+  &.rr-ml-4 { margin-left: 4px; }
+  &.rr-ml-6 { margin-left: 6px; }
+  &.rr-ml-8 { margin-left: 8px; }
+  &.rr-mr-4 { margin-right: 4px; }
+  &.rr-mr-6 { margin-right: 6px; }
+  &.rr-mr-8 { margin-right: 8px; }
+  &.rr-mt-12 { margin-top: 12px; }
+  &.rr-mt-2 { margin-top: 2px; }
+  &.rr-mt-4 { margin-top: 4px; }
+  &.rr-mt-6 { margin-top: 6px; }
+  &.rr-mt-8 { margin-top: 8px; }
+  &.rr-min-w-200 { min-width: 200px; }
+  &.rr-min-w-30 { min-width: 30px; }
+  &.rr-muted { opacity: 0.7; }
+  &.rr-subtle { opacity: 0.85; }
+  &.rr-overflow-auto { overflow: auto; }
+  &.rr-pl-12 { padding-left: 12px; }
+  &.rr-pl-24 { padding-left: 24px; }
+  &.rr-pl-4 { padding-left: 4px; }
+  &.rr-text-center { text-align: center; }
+  &.rr-capitalize { text-transform: capitalize; }
+  &.rr-nowrap { white-space: nowrap; }
+  &.rr-pre-wrap { white-space: pre-wrap; }
+  &.rr-w-100 { width: 100px; }
+  &.rr-w-120 { width: 120px; }
+  &.rr-w-140 { width: 140px; }
+  &.rr-w-150 { width: 150px; }
+  &.rr-w-200 { width: 200px; }
+  &.rr-w-60 { width: 60px; }
+  &.rr-w-70 { width: 70px; }
+  &.rr-w-80 { width: 80px; }
+  &.rr-w-full { width: 100%; }
+  &.rr-border-blocks { border-color: var(--badge-blocks-bg, orange); }
+}
