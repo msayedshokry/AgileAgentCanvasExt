@@ -76,8 +76,22 @@ body {
   --space-6: 32px;
   --space-7: 48px;
 
-  /* ── Shape ───────────────────────────────────────────────────────────── */
-  --radius: 2px;
+  /* ── Shape: controls < cards < zones ─────────────────────────────────── */
+  --radius: 6px;          /* buttons, inputs, chips */
+  --radius-card: 10px;    /* cards, panel sections, floating controls */
+  --radius-zone: 14px;    /* lanes, Kanban columns */
+
+  /* ── Depth (soft): cards sit above tinted zones ─────────────────────── */
+  /* Dark themes: a step lighter than the editor; light themes: white paper
+   * (overridden below) so cards lift off the tinted lanes. */
+  --surface-card: color-mix(in srgb, var(--vscode-editor-background) 93%, var(--vscode-foreground));
+  --card-edge: color-mix(in srgb, var(--vscode-foreground) 9%, transparent);
+  --shadow-color: rgba(0, 0, 0, 0.32);
+  --shadow-card: 0 1px 2px var(--shadow-color), 0 4px 14px color-mix(in srgb, var(--shadow-color) 55%, transparent);
+  --shadow-card-hover: 0 2px 4px var(--shadow-color), 0 10px 24px color-mix(in srgb, var(--shadow-color) 60%, transparent);
+  --shadow-float: 0 6px 24px color-mix(in srgb, var(--shadow-color) 80%, transparent);
+  /* Tinted type band at the top of a card; --type-color is set per card. */
+  --band-strength: 14%;
 
   /* ── Motion: transform/opacity only ──────────────────────────────────── */
   --dur-fast: 120ms;
@@ -85,15 +99,29 @@ body {
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
 
   /* ── Legacy variables, re-pointed so existing rules follow the system ─ */
-  --card-bg: var(--paper);
-  --card-border: var(--rule);
-  --card-shadow: none;
-  --card-shadow-hover: none;
-  --card-shadow-selected: 0 0 0 2px var(--accent);
+  --card-bg: var(--surface-card);
+  --card-border: var(--card-edge);
+  --card-shadow: var(--shadow-card);
+  --card-shadow-hover: var(--shadow-card-hover);
+  --card-shadow-selected: 0 0 0 2px var(--accent), var(--shadow-card);
   --transition-fast: var(--dur-fast) var(--ease-out);
   --transition-normal: var(--dur-base) var(--ease-out);
   --transition-slow: 300ms var(--ease-out);
   --transition-bounce: var(--dur-base) var(--ease-out);
+}
+
+/* Light themes: white cards and a lighter, cooler shadow. */
+body.vscode-light,
+body.ac-force-light {
+  --surface-card: var(--vscode-editor-background);
+  --card-edge: color-mix(in srgb, var(--vscode-foreground) 7%, transparent);
+  --shadow-color: rgba(15, 23, 42, 0.09);
+}
+
+/* Forced dark (in-app toggle) inside a light editor theme. */
+body.ac-force-dark {
+  --surface-card: color-mix(in srgb, var(--vscode-editor-background) 93%, var(--vscode-foreground));
+  --shadow-color: rgba(0, 0, 0, 0.32);
 }
 
 /* High contrast: VS Code supplies explicit border colours; use them. */
@@ -105,6 +133,12 @@ body.vscode-high-contrast-light {
   --ink-3: var(--vscode-foreground);
   /* Solid contrast borders would turn the dot grid into noise. */
   --paper-texture: none;
+  /* HC: depth comes from borders, not shadows. */
+  --surface-card: var(--vscode-editor-background);
+  --card-edge: var(--vscode-contrastBorder, currentColor);
+  --shadow-card: none;
+  --shadow-card-hover: none;
+  --shadow-float: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

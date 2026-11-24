@@ -763,32 +763,28 @@ body.ac-force-dark {
 .column-header {
   position: absolute;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--space-2);
   padding: var(--space-1) 0;
   font-family: var(--font-ui);
-  font-size: var(--text-small);
+  font-size: var(--text-body);
   font-weight: var(--weight-strong);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-kicker);
   color: var(--ink);
-  background: var(--paper);
   --phase: var(--ink-3);
 }
 
 .column-header-num {
-  font-family: var(--font-mono);
-  font-size: var(--text-title);
-  font-weight: 400;
-  letter-spacing: 0;
-  color: var(--phase);
+  display: none;
 }
 
 .column-header-count {
-  font-family: var(--font-mono);
-  font-weight: 400;
-  letter-spacing: 0;
-  color: var(--ink-3);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: var(--weight-strong);
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--phase) 16%, transparent);
+  color: var(--ink);
 }
 
 .column-header .lane-toggle-btns,
@@ -965,10 +961,10 @@ body.ac-force-dark {
 
 .canvas-hint:not(.collapsed) {
   padding: var(--space-1) var(--space-2) var(--space-1) var(--space-1);
-  background: var(--paper);
-  border: var(--rule-width) solid var(--rule);
-  border-radius: var(--radius);
-  box-shadow: none;
+  background: var(--surface-card);
+  border: var(--rule-width) solid var(--card-edge);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
 }
 
 .canvas-hint.collapsed {
@@ -994,10 +990,10 @@ body.ac-force-dark {
 
 .canvas-hint.collapsed .canvas-hint-toggle {
   padding: var(--space-1) var(--space-2);
-  background: var(--paper);
-  border: var(--rule-width) solid var(--rule);
-  border-radius: var(--radius);
-  box-shadow: none;
+  background: var(--surface-card);
+  border: var(--rule-width) solid var(--card-edge);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
 }
 
 .canvas-hint-toggle:hover {
@@ -1057,15 +1053,16 @@ body.ac-force-dark {
   position: absolute;
   z-index: 3;
   pointer-events: auto;
-  background: var(--paper);
-  border: var(--rule-width) solid var(--rule);
-  border-radius: var(--radius);
+  background: var(--surface-card);
+  border: var(--rule-width) solid var(--card-edge);
+  border-radius: var(--radius-card);
   padding: var(--space-3) var(--space-4) var(--space-3);
-  box-shadow: none;
+  box-shadow: var(--shadow-card);
   cursor: pointer;
   transition:
     top 0.3s ease,
-    border-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
     opacity var(--dur-base) var(--ease-out);
   user-select: none;
   overflow: visible;
@@ -1094,6 +1091,29 @@ body.ac-force-dark {
 .artifact-card.risks                 { --type-color: color-mix(in srgb, var(--vscode-charts-red) 80%, var(--vscode-charts-yellow)); }
 .artifact-card.task                  { --type-color: color-mix(in srgb, var(--vscode-charts-yellow) 70%, var(--vscode-charts-green)); }
 
+/* Module families without a per-type colour: one hue per module, shared by
+ * canvas cards and the detail panel so a type reads the same everywhere. */
+:is(.artifact-card, .detail-panel):is(.retrospective, .sprint-status, .definition-of-done, .code-review, .change-proposal,
+  .readiness-report, .research, .ux-design, .tech-spec, .project-overview, .project-context, .source-tree,
+  .fit-criteria, .success-metrics, .test-summary,
+  .type-retrospective, .type-sprint-status, .type-definition-of-done, .type-code-review, .type-change-proposal,
+  .type-readiness-report, .type-research, .type-ux-design, .type-tech-spec, .type-project-overview,
+  .type-project-context, .type-source-tree, .type-fit-criteria, .type-success-metrics, .type-test-summary)
+  { --type-color: var(--vscode-charts-orange); }
+:is(.artifact-card, .detail-panel):is(.traceability-matrix, .test-review, .nfr-assessment, .test-framework, .ci-pipeline,
+  .automation-summary, .atdd-checklist, .test-design, .test-design-qa, .test-design-architecture, .test-cases, .test-coverage,
+  .type-traceability-matrix, .type-test-review, .type-nfr-assessment, .type-test-framework, .type-ci-pipeline,
+  .type-automation-summary, .type-atdd-checklist, .type-test-design, .type-test-design-qa,
+  .type-test-design-architecture, .type-test-cases, .type-test-coverage)
+  { --type-color: color-mix(in srgb, var(--vscode-charts-red) 70%, var(--vscode-charts-purple)); }
+:is(.artifact-card, .detail-panel):is(.storytelling, .problem-solving, .innovation-strategy, .design-thinking,
+  .type-storytelling, .type-problem-solving, .type-innovation-strategy, .type-design-thinking)
+  { --type-color: var(--vscode-charts-purple); }
+:is(.artifact-card, .detail-panel):is(.risks, .type-risks)
+  { --type-color: color-mix(in srgb, var(--vscode-charts-red) 80%, var(--vscode-charts-yellow)); }
+:is(.artifact-card, .detail-panel):is(.visual-plan, .type-visual-plan)
+  { --type-color: var(--vscode-charts-yellow); }
+
 /* ── Tree-nested sub-card ──────────────────────────────────────────────────
    When a visual-plan card (`metadata.plan.sourceArtifactId` points at a
    parent) is repositioned as a child of that parent by Canvas's display
@@ -1114,7 +1134,8 @@ body.ac-force-dark {
 }
 
 .artifact-card:hover {
-  border-color: var(--rule-strong);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .artifact-card:focus-visible {
@@ -1124,7 +1145,7 @@ body.ac-force-dark {
 
 .artifact-card.selected {
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), var(--shadow-card-hover);
 }
 
 /* Status reads from the kicker row (text + dot); finished work steps back. */
@@ -1135,9 +1156,9 @@ body.ac-force-dark {
 
 .artifact-card.dragging {
   opacity: 0.95;
-  transform: scale(1.02);
+  transform: scale(1.02) rotate(0.5deg);
   z-index: 100;
-  border-color: var(--accent);
+  box-shadow: var(--shadow-float);
   transition: none;
 }
 
@@ -1181,10 +1202,13 @@ body.ac-force-dark {
 /* Kicker row: [type mark] TYPE · id ······ ● Status  [actions] */
 .artifact-header {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: var(--space-1) var(--space-2);
-  margin-bottom: var(--space-3);
+  margin: calc(-1 * var(--space-3)) calc(-1 * var(--space-4)) var(--space-3);
+  padding: 7px var(--space-4);
+  background: color-mix(in srgb, var(--type-color) var(--band-strength), transparent);
+  border-radius: calc(var(--radius-card) - 1px) calc(var(--radius-card) - 1px) 0 0;
 }
 
 .artifact-header .artifact-icon { order: 0; color: var(--type-color); }
@@ -1210,15 +1234,16 @@ body.ac-force-dark {
  * of reserving invisible space in the kicker row. */
 .artifact-header-actions {
   position: absolute;
-  top: var(--space-2);
+  top: 4px;
   right: var(--space-2);
   display: flex;
   align-items: center;
   gap: 2px;
   padding: 2px;
-  background: var(--paper);
-  border: var(--rule-width) solid var(--rule);
+  background: var(--surface-card);
+  border: var(--rule-width) solid var(--card-edge);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--dur-fast) var(--ease-out);
@@ -1230,11 +1255,16 @@ body.ac-force-dark {
   opacity: 1;
   pointer-events: auto;
 }
-
-.artifact-header { flex-wrap: nowrap; }
-.artifact-header .artifact-id,
 .artifact-header .artifact-status,
 .artifact-header .artifact-icon { flex-shrink: 0; }
+/* Type and id truncate before the status pill wraps. */
+.artifact-header .artifact-id {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* One quiet style for every card action: ink icon, wash on hover. */
 .card-ai-btn,
@@ -1290,11 +1320,10 @@ body.ac-force-dark {
 }
 
 .artifact-type {
-  font-family: var(--font-mono);
-  font-size: var(--text-kicker);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-kicker);
-  color: var(--ink-3);
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: var(--weight-strong);
+  color: color-mix(in srgb, var(--type-color) 72%, var(--ink));
   min-width: 0;
   flex-shrink: 1;
   overflow: hidden;
@@ -1308,11 +1337,13 @@ body.ac-force-dark {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: var(--text-kicker);
+  padding: 1px 8px 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--status-color) 18%, var(--surface-card));
+  font-size: 10.5px;
   font-weight: var(--weight-strong);
-  letter-spacing: 0.02em;
   white-space: nowrap;
-  color: var(--ink-2);
+  color: var(--ink);
   --status-color: var(--ink-3);
 }
 
@@ -2035,7 +2066,8 @@ body.ac-force-dark {
 
 .artifact-card.compact .artifact-header {
   gap: 3px;
-  margin-bottom: 1px;
+  margin: calc(-1 * var(--space-1)) calc(-1 * var(--space-2)) var(--space-1);
+  padding: 3px var(--space-2);
 }
 
 .artifact-card.compact .artifact-type {
@@ -2394,10 +2426,11 @@ body.ac-force-dark {
 
 .sb-container {
   width: 360px;
-  border-radius: var(--radius);
-  background: var(--paper-raised);
-  border: var(--rule-width) solid var(--rule-strong);
   overflow: hidden;
+  background: var(--surface-card);
+  border: var(--rule-width) solid var(--card-edge);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-float);
 }
 
 .sb-input-row {
@@ -2601,10 +2634,10 @@ body.ac-force-dark {
   align-items: center;
   gap: 2px;
   padding: var(--space-1);
-  background: var(--paper);
-  border: var(--rule-width) solid var(--rule);
-  border-radius: var(--radius);
-  box-shadow: none;
+  background: var(--surface-card);
+  border: var(--rule-width) solid var(--card-edge);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
   transition: opacity var(--dur-base) var(--ease-out);
 }
 
@@ -2658,14 +2691,14 @@ body.ac-force-dark {
   right: 16px;
   width: 240px;
   height: 160px;
-  background: var(--paper);
-  border: var(--rule-width) solid var(--rule);
-  border-radius: var(--radius);
-  box-shadow: none;
+  background: var(--surface-card);
+  border: var(--rule-width) solid var(--card-edge);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
   overflow: hidden;
   cursor: crosshair;
   z-index: 10;
-  opacity: 0.7;
+  opacity: 0.85;
   transition: opacity var(--dur-base) var(--ease-out);
 }
 
@@ -2993,8 +3026,8 @@ body.ac-force-dark {
 .swim-lane {
   position: absolute;
   --phase: var(--ink-3);
-  background: color-mix(in srgb, var(--phase) 6%, transparent);
-  border-top: 2px solid var(--phase);
+  background: color-mix(in srgb, var(--phase) 7%, transparent);
+  border-radius: var(--radius-zone);
 }
 
 .swim-lane.discovery      { --phase: var(--phase-discovery); }
@@ -3004,7 +3037,22 @@ body.ac-force-dark {
 .swim-lane.details        { --phase: var(--phase-details); }
 
 /* Lane label picks up its phase colour too, so header and lane read as one. */
-.column-header .column-header-label { color: var(--phase); }
+.column-header .column-header-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--ink);
+}
+
+/* Phase dot before the lane name. */
+.column-header .column-header-label::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--phase);
+  flex-shrink: 0;
+}
 
 /* Horizontal epic row bands */
 .epic-row-band {
@@ -3138,8 +3186,8 @@ body.ac-force-dark {
  * closed by a strong rule. No gradient, no accent strip. */
 .detail-panel-header {
   padding: var(--space-5) var(--space-5) 0;
-  border-bottom: var(--rule-width) solid var(--rule-strong);
-  background: var(--paper);
+  border-bottom: var(--rule-width) solid var(--card-edge);
+  background: color-mix(in srgb, var(--type-color, var(--ink-3)) 10%, var(--paper));
   position: relative;
 }
 
@@ -3435,7 +3483,8 @@ body.ac-force-dark {
 .detail-panel-content {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-2) var(--space-5) var(--space-6);
+  padding: var(--space-4) var(--space-4) var(--space-6);
+  background: color-mix(in srgb, var(--type-color, var(--ink-3)) 5%, var(--paper));
   scroll-behavior: smooth;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
@@ -3448,9 +3497,12 @@ body.ac-force-dark {
   flex-wrap: wrap;
   align-items: stretch;
   gap: 0;
-  margin: var(--space-3) 0;
-  border-top: var(--rule-width) solid var(--rule);
-  border-bottom: var(--rule-width) solid var(--rule);
+  margin: 0 0 var(--space-3);
+  padding: 0 var(--space-4);
+  background: var(--surface-card);
+  border: var(--rule-width) solid var(--card-edge);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
 }
 
 .detail-row .detail-section {
@@ -3487,12 +3539,6 @@ body.ac-force-dark {
   border: none;
   border-radius: 0;
   animation: fadeIn var(--dur-base) var(--ease-out) backwards;
-}
-
-.detail-panel-content > .detail-section + .detail-section,
-.detail-panel-content section + section {
-  border-top: var(--rule-width) solid var(--rule);
-  margin-top: 0;
 }
 
 .detail-section.inline {
@@ -3587,12 +3633,35 @@ body.ac-force-dark {
   display: none;
 }
 
-.detail-section.collapsible.collapsed {
-  padding: var(--space-3) 0;
+/* Each collapsible section is a soft card with a tinted header band —
+ * the same pattern as canvas cards. */
+.detail-panel-content > .detail-section.collapsible {
+  padding: 0 var(--space-4) var(--space-4);
+  background: var(--surface-card);
+  border: var(--rule-width) solid var(--card-edge);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
 }
 
-.detail-section.collapsible.collapsed > h4.collapsible-header {
+.detail-panel-content > section + section {
+  margin-top: var(--space-3);
+}
+
+.detail-panel-content > .detail-section.collapsible > h4.collapsible-header {
+  margin: 0 calc(-1 * var(--space-4)) var(--space-3);
+  padding: 9px var(--space-4);
+  background: color-mix(in srgb, var(--type-color, var(--ink-3)) var(--band-strength), transparent);
+  border-radius: calc(var(--radius-card) - 1px) calc(var(--radius-card) - 1px) 0 0;
+  color: color-mix(in srgb, var(--type-color, var(--ink-3)) 72%, var(--ink));
+}
+
+.detail-panel-content > .detail-section.collapsible.collapsed {
+  padding-bottom: 0;
+}
+
+.detail-panel-content > .detail-section.collapsible.collapsed > h4.collapsible-header {
   margin-bottom: 0;
+  border-radius: calc(var(--radius-card) - 1px);
 }
 
 /* Focus-visible for keyboard users */
@@ -5282,19 +5351,6 @@ body.ac-force-dark {
 /* ================================================
    NEW ARTIFACT TYPES - PRD, Architecture, ProductBrief
    ================================================ */
-
-/* Artifact card type-specific borders */
-.artifact-card.prd {
-  border-left-color: var(--vscode-charts-red, #e74c3c);
-}
-
-.artifact-card.architecture {
-  border-left-color: var(--vscode-charts-cyan, #00bcd4);
-}
-
-.artifact-card.product-brief {
-  border-left-color: var(--vscode-charts-purple, #9b59b6);
-}
 
 /* ================================================
    PRIORITY BADGES

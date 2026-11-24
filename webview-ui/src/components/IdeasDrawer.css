@@ -10,11 +10,11 @@
   width: 340px;
   max-width: 90vw;
   height: calc(100vh - 56px);
-  background: var(--paper-raised);
+  background: var(--paper);
   border-left: var(--rule-width) solid var(--rule-strong);
   border-top: var(--rule-width) solid var(--rule-strong);
   border-radius: 0;
-  box-shadow: none;
+  box-shadow: var(--shadow-float);
   display: flex;
   flex-direction: column;
   z-index: 51;
@@ -227,16 +227,18 @@
 }
 
 .ideas-card {
-  background: var(--paper);
-  border: var(--rule-width) solid var(--rule);
-  border-radius: var(--radius);
+  background: var(--surface-card);
+  border: var(--rule-width) solid var(--card-edge);
+  border-radius: var(--radius-card);
   padding: var(--space-2) var(--space-3);
   margin-bottom: var(--space-2);
-  transition: border-color var(--dur-fast) var(--ease-out);
+  box-shadow: var(--shadow-card);
+  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
 }
 
 .ideas-card:hover {
-  border-color: var(--rule-strong);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card-hover);
 }
 .ideas-card.editing {
   border-color: var(--accent);

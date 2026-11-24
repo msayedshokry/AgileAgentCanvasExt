@@ -17,21 +17,19 @@
 
 /* ── Column ── */
 .kanban-column {
-  counter-increment: kanban-column;
-  background: color-mix(in srgb, var(--kanban-col-accent, var(--ink-3)) 6%, transparent);
+  background: color-mix(in srgb, var(--kanban-col-accent, var(--ink-3)) 7%, transparent);
   border: none;
-  border-top: 2px solid var(--kanban-col-accent, var(--ink-3));
-  border-radius: 0;
+  border-radius: var(--radius-zone);
   display: flex;
   flex-direction: column;
   min-width: 200px;
-  padding: var(--space-2) var(--space-3) var(--space-3);
+  padding: var(--space-3);
 }
 
 /* Feature 2: WIP limit exceeded — red border + warning text */
 .kanban-column--wip-exceeded {
-  border-top-color: var(--vscode-charts-red, #ef4444);
-  background: color-mix(in srgb, var(--vscode-charts-red, #ef4444) 6%, transparent);
+  background: color-mix(in srgb, var(--vscode-charts-red, #ef4444) 9%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vscode-charts-red, #ef4444) 45%, transparent);
 }
 
 .kanban-column--wip-exceeded .kanban-column-header {
@@ -52,41 +50,40 @@
 .kanban-column-header {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: var(--space-2);
-  padding: 0 0 var(--space-2);
-  margin-bottom: var(--space-2);
+  padding: 0 var(--space-1) var(--space-3);
 }
 
 .kanban-column-label {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--space-2);
   font-family: var(--font-ui);
-  font-size: var(--text-small);
+  font-size: var(--text-body);
   font-weight: var(--weight-strong);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-kicker);
-  color: var(--kanban-col-accent, var(--ink));
+  color: var(--ink);
 }
 
 /* Column numeral (01, 02…) in the column's accent colour — the only hue on
  * the column chrome. */
 .kanban-column-label::before {
-  content: counter(kanban-column, decimal-leading-zero);
-  font-family: var(--font-mono);
-  font-size: var(--text-title);
-  font-weight: 400;
-  letter-spacing: 0;
-  color: var(--kanban-col-accent, var(--ink-3));
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--kanban-col-accent, var(--ink-3));
+  flex-shrink: 0;
 }
 
 .kanban-column-count {
-  font-family: var(--font-mono);
-  font-size: var(--text-small);
-  color: var(--ink-3);
-  min-width: 2ch;
-  text-align: right;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: var(--weight-strong);
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--kanban-col-accent, var(--ink-3)) 16%, transparent);
+  color: var(--ink);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -168,19 +165,21 @@
   text-align: center;
   color: var(--ink-3);
   padding: var(--space-4) var(--space-3);
-  border: var(--rule-width) dashed var(--rule);
-  border-radius: var(--radius);
+  border: 1.5px dashed color-mix(in srgb, var(--kanban-col-accent, var(--ink-3)) 30%, transparent);
+  border-radius: var(--radius-card);
   font-size: var(--text-small);
 }
 
 /* ── Card ── */
 .kanban-card {
-  background: var(--paper);
-  border: var(--rule-width) solid var(--rule);
-  border-radius: var(--radius);
+  --type-color: var(--vscode-charts-yellow);
+  background: var(--surface-card);
+  border: var(--rule-width) solid var(--card-edge);
+  border-radius: var(--radius-card);
   padding: var(--space-3);
   cursor: grab;
-  transition: border-color var(--dur-fast) var(--ease-out), opacity var(--dur-base) var(--ease-out);
+  box-shadow: var(--shadow-card);
+  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-base) var(--ease-out), opacity var(--dur-base) var(--ease-out);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -192,15 +191,18 @@
 /* Multi-select: selected card highlight */
 .kanban-card--selected {
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), var(--shadow-card-hover);
 }
 
 /* Feature 1: child story card — indented + smaller */
 .kanban-card--child {
   margin-left: var(--space-4);
-  border-left: var(--rule-width) solid var(--rule-strong);
   font-size: var(--text-small);
   padding: var(--space-2) var(--space-3);
+}
+
+.kanban-card--child .kanban-card-key {
+  margin-top: calc(-1 * var(--space-2));
 }
 
 .kanban-card--child .kanban-card-title {
@@ -208,7 +210,8 @@
 }
 
 .kanban-card:hover {
-  border-color: var(--rule-strong);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .kanban-card:active {
@@ -232,6 +235,7 @@
    No `@media` override required. */
 .kanban-card--epic {
   border-left: 4px solid var(--vscode-charts-purple, #8b5cf6);
+  --type-color: var(--vscode-charts-green);
 }
 
 .kanban-card--locked {
@@ -255,11 +259,16 @@
 }
 
 .kanban-card-key {
+  margin: calc(-1 * var(--space-3)) calc(-1 * var(--space-3)) var(--space-1);
+  padding: 6px var(--space-3);
+  background: color-mix(in srgb, var(--type-color) var(--band-strength), transparent);
+  border-radius: calc(var(--radius-card) - 1px) calc(var(--radius-card) - 1px) 0 0;
   font-family: var(--font-mono);
   font-size: var(--text-kicker);
-  color: var(--ink-3);
+  font-weight: var(--weight-strong);
+  color: color-mix(in srgb, var(--type-color) 72%, var(--ink));
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  letter-spacing: var(--tracking-kicker);
 }
 
 .kanban-card-title {
