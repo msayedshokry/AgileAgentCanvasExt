@@ -59,6 +59,15 @@ The Agentic Kanban now runs on whichever coding agent you already have installed
 - **Codex never launched:** Codex CLI 0.163 rejects `--ask-for-approval`, so every Codex board run and card action failed to start.
 - **Codex couldn't write files on Windows:** in the default `sandboxed` permission level, Codex silently ran read-only and refused every file write. Board runs now set Codex's Windows sandbox, so it can edit the workspace.
 
+### Fixed: Policy failures never showed on cards
+
+- **Harness policy results now reach the board.** When a policy check fails on a story or epic, its card shows the **Policy failed** badge with the failing policy and reason. Before, results stayed inside the extension and the badge never appeared. Results are kept when the board is closed and reopened.
+
+### Under the hood
+
+- Lint now blocks CI, and the existing lint backlog is cleared.
+- Cucumber steps that only logged now check real behaviour, and the simulated board scenarios are replaced by React component tests that render the real board.
+
 ## 0.5.7
 
 ### Highlights
