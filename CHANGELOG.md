@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed: Canvas flickered when zooming or panning
+
+- **The canvas no longer flickers or jumps back while you zoom or pan.** Fast scrolling or dragging made the view bounce between two positions. In the mind map it could keep bouncing until the canvas froze. The view now stays where you put it in lanes and mind map, and each layout still remembers its own position when you switch.
+
 ## 0.6.0
 
 ### Highlights
