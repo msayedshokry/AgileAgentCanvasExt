@@ -941,8 +941,8 @@ export async function importArtifacts(store: ArtifactStore): Promise<void> {
         );
 
         acOutput.appendLine(`[Import] Imported artifacts from: ${fileUris[0].fsPath} (${strategy.label})`);
-    } catch (err: any) {
-        const msg = err?.message ?? String(err);
+    } catch (err: unknown) {
+        const msg = errMsg(err);
         acOutput.appendLine(`[Import] Error importing artifacts: ${msg}`);
         vscode.window.showErrorMessage(`Failed to import artifacts: ${msg}`);
     }

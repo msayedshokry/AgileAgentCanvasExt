@@ -12,6 +12,7 @@ import {
 } from './schema-mappers';
 
 import type { ArtifactLoadCtx, ArtifactLoadFn, ArtifactLoadRegistry } from './reducer-types';
+import { errMsg } from '../utils/error';
 
 const l1LoadLogger = createLogger('load-l1-loaders');
 const logDebug = (...args: unknown[]) => l1LoadLogger.debug(...args);
@@ -65,8 +66,8 @@ const loadEpics: ArtifactLoadFn = async (ctx) => {
                     }
                     sourceFiles.set(perIdKey('epic', epic.id), epicFileUri);
                 }
-            } catch (refErr: any) {
-                logDebug(`Failed to load epic ref '${refPath}': ${refErr?.message ?? refErr}`);
+            } catch (refErr: unknown) {
+                logDebug(`Failed to load epic ref '${refPath}': ${errMsg(refErr)}`);
             }
         }
     } else {

@@ -33,6 +33,7 @@ import { graphQuery } from '../integrations/graphify/graph-query';
 import { loadGraph, loadCommunities, loadArchIndexMarkdown } from '../integrations/graphify/graph-loader';
 import { visualPlanService } from '../workflow/visual-plan-service';
 import { isVisualPlanEnabled, VISUAL_PLAN_DISABLED_MARKDOWN } from '../utils/visual-plan-config';
+import { errMsg } from '../utils/error';
 
 /**
  * AgileAgentCanvas Chat Participant - Integrates with VS Code Copilot Chat
@@ -293,9 +294,9 @@ export class AgileAgentCanvasChatParticipant {
                         let result: vscode.LanguageModelToolResult;
                         try {
                             result = await vscode.lm.invokeTool(tc.name, { input: tc.input, toolInvocationToken: undefined }, token);
-                        } catch (err: any) {
+                        } catch (err: unknown) {
                             result = new vscode.LanguageModelToolResult([
-                                new vscode.LanguageModelTextPart(`Tool "${tc.name}" failed: ${err?.message ?? err}`)
+                                new vscode.LanguageModelTextPart(`Tool "${tc.name}" failed: ${errMsg(err)}`)
                             ]);
                         }
                         toolResultParts.push(new vscode.LanguageModelToolResultPart(tc.callId, result.content));
@@ -1471,9 +1472,9 @@ ${PONYTAIL_HEURISTICS}
                         let result: vscode.LanguageModelToolResult;
                         try {
                             result = await vscode.lm.invokeTool(tc.name, { input: tc.input, toolInvocationToken: undefined }, token);
-                        } catch (err: any) {
+                        } catch (err: unknown) {
                             result = new vscode.LanguageModelToolResult([
-                                new vscode.LanguageModelTextPart(`Tool "${tc.name}" failed: ${err?.message ?? err}`)
+                                new vscode.LanguageModelTextPart(`Tool "${tc.name}" failed: ${errMsg(err)}`)
                             ]);
                         }
                         toolResultParts.push(new vscode.LanguageModelToolResultPart(tc.callId, result.content));
@@ -4589,8 +4590,8 @@ Output ONLY the JSON, no explanation.`;
             try {
                 const epics = await client.fetchEpics(resolvedProject);
                 stream.markdown(formatEpicsAsMarkdown(epics));
-            } catch (err: any) {
-                stream.markdown(`**Error:** ${err?.message ?? err}\n`);
+            } catch (err: unknown) {
+                stream.markdown(`**Error:** ${errMsg(err)}\n`);
                 this.addJiraTokenHint(stream, err);
             }
             return { metadata: { command: 'jira', subcommand: 'epics' } };
@@ -4611,8 +4612,8 @@ Output ONLY the JSON, no explanation.`;
                 try {
                     const stories = await client.fetchStoriesForEpic(arg, projectForEpic);
                     stream.markdown(formatStoriesAsMarkdown(stories, arg));
-                } catch (err: any) {
-                    stream.markdown(`**Error:** ${err?.message ?? err}\n`);
+                } catch (err: unknown) {
+                    stream.markdown(`**Error:** ${errMsg(err)}\n`);
                     this.addJiraTokenHint(stream, err);
                 }
             } else {
@@ -4621,8 +4622,8 @@ Output ONLY the JSON, no explanation.`;
                 try {
                     const stories = await client.fetchAllStoriesInProject(proj);
                     stream.markdown(formatStoriesAsMarkdown(stories));
-                } catch (err: any) {
-                    stream.markdown(`**Error:** ${err?.message ?? err}\n`);
+                } catch (err: unknown) {
+                    stream.markdown(`**Error:** ${errMsg(err)}\n`);
                     this.addJiraTokenHint(stream, err);
                 }
             }
@@ -4652,8 +4653,8 @@ Output ONLY the JSON, no explanation.`;
                     `| Epics updated | ${updated} |\n\n` +
                     `Your canvas artifacts have been updated. Open the canvas to see the changes.\n`
                 );
-            } catch (err: any) {
-                stream.markdown(`**Error:** ${err?.message ?? err}\n`);
+            } catch (err: unknown) {
+                stream.markdown(`**Error:** ${errMsg(err)}\n`);
                 this.addJiraTokenHint(stream, err);
             }
             return { metadata: { command: 'jira', subcommand: 'sync' } };
@@ -4714,8 +4715,8 @@ Output ONLY the JSON, no explanation.`;
                 '> ⚠️ API tokens expire after 1 year. Rotate before expiry at ' +
                 '[id.atlassian.com → Security → API tokens](https://id.atlassian.com/manage-profile/security/api-tokens).\n'
             );
-        } catch (err: any) {
-            stream.markdown(`❌ **Connection failed:** ${err?.message ?? err}\n`);
+        } catch (err: unknown) {
+            stream.markdown(`❌ **Connection failed:** ${errMsg(err)}\n`);
         }
 
         return { metadata: { command: 'jira', subcommand: 'config' } };

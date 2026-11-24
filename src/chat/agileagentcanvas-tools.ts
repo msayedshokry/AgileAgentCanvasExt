@@ -271,8 +271,8 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         return new vscode.LanguageModelToolResult([
                             new vscode.LanguageModelTextPart(content)
                         ]);
-                    } catch (err: any) {
-                        const msg = `Error reading "${filePath}": ${err?.message ?? err}`;
+                    } catch (err: unknown) {
+                        const msg = `Error reading "${filePath}": ${errMsg(err)}`;
                         logger.debug(`[agileagentcanvas_read_file] ${msg}`);
                         return new vscode.LanguageModelToolResult([
                             new vscode.LanguageModelTextPart(msg)
@@ -312,8 +312,8 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         return new vscode.LanguageModelToolResult([
                             new vscode.LanguageModelTextPart(result)
                         ]);
-                    } catch (err: any) {
-                        const msg = `Error listing "${dirPath}": ${err?.message ?? err}`;
+                    } catch (err: unknown) {
+                        const msg = `Error listing "${dirPath}": ${errMsg(err)}`;
                         logger.debug(`[agileagentcanvas_list_directory] ${msg}`);
                         return new vscode.LanguageModelToolResult([
                             new vscode.LanguageModelTextPart(msg)
@@ -356,9 +356,9 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         if (ctx.bmadPath && !schemaValidator.isInitialized()) {
                             try {
                                 schemaValidator.init(ctx.bmadPath);
-                            } catch (err: any) {
+                            } catch (err: unknown) {
                                 logger.debug(
-                                    `[agileagentcanvas_update_artifact] Schema validator init failed: ${err?.message ?? err}`
+                                    `[agileagentcanvas_update_artifact] Schema validator init failed: ${errMsg(err)}`
                                 );
                             }
                         }
@@ -387,8 +387,8 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(msg)
                             ]);
-                        } catch (err: any) {
-                            const msg = `Error updating artifact ${type}/${id}: ${err?.message ?? err}`;
+                        } catch (err: unknown) {
+                            const msg = `Error updating artifact ${type}/${id}: ${errMsg(err)}`;
                             logger.debug(`[agileagentcanvas_update_artifact] ${msg}`);
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(msg)
@@ -525,8 +525,8 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(msg)
                             ]);
-                        } catch (err: any) {
-                            const msg = `Error writing "${filePath}": ${err?.message ?? err}`;
+                        } catch (err: unknown) {
+                            const msg = `Error writing "${filePath}": ${errMsg(err)}`;
                             logger.debug(`[agileagentcanvas_write_file] ${msg}`);
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(msg)
@@ -572,8 +572,8 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(msg)
                             ]);
-                        } catch (err: any) {
-                            const msg = `Error syncing story status: ${err?.message ?? err}`;
+                        } catch (err: unknown) {
+                            const msg = `Error syncing story status: ${errMsg(err)}`;
                             logger.debug(`[agileagentcanvas_sync_story_status] ${msg}`);
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(msg)
@@ -611,8 +611,8 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(msg)
                             ]);
-                        } catch (err: any) {
-                            const msg = `Error syncing epic status: ${err?.message ?? err}`;
+                        } catch (err: unknown) {
+                            const msg = `Error syncing epic status: ${errMsg(err)}`;
                             logger.debug(`[agileagentcanvas_sync_epic_status] ${msg}`);
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(msg)
@@ -728,8 +728,8 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                                 )
                             ]);
 
-                        } catch (err: any) {
-                            const msg = `Jira error (${action}): ${err?.message ?? err}`;
+                        } catch (err: unknown) {
+                            const msg = `Jira error (${action}): ${errMsg(err)}`;
                             logger.debug(`[agileagentcanvas_read_jira] ${msg}`);
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(msg)
@@ -765,8 +765,8 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(result.text)
                             ]);
-                        } catch (err: any) {
-                            const msg = `graph_query error: ${err?.message ?? err}`;
+                        } catch (err: unknown) {
+                            const msg = `graph_query error: ${errMsg(err)}`;
                             logger.debug(`[agileagentcanvas_graph_query] ${msg}`);
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(msg)
@@ -801,8 +801,8 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(result.text)
                             ]);
-                        } catch (err: any) {
-                            const msg = `graph_path error: ${err?.message ?? err}`;
+                        } catch (err: unknown) {
+                            const msg = `graph_path error: ${errMsg(err)}`;
                             logger.debug(`[agileagentcanvas_graph_path] ${msg}`);
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(msg)
@@ -840,8 +840,8 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(text)
                             ]);
-                        } catch (err: any) {
-                            const msg = `graph_community error: ${err?.message ?? err}`;
+                        } catch (err: unknown) {
+                            const msg = `graph_community error: ${errMsg(err)}`;
                             logger.debug(`[agileagentcanvas_graph_community] ${msg}`);
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(msg)
@@ -918,10 +918,10 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                                     `Repair a smaller subset of fields and call again.`
                                 );
                             }
-                        } catch (e: any) {
+                        } catch (e: unknown) {
                             return errorResult(
                                 'input-not-serializable',
-                                `Input data is not JSON-serializable: ${e?.message ?? e}`
+                                `Input data is not JSON-serializable: ${errMsg(e)}`
                             );
                         }
 
@@ -929,8 +929,8 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         if (ctx.bmadPath && !schemaValidator.isInitialized()) {
                             try {
                                 schemaValidator.init(ctx.bmadPath);
-                            } catch (err: any) {
-                                const msg = `Schema validator init failed: ${err?.message ?? err}`;
+                            } catch (err: unknown) {
+                                const msg = `Schema validator init failed: ${errMsg(err)}`;
                                 logger.debug(`[agileagentcanvas_repair_json] ${msg}`);
                                 return errorResult('validator-init-failed', msg);
                             }
@@ -951,8 +951,8 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         let schemaObj: any;
                         try {
                             schemaObj = JSON.parse(schemaContent);
-                        } catch (err: any) {
-                            const msg = `Failed to parse schema for "${schemaName}": ${err?.message ?? err}`;
+                        } catch (err: unknown) {
+                            const msg = `Failed to parse schema for "${schemaName}": ${errMsg(err)}`;
                             logger.debug(`[agileagentcanvas_repair_json] ${msg}`);
                             return errorResult('schema-parse-error', msg);
                         }
@@ -1012,8 +1012,8 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(serialized)
                             ]);
-                        } catch (err: any) {
-                            const msg = `Repair failed for "${schemaName}": ${err?.message ?? err}`;
+                        } catch (err: unknown) {
+                            const msg = `Repair failed for "${schemaName}": ${errMsg(err)}`;
                             logger.debug(`[agileagentcanvas_repair_json] ${msg}`);
                             return errorResult('repair-failed', msg);
                         }
@@ -1060,8 +1060,8 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         return new vscode.LanguageModelToolResult([
                             new vscode.LanguageModelTextPart(JSON.stringify({ frontmatter, body }))
                         ]);
-                    } catch (err: any) {
-                        const msg = `Error extracting frontmatter from "${filePath}": ${err?.message ?? err}`;
+                    } catch (err: unknown) {
+                        const msg = `Error extracting frontmatter from "${filePath}": ${errMsg(err)}`;
                         logger.debug(`[agileagentcanvas_frontmatter_extract] ${msg}`);
                         return new vscode.LanguageModelToolResult([
                             new vscode.LanguageModelTextPart(msg)
@@ -1083,7 +1083,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         return new vscode.LanguageModelToolResult([
                             new vscode.LanguageModelTextPart(JSON.stringify({ ok: true, data }))
                         ]);
-                    } catch (err: any) {
+                    } catch (err: unknown) {
                         const errorMsg = err instanceof Error ? err.message : String(err);
                         logger.debug(`[agileagentcanvas_yaml_to_json] Parse error: ${errorMsg}`);
                         return new vscode.LanguageModelToolResult([
@@ -1116,7 +1116,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(JSON.stringify({ changes, summary }))
                             ]);
-                        } catch (err: any) {
+                        } catch (err: unknown) {
                             const errorMsg = err instanceof Error ? err.message : String(err);
                             logger.debug(`[agileagentcanvas_json_diff] Error: ${errorMsg}`);
                             return new vscode.LanguageModelToolResult([
@@ -1162,7 +1162,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(JSON.stringify({ ok: true, data: merged }))
                             ]);
-                        } catch (err: any) {
+                        } catch (err: unknown) {
                             const errorMsg = err instanceof Error ? err.message : String(err);
                             logger.debug(`[agileagentcanvas_json_merge] Error: ${errorMsg}`);
                             return new vscode.LanguageModelToolResult([
@@ -1524,7 +1524,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                                     // Skip files that can't be read
                                 }
                             }
-                        } catch (err: any) {
+                        } catch (err: unknown) {
                             const errorMsg = err instanceof Error ? err.message : String(err);
                             logger.debug(`[agileagentcanvas_codebase_search] Error: ${errorMsg}`);
                             return new vscode.LanguageModelToolResult([
@@ -1581,8 +1581,8 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(JSON.stringify({ ok: true, ...sim }))
                             ]);
-                        } catch (err: any) {
-                            const msg = `Simulate error: ${err?.message ?? err}`;
+                        } catch (err: unknown) {
+                            const msg = `Simulate error: ${errMsg(err)}`;
                             logger.debug(`[agileagentcanvas_headroom_simulate] ${msg}`);
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(JSON.stringify({ ok: false, reason: 'simulate_error', message: msg }))
@@ -1625,8 +1625,8 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(JSON.stringify({ ok: true, ...result }))
                             ]);
-                        } catch (err: any) {
-                            const msg = `Retrieve error: ${err?.message ?? err}`;
+                        } catch (err: unknown) {
+                            const msg = `Retrieve error: ${errMsg(err)}`;
                             logger.debug(`[agileagentcanvas_headroom_retrieve] ${msg}`);
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(JSON.stringify({ ok: false, reason: 'retrieve_error', message: msg }))
@@ -1705,8 +1705,8 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(JSON.stringify(results, null, 2))
                             ]);
-                        } catch (err: any) {
-                            const msg = `list_ideas error: ${err?.message ?? err}`;
+                        } catch (err: unknown) {
+                            const msg = `list_ideas error: ${errMsg(err)}`;
                             logger.debug(`[agileagentcanvas_list_ideas] ${msg}`);
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(msg)
@@ -1757,8 +1757,8 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(Buffer.from(text).toString('utf-8'))
                             ]);
-                        } catch (err: any) {
-                            const msg = `read_idea error: ${err?.message ?? err}`;
+                        } catch (err: unknown) {
+                            const msg = `read_idea error: ${errMsg(err)}`;
                             logger.debug(`[agileagentcanvas_read_idea] ${msg}`);
                             return new vscode.LanguageModelToolResult([
                                 new vscode.LanguageModelTextPart(msg)

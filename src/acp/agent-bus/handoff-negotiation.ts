@@ -18,6 +18,7 @@ const logger = createLogger('handoff-negotiation');
 import { agentRegistry } from './agent-registry';
 import { agentMessageBus } from './message-bus';
 import { getTraceRecorder } from '../../trace/trace-recorder';
+import { errMsg } from '../../utils/error';
 import {
   HandoffRequest,
   HandoffResponse,
@@ -224,8 +225,8 @@ export class HandoffNegotiationService {
           `[Handoff] SharedContext compressed: ${entry.originalTokens} → ${entry.compressedTokens} tokens ` +
           `(${entry.savingsPercent}% saved)`
         );
-      } catch (err: any) {
-        logger.debug(`[Handoff] SharedContext compression failed: ${err?.message ?? err}`);
+      } catch (err: unknown) {
+        logger.debug(`[Handoff] SharedContext compression failed: ${errMsg(err)}`);
       }
     }
 
@@ -270,8 +271,8 @@ export class HandoffNegotiationService {
       const serialised = this._shareCtx.get(sessionId, { full: true });
       if (!serialised) { return null; }
       return JSON.parse(serialised);
-    } catch (err: any) {
-      logger.debug(`[Handoff] SharedContext decompress failed: ${err?.message ?? err}`);
+    } catch (err: unknown) {
+      logger.debug(`[Handoff] SharedContext decompress failed: ${errMsg(err)}`);
       return null;
     }
   }

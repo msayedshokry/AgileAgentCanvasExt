@@ -21,6 +21,7 @@ import { getTraceRecorder } from '../trace/trace-recorder';
 // Audit follow-up to gap #20/#42 (chat-side workflow attribution in trace metadata).
 import { sharedToolContext } from '../chat/agileagentcanvas-tools';
 import { harnessFeedback } from '../harness/harness-feedback';
+import { errMsg } from '../utils/error';
 import {
     resultFilePath,
     readVerdictFile,
@@ -2603,9 +2604,9 @@ ${stepContent}
             try {
                 schemaValidator.init(bmadPath);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Schema validator init failure (buildWorkflowPrompt); err shape varies across implementations; debug-log-only
-            } catch (err: any) {
+            } catch (err: unknown) {
                 logger.debug(
-                    `[buildWorkflowPrompt] Schema validator init failed: ${err?.message ?? err}`
+                    `[buildWorkflowPrompt] Schema validator init failed: ${errMsg(err)}`
                 );
             }
         }
@@ -2819,9 +2820,9 @@ the correct workflow file for this task, then follow its steps.`;
             try {
                 schemaValidator.init(bmadPath);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Schema validator init failure (executeWithTools variant); debug-log-only
-            } catch (err: any) {
+            } catch (err: unknown) {
                 logger.debug(
-                    `[executeWithTools] Schema validator init failed: ${err?.message ?? err}`
+                    `[executeWithTools] Schema validator init failed: ${errMsg(err)}`
                 );
             }
         }
@@ -3017,8 +3018,8 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
             try {
                 response = await model.vscodeLm!.sendRequest(messages, { tools }, token);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any -- vscodeLm.sendRequest rejection; error type is opaque from VS Code LM API
-            } catch (err: any) {
-                stream.markdown(`\n\n**Error calling model:** ${err?.message ?? err}\n`);
+            } catch (err: unknown) {
+                stream.markdown(`\n\n**Error calling model:** ${errMsg(err)}\n`);
                 return;
             }
 
@@ -3065,8 +3066,8 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                 try {
                     result = await vscode.lm.invokeTool(tc.name, { input: tc.input, toolInvocationToken: undefined }, token);
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- vscode.lm.invokeTool rejection; error is opaque from VS Code LM API
-                } catch (err: any) {
-                    const errText = `Tool "${tc.name}" failed: ${err?.message ?? err}`;
+                } catch (err: unknown) {
+                    const errText = `Tool "${tc.name}" failed: ${errMsg(err)}`;
                     logger.debug(`[executeWithTools] ${errText}`);
                     result = new vscode.LanguageModelToolResult([
                         new vscode.LanguageModelTextPart(errText)
@@ -3160,9 +3161,9 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                                         );
                                     }
                                 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Read-on-disk error (executeWithTools validation fallback); debug-log-only path
-                                } catch (readErr: any) {
+                                } catch (readErr: unknown) {
                                     logger.debug(
-                                        `[executeWithTools] Failed to read on-disk artifact for ${artType}: ${readErr?.message ?? readErr}`
+                                        `[executeWithTools] Failed to read on-disk artifact for ${artType}: ${errMsg(readErr)}`
                                     );
                                 }
                             }
@@ -3359,9 +3360,9 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                         try {
                             result = await vscode.lm.invokeTool(tc.name, { input: tc.input, toolInvocationToken: undefined }, token);
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- vscode.lm.invokeTool rejection (recurring path); error opaque from VS Code LM API
-                        } catch (err: any) {
+                        } catch (err: unknown) {
                             result = new vscode.LanguageModelToolResult([
-                                new vscode.LanguageModelTextPart(`Tool "${tc.name}" failed: ${err?.message ?? err}`)
+                                new vscode.LanguageModelTextPart(`Tool "${tc.name}" failed: ${errMsg(err)}`)
                             ]);
                         }
 
@@ -3385,8 +3386,8 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
                     messages.push(vscode.LanguageModelChatMessage.User(nudgeToolResults));
                 }
             // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Nudge loop error (executeWithTools); debug-log-only path
-            } catch (err: any) {
-                logger.debug(`[executeWithTools] Nudge loop failed: ${err?.message ?? err}`);
+            } catch (err: unknown) {
+                logger.debug(`[executeWithTools] Nudge loop failed: ${errMsg(err)}`);
             }
 
             if (!artifactSaved) {
@@ -3512,9 +3513,9 @@ ${workflowOutputFormat === 'dual' || workflowOutputFormat === 'json'
             try {
                 schemaValidator.init(bmadPath);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Schema validator init failure (executeWithDirectApi); debug-log-only
-            } catch (err: any) {
+            } catch (err: unknown) {
                 logger.debug(
-                    `[executeWithDirectApi] Schema validator init failed: ${err?.message ?? err}`
+                    `[executeWithDirectApi] Schema validator init failed: ${errMsg(err)}`
                 );
             }
         }

@@ -6,6 +6,7 @@ import * as path from 'path';
 import { schemaValidator } from '../state/schema-validator';
 import { getPersonaForArtifactType, formatFullAgentForPrompt } from '../chat/agent-personas';
 import { PONYTAIL_HEURISTICS } from '../chat/ponytail-heuristics';
+import { errMsg } from '../utils/error';
 
 /**
  * AntiGravity Orchestrator
@@ -269,9 +270,9 @@ ${projectContextNotes.map(n => `- ${n}`).join('\n')}
     if (bmadPath && !schemaValidator.isInitialized()) {
         try {
             schemaValidator.init(bmadPath);
-        } catch (err: any) {
+        } catch (err: unknown) {
             logger.debug(
-                `[antigravity-orchestrator] Schema validator init failed: ${err?.message ?? err}`
+                `[antigravity-orchestrator] Schema validator init failed: ${errMsg(err)}`
             );
         }
     }
@@ -648,8 +649,8 @@ export async function orchestrateAntigravityWorkflow(
         // Write the guide file
         await vscode.workspace.fs.writeFile(guideUri, Buffer.from(guideContent, 'utf-8'));
         logger.debug(`[antigravity-orchestrator] Guide file written: ${guidePath}`);
-    } catch (err: any) {
-        const msg = `Failed to write guide file: ${err?.message ?? err}`;
+    } catch (err: unknown) {
+        const msg = `Failed to write guide file: ${errMsg(err)}`;
         logger.debug(`[antigravity-orchestrator] ${msg}`);
         stream?.markdown(`**AntiGravity error:** ${msg}\n`);
         return false;
@@ -665,10 +666,10 @@ export async function orchestrateAntigravityWorkflow(
             pointerPrompt
         );
         logger.debug('[antigravity-orchestrator] Prompt sent to Agent Panel');
-    } catch (err: any) {
+    } catch (err: unknown) {
         // Fallback: try the legacy sendTextToChat command
         logger.debug(
-            `[antigravity-orchestrator] sendPromptToAgentPanel failed: ${err?.message ?? err} -- trying sendTextToChat`
+            `[antigravity-orchestrator] sendPromptToAgentPanel failed: ${errMsg(err)} -- trying sendTextToChat`
         );
         try {
             await vscode.commands.executeCommand(
@@ -677,8 +678,8 @@ export async function orchestrateAntigravityWorkflow(
                 pointerPrompt
             );
             logger.debug('[antigravity-orchestrator] Fallback sendTextToChat succeeded');
-        } catch (err2: any) {
-            const msg = `Could not send prompt to AntiGravity: ${err2?.message ?? err2}`;
+        } catch (err2: unknown) {
+            const msg = `Could not send prompt to AntiGravity: ${errMsg(err2)}`;
             logger.debug(`[antigravity-orchestrator] ${msg}`);
             stream?.markdown(`**AntiGravity error:** ${msg}\n`);
             return false;
@@ -801,9 +802,9 @@ export async function sendSimplePrompt(prompt: string): Promise<boolean> {
             await vscode.commands.executeCommand('antigravity.sendTextToChat', true, prompt);
             logger.debug('[antigravity-orchestrator] Simple prompt sent via sendTextToChat (fallback)');
             return true;
-        } catch (err: any) {
+        } catch (err: unknown) {
             logger.debug(
-                `[antigravity-orchestrator] Simple prompt failed: ${err?.message ?? err}`
+                `[antigravity-orchestrator] Simple prompt failed: ${errMsg(err)}`
             );
             return false;
         }

@@ -120,9 +120,9 @@ export async function handleCommonWebviewMessage(
                 try {
                     const bmadPath = path.join(extensionUri.fsPath, 'resources', BMAD_RESOURCE_DIR);
                     schemaValidator.init(bmadPath);
-                } catch (err: any) {
+                } catch (err: unknown) {
                     logger.debug(
-                        `${logPrefix} Schema validator init failed: ${err?.message ?? err}`
+                        `${logPrefix} Schema validator init failed: ${errMsg(err)}`
                     );
                 }
             }
@@ -315,16 +315,16 @@ export async function handleCommonWebviewMessage(
                             if (sourceFolder) {
                                 try {
                                     await store.loadFromFolder(sourceFolder);
-                                } catch (reloadErr: any) {
+                                } catch (reloadErr: unknown) {
                                     // Repair succeeded but reload failed — send a differentiated message
                                     logger.debug(
-                                        `${logPrefix} fixSchemas: repair succeeded but reload failed: ${reloadErr?.message ?? reloadErr}`
+                                        `${logPrefix} fixSchemas: repair succeeded but reload failed: ${errMsg(reloadErr)}`
                                     );
                                     if (webview) {
                                         webview.postMessage({
                                             type: 'schemaFixResult',
                                             success: false,
-                                            error: `Schema repair completed and saved to disk, but reloading artifacts failed: ${reloadErr?.message ?? reloadErr}. Try reopening the folder.`,
+                                            error: `Schema repair completed and saved to disk, but reloading artifacts failed: ${errMsg(reloadErr)}. Try reopening the folder.`,
                                             remainingIssues: [],
                                         });
                                     }
@@ -367,14 +367,14 @@ export async function handleCommonWebviewMessage(
                         });
                     }
                 );
-            } catch (err: any) {
-                logger.debug(`${logPrefix} fixSchemas error: ${err?.message ?? err}`);
-                vscode.window.showErrorMessage(`Fix Schemas failed: ${err?.message ?? err}`);
+            } catch (err: unknown) {
+                logger.debug(`${logPrefix} fixSchemas error: ${errMsg(err)}`);
+                vscode.window.showErrorMessage(`Fix Schemas failed: ${errMsg(err)}`);
                 if (webview) {
                     webview.postMessage({
                         type: 'schemaFixResult',
                         success: false,
-                        error: String(err?.message ?? err),
+                        error: String(errMsg(err)),
                         remainingIssues: [],
                     });
                 }
@@ -402,13 +402,13 @@ export async function handleCommonWebviewMessage(
                         issues,
                     });
                 }
-            } catch (err: any) {
-                logger.debug(`${logPrefix} validateSchemas error: ${err?.message ?? err}`);
+            } catch (err: unknown) {
+                logger.debug(`${logPrefix} validateSchemas error: ${errMsg(err)}`);
                 if (webview) {
                     webview.postMessage({
                         type: 'schemaValidateResult',
                         issues: [],
-                        error: String(err?.message ?? err),
+                        error: String(errMsg(err)),
                     });
                 }
             }
@@ -583,8 +583,8 @@ export async function handleCommonWebviewMessage(
                         content = await fs.promises.readFile(match.fsPath, 'utf-8');
                         logger.debug(`${logPrefix} getSprintStatus: found YAML at ${match.fsPath}`);
                     }
-                } catch (err: any) {
-                    logger.debug(`${logPrefix} getSprintStatus: search error: ${err?.message ?? err}`);
+                } catch (err: unknown) {
+                    logger.debug(`${logPrefix} getSprintStatus: search error: ${errMsg(err)}`);
                 }
             }
 
@@ -835,9 +835,9 @@ export async function handleCommonWebviewMessage(
                         webview.postMessage({ type: 'jiraResult', success: true, markdown: md });
                     }
                 }
-            } catch (err: any) {
-                logger.debug(`${logPrefix} jiraAction error: ${err?.message ?? err}`);
-                webview.postMessage({ type: 'jiraResult', success: false, error: err?.message ?? String(err) });
+            } catch (err: unknown) {
+                logger.debug(`${logPrefix} jiraAction error: ${errMsg(err)}`);
+                webview.postMessage({ type: 'jiraResult', success: false, error: errMsg(err) });
             }
             return true;
         }
@@ -905,8 +905,8 @@ export async function handleCommonWebviewMessage(
                     status: toGraphifyStatusWebview(freshStatus),
                     archIndex: freshIndex,
                 });
-            } catch (err: any) {
-                logger.debug(`${logPrefix} graphifyAction "${action}" error: ${err?.message ?? err}`);
+            } catch (err: unknown) {
+                logger.debug(`${logPrefix} graphifyAction "${action}" error: ${errMsg(err)}`);
             }
             return true;
         }
@@ -937,8 +937,8 @@ export async function handleCatalogueWebviewMessage(
         try {
             const svc = getCatalogueService();
             webview.postMessage({ type: 'catalogueData', entries: svc.getSkillManifest() });
-        } catch (err: any) {
-            webview.postMessage({ type: 'catalogueError', message: err?.message ?? String(err) });
+        } catch (err: unknown) {
+            webview.postMessage({ type: 'catalogueError', message: errMsg(err) });
         }
     };
 
@@ -953,8 +953,8 @@ export async function handleCatalogueWebviewMessage(
                 const svc = getCatalogueService();
                 await svc.toggleSkill(String(message.name), Boolean(message.enabled));
                 postCatalogueData();
-            } catch (err: any) {
-                webview.postMessage({ type: 'catalogueError', message: err?.message ?? String(err) });
+            } catch (err: unknown) {
+                webview.postMessage({ type: 'catalogueError', message: errMsg(err) });
             }
             return true;
         }
@@ -964,8 +964,8 @@ export async function handleCatalogueWebviewMessage(
                 const svc = getCatalogueService();
                 await svc.deleteUserSkill(String(message.name));
                 postCatalogueData();
-            } catch (err: any) {
-                webview.postMessage({ type: 'catalogueError', message: err?.message ?? String(err) });
+            } catch (err: unknown) {
+                webview.postMessage({ type: 'catalogueError', message: errMsg(err) });
             }
             return true;
         }
@@ -975,8 +975,8 @@ export async function handleCatalogueWebviewMessage(
                 const svc = getCatalogueService();
                 await svc.createSkillFromTemplate(String(message.name));
                 postCatalogueData();
-            } catch (err: any) {
-                webview.postMessage({ type: 'catalogueError', message: err?.message ?? String(err) });
+            } catch (err: unknown) {
+                webview.postMessage({ type: 'catalogueError', message: errMsg(err) });
             }
             return true;
         }
@@ -985,8 +985,8 @@ export async function handleCatalogueWebviewMessage(
             try {
                 const svc = getCatalogueService();
                 svc.openSkillFolder(String(message.name));
-            } catch (err: any) {
-                webview.postMessage({ type: 'catalogueError', message: err?.message ?? String(err) });
+            } catch (err: unknown) {
+                webview.postMessage({ type: 'catalogueError', message: errMsg(err) });
             }
             return true;
         }
@@ -995,8 +995,8 @@ export async function handleCatalogueWebviewMessage(
             try {
                 const mgr = getSkillRepoManager();
                 webview.postMessage({ type: 'skillRepoList', repos: mgr.listRepos() });
-            } catch (err: any) {
-                webview.postMessage({ type: 'catalogueError', message: err?.message ?? String(err) });
+            } catch (err: unknown) {
+                webview.postMessage({ type: 'catalogueError', message: errMsg(err) });
             }
             return true;
         }
@@ -1017,8 +1017,8 @@ export async function handleCatalogueWebviewMessage(
                 webview.postMessage({ type: 'skillRepoResult', slug: entry.slug, success: true, result: entry });
                 webview.postMessage({ type: 'skillRepoList', repos: mgr.listRepos() });
                 postCatalogueData();
-            } catch (err: any) {
-                webview.postMessage({ type: 'skillRepoResult', slug, success: false, error: err?.message ?? String(err) });
+            } catch (err: unknown) {
+                webview.postMessage({ type: 'skillRepoResult', slug, success: false, error: errMsg(err) });
             }
             return true;
         }
@@ -1034,8 +1034,8 @@ export async function handleCatalogueWebviewMessage(
                 webview.postMessage({ type: 'skillRepoResult', slug, success: true, result });
                 webview.postMessage({ type: 'skillRepoList', repos: mgr.listRepos() });
                 postCatalogueData();
-            } catch (err: any) {
-                webview.postMessage({ type: 'skillRepoResult', slug, success: false, error: err?.message ?? String(err) });
+            } catch (err: unknown) {
+                webview.postMessage({ type: 'skillRepoResult', slug, success: false, error: errMsg(err) });
             }
             return true;
         }
@@ -1047,8 +1047,8 @@ export async function handleCatalogueWebviewMessage(
                 await mgr.removeRepo(slug);
                 webview.postMessage({ type: 'skillRepoList', repos: mgr.listRepos() });
                 postCatalogueData();
-            } catch (err: any) {
-                webview.postMessage({ type: 'catalogueError', message: err?.message ?? String(err) });
+            } catch (err: unknown) {
+                webview.postMessage({ type: 'catalogueError', message: errMsg(err) });
             }
             return true;
         }

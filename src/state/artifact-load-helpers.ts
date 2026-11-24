@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { createLogger } from '../utils/logger';
 import { mapSchemaStoryToInternal } from './schema-mappers';
 import type { Epic, Story, TestCase, TestCaseType } from '../types';
+import { errMsg } from '../utils/error';
 
 const loadHelpersLogger = createLogger('artifact-load-helpers');
 const logDebug = (...args: unknown[]) => loadHelpersLogger.debug(...args);
@@ -250,14 +251,14 @@ export async function loadEpicStoryRefs(
                     logDebug(`Specifically loaded storyRef: ${story.id} from ${storyUri.fsPath}`);
                 }
             }
-        } catch (err: any) {
-            const errMsg = err?.message || String(err);
-            if (errMsg.includes('ENOENT') || errMsg.includes('FileNotFound')) {
+        } catch (err: unknown) {
+            const message = errMsg(err);
+            if (message.includes('ENOENT') || message.includes('FileNotFound')) {
                 logError(`❌ Missing referenced story file: ${storyUri.fsPath}`);
                 getOutputChannel().appendLine(`❌ ERROR: Missing referenced story file found in epic ${epic.id}: ${storyUri.fsPath}`);
             } else {
-                logError(`❌ Failed to parse referenced story file: ${storyUri.fsPath} (${errMsg})`);
-                getOutputChannel().appendLine(`❌ ERROR: Failed to parse referenced story file in epic ${epic.id}: ${storyUri.fsPath} (${errMsg})`);
+                logError(`❌ Failed to parse referenced story file: ${storyUri.fsPath} (${message})`);
+                getOutputChannel().appendLine(`❌ ERROR: Failed to parse referenced story file in epic ${epic.id}: ${storyUri.fsPath} (${message})`);
             }
             
             const refTitle = typeof ref === 'string' ? ref : ref.title;
