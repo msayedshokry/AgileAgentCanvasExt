@@ -48,7 +48,8 @@ cucumber.js
 
 # Dev tooling
 .vscode/**
-.github/skills/**
+.github/**
+.githooks/**
 .eslintrc*
 .eslintignore
 .prettier*
@@ -92,3 +93,23 @@ fs.renameSync*
 .agent/**
 graphify-out/**
 docs/**
+
+# Repo-only dev scripts (none are loaded at runtime) and stray logs
+scripts/**
+*.log
+output.txt
+commit.bat
+CLAUDE.md
+AGENTS.md
+.graphifyignore
+
+# Local coding-agent state. 0.5.7 shipped .pi/ and .remember/ from the
+# packaging checkout, so exclude every agent's working folder explicitly.
+.pi/**
+.pi-*/**
+.remember/**
+.impeccable/**
+.aider*
+.codex/**
+.gemini/**
+.cursor/**
