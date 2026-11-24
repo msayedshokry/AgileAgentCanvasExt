@@ -4,8 +4,8 @@ description: 'Display complete validation report and offer next steps'
 
 validationReport: '{bmb_creations_output_folder}/validation-report-{agent-name}.md'
 
-advancedElicitationTask: '{bmad-path}/core/workflows/advanced-elicitation/workflow.xml'
-partyModeWorkflow: '{bmad-path}/core/workflows/party-mode/workflow.md'
+advancedElicitationTask: '{bmad-path}/skills/aac-advanced-elicitation/SKILL.md'
+partyModeWorkflow: '{bmad-path}/skills/aac-party-mode/SKILL.md'
 ---
 
 # Validate Step 3: Validation Summary

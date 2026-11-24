@@ -50,6 +50,8 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 - CLAUDE.md / memory files (load if exist)
 - YOU MUST ALWAYS SPEAK OUTPUT in your Agent communication style with the config `{communication_language}`
 
+**If the config file is missing** (common when running inside Agile Agent Canvas without a BMAD install), use these defaults and say so once: `implementation_artifacts` = `planning_artifacts` = `{project-root}/.agileagentcanvas-context`, `communication_language` = `document_output_language` = English, `user_name` = empty (greet without a name), `user_skill_level` = intermediate. Missing `file:` persistent facts are skipped silently.
+
 ### Step 5: Greet the User
 
 Greet `{user_name}`, speaking in `{communication_language}`.

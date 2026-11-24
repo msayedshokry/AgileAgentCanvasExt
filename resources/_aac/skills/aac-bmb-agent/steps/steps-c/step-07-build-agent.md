@@ -23,8 +23,8 @@ noSidecarExample: ../data/reference/without-sidecar/commit-poet.agent.yaml
 withSidecarExample: ../data/reference/with-sidecar/journal-keeper/journal-keeper.agent.yaml
 
 # Task References
-advancedElicitationTask: '{bmad-path}/core/workflows/advanced-elicitation/workflow.xml'
-partyModeWorkflow: '{bmad-path}/core/workflows/party-mode/workflow.md'
+advancedElicitationTask: '{bmad-path}/skills/aac-advanced-elicitation/SKILL.md'
+partyModeWorkflow: '{bmad-path}/skills/aac-party-mode/SKILL.md'
 ---
 
 # STEP GOAL

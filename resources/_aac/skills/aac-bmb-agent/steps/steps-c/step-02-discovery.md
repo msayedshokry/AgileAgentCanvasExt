@@ -8,8 +8,8 @@ agentPlan: '{bmb_creations_output_folder}/agent-plan-{agent_name}.md'
 brainstormContext: ../data/brainstorm-context.md
 
 # Task References
-advancedElicitationTask: '{bmad-path}/core/workflows/advanced-elicitation/workflow.xml'
-partyModeWorkflow: '{bmad-path}/core/workflows/party-mode/workflow.md'
+advancedElicitationTask: '{bmad-path}/skills/aac-advanced-elicitation/SKILL.md'
+partyModeWorkflow: '{bmad-path}/skills/aac-party-mode/SKILL.md'
 ---
 
 # STEP GOAL

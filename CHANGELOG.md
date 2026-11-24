@@ -41,6 +41,21 @@ Content ported from upstream BMB v2.2.2, CIS v0.3.2 and TEA v1.27.2 (TEA's last 
 - **Path scanner fixes:** valid `{project-root}/…` paths are no longer flagged as critical, and real double-prefix paths are now caught. Agent templates include `{project-root}` in memory paths, so newly built agents pass their own checks.
 - **Skill manifests are consistently named `aac-manifest.json`.** The docs and the scripts disagreed. Manifest validation also no longer crashes on Windows consoles when printing ✓.
 
+### Project context lives in AGENTS.md
+
+- **New `aac-project-context` skill** (ported from BMAD v6.12). It writes one small, verified block of agent instructions into your repo's `AGENTS.md`, covering policy, where things are, how to run and verify, conventions, and known pitfalls. It has `setup`, `adopt`, `refresh`, `record` and `audit` intents, and shows you every write before making it.
+- **Agent runs read that block first.** Board and in-chat agent runs now inject the `AGENTS.md` block ahead of the generated `project-context.md`. Blocks written by upstream BMAD (`bmad:context` markers) work too.
+- **Skills load `AGENTS.md` before `project-context.md`** in their persistent context (33 skills).
+
+### Broken paths fixed
+
+- **TEA workflows found their step files at a path that didn't exist.** Steps now resolve to the bundled `aac-tea-*` skills.
+- **The help catalog (`aac-help.csv`) pointed all 64 entries at files that didn't exist.** Every entry now points at its bundled skill. The canvas "ask for help" prompt also referenced a nonexistent `bmad-help.csv`.
+- **TEA and CIS workflow config pointed inside the extension**, where no config file has ever existed. They now read `_bmad/<module>/config.yaml` from your project and fall back to the canvas output folder.
+- **The TEA Teach-Me-Testing sessions and the CIS workflows referenced engine and workflow files that no longer exist.** They now point to the bundled advanced-elicitation and party-mode skills, and to their own step files.
+- **Removed the unused duplicate TEA copy** under `resources/_aac/tea/` (684 files nothing loaded).
+- **New regression tests** check that CIS persona names load, that every TEA knowledge fragment and `{bmad-path}` reference in the TEA and CIS skills exists, and that every help catalog entry resolves.
+
 ### Dependencies
 
 - **`headroom-ai` 0.22.4 → 0.45.0.** Every compression API the extension uses was smoke-tested against the new version and behaves the same. The upstream breaking changes in 0.40, 0.43 and 0.44 only affect the Python proxy packaging.

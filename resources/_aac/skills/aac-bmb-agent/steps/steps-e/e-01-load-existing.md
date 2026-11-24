@@ -10,8 +10,8 @@ editPlan: '{bmb_creations_output_folder}/edit-plan-{agent-name}.md'
 agentMetadata: ../data/agent-metadata.md
 agentMenuPatterns: ../data/agent-menu-patterns.md
 
-advancedElicitationTask: '{bmad-path}/core/workflows/advanced-elicitation/workflow.xml'
-partyModeWorkflow: '{bmad-path}/core/workflows/party-mode/workflow.md'
+advancedElicitationTask: '{bmad-path}/skills/aac-advanced-elicitation/SKILL.md'
+partyModeWorkflow: '{bmad-path}/skills/aac-party-mode/SKILL.md'
 ---
 
 # Edit Step 1: Load Existing Agent

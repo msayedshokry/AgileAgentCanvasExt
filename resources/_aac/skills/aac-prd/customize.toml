@@ -30,6 +30,7 @@ activation_steps_append = []
 #   "skill:acme-co:terms-and-conditions"                                      # a skill that contains some relevant info
 #   "Investor PRDs must include a market sizing section."                    # generic agent instruction
 persistent_facts = [
+  "file:{project-root}/AGENTS.md",
   "file:{project-root}/**/project-context.md",
 ]
 

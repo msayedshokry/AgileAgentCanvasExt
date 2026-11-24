@@ -50,7 +50,7 @@ function loadProjectContext(outputFolder: string): string | undefined {
   try {
     const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
     if (root) ensureProjectContext(root, outputFolder);
-    return readProjectContext(outputFolder) || undefined;
+    return readProjectContext(outputFolder, root) || undefined;
   } catch (err) {
     logger.debug(`[TerminalExecutor] project context unavailable: ${errMsg(err)}`);
     return undefined;

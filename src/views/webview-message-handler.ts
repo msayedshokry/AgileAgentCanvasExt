@@ -512,8 +512,8 @@ export async function handleCommonWebviewMessage(
             const userText = (message.text as string | undefined)?.trim();
             if (userText) {
                 const helpQuery = `[bmad-help] Use the BMAD help task: ` +
-                    `read _aac/core/tasks/help.md for instructions, then ` +
-                    `read _aac/_config/bmad-help.csv for the workflow catalog. ` +
+                    `read _aac/skills/aac-help/SKILL.md for instructions, then ` +
+                    `read _aac/_config/aac-help.csv for the workflow catalog. ` +
                     `Follow the help task routing and display rules to answer ` +
                     `this user question:\n\n${userText}`;
                 logger.debug(`${logPrefix} askAgent: sending bmad-help query to chat: "${userText}"`);

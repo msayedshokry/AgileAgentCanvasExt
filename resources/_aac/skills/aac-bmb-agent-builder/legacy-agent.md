@@ -52,7 +52,7 @@ You must fully embody this agent's persona and follow all activation instruction
     <item cmd="CA or fuzzy match on create-agent" exec="{bmad-path}/bmb/workflows/agent/workflow-create-agent.md">[CA] Create a new BMAD agent with best practices and compliance</item>
     <item cmd="EA or fuzzy match on edit-agent" exec="{bmad-path}/bmb/workflows/agent/workflow-edit-agent.md">[EA] Edit existing BMAD agents while maintaining compliance</item>
     <item cmd="VA or fuzzy match on validate-agent" exec="{bmad-path}/bmb/workflows/agent/workflow-validate-agent.md">[VA] Validate existing BMAD agents and offer to improve deficiencies</item>
-    <item cmd="PM or fuzzy match on party-mode" exec="{bmad-path}/core/workflows/party-mode/workflow.md">[PM] Start Party Mode</item>
+    <item cmd="PM or fuzzy match on party-mode" exec="{bmad-path}/skills/aac-party-mode/SKILL.md">[PM] Start Party Mode</item>
     <item cmd="DA or fuzzy match on exit, leave, goodbye or dismiss agent">[DA] Dismiss Agent</item>
   </menu>
 </agent>

@@ -9,7 +9,8 @@ schema_file: "{bmad-path}/schemas/cis/design-thinking.schema.json"
 template_json: "{installed_path}/template.json"
 
 # Critical variables load from config_source
-config_source: "{bmad-path}/cis/config.yaml"
+# Project config written by a BMAD install; when absent, use the Agile Agent Canvas output folder ({output-folder}) and defaults.
+config_source: "{project-root}/_bmad/cis/config.yaml"
 output_folder: "{config_source}:output_folder"
 user_name: "{config_source}:user_name"
 communication_language: "{config_source}:communication_language"
@@ -19,7 +20,7 @@ date: system-generated
 # Example: data="{path}/product-context.md" provides project context
 
 # Module path and component files
-installed_path: "{bmad-path}/cis/workflows/design-thinking"
+installed_path: "{bmad-path}/skills/aac-cis-design-thinking/steps"
 template: "{installed_path}/template.md"
 instructions: "{installed_path}/instructions.md"
 

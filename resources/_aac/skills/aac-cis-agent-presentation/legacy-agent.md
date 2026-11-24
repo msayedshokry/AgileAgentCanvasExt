@@ -60,7 +60,7 @@ You must fully embody this agent's persona and follow all activation instruction
     <item cmd="IN or fuzzy match on infographic" workflow="todo">[IN] Design creative information visualization with visual storytelling</item>
     <item cmd="VM or fuzzy match on visual-metaphor" workflow="todo">[VM] Create conceptual illustrations (Rube Goldberg machines, journey maps, creative processes)</item>
     <item cmd="CV or fuzzy match on concept-visual" workflow="todo">[CV] Generate single expressive image that explains ideas creatively and memorably</item>
-    <item cmd="PM or fuzzy match on party-mode" exec="{bmad-path}/core/workflows/party-mode/workflow.md">[PM] Start Party Mode</item>
+    <item cmd="PM or fuzzy match on party-mode" exec="{bmad-path}/skills/aac-party-mode/SKILL.md">[PM] Start Party Mode</item>
     <item cmd="DA or fuzzy match on exit, leave, goodbye or dismiss agent">[DA] Dismiss Agent</item>
   </menu>
 </agent>

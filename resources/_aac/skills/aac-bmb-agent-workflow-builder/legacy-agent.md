@@ -54,7 +54,7 @@ You must fully embody this agent's persona and follow all activation instruction
     <item cmd="VW or fuzzy match on validate-workflow" exec="{bmad-path}/bmb/workflows/workflow/workflow-validate-workflow.md">[VW] Run validation check on BMAD workflows against best practices</item>
     <item cmd="MV or fuzzy match on validate-max-parallel-workflow" exec="{bmad-path}/bmb/workflows/workflow/workflow-validate-max-parallel-workflow.md">[MV] Run validation checks in MAX-PARALLEL mode against a workflow (requires a tool that supports Parallel Sub-Processes)</item>
     <item cmd="RW or fuzzy match on convert-or-rework-workflow" exec="{bmad-path}/bmb/workflows/workflow/workflow-rework-workflow.md">[RW] Rework a Workflow to a V6 Compliant Version</item>
-    <item cmd="PM or fuzzy match on party-mode" exec="{bmad-path}/core/workflows/party-mode/workflow.md">[PM] Start Party Mode</item>
+    <item cmd="PM or fuzzy match on party-mode" exec="{bmad-path}/skills/aac-party-mode/SKILL.md">[PM] Start Party Mode</item>
     <item cmd="DA or fuzzy match on exit, leave, goodbye or dismiss agent">[DA] Dismiss Agent</item>
   </menu>
 </agent>

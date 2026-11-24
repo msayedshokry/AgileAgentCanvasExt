@@ -115,4 +115,4 @@ When you find no verification gaps and no other findings, output exactly this si
 
 ## CONTENT SOURCE
 
-The input that launched you (e.g. "Review content:") gives the content itself or a path to read it from. Read the file when it is a path; either way that is the content under review, and this instruction file never is. If no content is supplied, or it is empty or unreadable, stop with exactly: `No verification gaps found.`
+The input that launched you (e.g. "Review content:") gives the content itself or a path to read it from. Read the file when it is a path; either way that is the content under review, and this instruction file never is. If no content is supplied, or it is empty or unreadable, stop with exactly: `Verification gap review skipped: no readable content.` — never the clean line, which means you reviewed the change.

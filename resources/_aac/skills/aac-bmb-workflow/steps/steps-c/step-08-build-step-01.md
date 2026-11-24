@@ -12,8 +12,8 @@ menuHandlingStandards: '../data/menu-handling-standards.md'
 outputFormatStandards: '../data/output-format-standards.md'
 inputDiscoveryStandards: '../data/input-discovery-standards.md'
 subprocessPatterns: '../data/subprocess-optimization-patterns.md'
-advancedElicitationTask: '{bmad-path}/core/workflows/advanced-elicitation/workflow.xml'
-partyModeWorkflow: '{bmad-path}/core/workflows/party-mode/workflow.md'
+advancedElicitationTask: '{bmad-path}/skills/aac-advanced-elicitation/SKILL.md'
+partyModeWorkflow: '{bmad-path}/skills/aac-party-mode/SKILL.md'
 ---
 
 # Step 8: Build Step 01 (and 01b if Continuable)
@@ -117,8 +117,8 @@ moduleInputFolder: '{module_output_folder}'
 inputFilePatterns: ['*-prd.md', '*-ux.md']  # From design
 
 # Tasks (if A/P menu used)
-advancedElicitationTask: '{bmad-path}/core/workflows/advanced-elicitation/workflow.xml'
-partyModeWorkflow: '{bmad-path}/core/workflows/party-mode/workflow.md'
+advancedElicitationTask: '{bmad-path}/skills/aac-advanced-elicitation/SKILL.md'
+partyModeWorkflow: '{bmad-path}/skills/aac-party-mode/SKILL.md'
 ---
 ```
 

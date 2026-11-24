@@ -137,9 +137,26 @@ export function ensureProjectContext(root: string, outputFolder: string, force =
   return file;
 }
 
-/** Context text for prompts (bounded); empty when there is no file. */
-export function readProjectContext(outputFolder: string): string {
-  const text = safeRead(contextFilePath(outputFolder)).trim();
+/** Managed block written by the aac-project-context skill (upstream bmad-project-context markers accepted too). */
+const AGENTS_BLOCK_RE = /<!--\s*(?:aac|bmad):context\s*-->([\s\S]*?)<!--\s*\/(?:aac|bmad):context\s*-->/;
+
+/** The managed context block from `<root>/AGENTS.md`; empty when the file or the markers are absent. */
+export function readAgentsBlock(root: string): string {
+  const match = AGENTS_BLOCK_RE.exec(safeRead(path.join(root, 'AGENTS.md')));
+  return match ? match[1].trim() : '';
+}
+
+/**
+ * Context text for prompts (bounded); empty when there is nothing to inject.
+ * With `root`, the AGENTS.md managed block (the canonical project context)
+ * comes first, followed by the generated project-context.md.
+ */
+export function readProjectContext(outputFolder: string, root?: string): string {
+  const parts = [
+    root ? readAgentsBlock(root) : '',
+    safeRead(contextFilePath(outputFolder)).trim(),
+  ].filter((part) => part.length > 0);
+  const text = parts.join('\n\n');
   return text.length > MAX_CONTEXT_CHARS ? text.slice(0, MAX_CONTEXT_CHARS) + '\n…(truncated)' : text;
 }
 

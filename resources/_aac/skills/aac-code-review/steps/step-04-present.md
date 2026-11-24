@@ -8,19 +8,19 @@ deferred_work_file: '{implementation_artifacts}/deferred-work.md'
 
 - YOU MUST ALWAYS SPEAK OUTPUT in your Agent communication style with the config `{communication_language}`
 - When `{spec_file}` is set, always write findings to the story file before offering action choices.
-- `decision-needed` findings must be resolved before handling `patch` findings.
+- `decision_needed` findings must be resolved before handling `patch` findings.
 
 ## INSTRUCTIONS
 
 ### 1. Clean review shortcut
 
-If zero findings remain after triage (all rejected or none raised): state that and proceed to section 6 (Sprint Status Update).
+If zero findings remain after triage (all rejected or none raised): skip sections 2, 4 and 5, but still present section 3 — its `Rejected` appendix shows what was considered and why it was dropped — then proceed to section 6.
 
 ### 2. Write findings to the story file
 
 If `{spec_file}` exists and contains a Tasks/Subtasks section, append a `### Review Findings` subsection. Write all findings in this order:
 
-1. **`decision-needed`** findings (unchecked):
+1. **`decision_needed`** findings (unchecked):
    `- [ ] [Review][Decision] <Title> — <Detail>`
 
 2. **`patch`** findings (unchecked):
@@ -29,20 +29,20 @@ If `{spec_file}` exists and contains a Tasks/Subtasks section, append a `### Rev
 3. **`defer`** findings (checked off, marked deferred):
    `- [x] [Review][Defer] <Title> [<file>:<line>] — deferred: <pre-existing, or for maybe-false the evidence that would settle it>`
 
-Also append each `defer` finding to `{deferred_work_file}` under a heading `## Deferred from: code review ({date})`. If `{spec_file}` is set, include its basename in the heading (e.g., `code review of story-3.3 (2026-03-18)`). One bullet per finding with description.
+Whether or not `{spec_file}` is set, also append each `defer` finding to `{deferred_work_file}` under a heading `## Deferred from: code review ({date})`. If `{spec_file}` is set, include its basename in the heading (e.g., `code review of story-3.3 (2026-03-18)`). One bullet per finding with description.
 
 ### 3. Present summary
 
 Announce what was written:
 
-> **Code review complete.** <D> `decision-needed`, <P> `patch`, <W> `defer`, <R> rejected.
+> **Code review complete.** <D> `decision_needed`, <P> `patch`, <W> `defer`, <R> rejected.
 
 Add: `Follow-up review recommended: <yes|no>` (from step 3's `followup_review_recommended`, with the high/medium/low patch counts).
 
 The findings report ends with a `Rejected` appendix — one line per rejected finding: `false` with its refutation, `low` with why it was not worth fixing — in the story file's `### Review Findings` section when `{spec_file}` is set, at the tail of the chat listing otherwise.
 
 If `{spec_file}` is set, add: `Findings written to the review findings section in {spec_file}.`
-Otherwise add: `Findings are listed above. No story file was provided, so nothing was persisted.`
+Otherwise add: `Findings are listed above. No story file was provided; deferred findings were appended to {deferred_work_file}.`
 
 ### 4. Resolve decision-needed findings
 
@@ -50,7 +50,7 @@ If `decision_needed` findings exist, present each one with its detail and the op
 
 If the user chooses to defer, ask: Quick one-line reason for deferring this item? (helps future reviews): — then append that reason to both the story file bullet and the `{deferred_work_file}` entry.
 
-**HALT** — I am waiting for your numbered choice. Reply with only the number. Do not proceed until you select an option.
+  **HALT** (only when `decision_needed` findings exist) — I am waiting for your numbered choice. Reply with only the number. Do not proceed until you select an option.
 
 ### 5. Handle `patch` findings
 
@@ -90,7 +90,7 @@ Skip this section if `{spec_file}` is not set.
 
 #### Determine new status based on review outcome
 
-- If all `decision-needed` and `patch` findings were resolved (fixed or rejected) AND no unresolved `high`/`medium` findings remain: set `{new_status}` = `done`. Update the story file Status section to `done`.
+- If all `decision_needed` and `patch` findings were resolved (fixed or rejected) AND no unresolved `high`/`medium` findings remain: set `{new_status}` = `done`. Update the story file Status section to `done`.
 - If `patch` findings were left as action items, or unresolved issues remain: set `{new_status}` = `in-progress`. Update the story file Status section to `in-progress`.
 
 Save the story file.
@@ -120,7 +120,7 @@ If `{sprint_status}` file does not exist, note that story status was updated in 
 
 ### 7. Next steps
 
-Present the user with follow-up options:
+This section runs in every mode. Present the user with follow-up options — omit option 1 when `{spec_file}` is not set:
 
 > **What would you like to do next?**
 > 1. **Start the next story** — run `dev-story` to pick up the next `ready-for-dev` story

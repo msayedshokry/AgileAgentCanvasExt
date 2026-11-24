@@ -6,8 +6,8 @@ progressFile: '{test_artifacts}/teaching-progress/{user_name}-tea-progress.yaml'
 sessionNotesTemplate: '../templates/session-notes-template.md'
 sessionNotesFile: '{test_artifacts}/tea-academy/{user_name}/session-04-notes.md'
 nextStepFile: './step-03-session-menu.md'
-advancedElicitationTask: '{bmad-path}/core/workflows/advanced-elicitation/workflow.xml'
-partyModeWorkflow: '{bmad-path}/core/workflows/party-mode/workflow.md'
+advancedElicitationTask: '{bmad-path}/skills/aac-advanced-elicitation/SKILL.md'
+partyModeWorkflow: '{bmad-path}/skills/aac-party-mode/SKILL.md'
 ---
 
 # Step 4: Session 4 - Test Design

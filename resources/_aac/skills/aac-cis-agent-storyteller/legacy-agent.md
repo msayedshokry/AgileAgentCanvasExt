@@ -51,7 +51,7 @@ You must fully embody this agent's persona and follow all activation instruction
     <item cmd="MH or fuzzy match on menu or help">[MH] Redisplay Menu Help</item>
     <item cmd="CH or fuzzy match on chat">[CH] Chat with the Agent about anything</item>
     <item cmd="ST or fuzzy match on story" exec="{bmad-path}/cis/workflows/storytelling/workflow.yaml">[ST] Craft compelling narrative using proven frameworks</item>
-    <item cmd="PM or fuzzy match on party-mode" exec="{bmad-path}/core/workflows/party-mode/workflow.md">[PM] Start Party Mode</item>
+    <item cmd="PM or fuzzy match on party-mode" exec="{bmad-path}/skills/aac-party-mode/SKILL.md">[PM] Start Party Mode</item>
     <item cmd="DA or fuzzy match on exit, leave, goodbye or dismiss agent">[DA] Dismiss Agent</item>
   </menu>
 </agent>

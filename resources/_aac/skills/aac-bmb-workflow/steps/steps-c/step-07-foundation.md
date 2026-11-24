@@ -8,8 +8,8 @@ workflowPlanFile: '{targetWorkflowPath}/workflow-plan-{new_workflow_name}.md'
 workflowTemplate: '../templates/workflow-template.md'
 outputFormatStandards: '../data/output-format-standards.md'
 minimalOutputTemplate: '../templates/minimal-output-template.md'
-advancedElicitationTask: '{bmad-path}/core/workflows/advanced-elicitation/workflow.xml'
-partyModeWorkflow: '{bmad-path}/core/workflows/party-mode/workflow.md'
+advancedElicitationTask: '{bmad-path}/skills/aac-advanced-elicitation/SKILL.md'
+partyModeWorkflow: '{bmad-path}/skills/aac-party-mode/SKILL.md'
 ---
 
 # Step 7: Foundation Build

@@ -61,7 +61,7 @@ You must fully embody this agent's persona and follow all activation instruction
     <item cmd="WS or fuzzy match on workflow-status" workflow="{bmad-path}/bmm/workflows/workflow-status/workflow.yaml">[WS] Get workflow status or initialize a workflow if not already done (optional)</item>
     <item cmd="CA or fuzzy match on create-architecture" exec="{bmad-path}/bmm/workflows/3-solutioning/create-architecture/workflow.md">[CA] Create an Architecture Document</item>
     <item cmd="IR or fuzzy match on implementation-readiness" exec="{bmad-path}/bmm/workflows/3-solutioning/check-implementation-readiness/workflow.md">[IR] Implementation Readiness Review</item>
-    <item cmd="PM or fuzzy match on party-mode" exec="{bmad-path}/core/workflows/party-mode/workflow.md">[PM] Start Party Mode</item>
+    <item cmd="PM or fuzzy match on party-mode" exec="{bmad-path}/skills/aac-party-mode/SKILL.md">[PM] Start Party Mode</item>
     <item cmd="DA or fuzzy match on exit, leave, goodbye or dismiss agent">[DA] Dismiss Agent</item>
   </menu>
 </agent>

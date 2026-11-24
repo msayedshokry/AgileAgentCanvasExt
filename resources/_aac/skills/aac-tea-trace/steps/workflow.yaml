@@ -10,7 +10,8 @@ schema_file: "{bmad-path}/schemas/tea/traceability-matrix.schema.json"
 template_json: "{installed_path}/trace-template.json"
 
 # Critical variables from config
-config_source: "{bmad-path}/tea/config.yaml"
+# Project config written by a BMAD install; when absent, use the Agile Agent Canvas output folder ({output-folder}) and defaults.
+config_source: "{project-root}/_bmad/tea/config.yaml"
 output_folder: "{config_source}:output_folder"
 test_artifacts: "{config_source}:test_artifacts"
 user_name: "{config_source}:user_name"
@@ -19,7 +20,7 @@ document_output_language: "{config_source}:document_output_language"
 date: system-generated
 
 # Workflow components
-installed_path: "{bmad-path}/tea/workflows/testarch/trace"
+installed_path: "{bmad-path}/skills/aac-tea-trace/steps"
 instructions: "{installed_path}/instructions.md"
 validation: "{installed_path}/checklist.md"
 template: "{installed_path}/trace-template.md"

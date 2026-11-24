@@ -4,8 +4,8 @@ description: 'Assess what needs to be edited in the teaching workflow'
 
 nextStepFile: './step-e-02-apply-edits.md'
 workflowPath: '../'
-advancedElicitationTask: '{bmad-path}/core/workflows/advanced-elicitation/workflow.xml'
-partyModeWorkflow: '{bmad-path}/core/workflows/party-mode/workflow.md'
+advancedElicitationTask: '{bmad-path}/skills/aac-advanced-elicitation/SKILL.md'
+partyModeWorkflow: '{bmad-path}/skills/aac-party-mode/SKILL.md'
 ---
 
 # Edit Step 1: Assess What to Edit

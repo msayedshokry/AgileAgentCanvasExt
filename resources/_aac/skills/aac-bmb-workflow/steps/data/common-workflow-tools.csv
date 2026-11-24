@@ -1,6 +1,6 @@
 propose,type,tool_name,description,url,requires_install
-always,workflow,party-mode,"Enables collaborative idea generation by managing turn-taking, summarizing contributions, and synthesizing ideas from multiple AI personas in structured conversation sessions.",{bmad-path}/core/workflows/party-mode/workflow.md,no
-always,workflow,advanced-elicitation,"Employs diverse elicitation strategies such as Socratic questioning, role-playing, and counterfactual analysis to critically evaluate and enhance LLM outputs.",{bmad-path}/core/workflows/advanced-elicitation/workflow.xml,no
+always,workflow,party-mode,"Enables collaborative idea generation by managing turn-taking, summarizing contributions, and synthesizing ideas from multiple AI personas in structured conversation sessions.",{bmad-path}/skills/aac-party-mode/SKILL.md,no
+always,workflow,advanced-elicitation,"Employs diverse elicitation strategies such as Socratic questioning, role-playing, and counterfactual analysis to critically evaluate and enhance LLM outputs.",{bmad-path}/skills/aac-advanced-elicitation/SKILL.md,no
 always,task,brainstorming,"Facilitates idea generation by prompting users with targeted questions and synthesizing concepts into actionable insights.",{bmad-path}/core/tasks/brainstorming.xml,no
 always,llm-tool-feature,web-browsing,"Provides LLM with capabilities to perform real-time web searches and incorporate current information.",,no
 always,llm-tool-feature,file-io,"Enables LLM to manage file operations such as creating, reading, updating, and deleting files.",,no

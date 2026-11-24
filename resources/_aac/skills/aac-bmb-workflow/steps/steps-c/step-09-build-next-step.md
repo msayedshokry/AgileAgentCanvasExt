@@ -12,8 +12,8 @@ menuHandlingStandards: '../data/menu-handling-standards.md'
 outputFormatStandards: '../data/output-format-standards.md'
 csvDataFileStandards: '../data/csv-data-file-standards.md'
 subprocessPatterns: '../data/subprocess-optimization-patterns.md'
-advancedElicitationTask: '{bmad-path}/core/workflows/advanced-elicitation/workflow.xml'
-partyModeWorkflow: '{bmad-path}/core/workflows/party-mode/workflow.md'
+advancedElicitationTask: '{bmad-path}/skills/aac-advanced-elicitation/SKILL.md'
+partyModeWorkflow: '{bmad-path}/skills/aac-party-mode/SKILL.md'
 ---
 
 # Step 9: Build Next Step (Repeatable)
@@ -162,8 +162,8 @@ templateFile: '../templates/[template-name].md'  # If applicable
 someData: '../data/[data-file].csv'  # If applicable
 
 # Tasks (if A/P menu used)
-advancedElicitationTask: '{bmad-path}/core/workflows/advanced-elicitation/workflow.xml'
-partyModeWorkflow: '{bmad-path}/core/workflows/party-mode/workflow.md'
+advancedElicitationTask: '{bmad-path}/skills/aac-advanced-elicitation/SKILL.md'
+partyModeWorkflow: '{bmad-path}/skills/aac-party-mode/SKILL.md'
 ---
 ```
 

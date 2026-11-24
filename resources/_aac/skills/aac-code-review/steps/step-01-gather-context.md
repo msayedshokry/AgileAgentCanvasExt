@@ -58,6 +58,7 @@ story_key: '' # set at runtime when discovered from sprint status
    - For **staged changes only**: run `git diff --cached`.
    - For **uncommitted changes** (staged + unstaged): run `git diff HEAD`.
    - For **branch diff**: verify the base branch exists before running `git diff`. If it does not exist, HALT and ask the user for a valid branch.
+   - For **single commit**: run `git show --format= <sha>` (works for root commits too).
    - For **commit range**: verify the range resolves. If it does not, HALT and ask the user for a valid range.
    - For **provided diff**: validate the content is non-empty and parseable as a unified diff. If it is not parseable, HALT and ask the user to provide a valid diff.
    - For **file list**: validate each path exists in the working tree. Construct `{diff_output}` by running `git diff HEAD -- <path1> <path2> ...`. If any paths are untracked (new files not yet staged), use `git diff --no-index /dev/null <path>` to include them. If the diff is empty (files have no uncommitted changes and are not untracked), ask the user whether to review the full file contents or to specify a different baseline.

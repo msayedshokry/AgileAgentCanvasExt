@@ -3905,10 +3905,11 @@ export function getWorkflowExecutor(): WorkflowExecutor {
     return executorInstance;
 }
 
-/** Project commands + conventions (project-context.md) for in-chat/LM runs; empty when absent. */
+/** AGENTS.md managed block + project-context.md for in-chat/LM runs; empty when absent. */
 function projectContextSection(outputFolder: string): string {
     try {
-        const text = readProjectContext(outputFolder);
+        const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        const text = readProjectContext(outputFolder, root);
         return text ? `
 
 ## Project Context (from the team — follow it)

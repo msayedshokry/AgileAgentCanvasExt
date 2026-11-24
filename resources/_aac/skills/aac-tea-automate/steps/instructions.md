@@ -40,11 +40,11 @@ From `workflow.yaml`, resolve:
 ### 2. First Step
 
 Load, read completely, and execute:
-`{bmad-path}/tea/workflows/testarch/automate/steps-c/step-01-preflight-and-context.md`
+`{bmad-path}/skills/aac-tea-automate/steps/steps-c/step-01-preflight-and-context.md`
 
 ### 3. Resume Support
 
 If the user selects **Resume** mode, load, read completely, and execute:
-`{bmad-path}/tea/workflows/testarch/automate/steps-c/step-01b-resume.md`
+`{bmad-path}/skills/aac-tea-automate/steps/steps-c/step-01b-resume.md`
 
 This checks the output document for progress tracking frontmatter and routes to the next incomplete step.
