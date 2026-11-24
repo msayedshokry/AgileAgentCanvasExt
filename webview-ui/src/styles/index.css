@@ -295,35 +295,33 @@ body {
   z-index: 100;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1);
 }
 
 .toolbar-fab-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 16px;
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  border: none;
-  border-radius: 999px;
-  font-size: 12px;
-  font-family: var(--vscode-font-family);
+  gap: 6px;
+  height: 28px;
+  padding: 0 var(--space-3);
+  background: var(--accent-fill);
+  color: var(--accent-ink);
+  border: var(--rule-width) solid var(--accent-fill);
+  border-radius: var(--radius);
+  font-family: var(--font-ui);
+  font-size: var(--text-small);
+  font-weight: var(--weight-strong);
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-  backdrop-filter: blur(8px);
-  transition: background 0.15s ease, box-shadow 0.15s ease;
+  transition: background var(--dur-fast) var(--ease-out);
 }
 
 .toolbar-fab-btn:hover {
   background: var(--vscode-button-hoverBackground);
-  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
 }
 
 .toolbar-fab-btn.open {
   background: var(--vscode-button-hoverBackground);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 
 .toolbar-fab-icon {
@@ -333,27 +331,34 @@ body {
 }
 
 .toolbar-fab-label {
-  font-weight: 500;
+  font-weight: var(--weight-strong);
 }
 
 .toolbar-ai-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
+  gap: 6px;
   height: 28px;
-  padding: 0;
-  background: var(--vscode-button-secondaryBackground);
-  color: var(--vscode-button-secondaryForeground);
-  border: 1px solid var(--vscode-button-border, transparent);
-  border-radius: 999px;
-  font-size: 13px;
+  min-width: 28px;
+  padding: 0 var(--space-2);
+  background: var(--paper);
+  color: var(--ink-2);
+  border: var(--rule-width) solid var(--rule);
+  border-radius: var(--radius);
+  font-family: var(--font-ui);
+  font-size: var(--text-small);
+  font-weight: var(--weight-strong);
+  white-space: nowrap;
   cursor: pointer;
-  transition: background 0.15s ease;
+  box-shadow: none;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
 
 .toolbar-ai-btn:hover {
-  background: var(--vscode-button-secondaryHoverBackground);
+  background: var(--paper-wash);
+  color: var(--ink);
+  border-color: var(--rule-strong);
 }
 
 /* Theme toggle button */
@@ -361,21 +366,27 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
+  gap: 6px;
   height: 28px;
-  padding: 0;
-  background: var(--vscode-button-secondaryBackground);
-  color: var(--vscode-button-secondaryForeground);
-  border: 1px solid var(--vscode-button-border, transparent);
-  border-radius: 999px;
-  font-size: 13px;
+  min-width: 28px;
+  padding: 0 var(--space-2);
+  background: var(--paper);
+  color: var(--ink-2);
+  border: var(--rule-width) solid var(--rule);
+  border-radius: var(--radius);
+  font-family: var(--font-ui);
+  font-size: var(--text-small);
+  font-weight: var(--weight-strong);
+  white-space: nowrap;
   cursor: pointer;
-  margin-left: 4px;
-  transition: background 0.15s ease;
+  box-shadow: none;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
 
 .toolbar-theme-btn:hover {
-  background: var(--vscode-button-secondaryHoverBackground);
+  background: var(--paper-wash);
+  color: var(--ink);
+  border-color: var(--rule-strong);
 }
 
 /* Overflow kebab — absorbs Export/Import/Schema/Sprint/Jira/Graphify/Catalogue/Ask/Help */
@@ -388,22 +399,29 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
+  gap: 6px;
   height: 28px;
-  padding: 0;
-  position: relative;
-  background: var(--vscode-button-secondaryBackground);
-  color: var(--vscode-button-secondaryForeground);
-  border: 1px solid var(--vscode-button-border, transparent);
-  border-radius: 999px;
-  font-size: 13px;
+  min-width: 28px;
+  padding: 0 var(--space-2);
+  background: var(--paper);
+  color: var(--ink-2);
+  border: var(--rule-width) solid var(--rule);
+  border-radius: var(--radius);
+  font-family: var(--font-ui);
+  font-size: var(--text-small);
+  font-weight: var(--weight-strong);
+  white-space: nowrap;
   cursor: pointer;
-  transition: background 0.15s ease;
+  box-shadow: none;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+  position: relative;
 }
 
 .toolbar-overflow-btn:hover,
 .toolbar-overflow-btn.open {
-  background: var(--vscode-button-secondaryHoverBackground);
+  background: var(--paper-wash);
+  color: var(--ink);
+  border-color: var(--rule-strong);
 }
 
 .toolbar-overflow-badge {
@@ -427,28 +445,32 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 28px;
+  gap: 6px;
   height: 28px;
-  padding: 0 8px;
-  gap: 5px;
-  background: color-mix(in srgb, var(--vscode-button-secondaryBackground) 85%, var(--vscode-charts-blue, #4fc1ff));
-  color: var(--vscode-button-secondaryForeground);
-  border: 1px solid var(--vscode-button-border, transparent);
-  border-radius: 999px;
-  font-size: 12px;
+  min-width: 28px;
+  padding: 0 var(--space-2);
+  background: var(--paper);
+  color: var(--ink-2);
+  border: var(--rule-width) solid var(--rule);
+  border-radius: var(--radius);
+  font-family: var(--font-ui);
+  font-size: var(--text-small);
+  font-weight: var(--weight-strong);
+  white-space: nowrap;
   cursor: pointer;
-  margin-left: 4px;
-  transition: background 0.15s ease;
+  box-shadow: none;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
   max-width: 200px;
 }
 .toolbar-switch-btn:hover {
-  background: color-mix(in srgb, var(--vscode-button-secondaryHoverBackground) 80%, var(--vscode-charts-blue, #4fc1ff));
+  background: var(--paper-wash);
+  color: var(--ink);
+  border-color: var(--rule-strong);
 }
 
 .toolbar-folder-label {
-  font-size: 11px;
-  font-family: var(--vscode-font-family);
-  opacity: 0.85;
+  font-size: var(--text-small);
+  font-family: var(--font-ui);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -547,25 +569,8 @@ body.vscode-light .epic-row-progress-fill {
 }
 
 /* Detail panel */
-body.ac-force-light .detail-panel,
-body.vscode-light .detail-panel {
-  background: #ffffff;
-  border-color: #d0d4dc;
-}
 
 /* Canvas hint overlay – light theme */
-body.ac-force-light .canvas-hint:not(.collapsed),
-body.vscode-light .canvas-hint:not(.collapsed) {
-  background: #ffffff;
-  border-color: #d0d4dc;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
-}
-body.ac-force-light .canvas-hint.collapsed .canvas-hint-toggle,
-body.vscode-light .canvas-hint.collapsed .canvas-hint-toggle {
-  background: #ffffff;
-  border-color: #d0d4dc;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
-}
 
 /* Toolbar */
 body.ac-force-light .toolbar,
@@ -576,29 +581,8 @@ body.vscode-light .toolbar {
 }
 
 /* Zoom controls */
-body.ac-force-light .zoom-controls,
-body.vscode-light .zoom-controls {
-  background: #ffffff;
-  border-color: #d0d4dc;
-}
 
 /* Workflow FAB + Provider selector (match .kanban-toggle-fab light styling) */
-body.ac-force-light .workflow-fab,
-body.vscode-light .workflow-fab,
-body.ac-force-light .provider-selector-trigger,
-body.vscode-light .provider-selector-trigger {
-  background: #ffffff;
-  color: var(--vscode-foreground, #1a1d23);
-  border: 1px solid #d0d4dc;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-body.ac-force-light .provider-selector-trigger:hover,
-body.vscode-light .provider-selector-trigger:hover,
-body.ac-force-light .provider-selector.open .provider-selector-trigger,
-body.vscode-light .provider-selector.open .provider-selector-trigger {
-  background: #f5f6f8;
-}
 
 /* SearchBox — light theme */
 body.ac-force-light .sb-container,
@@ -1072,22 +1056,21 @@ body.ac-force-dark {
   position: absolute;
   bottom: 16px;
   left: 16px;
-  /* Leave room for the zoom-controls bar (~280px) on the right; items wrap. */
+  /* Leave room for the zoom-controls bar on the right; items wrap. */
   max-width: calc(100% - 330px);
   display: flex;
   align-items: center;
   gap: 6px;
   z-index: 5;
   cursor: default;
-  transition: background 0.2s, box-shadow 0.2s, padding 0.2s;
 }
 
 .canvas-hint:not(.collapsed) {
-  padding: 4px 8px 4px 4px;
-  border-radius: 6px;
-  background: var(--vscode-editor-background);
-  border: 1px solid var(--vscode-editorWidget-border);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-1);
+  background: var(--paper);
+  border: var(--rule-width) solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: none;
 }
 
 .canvas-hint.collapsed {
@@ -1100,37 +1083,33 @@ body.ac-force-dark {
 .canvas-hint-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   background: none;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  color: var(--vscode-descriptionForeground);
-  opacity: 0.7;
+  border: var(--rule-width) solid transparent;
+  border-radius: var(--radius);
+  color: var(--ink-2);
   cursor: pointer;
   padding: 3px 6px;
-  font-size: 12px;
-  transition: opacity 0.15s, background 0.15s, border-color 0.15s;
+  font-size: var(--text-small);
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 
 .canvas-hint.collapsed .canvas-hint-toggle {
-  padding: 4px 8px;
-  border-radius: 6px;
-  background: var(--vscode-editor-background);
-  border: 1px solid var(--vscode-editorWidget-border);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-  opacity: 0.5;
+  padding: var(--space-1) var(--space-2);
+  background: var(--paper);
+  border: var(--rule-width) solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: none;
 }
 
 .canvas-hint-toggle:hover {
-  opacity: 1;
-  background: var(--vscode-toolbar-hoverBackground);
-  border-color: var(--vscode-editorWidget-border);
+  background: var(--paper-wash);
+  color: var(--ink);
 }
 
 .canvas-hint-toggle:focus-visible {
-  outline: 2px solid var(--vscode-focusBorder);
+  outline: 2px solid var(--accent);
   outline-offset: 1px;
-  opacity: 1;
 }
 
 .canvas-hint-icon {
@@ -1139,8 +1118,10 @@ body.ac-force-dark {
 }
 
 .canvas-hint-label {
-  font-size: 10px;
-  opacity: 0.7;
+  font-family: var(--font-mono);
+  font-size: var(--text-kicker);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-kicker);
 }
 
 .canvas-hint-items {
@@ -1153,8 +1134,7 @@ body.ac-force-dark {
 
 .canvas-hint-item {
   font-size: 11px;
-  color: var(--vscode-descriptionForeground);
-  opacity: 0.7;
+  color: var(--ink-3);
   display: inline-flex;
   align-items: center;
   gap: 3px;
@@ -1163,13 +1143,13 @@ body.ac-force-dark {
 
 .canvas-hint-item kbd {
   display: inline-block;
-  padding: 0px 3px;
+  padding: 0 3px;
   font-size: 10px;
-  font-family: var(--vscode-editor-font-family, monospace);
-  color: var(--vscode-editor-foreground);
-  background: var(--vscode-textCodeBlock-background, rgba(128, 128, 128, 0.15));
-  border: 1px solid var(--vscode-editorWidget-border);
-  border-radius: 3px;
+  font-family: var(--font-mono);
+  color: var(--ink-2);
+  background: transparent;
+  border: var(--rule-width) solid var(--rule-strong);
+  border-radius: var(--radius);
   line-height: 1.4;
 }
 
@@ -2715,16 +2695,13 @@ body.ac-force-dark {
   right: 16px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: var(--vscode-editor-background);
-  border: 1px solid var(--vscode-editorWidget-border);
-  border-radius: 8px;
-  box-shadow: var(--card-shadow);
-  backdrop-filter: blur(8px);
-  transition: 
-    opacity var(--transition-normal),
-    transform var(--transition-normal);
+  gap: 2px;
+  padding: var(--space-1);
+  background: var(--paper);
+  border: var(--rule-width) solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: none;
+  transition: opacity var(--dur-base) var(--ease-out);
 }
 
 .canvas:not(:hover) .zoom-controls {
@@ -2732,66 +2709,60 @@ body.ac-force-dark {
 }
 
 .zoom-controls button {
-  min-width: 28px;
-  width: auto;
-  height: 28px;
-  padding: 0 8px;
-  border: none;
-  border-radius: 6px;
-  background: var(--vscode-button-secondaryBackground);
-  color: var(--vscode-button-secondaryForeground);
+  min-width: 26px;
+  height: 26px;
+  padding: 0 var(--space-2);
+  border: var(--rule-width) solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink-2);
   cursor: pointer;
-  font-size: 14px;
-  font-weight: bold;
+  font-size: 13px;
+  font-weight: var(--weight-strong);
   white-space: nowrap;
-  transition: 
-    background var(--transition-fast),
-    transform var(--transition-fast),
-    box-shadow var(--transition-fast);
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 
 .zoom-controls button:hover {
-  background: var(--vscode-button-secondaryHoverBackground);
-  transform: scale(1.1);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  background: var(--paper-wash);
+  color: var(--ink);
 }
 
 .zoom-controls button:focus-visible {
-  outline: 2px solid var(--vscode-focusBorder);
-  outline-offset: 2px;
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 .zoom-controls button:active {
-  transform: scale(0.95);
+  transform: translateY(1px);
 }
 
 .zoom-controls span {
-  font-size: 12px;
-  min-width: 40px;
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
+  min-width: 44px;
   text-align: center;
-  font-weight: 500;
+  color: var(--ink-2);
 }
 
 /* ─── Minimap ─────────────────────────────────────────────────────────── */
 
 .minimap {
   position: absolute;
-  bottom: 70px;          /* zoom-controls: 16px offset + 46px tall + 8px gap */
+  bottom: 60px;
+  /* zoom-controls: 16px offset + 36px tall + 8px gap */
   right: 16px;
   width: 240px;
   height: 160px;
-  background: var(--vscode-editor-background);
-  border: 1px solid var(--vscode-editorWidget-border);
-  border-radius: 8px;
-  box-shadow: var(--card-shadow);
-  backdrop-filter: blur(8px);
+  background: var(--paper);
+  border: var(--rule-width) solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: none;
   overflow: hidden;
   cursor: crosshair;
   z-index: 10;
-  opacity: 0.5;
-  transition:
-    opacity var(--transition-normal),
-    transform var(--transition-normal);
+  opacity: 0.7;
+  transition: opacity var(--dur-base) var(--ease-out);
 }
 
 .minimap:hover {
@@ -2812,11 +2783,12 @@ body.ac-force-dark {
 
 .minimap-viewport {
   position: absolute;
-  border: 1.5px solid var(--vscode-focusBorder, #007fd4);
-  border-radius: 2px;
-  background: rgba(0, 127, 212, 0.08);
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
   z-index: 3;
-  transition: none;   /* must track pan instantly */
+  transition: none;
+  /* must track pan instantly */
 }
 
 /* Toggle button for minimap — appears in zoom-controls row */
@@ -2843,17 +2815,6 @@ body.ac-force-dark {
 }
 
 /* Light theme adjustments */
-body.ac-force-light .minimap,
-body.vscode-light .minimap {
-  background: rgba(255, 255, 255, 0.92);
-  border-color: rgba(0, 0, 0, 0.12);
-}
-
-body.ac-force-light .minimap-viewport,
-body.vscode-light .minimap-viewport {
-  border-color: #005fb8;
-  background: rgba(0, 95, 184, 0.08);
-}
 
 /* AI Cursor */
 .ai-cursor {
@@ -6183,32 +6144,35 @@ body.vscode-light .minimap-viewport {
    ============================================================================= */
 
 .workflow-fab {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 14px;
-  border: none;
-  border-radius: 999px;
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-  backdrop-filter: blur(8px);
-  transition: background 0.15s ease, box-shadow 0.15s ease;
-  user-select: none;
-  letter-spacing: 0.01em;
+  justify-content: center;
+  gap: 6px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0 var(--space-2);
+  background: var(--paper);
+  color: var(--ink-2);
+  border: var(--rule-width) solid var(--rule);
+  border-radius: var(--radius);
+  font-family: var(--font-ui);
+  font-size: var(--text-small);
+  font-weight: var(--weight-strong);
   white-space: nowrap;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+  user-select: none;
 }
 
 .workflow-fab:hover {
-  background: var(--vscode-button-hoverBackground);
-  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+  background: var(--paper-wash);
+  color: var(--ink);
+  border-color: var(--rule-strong);
 }
 
 .workflow-fab:active {
-  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  background: var(--paper-wash);
 }
 
 .workflow-fab-label {
@@ -6726,39 +6690,63 @@ body.vscode-light .minimap-viewport {
 
 /* Ask / Chat button */
 .toolbar-ask-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
+  gap: 6px;
   height: 28px;
-  border: none;
-  border-radius: 6px;
+  min-width: 28px;
+  padding: 0 var(--space-2);
+  background: var(--paper);
+  color: var(--ink-2);
+  border: var(--rule-width) solid var(--rule);
+  border-radius: var(--radius);
+  font-family: var(--font-ui);
+  font-size: var(--text-small);
+  font-weight: var(--weight-strong);
+  white-space: nowrap;
   cursor: pointer;
-  color: var(--vscode-foreground);
-  background: rgba(0, 122, 204, 0.12);
-  transition: background 0.15s, opacity 0.15s;
+  box-shadow: none;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
 .toolbar-ask-btn:hover {
-  background: rgba(0, 122, 204, 0.24);
+  background: var(--paper-wash);
+  color: var(--ink);
+  border-color: var(--rule-strong);
 }
 
 /* Ideas / Notes button — toggleable; matches Ask button chrome, lit when open */
 .toolbar-ideas-btn {
-  position: relative;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
+  gap: 6px;
   height: 28px;
-  border: none;
-  border-radius: 6px;
+  min-width: 28px;
+  padding: 0 var(--space-2);
+  background: var(--paper);
+  color: var(--ink-2);
+  border: var(--rule-width) solid var(--rule);
+  border-radius: var(--radius);
+  font-family: var(--font-ui);
+  font-size: var(--text-small);
+  font-weight: var(--weight-strong);
+  white-space: nowrap;
   cursor: pointer;
-  color: var(--vscode-foreground);
-  background: rgba(212, 185, 65, 0.14);
-  transition: background 0.15s;
+  box-shadow: none;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+  position: relative;
 }
-.toolbar-ideas-btn:hover  { background: rgba(212, 185, 65, 0.28); }
-.toolbar-ideas-btn.open   { background: rgba(212, 185, 65, 0.36); }
+.toolbar-ideas-btn:hover  {
+  background: var(--paper-wash);
+  color: var(--ink);
+  border-color: var(--rule-strong);
+}
+.toolbar-ideas-btn.open   {
+  background: var(--paper-wash);
+  color: var(--ink);
+  border-color: var(--ink);
+}
 .toolbar-ideas-badge {
   position: absolute;
   top: -4px;
@@ -8847,29 +8835,29 @@ body.vscode-light .minimap-viewport {
 .provider-selector-trigger {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  height: auto;
-  padding: 6px 14px;
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  border: none;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  user-select: none;
+  justify-content: center;
+  gap: 6px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0 var(--space-2);
+  background: var(--paper);
+  color: var(--ink-2);
+  border: var(--rule-width) solid var(--rule);
+  border-radius: var(--radius);
+  font-family: var(--font-ui);
+  font-size: var(--text-small);
+  font-weight: var(--weight-strong);
   white-space: nowrap;
-  letter-spacing: 0.01em;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-  backdrop-filter: blur(8px);
-  transition: background 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
   max-width: 115px;
 }
 
 .provider-selector-trigger:hover {
-  background: var(--vscode-button-hoverBackground);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+  background: var(--paper-wash);
+  color: var(--ink);
+  border-color: var(--rule-strong);
 }
 
 .provider-selector-trigger:active {
@@ -9010,8 +8998,21 @@ body.vscode-light .minimap-viewport {
   z-index: 900;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0;
 }
+
+/* Segmented: the three tool buttons share hairlines; only the outer
+ * corners are rounded. Hovered/focused segment rises above its neighbours
+ * so its stronger rule isn't hidden. */
+.top-actions .kanban-toggle-fab { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.top-actions .provider-selector-trigger { border-radius: 0; margin-left: -1px; }
+.top-actions .workflow-fab { border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: -1px; }
+.top-actions .kanban-toggle-fab:hover,
+.top-actions .kanban-toggle-fab:focus-visible,
+.top-actions .provider-selector-trigger:hover,
+.top-actions .provider-selector-trigger:focus-visible,
+.top-actions .workflow-fab:hover,
+.top-actions .workflow-fab:focus-visible { position: relative; z-index: 1; }
 
 .app.with-detail-panel .top-actions {
   right: 396px; /* 380px panel + 16px margin */
@@ -9029,51 +9030,38 @@ body.vscode-light .minimap-viewport {
 .kanban-toggle-fab {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 6px 14px;
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  border: none;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  font-family: var(--vscode-font-family);
-  cursor: pointer;
+  height: 28px;
+  min-width: 28px;
+  padding: 0 var(--space-2);
+  background: var(--paper);
+  color: var(--ink-2);
+  border: var(--rule-width) solid var(--rule);
+  border-radius: var(--radius);
+  font-family: var(--font-ui);
+  font-size: var(--text-small);
+  font-weight: var(--weight-strong);
   white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-  backdrop-filter: blur(8px);
-  transition: background 0.15s ease, box-shadow 0.15s ease;
-  letter-spacing: 0.01em;
-  user-select: none;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
 
 .kanban-toggle-fab:hover {
-  background: var(--vscode-button-hoverBackground);
-  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+  background: var(--paper-wash);
+  color: var(--ink);
+  border-color: var(--rule-strong);
 }
 
 .kanban-toggle-fab:active {
-  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-  transform: scale(0.97);
+  background: var(--paper-wash);
 }
 
 .kanban-toggle-label {
   /* Match .workflow-fab-label so the action row reads as one set. */
   font-weight: 600;
   font-size: 11px;
-}
-
-body.ac-force-light .kanban-toggle-fab,
-body.vscode-light .kanban-toggle-fab {
-  background: #ffffff;
-  color: var(--vscode-foreground, #1a1d23);
-  border: 1px solid #d0d4dc;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-body.ac-force-light .kanban-toggle-fab:hover,
-body.vscode-light .kanban-toggle-fab:hover {
-  background: #f5f6f8;
 }
 
 /* ─── Terminal Modal (Agentic Kanban) ──────────────────────────────────── */
