@@ -2,7 +2,7 @@
   "name": "agileagentcanvas",
   "displayName": "Agile Agent Canvas",
   "description": "Visual AI-assisted product development with BMAD methodology - Design epics, stories, and requirements collaboratively with interactive AI chat workflows",
-  "version": "0.5.7",
+  "version": "0.6.0",
   "publisher": "msayedshokry",
   "license": "MIT",
   "repository": {
@@ -1380,7 +1380,6 @@
           }
         }
       },
-      
       {
         "title": "Visual Plan",
         "order": 7,
@@ -1393,12 +1392,15 @@
           "agileagentcanvas.visualPlan.mode": {
             "type": "string",
             "default": "canvas",
-            "enum": ["canvas", "panel"],
+            "enum": [
+              "canvas",
+              "panel"
+            ],
             "description": "Where to display generated Visual Plans. 'canvas' shows plan cards on the canvas Discovery lane; 'panel' opens the plan in a dedicated pop-out panel."
           }
         }
       },
-{
+      {
         "title": "Agentic Execution",
         "order": 8,
         "properties": {

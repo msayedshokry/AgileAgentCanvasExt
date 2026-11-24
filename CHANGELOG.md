@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.0
 
 ### Highlights
 
@@ -57,6 +57,7 @@ The Agentic Kanban now runs on whichever coding agent you already have installed
 ### Fixed: Codex board runs failed to launch
 
 - **Codex never launched:** Codex CLI 0.163 rejects `--ask-for-approval`, so every Codex board run and card action failed to start.
+- **Codex couldn't write files on Windows:** in the default `sandboxed` permission level, Codex silently ran read-only and refused every file write. Board runs now set Codex's Windows sandbox, so it can edit the workspace.
 
 ## 0.5.7
 
