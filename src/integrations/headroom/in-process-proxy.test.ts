@@ -31,7 +31,6 @@ import {
     type RecentCompressCall,
 } from './in-process-proxy';
 import {
-    setLocalProxyState,
     getLocalProxyState,
     resetLocalProxyStateForTest,
     onLocalProxyStateChange,

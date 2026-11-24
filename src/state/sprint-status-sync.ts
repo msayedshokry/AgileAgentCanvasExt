@@ -199,7 +199,7 @@ export class SprintStatusSync {
 
     try {
       const raw = await vscode.workspace.fs.readFile(yamlUri);
-      let content = Buffer.from(raw).toString('utf-8');
+      const content = Buffer.from(raw).toString('utf-8');
       const yamlStatus = this.mapInternalStatusToYaml(newStatus);
 
       // Build lookup key from prefix + id
@@ -207,7 +207,6 @@ export class SprintStatusSync {
       const keyPrefix = type === 'epic'
         ? epicId.replace(/^EPIC-/i, '')
         : (storyId || '').replace(/^S-?/i, '').replace(/\./g, '-');
-      const keyPattern = new RegExp(`^(\\s+)(${keyPrefix}[\\w-]*)\\s*:\\s*.*$`, 'm');
 
       let inDevStatus = false;
       const lines = content.split('\n');
@@ -373,7 +372,6 @@ export class SprintStatusSync {
       const storyIndex = (epic.stories || []).findIndex((s: Story) => s.id === storyId);
       if (storyIndex >= 0) {
         const story = epic.stories![storyIndex];
-        const oldStatus = story.status;
         story.status = newStatus as Story['status'];
         storyFound = true;
         break;

@@ -7,7 +7,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { createLogger } from '../utils/logger';
-import { autoScheduler, SchedulerState, SchedulerStory } from './auto-scheduler';
+import { autoScheduler, SchedulerStory } from './auto-scheduler';
 
 const logger = createLogger('scheduler-state-persistence');
 

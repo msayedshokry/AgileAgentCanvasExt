@@ -65,13 +65,6 @@ function findFirstOfType(ctx: TransformerTestContext, type: string): any {
     return artifact;
 }
 
-/** Find second artifact of given type */
-function findSecondOfType(ctx: TransformerTestContext, type: string): any {
-    const all = ctx.artifacts.filter(a => a.type === type);
-    assert.ok(all.length >= 2, `Expected at least 2 artifacts of type "${type}", found ${all.length}`);
-    return all[1];
-}
-
 // ============================================================================
 // GIVEN Steps
 // ============================================================================

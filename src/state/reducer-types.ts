@@ -1,10 +1,8 @@
 import type * as vscode from 'vscode';
 import type {
-    BmadMetadata,
     BmadArtifact,
     Epic,
     Story,
-    BmadArtifacts,
     BmadArtifactTypeMap,
     ArtifactChanges as _ArtifactChanges,
 } from '../types';

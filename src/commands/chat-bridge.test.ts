@@ -438,7 +438,7 @@ describe('openChatWithResult — terminal launch path (sendToTerminal)', () => {
     const [cmdLine] = sendTextSpy.mock.calls[0] as [string, boolean];
     // Shape: `claude --permission-mode acceptEdits < /tmp/aac-prompt-....md`
     expect(cmdLine).toMatch(
-      /^claude --permission-mode acceptEdits < ['\"]?.*aac-prompt-[\w-]+\.md['\"]?$/
+      /^claude --permission-mode acceptEdits < ['"]?.*aac-prompt-[\w-]+\.md['"]?$/
     );
   });
 
@@ -450,7 +450,7 @@ describe('openChatWithResult — terminal launch path (sendToTerminal)', () => {
     const [cmdLine] = sendTextSpy.mock.calls[0] as [string, boolean];
     // Shape: `Get-Content -Raw <path> | & claude --permission-mode acceptEdits`
     expect(cmdLine).toMatch(
-      /^Get-Content -Raw ['\"]?.*aac-prompt-[\w-]+\.md['\"]? \| & claude --permission-mode acceptEdits$/
+      /^Get-Content -Raw ['"]?.*aac-prompt-[\w-]+\.md['"]? \| & claude --permission-mode acceptEdits$/
     );
   });
 

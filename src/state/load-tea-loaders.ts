@@ -1,5 +1,5 @@
 import { createLogger } from '../utils/logger';
-import type { ArtifactLoadCtx, ArtifactLoadFn, ArtifactLoadRegistry } from './reducer-types';
+import type { ArtifactLoadFn, ArtifactLoadRegistry } from './reducer-types';
 
 const teaLoadLogger = createLogger('load-tea-loaders');
 const logDebug = (...args: unknown[]) => teaLoadLogger.debug(...args);

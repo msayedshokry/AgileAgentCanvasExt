@@ -17,8 +17,6 @@ import { concurrencyQueue } from './workflow/concurrency-queue';
 import { terminalExecutor } from './workflow/terminal-executor';
 import { initializeAcpSessionManager } from './acp/session-manager';
 import { agentMessageBus } from './acp/agent-bus/message-bus';
-import { agentRegistry } from './acp/agent-bus/agent-registry';
-import { handoffNegotiation } from './acp/agent-bus/handoff-negotiation';
 import { initializeTraceRecorder, getTraceRecorder } from './trace/trace-recorder';
 import { registerTraceCommands } from './commands/trace-commands';
 import { registerA2ACommands } from './commands/a2a-commands';
@@ -48,7 +46,7 @@ import { createCodeburnStatusBar, refreshCodeburnStatusBar } from './views/codeb
 import { createHeadroomStatusBar, refreshHeadroomStatusBar } from './views/headroom-status-bar';
 import { showHeadroomDetails } from './views/headroom-quick-pick';
 import { createChatProviderStatusBar, registerPickChatProviderCommand, refreshChatProviderStatusBar } from './views/chat-provider-status-bar';
-import { setSelectedProvider, getSelectedProvider, type ChatProviderId } from './commands/chat-bridge';
+import { setSelectedProvider, type ChatProviderId } from './commands/chat-bridge';
 import {
     createNewProject,
     loadExistingProject,
@@ -66,10 +64,7 @@ import {
     rebuildGraph,
     installGraphifyHook,
     detectGraphify,
-    clearGraphifyCache,
-    loadReport
-} from './integrations/graphify';
-import { detectCodeburn } from './integrations/codeburn';
+    clearGraphifyCache} from './integrations/graphify';
 import { detectHeadroom, disposeHeadroomClient, startInProcessProxy } from './integrations/headroom';
 import { JiraSecrets } from './integrations/jira-secrets';
 import { createLogger, setLoggerOutputSink } from './utils/logger';
@@ -289,13 +284,13 @@ export function activate(context: vscode.ExtensionContext) {
             return loadDemoData(artifactStore);
         }),
         // Workflow session commands (triggered by chat buttons)
-        vscode.commands.registerCommand('agileagentcanvas.continueWorkflow', (sessionId?: string) => {
+        vscode.commands.registerCommand('agileagentcanvas.continueWorkflow', (_sessionId?: string) => {
             return openChat(`@agileagentcanvas /continue`);
         }),
-        vscode.commands.registerCommand('agileagentcanvas.workflowStatus', (sessionId?: string) => {
+        vscode.commands.registerCommand('agileagentcanvas.workflowStatus', (_sessionId?: string) => {
             return openChat(`@agileagentcanvas /status`);
         }),
-        vscode.commands.registerCommand('agileagentcanvas.cancelWorkflow', (sessionId?: string) => {
+        vscode.commands.registerCommand('agileagentcanvas.cancelWorkflow', (_sessionId?: string) => {
             const executor = getWorkflowExecutor();
             executor.cancelSession();
             vscode.window.showInformationMessage('Workflow session cancelled.');
@@ -423,7 +418,7 @@ export function activate(context: vscode.ExtensionContext) {
             }
 
             // Fallback: open GRAPH_REPORT.md in VS Code markdown preview
-            const reportUri = vscode.Uri.file(require('path').join(root, 'graphify-out', 'GRAPH_REPORT.md'));
+            const reportUri = vscode.Uri.file(path.join(root, 'graphify-out', 'GRAPH_REPORT.md'));
             try {
                 await vscode.commands.executeCommand('markdown.showPreviewToSide', reportUri);
             } catch {
@@ -751,6 +746,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration(e => {
             if (e.affectsConfiguration('agileagentcanvas.codeburn.path')) {
+                // eslint-disable-next-line @typescript-eslint/no-var-requires -- intentional lazy load: avoids a load-order cycle and keeps it off the activation path
                 const { clearCodeburnCache } = require('./integrations/codeburn/codeburn-detector.js');
                 const root = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath;
                 if (root) { clearCodeburnCache(root); }

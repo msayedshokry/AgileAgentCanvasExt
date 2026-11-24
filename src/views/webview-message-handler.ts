@@ -32,8 +32,6 @@ import {
     getJiraConfig,
     formatEpicsAsMarkdown,
     formatStoriesAsMarkdown,
-    mergeJiraIntoArtifacts,
-    mergeJiraEpicIntoArtifacts,
     mergeJiraStoryIntoArtifacts,
     diffJiraEpics,
     applyConflictResolutions,
@@ -930,9 +928,9 @@ export async function handleCatalogueWebviewMessage(
     message: WebviewMessage,
     webview: vscode.Webview,
 ): Promise<boolean> {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-var-requires -- intentional lazy load: avoids a load-order cycle and keeps it off the activation path
     const { getCatalogueService } = require('../state/catalogue-service') as typeof import('../state/catalogue-service');
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-var-requires -- intentional lazy load: avoids a load-order cycle and keeps it off the activation path
     const { getSkillRepoManager } = require('../state/skill-repo-manager') as typeof import('../state/skill-repo-manager');
 
     const postCatalogueData = () => {

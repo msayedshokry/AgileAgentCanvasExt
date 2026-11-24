@@ -157,8 +157,6 @@ vi.mock('../commands/project-commands', () => ({
 // Now import the module under test (after mocks are established).
 import * as vscode from 'vscode';
 import { AgileAgentCanvasViewProvider } from './canvas-view-provider';
-import { handleAgenticKanbanMessage } from './agentic-kanban-message-handler';
-import { handleCommonWebviewMessage, handleCatalogueWebviewMessage } from './webview-message-handler';
 
 interface MockMessageHandler {
     dispose(): void;

@@ -52,7 +52,6 @@ export class ArtifactFileWriter {
     state: BmadArtifacts,
     baseUri: vscode.Uri,
   ): Promise<void> {
-    let targetUri: vscode.Uri;
 
     // Determine the output folder based on the artifact module
     let folder: string;
@@ -72,7 +71,7 @@ export class ArtifactFileWriter {
     } catch {
       // Folder might already exist
     }
-    targetUri = vscode.Uri.joinPath(folderUri, `${fileSlug}.json`);
+    const targetUri = vscode.Uri.joinPath(folderUri, `${fileSlug}.json`);
 
     // Build the JSON envelope: separate id/status into metadata, rest is content
     const { id, status, ...contentFields } = artifact;
@@ -1330,7 +1329,7 @@ export class ArtifactFileWriter {
 
           if (targetUri.fsPath.endsWith('.json')) {
 
-              const match = targetUri.fsPath.match(/([^\/\\]+)\.json$/);
+              const match = targetUri.fsPath.match(/([^/\\]+)\.json$/);
 
               if (match) mdFilename = match[1] + '.md';
 

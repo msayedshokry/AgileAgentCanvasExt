@@ -156,15 +156,15 @@ function buildHandler(world: BmadWorld): void {
                 ctx.errorMessageShown = args[0];
                 return Promise.resolve(undefined);
             },
-            showInformationMessage: async (...args: any[]) => {
+            showInformationMessage: async (..._args: any[]) => {
                 return ctx.showInformationMessageResult;
             },
             showSaveDialog: async () => ctx.showSaveDialogResult,
         },
         workspace: {
             ...world.vscode.workspace,
-            getConfiguration: (section?: string) => ({
-                get: (key: string, defaultValue?: any) => defaultValue,
+            getConfiguration: (_section?: string) => ({
+                get: (_key: string, defaultValue?: any) => defaultValue,
                 has: () => false,
                 inspect: () => undefined,
                 update: async (key: string, value: any, target: any) => {
@@ -179,7 +179,7 @@ function buildHandler(world: BmadWorld): void {
                 readFile: async () => new Uint8Array(),
                 readDirectory: async () => [],
             },
-            asRelativePath: (uri: any) => 'relative/path',
+            asRelativePath: (_uri: any) => 'relative/path',
             workspaceFolders: [{ uri: MockUri.file('/test/workspace'), name: 'test', index: 0 }],
         },
         commands: {

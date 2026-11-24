@@ -395,7 +395,6 @@ export async function generatePDF(state: BmadArtifacts): Promise<Uint8Array> {
 
         doc.end();
         } catch (syncErr: unknown) {
-            const msg = syncErr instanceof Error ? syncErr.message : String(syncErr);
             reject(syncErr);
         }
     });

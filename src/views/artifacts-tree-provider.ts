@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ArtifactStore, Epic, Story, UseCase, TestCase, TestStrategy, Architecture, Risk } from '../state/artifact-store';
+import { ArtifactStore, TestCase, TestStrategy, Architecture, Risk } from '../state/artifact-store';
 
 /**
  * Tree view provider for BMAD artifacts
@@ -533,7 +533,7 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
         const epics = this.store.getEpics();
         const allTestCases: TestCase[] = (state.testCases as TestCase[]) || [];
 
-        return epics.map((epic, index) => {
+        return epics.map((epic, _index) => {
             const storyCount = epic.stories?.length || 0;
             const ucCount = epic.useCases?.length || 0;
             // Count TCs that belong to this epic (via stories or directly)
@@ -578,7 +578,7 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
         const items: ArtifactTreeItem[] = [];
 
         // Stories — collapsible when they have test cases
-        (epic.stories || []).forEach((story, index) => {
+        (epic.stories || []).forEach((story, _index) => {
             const storyTcs = allTestCases.filter(tc => tc.storyId === story.id);
             const item = new ArtifactTreeItem(
                 `Story ${story.id}: ${story.title}`,
@@ -603,7 +603,7 @@ export class ArtifactsTreeProvider implements vscode.TreeDataProvider<ArtifactTr
         });
 
         // Use Cases
-        (epic.useCases || []).forEach((uc, index) => {
+        (epic.useCases || []).forEach((uc, _index) => {
             const item = new ArtifactTreeItem(
                 `UC ${uc.id}: ${uc.title || uc.id}`,
                 vscode.TreeItemCollapsibleState.None,

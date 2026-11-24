@@ -1,5 +1,4 @@
 import { createLogger } from '../utils/logger';
-import type { ArtifactChanges } from '../types';
 const logger = createLogger('agentic-kanban-message-handler');
 import * as vscode from 'vscode';
 import * as path from 'path';
@@ -107,7 +106,7 @@ function getTerminalRouter(webview: vscode.Webview): TerminalSessionRouter {
       // When the pty shell exits, clean up executor tracking AND post
       // terminal:exit to the webview so AgentTerminal tiles show the
       // [session ended] marker.
-      ptyBackend.onSessionExit = (sessionId, artifactId, exitCode) => {
+      ptyBackend.onSessionExit = (_sessionId, artifactId, exitCode) => {
         terminalExecutor.onPtySessionExit(artifactId, exitCode);
         terminalRouter?.emitExit(artifactId);
       };
@@ -445,7 +444,7 @@ export async function handleAgenticKanbanMessage(
 
     case 'kanban:resumeExecution': {
       // workflowId is passed through from the restored agent state in the webview
-      const { artifactId: resumeId, workflowId, sessionId: resumeSessionId } = message;
+      const { artifactId: resumeId, workflowId } = message;
 
       try {
         // P1 #12: if the handler was invoked without a webview (e.g., CLI/test),

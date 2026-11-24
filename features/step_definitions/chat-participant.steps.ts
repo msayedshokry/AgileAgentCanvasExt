@@ -54,7 +54,7 @@ const mockAiProvider = {
   getModel: async () => null,
   streamChatResponse: async () => '',
   getNoModelMessage: () => '**AI not available** (test mode)',
-  vsMessagesToChatMessages: (msgs: any[]) => msgs.map((m: any) => ({ role: 'user', content: '' }))
+  vsMessagesToChatMessages: (msgs: any[]) => msgs.map((_m: any) => ({ role: 'user', content: '' }))
 };
 
 function getChatParticipant(world: BmadWorld): { store: any; participant: any } {
@@ -75,7 +75,7 @@ function getChatParticipant(world: BmadWorld): { store: any; participant: any } 
       './artifact-file-io': {
         resolveArtifactTargetUri: async (opts: any) => world.vscode.Uri.file(`/test/${opts.fileName}`),
         writeJsonFile: async () => {},
-        writeMarkdownCompanion: async (jsonUri: any, mdFilename: string) => world.vscode.Uri.file(`/test/${mdFilename}`)
+        writeMarkdownCompanion: async (_jsonUri: any, mdFilename: string) => world.vscode.Uri.file(`/test/${mdFilename}`)
       },
       '../harness/policy-engine': {
         harnessEngine: { evaluate: async () => [] },

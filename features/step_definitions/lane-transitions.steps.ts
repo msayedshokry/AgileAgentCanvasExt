@@ -525,13 +525,13 @@ Then('the user should not have been prompted for confirmation', function (this: 
   assert.ok(true);
 });
 
-Then('the concurrency lock for {string} should have been acquired', function (this: BmadWorld, artifactId: string) {
+Then('the concurrency lock for {string} should have been acquired', function (this: BmadWorld, _artifactId: string) {
   // Lock is acquired during handleTransition — if transition completes without
   // "blocked: concurrency" error, lock was successfully acquired
   assert.ok(true);
 });
 
-Then('the concurrency lock for {string} should have been released', function (this: BmadWorld, artifactId: string) {
+Then('the concurrency lock for {string} should have been released', function (this: BmadWorld, _artifactId: string) {
   // Lock is released in the finally block — if no error about stale locks, it was released
   assert.ok(true);
 });

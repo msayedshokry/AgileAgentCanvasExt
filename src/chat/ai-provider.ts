@@ -445,29 +445,7 @@ async function streamVsCodeLm(
 // Direct HTTP helpers (shared low-level fetch)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function httpsPost(url: string, headers: Record<string, string>, body: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const parsed = new URL(url);
-        const isHttps = parsed.protocol === 'https:';
-        const lib = isHttps ? https : http;
-
-        const req = lib.request({
-            hostname: parsed.hostname,
-            port: parsed.port || (isHttps ? 443 : 80),
-            path: parsed.pathname + parsed.search,
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), ...headers }
-        }, res => {
-            let data = '';
-            res.on('data', (chunk: Buffer) => data += chunk.toString());
-            res.on('end', () => resolve(data));
-        });
-
-        req.on('error', reject);
-        req.write(body);
-        req.end();
-    });
-}/**
+/**
  * Stream SSE / newline-delimited JSON and yield text + usage deltas.
  *
  * Returns `{ text: string; usage?: Partial<TokenUsage> }` so callers can

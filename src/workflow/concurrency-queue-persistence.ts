@@ -6,7 +6,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { concurrencyQueue, LockEntry } from './concurrency-queue';
+import { concurrencyQueue } from './concurrency-queue';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('concurrency-queue-persistence');

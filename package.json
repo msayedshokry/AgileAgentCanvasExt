@@ -1690,7 +1690,7 @@
     "bundle:dev": "node esbuild.mjs",
     "compile-webview": "cd webview-ui && npm run build",
     "watch": "node esbuild.mjs --watch",
-    "lint": "eslint src features --ext ts --rulesdir eslint-rules",
+    "lint": "eslint src features --ext ts --rulesdir eslint-rules --max-warnings 639",
     "lint:changelog": "node scripts/lint-changelog.mjs",
     "lint:mapping-doc": "node scripts/lint-mapping-doc.mjs",
     "lint:mapping-doc:smoke": "node scripts/lint-mapping-doc.smoke.mjs",

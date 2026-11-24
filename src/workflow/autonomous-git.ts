@@ -191,7 +191,7 @@ export class AutonomousGit {
   }
 
   /** Create a PR if configured. */
-  async maybePR(storyId: string, title: string, body: string, cwd: string): Promise<string | null> {
+  async maybePR(storyId: string, title: string, body: string, _cwd: string): Promise<string | null> {
     if (!this.config.autoPR) return null;
     const ok = await this.ensureGit();
     if (!ok || !this.runner?.createPR) return null;

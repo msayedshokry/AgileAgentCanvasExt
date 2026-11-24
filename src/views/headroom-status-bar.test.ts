@@ -103,7 +103,7 @@ import {
 } from './headroom-status-bar';
 import { getCompressionStats, getAvailability, getCCRStats } from '../integrations/headroom';
 import { handoffNegotiation } from '../acp/agent-bus/handoff-negotiation';
-import { setLocalProxyState, getLocalProxyState, resetLocalProxyStateForTest, type LocalProxyState } from '../integrations/headroom/proxy-state';
+import { setLocalProxyState, resetLocalProxyStateForTest } from '../integrations/headroom/proxy-state';
 
 // fake context — only needs subscriptions.push
 const fakeContext: any = {

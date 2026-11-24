@@ -48,7 +48,7 @@ function getWorkflowExecutor(world: BmadWorld): any {
       },
       '../chat/ai-provider': {
         streamChatResponse: async () => '',
-        vsMessagesToChatMessages: (msgs: any[]) => msgs.map((m: any) => ({ role: 'user', content: '' }))
+        vsMessagesToChatMessages: (msgs: any[]) => msgs.map((_m: any) => ({ role: 'user', content: '' }))
       },
       '../antigravity/antigravity-orchestrator': {
         orchestrateAntigravityWorkflow: async () => true,

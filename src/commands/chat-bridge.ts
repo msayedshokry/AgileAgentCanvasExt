@@ -1,4 +1,7 @@
 import * as cp from 'child_process';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { sendSimplePrompt } from '../antigravity/antigravity-orchestrator';
 import { createLogger } from '../utils/logger';
@@ -246,8 +249,6 @@ function log(msg: string): void {
 }
 
 // ─── Selected-provider persistence ──────────────────────────────────────────
-
-const CHAT_PROVIDER_KEY = 'agileagentcanvas.chatProviderSelected';
 
 /**
  * The provider the user has chosen in the canvas dropdown. Set by the
@@ -616,9 +617,7 @@ async function sendToTerminal(args: string[], query: string): Promise<boolean> {
         const queryInArgs = args.includes(query);
 
         if (query.length > 8192 && queryInArgs) {
-            const tmp = require('os').tmpdir();
-            const path = require('path');
-            const fs = require('fs');
+            const tmp = os.tmpdir();
             // The random suffix prevents two terminal launches within the
             // same millisecond on the same VS Code instance from racing
             // on the same file (Date.now() resolution is 1ms). On a slow
@@ -867,7 +866,7 @@ export async function openChatWithResult(
 async function doOpenChat(
     providerId: ChatProviderId,
     query: string | undefined,
-    detected: string,
+    _detected: string,
 ): Promise<OpenChatResult> {
     const cmd = CHAT_COMMANDS[providerId] ?? CHAT_COMMANDS['copilot-fallback'];
 

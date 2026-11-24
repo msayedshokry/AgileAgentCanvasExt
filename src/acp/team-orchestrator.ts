@@ -6,7 +6,6 @@ import { acpSessionManager } from './session-manager';
 import { BmadModel } from '../chat/ai-provider';
 import { agentRegistry } from './agent-bus/agent-registry';
 import { agentMessageBus } from './agent-bus/message-bus';
-import { handoffNegotiation } from './agent-bus/handoff-negotiation';
 import { getTraceRecorder } from '../trace/trace-recorder';
 import type { AgentCapability } from './agent-bus/types';
 
@@ -776,7 +775,7 @@ export class AgentTeamOrchestrator {
       );
 
       // Subscribe to handoff requests for this agent role
-      agentMessageBus.subscribe(agentId, `handoff.${agentId}.#`, async (msg) => {
+      agentMessageBus.subscribe(agentId, `handoff.${agentId}.#`, async (_msg) => {
         agentRegistry.updateStatus(agentId, 'busy');
         // Processing occurs via the existing ACP session pipeline
       });

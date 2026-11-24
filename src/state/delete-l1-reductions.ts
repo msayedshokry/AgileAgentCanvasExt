@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { createLogger } from '../utils/logger';
 import { ArtifactFileWriter } from './artifact-file-writer';
-import type { ArtifactDeleteCtx, ArtifactDeleteFn, ArtifactDeleteRegistry } from './reducer-types';
+import type { ArtifactDeleteFn, ArtifactDeleteRegistry } from './reducer-types';
 
 const l1DeleteLogger = createLogger('delete-l1-reductions');
 const logDebug = (...args: unknown[]) => l1DeleteLogger.debug(...args);

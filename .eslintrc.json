@@ -9,6 +9,17 @@
     "plugin:@typescript-eslint/recommended"
   ],
   "rules": {
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_",
+        "destructuredArrayIgnorePattern": "^_",
+        "ignoreRestSiblings": true
+      }
+    ],
+    "@typescript-eslint/no-explicit-any": "warn",
     "no-restricted-imports": [
       "error",
       {
@@ -26,6 +37,12 @@
     ]
   },
   "overrides": [
+    {
+      "files": ["**/*.test.ts", "features/**/*.ts", "src/test/**/*.ts"],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off"
+      }
+    },
     {
       "files": ["features/step_definitions/*.steps.ts"],
       "rules": {

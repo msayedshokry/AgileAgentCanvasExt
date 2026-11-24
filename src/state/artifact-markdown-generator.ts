@@ -1,4 +1,4 @@
-import { BmadArtifacts, Epic, Story } from '../types';
+import { BmadArtifacts } from '../types';
 
 /**
  * ArtifactMarkdownGenerator — extracted from ArtifactStore.
@@ -119,7 +119,7 @@ export function generateVisionMarkdown(state: BmadArtifacts): string {
 
  */
 
-export function generateSingleEpicMarkdown(epic: any, state: BmadArtifacts): string {
+export function generateSingleEpicMarkdown(epic: any, _state: BmadArtifacts): string {
 
     let md = `# Epic ${epic.id}: ${epic.title || 'Untitled Epic'}\n\n`;
 

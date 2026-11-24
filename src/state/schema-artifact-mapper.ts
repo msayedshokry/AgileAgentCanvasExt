@@ -23,7 +23,6 @@ export function repairArtifactData(
 
     // Work on a deep copy so we don't mutate the caller's reference
     const d = JSON.parse(JSON.stringify(data));
-    let changed = false;
 
     // ── 0) Schema-driven automatic repair ──
     if (schemaValidator.isInitialized()) {
@@ -31,7 +30,6 @@ export function repairArtifactData(
         if (rawSchema) {
             const result = repairDataWithSchema(d, rawSchema);
             if (result.changed) {
-                changed = true;
                 for (const r of result.repairs) {
                     mapperLogger.debug(
                         `[SchemaArtifactMapper] schema-repair: ${r} in ${fileName}`,
@@ -69,7 +67,6 @@ export function repairArtifactData(
         };
         delete contentCopy.status;
         d.content = contentCopy;
-        changed = true;
     }
 
     // ── 2) Fix metadata.timestamps ──
@@ -77,19 +74,15 @@ export function repairArtifactData(
         if (!d.metadata.timestamps) {
             const now = new Date().toISOString();
             d.metadata.timestamps = { created: now, lastModified: now };
-            changed = true;
         } else if (!d.metadata.timestamps.created) {
             d.metadata.timestamps.created = new Date().toISOString();
-            changed = true;
         }
 
         if (!d.metadata.schemaVersion) {
             d.metadata.schemaVersion = '1.0.0';
-            changed = true;
         }
         if (!d.metadata.artifactType) {
             d.metadata.artifactType = artifactType;
-            changed = true;
         }
     }
 
@@ -97,7 +90,6 @@ export function repairArtifactData(
     if ((artifactType === 'product-brief' || artifactType === 'vision') && d.content) {
         if (!d.content.vision) {
             d.content.vision = {};
-            changed = true;
             mapperLogger.debug(
                 `[SchemaArtifactMapper] repairArtifactData: added empty content.vision to ${fileName}`,
             );
@@ -105,11 +97,9 @@ export function repairArtifactData(
 
         if (d.content.problemStatement && !d.content.vision.problemStatement) {
             d.content.vision.problemStatement = d.content.problemStatement;
-            changed = true;
         }
         if (d.content.valueProposition && !d.content.vision.uniqueValueProposition) {
             d.content.vision.uniqueValueProposition = d.content.valueProposition;
-            changed = true;
         }
 
         if (d.content.successCriteria && !d.content.successMetrics) {
@@ -118,25 +108,18 @@ export function repairArtifactData(
                     typeof c === 'string' ? { metric: c, description: c } : c,
                 )
                 : d.content.successCriteria;
-            changed = true;
         }
 
         if (!d.content.productName) {
             d.content.productName = d.metadata?.projectName || '';
-            changed = true;
         }
 
         if (Array.isArray(d.content.targetUsers)) {
             const users = d.content.targetUsers;
-            let coerced = false;
             for (let i = 0; i < users.length; i++) {
                 if (typeof users[i] === 'string') {
                     users[i] = { persona: users[i], description: '' };
-                    coerced = true;
                 }
-            }
-            if (coerced) {
-                changed = true;
             }
         }
     }

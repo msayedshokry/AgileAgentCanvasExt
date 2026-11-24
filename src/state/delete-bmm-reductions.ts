@@ -1,6 +1,5 @@
 import { createLogger } from '../utils/logger';
 import type {
-    ArtifactDeleteCtx,
     ArtifactDeleteFn,
     ArtifactDeleteRegistry,
 } from './reducer-types';

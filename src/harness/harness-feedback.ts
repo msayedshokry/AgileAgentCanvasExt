@@ -194,7 +194,7 @@ export class HarnessFeedbackService {
    */
   getFeedbackForArtifact(
     artifactId: string,
-    artifactType: string
+    _artifactType: string
   ): FormattedFeedback | null {
     const existing = this.feedback.get(artifactId);
     if (!existing) return null;

@@ -19,7 +19,6 @@ import { WorkflowExecutor } from './workflow-executor';
 import { concurrencyQueue } from './concurrency-queue';
 import { BmadModel } from '../chat/ai-provider';
 import { harnessEngine } from '../harness/policy-engine';
-import { harnessFeedback } from '../harness/harness-feedback';
 import { terminalExecutor } from './terminal-executor';
 import { runViaLanguageModel } from './harness/headless-lm-run';
 import { readVerdictFile, resultFilePath, getOutputFolder } from './kanban-verdict';

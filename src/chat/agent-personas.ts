@@ -106,6 +106,7 @@ export function loadAgentPersona(bmadPath: string, skillName: string): AgentPers
     // If CatalogueService is available, use its ordered search paths so user overrides win.
     let searchPaths: string[] | undefined;
     try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires -- intentional lazy load: avoids a load-order cycle and keeps it off the activation path
         const { getCatalogueService } = require('../state/catalogue-service');
         const svc = getCatalogueService();
         // getCatalogueService().getSearchPaths() returns [userPath, builtinPath]
@@ -194,6 +195,7 @@ export function loadAllAgentPersonas(bmadPath: string): { persona: AgentPersona;
     // Use the CatalogueService search paths when available so user overrides are included
     let searchPaths: string[];
     try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires -- intentional lazy load: avoids a load-order cycle and keeps it off the activation path
         const { getCatalogueService } = require('../state/catalogue-service');
         searchPaths = getCatalogueService().getSearchPaths();
     } catch {

@@ -3,8 +3,6 @@ import { ArtifactStore } from '../state/artifact-store';
 import { JiraClient, JiraClientError } from '../integrations/jira-client';
 import {
     getJiraConfig,
-    formatEpicsAsMarkdown,
-    formatStoriesAsMarkdown,
     mergeJiraIntoArtifacts
 } from '../integrations/jira-importer';
 import { createLogger } from '../utils/logger';

@@ -281,6 +281,7 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
     private async reloadFromDisk(): Promise<void> {
         let outputUri: any = null;
         try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires -- intentional lazy load: avoids a load-order cycle and keeps it off the activation path
             const { getWorkspaceResolver } = require('../extension');
             const resolver = getWorkspaceResolver();
             outputUri = resolver?.getActiveOutputUri();
@@ -390,6 +391,7 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
         // Derive active folder name for the toolbar display
         let activeFolderName = '';
         try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires -- intentional lazy load: avoids a load-order cycle and keeps it off the activation path
             const { getWorkspaceResolver } = require('../extension');
             const resolver = getWorkspaceResolver();
             const outputUri = resolver?.getActiveOutputUri();

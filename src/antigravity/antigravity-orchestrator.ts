@@ -231,7 +231,6 @@ export function buildGuideContent(params: AntigravityWorkflowParams): string {
         outputFolder,
         task,
         artifact,
-        workflowPath,
         workflowContent,
         outputFormat = 'json',
         executionHints,

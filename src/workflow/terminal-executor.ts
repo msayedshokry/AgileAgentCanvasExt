@@ -334,6 +334,7 @@ ${PONYTAIL_HEURISTICS}
 
 // ─── Output tail ─────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line no-control-regex -- matches ANSI escape sequences by design
 const ANSI_PATTERN = /\u001b\[[0-9;?]*[ -/]*[@-~]|\u001b\][^\u0007]*(\u0007|\u001b\\)/g;
 const TAIL_LINES = 8;
 const TAIL_CHARS = 800;

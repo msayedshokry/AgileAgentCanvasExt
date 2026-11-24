@@ -30,7 +30,9 @@ jobs:
       - name: TypeCheck
         run: npm run check-types
       - name: Lint
-        run: npm run lint || true
+        # Blocks on any error. no-explicit-any is a warning in production code,
+        # capped by --max-warnings in the lint script: lower the cap as anys are typed.
+        run: npm run lint
       - name: Lint Changelog
         run: npm run lint:changelog || true
       - name: Lint Mapping Doc

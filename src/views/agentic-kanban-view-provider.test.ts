@@ -116,8 +116,6 @@ vi.mock('../workflow/kanban-settings', () => ({
 // Now import the module under test (after mocks are established).
 import * as vscode from 'vscode';
 import { AgenticKanbanViewProvider } from './agentic-kanban-view-provider';
-import { handleAgenticKanbanMessage } from './agentic-kanban-message-handler';
-import { handleCommonWebviewMessage } from './webview-message-handler';
 
 interface MockMessageHandler {
     dispose(): void;

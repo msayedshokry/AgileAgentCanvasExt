@@ -602,7 +602,7 @@ describe('RecentBlocksTracker — lifecycle (startup / shutdown)', () => {
   });
 
   it('startup() returns an unsubscribe closure equivalent to the internal one', () => {
-    const { stub, off } = buildFindingsStub();
+    const { stub } = buildFindingsStub();
     tracker.startup(stub);
     const returnedUnsub = tracker.startup({ on: () => {}, off: vi.fn() } as any);
     // Both first and returned (second) closures should be callable

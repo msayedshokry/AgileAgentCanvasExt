@@ -404,7 +404,6 @@ export class TraceRecorder implements vscode.Disposable {
         if (started && !terminal && !errored) {
           // Parse session ID to extract workflowId and artifactId
           // Format: lane-{workflowId}-{artifactId}-{timestamp}
-          const parts = sessionId.split('-');
           // The first two parts are "lane" and the workflowId (may contain hyphens),
           // the last part is the timestamp, and everything in between is the artifact ID.
           // Safer approach: use the started entry's data

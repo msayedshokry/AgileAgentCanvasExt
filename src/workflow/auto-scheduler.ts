@@ -202,11 +202,12 @@ export class AutoScheduler extends EventEmitter {
         return 'waiting-on-human';
       case 'queue-empty':
         return 'blocked';
-      default: // 'user'
+      default: { // 'user'
         // If user paused but there ARE eligible stories, it's just idle.
         // If user paused AND there are no eligible stories, it's blocked.
         const next = this.pickNext();
         return next ? 'idle' : 'blocked';
+      }
     }
   }
 

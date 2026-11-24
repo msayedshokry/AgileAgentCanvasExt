@@ -33,7 +33,7 @@ function loadWizardProvider(world: BmadWorld): { store: any; provider: any } {
     './artifact-file-io': {
       resolveArtifactTargetUri: async (opts: any) => vsc.Uri.file(`/test/${opts.fileName}`),
       writeJsonFile: async () => {},
-      writeMarkdownCompanion: async (jsonUri: any, mdFilename: string) => vsc.Uri.file(`/test/${mdFilename}`)
+      writeMarkdownCompanion: async (_jsonUri: any, mdFilename: string) => vsc.Uri.file(`/test/${mdFilename}`)
     },
     // Mock policy-engine to prevent loading vscode (policy-engine imports vscode at line 11)
     '../harness/policy-engine': {
@@ -45,13 +45,13 @@ function loadWizardProvider(world: BmadWorld): { store: any; provider: any } {
   });
 
   // Load workflow-executor with mocked deps
-  const workflowExecutorModule = proxyquire('../../src/workflow/workflow-executor', {
+  proxyquire('../../src/workflow/workflow-executor', {
     'vscode': vsc,
     '../extension': { acOutput: mockAcOutput },
     '../chat/agileagentcanvas-tools': { getToolDefinitions: () => [] },
     '../chat/ai-provider': {
       streamChatResponse: async () => '',
-      vsMessagesToChatMessages: (msgs: any[]) => msgs.map((m: any) => ({ role: 'user', content: '' }))
+      vsMessagesToChatMessages: (msgs: any[]) => msgs.map((_m: any) => ({ role: 'user', content: '' }))
     },
     '../antigravity/antigravity-orchestrator': {
       orchestrateAntigravityWorkflow: async () => true,
@@ -259,7 +259,6 @@ Given('an active session with path-based step names', function(this: BmadWorld) 
 Given('an unknown artifact type {string} is selected in wizard steps', function(this: BmadWorld, type: string) {
   const { store } = loadWizardProvider(this);
   // Spy on getSelectedArtifact to return unknown type
-  const origGetSelectedArtifact = store.getSelectedArtifact.bind(store);
   store.getSelectedArtifact = () => ({ type, id: 'unknown-1', artifact: { title: 'Unknown' } });
 });
 

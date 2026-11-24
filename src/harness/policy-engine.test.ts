@@ -7,8 +7,6 @@ import { HarnessEngine, harnessEngine } from './policy-engine';
 import type { HarnessPolicy, EvaluationContext } from './policy-engine';
 import { getTraceRecorder } from '../trace/trace-recorder';
 import { schemaValidator } from '../state/schema-validator';
-import { repairDataWithSchema } from '../state/schema-repair-engine';
-import { harnessFeedback } from './harness-feedback';
 
 // ── Module mocks ─────────────────────────────────────────────────────────────
 

@@ -258,81 +258,6 @@ const IDE_TARGETS: Record<IdeId, IdeTarget> = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SKILL.md templates
-// ─────────────────────────────────────────────────────────────────────────────
-
-/** Escape a string for use as a YAML single-quoted value (double any internal single quotes) */
-function yamlQuote(value: string): string {
-    return `'${value.replace(/'/g, "''")}'`;
-}
-
-function agentSkillContent(artifact: Artifact, bmadResourcePath: string, extensionVersion?: string): string {
-    const versionStamp = extensionVersion ? `\n<!-- aac-version: ${extensionVersion} -->` : '';
-    // Read the source SKILL.md directly and prepend variable resolution + version stamp
-    const sourcePath = path.join(bmadResourcePath, artifact.relativePath);
-    try {
-        const sourceContent = fs.readFileSync(sourcePath, 'utf-8');
-        // If the source has frontmatter, inject version stamp after the closing ---
-        const fmEnd = sourceContent.indexOf('---', sourceContent.indexOf('---') + 3);
-        if (fmEnd > 0) {
-            return sourceContent.substring(0, fmEnd + 3) + versionStamp + '\n\n' +
-                `<variable-resolution>\nIn all BMAD resource files, the template variable {bmad-path} refers to: ${bmadResourcePath}\nThe template variable {project-root} refers to the workspace/project root directory.\nThe template variable {skill-root} refers to: ${bmadResourcePath}/skills\n</variable-resolution>\n` +
-                sourceContent.substring(fmEnd + 3);
-        }
-        return `---\nname: ${yamlQuote(artifact.skillName)}\ndescription: ${yamlQuote(artifact.description)}\n---${versionStamp}\n\n` +
-            `<variable-resolution>\nIn all BMAD resource files, the template variable {bmad-path} refers to: ${bmadResourcePath}\nThe template variable {project-root} refers to the workspace/project root directory.\nThe template variable {skill-root} refers to: ${bmadResourcePath}/skills\n</variable-resolution>\n\n` +
-            sourceContent;
-    } catch {
-        // Fallback if source can't be read
-        return `---\nname: ${yamlQuote(artifact.skillName)}\ndescription: ${yamlQuote(artifact.description)}\n---${versionStamp}\n\nLOAD the FULL agent file from ${bmadResourcePath}/${artifact.relativePath}\n`;
-    }
-}
-
-function workflowSkillContent(artifact: Artifact, bmadResourcePath: string): string {
-    const sourcePath = path.join(bmadResourcePath, artifact.relativePath);
-    try {
-        const sourceContent = fs.readFileSync(sourcePath, 'utf-8');
-        const fmEnd = sourceContent.indexOf('---', sourceContent.indexOf('---') + 3);
-        if (fmEnd > 0) {
-            return sourceContent.substring(0, fmEnd + 3) + '\n\n' +
-                `<variable-resolution>\nIn all BMAD resource files, the template variable {bmad-path} refers to: ${bmadResourcePath}\nThe template variable {project-root} refers to the workspace/project root directory.\nThe template variable {skill-root} refers to: ${bmadResourcePath}/skills\n</variable-resolution>\n` +
-                sourceContent.substring(fmEnd + 3);
-        }
-        return `---\nname: ${yamlQuote(artifact.skillName)}\ndescription: ${yamlQuote(artifact.description)}\n---\n\n` +
-            `<variable-resolution>\nIn all BMAD resource files, the template variable {bmad-path} refers to: ${bmadResourcePath}\nThe template variable {project-root} refers to the workspace/project root directory.\nThe template variable {skill-root} refers to: ${bmadResourcePath}/skills\n</variable-resolution>\n\n` +
-            sourceContent;
-    } catch {
-        return `---\nname: ${yamlQuote(artifact.skillName)}\ndescription: ${yamlQuote(artifact.description)}\n---\n\nLOAD the FULL workflow from ${bmadResourcePath}/${artifact.relativePath}\n`;
-    }
-}
-
-function taskSkillContent(artifact: Artifact, bmadResourcePath: string): string {
-    const sourcePath = path.join(bmadResourcePath, artifact.relativePath);
-    try {
-        const sourceContent = fs.readFileSync(sourcePath, 'utf-8');
-        const fmEnd = sourceContent.indexOf('---', sourceContent.indexOf('---') + 3);
-        if (fmEnd > 0) {
-            return sourceContent.substring(0, fmEnd + 3) + '\n\n' +
-                `<variable-resolution>\nIn all BMAD resource files, the template variable {bmad-path} refers to: ${bmadResourcePath}\nThe template variable {project-root} refers to the workspace/project root directory.\nThe template variable {skill-root} refers to: ${bmadResourcePath}/skills\n</variable-resolution>\n` +
-                sourceContent.substring(fmEnd + 3);
-        }
-        return `---\nname: ${yamlQuote(artifact.skillName)}\ndescription: ${yamlQuote(artifact.description)}\n---\n\n` +
-            `<variable-resolution>\nIn all BMAD resource files, the template variable {bmad-path} refers to: ${bmadResourcePath}\nThe template variable {project-root} refers to the workspace/project root directory.\nThe template variable {skill-root} refers to: ${bmadResourcePath}/skills\n</variable-resolution>\n\n` +
-            sourceContent;
-    } catch {
-        return `---\nname: ${yamlQuote(artifact.skillName)}\ndescription: ${yamlQuote(artifact.description)}\n---\n\nRead the task file at: ${bmadResourcePath}/${artifact.relativePath}\n`;
-    }
-}
-
-function skillContent(artifact: Artifact, bmadResourcePath: string, extensionVersion?: string): string {
-    switch (artifact.type) {
-        case 'agent': return agentSkillContent(artifact, bmadResourcePath, extensionVersion);
-        case 'workflow': return workflowSkillContent(artifact, bmadResourcePath);
-        case 'task': return taskSkillContent(artifact, bmadResourcePath);
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Manifest parsing — reads CSV manifests from resources/_aac/_config/
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -524,51 +449,6 @@ function cleanupLegacyDirs(ide: IdeTarget, workspaceRoot: string): void {
             logger.debug(`[IDE-Install] Cleaned ${removed} legacy extension files from ${legacyDir}`);
         }
     }
-}
-
-/**
- * Write skill directories for the given artifacts.
- * Each skill becomes: <skillsDir>/<skillName>/SKILL.md
- */
-function writeSkillDirs(
-    ide: IdeTarget,
-    artifacts: Artifact[],
-    workspaceRoot: string,
-    overwrite: boolean,
-    bmadResourcePath: string,
-    extensionVersion?: string
-): { written: number; skipped: number } {
-    const skillsDir = path.join(workspaceRoot, ide.skillsDir);
-    if (!fs.existsSync(skillsDir)) {
-        fs.mkdirSync(skillsDir, { recursive: true });
-    }
-
-    let written = 0;
-    let skipped = 0;
-
-    for (const artifact of artifacts) {
-        const skillDir = path.join(skillsDir, artifact.skillName);
-        const skillFile = path.join(skillDir, 'SKILL.md');
-
-        if (!overwrite && fs.existsSync(skillFile)) {
-            logger.debug(`[IDE-Install] Skipped (exists): ${artifact.skillName}`);
-            skipped++;
-            continue;
-        }
-
-        try {
-            if (!fs.existsSync(skillDir)) {
-                fs.mkdirSync(skillDir, { recursive: true });
-            }
-            fs.writeFileSync(skillFile, skillContent(artifact, bmadResourcePath, extensionVersion), 'utf-8');
-            written++;
-            logger.debug(`[IDE-Install] Wrote: ${ide.skillsDir}/${artifact.skillName}/SKILL.md`);
-        } catch (err) {
-            logger.debug(`[IDE-Install] Error writing ${artifact.skillName}: ${err}`);
-        }
-    }
-
-    return { written, skipped };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -818,247 +698,6 @@ function writeWorkflowStubs(
 // ─────────────────────────────────────────────────────────────────────────────
 
 const EXTENSION_AGENT_FILENAME = 'agileagentcanvas.agent.md';
-const INTEGRATOR_AGENT_FILENAME = 'agileagentcanvas-canvas-integrator.agent.md';
-
-/**
- * Build the content for the main extension agent file.
- * Produces Copilot-format (.agent.md) or OpenCode-format (mode: all) depending on `agentFormat`.
- */
-function extensionAgentContent(ide: IdeTarget): string {
-    const skillsDir = ide.skillsDir;
-    if (ide.agentFormat === 'opencode') {
-        return `---
-description: Agile Agent Canvas — Unified agile development assistant with expert personas for product management, architecture, development, QA, and more. Provides workflows for PRD creation, sprint planning, story development, architecture design, and testing.
-mode: all
----
-
-You are the **Agile Agent Canvas** assistant — a unified agile development platform powered by the BMAD methodology.
-
-## Capabilities
-
-You provide access to multiple expert agent personas, structured workflows, and agile development tasks. Your installed skills are in \`${skillsDir}/agileagentcanvas-*\` directories.
-
-## Agent Personas
-
-You can embody any of the following expert personas when the user requests one:
-
-| Persona | Name | Specialty |
-|---------|------|-----------|
-| Master | BMad Master | Workflow orchestration, task execution, knowledge custodian |
-| Analyst | Mary | Market research, competitive analysis, requirements |
-| PM | John | Product management, PRD creation, stakeholder alignment |
-| Architect | Winston | System architecture, distributed systems, API design |
-| Dev | Amelia | Story execution, TDD, code implementation |
-| QA | Quinn | Test automation, API testing, coverage analysis |
-| Scrum Master | Bob | Sprint planning, agile ceremonies, backlog management |
-| UX Designer | Sally | User research, interaction design, UI patterns |
-| Tech Writer | Paige | Documentation, diagrams, standards compliance |
-| Test Architect | Murat | Risk-based testing, ATDD, CI/CD governance |
-| Solo Dev | Barry | Quick flow — rapid spec and implementation |
-
-## Workflows & Commands
-
-Run \`/dev\`, \`/requirements\`, \`/epics\`, \`/stories\`, \`/sprint\`, \`/vision\`, \`/ux\`, \`/quick\`, \`/review-code\`, \`/context\`, \`/party\`, and more — all installed in \`.opencode/commands/\`.
-
-## Activation
-
-When a user asks for help, determine the most appropriate persona or workflow from your installed skills and follow the instructions in the corresponding SKILL.md file.
-`;
-    }
-
-    return `---
-description: 'Agile Agent Canvas — Unified agile development assistant with expert personas for product management, architecture, development, QA, and more. Provides workflows for PRD creation, sprint planning, story development, architecture design, and testing.'
-tools: ['read', 'edit', 'search', 'execute']
----
-
-You are the **Agile Agent Canvas** assistant — a unified agile development platform powered by the BMAD methodology.
-
-## Capabilities
-
-You provide access to multiple expert agent personas, structured workflows, and agile development tasks. Your installed skills are in \`${skillsDir}/agileagentcanvas-*\` directories.
-
-## Agent Personas
-
-You can embody any of the following expert personas when the user requests one:
-
-| Persona | Name | Specialty |
-|---------|------|-----------|
-| Master | BMad Master | Workflow orchestration, task execution, knowledge custodian |
-| Analyst | Mary | Market research, competitive analysis, requirements |
-| PM | John | Product management, PRD creation, stakeholder alignment |
-| Architect | Winston | System architecture, distributed systems, API design |
-| Dev | Amelia | Story execution, TDD, code implementation |
-| QA | Quinn | Test automation, API testing, coverage analysis |
-| Scrum Master | Bob | Sprint planning, agile ceremonies, backlog management |
-| UX Designer | Sally | User research, interaction design, UI patterns |
-| Tech Writer | Paige | Documentation, diagrams, standards compliance |
-| Test Architect | Murat | Risk-based testing, ATDD, CI/CD governance |
-| Solo Dev | Barry | Quick flow — rapid spec and implementation |
-
-## Workflows & Tasks
-
-Review the installed \`agileagentcanvas-*\` skills to discover available workflows (create PRD, architecture, stories, sprint planning, etc.) and standalone tasks (code review, editorial review, etc.).
-
-## Activation
-
-When a user asks for help, determine the most appropriate persona or workflow from your installed skills and follow the instructions in the corresponding SKILL.md file.
-`;
-}
-
-/**
- * Write a single agent file into the IDE's agents directory.
- * - Copilot: `.agent.md` files with Copilot-specific frontmatter
- * - OpenCode: `.md` files with `mode: all` frontmatter in `.opencode/agents/`
- * Only installs when the IDE target defines an `agentsDir`.
- */
-function writeExtensionAgentFile(
-    ide: IdeTarget,
-    workspaceRoot: string,
-    overwrite: boolean
-): boolean {
-    if (!ide.agentsDir) return false;
-
-    const agentsDir = path.join(workspaceRoot, ide.agentsDir);
-    const fileName = ide.agentFormat === 'opencode'
-        ? 'agileagentcanvas.md'
-        : EXTENSION_AGENT_FILENAME;
-    const agentFilePath = path.join(agentsDir, fileName);
-
-    if (!overwrite && fs.existsSync(agentFilePath)) {
-        return false;
-    }
-
-    if (!fs.existsSync(agentsDir)) {
-        fs.mkdirSync(agentsDir, { recursive: true });
-    }
-
-    const content = extensionAgentContent(ide);
-
-    try {
-        fs.writeFileSync(agentFilePath, content, 'utf-8');
-        logger.debug(`[IDE-Install] Wrote: ${ide.agentsDir}/${fileName}`);
-        return true;
-    } catch (err) {
-        logger.debug(`[IDE-Install] Error writing agent file: ${err}`);
-        return false;
-    }
-}
-
-/**
- * Write the Canvas Integrator agent file into the IDE's agents directory.
- * - Copilot: `.agent.md` with Copilot-specific frontmatter
- * - OpenCode: `.md` with `mode: subagent` frontmatter in `.opencode/agents/`
- * Only installs when the IDE target defines an `agentsDir`.
- */
-function writeIntegratorAgentFile(
-    ide: IdeTarget,
-    workspaceRoot: string,
-    overwrite: boolean
-): boolean {
-    if (!ide.agentsDir) return false;
-
-    const agentsDir = path.join(workspaceRoot, ide.agentsDir);
-    const fileName = ide.agentFormat === 'opencode'
-        ? 'agileagentcanvas-canvas-integrator.md'
-        : INTEGRATOR_AGENT_FILENAME;
-    const agentFilePath = path.join(agentsDir, fileName);
-
-    if (!overwrite && fs.existsSync(agentFilePath)) {
-        return false;
-    }
-
-    if (!fs.existsSync(agentsDir)) {
-        fs.mkdirSync(agentsDir, { recursive: true });
-    }
-
-    const skillsDir = ide.skillsDir;
-    const content = ide.agentFormat === 'opencode'
-        ? `---
-description: Agile Canvas Integrator (Morph) — converts BMAD markdown artifacts to schema-compliant JSON for Agile Agent Canvas visualization. Scans output folders, auto-detects artifact types, validates against schemas, and supports single-file, batch, and type-filtered conversions.
-mode: subagent
----
-
-You are **Morph**, the Agile Canvas Integrator — an artifact conversion specialist that transforms BMAD markdown files into schema-compliant JSON for the Agile Agent Canvas VS Code extension.
-
-## How to Activate
-
-Load and fully follow the agent instructions in your installed skill file:
-
-\`\`\`
-${skillsDir}/agileagentcanvas-agent-canvas-integrator/SKILL.md
-\`\`\`
-
-That file contains your full persona, activation steps, menu system, and conversion rules. Embody the Morph persona and follow the activation sequence exactly.
-
-## Quick Reference
-
-| Command | Description |
-|---------|-------------|
-| **SF** | Set source folder (default: configured output folder) |
-| **SC** | Scan & report — list convertible artifacts without converting |
-| **CS** | Convert a single file |
-| **CA** | Convert ALL artifacts in the source folder |
-| **CF** | Convert a subfolder (e.g. epics/) |
-| **CT** | Convert by type (e.g. story, epics, use-case) |
-
-## Conversion Rules
-
-- **VERBOSE** — capture ALL content from the source, never summarize or truncate
-- **Separate user story fields** — always split into \`asA\`, \`iWant\`, \`soThat\`
-- **Full acceptance criteria** — always use \`given\`, \`when\`, \`then\`, \`and[]\`
-- **Full requirement descriptions** — always include \`id\`, \`title\`, AND complete \`description\`
-- **Valid JSON** — always parseable without errors
-- **Schema-compliant** — validate against the matching BMAD schema before saving
-`
-        : `---
-description: 'Agile Canvas Integrator (Morph) — converts BMAD markdown artifacts to schema-compliant JSON for Agile Agent Canvas visualization. Scans output folders, auto-detects artifact types, validates against schemas, and supports single-file, batch, and type-filtered conversions.'
-tools: ['read_file', 'create_file', 'replace_string_in_file', 'file_search', 'list_dir']
----
-
-You are **Morph**, the Agile Canvas Integrator — an artifact conversion specialist that transforms BMAD markdown files into schema-compliant JSON for the Agile Agent Canvas VS Code extension.
-
-## How to Activate
-
-Load and fully follow the agent instructions in your installed skill file:
-
-\`\`\`
-${skillsDir}/agileagentcanvas-agent-canvas-integrator/SKILL.md
-\`\`\`
-
-That file contains your full persona, activation steps, menu system, and conversion rules. Embody the Morph persona and follow the activation sequence exactly.
-
-## Quick Reference
-
-| Command | Description |
-|---------|-------------|
-| **SF** | Set source folder (default: configured output folder) |
-| **SC** | Scan & report — list convertible artifacts without converting |
-| **CS** | Convert a single file |
-| **CA** | Convert ALL artifacts in the source folder |
-| **CF** | Convert a subfolder (e.g. epics/) |
-| **CT** | Convert by type (e.g. story, epics, use-case) |
-
-## Conversion Rules
-
-- **VERBOSE** — capture ALL content from the source, never summarize or truncate
-- **Separate user story fields** — always split into \`asA\`, \`iWant\`, \`soThat\`
-- **Full acceptance criteria** — always use \`given\`, \`when\`, \`then\`, \`and[]\`
-- **Full requirement descriptions** — always include \`id\`, \`title\`, AND complete \`description\`
-- **Valid JSON** — always parseable without errors
-- **Schema-compliant** — validate against the matching BMAD schema before saving
-
-The full conversion workflow with schema mappings, parsing patterns, and chunking strategy is in the installed skill's referenced workflow file.
-`;
-
-    try {
-        fs.writeFileSync(agentFilePath, content, 'utf-8');
-        logger.debug(`[IDE-Install] Wrote: ${ide.agentsDir}/${fileName}`);
-        return true;
-    } catch (err) {
-        logger.debug(`[IDE-Install] Error writing integrator agent file: ${err}`);
-        return false;
-    }
-}
 
 /**
  * Remove extension agent files from the agents directory.
@@ -1392,6 +1031,7 @@ export async function autoInstallIfNeeded(extensionPath: string): Promise<void> 
     // Prefer the resolver's active workspace folder for multi-root awareness
     let workspaceRoot: string;
     try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires -- intentional lazy load: avoids a load-order cycle and keeps it off the activation path
         const { getWorkspaceResolver } = require('../extension');
         const resolver = getWorkspaceResolver();
         const wsFolder = resolver?.getActiveWorkspaceFolder();
@@ -1585,7 +1225,6 @@ export async function installToIde(extensionPath: string): Promise<void> {
     }
 
     // ── Write into each target root ───────────────────────────────────────────
-    let totalRootsWritten = 0;
     await vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: `Installing Agile Agent Canvas for ${ide.label}...`, cancellable: false },
         async () => {
@@ -1596,8 +1235,7 @@ export async function installToIde(extensionPath: string): Promise<void> {
                 cleanupExtensionAgentFiles(ide, root);
 
                 // Write slim install
-                const didWrite = writeSlimInstall(ide, root, bmadResourcePath, extensionVersion, true);
-                if (didWrite) totalRootsWritten++;
+                writeSlimInstall(ide, root, bmadResourcePath, extensionVersion, true);
 
                 // Deploy schema reference
                 writeSchemaReference(extensionPath, root);
@@ -1619,24 +1257,4 @@ export async function installToIde(extensionPath: string): Promise<void> {
         vscode.commands.executeCommand('revealFileInOS',
             vscode.Uri.file(path.join(workspaceRoots[0], ide.skillsDir)));
     }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
-function countByType(artifacts: Artifact[]): Record<Artifact['type'], number> {
-    const counts: Record<Artifact['type'], number> = { agent: 0, workflow: 0, task: 0 };
-    for (const a of artifacts) {
-        counts[a.type]++;
-    }
-    return counts;
-}
-
-function formatCountSummary(counts: Record<Artifact['type'], number>): string {
-    const parts: string[] = [];
-    if (counts.agent > 0)    parts.push(`${counts.agent} agent${counts.agent !== 1 ? 's' : ''}`);
-    if (counts.workflow > 0) parts.push(`${counts.workflow} workflow${counts.workflow !== 1 ? 's' : ''}`);
-    if (counts.task > 0)     parts.push(`${counts.task} task${counts.task !== 1 ? 's' : ''}`);
-    return parts.join(', ') || '0 skills';
 }

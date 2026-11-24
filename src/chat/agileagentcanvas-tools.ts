@@ -3,6 +3,7 @@ const logger = createLogger('agileagentcanvas-tools');
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { parse as parseYaml } from 'yaml';
 
 import { ArtifactStore, BmadArtifacts } from '../state/artifact-store';
 import { BmadArtifactChange, BmadArtifactTypeMap } from '../types';
@@ -442,7 +443,6 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         try {
                             const ext = path.extname(filePath).toLowerCase();
                             const baseName = path.basename(filePath, ext);
-                            const dirUri = vscode.Uri.file(path.dirname(filePath));
                             const written: string[] = [];
 
                             // Determine what to write based on format and the file extension
@@ -1053,7 +1053,6 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                             ]);
                         }
 
-                        const { parse: parseYaml } = require('yaml');
                         const frontmatter = parseYaml(match[1]);
                         const body = content.slice(match[0].length).trim();
 
@@ -1079,7 +1078,6 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
             async invoke(request, _token) {
                 return trackToolCall('agileagentcanvas_yaml_to_json', async () => {
                     try {
-                        const { parse: parseYaml } = require('yaml');
                         const data = parseYaml(request.input.yaml);
                         logger.debug(`[agileagentcanvas_yaml_to_json] Converted YAML successfully`);
                         return new vscode.LanguageModelToolResult([
@@ -1741,6 +1739,7 @@ export function registerTools(ctx: AgileAgentCanvasToolContext): vscode.Disposab
                         }
                         // ponytail: ID is interpolated into a path — guard against
                         // traversal by stripping every path separator before use.
+                        // eslint-disable-next-line no-control-regex -- strips control characters from an id used in a file name
                         const safeId = id.replace(/[/\\<>:"|?*\x00-\x1f]/g, '');
                         if (safeId !== id) {
                             return new vscode.LanguageModelToolResult([

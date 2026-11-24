@@ -5,9 +5,7 @@
 // Issue: #10 — Dependency Visualization in Kanban
 
 import { dependencyGraph, StoryRef } from './dependency-graph';
-import { createLogger } from '../utils/logger';
 
-const logger = createLogger('kanban-dep-visualizer');
 
 // ── Types ────────────────────────────────────────────────────────────────────
 

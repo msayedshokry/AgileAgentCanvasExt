@@ -1,7 +1,6 @@
 import { createLogger } from '../utils/logger';
 import { pickChanges } from './reducer-helpers';
 import type {
-    ArtifactReducerCtx,
     ArtifactReducerFn,
     ArtifactReducerRegistry,
 } from './reducer-types';

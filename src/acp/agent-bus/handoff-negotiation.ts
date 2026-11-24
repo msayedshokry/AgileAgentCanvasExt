@@ -22,7 +22,6 @@ import {
   HandoffRequest,
   HandoffResponse,
   HandoffSession,
-  HandoffStatus,
   BusMessagePriority,
 } from './types';
 
@@ -37,7 +36,6 @@ const CONFIG = {
   MESSAGE_TTL: 60_000,
 };
 
-import { errMsg } from '../../utils/error';
 
 // ── SharedContext facade (lazy-loaded, silent-by-default) ──────────────────
 
@@ -208,7 +206,7 @@ export class HandoffNegotiationService {
     if (!this._shareCtxAttempted) {
       this._shareCtxAttempted = true;
       try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        // eslint-disable-next-line @typescript-eslint/no-var-requires -- optional dependency, loaded lazily so a missing package degrades gracefully
         const { SharedContext } = require('headroom-ai');
         this._shareCtx = new SharedContext({ ttl: 300_000, maxEntries: 50 });
         logger.debug('[Handoff] SharedContext initialised for inter-agent compression');

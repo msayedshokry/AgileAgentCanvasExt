@@ -4,8 +4,6 @@ import { ArtifactFileWriter } from './artifact-file-writer';
 import { writeMarkdownCompanion } from './artifact-file-io';
 import { pickChanges } from './reducer-helpers';
 import type {
-    ArtifactChanges,
-    ArtifactReducerCtx,
     ArtifactReducerFn,
     ArtifactReducerRegistry,
 } from './reducer-types';
@@ -246,7 +244,7 @@ const reduceStory: ArtifactReducerFn<'story'> = async (ctx, artifactId, changes)
         // the destructure.
         let epicId = routingEpicId;
         if (!epicId) {
-            const idMatch = artifactId.match(/^S?-?(\d+)[.\-]/i);
+            const idMatch = artifactId.match(/^S?-?(\d+)[.-]/i);
             if (idMatch) {
                 epicId = `EPIC-${parseInt(idMatch[1], 10)}`;
             }

@@ -103,7 +103,7 @@ let _loadAttempted = false;
 async function _ensureInitialised(): Promise<boolean> {
     _loadAttempted = true;
     try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        // eslint-disable-next-line @typescript-eslint/no-var-requires -- optional dependency, loaded lazily so a missing package degrades gracefully
         const headroom = require('headroom-ai');
         _compressFn = headroom.compress;
         _simulateFn = headroom.simulate;
