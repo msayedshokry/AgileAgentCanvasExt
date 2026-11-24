@@ -1,0 +1,113 @@
+/* webview-ui/src/styles/tokens.css
+ *
+ * Editorial / Swiss design tokens for the canvas webview.
+ *
+ * Direction: typography-led, hairline rules instead of fills and shadows,
+ * one accent, colour only as small marks. Every colour derives from the
+ * user's VS Code theme variables via color-mix(), so Light+, Dark+ and
+ * high-contrast themes work without per-theme overrides. High-contrast
+ * themes swap hairlines for the theme's contrastBorder (bottom of file).
+ *
+ * Imported before index.css (main.tsx) so every stylesheet can use them.
+ */
+
+:root {
+  /* ── Ink: text colours, strongest to faintest ───────────────────────── */
+  --ink: var(--vscode-foreground);
+  --ink-2: color-mix(in srgb, var(--vscode-foreground) 78%, transparent);
+  /* Meta text (kickers, counts). 62% keeps ≥4.5:1 on paper in Light+/Dark+. */
+  --ink-3: color-mix(in srgb, var(--vscode-foreground) 62%, transparent);
+
+  /* ── Paper: surfaces ─────────────────────────────────────────────────── */
+  --paper: var(--vscode-editor-background);
+  /* Overlays only (menus, modals, the detail panel). */
+  --paper-raised: var(--vscode-editorWidget-background, var(--vscode-editor-background));
+  /* Barely-there wash for hover rows and pressed states. */
+  --paper-wash: color-mix(in srgb, var(--vscode-foreground) 5%, transparent);
+
+  /* ── Rules: the only structural line ─────────────────────────────────── */
+  --rule: color-mix(in srgb, var(--vscode-foreground) 14%, transparent);
+  --rule-strong: color-mix(in srgb, var(--vscode-foreground) 40%, transparent);
+  --rule-width: 1px;
+
+  /* ── Accent: focus, selection, primary action ────────────────────────── */
+  --accent: var(--vscode-focusBorder);
+  --accent-ink: var(--vscode-button-foreground);
+  --accent-fill: var(--vscode-button-background);
+  --danger: var(--vscode-errorForeground);
+
+  /* ── Phase marks (lane numerals, minimap) — theme chart tokens ───────── */
+  --phase-discovery: var(--vscode-charts-purple, #9333ea);
+  --phase-planning: var(--vscode-charts-blue, #3b82f6);
+  --phase-solutioning: var(--vscode-charts-pink, #ec4899);
+  --phase-implementation: var(--vscode-charts-green, #22c55e);
+  --phase-details: var(--vscode-charts-yellow, #eab308);
+
+  /* ── Type ────────────────────────────────────────────────────────────── */
+  --font-ui: var(--vscode-font-family, system-ui, sans-serif);
+  --font-mono: var(--vscode-editor-font-family, ui-monospace, monospace);
+  --text-display: 22px;
+  --text-title: 15px;
+  --text-body: 13px;
+  --text-small: 12px;
+  --text-kicker: 10.5px;
+  --leading-display: 1.15;
+  --leading-title: 1.25;
+  --leading-body: 1.5;
+  --tracking-kicker: 0.12em;
+  --weight-strong: 600;
+
+  /* ── Space: 4-based rhythm ───────────────────────────────────────────── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  /* ── Shape ───────────────────────────────────────────────────────────── */
+  --radius: 2px;
+
+  /* ── Motion: transform/opacity only ──────────────────────────────────── */
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* ── Legacy variables, re-pointed so existing rules follow the system ─ */
+  --card-bg: var(--paper);
+  --card-border: var(--rule);
+  --card-shadow: none;
+  --card-shadow-hover: none;
+  --card-shadow-selected: 0 0 0 2px var(--accent);
+  --transition-fast: var(--dur-fast) var(--ease-out);
+  --transition-normal: var(--dur-base) var(--ease-out);
+  --transition-slow: 300ms var(--ease-out);
+  --transition-bounce: var(--dur-base) var(--ease-out);
+}
+
+/* High contrast: VS Code supplies explicit border colours; use them. */
+body.vscode-high-contrast,
+body.vscode-high-contrast-light {
+  --rule: var(--vscode-contrastBorder, currentColor);
+  --rule-strong: var(--vscode-contrastActiveBorder, var(--vscode-contrastBorder, currentColor));
+  --ink-2: var(--vscode-foreground);
+  --ink-3: var(--vscode-foreground);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur-base: 0ms;
+  }
+}
+
+/* ── Shared typographic primitive: the kicker ─────────────────────────── */
+.kicker {
+  font-family: var(--font-mono);
+  font-size: var(--text-kicker);
+  letter-spacing: var(--tracking-kicker);
+  text-transform: uppercase;
+  color: var(--ink-3);
+  line-height: 1.2;
+}

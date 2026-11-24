@@ -1,17 +1,6 @@
-/* BMAD Canvas Styles */
-:root {
-  --card-bg: var(--vscode-editor-background);
-  --card-border: var(--vscode-editorWidget-border);
-  --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  --card-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.25);
-  --card-shadow-selected: 0 0 0 2px var(--vscode-focusBorder), 0 4px 16px rgba(0, 0, 0, 0.2);
-  
-  /* Animation timing */
-  --transition-fast: 0.1s ease;
-  --transition-normal: 0.2s ease;
-  --transition-slow: 0.3s ease;
-  --transition-bounce: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
+/* BMAD Canvas Styles
+ * Design tokens (--ink, --rule, --paper, type scale, legacy --card-* and
+ * --transition-* aliases) live in ./tokens.css, imported first by main.tsx. */
 
 /* Animations */
 @keyframes fadeIn {
@@ -524,118 +513,6 @@ body.ac-force-light {
   --vscode-charts-cyan: #0e7373;
 }
 
-/* ---- Light-theme component overrides (forced + native VS Code light) ---- */
-body.ac-force-light,
-body.vscode-light {
-  --card-bg: #ffffff;
-  --card-border: #d0d4dc;
-  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.06);
-  --card-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
-  --card-shadow-selected: 0 0 0 2px var(--vscode-focusBorder), 0 2px 12px rgba(0, 120, 212, 0.15);
-}
-
-/* Canvas dot grid: slightly stronger on light bg */
-body.ac-force-light .canvas,
-body.vscode-light .canvas {
-  background-image:
-    radial-gradient(circle, rgba(0, 0, 0, 0.08) 1px, transparent 1px);
-}
-
-/* Cards: white on the gray canvas for clear separation */
-body.ac-force-light .artifact-card,
-body.vscode-light .artifact-card {
-  border-color: #d0d4dc;
-}
-
-body.ac-force-light .artifact-card:hover,
-body.vscode-light .artifact-card:hover {
-  background-color: #fafbfc;
-  border-color: #bbc0ca;
-}
-
-body.ac-force-light .artifact-card.selected,
-body.vscode-light .artifact-card.selected {
-  background: #ffffff;
-}
-
-/* Status tints: slightly stronger on light for readability */
-body.ac-force-light .artifact-card.status-tint-in-progress,
-body.vscode-light .artifact-card.status-tint-in-progress {
-  background: color-mix(in srgb, var(--vscode-charts-blue) 6%, #ffffff);
-}
-body.ac-force-light .artifact-card.status-tint-done,
-body.ac-force-light .artifact-card.status-tint-complete,
-body.vscode-light .artifact-card.status-tint-done,
-body.vscode-light .artifact-card.status-tint-complete {
-  background: color-mix(in srgb, var(--vscode-charts-green) 6%, #ffffff);
-}
-body.ac-force-light .artifact-card.status-tint-review,
-body.ac-force-light .artifact-card.status-tint-approved,
-body.vscode-light .artifact-card.status-tint-review,
-body.vscode-light .artifact-card.status-tint-approved {
-  background: color-mix(in srgb, var(--vscode-charts-purple) 6%, #ffffff);
-}
-
-/* Swim lanes: more visible on light background */
-body.ac-force-light .swim-lane.discovery,
-body.vscode-light .swim-lane.discovery {
-  background: rgba(109, 40, 168, 0.04);
-  border-color: rgba(109, 40, 168, 0.14);
-}
-body.ac-force-light .swim-lane.planning,
-body.vscode-light .swim-lane.planning {
-  background: rgba(26, 115, 199, 0.04);
-  border-color: rgba(26, 115, 199, 0.14);
-}
-body.ac-force-light .swim-lane.solutioning,
-body.vscode-light .swim-lane.solutioning {
-  background: rgba(194, 72, 21, 0.04);
-  border-color: rgba(194, 72, 21, 0.14);
-}
-body.ac-force-light .swim-lane.implementation,
-body.vscode-light .swim-lane.implementation {
-  background: rgba(17, 138, 62, 0.04);
-  border-color: rgba(17, 138, 62, 0.14);
-}
-
-/* Column headers: deeper saturation for light bg contrast */
-body.ac-force-light .column-header.discovery,
-body.vscode-light .column-header.discovery {
-  color: #6d28a8;
-  background: rgba(109, 40, 168, 0.08);
-  border-color: rgba(109, 40, 168, 0.25);
-}
-body.ac-force-light .column-header.planning,
-body.vscode-light .column-header.planning {
-  color: #1a73c7;
-  background: rgba(26, 115, 199, 0.08);
-  border-color: rgba(26, 115, 199, 0.25);
-}
-body.ac-force-light .column-header.solutioning,
-body.vscode-light .column-header.solutioning {
-  color: #c24815;
-  background: rgba(194, 72, 21, 0.08);
-  border-color: rgba(194, 72, 21, 0.25);
-}
-body.ac-force-light .column-header.implementation,
-body.vscode-light .column-header.implementation {
-  color: #118a3e;
-  background: rgba(17, 138, 62, 0.08);
-  border-color: rgba(17, 138, 62, 0.25);
-}
-body.ac-force-light .column-header.details,
-body.vscode-light .column-header.details {
-  color: #a67c00;
-  background: rgba(166, 124, 0, 0.08);
-  border-color: rgba(166, 124, 0, 0.25);
-}
-
-/* Column sub-headers */
-body.ac-force-light .column-subheader,
-body.vscode-light .column-subheader {
-  background: rgba(0, 0, 0, 0.04);
-}
-
 /* Epic row bands: stronger tints for light theme */
 body.ac-force-light .epic-row-band.even,
 body.vscode-light .epic-row-band.even {
@@ -942,10 +819,11 @@ body.ac-force-dark {
   flex: 1;
   position: relative;
   overflow: hidden;
-  background-color: var(--vscode-editor-background);
-  background-image: 
-    radial-gradient(circle, color-mix(in srgb, var(--vscode-editorWidget-border) 20%, transparent) 1px, transparent 1px);
-  background-size: 32px 32px;
+  background-color: var(--paper);
+  /* Faint 24px dot grid — paper texture, derived from the theme ink. */
+  background-image:
+    radial-gradient(circle, var(--rule) 1px, transparent 1px);
+  background-size: 24px 24px;
   cursor: grab;
 }
 
@@ -1005,21 +883,36 @@ body.ac-force-dark {
   right: 0;
 }
 
+/* Lane head: editorial section heading — mono numeral in the phase colour,
+ * uppercase label in ink. No box; the lane's top rule sits beneath it. */
 .column-header {
   position: absolute;
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  opacity: 0.85;
-  padding: 6px 14px;
-  background: var(--vscode-editor-background);
-  border-radius: 6px;
-  border: 1px solid var(--vscode-editorWidget-border);
   display: flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-small);
+  font-weight: var(--weight-strong);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-kicker);
+  color: var(--ink);
+  background: var(--paper);
+  --phase: var(--ink-3);
+}
+
+.column-header-num {
+  font-family: var(--font-mono);
+  font-size: var(--text-title);
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--phase);
+}
+
+.column-header .lane-toggle-btns,
+.column-header .lane-hide-btn {
+  align-self: center;
+  color: var(--ink-3);
 }
 
 /* Lane expand/collapse toggle buttons */
@@ -1148,38 +1041,14 @@ body.ac-force-dark {
   border-color: rgba(34, 197, 94, 0.3);
 }
 
-/* Phase-specific header colors */
-.column-header.discovery {
-  color: #9333ea;
-  background: rgba(147, 51, 234, 0.1);
-  border-color: rgba(147, 51, 234, 0.3);
-}
+/* Phase marks: only the numeral (and the lane's top rule) carry colour. */
+.column-header.discovery      { --phase: var(--phase-discovery); }
+.column-header.planning       { --phase: var(--phase-planning); }
+.column-header.solutioning    { --phase: var(--phase-solutioning); }
+.column-header.implementation { --phase: var(--phase-implementation); }
+.column-header.details        { --phase: var(--phase-details); }
 
-.column-header.planning {
-  color: #3b82f6;
-  background: rgba(59, 130, 246, 0.1);
-  border-color: rgba(59, 130, 246, 0.3);
-}
-
-.column-header.solutioning {
-  color: #ec4899;
-  background: rgba(236, 72, 153, 0.1);
-  border-color: rgba(236, 72, 153, 0.3);
-}
-
-.column-header.implementation {
-  color: #22c55e;
-  background: rgba(34, 197, 94, 0.1);
-  border-color: rgba(34, 197, 94, 0.3);
-}
-
-.column-header.details {
-  color: #eab308;
-  background: rgba(234, 179, 8, 0.1);
-  border-color: rgba(234, 179, 8, 0.3);
-}
-
-/* Column sub-headers showing artifact types */
+/* Column sub-headers: kicker text listing the lane's artifact types */
 .column-subheaders {
   position: absolute;
   top: 48px;
@@ -1189,15 +1058,12 @@ body.ac-force-dark {
 
 .column-subheader {
   position: absolute;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--vscode-descriptionForeground);
+  font-family: var(--font-mono);
+  font-size: var(--text-kicker);
+  letter-spacing: var(--tracking-kicker);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  opacity: 0.8;
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.05);
+  color: var(--ink-3);
+  padding: 2px 0;
   white-space: nowrap;
 }
 
@@ -1308,55 +1174,48 @@ body.ac-force-dark {
 }
 
 /* Artifact Card */
+/* Card: paper with a hairline — no shadow, no fill tint, no top bar.
+ * Hierarchy comes from type: kicker row, title, then muted body copy. */
 .artifact-card {
   position: absolute;
   z-index: 3;
   pointer-events: auto;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 8px;
-  padding: 12px 12px 10px;
-  box-shadow: var(--card-shadow);
+  background: var(--paper);
+  border: var(--rule-width) solid var(--rule);
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4) var(--space-3);
+  box-shadow: none;
   cursor: pointer;
-  transition: 
+  transition:
     top 0.3s ease,
-    box-shadow var(--transition-normal),
-    border-color var(--transition-normal),
-    background-color var(--transition-normal);
+    border-color var(--dur-fast) var(--ease-out),
+    opacity var(--dur-base) var(--ease-out);
   user-select: none;
   overflow: visible;
-  animation: fadeIn 0.3s ease-out;
+  animation: fadeIn var(--dur-base) var(--ease-out);
+  --type-color: var(--ink-3);
 }
 
-.artifact-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 8px;
-  right: 8px;
-  height: 3px;
-  border-radius: 0 0 3px 3px;
-  background: var(--card-border);
-  opacity: 0.8;
-}
+/* Type colour appears only as the small icon mark in the kicker row. */
+.artifact-card::before { content: none; }
 
-/* Per-type top-bar accent colors */
-.artifact-card.vision::before         { background: var(--vscode-charts-purple); }
-.artifact-card.requirement::before    { background: var(--vscode-charts-blue); }
-.artifact-card.nfr::before            { background: color-mix(in srgb, var(--vscode-charts-blue) 70%, var(--vscode-charts-purple)); }
-.artifact-card.additional-req::before { background: color-mix(in srgb, var(--vscode-charts-blue) 50%, var(--vscode-charts-purple)); }
-.artifact-card.epic::before           { background: var(--vscode-charts-green); }
-.artifact-card.story::before          { background: var(--vscode-charts-yellow); }
-.artifact-card.use-case::before       { background: var(--vscode-charts-orange); }
-.artifact-card.prd::before            { background: var(--vscode-charts-red); }
-.artifact-card.architecture::before   { background: var(--vscode-charts-cyan); }
-.artifact-card.architecture-decision::before { background: color-mix(in srgb, var(--vscode-charts-cyan) 70%, var(--vscode-charts-green)); }
-.artifact-card.system-component::before      { background: color-mix(in srgb, var(--vscode-charts-cyan) 60%, var(--vscode-charts-orange)); }
-.artifact-card.product-brief::before  { background: var(--vscode-charts-purple); }
-.artifact-card.test-case::before      { background: var(--vscode-charts-red); }
-.artifact-card.test-strategy::before  { background: var(--vscode-charts-blue); }
-.artifact-card.risk::before           { background: color-mix(in srgb, var(--vscode-charts-red) 80%, var(--vscode-charts-yellow)); }
-.artifact-card.task::before           { background: color-mix(in srgb, var(--vscode-charts-yellow) 70%, var(--vscode-charts-green)); }
+.artifact-card.vision                { --type-color: var(--vscode-charts-purple); }
+.artifact-card.requirement           { --type-color: var(--vscode-charts-blue); }
+.artifact-card.nfr                   { --type-color: color-mix(in srgb, var(--vscode-charts-blue) 70%, var(--vscode-charts-purple)); }
+.artifact-card.additional-req        { --type-color: color-mix(in srgb, var(--vscode-charts-blue) 50%, var(--vscode-charts-purple)); }
+.artifact-card.epic                  { --type-color: var(--vscode-charts-green); }
+.artifact-card.story                 { --type-color: var(--vscode-charts-yellow); }
+.artifact-card.use-case              { --type-color: var(--vscode-charts-orange); }
+.artifact-card.prd                   { --type-color: var(--vscode-charts-red); }
+.artifact-card.architecture          { --type-color: var(--vscode-charts-cyan); }
+.artifact-card.architecture-decision { --type-color: color-mix(in srgb, var(--vscode-charts-cyan) 70%, var(--vscode-charts-green)); }
+.artifact-card.system-component      { --type-color: color-mix(in srgb, var(--vscode-charts-cyan) 60%, var(--vscode-charts-orange)); }
+.artifact-card.product-brief         { --type-color: var(--vscode-charts-purple); }
+.artifact-card.test-case             { --type-color: var(--vscode-charts-red); }
+.artifact-card.test-strategy         { --type-color: var(--vscode-charts-blue); }
+.artifact-card.risk,
+.artifact-card.risks                 { --type-color: color-mix(in srgb, var(--vscode-charts-red) 80%, var(--vscode-charts-yellow)); }
+.artifact-card.task                  { --type-color: color-mix(in srgb, var(--vscode-charts-yellow) 70%, var(--vscode-charts-green)); }
 
 /* ── Tree-nested sub-card ──────────────────────────────────────────────────
    When a visual-plan card (`metadata.plan.sourceArtifactId` points at a
@@ -1378,42 +1237,30 @@ body.ac-force-dark {
 }
 
 .artifact-card:hover {
-  box-shadow: var(--card-shadow-hover);
-  background-color: color-mix(in srgb, var(--card-bg) 95%, var(--vscode-editorWidget-border) 5%);
+  border-color: var(--rule-strong);
 }
 
-.artifact-card:hover::before {
-  opacity: 1;
+.artifact-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .artifact-card.selected {
-  border-color: var(--vscode-focusBorder);
-  box-shadow: var(--card-shadow-selected);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 
-/* Status-based subtle background tinting — helps at-a-glance board awareness */
-.artifact-card.status-tint-in-progress {
-  background: color-mix(in srgb, var(--vscode-charts-blue) 5%, var(--card-bg));
+/* Status reads from the kicker row (text + dot); finished work steps back. */
+.artifact-card.status-tint-done .artifact-title h3,
+.artifact-card.status-tint-complete .artifact-title h3 {
+  color: var(--ink-2);
 }
-
-.artifact-card.status-tint-done,
-.artifact-card.status-tint-complete {
-  background: color-mix(in srgb, var(--vscode-charts-green) 5%, var(--card-bg));
-  opacity: 0.85;
-}
-
-.artifact-card.status-tint-review,
-.artifact-card.status-tint-approved {
-  background: color-mix(in srgb, var(--vscode-charts-purple) 5%, var(--card-bg));
-}
-
-/* draft and ready keep the default card-bg (no extra tint) */
 
 .artifact-card.dragging {
   opacity: 0.95;
-  transform: scale(1.03) rotate(1deg);
+  transform: scale(1.02);
   z-index: 100;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+  border-color: var(--accent);
   transition: none;
 }
 
@@ -1437,14 +1284,14 @@ body.ac-force-dark {
 
 /* Search match highlight ring */
 .artifact-card.search-match {
-  box-shadow: 0 0 0 2px var(--vscode-charts-yellow), var(--card-shadow);
+  border-color: var(--vscode-charts-yellow);
 }
 
 .artifact-card.search-match::after {
   content: '';
   position: absolute;
-  inset: -3px;
-  border-radius: 10px;
+  inset: -4px;
+  border-radius: var(--radius);
   border: 2px solid var(--vscode-charts-yellow);
   animation: searchPulse 1.5s ease-in-out infinite;
 }
@@ -1454,21 +1301,108 @@ body.ac-force-dark {
   50%      { opacity: 1; }
 }
 
+/* Kicker row: [type mark] TYPE · id ······ ● Status  [actions] */
 .artifact-header {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 6px;
-  margin-bottom: 8px;
+  gap: var(--space-1) var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
+.artifact-header .artifact-icon { order: 0; color: var(--type-color); }
+.artifact-header .artifact-type { order: 1; }
+.artifact-header .artifact-id {
+  order: 2;
+  margin: 0;
+  padding: 0;
+  background: none;
+  font-size: var(--text-kicker);
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+.artifact-header .artifact-id::before {
+  content: '·';
+  margin-right: var(--space-2);
+}
+.artifact-header .artifact-status { order: 3; margin-left: auto; }
+.artifact-header .has-plan-chip { order: 4; }
+.artifact-header .artifact-header-actions { order: 5; margin-left: 0; }
+
+/* Card actions float over the top-right of the card on hover/focus instead
+ * of reserving invisible space in the kicker row. */
 .artifact-header-actions {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
-  margin-left: auto;
-  justify-content: flex-end;
+  gap: 2px;
+  padding: 2px;
+  background: var(--paper);
+  border: var(--rule-width) solid var(--rule);
+  border-radius: var(--radius);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fast) var(--ease-out);
+  z-index: 2;
+}
+
+.artifact-card:hover .artifact-header-actions,
+.artifact-card:focus-within .artifact-header-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.artifact-header { flex-wrap: nowrap; }
+.artifact-header .artifact-id,
+.artifact-header .artifact-status,
+.artifact-header .artifact-icon { flex-shrink: 0; }
+
+/* One quiet style for every card action: ink icon, wash on hover. */
+.card-ai-btn,
+.card-info-btn,
+.card-elicit-btn,
+.card-docs-btn,
+.card-dev-btn,
+.card-plan-btn,
+.card-show-plan-btn {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+
+.card-ai-btn:hover,
+.card-info-btn:hover,
+.card-elicit-btn:hover,
+.card-docs-btn:hover,
+.card-dev-btn:hover,
+.card-plan-btn:hover,
+.card-show-plan-btn:hover {
+  background: var(--paper-wash);
+  color: var(--ink);
+}
+
+.card-ai-btn:focus-visible,
+.card-info-btn:focus-visible,
+.card-elicit-btn:focus-visible,
+.card-docs-btn:focus-visible,
+.card-dev-btn:focus-visible,
+.card-plan-btn:focus-visible,
+.card-show-plan-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 .artifact-icon {
@@ -1479,78 +1413,63 @@ body.ac-force-dark {
 }
 
 .artifact-type {
-  font-size: 10px;
+  font-family: var(--font-mono);
+  font-size: var(--text-kicker);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--vscode-descriptionForeground);
+  letter-spacing: var(--tracking-kicker);
+  color: var(--ink-3);
   min-width: 0;
   flex-shrink: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  opacity: 0.85;
 }
 
+/* Status: plain text with a coloured dot — the dot carries the hue, the
+ * words stay in ink so they read at full contrast in every theme. */
 .artifact-status {
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 999px;
-  font-weight: 600;
-  letter-spacing: 0.2px;
-  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--text-kicker);
+  font-weight: var(--weight-strong);
+  letter-spacing: 0.02em;
   white-space: nowrap;
+  color: var(--ink-2);
+  --status-color: var(--ink-3);
 }
 
-.status-draft {
-  background: rgba(234, 179, 8, 0.15);
-  color: var(--vscode-charts-yellow);
+.artifact-status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--status-color);
+  flex-shrink: 0;
 }
 
-.status-ready {
-  background: rgba(59, 130, 246, 0.15);
-  color: var(--vscode-charts-blue);
-}
-
-.status-in-progress {
-  background: rgba(6, 182, 212, 0.15);
-  color: var(--vscode-charts-cyan);
-}
-
-.status-complete {
-  background: rgba(40, 167, 69, 0.2);
-  color: var(--vscode-charts-green);
-}
-
-.status-approved {
-  background: rgba(40, 167, 69, 0.4);
-  color: var(--vscode-charts-green);
-}
-
-.status-review {
-  background: rgba(168, 85, 247, 0.2);
-  color: var(--vscode-charts-purple);
-}
-
-.status-archived {
-  background: rgba(128, 128, 128, 0.2);
-  color: var(--vscode-descriptionForeground);
-}
-
-.status-blocked {
-  background: rgba(239, 68, 68, 0.2);
-  color: var(--vscode-charts-red, #ef4444);
-}
+.status-draft       { --status-color: var(--vscode-charts-yellow); }
+.status-ready       { --status-color: var(--vscode-charts-blue); }
+.status-in-progress { --status-color: var(--vscode-charts-cyan, var(--vscode-charts-blue)); }
+.status-complete,
+.status-done        { --status-color: var(--vscode-charts-green); }
+.status-approved    { --status-color: var(--vscode-charts-green); }
+.status-review      { --status-color: var(--vscode-charts-purple); }
+.status-archived    { --status-color: var(--ink-3); }
+.status-blocked     { --status-color: var(--vscode-charts-red, #ef4444); }
 
 .artifact-title {
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
 }
 
 .artifact-title h3 {
   margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.3;
-  letter-spacing: 0.1px;
+  font-family: var(--font-ui);
+  font-size: var(--text-title);
+  font-weight: var(--weight-strong);
+  line-height: var(--leading-title);
+  letter-spacing: -0.005em;
+  color: var(--ink);
 }
 
 .artifact-title input {
@@ -1566,9 +1485,9 @@ body.ac-force-dark {
 }
 
 .artifact-description {
-  font-size: 12px;
-  color: var(--vscode-descriptionForeground);
-  line-height: 1.4;
+  font-size: var(--text-small);
+  color: var(--ink-2);
+  line-height: var(--leading-body);
 }
 
 /* Parent epic label shown on story cards */
@@ -2221,42 +2140,13 @@ body.ac-force-dark {
 
 /* Compact card for mindmap nodes */
 .artifact-card.compact {
-  padding: 4px 8px 4px 10px;
-  border-radius: 5px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius);
   overflow: hidden;
 }
 
-/* Override the top-bar to a left-edge color strip in compact mode */
-.artifact-card.compact::before {
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: auto;
-  width: 4px;
-  height: auto;
-  border-radius: 5px 0 0 5px;
-  opacity: 1;
-}
-
-/* Per-type subtle background tint for compact cards — makes types visually distinct */
-.artifact-card.compact.vision           { background: color-mix(in srgb, var(--vscode-charts-purple) 8%, var(--card-bg)); }
-.artifact-card.compact.product-brief    { background: color-mix(in srgb, var(--vscode-charts-purple) 8%, var(--card-bg)); }
-.artifact-card.compact.prd              { background: color-mix(in srgb, var(--vscode-charts-red) 8%, var(--card-bg)); }
-.artifact-card.compact.requirement      { background: color-mix(in srgb, var(--vscode-charts-blue) 8%, var(--card-bg)); }
-.artifact-card.compact.nfr              { background: color-mix(in srgb, var(--vscode-charts-blue) 6%, var(--card-bg)); }
-.artifact-card.compact.additional-req   { background: color-mix(in srgb, var(--vscode-charts-blue) 5%, var(--card-bg)); }
-.artifact-card.compact.risk             { background: color-mix(in srgb, var(--vscode-charts-red) 6%, var(--card-bg)); }
-.artifact-card.compact.architecture     { background: color-mix(in srgb, var(--vscode-charts-cyan) 8%, var(--card-bg)); }
-.artifact-card.compact.architecture-decision { background: color-mix(in srgb, var(--vscode-charts-cyan) 6%, var(--card-bg)); }
-.artifact-card.compact.system-component { background: color-mix(in srgb, var(--vscode-charts-cyan) 5%, var(--card-bg)); }
-.artifact-card.compact.epic             { background: color-mix(in srgb, var(--vscode-charts-green) 8%, var(--card-bg)); }
-.artifact-card.compact.story            { background: color-mix(in srgb, var(--vscode-charts-yellow) 8%, var(--card-bg)); }
-.artifact-card.compact.use-case         { background: color-mix(in srgb, var(--vscode-charts-orange) 8%, var(--card-bg)); }
-.artifact-card.compact.task             { background: color-mix(in srgb, var(--vscode-charts-yellow) 6%, var(--card-bg)); }
-.artifact-card.compact.test-case        { background: color-mix(in srgb, var(--vscode-charts-red) 6%, var(--card-bg)); }
-.artifact-card.compact.test-strategy    { background: color-mix(in srgb, var(--vscode-charts-blue) 6%, var(--card-bg)); }
-.artifact-card.compact.test-design      { background: color-mix(in srgb, var(--vscode-charts-blue) 5%, var(--card-bg)); }
-.artifact-card.compact.test-coverage    { background: color-mix(in srgb, var(--vscode-charts-green) 5%, var(--card-bg)); }
+/* Compact cards (mind map): same paper + hairline as full cards; the type
+   mark is the icon colour, so no per-type tints or edge strips. */
 
 .artifact-card.compact .artifact-header {
   gap: 3px;
@@ -3234,36 +3124,12 @@ body.vscode-light .minimap-viewport {
   z-index: 0;
 }
 
+/* Lanes: no fill, no box — a strong top rule under the lane head and a
+ * hairline down the left edge separating one phase from the next. */
 .swim-lane {
   position: absolute;
-  border-radius: 8px;
-  border: 1px solid;
-  transition: background-color 0.2s ease, height 0.3s ease, width 0.3s ease;
-}
-
-.swim-lane.discovery {
-  background: rgba(147, 51, 234, 0.03);
-  border-color: rgba(147, 51, 234, 0.1);
-}
-
-.swim-lane.planning {
-  background: rgba(59, 130, 246, 0.03);
-  border-color: rgba(59, 130, 246, 0.1);
-}
-
-.swim-lane.solutioning {
-  background: rgba(236, 72, 153, 0.03);
-  border-color: rgba(236, 72, 153, 0.1);
-}
-
-.swim-lane.implementation {
-  background: rgba(34, 197, 94, 0.03);
-  border-color: rgba(34, 197, 94, 0.1);
-}
-
-.swim-lane.details {
-  background: transparent;
-  border-color: rgba(234, 179, 8, 0.1);
+  border-top: var(--rule-width) solid var(--rule-strong);
+  border-left: var(--rule-width) solid var(--rule);
 }
 
 /* Horizontal epic row bands */
@@ -4984,62 +4850,11 @@ body.vscode-light .minimap-viewport {
 }
 
 /* AI Refine Button on Card Header */
-.card-ai-btn,
-.card-info-btn {
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 4px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%);
-  color: #a855f7;
-  font-size: 11px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  opacity: 0;
-  transform: scale(0.9);
-  flex-shrink: 0;
-}
-
-.card-info-btn {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(96, 165, 250, 0.2) 100%);
-  color: #60a5fa;
-}
-
-.artifact-card:hover .card-ai-btn,
-.artifact-card:hover .card-info-btn,
-.artifact-card:hover .card-docs-btn {
-  opacity: 1;
-  transform: scale(1);
-}
 
 .artifact-card:hover .expand-btn,
 .artifact-card:focus-within .expand-btn {
   opacity: 1;
   transform: translateY(0);
-}
-
-.card-ai-btn:focus-visible,
-.card-info-btn:focus-visible,
-.card-docs-btn:focus-visible {
-  opacity: 1;
-  transform: scale(1);
-  outline: 2px solid var(--vscode-focusBorder);
-  outline-offset: 2px;
-}
-
-.card-ai-btn:hover {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.4) 0%, rgba(168, 85, 247, 0.4) 100%);
-  color: #d946ef;
-  box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
-}
-
-.card-info-btn:hover {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.4) 0%, rgba(96, 165, 250, 0.4) 100%);
-  color: #93c5fd;
-  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
 }
 
 @keyframes sparkle {
@@ -5053,13 +4868,11 @@ body.vscode-light .minimap-viewport {
   }
 }
 
-.btn-ai .ai-icon,
-.card-ai-btn .ai-icon {
+.btn-ai .ai-icon {
   animation: none;
 }
 
-.btn-ai:hover .ai-icon,
-.card-ai-btn:hover .ai-icon {
+.btn-ai:hover .ai-icon {
   animation: sparkle 1s ease-in-out infinite;
 }
 
@@ -6179,8 +5992,7 @@ body.vscode-light .minimap-viewport {
 .reload-badge:focus-visible,
 .lane-btn:focus-visible,
 .elicit-close-btn:focus-visible,
-.wfl-close-btn:focus-visible,
-.card-dev-btn:focus-visible {
+.wfl-close-btn:focus-visible {
   outline: 2px solid var(--vscode-focusBorder);
   outline-offset: 2px;
 }
@@ -6390,109 +6202,13 @@ body.vscode-light .minimap-viewport {
    ELICITATION BUTTON — Artifact Card hover button
    ================================================ */
 
-.card-elicit-btn {
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 4px;
-  background: linear-gradient(135deg, rgba(8, 145, 178, 0.2) 0%, rgba(6, 182, 212, 0.2) 100%);
-  color: #06b6d4;
-  font-size: 11px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  opacity: 0;
-  transform: scale(0.9);
-  flex-shrink: 0;
-}
-
-.artifact-card:hover .card-elicit-btn {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.card-elicit-btn:hover {
-  background: linear-gradient(135deg, rgba(8, 145, 178, 0.35) 0%, rgba(6, 182, 212, 0.35) 100%);
-  box-shadow: 0 1px 6px rgba(6, 182, 212, 0.3);
-}
-
-.card-elicit-btn:focus-visible {
-  opacity: 1;
-  transform: scale(1);
-  outline: 2px solid var(--vscode-focusBorder);
-}
-
 /* ================================================
    DOCUMENTATION BUTTON — Artifact Card hover button
    ================================================ */
 
-.card-docs-btn {
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 4px;
-  background: linear-gradient(135deg, rgba(217, 119, 6, 0.2) 0%, rgba(245, 158, 11, 0.2) 100%);
-  color: #f59e0b;
-  font-size: 11px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  opacity: 0;
-  transform: scale(0.9);
-  flex-shrink: 0;
-}
-
-.artifact-card:hover .card-docs-btn {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.card-docs-btn:hover {
-  background: linear-gradient(135deg, rgba(217, 119, 6, 0.35) 0%, rgba(245, 158, 11, 0.35) 100%);
-  box-shadow: 0 1px 6px rgba(245, 158, 11, 0.3);
-}
-
-.card-docs-btn:focus-visible {
-  opacity: 1;
-  transform: scale(1);
-  outline: 2px solid var(--vscode-focusBorder);
-}
-
 /* ================================================
    START DEV BUTTON — Artifact Card hover button
    ================================================ */
-
-.card-dev-btn {
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 4px;
-  background: rgba(40, 167, 69, 0.2);
-  color: var(--vscode-charts-green, #28a745);
-  font-size: 11px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  opacity: 0;
-  transform: scale(0.9);
-  flex-shrink: 0;
-}
-
-.artifact-card:hover .card-dev-btn {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.card-dev-btn:hover {
-  background: rgba(40, 167, 69, 0.35);
-  box-shadow: 0 1px 6px rgba(40, 167, 69, 0.3);
-}
 
 /* ================================================
    PLAN BUTTON — Artifact Card hover button (Visual Plan)
@@ -6501,74 +6217,6 @@ body.vscode-light .minimap-viewport {
    ================================================ */
 
 /* Show Plan button (view existing visual-plan child) */
-.card-show-plan-btn {
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  background: linear-gradient(135deg, rgba(147, 51, 234, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%);
-  color: #a78bfa;
-  opacity: 0;
-  transform: scale(0.9);
-  transition: all 0.2s ease;
-}
-
-.artifact-card:hover .card-show-plan-btn {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.card-show-plan-btn:hover {
-  background: linear-gradient(135deg, rgba(147, 51, 234, 0.4) 0%, rgba(168, 85, 247, 0.4) 100%);
-  color: #c4b5fd;
-  box-shadow: 0 1px 6px rgba(147, 51, 234, 0.35);
-}
-
-.card-show-plan-btn:focus-visible {
-  opacity: 1;
-  transform: scale(1);
-  outline: 2px solid var(--vscode-focusBorder);
-  outline-offset: 2px;
-}
-
-.card-plan-btn {
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 4px;
-  background: linear-gradient(135deg, rgba(219, 39, 119, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%);
-  color: #ec4899;
-  font-size: 11px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  opacity: 0;
-  transform: scale(0.9);
-  flex-shrink: 0;
-}
-
-.artifact-card:hover .card-plan-btn {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.card-plan-btn:hover {
-  background: linear-gradient(135deg, rgba(219, 39, 119, 0.35) 0%, rgba(236, 72, 153, 0.35) 100%);
-  box-shadow: 0 1px 6px rgba(236, 72, 153, 0.3);
-}
-
-.card-plan-btn:focus-visible {
-  opacity: 1;
-  transform: scale(1);
-  outline: 2px solid var(--vscode-focusBorder);
-}
 
 /* =============================================================================
    Workflow Launcher FAB

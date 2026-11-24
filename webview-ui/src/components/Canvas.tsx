@@ -2009,7 +2009,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
         {layoutMode === 'lanes' && (<>
         {/* Column headers for visual guidance - BMAD workflow phases */}
         <div className="column-headers">
-          {LANE_DEFS.map(lane => {
+          {LANE_DEFS.map((lane, laneIndex) => {
             const pos = laneLayout.positions[lane.key];
             if (!pos) return null;
             if (!pos.visible) {
@@ -2029,7 +2029,8 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
             }
             return (
               <div key={lane.key} className={`column-header ${lane.key}`} style={{ left: pos.left + 20 }}>
-                {lane.key.charAt(0).toUpperCase() + lane.key.slice(1)}
+                <span className="column-header-num" aria-hidden="true">{String(laneIndex + 1).padStart(2, '0')}</span>
+                <span className="column-header-label">{lane.key.charAt(0).toUpperCase() + lane.key.slice(1)}</span>
                 {renderLaneButtons(lane.key)}
                 <button
                   className="lane-hide-btn"
