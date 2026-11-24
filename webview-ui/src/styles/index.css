@@ -536,106 +536,13 @@ body.ac-force-light {
 }
 
 /* Epic row bands: stronger tints for light theme */
-body.ac-force-light .epic-row-band.even,
-body.vscode-light .epic-row-band.even {
-  background: rgba(17, 138, 62, 0.04);
-  border-color: rgba(17, 138, 62, 0.12);
-}
-body.ac-force-light .epic-row-band.odd,
-body.vscode-light .epic-row-band.odd {
-  background: rgba(166, 124, 0, 0.04);
-  border-color: rgba(166, 124, 0, 0.12);
-}
 
 /* Testing row band: stronger tints for light theme */
-body.ac-force-light .testing-row-band,
-body.vscode-light .testing-row-band {
-  background: rgba(126, 58, 194, 0.04);
-  border-color: rgba(126, 58, 194, 0.12);
-}
-body.ac-force-light .testing-row-label,
-body.vscode-light .testing-row-label {
-  color: rgba(126, 58, 194, 0.6);
-}
 
 /* Epic row progress bar */
-body.ac-force-light .epic-row-progress,
-body.vscode-light .epic-row-progress {
-  background: rgba(17, 138, 62, 0.10);
-}
-body.ac-force-light .epic-row-progress-fill,
-body.vscode-light .epic-row-progress-fill {
-  background: rgba(17, 138, 62, 0.50);
-}
 
 
 /* SearchBox — light theme */
-body.ac-force-light .sb-container,
-body.vscode-light .sb-container {
-  background: #ffffff;
-  border: 1px solid #d0d4dc;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-body.ac-force-light .sb-input-row,
-body.vscode-light .sb-input-row {
-  border-bottom-color: #e5e7eb;
-}
-
-body.ac-force-light .sb-result-item:hover,
-body.ac-force-light .sb-result-item.highlighted,
-body.vscode-light .sb-result-item:hover,
-body.vscode-light .sb-result-item.highlighted {
-  background: rgba(0, 0, 0, 0.06);
-}
-
-body.ac-force-light .sb-result-item.highlighted,
-body.vscode-light .sb-result-item.highlighted {
-  background: rgba(0, 120, 212, 0.1);
-}
-
-body.ac-force-light .sb-result-status.sb-status-ready,
-body.ac-force-light .sb-result-status.sb-status-ready-for-dev,
-body.ac-force-light .sb-result-status.sb-status-accepted,
-body.vscode-light .sb-result-status.sb-status-ready,
-body.vscode-light .sb-result-status.sb-status-ready-for-dev,
-body.vscode-light .sb-result-status.sb-status-accepted {
-  color: #2563eb;
-}
-
-body.ac-force-light .sb-result-status.sb-status-in-progress,
-body.ac-force-light .sb-result-status.sb-status-implementing,
-body.vscode-light .sb-result-status.sb-status-in-progress,
-body.vscode-light .sb-result-status.sb-status-implementing {
-  color: #d97706;
-}
-
-body.ac-force-light .sb-result-status.sb-status-in-review,
-body.ac-force-light .sb-result-status.sb-status-review,
-body.ac-force-light .sb-result-status.sb-status-ready-for-review,
-body.vscode-light .sb-result-status.sb-status-in-review,
-body.vscode-light .sb-result-status.sb-status-review,
-body.vscode-light .sb-result-status.sb-status-ready-for-review {
-  color: #7c3aed;
-}
-
-body.ac-force-light .sb-result-status.sb-status-complete,
-body.ac-force-light .sb-result-status.sb-status-completed,
-body.ac-force-light .sb-result-status.sb-status-done,
-body.ac-force-light .sb-result-status.sb-status-approved,
-body.vscode-light .sb-result-status.sb-status-complete,
-body.vscode-light .sb-result-status.sb-status-completed,
-body.vscode-light .sb-result-status.sb-status-done,
-body.vscode-light .sb-result-status.sb-status-approved {
-  color: #16a34a;
-}
-
-body.ac-force-light .sb-result-status.sb-status-blocked,
-body.ac-force-light .sb-result-status.sb-status-rejected,
-body.vscode-light .sb-result-status.sb-status-blocked,
-body.vscode-light .sb-result-status.sb-status-rejected {
-  color: #dc2626;
-}
 
 /* Lane buttons (expand/collapse) — light mode hover fix */
 body.ac-force-light .lane-btn:hover,
@@ -883,6 +790,13 @@ body.vscode-high-contrast-light .canvas {
   font-weight: 400;
   letter-spacing: 0;
   color: var(--phase);
+}
+
+.column-header-count {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--ink-3);
 }
 
 .column-header .lane-toggle-btns,
@@ -1529,62 +1443,72 @@ body.vscode-high-contrast-light .canvas {
 .artifact-agile-badges {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 6px;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  margin-top: var(--space-2);
 }
 
 .agile-badge {
-  display: inline-block;
-  font-size: 10px;
-  font-weight: 600;
-  border-radius: 4px;
-  padding: 1px 6px;
-  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  font-size: var(--text-kicker);
+  font-weight: var(--weight-strong);
   white-space: nowrap;
+  color: var(--ink-2);
+  --status-color: var(--ink-3);
 }
 
 /* Story points / epic roll-up counts */
 .agile-badge.story-points {
-  background: color-mix(in srgb, var(--vscode-charts-blue) 12%, transparent);
-  border-color: color-mix(in srgb, var(--vscode-charts-blue) 30%, transparent);
-  color: var(--vscode-charts-blue);
+  font-family: var(--font-mono);
+  color: var(--ink-2);
 }
 
 .agile-badge.story-progress {
-  background: color-mix(in srgb, var(--vscode-charts-green) 12%, transparent);
-  border-color: color-mix(in srgb, var(--vscode-charts-green) 30%, transparent);
-  color: var(--vscode-charts-green);
+  --status-color: var(--vscode-charts-green);
 }
 
 /* Priority badges */
-.agile-badge.priority { color: var(--vscode-foreground); }
+.agile-badge.priority {
+  color: var(--ink-2);
+}
 
 .agile-badge.priority-P0,
 .agile-badge.priority-must-have {
-  background: color-mix(in srgb, var(--vscode-charts-red) 15%, transparent);
-  border-color: color-mix(in srgb, var(--vscode-charts-red) 35%, transparent);
-  color: var(--vscode-charts-red);
+  --status-color: var(--vscode-charts-red);
 }
 
 .agile-badge.priority-P1,
 .agile-badge.priority-should-have {
-  background: color-mix(in srgb, var(--vscode-charts-orange) 15%, transparent);
-  border-color: color-mix(in srgb, var(--vscode-charts-orange) 35%, transparent);
-  color: var(--vscode-charts-orange);
+  --status-color: var(--vscode-charts-orange);
 }
 
 .agile-badge.priority-P2,
 .agile-badge.priority-could-have {
-  background: color-mix(in srgb, var(--vscode-charts-yellow) 15%, transparent);
-  border-color: color-mix(in srgb, var(--vscode-charts-yellow) 35%, transparent);
-  color: var(--vscode-charts-yellow);
+  --status-color: var(--vscode-charts-yellow);
 }
 
 .agile-badge.priority-P3,
 .agile-badge.priority-won-t-have {
-  background: color-mix(in srgb, var(--vscode-descriptionForeground) 10%, transparent);
-  border-color: color-mix(in srgb, var(--vscode-descriptionForeground) 20%, transparent);
-  color: var(--vscode-descriptionForeground);
+  --status-color: var(--ink-3);
+}
+
+/* Shared status/priority dot — hue lives only here; the label stays ink. */
+.agile-badge.priority::before,
+.agile-badge.story-progress::before,
+.priority-badge::before,
+.sb-result-status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--status-color);
+  flex-shrink: 0;
 }
 
 /* ---- Test Coverage Card (consolidated TC summary) ---- */
@@ -2478,23 +2402,22 @@ body.vscode-high-contrast-light .canvas {
 
 .sb-container {
   width: 360px;
-  border-radius: 10px;
-  background: var(--vscode-editorWidget-background, var(--vscode-editor-background));
-  border: 1px solid var(--vscode-focusBorder);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  border: var(--rule-width) solid var(--rule-strong);
   overflow: hidden;
 }
 
 .sb-input-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--vscode-widget-border, rgba(128, 128, 128, 0.2));
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--rule-width) solid var(--rule);
 }
 
 .sb-input-row > svg {
-  color: var(--vscode-descriptionForeground);
+  color: var(--ink-3);
   flex-shrink: 0;
 }
 
@@ -2514,8 +2437,9 @@ body.vscode-high-contrast-light .canvas {
 }
 
 .sb-match-count {
-  font-size: 11px;
-  color: var(--vscode-descriptionForeground);
+  font-family: var(--font-mono);
+  font-size: var(--text-kicker);
+  color: var(--ink-3);
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -2586,12 +2510,12 @@ body.vscode-high-contrast-light .canvas {
 
 .sb-result-item:hover,
 .sb-result-item.highlighted {
-  background: var(--vscode-list-hoverBackground, rgba(128, 128, 128, 0.12));
+  background: var(--paper-wash);
 }
 
 .sb-result-item.highlighted {
-  background: var(--vscode-list-activeSelectionBackground, rgba(0, 120, 212, 0.15));
-  color: var(--vscode-list-activeSelectionForeground, inherit);
+  background: var(--paper-wash);
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 
 .sb-result-icon {
@@ -2602,11 +2526,11 @@ body.vscode-high-contrast-light .canvas {
 }
 
 .sb-result-type {
-  font-size: 10px;
-  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: var(--text-kicker);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--vscode-descriptionForeground);
+  letter-spacing: var(--tracking-kicker);
+  color: var(--ink-3);
   min-width: 60px;
   flex-shrink: 0;
 }
@@ -2619,14 +2543,19 @@ body.vscode-high-contrast-light .canvas {
 }
 
 .sb-result-status {
-  font-size: 10px;
-  padding: 1px 6px;
-  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  font-size: var(--text-kicker);
+  font-weight: var(--weight-strong);
   white-space: nowrap;
+  color: var(--ink-2);
+  --status-color: var(--ink-3);
   flex-shrink: 0;
-  font-weight: 500;
-  background: rgba(128, 128, 128, 0.15);
-  color: var(--vscode-descriptionForeground);
 }
 
 /* Status color accents (reuse existing card status colors) */
@@ -2634,48 +2563,42 @@ body.vscode-high-contrast-light .canvas {
 .sb-result-status.sb-status-not-started,
 .sb-result-status.sb-status-backlog,
 .sb-result-status.sb-status-proposed {
-  background: rgba(128, 128, 128, 0.15);
+  --status-color: var(--ink-3);
 }
 
 .sb-result-status.sb-status-ready,
 .sb-result-status.sb-status-ready-for-dev,
 .sb-result-status.sb-status-accepted {
-  background: rgba(59, 130, 246, 0.15);
-  color: #6ea8fe;
+  --status-color: var(--vscode-charts-blue);
 }
 
 .sb-result-status.sb-status-in-progress,
 .sb-result-status.sb-status-implementing {
-  background: rgba(245, 158, 11, 0.15);
-  color: #f5a623;
+  --status-color: var(--vscode-charts-orange);
 }
 
 .sb-result-status.sb-status-in-review,
 .sb-result-status.sb-status-review,
 .sb-result-status.sb-status-ready-for-review {
-  background: rgba(139, 92, 246, 0.15);
-  color: #a78bfa;
+  --status-color: var(--vscode-charts-purple);
 }
 
 .sb-result-status.sb-status-complete,
 .sb-result-status.sb-status-completed,
 .sb-result-status.sb-status-done,
 .sb-result-status.sb-status-approved {
-  background: rgba(34, 197, 94, 0.15);
-  color: #4ade80;
+  --status-color: var(--vscode-charts-green);
 }
 
 .sb-result-status.sb-status-blocked,
 .sb-result-status.sb-status-rejected {
-  background: rgba(239, 68, 68, 0.15);
-  color: #f87171;
+  --status-color: var(--vscode-charts-red);
 }
 
 .sb-result-status.sb-status-archived,
 .sb-result-status.sb-status-deprecated,
 .sb-result-status.sb-status-superseded {
-  background: rgba(128, 128, 128, 0.15);
-  color: var(--vscode-descriptionForeground);
+  --status-color: var(--ink-3);
 }
 
 .zoom-controls {
@@ -3084,42 +3007,40 @@ body.vscode-high-contrast-light .canvas {
 .epic-row-band {
   position: absolute;
   z-index: 0;
-  border-radius: 8px;
-  border: 1px solid;
-  transition: top 0.3s ease, height 0.3s ease;
+  border: none;
+  border-top: var(--rule-width) solid var(--rule);
+  border-radius: 0;
+  transition: top 0.3s ease;
 }
 
 .epic-row-band.even {
-  background: rgba(34, 197, 94, 0.03);
-  border-color: rgba(34, 197, 94, 0.1);
+  background: none;
 }
 
 .epic-row-band.odd {
-  background: rgba(234, 179, 8, 0.03);
-  border-color: rgba(234, 179, 8, 0.1);
+  background: none;
 }
 
 /* Horizontal testing row band (orphan test-strategy / test-cases section) */
 .testing-row-band {
   position: absolute;
   z-index: 0;
-  border-radius: 6px;
-  border-top: 1px solid;
-  border-bottom: 1px solid;
-  background: rgba(168, 85, 247, 0.03);
-  border-color: rgba(168, 85, 247, 0.1);
-  transition: top 0.3s ease, height 0.3s ease;
+  border: none;
+  border-top: var(--rule-width) dashed var(--rule-strong);
+  border-radius: 0;
+  background: none;
+  transition: top 0.3s ease;
 }
 
 .testing-row-label {
   position: absolute;
-  top: 4px;
-  left: 8px;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  top: var(--space-1);
+  left: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-kicker);
   text-transform: uppercase;
-  color: rgba(168, 85, 247, 0.5);
+  letter-spacing: var(--tracking-kicker);
+  color: var(--ink-3);
 }
 
 /* Sub-group labels rendered inside epic row-bands (Stories / Use Cases / Tests) */
@@ -3145,17 +3066,15 @@ body.vscode-high-contrast-light .canvas {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 3px;
-  background: rgba(34, 197, 94, 0.12);
-  border-radius: 0 0 6px 6px;
+  height: 2px;
+  background: var(--rule);
   overflow: hidden;
 }
 
 .epic-row-progress-fill {
   height: 100%;
-  background: rgba(34, 197, 94, 0.6);
-  border-radius: 0 0 6px 6px;
-  transition: width 0.4s ease;
+  background: var(--vscode-charts-green);
+  transition: transform 0.4s ease;
 }
 
 /* Detail Panel */
@@ -5381,57 +5300,50 @@ body.vscode-high-contrast-light .canvas {
 .priority-badge {
   display: inline-flex;
   align-items: center;
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
+  gap: 5px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  font-size: var(--text-small);
+  font-weight: var(--weight-strong);
+  white-space: nowrap;
+  color: var(--ink-2);
+  --status-color: var(--ink-3);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-}
-
-.priority-badge:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  letter-spacing: 0.04em;
 }
 
 .priority-badge.must-have,
 .priority-badge.p0 {
-  background: rgba(239, 68, 68, 0.2);
-  color: var(--vscode-charts-red);
+  --status-color: var(--vscode-charts-red);
 }
 
 .priority-badge.should-have,
 .priority-badge.p1 {
-  background: rgba(249, 115, 22, 0.2);
-  color: var(--vscode-charts-orange);
+  --status-color: var(--vscode-charts-orange);
 }
 
 .priority-badge.could-have,
 .priority-badge.p2 {
-  background: rgba(234, 179, 8, 0.2);
-  color: var(--vscode-charts-yellow);
+  --status-color: var(--vscode-charts-yellow);
 }
 
 .priority-badge.wont-have,
 .priority-badge.p3 {
-  background: rgba(128, 128, 128, 0.2);
-  color: var(--vscode-descriptionForeground);
+  --status-color: var(--ink-3);
 }
 
 .priority-badge.high {
-  background: rgba(239, 68, 68, 0.2);
-  color: var(--vscode-charts-red);
+  --status-color: var(--vscode-charts-red);
 }
 
 .priority-badge.medium {
-  background: rgba(234, 179, 8, 0.2);
-  color: var(--vscode-charts-yellow);
+  --status-color: var(--vscode-charts-yellow);
 }
 
 .priority-badge.low {
-  background: rgba(34, 197, 94, 0.2);
-  color: var(--vscode-charts-green);
+  --status-color: var(--vscode-charts-green);
 }
 
 /* Priority selector dropdown */

@@ -1959,15 +1959,16 @@ describe('Cluster D-3 commit 3 — post-harvest regression guards', () => {
       expect(matches.length, 'Kanban.css must retain ≥ 3 color-mix() sites — coverage is the .kanban-card-agent-badge--{...} mint layer at the kanban-card chrome bottom block').toBeGreaterThanOrEqual(3);
     });
 
-    it('B-2: styles/index.css + tokens.css have ≥ 105 color-mix() sites (editorial redesign baseline: 116)', () => {
+    it('B-2: styles/index.css + tokens.css have ≥ 93 color-mix() sites (editorial redesign baseline: 103)', () => {
       // Re-baselined 2026-11-24 for the editorial redesign: per-selector
       // tints were removed and theme-derived colour moved into tokens.css,
       // so both files are counted. History: 177 (Cluster D-2) → 151 after the
-      // ideas-drawer reorg (8c16817) → 116 after the redesign.
+      // ideas-drawer reorg (8c16817) → 116 after the redesign → 103 once badge
+      // and search-status tints became dot + ink labels.
       const css = readFileSync(STYLES_CSS_PATH, 'utf-8')
         + readFileSync(path.resolve(process.cwd(), 'src/styles', 'tokens.css'), 'utf-8');
       const matches = css.match(/color-mix\(/g) ?? [];
-      expect(matches.length, 'index.css + tokens.css must retain ≥ 105 color-mix() sites (116 after the editorial redesign); a wholesale deletion of the theme-derived palette below this floor trips the guard').toBeGreaterThanOrEqual(105);
+      expect(matches.length, 'index.css + tokens.css must retain ≥ 93 color-mix() sites (103 after the editorial redesign); a wholesale deletion of the theme-derived palette below this floor trips the guard').toBeGreaterThanOrEqual(93);
     });
 
     it('B-3: ≥ 5 distinct categorical CSS-rule anchors in styles/index.css USE color-mix() with the 2-stop form (selector token is part of the contract — rename trips the guard)', () => {

@@ -1740,6 +1740,21 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
     return computeMindmapLayout(displayArtifacts);
   }, [layoutMode, displayArtifacts]);
 
+  // Lane head counts: displayed artifacts whose card sits inside the lane's
+  // horizontal bounds. Counted by position, not cardTypes, because types
+  // outside every lane's cardTypes (risks, retrospective, …) still render
+  // inside a lane and the count must match what the user sees.
+  const laneCounts = useMemo(() => {
+    const counts = new Map<string, number>(LANE_DEFS.map(lane => [lane.key, 0]));
+    for (const lane of LANE_DEFS) {
+      const pos = laneLayout.positions[lane.key];
+      if (!pos || !pos.visible) continue;
+      const right = pos.left + (lane.key === 'implementation' ? implLaneWidth : pos.width);
+      counts.set(lane.key, displayArtifacts.filter(a => a.position.x >= pos.left && a.position.x < right).length);
+    }
+    return counts;
+  }, [displayArtifacts, laneLayout.positions, implLaneWidth]);
+
   // Compute group bounding boxes for mindmap mode.
   // Instead of cycling through 8 arbitrary colors, each depth level gets its own
   // subtle background shade. This visually communicates "how deep" a group is
@@ -2031,6 +2046,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
               <div key={lane.key} className={`column-header ${lane.key}`} style={{ left: pos.left + 20 }}>
                 <span className="column-header-num" aria-hidden="true">{String(laneIndex + 1).padStart(2, '0')}</span>
                 <span className="column-header-label">{lane.key.charAt(0).toUpperCase() + lane.key.slice(1)}</span>
+                <span className="column-header-count" title={`${laneCounts.get(lane.key) ?? 0} artifacts in this lane`}>{laneCounts.get(lane.key) ?? 0}</span>
                 {renderLaneButtons(lane.key)}
                 <button
                   className="lane-hide-btn"

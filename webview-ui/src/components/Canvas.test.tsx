@@ -937,6 +937,30 @@ describe('Canvas', () => {
   });
 
   describe('Lane Hiding/Showing', () => {
+    it('shows how many displayed artifacts each lane holds in its header', () => {
+      const artifacts = [
+        createMockArtifact({ id: 'brief-1', type: 'product-brief', title: 'Brief', position: { x: 50, y: 100 } }),
+        createMockArtifact({ id: 'vision-1', type: 'vision', title: 'Vision', position: { x: 50, y: 300 } }),
+        createMockArtifact({ id: 'prd-1', type: 'prd', title: 'PRD', position: { x: 400, y: 100 } }),
+      ];
+      render(<Canvas {...defaultProps} artifacts={artifacts} />);
+
+      const count = (lane: string) =>
+        document.querySelector(`.column-header.${lane} .column-header-count`)?.textContent;
+      expect(count('discovery')).toBe('2');
+      expect(count('planning')).toBe('1');
+      expect(count('solutioning')).toBe('0');
+    });
+
+    it('counts a card by where it sits, even when its type is not in the lane cardTypes', () => {
+      const artifacts = [
+        createMockArtifact({ id: 'retro-1', type: 'retrospective', title: 'Retro', position: { x: 720, y: 100 } }),
+      ];
+      render(<Canvas {...defaultProps} artifacts={artifacts} />);
+
+      expect(document.querySelector('.column-header.planning .column-header-count')?.textContent).toBe('1');
+    });
+
     it('should hide a lane when lane hide button is clicked', () => {
       const artifacts = [
         createMockArtifact({ id: 'brief-1', type: 'product-brief', title: 'Brief 1', position: { x: 50, y: 100 } }),
