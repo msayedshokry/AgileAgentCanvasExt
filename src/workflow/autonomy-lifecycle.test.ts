@@ -155,6 +155,7 @@ function makeStore(epics: any[] = []) {
       }
       return undefined;
     }),
+    createEpic: vi.fn(() => ({ id: 'goal-E-1' })),
     createStory: vi.fn(() => ({ id: 'created-S-1' })),
     updateArtifact: vi.fn(async () => {}),
     onDidChangeArtifacts: vi.fn(() => ({ dispose: vi.fn() })),
@@ -283,18 +284,20 @@ describe('AutonomyLifecycle wiring', () => {
   // ── 2. Goal decomposer hooks ───────────────────────────────────────────────
 
   describe('goal decomposer hooks (wireGoalDecomposerHooks)', () => {
-    it('happy: persistStory creates a story and updates it with title/description', async () => {
+    it('happy: persistStory creates the goal epic once and a ready-for-dev story under it', async () => {
       const { lc, store } = makeLifecycle();
       lc.start();
       const hooks = mockGoalDecomposer.setHooks.mock.calls[0][0];
 
       const id = await hooks.persistStory({ id: 'p1', title: 'Add auth', description: 'OAuth2 flow' });
 
-      expect(store.createStory).toHaveBeenCalled();
+      expect(store.createEpic).toHaveBeenCalledTimes(1);
+      expect(store.createStory).toHaveBeenCalledWith('goal-E-1');
       expect(store.updateArtifact).toHaveBeenCalledWith('story', 'created-S-1', {
         title: 'Add auth',
-        description: 'OAuth2 flow',
-        metadata: { priority: undefined },
+        notes: 'OAuth2 flow',
+        status: 'ready-for-dev',
+        priority: undefined,
       });
       expect(id).toBe('created-S-1');
     });

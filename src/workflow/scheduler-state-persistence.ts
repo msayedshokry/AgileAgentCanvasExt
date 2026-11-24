@@ -84,8 +84,10 @@ export class SchedulerStatePersistence {
       );
       // Restore the story queue so pickNext() finds stories after restart.
       autoScheduler.setStories(state.queue);
-      // Restore in-progress IDs so WIP capacity is correctly tracked.
-      autoScheduler.setInProgressIds(state.inProgress);
+      // In-progress runs do not survive a restart (their loops lived in the old
+      // extension host; run-recovery.ts resolves each one), so restoring the ids
+      // would only hold WIP slots forever.
+      autoScheduler.setInProgressIds([]);
       autoScheduler.setWipLimit(state.wipLimit);
       autoScheduler.setPollIntervalMs(state.pollIntervalMs);
       // Audit gap #50 — restore per-story pause flags so users don't lose

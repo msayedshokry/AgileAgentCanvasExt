@@ -26,8 +26,7 @@ import {
     captureWorkspaceSnapshot,
     diffWorkspaceSnapshots,
     TerminalExecutor,
-    buildStdinCliCommand,
-    buildStdinCommandLine,
+    outputTail,
 } from './terminal-executor';
 import { window, workspace } from 'vscode';
 
@@ -38,6 +37,13 @@ import { window, workspace } from 'vscode';
 
 // Mutable holder so tests can flip the shell flavor per test.
 const chatBridgeMockState = vi.hoisted(() => ({ isPowerShell: false }));
+const harnessMockState = vi.hoisted(() => ({ outputFolder: '.agileagentcanvas-context', resolution: undefined as any, trustBlock: undefined as string | undefined }));
+vi.mock('./harness/board-harness', () => ({
+    resolveBoardHarness: async () => harnessMockState.resolution,
+    getPermissionPosture: () => 'sandboxed',
+    resolveEffectivePosture: async () => 'sandboxed',
+    agentRunBlockReason: () => harnessMockState.trustBlock,
+}));
 
 // NOTE: chat-bridge and trace-recorder live OUTSIDE src/workflow — mock paths
 // must be resolved from this test file (src/workflow/…) as '../commands/…' and
@@ -74,7 +80,7 @@ vi.mock('./kanban-verdict', () => ({
     resultFilePath: (folder: string, artifactId: string, workflowId: string) =>
         `${folder}/_terminal-output/${artifactId}-${workflowId}-result.json`,
     readVerdictFile: () => undefined,
-    getOutputFolder: () => '.agileagentcanvas-context',
+    getOutputFolder: () => harnessMockState.outputFolder,
 }));
 
 // ── Module mocks ─────────────────────────────────────────────────────────────
@@ -111,6 +117,7 @@ vi.mock('vscode', () => {
         window: {
             showInformationMessage: vi.fn(async () => undefined),
             showErrorMessage: vi.fn(async () => undefined),
+            showWarningMessage: vi.fn(async () => undefined),
             createTerminal: vi.fn(() => ({
                 show: vi.fn(),
                 sendText: vi.fn(),
@@ -144,6 +151,8 @@ vi.mock('vscode', () => {
 // ── Imports (after mocks — module receives stubbed vscode) ───────────────────
 
 import { buildTerminalPrompt } from './terminal-executor';
+import { getHarnessAdapter } from './harness/harness-adapters';
+harnessMockState.resolution = { kind: 'cli', adapter: getHarnessAdapter('pi')!, binary: 'pi', reason: 'test' };
 
 // ── Tests ───────────────────────────────────────────────────────────────────
 
@@ -561,170 +570,148 @@ describe('synthetic verdict from workspace file diff', () => {
     });
 });
 
-// ─── Long-prompt stdin staging ───────────────────────────────────────────────
-// Regression for the "kanban run dies after minutes of nothing" bug chain:
-//
-//  1. Windows PowerShell 5.1 SPLITS multi-line argv values containing
-//     embedded double quotes into multiple argv entries and strips the
-//     quotes — the BMAD prompt (markdown fences + JSON) is mangled before
-//     the CLI even starts, leaving the shell waiting at a `>>` continuation
-//     prompt forever.
-//  2. VS Code sendText of a multi-KB string can drop/mangle characters in
-//     the ConPTY paste buffer and risks the ~32 KB ARG_MAX ceiling.
-//
-// Fix: prompts > 8 KiB are staged to a temp file; the terminal receives a
-// short command that pipes the file into the CLI's stdin (verified stdin
-// contract: claude -p, codex exec -, opencode run, pi -p).
+// ─── Harness launch (prompt staging + adapter command lines) ─────────────────
+// Every harness run stages its prompt to a private file under
+// <outputFolder>/_terminal-output/prompts and the terminal receives a SHORT
+// command (stdin redirect or pointer argument). Adapter flags and cross-shell
+// delivery are covered by src/workflow/harness/*.test.ts.
 
-describe('buildStdinCliCommand — verified stdin contracts per provider', () => {
-    it('pi: keeps headless flags, prompt arrives via stdin (no positional)', () => {
-        expect(buildStdinCliCommand('pi')).toEqual(['pi', '--no-session', '--approve', '-p']);
-    });
+function makeTerminal() {
+    const sendTextMock = vi.fn();
+    const terminalObj = {
+        name: 'AAC: test',
+        show: vi.fn(),
+        sendText: sendTextMock,
+        dispose: vi.fn(),
+        processId: Promise.resolve(4242),
+        onDidWriteData: vi.fn(() => ({ dispose: vi.fn() })),
+    };
+    vi.mocked(window.createTerminal).mockImplementationOnce(() => terminalObj as any);
+    return { terminalObj, sendTextMock };
+}
 
-    it('claude: bypassPermissions flags + bare -p', () => {
-        expect(buildStdinCliCommand('claude')).toEqual([
-            'claude', '--permission-mode', 'bypassPermissions',
-            '--dangerously-skip-permissions', '-p',
-        ]);
+function withWorkspace<T>(fn: (outputFolder: string) => Promise<T>): Promise<T> {
+    const wsDir = mkdtempSync(join(tmpdir(), 'aac-termx-'));
+    harnessMockState.outputFolder = join(wsDir, '.agileagentcanvas-context');
+    return fn(harnessMockState.outputFolder).finally(() => {
+        harnessMockState.outputFolder = '.agileagentcanvas-context';
+        rmSync(wsDir, { recursive: true, force: true });
     });
+}
 
-    it('codex: exec with `-` stdin placeholder', () => {
-        expect(buildStdinCliCommand('codex')).toEqual([
-            'codex', 'exec', '--ask-for-approval', 'never',
-            '--sandbox', 'workspace-write', '-',
-        ]);
-    });
-
-    it('opencode: run with no positional', () => {
-        expect(buildStdinCliCommand('opencode')).toEqual(['opencode', 'run']);
-    });
-
-    it('providers without a verified stdin contract fall back to undefined (inline)', () => {
-        expect(buildStdinCliCommand('aider')).toBeUndefined();
-        expect(buildStdinCliCommand('copilot')).toBeUndefined();
-    });
+const cli = (id: string) => ({
+    kind: 'cli', adapter: getHarnessAdapter(id)!, binary: getHarnessAdapter(id)!.binaries[0], reason: 'test',
 });
 
-describe('buildStdinCommandLine — shell-aware stdin wiring', () => {
+describe('executeTerminalWorkflow — harness launch', () => {
     afterEach(() => {
-        chatBridgeMockState.isPowerShell = false;
+        harnessMockState.resolution = cli('pi');
+        vi.mocked(window.createTerminal).mockClear();
     });
 
-    it('POSIX: short `< \'file\'` redirect, no prompt text in the command line', () => {
-        const line = buildStdinCommandLine(
-            ['pi', '--no-session', '--approve', '-p'],
-            'C:/Users/test/Temp/aac-prompt-EPIC-1-123.txt',
-        );
-        expect(line).toBe("pi --no-session --approve -p < 'C:/Users/test/Temp/aac-prompt-EPIC-1-123.txt'");
-        expect(line).not.toContain('Get-Content');
-        expect(line.length).toBeLessThan(200);
-    });
+    it('stdin harness: stages the prompt privately, sends a short stdin command, cleans up on close', async () => {
+        await withWorkspace(async (outputFolder) => {
+            const { terminalObj, sendTextMock } = makeTerminal();
+            const executor = new TerminalExecutor();
+            const longBody = 'B'.repeat(9000);
+            await executor.executeTerminalWorkflow('epic-enhancement', { id: 'EPIC-LONG', type: 'epic', description: longBody }, {});
 
-    it('PowerShell: pipes via Get-Content with UTF-8 output encoding, scoped in a script block', () => {
-        chatBridgeMockState.isPowerShell = true;
-        const line = buildStdinCommandLine(
-            ['pi', '--no-session', '--approve', '-p'],
-            'C:/Users/test/Temp/aac-prompt-EPIC-1-123.txt',
-        );
-        expect(line).toContain('& { $OutputEncoding=[System.Text.UTF8Encoding]::new();');
-        expect(line).toContain("Get-Content -Raw -Encoding UTF8 'C:/Users/test/Temp/aac-prompt-EPIC-1-123.txt'");
-        expect(line).toContain('| pi --no-session --approve -p }');
-        expect(line).not.toContain('<');
-        expect(line.length).toBeLessThan(400);
-    });
-
-    it('POSIX: escapes single quotes in the file path', () => {
-        const line = buildStdinCommandLine(['pi', '-p'], "/tmp/aac'weird.txt");
-        expect(line).toBe("pi -p < '/tmp/aac'\\''weird.txt'");
-    });
-});
-
-describe('executeTerminalWorkflow — long prompts staged to temp file (e2e)', () => {
-    it('stages a >8KiB prompt, sends a SHORT stdin command, and cleans up the temp file on close', async () => {
-        const wsDir = mkdtempSync(join(tmpdir(), 'aac-termx-'));
-        const originalFolders = (workspace as any).workspaceFolders;
-        (workspace as any).workspaceFolders = [{ uri: { fsPath: wsDir }, name: 't', index: 0 }];
-
-        // Capture the terminal the executor creates so we can grab sendText
-        // and simulate the terminal closing.
-        const sendTextMock = vi.fn();
-        const terminalObj = {
-            name: 'AAC: test',
-            show: vi.fn(),
-            sendText: sendTextMock,
-            dispose: vi.fn(),
-            processId: Promise.resolve(4242),
-            onDidWriteData: vi.fn(() => ({ dispose: vi.fn() })),
-        };
-        vi.mocked(window.createTerminal).mockImplementationOnce(() => terminalObj as any);
-
-        const executor = new TerminalExecutor();
-        const longBody = 'B'.repeat(9000); // > 8 KiB staging threshold
-        const artifact = { id: 'EPIC-LONG', type: 'epic', title: 'Long', description: longBody };
-
-        try {
-            await executor.executeTerminalWorkflow('epic-enhancement', artifact, {});
-
-            // The terminal received ONE short command — not a multi-KB blob.
             expect(sendTextMock).toHaveBeenCalledTimes(1);
             const cmd = sendTextMock.mock.calls[0][0] as string;
-            expect(cmd.length).toBeLessThan(1000);
-            expect(cmd).toContain("< '");
+            expect(cmd.length).toBeLessThan(400);
+            expect(cmd).toMatch(/^pi --no-session --tools 'read,write,edit' -p < '?.*_terminal-output\/prompts\/EPIC-LONG-/);
             expect(cmd).not.toContain(longBody.slice(0, 100));
 
-            // The prompt WAS staged intact to the temp file.
-            const session = executor.getTerminalSession('EPIC-LONG');
-            expect(session?.promptFile).toBeTruthy();
-            const staged = readFileSync(session!.promptFile!, 'utf-8');
-            expect(staged).toContain(longBody);
-            expect(staged).toContain('verdict'); // verdict contract intact
+            const session = executor.getTerminalSession('EPIC-LONG')!;
+            expect(session.promptFile!.startsWith(join(outputFolder, '_terminal-output', 'prompts'))).toBe(true);
+            expect(readFileSync(session.promptFile!, 'utf-8')).toContain(longBody);
 
-            // Session end → temp file cleaned up.
             (executor as any).onDidCloseTerminal(terminalObj);
-            expect(existsSync(session!.promptFile!)).toBe(false);
-        } finally {
-            (workspace as any).workspaceFolders = originalFolders;
-            rmSync(wsDir, { recursive: true, force: true });
-        }
+            expect(existsSync(session.promptFile!)).toBe(false);
+        });
     });
 
-    it('keeps short prompts inline (unchanged behavior)', async () => {
-        const wsDir = mkdtempSync(join(tmpdir(), 'aac-termx-'));
-        const originalFolders = (workspace as any).workspaceFolders;
-        (workspace as any).workspaceFolders = [{ uri: { fsPath: wsDir }, name: 't', index: 0 }];
-
-        const sendTextMock = vi.fn();
-        const terminalObj = {
-            name: 'AAC: test',
-            show: vi.fn(),
-            sendText: sendTextMock,
-            dispose: vi.fn(),
-            processId: Promise.resolve(4242),
-            onDidWriteData: vi.fn(() => ({ dispose: vi.fn() })),
-        };
-        vi.mocked(window.createTerminal).mockImplementationOnce(() => terminalObj as any);
-
-        const executor = new TerminalExecutor();
-        const artifact = { id: 'STORY-SHORT', type: 'story', title: 'Short', description: 'tiny' };
-
-        try {
-            await executor.executeTerminalWorkflow('dev-story', artifact, {});
-
+    it('short prompts are staged too: prompt text never travels on the command line', async () => {
+        await withWorkspace(async () => {
+            const { sendTextMock } = makeTerminal();
+            await new TerminalExecutor().executeTerminalWorkflow('dev-story', { id: 'S-1', type: 'story', description: 'tiny-marker' }, {});
             const cmd = sendTextMock.mock.calls[0][0] as string;
-            // Inline shape: the full BMAD prompt travels as ONE quoted
-            // positional arg, closed with the /dev/null stdin guard (POSIX).
-            // The artifact description ('tiny') is embedded mid-prompt, so the
-            // bare substring — not a quoted token — is the right assertion.
-            expect(cmd).toContain('tiny');
-            expect(cmd).toContain('< /dev/null');
-            expect(cmd).not.toContain('aac-prompt-'); // nothing was staged
-            const session = executor.getTerminalSession('STORY-SHORT');
-            expect(session?.promptFile).toBeUndefined();
-        } finally {
-            (workspace as any).workspaceFolders = originalFolders;
-            rmSync(wsDir, { recursive: true, force: true });
-        }
+            expect(cmd).not.toContain('tiny-marker');
+            expect(cmd).toContain('_terminal-output/prompts/S-1-');
+        });
+    });
+
+    it('pointer harness (gemini): passes a short instruction naming the prompt file', async () => {
+        harnessMockState.resolution = cli('gemini');
+        await withWorkspace(async () => {
+            const { sendTextMock } = makeTerminal();
+            await new TerminalExecutor().executeTerminalWorkflow('dev-story', { id: 'S-2', type: 'story' }, {});
+            const cmd = sendTextMock.mock.calls[0][0] as string;
+            expect(cmd).toMatch(/^gemini --approval-mode auto_edit -p 'Read the file .*_terminal-output\/prompts\/S-2-/);
+            expect(cmd).not.toContain('<');
+        });
+    });
+
+    it('no harness: no terminal is created and the run is BLOCKED with the reason', async () => {
+        harnessMockState.resolution = { kind: 'none', message: 'No coding-agent harness found. Install it.' };
+        await withWorkspace(async () => {
+            const executor = new TerminalExecutor();
+            expect(await executor.executeTerminalWorkflow('dev-story', { id: 'S-3' }, {})).toBeUndefined();
+            const verdict = await executor.executeAndAwaitVerdict('dev-story', { id: 'S-3' }, {});
+            expect(verdict).toEqual({ verdict: 'BLOCKED', summary: 'No coding-agent harness found. Install it.' });
+            expect(window.createTerminal).not.toHaveBeenCalled();
+        });
+    });
+
+    it('language-model fallback: uses the runner verdict, or BLOCKS when the caller has no runner', async () => {
+        harnessMockState.resolution = { kind: 'lm', reason: 'test' };
+        await withWorkspace(async () => {
+            const executor = new TerminalExecutor();
+            const lmRunner = vi.fn(async () => ({ verdict: 'COMPLETED' as const, summary: 'via LM' }));
+            expect(await executor.executeAndAwaitVerdict('dev-story', { id: 'S-4' }, {}, { lmRunner }))
+                .toEqual({ verdict: 'COMPLETED', summary: 'via LM' });
+            expect(lmRunner).toHaveBeenCalledTimes(1);
+            expect((await executor.executeAndAwaitVerdict('dev-story', { id: 'S-4' }, {})).verdict).toBe('BLOCKED');
+            expect(window.createTerminal).not.toHaveBeenCalled();
+        });
     });
 });
 
+describe('executeTerminalWorkflow — workspace trust', () => {
+    afterEach(() => { harnessMockState.trustBlock = undefined; });
 
+    it('Restricted Mode blocks agent runs before any harness is resolved or terminal created', async () => {
+        harnessMockState.trustBlock = 'Agent runs are disabled in Restricted Mode.';
+        const lmRunner = vi.fn();
+        const verdict = await new TerminalExecutor().executeAndAwaitVerdict('dev-story', { id: 'S-9' }, {}, { lmRunner });
+        expect(verdict).toEqual({ verdict: 'BLOCKED', summary: 'Agent runs are disabled in Restricted Mode.' });
+        expect(lmRunner).not.toHaveBeenCalled();
+        expect(window.createTerminal).not.toHaveBeenCalled();
+    });
+});
+
+describe('outputTail', () => {
+    it('keeps the last lines without ANSI colour codes, so a missing verdict can say why', async () => {
+
+        const raw = 'noise\n'.repeat(50) + '\u001b[91m\u001b[1mError: \u001b[0mThis API key has expired.\r\n\r\n';
+        expect(outputTail(raw).endsWith('Error: This API key has expired.')).toBe(true);
+        expect(outputTail(raw)).not.toContain('\u001b');
+        expect(outputTail(undefined)).toBe('');
+    });
+});
+
+describe('executeTerminalWorkflow — run journal', () => {
+    it('journals a CLI run at launch (with its revert column) and clears it when the terminal ends', async () => {
+        await withWorkspace(async (outputFolder) => {
+            const { terminalObj } = makeTerminal();
+            const executor = new TerminalExecutor();
+            await executor.executeTerminalWorkflow('dev-story', { id: 'S-J', type: 'story' }, {}, { revertStatusOnInterrupt: 'ready-for-dev' });
+            const journalFile = join(outputFolder, 'agent-runs.json');
+            const records = JSON.parse(readFileSync(journalFile, 'utf-8'));
+            expect(records).toEqual([expect.objectContaining({ artifactId: 'S-J', workflowId: 'dev-story', revertTo: 'ready-for-dev', terminalName: 'AAC: dev-story S-J' })]);
+
+            (executor as any).onDidCloseTerminal(terminalObj);
+            expect(JSON.parse(readFileSync(journalFile, 'utf-8'))).toEqual([]);
+        });
+    });
+});

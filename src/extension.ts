@@ -4,6 +4,8 @@ import { AgileAgentCanvasChatParticipant } from './chat/chat-participant';
 import { ArtifactsTreeProvider } from './views/artifacts-tree-provider';
 import { WizardStepsProvider } from './views/wizard-steps-provider';
 import { AgenticKanbanViewProvider } from './views/agentic-kanban-view-provider';
+import { registerNeedsYou } from './views/needs-you';
+import { registerDevHubCommands } from './commands/dev-hub-commands';
 import { AgentSessionsViewProvider } from './views/agent-sessions-view-provider';
 import { AgileAgentCanvasViewProvider } from './views/canvas-view-provider';
 import { ArtifactStore } from './state/artifact-store';
@@ -20,6 +22,9 @@ import { handoffNegotiation } from './acp/agent-bus/handoff-negotiation';
 import { initializeTraceRecorder, getTraceRecorder } from './trace/trace-recorder';
 import { registerTraceCommands } from './commands/trace-commands';
 import { registerA2ACommands } from './commands/a2a-commands';
+import { registerHarnessCommands } from './commands/harness-commands';
+import { initApiKeyStore } from './chat/api-key-store';
+import { sweepStalePromptFiles } from './workflow/harness/prompt-staging';
 import { harnessEngine } from './harness/policy-engine';
 import { loadUserPolicies } from './harness/policy-loader';
 import { sendArtifactsToPanel, buildArtifacts } from './canvas/artifact-transformer';
@@ -74,6 +79,7 @@ import { initialiseCatalogueService } from './state/catalogue-service';
 import { initialiseSkillRepoManager } from './state/skill-repo-manager';
 import { USER_CATALOGUE_SETTING } from './state/constants';
 import { IdeaStore } from './state/idea-store';
+import { errMsg } from './utils/error';
 
 const logger = createLogger('extension');
 
@@ -169,6 +175,10 @@ export function activate(context: vscode.ExtensionContext) {
     const artifactsTreeProvider = new ArtifactsTreeProvider(artifactStore);
     const wizardStepsProvider = new WizardStepsProvider(artifactStore);
     const agenticKanbanProvider = new AgenticKanbanViewProvider(context.extensionUri, artifactStore);
+    // Status-bar count of cards waiting on the user (stopped runs, approvals, paused stories).
+    registerNeedsYou(context, (artifactId) => agenticKanbanProvider.broadcast({ type: 'kanban:focusCard', artifactId }));
+    // Developer hub: project context, metrics, release notes, GitHub Issues sync, story CodeLens.
+    registerDevHubCommands(context, artifactStore, (artifactId) => agenticKanbanProvider.broadcast({ type: 'kanban:focusCard', artifactId }));
     const agentSessionsProvider = new AgentSessionsViewProvider(context.extensionUri);
     // Push the provider itself so its timer + singleton listeners are
     // cleared on extension deactivation (otherwise the 30 s heartbeat can
@@ -220,6 +230,14 @@ export function activate(context: vscode.ExtensionContext) {
     initializeTraceRecorder(tracesOutputPath);
     registerTraceCommands(context);
     registerA2ACommands(context);
+    registerHarnessCommands(context);
+    void initApiKeyStore(context);
+    try {
+        const swept = sweepStalePromptFiles(tracesOutputPath);
+        if (swept > 0) logger.info(`Removed ${swept} stale staged prompt file(s)`);
+    } catch (err) {
+        logger.warn(`Prompt sweep failed: ${errMsg(err)}`);
+    }
     logger.info('Trace Recorder and A2A Commands initialized');
 
     // ── Harness Policy Engine initialization (Epic 4) ─────────────────────

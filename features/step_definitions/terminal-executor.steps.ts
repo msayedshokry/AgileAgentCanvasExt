@@ -8,6 +8,11 @@ import * as assert from 'assert';
 import { BmadWorld } from '../support/world';
 
 const proxyquire = require('proxyquire').noCallThru();
+import * as os from 'os';
+import * as path from 'path';
+import { getHarnessAdapter, harnessForChatProvider } from '../../src/workflow/harness/harness-adapters';
+
+const CUKE_OUTPUT_FOLDER = path.join(os.tmpdir(), 'aac-cucumber-terminal-executor');
 
 // ─── Context ────────────────────────────────────────────────────────────────
 
@@ -34,6 +39,8 @@ interface TerminalTestContext {
   cliArgs: string[] | null;
   /** Override the provider returned by getSelectedProvider(). Default: 'claude'. */
   selectedProvider: string;
+  /** Permission posture returned by board-harness. Default: 'sandboxed'. */
+  posture: 'sandboxed' | 'full';
 
   // Sanitization test state
   lastSanitizeResult: string;
@@ -61,6 +68,7 @@ function getCtx(world: BmadWorld): TerminalTestContext {
       promptLength: 'long',
       cliArgs: null,
       selectedProvider: 'claude',
+      posture: 'sandboxed',
       lastSanitizeResult: '',
       hasCustomArtifactId: false,
       customArtifactId: '',
@@ -162,7 +170,7 @@ function loadModule(world: BmadWorld): any {
       resultFilePath: (folder: string, artifactId: string, workflowId: string) =>
         `${folder}/_terminal-output/${artifactId}-${workflowId}-result.json`,
       readVerdictFile: () => undefined,
-      getOutputFolder: () => '.agileagentcanvas-context',
+      getOutputFolder: () => CUKE_OUTPUT_FOLDER,
       normalizeVerdict: (parsed: any) => ({ verdict: 'UNKNOWN', raw: parsed }),
       extractVerdictFromText: () => undefined,
     },
@@ -173,6 +181,20 @@ function loadModule(world: BmadWorld): any {
         isLocked: () => false,
         acquire: () => true,
       },
+    },
+    // Resolve the harness from the scenario's provider pick so results do not
+    // depend on which CLIs happen to be installed on the test machine.
+    './harness/board-harness': {
+      resolveBoardHarness: async () => {
+        const id = harnessForChatProvider(ctx.selectedProvider) ?? ctx.selectedProvider;
+        const adapter = getHarnessAdapter(id);
+        return adapter
+          ? { kind: 'cli', adapter, binary: adapter.binaries[0], reason: 'scenario' }
+          : { kind: 'none', message: `no harness for ${ctx.selectedProvider}` };
+      },
+      getPermissionPosture: () => ctx.posture,
+      resolveEffectivePosture: async () => ctx.posture,
+      agentRunBlockReason: () => undefined,
     },
     '../commands/chat-bridge': {
       getSelectedProvider: () => ctx.selectedProvider,
@@ -253,6 +275,7 @@ Given('a fresh terminal executor context', function (this: BmadWorld) {
   ctx.promptLength = 'long';
   ctx.cliArgs = null;
   ctx.selectedProvider = 'claude';
+  ctx.posture = 'sandboxed';
   ctx.module = null;
   ctx.isPowerShell = null;
   ctx.shellQuote = null;
@@ -285,6 +308,12 @@ Given('the artifact ID contains a space', function (this: BmadWorld) {
   const ctx = getCtx(this);
   ctx.hasCustomArtifactId = true;
   ctx.customArtifactId = 'Epic 2';
+});
+
+Given('the permission posture is {string}', function (this: BmadWorld, posture: string) {
+  const ctx = getCtx(this);
+  ctx.posture = posture === 'full' ? 'full' : 'sandboxed';
+  ctx.module = loadModule(this);
 });
 
 Given('the terminal provider is {string}', function (this: BmadWorld, provider: string) {

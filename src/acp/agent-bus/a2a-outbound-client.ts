@@ -17,6 +17,7 @@
 //   );
 
 import { createLogger } from '../../utils/logger';
+import { assertOutboundUrlAllowed, type HostResolver } from './url-policy';
 const logger = createLogger('a2a-outbound-client');
 
 import {
@@ -128,6 +129,14 @@ export class A2ANetworkError extends A2AOutboundError {
   }
 }
 
+/** A request refused by policy (SSRF, trust, size, redirect): never retried. */
+export class A2APolicyError extends A2ANetworkError {
+  constructor(message: string) {
+    super(message);
+    // Keeps the A2ANetworkError name: callers and logs treat it as a network failure.
+  }
+}
+
 export class A2ATimeoutError extends A2AOutboundError {
   constructor(
     message: string,
@@ -163,7 +172,16 @@ export interface A2AOutboundClientOptions {
   retryDelay?: number;
   /** Static HTTP headers to attach to requests */
   requestHeaders?: Record<string, string>;
+  /** Hosts that may be called. Empty = any public host (private addresses refused). */
+  allowedHosts?: string[];
+  /** Host-name resolver for the private-address check (tests inject one). */
+  resolveHost?: HostResolver;
+  /** False in Restricted Mode: remote agent calls are refused. */
+  isTrusted?: () => boolean;
 }
+
+/** Agent Cards and RPC responses larger than this are refused. */
+export const MAX_A2A_RESPONSE_BYTES = 1024 * 1024;
 
 const DEFAULT_OPTIONS: Required<A2AOutboundClientOptions> = {
   timeout: 30_000,
@@ -172,6 +190,9 @@ const DEFAULT_OPTIONS: Required<A2AOutboundClientOptions> = {
   maxRetries: 3,
   retryDelay: 1_000,
   requestHeaders: {},
+  allowedHosts: [],
+  resolveHost: undefined as unknown as HostResolver,
+  isTrusted: () => true,
 };
 
 /** Terminal states — polling stops when reached */
@@ -233,8 +254,8 @@ export class A2AOutboundClient {
         return card;
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
-        // Don't retry invalid cards
-        if (lastError instanceof A2AInvalidCardError) {
+        // Don't retry invalid cards or policy refusals
+        if (lastError instanceof A2AInvalidCardError || lastError instanceof A2APolicyError) {
           throw lastError;
         }
         // Wait before retrying (except last attempt)
@@ -441,7 +462,8 @@ export class A2AOutboundClient {
         // Don't retry invalid cards or timeouts
         if (
           lastError instanceof A2AInvalidCardError ||
-          lastError instanceof A2ATimeoutError
+          lastError instanceof A2ATimeoutError ||
+          lastError instanceof A2APolicyError
         ) {
           throw lastError;
         }
@@ -467,14 +489,32 @@ export class A2AOutboundClient {
     url: string,
     init: RequestInit
   ): Promise<Response> {
+    if (this.options.isTrusted && !this.options.isTrusted()) {
+      throw new A2APolicyError('Remote agent calls are disabled in Restricted Mode. Trust this workspace to allow them.');
+    }
+    // SSRF guard: a remote Agent Card chooses the next URL we call.
+    try {
+      await assertOutboundUrlAllowed(url, { allowedHosts: this.options.allowedHosts ?? [] }, this.options.resolveHost);
+    } catch (err) {
+      throw new A2APolicyError(err instanceof Error ? err.message : String(err));
+    }
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.options.timeout);
 
     try {
       const response = await fetch(url, {
         ...init,
+        // Redirects could bounce a vetted URL to a private one: refuse them.
+        redirect: 'manual',
         signal: controller.signal,
       });
+      if (response.status >= 300 && response.status < 400) {
+        throw new A2APolicyError(`Refusing redirect (${response.status}) from ${url}`);
+      }
+      const declared = Number(response.headers?.get?.('content-length') ?? NaN);
+      if (Number.isFinite(declared) && declared > MAX_A2A_RESPONSE_BYTES) {
+        throw new A2APolicyError(`Response too large (${declared} bytes, limit ${MAX_A2A_RESPONSE_BYTES})`);
+      }
       return response;
     } finally {
       clearTimeout(timeoutId);
@@ -549,10 +589,25 @@ export function getA2AOutboundClient(
   if (options) {
     return new A2AOutboundClient(options);
   }
-  if (!_defaultClient) {
-    _defaultClient = new A2AOutboundClient();
-  }
+  // Settings can change at any time, so the default client is rebuilt with the
+  // current allow-list on each call (construction is cheap).
+  _defaultClient = new A2AOutboundClient(readA2ASettings());
   return _defaultClient;
+}
+
+/** Allow-list and workspace-trust gate from VS Code settings (lazy vscode require keeps tests light). */
+function readA2ASettings(): A2AOutboundClientOptions {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const vscode = require('vscode') as typeof import('vscode');
+    const hosts = vscode.workspace.getConfiguration('agileagentcanvas').get<string[]>('a2a.allowedHosts', []);
+    return {
+      allowedHosts: Array.isArray(hosts) ? hosts.filter((h) => typeof h === 'string' && h.trim()) : [],
+      isTrusted: () => vscode.workspace.isTrusted !== false,
+    };
+  } catch {
+    return {};
+  }
 }
 
 /**

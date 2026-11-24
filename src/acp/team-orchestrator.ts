@@ -11,6 +11,8 @@ import { getTraceRecorder } from '../trace/trace-recorder';
 import type { AgentCapability } from './agent-bus/types';
 
 import { errMsg } from '../utils/error';
+import { concurrencyQueue } from '../workflow/concurrency-queue';
+import { budgetEnforcer } from '../workflow/budget-enforcer';
 
 // ─── Agent Team Registry ─────────────────────────────────────────────────────
 
@@ -825,6 +827,16 @@ export class AgentTeamOrchestrator {
     const team = TEAM_REGISTRY[teamId];
     if (!team) throw new Error(`Team "${teamId}" not found`);
 
+    // Same guardrails as Kanban runs: respect spend caps and never work an
+    // artifact another agent (board run or team) is already working on.
+    const lockId: string | undefined = artifact?.id;
+    if (lockId && !budgetEnforcer.canStart(lockId)) {
+      throw new Error(budgetEnforcer.getStatus(lockId).bannerMessage ?? `Budget exceeded for ${lockId}`);
+    }
+    if (lockId && !concurrencyQueue.tryAcquire(lockId, `team-${teamId}`, `team-${teamId}-${Date.now()}`)) {
+      throw new Error(`"${lockId}" is already being worked on by another agent`);
+    }
+
     // Create a team-level trace session for observability
     const teamTraceSessionId = `team-${teamId}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const teamStartTime = Date.now();
@@ -999,6 +1011,7 @@ export class AgentTeamOrchestrator {
       // Deregister team agents from the bus
       this.deregisterTeamFromBus(busAgentIds);
       cancellationListener?.dispose();
+      if (lockId) concurrencyQueue.release(lockId);
     }
   }
 

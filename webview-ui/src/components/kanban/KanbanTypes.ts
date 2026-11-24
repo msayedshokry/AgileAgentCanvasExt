@@ -24,6 +24,8 @@ export interface KanbanItem {
     terminalId?: string;
     /** Why the workflow was interrupted (vs-code-closed, timeout, error, user-abort, no-session) */
     interruptionReason?: string;
+    /** Plain-language cause of a stopped run and the actions that fix it. */
+    failure?: AgentFailureInfo;
   };
   /** Concurrency lock state (AgenticKanban only) */
   lockInfo?: {
@@ -95,3 +97,23 @@ export function normalizeToKanbanColumn(status: string): KanbanColumnKey {
       return 'backlog';
   }
 }
+
+/** Fix actions the extension can perform for a stopped run (mirrors src/workflow/harness/agent-failure.ts). */
+export type AgentFixAction = 'sign-in' | 'set-api-key' | 'switch-agent' | 'retry' | 'install' | 'open-output' | 'move-back';
+
+export interface AgentFailureInfo {
+  kind: string;
+  title: string;
+  detail: string;
+  actions: AgentFixAction[];
+}
+
+export const FIX_ACTION_LABELS: Record<AgentFixAction, string> = {
+  'sign-in': 'Sign in',
+  'set-api-key': 'Set API key',
+  'switch-agent': 'Switch agent',
+  'retry': 'Retry',
+  'install': 'Install / update',
+  'open-output': 'Show output',
+  'move-back': 'Move back',
+};

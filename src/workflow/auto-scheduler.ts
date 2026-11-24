@@ -45,6 +45,10 @@ const PRIORITY_ORDER: Record<string, number> = {
 };
 
 const DEFAULT_POLL_INTERVAL_MS = 5_000;
+/** A story that fails this many runs in a row is paused for a human. */
+export const MAX_STORY_ATTEMPTS = 3;
+/** Back-off before re-picking a failed story (multiplied by the failure count). */
+export const STORY_RETRY_COOLDOWN_MS = 10 * 60 * 1000;
 const DEFAULT_WIP_LIMIT = 3;
 
 // ── Scheduler ────────────────────────────────────────────────────────────────
@@ -57,6 +61,8 @@ export class AutoScheduler extends EventEmitter {
   private runStory: StoryRunner | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
   private inProgressIds = new Set<string>();
+  /** Consecutive failed runs per story, with the earliest time it may run again. */
+  private storyFailures = new Map<string, { count: number; retryAfter: number }>();
   /** Audit gap #50 — per-story pause map. Stories here are skipped by pickNext() and persist across restarts. */
   private pausedStoryIds: Map<string, { reason?: string; pausedAt: number }> = new Map();
 
@@ -92,6 +98,7 @@ export class AutoScheduler extends EventEmitter {
 
   /** Unpause a story so the scheduler picks it up again on the next tick. Idempotent. */
   resumeStory(artifactId: string): void {
+    this.storyFailures.delete(artifactId);
     if (!this.pausedStoryIds.delete(artifactId)) return;
     logger.info(`AutoScheduler resumed story ${artifactId}`);
     this.emit('stateChange', { from: this.state, to: this.state });
@@ -167,6 +174,8 @@ export class AutoScheduler extends EventEmitter {
   }
 
   stop(): void {
+    // A full stop forgets failure back-offs; pause() keeps them.
+    this.storyFailures.clear();
     if (this.state === 'idle') return;
     this.setState('idle');
     if (this.timer) { clearInterval(this.timer); this.timer = null; }
@@ -230,13 +239,16 @@ export class AutoScheduler extends EventEmitter {
   }
 
   /** Pick the highest-priority ready-for-dev story that isn't in progress or paused. */
-  pickNext(): SchedulerStory | null {
+  pickNext(now: number = Date.now()): SchedulerStory | null {
     const ready = this.stories
       .filter(s =>
         s.status === 'ready-for-dev'
         && !this.inProgressIds.has(s.id)
         // Audit gap #50 — exclude per-story paused stories.
         && !this.pausedStoryIds.has(s.id)
+        // Failed stories wait out their back-off instead of being re-picked
+        // immediately (each run can take many minutes and real spend).
+        && (this.storyFailures.get(s.id)?.retryAfter ?? 0) <= now
       )
       .sort((a, b) => {
         const pa = PRIORITY_ORDER[a.priority ?? ''] ?? 99;
@@ -245,6 +257,29 @@ export class AutoScheduler extends EventEmitter {
         return a.id.localeCompare(b.id);
       });
     return ready[0] ?? null;
+  }
+
+  /**
+   * Record a run outcome. Success clears the story's failure count; a failure
+   * schedules a back-off, and MAX_STORY_ATTEMPTS failures in a row pause the
+   * story so it waits for a human instead of burning runs.
+   */
+  recordOutcome(storyId: string, succeeded: boolean, now: number = Date.now()): void {
+    if (succeeded) {
+      this.storyFailures.delete(storyId);
+      return;
+    }
+    const count = (this.storyFailures.get(storyId)?.count ?? 0) + 1;
+    this.storyFailures.set(storyId, { count, retryAfter: now + STORY_RETRY_COOLDOWN_MS * count });
+    if (count >= MAX_STORY_ATTEMPTS) {
+      logger.warn('Scheduler: story failed repeatedly — pausing it', { storyId, count });
+      this.pauseStory(storyId, `Failed ${count} runs in a row — check the card, then resume it`);
+    }
+  }
+
+  /** Consecutive failure count for a story (0 when it last succeeded or never ran). */
+  getFailureCount(storyId: string): number {
+    return this.storyFailures.get(storyId)?.count ?? 0;
   }
 
   /** Notify the scheduler that a story completed — may immediately pick the next one. */
@@ -320,9 +355,11 @@ export class AutoScheduler extends EventEmitter {
     logger.debug('Scheduler starting story', { storyId: next.id, inProgress: this.inProgressIds.size });
 
     try {
-      await this.runStory(next.id);
+      const succeeded = await this.runStory(next.id);
+      this.recordOutcome(next.id, succeeded === true);
     } catch (err) {
       logger.warn('Story runner threw', { storyId: next.id, error: String(err) });
+      this.recordOutcome(next.id, false);
     } finally {
       this.inProgressIds.delete(next.id);
       this.emit('completed', { storyId: next.id });

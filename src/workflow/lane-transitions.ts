@@ -21,11 +21,13 @@ import { BmadModel } from '../chat/ai-provider';
 import { harnessEngine } from '../harness/policy-engine';
 import { harnessFeedback } from '../harness/harness-feedback';
 import { terminalExecutor } from './terminal-executor';
+import { runViaLanguageModel } from './harness/headless-lm-run';
 import { readVerdictFile, resultFilePath, getOutputFolder } from './kanban-verdict';
 import type { KanbanVerdict } from './kanban-verdict';
 import { getA2AOutboundClient } from '../acp/agent-bus/a2a-outbound-client';
 import { isKanbanAutoAdvanceEnabled } from './kanban-settings';
-import { kanbanOrchestrator } from './kanban-orchestrator';
+import { kanbanOrchestrator, kanbanProgress } from './kanban-orchestrator';
+import { classifyAgentFailure } from './harness/agent-failure';
 
 import { errMsg } from '../utils/error';
 
@@ -234,16 +236,25 @@ export class LaneTransitionEngine {
             token
           );
         } else {
-          // No chat session — execute via terminal CLI provider.
+          // No chat session — run through the resolved harness (CLI, or the
+          // VS Code language model when no CLI is installed).
           // Lock is released when the terminal closes via callback, NOT here.
-          const sessionId = await terminalExecutor.executeTerminalWorkflow(
+          const launch = await terminalExecutor.launchHarness(
             terminalWorkflowId,
             found.artifact,
-            this.store
+            this.store,
+            {
+              lmRunner: () => runViaLanguageModel(this.executor, terminalWorkflowId, found.artifact, this.store),
+              revertStatusOnInterrupt: fromStatus,
+            },
           );
-          if (sessionId) {
+          if (launch.kind === 'blocked') {
+            logger.warn(`[E2] Cannot run ${terminalWorkflowId} on ${artifactId}: ${launch.verdict.summary}`);
+            void vscode.window.showWarningMessage(`Agile Agent Canvas: ${launch.verdict.summary}`);
+          } else {
+            const sessionId = launch.kind === 'cli' ? launch.sessionId : `lm-${terminalWorkflowId}-${artifactId}-${Date.now()}`;
             logger.info(
-              `[E2] Launched terminal execution for ${terminalWorkflowId} on ${artifactId} (session: ${sessionId})`
+              `[E2] Launched ${launch.kind} execution for ${terminalWorkflowId} on ${artifactId} (session: ${sessionId})`
             );
             // ponytail: single-shot terminal path was returning `terminal_launched`
             // immediately and silently leaving the card stuck in `toStatus` if the
@@ -254,12 +265,9 @@ export class LaneTransitionEngine {
             // so the orchestrator or a subsequent drag advances as before.
             this.watchSingleShotVerdict(
               artifactId, artifactType, terminalWorkflowId, fromStatus,
+              launch.kind === 'lm' ? launch.verdict : undefined,
             );
             return { ok: true, workflowLaunched: true, status: 'terminal_launched', terminalSessionId: sessionId };
-          } else {
-            logger.warn(
-              `[E2] Failed to launch terminal execution for ${terminalWorkflowId} on ${artifactId}`
-            );
           }
         }
       }
@@ -311,6 +319,7 @@ export class LaneTransitionEngine {
     artifactType: string,
     workflowId: string,
     preDragStatus: string,
+    verdictPromise?: Promise<KanbanVerdict>,
   ): void {
     const resultPath = resultFilePath(getOutputFolder(), artifactId, workflowId);
     const timeoutMs = 20 * 60 * 1000;
@@ -318,8 +327,8 @@ export class LaneTransitionEngine {
     const startedAt = Date.now();
 
     void (async () => {
-      let verdict: KanbanVerdict | undefined;
-      while (Date.now() - startedAt < timeoutMs) {
+      let verdict: KanbanVerdict | undefined = verdictPromise ? await verdictPromise : undefined;
+      while (!verdict && Date.now() - startedAt < timeoutMs) {
         verdict = readVerdictFile(resultPath);
         if (verdict) break;
         const session = terminalExecutor.getTerminalSession(artifactId);
@@ -337,6 +346,14 @@ export class LaneTransitionEngine {
       }
 
       const summary = verdict.summary ?? `Agent exited with ${verdict.verdict}`;
+      try {
+        kanbanProgress.fire({
+          artifactId,
+          agentState: { status: 'interrupted', workflowId, failure: classifyAgentFailure(summary) },
+        });
+      } catch {
+        // emitter may be disposed
+      }
       const currentStatus: string | undefined = this.store.findArtifactById(artifactId)?.artifact?.status;
       logger.warn(
         `[E2] ${artifactId} (${workflowId}) non-success verdict ${verdict.verdict} ` +

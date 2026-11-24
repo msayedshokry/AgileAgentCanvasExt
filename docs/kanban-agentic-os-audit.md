@@ -1,5 +1,7 @@
 # Kanban Agentic OS — Deep Audit Report
 
+> **Superseded (2026-11-19):** several items marked resolved below were only partly fixed. See [plans/2026-11-19-agentic-prod-readiness.md](plans/2026-11-19-agentic-prod-readiness.md) for the re-audit and the fixes that followed.
+
 > **Updated:** 2026-06-18 (deep autonomy audit — traced every code path end-to-end)
 > **Status:** 23 original GitHub issues (#23–45) + 6 new autonomy-blocking gaps identified below
 > **Methodology:** Read every file in the scheduler→orchestrator→executor→verdict→transition pipeline. Verified each branch (chat vs terminal, auto-advance ON vs OFF) line-by-line.

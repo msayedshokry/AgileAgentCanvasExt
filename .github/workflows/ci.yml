@@ -43,6 +43,42 @@ jobs:
         run: npm run bundle
 
   # ═══════════════════════════════════════════════════════════════════════
+  # Extension — Vitest unit tests (src/**/*.test.ts)
+  # ═══════════════════════════════════════════════════════════════════════
+  extension-vitest:
+    name: Extension (Vitest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: rm -f package-lock.json && npm install
+      - run: npx vitest run
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Agent harness contract — every harness adapter launched through the
+  # real shells of each OS (PowerShell 5.1 / pwsh / cmd on Windows,
+  # bash / sh elsewhere) with a shell-hostile prompt and fake CLIs on PATH.
+  # ═══════════════════════════════════════════════════════════════════════
+  harness-contract:
+    name: Harness contract (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: rm -f package-lock.json && npm install
+        shell: bash
+      - run: npx vitest run src/workflow/harness src/chat/write-guard.test.ts
+        shell: bash
+
+  # ═══════════════════════════════════════════════════════════════════════
   # Webview — Typecheck, Lint, Build, Vitest
   # ═══════════════════════════════════════════════════════════════════════
   webview:
