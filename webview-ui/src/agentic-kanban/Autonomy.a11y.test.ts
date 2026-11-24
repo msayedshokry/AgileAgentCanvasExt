@@ -2014,9 +2014,9 @@ describe('Cluster D-3 commit 3 — post-harvest regression guards', () => {
       note: string;
     }
     const ANCHOR_CONTRACTS: AnchorContract[] = [
-      // App.tsx:L57 — error-boundary-fallback color rail.
-      // (shifted from L56 by the IdeasDrawer import added in the ideas-drawer reorg)
-      { relPath: 'App.tsx', lineno: 57, key: 'color', rail: 'fg',
+      // App.tsx:L59 — error-boundary-fallback color rail.
+      // (shifted from L56 by the IdeasDrawer import, then L57 → L59 by the product-tour imports)
+      { relPath: 'App.tsx', lineno: 59, key: 'color', rail: 'fg',
         expectedValueRegex: /var\(--vscode-errorForeground/,
         note: 'theme-aware red error text (error-boundary-fallback)' },
       // AgenticKanbanApp.tsx:L950 — input field bg rail.

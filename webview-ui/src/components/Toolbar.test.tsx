@@ -325,5 +325,15 @@ describe('Toolbar', () => {
       openOverflow();
       expect(overflowLabels()).toEqual(['Help']);
     });
+
+    it('starts the product tour from the overflow menu and closes the popover', () => {
+      const onStartTour = vi.fn();
+      render(<Toolbar {...defaultProps} onHelp={vi.fn()} onStartTour={onStartTour} />);
+      openOverflow();
+      expect(overflowLabels()).toEqual(['Help', 'Take the Tour']);
+      fireEvent.click(screen.getByRole('menuitem', { name: /take the tour/i }));
+      expect(onStartTour).toHaveBeenCalledOnce();
+      expect(document.querySelector('.toolbar-popover--right')).not.toBeInTheDocument();
+    });
   });
 });

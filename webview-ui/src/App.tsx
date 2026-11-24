@@ -9,6 +9,8 @@ import { DetailPanel } from './components/DetailPanel';
 import { ElicitationPicker } from './components/ElicitationPicker';
 import { WorkflowLauncher } from './components/WorkflowLauncher';
 import { HelpModal } from './components/HelpModal';
+import { ProductTour } from './components/tour/ProductTour';
+import { CANVAS_TOUR_STEPS, hasSeenTour, markTourSeen } from './components/tour/tourSteps';
 import { AskModal } from './components/AskModal';
 import { JiraModal } from './components/JiraModal';
 import { GraphifyModal } from './components/GraphifyModal';
@@ -73,6 +75,9 @@ class ErrorBoundary extends Component<{ children: ReactNode; label?: string }, E
   }
 }
 
+/** Lets the first canvas layout settle before the spotlight measures targets. */
+const TOUR_AUTOSTART_DELAY_MS = 800;
+
 function App() {
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [aiCursor, setAiCursor] = useState<AICursorState | null>(null);
@@ -97,6 +102,7 @@ function App() {
   
   // Help modal state
   const [helpOpen, setHelpOpen] = useState<boolean>(false);
+  const [tourOpen, setTourOpen] = useState<boolean>(false);
   
   // Ask modal state
   const [askOpen, setAskOpen] = useState<boolean>(false);
@@ -682,6 +688,25 @@ function App() {
   const handleCloseHelp = useEvent(() => {
     setHelpOpen(false);
   });
+
+  const handleStartTour = useEvent(() => {
+    setShowKanban(false);
+    setTourOpen(true);
+  });
+
+  const handleCloseTour = useEvent(() => {
+    setTourOpen(false);
+    markTourSeen();
+  });
+
+  // First run: offer the tour once the canvas has something to show.
+  const tourAutoStartedRef = useRef(false);
+  useEffect(() => {
+    if (tourAutoStartedRef.current || artifacts.length === 0 || hasSeenTour()) return;
+    tourAutoStartedRef.current = true;
+    const t = setTimeout(() => setTourOpen(true), TOUR_AUTOSTART_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [artifacts.length]);
 
   const handleOpenAsk = useEvent(() => {
     setAskOpen(true);
@@ -1279,6 +1304,7 @@ function App() {
           onExport={handleExport}
           onImport={handleImport}
           onHelp={handleOpenHelp}
+          onStartTour={handleStartTour}
           onAsk={handleOpenAsk}
           onSprintView={handleOpenSprintView}
           onJira={handleOpenJira}
@@ -1400,6 +1426,9 @@ function App() {
       )}
       {helpOpen && (
         <HelpModal onClose={handleCloseHelp} />
+      )}
+      {tourOpen && (
+        <ProductTour steps={CANVAS_TOUR_STEPS} onClose={handleCloseTour} />
       )}
       {catalogueOpen && (
         <CatalogueModal onClose={() => setCatalogueOpen(false)} />

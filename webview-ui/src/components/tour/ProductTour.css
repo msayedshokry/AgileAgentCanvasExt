@@ -1,0 +1,158 @@
+/* Product tour — coach marks over the canvas.
+   Sits above every other layer (highest existing z-index is 9999). */
+.product-tour {
+  --tour-z: 10000;
+  --tour-scrim: rgba(0, 0, 0, 0.55);
+  --tour-radius: 10px;
+  --tour-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --tour-move: 260ms;
+  --tour-surface: var(--vscode-editorWidget-background, #252526);
+  --tour-border: var(--vscode-editorWidget-border, rgba(255, 255, 255, 0.12));
+  --tour-fg: var(--vscode-editorWidget-foreground, var(--vscode-foreground, #e6e6e6));
+  --tour-muted: var(--vscode-descriptionForeground, #a8a8b3);
+  --tour-accent: var(--vscode-focusBorder, #3794ff);
+
+  position: fixed;
+  inset: 0;
+  z-index: var(--tour-z);
+  font-family: var(--vscode-font-family, system-ui, sans-serif);
+}
+
+.product-tour-shield {
+  position: absolute;
+  inset: 0;
+}
+
+/* The giant spread shadow is the scrim; the hole is the spotlighted control. */
+.product-tour-spotlight {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: var(--tour-radius);
+  box-shadow:
+    0 0 0 2px var(--tour-accent),
+    0 0 0 9999px var(--tour-scrim);
+  pointer-events: none;
+  transition: transform var(--tour-move) var(--tour-ease);
+}
+
+.product-tour-popover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: min(320px, calc(100vw - 16px));
+  padding: 16px 16px 12px;
+  border: 1px solid var(--tour-border);
+  border-radius: var(--tour-radius);
+  background: var(--tour-surface);
+  color: var(--tour-fg);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: transform var(--tour-move) var(--tour-ease);
+  animation: product-tour-in 180ms var(--tour-ease);
+}
+
+/* Accent stripe on the edge that faces the spotlighted control. */
+.product-tour-popover::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--tour-accent);
+  opacity: 0.8;
+}
+.product-tour-popover--bottom::before { top: -1px; }
+.product-tour-popover--top::before { bottom: -1px; }
+
+.product-tour-title {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.005em;
+}
+
+.product-tour-body {
+  margin: 0 0 14px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--tour-muted);
+}
+
+.product-tour-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.product-tour-count {
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--tour-muted);
+}
+
+.product-tour-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.product-tour-btn {
+  padding: 5px 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 120ms ease, opacity 120ms ease;
+}
+
+.product-tour-btn:focus-visible {
+  outline: 2px solid var(--tour-accent);
+  outline-offset: 2px;
+}
+
+.product-tour-btn--primary {
+  background: var(--vscode-button-background, #3b5bdb);
+  color: var(--vscode-button-foreground, #fff);
+}
+.product-tour-btn--primary:hover {
+  background: var(--vscode-button-hoverBackground);
+}
+
+.product-tour-btn--secondary {
+  background: var(--vscode-button-secondaryBackground, #3a3d41);
+  color: var(--vscode-button-secondaryForeground, #e6e6e6);
+}
+.product-tour-btn--secondary:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.product-tour-btn--ghost {
+  background: transparent;
+  border-color: var(--tour-border);
+  color: var(--tour-muted);
+}
+.product-tour-btn--ghost:hover {
+  color: var(--tour-fg);
+  background: var(--vscode-toolbar-hoverBackground, rgba(255, 255, 255, 0.06));
+}
+
+.product-tour-btn:active {
+  opacity: 0.85;
+}
+
+@keyframes product-tour-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-tour-spotlight,
+  .product-tour-popover {
+    transition: none;
+    animation: none;
+  }
+}

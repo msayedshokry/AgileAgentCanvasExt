@@ -15,6 +15,7 @@ interface ToolbarProps {
   onExport?: () => void;
   onImport?: () => void;
   onHelp?: () => void;
+  onStartTour?: () => void;
   onAsk?: () => void;
   schemaIssueCount?: number;
   onFixSchemas?: () => void;
@@ -75,7 +76,7 @@ const ROOT_TYPES: Set<Artifact['type']> = new Set([
   'epic', 'requirement', 'prd', 'architecture', 'vision', 'product-brief',
 ]);
 
-export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhance, onElicit, themeOverride, onToggleTheme, onSwitchProject, activeFolderName, onExport, onImport, onHelp, onAsk, schemaIssueCount, onFixSchemas, onValidateSchemas, schemaValidating, schemaFixing, onSprintView, onJira, onGraphify, graphifyReady, onCatalogue, onGeneratePlan, onToggleIdeas, ideasOpen, ideasCount }: ToolbarProps) {
+export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhance, onElicit, themeOverride, onToggleTheme, onSwitchProject, activeFolderName, onExport, onImport, onHelp, onStartTour, onAsk, schemaIssueCount, onFixSchemas, onValidateSchemas, schemaValidating, schemaFixing, onSprintView, onJira, onGraphify, graphifyReady, onCatalogue, onGeneratePlan, onToggleIdeas, ideasOpen, ideasCount }: ToolbarProps) {
   const [open, setOpen] = useState(false);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -321,6 +322,16 @@ export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhanc
               >
                 <span className="toolbar-popover-icon"><Icon name="help" size={16} /></span>
                 <span className="toolbar-popover-label">Help</span>
+              </button>
+            )}
+            {onStartTour && (
+              <button
+                className="toolbar-popover-item"
+                onClick={() => { onStartTour(); setOverflowOpen(false); }}
+                role="menuitem"
+              >
+                <span className="toolbar-popover-icon"><Icon name="sparkle" size={16} /></span>
+                <span className="toolbar-popover-label">Take the Tour</span>
               </button>
             )}
           </div>
