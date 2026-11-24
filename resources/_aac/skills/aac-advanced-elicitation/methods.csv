@@ -59,3 +59,5 @@ num,category,method_name,description,output_pattern
 58,technical,Trade-off Matrix (GSD 5-Column),5-column matrix (Option/Pros/Cons/Risk/Recommendation) for evaluating technical decisions,options → pros/cons → risk → verdict
 59,core,Goal-Backward Planning,Start from the ideal end state and work backwards to define the critical path of execution,end state → dependencies → execution chain
 60,collaboration,User Behavioral Profiling,Analyze expected user interaction patterns and edge cases to harden the happy path,user intent → happy path → edge cases → hardening
+61,creative,Subtraction,Improve by deliberately removing elements instead of adding them - counters the well-documented additive bias where people overlook subtractive changes that would simplify and strengthen the work,current state → what to remove → simplified result
+62,philosophical,Map Is Not the Territory,Treat any model or diagram as a lossy abstraction of reality - check where the representation diverges from the real system before trusting it,model → reality check → divergences found → corrected understanding

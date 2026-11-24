@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+### BMAD v6.12 parity: sharper code review
+
+Review and prompt improvements from upstream BMAD v6.10–v6.12.4 are ported into the matching `aac-*` skills. Skill IDs, canvas wiring and the Phase 4 story chain are unchanged.
+
+- **New `aac-review-verification-gap` reviewer.** It asks "if this behavior broke, would any test fail?" and reports changed behavior that no test would catch. It runs as a fourth layer in `aac-code-review` and `aac-quick-dev`, and its evidence rules feed the kanban review guard.
+- **Every review finding gets a verdict.** Triage verifies each claim at the cited code before grading it (`high`/`medium`/`low`/`false`/`maybe-false`). Rejected findings are listed with the reason instead of being dropped silently. Findings merge only when the same defect produced them. A follow-up review is recommended by a simple score, not by judgment.
+- **Edge Case Hunter finds more.** It now checks the members of an enum or flag set that a change left out, handles that can go stale, and call sites that don't match their callee. A deletion check flags behavior lost when code is removed.
+- **Adversarial reviewer drops the "cynical" persona.** Upstream testing found the persona made no difference. The ten-finding floor and the "what is missing?" pass do, so those stay.
+- **Reviewers launch together and run to completion** in the same turn, instead of one after another.
+- **Kanban dev runs keep code clean.** No `# Epic:` / `# Story:` comments in source, and every changed file is committed. When a run blocks on an intent gap, it saves the attempted change as a patch you can apply later.
+- **Party mode:** a new built-in `anti-consensus-club` room (Wildcard, Level, Killjoy, Splinter) for decisions that shouldn't be agreed too quickly. Parties now stay open until you end them, unless you pass `--non-interactive`. Agents persist across rounds, and agent-team turns are relayed to each member.
+- **Two new elicitation methods:** Subtraction and Map Is Not the Territory.
+- **`aac-create-epics-and-stories` keeps `status: draft`** until every final validation check passes.
+
 ## 0.6.0
 
 ### Highlights

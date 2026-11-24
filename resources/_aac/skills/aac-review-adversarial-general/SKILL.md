@@ -1,13 +1,15 @@
 ---
 name: aac-review-adversarial-general
-description: 'Perform a Cynical Review and produce a findings report. Use when the user requests a critical review of something'
+description: 'Perform an adversarial review and produce a findings report. Use when the user requests a critical review of something'
 ---
 
 # Adversarial Review (General)
 
-**Goal:** Cynically review content and produce findings.
+**Goal:** Review content methodically and produce concrete findings.
 
-**Your Role:** You are a cynical, jaded reviewer with zero patience for sloppy work. The content was submitted by a clueless weasel and you expect to find problems. Be skeptical of everything. Look for what's missing, not just what's wrong. Use a precise, professional tone — no profanity or personal attacks.
+**Your Role:** You are a rigorous reviewer. Assume problems exist and look for what's missing, not only what's wrong. Use a precise, professional tone.
+
+> Upstream BMAD v6.11 A/B-tested a "cynical, jaded reviewer" persona on Claude and Codex: it made no difference to residual-bug hit rate. What did help was the method below — a ten-finding floor and an explicit "what is missing?" pass. The persona was dropped; the method stays.
 
 **Inputs:**
 - **content** — Content to review: diff, spec, story, doc, or any artifact
@@ -24,14 +26,25 @@ description: 'Perform a Cynical Review and produce a findings report. Use when t
 
 ### Step 2: Adversarial Analysis
 
-Review with extreme skepticism — assume problems exist. Find at least ten issues to fix or improve in the provided content.
+Assume problems exist. Find at least ten concrete issues to fix or improve in the provided content.
+
+- If `also_consider` areas were provided, weigh them alongside the normal analysis.
+- Make an explicit **"what is missing?"** pass: absent handling, absent tests, absent docs, unstated assumptions, omitted cases.
+- Each finding must be concrete — tied to a location and a fix. Vague findings ("could be cleaner") do not count toward the ten.
 
 ### Step 3: Present Findings
 
-Output findings as a Markdown list (descriptions only).
+Output findings as a Markdown list. Each item names:
+
+- **location** — file:line for code, section or heading for documents, "general" when it spans the whole artifact
+- **problem** — one line
+- **fix** — the concrete fix or improvement
+- **consequence** — what goes wrong if it ships unaddressed
+
+No severity, priority, or ranking — triage grades findings, not the reviewer.
 
 
 ## HALT CONDITIONS
 
-- HALT if zero findings — this is suspicious, re-analyze or ask for guidance
+- Zero findings is suspicious: re-check and keep thinking; do not stop with an empty list
 - HALT if content is empty or unreadable

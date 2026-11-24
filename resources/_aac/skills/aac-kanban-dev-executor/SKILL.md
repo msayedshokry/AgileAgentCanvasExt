@@ -28,16 +28,18 @@ Before writing ANY code, check the artifact against these criteria:
 If ALL checks pass → proceed to implementation.
 If ANY check fails → output BLOCKED verdict with specific reasons.
 
+If you discover mid-implementation that the captured intent is incomplete (an intent gap), save the attempted change as a patch file under the implementation artifacts folder, name it in the BLOCKED reason, then revert — so the work can be `git apply`-ed and resumed instead of redone.
+
 ---
 
 ## Implementation
 
 1. **Read context:** Load the artifact, any linked specs, project context files
 2. **Preflight conflict check:** Check if other agents are working on overlapping files (if agent bus is available)
-3. **Implement minimally:** Follow existing code patterns. No refactors, no scope creep.
+3. **Implement minimally:** Follow existing code patterns. No refactors, no scope creep. Never write epic, story, or card reference comments (`# Epic: X`, `// Story: PROJ-42`) or explanatory noise into source — traceability lives in Dev Evidence and commit messages.
 4. **Red-green-refactor:** Write tests first, implement to pass, refactor for quality
 5. **Run verification commands:** Execute tests, lints, typechecks
-6. **Commit code:** Follow project git discipline
+6. **Commit code:** Follow project git discipline. The commit must contain every file in the implemented diff, tracked and untracked. Declare in Dev Evidence any file changed beyond the card's tasks, and any file still dirty after commit as a residual artifact.
 
 ---
 

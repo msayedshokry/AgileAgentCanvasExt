@@ -41,6 +41,16 @@ For each criterion, output exactly ONE:
 
 ---
 
+## Verification Gap Check
+
+A ✅ VERIFIED criterion needs evidence that would fail if the behavior regressed. For each criterion whose evidence is a test, read the test and ask: *if this behavior broke where it is used, would this assertion fail?*
+
+These do NOT count as verification: tests that are skipped or not in the normal run; success/no-throw/snapshot-only checks; mock- or log-call-only checks; assertions on source text instead of running the code; `expect(x ?? DEFAULT).toBe(DEFAULT)`-style checks that pass when the value is missing. Do not demand tests for prompt/static text or live-model output — those cannot be deterministically verified.
+
+If the cited test would not catch a regression, downgrade the criterion to ⚠️ DEVIATION and add a `fix_requests` entry naming the missing assertion. Use the `aac-review-verification-gap` skill's evidence rules when tracing.
+
+---
+
 ## Commit Authorship Check
 
 Verify each commit in scope follows git discipline:
@@ -107,4 +117,5 @@ Compile a short index:
 - BLOCKED if evidence is missing (can't verify)
 - NEEDS_FIXES if criteria fail — include structured fix requests
 - Evidence-driven: no evidence = not verified
+- A test that would not fail on regression is not evidence
 - No implementation — you only verify and report

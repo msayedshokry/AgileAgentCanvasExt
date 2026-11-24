@@ -56,6 +56,9 @@ principles = [
   "Document in story file Dev Agent Record what was implemented, tests created, and any decisions made.",
   "Update story file File List with ALL changed files after each task completion.",
   "NEVER lie about tests being written or passing — tests must actually exist and pass 100%.",
+  "Never add epic or story references as inline code comments (e.g. # Epic: X, # Story: PROJ-42).",
+  "Code comments explain why, not what — no AI workflow metadata, planning refs, or story tracking in source code.",
+  "Generated code must be production-ready: clean, minimal, and free of AI-generated noise.",
 ]
 
 # Capabilities menu. Overrides merge by `code`: matching codes replace the item

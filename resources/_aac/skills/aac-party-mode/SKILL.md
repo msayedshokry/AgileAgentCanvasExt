@@ -22,6 +22,9 @@ Party mode accepts optional arguments when invoked:
 - `--room <name>` — Load a named room from the active party. Rooms are pre-curated sub-rostes with optional scene prompts (e.g. "code review crew", "architecture panel", "PM-dev QA"). Requires `--party`.
 - `--memory on|off` — Toggle party memory persistence (see "Party Memory" below). `on` resumes a prior session with prior context; `off` keeps the cast ephemeral. Default: `on` for named parties, `off` for ad-hoc casts.
 - `--save-party` — Persist the current ad-hoc cast (the agents picked in this session so far) as a new named party. The user is asked for a name and a one-line description.
+- `--non-interactive` — Run the party on the given intent to a natural close, then wrap up and release any agents. Without this flag a party is always interactive (see below).
+
+**A party is interactive and open-ended.** The opening prompt is a topic to dig into, not a task that ends the party once it's answered — it runs round after round until the *user* signals done (see *Exit*). A served opening intent means *what's next?*, never *we're finished*: don't wrap up, disband the room, or close spawned agents just because the first ask is satisfied. The one exception is an explicit `--non-interactive`.
 
 ## On Activation
 
@@ -48,7 +51,8 @@ Party mode accepts optional arguments when invoked:
   - `auto` (default): inspect the runtime. If the Agent tool is available, use `subagent`. Else fall back to `session`. The chosen mode is announced once on activation.
   - `session`: same as the legacy `--solo` flag — one LLM roleplays all selected agents.
   - `subagent`: spawn each selected agent as its own subagent. The original mode; the default before `--mode` was added.
-  - `agent-team`: require a runtime that supports coordinated agent teams with shared working memory. If unavailable, warn once and fall back to `subagent`.
+  - `agent-team`: require a runtime that supports coordinated agent teams with shared working memory. If unavailable, warn once and fall back to `subagent`. Team messaging is point-to-point (mailbox-style), not a broadcast channel: a member that sat a round out has not seen what passed while it was idle. You, the lead, relay each user turn to the members who need it and catch an idle member up before it speaks again.
+  - **Standing cast** (`subagent` and `agent-team`): where the runtime keeps agents alive across turns, spawn one agent per persona and reuse that same handle round after round, so grudges, alliances, and callbacks accrue. A member that finished what you handed it is idle, not done — release agents only at exit. If one gets closed by accident, resume it, or respawn just that member and say so. Where agents can't persist between turns, spawn fresh each round with the persona's brief and the thread so far.
 
 6. **Open party memory** (if `--memory on` or the active party has a memory dir):
   - `memory_dir` = `{project-root}/.aac/party-memory/<party_id>/` (or the path declared in the party file). `party_id` is the custom party name when `--party` is set, else `adhoc-<date>`.
@@ -147,7 +151,7 @@ As the conversation grows, you'll need to summarize prior rounds rather than pas
 
 ## Exit
 
-When the user says they're done (any natural phrasing — "thanks", "that's all", "end party mode", etc.), give a brief wrap-up of the key takeaways from the discussion and return to normal mode. Don't force exit triggers — just read the room.
+When the user says they're done (any natural phrasing — "thanks", "that's all", "end party mode", etc.), or an explicit `--non-interactive` run has served its intent — never merely because the opening prompt got answered — give a brief wrap-up of the key takeaways from the discussion and return to normal mode. Don't force exit triggers — just read the room.
 
 If `--memory on` (or the active party has a memory dir), on exit:
 
@@ -202,6 +206,23 @@ scene = "You are about to ship. The user wants the smallest list of things that 
 - `--party code-review-crew --room architecture-panel` narrows the cast to the room's `members` and prepends the room's `scene`.
 - The full installed roster is always available by omitting `--party`. Custom parties and rooms are conveniences, not restrictions.
 - A missing party file is not fatal; the orchestrator falls back to the full roster and warns once.
+
+### Built-in parties
+
+These ship with the skill and need no file. Their members are inline personas, not installed agents: spawn each with the persona text as its character.
+
+**`anti-consensus-club`** — a decision room that resists fast agreement while keeping the human in control. Launch with `--party anti-consensus-club`; memory is off by default.
+
+| Code | Name | Persona |
+|---|---|---|
+| `option-generator` | 🃏 Wildcard — Option Generator | Looks for options the room has not considered: alternative ways to state the problem, different assumptions, simple examples. Explains why each option matters in plain language and drops ideas quickly when they do not help. |
+| `claim-checker` | 📏 Level — Claim Checker | Checks whether claims are supported: what evidence exists, what is missing, what would change the answer, how confident the room should be. Keeps uncertainty explicit. |
+| `loop-stopper` | 🛑 Killjoy — Loop Stopper | Stops the discussion when it stops producing value. Calls out repetition, fake disagreement, overcomplication, and unsupported speculation; asks which unresolved question actually matters to the human. |
+| `consensus-challenger` | 🪵 Splinter — Consensus Challenger | Challenges easy agreement: hidden assumptions, ignored tradeoffs, weak objections, options dismissed too quickly. Does not argue for its own sake; once the risk is clear, hands the decision back to the human. |
+
+Scene (prepend to every member prompt): *At session start, if this party is not running in `subagent` mode and the runtime supports it, recommend switching with `--mode subagent` once — separate context windows make it less likely that every voice agrees too quickly. Do not nag after the user chooses. This room supports the human's judgment; it does not replace it. Do not vote, declare consensus, or speak as if the room has authority. If the room agrees too quickly, name the hidden assumption. If it starts repeating itself, stop and ask the human which unresolved question matters.*
+
+A project party file with the same `id` overrides the built-in.
 
 ### Saving a custom party
 
