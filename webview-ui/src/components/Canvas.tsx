@@ -202,6 +202,11 @@ const TREE_PLAN_SCALE       = 0.85; // height multiplier (= plan.size.height * 0
 const TREE_PLAN_OFFSET_Y    = 8;   // vertical gap below the parent card
 const TREE_PLAN_BAND_PAD    = 8;   // extra padding below tree-nested plan card inside row band
 const BAND_V_INSET          = 6;   // vertical inset for epic row band (matched in JSX render)
+/** Bound on remembered self-reported views (see reportedViewKeysRef). */
+const MAX_REPORTED_VIEW_KEYS = 200;
+const viewKey = (zoom: number, pan: { x: number; y: number }): string =>
+  `${zoom}|${pan.x}|${pan.y}`;
+
 export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpand, expandedIds, expandedCategories, onToggleCategoryExpand, onRefineWithAI, onElicit, onExpandLane, onCollapseLane, centerOnId, onCentered, onOpenSearch, searchMatchIds, screenshotTrigger, screenshotFormat, onScreenshotReady, onScreenshotError, onOpenDetail, initialCanvasView, onCanvasViewChange, childPlanMap, onShowPlan, initialLayoutMode, onLayoutModeChange, hasCustomMindmapView }: CanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -216,7 +221,17 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
   // Intentionally NOT including `onCanvasViewChange` in deps — upstream wires
   // it as a `useEvent` with stable identity, and including the prop would
   // cause render churn if a future caller forgets to memoise it.
+  //
+  // Every reported view is remembered (per layout mode) so the restore
+  // effect below can recognise App echoing it back.  Without this, a fast
+  // wheel/drag produces a ping-pong: Canvas reports v1, moves on to v2,
+  // App's echo of v1 arrives as a "new" initialCanvasView, Canvas snaps
+  // back to v1, reports again… — visible as canvas flicker.
+  const reportedViewKeysRef = useRef<Set<string>>(new Set());
   useEffect(() => {
+    const keys = reportedViewKeysRef.current;
+    if (keys.size >= MAX_REPORTED_VIEW_KEYS) keys.clear();
+    keys.add(viewKey(zoom, pan));
     if (onCanvasViewChange) onCanvasViewChange(layoutMode, zoom, pan);
   }, [zoom, pan]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -225,6 +240,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
   // seeds the values, so we skip the initial run via a ref.  Subsequent
   // changes — App re-renders with a different mode's saved view — restore
   // the correct per-mode pan/zoom so views are persisted separately.
+  // Echoes of views this Canvas reported itself are ignored (see above).
   const isFirstViewRestoreRef = useRef(true);
   useEffect(() => {
     if (isFirstViewRestoreRef.current) {
@@ -235,6 +251,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
     if (zoom === initialCanvasView.zoom &&
         pan.x === initialCanvasView.pan.x &&
         pan.y === initialCanvasView.pan.y) return;
+    if (reportedViewKeysRef.current.has(viewKey(initialCanvasView.zoom, initialCanvasView.pan))) return;
     setZoom(initialCanvasView.zoom);
     setPan(initialCanvasView.pan);
   }, [initialCanvasView]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -268,6 +285,9 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
   // above. Including the prop here would cause render churn if a future caller
   // forgets to memoise the handler.
   useEffect(() => {
+    // New mode → its saved view must be restorable even if it matches a
+    // view reported while in an earlier mode.
+    reportedViewKeysRef.current.clear();
     if (onLayoutModeChange) onLayoutModeChange(layoutMode);
   }, [layoutMode]); // eslint-disable-line react-hooks/exhaustive-deps
   // Screenshot capture in progress

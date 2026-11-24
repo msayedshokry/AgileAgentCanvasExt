@@ -1954,5 +1954,33 @@ describe('Canvas', () => {
       expect(content.style.transform).toContain('translate(-40px, 60px');
       expect(content.style.transform).toContain('scale(0.75)');
     });
+
+    it('ignores a stale echo of a view it reported itself (no zoom snap-back flicker)', () => {
+      const onCanvasViewChange = vi.fn();
+      const view = { zoom: 1, pan: { x: 0, y: 0 } };
+      const { rerender } = render(
+        <Canvas {...defaultProps} initialCanvasView={view} onCanvasViewChange={onCanvasViewChange} />
+      );
+      const canvas = document.querySelector('.canvas')!;
+      const zoomIn = () => fireEvent.wheel(canvas, { deltaY: -100, ctrlKey: true, clientX: 200, clientY: 200 });
+
+      zoomIn();
+      const [, firstZoom, firstPan] = onCanvasViewChange.mock.calls.at(-1)!;
+      zoomIn();
+      const content = document.querySelector('.canvas-content') as HTMLElement;
+      const latestTransform = content.style.transform;
+      expect(latestTransform).not.toContain(`scale(${firstZoom})`);
+
+      // App echoes the FIRST reported view back after the user already moved on.
+      rerender(
+        <Canvas
+          {...defaultProps}
+          initialCanvasView={{ zoom: firstZoom, pan: { ...firstPan } }}
+          onCanvasViewChange={onCanvasViewChange}
+        />
+      );
+
+      expect((document.querySelector('.canvas-content') as HTMLElement).style.transform).toBe(latestTransform);
+    });
   });
 });
