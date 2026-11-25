@@ -101,6 +101,7 @@ export interface RecentCompressCall {
 const RECENT_CALL_CAP = 20;
 
 let _server: http.Server | null = null;
+let _boundPort: number | null = null;
 let _stats: ManagedProxyStats = {
     totalCalls: 0,
     totalTokensBefore: 0,
@@ -119,9 +120,13 @@ const _recentCalls: RecentCompressCall[] = [];
  * rebinds (extension reload, fork-pool child restart) succeed even on
  * Windows; foreign-port contention still throws EADDRINUSE.
  *
+ * @param options.port TCP port to bind. Defaults to 8787, the port the
+ *   headroom-ai SDK dials. Pass 0 for an OS-assigned port (tests), then
+ *   read it back with {@link getInProcessProxyPort}.
  * @returns A `vscode.Disposable`-shaped object that closes the server.
  */
-export function startInProcessProxy(): { dispose(): void } {
+export function startInProcessProxy(options: { readonly port?: number } = {}): { dispose(): void } {
+    const port = options.port ?? PROXY_PORT;
     if (_server || getLocalProxyState() !== 'idle') {
         logger.debug('In-process proxy already started; ignoring duplicate start');
         return { dispose: () => {} };
@@ -149,7 +154,7 @@ export function startInProcessProxy(): { dispose(): void } {
     server.on('error', (err: NodeJS.ErrnoException) => {
         if (err.code === 'EADDRINUSE') {
             logger.info(
-                `Port ${PROXY_PORT} already in use by another process — ` +
+                `Port ${port} already in use by another process — ` +
                 'falling back to external Headroom proxy (extension will not host its own).',
             );
             setLocalProxyState('fallback');
@@ -158,6 +163,7 @@ export function startInProcessProxy(): { dispose(): void } {
             setLocalProxyState('failed');
         }
         _server = null;
+        _boundPort = null;
         // Always close the underlying server after an error event. In a
         // genuine EADDRINUSE case, server.listen() never bound — close()
         // is a no-op. In a synthetic-error test case (the listen-error
@@ -171,8 +177,10 @@ export function startInProcessProxy(): { dispose(): void } {
     });
 
     // See `startInProcessProxy` JSDoc for listen-options intent.
-    server.listen({ port: PROXY_PORT, host: PROXY_HOST, exclusive: false }, () => {
-        logger.info(`In-process Headroom proxy listening on http://${PROXY_HOST}:${PROXY_PORT}`);
+    server.listen({ port, host: PROXY_HOST, exclusive: false }, () => {
+        const address = server.address();
+        _boundPort = typeof address === 'object' && address ? address.port : port;
+        logger.info(`In-process Headroom proxy listening on http://${PROXY_HOST}:${_boundPort}`);
         setLocalProxyState('running');
     });
 
@@ -183,6 +191,7 @@ export function startInProcessProxy(): { dispose(): void } {
             if (_server) {
                 const closing = _server;
                 _server = null;
+                _boundPort = null;
                 setLocalProxyState('idle');
                 // closeAllConnections is Node ≥ 18.2 (we target node20 in esbuild).
                 // Drop in-flight sockets BEFORE close() so a request landing in
@@ -203,6 +212,11 @@ export function startInProcessProxy(): { dispose(): void } {
             _ccr.clear();
         },
     };
+}
+
+/** The port the in-process proxy is listening on, or null when it is not listening. */
+export function getInProcessProxyPort(): number | null {
+    return _boundPort;
 }
 
 /** Read aggregated stats — used by status bar tooltip / debugging. */

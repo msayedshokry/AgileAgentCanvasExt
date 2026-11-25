@@ -8,19 +8,17 @@
  * Content-Type surprises. We accept the slight test-runtime cost
  * (~50 ms per lifecycle test) for the honest round-trip.
  *
- * IMPORTANT: tests in this suite bind TCP port 8787. Today no other
- * test file in the project binds 8787, so vitest's default worker
- * pool is fine. If a future test adds a second 8787-binding suite,
- * run vitest's lifecycle/endpoint/handle-error tests in this file
- * AFTER the port-binding tests complete (already the case) — the
- * afterEach drain waits for the socket to fully close before the
- * next describe runs.
+ * The proxy binds 8787 in production. These tests bind an OS-assigned
+ * port instead (`TEST_PORT` = 0) and read it back, so another process
+ * holding 8787 (a VS Code dev host, a real headroom-ai engine) cannot
+ * push the proxy into 'fallback' and time the suite out.
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import * as http from 'node:http';
 import { countTokens } from 'gpt-tokenizer';
 import {
     startInProcessProxy,
+    getInProcessProxyPort,
     getManagedProxyStats,
     resetManagedProxyStats,
     _getInternalServerForTest,
@@ -51,7 +49,7 @@ function httpRequest(
         const req = http.request(
             {
                 host: '127.0.0.1',
-                port: 8787,
+                port: boundPort(),
                 path,
                 method,
                 headers: body ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body).toString() } : {},
@@ -70,6 +68,15 @@ function httpRequest(
         if (body) { req.write(body); }
         req.end();
     });
+}
+
+/** Ask the OS for a free port; see the file header. */
+const TEST_PORT = 0;
+
+function boundPort(): number {
+    const port = getInProcessProxyPort();
+    if (port === null) { throw new Error('in-process proxy is not listening'); }
+    return port;
 }
 
 async function waitFor(predicate: () => boolean, timeoutMs = 3000, intervalMs = 10): Promise<void> {
@@ -110,7 +117,7 @@ afterEach(async () => {
 
 describe('in-process proxy — lifecycle', () => {
   it('transitions idle → starting → running on first start', async () => {
-    firstDisposable = startInProcessProxy();
+    firstDisposable = startInProcessProxy({ port: TEST_PORT });
     expect(getLocalProxyState()).toBe('starting');
 
     await waitFor(() => getLocalProxyState() === 'running');
@@ -118,11 +125,11 @@ describe('in-process proxy — lifecycle', () => {
   });
 
   it('is idempotent: a second start returns a no-op disposable and does not refire listeners', async () => {
-    firstDisposable = startInProcessProxy();
+    firstDisposable = startInProcessProxy({ port: TEST_PORT });
     await waitFor(() => getLocalProxyState() === 'running');
     const callsAtRunning = listenerEvents.length;
 
-    const secondDisposable = startInProcessProxy();
+    const secondDisposable = startInProcessProxy({ port: TEST_PORT });
     secondDisposable.dispose();   // no-op; should not flip state
 
     expect(listenerEvents.length).toBe(callsAtRunning);
@@ -130,7 +137,7 @@ describe('in-process proxy — lifecycle', () => {
   });
 
   it('dispose resolves back to idle after server.close', async () => {
-    firstDisposable = startInProcessProxy();
+    firstDisposable = startInProcessProxy({ port: TEST_PORT });
     await waitFor(() => getLocalProxyState() === 'running');
 
     firstDisposable.dispose();
@@ -139,23 +146,25 @@ describe('in-process proxy — lifecycle', () => {
     expect(listenerEvents[listenerEvents.length - 1]).toBe('idle');
   });
 
-  it('rebinds TCP 8787 successfully after a dispose → restart cycle (regression for Windows in-process reload)', async () => {
+  it('rebinds the same TCP port successfully after a dispose → restart cycle (regression for Windows in-process reload)', async () => {
     // Regression guard: `exclusive: false` on server.listen() opts into
     // in-process SO_REUSEADDR on Windows so a same-process dispose → restart
-    // cycle re-binds 8787 cleanly. If a future refactor drops
+    // cycle re-binds the same port cleanly. If a future refactor drops
     // `exclusive: false`, the second start would land in 'fallback' state
     // (foreign EADDRINUSE semantics) and the no-fallback assertion below
     // would fail loudly. Foreign-process contention is still covered by
     // the listen-error-handling describe block (it synthesizes an
     // EADDRINUSE 'error' event on the live server).
-    firstDisposable = startInProcessProxy();
+    firstDisposable = startInProcessProxy({ port: TEST_PORT });
     await waitFor(() => getLocalProxyState() === 'running');
+    const port = boundPort();
     firstDisposable.dispose();
     firstDisposable = null;
     // dispose() flips state synchronously.
     expect(getLocalProxyState()).toBe('idle');
+    expect(getInProcessProxyPort()).toBeNull();
 
-    firstDisposable = startInProcessProxy();
+    firstDisposable = startInProcessProxy({ port });
     await waitFor(() => getLocalProxyState() === 'running', 1000);
     // Explicit no-foreign-fallback invariant — vital because
     // `state === 'running'` could mask a fall-then-recover sequence.
@@ -167,7 +176,7 @@ describe('in-process proxy — lifecycle', () => {
 
 describe('in-process proxy — endpoint surface', () => {
   beforeEach(async () => {
-    firstDisposable = startInProcessProxy();
+    firstDisposable = startInProcessProxy({ port: TEST_PORT });
     await waitFor(() => getLocalProxyState() === 'running');
     // Clear the CCR store so each test in this describe block starts
     // from a deterministic empty state. The recent-call ring is already
@@ -437,7 +446,7 @@ describe('in-process proxy — listen error handling', () => {
     // occupy port 8787 with a real side-channel server. Node's async
     // socket-release timing makes real-port-contention unit tests
     // flaky — synthetic emit guarantees the on-error handler fires.
-    firstDisposable = startInProcessProxy();
+    firstDisposable = startInProcessProxy({ port: TEST_PORT });
     await waitFor(() => getLocalProxyState() === 'starting');
 
     const internal = _getInternalServerForTest();
@@ -454,7 +463,7 @@ describe('in-process proxy — listen error handling', () => {
   });
 
   it('transitions to "failed" when the server emits a non-EADDRINUSE error', async () => {
-    firstDisposable = startInProcessProxy();
+    firstDisposable = startInProcessProxy({ port: TEST_PORT });
     await waitFor(() => getLocalProxyState() === 'starting');
 
     const internal = _getInternalServerForTest();
@@ -473,7 +482,7 @@ describe('in-process proxy — listen error handling', () => {
 
 describe('in-process proxy — managed stats accessor', () => {
   it('getManagedProxyStats() returns a fresh snapshot — caller mutation cannot poison internals', async () => {
-    // We don't startInProcessProxy() here because port 8787 may be in
+    // We don't startInProcessProxy() here because the port may be in
     // TIME_WAIT from previous describe blocks' server.close() callbacks.
     // The endpoint-surface tests already cover the round-trip that
     // increments _stats via /v1/compress. This test locks the snapshot
@@ -502,7 +511,7 @@ describe('in-process proxy — CCR cross-call dedup', () => {
     // Wire-format invariant: regardless of transforms applied, the
     // `ccr_hashes` array length must equal the input `messages` length,
     // and every element must be a 64-bit (16 hex chars) SHA-256 prefix.
-    firstDisposable = startInProcessProxy();
+    firstDisposable = startInProcessProxy({ port: TEST_PORT });
     await waitFor(() => getLocalProxyState() === 'running');
     const r = await httpRequest('POST', '/v1/compress', JSON.stringify({
       messages: [
@@ -525,7 +534,7 @@ describe('in-process proxy — CCR cross-call dedup', () => {
     // Two /v1/compress calls with the same input message produce the
     // same hash — that's the dedup contract. The 16-hex hash is
     // deterministic across the 100ms gap between calls.
-    firstDisposable = startInProcessProxy();
+    firstDisposable = startInProcessProxy({ port: TEST_PORT });
     await waitFor(() => getLocalProxyState() === 'running');
     const sharedMessage = { role: 'user', content: 'canonical fixture across calls' };
 
@@ -546,7 +555,7 @@ describe('in-process proxy — CCR cross-call dedup', () => {
     // The role prefix on the hash input gates collisions across roles.
     // Fixing the role-blending bug here would silently break the
     // cross-canvas CCR contract — guard against future regressions.
-    firstDisposable = startInProcessProxy();
+    firstDisposable = startInProcessProxy({ port: TEST_PORT });
     await waitFor(() => getLocalProxyState() === 'running');
     const text = 'hello world';
     const r1 = await httpRequest('POST', '/v1/compress', JSON.stringify({
@@ -561,11 +570,11 @@ describe('in-process proxy — CCR cross-call dedup', () => {
   });
 
   it('CCR cap=1000 invariant — pushing 1001 unique messages drops the oldest entry', async () => {
-    // Bind port 8787 + fire 1001 real compress calls. Each call carries
+    // Bind a port + fire 1001 real compress calls. Each call carries
     // one unique message whose content includes a Math.random() suffix
     // so no two calls can collide on hash. After the burst, GET
     // /v1/retrieve/stats should report `entries <= 1000`.
-    firstDisposable = startInProcessProxy();
+    firstDisposable = startInProcessProxy({ port: TEST_PORT });
     await waitFor(() => getLocalProxyState() === 'running');
     for (let i = 0; i < 1001; i++) {
       await httpRequest('POST', '/v1/compress', JSON.stringify({
@@ -587,7 +596,7 @@ describe('in-process proxy — CCR cross-call dedup', () => {
     // Populate CCR via /v1/compress, then retrieve via /v1/retrieve.
     // The preview must be the first 200 chars of the original content
     // (NOT the summarised/truncated form — CCR records raw input).
-    firstDisposable = startInProcessProxy();
+    firstDisposable = startInProcessProxy({ port: TEST_PORT });
     await waitFor(() => getLocalProxyState() === 'running');
     const originalContent = 'X'.repeat(300);
 
@@ -615,7 +624,7 @@ describe('in-process proxy — CCR cross-call dedup', () => {
   it('POST /v1/retrieve returns null content + cached:false on cache miss', async () => {
     // Negate of the hit path — unknown hash returns the SDK-fallback
     // shape so consumers can disambiguate.
-    firstDisposable = startInProcessProxy();
+    firstDisposable = startInProcessProxy({ port: TEST_PORT });
     await waitFor(() => getLocalProxyState() === 'running');
     const r = await httpRequest('POST', '/v1/retrieve', JSON.stringify({ hash: 'nonexistent-hash-0123' }));
     expect(r.status).toBe(200);
@@ -630,7 +639,7 @@ describe('in-process proxy — CCR cross-call dedup', () => {
     // aggregated CCR shape (entries + token totals). Stub proxy has
     // compressedTokens === originalTokens so savingsPercent stays 0
     // by design; Phase 4 introduces hit-rate tracking.
-    firstDisposable = startInProcessProxy();
+    firstDisposable = startInProcessProxy({ port: TEST_PORT });
     await waitFor(() => getLocalProxyState() === 'running');
     await httpRequest('POST', '/v1/compress', JSON.stringify({
       messages: [
@@ -682,7 +691,7 @@ describe('in-process proxy — recent-calls ring buffer', () => {
 
   it('cap=20 invariant — pushing past the cap evicts the oldest entries', () => {
     // Seed 25 entries directly via the test push accessor so the cap
-    // invariant is asserted without binding port 8787 (avoids the
+    // invariant is asserted without binding a port (avoids the
     // TIME_WAIT race that flaked the 25-roundtrip variant).
     for (let i = 0; i < 25; i++) {
       _pushRecentCallForTest(_makeCallEntry(i, 100, 25));
@@ -731,7 +740,7 @@ describe('in-process proxy — recent-calls ring buffer', () => {
 /**
  * Helper for the ring-buffer tests — produces a RecentCompressCall
  * with predictable values derived from `idx`. Avoids relying on a
- * live HTTP roundtrip (port 8787 TIME_WAIT across siblings).
+ * live HTTP roundtrip (port TIME_WAIT across siblings).
  */
 function _makeCallEntry(idx: number, tokensBefore: number, tokensSaved: number): RecentCompressCall {
     const tokensAfter = tokensBefore - tokensSaved;
