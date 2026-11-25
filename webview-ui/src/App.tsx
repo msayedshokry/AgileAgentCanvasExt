@@ -15,6 +15,7 @@ import { AskModal } from './components/AskModal';
 import { JiraModal } from './components/JiraModal';
 import { GraphifyModal } from './components/GraphifyModal';
 import { SprintPlanningView, parseSprintStatusYaml } from './components/SprintPlanningView';
+import { SchemaIssueList } from './components/SchemaIssueList';
 import type { SprintData, SprintHealth } from './components/SprintPlanningView';
 import { AgenticKanbanApp } from './agentic-kanban/AgenticKanbanApp';
 import { AgentSessionsPanel } from './components/AgentSessionsPanel';
@@ -1581,14 +1582,7 @@ function App() {
                 {schemaIssues.length} file(s) don't match expected BMAD schemas.
                 Re-saving through the pipeline can fix structural issues.
               </div>
-              <ul className="toast-error-list">
-                {schemaIssues.slice(0, 3).map((issue, i) => (
-                  <li key={i} className="toast-body">{issue?.file ?? 'unknown'} ({issue?.type ?? '?'})</li>
-                ))}
-                {schemaIssues.length > 3 && (
-                  <li className="toast-body">...and {schemaIssues.length - 3} more</li>
-                )}
-              </ul>
+              <SchemaIssueList issues={schemaIssues} />
             </div>
             <div className="toast-actions">
               <button className="btn btn-secondary" onClick={() => setSchemaIssues([])}>Dismiss</button>
@@ -1615,6 +1609,7 @@ function App() {
           <div className={`toast ${schemaIssues.length > 0 ? 'toast-warning' : 'toast-success'}`}>
             <div className="toast-content">
               <div className="toast-title">{schemaFixMessage}</div>
+              {schemaIssues.length > 0 && <SchemaIssueList issues={schemaIssues} />}
             </div>
             <div className="toast-actions">
               <button className="btn btn-secondary" onClick={() => setSchemaFixMessage(null)}>Dismiss</button>

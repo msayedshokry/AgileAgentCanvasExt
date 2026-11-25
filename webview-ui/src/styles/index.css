@@ -2877,6 +2877,30 @@ body.ac-force-dark {
   font-size: 11px;
 }
 
+/* Schema issues: file, then the first reason it fails on its own line. */
+.schema-issue-list li {
+  margin-bottom: 6px;
+  max-width: 460px;
+}
+
+.schema-issue-file {
+  font-weight: 600;
+}
+
+.schema-issue-reason {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  color: var(--vscode-descriptionForeground, #8b8b8b);
+}
+
+.schema-issue-more {
+  margin-left: 6px;
+  color: var(--vscode-descriptionForeground, #8b8b8b);
+}
+
 /* Persistent reload badge — visible after toast auto-dismisses */
 .reload-badge {
   position: absolute;

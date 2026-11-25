@@ -84,6 +84,7 @@ Every epics file with full epics inline, the canvas's normal format, failed stri
 - The validator always explains a failure instead of reporting invalid with no errors. It reports the concrete problem, such as an epic status that isn't allowed, without the shape-matching messages around it.
 - An epic status of `partial` is read as `in-progress`. Before, repair turned it into `draft`, marking half-done epics as not started.
 - Repair no longer replaces a status (or any listed value, text or number) it can't match with the first allowed value. It fixes typos and abbreviations like "In Progress" or "in-prog" and leaves anything else for validation to report. "not-ready" no longer becomes "ready", nor "undone" "done".
+- The schema messages on the canvas show why each file fails, not just its name, including what Fix Schemas could not repair.
 - A new test checks every sample project artifact against its schema.
 
 ## 0.6.0

@@ -966,6 +966,28 @@ describe('App - Additional Message Types', () => {
       await waitFor(() => {
         expect(screen.getByText(/Schema issues detected/)).toBeInTheDocument();
         expect(screen.getByText(/2 file\(s\) don't match/)).toBeInTheDocument();
+        expect(screen.getByText('bad field')).toBeInTheDocument();
+      });
+    });
+
+    it('shows what Fix Schemas could not repair', async () => {
+      render(<App />);
+
+      act(() => {
+        dispatchMessage('schemaFixResult', {
+          success: false,
+          fixedCount: 0,
+          noProgress: true,
+          remainingIssues: [
+            { file: 'planning/epics.json', type: 'epics', errors: ['.content.epics[0].status: should be equal to one of the allowed values'] },
+          ],
+        });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText(/Could not auto-fix 1 issue/)).toBeInTheDocument();
+        expect(screen.getByText('planning/epics.json')).toBeInTheDocument();
+        expect(screen.getByText('.content.epics[0].status: should be equal to one of the allowed values')).toBeInTheDocument();
       });
     });
   });
