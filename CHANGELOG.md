@@ -81,7 +81,7 @@ Every epics file with full epics inline, the canvas's normal format, failed stri
 - The epics schema now accepts an epic that also fits the lightweight reference shape.
 - An epic that has stories is checked against the full epic shape. Before, the reference shape let any epic with an ID and title pass.
 - An acceptance criterion can have both Given/When/Then and `criterion` text, and a story's user story can be both structured and formatted. Both used to fail.
-- The validator always explains a failure instead of reporting invalid with no errors.
+- The validator always explains a failure instead of reporting invalid with no errors. It reports the concrete problem, such as an epic status that isn't allowed, without the shape-matching messages around it.
 - A new test checks every sample project artifact against its schema.
 
 ## 0.6.0

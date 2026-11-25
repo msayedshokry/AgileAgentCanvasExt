@@ -92,6 +92,18 @@ describe('sample project artifacts', () => {
     expect(result.errors.join('\n')).toMatch(/acceptanceCriteria/);
   });
 
+  it('reports the concrete problem with an inline epic, not the shape-matching noise', () => {
+    const epics = JSON.parse(JSON.stringify(artifacts.find((a) => a.type === 'epics')!.data)) as {
+      content: { epics: Array<Record<string, unknown>> };
+    };
+    epics.content.epics[0].status = 'partial';
+    const result = schemaValidator.validate('epics', epics);
+    expect(result.valid).toBe(false);
+    expect(result.errors).toEqual([
+      expect.stringMatching(/^\.content\.epics\[0\]\.status: .*one of -> draft/),
+    ]);
+  });
+
   it('fails validation when a required field is removed', () => {
     const retro = artifacts.find((a) => a.type === 'retrospective');
     expect(retro).toBeDefined();

@@ -47,6 +47,20 @@ vi.mock('../../trace/trace-recorder', () => ({
 // ─── Imports ──────────────────────────────────────────────────────────────
 
 import { HandoffNegotiationService } from './handoff-negotiation';
+import * as net from 'node:net';
+
+/** A loopback port that nothing listens on: bound by the OS, then released. */
+function closedPort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address();
+      const port = typeof address === 'object' && address ? address.port : 0;
+      server.close(() => resolve(port));
+    });
+  });
+}
 
 // ─── Mock SharedContext facade ────────────────────────────────────────────
 
@@ -167,8 +181,20 @@ describe('transferContext — SharedContext compression', () => {
   it('falls back to raw context when SharedContext is not primed (require path)', async () => {
     // headroom-ai IS installed → require succeeds, real SharedContext is used.
     // This test verifies the REAL lazy-load + compression code path works.
-    const sessionId = await createSession(service);
-    const result = await service.transferContext(sessionId, sampleContext);
+    // SharedContext.put() calls the Headroom proxy over HTTP (default
+    // localhost:8787, read from HEADROOM_BASE_URL at construction). Point it
+    // at a port that was just closed so the call is refused at once and the
+    // client falls back locally, instead of stalling on whatever happens to
+    // be listening on 8787.
+    vi.stubEnv('HEADROOM_BASE_URL', `http://127.0.0.1:${await closedPort()}`);
+    let sessionId: string;
+    let result: boolean;
+    try {
+      sessionId = await createSession(service);
+      result = await service.transferContext(sessionId, sampleContext);
+    } finally {
+      vi.unstubAllEnvs();
+    }
 
     expect(result).toBe(true);
     const session = service.getSession(sessionId);

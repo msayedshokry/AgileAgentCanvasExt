@@ -10,6 +10,9 @@ type AjvErrorObject = NonNullable<AjvValidateFunction['errors']>[number];
 import { createLogger } from '../utils/logger';
 import { errMsg } from '../utils/error';
 
+/** Keywords whose errors only summarize a failed branch choice; the sub-errors say why. */
+const BRANCH_SUMMARY_KEYWORDS: ReadonlySet<string> = new Set(['oneOf', 'anyOf', 'not']);
+
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface ValidationResult {
@@ -953,9 +956,10 @@ export class SchemaValidator {
                 suggestion = ` (Correction Suggestion: Convert value to -> ${params.type})`;
             }
 
-            // Skip noisy oneOf "should match exactly one schema" when sub-errors
-            // are already reported
-            if (err.keyword === 'oneOf' && errors.length > 1) continue;
+            // Skip branch-summary errors ("should match exactly one / some
+            // schema", "should NOT be valid") when the concrete sub-errors that
+            // explain them are also reported.
+            if (BRANCH_SUMMARY_KEYWORDS.has(err.keyword) && errors.length > 1) continue;
 
             const formatted = `${dataPath || '(root)'}: ${message}${suggestion}`;
             if (!seen.has(formatted)) {
