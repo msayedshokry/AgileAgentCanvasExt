@@ -4,6 +4,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import { getAvailableSchemaTypes, schemaValidator } from './schema-validator';
+import { repairArtifactData } from './schema-artifact-mapper';
 
 const RESOURCES = path.resolve(__dirname, '..', '..', 'resources');
 const SAMPLE = path.join(RESOURCES, 'sample-project');
@@ -96,12 +97,35 @@ describe('sample project artifacts', () => {
     const epics = JSON.parse(JSON.stringify(artifacts.find((a) => a.type === 'epics')!.data)) as {
       content: { epics: Array<Record<string, unknown>> };
     };
-    epics.content.epics[0].status = 'partial';
+    epics.content.epics[0].status = 'someday';
     const result = schemaValidator.validate('epics', epics);
     expect(result.valid).toBe(false);
     expect(result.errors).toEqual([
       expect.stringMatching(/^\.content\.epics\[0\]\.status: .*one of -> draft/),
     ]);
+  });
+
+  // Agents write "partial" for a half-done epic. Without the alias, repair
+  // fuzzy-matched it to "draft", marking finished work as not started.
+  describe('inline epic status "partial"', () => {
+    type EpicsDoc = { content: { epics: Array<Record<string, unknown>> } };
+    const withPartialStatus = (): EpicsDoc => {
+      const epics = JSON.parse(JSON.stringify(artifacts.find((a) => a.type === 'epics')!.data)) as EpicsDoc;
+      epics.content.epics[0].status = 'partial';
+      return epics;
+    };
+
+    it('validates as in-progress', () => {
+      const epics = withPartialStatus();
+      const result = schemaValidator.validate('epics', epics);
+      expect(result.errors).toEqual([]);
+      expect(epics.content.epics[0].status).toBe('in-progress');
+    });
+
+    it('is repaired to in-progress, not fuzzy-matched to draft', () => {
+      const repaired = repairArtifactData(withPartialStatus(), 'epics', 'epics.json') as EpicsDoc;
+      expect(repaired.content.epics[0].status).toBe('in-progress');
+    });
   });
 
   it('fails validation when a required field is removed', () => {

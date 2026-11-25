@@ -36,7 +36,8 @@
       "x-aliases": {
         "complete": "done",
         "completed": "done",
-        "draft": "backlog"
+        "draft": "backlog",
+        "partial": "in-progress"
       },
       "examples": ["ready", "in-progress", "done"]
     },

@@ -420,7 +420,10 @@
                   "review",
                   "done",
                   "complete"
-                ]
+                ],
+                "x-aliases": {
+                  "partial": "in-progress"
+                }
               },
               "dependencies": {
                 "type": "array",
