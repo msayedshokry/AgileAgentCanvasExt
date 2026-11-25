@@ -52,8 +52,6 @@ Many bundled skills referenced files that did not exist, so parts of them silent
 
 ## 0.6.0
 
-### Highlights
-
 The Agentic Kanban now runs on whichever coding agent you already have installed, with safe defaults for any repository. Runs stop cleanly, survive a window reload, and tell you why when an agent fails.
 
 ### Feature: Use the agent you already have
@@ -129,8 +127,6 @@ The Agentic Kanban now runs on whichever coding agent you already have installed
 
 ## 0.5.7
 
-### Highlights
-
 A lightweight **Ideas drawer** lives in the canvas — capture free-form notes without leaving the canvas, with the AI able to read them. Plus three round-trip / layout fixes that were caught immediately after the 0.5.6 release.
 
 ### Added: Ideas drawer
@@ -147,7 +143,7 @@ Free-form notes that live in the project folder, parallel to BMAD artifacts but 
 
 ### Fixed
 
-- **Pop-out panel silently dropped idea messages.** `openCanvasPanel`'s switch in `extension.ts` had no handlers for `createIdea` / `updateIdea` / `archiveIdea` / `restoreIdea` / `deleteIdea`, so messages from the drawer disappeared. The sidebar's canvas-view-provider handled them, but the pop-out is the default canvas surface, so most users never saw their ideas get saved. All 5 cases now route through `ideaStore` from both hosts, with multi-panel fan-out on every change.
+- **Pop-out panel silently dropped idea messages.** `openCanvasPanel`'s switch in extension.ts had no handlers for `createIdea` / `updateIdea` / `archiveIdea` / `restoreIdea` / `deleteIdea`, so messages from the drawer disappeared. The sidebar's canvas-view-provider handled them, but the pop-out is the default canvas surface, so most users never saw their ideas get saved. All 5 cases now route through `ideaStore` from both hosts, with multi-panel fan-out on every change.
 - **Drawer didn't close on outside click.** Added a transparent scrim + document mousedown listener (drawer ref-guards so internal clicks don't fire) and a global Escape listener.
 - **Top of the drawer hidden behind the canvas toolbar FAB.** Toolbar container is at `z-index: 100`; the drawer was at `z:51`. Drawer now drops to `top: 56px` with a `height: calc(100vh - 56px)` and a `border-radius: 8px 0 0 8px` so it reads as a sheet below the toolbar.
 
@@ -158,11 +154,9 @@ Free-form notes that live in the project folder, parallel to BMAD artifacts but 
 `vsce package` failed with *"The extension contains an entry extension/webview-ui/nul which is unsafe for extraction"* — two stray files literally named `nul` (a Windows reserved device name, like `con` / `prn` / `com1`) had regenerated in the source tree from a misdirected shell redirect.
 
 - Files deleted.
-- `scripts/prepublish-guard.js` now scans the entire source tree for the full Windows reserved-name set (`nul`, `con`, `prn`, `aux`, `com1`–`com9`, `lpt1`–`lpt9`) and fails the build before `vsce` gets a chance to reject the package. Skips `node_modules`, `.git`, `dist`, `coverage`, `reports`, and `webview-ui/build` to keep the scan fast.
+- scripts/prepublish-guard.js now scans the entire source tree for the full Windows reserved-name set (`nul`, `con`, `prn`, `aux`, `com1`–`com9`, `lpt1`–`lpt9`) and fails the build before `vsce` gets a chance to reject the package. Skips `node_modules`, `.git`, `dist`, `coverage`, `reports`, and `webview-ui/build` to keep the scan fast.
 
 ## 0.5.5
-
-### Highlights
 
 The Agentic Kanban can now run cards end-to-end without human intervention. Visual Plan comments actually reach the AI. Context compression is provably accurate via real BPE tokens. 13 new BMAD v6.9.0 skills ship out of the box. Plus 32 WCAG contrast fixes across autonomy surfaces.
 
@@ -208,12 +202,12 @@ The in-process compression proxy is now owned by the extension — no manual `np
 Catalogue auto-discovers the new skills without further wiring.
 
 - **`aac-forge-idea`** — Socratic idea pressure-testing with optional `--attack` adversarial mode.
-- **`aac-architecture-spine`** — Lean intent-based architecture; produces `ARCHITECTURE-SPINE.md` as the source of truth.
+- **`aac-architecture-spine`** — Lean intent-based architecture; produces ARCHITECTURE-SPINE.md as the source of truth.
 - **`aac-party-mode` enhancements** — Four run modes (`auto` / `session` / `subagent` / `agent-team`), custom parties from TOML, persistent party memory.
-- **`aac-brainstorming`** — New `brain-selector.html` visual composer (69 techniques); 8 new techniques (HMW, JTBD, Empathy Map, Backcasting, TRIZ, Fishbone, Build on What Works, Scenario Cross); explicit diverge → organize → converge → commit phasing; top-level facilitation mode selector.
+- **`aac-brainstorming`** — New brain-selector.html visual composer (69 techniques); 8 new techniques (HMW, JTBD, Empathy Map, Backcasting, TRIZ, Fishbone, Build on What Works, Scenario Cross); explicit diverge → organize → converge → commit phasing; top-level facilitation mode selector.
 - **`aac-create-architecture`** — Breadth-coverage rubric added per altitude.
-- **`aac-create-epics-and-stories`** — Recognises AAC-adapted `*ux*/**/DESIGN.md` and `EXPERIENCE.md` spines.
-- **Retrospective action items in `sprint-status.yaml`** — `action_items:` array alongside epic-retrospective status, validated by schema and surfaced by `aac-sprint-status`.
+- **`aac-create-epics-and-stories`** — Recognises AAC-adapted `*ux*/**/DESIGN.md` and EXPERIENCE.md spines.
+- **Retrospective action items in sprint-status.yaml** — `action_items:` array alongside epic-retrospective status, validated by schema and surfaced by `aac-sprint-status`.
 
 ### Addy Osmani + Matt Pocock skills parity (11 new skills)
 
@@ -257,7 +251,7 @@ Audits an artifact (`/ponytail-review EPIC-3`) or whole project for reinvented s
 ### Phase 2 refactors
 
 - **BMAD → AAC close-out** — six catalogue rows added; documentation examples updated to real framework paths or explicit `mock-workflow-fixture` literals. Residual footprint mapping finalized.
-- **Phase 18 — `pickChanges` helper centralised** — single shared `reducer-helpers.ts` module; 26 named `*_FIELDS` consts lifted to module level across cis/tea/bmm/l1 for grep-discoverability.
+- **Phase 18 — `pickChanges` helper centralised** — single shared reducer-helpers.ts module; 26 named `*_FIELDS` consts lifted to module level across cis/tea/bmm/l1 for grep-discoverability.
 - **`useEvent` migration** — entire webview UI converted from `useCallback`/inline arrows to `useEvent` for stable handler identity. 3 useRef stale-closure workarounds deleted. No user-visible behavior change.
 
 ### Bug fixes
@@ -288,8 +282,6 @@ Click the active Headroom bar to surface a transient QuickPick with SharedContex
 
 ## 0.5.4
 
-### Highlights
-
 Transparent context compression ships out of the box. Full BMAD v6.8.0 module update across core + BMM, BMB, TEA, and CIS.
 
 - **Headroom context compression** — auto-detects the Headroom proxy, lazy-loads the SDK on first chat call, transparently compresses all LLM-bound messages. Tracks cumulative savings. `agileagentcanvas.headroom.enabled` opt-out setting. Status bar shows savings % alongside cost when active.
@@ -298,8 +290,6 @@ Transparent context compression ships out of the box. Full BMAD v6.8.0 module up
 ---
 
 ## 0.5.3
-
-### Highlights
 
 Custom ESLint rule, agent-to-agent message bus, the first Agentic Kanban view, multi-agent team execution (ACP), harness governance loop, and the trace recorder.
 
@@ -322,8 +312,6 @@ Custom ESLint rule, agent-to-agent message bus, the first Agentic Kanban view, m
 
 ## 0.5.1
 
-### Highlights
-
 3D Corpus view with custom shapes per artifact type, real provider detection in the dropdown, mindmap redesign, 3D corpus search & filter.
 
 - **3D Corpus view** — force-directed 3D graph with per-type shapes (Sphere / Cone / Box / Cylinder / Torus / Tetrahedron / Dodecahedron / Octahedron); phase color coding; auto-rotation; click-to-select; animated edge particles.
@@ -337,15 +325,13 @@ Custom ESLint rule, agent-to-agent message bus, the first Agentic Kanban view, m
 
 ## 0.5.0
 
-### Highlights
-
 JSON↔Markdown bouncing eliminated (root-cause fix for LLM sync loops). Provider-level structured outputs. 10 new built-in tools (16 → 26). Tool catalog & telemetry.
 
 - **JSON↔Markdown bouncing fixed** — artifact writes are JSON-only; stale `.md` companions auto-renamed to `.md.bak` on upgrade; LLM persona override forbids reading `.md` as source of truth.
 - **Provider-level structured outputs** — `response_format: json_object` (OpenAI), tool-use schema (Anthropic), `responseSchema` (Gemini), `format` parameter (Ollama), `JsonObject` (VS Code LM). Configurable `agileagentcanvas.defaultTemperature` (default 0.2).
-- **Robust fence stripping & validation** — new `json-extract.ts` handles fenced/bare JSON; validation retry loop with escalating feedback.
+- **Robust fence stripping & validation** — new json-extract.ts handles fenced/bare JSON; validation retry loop with escalating feedback.
 - **10 new built-in tools** — `agileagentcanvas_repair_json`, `agileagentcanvas_frontmatter_extract`, `agileagentcanvas_yaml_to_json`, `agileagentcanvas_json_diff`, `agileagentcanvas_json_merge`, `agileagentcanvas_write_file`, `agileagentcanvas_sync_story_status`, `agileagentcanvas_sync_epic_status`, `agileagentcanvas_graph_community`, `agileagentcanvas_artifact_query`, `agileagentcanvas_workflow_resolve_vars`, `agileagentcanvas_types_from_schema`, `agileagentcanvas_schema_from_json`, `agileagentcanvas_codebase_search`.
-- **Tool catalog & telemetry** — `docs/tool-catalog.md` (authoritative reference for all 26 tools); few-shot examples injected into every system prompt; `toolTelemetry` singleton with JSONL persistence; `/suggest-tool` command; weekly waste report.
+- **Tool catalog & telemetry** — docs/tool-catalog.md (authoritative reference for all 26 tools); few-shot examples injected into every system prompt; `toolTelemetry` singleton with JSONL persistence; `/suggest-tool` command; weekly waste report.
 
 See [docs/changelog/0.5.0.md](docs/changelog/0.5.0.md) for the full detail.
 
@@ -359,11 +345,9 @@ See [docs/changelog/0.5.0.md](docs/changelog/0.5.0.md) for the full detail.
 
 ## 0.4.3
 
-### Highlights
-
 Skill Catalogue Manager and git-sourced skill repos — the extension is now genuinely extensible from a user folder or any git URL.
 
-- **User-managed skill folder** (`agileagentcanvas.userCataloguePath`) — subfolders with `SKILL.md` treated as skills/agents; live FileSystemWatcher reload; user skills override built-ins by folder name.
+- **User-managed skill folder** (`agileagentcanvas.userCataloguePath`) — subfolders with SKILL.md treated as skills/agents; live FileSystemWatcher reload; user skills override built-ins by folder name.
 - **Skill Catalogue Modal** — 5 tabs (All / Agents / Skills / User-Added / Skill Repos); create from template; delete with confirmation; open folder in Explorer.
 - **Git Skill Repos** — paste any git URL; cloned with `--depth 1` into a managed `_repos/` subfolder; per-skill `.repo-source` sidecar records provenance; Sync runs `git pull` and re-discovers.
 - **`/help` smart skill routing** — natural-language prompt → top 3–5 catalogue matches with one-sentence explanation. CLI-compatible markdown output. Keyword fallback if the LLM response can't be parsed.
@@ -372,12 +356,10 @@ Skill Catalogue Manager and git-sourced skill repos — the extension is now gen
 
 ## 0.4.2
 
-### Highlights
-
 Codeburn integration for AI cost/token observability. Graphify Index architecture corpus & modal.
 
 - **Codeburn** — integration module under `src/integrations/codeburn/` with status bar visibility, command palette actions, `/codeburn` chat command (with `/cost` and `/tokens` aliases), and the `agileagentcanvas_codeburn_report` LM tool. Cross-platform detection (CLI / local `node_modules/.bin` / `npx` fallback).
-- **Graphify Index** — `graphify index .` CLI stage generates `ARCH_INDEX.md` + `ARCH_INDEX.json` (community summaries, god-node detection, cross-community edges, token-budget metadata). `GraphifyModal` webview component with Pipeline Tracker / Arch Corpus / Recommended Actions sections.
+- **Graphify Index** — `graphify index .` CLI stage generates ARCH_INDEX.md + ARCH_INDEX.json (community summaries, god-node detection, cross-community edges, token-budget metadata). `GraphifyModal` webview component with Pipeline Tracker / Arch Corpus / Recommended Actions sections.
 - **`agileagentcanvas_graph_community` LM tool** — AI can query community-specific wiki content.
 - **graphify integration docs** — updated with per-repo and cross-repo CI YAML templates and a Tiered Context for Coding Agents section.
 
@@ -385,20 +367,16 @@ Codeburn integration for AI cost/token observability. Graphify Index architectur
 
 ## 0.4.1
 
-### Highlights
-
 Jira Cloud read integration with conflict picker. Single source of truth for status fields. CLI agent integration with full tier coverage.
 
 - **Jira Cloud** — fetch epics/stories, dedicated modal with 5 tabs (Fetch Epics / Stories / Issue / Sync to Canvas / Connection), field-level conflict picker before any overwrite, `/jira` chat command with 4 subcommands, `agileagentcanvas_read_jira` LM tool, secure token storage in OS keychain, `/rest/api/3/search/jql` cursor-based pagination.
 - **Status field consolidation** — single `status` field replaces dual `verified`/`status` and `completed`/`status` patterns; transparent migration on load.
-- **Index files removed** — `stories-index.json` and `epics-index.json` deleted (LLMs were treating them as authoritative sources of truth).
+- **Index files removed** — stories-index.json and epics-index.json deleted (LLMs were treating them as authoritative sources of truth).
 - **CLI agent integration** — 13 new workflows in manifest (security-audit, ceo-review, eng-review, design-audit, verification-loop, coding-standards, e2e-testing, eval-harness, api-design, create-story-checklist, story-enhancement, epic-enhancement, dev-story-checklist); 6 delegation stubs converted to executable; artifact-type routing table in help.md; version-aware auto-reinstall.
 
 ---
 
 ## 0.4.0
-
-### Highlights
 
 Artifact persistence & sync fixes (payload-authoritative merge, race conditions, orphan cleanup). Claude Code workflow wrappers become executable instead of delegation stubs.
 
@@ -410,8 +388,6 @@ Artifact persistence & sync fixes (payload-authoritative merge, race conditions,
 ---
 
 ## 0.3.9
-
-### Highlights
 
 5 GSD-inspired skills, agent honesty guardrails, single story file architecture for implementation status.
 
@@ -431,8 +407,6 @@ Artifact persistence & sync fixes (payload-authoritative merge, race conditions,
 
 ## 0.3.7
 
-### Highlights
-
 Gstack elicitation workflows, ECC-inspired skills, test case tracking, and major artifact store refactor.
 
 - **Gstack workflows** — Security Audit (STRIDE, OWASP), Execution Lock Review, CEO Scope Review, Design Dimension Audit, Six Forcing Questions (Garry Tan).
@@ -445,8 +419,6 @@ Gstack elicitation workflows, ECC-inspired skills, test case tracking, and major
 
 ## 0.3.6
 
-### Highlights
-
 Single canonical story file. Epic JSON slim-down with lightweight storyRefs. Code-review post-fix integrity re-scan gate.
 
 - **Single story file** — `epics/epic-{N}/stories/{id}.json` is the canonical path; old `implementation/` directories auto-migrated on load.
@@ -458,13 +430,11 @@ Single canonical story file. Epic JSON slim-down with lightweight storyRefs. Cod
 
 ## 0.3.5
 
-### Highlights
-
 Acceptance Criteria as a distinct third category with verified/status lifecycle. Tabbed story detail layout. Status mapping fix.
 
 - **Acceptance Criteria lifecycle** — distinct category on story cards (`📋 N/Total` chip with progress bar); `verified` + `status` fields extended in schema and types; three workflows (`create-story` / `dev-story` / `code-review`) updated to maintain AC lifecycle.
 - **Tabbed story detail layout** — Tasks / Tests / ACs tabs replace vertical list; dynamic tabs (only those with content).
-- **Status mapping fix** — `mapStatus()` now passes through all 22 valid `ArtifactStatus` values instead of collapsing to 4; Kanban column normalization into 5 existing columns.
+- **Status mapping fix** — mapStatus() now passes through all 22 valid `ArtifactStatus` values instead of collapsing to 4; Kanban column normalization into 5 existing columns.
 - **Dependency graph sync fidelity** — canvas dependency arrows use precise story IDs from epic.json `content.stories[].dependencies`; bidirectional sync in `create-story` / `dev-story`.
 - **Code-review enhancements** — ground-up baseline mandate (no prior review is validated baseline), TODO/stub audit, round-trip persistence audit, response-truthfulness check, AC verification before `done`.
 
@@ -480,11 +450,9 @@ Acceptance Criteria as a distinct third category with verified/status lifecycle.
 
 ## 0.3.2
 
-### Highlights
-
 Standalone epic files. 17 schema validation warnings → 0. Use case and test strategy preservation on reload.
 
-- **Standalone epic files** — each epic saved to `planning-artifacts/epics/epic-{id}.json`; `epics.json` becomes a lightweight manifest. Backward-compatible loading; auto-split on save.
+- **Standalone epic files** — each epic saved to `planning-artifacts/epics/epic-{id}.json`; epics.json becomes a lightweight manifest. Backward-compatible loading; auto-split on save.
 - **Schema ID convention audit** — 12 schemas updated with explicit ID format guidance for LLM-generated IDs.
 - **Artifact array migration** — refactored schemas and `ArtifactStore` to support arrays of `codeReview`, `techSpec`, `testReview`, `retrospective`, `changeProposal`, `uxDesign`, `readinessReport`, `sprintStatus`.
 - **Bug fixes** — use case / test strategy preservation on duplicate-epic merge; 17 schema validation warnings → 0; test design rendering and overwriting; auto-reload data loss prevention; test case ID auto-generation; epic/story ID normalization; epic swimlane height accumulation.
@@ -492,8 +460,6 @@ Standalone epic files. 17 schema validation warnings → 0. Use case and test st
 ---
 
 ## 0.3.1
-
-### Highlights
 
 IDE installer overhaul with workflow stub provisioning.
 
@@ -505,8 +471,6 @@ IDE installer overhaul with workflow stub provisioning.
 ---
 
 ## 0.3.0
-
-### Highlights
 
 Story children layout refactor. Acceptance Criteria lifecycle schema groundwork.
 

@@ -24,7 +24,7 @@
 #   - done: Retrospective has been completed
 
 generated: 2026-02-28 17:00
-last_updated: 2026-02-28 17:00
+last_updated: 2026-03-12 17:00
 project: TaskFlow Pro
 project_key: NOKEY
 tracking_system: file-system
@@ -35,7 +35,7 @@ development_status:
   1-1-task-crud-api-data-model: done
   1-2-real-time-task-board-ui: in-progress
   1-3-dependency-graph-visualization: backlog
-  epic-1-retrospective: optional
+  epic-1-retrospective: done
 
   epic-2: in-progress
   2-1-ai-priority-scoring-engine: in-progress

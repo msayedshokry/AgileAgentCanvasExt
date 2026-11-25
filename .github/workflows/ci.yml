@@ -34,7 +34,8 @@ jobs:
         # capped by --max-warnings in the lint script: lower the cap as anys are typed.
         run: npm run lint
       - name: Lint Changelog
-        run: npm run lint:changelog || true
+        # Blocking: CHANGELOG.md is clean against docs/changelog-style-guide.md.
+        run: npm run lint:changelog
       - name: Lint Mapping Doc
         # If this fails CI on a known-clean mapping doc, the maintainer probably
         # broke the parser (not the doc). Run `npm run lint:mapping-doc -- --soft`
