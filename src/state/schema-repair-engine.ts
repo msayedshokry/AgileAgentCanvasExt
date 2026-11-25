@@ -10,7 +10,8 @@
  *  - Missing `required` fields  → scaffold with type-appropriate defaults
  *  - `additionalProperties: false` at ANY nesting depth → strip extras
  *  - Type mismatches (string↔number/integer/boolean) → coerce
- *  - Invalid `enum` values → fuzzy-match to closest valid value
+ *  - Invalid string `enum` values → x-alias, or a close match (typo,
+ *    abbreviation); anything else is left for validation to report
  *  - `minimum` / `maximum` violations → clamp
  *  - `oneOf` constraints → pick the best-matching branch
  */
@@ -274,14 +275,9 @@ export function repairDataWithSchema(
                     value = node.maximum;
                 }
             }
-            // Enum repair for numbers
-            if (Array.isArray(node.enum) && value !== null && value !== undefined) {
-                if (!node.enum.includes(value)) {
-                    const fallback = node.default ?? node.enum[0];
-                    log(path, `replaced invalid enum value ${value} with ${fallback}`);
-                    value = fallback;
-                }
-            }
+            // A number outside its enum is left for validation to report:
+            // there is no "close" number, and swapping in the default or
+            // first value would silently change meaning.
             return value;
         }
 
@@ -461,6 +457,13 @@ function describeDefault(node: SchemaNode): string {
     }
 }
 
+/** An abbreviation must have at least this many characters to count. */
+const MIN_PREFIX_LEN = 3;
+/** ...and cover at least this share of the full value. */
+const MIN_PREFIX_RATIO = 0.5;
+/** Edit distance allowed, as a share of the longer string, to count as a typo. */
+const MAX_EDIT_RATIO = 0.3;
+
 /**
  * Fuzzy-match a string value against enum candidates.  Uses normalised
  * (lowercased, stripped of dashes/underscores) comparison with Levenshtein
@@ -480,11 +483,18 @@ function fuzzyMatchEnum(value: string, candidates: unknown[]): string | undefine
         if (norm(c) === nValue) return c;
     }
 
-    // Prefix/contains match
+    // Prefix match: one is an abbreviation of the other ("in-prog"). No
+    // contains-match: "not-ready" contains "ready" but means the opposite.
     for (const c of strCandidates) {
         const nc = norm(c);
-        if (nc.startsWith(nValue) || nValue.startsWith(nc)) return c;
-        if (nc.includes(nValue) || nValue.includes(nc)) return c;
+        const [shorter, longer] = nValue.length <= nc.length ? [nValue, nc] : [nc, nValue];
+        if (
+            shorter.length >= MIN_PREFIX_LEN &&
+            shorter.length / longer.length >= MIN_PREFIX_RATIO &&
+            longer.startsWith(shorter)
+        ) {
+            return c;
+        }
     }
 
     // Levenshtein distance
@@ -498,8 +508,9 @@ function fuzzyMatchEnum(value: string, candidates: unknown[]): string | undefine
         }
     }
 
-    // Too far from every candidate (>50% of the longer string): no match.
-    if (bestDist > Math.max(nValue.length, norm(best).length) * 0.5) {
+    // Too far from every candidate: no match. A typo ("redy", "compelte") is
+    // well inside this; a different word ("undone" vs "done") is not.
+    if (bestDist > Math.max(nValue.length, norm(best).length) * MAX_EDIT_RATIO) {
         return undefined;
     }
 

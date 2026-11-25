@@ -29,4 +29,31 @@ describe('enum repair', () => {
     expect(result.data.status).toBe('someday');
     expect(result.changed).toBe(false);
   });
+
+  it('completes a clear abbreviation', () => {
+    expect(repairStatus('in-prog').data.status).toBe('in-progress');
+  });
+
+  it.each(['not-ready', 'undone', 'in', ''])('does not rewrite %j to a status it merely contains or prefixes', (value) => {
+    const result = repairStatus(value);
+    expect(result.data.status).toBe(value);
+    expect(result.changed).toBe(false);
+  });
+});
+
+describe('number enum repair', () => {
+  const numberSchema = {
+    type: 'object',
+    properties: { level: { type: 'integer', enum: [1, 2, 3], default: 1 } },
+  };
+
+  it('leaves an out-of-set number for validation instead of using the default', () => {
+    const result = repairDataWithSchema({ level: 7 }, numberSchema);
+    expect(result.data.level).toBe(7);
+    expect(result.changed).toBe(false);
+  });
+
+  it('still keeps a number that is in the set', () => {
+    expect(repairDataWithSchema({ level: 2 }, numberSchema).data.level).toBe(2);
+  });
 });
