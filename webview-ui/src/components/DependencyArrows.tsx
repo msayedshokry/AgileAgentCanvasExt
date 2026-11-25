@@ -71,6 +71,38 @@ function computePath(
   return `M ${startX} ${startY} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${endX} ${endY}`;
 }
 
+/**
+ * Orthogonal "elbow" connector for mind-map tree lines: out of the parent's
+ * right edge, down a vertical trunk just left of the child column, into the
+ * child's left edge. Siblings in one column share the trunk, so a parent's
+ * children read as one bracket.
+ */
+const ELBOW_RADIUS = 8;
+const TRUNK_INSET = 28; // trunk distance from the child column's left edge
+
+function computeElbowPath(
+  from: { x: number; y: number; width: number; height: number },
+  to: { x: number; y: number; width: number; height: number }
+): string {
+  const sx = from.x + from.width;
+  const sy = from.y + from.height / 2;
+  const ex = to.x;
+  const ey = to.y + to.height / 2;
+  const dy = ey - sy;
+  if (Math.abs(dy) < 1 || ex <= sx) return `M ${sx} ${sy} L ${ex} ${ey}`;
+  const trunkX = Math.max(sx + ELBOW_RADIUS, ex - TRUNK_INSET);
+  const r = Math.min(ELBOW_RADIUS, Math.abs(dy) / 2, trunkX - sx, ex - trunkX);
+  const dir = dy > 0 ? 1 : -1;
+  return [
+    `M ${sx} ${sy}`,
+    `H ${trunkX - r}`,
+    `Q ${trunkX} ${sy} ${trunkX} ${sy + dir * r}`,
+    `V ${ey - dir * r}`,
+    `Q ${trunkX} ${ey} ${trunkX + r} ${ey}`,
+    `H ${ex}`,
+  ].join(' ');
+}
+
 interface ArrowData {
   key: string;
   fromId: string;
@@ -82,6 +114,8 @@ interface ArrowData {
   markerId: string;
   /** If true, this is a tree-structure line (parent→child), not a dependency arrow */
   isTreeLine?: boolean;
+  /** Non-tree dependency drawn in mind-map mode (dashed, subdued). */
+  isCrossLink?: boolean;
 }
 
 export const DependencyArrows = React.memo(function DependencyArrows({ artifacts, highlightedIds, layoutMode, hiddenLineCategories }: DependencyArrowsProps) {
@@ -123,27 +157,15 @@ export const DependencyArrows = React.memo(function DependencyArrows({ artifacts
 
       const edgeKey = `tree:${artifact.parentId}-${artifact.id}`;
       drawnEdges.add(`${artifact.parentId}-${artifact.id}`);
-
-      // Compute depth for line styling: deeper = lighter, more transparent
-      let depth = 0;
-      let cur = artifact;
-      while (cur.parentId) {
-        depth++;
-        const parent = artifacts.find(a => a.id === cur.parentId);
-        if (!parent) break;
-        cur = parent;
-      }
-      const depthFactor = Math.max(0.2, 1 - depth * 0.15); // less opaque at depth
-      const path = computePath(from, to);
       arrows.push({
         key: edgeKey,
         fromId: artifact.parentId,
         toId: artifact.id,
-        path,
-        stroke: 'var(--vscode-editorWidget-border)',
-        strokeWidth: Math.max(1, 2 - depth * 0.3), // thinner at depth
-        opacity: 0.5 * depthFactor,
-        markerId: 'arrowhead-tree',  // tiny arrowhead for tree lines
+        path: computeElbowPath(from, to),
+        stroke: 'var(--rule-strong)',
+        strokeWidth: 1.25,
+        opacity: 1,
+        markerId: '',
         isTreeLine: true,
       });
     });
@@ -171,7 +193,10 @@ export const DependencyArrows = React.memo(function DependencyArrows({ artifacts
         const style = arrowStyle(from.type, artifact.type);
         if (hiddenLineCategories?.has(style.category)) return;
         const path = computePath(from, to);
-        arrows.push({ key: `${depId}-${artifact.id}`, fromId: depId, toId: artifact.id, path, ...style });
+        // In the mind map the tree carries the hierarchy; cross-links stay
+        // quiet (dashed, faint) until a selection highlights them.
+        const crossLink = isMindmap ? { opacity: style.opacity * 0.45, isCrossLink: true } : {};
+        arrows.push({ key: `${depId}-${artifact.id}`, fromId: depId, toId: artifact.id, path, ...style, ...crossLink });
       }
     });
   });
@@ -188,22 +213,19 @@ export const DependencyArrows = React.memo(function DependencyArrows({ artifacts
         <marker id="arrowhead-default" markerWidth="9" markerHeight="6" refX="8" refY="3" orient="auto">
           <polygon points="0 0, 9 3, 0 6" fill="var(--vscode-editorWidget-border)" />
         </marker>
-        <marker id="arrowhead-tree" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto">
-          <polygon points="0 0, 7 2.5, 0 5" fill="var(--vscode-editorWidget-border)" />
-        </marker>
       </defs>
 
-      {arrows.map(({ key, fromId, toId, path, stroke, strokeWidth, opacity, markerId, isTreeLine }) => {
+      {arrows.map(({ key, fromId, toId, path, stroke, strokeWidth, opacity, markerId, isTreeLine, isCrossLink }) => {
         // When highlighting is active, boost arrows between highlighted nodes, dim others
         let finalOpacity = opacity;
         let finalStrokeWidth = strokeWidth;
         if (highlightedIds && highlightedIds.size > 0) {
           const isHighlighted = highlightedIds.has(fromId) && highlightedIds.has(toId);
           if (isHighlighted) {
-            finalOpacity = Math.min(1, opacity + 0.3);
+            finalOpacity = isCrossLink ? 0.9 : Math.min(1, opacity + 0.3);
             finalStrokeWidth = strokeWidth + (isTreeLine ? 0.5 : 1);
           } else {
-            finalOpacity = isTreeLine ? 0.12 : 0.08;
+            finalOpacity = isTreeLine ? 0.25 : 0.06;
           }
         }
         return (
@@ -215,7 +237,8 @@ export const DependencyArrows = React.memo(function DependencyArrows({ artifacts
             fill="none"
             markerEnd={markerId ? `url(#${markerId})` : undefined}
             opacity={finalOpacity}
-            strokeDasharray={isTreeLine ? '6 3' : undefined}
+            strokeDasharray={isCrossLink ? '4 4' : undefined}
+            strokeLinecap="round"
           />
         );
       })}

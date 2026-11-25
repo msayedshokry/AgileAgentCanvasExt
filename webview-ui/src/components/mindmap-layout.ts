@@ -1,347 +1,243 @@
 /**
- * Mind-map layout engine
+ * Mind-map layout engine — a tidy left-to-right hierarchy.
  *
- * Takes the flat Artifact[] array and computes new position coordinates
- * arranged as a horizontal tree (left-to-right).  The hierarchy is derived
- * from parentId relationships with a virtual project root gathering the
- * top-level artifacts.
+ * The tree comes from `parentId` links (brief → vision → PRD → requirements →
+ * epics → stories → tasks). Each artifact type sits in a fixed hierarchy
+ * level, and each level that has content gets one column, so a column always
+ * means the same kind of thing ("Epics", "Stories") and can carry a header.
  *
- * The algorithm:
- * 1. Build a tree from parentId links.
- * 2. Group orphan roots under virtual phase nodes.
- * 3. Recursively measure subtree extents (bottom-up).
- * 4. Assign positions top-down with wrapping children into a grid so that
- *    deep trees with many siblings stay compact instead of growing very tall.
- *
- * Children wrapping:
- *   When a node has more than MAX_CHILDREN_PER_COL children, the children
- *   wrap into additional columns placed side-by-side at the same depth.
- *   Each column is separated by COL_GAP.  The parent node connects to the
- *   left edge of the first column; arrows remain left-to-right.
+ * Vertical placement is a classic tidy tree: leaves stack top to bottom in
+ * source order, and every parent is centred on the span of its children.
+ * Subtrees never interleave, so a parent's descendants always form one
+ * contiguous band to its right — the band *is* the grouping, no boxes needed.
  */
 
 import type { Artifact } from '../types';
 
 // ── Layout constants ────────────────────────────────────────────────────────
-// These values are the single source of truth for both this implementation
-// and mindmap-layout.test.ts. The test file imports them via LAYOUT_CONSTANTS
-// (exported below) rather than duplicating locally, so any change here
-// propagates to the test assertions automatically — no more drift.
-const NODE_W = 170;       // card width
-const NODE_H = 72;        // card height (matches actual compact card render height)
-const H_GAP  = 70;        // horizontal gap between depth levels
-const V_GAP  = 40;        // vertical gap between sibling nodes
-const ROOT_X = 40;        // left margin for root
-const ROOT_Y = 40;        // top margin
+// Single source of truth, shared with mindmap-layout.test.ts via LAYOUT_CONSTANTS.
+const NODE_W = 184;        // card width
+const NODE_H = 72;         // card height (compact card render height)
+const LEVEL_GAP = 88;      // horizontal gap between level columns (room for elbow connectors)
+const LEAF_GAP = 10;       // vertical gap between two leaf siblings
+const BRANCH_GAP = 28;     // vertical gap when either neighbouring sibling has children
+const ROOT_GAP = 64;       // vertical gap between separate root trees
+const ROOT_X = 40;         // left margin
+const ROOT_Y = 132;        // top margin: headers clear the floating toolbar at zoom 1
+const HEADER_OFFSET = 52;  // column header sits this far above ROOT_Y
 
-// ── Wrapping constants ──────────────────────────────────────────────────────
-const MAX_CHILDREN_PER_COL = 5;   // max children in one vertical column before wrapping
-const COL_GAP = 20;               // horizontal gap between wrapped child columns
+type Phase = 'discovery' | 'planning' | 'solutioning' | 'implementation' | 'details';
 
-// Depth ordering: discovery items first, then planning, solutioning, impl
-const DEPTH_ORDER: Record<string, number> = {
-  'product-brief': 0,
-  'vision': 1,
-  'prd': 2,
-  'requirement': 3,
-  'nfr': 4,
-  'additional-req': 5,
-  'risk': 6,
-  'architecture': 7,
-  'architecture-decision': 8,
-  'system-component': 9,
-  'epic': 10,
-  'story': 11,
-  'use-case': 12,
-  'task': 13,
-  'test-strategy': 14,
-  'test-design': 15,
-  'test-case': 16,
-  'test-coverage': 17,
+interface LevelInfo { level: number; label: string; phase: Phase }
+
+/**
+ * Hierarchy level per artifact type. Types sharing a level are siblings in
+ * the BMAD model (e.g. requirements and architecture both hang off the PRD).
+ */
+const TYPE_LEVELS: Record<string, LevelInfo> = {
+  'product-brief':         { level: 0, label: 'Briefs',        phase: 'discovery' },
+  'vision':                { level: 1, label: 'Vision',        phase: 'discovery' },
+  'prd':                   { level: 2, label: 'PRD',           phase: 'planning' },
+  'requirement':           { level: 3, label: 'Requirements',  phase: 'planning' },
+  'nfr':                   { level: 3, label: 'NFRs',          phase: 'planning' },
+  'additional-req':        { level: 3, label: 'Additional',    phase: 'planning' },
+  'risk':                  { level: 3, label: 'Risks',         phase: 'planning' },
+  'architecture':          { level: 3, label: 'Architecture',  phase: 'solutioning' },
+  'architecture-decision': { level: 4, label: 'Decisions',     phase: 'solutioning' },
+  'system-component':      { level: 4, label: 'Components',    phase: 'solutioning' },
+  'epic':                  { level: 4, label: 'Epics',         phase: 'implementation' },
+  'story':                 { level: 5, label: 'Stories',       phase: 'implementation' },
+  'use-case':              { level: 5, label: 'Use cases',     phase: 'implementation' },
+  'test-strategy':         { level: 5, label: 'Test strategy', phase: 'details' },
+  'test-design':           { level: 5, label: 'Test design',   phase: 'details' },
+  'test-coverage':         { level: 5, label: 'Coverage',      phase: 'details' },
+  'task':                  { level: 6, label: 'Tasks',         phase: 'details' },
+  'test-case':             { level: 6, label: 'Test cases',    phase: 'details' },
 };
+
+/** Column header label for a type, also used for types outside TYPE_LEVELS. */
+function typeLabel(type: string): string {
+  const known = TYPE_LEVELS[type]?.label;
+  if (known) return known;
+  const words = type.replace(/-/g, ' ');
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/** Order of types within one parent's children: hierarchy level, then table order. */
+const TYPE_ORDER = new Map(Object.keys(TYPE_LEVELS).map((t, i) => [t, i]));
+
+export interface MindmapColumn {
+  /** Column index (0 = leftmost). */
+  index: number;
+  x: number;
+  y: number;
+  width: number;
+  /** Type labels present in this column, most frequent first. */
+  label: string;
+  count: number;
+  phase: Phase;
+}
+
+export interface MindmapLayout {
+  nodes: Artifact[];
+  columns: MindmapColumn[];
+}
 
 interface TreeNode {
   artifact: Artifact;
+  order: number;      // index in the input — preserves the author's ordering
+  level: number;      // hierarchy level (pre-compression)
   children: TreeNode[];
-  /** Total height of this subtree (for vertical allocation) */
-  subtreeHeight: number;
-  /** Total width of this subtree (for horizontal allocation) */
-  subtreeWidth: number;
+  y: number;
 }
 
-/**
- * Sort children by DEPTH_ORDER then by title for stable layout.
- */
-function sortChildren(children: TreeNode[]): TreeNode[] {
-  return children.sort((a, b) => {
-    const oa = DEPTH_ORDER[a.artifact.type] ?? 99;
-    const ob = DEPTH_ORDER[b.artifact.type] ?? 99;
-    if (oa !== ob) return oa - ob;
-    return a.artifact.title.localeCompare(b.artifact.title);
+function compareSiblings(a: TreeNode, b: TreeNode): number {
+  if (a.level !== b.level) return a.level - b.level;
+  const ta = TYPE_ORDER.get(a.artifact.type) ?? Number.MAX_SAFE_INTEGER;
+  const tb = TYPE_ORDER.get(b.artifact.type) ?? Number.MAX_SAFE_INTEGER;
+  if (ta !== tb) return ta - tb;
+  return a.order - b.order;
+}
+
+/** Build the forest from parentId links. Cycles are broken, nothing is dropped. */
+function buildForest(artifacts: Artifact[]): TreeNode[] {
+  const byId = new Map<string, TreeNode>();
+  artifacts.forEach((artifact, order) => {
+    byId.set(artifact.id, { artifact, order, level: 0, children: [], y: 0 });
   });
-}
 
-/**
- * Split children into columns of at most MAX_CHILDREN_PER_COL.
- */
-function splitIntoColumns(children: TreeNode[]): TreeNode[][] {
-  if (children.length === 0) return [];
-  const cols: TreeNode[][] = [];
-  for (let i = 0; i < children.length; i += MAX_CHILDREN_PER_COL) {
-    cols.push(children.slice(i, i + MAX_CHILDREN_PER_COL));
+  const roots: TreeNode[] = [];
+  for (const node of byId.values()) {
+    const parent = node.artifact.parentId ? byId.get(node.artifact.parentId) : undefined;
+    if (parent && parent !== node) parent.children.push(node);
+    else roots.push(node);
   }
-  return cols;
-}
 
-/**
- * Compute the height of a single column of children (sum of subtreeHeights + gaps).
- */
-function columnHeight(col: TreeNode[]): number {
-  let h = 0;
-  for (let i = 0; i < col.length; i++) {
-    if (i > 0) h += V_GAP;
-    h += col[i].subtreeHeight;
+  // Assign levels top-down; a child always sits at least one level right of
+  // its parent, even if its type would put it further left.
+  const visited = new Set<TreeNode>();
+  const assign = (node: TreeNode, parentLevel: number) => {
+    visited.add(node);
+    const natural = TYPE_LEVELS[node.artifact.type]?.level;
+    node.level = parentLevel < 0
+      ? (natural ?? 0)
+      : Math.max(natural ?? parentLevel + 1, parentLevel + 1);
+    node.children = node.children.filter(c => !visited.has(c));
+    node.children.sort(compareSiblings);
+    for (const child of node.children) assign(child, node.level);
+  };
+  for (const root of roots) assign(root, -1);
+
+  // Nodes only reachable through a parentId cycle: promote the first one of
+  // each cycle to a root so it still renders.
+  for (const node of byId.values()) {
+    if (visited.has(node)) continue;
+    node.children = node.children.filter(c => !visited.has(c));
+    roots.push(node);
+    assign(node, -1);
   }
-  return h;
+
+  return roots.sort(compareSiblings);
 }
 
-/**
- * Compute the maximum subtreeWidth across children in a column.
- * This tells us how wide that column extends to the right.
- */
-function columnWidth(col: TreeNode[]): number {
-  let w = 0;
-  for (const child of col) {
-    w = Math.max(w, child.subtreeWidth);
-  }
-  return w;
-}
-
-/**
- * Recursively compute subtreeHeight and subtreeWidth (bottom-up).
- *
- * For leaf nodes: subtreeHeight = NODE_H, subtreeWidth = NODE_W.
- *
- * For branch nodes with children split into columns:
- *   subtreeHeight = max height across all columns (they sit side by side)
- *   subtreeWidth  = NODE_W + H_GAP + sum of column widths + gaps between columns
- *
- * The subtreeHeight must be at least NODE_H (for the node itself).
- */
-function measureSubtree(node: TreeNode): void {
+/** Tidy-tree vertical placement. Returns the y just below the subtree. */
+function placeSubtree(node: TreeNode, top: number): number {
   if (node.children.length === 0) {
-    node.subtreeHeight = NODE_H;
-    node.subtreeWidth = NODE_W;
-    return;
+    node.y = top;
+    return top + NODE_H;
   }
+  let cursor = top;
+  node.children.forEach((child, i) => {
+    if (i > 0) {
+      const prev = node.children[i - 1];
+      const branchy = prev.children.length > 0 || child.children.length > 0;
+      cursor += branchy ? BRANCH_GAP : LEAF_GAP;
+    }
+    cursor = placeSubtree(child, cursor);
+  });
+  const first = node.children[0].y;
+  const last = node.children[node.children.length - 1].y;
+  node.y = (first + last) / 2;
+  return cursor;
+}
 
-  // Measure all children first
-  for (const child of node.children) {
-    measureSubtree(child);
+function walk(nodes: TreeNode[], visit: (n: TreeNode) => void): void {
+  for (const n of nodes) {
+    visit(n);
+    walk(n.children, visit);
   }
-
-  // Split children into columns
-  const cols = splitIntoColumns(node.children);
-
-  // Height = maximum column height (columns are placed side by side)
-  let maxColH = 0;
-  for (const col of cols) {
-    maxColH = Math.max(maxColH, columnHeight(col));
-  }
-  node.subtreeHeight = Math.max(NODE_H, maxColH);
-
-  // Width = NODE_W + H_GAP + total width of all columns side by side
-  let totalColumnsWidth = 0;
-  for (let ci = 0; ci < cols.length; ci++) {
-    if (ci > 0) totalColumnsWidth += COL_GAP;
-    totalColumnsWidth += columnWidth(cols[ci]);
-  }
-  node.subtreeWidth = NODE_W + H_GAP + totalColumnsWidth;
 }
 
 /**
- * Recursively assign positions (top-down).
- *
- * Children are split into columns. Each column is placed at the same base X,
- * offset further right for subsequent columns. Within each column, children
- * are stacked vertically, centered in the column's allocated height band.
+ * Compute the mind-map: positioned copies of the artifacts plus one header
+ * descriptor per occupied column. Input artifacts are not mutated.
  */
-function positionSubtree(
-  node: TreeNode,
-  x: number,
-  yStart: number,
-  out: Artifact[]
-): void {
-  // Center this node vertically within its allocated band
-  const centerY = yStart + node.subtreeHeight / 2 - NODE_H / 2;
+export function computeMindmap(artifacts: Artifact[]): MindmapLayout {
+  if (artifacts.length === 0) return { nodes: [], columns: [] };
 
-  out.push({
-    ...node.artifact,
-    position: { x, y: centerY },
-    size: { width: NODE_W, height: NODE_H },
+  const roots = buildForest(artifacts);
+
+  // Compress levels so empty levels (e.g. no PRD) don't leave blank columns.
+  const usedLevels = new Set<number>();
+  walk(roots, n => usedLevels.add(n.level));
+  const columnOf = new Map([...usedLevels].sort((a, b) => a - b).map((lvl, i) => [lvl, i]));
+  const columnX = (col: number) => ROOT_X + col * (NODE_W + LEVEL_GAP);
+
+  let cursor = ROOT_Y;
+  roots.forEach((root, i) => {
+    if (i > 0) cursor += ROOT_GAP;
+    cursor = placeSubtree(root, cursor);
   });
 
-  if (node.children.length === 0) return;
+  const nodes: Artifact[] = [];
+  const typeCounts = new Map<number, Map<string, number>>();
+  walk(roots, n => {
+    const col = columnOf.get(n.level)!;
+    nodes.push({
+      ...n.artifact,
+      position: { x: columnX(col), y: n.y },
+      size: { width: NODE_W, height: NODE_H },
+    });
+    const counts = typeCounts.get(col) ?? new Map<string, number>();
+    counts.set(n.artifact.type, (counts.get(n.artifact.type) ?? 0) + 1);
+    typeCounts.set(col, counts);
+  });
 
-  // Split children into columns
-  const cols = splitIntoColumns(node.children);
-
-  // Compute each column's width (max subtreeWidth of its members)
-  const colWidths = cols.map(col => columnWidth(col));
-
-  // Starting X for children: to the right of this node
-  let colX = x + NODE_W + H_GAP;
-
-  for (let ci = 0; ci < cols.length; ci++) {
-    const col = cols[ci];
-    const colH = columnHeight(col);
-
-    // Center this column vertically within the subtree band
-    let childY = yStart;
-    if (colH < node.subtreeHeight) {
-      childY += (node.subtreeHeight - colH) / 2;
-    }
-
-    for (const child of col) {
-      positionSubtree(child, colX, childY, out);
-      childY += child.subtreeHeight + V_GAP;
-    }
-
-    // Advance X for the next column
-    colX += colWidths[ci] + COL_GAP;
-  }
-}
-
-/**
- * Compute mind-map positions for all artifacts.
- * Returns a new array of Artifact objects with updated position/size.
- * The original artifacts are not mutated.
- */
-export function computeMindmapLayout(artifacts: Artifact[]): Artifact[] {
-  if (artifacts.length === 0) return [];
-
-  // Build lookup and children map
-  const byId = new Map<string, Artifact>();
-  const childrenMap = new Map<string, Artifact[]>();
-
-  for (const a of artifacts) {
-    byId.set(a.id, a);
-  }
-
-  // Identify roots (no parentId, or parentId not in the set)
-  const roots: Artifact[] = [];
-  for (const a of artifacts) {
-    if (!a.parentId || !byId.has(a.parentId)) {
-      roots.push(a);
-    } else {
-      let kids = childrenMap.get(a.parentId);
-      if (!kids) { kids = []; childrenMap.set(a.parentId, kids); }
-      kids.push(a);
-    }
-  }
-
-  // Build tree nodes recursively
-  function buildNode(artifact: Artifact): TreeNode {
-    const kids = childrenMap.get(artifact.id) || [];
-    const childNodes = kids.map(k => buildNode(k));
-    return {
-      artifact,
-      children: sortChildren(childNodes),
-      subtreeHeight: 0,
-      subtreeWidth: 0,
-    };
-  }
-
-  const rootNodes = roots
-    .map(r => buildNode(r))
-    .sort((a, b) => {
-      const oa = DEPTH_ORDER[a.artifact.type] ?? 99;
-      const ob = DEPTH_ORDER[b.artifact.type] ?? 99;
-      if (oa !== ob) return oa - ob;
-      return a.artifact.title.localeCompare(b.artifact.title);
+  const MAX_LABELS = 3;
+  const columns: MindmapColumn[] = [...typeCounts.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([index, counts]) => {
+      const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+      const names = ranked.slice(0, MAX_LABELS).map(([t]) => typeLabel(t));
+      const extra = ranked.length - MAX_LABELS;
+      const dominant = ranked[0][0];
+      return {
+        index,
+        x: columnX(index),
+        y: ROOT_Y - HEADER_OFFSET,
+        width: NODE_W,
+        label: extra > 0 ? `${names.join(' · ')} +${extra}` : names.join(' · '),
+        count: ranked.reduce((sum, [, c]) => sum + c, 0),
+        phase: TYPE_LEVELS[dominant]?.phase ?? 'details',
+      };
     });
 
-  // If there's just one root, use it as the tree root directly.
-  // If there are multiple roots, create virtual phase grouping nodes.
-  let treeRoots: TreeNode[];
-
-  // Always group roots into phase clusters so the top-to-bottom flow
-  // (Discovery → Planning → Solutioning → Implementation) is consistent
-  // regardless of how many roots each phase contains.
-  {
-    const phases: { label: string; types: Set<string>; nodes: TreeNode[] }[] = [
-      { label: 'Discovery',      types: new Set(['product-brief', 'vision']), nodes: [] },
-      { label: 'Planning',       types: new Set(['prd', 'requirement', 'nfr', 'additional-req', 'risk']), nodes: [] },
-      { label: 'Solutioning',    types: new Set(['architecture', 'architecture-decision', 'system-component']), nodes: [] },
-      { label: 'Implementation', types: new Set(['epic', 'story', 'use-case', 'task', 'test-strategy', 'test-design', 'test-case', 'test-coverage']), nodes: [] },
-    ];
-
-    for (const rn of rootNodes) {
-      const phase = phases.find(p => p.types.has(rn.artifact.type));
-      if (phase) {
-        phase.nodes.push(rn);
-      } else {
-        phases[3].nodes.push(rn);
-      }
-    }
-
-    // Build phase group nodes — always create a virtual phase node
-    // (even for phases with only 1 root) so the top-to-bottom flow
-    // has consistent headers across all four phases.
-    const phaseNodes: TreeNode[] = [];
-    for (const phase of phases) {
-      if (phase.nodes.length === 0) continue;
-      const virtualArtifact: Artifact = {
-        id: `__phase_${phase.label.toLowerCase()}`,
-        type: 'vision',
-        title: phase.label,
-        description: '',
-        status: 'approved',
-        position: { x: 0, y: 0 },
-        size: { width: NODE_W, height: NODE_H },
-        dependencies: [],
-        metadata: {},
-      };
-      phaseNodes.push({
-        artifact: virtualArtifact,
-        children: phase.nodes,
-        subtreeHeight: 0,
-        subtreeWidth: 0,
-      });
-    }
-
-    treeRoots = phaseNodes;
-  }
-
-  // Measure all subtrees
-  for (const root of treeRoots) {
-    measureSubtree(root);
-  }
-
-  // Position all subtrees stacked vertically
-  const result: Artifact[] = [];
-  let y = ROOT_Y;
-  for (const root of treeRoots) {
-    positionSubtree(root, ROOT_X, y, result);
-    y += root.subtreeHeight + V_GAP * 3; // extra gap between root trees
-  }
-
-  return result;
+  return { nodes, columns };
 }
 
-/**
- * Exported layout constants — single source of truth shared with
- * mindmap-layout.test.ts (which imports these rather than duplicating values
- * locally). Add new layout knobs here and they'll automatically be available
- * to the test assertions.
- */
+/** Positioned artifacts only — kept for callers that don't render headers. */
+export function computeMindmapLayout(artifacts: Artifact[]): Artifact[] {
+  return computeMindmap(artifacts).nodes;
+}
+
 export const LAYOUT_CONSTANTS = {
   NODE_W,
   NODE_H,
-  H_GAP,
-  V_GAP,
+  LEVEL_GAP,
+  LEAF_GAP,
+  BRANCH_GAP,
+  ROOT_GAP,
   ROOT_X,
   ROOT_Y,
-  MAX_CHILDREN_PER_COL,
-  COL_GAP,
+  HEADER_OFFSET,
 } as const;

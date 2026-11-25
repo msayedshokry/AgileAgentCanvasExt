@@ -307,23 +307,6 @@ export const ArtifactCard = React.memo(
   // Safely get status info with fallback
   const statusInfo = STATUS_BADGES[artifact.status] || { label: artifact.status || 'Unknown', className: 'status-draft' };
 
-  // Virtual phase nodes (from mindmap layout) — render as a simple label, not interactive
-  if (artifact.id.startsWith('__phase_')) {
-    return (
-      <div
-        className="artifact-card phase-node"
-        style={{
-          left: artifact.position.x,
-          top: artifact.position.y,
-          width: artifact.size.width,
-          ...(treeNested ? { maxHeight: artifact.size.height, overflowY: 'auto' as const } : {}),
-        }}
-      >
-        <div className="phase-node-label">{artifact.title}</div>
-      </div>
-    );
-  }
-
   // Compact mode — simplified card for mindmap view
   if (compact) {
     return (

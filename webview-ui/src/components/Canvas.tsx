@@ -4,7 +4,7 @@ import { ArtifactCard } from './ArtifactCard';
 import { DependencyArrows } from './DependencyArrows';
 import { Icon } from './Icon';
 import { Minimap } from './Minimap';
-import { computeMindmapLayout } from './mindmap-layout';
+import { computeMindmap, type MindmapColumn } from './mindmap-layout';
 import { Corpus3DView } from './Corpus3DView';
 import html2canvas from 'html2canvas';
 import { useEvent } from '../agentic-kanban/useEvent';
@@ -204,6 +204,7 @@ const TREE_PLAN_BAND_PAD    = 8;   // extra padding below tree-nested plan card 
 const BAND_V_INSET          = 6;   // vertical inset for epic row band (matched in JSX render)
 /** Bound on remembered self-reported views (see reportedViewKeysRef). */
 const MAX_REPORTED_VIEW_KEYS = 200;
+const EMPTY_COLUMNS: MindmapColumn[] = [];
 const viewKey = (zoom: number, pan: { x: number; y: number }): string =>
   `${zoom}|${pan.x}|${pan.y}`;
 
@@ -397,11 +398,8 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
           maxY = Math.max(maxY, art.position.y + art.size.height);
         });
         if (layoutMode === 'mindmap') {
-          mindmapGroupBoxes.forEach(box => {
-            minX = Math.min(minX, box.x);
-            minY = Math.min(minY, box.y);
-            maxX = Math.max(maxX, box.x + box.w);
-            maxY = Math.max(maxY, box.y + box.h);
+          mindmapColumns.forEach(col => {
+            minY = Math.min(minY, col.y);
           });
         }
         
@@ -464,7 +462,7 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
         }
 
         // Clone background layers (lanes, bands, etc)
-        const bgElements = el.querySelectorAll('.column-header, .column-subheader, .epic-row-band, .testing-row-band, .mindmap-group-box');
+        const bgElements = el.querySelectorAll('.column-header, .column-subheader, .epic-row-band, .testing-row-band, .mindmap-column-header');
         for (let i = 0; i < bgElements.length; i++) {
           const orig = bgElements[i] as HTMLElement;
           const clone = orig.cloneNode(true) as HTMLElement;
@@ -1734,11 +1732,28 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
 
   // When in mindmap mode, recompute positions using the tree layout engine.
   // In lanes mode, pass through displayArtifacts unchanged.
-  const finalArtifacts = useMemo(() => {
-    if (layoutMode !== 'mindmap') return displayArtifacts;
-    // Filter out virtual phase nodes that don't exist in the original data
-    return computeMindmapLayout(displayArtifacts);
-  }, [layoutMode, displayArtifacts]);
+  const mindmap = useMemo(
+    () => (layoutMode === 'mindmap' ? computeMindmap(displayArtifacts) : null),
+    [layoutMode, displayArtifacts]
+  );
+  const finalArtifacts = mindmap ? mindmap.nodes : displayArtifacts;
+  const mindmapColumns = mindmap?.columns ?? EMPTY_COLUMNS;
+
+  // The mindmap tree can be much taller than the lanes layout; size the
+  // content layer (and the arrows SVG inside it) to whichever is in use.
+  const contentSize = useMemo(() => {
+    if (!mindmap) return canvasContentSize;
+    let maxRight = 0;
+    let maxBottom = 0;
+    for (const a of mindmap.nodes) {
+      maxRight = Math.max(maxRight, a.position.x + a.size.width);
+      maxBottom = Math.max(maxBottom, a.position.y + a.size.height);
+    }
+    return {
+      width: Math.max(canvasContentSize.width, maxRight + 200),
+      height: Math.max(canvasContentSize.height, maxBottom + 200),
+    };
+  }, [mindmap, canvasContentSize]);
 
   // Lane head counts: displayed artifacts whose card sits inside the lane's
   // horizontal bounds. Counted by position, not cardTypes, because types
@@ -1754,101 +1769,6 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
     }
     return counts;
   }, [displayArtifacts, laneLayout.positions, implLaneWidth]);
-
-  // Compute group bounding boxes for mindmap mode.
-  // Instead of cycling through 8 arbitrary colors, each depth level gets its own
-  // subtle background shade. This visually communicates "how deep" a group is
-  // without the noise of cycling colors on unrelated sibling groups.
-  const mindmapGroupBoxes = useMemo(() => {
-    if (layoutMode !== 'mindmap' || finalArtifacts.length === 0) return [];
-
-    // Compute depth for each artifact by walking parentId chain
-    const depthOf = new Map<string, number>();
-    const computeDepth = (id: string): number => {
-      const cached = depthOf.get(id);
-      if (cached !== undefined) return cached;
-      const art = finalArtifacts.find(a => a.id === id);
-      if (!art || !art.parentId || art.parentId.startsWith('__phase_')) {
-        depthOf.set(id, 0);
-        return 0;
-      }
-      const d = computeDepth(art.parentId) + 1;
-      depthOf.set(id, d);
-      return d;
-    };
-
-    // Build a parent→children lookup from positioned artifacts
-    const byId = new Map<string, Artifact>();
-    const childrenMap = new Map<string, string[]>();
-    for (const a of finalArtifacts) {
-      byId.set(a.id, a);
-      computeDepth(a.id); // ensure depth is computed
-      if (a.parentId && !a.id.startsWith('__phase_') && !a.parentId.startsWith('__phase_')) {
-        let kids = childrenMap.get(a.parentId);
-        if (!kids) { kids = []; childrenMap.set(a.parentId, kids); }
-        kids.push(a.id);
-      }
-    }
-
-    // Collect all descendants of a given root
-    function collectDescendants(rootId: string): string[] {
-      const ids: string[] = [rootId];
-      const queue = [rootId];
-      while (queue.length > 0) {
-        const cur = queue.shift()!;
-        const kids = childrenMap.get(cur);
-        if (kids) {
-          for (const kid of kids) {
-            ids.push(kid);
-            queue.push(kid);
-          }
-        }
-      }
-      return ids;
-    }
-
-    // Only create group boxes for non-virtual artifacts at depth 0 or 1
-    // that have children. Deeper groups are skipped to avoid the nested
-    // overlapping-box noise that made the mindmap hard to read.
-    const groups: { id: string; depth: number; x: number; y: number; w: number; h: number; label: string }[] = [];
-    const PAD = 14; // padding around the group
-
-    for (const a of finalArtifacts) {
-      if (a.id.startsWith('__phase_')) continue;
-      const depth = depthOf.get(a.id) ?? 0;
-      if (depth > 1) continue; // only render group boxes for top 2 depth levels
-      const kids = childrenMap.get(a.id);
-      if (!kids || kids.length === 0) continue;
-
-      // Collect all descendant IDs and compute bounding box
-      const allIds = collectDescendants(a.id);
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-      for (const id of allIds) {
-        const node = byId.get(id);
-        if (!node) continue;
-        const nx = node.position?.x ?? 0;
-        const ny = node.position?.y ?? 0;
-        const nw = node.size?.width ?? 200;
-        const nh = node.size?.height ?? 60;
-        if (nx < minX) minX = nx;
-        if (ny < minY) minY = ny;
-        if (nx + nw > maxX) maxX = nx + nw;
-        if (ny + nh > maxY) maxY = ny + nh;
-      }
-
-      groups.push({
-        id: a.id,
-        depth: Math.min(depthOf.get(a.id) ?? 0, 3), // clamp to 0-3 for CSS classes
-        x: minX - PAD,
-        y: minY - PAD,
-        w: maxX - minX + PAD * 2,
-        h: maxY - minY + PAD * 2,
-        label: a.title,
-      });
-    }
-
-    return groups;
-  }, [layoutMode, finalArtifacts]);
 
   // Auto fit-to-view when entering mindmap mode.
   // Runs exactly ONCE per component mount — the first time the user
@@ -1867,7 +1787,6 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
     const vpH = el.clientHeight;
     if (vpW === 0 || vpH === 0) return;
 
-    hasAutoFittedRef.current = true;
 
     let minX = Infinity, minY = Infinity, maxX = 0, maxY = 0;
     for (const a of finalArtifacts) {
@@ -1880,12 +1799,9 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
       if (ax + aw > maxX) maxX = ax + aw;
       if (ay + ah > maxY) maxY = ay + ah;
     }
-    // Include group boxes in the bounding box so they're not clipped
-    for (const box of mindmapGroupBoxes) {
-      if (box.x < minX) minX = box.x;
-      if (box.y < minY) minY = box.y;
-      if (box.x + box.w > maxX) maxX = box.x + box.w;
-      if (box.y + box.h > maxY) maxY = box.y + box.h;
+    // Include the column headers so they're not clipped
+    for (const col of mindmapColumns) {
+      if (col.y < minY) minY = col.y;
     }
     const contentW = maxX - minX;
     const contentH = maxY - minY;
@@ -1967,26 +1883,19 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
         style={{
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
           transformOrigin: '0 0',
-          width: canvasContentSize.width,
-          height: canvasContentSize.height,
+          width: contentSize.width,
+          height: contentSize.height,
         }}
       >
-        {/* Mindmap group boxes — rendered behind cards & arrows.
-            Depth-based shading replaces the old 8-color cycling system.
-            Deeper groups get more subtle backgrounds; shallow groups are more visible. */}
-        {layoutMode === 'mindmap' && mindmapGroupBoxes.map(box => (
+        {/* Mindmap column headers — one per hierarchy level. */}
+        {layoutMode === 'mindmap' && mindmapColumns.map(col => (
           <div
-            key={`group-${box.id}`}
-            className={`mindmap-group-box group-depth-${box.depth}`}
-            style={{
-              position: 'absolute',
-              left: box.x,
-              top: box.y,
-              width: box.w,
-              height: box.h,
-            }}
+            key={`mm-col-${col.index}`}
+            className={`mindmap-column-header phase-${col.phase}`}
+            style={{ left: col.x, top: col.y, width: col.width }}
           >
-            <span className={`mindmap-group-box-label group-depth-${box.depth}`}>{box.label}</span>
+            <span className="mindmap-column-label" title={col.label}>{col.label}</span>
+            <span className="mindmap-column-count">{col.count}</span>
           </div>
         ))}
 
