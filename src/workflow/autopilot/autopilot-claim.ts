@@ -14,15 +14,21 @@ function claimFile(outputFolder: string, id: string, minute: string): string {
   return path.join(outputFolder, CLAIMS_DIR, `${id}@${minute.replace(/:/g, '-')}`);
 }
 
-/** True when this caller won the claim for (id, minute). */
+/**
+ * True when this caller won the claim for (id, minute); false when another
+ * window already holds it. Any other failure (the claims folder cannot be
+ * created or written) throws, so the caller can report it instead of the
+ * autopilot silently never running.
+ */
 export function claimScheduledRun(outputFolder: string, id: string, minute: string): boolean {
   const file = claimFile(outputFolder, id, minute);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
   try {
-    fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.closeSync(fs.openSync(file, 'wx'));
     return true;
-  } catch {
-    return false;
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'EEXIST') return false;
+    throw err;
   }
 }
 

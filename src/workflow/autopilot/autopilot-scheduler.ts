@@ -51,6 +51,7 @@ export class AutopilotScheduler implements vscode.Disposable {
   private readonly lastFired = new Map<string, string>();
   private readonly running = new Set<string>();
   private reportedErrors = '';
+  private reportedClaimError = '';
   private ticks = 0;
 
   start(): void {
@@ -76,8 +77,23 @@ export class AutopilotScheduler implements vscode.Disposable {
         logger.warn(`[Autopilot] ${autopilot.id}: previous run still going — skipping ${minute}`);
         continue;
       }
-      if (!claimScheduledRun(getOutputFolder(), autopilot.id, minute)) continue; // another window has it
+      if (!this.claim(autopilot, minute)) continue;
       void this.run(autopilot, 'schedule');
+    }
+  }
+
+  /** False when another window has the run, or when claiming failed (reported once per distinct error). */
+  private claim(autopilot: ParsedAutopilot, minute: string): boolean {
+    try {
+      return claimScheduledRun(getOutputFolder(), autopilot.id, minute);
+    } catch (err) {
+      const message = `Autopilot "${autopilot.name}" could not claim its run: ${errMsg(err)}`;
+      logger.warn(`[Autopilot] ${message}`);
+      if (this.reportedClaimError !== message) {
+        this.reportedClaimError = message;
+        void vscode.window.showWarningMessage(message);
+      }
+      return false;
     }
   }
 

@@ -19,6 +19,11 @@ describe('claimScheduledRun', () => {
     expect(claimScheduledRun(dir, 'daily', '2026-11-26T09:00')).toBe(true);
     expect(claimScheduledRun(dir, 'weekly', '2026-11-25T09:00')).toBe(true);
   });
+
+  it('throws when the claims folder cannot be created, instead of reporting a lost race', () => {
+    fs.writeFileSync(path.join(dir, CLAIMS_DIR), 'not a folder');
+    expect(() => claimScheduledRun(dir, 'daily', '2026-11-25T09:00')).toThrow();
+  });
 });
 
 describe('pruneClaims', () => {

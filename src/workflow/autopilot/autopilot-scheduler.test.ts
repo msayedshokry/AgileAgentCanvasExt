@@ -71,4 +71,15 @@ describe('AutopilotScheduler.tick', () => {
     scheduler.tick(NINE);
     expect(vscode.window.showWarningMessage).toHaveBeenCalledTimes(1);
   });
+
+  it('warns once when the claims folder cannot be written, instead of silently never running', () => {
+    writeConfig([{ ...daily, schedule: '* * * * *' }]);
+    fs.writeFileSync(path.join(state.outputFolder, '.autopilot-claims'), 'not a folder');
+    const scheduler = new AutopilotScheduler();
+    expect(() => scheduler.tick(NINE)).not.toThrow();
+    scheduler.tick(new Date(NINE.getTime() + 60_000));
+    expect(executeAndAwaitVerdict).not.toHaveBeenCalled();
+    expect(vscode.window.showWarningMessage).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(vscode.window.showWarningMessage).mock.calls[0][0]).toMatch(/^Autopilot "Daily summary" could not claim its run: /);
+  });
 });
