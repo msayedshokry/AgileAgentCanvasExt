@@ -6,6 +6,7 @@ import { WizardStepsProvider } from './views/wizard-steps-provider';
 import { AgenticKanbanViewProvider } from './views/agentic-kanban-view-provider';
 import { registerNeedsYou } from './views/needs-you';
 import { registerDevHubCommands } from './commands/dev-hub-commands';
+import { registerAutopilots } from './workflow/autopilot/autopilot-scheduler';
 import { AgentSessionsViewProvider } from './views/agent-sessions-view-provider';
 import { AgileAgentCanvasViewProvider } from './views/canvas-view-provider';
 import { ArtifactStore } from './state/artifact-store';
@@ -174,6 +175,7 @@ export function activate(context: vscode.ExtensionContext) {
     registerNeedsYou(context, (artifactId) => agenticKanbanProvider.broadcast({ type: 'kanban:focusCard', artifactId }));
     // Developer hub: project context, metrics, release notes, GitHub Issues sync, story CodeLens.
     registerDevHubCommands(context, artifactStore, (artifactId) => agenticKanbanProvider.broadcast({ type: 'kanban:focusCard', artifactId }));
+    registerAutopilots(context);
     const agentSessionsProvider = new AgentSessionsViewProvider(context.extensionUri);
     // Push the provider itself so its timer + singleton listeners are
     // cleared on extension deactivation (otherwise the 30 s heartbeat can

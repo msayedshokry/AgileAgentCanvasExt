@@ -426,26 +426,32 @@ When('I execute team {string} with task {string} and mock model that throws',
   }
 );
 
+// Squad used by the role-task steps: buildRoleTask(members, role, task, artifact, handoffNotes).
+const SQUAD = [
+  { role: 'coordinator', personaId: 'aac-agent-pm', order: 1 },
+  { role: 'researcher', personaId: 'aac-agent-analyst', order: 2 },
+  { role: 'crafter', personaId: 'aac-agent-dev', order: 3 },
+  { role: 'gate', personaId: 'aac-agent-architect', order: 4 },
+];
+
 When('I build a role task for {string} with original task {string}', function (this: BmadWorld, role: string, task: string) {
   const ctx = getCtx(this);
   // Access the private buildRoleTask via any cast
-  ctx.lastRoleTask = (ctx.orchestrator as any).buildRoleTask(role, task, null, []);
+  ctx.lastRoleTask = (ctx.orchestrator as any).buildRoleTask(SQUAD, role, task, null, []);
 });
 
 When('I build a role task for {string} with original task {string} and artifact',
   function (this: BmadWorld, role: string, task: string) {
     const ctx = getCtx(this);
     const artifact = { id: 'test-1', title: task, type: 'story' };
-    ctx.lastRoleTask = (ctx.orchestrator as any).buildRoleTask(role, task, artifact, []);
+    ctx.lastRoleTask = (ctx.orchestrator as any).buildRoleTask(SQUAD, role, task, artifact, []);
   }
 );
 
 When('I build a role task for {string} with previous results', function (this: BmadWorld, role: string) {
   const ctx = getCtx(this);
-  const prevResults = [
-    { role: 'coordinator', output: 'plan', status: 'completed' },
-  ];
-  ctx.lastRoleTask = (ctx.orchestrator as any).buildRoleTask(role, 'Original task', null, prevResults);
+  const handoffNotes = [{ role: 'coordinator', text: 'plan' }];
+  ctx.lastRoleTask = (ctx.orchestrator as any).buildRoleTask(SQUAD, role, 'Original task', null, handoffNotes);
 });
 
 // ─── THEN ───────────────────────────────────────────────────────────────────

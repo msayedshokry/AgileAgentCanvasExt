@@ -43,6 +43,11 @@ export interface LaunchContext {
   readonly posture: PermissionPosture;
   /** Workspace root the agent works in (for CLIs that need it named explicitly). */
   readonly workspaceDir?: string;
+  /**
+   * Conversation to start or continue, for adapters with `sessionResume`.
+   * See card-session.ts for when a session is resumed.
+   */
+  readonly session?: { readonly id: string; readonly resume: boolean };
 }
 
 export interface HarnessAdapter {
@@ -57,6 +62,8 @@ export interface HarnessAdapter {
   readonly postures: readonly PermissionPosture[];
   /** Plain-language description of what each posture allows for this CLI. */
   readonly postureNotes: Readonly<Record<PermissionPosture, string>>;
+  /** True when the CLI can start a conversation with a chosen id and resume it later. */
+  readonly sessionResume?: boolean;
   buildLaunch(ctx: LaunchContext): LaunchSpec;
 }
 
@@ -83,10 +90,15 @@ const claude: HarnessAdapter = {
   // claude 2.1.x: `-p` prints and exits; with no positional prompt it reads stdin.
   // `acceptEdits` alone does not approve Write on a NEW file (the verdict
   // path is fresh each run), so Write is allow-listed explicitly.
-  buildLaunch: ({ binary, posture }) => ({
-    args: posture === 'full'
-      ? [binary, '-p', '--permission-mode', 'bypassPermissions', '--dangerously-skip-permissions']
-      : [binary, '-p', '--permission-mode', 'acceptEdits', '--allowedTools', 'Read Write Edit Glob Grep'],
+  // `--session-id <uuid>` names a new conversation; `--resume <uuid>` continues it.
+  sessionResume: true,
+  buildLaunch: ({ binary, posture, session }) => ({
+    args: [
+      ...(posture === 'full'
+        ? [binary, '-p', '--permission-mode', 'bypassPermissions', '--dangerously-skip-permissions']
+        : [binary, '-p', '--permission-mode', 'acceptEdits', '--allowedTools', 'Read Write Edit Glob Grep']),
+      ...(session ? [session.resume ? '--resume' : '--session-id', session.id] : []),
+    ],
   }),
 };
 

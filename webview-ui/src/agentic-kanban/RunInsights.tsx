@@ -17,6 +17,26 @@ interface TimelineRun {
   startedAt: number;
   finishedAt: number;
   failure?: AgentFailureInfo;
+  context?: ContextSource[];
+}
+
+/** One context source a run was given (names and sizes only — see context-receipt.ts). */
+interface ContextSource {
+  kind: string;
+  name: string;
+  chars: number;
+  hash: string;
+  delivery: 'inline' | 'discovered' | 'resumed';
+}
+
+const DELIVERY_LABEL: Record<ContextSource['delivery'], string> = {
+  inline: 'in prompt',
+  discovered: 'loaded by the CLI',
+  resumed: 'already in the conversation',
+};
+
+function size(chars: number): string {
+  return chars >= 1000 ? `${(chars / 1000).toFixed(1)}k chars` : `${chars} chars`;
 }
 
 interface AgentCommit { sha: string; subject: string; date: string; files?: string[] }
@@ -152,6 +172,18 @@ export function RunInsights({ item }: { item: KanbanItem }) {
                   {r.harness} · {new Date(r.finishedAt).toLocaleString()} · {duration(r.finishedAt - r.startedAt)}
                 </span>
                 {r.failure && <span className="agent-timeline-why">{r.failure.title}</span>}
+                {r.context && r.context.length > 0 && (
+                  <details className="agent-timeline-context">
+                    <summary>Context: {r.context.length} source{r.context.length === 1 ? '' : 's'}</summary>
+                    <ul>
+                      {r.context.map((c) => (
+                        <li key={`${c.kind}-${c.name}`} title={`sha256 ${c.hash}`}>
+                          <code>{c.name}</code> {size(c.chars)} · {DELIVERY_LABEL[c.delivery]}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
               </li>
             ))}
           </ol>

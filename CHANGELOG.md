@@ -4,6 +4,30 @@
 
 Brings the bundled BMAD content up to upstream v6.12.4 where it helps the canvas, makes sprint planning deterministic, and fixes many bundled paths that pointed at nothing. Full detail: [docs/changelog/unreleased.md](docs/changelog/unreleased.md).
 
+### Feature: More reliable agent runs
+
+Board runs stop when stuck rather than on a fixed timer, retry only failures that can clear on their own, and resume their conversation for rework.
+
+- Runs stop after 15 minutes with no output, with a 2-hour limit overall. Before, every run stopped at 20 minutes, even one still working. Set them with `agents.idleTimeoutMinutes` and `agents.maxRunMinutes`.
+- A failed run is retried automatically only for network errors, a stuck agent, a missing verdict file, rate limits (after 60 seconds) and provider server errors (after 15 seconds). Sign-in, API key, model, quota and context-overflow failures go straight to the card with their fix actions.
+- Failures now name a full context window, a temporary rate limit (including the 403 "concurrent request limit"), a spent quota, and provider 5xx errors separately.
+- With Claude Code, a card back for rework resumes its previous conversation and sends only the new instructions and fix requests. A run that ended without a verdict is never resumed. Turn this off with `agents.resumeSessions`.
+- Each run in a card's timeline lists the context it received: name, size and how it was delivered, without the content.
+
+### Feature: Autopilots
+
+Run recurring agent work on a schedule while VS Code is open.
+
+- Define runbooks with cron schedules in the autopilots file (**Edit Autopilots** opens it), or start one with **Run Autopilot Now**. They are off until you turn on `autopilots.enabled` in your user settings, so a cloned project cannot start agents on its own.
+- Each run uses a fresh agent session, runs once even with several windows open, and only notifies you when it needs attention.
+
+### Feature: Agent team protocol
+
+Team runs now pass work between members instead of running a fixed pipeline blind.
+
+- Each member gets a brief with its role and the roster, and receives the earlier members' handoff notes. Before, members received nothing from each other, because their output was never captured.
+- The coordinator can skip members it doesn't need, and a gate that requests changes sends the work back to the crafter once.
+
 ### Feature: Sharper code review
 
 Code review now verifies every finding against the code and reports changed behavior that no test would catch.

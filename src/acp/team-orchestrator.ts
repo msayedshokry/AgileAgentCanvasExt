@@ -12,6 +12,30 @@ import type { AgentCapability } from './agent-bus/types';
 import { errMsg } from '../utils/error';
 import { concurrencyQueue } from '../workflow/concurrency-queue';
 import { budgetEnforcer } from '../workflow/budget-enforcer';
+import { memberBrief, nextQueue, renderHandoffNotes, type HandoffNote, type SquadMember } from './team-orchestrator/squad-protocol';
+
+/**
+ * Pass a member's chat stream through while keeping a copy of the markdown it
+ * writes. The tool loop streams its answer and returns nothing, so this copy
+ * is the member's output for handoffs and the gate's verdict.
+ */
+function captureStream(stream: vscode.ChatResponseStream | undefined): { stream: vscode.ChatResponseStream; text: () => string } {
+  let text = '';
+  const target = (stream ?? {}) as Record<string | symbol, unknown>;
+  const proxy = new Proxy(target, {
+    get(t, prop) {
+      if (prop === 'markdown') {
+        return (value: string | { value?: string }) => {
+          text += typeof value === 'string' ? value : value?.value ?? '';
+          (t.markdown as ((v: unknown) => void) | undefined)?.call(t, value);
+        };
+      }
+      const v = t[prop];
+      return typeof v === 'function' ? (v as (...a: unknown[]) => unknown).bind(t) : v;
+    },
+  });
+  return { stream: proxy as unknown as vscode.ChatResponseStream, text: () => text };
+}
 
 // ─── Agent Team Registry ─────────────────────────────────────────────────────
 
@@ -869,7 +893,12 @@ export class AgentTeamOrchestrator {
     } catch { /* trace recorder may not be initialized */ }
 
     try {
-      for (const member of team.members.sort((a, b) => a.order - b.order)) {
+      const members: SquadMember[] = [...team.members].sort((a, b) => a.order - b.order);
+      let queue: SquadMember[] = [...members];
+      const notes: HandoffNote[] = [];
+      let reworkRounds = 0;
+      while (queue.length > 0) {
+        const member = queue.shift()!;
         if (cancelled) {
           logger.info('Team execution cancelled', { teamId, stoppedAt: member.role });
           break;
@@ -877,7 +906,7 @@ export class AgentTeamOrchestrator {
 
         stream?.markdown(`\n\n**🤖 ${member.role}** is working...\n\n`);
 
-        const roleTask = this.buildRoleTask(member.role, task, currentArtifact, results);
+        const roleTask = this.buildRoleTask(members, member.role, task, currentArtifact, notes);
 
         const spec: AcpSessionSpec = {
           role: member.role,
@@ -914,12 +943,14 @@ export class AgentTeamOrchestrator {
           });
         } catch { /* trace recorder may not be initialized */ }
 
-        const result = await acpSessionManager.execute(session.id, model, store, stream, token);
+        const capture = captureStream(stream);
+        const result = await acpSessionManager.execute(session.id, model, store, capture.stream, token);
         const agentDurationMs = Date.now() - agentStartTime;
+        const memberText = capture.text();
 
         currentArtifact = result.output || currentArtifact;
         previousSessionId = session.id;
-        results.push(result);
+        results.push({ ...result, output: result.output ?? (memberText || null) });
 
         if (result.status === 'completed') {
           // Record agent completed trace — includes tool call count and duration
@@ -940,6 +971,24 @@ export class AgentTeamOrchestrator {
           } catch { /* trace recorder may not be initialized */ }
 
           stream?.markdown(`\n\n✅ **${member.role}** completed (${result.toolCalls} tool calls, ${agentDurationMs}ms)\n\n`);
+
+          // Squad protocol: the coordinator routes, a gate that requests
+          // changes sends the work back to the crafter once.
+          notes.push({ role: member.role, text: memberText });
+          const next = nextQueue(member.role, memberText, queue, members, reworkRounds);
+          if (next.rework) reworkRounds++;
+          if (next.note) {
+            stream?.markdown(`\n\n> ${next.note}\n\n`);
+            try {
+              getTraceRecorder().record({
+                sessionId: teamTraceSessionId,
+                type: 'decision',
+                agent: 'team-orchestrator',
+                data: { decision: next.note, rationale: `after ${member.role}`, artifactId: artifact?.id, artifactType: artifact?.type },
+              });
+            } catch { /* trace recorder may not be initialized */ }
+          }
+          queue = next.queue;
         } else {
           // Record agent failed trace with error details
           try {
@@ -1015,22 +1064,26 @@ export class AgentTeamOrchestrator {
   }
 
   private buildRoleTask(
+    members: readonly SquadMember[],
     role: AgentRole,
     originalTask: string,
-    artifact: any,
-    previousResults: AcpSessionResult[]
+    artifact: unknown,
+    notes: readonly HandoffNote[],
   ): string {
-    switch (role) {
-      case 'coordinator':
-        return `Decompose this task into actionable steps and plan the implementation:\n\n${originalTask}`;
-      case 'crafter':
-        return `Implement the following task using the artifact and previous context:\n\nTask: ${originalTask}\n\nArtifact context: ${JSON.stringify(artifact, null, 2)}`;
-      case 'gate':
-        return `Verify the output from previous steps meets quality standards. Review the following:\n\nTask: ${originalTask}\n\nPrevious outputs: ${JSON.stringify(previousResults.map(r => ({ role: r.role, output: r.output, status: r.status })))}`;
-      case 'researcher':
-        return `Research and gather information relevant to:\n\n${originalTask}`;
-      default:
-        return originalTask;
-    }
+    const work = (() => {
+      switch (role) {
+        case 'coordinator':
+          return `Decompose this task into actionable steps and plan the implementation:\n\n${originalTask}`;
+        case 'crafter':
+          return `Implement the following task using the artifact and the handoff notes:\n\nTask: ${originalTask}\n\nArtifact context: ${JSON.stringify(artifact, null, 2)}`;
+        case 'gate':
+          return `Verify the work from the earlier members meets quality standards for this task:\n\nTask: ${originalTask}`;
+        case 'researcher':
+          return `Research and gather information relevant to:\n\n${originalTask}`;
+        default:
+          return originalTask;
+      }
+    })();
+    return [memberBrief(members, role), work, renderHandoffNotes(notes)].filter(Boolean).join('\n\n');
   }
 }

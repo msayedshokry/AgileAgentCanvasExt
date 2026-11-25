@@ -31,6 +31,7 @@ import { autonomousGit } from './autonomous-git';
 import { TerminalExecutor } from './terminal-executor';
 import { runViaLanguageModel } from './harness/headless-lm-run';
 import { classifyAgentFailure, type AgentFailure } from './harness/agent-failure';
+import { decideRetry } from './harness/retry-policy';
 import { finishApprovedCard, prepareCardWorkspace, verifyCard } from './harness/card-isolation';
 import { verifyFixRequest } from './harness/verify-gate';
 import type { CardWorktree } from './harness/card-worktree';
@@ -537,10 +538,18 @@ export class KanbanOrchestrator {
     // crash, disk-flush race), executeAndAwaitVerdict returns UNKNOWN.
     // The autoRetryEngine doesn't retry UNKNOWN because the work function
     // didn't throw — the verdict IS the result. We give it ONE more
-    // attempt with a fresh terminal before surfacing to the orchestrator.
+    // attempt with a fresh terminal before surfacing to the orchestrator,
+    // but only when the failure is transient (see retry-policy.ts): a
+    // signed-out agent or a spent quota fails the same way again.
     if (retryResult.succeeded && captured) {
-      if (captured.verdict === 'UNKNOWN' && !this.abortControllers.get(id)?.signal.aborted) {
-        logger.warn(`[Orchestrator] ${id}: UNKNOWN verdict on first attempt — retrying once`);
+      const retry = captured.verdict === 'UNKNOWN'
+        ? decideRetry(captured.summary, this.abortControllers.get(id)?.signal.aborted === true)
+        : undefined;
+      if (retry && !retry.retry) {
+        logger.info(`[Orchestrator] ${id}: UNKNOWN verdict not retried — ${retry.reason}`);
+      }
+      if (retry?.retry && await this.waitBeforeRetry(id, retry.delayMs)) {
+        logger.warn(`[Orchestrator] ${id}: UNKNOWN verdict on first attempt — retrying once (${retry.reason})`);
         try {
           if (useChatPath) {
             const chatInputs = requireChatPathContext(ctx)!;
@@ -587,6 +596,22 @@ export class KanbanOrchestrator {
       verdict: 'UNKNOWN',
       summary: `Retries exhausted: ${errMsg(lastErr)}`,
     } as unknown as KanbanVerdict;
+  }
+
+  /**
+   * Wait out a retry delay (rate limit, provider outage). Resolves false when
+   * the card's run is aborted meanwhile, so Stop never triggers a retry.
+   */
+  private waitBeforeRetry(id: string, delayMs: number): Promise<boolean> {
+    const signal = this.abortControllers.get(id)?.signal;
+    if (signal?.aborted) return Promise.resolve(false);
+    if (delayMs <= 0) return Promise.resolve(true);
+    logger.info(`[Orchestrator] ${id}: waiting ${Math.round(delayMs / 1000)}s before retrying`);
+    return new Promise((resolve) => {
+      const onAbort = () => { clearTimeout(timer); resolve(false); };
+      const timer = setTimeout(() => { signal?.removeEventListener('abort', onAbort); resolve(true); }, delayMs);
+      signal?.addEventListener('abort', onAbort, { once: true });
+    });
   }
 
   // ── Approval checkpoint (P1 #5) ──────────────────────────────────────────

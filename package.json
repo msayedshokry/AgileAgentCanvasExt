@@ -60,7 +60,8 @@
         "agileagentcanvas.aiProvider",
         "agileagentcanvas.budget.perStoryUsd",
         "agileagentcanvas.budget.dailyUsd",
-        "agileagentcanvas.a2a.allowedHosts"
+        "agileagentcanvas.a2a.allowedHosts",
+        "agileagentcanvas.autopilots.enabled"
       ]
     },
     "virtualWorkspaces": {
@@ -797,6 +798,14 @@
       }
     ],
     "commands": [
+      {
+        "command": "agileagentcanvas.autopilot.open",
+        "title": "Agile Agent Canvas: Edit Autopilots"
+      },
+      {
+        "command": "agileagentcanvas.autopilot.runNow",
+        "title": "Agile Agent Canvas: Run Autopilot Now"
+      },
       {
         "command": "agileagentcanvas.refreshProjectContext",
         "title": "Agile Agent Canvas: Refresh Project Context",
@@ -1540,6 +1549,29 @@
             "default": 15,
             "minimum": 1,
             "description": "Maximum time for the verify command before it is stopped and counted as failed."
+          },
+          "agileagentcanvas.agents.idleTimeoutMinutes": {
+            "type": "number",
+            "default": 15,
+            "minimum": 0,
+            "description": "Stop an agent run that produces no terminal output for this many minutes, and report it as stuck. 0 turns the check off."
+          },
+          "agileagentcanvas.agents.maxRunMinutes": {
+            "type": "number",
+            "default": 120,
+            "minimum": 0,
+            "description": "Stop an agent run after this many minutes in total, even if it is still producing output. 0 removes the limit."
+          },
+          "agileagentcanvas.agents.resumeSessions": {
+            "type": "boolean",
+            "default": true,
+            "markdownDescription": "When a card comes back for rework, continue the agent conversation it had last time instead of starting over (Claude Code only). A run that ended without a verdict is never resumed."
+          },
+          "agileagentcanvas.autopilots.enabled": {
+            "type": "boolean",
+            "default": false,
+            "scope": "application",
+            "markdownDescription": "Run the scheduled agent jobs defined in `autopilots.json` (in the output folder) while VS Code is open. Off by default so a cloned project cannot start agents on its own. Use **Agile Agent Canvas: Edit Autopilots** to define them."
           },
           "agileagentcanvas.agents.openPullRequests": {
             "type": "boolean",

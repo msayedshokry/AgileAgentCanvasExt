@@ -5,6 +5,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import type { ReceiptItem } from './context-receipt';
 
 export interface RunHistoryEntry {
   readonly runId: string;
@@ -16,6 +17,8 @@ export interface RunHistoryEntry {
   readonly summary?: string;
   readonly startedAt: number;
   readonly finishedAt: number;
+  /** What context the agent was given (names, sizes, hashes — no content). */
+  readonly context?: readonly ReceiptItem[];
 }
 
 export const RUN_HISTORY_FILE = 'agent-run-history.jsonl';

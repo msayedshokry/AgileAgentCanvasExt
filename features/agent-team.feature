@@ -113,6 +113,8 @@ Feature: Agent Team - Multi-Agent Orchestration
     When I build a role task for "gate" with previous results
     Then the role task should contain "Verify"
     And the role task should contain "quality standards"
+    And the role task should contain "### From the coordinator"
+    And the role task should contain "VERDICT: APPROVED"
 
   @team @tasks
   Scenario: Researcher role task asks to research

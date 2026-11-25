@@ -19,12 +19,15 @@ import { getTraceRecorder } from '../trace/trace-recorder';
 import { concurrencyQueue } from './concurrency-queue';
 import { agentHealthMonitor } from './agent-health-monitor';
 import { createTerminalHealthChecks } from './terminal-health-checks';
-import { buildHarnessLaunch, type HarnessId } from './harness/harness-adapters';
+import { buildHarnessLaunch, type HarnessAdapter, type HarnessId } from './harness/harness-adapters';
 import { type HarnessResolution } from './harness/harness-resolver';
 import { agentRunBlockReason, resolveBoardHarness, resolveEffectivePosture } from './harness/board-harness';
 import { buildCommandLine, detectShellKind, type ShellKind } from './harness/shell-command';
 import { stagePromptFile, disposePromptFile as disposeStagedPrompt } from './harness/prompt-staging';
 import { RunJournal } from './harness/run-journal';
+import { checkWatchdog, resolveWatchdogPolicy } from './harness/run-watchdog';
+import { buildContextReceipt, summarizeReceipt, type ReceiptItem } from './harness/context-receipt';
+import { CardSessionStore, cardSessionKey, planSession, recordAfterRun, type SessionPlan } from './harness/card-session';
 import { appendRunHistory, type RunHistoryEntry } from './harness/run-history';
 import {
   sanitizeId as sanitizeResultId,
@@ -206,6 +209,8 @@ export interface HarnessRunOptions {
   revertStatusOnInterrupt?: string;
   /** Working copy the agent runs in (the card's git worktree); defaults to the workspace. */
   cwd?: string;
+  /** Always start a new agent conversation (recurring jobs must not grow one session forever). */
+  freshSession?: boolean;
 }
 
 /** Output folder for a run: inside the card's worktree when it has one, so sandboxed agents may write there. */
@@ -243,6 +248,61 @@ function blocked(summary: string): KanbanVerdict {
  * Includes BMAD workflow context, artifact data, and instructions to
  * update the artifact store when finished.
  */
+/** The verdict-file contract every run prompt opens with. */
+function verdictContract(resultPath: string, runId?: string): string {
+  return `## ⛔ Required first action — verdict contract
+
+You are running as a non-interactive headless agent. Before you do ANY other work in this session, you MUST understand and follow this contract:
+
+- When you finish (success or failure), write a verdict JSON to EXACTLY this file path:
+  \`\`\`
+  ${resultPath}
+  \`\`\`
+- The file MUST contain valid JSON with a top-level \`"verdict"\` field, one of:
+  \`COMPLETED\` · \`APPROVED\` · \`NEEDS_FIXES\` · \`BLOCKED\`
+- For \`NEEDS_FIXES\`, include a top-level \`"fix_requests"\` array describing each failing criterion.
+${runId ? `- Include \`"run_id": "${runId}"\` in the JSON so the orchestrator can match it to this run.\n` : ''}- If the file does NOT exist or has no \`"verdict"\` field, the card stays stuck in \`in-progress\` forever. The orchestrator will NOT advance without it.
+- This file write is MANDATORY — do not skip it even if the rest of the work succeeded.
+
+If parent directory \`_terminal-output/\` does not exist, create it first.
+
+`;
+}
+
+/**
+ * Prompt for a run that resumes the card's previous agent conversation (see
+ * harness/card-session.ts). The workflow definition, project context and
+ * engineering guidance are already in that conversation — and in the CLI's
+ * prompt cache — so this turn carries only what changed: a new verdict
+ * contract for this run and the card as it is now, including any fix
+ * requests from review.
+ */
+export function buildResumePrompt(
+  workflowId: string,
+  artifact: { readonly id?: unknown } | undefined,
+  outputFolder: string,
+  runId?: string,
+): string {
+  const artifactId = typeof artifact?.id === 'string' && artifact.id ? artifact.id : 'unknown';
+  const resultPath = resultFilePath(outputFolder, artifactId, workflowId);
+  return `${verdictContract(resultPath, runId)}---
+
+# Continue: ${workflowId} on ${artifactId}
+
+This continues your earlier session on this card. The workflow definition, project context and engineering principles you were given then still apply — do not re-read them unless you need to. The verdict file path and run id above are NEW for this run; the earlier ones are void.
+
+## The card now
+\`\`\`json
+${JSON.stringify(artifact, null, 2)}
+\`\`\`
+
+## Instructions
+1. Check what changed since your last turn: review comments, \`fixRequests\` in the card metadata, and the current state of the files you touched.
+2. Address EVERY fix request before reporting completion.
+3. Write your verdict JSON to the path in the ⛔ section above.
+`;
+}
+
 export function buildTerminalPrompt(
   workflowId: string,
   artifact: any,
@@ -272,23 +332,7 @@ export function buildTerminalPrompt(
   // task and the file-write as busy-work, leaving the verdict JSON on disk
   // as missing/UNKNOWN. Putting the contract at the top surfaces it before
   // the model overloads on the workflow narrative below.
-  return `## ⛔ Required first action — verdict contract
-
-You are running as a non-interactive headless agent. Before you do ANY other work in this session, you MUST understand and follow this contract:
-
-- When you finish (success or failure), write a verdict JSON to EXACTLY this file path:
-  \`\`\`
-  ${resultPath}
-  \`\`\`
-- The file MUST contain valid JSON with a top-level \`"verdict"\` field, one of:
-  \`COMPLETED\` · \`APPROVED\` · \`NEEDS_FIXES\` · \`BLOCKED\`
-- For \`NEEDS_FIXES\`, include a top-level \`"fix_requests"\` array describing each failing criterion.
-${runId ? `- Include \`"run_id": "${runId}"\` in the JSON so the orchestrator can match it to this run.\n` : ''}- If the file does NOT exist or has no \`"verdict"\` field, the card stays stuck in \`in-progress\` forever. The orchestrator will NOT advance without it.
-- This file write is MANDATORY — do not skip it even if the rest of the work succeeded.
-
-If parent directory \`_terminal-output/\` does not exist, create it first.
-
----
+  return `${verdictContract(resultPath, runId)}---
 
 # BMAD Workflow Run
 
@@ -363,6 +407,12 @@ export class TerminalExecutor implements vscode.Disposable {
   private activeTerminals = new Map<string, TerminalSession>();
   /** Tail of each finished session's output, so a missing verdict can say why. */
   private lastOutput = new Map<string, string>();
+  /** Live time of each running session's latest output, read by the run watchdog. */
+  private lastOutputTimes = new Map<string, number>();
+  /** Agent conversation each run started or resumed, keyed by run id (see harness/card-session.ts). */
+  private sessionPlans = new Map<string, SessionPlan>();
+  /** What context each run was given, keyed by run id (see harness/context-receipt.ts). */
+  private receipts = new Map<string, ReceiptItem[]>();
   private disposables: vscode.Disposable[] = [];
   /** Webview streaming callbacks keyed by artifactId */
   private webviewStreams = new Map<string, (data: string) => void>();
@@ -434,6 +484,7 @@ export class TerminalExecutor implements vscode.Disposable {
 
     const resolution = options?.resolution ?? await this.resolveHarness();
     this.lastOutput.delete(artifactId);
+    this.lastOutputTimes.delete(artifactId);
     if (resolution.kind === 'none') {
       logger.warn(`[TerminalExecutor] No harness for ${artifactId}: ${resolution.message}`);
       return { kind: 'blocked', verdict: blocked(resolution.message) };
@@ -454,13 +505,30 @@ export class TerminalExecutor implements vscode.Disposable {
     const outputFolder = runOutputFolder(options?.cwd);
     const resultPath = resultFilePath(outputFolder, artifactId, workflowId);
 
-    const projectContext = loadProjectContext(outputFolder);
-    const prompt = buildTerminalPrompt(workflowId, artifact, outputFolder, options?.skillContent, sessionId, projectContext);
+    const workspaceDir = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    const sessionPlan = options?.freshSession ? undefined : this.planCardSession(adapter, artifactId, workflowId, options?.cwd ?? workspaceDir);
+    // A resumed conversation already holds the full brief; send only the new turn.
+    const resumed = sessionPlan?.resume === true;
+    const projectContext = resumed ? undefined : loadProjectContext(outputFolder);
+    const prompt = resumed
+      ? buildResumePrompt(workflowId, artifact, outputFolder, sessionId)
+      : buildTerminalPrompt(workflowId, artifact, outputFolder, options?.skillContent, sessionId, projectContext);
+    this.recordReceipt(sessionId, artifactId, {
+      harness: provider, prompt, resumed, workflowId,
+      skillContent: options?.skillContent,
+      projectContext,
+      artifactJson: JSON.stringify(artifact ?? {}),
+      readFile: (rel) => {
+        const dir = options?.cwd ?? workspaceDir;
+        try { return dir ? fs.readFileSync(path.join(dir, rel), 'utf-8') : undefined; } catch { return undefined; }
+      },
+    });
     let promptFile: string;
     try {
       fs.mkdirSync(path.dirname(resultPath), { recursive: true });
       promptFile = stagePromptFile(outputFolder, artifactId, sessionId, prompt);
     } catch (err) {
+      this.receipts.delete(sessionId);
       return { kind: 'blocked', verdict: blocked(`Could not stage the prompt file: ${errMsg(err)}`) };
     }
 
@@ -472,11 +540,14 @@ export class TerminalExecutor implements vscode.Disposable {
       : detectShellKind(vscode.env.shell, process.platform);
     let cmdLine: string;
     try {
-      const workspaceDir = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-      const spec = buildHarnessLaunch(adapter, { binary, promptFile, resultPath, posture, workspaceDir });
+      if (sessionPlan) this.sessionPlans.set(sessionId, sessionPlan);
+      const session = sessionPlan ? { id: sessionPlan.sessionId, resume: sessionPlan.resume } : undefined;
+      const spec = buildHarnessLaunch(adapter, { binary, promptFile, resultPath, posture, workspaceDir, session });
       cmdLine = buildCommandLine(spec, shellKind);
     } catch (err) {
       disposeStagedPrompt(promptFile);
+      this.sessionPlans.delete(sessionId);
+      this.receipts.delete(sessionId);
       return { kind: 'blocked', verdict: blocked(errMsg(err)) };
     }
 
@@ -516,6 +587,7 @@ export class TerminalExecutor implements vscode.Disposable {
       const ptyDisposable = ptyBackend.attach(artifactId, (chunk: string) => {
         accumulatedData += chunk;
         lastOutputAt = Date.now();
+        this.lastOutputTimes.set(artifactId, lastOutputAt);
         this.scheduleLockTimeout(artifactId);
 
         const cb = this.webviewStreams.get(artifactId);
@@ -600,6 +672,7 @@ export class TerminalExecutor implements vscode.Disposable {
         accumulatedData += data;
         // Issue #21: keep the health-check output-progress timer fresh.
         lastOutputAt = Date.now();
+        this.lastOutputTimes.set(artifactId, lastOutputAt);
 
         // P1 #11 heartbeat: every chunk of terminal output refreshes the
         // lock-release timeout so long-running workflows don't have their
@@ -730,6 +803,43 @@ export class TerminalExecutor implements vscode.Disposable {
   }
 
   /** Append to the user-visible run history (Show Agent Run History). Never throws. */
+  private recordReceipt(runId: string, artifactId: string, input: Parameters<typeof buildContextReceipt>[0]): void {
+    try {
+      const receipt = buildContextReceipt(input);
+      this.receipts.set(runId, receipt);
+      logger.info(`[TerminalExecutor] ${artifactId} context: ${summarizeReceipt(receipt)}`);
+    } catch (err) {
+      logger.warn(`[TerminalExecutor] Could not build the context receipt: ${errMsg(err)}`);
+    }
+  }
+
+  /** Start or resume this card's agent conversation, when the CLI and settings allow it. */
+  private planCardSession(adapter: HarnessAdapter, artifactId: string, workflowId: string, cwd: string | undefined): SessionPlan | undefined {
+    const enabled = vscode.workspace.getConfiguration('agileagentcanvas').get<boolean>('agents.resumeSessions', true);
+    if (!adapter.sessionResume || !enabled || !cwd) return undefined;
+    try {
+      const key = cardSessionKey(artifactId, workflowId, adapter.id);
+      const plan = planSession(key, CardSessionStore.inFolder(getOutputFolder()).get(key), cwd);
+      logger.info(`[TerminalExecutor] ${artifactId}: ${plan.resume ? 'resuming' : 'starting'} agent session ${plan.sessionId}`);
+      return plan;
+    } catch (err) {
+      logger.warn(`[TerminalExecutor] Could not plan a card session: ${errMsg(err)}`);
+      return undefined;
+    }
+  }
+
+  /** Keep the run's session for the next run on the card, or mark it unsafe to resume. */
+  private recordCardSession(runId: string, verdict: KanbanVerdict): void {
+    const plan = this.sessionPlans.get(runId);
+    if (!plan) return;
+    this.sessionPlans.delete(runId);
+    try {
+      CardSessionStore.inFolder(getOutputFolder()).set(plan.key, recordAfterRun(plan, verdict.verdict, verdict.summary, Date.now()));
+    } catch (err) {
+      logger.warn(`[TerminalExecutor] Could not record the card session: ${errMsg(err)}`);
+    }
+  }
+
   private recordHistory(entry: RunHistoryEntry): void {
     try {
       appendRunHistory(getOutputFolder(), entry);
@@ -800,10 +910,14 @@ export class TerminalExecutor implements vscode.Disposable {
       resolution: options?.resolution,
       revertStatusOnInterrupt: options?.revertStatusOnInterrupt,
       cwd: options?.cwd,
+      freshSession: options?.freshSession,
     });
     const startedAtMs = Date.now();
-    const history = (runId: string, harness: string, v: KanbanVerdict) =>
-      this.recordHistory({ runId, artifactId, workflowId, harness, verdict: v.verdict, summary: v.summary, startedAt: startedAtMs, finishedAt: Date.now() });
+    const history = (runId: string, harness: string, v: KanbanVerdict) => {
+      const context = this.receipts.get(runId);
+      this.receipts.delete(runId);
+      this.recordHistory({ runId, artifactId, workflowId, harness, verdict: v.verdict, summary: v.summary, startedAt: startedAtMs, finishedAt: Date.now(), ...(context ? { context } : {}) });
+    };
     if (launch.kind === 'blocked') {
       history(`blocked-${startedAtMs}`, 'none', launch.verdict);
       return launch.verdict;
@@ -828,7 +942,14 @@ export class TerminalExecutor implements vscode.Disposable {
     // so cost can still be estimated even when the session is gone.
     const capturedPromptLength = this.activeTerminals.get(artifactId)?.promptLength ?? 0;
 
-    const timeoutMs = options?.timeoutMs ?? 20 * 60 * 1000; // 20 minutes
+    // Judge the run on silence, not wall-clock time: an agent that keeps
+    // producing output keeps running up to the ceiling. An explicit
+    // `timeoutMs` from the caller is honoured as the ceiling.
+    const agentSettings = vscode.workspace.getConfiguration('agileagentcanvas');
+    const watchdog = resolveWatchdogPolicy(
+      { idleMinutes: agentSettings.get('agents.idleTimeoutMinutes'), maxRunMinutes: agentSettings.get('agents.maxRunMinutes') },
+      options?.timeoutMs,
+    );
     const pollIntervalMs = options?.pollIntervalMs ?? 3000;
     const startedAt = Date.now();
 
@@ -844,6 +965,7 @@ export class TerminalExecutor implements vscode.Disposable {
         // CLI spend. Uses the captured prompt length (safe even if the
         // session was cleaned up).
         this.recordTerminalCost(artifactId, sessionId, v, capturedPromptLength, harnessId, startedAtMs);
+        this.recordCardSession(sessionId, v);
         history(sessionId, harnessId, v);
         resolve(v);
       };
@@ -881,11 +1003,16 @@ export class TerminalExecutor implements vscode.Disposable {
           return;
         }
 
-        // 3. Timeout: stop the agent before giving up so it cannot keep
-        //    writing after the lock is released and a retry starts.
-        if (Date.now() - startedAt >= timeoutMs) {
-          void this.killTerminal(artifactId).finally(() =>
-            finish({ verdict: 'UNKNOWN', summary: `No verdict within ${Math.round(timeoutMs / 60000)}m — agent stopped` }));
+        // 3. Watchdog: stop a silent or over-long agent before giving up so
+        //    it cannot keep writing after the lock is released and a retry starts.
+        const decision = checkWatchdog(Date.now(), {
+          startedAt,
+          lastOutputAt: this.lastOutputTimes.get(artifactId) ?? startedAt,
+        }, watchdog);
+        if (decision.kind === 'stop') {
+          logger.warn(`[TerminalExecutor] ${artifactId}: watchdog (${decision.reason}) — ${decision.summary}`);
+          clearInterval(timer);
+          void this.killTerminal(artifactId).finally(() => finish({ verdict: 'UNKNOWN', summary: decision.summary }));
         }
       }, pollIntervalMs);
     });
@@ -1117,6 +1244,7 @@ export class TerminalExecutor implements vscode.Disposable {
     );
     this.activeTerminals.delete(artifactId);
     this.lastOutput.set(artifactId, outputTail(session.accumulatedData));
+    this.lastOutputTimes.delete(artifactId);
     this.unjournalRun(session.sessionId);
     disposeStagedPrompt(session.promptFile, (e) => logger.warn(`[TerminalExecutor] prompt cleanup failed: ${errMsg(e)}`));
 
@@ -1156,6 +1284,7 @@ export class TerminalExecutor implements vscode.Disposable {
         );
         this.activeTerminals.delete(artifactId);
         this.lastOutput.set(artifactId, outputTail(session.accumulatedData));
+        this.lastOutputTimes.delete(artifactId);
         this.unjournalRun(session.sessionId);
         disposeStagedPrompt(session.promptFile, (e) => logger.warn(`[TerminalExecutor] prompt cleanup failed: ${errMsg(e)}`));
 

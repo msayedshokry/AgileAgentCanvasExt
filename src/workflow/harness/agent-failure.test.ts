@@ -25,11 +25,22 @@ describe('classifyAgentFailure', () => {
   });
 
   it.each([
-    ['429 Too Many Requests', 'quota'],
+    ['429 Too Many Requests', 'rate-limit'],
+    ['Token usage exceeds the current model TPM (tokens per minute) limit 1000000', 'rate-limit'],
+    ['API Error: 403 {"error":"authentication failed: concurrent request limit reached"}', 'rate-limit'],
+    ['You exceeded your current quota, please check your plan and billing details', 'quota'],
+    ['Claude AI usage limit reached|1795600000', 'quota'],
+    ['API Error: 400 prompt is too long: 215000 tokens > 200000 maximum', 'context-overflow'],
+    ["This model's maximum context length is 128000 tokens", 'context-overflow'],
+    ['API Error: 500 {"type":"api_error","message":"Internal server error"}', 'provider-error'],
+    ['upstream 502 Bad Gateway', 'provider-error'],
+    ['request id c429f4b5 failed after 1500ms', 'unknown'],
     ["'claude' is not recognized as an internal or external command", 'not-installed'],
     ['connect ECONNREFUSED 127.0.0.1:8080', 'network'],
     ['Run aborted', 'aborted'],
     ['Agent exited without writing a verdict file.', 'no-verdict'],
+    ['No verdict and no agent output for 15m — agent stopped as stuck', 'stuck'],
+    ['No verdict within 120m (run time limit) — agent stopped', 'time-limit'],
     ['something odd happened', 'unknown'],
   ])('%s → %s', (text, kind) => {
     expect(classifyAgentFailure(text)?.kind).toBe(kind);

@@ -276,6 +276,8 @@
 .agent-timeline-item--unknown::before { background: var(--agent-warn); }
 .agent-timeline-what { font-weight: 600; }
 .agent-timeline-why { flex-basis: 100%; color: var(--agent-warn); font-size: 11px; }
+.agent-timeline-context { flex-basis: 100%; font-size: 11px; color: var(--agent-muted); }
+.agent-timeline-context ul { margin: 4px 0 0; padding-left: 16px; }
 
 .agent-commit-list {
   list-style: none;

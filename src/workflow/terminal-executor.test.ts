@@ -150,7 +150,7 @@ vi.mock('vscode', () => {
 
 // ── Imports (after mocks — module receives stubbed vscode) ───────────────────
 
-import { buildTerminalPrompt } from './terminal-executor';
+import { buildTerminalPrompt, buildResumePrompt } from './terminal-executor';
 import { getHarnessAdapter } from './harness/harness-adapters';
 harnessMockState.resolution = { kind: 'cli', adapter: getHarnessAdapter('pi')!, binary: 'pi', reason: 'test' };
 
@@ -713,5 +713,28 @@ describe('executeTerminalWorkflow — run journal', () => {
             (executor as any).onDidCloseTerminal(terminalObj);
             expect(JSON.parse(readFileSync(journalFile, 'utf-8'))).toEqual([]);
         });
+    });
+});
+
+describe('buildResumePrompt — continuation turn for a resumed card session', () => {
+    const artifact = { ...SAMPLE_ARTIFACT, metadata: { fixRequests: ['Add a test for the empty list'] } };
+
+    it('opens with the verdict contract carrying the new path and run id', () => {
+        const prompt = buildResumePrompt('dev-story', artifact, SAMPLE_OUTPUT_FOLDER, 'term-run-2');
+        expect(prompt.slice(0, 500)).toMatch(/verdict contract/);
+        expect(prompt).toContain('"run_id": "term-run-2"');
+        expect(prompt).toContain('STORY-1-1');
+    });
+
+    it('carries the current card, including its fix requests', () => {
+        expect(buildResumePrompt('dev-story', artifact, SAMPLE_OUTPUT_FOLDER)).toContain('Add a test for the empty list');
+    });
+
+    it('does not resend the brief the conversation already holds', () => {
+        const full = buildTerminalPrompt('dev-story', artifact, SAMPLE_OUTPUT_FOLDER, 'SKILL BODY', 'r', 'PROJECT CONTEXT');
+        const resumed = buildResumePrompt('dev-story', artifact, SAMPLE_OUTPUT_FOLDER, 'r');
+        expect(resumed).not.toContain(PONYTAIL_HEURISTICS);
+        expect(resumed).not.toContain('Workflow Definition');
+        expect(resumed.length).toBeLessThan(full.length / 2);
     });
 });

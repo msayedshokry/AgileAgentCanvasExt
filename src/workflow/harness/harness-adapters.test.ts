@@ -68,6 +68,16 @@ describe('per-harness flags (verified against CLI help/docs 2026-11-19)', () => 
       ['claude', '-p', '--permission-mode', 'acceptEdits', '--allowedTools', 'Read Write Edit Glob Grep']);
   });
 
+  it('claude names a new session or resumes the card session (verified against claude 2.1.294)', () => {
+    const adapter = getHarnessAdapter('claude')!;
+    expect(adapter.sessionResume).toBe(true);
+    const id = '0f8fad5b-d9cb-469f-a165-70867728950e';
+    const fresh = buildHarnessLaunch(adapter, { ...ctx('sandboxed', 'claude'), session: { id, resume: false } });
+    expect(fresh.args.slice(-2)).toEqual(['--session-id', id]);
+    const resumed = buildHarnessLaunch(adapter, { ...ctx('full', 'claude'), session: { id, resume: true } });
+    expect(resumed.args.slice(-2)).toEqual(['--resume', id]);
+  });
+
   it('codex no longer passes --ask-for-approval (rejected by codex exec 0.163)', () => {
     for (const p of ['sandboxed', 'full'] as const) {
       expect(launch('codex', p).args).not.toContain('--ask-for-approval');
