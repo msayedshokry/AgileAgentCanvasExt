@@ -62,14 +62,32 @@ interface StoredState {
   [TOUR_STATE_KEY]?: number;
 }
 
+/**
+ * Session cache only. Webview state is wiped when VS Code restarts (the canvas
+ * has no panel serializer), so the durable flag lives in the extension's
+ * globalState: ask with `requestTourSeenVersion`, record with `markTourSeen`.
+ */
 export function hasSeenTour(): boolean {
   const state = (vscode.getState() as StoredState | undefined) ?? {};
   return (state[TOUR_STATE_KEY] ?? 0) >= TOUR_VERSION;
 }
 
+/** Ask the extension which tour version was seen; it replies with `productTour:seen`. */
+export function requestTourSeenVersion(): void {
+  vscode.postMessage({ type: 'productTour:getSeen' });
+}
+
+/** Read the extension's reply; `null` for any other message. */
+export function readTourSeenReply(data: unknown): number | null {
+  if (typeof data !== 'object' || data === null) return null;
+  const msg = data as { type?: unknown; version?: unknown };
+  return msg.type === 'productTour:seen' && typeof msg.version === 'number' ? msg.version : null;
+}
+
 export function markTourSeen(): void {
   const current = (vscode.getState() as Record<string, unknown> | undefined) ?? {};
   vscode.setState({ ...current, [TOUR_STATE_KEY]: TOUR_VERSION });
+  vscode.postMessage({ type: 'productTour:markSeen', version: TOUR_VERSION });
 }
 
 export interface Rect {

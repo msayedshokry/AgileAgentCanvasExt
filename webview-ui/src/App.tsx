@@ -10,7 +10,7 @@ import { ElicitationPicker } from './components/ElicitationPicker';
 import { WorkflowLauncher } from './components/WorkflowLauncher';
 import { HelpModal } from './components/HelpModal';
 import { ProductTour } from './components/tour/ProductTour';
-import { CANVAS_TOUR_STEPS, hasSeenTour, markTourSeen } from './components/tour/tourSteps';
+import { CANVAS_TOUR_STEPS, TOUR_VERSION, hasSeenTour, markTourSeen, readTourSeenReply, requestTourSeenVersion } from './components/tour/tourSteps';
 import { AskModal } from './components/AskModal';
 import { JiraModal } from './components/JiraModal';
 import { GraphifyModal } from './components/GraphifyModal';
@@ -700,14 +700,36 @@ function App() {
     markTourSeen();
   });
 
-  // First run: offer the tour once the canvas has something to show.
+  // First run only: the extension's globalState says which tour version was
+  // seen (webview state does not survive a VS Code restart). Until it answers,
+  // `null` means "unknown" and the tour stays closed.
+  const [hostTourSeenVersion, setHostTourSeenVersion] = useState<number | null>(null);
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      const version = readTourSeenReply(e.data);
+      if (version !== null) setHostTourSeenVersion(version);
+    };
+    window.addEventListener('message', onMessage);
+    requestTourSeenVersion();
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+
   const tourAutoStartedRef = useRef(false);
   useEffect(() => {
-    if (tourAutoStartedRef.current || artifacts.length === 0 || hasSeenTour()) return;
-    tourAutoStartedRef.current = true;
-    const t = setTimeout(() => setTourOpen(true), TOUR_AUTOSTART_DELAY_MS);
+    const shouldStart = !tourAutoStartedRef.current
+      && artifacts.length > 0
+      && hostTourSeenVersion !== null
+      && hostTourSeenVersion < TOUR_VERSION
+      && !hasSeenTour();
+    if (!shouldStart) return;
+    const t = setTimeout(() => {
+      tourAutoStartedRef.current = true;
+      // Record it as soon as it shows, so closing VS Code mid-tour doesn't replay it.
+      markTourSeen();
+      setTourOpen(true);
+    }, TOUR_AUTOSTART_DELAY_MS);
     return () => clearTimeout(t);
-  }, [artifacts.length]);
+  }, [artifacts.length, hostTourSeenVersion]);
 
   const handleOpenAsk = useEvent(() => {
     setAskOpen(true);

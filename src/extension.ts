@@ -41,6 +41,7 @@ import {
     selectArtifact
 } from './commands/artifact-commands';
 import { handleCommonWebviewMessage, handleCatalogueWebviewMessage } from './views/webview-message-handler';
+import { initProductTourState } from './state/product-tour-state';
 import { handleAgenticKanbanMessage } from './views/agentic-kanban-message-handler';
 import { createGraphifyStatusBar, refreshGraphifyStatusBar } from './views/graphify-status-bar';
 import { createCodeburnStatusBar, refreshCodeburnStatusBar } from './views/codeburn-status-bar';
@@ -125,6 +126,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Initialize the lightweight Ideas scratchpad (separate from ArtifactStore)
     ideaStore = new IdeaStore();
+
+    // Product tour 'seen' flag must outlive the webview (see product-tour-state.ts)
+    initProductTourState(context.globalState);
 
     // ── Skill Catalogue & Repo Manager ──────────────────────────────────────
     const catalogueService = initialiseCatalogueService(context, context.extensionPath);

@@ -9,6 +9,7 @@ import PDFDocument from 'pdfkit';
 import { ArtifactStore } from '../state/artifact-store';
 import { BMAD_RESOURCE_DIR } from '../state/constants';
 import { schemaValidator } from '../state/schema-validator';
+import { getProductTourSeenVersion, markProductTourSeen } from '../state/product-tour-state';
 
 import {
     refineArtifactWithAI,
@@ -157,6 +158,14 @@ export async function handleCommonWebviewMessage(
 
         case 'deleteArtifact':
             await store.deleteArtifact(message.artifactType || 'epic', message.id);
+            return true;
+
+        case 'productTour:getSeen':
+            await webview?.postMessage({ type: 'productTour:seen', version: getProductTourSeenVersion() });
+            return true;
+
+        case 'productTour:markSeen':
+            await markProductTourSeen(message.version);
             return true;
 
         case 'refineWithAI':
