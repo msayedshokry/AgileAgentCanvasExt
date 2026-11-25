@@ -438,6 +438,19 @@ describe('in-process proxy — endpoint surface', () => {
     const payload = JSON.parse(r.body);
     expect(payload.error.type).toBe('invalid_request');
   });
+
+  it('rejects a non-array "messages" with 400 + invalid_request envelope', async () => {
+    const r = await httpRequest('POST', '/v1/compress', JSON.stringify({ messages: { role: 'user', content: 'hi' } }));
+    expect(r.status).toBe(400);
+    expect(JSON.parse(r.body).error.type).toBe('invalid_request');
+  });
+
+  it('counts tokens for a multi-part message whose parts are not all objects', async () => {
+    const body = JSON.stringify({ messages: [{ role: 'user', content: [null, 'stray', { type: 'text', text: 'hello world' }] }] });
+    const r = await httpRequest('POST', '/v1/compress', body);
+    expect(r.status).toBe(200);
+    expect(JSON.parse(r.body).tokens_before).toBeGreaterThan(0);
+  });
 });
 
 describe('in-process proxy — listen error handling', () => {

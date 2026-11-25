@@ -20,6 +20,48 @@ export interface ValidationResult {
     errors: string[];
 }
 
+/**
+ * A parsed JSON object — a schema node or a piece of artifact data.
+ * A type alias (not an interface) so plain object types stay assignable.
+ */
+type JsonObject = { [key: string]: unknown };
+
+/** Narrow to a non-null, non-array object whose keys can be read and written. */
+function isJsonObject(value: unknown): value is JsonObject {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** The `properties` map of a schema node, if it has one. */
+function getProperties(schemaNode: unknown): JsonObject | undefined {
+    if (!isJsonObject(schemaNode)) return undefined;
+    return isJsonObject(schemaNode.properties) ? schemaNode.properties : undefined;
+}
+
+/** `Object.values` of any object (arrays included); empty for primitives. */
+function objectValues(value: unknown): unknown[] {
+    return typeof value === 'object' && value !== null ? Object.values(value) : [];
+}
+
+/**
+ * The canonical value for `val` when the property definition declares it
+ * as an `x-aliases` key; `undefined` when no alias applies.  `in` is kept
+ * (rather than own-key checks) to preserve the original lookup semantics.
+ */
+function resolveAlias(propDef: JsonObject, val: unknown): { canonical: unknown } | undefined {
+    const aliases = propDef['x-aliases'];
+    if (!isJsonObject(aliases) || typeof val !== 'string' || !(val in aliases)) return undefined;
+    return { canonical: aliases[val] };
+}
+
+/** Best human-readable identifier for an artifact in log messages. */
+function describeInstance(fileName: string | undefined, data: unknown): unknown {
+    const obj = isJsonObject(data) ? data : {};
+    const content = isJsonObject(obj.content) ? obj.content : {};
+    return fileName || obj.id || obj.title || obj.name ||
+        content.id || content.title || content.name ||
+        'unknown instance';
+}
+
 const logger = createLogger('schema-validator');
 
 // ─── Artifact-type → schema-file mapping ────────────────────────────────────
@@ -266,7 +308,7 @@ export class SchemaValidator {
      */
     validateChanges(
         artifactType: string,
-        changes: Record<string, any>,
+        changes: object,
         fileName?: string
     ): ValidationResult {
         if (!this.initialized || !this.ajv) {
@@ -299,9 +341,9 @@ export class SchemaValidator {
         // The LLM sends changes like { title, status, metadata: { ... } }.
         // Unwrap `metadata` into the top level for validation (many handlers
         // flatten metadata fields onto the artifact).
-        const flatChanges = { ...changes };
-        if (flatChanges.metadata && typeof flatChanges.metadata === 'object') {
-            const meta = flatChanges.metadata;
+        const flatChanges: JsonObject = { ...changes };
+        const meta = flatChanges.metadata;
+        if (meta && typeof meta === 'object') {
             delete flatChanges.metadata;
             Object.assign(flatChanges, meta);
         }
@@ -348,9 +390,7 @@ export class SchemaValidator {
 
         const errors = this.formatErrors(validateFn.errors || []);
 
-        const identifier = fileName || flatChanges.id || flatChanges.title || flatChanges.name ||
-                           flatChanges.content?.id || flatChanges.content?.title || flatChanges.content?.name ||
-                           'unknown instance';
+        const identifier = describeInstance(fileName, flatChanges);
         logger.warn(
             `Changes for "${artifactType}" (${identifier}) have issues: ${errors.join('; ')}`
         );
@@ -364,7 +404,7 @@ export class SchemaValidator {
      */
     validate(
         artifactType: string,
-        data: Record<string, any>,
+        data: object,
         fileName?: string
     ): ValidationResult {
         if (!this.initialized || !this.ajv) {
@@ -404,9 +444,7 @@ export class SchemaValidator {
 
         const errors = this.formatErrors(validateFn.errors || []);
 
-        const identifier = fileName || data.id || data.title || data.name ||
-                           data.content?.id || data.content?.title || data.content?.name ||
-                           'unknown instance';
+        const identifier = describeInstance(fileName, data);
         logger.warn(
             `Validation failed for "${artifactType}" (${identifier}): ${errors.join('; ')}`
         );
@@ -445,7 +483,7 @@ export class SchemaValidator {
      * Returns `undefined` if the validator is not initialized, the type has no
      * mapping, or the file cannot be read.
      */
-    getRawSchema(artifactType: string): Record<string, any> | undefined {
+    getRawSchema(artifactType: string): JsonObject | undefined {
         if (!this.schemasDir) {
             return undefined;
         }
@@ -458,7 +496,13 @@ export class SchemaValidator {
         const schemaFilePath = path.join(this.schemasDir, relPath);
         try {
             const raw = fs.readFileSync(schemaFilePath, 'utf-8');
-            const schema = JSON.parse(raw);
+            const schema: unknown = JSON.parse(raw);
+            if (!isJsonObject(schema)) {
+                logger.error(
+                    `Raw schema for "${artifactType}" is not a JSON object: ${schemaFilePath}`
+                );
+                return undefined;
+            }
 
             // Resolve $ref so the caller gets a self-contained schema tree.
             this.resolveRefsInline(schema);
@@ -537,34 +581,29 @@ export class SchemaValidator {
      */
     private normalizeAliases(
         schemaId: string,
-        data: Record<string, any>
+        data: JsonObject
     ): void {
         if (!this.ajv) return;
 
         const schemaFn = this.ajv.getSchema(schemaId);
-        if (!schemaFn || !schemaFn.schema) return;
-
-        const schema = schemaFn.schema as Record<string, any>;
+        if (!schemaFn) return;
 
         // Walk into content.properties if present (most BMAD schemas nest under content)
-        const propSources = [
-            schema.properties,
-            schema.properties?.content?.properties,
-        ].filter(Boolean);
+        const topProps = getProperties(schemaFn.schema);
+        const propSources = [topProps, getProperties(topProps?.content)];
 
         for (const props of propSources) {
-            for (const [key, propDef] of Object.entries(props as Record<string, any>)) {
-                if (!propDef || typeof propDef !== 'object') continue;
-                const aliases = propDef['x-aliases'];
-                if (!aliases || typeof aliases !== 'object') continue;
+            if (!props) continue;
+            for (const [key, propDef] of Object.entries(props)) {
+                if (!isJsonObject(propDef)) continue;
 
                 const val = data[key];
-                if (typeof val === 'string' && val in aliases) {
-                    const canonical = aliases[val];
+                const alias = resolveAlias(propDef, val);
+                if (alias) {
                     logger.debug(
-                        `Alias normalised: ${key}="${val}" → "${canonical}"`
+                        `Alias normalised: ${key}="${String(val)}" → "${String(alias.canonical)}"`
                     );
-                    data[key] = canonical;
+                    data[key] = alias.canonical;
                 }
             }
         }
@@ -577,66 +616,76 @@ export class SchemaValidator {
      *
      * For each property in the schema that defines `x-aliases`, if the
      * corresponding value in `data` is a known alias, it is rewritten
-     * to the canonical value.
+     * to the canonical value.  `data` is mutated in place.
      */
     private normalizeAliasesDeep(
         schemaId: string,
-        data: any
+        data: unknown
     ): void {
-        if (!this.ajv || !data || typeof data !== 'object') return;
+        if (!this.ajv || !isJsonObject(data)) return;
 
         const schemaFn = this.ajv.getSchema(schemaId);
-        if (!schemaFn || !schemaFn.schema) return;
+        if (!schemaFn) return;
 
-        this.applyAliasesRecursive(schemaFn.schema as Record<string, any>, data);
+        this.applyAliasesRecursive(schemaFn.schema, data);
     }
 
     /**
      * Internal recursive walker: applies `x-aliases` from `schemaPart`
-     * to `dataPart` at every nesting level.
+     * to `dataPart` at every nesting level.  Non-object schema parts
+     * (boolean schemas, tuple-form `items` arrays) and non-object data
+     * are no-ops.
      */
     private applyAliasesRecursive(
-        schemaPart: Record<string, any>,
-        dataPart: any
+        schemaPart: unknown,
+        dataPart: unknown
     ): void {
-        if (!schemaPart || !dataPart || typeof dataPart !== 'object') return;
+        if (!isJsonObject(schemaPart) || !isJsonObject(dataPart)) return;
 
         // If schemaPart has properties, walk them
-        const props = schemaPart.properties;
-        if (props && typeof props === 'object') {
-            for (const [key, propDef] of Object.entries(props as Record<string, any>)) {
-                if (!propDef || typeof propDef !== 'object') continue;
-                const val = dataPart[key];
-                if (val === undefined) continue;
-
-                // Apply alias if this property has x-aliases and val is a string
-                const aliases = propDef['x-aliases'];
-                if (aliases && typeof aliases === 'object' && typeof val === 'string' && val in aliases) {
-                    dataPart[key] = aliases[val];
-                }
-
-                // Recurse into nested objects
-                if (typeof val === 'object' && !Array.isArray(val)) {
-                    this.applyAliasesRecursive(propDef, val);
-                }
-
-                // Recurse into arrays
-                if (Array.isArray(val) && propDef.items) {
-                    for (const item of val) {
-                        if (typeof item === 'object' && item !== null) {
-                            this.applyAliasesRecursive(propDef.items, item);
-                        }
-                    }
+        const props = getProperties(schemaPart);
+        if (props) {
+            for (const [key, propDef] of Object.entries(props)) {
+                if (isJsonObject(propDef)) {
+                    this.applyAliasesToProperty(propDef, dataPart, key);
                 }
             }
         }
 
         // Also walk oneOf/anyOf/allOf branches
         for (const combiner of ['oneOf', 'anyOf', 'allOf']) {
-            if (Array.isArray(schemaPart[combiner])) {
-                for (const branch of schemaPart[combiner]) {
+            const branches = schemaPart[combiner];
+            if (Array.isArray(branches)) {
+                for (const branch of branches) {
                     this.applyAliasesRecursive(branch, dataPart);
                 }
+            }
+        }
+    }
+
+    /**
+     * Apply `propDef`'s alias to `dataPart[key]`, then recurse into the
+     * value (as read before any alias rewrite) if it is an object or array.
+     */
+    private applyAliasesToProperty(propDef: JsonObject, dataPart: JsonObject, key: string): void {
+        const val = dataPart[key];
+        if (val === undefined) return;
+
+        // Apply alias if this property has x-aliases and val is a string
+        const alias = resolveAlias(propDef, val);
+        if (alias) {
+            dataPart[key] = alias.canonical;
+        }
+
+        // Recurse into nested objects
+        if (isJsonObject(val)) {
+            this.applyAliasesRecursive(propDef, val);
+        }
+
+        // Recurse into arrays
+        if (Array.isArray(val) && propDef.items) {
+            for (const item of val) {
+                this.applyAliasesRecursive(propDef.items, item);
             }
         }
     }
@@ -652,7 +701,7 @@ export class SchemaValidator {
      *                      this `$ref`.  Relative refs are resolved against
      *                      this directory, NOT against `this.schemasDir`.
      */
-    private resolveRefsInline(obj: any, containingDir?: string): void {
+    private resolveRefsInline(obj: unknown, containingDir?: string): void {
         if (!obj || typeof obj !== 'object' || !this.schemasDir) return;
 
         const baseDir = containingDir || this.schemasDir;
@@ -663,36 +712,48 @@ export class SchemaValidator {
             }
             return;
         }
+        if (!isJsonObject(obj)) return;
 
         for (const key of Object.keys(obj)) {
-            if (key === '$ref' && typeof obj[key] === 'string') {
-                const ref = obj[key] as string;
+            const value = obj[key];
+            if (key === '$ref' && typeof value === 'string') {
                 // Only resolve relative file refs, not JSON pointer refs
-                if (!ref.startsWith('#')) {
-                    try {
-                        // Resolve the $ref relative to the containing schema's
-                        // own directory (not the schemas root).
-                        const refPath = path.resolve(baseDir, ref);
-                        const refRaw = fs.readFileSync(refPath, 'utf-8');
-                        const refSchema = JSON.parse(refRaw);
-                        // Remove meta fields from the inlined ref
-                        delete refSchema.$schema;
-                        delete refSchema.$id;
-                        // Replace the $ref with the inlined schema
-                        delete obj.$ref;
-                        Object.assign(obj, refSchema);
-                        // Recurse into the newly inlined content, using the
-                        // referenced file's directory as the new base for any
-                        // nested $refs it may contain.
-                        this.resolveRefsInline(obj, path.dirname(refPath));
-                    } catch {
-                        // Leave unresolved $ref as-is — the LLM can still
-                        // read the referenced file via agileagentcanvas_read_file
-                    }
+                if (!value.startsWith('#')) {
+                    this.inlineFileRef(obj, value, baseDir);
                 }
             } else {
-                this.resolveRefsInline(obj[key], baseDir);
+                this.resolveRefsInline(value, baseDir);
             }
+        }
+    }
+
+    /**
+     * Replace `obj.$ref` (a relative file ref) with the referenced schema's
+     * content, then resolve any `$ref`s that content brings in.  On any
+     * failure — unreadable file, invalid JSON, or JSON that is not an object —
+     * the `$ref` is left as-is.
+     */
+    private inlineFileRef(obj: JsonObject, ref: string, baseDir: string): void {
+        try {
+            // Resolve the $ref relative to the containing schema's
+            // own directory (not the schemas root).
+            const refPath = path.resolve(baseDir, ref);
+            const refRaw = fs.readFileSync(refPath, 'utf-8');
+            const refSchema: unknown = JSON.parse(refRaw);
+            if (!isJsonObject(refSchema)) return;
+            // Remove meta fields from the inlined ref
+            delete refSchema.$schema;
+            delete refSchema.$id;
+            // Replace the $ref with the inlined schema
+            delete obj.$ref;
+            Object.assign(obj, refSchema);
+            // Recurse into the newly inlined content, using the
+            // referenced file's directory as the new base for any
+            // nested $refs it may contain.
+            this.resolveRefsInline(obj, path.dirname(refPath));
+        } catch {
+            // Leave unresolved $ref as-is — the LLM can still
+            // read the referenced file via agileagentcanvas_read_file
         }
     }
 
@@ -721,10 +782,10 @@ export class SchemaValidator {
      * This reduces token usage and prevents the LLM from filling in fields
      * that are system-managed.
      */
-    private stripRuntimeFields(schema: any): void {
-        if (!schema || typeof schema !== 'object') return;
+    private stripRuntimeFields(schema: unknown): void {
+        if (!isJsonObject(schema)) return;
 
-        const stripFrom = (props: Record<string, any> | undefined) => {
+        const stripFrom = (props: JsonObject | undefined) => {
             if (!props) return;
             for (const field of SchemaValidator.RUNTIME_FIELDS) {
                 delete props[field];
@@ -732,24 +793,23 @@ export class SchemaValidator {
         };
 
         // Top-level properties
-        stripFrom(schema.properties);
+        const topProps = getProperties(schema);
+        stripFrom(topProps);
 
         // Inside the `content` wrapper used by many BMAD schemas
-        if (schema.properties?.content?.properties) {
-            stripFrom(schema.properties.content.properties);
-        }
+        stripFrom(getProperties(topProps?.content));
 
         // Also strip from `required` arrays so validation won't demand them
-        const stripFromRequired = (obj: any) => {
-            if (Array.isArray(obj?.required)) {
-                obj.required = obj.required.filter(
-                    (r: string) => !SchemaValidator.RUNTIME_FIELDS.has(r)
+        const stripFromRequired = (node: unknown) => {
+            if (isJsonObject(node) && Array.isArray(node.required)) {
+                node.required = node.required.filter(
+                    (r: unknown) => typeof r !== 'string' || !SchemaValidator.RUNTIME_FIELDS.has(r)
                 );
             }
         };
 
         stripFromRequired(schema);
-        stripFromRequired(schema.properties?.content);
+        stripFromRequired(topProps?.content);
     }
 
     // ─── Private helpers ────────────────────────────────────────────────
@@ -776,10 +836,11 @@ export class SchemaValidator {
             if (this.relaxedValidators.has(schemaId)) continue;
 
             const originalValidateFn = this.ajv.getSchema(schemaId);
-            if (!originalValidateFn || !originalValidateFn.schema) continue;
+            const original = originalValidateFn?.schema;
+            // Every loaded schema file is a JSON object (init() assigns its $id).
+            if (!isJsonObject(original)) continue;
 
             try {
-                const original = originalValidateFn.schema as Record<string, any>;
                 const relaxed = this.createRelaxedSchema(original, schemaId);
 
                 const validateFn = this.ajv.compile(relaxed);
@@ -798,27 +859,29 @@ export class SchemaValidator {
      * changes objects.
      */
     private createRelaxedSchema(
-        original: Record<string, any>,
+        original: JsonObject,
         originalId: string
-    ): Record<string, any> {
-        const relaxed = JSON.parse(JSON.stringify(original));
+    ): JsonObject {
+        // A JSON round-trip of a JSON object is a JSON object.
+        const relaxed: JsonObject = JSON.parse(JSON.stringify(original));
 
         // Give it a unique $id so it doesn't clash with the strict version
         relaxed.$id = `${originalId}#relaxed`;
 
         // If schema has { properties: { metadata, content: { properties: {...} } } },
         // hoist `content.properties` to the top level so flat changes objects match.
-        if (relaxed.properties?.content?.properties) {
-            const contentProps = relaxed.properties.content.properties;
+        const topProps = getProperties(relaxed);
+        const contentProps = getProperties(topProps?.content);
+        if (topProps && contentProps) {
             // Merge content properties into the top-level properties
             // (metadata stays at top level if it exists)
             for (const [key, value] of Object.entries(contentProps)) {
-                if (!relaxed.properties[key]) {
-                    relaxed.properties[key] = value;
+                if (!topProps[key]) {
+                    topProps[key] = value;
                 }
             }
             // Remove the `content` wrapper — we've flattened it
-            delete relaxed.properties.content;
+            delete topProps.content;
 
             // Rewrite any internal $ref pointers that referenced
             // #/properties/content/properties/... since content was hoisted
@@ -843,20 +906,21 @@ export class SchemaValidator {
      * to root level, `#/properties/content/properties/X` becomes
      * `#/properties/X`.
      */
-    private rewriteContentRefs(obj: any): void {
-        if (!obj || typeof obj !== 'object') return;
+    private rewriteContentRefs(obj: unknown): void {
         if (Array.isArray(obj)) {
             for (const item of obj) this.rewriteContentRefs(item);
             return;
         }
+        if (!isJsonObject(obj)) return;
         for (const key of Object.keys(obj)) {
-            if (key === '$ref' && typeof obj[key] === 'string') {
-                obj[key] = obj[key].replace(
+            const value = obj[key];
+            if (key === '$ref' && typeof value === 'string') {
+                obj[key] = value.replace(
                     '#/properties/content/properties/',
                     '#/properties/'
                 );
             } else {
-                this.rewriteContentRefs(obj[key]);
+                this.rewriteContentRefs(value);
             }
         }
     }
@@ -870,15 +934,14 @@ export class SchemaValidator {
      *   include the mandatory fields.
      * - `additionalProperties` is set to `true` at all depths.
      */
-    private relaxSchema(schema: any, depth: number): void {
-        if (!schema || typeof schema !== 'object') return;
-
+    private relaxSchema(schema: unknown, depth: number): void {
         if (Array.isArray(schema)) {
             for (const item of schema) {
                 this.relaxSchema(item, depth);
             }
             return;
         }
+        if (!isJsonObject(schema)) return;
 
         // Only strip `required` at the root level (depth 0).
         // Nested objects retain their required constraints.
@@ -892,10 +955,8 @@ export class SchemaValidator {
         }
 
         // Recurse into properties (each property is one level deeper)
-        if (schema.properties) {
-            for (const prop of Object.values(schema.properties)) {
-                this.relaxSchema(prop, depth + 1);
-            }
+        for (const prop of objectValues(schema.properties)) {
+            this.relaxSchema(prop, depth + 1);
         }
 
         // Recurse into items (arrays) — items are nested
@@ -906,8 +967,9 @@ export class SchemaValidator {
         // Recurse into oneOf / anyOf / allOf (same depth — these are
         // alternative shapes for the SAME level, not deeper nesting)
         for (const combiner of ['oneOf', 'anyOf', 'allOf']) {
-            if (Array.isArray(schema[combiner])) {
-                for (const sub of schema[combiner]) {
+            const branches = schema[combiner];
+            if (Array.isArray(branches)) {
+                for (const sub of branches) {
                     this.relaxSchema(sub, depth);
                 }
             }
@@ -915,17 +977,13 @@ export class SchemaValidator {
 
         // Recurse into definitions / $defs (depth doesn't advance —
         // definitions are referenced, not directly nested)
-        if (schema.definitions) {
-            for (const def of Object.values(schema.definitions)) {
-                this.relaxSchema(def, depth);
-            }
+        for (const def of objectValues(schema.definitions)) {
+            this.relaxSchema(def, depth);
         }
 
         // Recurse into patternProperties
-        if (schema.patternProperties) {
-            for (const pp of Object.values(schema.patternProperties)) {
-                this.relaxSchema(pp, depth + 1);
-            }
+        for (const pp of objectValues(schema.patternProperties)) {
+            this.relaxSchema(pp, depth + 1);
         }
     }
 

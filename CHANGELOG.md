@@ -62,7 +62,7 @@ Ported the useful parts of upstream Test Architect 1.27.2, Creative Intelligence
 - Creative Intelligence agents introduce themselves by name and have working capability menus. The Presentation Master's seven capabilities now run real prompts.
 - The agent and workflow builders produce skills that load real config, follow a shared prompt-quality guide and pass their own path checks.
 - Party mode gained an anti-consensus room and stays open until you end it. Added two elicitation methods (Subtraction, Map Is Not the Territory). Epics stay in draft until final validation passes.
-- Upgraded the Headroom compression engine from 0.22 to 0.45; every compression call the extension makes behaves the same.
+- Upgraded the Headroom compression engine from 0.22 to 0.45; every compression call the extension makes behaves the same. The built-in proxy answers a request whose message list is malformed with a clear 400 error instead of failing.
 
 ### Fixed: Bundled paths that pointed at nothing
 

@@ -325,18 +325,62 @@ export function _clearCcrForTest(): void {
  * structures. The result round-trips through `JSON.stringify` without
  * semantic loss.
  */
-function _canonicalise(value: any): any {
+function _canonicalise(value: unknown): unknown {
     if (Array.isArray(value)) {
         return value.map(_canonicalise);
     }
     if (value && typeof value === 'object') {
-        const sorted: Record<string, any> = {};
-        for (const key of Object.keys(value).sort()) {
-            sorted[key] = _canonicalise(value[key]);
+        const source = value as Record<string, unknown>;
+        const sorted: Record<string, unknown> = {};
+        for (const key of Object.keys(source).sort()) {
+            sorted[key] = _canonicalise(source[key]);
         }
         return sorted;
     }
     return value;
+}
+
+// ─── Wire shapes ────────────────────────────────────────────────────────────
+// Messages arrive as untrusted JSON from the SDK. Only the fields the proxy
+// reads are named, and each is `unknown` until narrowed where it is used.
+
+/** One part of a multi-part message: text, image_url, tool_result, ... */
+interface WirePart {
+    readonly type?: unknown;
+    readonly text?: unknown;
+    readonly content?: unknown;
+    readonly [key: string]: unknown;
+}
+
+/** A chat message as received on /v1/compress. */
+interface WireMessage {
+    readonly role?: unknown;
+    readonly content?: unknown;
+    readonly _headroomSummarised?: boolean;
+    readonly _headroomTruncated?: boolean;
+    readonly [key: string]: unknown;
+}
+
+/** String content, multi-part content, or null when neither. */
+type WireContent = string | readonly unknown[] | null;
+
+function _roleOf(msg: WireMessage): string {
+    return typeof msg?.role === 'string' ? msg.role : 'unknown';
+}
+
+function _asPart(part: unknown): WirePart | undefined {
+    return part !== null && typeof part === 'object' ? (part as WirePart) : undefined;
+}
+
+function _isToolResultPart(part: unknown): boolean {
+    const p = _asPart(part);
+    return typeof p?.type === 'string' && p.type.startsWith('tool_result');
+}
+
+/** The inner text of a tool_result part, when it is a string. */
+function _toolResultText(part: unknown): string | undefined {
+    const content = _asPart(part)?.content;
+    return _isToolResultPart(part) && typeof content === 'string' ? content : undefined;
 }
 
 /**
@@ -346,8 +390,8 @@ function _canonicalise(value: any): any {
  * where ('a', 'bc') and ('ab', 'c') collide because the strings just
  * concatenate.
  */
-function _hashMessage(msg: any): string {
-    const role = msg?.role ?? 'unknown';
+function _hashMessage(msg: WireMessage): string {
+    const role = _roleOf(msg);
     const c = _contentOf(msg);
     let normalised: string;
     if (typeof c === 'string') {
@@ -376,7 +420,7 @@ function _hashMessage(msg: any): string {
  * Returns the 16-hex-char hash so the caller can populate the
  * response's `ccr_hashes` field.
  */
-function _upsertCcrEntry(msg: any): string {
+function _upsertCcrEntry(msg: WireMessage): string {
     const hash = _hashMessage(msg);
     const originalTokens = _estimateMessageTokens(msg);
     const contentRaw = _contentOf(msg);
@@ -394,7 +438,7 @@ function _upsertCcrEntry(msg: any): string {
         _ccr.set(hash, { ...existing, timestamp: Date.now() / 1000 });
     } else {
         _ccr.set(hash, {
-            role: msg?.role ?? 'unknown',
+            role: _roleOf(msg),
             contentRef: preview,
             originalTokens,
             compressedTokens: originalTokens,   // stub proxy: identical
@@ -459,7 +503,7 @@ async function _handleRequest(req: http.IncomingMessage, res: http.ServerRespons
         if (method === 'POST' && url === '/v1/compress') {
             // Client-side input validation gets its own error envelope so the
             // SDK can disambiguate from genuine server faults.
-            let payload: { messages?: any[] };
+            let payload: { messages?: unknown };
             try {
                 payload = body ? JSON.parse(body) : {};
             } catch (parseErr: unknown) {
@@ -468,7 +512,13 @@ async function _handleRequest(req: http.IncomingMessage, res: http.ServerRespons
                 });
                 return;
             }
-            const inputMessages = payload.messages ?? [];
+            if (payload.messages !== undefined && !Array.isArray(payload.messages)) {
+                _sendJson(res, 400, {
+                    error: { type: 'invalid_request', message: '/v1/compress body "messages" must be an array' },
+                });
+                return;
+            }
+            const inputMessages: WireMessage[] = payload.messages ?? [];
             const result = _naiveCompress(inputMessages);
             _stats.totalCalls++;
             _stats.totalTokensBefore += result.tokensBefore;
@@ -574,7 +624,7 @@ function _sendJson(res: http.ServerResponse, status: number, body: unknown): voi
 // ─── Naïve compression (MVP) ────────────────────────────────────────────────
 
 interface NaiveCompressResult {
-    messages: any[];
+    messages: WireMessage[];
     compressed: boolean;
     tokensBefore: number;
     tokensAfter: number;
@@ -584,7 +634,7 @@ interface NaiveCompressResult {
     ccrHashes: string[];
 }
 
-function _naiveCompress(messages: any[]): NaiveCompressResult {
+function _naiveCompress(messages: readonly WireMessage[]): NaiveCompressResult {
     // Phase 3.3 — upsert each message into the module-level CCR store
     // BEFORE any compression transforms run, so the recorded hash
     // reflects the canonical raw-input signature. The 1:1
@@ -595,7 +645,7 @@ function _naiveCompress(messages: any[]): NaiveCompressResult {
     const tokensBefore = messages.reduce((sum, m) => sum + _estimateMessageTokens(m), 0);
 
     // 1) Dedupe identical adjacent messages (cheap structural shortcut)
-    const deduped: any[] = [];
+    const deduped: WireMessage[] = [];
     for (const m of messages) {
         const prev = deduped[deduped.length - 1];
         if (prev && JSON.stringify(_contentOf(prev)) === JSON.stringify(_contentOf(m))) {
@@ -618,7 +668,7 @@ function _naiveCompress(messages: any[]): NaiveCompressResult {
     //        walk each part, summarise the inner content of any tool_result
     //        whose inner `content` is a summarisable string. Non-tool
     //        parts and unparseable inner content pass through untouched.
-    const summarised = deduped.map(m => {
+    const summarised = deduped.map((m): WireMessage => {
         if (!_isToolish(m)) { return m; }
         const c = _contentOf(m);
         if (typeof c === 'string') {
@@ -628,16 +678,13 @@ function _naiveCompress(messages: any[]): NaiveCompressResult {
         }
         if (Array.isArray(c) && m.role === 'user') {
             let anyChanged = false;
-            const newParts = c.map((part: any) => {
-                if (typeof part?.type === 'string'
-                    && part.type.startsWith('tool_result')
-                    && typeof part?.content === 'string') {
-                    const next = _summariseToolResult(part.content);
-                    if (next === null) { return part; }
-                    anyChanged = true;
-                    return { ...part, content: next };
-                }
-                return part;
+            const newParts = c.map((part) => {
+                const text = _toolResultText(part);
+                if (text === undefined) { return part; }
+                const next = _summariseToolResult(text);
+                if (next === null) { return part; }
+                anyChanged = true;
+                return { ..._asPart(part), content: next };
             });
             if (anyChanged) {
                 return { ...m, content: newParts, _headroomSummarised: true };
@@ -648,7 +695,7 @@ function _naiveCompress(messages: any[]): NaiveCompressResult {
 
     // 3) Cap single-message content length (don't compress tool results;
     //    the LLM often needs the literal structured output)
-    const capped = summarised.map(m => {
+    const capped = summarised.map((m): WireMessage => {
         const c = _contentOf(m);
         if (typeof c === 'string' && c.length > MAX_CONTENT_LEN) {
             return {
@@ -665,8 +712,8 @@ function _naiveCompress(messages: any[]): NaiveCompressResult {
     const tokensSaved = Math.max(0, tokensBefore - tokensAfter);
     const transformsApplied: string[] = [];
     if (capped.length < messages.length) { transformsApplied.push('dedupe'); }
-    if (capped.some((m: any) => m._headroomSummarised)) { transformsApplied.push('compress_tool_call'); }
-    if (capped.some((m: any) => m._headroomTruncated)) { transformsApplied.push('truncate'); }
+    if (capped.some((m) => m._headroomSummarised)) { transformsApplied.push('compress_tool_call'); }
+    if (capped.some((m) => m._headroomTruncated)) { transformsApplied.push('truncate'); }
     if (transformsApplied.length === 0) { transformsApplied.push('identity'); }
 
     return {
@@ -681,10 +728,11 @@ function _naiveCompress(messages: any[]): NaiveCompressResult {
     };
 }
 
-function _contentOf(msg: any): any {
-    if (typeof msg?.content === 'string') { return msg.content; }
+function _contentOf(msg: WireMessage): WireContent {
+    const content = msg?.content;
+    if (typeof content === 'string') { return content; }
     // OpenAI multi-part content (array of text/image_url parts)
-    if (Array.isArray(msg?.content)) { return msg.content; }
+    if (Array.isArray(content)) { return content; }
     return null;
 }
 
@@ -696,12 +744,11 @@ function _contentOf(msg: any): any {
  * explicit roles the design enumerates so we never accidentally compress
  * arbitrary model prose or non-tool user messages.
  */
-function _isToolish(msg: any): boolean {
+function _isToolish(msg: WireMessage): boolean {
     if (!msg) { return false; }
     if (msg.role === 'tool' || msg.role === 'function') { return true; }
     if (msg.role === 'user' && Array.isArray(msg.content)) {
-        return msg.content.some((p: any) =>
-            typeof p?.type === 'string' && p.type.startsWith('tool_result'));
+        return msg.content.some(_isToolResultPart);
     }
     return false;
 }
@@ -721,7 +768,7 @@ function _isToolish(msg: any): boolean {
  *   Re-stringify fail — return null and let the upstream callee revert.
  */
 function _summariseToolResult(content: string): string | null {
-    let parsed: any;
+    let parsed: unknown;
     try {
         parsed = JSON.parse(content);
     } catch {
@@ -740,7 +787,7 @@ function _summariseToolResult(content: string): string | null {
         ]);
     } else if (parsed && typeof parsed === 'object') {
         let anyChanged = false;
-        const truncated: Record<string, any> = {};
+        const truncated: Record<string, unknown> = {};
         for (const [key, value] of Object.entries(parsed)) {
             if (typeof value === 'string' && value.length > MAX_TOOL_OBJ_STR_LEN) {
                 const removed = value.length - MAX_TOOL_OBJ_STR_LEN;
@@ -791,14 +838,15 @@ function _summariseToolResult(content: string): string | null {
  * Returns 0 for messages whose content we cannot parse (no string, no
  * array of text parts). No callbacks to `_naiveCompress` re-throw paths.
  */
-function _estimateMessageTokens(msg: any): number {
+function _estimateMessageTokens(msg: WireMessage): number {
     const c = _contentOf(msg);
     if (typeof c === 'string') { return countTokens(c); }
     if (Array.isArray(c)) {
-        return c.reduce((sum: number, part: any) => {
+        return c.reduce((sum: number, part: unknown) => {
             // OpenAI / Anthropic text-bearing parts — original heuristic.
-            if (typeof part?.text === 'string') {
-                return sum + countTokens(part.text);
+            const text = _asPart(part)?.text;
+            if (typeof text === 'string') {
+                return sum + countTokens(text);
             }
             // Anthropic / OpenAI tool_result parts — their inner `content`
             // is typically a JSON-stringified structured response. Count it
@@ -806,10 +854,9 @@ function _estimateMessageTokens(msg: any): number {
             // tool-result tokens. Skipping these would make `_naiveCompress`'s
             // summarise-vs-after BPE delta read as zero and hide real
             // savings — see Phase 3.2 multi-part test for the round-trip.
-            if (typeof part?.type === 'string'
-                && part.type.startsWith('tool_result')
-                && typeof part?.content === 'string') {
-                return sum + countTokens(part.content);
+            const toolText = _toolResultText(part);
+            if (toolText !== undefined) {
+                return sum + countTokens(toolText);
             }
             return sum;
         }, 0);
