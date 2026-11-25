@@ -1,269 +1,225 @@
 # Agile Agent Canvas
 
-**Visual AI-assisted product development inside VS Code.**
+**Plan your product on a visual canvas, let AI write the documents, and let your coding agent build the stories, all inside VS Code.**
 
-A VS Code extension that turns product development into a structured, AI-assisted workflow. Design a product vision, break it down into epics and stories, define requirements, plan architecture, and track implementation readiness — through an interactive visual canvas, an in-IDE AI chat participant, and an optional codebase knowledge graph.
+![The Agile Agent Canvas showing a sample project across four lanes: Discovery, Planning, Solutioning and Implementation](images/canvas-overview.png)
 
-The extension is methodology-agnostic at its core: it ships with the [BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD) bundle (44 workflows, 5 modules, persona catalogue) and can install the same bundle into Claude Code, Cursor, Antigravity, OpenCode, and Copilot so the same workflow runs the same way everywhere. For the full methodology walkthrough, see [docs/methodology.md](docs/methodology.md).
+## What it does
 
----
+1. **Plan visually.** Your vision, requirements, architecture, epics and stories appear as linked cards on one canvas, arranged left to right from idea to implementation.
+2. **Draft with AI.** Ask `@agileagentcanvas` in Copilot Chat, or launch a guided workflow from the canvas. AI fills in the documents and the cards update as it goes.
+3. **Build with agents.** Send ready stories to the Agentic Kanban board. The coding agent you already use (Claude Code, Codex, Gemini CLI, Copilot CLI and more) builds each one on its own git branch, runs your tests, and waits for your approval.
 
-## What you get
+Everything is saved as plain JSON and Markdown in your repository, so your plan is versioned and reviewed like code.
 
-- **Visual 4-lane canvas** — Discovery → Planning → Solutioning → Implementation. Cards are colour-coded by artifact type and connected with dependency arrows. Three view modes: Lanes, Mindmap, 3D Corpus.
-- **In-IDE AI chat** — `@agileagentcanvas` in Copilot Chat with 34 slash commands and 21 LM tools the AI can call autonomously.
-- **Curated workflows** — 10 built-in workflows with defined steps, validation checkpoints, and artifacts that populate the canvas automatically.
-- **Optional knowledge graph** — [graphify](https://github.com/safishamsi/graphify) integration builds a semantic dependency graph of your codebase and feeds it into AI context.
-- **Agentic Kanban board** — a live execution board where agents pick up stories, run workflows, and move cards across Backlog → Ready → In-Progress → Review → Done.
-- **Visual Plan approval gate** — AI-generated plan documents reviewed before any code is written; approve to dispatch into real story artifacts.
-- **Jira Cloud sync** — fetch epics and stories from Jira, with a field-level conflict picker before any overwrite.
-- **Framework installer** — push the same skill/agent catalogue into VS Code Copilot, Claude Code, Cursor, Antigravity, or OpenCode.
+## How it works
 
----
+![From idea to merged code: four planning lanes produce documents, then ready stories move across the Kanban board while your coding agent builds them](images/workflow.png)
 
-## Quickstart
+Each lane answers one question and produces real documents:
 
-1. Install **Agile Agent Canvas** from the Extensions marketplace.
-2. Click the Agile Agent Canvas icon in the activity bar to open the sidebar.
-3. Run **New Project** from the Command Palette, or **Load Demo Data** to see a populated canvas.
-4. Open the canvas from the sidebar header or **Open Visual Canvas**.
-5. In Copilot Chat, start with:
+| Lane | Question | You get |
+|---|---|---|
+| **Discovery** | Why build it? | Product brief, vision, research |
+| **Planning** | What must it do? | PRD, functional and non-functional requirements, risks |
+| **Solutioning** | How will it work? | Architecture, design decisions, system components |
+| **Implementation** | What do we build first? | Epics, stories with acceptance criteria, test cases |
 
+The steps follow the open-source [BMAD Method](https://github.com/bmad-code-org/BMAD-METHOD), which ships with the extension. You don't need to know it to start: the AI guides each step.
+
+## Get started in 2 minutes
+
+1. **Install** Agile Agent Canvas from the Extensions view.
+2. **Open a folder** and click the **Agile Agent Canvas** icon in the Activity Bar.
+3. Click **Open Visual Canvas**, then **Create Sample Project** to explore a complete example. A short tour shows you around.
+4. **Start your own project** from Copilot Chat:
+
+   ```text
+   @agileagentcanvas /vision I want to build a booking app for vet clinics
    ```
-   @agileagentcanvas /help I need to break this epic into stories
-   ```
 
-   `/help` reads the live skill catalogue and recommends the best matches for your task.
+Not sure which command to use? Ask `@agileagentcanvas /help` and describe what you want to do.
 
-### Recommended workflow
+![The guided tour on first open, pointing at the four lanes](images/product-tour.png)
 
-```
-/vision       →  Define what you're building and why
-/requirements →  Extract functional and non-functional requirements
-/epics        →  Structure work into value-driven epics
-/stories      →  Break epics into implementable stories
-/readiness    →  Validate everything is ready for development
-/dev          →  Start building with full context
-```
+## Features
 
----
+### Visual Canvas
 
-## Core capabilities
+Every artifact is a card, color-coded by lane and connected to what it depends on. Switch between three views with `L`: **Lanes**, **Mind Map** and **3D graph**. Each card has a **Refine with AI** menu with the workflows that fit it, such as Dev Story, Code Review or Sprint Planning.
 
-### Canvas
+![Close-up of canvas cards: product brief, vision, PRD, risks and requirements](images/canvas-cards.png)
 
-The canvas is a full-screen editor tab with three view modes:
+### AI chat in Copilot Chat
 
-- **Lanes** (default) — 4-phase horizontal swimlanes.
-- **Mindmap** — tree view grouping related artifacts.
-- **3D Corpus** — force-directed 3D graph revealing cross-phase connections (press `L` to cycle).
+`@agileagentcanvas` brings expert roles (analyst, product manager, architect, developer, QA) into Copilot Chat. It can read and update your artifacts directly, so you never copy text between windows.
 
-Every card has a **Refine with AI** menu with the most relevant workflow for that artifact type: Code Review, Dev Story, Security Audit, Sprint Planning, and more.
-
-### Chat
-
-The chat participant routes commands to a registered persona (analyst, PM, architect, dev, QA, …) and has access to 21 LM tools, so it can read and write artifacts, query the knowledge graph, sync Jira, and call other agents — without you copying anything between windows.
-
-Run `@agileagentcanvas /workflows` for the full command list.
-
-### Knowledge graph (optional)
-
-Run **Bootstrap graphify** once to install the graphify CLI and build an initial knowledge graph of your codebase. Once built, the AI can answer questions like *"what depends on `ArtifactStore`?"* with citations from your actual code.
-
-The graph updates incrementally on file change (debounced 5 s, code-only, no LLM re-extraction) and surfaces a `GRAPH_REPORT.md` plus an interactive Graph browser for communities and god nodes.
+| Command | What it does |
+|---|---|
+| `/vision` | Define the product, the problem and who it's for |
+| `/requirements` | Pull functional and non-functional requirements out of your notes |
+| `/epics` | Group the work into epics that each deliver value |
+| `/stories` | Break epics into stories with acceptance criteria |
+| `/readiness` | Check everything is ready before development starts |
+| `/dev` | Implement a story with full project context |
+| `/workflows` | List every available workflow and command |
 
 ### Agentic Kanban
 
-A sidebar execution board that turns canvas artifacts into a live, drag-and-drop workflow. Cards move through five columns:
+The board turns stories into work your coding agent picks up: **Backlog → Ready for Dev → In Progress → Review → Done**.
 
-| Column | Purpose |
-|---|---|
-| **Backlog** | New stories and epics land here |
-| **Ready-for-Dev** | Approved, waiting for an agent to pick up |
-| **In-Progress** | Actively being worked on (agent running) |
-| **Review** | Completed work awaiting review |
-| **Done** | Finished and verified |
+![Agentic Kanban board with stories across Backlog, In Progress and Done](images/agentic-kanban.png)
 
-Cards show live **agent badges** (running/completed/failed), **dependency badges** (blocked-by counts), and **priority indicators**. Auto-advance mode (off by default) drives cards through the implement → review → done loop automatically; an approval banner pauses execution when a required policy gate is hit. A toggleable terminal grid shows live agent output in real time.
+- **Your agent, your choice.** The board uses a coding agent you already have installed and shows whether it is signed in. You can switch agents with one click.
+- **Safe by default.** Each card runs on its own git branch. Your tests run after every step, and failures go back to the agent. Nothing merges until you approve it, and you can open a pull request instead.
+- **Spending limits.** Runs are capped at $5 per story and $25 per day by default. **Stop All Agents** stops everything at once.
+- **Hands-off when you want it.** Turn on auto-advance to move cards through implement, review and done on their own. The board only pauses when it needs a decision from you.
 
-#### Which agent runs the board
+![Agent picker listing installed coding agents, their versions and sign-in status](images/agent-picker.png)
 
-The board drives the coding agent you already have. It picks, in order:
-
-1. The harness set in `agileagentcanvas.agents.harness`. If that harness isn't installed, the run is blocked with install instructions; it is never swapped for another CLI.
-2. The CLI matching your chat-provider pick.
-3. The first installed CLI.
-4. The VS Code language model (for example GitHub Copilot Chat).
-
-| Harness | Command used |
+| Coding agent | Command the board runs |
 |---|---|
 | Claude Code | `claude -p` |
 | OpenAI Codex CLI | `codex exec` |
 | Gemini CLI | `gemini -p` |
 | GitHub Copilot CLI | `copilot -p` |
-| Cursor CLI | `cursor-agent -p` / `agent -p` |
+| Cursor CLI | `cursor-agent -p` |
 | OpenCode | `opencode run` |
 | Pi | `pi -p` |
 | Aider | `aider --message-file` |
 
-The strip at the top of the board shows the agent in use and whether it's signed in, with one-click sign-in and switching. When a run stops, the card says why and offers the fix. **Check Agent Harnesses** runs a real smoke test.
-
-**Permissions.** `agileagentcanvas.agents.permissionPosture` defaults to `sandboxed`: agents edit workspace files but get no unrestricted shell where the CLI supports it. `full` auto-approves every tool, and needs a trusted workspace and a one-time confirmation.
-
-**From card to merged code.** Each autonomous card runs on its own git branch and working copy next to your repo. The project's tests run after every implement step, and failures go back to the agent. Approval merges the branch, or opens a pull request whose review comments the agent can address. `project-context.md` tells agents your build, lint and test commands and conventions.
-
-**Developer hub commands.** **Sync GitHub Issues**, **Show Engineering Metrics**, **Generate Release Notes**, and a CodeLens linking files to the stories that changed them.
-
-**Limits.** Agents never run in Restricted Mode. Spend caps default to $5 per story and $25 per day (`agileagentcanvas.budget.*`). **Stop All Agents** stops everything immediately, and **Show Agent Run History** lists what ran and how it ended.
+No coding CLI installed? The board falls back to the VS Code language model, such as GitHub Copilot.
 
 ### Visual Plan
 
-Visual Plan is an AI-generated, structured plan document you review **before** any code is written. Plans surface in the canvas DetailPanel, the Kanban board, or a pop-out window, and contain up to nine section kinds:
+Before any code is written, the AI can produce a plan for you to review: affected files, diagrams, API and data changes, open questions and a task list. Approve it and the selected tasks become stories on the board.
 
-| Section | Content |
-|---|---|
-| **Overview** | Summary with risk badge and grounded file references |
-| **File Map** | Affected files grouped by change type with per-file notes |
-| **Diagram** | Mermaid source or auto-laid-out SVG node/edge diagram |
-| **Wireframe** | UI region breakdown with element types |
-| **API Spec** | HTTP methods, paths, request bodies, and response codes |
-| **Schema Map** | Data entities with fields, types, constraints, and relationships |
-| **Annotated Code** | Code blocks with per-line annotations and syntax highlighting |
-| **Open Questions** | Questions the AI identified as needing human input |
-| **Tasks** | Checkbox-selectable task list grouped by priority (P0/P1/P2) |
+### Works with your tools
 
-Plan lifecycle: `Generate → Review → Revise → Approved → Dispatched`. Approve & Dispatch converts selected tasks into real Story artifacts nested under their parent epic, sets status to `ready-for-dev`, and registers them with the AutoScheduler.
+- **Jira Cloud.** Fetch epics and stories, and choose field by field when they conflict with your local copy.
+- **GitHub Issues.** Sync issues with stories.
+- **Code knowledge graph.** Optional [graphify](https://github.com/safishamsi/graphify) integration maps your codebase so the AI can answer questions like *"what depends on this module?"* from your real code.
+- **Other AI tools.** **Install Framework to IDE** copies the same workflows and roles into Claude Code, Cursor, Antigravity, OpenCode or Copilot, so they behave the same everywhere.
 
----
+## Architecture
 
-## AI providers
+![Architecture: the canvas, chat and Kanban in VS Code sit on a workflow engine, artifact store and agent runner; they use your chosen AI model and coding agent and save plain files to your repository](images/architecture.png)
 
-Set `agileagentcanvas.aiProvider` in VS Code settings:
+- **What you see:** the canvas, the chat participant and the Kanban board, all inside VS Code.
+- **What does the work:** a workflow engine that runs the guided steps, an artifact store that checks every document against a schema, and an agent runner that manages branches, tests, budgets and approvals.
+- **Where it lives:** plain files in `.agileagentcanvas-context/` in your repository, plus normal git branches for code changes.
+- **What it connects to:** the AI model you pick for drafting, and the coding agent you already use for building.
+
+## Choose your AI model
+
+Set `agileagentcanvas.aiProvider` in Settings. The default, `auto`, picks the best one available.
 
 | Provider | Setup |
 |---|---|
-| **auto** (default) | Detects the best available provider automatically |
-| **copilot** | GitHub Copilot via VS Code Language Model API |
-| **openai** | **Set AI API Key** command; default `gpt-4o` |
-| **anthropic** | **Set AI API Key** command; default `claude-sonnet-4-5` |
-| **gemini** | **Set AI API Key** command; default `gemini-2.0-flash` |
-| **ollama** | `agileagentcanvas.baseUrl` (e.g. `http://localhost:11434`); default `llama3` |
-| **antigravity** | Google Antigravity chat panel |
-| **omp** | Oh My Pi harness — writes to `.omp/inbox.md` or invokes the OMP extension |
+| **GitHub Copilot** | Works through the VS Code language model API. Nothing to configure. |
+| **OpenAI**, **Anthropic**, **Gemini** | Run **Set AI API Key**. Keys are stored in your OS keychain, never in settings. |
+| **Ollama** | Set `agileagentcanvas.baseUrl` to your local server, for example `http://localhost:11434`. |
+| **Antigravity**, **Oh My Pi** | Route through those tools' own chat. |
 
-API keys are kept in VS Code secure storage (your OS keychain), never in settings.
+`agileagentcanvas.chatProvider` chooses which chat tool the canvas buttons open (Copilot, Claude, Cursor, Windsurf, Codex, Aider, OpenCode and others).
 
-Chat-provider routing is independent and configurable via `agileagentcanvas.chatProvider` (auto, copilot, claude, cursor, windsurf, antigravity, omp, codex, aider, opencode, pi, terminal).
+## Requirements
 
----
+- VS Code 1.93 or later.
+- For AI features: GitHub Copilot, an API key for OpenAI, Anthropic or Gemini, or a local Ollama server.
+- For the Kanban board: at least one coding agent CLI from the table above, or GitHub Copilot.
+- Optional, for the code knowledge graph: Python 3.10 or later. The extension offers to install graphify for you.
 
-## Common settings
+## Reference
+
+<details>
+<summary><b>Common settings</b></summary>
 
 | Setting | Default | Purpose |
 |---|---|---|
 | `agileagentcanvas.outputFolder` | `.agileagentcanvas-context` | Where artifacts are written |
-| `agileagentcanvas.aiProvider` | `auto` | AI provider (see table above) |
-| `agileagentcanvas.chatProvider` | `auto` | Chat surface for canvas actions |
+| `agileagentcanvas.aiProvider` | `auto` | AI model provider |
+| `agileagentcanvas.chatProvider` | `auto` | Chat tool the canvas actions open |
 | `agileagentcanvas.agents.harness` | `auto` | Coding agent that runs board steps |
 | `agileagentcanvas.agents.permissionPosture` | `sandboxed` | What agents may do without asking |
-| `agileagentcanvas.budget.perStoryUsd` / `dailyUsd` | `5` / `25` | Spend caps (`0` disables) |
-| `agileagentcanvas.kanban.autoAdvance` | `false` | Run implement → review → done automatically |
-| `agileagentcanvas.defaultTemperature` | `0.2` | Sampling temperature (0–2); lower = more deterministic JSON |
-| `agileagentcanvas.headroom.enabled` | `true` | Transparent chat-message compression |
-| `agileagentcanvas.autoSync` | `true` | Auto-save canvas changes to disk |
-| `agileagentcanvas.graphify.pythonPath` | `python` | Override if Python is not on PATH |
+| `agileagentcanvas.budget.perStoryUsd` / `dailyUsd` | `5` / `25` | Spend caps (`0` turns a cap off) |
+| `agileagentcanvas.kanban.autoAdvance` | `false` | Move cards through implement → review → done automatically |
+| `agileagentcanvas.autoSync` | `true` | Save canvas changes to disk automatically |
+| `agileagentcanvas.graphify.pythonPath` | `python` | Python to use if it isn't on PATH |
 
-The full list of 30+ settings lives in VS Code Settings under **Extensions → Agile Agent Canvas**.
+All settings are under **Settings → Extensions → Agile Agent Canvas**.
 
----
+</details>
 
-## Most-used commands
+<details>
+<summary><b>Most-used commands</b></summary>
 
-Run any from the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`):
+Run these from the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`):
 
-- **Open Visual Canvas** — open the canvas in an editor tab
-- **Check Agent Harnesses** / **Stop All Agents** / **Show Agent Run History**
-- **Set AI API Key** — store the direct-provider API key in secure storage
+- **Open Visual Canvas**
 - **New Project** / **Load Existing Project** / **Switch Project**
-- **Install Framework to IDE** — install the skill/agent bundle into VS Code Copilot, Claude Code, Cursor, Antigravity, or OpenCode
-- **Fetch from Jira** / **Set Jira API Token** / **Clear Jira API Token**
-- **Bootstrap graphify** / **Update graphify Graph** / **Open graphify Status**
+- **Check Agent Harnesses** / **Stop All Agents** / **Show Agent Run History**
+- **Set AI API Key**
 - **Generate Visual Plan** / **Open Visual Plan**
-- **Clean Up Old Trace Files** — scrub stale `.test-traces-*` dirs and other scratch
+- **Install Framework to IDE**
+- **Fetch from Jira** / **Set Jira API Token**
+- **Bootstrap graphify** / **Update graphify Graph**
 
----
+</details>
 
-## Canvas keyboard shortcuts
+<details>
+<summary><b>Canvas keyboard shortcuts</b></summary>
 
-| Shortcut | Action |
+| Key | Action |
 |---|---|
-| Arrow keys | Pan canvas |
+| Arrow keys | Pan |
 | `+` / `-` | Zoom in / out |
 | `0` | Reset zoom and pan |
-| `F` | Toggle focus mode |
-| `M` | Toggle minimap |
-| `T` | Toggle type/status filter bar |
-| `L` | Cycle layout (Lanes → Mindmap → 3D Corpus) |
-| `/` | Open canvas search |
+| `F` | Focus mode |
+| `M` | Minimap |
+| `T` | Type and status filters |
+| `L` | Switch view (Lanes → Mind Map → 3D) |
+| `/` | Search |
 | `Esc` | Close panel / deselect |
 
----
+</details>
 
-## Requirements
+<details>
+<summary><b>Agent permissions and limits</b></summary>
 
-- VS Code 1.93 or later
-- For AI features: GitHub Copilot extension, or an API key for OpenAI / Anthropic / Gemini, or a local Ollama instance
-- For the knowledge graph: Python 3.10+ with `pip install graphifyy` (the extension can offer to install it automatically)
+- `agileagentcanvas.agents.permissionPosture` defaults to `sandboxed`: agents can edit workspace files but get no unrestricted shell where the CLI supports it. `full` approves every tool automatically and needs a trusted workspace plus a one-time confirmation.
+- Agents never run in Restricted Mode.
+- If `agileagentcanvas.agents.harness` names an agent that isn't installed, runs are blocked with install instructions. The board never silently swaps in a different agent.
+- `project-context.md` and `AGENTS.md` tell agents your build, lint and test commands and your conventions.
+- **Show Agent Run History** lists what ran and how it ended.
 
----
+</details>
 
 ## Open-source credits
 
-This extension is built on, integrates with, or is inspired by the following open-source projects. All are used under their respective licenses (MIT unless noted).
-
-### Frameworks and methodology
+Built on and inspired by open-source work, used under each project's license (MIT unless noted).
 
 | Project | Used for | License |
 |---|---|---|
-| [BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD) | Shipped workflow bundle, agent personas, and schemas | MIT |
-| [graphify](https://github.com/safishamsi/graphify) | Codebase knowledge graph (external CLI, not bundled) | MIT |
+| [BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD) | Bundled workflows, agent roles and schemas | MIT |
+| [graphify](https://github.com/safishamsi/graphify) | Code knowledge graph (external tool, not bundled) | MIT |
+| [ajv](https://github.com/ajv-validator/ajv) | Schema validation for artifacts | MIT |
+| [yaml](https://github.com/eemeli/yaml) | YAML parsing | ISC |
+| [@iarna/toml](https://github.com/iarna/iarna-toml) | TOML parsing | ISC |
+| [gpt-tokenizer](https://github.com/niieani/gpt-tokenizer) | Token counting for context budgets | MIT |
+| [headroom-ai](https://github.com/team-headroom/headroom) | Chat message compression | Apache-2.0 |
+| [pdfkit](https://github.com/foliojs/pdfkit) | PDF export | MIT |
+| [simple-git](https://github.com/steveukx/git-js) | Git operations | MIT |
+| [deepmerge](https://github.com/TehShrike/deepmerge) / [microdiff](https://github.com/AsyncBanana/microdiff) | Merging and diffing artifacts | MIT |
+| [React](https://react.dev) | Webview UI | MIT |
+| [Three.js](https://threejs.org) / [3d-force-graph](https://github.com/vasturiano/3d-force-graph) | 3D graph view | MIT |
+| [@xterm/xterm](https://xtermjs.org) | Live agent terminal output | MIT |
+| [marked](https://marked.js.org) | Markdown rendering | MIT |
+| [html2canvas](https://html2canvas.hertzen.com) | PNG export of the canvas | MIT |
+| [@vscode/webview-ui-toolkit](https://github.com/microsoft/vscode-webview-ui-toolkit) | VS Code-style webview components | MIT |
 
-### Runtime libraries (extension host)
+Workflow and agent patterns were also informed by [get-shit-done](https://github.com/gsd-build/get-shit-done), [everything-claude-code](https://github.com/affaan-m/everything-claude-code) and [gstack](https://github.com/dzt/gstack) (all MIT). No source code is copied from them.
 
-| Library | Used for | License |
-|---|---|---|
-| [ajv](https://github.com/ajv-validator/ajv) | JSON Schema validation for artifact data | MIT |
-| [yaml](https://github.com/eemeli/yaml) | YAML parsing for BMAD artifact files | ISC |
-| [@iarna/toml](https://github.com/iarna/iarna-toml) | TOML parsing for settings and config files | TOML |
-| [gpt-tokenizer](https://github.com/niieani/gpt-tokenizer) | Token counting for context budget tracking | Apache-2.0 |
-| [headroom-ai](https://github.com/team-headroom/headroom) | Transparent chat-message compression | Apache-2.0 |
-| [pdfkit](https://github.com/foliojs/pdfkit) | PDF export of artifacts and reports | MIT |
-| [simple-git](https://github.com/steveukx/git-js) | Git operations for change detection | MIT |
-| [deepmerge](https://github.com/TehShrike/deepmerge) / [microdiff](https://github.com/AsyncBanana/microdiff) | JSON merge and diff for artifact sync | MIT |
+## Feedback
 
-### Runtime libraries (webview UI)
-
-| Library | Used for | License |
-|---|---|---|
-| [React](https://react.dev) | UI framework | MIT |
-| [Three.js](https://threejs.org) | WebGL rendering for the 3D Corpus view | MIT |
-| [3d-force-graph](https://github.com/vasturiano/3d-force-graph) | Force-directed 3D graph component | MIT |
-| [@xterm/xterm](https://xtermjs.org) | Embedded terminal for live agent output | MIT |
-| [mermaid](https://mermaid.js.org) | Diagram rendering in Visual Plan | MIT |
-| [marked](https://marked.js.org) | Markdown rendering for artifact text | MIT |
-| [html2canvas](https://html2canvas.hertzen.com) | Canvas snapshot for PNG export | MIT |
-| [@vscode/webview-ui-toolkit](https://github.com/microsoft/vscode-webview-ui-toolkit) | VS Code-native webview components | MIT |
-
-### Inspiration
-
-Workflow and agent patterns in this extension were informed by the following projects. No source code is copied; conceptual patterns only.
-
-- [get-shit-done](https://github.com/gsd-build/get-shit-done) — MIT
-- [everything-claude-code](https://github.com/affaan-m/everything-claude-code) — MIT
-- [gstack](https://github.com/dzt/gstack) — MIT
-
----
-
-## Feedback and issues
-
-Open an issue on the [project repository](https://github.com/msayedshokry/AgileAgentCanvasExt/issues). If you find a real-world pattern the catalogue doesn't cover, the **Suggest New Tool** command lets the LLM propose a tool spec.
+Found a bug or have an idea? [Open an issue](https://github.com/msayedshokry/AgileAgentCanvasExt/issues).

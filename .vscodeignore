@@ -94,6 +94,11 @@ fs.renameSync*
 graphify-out/**
 docs/**
 
+# README screenshots and diagrams. vsce rewrites the README's relative image
+# links to GitHub raw URLs, so the Marketplace and the Extensions view load
+# them from the repository; shipping them would only grow the VSIX.
+images/**
+
 # Repo-only dev scripts (none are loaded at runtime) and stray logs
 scripts/**
 *.log

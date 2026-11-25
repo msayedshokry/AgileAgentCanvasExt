@@ -1,7 +1,7 @@
 {
   "name": "agileagentcanvas",
   "displayName": "Agile Agent Canvas",
-  "description": "Visual AI-assisted product development with BMAD methodology - Design epics, stories, and requirements collaboratively with interactive AI chat workflows",
+  "description": "Plan your product on a visual canvas, let AI draft the vision, PRD, architecture, epics and stories, then hand stories to your coding agent (Claude Code, Codex, Copilot and more) on a Kanban board.",
   "version": "0.6.0",
   "publisher": "msayedshokry",
   "license": "MIT",
@@ -21,8 +21,10 @@
     "webview-ui"
   ],
   "categories": [
-    "Other",
-    "Visualization"
+    "AI",
+    "Chat",
+    "Visualization",
+    "Other"
   ],
   "keywords": [
     "agileagentcanvas",
@@ -37,7 +39,12 @@
     "prd",
     "agile",
     "architecture",
-    "sprint-planning"
+    "sprint-planning",
+    "kanban",
+    "ai-agents",
+    "claude-code",
+    "codex",
+    "copilot"
   ],
   "icon": "resources/icons/agileagentcanvas-icon.png",
   "galleryBanner": {

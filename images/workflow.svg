@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="840" viewBox="0 0 1600 840" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif">
+  <title>From idea to merged code</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8b98a9"/>
+    </marker>
+    <marker id="arrow-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#e3a008"/>
+    </marker>
+    <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="1" fill="#1d2430"/>
+    </pattern>
+    <style>
+      .title { font-size: 34px; font-weight: 700; fill: #f0f3f6; }
+      .subtitle { font-size: 18px; fill: #8b98a9; }
+      .eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 2px; fill: #8b98a9; }
+      .step { font-size: 14px; font-weight: 700; letter-spacing: 1.5px; }
+      .h { font-size: 24px; font-weight: 700; fill: #f0f3f6; }
+      .q { font-size: 16px; fill: #b4bfcc; font-style: italic; }
+      .item { font-size: 15px; fill: #dce3ea; }
+      .mono { font-family: 'Cascadia Code', Consolas, 'SF Mono', monospace; font-size: 14px; fill: #b4bfcc; }
+      .col { font-size: 15px; font-weight: 650; }
+      .card { font-size: 13px; fill: #dce3ea; }
+      .label { font-size: 14px; fill: #8b98a9; font-style: italic; }
+      .lane { fill: #161b22; stroke: #2b333e; stroke-width: 1.5; }
+      .art { fill: #1d2530; stroke: #303b49; stroke-width: 1; }
+      .kcol { fill: #141a21; stroke: #2b333e; stroke-width: 1; }
+      .kcard { fill: #1d2530; stroke: #303b49; stroke-width: 1; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="840" rx="24" fill="#0d1117"/>
+  <rect width="1600" height="840" rx="24" fill="url(#dots)"/>
+
+  <text x="60" y="78" class="title">From idea to merged code</text>
+  <text x="60" y="112" class="subtitle">Each lane produces real documents. Once stories are ready, the board hands them to your coding agent.</text>
+
+  <!-- Lane 1: Discovery -->
+  <g>
+    <rect x="60" y="150" width="344" height="320" rx="16" class="lane"/>
+    <rect x="60" y="150" width="344" height="6" rx="3" fill="#b180d7"/>
+    <text x="84" y="190" class="step" fill="#b180d7">1 · DISCOVERY</text>
+    <text x="84" y="224" class="h">Why build it?</text>
+    <text x="84" y="250" class="q">Problem, users and goals</text>
+    <rect x="84" y="270" width="296" height="36" rx="8" class="art"/><text x="102" y="294" class="item">Product brief</text>
+    <rect x="84" y="314" width="296" height="36" rx="8" class="art"/><text x="102" y="338" class="item">Product vision</text>
+    <rect x="84" y="358" width="296" height="36" rx="8" class="art"/><text x="102" y="382" class="item">Research</text>
+    <text x="84" y="440" class="mono">/vision</text>
+  </g>
+  <path d="M406,310 L434,310" stroke="#8b98a9" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Lane 2: Planning -->
+  <g>
+    <rect x="436" y="150" width="344" height="320" rx="16" class="lane"/>
+    <rect x="436" y="150" width="344" height="6" rx="3" fill="#3794ff"/>
+    <text x="460" y="190" class="step" fill="#3794ff">2 · PLANNING</text>
+    <text x="460" y="224" class="h">What must it do?</text>
+    <text x="460" y="250" class="q">Scope you can test against</text>
+    <rect x="460" y="270" width="296" height="36" rx="8" class="art"/><text x="478" y="294" class="item">Product requirements (PRD)</text>
+    <rect x="460" y="314" width="296" height="36" rx="8" class="art"/><text x="478" y="338" class="item">Functional &amp; non-functional reqs</text>
+    <rect x="460" y="358" width="296" height="36" rx="8" class="art"/><text x="478" y="382" class="item">Risks and mitigations</text>
+    <text x="460" y="440" class="mono">/requirements</text>
+  </g>
+  <path d="M782,310 L810,310" stroke="#8b98a9" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Lane 3: Solutioning -->
+  <g>
+    <rect x="812" y="150" width="344" height="320" rx="16" class="lane"/>
+    <rect x="812" y="150" width="344" height="6" rx="3" fill="#e0608c"/>
+    <text x="836" y="190" class="step" fill="#e0608c">3 · SOLUTIONING</text>
+    <text x="836" y="224" class="h">How will it work?</text>
+    <text x="836" y="250" class="q">Design decisions, written down</text>
+    <rect x="836" y="270" width="296" height="36" rx="8" class="art"/><text x="854" y="294" class="item">Architecture</text>
+    <rect x="836" y="314" width="296" height="36" rx="8" class="art"/><text x="854" y="338" class="item">Decisions (ADRs)</text>
+    <rect x="836" y="358" width="296" height="36" rx="8" class="art"/><text x="854" y="382" class="item">System components</text>
+    <text x="836" y="440" class="mono">Workflows → Create Architecture</text>
+  </g>
+  <path d="M1158,310 L1186,310" stroke="#8b98a9" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Lane 4: Implementation -->
+  <g>
+    <rect x="1188" y="150" width="352" height="320" rx="16" class="lane"/>
+    <rect x="1188" y="150" width="352" height="6" rx="3" fill="#4ec96b"/>
+    <text x="1212" y="190" class="step" fill="#4ec96b">4 · IMPLEMENTATION</text>
+    <text x="1212" y="224" class="h">What do we build first?</text>
+    <text x="1212" y="250" class="q">Work sized for one agent run</text>
+    <rect x="1212" y="270" width="304" height="36" rx="8" class="art"/><text x="1230" y="294" class="item">Epics</text>
+    <rect x="1212" y="314" width="304" height="36" rx="8" class="art"/><text x="1230" y="338" class="item">Stories + acceptance criteria</text>
+    <rect x="1212" y="358" width="304" height="36" rx="8" class="art"/><text x="1230" y="382" class="item">Test cases</text>
+    <text x="1212" y="440" class="mono">/epics  /stories  /readiness</text>
+  </g>
+
+  <!-- Hand-off arrow -->
+  <path d="M1364,472 C1364,510 1364,510 1364,540" stroke="#8b98a9" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <text x="1380" y="514" class="label">ready stories go to the board</text>
+
+  <!-- Kanban -->
+  <rect x="60" y="542" width="1480" height="226" rx="16" fill="#121820" stroke="#2b333e" stroke-width="1.5"/>
+  <text x="84" y="574" class="eyebrow">AGENTIC KANBAN · YOUR CODING AGENT DOES THE WORK, YOU APPROVE IT</text>
+
+  <rect x="84" y="592" width="270" height="150" rx="12" class="kcol"/>
+  <text x="102" y="620" class="col" fill="#9aa5b4">Backlog</text>
+  <rect x="102" y="636" width="234" height="40" rx="8" class="kcard"/><text x="118" y="661" class="card">Story waits its turn</text>
+
+  <rect x="372" y="592" width="270" height="150" rx="12" class="kcol"/>
+  <text x="390" y="620" class="col" fill="#3794ff">Ready for Dev</text>
+  <rect x="390" y="636" width="234" height="40" rx="8" class="kcard"/><text x="406" y="661" class="card">Agent claims the story</text>
+
+  <rect x="660" y="592" width="270" height="150" rx="12" class="kcol" stroke="#e3a008"/>
+  <text x="678" y="620" class="col" fill="#e3a008">In Progress</text>
+  <rect x="678" y="636" width="234" height="40" rx="8" fill="#2b2410" stroke="#e3a008" stroke-width="1.2"/>
+  <circle cx="696" cy="656" r="5" fill="#e3a008"/>
+  <text x="710" y="661" class="card">Codes on its own branch</text>
+  <text x="678" y="700" class="card" fill="#9aa5b4">Your tests run after each step</text>
+
+  <rect x="948" y="592" width="270" height="150" rx="12" class="kcol"/>
+  <text x="966" y="620" class="col" fill="#b180d7">Review</text>
+  <rect x="966" y="636" width="234" height="40" rx="8" class="kcard"/><text x="982" y="661" class="card">You read the diff</text>
+
+  <rect x="1236" y="592" width="280" height="150" rx="12" class="kcol"/>
+  <text x="1254" y="620" class="col" fill="#4ec96b">Done</text>
+  <rect x="1254" y="636" width="244" height="40" rx="8" fill="#16301f" stroke="#4ec96b" stroke-width="1.2"/><text x="1270" y="661" class="card">Merged, or opened as a PR</text>
+
+  <path d="M354,656 L370,656" stroke="#8b98a9" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M642,656 L658,656" stroke="#8b98a9" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M930,656 L946,656" stroke="#8b98a9" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M1218,656 L1234,656" stroke="#8b98a9" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Rework loop -->
+  <path d="M1083,742 C1083,766 806,766 806,744" stroke="#e3a008" stroke-width="2" fill="none" stroke-dasharray="6 4" marker-end="url(#arrow-amber)"/>
+  <text x="1083" y="726" text-anchor="middle" class="label">changes requested</text>
+
+  <text x="60" y="806" class="label">Guard rails on by default: agents never run in Restricted Mode, edits stay sandboxed, and spending is capped per story and per day.</text>
+</svg>

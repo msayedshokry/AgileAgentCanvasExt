@@ -1,0 +1,174 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="960" viewBox="0 0 1600 960" font-family="'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif">
+  <title>How Agile Agent Canvas works</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8b98a9"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4ec96b"/>
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#b180d7"/>
+    </marker>
+    <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="1" fill="#1d2430"/>
+    </pattern>
+    <style>
+      .title { font-size: 34px; font-weight: 700; fill: #f0f3f6; }
+      .subtitle { font-size: 18px; fill: #8b98a9; }
+      .eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 2px; fill: #8b98a9; }
+      .h { font-size: 20px; font-weight: 650; fill: #f0f3f6; }
+      .b { font-size: 15px; fill: #b4bfcc; }
+      .mono { font-family: 'Cascadia Code', Consolas, 'SF Mono', monospace; font-size: 14px; fill: #b4bfcc; }
+      .chip { font-size: 14px; fill: #dce3ea; }
+      .label { font-size: 13px; fill: #8b98a9; font-style: italic; }
+      .box { fill: #161b22; stroke: #2b333e; stroke-width: 1.5; }
+      .sub { fill: #1b222c; stroke: #2b333e; stroke-width: 1; }
+      .chipbox { fill: #212a35; stroke: #33404f; stroke-width: 1; }
+      .flow { stroke: #8b98a9; stroke-width: 2; fill: none; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="960" rx="24" fill="#0d1117"/>
+  <rect width="1600" height="960" rx="24" fill="url(#dots)"/>
+
+  <text x="60" y="78" class="title">How Agile Agent Canvas works</text>
+  <text x="60" y="112" class="subtitle">Plan on a visual canvas, let AI draft the documents, then hand finished stories to the coding agent you already use.</text>
+
+  <!-- You -->
+  <g>
+    <rect x="60" y="214" width="210" height="132" rx="16" class="box"/>
+    <circle cx="165" cy="256" r="20" fill="none" stroke="#f0f3f6" stroke-width="2.5"/>
+    <path d="M131,312 a34,26 0 0 1 68,0" fill="none" stroke="#f0f3f6" stroke-width="2.5"/>
+    <text x="165" y="335" text-anchor="middle" class="b">PM · architect · developer</text>
+  </g>
+  <text x="165" y="196" text-anchor="middle" class="eyebrow">YOU</text>
+  <path d="M270,280 L338,280" class="flow" marker-end="url(#arrow)"/>
+
+  <!-- VS Code frame -->
+  <rect x="340" y="150" width="850" height="740" rx="20" fill="#0f141b" stroke="#2f81f7" stroke-width="2" stroke-dasharray="8 6"/>
+  <rect x="362" y="136" width="166" height="28" rx="14" fill="#0d1117" stroke="#2f81f7" stroke-width="1.5"/>
+  <text x="445" y="155" text-anchor="middle" font-size="14" font-weight="700" fill="#58a6ff" letter-spacing="1.5">INSIDE VS CODE</text>
+
+  <!-- Surfaces row -->
+  <text x="366" y="198" class="eyebrow">WHAT YOU SEE</text>
+  <!-- Canvas -->
+  <rect x="366" y="212" width="258" height="160" rx="14" class="box"/>
+  <rect x="366" y="212" width="258" height="5" rx="2.5" fill="#3794ff"/>
+  <text x="386" y="248" class="h">Visual Canvas</text>
+  <text x="386" y="274" class="b">Every artifact is a card,</text>
+  <text x="386" y="294" class="b">linked to what it depends on</text>
+  <rect x="386" y="318" width="50" height="34" rx="6" fill="#b180d7" opacity="0.85"/>
+  <rect x="442" y="318" width="50" height="34" rx="6" fill="#3794ff" opacity="0.85"/>
+  <rect x="498" y="318" width="50" height="34" rx="6" fill="#e0608c" opacity="0.85"/>
+  <rect x="554" y="318" width="50" height="34" rx="6" fill="#4ec96b" opacity="0.85"/>
+
+  <!-- Chat -->
+  <rect x="636" y="212" width="258" height="160" rx="14" class="box"/>
+  <rect x="636" y="212" width="258" height="5" rx="2.5" fill="#b180d7"/>
+  <text x="656" y="248" class="h">AI Chat</text>
+  <text x="656" y="274" class="b">@agileagentcanvas in</text>
+  <text x="656" y="294" class="b">Copilot Chat, with expert roles</text>
+  <rect x="656" y="316" width="218" height="38" rx="8" class="chipbox"/>
+  <text x="672" y="340" class="mono">/vision  /epics  /dev</text>
+
+  <!-- Kanban -->
+  <rect x="906" y="212" width="262" height="160" rx="14" class="box"/>
+  <rect x="906" y="212" width="262" height="5" rx="2.5" fill="#4ec96b"/>
+  <text x="926" y="248" class="h">Agentic Kanban</text>
+  <text x="926" y="274" class="b">Coding agents pick up stories</text>
+  <text x="926" y="294" class="b">and move them to Done</text>
+  <rect x="926" y="318" width="40" height="34" rx="6" class="chipbox"/>
+  <rect x="972" y="318" width="40" height="34" rx="6" class="chipbox"/>
+  <rect x="1018" y="318" width="40" height="34" rx="6" fill="#3a2f12" stroke="#e3a008" stroke-width="1.5"/>
+  <rect x="1064" y="318" width="40" height="34" rx="6" class="chipbox"/>
+  <rect x="1110" y="318" width="40" height="34" rx="6" fill="#16301f" stroke="#4ec96b" stroke-width="1.5"/>
+  <circle cx="1038" cy="335" r="5" fill="#e3a008"/>
+
+  <path d="M765,372 L765,414" class="flow" marker-end="url(#arrow)"/>
+
+  <!-- Core -->
+  <rect x="366" y="416" width="802" height="226" rx="16" fill="#121820" stroke="#2b333e" stroke-width="1.5"/>
+  <text x="388" y="448" class="eyebrow">WHAT DOES THE WORK</text>
+
+  <rect x="388" y="464" width="244" height="158" rx="12" class="sub"/>
+  <text x="406" y="496" class="h">Workflow engine</text>
+  <text x="406" y="522" class="b">Step-by-step BMAD</text>
+  <text x="406" y="542" class="b">workflows: analyst, PM,</text>
+  <text x="406" y="562" class="b">architect, dev and QA</text>
+  <text x="406" y="582" class="b">roles, with checkpoints</text>
+
+  <rect x="645" y="464" width="244" height="158" rx="12" class="sub"/>
+  <text x="663" y="496" class="h">Artifact store</text>
+  <text x="663" y="522" class="b">Vision, PRD, architecture,</text>
+  <text x="663" y="542" class="b">epics, stories and tests,</text>
+  <text x="663" y="562" class="b">checked against schemas</text>
+  <text x="663" y="582" class="b">and saved as you go</text>
+
+  <rect x="902" y="464" width="244" height="158" rx="12" class="sub"/>
+  <text x="920" y="496" class="h">Agent runner</text>
+  <text x="920" y="522" class="b">One git branch per card</text>
+  <text x="920" y="542" class="b">Runs your tests each step</text>
+  <text x="920" y="562" class="b">Spend caps per story/day</text>
+  <text x="920" y="582" class="b">You approve every merge</text>
+
+  <path d="M765,642 L765,684" class="flow" marker-end="url(#arrow)"/>
+  <text x="778" y="668" class="label">reads &amp; writes</text>
+
+  <!-- Repo -->
+  <rect x="366" y="686" width="802" height="180" rx="16" fill="#121820" stroke="#2b333e" stroke-width="1.5"/>
+  <text x="388" y="718" class="eyebrow">YOUR REPOSITORY · PLAIN FILES YOU REVIEW IN GIT</text>
+  <rect x="388" y="734" width="372" height="112" rx="12" class="sub"/>
+  <text x="406" y="762" class="mono" fill="#58a6ff">.agileagentcanvas-context/</text>
+  <text x="406" y="786" class="mono">├─ vision.json</text>
+  <text x="406" y="806" class="mono">├─ planning/prd.json · epics.json</text>
+  <text x="406" y="826" class="mono">└─ solutioning/architecture.json</text>
+  <rect x="774" y="734" width="372" height="112" rx="12" class="sub"/>
+  <text x="792" y="764" class="h">Code changes</text>
+  <text x="792" y="790" class="b">Story branch → tests pass →</text>
+  <text x="792" y="810" class="b">merge or pull request</text>
+  <text x="792" y="830" class="b">after your approval</text>
+
+  <!-- Right column: AI models -->
+  <rect x="1238" y="212" width="302" height="186" rx="16" class="box"/>
+  <rect x="1238" y="212" width="302" height="5" rx="2.5" fill="#b180d7"/>
+  <text x="1258" y="248" class="h">AI model you choose</text>
+  <g class="chip">
+    <rect x="1258" y="266" width="128" height="32" rx="16" class="chipbox"/><text x="1322" y="287" text-anchor="middle">GitHub Copilot</text>
+    <rect x="1394" y="266" width="128" height="32" rx="16" class="chipbox"/><text x="1458" y="287" text-anchor="middle">OpenAI</text>
+    <rect x="1258" y="306" width="128" height="32" rx="16" class="chipbox"/><text x="1322" y="327" text-anchor="middle">Anthropic</text>
+    <rect x="1394" y="306" width="128" height="32" rx="16" class="chipbox"/><text x="1458" y="327" text-anchor="middle">Gemini</text>
+    <rect x="1258" y="346" width="128" height="32" rx="16" class="chipbox"/><text x="1322" y="367" text-anchor="middle">Ollama (local)</text>
+  </g>
+  <path d="M1168,470 C1212,470 1200,372 1236,372" stroke="#b180d7" stroke-width="2" fill="none" marker-end="url(#arrow-purple)"/>
+  <text x="1196" y="494" class="label">drafts</text>
+
+  <!-- Right column: coding agents -->
+  <rect x="1238" y="430" width="302" height="226" rx="16" class="box"/>
+  <rect x="1238" y="430" width="302" height="5" rx="2.5" fill="#4ec96b"/>
+  <text x="1258" y="466" class="h">Coding agent you have</text>
+  <g class="chip">
+    <rect x="1258" y="484" width="128" height="32" rx="16" class="chipbox"/><text x="1322" y="505" text-anchor="middle">Claude Code</text>
+    <rect x="1394" y="484" width="128" height="32" rx="16" class="chipbox"/><text x="1458" y="505" text-anchor="middle">Codex CLI</text>
+    <rect x="1258" y="524" width="128" height="32" rx="16" class="chipbox"/><text x="1322" y="545" text-anchor="middle">Gemini CLI</text>
+    <rect x="1394" y="524" width="128" height="32" rx="16" class="chipbox"/><text x="1458" y="545" text-anchor="middle">Copilot CLI</text>
+    <rect x="1258" y="564" width="128" height="32" rx="16" class="chipbox"/><text x="1322" y="585" text-anchor="middle">Cursor CLI</text>
+    <rect x="1394" y="564" width="128" height="32" rx="16" class="chipbox"/><text x="1458" y="585" text-anchor="middle">OpenCode</text>
+    <rect x="1258" y="604" width="128" height="32" rx="16" class="chipbox"/><text x="1322" y="625" text-anchor="middle">Pi</text>
+    <rect x="1394" y="604" width="128" height="32" rx="16" class="chipbox"/><text x="1458" y="625" text-anchor="middle">Aider</text>
+  </g>
+  <path d="M1146,570 C1190,570 1196,570 1236,570" stroke="#4ec96b" stroke-width="2" fill="none" marker-end="url(#arrow-green)"/>
+  <text x="1197" y="560" class="label">builds</text>
+
+  <!-- Right column: optional integrations -->
+  <rect x="1238" y="688" width="302" height="178" rx="16" fill="#161b22" stroke="#2b333e" stroke-width="1.5" stroke-dasharray="6 5"/>
+  <text x="1258" y="722" class="h">Optional extras</text>
+  <text x="1258" y="752" class="b">Jira Cloud sync</text>
+  <text x="1258" y="778" class="b">GitHub Issues sync</text>
+  <text x="1258" y="804" class="b">graphify code knowledge graph</text>
+  <text x="1258" y="830" class="b">Install the same workflows into</text>
+  <text x="1258" y="850" class="b">Claude Code, Cursor, OpenCode…</text>
+  <path d="M1168,776 L1236,776" stroke="#8b98a9" stroke-width="2" stroke-dasharray="5 5" fill="none" marker-end="url(#arrow)"/>
+
+  <text x="60" y="930" class="label">Solid arrows: what happens on every run · Dashed: optional, off until you set it up</text>
+</svg>
