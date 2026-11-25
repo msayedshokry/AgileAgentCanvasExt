@@ -29,9 +29,11 @@ const artifacts: Artifact[] = [
 /** Mirrors App.tsx: per-mode view slots + echo suppression. */
 function Harness({ onReport }: { onReport: (mode: LayoutMode, v: View) => void }) {
   const [mode, setMode] = useState<LayoutMode>('lanes');
-  const [byMode, setByMode] = useState<Record<LayoutMode, View>>({
-    lanes: DEFAULT_VIEW, mindmap: DEFAULT_VIEW, corpus3d: DEFAULT_VIEW,
-  });
+  // Distinct objects per slot, like App's makeDefaultView(): a shared object
+  // would hide restore-on-mode-switch bugs (the prop identity never changes).
+  const [byMode, setByMode] = useState<Record<LayoutMode, View>>(() => ({
+    lanes: { ...DEFAULT_VIEW }, mindmap: { ...DEFAULT_VIEW }, corpus3d: { ...DEFAULT_VIEW },
+  }));
   const handleViewChange = (m: LayoutMode, zoom: number, pan: View['pan']) => {
     onReport(m, { zoom, pan });
     const slot = byMode[m];

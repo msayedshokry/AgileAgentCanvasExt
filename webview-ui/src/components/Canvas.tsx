@@ -249,6 +249,10 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
       return;
     }
     if (!initialCanvasView) return;
+    // A never-customised mindmap slot holds the default view; auto-fit owns
+    // that case. Restoring it here would snap the fitted tree back to
+    // zoom 1 at the origin right after the fit ran.
+    if (layoutMode === 'mindmap' && !hasCustomMindmapView) return;
     if (zoom === initialCanvasView.zoom &&
         pan.x === initialCanvasView.pan.x &&
         pan.y === initialCanvasView.pan.y) return;
@@ -1770,16 +1774,13 @@ export function Canvas({ artifacts, selectedId, onSelect, onUpdate, onToggleExpa
     return counts;
   }, [displayArtifacts, laneLayout.positions, implLaneWidth]);
 
-  // Auto fit-to-view when entering mindmap mode.
-  // Runs exactly ONCE per component mount — the first time the user
-  // enters mindmap mode.  On subsequent re-entries (e.g. cycling
-  // lanes → mindmap → corpus3d → lanes → mindmap) the restore effect
-  // (initialCanvasView prop) handles bringing back the saved view so
-  // the user's manual zoom/pan is never lost to an auto-fit reset.
-  const hasAutoFittedRef = useRef(hasCustomMindmapView ?? false);
+  // Auto fit-to-view in mindmap mode while the user has no saved mindmap
+  // view. The fitted view is reported up, which makes the slot custom, so
+  // this runs once; afterwards re-entering mindmap restores the saved view
+  // and the user's own zoom/pan is never overwritten.
   useEffect(() => {
     if (layoutMode !== 'mindmap') return;
-    if (hasAutoFittedRef.current) return;
+    if (hasCustomMindmapView) return;
     if (finalArtifacts.length === 0) return;
     const el = canvasRef.current;
     if (!el) return;
