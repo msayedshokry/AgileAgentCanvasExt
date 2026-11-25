@@ -11,7 +11,8 @@
       "retrospective",
       "epic-1",
       "core-platform",
-      "lessons-learned"
+      "lessons-learned",
+      "sprint-1"
     ],
     "author": "Sarah Chen",
     "projectName": "TaskFlow Pro"
@@ -20,16 +21,14 @@
     "epicReference": {
       "epicId": "EPIC-1",
       "title": "Core Task Platform",
-      "goal": "Build the foundational task management platform with authentication, task CRUD, and project organization",
+      "goal": "Build the foundational task management system with CRUD operations, real-time collaboration, and dependency tracking — the backbone that all other epics build upon.",
       "totalStories": 3,
-      "startDate": "2026-02-01",
-      "completionDate": "2026-03-12",
-      "durationDays": 40
+      "startDate": "2026-02-01"
     },
     "summary": {
       "overallSuccess": "met-expectations",
       "keyAchievements": [
-        "Authentication system passed security audit with zero critical findings",
+        "Task API passed security review with zero critical findings",
         "Task CRUD API performance far exceeded targets (87ms p95 vs 200ms target)",
         "Clean architecture allows easy extension for upcoming AI integration",
         "Design system established and documented in Storybook for team consistency"
@@ -37,10 +36,10 @@
       "mainChallenges": [
         "Concurrent task reordering (drag-and-drop) required 2 iterations to get right",
         "CI/CD Docker Hub rate limiting caused delays in Sprints 1 and 2",
-        "Initial database schema needed revision after discovering label management requirements"
+        "Initial task data model needed revision after discovering dependency-link requirements"
       ],
       "velocityAnalysis": {
-        "estimatedEffort": "42 story points across 3 stories",
+        "estimatedEffort": "42 story points across Sprint 1 (S-1.1, S-1.2)",
         "actualEffort": "47 story points",
         "variance": "+12% over estimate",
         "varianceReason": "S-1.2 drag-and-drop concurrent handling was more complex than estimated, adding ~5 points"
@@ -65,9 +64,9 @@
     ],
     "whatDidNotGoWell": [
       {
-        "item": "Database schema migration required mid-sprint",
-        "impact": "Lost 1.5 days on migration and data transformation for the labels feature",
-        "rootCause": "Labels requirement was underspecified in story - discovered multi-project labels needed a join table",
+        "item": "Task data model migration required mid-sprint",
+        "impact": "Lost 1.5 days on migration and data transformation for task dependency links",
+        "rootCause": "Dependency links were underspecified in the story - discovered task-to-task links needed a join table",
         "recommendation": "Require database schema review as part of story grooming for data-model changes"
       },
       {
@@ -77,8 +76,8 @@
         "recommendation": "Migrate to ECR image caching (already in progress, scheduled for completion March 18)"
       },
       {
-        "item": "E2E tests for OAuth flows were written too late",
-        "impact": "OAuth error handling bugs found in week 4 instead of week 2",
+        "item": "E2E tests for board drag-and-drop were written too late",
+        "impact": "Concurrent reordering bugs found in week 4 instead of week 2",
         "rootCause": "E2E test writing was deferred to the end of the story instead of written alongside feature code",
         "recommendation": "Write E2E tests concurrently with feature implementation, not after"
       }
@@ -119,30 +118,20 @@
     "storyAnalysis": [
       {
         "storyId": "S-1.1",
-        "storyTitle": "User Authentication & Authorization",
+        "storyTitle": "Task CRUD API & Data Model",
         "outcome": "smooth",
-        "notes": "Well-specified story with clear acceptance criteria. Security audit pass on first attempt.",
+        "notes": "Well-specified story with clear acceptance criteria. API met its p95 latency target on the first pass.",
         "timeSpent": "10 days (on estimate)",
         "blockers": []
       },
       {
         "storyId": "S-1.2",
-        "storyTitle": "Task CRUD & Real-time Sync",
+        "storyTitle": "Real-time Task Board UI",
         "outcome": "challenging",
-        "notes": "Core CRUD was straightforward but concurrent drag-and-drop reordering required significant rework.",
-        "timeSpent": "18 days (3 days over estimate)",
+        "notes": "Board rendering was straightforward but concurrent drag-and-drop reordering required significant rework. Still in progress at sprint end.",
+        "timeSpent": "18 days so far (3 days over estimate)",
         "blockers": [
           "Concurrent position update race condition required architectural rethink"
-        ]
-      },
-      {
-        "storyId": "S-1.3",
-        "storyTitle": "Project Organization & Labels",
-        "outcome": "reworked",
-        "notes": "Required mid-sprint database schema migration for multi-project labels. Feature works well after rework.",
-        "timeSpent": "12 days (2 days over estimate)",
-        "blockers": [
-          "Database schema change mid-sprint"
         ]
       }
     ],

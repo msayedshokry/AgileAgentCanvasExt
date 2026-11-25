@@ -18,10 +18,10 @@
   },
   "content": {
     "summary": {
-      "scope": "Sprint 1 test generation covering EPIC-1 Core Task Platform (S-1.1 Auth, S-1.2 Task CRUD)",
+      "scope": "Sprint 1 test generation covering EPIC-1 Core Task Platform (S-1.1 Task CRUD API, S-1.2 Real-time Task Board UI)",
       "targetFeatures": [
-        "User Authentication & Authorization",
-        "Task CRUD & Real-time Sync"
+        "Task CRUD API & Data Model",
+        "Real-time Task Board UI"
       ],
       "testingApproach": "Layered testing with unit, integration, and E2E coverage across API and web packages",
       "frameworkUsed": "Vitest + Playwright",
@@ -147,16 +147,16 @@
         "stories": [
           {
             "storyId": "S-1.1",
-            "storyTitle": "User Authentication & Authorization",
+            "storyTitle": "Task CRUD API & Data Model",
             "totalTests": 142,
             "passed": 134,
             "failed": 8,
             "passRate": 94.4,
-            "notes": "Auth module well tested. Failures are edge cases in OAuth error handling and session timeout."
+            "notes": "API module well tested. Failures are edge cases in authenticated-endpoint error handling and session timeout."
           },
           {
             "storyId": "S-1.2",
-            "storyTitle": "Task CRUD & Real-time Sync",
+            "storyTitle": "Real-time Task Board UI",
             "totalTests": 204,
             "passed": 192,
             "failed": 4,
@@ -247,6 +247,6 @@
         "effort": "2 days"
       }
     ],
-    "nextSprintTestPlan": "Sprint 2 will cover S-1.3 (Project Organization) and S-2.1 (AI Priority Scoring). Key focus areas: project CRUD operations, label management, and initial AI model inference accuracy testing. Target: maintain >90% pass rate and >80% coverage."
+    "nextSprintTestPlan": "Sprint 2 will cover S-1.3 (Dependency Graph Visualization) and S-2.1 (AI Priority Scoring). Key focus areas: dependency graph rendering, cycle detection, and initial AI model inference accuracy testing. Target: maintain >90% pass rate and >80% coverage."
   }
 }
