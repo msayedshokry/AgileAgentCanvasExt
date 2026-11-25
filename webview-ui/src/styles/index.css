@@ -2896,6 +2896,13 @@ body.ac-force-dark {
   color: var(--vscode-descriptionForeground, #8b8b8b);
 }
 
+/* The suggested fix (e.g. the allowed values) wraps so it is never cut off. */
+.schema-issue-fix {
+  display: block;
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
 .schema-issue-more {
   margin-left: 6px;
   color: var(--vscode-descriptionForeground, #8b8b8b);

@@ -2043,7 +2043,7 @@ describe('Cluster D-3 commit 3 — post-harvest regression guards', () => {
   // ─────────────────────────────────────────────────────────────────────
   describe('C — 5 spot-check HARVEST anchors (SHAPE only — no in-process contrast math)', () => {
     // SHAPE-only lock: each anchor must (1) appear in HARVEST with the
-    // exact (relPath, lineNum, key) tuple, AND (2) carry an exact value
+    // (relPath, key) at the line its marker locates, AND (2) carry an exact value
     // matching the contract. Contrast math lives ONLY in
     // scripts/a11y-surface-sweep.mjs — mirroring the resolver in-test
     // creates a duplication hazard (regex sync between audit-script and
@@ -2051,62 +2051,77 @@ describe('Cluster D-3 commit 3 — post-harvest regression guards', () => {
     // Cross-theme contrast coverage remains in the audit-script itself
     // (it is the source of truth) — these SHAPE locks assert the
     // structural contract that future contributors must respect.
+    // Anchors are located by a marker string that is unique in the file,
+    // not by line number: the harvested row is the first one with this key
+    // at or within ANCHOR_SPAN lines after the marker. Editing lines above
+    // the anchor (a new import) no longer breaks the lock; moving or
+    // rewriting the anchored style still does.
     interface AnchorContract {
       relPath: string;
-      lineno: number;
+      /** Text that appears exactly once in the file, on or just above the anchored style. */
+      marker: string;
       key: string;
       rail: 'fg' | 'bg';
       expectedValueRegex: RegExp;
       note: string;
     }
     const ANCHOR_CONTRACTS: AnchorContract[] = [
-      // App.tsx:L60 — error-boundary-fallback color rail.
-      // (shifted from L56 by the IdeasDrawer import, then L57 → L59 by the product-tour imports,
-      // then L59 → L60 by the SchemaIssueList import)
-      { relPath: 'App.tsx', lineno: 60, key: 'color', rail: 'fg',
+      // App.tsx — error-boundary-fallback color rail.
+      { relPath: 'App.tsx', marker: 'className="error-boundary-fallback"', key: 'color', rail: 'fg',
         expectedValueRegex: /var\(--vscode-errorForeground/,
         note: 'theme-aware red error text (error-boundary-fallback)' },
-      // AgenticKanbanApp.tsx:L950 — input field bg rail.
-      // (shifted from L935 by the harnessResults state + message handling)
-      { relPath: 'agentic-kanban/AgenticKanbanApp.tsx', lineno: 950, key: 'background', rail: 'bg',
+      // AgenticKanbanApp.tsx — filter input field bg rail.
+      { relPath: 'agentic-kanban/AgenticKanbanApp.tsx', marker: 'aria-label="Filter cards by title, epic, or status"', key: 'background', rail: 'bg',
         expectedValueRegex: /var\(--vscode-input-background/,
         note: 'theme-aware input field background' },
       // bmm-renderers.tsx:L95 — BMAD-method renderer badge bg.
             // (Anchor tuple for (Corpus3DView.tsx, L370, borderTopColor) REMOVED in Cluster D-3 #1.a -- inline style migrated to className ref `.corpus-3d-spinner`; the SHAPE-spinner-borderTop-tokenized + reversal-lock tests in Cluster-D3-1a own the regression-tripwire going forward.) --
-      // AgenticKanbanApp.tsx:L963 — toolbar toggle button bg.
+      // AgenticKanbanApp.tsx — clear-filter button bg.
       // Currently `'transparent'` (HARDCODED literal). The contract also
       // accepts `var(--vscode-*)` theme tokens so a future migration to
       // theme-aware chrome passes without breaking this lock. Pure HARDCODED
       // hex (e.g. `#000`, `#fff`) does NOT match — the audit matrix
       // surfaces that as a regression candidate for follow-up tokenization.
-      // (shifted from L948 by the harnessResults state + message handling)
-      { relPath: 'agentic-kanban/AgenticKanbanApp.tsx', lineno: 963, key: 'background', rail: 'bg',
+      { relPath: 'agentic-kanban/AgenticKanbanApp.tsx', marker: 'onClick={handleClearSearch}', key: 'background', rail: 'bg',
         expectedValueRegex: /^transparent$|^var\(--vscode-/,
         note: 'transparent (current) or theme token (future migration); HARDCODED hex swap fails this guard' },
     ];
 
+    const ANCHOR_SPAN = 5;
+    /** 1-based lines of `relPath` that contain `marker`. */
+    function markerLines(relPath: string, marker: string): number[] {
+      const lines = readFileSync(path.join(WEBVIEW_SRC_DIR, relPath), 'utf-8').split(/\r?\n/);
+      return lines.flatMap((line, i) => (line.includes(marker) ? [i + 1] : []));
+    }
+    function findAnchorRow(a: AnchorContract) {
+      const [at] = markerLines(a.relPath, a.marker);
+      return HARVEST.rows
+        .filter((r) => r.relPath === a.relPath && r.key === a.key && r.lineNum >= at && r.lineNum <= at + ANCHOR_SPAN)
+        .sort((x, y) => x.lineNum - y.lineNum)[0];
+    }
+
     for (const a of ANCHOR_CONTRACTS) {
-      describe(`Anchor ${a.relPath}:L${a.lineno} ${a.key} (${a.note})`, () => {
-        it('HARVEST lookup: introspector surfaces this specific (relPath, lineNum, key) tuple', () => {
-          const hits = HARVEST.rows.filter(
-            (r) => r.relPath === a.relPath && r.lineNum === a.lineno && r.key === a.key,
-          );
+      describe(`Anchor ${a.relPath} ${a.key} near ${a.marker} (${a.note})`, () => {
+        it('marker locates exactly one line in the source', () => {
           expect(
-            hits.length,
-            `${a.relPath}:L${a.lineno} ${a.key} must appear in HARVEST — if absent, the introspector's regex went too narrow or the source moved`,
-          ).toBeGreaterThanOrEqual(1);
-          if (hits.length > 0) {
-            expect(hits[0].rail, `row must be on the ${a.rail} rail`).toBe(a.rail);
-          }
+            markerLines(a.relPath, a.marker).length,
+            `marker ${a.marker} must appear exactly once in ${a.relPath} — pick a more specific marker if it now repeats`,
+          ).toBe(1);
+        });
+        it('HARVEST lookup: introspector surfaces a (relPath, key) row at the marker', () => {
+          const row = findAnchorRow(a);
+          expect(
+            row,
+            `${a.relPath} ${a.key} must appear in HARVEST within ${ANCHOR_SPAN} lines of ${a.marker} — if absent, the introspector's regex went too narrow or the style moved away from its marker`,
+          ).toBeTruthy();
+          expect(row!.rail, `row must be on the ${a.rail} rail`).toBe(a.rail);
         });
         it('value contract: harvested CSS expression matches the documented pattern', () => {
-          const row = HARVEST.rows.find(
-            (r) => r.relPath === a.relPath && r.lineNum === a.lineno && r.key === a.key,
-          );
+          const row = findAnchorRow(a);
           expect(row, 'precondition: HARVEST lookup must succeed (see sibling test)').toBeTruthy();
           expect(
             row!.value,
-            `${a.relPath}:L${a.lineno} ${a.key} value must match expected pattern — a future rewrite that swaps the expression (e.g. HARDCODED hex replacement) trips this guard`,
+            `${a.relPath} ${a.key} near ${a.marker} must match expected pattern — a future rewrite that swaps the expression (e.g. HARDCODED hex replacement) trips this guard`,
           ).toMatch(a.expectedValueRegex);
         });
       });
