@@ -246,6 +246,20 @@ Feature: AgileAgentCanvasViewProvider
     And I send launchWorkflow message with trigger "lets create a product brief"
     Then canvas launchBmmWorkflow should have been called
 
+  Scenario: Launches the bundled skill sent by the sprint health strip
+    Given the build does not exist
+    And the extension root is this repository
+    When I resolve the webview view
+    And I send launchWorkflow message for skill "aac-dev-story" with trigger "aac-dev-story for story 1-2-real-time-task-board-ui"
+    Then canvas launchBmmWorkflow should have been called with trigger "aac-dev-story for story 1-2-real-time-task-board-ui" and the "aac-dev-story" skill file
+
+  Scenario: Ignores a skill id that is not a plain bundled skill name
+    Given the build does not exist
+    And the extension root is this repository
+    When I resolve the webview view
+    And I send launchWorkflow message for skill "../aac-dev-story" with trigger "aac-dev-story"
+    Then canvas launchBmmWorkflow should have been called without a skill file
+
   Scenario: Handles launchWorkflow message with missing triggerPhrase without error
     Given the build does not exist
     When I resolve the webview view

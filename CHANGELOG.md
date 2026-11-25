@@ -83,6 +83,7 @@ Every epics file with full epics inline, the canvas's normal format, failed stri
 - An acceptance criterion can have both Given/When/Then and `criterion` text, and a story's user story can be both structured and formatted. Both used to fail.
 - The validator always explains a failure instead of reporting invalid with no errors. It reports the concrete problem, such as an epic status that isn't allowed, without the shape-matching messages around it.
 - An epic status of `partial` is read as `in-progress`. Before, repair turned it into `draft`, marking half-done epics as not started.
+- Repair no longer replaces a status (or any listed value) it can't match with the first allowed value. It fixes near misses like "In Progress" and leaves anything else for validation to report.
 - A new test checks every sample project artifact against its schema.
 
 ## 0.6.0

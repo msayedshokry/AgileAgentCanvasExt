@@ -221,11 +221,16 @@ export function repairDataWithSchema(
                             }
                         }
                     }
-                    // Fall back to Levenshtein if still invalid
+                    // Fall back to a close match if still invalid. When nothing
+                    // is close, leave the value for validation to report:
+                    // guessing (e.g. "partial" → "draft") silently rewrites
+                    // meaning.
                     if (!node.enum.includes(value)) {
                         const best = fuzzyMatchEnum(String(value), node.enum);
-                        log(path, `coerced enum "${value}" → "${best}"`);
-                        value = best;
+                        if (best !== undefined) {
+                            log(path, `coerced enum "${value}" → "${best}"`);
+                            value = best;
+                        }
                     }
                 }
             }
@@ -461,11 +466,11 @@ function describeDefault(node: SchemaNode): string {
  * (lowercased, stripped of dashes/underscores) comparison with Levenshtein
  * distance as tie-breaker.
  *
- * Returns the best match or the first enum value if nothing is close.
+ * Returns the best match, or undefined when nothing is close.
  */
-function fuzzyMatchEnum(value: string, candidates: any[]): any {
-    const strCandidates = candidates.filter(c => typeof c === 'string');
-    if (strCandidates.length === 0) return candidates[0];
+function fuzzyMatchEnum(value: string, candidates: unknown[]): string | undefined {
+    const strCandidates = candidates.filter((c): c is string => typeof c === 'string');
+    if (strCandidates.length === 0) return undefined;
 
     const norm = (s: string) => s.toLowerCase().replace(/[-_\s]/g, '');
     const nValue = norm(value);
@@ -493,10 +498,9 @@ function fuzzyMatchEnum(value: string, candidates: any[]): any {
         }
     }
 
-    // If Levenshtein distance is too large (>50% of target length),
-    // fall back to the schema default or first enum value
+    // Too far from every candidate (>50% of the longer string): no match.
     if (bestDist > Math.max(nValue.length, norm(best).length) * 0.5) {
-        return strCandidates[0];
+        return undefined;
     }
 
     return best;

@@ -19,6 +19,7 @@ let onDidReceiveMessageHandler: ((msg: any) => void) | null = null;
 let executeCommandCalls: string[] = [];
 let elicitArtifactWithMethodCalls: number = 0;
 let launchBmmWorkflowCalls: number = 0;
+let launchBmmWorkflowArgs: { trigger: string; workflowFilePath?: string } | null = null;
 let updateArtifactCalls: number = 0;
 let buildExists = false;
 let lastError: Error | null = null;
@@ -74,8 +75,9 @@ function buildModules(world: BmadWorld) {
     startDevelopment: async () => {},
     loadElicitationMethods: (_extensionUri: any) => [],
     loadBmmWorkflows: (_workspaceRoot: string) => [],
-    launchBmmWorkflow: async (_trigger: string) => {
+    launchBmmWorkflow: async (trigger: string, _store?: unknown, workflowFilePath?: string) => {
       launchBmmWorkflowCalls++;
+      launchBmmWorkflowArgs = { trigger, workflowFilePath };
     }
   };
 
@@ -257,6 +259,7 @@ Given('a fresh canvas view provider', function(this: BmadWorld) {
   executeCommandCalls = [];
   elicitArtifactWithMethodCalls = 0;
   launchBmmWorkflowCalls = 0;
+  launchBmmWorkflowArgs = null;
   updateArtifactCalls = 0;
   buildExists = false;
   lastError = null;
@@ -660,6 +663,40 @@ When('I send launchWorkflow message without trigger phrase', async function(this
   } catch (e: any) {
     lastError = e;
   }
+});
+
+// The sprint health strip's "Next" button sends a bundled skill id; the
+// handler must resolve it to the real SKILL.md shipped with the extension.
+Given('the extension root is this repository', function(this: BmadWorld) {
+  const path = require('path') as typeof import('path');
+  extensionUriMock = this.vscode.Uri.file(path.resolve(__dirname, '..', '..'));
+  canvasProvider = new canvasModule.AgileAgentCanvasViewProvider(extensionUriMock, canvasStore);
+});
+
+When('I send launchWorkflow message for skill {string} with trigger {string}', async function(this: BmadWorld, skillId: string, trigger: string) {
+  assert.ok(onDidReceiveMessageHandler, 'Message handler not registered');
+  launchBmmWorkflowCalls = 0;
+  launchBmmWorkflowArgs = null;
+  try {
+    await onDidReceiveMessageHandler({ type: 'launchWorkflow', workflow: { triggerPhrase: trigger, skillId } });
+    lastError = null;
+  } catch (e: any) {
+    lastError = e;
+  }
+});
+
+Then('canvas launchBmmWorkflow should have been called with trigger {string} and the {string} skill file', function(this: BmadWorld, trigger: string, skillId: string) {
+  assert.ok(launchBmmWorkflowArgs, 'Expected launchBmmWorkflow to have been called');
+  assert.strictEqual(launchBmmWorkflowArgs.trigger, trigger,
+    `Expected trigger "${trigger}", got "${launchBmmWorkflowArgs.trigger}"`);
+  const file = (launchBmmWorkflowArgs.workflowFilePath ?? '').replace(/\\/g, '/');
+  assert.ok(file.endsWith(`resources/_aac/skills/${skillId}/SKILL.md`), `Unexpected skill file: ${file || '(none)'}`);
+});
+
+Then('canvas launchBmmWorkflow should have been called without a skill file', function(this: BmadWorld) {
+  assert.ok(launchBmmWorkflowArgs, 'Expected launchBmmWorkflow to have been called');
+  assert.strictEqual(launchBmmWorkflowArgs.workflowFilePath, undefined,
+    `Expected no skill file, got "${launchBmmWorkflowArgs.workflowFilePath}"`);
 });
 
 Then('canvas launchBmmWorkflow should have been called', function(this: BmadWorld) {
