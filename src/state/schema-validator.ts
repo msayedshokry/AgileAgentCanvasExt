@@ -964,6 +964,15 @@ export class SchemaValidator {
             }
         }
 
+        // Never report "invalid" with nothing to show: if only oneOf errors
+        // were raised (and skipped above), surface them.
+        if (result.length === 0 && errors.length > 0) {
+            for (const err of errors) {
+                const errAny = err as unknown as { instancePath?: string };
+                result.push(`${errAny.instancePath || err.dataPath || '(root)'}: ${err.message || 'unknown error'}`);
+            }
+        }
+
         // Cap at 10 errors to avoid overwhelming the LLM
         if (result.length > 10) {
             const total = result.length;

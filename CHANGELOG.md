@@ -50,6 +50,14 @@ Many bundled skills referenced files that did not exist, so parts of them silent
 - Board runs resolve skill paths, the storytelling prompt names the right agent, skill manifests share one name, and manifest validation no longer crashes on Windows consoles.
 - Removed an unused duplicate copy of the Test Architect content (684 files). Added regression tests so these paths cannot break silently again.
 
+### Fixed: Epics files failed strict schema validation
+
+Every epics file with full epics inline, the canvas's normal format, failed strict schema validation, and the validator gave no reason.
+
+- The epics schema now accepts an epic that also fits the lightweight reference shape.
+- The validator always explains a failure instead of reporting invalid with no errors.
+- A new test checks every sample project artifact against its schema.
+
 ## 0.6.0
 
 The Agentic Kanban now runs on whichever coding agent you already have installed, with safe defaults for any repository. Runs stop cleanly, survive a window reload, and tell you why when an agent fails.

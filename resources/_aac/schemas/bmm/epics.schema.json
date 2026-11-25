@@ -315,7 +315,7 @@
           "type": "array",
           "description": "Complete list of epics with full detail",
           "items": {
-            "oneOf": [
+            "anyOf": [
               {
                 "type": "object",
                 "description": "Lightweight manifest reference to a standalone epic file (reference architecture)",
