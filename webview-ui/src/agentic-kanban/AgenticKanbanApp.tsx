@@ -10,12 +10,16 @@ import { LiveTerminalStrip } from './LiveTerminalStrip';
 import { AgenticDetailPanel } from './AgenticDetailPanel';
 import { ContextMenu } from './ContextMenu';
 import { useEvent } from './useEvent';
-import { AutonomyBar, type SchedulerStateMessage, type BudgetStatus, type ProposedGoal, type SystemicIssue } from './AutonomyBar';
+import { AutonomyBar, buildSystemInboxItems, type SchedulerStateMessage, type BudgetStatus, type ProposedGoal, type SystemicIssue } from './AutonomyBar';
 import { TracePanel } from './TracePanel';
 import { DiffPanel, type GitDiffMessage } from './DiffPanel';
 import { VisualPlanSections } from '../visual-plan/VisualPlanSections';
 import type { VisualPlan } from '../visual-plan/types';
-import { ApprovalBanner, type ApprovalRequest } from './ApprovalBanner';
+import type { ApprovalRequest } from './ApprovalBanner';
+import { Inbox } from './Inbox';
+import { buildInboxEntries, type InboxItem } from './inbox-model';
+import { AgentEditor } from './AgentEditor';
+import { assigneeFor, parseTeamMessage, EMPTY_TEAM_VIEW, type AgentTeamView } from './agent-team-view';
 import { GoalDecomposerModal } from './GoalDecomposerModal';
 import { AgentStatusBar } from './AgentStatusBar';
 import type { TraceBreakdownMessage } from '../types';
@@ -116,6 +120,11 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
   // Keyed by story id; merged into displayItems so the KanbanCard badge
   // (🔗/⛔ Blocked by N) stays in sync with the live dependency graph.
   const [depBadges, setDepBadges] = useState<Map<string, DependencyBadge>>(() => new Map());
+  // Named agents and card assignments (agent-team.json), pushed by the extension.
+  const [team, setTeam] = useState<AgentTeamView>(EMPTY_TEAM_VIEW);
+  // Latest output line per running card ("what is the agent doing now").
+  const [agentEditorOpen, setAgentEditorOpen] = useState(false);
+  const [progressById, setProgressById] = useState<Map<string, string>>(() => new Map());
   // Latest harness policy results per card, pushed by the extension after
   // every evaluation. Drives the card's "Policy failed" badge and the detail
   // panel's policy list.
@@ -141,8 +150,10 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
   // ── Approval checkpoint (P1 #5) ────────────────────────────────────────
   // When the orchestrator hits a blocking harness failure and the user has
   // opted into approval checkpoints, it pauses and broadcasts an approval
-  // request. The banner shows Approve/Deny buttons. Null = no pending request.
+  // request, shown at the top of the Inbox. Null = no pending request.
   const [approvalRequest, setApprovalRequest] = useState<ApprovalRequest | null>(null);
+  // Everything else waiting on the user, from the extension's needs-you tracker.
+  const [inboxItems, setInboxItems] = useState<InboxItem[]>([]);
 
   // ── Imperative refs (NOT state mirrors) ──────────────────────────────────
   // These track backend IPC bookkeeping, not React state. They survive
@@ -237,9 +248,16 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
         break;
       }
       case 'goalReadyForReview': {
+        // Agent proposals wait in the Inbox; only a goal you typed opens the review.
+        if ((message.goal as ProposedGoal)?.source) break;
         setPendingGoal(message.goal as ProposedGoal);
         setGoalReviewOpen(true);
         setToast({ message: 'Goal decomposed — review the proposed stories', type: 'info' });
+        break;
+      }
+      case 'kanban:openProposalReview': {
+        setPendingGoal(message.goal as ProposedGoal);
+        setGoalReviewOpen(true);
         break;
       }
       case 'circuitStatus': {
@@ -369,6 +387,21 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
         setTerminalInteractive(!!message.supportsInput);
         break;
       }
+      case 'kanban:progress': {
+        if (typeof message.artifactId === 'string' && typeof message.line === 'string') {
+          setProgressById(prev => new Map(prev).set(message.artifactId, message.line));
+        }
+        break;
+      }
+      case 'kanban:agentTeam': {
+        const parsed = parseTeamMessage(message);
+        if (parsed) setTeam(parsed);
+        break;
+      }
+      case 'kanban:inbox': {
+        if (Array.isArray(message.items)) setInboxItems(message.items);
+        break;
+      }
       case 'kanban:focusCard': {
         // From the "needs you" status bar: open this card's detail panel.
         if (typeof message.artifactId === 'string') {
@@ -392,6 +425,12 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
         }
         if (incomingStatus === 'completed' || incomingStatus === 'failed' || incomingStatus === 'interrupted') {
           agentInfoCache.current.delete(message.artifactId);
+          setProgressById(prev => {
+            if (!prev.has(message.artifactId)) return prev;
+            const next = new Map(prev);
+            next.delete(message.artifactId);
+            return next;
+          });
         }
         setResumingArtifactId(prev => prev === message.artifactId ? null : prev);
         setPendingTransitions(prev => {
@@ -488,6 +527,8 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
       vscode.postMessage({ type: 'agenticKanbanReady' });
     }
     vscode.postMessage({ type: 'kanban:getAutoAdvance' });
+    vscode.postMessage({ type: 'kanban:getInbox' });
+    vscode.postMessage({ type: 'kanban:getAgentTeam' });
     // Issue #22: pull autonomy state on mount so the bar isn't empty
     vscode.postMessage({ type: 'getSchedulerState' });
     vscode.postMessage({ type: 'getBudgetStatus' });
@@ -556,7 +597,11 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
         ? { ...item, agentState: { ...item.agentState, status: 'queued' as const, agentRole: item.agentState?.agentRole } }
         : item;
       const harnessResults = harnessById.get(item.id);
-      const queued = harnessResults ? { ...base, harnessResults } : base;
+      const assignee = assigneeFor(team, item.id);
+      const withHarness = harnessResults ? { ...base, harnessResults } : base;
+      const withAssignee = assignee ? { ...withHarness, assignee: { id: assignee.id, name: assignee.name } } : withHarness;
+      const progressLine = withAssignee.agentState?.status === 'running' ? progressById.get(item.id) : undefined;
+      const queued = progressLine ? { ...withAssignee, progressLine } : withAssignee;
       // Merge dep badges from the extension's autonomy lifecycle into the
       // card so the KanbanCard "Blocked by N" badge stays in sync with the
       // live dependency graph. Cards without a badge entry show no badge.
@@ -580,7 +625,7 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
       }
     }
     return { displayItems: enriched, dimmedIds: dimmed };
-  }, [items, pendingTransitions, searchQuery, depBadges, harnessById]);
+  }, [items, pendingTransitions, searchQuery, depBadges, harnessById, team, progressById]);
 
   // ── TerminalGrid sessions derived from agent state ───────────────────────
   const terminalSessions = useMemo<TerminalGridSession[]>(() =>
@@ -889,6 +934,12 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
     () => (detailOpenId ? displayItems.find(i => i.id === detailOpenId) : undefined),
     [detailOpenId, displayItems],
   );
+  const inboxEntries = useMemo(() => buildInboxEntries(inboxItems, items), [inboxItems, items]);
+  // Budget cap, circuit breaker, empty queue, systemic policy failures: shown in the same Inbox.
+  const systemInboxItems = useMemo(
+    () => buildSystemInboxItems({ schedulerState, budgetStatus, systemicIssue }),
+    [schedulerState, budgetStatus, systemicIssue],
+  );
 
   // ── Loading state ─────────────────────────────────────────────────────────
   if (loading) {
@@ -923,6 +974,33 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
       <header className="agentic-kanban-header">
         <h2>Agentic Execution Board</h2>
         <div className="agentic-kanban-toolbar">
+          <Inbox
+            entries={inboxEntries}
+            systemItems={systemInboxItems}
+            approval={approvalRequest}
+            onRespondApproval={(approved) => {
+              if (approvalRequest) {
+                vscode.postMessage({
+                  type: 'kanban:approvalResponse',
+                  artifactId: approvalRequest.artifactId,
+                  approved,
+                });
+              }
+              setApprovalRequest(null);
+            }}
+            onOpenCard={(artifactId) => {
+              setView('board');
+              setSelectedIds(new Set([artifactId]));
+              setAnchorId(artifactId);
+            }}
+          />
+          <button
+            className="agent-editor-trigger"
+            onClick={() => setAgentEditorOpen(true)}
+            title="Name agents and choose each one's CLI and model"
+          >
+            Agents
+          </button>
           <button
             onClick={() => setView(v => v === 'terminals' ? 'board' : 'terminals')}
             style={{
@@ -1019,23 +1097,10 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
         onOpenGoalReview={() => setGoalReviewOpen(true)}
         systemicIssue={systemicIssue}
         onDismissSystemicIssue={() => setSystemicIssue(null)}
+        showInbox={false}
       />
 
       <TracePanel breakdown={traceBreakdown} />
-
-      <ApprovalBanner
-        request={approvalRequest}
-        onRespond={(approved) => {
-          if (approvalRequest) {
-            vscode.postMessage({
-              type: 'kanban:approvalResponse',
-              artifactId: approvalRequest.artifactId,
-              approved,
-            });
-          }
-          setApprovalRequest(null);
-        }}
-      />
 
       <DiffPanel diff={commitDiff} onClose={() => setCommitDiff(null)} />
 
@@ -1117,8 +1182,12 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
           onResumeStateChange={setResumingArtifactId}
           chatSessionActive={chatSessionActive}
           chatSessionModel={chatSessionModel}
+          team={team}
+          onEditTeam={() => setAgentEditorOpen(true)}
         />
       )}
+
+      {agentEditorOpen && <AgentEditor team={team} onClose={() => setAgentEditorOpen(false)} />}
 
       {/* Toast — role="status" implies aria-live="polite" + aria-atomic="true" for screen reader announcement. */}
       {toast && (

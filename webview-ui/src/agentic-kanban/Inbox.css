@@ -1,0 +1,168 @@
+/* ─── Inbox: what waits on a person ─────────────────────────────────────────
+ * The trigger is quiet until something needs you; then the count carries the
+ * accent. The panel floats over the board (it is a decision list, not a
+ * column) and uses the board's paper/ink tokens. */
+
+.inbox { position: relative; }
+
+.inbox-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 28px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink-2);
+  font-size: var(--text-small);
+  font-weight: var(--weight-strong);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.inbox-trigger:hover { border-color: var(--rule-strong); color: var(--ink); }
+.inbox-trigger:focus-visible { outline: 2px solid var(--vscode-focusBorder, var(--accent)); outline-offset: 1px; }
+.inbox-trigger--active { border-color: var(--accent); color: var(--ink); }
+
+.inbox-count {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--accent-fill, var(--accent));
+  color: var(--accent-ink, var(--paper));
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.inbox-panel {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: 40;
+  width: min(420px, 90vw);
+  max-height: min(70vh, 560px);
+  overflow: auto;
+  padding: var(--space-3);
+  background: var(--paper-raised, var(--paper));
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius-card, var(--radius));
+  box-shadow: var(--shadow-float);
+  transform-origin: top right;
+  animation: inbox-in var(--dur-base) var(--ease-out);
+}
+@keyframes inbox-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+}
+
+.inbox-heading {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-kicker, 11px);
+  letter-spacing: var(--tracking-kicker, 0.06em);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.inbox-panel .approval-banner { margin: 0 0 var(--space-3); }
+
+.inbox-empty {
+  margin: var(--space-2) 0;
+  color: var(--ink-2);
+  font-size: var(--text-small);
+  line-height: var(--leading-body);
+}
+
+.inbox-list { list-style: none; margin: 0; padding: 0; }
+.inbox-entry {
+  padding: var(--space-3) 0 var(--space-3) var(--space-3);
+  border-left: 2px solid var(--rule);
+}
+.inbox-entry + .inbox-entry { margin-top: var(--space-2); }
+/* Colour says how urgent: stopped/approval block work, paused and autopilot can wait. */
+.inbox-entry--approval,
+.inbox-entry--stopped { border-left-color: var(--vscode-editorWarning-foreground, var(--accent)); }
+.inbox-entry--paused,
+.inbox-entry--autopilot { border-left-color: var(--rule-strong); }
+/* Board-wide items (budget, circuit breaker…) carry their own severity. */
+.inbox-entry--critical { border-left-color: var(--vscode-editorError-foreground, var(--danger)); }
+.inbox-entry--warning { border-left-color: var(--vscode-editorWarning-foreground, var(--accent)); }
+.inbox-entry--info { border-left-color: var(--rule-strong); }
+
+.inbox-entry-head { display: flex; align-items: baseline; gap: var(--space-2); min-width: 0; }
+.inbox-kind {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: var(--weight-strong);
+  color: var(--ink-3);
+}
+.inbox-entry-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: var(--weight-strong);
+  color: var(--ink);
+}
+.inbox-wait {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.inbox-reason {
+  margin: var(--space-1) 0 var(--space-2);
+  color: var(--ink-2);
+  font-size: var(--text-small);
+  line-height: var(--leading-body);
+}
+
+.inbox-entry-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.inbox-btn {
+  height: 24px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink);
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+}
+.inbox-btn:hover { border-color: var(--rule-strong); background: var(--paper-wash); }
+.inbox-btn:focus-visible { outline: 2px solid var(--vscode-focusBorder, var(--accent)); outline-offset: 1px; }
+.inbox-btn--primary {
+  border-color: var(--accent);
+  background: var(--accent-fill, var(--accent));
+  color: var(--accent-ink, var(--paper));
+}
+.inbox-btn--primary:hover { background: var(--accent); border-color: var(--accent); }
+.inbox-btn--quiet { border-color: transparent; color: var(--ink-3); }
+
+@media (prefers-reduced-motion: reduce) {
+  .inbox-panel { animation: none; }
+  .inbox-trigger, .inbox-btn { transition: none; }
+}
+
+/* An agent's questions or proposed card titles, and the answer box. */
+.inbox-entry--question { border-left-color: var(--vscode-editorWarning-foreground, var(--accent)); }
+.inbox-entry--proposal { border-left-color: var(--accent); }
+.inbox-details {
+  margin: 0 0 var(--space-2);
+  padding-left: var(--space-4);
+  color: var(--ink);
+  font-size: var(--text-small);
+  line-height: var(--leading-body);
+}
+.inbox-answer { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-2); }
+.inbox-answer textarea {
+  min-height: 44px; resize: vertical; padding: var(--space-1) var(--space-2);
+  background: var(--vscode-input-background, var(--paper));
+  color: var(--vscode-input-foreground, var(--ink));
+  border: 1px solid var(--vscode-input-border, var(--rule));
+  border-radius: var(--radius);
+  font: inherit; font-size: var(--text-small);
+}
+.inbox-answer textarea:focus-visible { outline: 1px solid var(--vscode-focusBorder, var(--accent)); outline-offset: -1px; }
+.inbox-answer .inbox-btn { align-self: flex-end; }

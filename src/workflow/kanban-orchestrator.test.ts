@@ -8,7 +8,7 @@
 // We supply a no-op tracker stub in every chat-path test fixture.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { KanbanOrchestrator } from './kanban-orchestrator';
+import { KanbanOrchestrator, setLeadHandler } from './kanban-orchestrator';
 import { concurrencyQueue } from './concurrency-queue';
 
 // ── Module mocks ─────────────────────────────────────────────────────────────
@@ -287,5 +287,23 @@ describe('KanbanOrchestrator', () => {
     // it should reference the tracker-requirement error somewhere.
     const diagnostic = JSON.stringify(result.blockedBy);
     expect(diagnostic.toLowerCase()).toMatch(/tracker/i);
+  });
+});
+
+describe('KanbanOrchestrator — lead-owned epics', () => {
+  it('hands an epic owned by the lead to the lead handler instead of running dev and review', async () => {
+    const executor = fakeExecutor();
+    const store = fakeStore();
+    const start = vi.fn(async () => ({ ok: true, workflowLaunched: true, status: 'complete' as const }));
+    setLeadHandler({ owns: (a) => a.id === 'E-1', start });
+    try {
+      const orch = new KanbanOrchestrator(store, executor, fakeTerminalExecutor());
+      expect(await orch.runAutonomous({ id: 'E-1', type: 'epic' }, {})).toEqual({ ok: true, workflowLaunched: true, status: 'complete' });
+      expect(start).toHaveBeenCalledWith({ id: 'E-1', type: 'epic' });
+      expect(executor.executeLaneTransition).not.toHaveBeenCalled();
+      expect(store.updateArtifact).not.toHaveBeenCalled();
+    } finally {
+      setLeadHandler(undefined);
+    }
   });
 });

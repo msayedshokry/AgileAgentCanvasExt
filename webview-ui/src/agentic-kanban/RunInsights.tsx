@@ -1,33 +1,14 @@
 // Per-card "why did it stop / what ran / undo it" section of the detail panel:
-// fix-it actions for a stopped run, prompt preview, and the run timeline with
-// one-click revert of agent commits.
+// fix-it actions for a stopped run, prompt preview, and one activity feed:
+// runs (with their steps and context), agent commits (one-click revert) and
+// trace steps, grouped by day, newest first.
 
 import { useEffect, useState } from 'react';
 import { vscode } from '../vscodeApi';
 import type { AgentFailureInfo, AgentFixAction, KanbanItem } from '../components/kanban/KanbanTypes';
 import { FIX_ACTION_LABELS } from '../components/kanban/KanbanTypes';
+import { buildCardTimeline, describeBoard, formatTokens, groupByDay, totalUsage, type AgentCommit, type CardNote, type ContextSource, type TimelineEntry, type TimelineRun, type TraceStep } from './card-timeline';
 import './AgentUx.css';
-
-interface TimelineRun {
-  runId: string;
-  workflowId: string;
-  harness: string;
-  verdict: string;
-  summary?: string;
-  startedAt: number;
-  finishedAt: number;
-  failure?: AgentFailureInfo;
-  context?: ContextSource[];
-}
-
-/** One context source a run was given (names and sizes only — see context-receipt.ts). */
-interface ContextSource {
-  kind: string;
-  name: string;
-  chars: number;
-  hash: string;
-  delivery: 'inline' | 'discovered' | 'resumed';
-}
 
 const DELIVERY_LABEL: Record<ContextSource['delivery'], string> = {
   inline: 'in prompt',
@@ -38,8 +19,6 @@ const DELIVERY_LABEL: Record<ContextSource['delivery'], string> = {
 function size(chars: number): string {
   return chars >= 1000 ? `${(chars / 1000).toFixed(1)}k chars` : `${chars} chars`;
 }
-
-interface AgentCommit { sha: string; subject: string; date: string; files?: string[] }
 
 interface CardPullRequest {
   url: string;
@@ -93,12 +72,37 @@ function duration(ms: number): string {
   return s < 90 ? `${s}s` : `${Math.round(s / 60)}m`;
 }
 
+/** The agent stopped to ask the user: answer right here (same as from the Inbox). */
+function AnswerQuestions({ artifactId }: { artifactId: string }) {
+  const [answer, setAnswer] = useState('');
+  const send = () => {
+    if (!answer.trim()) return;
+    vscode.postMessage({ type: 'kanban:answerQuestions', artifactId, answer: answer.trim() });
+    setAnswer('');
+  };
+  return (
+    <form className="agent-fixit-answer" onSubmit={e => { e.preventDefault(); send(); }}>
+      <textarea
+        rows={2}
+        value={answer}
+        maxLength={2000}
+        aria-label="Your answer to the agent"
+        placeholder="Your answer (Ctrl+Enter to send)"
+        onChange={e => setAnswer(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); send(); } }}
+      />
+      <button type="submit" className="agent-btn agent-btn--primary" disabled={!answer.trim()}>Send answer</button>
+    </form>
+  );
+}
+
 export function FixItPanel({ artifactId, failure }: { artifactId: string; failure: AgentFailureInfo }) {
   const act = (action: AgentFixAction) => vscode.postMessage({ type: 'kanban:fixAction', artifactId, action });
   return (
     <section className="agent-fixit" role="alert" aria-label="Why the agent stopped">
       <p className="agent-fixit-title">{failure.title}</p>
       {failure.detail && <pre className="agent-fixit-detail">{failure.detail}</pre>}
+      {failure.kind === 'needs-answer' && <AnswerQuestions artifactId={artifactId} />}
       <div className="agent-fixit-actions">
         {failure.actions.map((action, idx) => (
           <button
@@ -114,19 +118,156 @@ export function FixItPanel({ artifactId, failure }: { artifactId: string; failur
   );
 }
 
-export function RunInsights({ item }: { item: KanbanItem }) {
+const timeOfDay = (at: number) => new Date(at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+
+function StepList({ steps }: { steps: readonly TraceStep[] }) {
+  return (
+    <ul className="agent-feed-steps">
+      {steps.map((s, idx) => (
+        <li key={`${s.ts}-${idx}`} className={s.isError ? 'agent-feed-step--err' : undefined}>
+          <span className="agent-feed-step-type">{s.type}</span>
+          <span>{s.summary || '—'}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function RunEntry({ run, steps }: { run: TimelineRun; steps: readonly TraceStep[] }) {
+  return (
+    <>
+      <div className="agent-feed-line">
+        <span className={`agent-pill agent-pill--verdict-${run.verdict.toLowerCase()}`}>{run.verdict.replace('_', ' ')}</span>
+        <span className="agent-timeline-what">{WORKFLOW_LABEL[run.workflowId] ?? run.workflowId}</span>
+        <time className="agent-feed-time">{timeOfDay(run.finishedAt)}</time>
+      </div>
+      <p className="agent-feed-meta">
+        {run.agent ? `${run.agent} (${run.harness}${run.model ? ` · ${run.model}` : ''})` : run.harness} · {duration(run.finishedAt - run.startedAt)}
+        {run.usage && (
+          <span title={`Fresh input ${run.usage.input}, cache read ${run.usage.cacheRead}, cache write ${run.usage.cacheWrite}, output ${run.usage.output} tokens`}>
+            {' · '}{formatTokens(run.usage.input + run.usage.cacheRead + run.usage.cacheWrite)} in / {formatTokens(run.usage.output)} out
+          </span>
+        )}
+      </p>
+      {run.failure && <p className="agent-timeline-why">{run.failure.title}</p>}
+      {describeBoard(run.board) && <p className="agent-feed-board" title={run.board?.dropped?.join('\n')}>{describeBoard(run.board)}</p>}
+      {/* A failed run's summary is the raw error; its failure title already says it plainly. */}
+      {run.summary && !run.failure && <p className="agent-feed-summary" title={run.summary}>{run.summary}</p>}
+      {steps.length > 0 && (
+        <details className="agent-timeline-context">
+          <summary>{steps.length} step{steps.length === 1 ? '' : 's'}</summary>
+          <StepList steps={steps} />
+        </details>
+      )}
+      {run.context && run.context.length > 0 && (
+        <details className="agent-timeline-context">
+          <summary>Context: {run.context.length} source{run.context.length === 1 ? '' : 's'}</summary>
+          <ul>
+            {run.context.map((c) => (
+              <li key={`${c.kind}-${c.name}`} title={`sha256 ${c.hash}`}>
+                <code>{c.name}</code> {size(c.chars)} · {DELIVERY_LABEL[c.delivery]}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </>
+  );
+}
+
+function CommitEntry({ artifactId, commit }: { artifactId: string; commit: AgentCommit }) {
+  return (
+    <>
+      <div className="agent-feed-line agent-commit">
+        <span className="agent-feed-kind">Committed</span>
+        <code>{commit.sha.slice(0, 8)}</code>
+        <span className="agent-commit-subject">{commit.subject}</span>
+        <time className="agent-feed-time">{timeOfDay(Date.parse(commit.date))}</time>
+        <button
+          className="agent-btn agent-btn--danger"
+          onClick={() => vscode.postMessage({ type: 'kanban:revertRun', artifactId, sha: commit.sha })}
+          title="Create a commit that undoes this agent commit (asks first)"
+        >
+          Revert
+        </button>
+      </div>
+      {commit.files && commit.files.length > 0 && (
+        <details className="agent-commit-files">
+          <summary>{commit.files.length} file{commit.files.length === 1 ? '' : 's'}</summary>
+          <ul>{commit.files.map((file) => <li key={file}><code>{file}</code></li>)}</ul>
+        </details>
+      )}
+    </>
+  );
+}
+
+function FeedEntry({ artifactId, entry }: { artifactId: string; entry: TimelineEntry }) {
+  switch (entry.kind) {
+    case 'running':
+      return (
+        <>
+          <div className="agent-feed-line">
+            <span className="agent-pill agent-pill--running">Running</span>
+            <span className="agent-muted">started {timeOfDay(entry.at)}</span>
+          </div>
+          {entry.steps.length > 0 && <StepList steps={entry.steps} />}
+        </>
+      );
+    case 'run':
+      return <RunEntry run={entry.run} steps={entry.steps} />;
+    case 'commit':
+      return <CommitEntry artifactId={artifactId} commit={entry.commit} />;
+    case 'note':
+      return (
+        <>
+          <div className="agent-feed-line">
+            <span className="agent-feed-kind">{entry.note.author}</span>
+            <time className="agent-feed-time">{timeOfDay(entry.at)}</time>
+          </div>
+          <p className="agent-feed-note">{entry.note.text}</p>
+        </>
+      );
+    case 'step':
+      return (
+        <div className={`agent-feed-line${entry.step.isError ? ' agent-feed-step--err' : ''}`}>
+          <span className="agent-feed-step-type">{entry.step.type}</span>
+          <span>{entry.step.summary || '—'}</span>
+          <time className="agent-feed-time">{timeOfDay(entry.at)}</time>
+        </div>
+      );
+  }
+}
+
+function entryClass(entry: TimelineEntry): string {
+  if (entry.kind === 'run') return `agent-timeline-item agent-timeline-item--${entry.run.verdict.toLowerCase()}`;
+  if (entry.kind === 'step' && entry.step.isError) return 'agent-timeline-item agent-timeline-item--blocked';
+  return `agent-timeline-item agent-timeline-item--${entry.kind}`;
+}
+
+interface RunInsightsProps {
+  item: KanbanItem;
+  /** Recent trace steps for this card; each nests under the run it happened in. */
+  trace?: readonly TraceStep[];
+}
+
+const NO_TRACE: readonly TraceStep[] = [];
+
+export function RunInsights({ item, trace = NO_TRACE }: RunInsightsProps) {
   const [runs, setRuns] = useState<TimelineRun[] | null>(null);
   const [commits, setCommits] = useState<AgentCommit[]>([]);
   const [pr, setPr] = useState<CardPullRequest | undefined>();
+  const [notes, setNotes] = useState<CardNote[]>([]);
 
   useEffect(() => {
     setRuns(null);
+    setNotes([]);
     const onMessage = (event: MessageEvent) => {
       const msg = event.data;
       if (msg?.type === 'kanban:runTimeline' && msg.artifactId === item.id) {
         setRuns(msg.runs ?? []);
         setCommits(msg.commits ?? []);
         setPr(msg.pr ?? undefined);
+        if (Array.isArray(msg.notes)) setNotes(msg.notes);
       }
     };
     window.addEventListener('message', onMessage);
@@ -136,6 +277,11 @@ export function RunInsights({ item }: { item: KanbanItem }) {
   }, [item.id, item.agentState?.status]);
 
   const failure = item.agentState?.status === 'interrupted' ? item.agentState.failure : undefined;
+  const startedAt = item.agentState?.status === 'running' ? Date.parse(item.agentState.startedAt ?? '') : NaN;
+  const feed = runs === null ? [] : buildCardTimeline({
+    runs, commits, trace, notes, runningSince: Number.isNaN(startedAt) ? undefined : startedAt,
+  });
+  const tokens = runs ? totalUsage(runs) : undefined;
 
   return (
     <div className="agent-insights">
@@ -156,65 +302,32 @@ export function RunInsights({ item }: { item: KanbanItem }) {
 
       {pr && <PullRequestPanel artifactId={item.id} pr={pr} />}
 
-      <section className="agent-timeline" aria-label="Agent runs for this card">
-        <h4 className="agent-timeline-heading">Runs</h4>
+      <section className="agent-timeline" aria-label="Activity for this card">
+        <h4 className="agent-timeline-heading">
+          Activity
+          {tokens && (
+            <span className="agent-timeline-total" title="Tokens across this card's runs that reported usage">
+              {formatTokens(tokens.read)} in / {formatTokens(tokens.written)} out
+            </span>
+          )}
+        </h4>
         {runs === null ? (
           <p className="agent-muted">Loading…</p>
-        ) : runs.length === 0 ? (
-          <p className="agent-muted">No agent runs yet.</p>
+        ) : feed.length === 0 ? (
+          <p className="agent-muted">No agent activity yet.</p>
         ) : (
-          <ol className="agent-timeline-list">
-            {runs.map((r) => (
-              <li key={r.runId} className={`agent-timeline-item agent-timeline-item--${r.verdict.toLowerCase()}`}>
-                <span className={`agent-pill agent-pill--verdict-${r.verdict.toLowerCase()}`}>{r.verdict.replace('_', ' ')}</span>
-                <span className="agent-timeline-what">{WORKFLOW_LABEL[r.workflowId] ?? r.workflowId}</span>
-                <span className="agent-muted">
-                  {r.harness} · {new Date(r.finishedAt).toLocaleString()} · {duration(r.finishedAt - r.startedAt)}
-                </span>
-                {r.failure && <span className="agent-timeline-why">{r.failure.title}</span>}
-                {r.context && r.context.length > 0 && (
-                  <details className="agent-timeline-context">
-                    <summary>Context: {r.context.length} source{r.context.length === 1 ? '' : 's'}</summary>
-                    <ul>
-                      {r.context.map((c) => (
-                        <li key={`${c.kind}-${c.name}`} title={`sha256 ${c.hash}`}>
-                          <code>{c.name}</code> {size(c.chars)} · {DELIVERY_LABEL[c.delivery]}
-                        </li>
-                      ))}
-                    </ul>
-                  </details>
-                )}
-              </li>
-            ))}
-          </ol>
-        )}
-
-        {commits.length > 0 && (
-          <>
-            <h4 className="agent-timeline-heading">Agent commits</h4>
-            <ul className="agent-commit-list">
-              {commits.map((c) => (
-                <li key={c.sha} className="agent-commit">
-                  <code>{c.sha.slice(0, 8)}</code>
-                  <span className="agent-commit-subject">{c.subject}</span>
-                  <span className="agent-muted">{new Date(c.date).toLocaleString()}</span>
-                  {c.files && c.files.length > 0 && (
-                    <details className="agent-commit-files">
-                      <summary>{c.files.length} file{c.files.length === 1 ? '' : 's'}</summary>
-                      <ul>{c.files.map((file) => <li key={file}><code>{file}</code></li>)}</ul>
-                    </details>
-                  )}
-                  <button
-                    className="agent-btn agent-btn--danger"
-                    onClick={() => vscode.postMessage({ type: 'kanban:revertRun', artifactId: item.id, sha: c.sha })}
-                    title="Create a commit that undoes this agent commit (asks first)"
-                  >
-                    Revert
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </>
+          groupByDay(feed, Date.now()).map((day) => (
+            <div key={day.label} className="agent-feed-day">
+              <h5 className="agent-feed-day-label">{day.label}</h5>
+              <ol className="agent-timeline-list">
+                {day.entries.map((entry, idx) => (
+                  <li key={`${entry.kind}-${entry.at}-${idx}`} className={entryClass(entry)}>
+                    <FeedEntry artifactId={item.id} entry={entry} />
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ))
         )}
       </section>
     </div>

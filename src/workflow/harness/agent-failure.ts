@@ -20,6 +20,8 @@ export type AgentFailureKind =
   | 'time-limit'
   | 'no-verdict'
   | 'aborted'
+  /** The agent stopped to ask the user something (board.questions); answered from the Inbox. */
+  | 'needs-answer'
   | 'unknown';
 
 /** Fix actions the board offers; the extension knows how to perform each. */

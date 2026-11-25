@@ -9,7 +9,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { mockVsCodeApi } from '../test/setup';
-import { AutonomyBar } from './AutonomyBar';
+import { AutonomyBar, buildSystemInboxItems } from './AutonomyBar';
 import type { SchedulerStateMessage, BudgetStatus, ProposedGoal, SystemicIssue } from './AutonomyBar';
 import type { ApprovalRequest } from './ApprovalBanner';
 
@@ -286,6 +286,22 @@ describe('AutonomyBar — pauseReasonLabel', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 // P1 #7 — Inbox badge
 // ═══════════════════════════════════════════════════════════════════════════════
+
+describe('AutonomyBar — inbox moved to the board header', () => {
+  it('hides its own inbox when the host shows one (showInbox=false)', () => {
+    render(<AutonomyBar {...defaultProps()} showInbox={false} />);
+    expect(screen.queryByRole('button', { name: /Needs you inbox/ })).toBeNull();
+  });
+
+  it('buildSystemInboxItems returns the same items the bar lists', () => {
+    const items = buildSystemInboxItems({
+      schedulerState: null,
+      budgetStatus: { daily: { used: 5, cap: 5 }, anyExceeded: true, bannerMessage: 'Daily cap hit' } as unknown as BudgetStatus,
+      systemicIssue: null,
+    });
+    expect(items).toEqual([{ type: 'budget', severity: 'warning', title: 'Daily cap hit', detail: '$5.00 / $5.00 used today' }]);
+  });
+});
 
 describe('AutonomyBar — P1 #7 inbox badge', () => {
   it('renders the inbox button with bell icon', () => {

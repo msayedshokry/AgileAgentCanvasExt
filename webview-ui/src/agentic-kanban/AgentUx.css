@@ -253,10 +253,9 @@
 .agent-timeline-item {
   position: relative;
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 2px 8px;
-  padding: 4px 0;
+  flex-direction: column;
+  gap: 3px;
+  padding: 5px 0;
   font-size: 12px;
 }
 .agent-timeline-item::before {
@@ -275,9 +274,89 @@
 .agent-timeline-item--needs_fixes::before,
 .agent-timeline-item--unknown::before { background: var(--agent-warn); }
 .agent-timeline-what { font-weight: 600; }
-.agent-timeline-why { flex-basis: 100%; color: var(--agent-warn); font-size: 11px; }
-.agent-timeline-context { flex-basis: 100%; font-size: 11px; color: var(--agent-muted); }
+.agent-timeline-why { margin: 0; color: var(--agent-warn); font-size: 11px; }
+.agent-timeline-context { font-size: 11px; color: var(--agent-muted); }
 .agent-timeline-context ul { margin: 4px 0 0; padding-left: 16px; }
+
+/* ── Activity feed: one dated list per card ─────────────────────────────── */
+
+.agent-timeline-heading { display: flex; align-items: baseline; gap: 8px; }
+.agent-timeline-total {
+  margin-left: auto;
+  text-transform: none;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.agent-feed-day + .agent-feed-day { margin-top: 8px; }
+.agent-feed-day-label {
+  margin: 0 0 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--agent-muted);
+}
+.agent-feed-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+/* Time sits flush right so the eye can scan the feed by when. */
+.agent-feed-time {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--agent-muted);
+  font-variant-numeric: tabular-nums;
+}
+.agent-feed-kind { font-weight: 600; }
+.agent-feed-meta {
+  margin: 0;
+  font-size: 11px;
+  color: var(--agent-muted);
+  font-variant-numeric: tabular-nums;
+}
+.agent-feed-summary {
+  margin: 0;
+  color: var(--vscode-foreground);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.agent-feed-steps {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.agent-feed-steps li { display: flex; gap: 8px; min-width: 0; }
+.agent-feed-step-type {
+  flex-shrink: 0;
+  min-width: 5.5em;
+  font-family: var(--vscode-editor-font-family);
+  color: var(--agent-muted);
+}
+.agent-feed-step--err,
+.agent-feed-step--err .agent-feed-step-type { color: var(--agent-error); }
+
+/* Commits are a different kind of event than runs: a hollow marker. */
+.agent-timeline-item--commit::before {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--agent-muted);
+}
+/* The run in progress breathes; nothing else on the feed moves. */
+.agent-timeline-item--running::before {
+  background: var(--vscode-progressBar-background, var(--agent-ok));
+  animation: agent-feed-pulse 1.6s ease-in-out infinite;
+}
+.agent-pill--running { color: var(--vscode-progressBar-background, var(--agent-ok)); }
+@keyframes agent-feed-pulse {
+  50% { opacity: 0.35; }
+}
 
 .agent-commit-list {
   list-style: none;
@@ -323,6 +402,98 @@
 .agent-commit-files { flex-basis: 100%; font-size: 11px; color: var(--agent-muted); }
 .agent-commit-files ul { margin: 4px 0 0; padding-left: 16px; }
 
+/* ── Follow-up composer (detail panel footer) ───────────────────────────── */
+
+.agent-followup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+.agent-followup-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 44px;
+  resize: vertical;
+  padding: 6px 8px;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.25)));
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.agent-followup-input:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: -1px; }
+.agent-followup-row { display: flex; align-items: center; gap: 8px; }
+.agent-followup-hint {
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+
+/* ── Assignee picker (detail panel agent row) ───────────────────────────── */
+
+.agent-assignee {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.agent-assignee-select {
+  height: 24px;
+  max-width: 150px;
+  padding: 0 4px;
+  background: var(--vscode-dropdown-background);
+  color: var(--vscode-dropdown-foreground);
+  border: 1px solid var(--vscode-dropdown-border, var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.25)));
+  border-radius: 4px;
+  font-size: 12px;
+}
+.agent-assignee-select:focus-visible,
+.agent-assignee .agent-assignee-edit:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: 1px; }
+/* Scoped under .agent-assignee to outrank the panel-wide `.agentic-detail-panel button` rule. */
+.agent-assignee .agent-assignee-edit {
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  color: var(--vscode-textLink-foreground);
+  font-size: 11px;
+  cursor: pointer;
+}
+.agent-assignee .agent-assignee-edit:hover { text-decoration: underline; }
+
 @media (prefers-reduced-motion: reduce) {
   .agent-btn { transition: none; }
+  .agent-timeline-item--running::before { animation: none; }
 }
+
+/* ── Board protocol in the feed: notes and what a run asked of the board ── */
+.agent-timeline-item--note::before {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--vscode-textLink-foreground, var(--agent-muted));
+}
+.agent-feed-note {
+  margin: 0;
+  white-space: pre-wrap;
+  color: var(--vscode-foreground);
+  line-height: 1.45;
+}
+.agent-feed-board {
+  margin: 0;
+  font-size: 11px;
+  color: var(--vscode-textLink-foreground, var(--agent-muted));
+}
+.agent-fixit-answer { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.agent-fixit-answer textarea {
+  min-height: 44px; resize: vertical; padding: 6px 8px;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, var(--agent-border));
+  border-radius: var(--agent-radius);
+  font: inherit; font-size: 12px;
+}
+.agent-fixit-answer textarea:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: -1px; }
+.agent-fixit-answer .agent-btn { align-self: flex-end; }

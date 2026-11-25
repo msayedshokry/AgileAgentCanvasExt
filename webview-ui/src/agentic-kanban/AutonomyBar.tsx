@@ -51,6 +51,8 @@ export interface ProposedGoal {
   status: 'pending' | 'decomposing' | 'review' | 'approved' | 'rejected' | 'dispatched';
   proposedStories: Array<{ id: string; title: string; description?: string; priority?: string }>;
   approvedStories: Array<{ id: string; title: string }>;
+  /** Set when an agent proposed these stories (they wait in the Inbox instead of opening the review). */
+  source?: { cardId: string; agent: string };
 }
 
 /** A single cross-artifact pattern detected by the harness engine. */
@@ -93,6 +95,80 @@ interface AutonomyBarProps {
   onDismissSystemicIssue: () => void;
   /** P1 #7: active approval request (null = no pending approval). */
   approvalRequest?: ApprovalRequest | null;
+  /** False when the host shows these items in its own Inbox (the Agentic board does). */
+  showInbox?: boolean;
+}
+
+// ── P1 #7: system-level items that need a person (budget, circuit, queue, systemic, approval) ──
+// Pure so the board's header Inbox can list them beside the cards waiting on you.
+export function buildSystemInboxItems({ schedulerState, budgetStatus, systemicIssue, approvalRequest }: {
+  schedulerState: SchedulerStateMessage | null;
+  budgetStatus: BudgetStatus | null;
+  systemicIssue: SystemicIssue | null;
+  approvalRequest?: ApprovalRequest | null;
+}): InboxItem[] {
+  const dailyUsed = budgetStatus?.daily.used ?? 0;
+  const dailyCap = budgetStatus?.daily.cap ?? 0;
+  const budgetExceeded = budgetStatus?.anyExceeded ?? false;
+  const continuousMode = schedulerState?.continuousMode ?? false;
+  const items: InboxItem[] = [];
+
+  // 1) Approval checkpoint — active approval request
+  if (approvalRequest) {
+    const policyCount = approvalRequest.policyFailures.length;
+    items.push({
+      type: 'approval',
+      severity: 'critical',
+      title: `Approval needed for ${approvalRequest.artifactId}`,
+      detail: approvalRequest.workflowId
+        ? `${policyCount} policy failure(s) in ${approvalRequest.workflowId}`
+        : `${policyCount} policy failure(s)`,
+      artifactId: approvalRequest.artifactId,
+    });
+  }
+
+  // 2) Budget exceeded
+  if (budgetExceeded) {
+    items.push({
+      type: 'budget',
+      severity: 'warning',
+      title: budgetStatus?.bannerMessage ?? 'Budget daily cap exceeded',
+      detail: `$${dailyUsed.toFixed(2)} / $${dailyCap.toFixed(2)} used today`,
+    });
+  }
+
+  // 3) Scheduler paused with system reasons
+  const reason = schedulerState?.pauseReason;
+  if (reason === 'circuit') {
+    items.push({
+      type: 'circuit',
+      severity: 'critical',
+      title: 'Circuit breaker open',
+      detail: 'A workflow type is repeatedly failing. Investigate and reset.',
+    });
+  }
+  if (reason === 'queue-empty' && continuousMode) {
+    items.push({
+      type: 'queue-empty',
+      severity: 'info',
+      title: 'Queue empty — backlog drained',
+      detail: 'All eligible stories are done or blocked. Add new stories to resume.',
+    });
+  }
+
+  // 4) Systemic issues from harness engine
+  if (systemicIssue && systemicIssue.patterns.length > 0) {
+    for (const p of systemicIssue.patterns) {
+      items.push({
+        type: 'systemic',
+        severity: p.severity === 'critical' || p.severity === 'high' ? 'critical' : 'warning',
+        title: `${p.policyId} — ${p.count} artifact(s) affected`,
+        detail: p.sampleMessage,
+      });
+    }
+  }
+
+  return items;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -148,6 +224,7 @@ export function AutonomyBar({
   systemicIssue,
   onDismissSystemicIssue,
   approvalRequest = null,
+  showInbox = true,
 }: AutonomyBarProps) {
   const [goalDraft, setGoalDraft] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -243,66 +320,10 @@ export function AutonomyBar({
   })();
 
   // ── P1 #7: Compute inbox items from all existing props ──────────────────
-  const inboxItems: InboxItem[] = useMemo(() => {
-    const items: InboxItem[] = [];
-
-    // 1) Approval checkpoint — active approval request
-    if (approvalRequest) {
-      const policyCount = approvalRequest.policyFailures.length;
-      items.push({
-        type: 'approval',
-        severity: 'critical',
-        title: `Approval needed for ${approvalRequest.artifactId}`,
-        detail: approvalRequest.workflowId
-          ? `${policyCount} policy failure(s) in ${approvalRequest.workflowId}`
-          : `${policyCount} policy failure(s)`,
-        artifactId: approvalRequest.artifactId,
-      });
-    }
-
-    // 2) Budget exceeded
-    if (budgetExceeded) {
-      items.push({
-        type: 'budget',
-        severity: 'warning',
-        title: budgetStatus?.bannerMessage ?? 'Budget daily cap exceeded',
-        detail: `$${dailyUsed.toFixed(2)} / $${dailyCap.toFixed(2)} used today`,
-      });
-    }
-
-    // 3) Scheduler paused with system reasons
-    const reason = schedulerState?.pauseReason;
-    if (reason === 'circuit') {
-      items.push({
-        type: 'circuit',
-        severity: 'critical',
-        title: 'Circuit breaker open',
-        detail: 'A workflow type is repeatedly failing. Investigate and reset.',
-      });
-    }
-    if (reason === 'queue-empty' && continuousMode) {
-      items.push({
-        type: 'queue-empty',
-        severity: 'info',
-        title: 'Queue empty — backlog drained',
-        detail: 'All eligible stories are done or blocked. Add new stories to resume.',
-      });
-    }
-
-    // 4) Systemic issues from harness engine
-    if (systemicIssue && systemicIssue.patterns.length > 0) {
-      for (const p of systemicIssue.patterns) {
-        items.push({
-          type: 'systemic',
-          severity: p.severity === 'critical' || p.severity === 'high' ? 'critical' : 'warning',
-          title: `${p.policyId} — ${p.count} artifact(s) affected`,
-          detail: p.sampleMessage,
-        });
-      }
-    }
-
-    return items;
-  }, [approvalRequest, budgetExceeded, budgetStatus?.bannerMessage, dailyUsed, dailyCap, schedulerState?.pauseReason, continuousMode, systemicIssue]);
+  const inboxItems: InboxItem[] = useMemo(
+    () => buildSystemInboxItems({ schedulerState, budgetStatus, systemicIssue, approvalRequest }),
+    [schedulerState, budgetStatus, systemicIssue, approvalRequest],
+  );
 
   const inboxCount = inboxItems.length;
   const inboxHasCritical = inboxItems.some(i => i.severity === 'critical');
@@ -316,7 +337,8 @@ export function AutonomyBar({
 
   return (
     <div className="autonomy-bar">
-      {/* ── P1 #7: "Needs you" inbox badge ─────────────────────────────── */}
+      {/* ── P1 #7: "Needs you" inbox badge (the board shows these in its header Inbox instead) ── */}
+      {showInbox && (
       <div className="autonomy-bar-group autonomy-bar-group--inbox" ref={inboxRef}>
         <button
           className={`autonomy-inbox-btn ${inboxHasCritical ? 'autonomy-inbox-btn--critical' : ''} ${inboxOpen ? 'autonomy-inbox-btn--open' : ''}`}
@@ -384,6 +406,7 @@ export function AutonomyBar({
           </div>
         )}
       </div>
+      )}
 
       {/* ── P1 #6: Continuous Mode toggle + display state ──────────────── */}
       <div className="autonomy-bar-group autonomy-bar-group--continuous">

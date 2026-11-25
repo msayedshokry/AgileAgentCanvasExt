@@ -27,6 +27,10 @@ import { circuitBreaker } from '../workflow/circuit-breaker';
 
 import { kanbanOrchestrator } from '../workflow/kanban-orchestrator';
 import { handleAgentUxMessage } from './agent-ux-messages';
+import { handleAgentTeamMessage } from './agent-team-messages';
+import { handleFollowUpMessage } from './follow-up-messages';
+import { handleBoardProtocolMessage } from './board-protocol';
+import { leadCoordinator } from './lead-coordinator';
 
 import { isTerminalInbound } from './terminal-protocol';
 import { TerminalSessionRouter } from './terminal-session-router';
@@ -337,6 +341,9 @@ export async function handleAgenticKanbanMessage(
   }
 
   if (await handleAgentUxMessage(message, store, webview)) return true;
+  if (await handleAgentTeamMessage(message, webview, store)) return true;
+  if (await handleFollowUpMessage(message, store, webview)) return true;
+  if (await handleBoardProtocolMessage(message, store, webview)) return true;
 
   switch (message.type) {
     case 'kanban:statusChanged': {
@@ -856,7 +863,8 @@ export async function handleAgenticKanbanMessage(
 
     case 'submitGoal': {
       try {
-        const id = await goalDecomposer.submit(message.text ?? '');
+        // With a lead agent on the team, the lead plans the goal as an epic.
+        const id = (await leadCoordinator()?.planGoal(String(message.text ?? ''))) ?? await goalDecomposer.submit(message.text ?? '');
         if (webview) {
           webview.postMessage({ type: 'goalSubmitted', goalId: id, text: message.text });
         }
@@ -870,7 +878,10 @@ export async function handleAgenticKanbanMessage(
 
     case 'approveGoalStories': {
       try {
-        await goalDecomposer.approveStories(message.goalId, message.storyIds);
+        const goal = await goalDecomposer.approveStories(message.goalId, message.storyIds);
+        // Approved stories become cards. Before, nothing called dispatch, so an
+        // approved goal said "dispatched" but created no cards.
+        if (goal.status === 'approved') await goalDecomposer.dispatch(goal.id);
       } catch (error) {
         logger.warn(`[AgenticKanban] approveGoalStories failed: ${errMsg(error)}`);
       }

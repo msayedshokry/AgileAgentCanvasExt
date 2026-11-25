@@ -19,7 +19,7 @@ Board runs stop when stuck rather than on a fixed timer, retry only failures tha
 Run recurring agent work on a schedule while VS Code is open.
 
 - Define runbooks with cron schedules in the autopilots file (**Edit Autopilots** opens it), or start one with **Run Autopilot Now**. They are off until you turn on `autopilots.enabled` in your user settings, so a cloned project cannot start agents on its own.
-- Each run uses a fresh agent session, runs once even with several windows open, and only notifies you when it needs attention.
+- Each run uses a fresh agent session and runs once even with several windows open. A run that needs attention goes to the board's Inbox and the status-bar count, not a popup.
 
 ### Feature: Agent team protocol
 
@@ -27,6 +27,27 @@ Team runs now pass work between members instead of running a fixed pipeline blin
 
 - Each member gets a brief with its role and the roster, and receives the earlier members' handoff notes. Before, members received nothing from each other, because their output was never captured.
 - The coordinator can skip members it doesn't need, and a gate that requests changes sends the work back to the crafter once.
+
+### Feature: Calmer agent board
+
+The Agentic board shows each card's work in one place and only interrupts you for decisions.
+
+- A card's detail panel has one **Activity** feed: runs, agent commits and trace steps by day, newest first. Each run opens to the steps it took and the context it received; the separate Runs, Agent commits and Activity sections are gone.
+- An **Inbox** in the board header lists everything waiting on you: approvals, stopped runs with their fix button, paused stories, autopilot runs, budget and circuit-breaker stops. It replaces the approval banner and the autonomy bar's inbox, and opens by itself only for an approval.
+- Assign a card to a named agent from its detail panel. The card shows the assignee and runs on its CLI and model. Until you add an agent, each installed CLI acts as one.
+- Create, edit and delete agents in the **Agents** dialog on the board: a name, one of the installed CLIs, and a model. The model list comes from the CLI itself for Claude Code, Codex, OpenCode and Pi, without starting a model call; for other CLIs you type a model, and the Cursor and Copilot CLIs keep their own model setting.
+- A running card shows the agent's latest output line, and each Claude Code run records its tokens, shown per run and per card.
+- Message a card's agent from its detail panel. While the agent works, the message waits and is sent when the run ends; it reaches the agent as a fix request in the same conversation.
+
+### Feature: Agents that work with the board, and a lead agent
+
+Agents now know who they are and what the board expects, can ask you and each other for things, and one agent can lead the rest.
+
+- Every run tells the agent its name, role, model and instructions, who else is on the team, and the notes earlier agents left on the card. Give an agent a role and standing instructions in the **Agents** dialog.
+- An agent can ask you a question instead of guessing. The card waits with "Waiting for your answer"; answer from the Inbox or the card, and the agent continues in the same conversation.
+- An agent can propose new cards instead of widening its own. Proposals wait in the Inbox for your approval, or are created at once with `agents.autoApproveProposals`. Approving a goal's stories now creates them as cards; before, nothing was created.
+- An agent can hand a card to another agent on the team, and leave notes for whoever works on the card next. All of it shows in the card's Activity.
+- Mark one agent as **Lead**. An epic you give it, or a goal you type while a lead exists, is planned instead of implemented: the lead proposes the stories, assigns them to the other agents by role, and is woken each time one finishes. It moves the epic to review when the goal is met and leaves done to you. It never implements, runs at most 20 times per epic, and stops with an Inbox entry if it twice does nothing.
 
 ### Feature: Sharper code review
 

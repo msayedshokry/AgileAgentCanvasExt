@@ -54,6 +54,7 @@
       "description": "In Restricted Mode, Agile Agent Canvas shows the canvas read-only: coding agents, the AI file-write tool, and remote A2A calls are disabled, and agent settings come only from user settings.",
       "restrictedConfigurations": [
         "agileagentcanvas.agents.harness",
+        "agileagentcanvas.agents.autoApproveProposals",
         "agileagentcanvas.agents.permissionPosture",
         "agileagentcanvas.outputFolder",
         "agileagentcanvas.apiKey",
@@ -1566,6 +1567,11 @@
             "type": "boolean",
             "default": true,
             "markdownDescription": "When a card comes back for rework, continue the agent conversation it had last time instead of starting over (Claude Code only). A run that ended without a verdict is never resumed."
+          },
+          "agileagentcanvas.agents.autoApproveProposals": {
+            "type": "boolean",
+            "default": false,
+            "markdownDescription": "Create the cards agents propose without asking. Off: proposals wait in the board's Inbox for your approval."
           },
           "agileagentcanvas.autopilots.enabled": {
             "type": "boolean",

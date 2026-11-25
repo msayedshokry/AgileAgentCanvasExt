@@ -37,9 +37,9 @@ import { window } from 'vscode';
 
 // Mutable holder so tests can flip the shell flavor per test.
 const chatBridgeMockState = vi.hoisted(() => ({ isPowerShell: false }));
-const harnessMockState = vi.hoisted(() => ({ outputFolder: '.agileagentcanvas-context', resolution: undefined as any, trustBlock: undefined as string | undefined }));
+const harnessMockState = vi.hoisted(() => ({ outputFolder: '.agileagentcanvas-context', resolution: undefined as any, trustBlock: undefined as string | undefined, override: undefined as string | undefined }));
 vi.mock('./harness/board-harness', () => ({
-    resolveBoardHarness: async () => harnessMockState.resolution,
+    resolveBoardHarness: async (override?: string) => { harnessMockState.override = override; return harnessMockState.resolution; },
     getPermissionPosture: () => 'sandboxed',
     resolveEffectivePosture: async () => 'sandboxed',
     agentRunBlockReason: () => harnessMockState.trustBlock,
@@ -673,6 +673,79 @@ describe('executeTerminalWorkflow — harness launch', () => {
             expect(lmRunner).toHaveBeenCalledTimes(1);
             expect((await executor.executeAndAwaitVerdict('dev-story', { id: 'S-4' }, {})).verdict).toBe('BLOCKED');
             expect(window.createTerminal).not.toHaveBeenCalled();
+        });
+    });
+});
+
+describe('executeTerminalWorkflow — assigned agent', () => {
+    afterEach(() => {
+        harnessMockState.resolution = cli('pi');
+        harnessMockState.override = undefined;
+        vi.mocked(window.createTerminal).mockClear();
+    });
+
+    it("runs a card on its assignee's harness and names the agent in run history", async () => {
+        harnessMockState.resolution = { kind: 'lm', reason: 'test' };
+        await withWorkspace(async (outputFolder) => {
+            mkdirSync(outputFolder, { recursive: true });
+            writeFileSync(join(outputFolder, 'agent-team.json'), JSON.stringify({
+                agents: [{ id: 'reviewer', name: 'Reviewer', harness: 'codex' }],
+                assignments: { 'S-7': 'reviewer' },
+            }));
+            const lmRunner = async () => ({ verdict: 'COMPLETED' as const, summary: 'ok' });
+            await new TerminalExecutor().executeAndAwaitVerdict('dev-story', { id: 'S-7' }, {}, { lmRunner });
+            expect(harnessMockState.override).toBe('codex');
+            const [entry] = readFileSync(join(outputFolder, 'agent-run-history.jsonl'), 'utf-8').trim().split('\n').map((l) => JSON.parse(l));
+            expect(entry).toMatchObject({ artifactId: 'S-7', agent: 'Reviewer' });
+        });
+    });
+
+    it("launches the assignee's CLI with the assignee's model", async () => {
+        harnessMockState.resolution = cli('pi');
+        await withWorkspace(async (outputFolder) => {
+            mkdirSync(outputFolder, { recursive: true });
+            writeFileSync(join(outputFolder, 'agent-team.json'), JSON.stringify({
+                agents: [{ id: 'qa', name: 'QA', harness: 'pi', model: 'anthropic/claude-haiku-4-5' }],
+                assignments: { 'S-9': 'qa' },
+            }));
+            const { sendTextMock } = makeTerminal();
+            await new TerminalExecutor().executeTerminalWorkflow('dev-story', { id: 'S-9', type: 'story' }, {});
+            expect(harnessMockState.override).toBe('pi');
+            expect(sendTextMock.mock.calls[0][0]).toContain("--model 'anthropic/claude-haiku-4-5'".replace(/'/g, ''));
+        });
+    });
+
+    it("puts the assignee's brief right after the verdict contract, with the card's notes", async () => {
+        harnessMockState.resolution = cli('pi');
+        await withWorkspace(async (outputFolder) => {
+            mkdirSync(outputFolder, { recursive: true });
+            writeFileSync(join(outputFolder, 'agent-team.json'), JSON.stringify({
+                agents: [
+                    { id: 'qa', name: 'QA', harness: 'pi', role: 'Tests stories', instructions: 'Run the e2e suite.' },
+                    { id: 'dev', name: 'Dev', harness: 'claude' },
+                ],
+                assignments: { 'S-10': 'qa' },
+            }));
+            makeTerminal();
+            const executor = new TerminalExecutor();
+            await executor.executeTerminalWorkflow('dev-story', {
+                id: 'S-10', type: 'story', metadata: { agentNotes: [{ author: 'Dev', text: 'Form is in login.tsx', at: 't' }] },
+            }, {});
+            const prompt = readFileSync(executor.getTerminalSession('S-10')!.promptFile!, 'utf-8');
+            expect(prompt.indexOf('## ⛔ Required first action')).toBe(0);
+            expect(prompt.indexOf('## You and this board')).toBeLessThan(prompt.indexOf('# BMAD Workflow Run'));
+            expect(prompt).toContain('You are **QA** (agent id `qa`), running on Pi CLI. Your role: Tests stories.');
+            expect(prompt).toContain('Run the e2e suite.');
+            expect(prompt).toContain('- `dev` — Dev');
+            expect(prompt).toContain('- Dev (t): Form is in login.tsx');
+        });
+    });
+
+    it('uses the board default for an unassigned card', async () => {
+        harnessMockState.resolution = { kind: 'lm', reason: 'test' };
+        await withWorkspace(async () => {
+            await new TerminalExecutor().executeAndAwaitVerdict('dev-story', { id: 'S-8' }, {}, { lmRunner: async () => ({ verdict: 'COMPLETED' as const, summary: 'ok' }) });
+            expect(harnessMockState.override).toBeUndefined();
         });
     });
 });

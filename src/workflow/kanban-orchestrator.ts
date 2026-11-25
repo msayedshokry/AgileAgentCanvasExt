@@ -124,7 +124,22 @@ export const kanbanProgress = new vscode.EventEmitter<KanbanProgressEvent>();
 const DEV_WORKFLOW = 'aac-kanban-dev-executor';
 const REVIEW_WORKFLOW = 'aac-kanban-review-guard';
 
+/** Takes epics owned by the team's lead agent instead of the dev → review loop (views/lead-coordinator.ts). */
+export interface LeadHandler {
+  owns(artifact: { id?: unknown; type?: unknown }): boolean;
+  start(artifact: { id?: unknown; type?: unknown }): Promise<TransitionResult>;
+}
+
+// Module state, not instance state: the lead coordinator registers during
+// activation, before initializeKanbanOrchestrator() creates the instance.
+let leadHandler: LeadHandler | undefined;
+
+export function setLeadHandler(handler: LeadHandler | undefined): void {
+  leadHandler = handler;
+}
+
 export class KanbanOrchestrator {
+
   // #26: Per-artifact abort controllers for cancel/abort.
   private abortControllers = new Map<string, AbortController>();
   /** Column each active run started from (where a lost run returns the card). */
@@ -244,6 +259,8 @@ export class KanbanOrchestrator {
     if (!id) {
       return { ok: false, status: 'blocked', blockedBy: ['Artifact has no id'] };
     }
+    // An epic given to the lead agent is planned and handed out, not implemented.
+    if (leadHandler?.owns(artifact)) return leadHandler.start(artifact);
 
     if (concurrencyQueue.isLocked(id)) {
       return { ok: false, status: 'blocked', blockedBy: ['Artifact is already being processed'] };
@@ -751,20 +768,25 @@ export class KanbanOrchestrator {
       }
     }
 
+    // An agent that stopped to ask the user waits for an answer in the Inbox
+    // (views/board-protocol.ts); that is not a failure, so no warning popup.
+    const questions = verdict?.board?.questions ?? [];
+    const failure = questions.length > 0
+      ? { kind: 'needs-answer' as const, title: 'Waiting for your answer', detail: questions.map((q) => `- ${q}`).join('\n'), actions: [] }
+      : classifyAgentFailure(`${verdict?.summary ?? ''}\n${reason}`);
     try {
-      kanbanProgress.fire({
-        artifactId: id,
-        agentState: { status: 'interrupted', failure: classifyAgentFailure(`${verdict?.summary ?? ''}\n${reason}`) },
-      });
+      kanbanProgress.fire({ artifactId: id, agentState: { status: 'interrupted', failure } });
     } catch {
       // emitter may be disposed
     }
-    try {
-      vscode.window.showWarningMessage(
-        `Autonomous run stopped for ${id}: ${detail}${diagnosticHint}${revertMessage}`
-      );
-    } catch {
-      // window API may be unavailable (e.g. in tests)
+    if (questions.length === 0) {
+      try {
+        vscode.window.showWarningMessage(
+          `Autonomous run stopped for ${id}: ${detail}${diagnosticHint}${revertMessage}`
+        );
+      } catch {
+        // window API may be unavailable (e.g. in tests)
+      }
     }
     return { ok: false, status: 'blocked', blockedBy: [detail] };
   }

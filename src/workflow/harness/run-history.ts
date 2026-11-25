@@ -6,6 +6,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import type { ReceiptItem } from './context-receipt';
+import type { RunUsage } from './run-usage';
 
 export interface RunHistoryEntry {
   readonly runId: string;
@@ -13,6 +14,21 @@ export interface RunHistoryEntry {
   readonly workflowId: string;
   /** Harness id, `vscode-lm`, or `none` when nothing could run. */
   readonly harness: string;
+  /** Name of the agent the card was assigned to, when it had one. */
+  readonly agent?: string;
+  /** Model the agent asked its CLI for, when it set one. */
+  readonly model?: string;
+  /** What the agent asked of the board in its verdict (counts; see board-actions.ts). */
+  readonly board?: {
+    readonly questions: number;
+    readonly proposals: number;
+    readonly handoffTo?: string;
+    readonly assigned?: number;
+    readonly notes: boolean;
+    readonly dropped?: readonly string[];
+  };
+  /** Tokens the run used, when the harness keeps a transcript (see run-usage.ts). */
+  readonly usage?: RunUsage;
   readonly verdict: string;
   readonly summary?: string;
   readonly startedAt: number;

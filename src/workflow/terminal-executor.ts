@@ -29,6 +29,37 @@ import { checkWatchdog, resolveWatchdogPolicy } from './harness/run-watchdog';
 import { buildContextReceipt, summarizeReceipt, type ReceiptItem } from './harness/context-receipt';
 import { CardSessionStore, cardSessionKey, planSession, recordAfterRun, type SessionPlan } from './harness/card-session';
 import { appendRunHistory, type RunHistoryEntry } from './harness/run-history';
+import { assignedAgent, readAgentTeam, type TeamAgent } from './harness/agent-team';
+import { latestProgressLine, ProgressThrottle } from './harness/progress-line';
+import { buildAgentBrief, buildResumeBrief, readAgentNotes } from './harness/agent-brief';
+import { readClaudeRunUsage, type RunUsage } from './harness/run-usage';
+
+/** What a running card's agent is doing now; the board shows it on the card. */
+export const agentProgress = new vscode.EventEmitter<{ artifactId: string; line: string }>();
+
+/** Every finished run's verdict, with the agent that ran it (see views/board-protocol.ts). */
+export interface AgentVerdictEvent {
+  readonly artifactId: string;
+  readonly workflowId: string;
+  readonly verdict: KanbanVerdict;
+  readonly agent?: TeamAgent;
+}
+export const agentVerdicts = new vscode.EventEmitter<AgentVerdictEvent>();
+
+/** Counts for the card's Activity feed: what the agent asked of the board. */
+function boardSummary(v: KanbanVerdict): RunHistoryEntry['board'] | undefined {
+  const b = v.board;
+  const dropped = v.boardDropped ?? [];
+  if (!b && !v.lead && dropped.length === 0) return undefined;
+  return {
+    questions: b?.questions.length ?? 0,
+    proposals: (b?.proposals.length ?? 0) + (v.lead?.stories.length ?? 0),
+    ...(b?.handoff ? { handoffTo: b.handoff.to } : {}),
+    ...(v.lead ? { assigned: v.lead.assign.length } : {}),
+    notes: !!b?.notes,
+    ...(dropped.length ? { dropped } : {}),
+  };
+}
 import {
   sanitizeId as sanitizeResultId,
   resultFilePath,
@@ -211,6 +242,11 @@ export interface HarnessRunOptions {
   cwd?: string;
   /** Always start a new agent conversation (recurring jobs must not grow one session forever). */
   freshSession?: boolean;
+  /**
+   * Instructions that change every run (the lead's runbook with the current
+   * board state). Sent on resumed runs too, where `skillContent` is not.
+   */
+  turnContext?: string;
 }
 
 /** Output folder for a run: inside the card's worktree when it has one, so sandboxed agents may write there. */
@@ -282,16 +318,23 @@ export function buildResumePrompt(
   artifact: { readonly id?: unknown } | undefined,
   outputFolder: string,
   runId?: string,
+  brief?: string,
+  turnContext?: string,
 ): string {
   const artifactId = typeof artifact?.id === 'string' && artifact.id ? artifact.id : 'unknown';
   const resultPath = resultFilePath(outputFolder, artifactId, workflowId);
-  return `${verdictContract(resultPath, runId)}---
+  return `${verdictContract(resultPath, runId)}${brief ? `${brief.trimEnd()}
+
+` : ''}---
 
 # Continue: ${workflowId} on ${artifactId}
 
 This continues your earlier session on this card. The workflow definition, project context and engineering principles you were given then still apply — do not re-read them unless you need to. The verdict file path and run id above are NEW for this run; the earlier ones are void.
 
-## The card now
+${turnContext ? `## This run
+${turnContext}
+
+` : ''}## The card now
 \`\`\`json
 ${JSON.stringify(artifact, null, 2)}
 \`\`\`
@@ -310,6 +353,7 @@ export function buildTerminalPrompt(
   skillContent?: string,
   runId?: string,
   projectContext?: string,
+  brief?: string,
 ): string {
   const artifactType = artifact?.type || 'unknown';
   const artifactId = artifact?.id || 'unknown';
@@ -332,7 +376,9 @@ export function buildTerminalPrompt(
   // task and the file-write as busy-work, leaving the verdict JSON on disk
   // as missing/UNKNOWN. Putting the contract at the top surfaces it before
   // the model overloads on the workflow narrative below.
-  return `${verdictContract(resultPath, runId)}---
+  return `${verdictContract(resultPath, runId)}${brief ? `${brief.trimEnd()}
+
+` : ''}---
 
 # BMAD Workflow Run
 
@@ -409,6 +455,7 @@ export class TerminalExecutor implements vscode.Disposable {
   private lastOutput = new Map<string, string>();
   /** Live time of each running session's latest output, read by the run watchdog. */
   private lastOutputTimes = new Map<string, number>();
+  private readonly progress = new ProgressThrottle();
   /** Agent conversation each run started or resumed, keyed by run id (see harness/card-session.ts). */
   private sessionPlans = new Map<string, SessionPlan>();
   /** What context each run was given, keyed by run id (see harness/context-receipt.ts). */
@@ -435,8 +482,31 @@ export class TerminalExecutor implements vscode.Disposable {
   }
 
   /** Resolve which harness runs the next board step (see harness-resolver.ts). */
-  resolveHarness(): Promise<HarnessResolution> {
-    return resolveBoardHarness();
+  resolveHarness(harnessOverride?: string): Promise<HarnessResolution> {
+    return resolveBoardHarness(harnessOverride);
+  }
+
+  /** Tell the board what the agent is doing now (throttled; see harness/progress-line.ts). */
+  private reportProgress(artifactId: string, output: string): void {
+    const line = this.progress.offer(artifactId, latestProgressLine(output), Date.now());
+    if (line) agentProgress.fire({ artifactId, line });
+  }
+
+  /** The agent brief for this run (harness/agent-brief.ts); the short form when resuming. */
+  private briefFor(artifact: HarnessArtifact, agent: TeamAgent | undefined, cliLabel: string, model: string | undefined, resumed: boolean): string {
+    let roster: readonly TeamAgent[] = [];
+    try { roster = readAgentTeam(getOutputFolder()).team.agents; } catch { /* no output folder yet */ }
+    const input = { agent, cliLabel, model, roster, notes: readAgentNotes(artifact) };
+    return resumed ? buildResumeBrief(input) : buildAgentBrief(input);
+  }
+
+  /** The named agent a card is assigned to, if any (see harness/agent-team.ts). */
+  private assigneeOf(artifactId: string): TeamAgent | undefined {
+    try {
+      return assignedAgent(readAgentTeam(getOutputFolder()).team, artifactId);
+    } catch {
+      return undefined; // no output folder yet: nothing is assigned
+    }
   }
 
   /**
@@ -482,9 +552,12 @@ export class TerminalExecutor implements vscode.Disposable {
     const trustBlock = agentRunBlockReason();
     if (trustBlock) return { kind: 'blocked', verdict: blocked(trustBlock) };
 
-    const resolution = options?.resolution ?? await this.resolveHarness();
+    const assignee = this.assigneeOf(artifactId);
+    const resolution = options?.resolution ?? await this.resolveHarness(assignee?.harness);
+    if (assignee) logger.info(`[TerminalExecutor] ${artifactId} is assigned to ${assignee.name} (${assignee.harness})`);
     this.lastOutput.delete(artifactId);
     this.lastOutputTimes.delete(artifactId);
+    this.progress.forget(artifactId);
     if (resolution.kind === 'none') {
       logger.warn(`[TerminalExecutor] No harness for ${artifactId}: ${resolution.message}`);
       return { kind: 'blocked', verdict: blocked(resolution.message) };
@@ -510,9 +583,10 @@ export class TerminalExecutor implements vscode.Disposable {
     // A resumed conversation already holds the full brief; send only the new turn.
     const resumed = sessionPlan?.resume === true;
     const projectContext = resumed ? undefined : loadProjectContext(outputFolder);
+    const brief = this.briefFor(artifact, assignee, adapter.label, assignee?.harness === adapter.id ? assignee.model : undefined, resumed);
     const prompt = resumed
-      ? buildResumePrompt(workflowId, artifact, outputFolder, sessionId)
-      : buildTerminalPrompt(workflowId, artifact, outputFolder, options?.skillContent, sessionId, projectContext);
+      ? buildResumePrompt(workflowId, artifact, outputFolder, sessionId, brief, options?.turnContext)
+      : buildTerminalPrompt(workflowId, artifact, outputFolder, options?.skillContent, sessionId, projectContext, brief);
     this.recordReceipt(sessionId, artifactId, {
       harness: provider, prompt, resumed, workflowId,
       skillContent: options?.skillContent,
@@ -542,7 +616,9 @@ export class TerminalExecutor implements vscode.Disposable {
     try {
       if (sessionPlan) this.sessionPlans.set(sessionId, sessionPlan);
       const session = sessionPlan ? { id: sessionPlan.sessionId, resume: sessionPlan.resume } : undefined;
-      const spec = buildHarnessLaunch(adapter, { binary, promptFile, resultPath, posture, workspaceDir, session });
+      // The assignee's model applies only when its CLI is the one running this step.
+      const model = assignee?.harness === adapter.id ? assignee.model : undefined;
+      const spec = buildHarnessLaunch(adapter, { binary, promptFile, resultPath, posture, workspaceDir, session, model });
       cmdLine = buildCommandLine(spec, shellKind);
     } catch (err) {
       disposeStagedPrompt(promptFile);
@@ -588,6 +664,7 @@ export class TerminalExecutor implements vscode.Disposable {
         accumulatedData += chunk;
         lastOutputAt = Date.now();
         this.lastOutputTimes.set(artifactId, lastOutputAt);
+        this.reportProgress(artifactId, accumulatedData);
         this.scheduleLockTimeout(artifactId);
 
         const cb = this.webviewStreams.get(artifactId);
@@ -673,6 +750,7 @@ export class TerminalExecutor implements vscode.Disposable {
         // Issue #21: keep the health-check output-progress timer fresh.
         lastOutputAt = Date.now();
         this.lastOutputTimes.set(artifactId, lastOutputAt);
+        this.reportProgress(artifactId, accumulatedData);
 
         // P1 #11 heartbeat: every chunk of terminal output refreshes the
         // lock-release timeout so long-running workflows don't have their
@@ -913,10 +991,20 @@ export class TerminalExecutor implements vscode.Disposable {
       freshSession: options?.freshSession,
     });
     const startedAtMs = Date.now();
-    const history = (runId: string, harness: string, v: KanbanVerdict) => {
+    const history = (runId: string, harness: string, v: KanbanVerdict, usage?: RunUsage) => {
       const context = this.receipts.get(runId);
       this.receipts.delete(runId);
-      this.recordHistory({ runId, artifactId, workflowId, harness, verdict: v.verdict, summary: v.summary, startedAt: startedAtMs, finishedAt: Date.now(), ...(context ? { context } : {}) });
+      const assignee = this.assigneeOf(artifactId);
+      const agent = assignee?.name;
+      const model = assignee?.harness === harness ? assignee.model : undefined;
+      const board = boardSummary(v);
+      this.recordHistory({
+        runId, artifactId, workflowId, harness, verdict: v.verdict, summary: v.summary, startedAt: startedAtMs, finishedAt: Date.now(),
+        ...(agent ? { agent } : {}), ...(model ? { model } : {}), ...(usage ? { usage } : {}),
+        ...(board ? { board } : {}), ...(context ? { context } : {}),
+      });
+      // The board protocol applier (views/board-protocol.ts) acts on what the agent asked for.
+      agentVerdicts.fire({ artifactId, workflowId, verdict: v, agent: assignee });
     };
     if (launch.kind === 'blocked') {
       history(`blocked-${startedAtMs}`, 'none', launch.verdict);
@@ -965,8 +1053,11 @@ export class TerminalExecutor implements vscode.Disposable {
         // CLI spend. Uses the captured prompt length (safe even if the
         // session was cleaned up).
         this.recordTerminalCost(artifactId, sessionId, v, capturedPromptLength, harnessId, startedAtMs);
+        // Tokens from the CLI's own transcript (Claude Code; see harness/run-usage.ts).
+        const plan = this.sessionPlans.get(sessionId);
+        const usage = plan && harnessId === 'claude' ? readClaudeRunUsage(plan.cwd, plan.sessionId, startedAtMs) : undefined;
         this.recordCardSession(sessionId, v);
-        history(sessionId, harnessId, v);
+        history(sessionId, harnessId, v, usage);
         resolve(v);
       };
       // Abort (Stop / Stop All Agents): kill the agent first so it cannot

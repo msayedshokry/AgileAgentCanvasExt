@@ -48,6 +48,8 @@ export interface LaunchContext {
    * See card-session.ts for when a session is resumed.
    */
   readonly session?: { readonly id: string; readonly resume: boolean };
+  /** Model id for adapters with `acceptsModel`; undefined uses the CLI's default. */
+  readonly model?: string;
 }
 
 export interface HarnessAdapter {
@@ -64,6 +66,8 @@ export interface HarnessAdapter {
   readonly postureNotes: Readonly<Record<PermissionPosture, string>>;
   /** True when the CLI can start a conversation with a chosen id and resume it later. */
   readonly sessionResume?: boolean;
+  /** True when buildLaunch passes `ctx.model` to the CLI's model flag (flag checked against the CLI's --help). */
+  readonly acceptsModel?: boolean;
   buildLaunch(ctx: LaunchContext): LaunchSpec;
 }
 
@@ -92,12 +96,14 @@ const claude: HarnessAdapter = {
   // path is fresh each run), so Write is allow-listed explicitly.
   // `--session-id <uuid>` names a new conversation; `--resume <uuid>` continues it.
   sessionResume: true,
-  buildLaunch: ({ binary, posture, session }) => ({
+  acceptsModel: true,
+  buildLaunch: ({ binary, posture, session, model }) => ({
     args: [
       ...(posture === 'full'
         ? [binary, '-p', '--permission-mode', 'bypassPermissions', '--dangerously-skip-permissions']
         : [binary, '-p', '--permission-mode', 'acceptEdits', '--allowedTools', 'Read Write Edit Glob Grep']),
       ...(session ? [session.resume ? '--resume' : '--session-id', session.id] : []),
+      ...(model ? ['--model', model] : []),
     ],
   }),
 };
@@ -120,11 +126,15 @@ const codex: HarnessAdapter = {
   // workspace-write to read-only unless a Windows sandbox mode is configured,
   // so every shell write is "rejected: blocked by policy". The key is ignored
   // on other platforms. Unquoted so it stays a SAFE_ARG in every shell.
-  buildLaunch: ({ binary, posture }) => ({
-    args: posture === 'full'
-      ? [binary, 'exec', '--dangerously-bypass-approvals-and-sandbox', '--skip-git-repo-check', '-']
-      : [binary, 'exec', '--sandbox', 'workspace-write', '-c', 'windows.sandbox=unelevated', '--skip-git-repo-check', '-'],
-  }),
+  acceptsModel: true,
+  buildLaunch: ({ binary, posture, model }) => {
+    const m = model ? ['-m', model] : [];
+    return {
+      args: posture === 'full'
+        ? [binary, 'exec', ...m, '--dangerously-bypass-approvals-and-sandbox', '--skip-git-repo-check', '-']
+        : [binary, 'exec', ...m, '--sandbox', 'workspace-write', '-c', 'windows.sandbox=unelevated', '--skip-git-repo-check', '-'],
+    };
+  },
 };
 
 const gemini: HarnessAdapter = {
@@ -139,8 +149,9 @@ const gemini: HarnessAdapter = {
     full: 'All tools auto-approved (--approval-mode yolo).',
   },
   // gemini 0.35: `-p/--prompt` forces headless mode.
-  buildLaunch: ({ binary, posture, promptFile }) => ({
-    args: [binary, '--approval-mode', posture === 'full' ? 'yolo' : 'auto_edit', '-p', pointerPrompt(promptFile)],
+  acceptsModel: true,
+  buildLaunch: ({ binary, posture, promptFile, model }) => ({
+    args: [binary, ...(model ? ['-m', model] : []), '--approval-mode', posture === 'full' ? 'yolo' : 'auto_edit', '-p', pointerPrompt(promptFile)],
   }),
 };
 
@@ -208,11 +219,13 @@ const opencode: HarnessAdapter = {
   // point anywhere (VS Code launched from another shell); writes under the
   // real workspace then count as "external_directory" and are rejected.
   // --dir names the workspace explicitly.
-  buildLaunch: ({ binary, posture, workspaceDir }) => {
+  acceptsModel: true,
+  buildLaunch: ({ binary, posture, workspaceDir, model }) => {
     const dir = workspaceDir ? ['--dir', workspaceDir.replace(/\\/g, '/')] : [];
+    const m = model ? ['-m', model] : [];
     return posture === 'full'
-      ? { args: [binary, 'run', ...dir, '--auto'] }
-      : { args: [binary, 'run', ...dir], env: { OPENCODE_PERMISSION: OPENCODE_SANDBOX_PERMISSION } };
+      ? { args: [binary, 'run', ...dir, ...m, '--auto'] }
+      : { args: [binary, 'run', ...dir, ...m], env: { OPENCODE_PERMISSION: OPENCODE_SANDBOX_PERMISSION } };
   },
 };
 
@@ -229,9 +242,10 @@ const aider: HarnessAdapter = {
   },
   // aider 0.86: --message-file runs one message and exits. The verdict file
   // is added with --file so aider is allowed to create it.
-  buildLaunch: ({ binary, posture, promptFile, resultPath }) => ({
+  acceptsModel: true,
+  buildLaunch: ({ binary, posture, promptFile, resultPath, model }) => ({
     args: [
-      binary, '--message-file', promptFile, '--file', resultPath, '--yes-always',
+      binary, ...(model ? ['--model', model] : []), '--message-file', promptFile, '--file', resultPath, '--yes-always',
       ...(posture === 'full' ? [] : ['--no-suggest-shell-commands']),
     ],
   }),
@@ -249,11 +263,15 @@ const pi: HarnessAdapter = {
     full: 'All tools, and project-local files trusted (--approve).',
   },
   // pi 1.2: `-p` non-interactive with piped stdin; --tools is an allow-list.
-  buildLaunch: ({ binary, posture }) => ({
-    args: posture === 'full'
-      ? [binary, '--no-session', '--approve', '-p']
-      : [binary, '--no-session', '--tools', 'read,write,edit', '-p'],
-  }),
+  acceptsModel: true,
+  buildLaunch: ({ binary, posture, model }) => {
+    const m = model ? ['--model', model] : [];
+    return {
+      args: posture === 'full'
+        ? [binary, '--no-session', ...m, '--approve', '-p']
+        : [binary, '--no-session', ...m, '--tools', 'read,write,edit', '-p'],
+    };
+  },
 };
 
 /** All adapters, in auto-detection preference order. */

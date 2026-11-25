@@ -148,3 +148,40 @@ describe('helpers', () => {
     expect(harnessForChatProvider('auto')).toBeUndefined();
   });
 });
+
+describe('model per agent (flags read from each CLI --help, 2026-11-25)', () => {
+  const withModel = (id: string, model?: string) =>
+    buildHarnessLaunch(getHarnessAdapter(id)!, { ...ctx('sandboxed', getHarnessAdapter(id)!.binaries[0]), model }).args;
+
+  it.each([
+    ['claude', ['--model', 'sonnet']],
+    ['codex', ['-m', 'sonnet']],
+    ['gemini', ['-m', 'sonnet']],
+    ['opencode', ['-m', 'sonnet']],
+    ['aider', ['--model', 'sonnet']],
+    ['pi', ['--model', 'sonnet']],
+  ])('%s passes the model with its own flag', (id, flag) => {
+    const args = withModel(id, 'sonnet');
+    const at = args.indexOf(flag[0]);
+    expect(at).toBeGreaterThan(0);
+    expect(args[at + 1]).toBe('sonnet');
+    expect(getHarnessAdapter(id)!.acceptsModel).toBe(true);
+  });
+
+  it('keeps codex reading the prompt from stdin last', () => {
+    expect(withModel('codex', 'gpt-reserve').at(-1)).toBe('-');
+  });
+
+  it('leaves the CLI default when no model is set', () => {
+    for (const a of HARNESS_ADAPTERS) {
+      const args = buildHarnessLaunch(a, ctx('sandboxed', a.binaries[0])).args;
+      expect(args).not.toContain('--model');
+      expect(args).not.toContain('-m');
+    }
+  });
+
+  it('does not claim a model flag for CLIs whose flag is unverified', () => {
+    expect(getHarnessAdapter('copilot-cli')!.acceptsModel).toBeFalsy();
+    expect(getHarnessAdapter('cursor-agent')!.acceptsModel).toBeFalsy();
+  });
+});

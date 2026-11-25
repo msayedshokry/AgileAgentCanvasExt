@@ -22,6 +22,10 @@ export interface ProposedStory {
   scope?: string[];
   /** Set when the user rejects. */
   rejectionReason?: string;
+  /** Epic the story belongs in (agent proposals land next to the card that proposed them). */
+  epicId?: string;
+  /** Acceptance criteria, when the proposer gave them (the lead agent does). */
+  acceptance?: string[];
 }
 
 export interface ProposedGoal {
@@ -33,6 +37,8 @@ export interface ProposedGoal {
   approvedStories: ProposedStory[];
   rejectedStories: ProposedStory[];
   submittedBy?: string;
+  /** Set for cards an agent proposed: which card and agent they came from. */
+  source?: { cardId: string; agent: string };
 }
 
 export interface DecomposerHooks {
@@ -83,6 +89,28 @@ export class GoalDecomposer extends EventEmitter {
       this.emit('decompositionFailed', proposed);
     }
     return id;
+  }
+
+  /**
+   * Queue cards an agent proposed (from its verdict's board.proposals, or the
+   * lead's plan) for the same review as a decomposed goal. No LLM call.
+   */
+  proposeStories(summary: string, source: { cardId: string; agent: string }, stories: ProposedStory[]): ProposedGoal {
+    const id = `goal-${Date.now()}-${++this.idCounter}`;
+    const proposed: ProposedGoal = {
+      id, goal: summary, submittedAt: Date.now(), status: 'review',
+      proposedStories: stories, approvedStories: [], rejectedStories: [],
+      submittedBy: source.agent, source,
+    };
+    this.goals.set(id, proposed);
+    this.emit('readyForReview', proposed);
+    logger.info('Agent proposed stories', { id, card: source.cardId, count: stories.length });
+    return proposed;
+  }
+
+  /** Goals waiting for review, oldest first. */
+  pendingReview(): ProposedGoal[] {
+    return [...this.goals.values()].filter((g) => g.status === 'review').sort((a, b) => a.submittedAt - b.submittedAt);
   }
 
   /** Approve a subset of proposed stories. Reject the rest. */

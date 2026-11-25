@@ -97,3 +97,24 @@ describe('verdict hardening (untrusted agent output)', () => {
     expect(verdictMatchesRun(normalizeVerdict({ verdict: 'COMPLETED' }), 'run-new')).toBe(true);
   });
 });
+
+describe('normalizeVerdict — board and lead blocks', () => {
+  it('carries sanitized board actions and the lead plan, and reports what was dropped', () => {
+    const v = normalizeVerdict({
+      verdict: 'BLOCKED',
+      summary: 'Need the password rules',
+      board: { questions: ['8 or 12?'], handoff: { to: 'not an id!' } },
+      lead: { stories: [{ ref: 'a', title: 'Form' }], assign: [{ card: 'a', to: 'dev' }], next: 'wait' },
+    });
+    expect(v.board).toEqual({ questions: ['8 or 12?'], proposals: [] });
+    expect(v.lead).toEqual({ stories: [{ ref: 'a', title: 'Form' }], assign: [{ card: 'a', to: 'dev' }], next: 'wait' });
+    expect(v.boardDropped).toEqual(['a handoff without a valid agent id']);
+  });
+
+  it('adds nothing for a plain verdict', () => {
+    const v = normalizeVerdict({ verdict: 'COMPLETED', summary: 'done' });
+    expect(v).not.toHaveProperty('board');
+    expect(v).not.toHaveProperty('lead');
+    expect(v).not.toHaveProperty('boardDropped');
+  });
+});

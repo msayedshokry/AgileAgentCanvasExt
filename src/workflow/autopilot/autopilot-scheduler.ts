@@ -19,6 +19,7 @@ import { getOutputFolder } from '../kanban-verdict';
 import { terminalExecutor } from '../terminal-executor';
 import { minuteKey, nextRuns } from './cron';
 import { claimScheduledRun, pruneClaims } from './autopilot-claim';
+import { dismissNeedsYou, notifyNeedsYou } from '../../views/needs-you';
 import {
   AUTOPILOTS_FILE, AUTOPILOT_TEMPLATE, autopilotArtifact, dueAutopilots, parseAutopilotConfig,
   type AutopilotConfig, type ParsedAutopilot,
@@ -113,16 +114,27 @@ export class AutopilotScheduler implements vscode.Disposable {
       logger.info(`[Autopilot] ${autopilot.id}: ${verdict.verdict}`);
       if (verdict.verdict !== 'COMPLETED' && verdict.verdict !== 'APPROVED') {
         const detail = (verdict.summary ?? '').split('\n')[0].slice(0, 200);
-        void vscode.window.showWarningMessage(`Autopilot "${autopilot.name}" needs attention: ${verdict.verdict}${detail ? ` — ${detail}` : ''}`);
-      } else if (trigger === 'manual') {
-        void vscode.window.showInformationMessage(`Autopilot "${autopilot.name}" finished: ${verdict.verdict}.`);
+        this.needsAttention(autopilot, trigger, `${verdict.verdict}${detail ? ` — ${detail}` : ''}`);
+      } else {
+        dismissNeedsYou(autopilotArtifact(autopilot).id);
+        if (trigger === 'manual') void vscode.window.showInformationMessage(`Autopilot "${autopilot.name}" finished: ${verdict.verdict}.`);
       }
     } catch (err) {
       logger.warn(`[Autopilot] ${autopilot.id} failed: ${errMsg(err)}`);
-      void vscode.window.showWarningMessage(`Autopilot "${autopilot.name}" could not run: ${errMsg(err)}`);
+      this.needsAttention(autopilot, trigger, `could not run: ${errMsg(err)}`);
     } finally {
       this.running.delete(autopilot.id);
     }
+  }
+
+  /**
+   * A scheduled run that needs a person goes to the Inbox (and the status-bar
+   * count) rather than a popup; a run the user started by hand still says so
+   * directly, since they are waiting on it.
+   */
+  private needsAttention(autopilot: ParsedAutopilot, trigger: 'schedule' | 'manual', what: string): void {
+    notifyNeedsYou(autopilotArtifact(autopilot).id, 'autopilot', `Autopilot "${autopilot.name}": ${what}`);
+    if (trigger === 'manual') void vscode.window.showWarningMessage(`Autopilot "${autopilot.name}" needs attention: ${what}`);
   }
 
   private reportConfigErrors(errors: readonly string[]): void {

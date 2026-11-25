@@ -3,6 +3,8 @@ import type { KanbanItem } from '../components/kanban/KanbanTypes';
 import { vscode } from '../vscodeApi';
 import { useEvent } from './useEvent';
 import { RunInsights } from './RunInsights';
+import type { AgentTeamView } from './agent-team-view';
+import { FollowUpComposer } from './FollowUpComposer';
 import {
   AgentInfo,
   getInterruptionMessage,
@@ -29,6 +31,10 @@ interface AgenticDetailPanelProps {
   chatSessionActive: boolean;
   /** The model name, used to compose a more specific Resume tooltip. */
   chatSessionModel?: string;
+  /** Named agents and assignments, for the assignee picker. */
+  team?: AgentTeamView;
+  /** Opens the agent editor (falls back to the team file when absent). */
+  onEditTeam?: () => void;
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -47,6 +53,30 @@ function AgentAvatar({ name, icon }: { name: string; icon?: string }) {
   );
 }
 
+/** Who runs this card: a named agent, or whatever the board defaults to. */
+function AssigneePicker({ artifactId, team, onEditTeam }: { artifactId: string; team: AgentTeamView; onEditTeam?: () => void }) {
+  return (
+    <div className="agent-assignee">
+      <select
+        className="agent-assignee-select"
+        aria-label="Assign this card to an agent"
+        value={team.assignments[artifactId] ?? ''}
+        onChange={e => vscode.postMessage({ type: 'kanban:assignAgent', artifactId, agentId: e.target.value || null })}
+      >
+        <option value="">Board default</option>
+        {team.agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+      </select>
+      <button
+        className="agent-assignee-edit"
+        onClick={() => (onEditTeam ? onEditTeam() : vscode.postMessage({ type: 'kanban:editAgentTeam' }))}
+        title={team.rosterDefined ? 'Add or change agents, their CLI and model' : 'Name your agents and pick their CLI and model'}
+      >
+        {team.rosterDefined ? 'Edit team' : 'Name agents'}
+      </button>
+    </div>
+  );
+}
+
 const RESUME_TIMEOUT_MS = 15_000;
 const UNDO_DISMISS_MS = 8_000;
 
@@ -61,6 +91,8 @@ export function AgenticDetailPanel({
   onResumeStateChange,
   chatSessionActive,
   chatSessionModel,
+  team,
+  onEditTeam,
 }: AgenticDetailPanelProps) {
   const [agentInfo, setAgentInfo] = useState<AgentInfo | null>(() => {
     const cached = infoCache?.current.get(item.id);
@@ -185,7 +217,6 @@ export function AgenticDetailPanel({
   // ── Display values from agent info ──
   const persona = agentInfo?.persona;
   const terminalInfo = agentInfo?.terminalInfo;
-  const traceSummary = agentInfo?.traceSummary;
   const latestVerdict = agentInfo?.latestVerdict;
   const lockDetail = agentInfo?.lockDetail;
   const recentTrace = agentInfo?.recentTrace;
@@ -225,7 +256,6 @@ export function AgenticDetailPanel({
   // status badges + Agent info are always visible.
   const [showHarness, setShowHarness] = useState(hasHarnessFailures);
   const [showBlockers, setShowBlockers] = useState(false);
-  const [showTrace, setShowTrace] = useState(false);
 
   return (
     <div className="agentic-detail-panel">
@@ -288,8 +318,8 @@ export function AgenticDetailPanel({
         </section>
       ) : null}
 
-      {/* ── Why it stopped + fixes, prompt preview, run timeline ── */}
-      <RunInsights item={item} />
+      {/* ── Why it stopped + fixes, prompt preview, one activity feed ── */}
+      <RunInsights item={item} trace={recentTrace} />
 
       {/* ── Status chips — workflow / provider / started / lock / trace ── */}
       <div className="agentic-chips">
@@ -316,13 +346,16 @@ export function AgenticDetailPanel({
           <span className="agentic-loading">Loading agent…</span>
         ) : (
           <>
-            <AgentAvatar name={agentDisplayName} icon={agentIcon} />
+            <AgentAvatar name={item.assignee?.name ?? agentDisplayName} icon={item.assignee ? undefined : agentIcon} />
             <div className="agentic-agent-info">
-              <div className="agentic-agent-name">{agentDisplayName}</div>
-              {agentTitle && <div className="agentic-agent-title">{agentTitle}</div>}
+              <div className="agentic-agent-name">{item.assignee?.name ?? agentDisplayName}</div>
+              {(item.assignee ? 'Assignee' : agentTitle) && (
+                <div className="agentic-agent-title">{item.assignee ? 'Assignee' : agentTitle}</div>
+              )}
             </div>
           </>
         )}
+        {team && <AssigneePicker artifactId={item.id} team={team} onEditTeam={onEditTeam} />}
       </div>
 
       {/* ── Collapsible context (harness / blockers / activity) ── */}
@@ -374,38 +407,9 @@ export function AgenticDetailPanel({
         </details>
       )}
 
-      {traceSummary && (traceSummary.decisions + traceSummary.toolCalls + traceSummary.errors) > 0 && (
-        <details
-          className="agentic-collapse"
-          open={showTrace}
-          onToggle={e => setShowTrace((e.target as HTMLDetailsElement).open)}
-        >
-          <summary className="agentic-collapse-summary">
-            Activity
-            <span className="agentic-collapse-counts">
-              <span>{traceSummary.decisions}d</span>
-              <span>{traceSummary.toolCalls}tc</span>
-              {traceSummary.errors > 0 && <span className="agentic-collapse-counts--err">{traceSummary.errors}err</span>}
-            </span>
-          </summary>
-          <div className="agentic-collapse-body">
-            {recentTrace && recentTrace.length > 0 && (
-              <ul className="agentic-trace-list">
-                {recentTrace.map((entry, idx) => (
-                  <li key={idx} className={entry.isError ? 'agentic-trace-item--err' : ''}>
-                    <span className="agentic-trace-time">{formatTime(entry.ts)}</span>
-                    <span className="agentic-trace-type">{entry.type}</span>
-                    <span className="agentic-trace-summary">{entry.summary || '—'}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </details>
-      )}
-
       {/* ── Sticky footer with actions — only what's relevant ── */}
       <footer className="agentic-detail-footer">
+        <FollowUpComposer artifactId={item.id} isRunning={isRunning} />
         {isInterrupted && (
           <button
             className={`agentic-btn agentic-btn--primary agentic-btn--block${isResuming ? ' is-loading' : ''}`}

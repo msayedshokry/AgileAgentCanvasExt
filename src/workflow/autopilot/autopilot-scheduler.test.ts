@@ -9,6 +9,8 @@ const executeAndAwaitVerdict = vi.hoisted(() => vi.fn());
 
 vi.mock('../kanban-verdict', () => ({ getOutputFolder: () => state.outputFolder }));
 vi.mock('../terminal-executor', () => ({ terminalExecutor: { executeAndAwaitVerdict } }));
+const needsYou = vi.hoisted(() => ({ notifyNeedsYou: vi.fn(), dismissNeedsYou: vi.fn() }));
+vi.mock('../../views/needs-you', () => needsYou);
 
 import { AutopilotScheduler } from './autopilot-scheduler';
 
@@ -22,6 +24,8 @@ beforeEach(() => {
   state.enabled = true;
   executeAndAwaitVerdict.mockReset().mockResolvedValue({ verdict: 'COMPLETED', summary: 'ok' });
   vi.mocked(vscode.window.showWarningMessage).mockClear();
+  needsYou.notifyNeedsYou.mockClear();
+  needsYou.dismissNeedsYou.mockClear();
   vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({
     get: (key: string, fallback?: unknown) => (key === 'autopilots.enabled' ? state.enabled : fallback),
   } as unknown as vscode.WorkspaceConfiguration);
@@ -56,12 +60,27 @@ describe('AutopilotScheduler.tick', () => {
     await vi.waitFor(() => expect(executeAndAwaitVerdict).toHaveBeenCalledTimes(1));
   });
 
-  it('warns only when a run needs a person', async () => {
+  it('sends a scheduled run that needs a person to the Inbox, not a popup', async () => {
     executeAndAwaitVerdict.mockResolvedValue({ verdict: 'BLOCKED', summary: 'knip is not installed' });
     writeConfig([daily]);
     new AutopilotScheduler().tick(NINE);
-    await vi.waitFor(() => expect(vscode.window.showWarningMessage).toHaveBeenCalledWith(
-      'Autopilot "Daily summary" needs attention: BLOCKED — knip is not installed'));
+    await vi.waitFor(() => expect(needsYou.notifyNeedsYou).toHaveBeenCalledWith(
+      'AUTOPILOT-daily', 'autopilot', 'Autopilot "Daily summary": BLOCKED — knip is not installed'));
+    expect(vscode.window.showWarningMessage).not.toHaveBeenCalled();
+  });
+
+  it('clears the Inbox item once a later run succeeds', async () => {
+    writeConfig([daily]);
+    new AutopilotScheduler().tick(NINE);
+    await vi.waitFor(() => expect(needsYou.dismissNeedsYou).toHaveBeenCalledWith('AUTOPILOT-daily'));
+    expect(needsYou.notifyNeedsYou).not.toHaveBeenCalled();
+  });
+
+  it('still tells the user directly when a run they started by hand needs them', async () => {
+    executeAndAwaitVerdict.mockResolvedValue({ verdict: 'BLOCKED', summary: 'knip is not installed' });
+    await new AutopilotScheduler().run(daily as never, 'manual');
+    expect(vscode.window.showWarningMessage).toHaveBeenCalledWith(
+      'Autopilot "Daily summary" needs attention: BLOCKED — knip is not installed');
   });
 
   it('reports config problems once, not on every tick', () => {

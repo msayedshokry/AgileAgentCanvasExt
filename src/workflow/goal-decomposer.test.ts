@@ -40,3 +40,26 @@ describe('GoalDecomposer', () => {
     await expect(d.submit('whatever')).rejects.toThrow(/hooks not set/);
   });
 });
+
+describe('GoalDecomposer — agent proposals', () => {
+  it('queues proposed stories for review with their source, then dispatches the approved ones', async () => {
+    const d = new GoalDecomposer();
+    const persist = vi.fn(async (s: ProposedStory) => `art-${s.id}`);
+    d.setHooks({ decompose: vi.fn(), persistStory: persist });
+    const ready: string[] = [];
+    d.on('readyForReview', (g) => ready.push(g.id));
+
+    const goal = d.proposeStories('Proposed by Dev on S-1', { cardId: 'S-1', agent: 'Dev' }, [
+      { id: 'q1', title: 'Rate limiting', epicId: 'E-1' },
+      { id: 'q2', title: 'Audit log', epicId: 'E-1' },
+    ]);
+    expect(goal).toMatchObject({ status: 'review', source: { cardId: 'S-1', agent: 'Dev' }, submittedBy: 'Dev' });
+    expect(ready).toEqual([goal.id]);
+    expect(d.pendingReview().map((g) => g.id)).toEqual([goal.id]);
+
+    await d.approveStories(goal.id, ['q1']);
+    expect(await d.dispatch(goal.id)).toEqual(['art-q1']);
+    expect(persist).toHaveBeenCalledWith(expect.objectContaining({ title: 'Rate limiting', epicId: 'E-1' }));
+    expect(d.pendingReview()).toEqual([]);
+  });
+});

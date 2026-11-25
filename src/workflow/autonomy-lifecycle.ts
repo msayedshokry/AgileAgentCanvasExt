@@ -583,6 +583,21 @@ export class AutonomyLifecycle extends EventEmitter {
       },
 
       persistStory: async (story: ProposedStory): Promise<string> => {
+        // Agent proposals and the lead's stories name their epic: they land
+        // next to the card that proposed them.
+        if (story.epicId && store.findArtifactById(story.epicId)) {
+          const created = store.createStory(story.epicId);
+          await store.updateArtifact('story', created.id, {
+            title: story.title,
+            notes: story.description || '',
+            status: 'ready-for-dev',
+            ...(story.priority ? { priority: story.priority } : {}),
+            ...(story.acceptance?.length
+              ? { acceptanceCriteria: story.acceptance.map((criterion) => ({ criterion, status: 'draft' as const })) }
+              : {}),
+          } as ArtifactChanges);
+          return created.id;
+        }
         // Create ONE epic per goal batch (first persistStory call creates it,
         // subsequent calls reuse it so all stories land under a single epic).
         if (!goalEpicId) {

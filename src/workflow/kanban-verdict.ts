@@ -11,6 +11,7 @@
 
 import * as path from 'path';
 import * as fs from 'fs';
+import { hasBoardActions, sanitizeBoardActions, sanitizeLeadPlan, type BoardActions, type LeadPlan } from './harness/board-actions';
 
 /** Possible verdict outcomes across both lane agents. */
 export type KanbanVerdictKind =
@@ -39,6 +40,12 @@ export interface KanbanVerdict {
   raw?: unknown;
   /** Run id the agent echoed back (`run_id`), when the prompt asked for one. */
   runId?: string;
+  /** What the agent asked of the board (questions, proposals, handoff, notes); sanitized. */
+  board?: BoardActions;
+  /** The lead agent's plan (stories, assignments, next step); sanitized. */
+  lead?: LeadPlan;
+  /** Parts of `board`/`lead` that were dropped by the sanitizer, in plain words. */
+  boardDropped?: string[];
 }
 
 /** Caps on agent-supplied fix requests (they are persisted into artifact metadata). */
@@ -166,7 +173,17 @@ export function normalizeVerdict(parsed: unknown): KanbanVerdict {
 
   const runId = typeof obj.run_id === 'string' ? obj.run_id : typeof obj.runId === 'string' ? obj.runId : undefined;
 
-  return { verdict, fixRequests, summary, raw: parsed, ...(runId ? { runId } : {}) };
+  const board = sanitizeBoardActions(obj.board);
+  const lead = sanitizeLeadPlan(obj.lead);
+  const boardDropped = [...board.dropped, ...lead.dropped];
+
+  return {
+    verdict, fixRequests, summary, raw: parsed,
+    ...(runId ? { runId } : {}),
+    ...(hasBoardActions(board.value) ? { board: board.value } : {}),
+    ...(lead.value ? { lead: lead.value } : {}),
+    ...(boardDropped.length ? { boardDropped } : {}),
+  };
 }
 
 /**

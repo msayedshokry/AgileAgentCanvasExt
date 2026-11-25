@@ -49,11 +49,15 @@ async function hasLanguageModel(): Promise<boolean> {
   }
 }
 
-/** Decide which harness runs the next board step on this machine. */
-export async function resolveBoardHarness(): Promise<HarnessResolution> {
+/**
+ * Decide which harness runs the next board step on this machine.
+ * `harnessOverride` is a card assignee's harness; it is resolved like an
+ * explicit setting (blocked with an install hint if missing, never swapped).
+ */
+export async function resolveBoardHarness(harnessOverride?: string): Promise<HarnessResolution> {
   const selected = getSelectedProvider();
   return resolveHarness({
-    configuredHarness: getConfiguredHarness(),
+    configuredHarness: harnessOverride ?? getConfiguredHarness(),
     selectedChatProvider: selected === 'auto' ? loadWorkspaceChatProviderFromSettings() : selected,
     isOnPath: (name) => isOnPathCached(name),
     hasLanguageModel,

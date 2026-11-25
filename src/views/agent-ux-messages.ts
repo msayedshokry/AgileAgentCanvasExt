@@ -27,6 +27,8 @@ import { execTool } from '../workflow/harness/git-cli';
 import { getCardPullRequest, prFixRequests } from '../workflow/harness/pull-request';
 import { createLogger } from '../utils/logger';
 import { errMsg } from '../utils/error';
+import { dismissNeedsYou, needsYouList } from './needs-you';
+import { readAgentNotes } from '../workflow/harness/agent-brief';
 
 const logger = createLogger('agent-ux-messages');
 const CONFIG = 'agileagentcanvas';
@@ -234,7 +236,7 @@ function gitCommitsFor(artifactId: string, cwd: string): Promise<AgentCommit[]> 
   });
 }
 
-async function postTimeline(artifactId: string, post: Post): Promise<void> {
+async function postTimeline(artifactId: string, post: Post, store?: ArtifactStore): Promise<void> {
   const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
   const runs = readRunHistory(getOutputFolder(), 500).filter((e) => e.artifactId === artifactId).slice(0, 30)
     .map((e) => ({ ...e, failure: e.verdict === 'COMPLETED' || e.verdict === 'APPROVED' ? undefined : classifyAgentFailure(e.summary) }));
@@ -245,7 +247,9 @@ async function postTimeline(artifactId: string, post: Post): Promise<void> {
     if (r.code === 0) c.files = r.stdout.split('\n').map((l) => l.trim()).filter(Boolean).slice(0, 50);
   }));
   const pr = cwd ? await getCardPullRequest(artifactId, cwd) : undefined;
-  post({ type: 'kanban:runTimeline', artifactId, runs, commits, pr });
+  // Notes agents and the lead left on the card (board protocol), for the Activity feed.
+  const notes = store ? { notes: readAgentNotes(store.findArtifactById(artifactId)?.artifact) } : {};
+  post({ type: 'kanban:runTimeline', artifactId, runs, commits, pr, ...notes });
 }
 
 async function revertCommit(artifactId: string, sha: string, post: Post): Promise<void> {
@@ -283,7 +287,7 @@ async function addressReview(artifactId: string, store: ArtifactStore, post: Pos
   await store.updateArtifact(found.type, artifactId, { metadata: { fixRequests: fixes }, status: 'ready-for-dev' } as ArtifactChanges);
   void vscode.window.showInformationMessage(`Sending ${fixes.length} review item(s) from ${pr.url} back to the agent.`);
   const fresh = store.findArtifactById(artifactId)?.artifact ?? found.artifact;
-  void kanbanOrchestrator.runAutonomous(fresh, {}).then(() => postTimeline(artifactId, post));
+  void kanbanOrchestrator.runAutonomous(fresh, {}).then(() => postTimeline(artifactId, post, store));
 }
 
 // ── Router ───────────────────────────────────────────────────────────────────
@@ -291,6 +295,7 @@ async function addressReview(artifactId: string, store: ArtifactStore, post: Pos
 const HANDLED = new Set([
   'harness:getStatus', 'harness:select', 'harness:setPosture', 'harness:signIn', 'harness:install', 'harness:smoke', 'harness:pick',
   'kanban:fixAction', 'kanban:previewPrompt', 'kanban:getRunTimeline', 'kanban:revertRun', 'kanban:showOutput', 'kanban:addressReview',
+  'kanban:getInbox', 'kanban:dismissInbox',
 ]);
 
 /** Returns true when the message was one of ours. */
@@ -346,13 +351,20 @@ export async function handleAgentUxMessage(
         if (artifactId) await previewPrompt(artifactId, store);
         break;
       case 'kanban:getRunTimeline':
-        if (artifactId) await postTimeline(artifactId, post);
+        if (artifactId) await postTimeline(artifactId, post, store);
         break;
       case 'kanban:addressReview':
         if (artifactId) await addressReview(artifactId, store, post);
         break;
       case 'kanban:revertRun':
         if (artifactId && typeof message.sha === 'string') await revertCommit(artifactId, message.sha, post);
+        break;
+      case 'kanban:getInbox':
+        post({ type: 'kanban:inbox', items: needsYouList() });
+        break;
+      case 'kanban:dismissInbox':
+        // The tracker re-broadcasts the new list to every board.
+        if (artifactId) dismissNeedsYou(artifactId);
         break;
     }
   } catch (err) {

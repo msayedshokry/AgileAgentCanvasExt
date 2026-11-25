@@ -2,6 +2,7 @@ import type { KanbanItem } from './KanbanTypes';
 import { vscode } from '../../vscodeApi';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useEvent } from '../../agentic-kanban/useEvent';
+import { getAvatarColor, getInitials } from '../../agentic-kanban/kanban-helpers';
 
 // ─── KanbanCard ───────────────────────────────────────────────────────────────
 // Shared presentational card used by SprintPlanningView (read-only) and
@@ -200,6 +201,16 @@ export function KanbanCard({ item, index, draggable, onDragStart, onClick, class
         </button>
       )}
       <span className="kanban-card-key">{item.key}</span>
+      {item.assignee && (
+        <span
+          className="kanban-card-assignee"
+          style={{ '--avatar-color': getAvatarColor(item.assignee.name) } as React.CSSProperties}
+          title={`Assigned to ${item.assignee.name}`}
+          aria-label={`Assigned to ${item.assignee.name}`}
+        >
+          {getInitials(item.assignee.name)}
+        </span>
+      )}
       {isEditing ? (
         <input
           ref={editInputRef}
@@ -254,7 +265,11 @@ export function KanbanCard({ item, index, draggable, onDragStart, onClick, class
           Terminal active
         </span>
       )}
-      {isRunning && item.agentState?.agentRole && !hasTerminal && (
+      {isRunning && item.progressLine ? (
+        <span className="kanban-card-progress" title={item.progressLine}>
+          {item.progressLine}
+        </span>
+      ) : isRunning && item.agentState?.agentRole && !hasTerminal && (
         <span className="kanban-card-agent-badge">
           {item.agentState.agentRole} is working...
         </span>

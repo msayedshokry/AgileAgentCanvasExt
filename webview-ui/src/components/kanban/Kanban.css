@@ -273,6 +273,43 @@
   text-transform: uppercase;
 }
 
+/* Assignee: initials in the key band's corner. Ink on paper with a ring in
+   the agent's colour, so the text keeps its contrast whatever the colour. */
+.kanban-card-assignee {
+  position: absolute;
+  top: 3px;
+  right: var(--space-2);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1.5px var(--avatar-color, var(--rule-strong));
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: var(--weight-strong);
+  letter-spacing: 0;
+  line-height: 1;
+}
+/* Epics keep their expand chevron in that corner. */
+.kanban-card--epic .kanban-card-assignee { right: 28px; }
+
+/* What the running agent is doing now: one muted mono line, newest output. */
+.kanban-card-progress {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-left: var(--space-2);
+  border-left: 2px solid var(--vscode-progressBar-background, var(--accent));
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
 .kanban-card-title {
   font-size: var(--text-body);
   font-weight: var(--weight-strong);

@@ -116,6 +116,60 @@ describe('RunInsights', () => {
   });
 });
 
+describe('RunInsights — activity feed', () => {
+  const now = Date.now();
+  const iso = (msAgo: number) => new Date(now - msAgo).toISOString();
+
+  it('shows one dated feed with each run opening to the steps it took', () => {
+    render(<RunInsights item={{ ...ITEM, agentState: undefined }} trace={[{ ts: iso(30_000), type: 'tool_call', summary: 'edited login.ts' }]} />);
+    deliver({
+      type: 'kanban:runTimeline',
+      artifactId: 'S-1',
+      runs: [{ runId: 'r1', workflowId: 'aac-kanban-dev-executor', harness: 'claude', verdict: 'COMPLETED', summary: 'Login form done.', startedAt: now - 60_000, finishedAt: now - 10_000 }],
+      commits: [{ sha: 'abcdef1234567890', subject: 'agent commit', date: iso(5_000) }],
+    });
+    expect(screen.getByRole('heading', { name: 'Activity' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Today' })).toBeTruthy();
+    expect(screen.getByText('Login form done.')).toBeTruthy();
+    expect(screen.getByText('1 step')).toBeTruthy();
+    expect(screen.getByText('edited login.ts')).toBeTruthy();
+    const items = screen.getAllByRole('listitem').filter((li) => li.className.includes('agent-timeline-item'));
+    expect(items.map((li) => li.className)).toEqual([
+      'agent-timeline-item agent-timeline-item--commit',
+      'agent-timeline-item agent-timeline-item--completed',
+    ]);
+  });
+
+  it('puts the run in progress at the top with its live steps', () => {
+    const running = { ...ITEM, agentState: { status: 'running' as const, startedAt: iso(20_000) } };
+    render(<RunInsights item={running} trace={[{ ts: iso(10_000), type: 'tool_call', summary: 'running tests' }]} />);
+    deliver({ type: 'kanban:runTimeline', artifactId: 'S-1', runs: [], commits: [] });
+    expect(screen.getByText('Running')).toBeTruthy();
+    expect(screen.getByText('running tests')).toBeTruthy();
+  });
+
+  it("shows each run's tokens and the card's total", () => {
+    render(<RunInsights item={{ ...ITEM, agentState: undefined }} />);
+    deliver({
+      type: 'kanban:runTimeline',
+      artifactId: 'S-1',
+      runs: [{
+        runId: 'r1', workflowId: 'aac-kanban-dev-executor', harness: 'claude', agent: 'Dev', verdict: 'COMPLETED',
+        startedAt: now - 60_000, finishedAt: now - 10_000, usage: { input: 200, output: 1500, cacheRead: 40_000, cacheWrite: 2000 },
+      }],
+      commits: [],
+    });
+    expect(screen.getByText(/Dev \(claude\)/)).toBeTruthy();
+    expect(screen.getAllByText(/42k in \/ 1\.5k out/)).toHaveLength(2);
+  });
+
+  it('says so when a card has no activity yet', () => {
+    render(<RunInsights item={{ ...ITEM, agentState: undefined }} />);
+    deliver({ type: 'kanban:runTimeline', artifactId: 'S-1', runs: [], commits: [] });
+    expect(screen.getByText('No agent activity yet.')).toBeTruthy();
+  });
+});
+
 describe('RunInsights — pull request + story ↔ code', () => {
   it('shows PR checks and sends review feedback back to the agent; lists files per agent commit', () => {
     render(<RunInsights item={{ ...ITEM, agentState: undefined }} />);
@@ -136,5 +190,29 @@ describe('RunInsights — pull request + story ↔ code', () => {
     expect(posted).toContainEqual({ type: 'kanban:addressReview', artifactId: 'S-1' });
     expect(screen.getByText('2 files')).toBeTruthy();
     expect(screen.getByText('src/login.ts')).toBeTruthy();
+  });
+});
+
+describe('RunInsights — board protocol', () => {
+  it("shows notes in the feed and what each run asked of the board", () => {
+    render(<RunInsights item={{ ...ITEM, agentState: undefined }} />);
+    deliver({
+      type: 'kanban:runTimeline', artifactId: 'S-1', commits: [],
+      runs: [{ runId: 'r1', workflowId: 'aac-kanban-dev-executor', harness: 'claude', verdict: 'BLOCKED', startedAt: 0, finishedAt: 60_000,
+        board: { questions: 1, proposals: 2, handoffTo: 'reviewer', notes: true, dropped: ['a handoff to itself'] } }],
+      notes: [{ author: 'Chief of Staff', text: 'Assigned to Dev: UI work', at: '2026-11-25 10:00' }],
+    });
+    expect(screen.getByText('Asked 1 question · Proposed 2 cards · Handed off to reviewer · 1 request ignored')).toBeTruthy();
+    expect(screen.getByText('Chief of Staff')).toBeTruthy();
+    expect(screen.getByText('Assigned to Dev: UI work')).toBeTruthy();
+  });
+
+  it('lets you answer a card that stopped to ask you', () => {
+    const waiting = { ...ITEM, agentState: { status: 'interrupted' as const, failure: { kind: 'needs-answer', title: 'Waiting for your answer', detail: '- 8 or 12?', actions: [] } } };
+    render(<RunInsights item={waiting} />);
+    expect(screen.getByText('Waiting for your answer')).toBeTruthy();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Your answer to the agent' }), { target: { value: '12' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send answer' }));
+    expect(posted).toContainEqual({ type: 'kanban:answerQuestions', artifactId: 'S-1', answer: '12' });
   });
 });

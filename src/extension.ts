@@ -15,7 +15,9 @@ import { getWorkflowExecutor } from './workflow/workflow-executor';
 import { initializeLaneTransitionEngine, laneTransitionEngine } from './workflow/lane-transitions';
 import { initializeKanbanOrchestrator } from './workflow/kanban-orchestrator';
 import { concurrencyQueue } from './workflow/concurrency-queue';
-import { terminalExecutor } from './workflow/terminal-executor';
+import { agentProgress, terminalExecutor } from './workflow/terminal-executor';
+import { registerBoardProtocol } from './views/board-protocol';
+import { registerLeadCoordinator } from './views/lead-coordinator';
 import { initializeAcpSessionManager } from './acp/session-manager';
 import { agentMessageBus } from './acp/agent-bus/message-bus';
 import { initializeTraceRecorder, getTraceRecorder } from './trace/trace-recorder';
@@ -175,11 +177,22 @@ export function activate(context: vscode.ExtensionContext) {
     const artifactsTreeProvider = new ArtifactsTreeProvider(artifactStore);
     const wizardStepsProvider = new WizardStepsProvider(artifactStore);
     const agenticKanbanProvider = new AgenticKanbanViewProvider(context.extensionUri, artifactStore);
-    // Status-bar count of cards waiting on the user (stopped runs, approvals, paused stories).
-    registerNeedsYou(context, (artifactId) => agenticKanbanProvider.broadcast({ type: 'kanban:focusCard', artifactId }));
+    // What waits on the user (stopped runs, approvals, paused stories, autopilots):
+    // a status-bar count, and the board's Inbox kept in sync.
+    registerNeedsYou(
+        context,
+        (artifactId) => agenticKanbanProvider.broadcast({ type: 'kanban:focusCard', artifactId }),
+        (items) => agenticKanbanProvider.broadcast({ type: 'kanban:inbox', items }),
+    );
+    // Live "what is the agent doing" line on running cards.
+    context.subscriptions.push(agentProgress.event((p) => agenticKanbanProvider.broadcast({ type: 'kanban:progress', ...p })));
     // Developer hub: project context, metrics, release notes, GitHub Issues sync, story CodeLens.
     registerDevHubCommands(context, artifactStore, (artifactId) => agenticKanbanProvider.broadcast({ type: 'kanban:focusCard', artifactId }));
     registerAutopilots(context);
+    // Agents' board requests (notes, questions, proposals, handoffs, the lead's plan).
+    registerBoardProtocol(context, artifactStore);
+    // The lead agent (chief of staff): plans lead-owned epics and hands stories out.
+    registerLeadCoordinator(context, artifactStore);
     const agentSessionsProvider = new AgentSessionsViewProvider(context.extensionUri);
     // Push the provider itself so its timer + singleton listeners are
     // cleared on extension deactivation (otherwise the 30 s heartbeat can
