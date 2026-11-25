@@ -320,6 +320,7 @@
                 "type": "object",
                 "description": "Lightweight manifest reference to a standalone epic file (reference architecture)",
                 "required": ["id", "title"],
+                "not": { "required": ["stories"] },
                 "additionalProperties": true,
                 "properties": {
                   "id": {
@@ -810,7 +811,7 @@
                                 "description": "COMPLETE criterion text for prose/bullet-list format"
                               }
                             },
-                            "oneOf": [
+                            "anyOf": [
                               {
                                 "required": [
                                   "given",

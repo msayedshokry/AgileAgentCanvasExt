@@ -49,6 +49,49 @@ describe('sample project artifacts', () => {
     expect(result.valid).toBe(true);
   });
 
+  // Shapes that may legitimately carry both alternatives at once (structured
+  // fields plus a prose rendering) must use anyOf, not oneOf.
+  const sampleStory = (): Record<string, unknown> => {
+    const epics = artifacts.find((a) => a.type === 'epics')!.data as {
+      content: { epics: Array<{ id: string; stories?: unknown[] }> };
+    };
+    const epic = epics.content.epics[0];
+    const story = epic.stories!.find((s) => typeof s === 'object') as Record<string, unknown>;
+    return JSON.parse(JSON.stringify({ ...story, epicId: epic.id })) as Record<string, unknown>;
+  };
+
+  it('accepts a standalone story whose user story is both structured and formatted', () => {
+    const story = sampleStory();
+    const userStory = story.userStory as Record<string, unknown>;
+    expect(userStory.asA).toBeDefined();
+    expect(userStory.formatted).toBeDefined();
+    const result = schemaValidator.validate('story', { content: story });
+    expect(result.errors).toEqual([]);
+    expect(result.valid).toBe(true);
+  });
+
+  it('accepts an epics acceptance criterion that has both Given/When/Then and criterion text', () => {
+    const epics = JSON.parse(JSON.stringify(artifacts.find((a) => a.type === 'epics')!.data)) as {
+      content: { epics: Array<{ stories?: Array<{ acceptanceCriteria?: Array<Record<string, unknown>> }> }> };
+    };
+    const ac = epics.content.epics[0].stories![0].acceptanceCriteria![0];
+    expect(ac.given).toBeDefined();
+    ac.criterion = 'Creating a task returns it with a unique ID';
+    const result = schemaValidator.validate('epics', epics);
+    expect(result.errors).toEqual([]);
+    expect(result.valid).toBe(true);
+  });
+
+  it('checks inline epics against the full epic shape, not only the file-reference shape', () => {
+    const epics = JSON.parse(JSON.stringify(artifacts.find((a) => a.type === 'epics')!.data)) as {
+      content: { epics: Array<{ stories?: Array<Record<string, unknown>> }> };
+    };
+    delete epics.content.epics[0].stories![0].acceptanceCriteria;
+    const result = schemaValidator.validate('epics', epics);
+    expect(result.valid).toBe(false);
+    expect(result.errors.join('\n')).toMatch(/acceptanceCriteria/);
+  });
+
   it('fails validation when a required field is removed', () => {
     const retro = artifacts.find((a) => a.type === 'retrospective');
     expect(retro).toBeDefined();

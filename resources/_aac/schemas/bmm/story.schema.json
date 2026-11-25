@@ -123,7 +123,7 @@
               "description": "Additional context for the story"
             }
           },
-          "oneOf": [
+          "anyOf": [
             {
               "required": [
                 "asA",
