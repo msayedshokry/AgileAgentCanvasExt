@@ -33,6 +33,10 @@ export interface KanbanItem {
   childProgress?: { done: number; total: number };
   /** Title of the story's epic, shown instead of its id (AgenticKanban only). */
   epicTitle?: string;
+  /** What the card asks for, as written in the artifact (AgenticKanban card page). */
+  description?: string;
+  userStory?: { asA?: string; iWant?: string; soThat?: string };
+  acceptanceCriteria?: AcceptanceCriterionView[];
   /** What the running agent is doing now: its latest output line (AgenticKanban only). */
   progressLine?: string;
   /** Named agent this card is assigned to (AgenticKanban only; see agent-team-view.ts). */
@@ -55,6 +59,17 @@ export interface KanbanItem {
   hasCycle?: boolean;
   /** Issue #22: titles of stories blocking this one (for badge tooltip) */
   blockerTitles?: string[];
+}
+
+/** An acceptance criterion as the card page shows it: prose, or given/when/then. */
+export interface AcceptanceCriterionView {
+  id?: string;
+  criterion?: string;
+  given?: string;
+  when?: string;
+  then?: string;
+  and?: string[];
+  status?: string;
 }
 
 export interface KanbanColumnDef {

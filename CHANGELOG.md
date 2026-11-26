@@ -41,6 +41,8 @@ The Agentic board shows each card's work in one place and only interrupts you fo
 - Cards are quieter: the id and an activity indicator on top, then the title, one status line, the epic's name and the assignee by name. Epics show a stack icon and a progress ring instead of a coloured stripe.
 - **Start** on a ready card (on hover) and **Stop** on a running one. Right-click offers Start or Stop, Open terminal, and moves; **Approve and mark done** appears only on cards in Review, so nothing skips review by accident.
 - One toolbar replaces five rows: Board and Terminals tabs, the filter, the coding agent, **Autopilot**, **New goal**, **Agents**, **Inbox** and a **⋯** menu. The five columns share the width, so the whole flow fits in a normal editor tab. The Inbox no longer opens off-screen.
+- A card opens as a page in place of the board: its title, user story, description and acceptance criteria, then the activity thread with a message box at the bottom to steer or answer the agent. A side column holds status, assignee, epic, priority and the agent's run. **Board** goes back; the epic in the breadcrumb opens the epic.
+- Cards in Review show **Approve and mark done** (the review check runs, then the branch is merged or a pull request opened) and **Request changes**, which takes you to the message box. Ready cards show **Start agent**, running ones **Stop agent**. Buttons in the card view are real buttons again; before, an old style made them look like plain text.
 
 ### Feature: Agents that work with the board, and a lead agent
 

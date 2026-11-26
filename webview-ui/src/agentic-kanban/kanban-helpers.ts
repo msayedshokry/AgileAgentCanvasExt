@@ -4,7 +4,7 @@
  * let sub-components (TerminalModal, AgenticDetailPanel) consume these
  * types without circular imports.
  */
-import type { KanbanItem } from "../components/kanban/KanbanTypes";
+import type { AcceptanceCriterionView, KanbanItem } from "../components/kanban/KanbanTypes";
 
 // ── Dependency badge IPC payload (Issue: wire dependency data flow) ─────────
 
@@ -37,6 +37,8 @@ export interface ArtifactLike {
   priority?: string;
   parentId?: string;
   epicKey?: string;
+  description?: string;
+  metadata?: object;
 }
 
 /** Artifact types that have an agentic execution lifecycle. */
@@ -56,7 +58,37 @@ export function artifactToKanbanItem(a: ArtifactLike): KanbanItem {
     priority: a.priority,
     epicKey: a.parentId || a.epicKey,
     isEpic: a.type === 'epic',
+    ...cardBrief(a),
   };
+}
+
+const text = (v: unknown): string | undefined => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
+
+/** Description, user story and acceptance criteria, tolerant of partial or odd artifact data. */
+export function cardBrief(a: ArtifactLike): Pick<KanbanItem, 'description' | 'userStory' | 'acceptanceCriteria'> {
+  const out: Pick<KanbanItem, 'description' | 'userStory' | 'acceptanceCriteria'> = {};
+  const description = text(a.description);
+  if (description) out.description = description;
+  const meta = (a.metadata ?? {}) as { userStory?: unknown; acceptanceCriteria?: unknown };
+  const us = meta.userStory as Record<string, unknown> | undefined;
+  if (us && typeof us === 'object' && (text(us.asA) || text(us.iWant) || text(us.soThat))) {
+    out.userStory = { asA: text(us.asA), iWant: text(us.iWant), soThat: text(us.soThat) };
+  }
+  const acs = meta.acceptanceCriteria;
+  if (Array.isArray(acs)) {
+    const list = acs.flatMap((raw): AcceptanceCriterionView[] => {
+      if (typeof raw === 'string') return text(raw) ? [{ criterion: raw.trim() }] : [];
+      if (!raw || typeof raw !== 'object') return [];
+      const r = raw as Record<string, unknown>;
+      const ac: AcceptanceCriterionView = {
+        id: text(r.id), criterion: text(r.criterion), given: text(r.given), when: text(r.when), then: text(r.then), status: text(r.status),
+        and: Array.isArray(r.and) ? r.and.filter((x): x is string => typeof x === 'string' && !!x.trim()) : undefined,
+      };
+      return ac.criterion || ac.given || ac.when || ac.then ? [ac] : [];
+    });
+    if (list.length) out.acceptanceCriteria = list;
+  }
+  return out;
 }
 
 // ── Agent info (fetched lazily on card click) ───────────────────────────────

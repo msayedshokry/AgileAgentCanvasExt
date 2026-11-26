@@ -973,14 +973,6 @@
   font-size: 14px;
 }
 
-.agentic-detail-panel button {
-  background: none;
-  border: none;
-  color: var(--vscode-descriptionForeground);
-  cursor: pointer;
-  font-size: 16px;
-}
-
 /* ── Detail Panel: Warning & Actions ── */
 .agentic-detail-warning {
   font-size: 12px;

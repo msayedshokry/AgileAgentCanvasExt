@@ -849,7 +849,9 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
 
   // ── Keyboard nav: ←/→ moves selected (incl. multi-select) between columns ─
   const handleKeyDown = useEvent((e: React.KeyboardEvent) => {
-    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
+    // On an open card page only Escape (back to the board) applies; arrows must not move the card.
+    if (selectedItem && e.key !== 'Escape') return;
     // Skip during IME composition (CJK keyboards route many keys through
     // the IME — keyCode 229 is the legacy indicator; isComposing is modern).
     if (e.nativeEvent.isComposing || e.keyCode === 229) return;
@@ -1174,6 +1176,33 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
           focusedSessionId={focusedSessionId}
           onFocusComplete={() => setFocusedSessionId(null)}
         />
+      ) : selectedItem ? (
+        <AgenticDetailPanel
+          item={selectedItem}
+          onClose={() => { setSelectedIds(new Set()); setAnchorId(null); }}
+          onOpenTerminal={(item) => {
+            setView('terminals');
+            vscode.postMessage({ type: 'kanban:jumpToTerminal', artifactId: item.id });
+          }}
+          onTakeOver={(item) => {
+            // P1 #4: switch to terminals view and flash the agent's tile
+            setView('terminals');
+            setFocusedSessionId(item.id);
+            vscode.postMessage({ type: 'kanban:takeOverAgent', artifactId: item.id });
+          }}
+          terminalInteractive={terminalInteractive}
+          infoCache={agentInfoCache}
+          resumingArtifactId={resumingArtifactId}
+          onResumeStateChange={setResumingArtifactId}
+          chatSessionActive={chatSessionActive}
+          chatSessionModel={chatSessionModel}
+          team={team}
+          onEditTeam={() => setAgentEditorOpen(true)}
+          onStart={handleStartCard}
+          onStop={handleStopCard}
+          onApprove={(card) => handleDrop(card.id, 'done')}
+          onOpenCard={(id) => { setSelectedIds(new Set([id])); setAnchorId(id); }}
+        />
       ) : (
       <div className="agentic-kanban-board">
         {KANBAN_COLUMNS.map(col => (
@@ -1206,31 +1235,6 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
           />
         ))}
       </div>
-      )}
-
-      {selectedItem && (
-        <AgenticDetailPanel
-          item={selectedItem}
-          onClose={() => { setSelectedIds(new Set()); setAnchorId(null); }}
-          onOpenTerminal={(item) => {
-            setView('terminals');
-            vscode.postMessage({ type: 'kanban:jumpToTerminal', artifactId: item.id });
-          }}
-          onTakeOver={(item) => {
-            // P1 #4: switch to terminals view and flash the agent's tile
-            setView('terminals');
-            setFocusedSessionId(item.id);
-            vscode.postMessage({ type: 'kanban:takeOverAgent', artifactId: item.id });
-          }}
-          terminalInteractive={terminalInteractive}
-          infoCache={agentInfoCache}
-          resumingArtifactId={resumingArtifactId}
-          onResumeStateChange={setResumingArtifactId}
-          chatSessionActive={chatSessionActive}
-          chatSessionModel={chatSessionModel}
-          team={team}
-          onEditTeam={() => setAgentEditorOpen(true)}
-        />
       )}
 
       {agentEditorOpen && <AgentEditor team={team} onClose={() => setAgentEditorOpen(false)} />}

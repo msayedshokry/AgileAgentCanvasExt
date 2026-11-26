@@ -1,0 +1,238 @@
+/* ─── Card page ──────────────────────────────────────────────────────────────
+ * A card opens as a page in place of the board (Multica's issue page is the
+ * reference): a reading column with what the card asks for, the activity
+ * thread and the composer; a quiet side column with properties, the agent
+ * and its run. Below ~860px the side column moves above the thread. */
+
+.agentic-detail-panel.card-page {
+  position: static;
+  inset: auto;
+  width: auto;
+  max-width: none;
+  height: auto;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--paper);
+  border: none;
+  box-shadow: none;
+  z-index: auto;
+  font-size: 13px;
+  color: var(--ink);
+  animation: card-page-in var(--dur-base, 180ms) var(--ease-out, ease-out);
+}
+@keyframes card-page-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .agentic-detail-panel.card-page { animation: none; }
+}
+
+/* ── Bar ── */
+.card-page-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 12px);
+  padding: 8px var(--space-4, 16px);
+  border-bottom: var(--rule-width, 1px) solid var(--rule);
+  min-height: 44px;
+  box-sizing: border-box;
+}
+.card-page-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px 0 6px;
+  border: var(--rule-width, 1px) solid var(--rule);
+  border-radius: var(--radius, 6px);
+  background: var(--paper);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 12px;
+  font-weight: var(--weight-strong, 600);
+  cursor: pointer;
+}
+.card-page-back:hover { color: var(--ink); background: var(--paper-wash); }
+.card-page-crumbs { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 12.5px; }
+.card-page-crumb {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--ink-2);
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 260px;
+}
+button.card-page-crumb:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+.card-page-crumb--current { color: var(--ink); font-family: var(--font-mono); font-size: 12px; cursor: default; }
+.card-page-crumb-sep { color: var(--ink-3); }
+.card-page-bar-actions { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-shrink: 0; }
+.card-page-bar :focus-visible,
+.card-page-side :focus-visible { outline: 2px solid var(--vscode-focusBorder, var(--accent)); outline-offset: 1px; }
+
+/* ── Body: reading column + side column ── */
+.card-page-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-auto-rows: max-content;
+  align-content: start;
+  align-items: start;
+}
+.card-page-main {
+  min-width: 0;
+  max-width: 760px;
+  width: 100%;
+  justify-self: center;
+  padding: var(--space-5, 24px) var(--space-6, 32px) var(--space-6, 32px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+}
+.card-page-side {
+  position: sticky;
+  top: 0;
+  align-self: stretch;
+  min-height: 100%;
+  border-left: var(--rule-width, 1px) solid var(--rule);
+  padding: var(--space-4, 16px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+  background: color-mix(in srgb, var(--ink) 2%, var(--paper));
+}
+@media (max-width: 860px) {
+  .card-page-body { grid-template-columns: minmax(0, 1fr); }
+  .card-page-side { position: static; min-height: auto; border-left: none; border-top: var(--rule-width, 1px) solid var(--rule); }
+  .card-page-main { padding: var(--space-4, 16px); }
+}
+
+/* ── Reading column ── */
+.card-page-title {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 22px;
+  line-height: 1.25;
+  font-weight: var(--weight-strong, 600);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.card-page-brief { display: flex; flex-direction: column; gap: var(--space-3, 12px); }
+.card-page-story,
+.card-page-description { margin: 0; font-size: 14px; line-height: 1.6; color: var(--ink); }
+.card-page-description { color: var(--ink-2); white-space: pre-wrap; }
+.card-page-empty { margin: 0; color: var(--ink-3); font-size: 13px; }
+.card-page-acs { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; line-height: 1.5; }
+.card-page-ac::marker { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.card-page-gwt { font-weight: var(--weight-strong, 600); color: var(--ink-2); }
+.card-page-ac-status {
+  margin-left: 8px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--ink-2);
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+}
+.card-page-ac--verified .card-page-ac-status { background: color-mix(in srgb, var(--vscode-testing-iconPassed, #2ea043) 18%, transparent); color: var(--ink); }
+.card-page-ac--failed .card-page-ac-status { background: color-mix(in srgb, var(--vscode-editorError-foreground, #f14c4c) 18%, transparent); color: var(--ink); }
+
+/* The activity thread and the composer read as one conversation. */
+.card-page-main .agent-insights { padding: 0; border: none; }
+.card-page-composer {
+  position: sticky;
+  bottom: 0;
+  padding: var(--space-3, 12px) 0 var(--space-2, 8px);
+  background: linear-gradient(to bottom, transparent, var(--paper) 16px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+}
+.card-page-recover { display: flex; gap: var(--space-2, 8px); flex-wrap: wrap; }
+
+/* ── Side column ── */
+.card-page-section { display: flex; flex-direction: column; gap: var(--space-2, 8px); }
+.card-page-section-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: var(--weight-strong, 600);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.card-page-props {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 10px 8px;
+  align-items: center;
+  font-size: 12.5px;
+}
+.card-page-props dt { color: var(--ink-3); }
+.card-page-props dd { margin: 0; min-width: 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; color: var(--ink); }
+.card-page-props .agent-assignee { width: 100%; }
+.card-page-capital { text-transform: capitalize; }
+.card-page-link {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--vscode-textLink-foreground, var(--accent));
+  cursor: pointer;
+  text-align: left;
+}
+.card-page-link:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+/* Status: a dot in the column's colour, then the column name. */
+.card-page-status { display: inline-flex; align-items: center; gap: 6px; font-weight: var(--weight-strong, 600); }
+.card-page-status::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); }
+.card-page-status--ready-for-dev::before { background: var(--vscode-charts-blue, #3b82f6); }
+.card-page-status--in-progress::before { background: var(--vscode-charts-orange, #f59e0b); }
+.card-page-status--review::before { background: var(--vscode-charts-purple, #8b5cf6); }
+.card-page-status--done::before { background: var(--vscode-charts-green, #22c55e); }
+
+.card-page-side .agentic-agent-row { padding: 0; border: none; background: none; }
+.card-page-side .agentic-chips { padding: 0; }
+.card-page-terminal { display: flex; flex-direction: column; gap: 6px; }
+.card-page-side .agentic-collapse { border-top: var(--rule-width, 1px) solid var(--rule); }
+.card-page-side .agentic-collapse-summary { padding-left: 0; padding-right: 0; }
+
+/* ── Buttons on the page: one bordered secondary style, one filled primary. */
+.card-page .agentic-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  min-width: 0;
+  height: 28px;
+  padding: 0 12px;
+  border: var(--rule-width, 1px) solid var(--rule-strong);
+  border-radius: var(--radius, 6px);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: var(--weight-strong, 600);
+  cursor: pointer;
+}
+.card-page .agentic-btn:hover:not(:disabled) { background: var(--paper-wash); }
+.card-page .agentic-btn--primary {
+  background: var(--accent-fill, var(--accent));
+  border-color: var(--accent);
+  color: var(--accent-ink, var(--paper));
+}
+.card-page .agentic-btn--primary:hover:not(:disabled) { background: var(--accent); }
+.card-page .card-page-stop { color: var(--vscode-editorError-foreground, #c4314b); }
+.card-page .agentic-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.card-page-terminal .agentic-btn { align-self: flex-start; }

@@ -214,15 +214,16 @@ describe('AgenticKanbanApp — agent state on cards', () => {
 // ── Detail panel ────────────────────────────────────────────────────────────
 
 describe('AgenticKanbanApp — detail panel', () => {
-  it('opens the detail panel for the clicked card and closes it from the close button', () => {
+  it('opens the clicked card as a page in place of the board, and goes back from the Board button', () => {
     renderBoard([story('story-detail', 'backlog', 'Add Dark Mode')]);
     fireEvent.click(card('Add Dark Mode'));
-    const close = screen.getByLabelText('Close detail panel');
-    expect(close).toBeInTheDocument();
-    expect(screen.getAllByText('Add Dark Mode').length).toBeGreaterThan(1);
+    const back = screen.getByLabelText('Close detail panel');
+    expect(screen.getByRole('heading', { name: 'Add Dark Mode' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Add Dark Mode —/ })).not.toBeInTheDocument();
 
-    fireEvent.click(close);
+    fireEvent.click(back);
     expect(screen.queryByLabelText('Close detail panel')).not.toBeInTheDocument();
+    expect(card('Add Dark Mode')).toBeInTheDocument();
   });
 
   it('offers a trace link only when the card has an agent session, and posts kanban:viewTrace', () => {
@@ -231,6 +232,7 @@ describe('AgenticKanbanApp — detail panel', () => {
 
     fireEvent.click(card('Untraced Story'));
     expect(screen.queryByRole('button', { name: 'Trace →' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText('Close detail panel'));
 
     fireEvent.click(card('Traced Story'));
     fireEvent.click(screen.getByRole('button', { name: 'Trace →' }));
