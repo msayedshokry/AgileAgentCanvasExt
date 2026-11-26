@@ -48,6 +48,14 @@ export class FollowUpSender {
     await this.send(artifactId, post);
   }
 
+  /**
+   * A running agent reads the messages queued for its card (board_check_messages).
+   * They are taken, so they are not sent again as a follow-up after the run.
+   */
+  takeForRun(artifactId: string): string[] {
+    return this.queue.take(artifactId);
+  }
+
   dispose(): void {
     for (const timer of this.waiting.values()) clearInterval(timer);
     this.waiting.clear();

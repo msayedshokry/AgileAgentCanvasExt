@@ -63,3 +63,43 @@ describe('readAgentNotes — where the store keeps them', () => {
     expect(readAgentNotes({ agentNotes: [{ author: 'A', text: 'lifted', at: 't' }] })).toEqual([{ author: 'A', text: 'lifted', at: 't' }]);
   });
 });
+
+describe('buildAgentBrief — skills', () => {
+  it('lists the agent\'s skills with where to read them, before the board rules', () => {
+    const brief = buildAgentBrief({
+      agent: { id: 'dev', name: 'Dev', harness: 'claude' }, cliLabel: 'Claude Code', roster: [], notes: [],
+      skills: [{ id: 'aac-dev', name: 'Dev story', description: 'Implements a story', path: '.agileagentcanvas-context/_terminal-output/skills/aac-dev/SKILL.md' }],
+    });
+    expect(brief).toContain('### Your skills');
+    expect(brief).toContain('- **Dev story** (`.agileagentcanvas-context/_terminal-output/skills/aac-dev/SKILL.md`): Implements a story');
+    expect(brief.indexOf('### Your skills')).toBeLessThan(brief.indexOf('### The board'));
+  });
+});
+
+describe('buildAgentBrief — live board tools', () => {
+  it('lists the board tools only for runs that have them', () => {
+    const base = { agent: { id: 'dev', name: 'Dev', harness: 'claude' }, cliLabel: 'Claude Code', roster: [], notes: [] };
+    expect(buildAgentBrief({ ...base, liveTools: true })).toContain('`board_check_messages`');
+    expect(buildAgentBrief(base)).not.toContain('Board tools (live)');
+    expect(buildResumeBrief({ ...base, liveTools: true })).toContain('call board_check_messages first');
+  });
+});
+
+describe('epic context in the brief', () => {
+  const input = { agent: dev, cliLabel: 'Claude Code', roster: [dev], notes: [{ author: 'Reviewer', text: 'Fix it', at: '2026-11-26 09:00' }] };
+
+  it('lists the epic context after the precedence rules and before the card notes', () => {
+    const brief = buildAgentBrief({ ...input, epicContext: { epicId: 'E-1', context: { paths: ['docs/auth.md'], urls: [], note: 'Use v2' } } });
+    const at = brief.indexOf('### Context for this epic (E-1)');
+    expect(at).toBeGreaterThan(brief.indexOf('### Instruction precedence'));
+    expect(at).toBeLessThan(brief.indexOf('### Notes on this card'));
+    expect(brief).toContain('- `docs/auth.md`');
+  });
+
+  it('leaves it out when the epic has none, and marks people on the team', () => {
+    const brief = buildAgentBrief({ ...input, roster: [dev, { id: 'maya', name: 'Maya', harness: '', kind: 'person' as const }] });
+    expect(brief).not.toContain('Context for this epic');
+    expect(brief).toContain('- `maya` — Maya (person)');
+  });
+});
+

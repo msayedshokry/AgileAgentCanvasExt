@@ -27,10 +27,12 @@ export interface KanbanItem {
     /** Plain-language cause of a stopped run and the actions that fix it. */
     failure?: AgentFailureInfo;
   };
+  /** An epic the team's lead owns: who leads it and how many of its stories are done. */
+  leadProgress?: { lead: string; done: number; total: number };
   /** What the running agent is doing now: its latest output line (AgenticKanban only). */
   progressLine?: string;
   /** Named agent this card is assigned to (AgenticKanban only; see agent-team-view.ts). */
-  assignee?: { id: string; name: string };
+  assignee?: { id: string; name: string; /** A person, not an agent: the card never starts a run. */ person?: boolean };
   /** Concurrency lock state (AgenticKanban only) */
   lockInfo?: {
     locked: boolean;

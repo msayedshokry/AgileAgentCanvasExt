@@ -8,7 +8,7 @@
 // We supply a no-op tracker stub in every chat-path test fixture.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { KanbanOrchestrator, setLeadHandler } from './kanban-orchestrator';
+import { KanbanOrchestrator, setAgentResolver, setLeadHandler } from './kanban-orchestrator';
 import { concurrencyQueue } from './concurrency-queue';
 
 // ── Module mocks ─────────────────────────────────────────────────────────────
@@ -304,6 +304,51 @@ describe('KanbanOrchestrator — lead-owned epics', () => {
       expect(store.updateArtifact).not.toHaveBeenCalled();
     } finally {
       setLeadHandler(undefined);
+    }
+  });
+});
+
+describe('KanbanOrchestrator — agent capacity', () => {
+  it('runs a second card for a busy agent only after the first one finishes', async () => {
+    setAgentResolver(() => ({ agentId: 'dev', name: 'Dev', capacity: 1 }));
+    try {
+      const executor = fakeExecutor();
+      let finishA!: () => void;
+      const aGate = new Promise<void>((r) => { finishA = r; });
+      const calls: string[] = [];
+      vi.mocked(executor.executeLaneTransition).mockImplementation(async (_wf: unknown, artifact: { id: string }) => {
+        calls.push(artifact.id);
+        if (artifact.id === 'S-A' && calls.filter((c) => c === 'S-A').length === 1) await aGate;
+        return { verdict: calls.filter((c) => c === artifact.id).length === 1 ? 'COMPLETED' : 'APPROVED' } as never;
+      });
+      const orch = new KanbanOrchestrator(fakeStore(), executor, fakeTerminalExecutor());
+      const ctx = { model: { name: 'm' } as never, stream: { markdown: vi.fn() } as never, tracker: noopTrackerStub() };
+      const a = orch.runAutonomous({ id: 'S-A', type: 'story' }, ctx);
+      await vi.waitFor(() => expect(calls).toEqual(['S-A']));
+      const b = orch.runAutonomous({ id: 'S-B', type: 'story' }, ctx);
+      await new Promise((r) => setTimeout(r, 20));
+      expect(calls).toEqual(['S-A']);
+      finishA();
+      await Promise.all([a, b]);
+      expect(calls.indexOf('S-B')).toBeGreaterThan(calls.lastIndexOf('S-A'));
+    } finally {
+      setAgentResolver(undefined);
+    }
+  });
+});
+
+describe('KanbanOrchestrator — people', () => {
+  it("never starts an agent on a person's card, and says why", async () => {
+    setAgentResolver(() => ({ agentId: 'maya', name: 'Maya', capacity: 1, person: true }));
+    try {
+      const executor = fakeExecutor();
+      const orch = new KanbanOrchestrator(fakeStore(), executor, fakeTerminalExecutor());
+      const result = await orch.runAutonomous({ id: 'S-1', type: 'story' }, {});
+      expect(result).toMatchObject({ ok: false, status: 'blocked' });
+      expect(result.blockedBy?.[0]).toMatch(/^Assigned to Maya, a person/);
+      expect(executor.executeLaneTransition).not.toHaveBeenCalled();
+    } finally {
+      setAgentResolver(undefined);
     }
   });
 });

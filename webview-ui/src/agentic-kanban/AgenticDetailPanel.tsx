@@ -5,6 +5,7 @@ import { useEvent } from './useEvent';
 import { RunInsights } from './RunInsights';
 import type { AgentTeamView } from './agent-team-view';
 import { FollowUpComposer } from './FollowUpComposer';
+import { EpicContextEditor } from './EpicContextEditor';
 import {
   AgentInfo,
   getInterruptionMessage,
@@ -64,7 +65,7 @@ function AssigneePicker({ artifactId, team, onEditTeam }: { artifactId: string; 
         onChange={e => vscode.postMessage({ type: 'kanban:assignAgent', artifactId, agentId: e.target.value || null })}
       >
         <option value="">Board default</option>
-        {team.agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+        {team.agents.map(a => <option key={a.id} value={a.id}>{a.kind === 'person' ? `${a.name} (person)` : a.name}</option>)}
       </select>
       <button
         className="agent-assignee-edit"
@@ -357,6 +358,8 @@ export function AgenticDetailPanel({
         )}
         {team && <AssigneePicker artifactId={item.id} team={team} onEditTeam={onEditTeam} />}
       </div>
+
+      {item.isEpic && <EpicContextEditor epicId={item.id} />}
 
       {/* ── Collapsible context (harness / blockers / activity) ── */}
       {hasAnyHarnessResults && (

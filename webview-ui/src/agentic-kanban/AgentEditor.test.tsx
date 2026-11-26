@@ -48,7 +48,7 @@ describe('AgentEditor', () => {
     fireEvent.change(screen.getByRole('combobox', { name: 'Model' }), { target: { value: 'sonnet' } });
     expect(screen.getByText('Sonnet 5.5 · Efficient for routine tasks')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Add agent' }));
-    expect(posted).toContainEqual({ type: 'kanban:saveAgent', agent: { name: 'Reviewer', harness: 'claude', model: 'sonnet', role: '', instructions: '', lead: false } });
+    expect(posted).toContainEqual({ type: 'kanban:saveAgent', agent: { name: 'Reviewer', harness: 'claude', model: 'sonnet', role: '', instructions: '', lead: false, skills: [], maxConcurrent: 1 } });
   });
 
   it('shows the save error and closes the form once saved', () => {
@@ -65,7 +65,7 @@ describe('AgentEditor', () => {
     render(<AgentEditor team={TEAM} onClose={() => undefined} />);
     fireEvent.click(screen.getByRole('button', { name: 'Edit Dev Agent' }));
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-    expect(posted).toContainEqual({ type: 'kanban:saveAgent', agent: { id: 'dev', name: 'Dev Agent', harness: 'claude', model: 'sonnet', role: '', instructions: '', lead: false } });
+    expect(posted).toContainEqual({ type: 'kanban:saveAgent', agent: { id: 'dev', name: 'Dev Agent', harness: 'claude', model: 'sonnet', role: '', instructions: '', lead: false, skills: [], maxConcurrent: 1 } });
   });
 
   it('asks before deleting an agent that has cards', () => {
@@ -110,6 +110,70 @@ describe('AgentEditor — role, instructions and lead', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(posted).toContainEqual({ type: 'kanban:saveAgent', agent: {
       id: 'dev', name: 'Dev Agent', harness: 'claude', model: 'sonnet', role: 'Implements stories', instructions: 'Add tests.', lead: true,
+      skills: [], maxConcurrent: 1,
     } });
   });
 });
+
+describe('AgentEditor — skills, capacity, preview and usage', () => {
+  it('chooses skills from the list and sets how many runs the agent may have at once', () => {
+    render(<AgentEditor team={TEAM} onClose={() => undefined} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Dev Agent' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Choose skills' }));
+    expect(posted).toContainEqual({ type: 'kanban:listSkills' });
+    deliver({ type: 'kanban:skills', skills: [
+      { id: 'aac-dev-story', name: 'Dev story', description: 'Implements a story', source: 'bundled' },
+      { id: 'our-style', name: 'Style', description: 'House style', source: 'workspace' },
+    ] });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Filter skills' }), { target: { value: 'style' } });
+    expect(screen.queryByText('aac-dev-story')).toBeNull();
+    fireEvent.click(screen.getByRole('checkbox', { name: /our-style/ }));
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Runs at once' }), { target: { value: '3' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(posted.at(-1)).toMatchObject({ type: 'kanban:saveAgent', agent: { skills: ['our-style'], maxConcurrent: 3 } });
+  });
+
+  it('previews the brief the agent will receive', () => {
+    render(<AgentEditor team={TEAM} onClose={() => undefined} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Dev Agent' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Preview brief' }));
+    expect(posted.at(-1)).toMatchObject({ type: 'kanban:previewBrief', agent: { id: 'dev', name: 'Dev Agent' } });
+    deliver({ type: 'kanban:briefPreview', brief: '## You and this board\n\nYou are **Dev Agent**' });
+    expect(screen.getByText(/You are \*\*Dev Agent\*\*/)).toBeTruthy();
+  });
+
+  it('shows usage per agent for the chosen period', () => {
+    render(<AgentEditor team={TEAM} onClose={() => undefined} />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Usage' }));
+    expect(posted).toContainEqual({ type: 'kanban:getUsage' });
+    const t = (runs: number) => ({ runs, succeeded: runs, timeMs: 90 * 60_000, tokensIn: 42_000, tokensOut: 1500, cards: 2 });
+    deliver({ type: 'kanban:usage', usage: [{ who: 'Dev Agent', windows: { today: t(0), week: t(4), month: t(9) } }] });
+    const row = screen.getByRole('row', { name: /Dev Agent/ });
+    expect(row.textContent).toContain('4');
+    expect(row.textContent).toContain('100%');
+    expect(row.textContent).toContain('1h 30m');
+    expect(row.textContent).toContain('42k / 1.5k');
+    fireEvent.click(screen.getByRole('radio', { name: 'Today' }));
+    expect(screen.getByText('No agent runs in this period.')).toBeTruthy();
+  });
+
+  it("adds a person with a name and role, and lists them without a CLI", () => {
+    render(<AgentEditor team={TEAM} onClose={() => undefined} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Add person' }));
+    expect(screen.queryByRole('combobox', { name: 'CLI' })).toBeNull();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Name' }), { target: { value: ' Maya ' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Role' }), { target: { value: 'Design' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add person' }));
+    expect(posted).toContainEqual({ type: 'kanban:saveAgent', agent: { name: 'Maya', kind: 'person', role: 'Design' } });
+  });
+
+  it('shows a person on the team as a person, and edits them with the person form', () => {
+    const team = { ...TEAM, agents: [...TEAM.agents, { id: 'maya', name: 'Maya', harness: '', kind: 'person' as const }] };
+    render(<AgentEditor team={team} onClose={() => undefined} />);
+    expect(screen.getByText('Person · works their cards by hand')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Maya' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(posted).toContainEqual({ type: 'kanban:saveAgent', agent: { id: 'maya', name: 'Maya', kind: 'person', role: '' } });
+  });
+});
+

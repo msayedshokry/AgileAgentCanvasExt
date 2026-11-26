@@ -599,9 +599,14 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
       const harnessResults = harnessById.get(item.id);
       const assignee = assigneeFor(team, item.id);
       const withHarness = harnessResults ? { ...base, harnessResults } : base;
-      const withAssignee = assignee ? { ...withHarness, assignee: { id: assignee.id, name: assignee.name } } : withHarness;
+      const withAssignee = assignee ? { ...withHarness, assignee: { id: assignee.id, name: assignee.name, ...(assignee.kind === 'person' ? { person: true } : {}) } } : withHarness;
       const progressLine = withAssignee.agentState?.status === 'running' ? progressById.get(item.id) : undefined;
-      const queued = progressLine ? { ...withAssignee, progressLine } : withAssignee;
+      const withProgress = progressLine ? { ...withAssignee, progressLine } : withAssignee;
+      // An epic the lead owns shows the lead and how many of its stories are done.
+      const children = assignee?.lead ? items.filter(c => c.epicKey === item.id && !c.isEpic) : [];
+      const queued = assignee?.lead && item.isEpic
+        ? { ...withProgress, leadProgress: { lead: assignee.name, done: children.filter(c => c.status === 'done').length, total: children.length } }
+        : withProgress;
       // Merge dep badges from the extension's autonomy lifecycle into the
       // card so the KanbanCard "Blocked by N" badge stays in sync with the
       // live dependency graph. Cards without a badge entry show no badge.

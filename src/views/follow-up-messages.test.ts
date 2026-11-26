@@ -74,3 +74,23 @@ describe('FollowUpSender', () => {
     expect(posted).toEqual([]);
   });
 });
+
+describe('FollowUpSender — read during the run', () => {
+  it('lets the running agent take queued messages so they are not sent again after the run', async () => {
+    vi.useFakeTimers();
+    try {
+      const store = fakeStore();
+      let busy = true;
+      const run = makeRun();
+      const sender = new FollowUpSender(store as never, { isBusy: () => busy, run, pollMs: 100 });
+      await sender.submit('S-1', 'use the new API', () => undefined);
+      expect(sender.takeForRun('S-1')).toEqual(['use the new API']);
+      busy = false;
+      await vi.advanceTimersByTimeAsync(200);
+      expect(run).not.toHaveBeenCalled();
+      sender.dispose();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

@@ -38,7 +38,7 @@ export function describeWake(wake: LeadWake): string {
 export function buildLeadRunbook(stories: readonly EpicStory[], roster: readonly TeamAgent[], wake: LeadWake): string {
   const members = roster.filter((a) => !a.lead);
   const team = members.length
-    ? members.map((a) => `| \`${a.id}\` | ${a.name} | ${a.role ?? '—'} |`).join('\n')
+    ? members.map((a) => `| \`${a.id}\` | ${a.name}${a.kind === 'person' ? ' (person)' : ''} | ${a.role ?? '—'} |`).join('\n')
     : '| — | (no other agents yet: propose stories and ask the user to add agents) | |';
   const board = stories.length
     ? stories.map((s) => `| \`${s.id}\` | ${s.title} | ${s.status} | ${s.assignee ?? 'unassigned'} |`).join('\n')
@@ -74,7 +74,7 @@ Write verdict \`COMPLETED\` with a \`"lead"\` object:
 }
 \`\`\`
 - \`stories\`: new stories this epic needs (up to ${LIMITS.leadStories}). Give each a short \`ref\`; the user approves them before they become cards. Don't repeat stories that already exist.
-- \`assign\`: who takes which story, by story id or by the \`ref\` of a story you propose in this run (up to ${LIMITS.leadAssignments}). Match the work to the agent's role. Only ready stories are started; give a one-line \`why\`.
+- \`assign\`: who takes which story, by story id or by the \`ref\` of a story you propose in this run (up to ${LIMITS.leadAssignments}). Match the work to the agent's role. Only ready stories are started; give a one-line \`why\`. A member marked (person) is a human: assigning to them asks them in their Inbox and starts nothing, so give people only work an agent can't do.
 - \`next\`: \`"wait"\` to be woken when a story finishes; \`"review"\` when every story is done and the epic's goal is met (the user then checks it and marks it done); \`"ask"\` when you need the user — put your questions in \`"board": {"questions": [...]}\`.
 - Don't reassign a story that is running. If a story stopped, read its notes and decide: reassign it, split it, or ask.
 `;

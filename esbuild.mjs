@@ -36,6 +36,19 @@ const sprintPlanCliOptions = {
 };
 
 /**
+ * Board MCP shim (src/board-mcp/board-mcp-shim.ts). CLI agents start it as
+ * their `aac_board` MCP server; it runs on VS Code's own runtime
+ * (ELECTRON_RUN_AS_NODE=1), so it bundles everything it needs.
+ * @type {import('esbuild').BuildOptions}
+ */
+const boardMcpShimOptions = {
+    ...buildOptions,
+    entryPoints: ['src/board-mcp/board-mcp-shim.ts'],
+    outfile: 'dist/board-mcp.js',
+    external: [],
+};
+
+/**
  * Copy pdfkit font data files (.afm) to dist/data/ so they can be found
  * at runtime.  PDFKit's built-in font loader reads:
  *   fs.readFileSync(__dirname + '/data/Helvetica.afm', 'utf8')
@@ -84,10 +97,13 @@ async function main() {
         await ctx.watch();
         const cliCtx = await esbuild.context(sprintPlanCliOptions);
         await cliCtx.watch();
+        const shimCtx = await esbuild.context(boardMcpShimOptions);
+        await shimCtx.watch();
         console.log('[esbuild] Watching for changes...');
     } else {
         await esbuild.build(buildOptions);
         await esbuild.build(sprintPlanCliOptions);
+        await esbuild.build(boardMcpShimOptions);
         copyPdfkitFontData();
         copyHeadroomAi();
         copyNodePty();

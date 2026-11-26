@@ -49,6 +49,19 @@ Agents now know who they are and what the board expects, can ask you and each ot
 - An agent can hand a card to another agent on the team, and leave notes for whoever works on the card next. All of it shows in the card's Activity.
 - Mark one agent as **Lead**. An epic you give it, or a goal you type while a lead exists, is planned instead of implemented: the lead proposes the stories, assigns them to the other agents by role, and is woken each time one finishes. It moves the epic to review when the goal is met and leaves done to you. It never implements, runs at most 20 times per epic, and stops with an Inbox entry if it twice does nothing.
 
+### Feature: Live board tools, skills, capacity, people and epic context
+
+Agents can talk to the board while they work, and the team can include people.
+
+- Claude Code and Codex runs get board tools during the run: read the card or its epic, leave a note, propose cards, hand off, read messages you sent since the run started, and ask you a question and wait up to 10 minutes for the answer. They run through a local endpoint with a per-run token; the verdict's board block still works for other CLIs.
+- Give an agent skills in the **Agents** dialog. Bundled and workspace skills are copied into each run and listed in its brief. **Preview brief** shows exactly what an agent receives.
+- Each agent runs one card at a time by default (**Runs at once** raises it). Other cards wait in priority order and show "Waiting for Dev (1 of 1 busy)"; a wait over 30 minutes goes to the Inbox.
+- The **Usage** tab totals runs, time and tokens per agent for today, this week and this month. It shows no costs.
+- **Add person** puts you, or someone you name, on the team. A person's cards never start an agent. When the lead assigns a person a story it appears in the Inbox, and moving that card to done wakes the lead.
+- An epic's **Context for agents** (files, folders, links and a note, in its detail panel) is listed in the brief of every story in that epic. Files are listed, not pasted, and links are not fetched.
+- Autopilots can run on board events as well as on a schedule: `"on": {"event": "card.done"}`, also `card.stopped`, `card.needs-answer`, `pr.merged`, `pr.checks-failed` and `goal.approved`, optionally for one epic. The run is told what happened.
+- An epic run by the lead shows its progress on the card, for example "Chief of Staff · 3 of 5 done".
+
 ### Feature: Sharper code review
 
 Code review now verifies every finding against the code and reports changed behavior that no test would catch.

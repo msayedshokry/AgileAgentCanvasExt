@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../workflow/terminal-executor', () => ({ agentVerdicts: { event: vi.fn() } }));
+vi.mock('../workflow/kanban-orchestrator', () => ({ setAgentResolver: vi.fn(), agentWaitAlert: { event: vi.fn() } }));
 vi.mock('../workflow/kanban-verdict', () => ({ getOutputFolder: () => '' }));
 vi.mock('./follow-up-messages', () => ({ followUpSender: vi.fn() }));
 vi.mock('../workflow/goal-decomposer', () => ({ goalDecomposer: { on: vi.fn(), off: vi.fn(), pendingReview: () => [] } }));
 
-import { applyAgentVerdict, epicOf, proposalKey, type BoardProtocolDeps } from './board-protocol';
+import { applyAgentVerdict, epicContextFor, epicOf, proposalKey, saveEpicContext, type BoardProtocolDeps } from './board-protocol';
 import type { AgentTeam } from '../workflow/harness/agent-team';
 import type { KanbanVerdict } from '../workflow/kanban-verdict';
 
@@ -93,5 +94,27 @@ describe('epicOf', () => {
     expect(epicOf(store, 'S-1')).toBe('E-1');
     expect(epicOf(store, 'E-1')).toBe('E-1');
     expect(epicOf(store, 'X')).toBeUndefined();
+  });
+});
+
+describe('epic context', () => {
+  const epics = [{ id: 'E-1', stories: [{ id: 'S-1' }], agentContext: { paths: ['docs/auth.md'], urls: [] } }];
+
+  it("gives a story its epic's context", () => {
+    const store = { getEpics: () => epics } as never;
+    expect(epicContextFor(store, 'S-1')).toEqual({ epicId: 'E-1', context: { paths: ['docs/auth.md'], urls: [] } });
+    expect(epicContextFor(store, 'X')).toBeUndefined();
+  });
+
+  it('saves checked context on the epic, and reports problems without saving', async () => {
+    const updateArtifact = vi.fn(async () => undefined);
+    const store = { getEpics: () => epics, updateArtifact } as never;
+    const post = vi.fn();
+    await saveEpicContext(store, 'E-1', { paths: 'src/auth', urls: '', note: 'v2' }, post);
+    expect(updateArtifact).toHaveBeenCalledWith('epic', 'E-1', { metadata: { agentContext: { paths: ['src/auth'], urls: [], note: 'v2' } } });
+    expect(post).toHaveBeenLastCalledWith({ type: 'kanban:epicContextSaved', artifactId: 'E-1', context: { paths: ['src/auth'], urls: [], note: 'v2' } });
+    await saveEpicContext(store, 'E-1', { paths: '../outside' }, post);
+    expect(post).toHaveBeenLastCalledWith({ type: 'kanban:epicContextError', artifactId: 'E-1', error: 'Path "../outside" must stay inside the workspace' });
+    expect(updateArtifact).toHaveBeenCalledTimes(1);
   });
 });

@@ -5,7 +5,7 @@
 
 import type { AgentFixAction, KanbanItem } from '../components/kanban/KanbanTypes';
 
-export type InboxKind = 'approval' | 'stopped' | 'paused' | 'autopilot' | 'question' | 'proposal';
+export type InboxKind = 'approval' | 'stopped' | 'paused' | 'autopilot' | 'question' | 'proposal' | 'assigned';
 
 /** As sent by the extension in `kanban:inbox`. */
 export interface InboxItem {
@@ -36,6 +36,7 @@ export const KIND_LABEL: Record<InboxKind, string> = {
   autopilot: 'Autopilot',
   question: 'Question',
   proposal: 'Proposal',
+  assigned: 'Assigned',
 };
 
 const AUTOPILOT_REASON = /^Autopilot "([^"]+)":\s*(.*)$/s;

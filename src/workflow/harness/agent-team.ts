@@ -10,6 +10,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { isHarnessChoice } from './harness-resolver';
 import { getHarnessAdapter } from './harness-adapters';
+import { MAX_SKILLS_PER_AGENT, SKILL_ID } from './skill-catalog';
 
 export const AGENT_TEAM_FILE = 'agent-team.json';
 const ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,39}$/;
@@ -28,6 +29,30 @@ export interface TeamAgent {
   readonly instructions?: string;
   /** The team's lead (chief of staff): plans epics and hands stories out. At most one. */
   readonly lead?: boolean;
+  /** Skill ids (skill-catalog.ts) copied into each run and listed in the brief. */
+  readonly skills?: readonly string[];
+  /** Runs this agent may have going at once; absent means DEFAULT_MAX_CONCURRENT. */
+  readonly maxConcurrent?: number;
+  /** A person on the team (you, or someone you name): no CLI, never runs. Their `harness` is ''. */
+  readonly kind?: 'person';
+}
+
+/** True for a person on the team: their cards never start an agent run. */
+export function isPerson(member: Pick<TeamAgent, 'kind'> | undefined): boolean {
+  return member?.kind === 'person';
+}
+
+/** Why a person's card does not start an agent run. */
+export function personBlockReason(name: string): string {
+  return `Assigned to ${name}, a person, so no agent runs it. Move the card yourself, or assign it to an agent.`;
+}
+
+export const DEFAULT_MAX_CONCURRENT = 1;
+export const MAX_CONCURRENT_LIMIT = 10;
+
+/** How many runs this agent may have going at once. */
+export function capacityOf(agent: TeamAgent): number {
+  return agent.maxConcurrent ?? DEFAULT_MAX_CONCURRENT;
 }
 
 export const MAX_ROLE_CHARS = 120;
@@ -57,10 +82,12 @@ export interface ParsedTeam {
 function parseAgent(raw: unknown, index: number, seen: Set<string>): TeamAgent | string {
   const where = `agents[${index}]`;
   if (!raw || typeof raw !== 'object') return `${where}: not an object`;
-  const { id, name, harness, model, role, instructions, lead } = raw as Record<string, unknown>;
+  const { id, name, harness, model, role, instructions, lead, skills, maxConcurrent, kind } = raw as Record<string, unknown>;
   if (typeof id !== 'string' || !ID_PATTERN.test(id)) return `${where}: "id" must be lowercase letters, digits and dashes`;
   if (seen.has(id)) return `${where}: duplicate id "${id}"`;
   if (typeof name !== 'string' || !name.trim() || name.length > MAX_NAME) return `${where}: "name" must be 1-${MAX_NAME} characters`;
+  if (kind !== undefined && kind !== 'person' && kind !== 'agent') return `${where}: "kind" must be "agent" or "person"`;
+  if (kind === 'person') return parsePerson(id, name.trim(), role, lead, where, seen);
   if (typeof harness !== 'string' || harness === 'auto' || !isHarnessChoice(harness)) return `${where}: "harness" must be an installed-agent id such as "claude" or "codex"`;
   if (model !== undefined && model !== '' && (typeof model !== 'string' || !isValidModelId(model))) {
     return `${where}: "model" must be a model id such as "sonnet" or "opencode/big-pickle"`;
@@ -70,6 +97,12 @@ function parseAgent(raw: unknown, index: number, seen: Set<string>): TeamAgent |
     return `${where}: "instructions" must be up to ${MAX_INSTRUCTIONS_CHARS} characters`;
   }
   if (lead !== undefined && typeof lead !== 'boolean') return `${where}: "lead" must be true or false`;
+  if (skills !== undefined && (!Array.isArray(skills) || skills.length > MAX_SKILLS_PER_AGENT || skills.some((k) => typeof k !== 'string' || !SKILL_ID.test(k)))) {
+    return `${where}: "skills" must be up to ${MAX_SKILLS_PER_AGENT} skill ids`;
+  }
+  if (maxConcurrent !== undefined && (!Number.isInteger(maxConcurrent) || (maxConcurrent as number) < 1 || (maxConcurrent as number) > MAX_CONCURRENT_LIMIT)) {
+    return `${where}: "maxConcurrent" must be a whole number from 1 to ${MAX_CONCURRENT_LIMIT}`;
+  }
   seen.add(id);
   const text = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
   return {
@@ -78,7 +111,17 @@ function parseAgent(raw: unknown, index: number, seen: Set<string>): TeamAgent |
     ...(text(role) ? { role: text(role) } : {}),
     ...(text(instructions) ? { instructions: text(instructions) } : {}),
     ...(lead === true ? { lead: true } : {}),
+    ...(Array.isArray(skills) && skills.length ? { skills: [...new Set(skills as string[])] } : {}),
+    ...(typeof maxConcurrent === 'number' && maxConcurrent !== DEFAULT_MAX_CONCURRENT ? { maxConcurrent } : {}),
   };
+}
+
+function parsePerson(id: string, name: string, role: unknown, lead: unknown, where: string, seen: Set<string>): TeamAgent | string {
+  if (role !== undefined && (typeof role !== 'string' || role.length > MAX_ROLE_CHARS)) return `${where}: "role" must be up to ${MAX_ROLE_CHARS} characters`;
+  if (lead === true) return `${where}: a person cannot be the lead; the lead is an agent`;
+  seen.add(id);
+  const r = typeof role === 'string' ? role.trim() : '';
+  return { id, name, harness: '', kind: 'person', ...(r ? { role: r } : {}) };
 }
 
 /** The team's lead agent, if one is marked. */
@@ -193,7 +236,9 @@ export function readAgentTeam(outputFolder: string): ParsedTeam {
 
 export function writeAgentTeam(outputFolder: string, team: AgentTeam): void {
   fs.mkdirSync(outputFolder, { recursive: true });
-  fs.writeFileSync(path.join(outputFolder, AGENT_TEAM_FILE), `${JSON.stringify(team, null, 2)}\n`, 'utf-8');
+  // A person has no CLI: their empty harness is not written.
+  const agents = team.agents.map((a) => (isPerson(a) ? (({ harness: _none, ...p }) => p)(a) : a));
+  fs.writeFileSync(path.join(outputFolder, AGENT_TEAM_FILE), `${JSON.stringify({ ...team, agents }, null, 2)}\n`, 'utf-8');
 }
 
 export const AGENT_TEAM_TEMPLATE = `${JSON.stringify({

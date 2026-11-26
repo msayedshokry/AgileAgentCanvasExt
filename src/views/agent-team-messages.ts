@@ -14,6 +14,10 @@ import {
   withoutAgent, writeAgentTeam,
 } from '../workflow/harness/agent-team';
 import { discoverModels, supportsModelDiscovery } from '../workflow/harness/model-discovery';
+import { listSkills } from '../workflow/harness/skill-catalog';
+import { buildAgentBrief } from '../workflow/harness/agent-brief';
+import { usageByAgent } from '../workflow/harness/agent-usage';
+import { readRunHistory } from '../workflow/harness/run-history';
 import { getOutputFolder } from '../workflow/kanban-verdict';
 import { leadCoordinator } from './lead-coordinator';
 import { createLogger } from '../utils/logger';
@@ -22,6 +26,7 @@ import { errMsg } from '../utils/error';
 const logger = createLogger('agent-team-messages');
 const HANDLED = new Set([
   'kanban:getAgentTeam', 'kanban:assignAgent', 'kanban:editAgentTeam', 'kanban:listModels', 'kanban:saveAgent', 'kanban:deleteAgent',
+  'kanban:listSkills', 'kanban:getUsage', 'kanban:previewBrief',
 ]);
 
 type Post = (message: Record<string, unknown>) => void;
@@ -104,6 +109,27 @@ function saveAgent(raw: unknown, post: Post): void {
   postTeam(post);
 }
 
+/** The brief a draft agent would get on its next run, built by the same code a run uses. */
+function previewBrief(raw: unknown): Record<string, unknown> {
+  const input = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  const result = validateAgent({ ...input, id: typeof input.id === 'string' && input.id ? input.id : 'new-agent' });
+  if ('error' in result) return { type: 'kanban:briefPreview', error: result.error };
+  const agent = result.agent;
+  if (agent.kind === 'person') return { type: 'kanban:briefPreview', error: 'People get no brief: their cards never start an agent run.' };
+  const folder = getOutputFolder();
+  const ws = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  const roster = withAgent(readAgentTeam(folder).team, agent).agents;
+  const catalog = listSkills(ws);
+  const skills = (agent.skills ?? []).flatMap((id) => {
+    const entry = catalog.find((c) => c.id === id);
+    if (!entry || !ws) return [];
+    const where = path.relative(ws, path.join(folder, '_terminal-output', 'skills', id, 'SKILL.md')).replace(/\\/g, '/');
+    return [{ id, name: entry.name, description: entry.description, path: where }];
+  });
+  const brief = buildAgentBrief({ agent, cliLabel: getHarnessAdapter(agent.harness)?.label ?? agent.harness, model: agent.model, roster, notes: [], skills });
+  return { type: 'kanban:briefPreview', brief };
+}
+
 /** Returns true when the message was one of ours. */
 export async function handleAgentTeamMessage(
   message: { type: string; [key: string]: unknown },
@@ -139,6 +165,17 @@ export async function handleAgentTeamMessage(
         postTeam(post);
         break;
       }
+      case 'kanban:listSkills': {
+        const ws = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        post({ type: 'kanban:skills', skills: listSkills(ws).map(({ id, name, description, source }) => ({ id, name, description, source })) });
+        break;
+      }
+      case 'kanban:previewBrief':
+        post(previewBrief(message.agent));
+        break;
+      case 'kanban:getUsage':
+        post({ type: 'kanban:usage', usage: usageByAgent(readRunHistory(getOutputFolder(), 5000), Date.now()) });
+        break;
       case 'kanban:editAgentTeam':
         await openTeamFile();
         break;

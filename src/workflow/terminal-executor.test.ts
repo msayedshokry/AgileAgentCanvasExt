@@ -28,7 +28,8 @@ import {
     TerminalExecutor,
     outputTail,
 } from './terminal-executor';
-import { window } from 'vscode';
+import { window, workspace } from 'vscode';
+import { setBundledSkillsRoot } from './harness/skill-catalog';
 
 // ── Additional module mocks for the long-prompt staging tests ────────────────
 // The e2e staging test drives executeTerminalWorkflow, which pulls in the
@@ -150,7 +151,7 @@ vi.mock('vscode', () => {
 
 // ── Imports (after mocks — module receives stubbed vscode) ───────────────────
 
-import { buildTerminalPrompt, buildResumePrompt } from './terminal-executor';
+import { buildTerminalPrompt, buildResumePrompt, setBoardLive } from './terminal-executor';
 import { getHarnessAdapter } from './harness/harness-adapters';
 harnessMockState.resolution = { kind: 'cli', adapter: getHarnessAdapter('pi')!, binary: 'pi', reason: 'test' };
 
@@ -739,6 +740,79 @@ describe('executeTerminalWorkflow — assigned agent', () => {
             expect(prompt).toContain('- `dev` — Dev');
             expect(prompt).toContain('- Dev (t): Form is in login.tsx');
         });
+    });
+
+    it("copies the agent's skills into the workspace and lists them in the prompt", async () => {
+        harnessMockState.resolution = cli('pi');
+        const bundled = mkdtempSync(join(tmpdir(), 'aac-skills-'));
+        mkdirSync(join(bundled, 'aac-dev'), { recursive: true });
+        writeFileSync(join(bundled, 'aac-dev', 'SKILL.md'), '---\nname: Dev story\ndescription: Implements a story\n---\n');
+        setBundledSkillsRoot(bundled);
+        try {
+            await withWorkspace(async (outputFolder) => {
+                mkdirSync(outputFolder, { recursive: true });
+                writeFileSync(join(outputFolder, 'agent-team.json'), JSON.stringify({
+                    agents: [{ id: 'qa', name: 'QA', harness: 'pi', skills: ['aac-dev', 'missing-skill'] }],
+                    assignments: { 'S-11': 'qa' },
+                }));
+                makeTerminal();
+                (workspace as unknown as { workspaceFolders: unknown[] }).workspaceFolders = [{ uri: { fsPath: join(outputFolder, '..') } }];
+                const executor = new TerminalExecutor();
+                await executor.executeTerminalWorkflow('dev-story', { id: 'S-11', type: 'story' }, {});
+                (workspace as unknown as { workspaceFolders: unknown[] }).workspaceFolders = [];
+                const prompt = readFileSync(executor.getTerminalSession('S-11')!.promptFile!, 'utf-8');
+                expect(prompt).toContain('- **Dev story** (`.agileagentcanvas-context/_terminal-output/skills/aac-dev/SKILL.md`): Implements a story');
+                expect(existsSync(join(outputFolder, '_terminal-output', 'skills', 'aac-dev', 'SKILL.md'))).toBe(true);
+                expect(prompt).not.toContain('missing-skill');
+            });
+        } finally {
+            rmSync(bundled, { recursive: true, force: true });
+        }
+    });
+
+    it('gives a Claude run the board tools: a scoped token, private credentials and an MCP config, cleaned up when it ends', async () => {
+        harnessMockState.resolution = cli('claude');
+        const revoke = vi.fn();
+        const issue = vi.fn(() => 'run-token');
+        setBoardLive({ shimPath: '/ext/dist/board-mcp.js', endpoint: async () => 'http://127.0.0.1:4321/tool', issue, revoke });
+        try {
+            await withWorkspace(async () => {
+                const { terminalObj, sendTextMock } = makeTerminal();
+                const executor = new TerminalExecutor();
+                await executor.executeTerminalWorkflow('dev-story', { id: 'S-12', type: 'story' }, {});
+                expect(issue).toHaveBeenCalledWith(expect.objectContaining({ cardId: 'S-12' }));
+                const cmd = sendTextMock.mock.calls[0][0] as string;
+                const configFile = /--mcp-config '?([^' ]+\.mcp\.json)/.exec(cmd)?.[1];
+                expect(configFile).toBeDefined();
+                const config = JSON.parse(readFileSync(configFile!, 'utf-8'));
+                const credentials = config.mcpServers.aac_board.args[2] as string;
+                expect(config.mcpServers.aac_board).toMatchObject({ args: ['/ext/dist/board-mcp.js', '--credentials', credentials], env: { ELECTRON_RUN_AS_NODE: '1' } });
+                expect(JSON.parse(readFileSync(credentials, 'utf-8'))).toEqual({ url: 'http://127.0.0.1:4321/tool', token: 'run-token' });
+                expect(cmd).not.toContain('run-token');
+                const prompt = readFileSync(executor.getTerminalSession('S-12')!.promptFile!, 'utf-8');
+                expect(prompt).toContain('### Board tools (live)');
+                (executor as any).onDidCloseTerminal(terminalObj);
+                expect(revoke).toHaveBeenCalledWith('run-token', 'S-12');
+                expect(existsSync(credentials)).toBe(false);
+                expect(existsSync(configFile!)).toBe(false);
+            });
+        } finally {
+            setBoardLive(undefined);
+        }
+    });
+
+    it('runs without board tools when the endpoint is unavailable', async () => {
+        harnessMockState.resolution = cli('claude');
+        setBoardLive({ shimPath: '/x.js', endpoint: async () => undefined, issue: vi.fn(), revoke: vi.fn() });
+        try {
+            await withWorkspace(async () => {
+                const { sendTextMock } = makeTerminal();
+                await new TerminalExecutor().executeTerminalWorkflow('dev-story', { id: 'S-13', type: 'story' }, {});
+                expect(sendTextMock.mock.calls[0][0]).not.toContain('--mcp-config');
+            });
+        } finally {
+            setBoardLive(undefined);
+        }
     });
 
     it('uses the board default for an unassigned card', async () => {

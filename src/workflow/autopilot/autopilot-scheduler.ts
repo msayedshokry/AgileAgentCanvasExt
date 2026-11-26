@@ -21,9 +21,15 @@ import { minuteKey, nextRuns } from './cron';
 import { claimScheduledRun, pruneClaims } from './autopilot-claim';
 import { dismissNeedsYou, notifyNeedsYou } from '../../views/needs-you';
 import {
-  AUTOPILOTS_FILE, AUTOPILOT_TEMPLATE, autopilotArtifact, dueAutopilots, parseAutopilotConfig,
-  type AutopilotConfig, type ParsedAutopilot,
+  AUTOPILOTS_FILE, AUTOPILOT_TEMPLATE, autopilotArtifact, describeEvent, dueAutopilots, parseAutopilotConfig, triggeredAutopilots,
+  type AutopilotConfig, type BoardEvent, type ParsedAutopilot,
 } from './autopilot-config';
+import { kanbanProgress } from '../kanban-orchestrator';
+import { goalDecomposer, type ProposedGoal } from '../goal-decomposer';
+import { getCardPullRequest } from '../harness/pull-request';
+import { PR_POLL_MS, PrWatcher } from './pr-watch';
+
+type Trigger = 'schedule' | 'manual' | 'event';
 
 const logger = createLogger('autopilot');
 const TICK_MS = 20_000;
@@ -83,6 +89,22 @@ export class AutopilotScheduler implements vscode.Disposable {
     }
   }
 
+  /** A board event: run every enabled autopilot whose `on` trigger matches, once across windows. */
+  onEvent(evt: BoardEvent, now: Date = new Date()): void {
+    if (!isEnabled()) return;
+    const { autopilots, errors } = loadAutopilots();
+    this.reportConfigErrors(errors);
+    for (const autopilot of triggeredAutopilots(autopilots, evt)) {
+      if (this.running.has(autopilot.id)) {
+        logger.warn(`[Autopilot] ${autopilot.id}: previous run still going — skipping ${evt.event} on ${evt.cardId ?? '-'}`);
+        continue;
+      }
+      const key = `${minuteKey(now)}-${evt.event}-${evt.cardId ?? ''}`.replace(/[^\w.-]/g, '-');
+      if (!this.claim(autopilot, key)) continue;
+      void this.run(autopilot, 'event', evt);
+    }
+  }
+
   /** False when another window has the run, or when claiming failed (reported once per distinct error). */
   private claim(autopilot: ParsedAutopilot, minute: string): boolean {
     try {
@@ -99,7 +121,7 @@ export class AutopilotScheduler implements vscode.Disposable {
   }
 
   /** Run one autopilot now; resolves when the run has a verdict. */
-  async run(autopilot: ParsedAutopilot, trigger: 'schedule' | 'manual'): Promise<void> {
+  async run(autopilot: ParsedAutopilot, trigger: Trigger, evt?: BoardEvent): Promise<void> {
     if (this.running.has(autopilot.id)) {
       void vscode.window.showInformationMessage(`Autopilot "${autopilot.name}" is already running.`);
       return;
@@ -109,7 +131,7 @@ export class AutopilotScheduler implements vscode.Disposable {
     try {
       const verdict = await terminalExecutor.executeAndAwaitVerdict(
         `autopilot-${autopilot.id}`, autopilotArtifact(autopilot), undefined,
-        { skillContent: `# Autopilot: ${autopilot.name}\n\n${autopilot.runbook}`, freshSession: true },
+        { skillContent: `# Autopilot: ${autopilot.name}\n\n${evt ? `${describeEvent(evt)}\n` : ''}${autopilot.runbook}`, freshSession: true },
       );
       logger.info(`[Autopilot] ${autopilot.id}: ${verdict.verdict}`);
       if (verdict.verdict !== 'COMPLETED' && verdict.verdict !== 'APPROVED') {
@@ -132,7 +154,7 @@ export class AutopilotScheduler implements vscode.Disposable {
    * count) rather than a popup; a run the user started by hand still says so
    * directly, since they are waiting on it.
    */
-  private needsAttention(autopilot: ParsedAutopilot, trigger: 'schedule' | 'manual', what: string): void {
+  private needsAttention(autopilot: ParsedAutopilot, trigger: Trigger, what: string): void {
     notifyNeedsYou(autopilotArtifact(autopilot).id, 'autopilot', `Autopilot "${autopilot.name}": ${what}`);
     if (trigger === 'manual') void vscode.window.showWarningMessage(`Autopilot "${autopilot.name}" needs attention: ${what}`);
   }
@@ -173,17 +195,52 @@ async function runNow(scheduler: AutopilotScheduler): Promise<void> {
   const now = new Date();
   const choice = await vscode.window.showQuickPick(autopilots.map((a) => ({
     label: a.name,
-    description: `${a.schedule}${a.enabled ? '' : ' · disabled'}`,
-    detail: `Next: ${nextRuns(a.cron, now, 1)[0]?.toLocaleString() ?? 'none within a year'}`,
+    description: `${[a.schedule, a.on ? `on ${a.on.event}${a.on.epic ? ` in ${a.on.epic}` : ''}` : ''].filter(Boolean).join(' · ')}${a.enabled ? '' : ' · disabled'}`,
+    detail: a.cron ? `Next: ${nextRuns(a.cron, now, 1)[0]?.toLocaleString() ?? 'none within a year'}` : 'Runs when its event happens',
     autopilot: a,
   })), { placeHolder: 'Run an autopilot now' });
   if (choice) await scheduler.run(choice.autopilot, 'manual');
 }
 
-export function registerAutopilots(context: vscode.ExtensionContext): AutopilotScheduler {
+/**
+ * Start the scheduler and feed it board events: card progress, approved goals
+ * and PR changes. `epicOf` finds a card's epic, for `on.epic` filters.
+ */
+export function registerAutopilots(
+  context: vscode.ExtensionContext,
+  epicOf: (cardId: string) => string | undefined = () => undefined,
+): AutopilotScheduler {
   const scheduler = new AutopilotScheduler();
   scheduler.start();
+  const cwd = () => vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  const prs = new PrWatcher(
+    async (cardId) => {
+      const dir = cwd();
+      const pr = dir ? await getCardPullRequest(cardId, dir) : undefined;
+      return pr && { state: pr.state, failing: pr.checks.filter((c) => c.state === 'fail').map((c) => c.name) };
+    },
+    (cardId, evt) => scheduler.onEvent({
+      event: evt.event, cardId, epicId: epicOf(cardId),
+      ...(evt.event === 'pr.checks-failed' ? { detail: `Failing checks: ${evt.checks.join(', ')}` } : {}),
+    }),
+  );
+  const prTimer = setInterval(() => { if (isEnabled()) void prs.poll(); }, PR_POLL_MS);
+  const onGoal = (goal: ProposedGoal) => {
+    if (goal.status === 'approved') scheduler.onEvent({ event: 'goal.approved', detail: goal.goal.slice(0, 2000) });
+  };
+  goalDecomposer.on('reviewed', onGoal);
   context.subscriptions.push(
+    kanbanProgress.event((evt) => {
+      const s = evt.agentState;
+      const base = { cardId: evt.artifactId, epicId: epicOf(evt.artifactId) };
+      if (s.status === 'running') prs.watch(evt.artifactId);
+      if (s.status === 'completed') scheduler.onEvent({ event: 'card.done', ...base });
+      else if (s.failure?.kind === 'needs-answer') scheduler.onEvent({ event: 'card.needs-answer', ...base, detail: s.failure.detail });
+      else if (s.status === 'interrupted' || s.status === 'failed') {
+        scheduler.onEvent({ event: 'card.stopped', ...base, ...(s.failure ? { detail: s.failure.title } : {}) });
+      }
+    }),
+    { dispose: () => { clearInterval(prTimer); goalDecomposer.off('reviewed', onGoal); } },
     scheduler,
     vscode.commands.registerCommand('agileagentcanvas.autopilot.open', () => openConfig()),
     vscode.commands.registerCommand('agileagentcanvas.autopilot.runNow', () => runNow(scheduler)),

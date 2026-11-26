@@ -21,6 +21,7 @@ import type { WorkflowExecutor } from './workflow-executor';
 import type { BmadModel } from '../chat/ai-provider';
 import type { TransitionResult } from './lane-transitions';
 import { concurrencyQueue } from './concurrency-queue';
+import { AgentSlots, priorityRank } from './harness/agent-slots';
 import { getKanbanMaxIterations, isApprovalCheckpointEnabled } from './kanban-settings';
 import { harnessEngine } from '../harness/policy-engine';
 import type { KanbanVerdict, KanbanFixRequest, KanbanVerdictKind } from './kanban-verdict';
@@ -43,6 +44,7 @@ import {
 } from './terminal-health-checks';
 
 import { errMsg } from '../utils/error';
+import { personBlockReason } from './harness/agent-team';
 
 /** A pending approval checkpoint is denied after this long (webview closed, user away). */
 export const APPROVAL_TIMEOUT_MS = 30 * 60 * 1000;
@@ -107,7 +109,7 @@ export interface OrchestratorContext {
 export interface KanbanProgressEvent {
   artifactId: string;
   agentState: {
-    status: 'running' | 'completed' | 'failed' | 'interrupted' | 'idle';
+    status: 'running' | 'completed' | 'failed' | 'interrupted' | 'idle' | 'queued';
     agentRole?: string;
     workflowId?: string;
     /** Why the run stopped, in plain words, with the actions that fix it. */
@@ -120,6 +122,8 @@ export interface KanbanProgressEvent {
  * these to the webview so badges and columns stay live during a long run.
  */
 export const kanbanProgress = new vscode.EventEmitter<KanbanProgressEvent>();
+/** A card has waited AGENT_WAIT_ALERT_MS for its busy agent (raised in the Inbox). */
+export const agentWaitAlert = new vscode.EventEmitter<{ artifactId: string; agent: string }>();
 
 const DEV_WORKFLOW = 'aac-kanban-dev-executor';
 const REVIEW_WORKFLOW = 'aac-kanban-review-guard';
@@ -136,6 +140,18 @@ let leadHandler: LeadHandler | undefined;
 
 export function setLeadHandler(handler: LeadHandler | undefined): void {
   leadHandler = handler;
+}
+
+/** The named agent a card runs on, with its capacity (views/lead-coordinator.ts registers it). */
+export type AgentResolver = (cardId: string) => { agentId: string; name: string; capacity: number; person?: boolean } | undefined;
+let agentResolver: AgentResolver | undefined;
+/** Runs per agent, so an agent with capacity 1 works one card at a time (harness/agent-slots.ts). */
+export const agentSlots = new AgentSlots();
+/** A card waiting this long for its agent raises an Inbox entry. */
+export const AGENT_WAIT_ALERT_MS = 30 * 60_000;
+
+export function setAgentResolver(resolver: AgentResolver | undefined): void {
+  agentResolver = resolver;
 }
 
 export class KanbanOrchestrator {
@@ -261,6 +277,9 @@ export class KanbanOrchestrator {
     }
     // An epic given to the lead agent is planned and handed out, not implemented.
     if (leadHandler?.owns(artifact)) return leadHandler.start(artifact);
+    // A card assigned to a person is theirs to work; the board never starts an agent on it.
+    const assignee = agentResolver?.(id);
+    if (assignee?.person) return { ok: false, status: 'blocked', blockedBy: [personBlockReason(assignee.name)] };
 
     if (concurrencyQueue.isLocked(id)) {
       return { ok: false, status: 'blocked', blockedBy: ['Artifact is already being processed'] };
@@ -276,8 +295,28 @@ export class KanbanOrchestrator {
     const ac = new AbortController();
     this.abortControllers.set(id, ac);
     this.runStartStatus.set(id, (artifact?.status as string) || 'ready-for-dev');
+    let releaseSlot: (() => void) | undefined;
 
     try {
+      // ── Agent capacity: wait until the card's agent has room ────────────
+      const who = assignee;
+      if (who) {
+        let alert: ReturnType<typeof setTimeout> | undefined;
+        try {
+          releaseSlot = await agentSlots.acquire(
+            { agentId: who.agentId, capacity: who.capacity, cardId: id, rank: priorityRank(artifact?.priority), signal: ac.signal },
+            (busy) => {
+              this.emit(id, 'queued', `Waiting for ${who.name} (${busy} of ${who.capacity} busy)`);
+              alert = setTimeout(() => agentWaitAlert.fire({ artifactId: id, agent: who.name }), AGENT_WAIT_ALERT_MS);
+            },
+          );
+        } catch {
+          return await this.stop(id, 'Aborted by user');
+        } finally {
+          if (alert) clearTimeout(alert);
+        }
+      }
+
       // ── Pre-flight guardrails ──────────────────────────────────────────
       // Check circuit breaker before starting — don't waste cycles on a
       // workflow type that's repeatedly failing.
@@ -420,6 +459,7 @@ export class KanbanOrchestrator {
       // to prevent deadlock (the finally block can't execute while the
       // Promise is still awaiting, so resolve it now).
       this.resolveApproval(id, false);
+      releaseSlot?.();
       concurrencyQueue.release(id);
     }
   }

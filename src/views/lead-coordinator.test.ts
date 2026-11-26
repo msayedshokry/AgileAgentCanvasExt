@@ -134,4 +134,37 @@ describe('LeadCoordinator', () => {
     expect(t.runbooks[0]).toContain('The user gave you this goal');
     expect(t.runbooks[0]).toContain('Add login');
   });
+
+  describe('people on the team', () => {
+    const maya = { id: 'maya', name: 'Maya', harness: '', kind: 'person' as const, role: 'design' };
+    const withMaya = (t: ReturnType<typeof setup>) => t.deps.writeTeam({ ...t.team(), agents: [lead, dev, maya] });
+
+    it("lists people in the lead's roster and assigns to them through the Inbox, starting nothing", async () => {
+      const t = setup([plan({ assign: [{ card: 'S-1', to: 'maya', why: 'needs a designer' }] })]);
+      withMaya(t);
+      await t.c.start('E-1');
+      expect(t.runbooks[0]).toContain('| `maya` | Maya (person) | design |');
+      expect(t.team().assignments['S-1']).toBe('maya');
+      expect(t.started).toEqual([]);
+      expect(t.notified).toContainEqual(['S-1', 'assigned', 'Chief of Staff assigned Maya "Login form"', { details: ['needs a designer'] }]);
+      expect(t.cards['E-1'].artifact.agentNotes).not.toEqual(expect.arrayContaining([expect.objectContaining({ author: 'Board' })]));
+    });
+
+    it('wakes the lead and clears the Inbox entry when a person moves their story to done', async () => {
+      const dismiss = vi.fn();
+      const t = setup([], { dismiss });
+      withMaya(t);
+      t.deps.writeTeam({ ...t.team(), assignments: { ...t.team().assignments, 'S-1': 'maya' } });
+      await t.c.storyMovedToDone('S-1');
+      expect(dismiss).toHaveBeenCalledWith('S-1');
+      expect(t.runbooks[0]).toContain('- S-1 "Login form" was finished by Maya and is done');
+    });
+
+    it("ignores manual moves of agents' stories, which wake the lead when their run ends", async () => {
+      const t = setup([]);
+      t.deps.writeTeam({ ...t.team(), assignments: { ...t.team().assignments, 'S-1': 'dev' } });
+      await t.c.storyMovedToDone('S-1');
+      expect(t.runbooks).toEqual([]);
+    });
+  });
 });

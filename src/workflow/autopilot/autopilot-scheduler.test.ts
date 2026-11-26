@@ -102,3 +102,27 @@ describe('AutopilotScheduler.tick', () => {
     expect(vi.mocked(vscode.window.showWarningMessage).mock.calls[0][0]).toMatch(/^Autopilot "Daily summary" could not claim its run: /);
   });
 });
+
+describe('AutopilotScheduler.onEvent', () => {
+  const onDone = { id: 'review', name: 'Review done work', on: { event: 'card.done' }, runbook: 'Check the work' };
+
+  it('runs matching autopilots with the event in the prompt, once across windows', async () => {
+    writeConfig([onDone, daily]);
+    const evt = { event: 'card.done' as const, cardId: 'S-1', epicId: 'EPIC-1' };
+    new AutopilotScheduler().onEvent(evt, NINE);
+    new AutopilotScheduler().onEvent(evt, NINE);
+    await vi.waitFor(() => expect(executeAndAwaitVerdict).toHaveBeenCalledTimes(1));
+    const [workflowId, , , options] = executeAndAwaitVerdict.mock.calls[0];
+    expect(workflowId).toBe('autopilot-review');
+    expect(options.skillContent).toContain('card.done: S-1 (epic EPIC-1)');
+    expect(options.skillContent).toContain('Check the work');
+  });
+
+  it('ignores other events and does nothing while turned off', () => {
+    writeConfig([onDone]);
+    new AutopilotScheduler().onEvent({ event: 'pr.merged', cardId: 'S-1' }, NINE);
+    state.enabled = false;
+    new AutopilotScheduler().onEvent({ event: 'card.done', cardId: 'S-1' }, NINE);
+    expect(executeAndAwaitVerdict).not.toHaveBeenCalled();
+  });
+});

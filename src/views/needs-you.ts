@@ -9,7 +9,7 @@ import * as vscode from 'vscode';
 import { kanbanProgress, type KanbanProgressEvent } from '../workflow/kanban-orchestrator';
 import { autoScheduler } from '../workflow/auto-scheduler';
 
-export type AttentionKind = 'approval' | 'stopped' | 'paused' | 'autopilot' | 'question' | 'proposal';
+export type AttentionKind = 'approval' | 'stopped' | 'paused' | 'autopilot' | 'question' | 'proposal' | 'assigned';
 
 export interface AttentionItem {
   readonly artifactId: string;

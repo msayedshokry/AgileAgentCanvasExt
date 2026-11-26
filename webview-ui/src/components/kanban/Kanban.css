@@ -295,6 +295,7 @@
 }
 /* Epics keep their expand chevron in that corner. */
 .kanban-card--epic .kanban-card-assignee { right: 28px; }
+.kanban-card-assignee--person { border-radius: var(--radius-sm, 5px); }
 
 /* What the running agent is doing now: one muted mono line, newest output. */
 .kanban-card-progress {
@@ -1632,4 +1633,12 @@
   .corpus-3d-phase-swatch--1 { background: #0e7490; }
   .corpus-3d-phase-swatch--2 { background: #b45309; }
   .corpus-3d-phase-swatch--3 { background: #15803D; }
+}
+
+/* An epic the lead owns: who leads it and progress. */
+.kanban-card-lead {
+  display: block;
+  font-size: 11px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
 }

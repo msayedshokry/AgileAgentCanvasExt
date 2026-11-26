@@ -75,3 +75,15 @@ describe('detail panel assignee picker', () => {
     expect(posted).toContainEqual({ type: 'kanban:editAgentTeam' });
   });
 });
+
+describe('card — capacity wait and lead epics', () => {
+  it('says which agent a queued card is waiting for', () => {
+    render(<KanbanCard item={{ ...ITEM, agentState: { status: 'queued', agentRole: 'Waiting for Dev (1 of 1 busy)' } }} />);
+    expect(screen.getByText('Waiting for Dev (1 of 1 busy)')).toBeTruthy();
+  });
+
+  it('shows the lead and story progress on a lead epic', () => {
+    render(<KanbanCard item={{ ...ITEM, isEpic: true, type: 'epic', leadProgress: { lead: 'Chief of Staff', done: 2, total: 5 } }} />);
+    expect(screen.getByText('Lead: Chief of Staff · 2/5 done')).toBeTruthy();
+  });
+});

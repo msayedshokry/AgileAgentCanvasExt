@@ -16,7 +16,8 @@ import { initializeLaneTransitionEngine, laneTransitionEngine } from './workflow
 import { initializeKanbanOrchestrator } from './workflow/kanban-orchestrator';
 import { concurrencyQueue } from './workflow/concurrency-queue';
 import { agentProgress, terminalExecutor } from './workflow/terminal-executor';
-import { registerBoardProtocol } from './views/board-protocol';
+import { epicOf, registerBoardProtocol } from './views/board-protocol';
+import { setBundledSkillsRoot } from './workflow/harness/skill-catalog';
 import { registerLeadCoordinator } from './views/lead-coordinator';
 import { initializeAcpSessionManager } from './acp/session-manager';
 import { agentMessageBus } from './acp/agent-bus/message-bus';
@@ -188,7 +189,9 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(agentProgress.event((p) => agenticKanbanProvider.broadcast({ type: 'kanban:progress', ...p })));
     // Developer hub: project context, metrics, release notes, GitHub Issues sync, story CodeLens.
     registerDevHubCommands(context, artifactStore, (artifactId) => agenticKanbanProvider.broadcast({ type: 'kanban:focusCard', artifactId }));
-    registerAutopilots(context);
+    registerAutopilots(context, (id) => epicOf(artifactStore, id));
+    // Skills agents can be given (Agents dialog); bundled ones ship in resources/_aac/skills.
+    setBundledSkillsRoot(path.join(context.extensionPath, 'resources', '_aac', 'skills'));
     // Agents' board requests (notes, questions, proposals, handoffs, the lead's plan).
     registerBoardProtocol(context, artifactStore);
     // The lead agent (chief of staff): plans lead-owned epics and hands stories out.

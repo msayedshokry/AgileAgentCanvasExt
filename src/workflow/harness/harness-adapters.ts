@@ -50,6 +50,43 @@ export interface LaunchContext {
   readonly session?: { readonly id: string; readonly resume: boolean };
   /** Model id for adapters with `acceptsModel`; undefined uses the CLI's default. */
   readonly model?: string;
+  /**
+   * The board's MCP server for this run (adapters with `boardTools`): the
+   * shim command and, for Claude Code, a ready MCP config file.
+   */
+  readonly board?: BoardMcpLaunch;
+}
+
+export interface BoardMcpLaunch {
+  readonly command: string;
+  readonly args: readonly string[];
+  readonly env: Readonly<Record<string, string>>;
+  /** `{"mcpServers": {"aac_board": …}}` written for this run (Claude Code's --mcp-config). */
+  readonly configFile: string;
+}
+
+export const BOARD_MCP_SERVER = 'aac_board';
+/** board_ask waits up to 10 minutes for the user; give the call a minute more. */
+export const BOARD_TOOL_TIMEOUT_SEC = 660;
+
+/** A TOML literal string: no escapes, so Windows paths pass as they are. */
+const tomlLiteral = (s: string) => `'${s.replace(/'/g, '')}'`;
+
+/** Codex `-c` overrides that register the board server for this run only. */
+function codexBoardOverrides(board: BoardMcpLaunch | undefined): string[] {
+  if (!board) return [];
+  const prefix = `mcp_servers.${BOARD_MCP_SERVER}`;
+  const env = Object.entries(board.env).map(([k, v]) => `${k} = ${tomlLiteral(v)}`).join(', ');
+  return [
+    '-c', `${prefix}.command=${tomlLiteral(board.command)}`,
+    '-c', `${prefix}.args=[${board.args.map(tomlLiteral).join(', ')}]`,
+    ...(env ? ['-c', `${prefix}.env={ ${env} }`] : []),
+    // Headless exec refuses MCP calls that would need approval; these tools only
+    // act on the run's own card, so this one server is pre-approved (0.163
+    // accepts auto|approve|prompt|writes). board_ask may wait 10 minutes.
+    '-c', `${prefix}.default_tools_approval_mode='approve'`,
+    '-c', `${prefix}.tool_timeout_sec=${BOARD_TOOL_TIMEOUT_SEC}`,
+  ];
 }
 
 export interface HarnessAdapter {
@@ -68,6 +105,8 @@ export interface HarnessAdapter {
   readonly sessionResume?: boolean;
   /** True when buildLaunch passes `ctx.model` to the CLI's model flag (flag checked against the CLI's --help). */
   readonly acceptsModel?: boolean;
+  /** True when buildLaunch can register the board's MCP server for one run (`ctx.board`). */
+  readonly boardTools?: boolean;
   buildLaunch(ctx: LaunchContext): LaunchSpec;
 }
 
@@ -97,13 +136,17 @@ const claude: HarnessAdapter = {
   // `--session-id <uuid>` names a new conversation; `--resume <uuid>` continues it.
   sessionResume: true,
   acceptsModel: true,
-  buildLaunch: ({ binary, posture, session, model }) => ({
+  // --mcp-config loads the board server for this run only; in the sandboxed
+  // posture its tools are allow-listed by server name (claude 2.1.294).
+  boardTools: true,
+  buildLaunch: ({ binary, posture, session, model, board }) => ({
     args: [
       ...(posture === 'full'
         ? [binary, '-p', '--permission-mode', 'bypassPermissions', '--dangerously-skip-permissions']
-        : [binary, '-p', '--permission-mode', 'acceptEdits', '--allowedTools', 'Read Write Edit Glob Grep']),
+        : [binary, '-p', '--permission-mode', 'acceptEdits', '--allowedTools', `Read Write Edit Glob Grep${board ? ` mcp__${BOARD_MCP_SERVER}` : ''}`]),
       ...(session ? [session.resume ? '--resume' : '--session-id', session.id] : []),
       ...(model ? ['--model', model] : []),
+      ...(board ? ['--mcp-config', board.configFile] : []),
     ],
   }),
 };
@@ -127,8 +170,11 @@ const codex: HarnessAdapter = {
   // so every shell write is "rejected: blocked by policy". The key is ignored
   // on other platforms. Unquoted so it stays a SAFE_ARG in every shell.
   acceptsModel: true,
-  buildLaunch: ({ binary, posture, model }) => {
-    const m = model ? ['-m', model] : [];
+  // `-c mcp_servers.<name>.*` registers the board server for this run without
+  // touching ~/.codex/config.toml (checked with `codex mcp list`, 0.163).
+  boardTools: true,
+  buildLaunch: ({ binary, posture, model, board }) => {
+    const m = [...(model ? ['-m', model] : []), ...codexBoardOverrides(board)];
     return {
       args: posture === 'full'
         ? [binary, 'exec', ...m, '--dangerously-bypass-approvals-and-sandbox', '--skip-git-repo-check', '-']

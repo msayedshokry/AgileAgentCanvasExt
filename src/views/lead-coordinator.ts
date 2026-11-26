@@ -15,13 +15,13 @@ import { getOutputFolder } from '../workflow/kanban-verdict';
 import { kanbanOrchestrator, kanbanProgress, setLeadHandler, type KanbanProgressEvent } from '../workflow/kanban-orchestrator';
 import { terminalExecutor } from '../workflow/terminal-executor';
 import { goalDecomposer, type ProposedGoal, type ProposedStory } from '../workflow/goal-decomposer';
-import { leadAgent, readAgentTeam, withAssignment, writeAgentTeam, type AgentTeam } from '../workflow/harness/agent-team';
+import { isPerson, leadAgent, readAgentTeam, withAssignment, writeAgentTeam, type AgentTeam } from '../workflow/harness/agent-team';
 import {
   buildLeadRunbook, LEAD_WORKFLOW, LeadGuard, planLeadEffects, type EpicStory, type LeadWake,
 } from '../workflow/harness/lead-plan';
 import { appendNote } from '../workflow/harness/board-effects';
 import { readAgentNotes, type AgentNote } from '../workflow/harness/agent-brief';
-import { notifyNeedsYou, type AttentionExtra, type AttentionKind } from './needs-you';
+import { dismissNeedsYou, notifyNeedsYou, type AttentionExtra, type AttentionKind } from './needs-you';
 import { createLogger } from '../utils/logger';
 import { errMsg } from '../utils/error';
 
@@ -39,6 +39,7 @@ export interface LeadCoordinatorDeps {
   readonly autoApprove: () => boolean;
   readonly approveAll: (goalId: string) => Promise<void>;
   readonly notify: (key: string, kind: AttentionKind, reason: string, extra?: AttentionExtra) => void;
+  readonly dismiss?: (key: string) => void;
   readonly now: () => Date;
 }
 
@@ -85,6 +86,18 @@ export class LeadCoordinator {
     const title = String(this.deps.store.findArtifactById(evt.artifactId)?.artifact?.title ?? evt.artifactId);
     const what = status === 'completed' ? 'finished and is done' : `stopped: ${evt.agentState.failure?.title ?? 'no reason given'}`;
     await this.wake(epicId, { kind: 'finished', updates: [] }, `${evt.artifactId} "${title}" ${what}`);
+  }
+
+  /** A person moved their story to done by hand: clear their Inbox entry and wake the lead as for any finished story. */
+  async storyMovedToDone(storyId: string): Promise<void> {
+    const team = this.deps.readTeam();
+    const member = team.agents.find((a) => a.id === team.assignments[storyId]);
+    if (!isPerson(member)) return; // agents' stories wake the lead through their run's end
+    this.deps.dismiss?.(storyId);
+    const epicId = this.epicOfStory(storyId);
+    if (!epicId || !this.owns({ id: epicId, type: 'epic' })) return;
+    const title = String(this.deps.store.findArtifactById(storyId)?.artifact?.title ?? storyId);
+    await this.wake(epicId, { kind: 'finished', updates: [] }, `${storyId} "${title}" was finished by ${member!.name} and is done`);
   }
 
   /** Proposed stories were approved and created: apply the lead's assignments that waited on them. */
@@ -189,18 +202,29 @@ export class LeadCoordinator {
     for (const a of assign) team = withAssignment(team, a.card, a.to);
     this.deps.writeTeam(team);
     let started = 0;
+    const leadName = leadAgent(team)?.name ?? 'Lead';
+    let forPeople = 0;
     for (const a of assign) {
-      const name = team.agents.find((x) => x.id === a.to)?.name ?? a.to;
-      await this.note(a.card, leadAgent(team)?.name ?? 'Lead', `Assigned to ${name}${a.why ? `: ${a.why}` : '.'}`);
+      const member = team.agents.find((x) => x.id === a.to);
+      const name = member?.name ?? a.to;
+      await this.note(a.card, leadName, `Assigned to ${name}${a.why ? `: ${a.why}` : '.'}`);
       const story = this.deps.store.findArtifactById(a.card);
+      if (isPerson(member)) {
+        // A person works the card themselves; moving it to done wakes the lead (storyMovedToDone).
+        forPeople++;
+        const title = String(story?.artifact?.title ?? a.card);
+        this.deps.notify(a.card, 'assigned', `${leadName} assigned ${name} "${title}"`, a.why ? { details: [a.why] } : undefined);
+        continue;
+      }
       const status = String(story?.artifact?.status ?? '');
       if (story && (status === 'ready-for-dev' || status === 'backlog' || status === 'ready') && started < MAX_STARTS_PER_LEAD_RUN) {
         started++;
         this.deps.startStory(story.artifact);
       }
     }
-    if (assign.length > started) {
-      await this.note(epicId, 'Board', `${assign.length - started} assigned stor${assign.length - started === 1 ? 'y waits' : 'ies wait'} to start (at most ${MAX_STARTS_PER_LEAD_RUN} start per lead run, and only ready stories).`);
+    const waiting = assign.length - forPeople - started;
+    if (waiting > 0) {
+      await this.note(epicId, 'Board', `${waiting} assigned stor${waiting === 1 ? 'y waits' : 'ies wait'} to start (at most ${MAX_STARTS_PER_LEAD_RUN} start per lead run, and only ready stories).`);
     }
   }
 
@@ -235,6 +259,7 @@ export function registerLeadCoordinator(context: vscode.ExtensionContext, store:
       await goalDecomposer.dispatch(goalId);
     },
     notify: (key, kind, reason, extra) => notifyNeedsYou(key, kind, reason, extra),
+    dismiss: (key) => dismissNeedsYou(key),
     now: () => new Date(),
   };
   coordinator = new LeadCoordinator(deps);

@@ -106,3 +106,30 @@ describe('giving an epic to the lead', () => {
     leadRef.current = undefined;
   });
 });
+
+describe('skills and usage messages', () => {
+  it('reports usage per agent from the run history', async () => {
+    const now = Date.now();
+    fs.writeFileSync(path.join(state.outputFolder, 'agent-run-history.jsonl'),
+      `${JSON.stringify({ runId: 'r1', artifactId: 'S-1', workflowId: 'w', harness: 'claude', agent: 'Dev', verdict: 'COMPLETED', startedAt: now - 60_000, finishedAt: now })}\n`);
+    await send({ type: 'kanban:getUsage' });
+    expect(posted.at(-1)).toMatchObject({ type: 'kanban:usage', usage: [{ who: 'Dev', windows: { today: { runs: 1, succeeded: 1 } } }] });
+  });
+
+  it('lists the skills an agent can be given', async () => {
+    await send({ type: 'kanban:listSkills' });
+    expect(posted.at(-1)).toMatchObject({ type: 'kanban:skills' });
+    expect(Array.isArray(posted.at(-1)?.skills)).toBe(true);
+  });
+});
+
+describe('brief preview', () => {
+  it('shows the brief a draft agent would get, or why it is invalid', async () => {
+    await send({ type: 'kanban:previewBrief', agent: { name: 'QA', harness: 'claude', role: 'Tests stories', instructions: 'Run e2e.' } });
+    const brief = String(posted.at(-1)?.brief);
+    expect(brief).toContain('You are **QA** (agent id `new-agent`), running on Claude Code. Your role: Tests stories.');
+    expect(brief).toContain('Run e2e.');
+    await send({ type: 'kanban:previewBrief', agent: { name: 'QA', harness: 'claude', model: 'bad model' } });
+    expect(posted.at(-1)).toMatchObject({ type: 'kanban:briefPreview', error: expect.stringMatching(/model/) });
+  });
+});

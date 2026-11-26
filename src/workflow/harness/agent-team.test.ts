@@ -4,7 +4,7 @@ import * as os from 'os';
 import * as path from 'path';
 import {
   AGENT_TEAM_TEMPLATE, agentIdFor, assignedAgent, effectiveRoster, parseAgentTeam, readAgentTeam, validateAgent, withAgent, withAssignment,
-  withoutAgent, writeAgentTeam, leadAgent, EMPTY_TEAM,
+  withoutAgent, writeAgentTeam, leadAgent, capacityOf, EMPTY_TEAM, isPerson, personBlockReason,
 } from './agent-team';
 
 const INSTALLED = [{ id: 'claude', label: 'Claude Code' }, { id: 'codex', label: 'OpenAI Codex CLI' }];
@@ -144,5 +144,53 @@ describe('role, instructions and lead', () => {
     const { team } = parseAgentTeam(JSON.stringify({ agents: [{ id: 'a', name: 'A', harness: 'claude', lead: true }, { id: 'b', name: 'B', harness: 'codex' }] }));
     const moved = withAgent(team, { id: 'b', name: 'B', harness: 'codex', lead: true });
     expect(moved.agents.map((a) => [a.id, a.lead === true])).toEqual([['a', false], ['b', true]]);
+  });
+});
+
+describe('skills and capacity', () => {
+  it('keeps unique skill ids and a capacity other than the default', () => {
+    expect(validateAgent({ id: 'dev', name: 'Dev', harness: 'claude', skills: ['aac-dev', 'aac-dev', 'aac-qa'], maxConcurrent: 2 }))
+      .toEqual({ agent: { id: 'dev', name: 'Dev', harness: 'claude', skills: ['aac-dev', 'aac-qa'], maxConcurrent: 2 } });
+    expect(validateAgent({ id: 'dev', name: 'Dev', harness: 'claude', maxConcurrent: 1 })).toEqual({ agent: { id: 'dev', name: 'Dev', harness: 'claude' } });
+  });
+
+  it('rejects bad skills and capacities', () => {
+    expect(validateAgent({ id: 'dev', name: 'Dev', harness: 'claude', skills: ['../etc'] })).toEqual({ error: '"skills" must be up to 20 skill ids' });
+    expect(validateAgent({ id: 'dev', name: 'Dev', harness: 'claude', maxConcurrent: 0 })).toEqual({ error: '"maxConcurrent" must be a whole number from 1 to 10' });
+    expect(validateAgent({ id: 'dev', name: 'Dev', harness: 'claude', maxConcurrent: 1.5 })).toHaveProperty('error');
+  });
+
+  it('defaults capacity to one run at a time', () => {
+    expect(capacityOf({ id: 'a', name: 'A', harness: 'claude' })).toBe(1);
+    expect(capacityOf({ id: 'a', name: 'A', harness: 'claude', maxConcurrent: 3 })).toBe(3);
+  });
+});
+
+describe('people on the team', () => {
+  it('loads a person with a name and role and no CLI, and refuses a person as lead', () => {
+    const { team, errors } = parseAgentTeam(JSON.stringify({ agents: [
+      { id: 'maya', name: 'Maya', kind: 'person', role: 'design', harness: 'claude', model: 'sonnet' },
+      { id: 'sam', name: 'Sam', kind: 'person', lead: true },
+      { id: 'x', name: 'X', kind: 'robot', harness: 'claude' },
+    ] }));
+    expect(team.agents).toEqual([{ id: 'maya', name: 'Maya', harness: '', kind: 'person', role: 'design' }]);
+    expect(isPerson(team.agents[0])).toBe(true);
+    expect(errors).toEqual(['agents[1]: a person cannot be the lead; the lead is an agent', 'agents[2]: "kind" must be "agent" or "person"']);
+  });
+
+  it('writes a person without a harness and reads it back the same', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'team-person-'));
+    try {
+      const team = { agents: [{ id: 'maya', name: 'Maya', harness: '', kind: 'person' as const }], assignments: { 'S-1': 'maya' } };
+      writeAgentTeam(dir, team);
+      expect(fs.readFileSync(path.join(dir, 'agent-team.json'), 'utf-8')).not.toContain('harness');
+      expect(readAgentTeam(dir).team).toEqual(team);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("says why a person's card does not run", () => {
+    expect(personBlockReason('Maya')).toBe('Assigned to Maya, a person, so no agent runs it. Move the card yourself, or assign it to an agent.');
   });
 });

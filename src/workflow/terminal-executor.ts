@@ -19,23 +19,48 @@ import { getTraceRecorder } from '../trace/trace-recorder';
 import { concurrencyQueue } from './concurrency-queue';
 import { agentHealthMonitor } from './agent-health-monitor';
 import { createTerminalHealthChecks } from './terminal-health-checks';
-import { buildHarnessLaunch, type HarnessAdapter, type HarnessId } from './harness/harness-adapters';
+import { BOARD_MCP_SERVER, buildHarnessLaunch, type BoardMcpLaunch, type HarnessAdapter, type HarnessId } from './harness/harness-adapters';
 import { type HarnessResolution } from './harness/harness-resolver';
 import { agentRunBlockReason, resolveBoardHarness, resolveEffectivePosture } from './harness/board-harness';
 import { buildCommandLine, detectShellKind, type ShellKind } from './harness/shell-command';
-import { stagePromptFile, disposePromptFile as disposeStagedPrompt } from './harness/prompt-staging';
+import { promptDir, stagePromptFile, disposePromptFile as disposeStagedPrompt } from './harness/prompt-staging';
 import { RunJournal } from './harness/run-journal';
 import { checkWatchdog, resolveWatchdogPolicy } from './harness/run-watchdog';
 import { buildContextReceipt, summarizeReceipt, type ReceiptItem } from './harness/context-receipt';
 import { CardSessionStore, cardSessionKey, planSession, recordAfterRun, type SessionPlan } from './harness/card-session';
 import { appendRunHistory, type RunHistoryEntry } from './harness/run-history';
-import { assignedAgent, readAgentTeam, type TeamAgent } from './harness/agent-team';
+import { assignedAgent, isPerson, personBlockReason, readAgentTeam, type TeamAgent } from './harness/agent-team';
+import type { EpicContext } from './harness/epic-context';
 import { latestProgressLine, ProgressThrottle } from './harness/progress-line';
 import { buildAgentBrief, buildResumeBrief, readAgentNotes } from './harness/agent-brief';
+import { listSkills, materializeSkills } from './harness/skill-catalog';
 import { readClaudeRunUsage, type RunUsage } from './harness/run-usage';
 
 /** What a running card's agent is doing now; the board shows it on the card. */
 export const agentProgress = new vscode.EventEmitter<{ artifactId: string; line: string }>();
+
+/** The board's live channel (views/board-live.ts registers it): board tools during a run. */
+export interface BoardLiveHook {
+  /** dist/board-mcp.js, the MCP shim a CLI starts. */
+  readonly shimPath: string;
+  /** The endpoint URL, starting it on first use; undefined when it can't run. */
+  endpoint(): Promise<string | undefined>;
+  issue(scope: { runId: string; cardId: string; agentId?: string; agentName?: string }): string;
+  revoke(token: string, cardId: string): void;
+}
+let boardLive: BoardLiveHook | undefined;
+
+export function setBoardLive(hook: BoardLiveHook | undefined): void {
+  boardLive = hook;
+}
+
+/** Finds the context attached to a card's epic (views/board-protocol.ts registers it). */
+export type EpicContextResolver = (cardId: string) => { epicId: string; context: EpicContext } | undefined;
+let epicContextOf: EpicContextResolver | undefined;
+
+export function setEpicContextResolver(resolver: EpicContextResolver | undefined): void {
+  epicContextOf = resolver;
+}
 
 /** Every finished run's verdict, with the agent that ran it (see views/board-protocol.ts). */
 export interface AgentVerdictEvent {
@@ -456,6 +481,8 @@ export class TerminalExecutor implements vscode.Disposable {
   /** Live time of each running session's latest output, read by the run watchdog. */
   private lastOutputTimes = new Map<string, number>();
   private readonly progress = new ProgressThrottle();
+  /** Runs with board tools: their token and credential files, released when the run ends. */
+  private readonly boardRuns = new Map<string, { token: string; cardId: string; files: string[] }>();
   /** Agent conversation each run started or resumed, keyed by run id (see harness/card-session.ts). */
   private sessionPlans = new Map<string, SessionPlan>();
   /** What context each run was given, keyed by run id (see harness/context-receipt.ts). */
@@ -493,11 +520,79 @@ export class TerminalExecutor implements vscode.Disposable {
   }
 
   /** The agent brief for this run (harness/agent-brief.ts); the short form when resuming. */
-  private briefFor(artifact: HarnessArtifact, agent: TeamAgent | undefined, cliLabel: string, model: string | undefined, resumed: boolean): string {
+  private briefFor(
+    artifact: HarnessArtifact, agent: TeamAgent | undefined, cliLabel: string, model: string | undefined,
+    resumed: boolean, outputFolder: string, workspaceDir: string | undefined, liveTools = false,
+  ): string {
     let roster: readonly TeamAgent[] = [];
     try { roster = readAgentTeam(getOutputFolder()).team.agents; } catch { /* no output folder yet */ }
-    const input = { agent, cliLabel, model, roster, notes: readAgentNotes(artifact) };
+    let epicContext: ReturnType<EpicContextResolver>;
+    try { epicContext = artifact?.id ? epicContextOf?.(String(artifact.id)) : undefined; } catch (err) {
+      logger.warn(`[TerminalExecutor] Could not read the epic context for ${String(artifact?.id)}: ${errMsg(err)}`);
+    }
+    const input = { agent, cliLabel, model, roster, notes: readAgentNotes(artifact), skills: this.skillsFor(agent, outputFolder, workspaceDir), liveTools, epicContext };
     return resumed ? buildResumeBrief(input) : buildAgentBrief(input);
+  }
+
+  /** Copy the agent's skills into the run's output folder so even a sandboxed agent can read them. */
+  private skillsFor(agent: TeamAgent | undefined, outputFolder: string, workspaceDir: string | undefined) {
+    if (!agent?.skills?.length || !workspaceDir) return undefined;
+    try {
+      const { skills, missing } = materializeSkills(agent.skills, listSkills(workspaceDir), path.join(outputFolder, '_terminal-output', 'skills'), workspaceDir);
+      if (missing.length) logger.warn(`[TerminalExecutor] ${agent.name}: skills not found: ${missing.join(', ')}`);
+      return skills.map(({ id, name, description, path: p }) => ({ id, name, description, path: p }));
+    } catch (err) {
+      logger.warn(`[TerminalExecutor] Could not prepare ${agent.name}'s skills: ${errMsg(err)}`);
+      return undefined;
+    }
+  }
+
+  /** Board tool calls count as activity, so the watchdog doesn't stop an agent waiting on the user. */
+  noteActivity(artifactId: string): void {
+    if (this.lastOutputTimes.has(artifactId)) this.lastOutputTimes.set(artifactId, Date.now());
+  }
+
+  /**
+   * Board tools for this run (Claude Code, Codex): a token scoped to the card,
+   * a private credentials file the shim reads, and Claude's MCP config file.
+   * Undefined when the endpoint can't run; the verdict's "board" object still works.
+   */
+  private async prepareBoardLive(
+    adapter: HarnessAdapter, runId: string, artifactId: string, agent: TeamAgent | undefined, outputFolder: string,
+  ): Promise<BoardMcpLaunch | undefined> {
+    if (!adapter.boardTools || !boardLive) return undefined;
+    const url = await boardLive.endpoint();
+    if (!url) return undefined;
+    const token = boardLive.issue({ runId, cardId: artifactId, agentId: agent?.id, agentName: agent?.name });
+    const base = path.join(promptDir(outputFolder), `${sanitizeResultId(artifactId)}-${sanitizeResultId(runId)}`);
+    const credentials = `${base}.board.json`;
+    const configFile = `${base}.mcp.json`;
+    const launch: BoardMcpLaunch = {
+      command: process.execPath,
+      args: [boardLive.shimPath, '--credentials', credentials],
+      env: { ELECTRON_RUN_AS_NODE: '1' },
+      configFile,
+    };
+    try {
+      fs.mkdirSync(promptDir(outputFolder), { recursive: true });
+      fs.writeFileSync(credentials, JSON.stringify({ url, token }), { encoding: 'utf-8', mode: 0o600, flag: 'wx' });
+      fs.writeFileSync(configFile, JSON.stringify({ mcpServers: { [BOARD_MCP_SERVER]: { command: launch.command, args: launch.args, env: launch.env } } }), { encoding: 'utf-8', mode: 0o600, flag: 'wx' });
+    } catch (err) {
+      boardLive.revoke(token, artifactId);
+      logger.warn(`[TerminalExecutor] Board tools off for ${artifactId}: ${errMsg(err)}`);
+      return undefined;
+    }
+    this.boardRuns.set(runId, { token, cardId: artifactId, files: [credentials, configFile] });
+    return launch;
+  }
+
+  /** End a run's board access: revoke its token and delete its credentials. */
+  private releaseBoardLive(runId: string): void {
+    const run = this.boardRuns.get(runId);
+    if (!run) return;
+    this.boardRuns.delete(runId);
+    boardLive?.revoke(run.token, run.cardId);
+    for (const file of run.files) disposeStagedPrompt(file, (e) => logger.warn(`[TerminalExecutor] board file cleanup failed: ${errMsg(e)}`));
   }
 
   /** The named agent a card is assigned to, if any (see harness/agent-team.ts). */
@@ -553,6 +648,7 @@ export class TerminalExecutor implements vscode.Disposable {
     if (trustBlock) return { kind: 'blocked', verdict: blocked(trustBlock) };
 
     const assignee = this.assigneeOf(artifactId);
+    if (isPerson(assignee)) return { kind: 'blocked', verdict: blocked(personBlockReason(assignee!.name)) };
     const resolution = options?.resolution ?? await this.resolveHarness(assignee?.harness);
     if (assignee) logger.info(`[TerminalExecutor] ${artifactId} is assigned to ${assignee.name} (${assignee.harness})`);
     this.lastOutput.delete(artifactId);
@@ -583,7 +679,8 @@ export class TerminalExecutor implements vscode.Disposable {
     // A resumed conversation already holds the full brief; send only the new turn.
     const resumed = sessionPlan?.resume === true;
     const projectContext = resumed ? undefined : loadProjectContext(outputFolder);
-    const brief = this.briefFor(artifact, assignee, adapter.label, assignee?.harness === adapter.id ? assignee.model : undefined, resumed);
+    const board = await this.prepareBoardLive(adapter, sessionId, artifactId, assignee, outputFolder);
+    const brief = this.briefFor(artifact, assignee, adapter.label, assignee?.harness === adapter.id ? assignee.model : undefined, resumed, outputFolder, options?.cwd ?? workspaceDir, !!board);
     const prompt = resumed
       ? buildResumePrompt(workflowId, artifact, outputFolder, sessionId, brief, options?.turnContext)
       : buildTerminalPrompt(workflowId, artifact, outputFolder, options?.skillContent, sessionId, projectContext, brief);
@@ -618,10 +715,11 @@ export class TerminalExecutor implements vscode.Disposable {
       const session = sessionPlan ? { id: sessionPlan.sessionId, resume: sessionPlan.resume } : undefined;
       // The assignee's model applies only when its CLI is the one running this step.
       const model = assignee?.harness === adapter.id ? assignee.model : undefined;
-      const spec = buildHarnessLaunch(adapter, { binary, promptFile, resultPath, posture, workspaceDir, session, model });
+      const spec = buildHarnessLaunch(adapter, { binary, promptFile, resultPath, posture, workspaceDir, session, model, ...(board ? { board } : {}) });
       cmdLine = buildCommandLine(spec, shellKind);
     } catch (err) {
       disposeStagedPrompt(promptFile);
+      this.releaseBoardLive(sessionId);
       this.sessionPlans.delete(sessionId);
       this.receipts.delete(sessionId);
       return { kind: 'blocked', verdict: blocked(errMsg(err)) };
@@ -1048,6 +1146,7 @@ export class TerminalExecutor implements vscode.Disposable {
         done = true;
         clearInterval(timer);
         this.unjournalRun(sessionId);
+        this.releaseBoardLive(sessionId);
         options?.signal?.removeEventListener('abort', onAbort);
         // Gap #23: record terminal CLI costs so the budget gauge reflects
         // CLI spend. Uses the captured prompt length (safe even if the
@@ -1337,6 +1436,7 @@ export class TerminalExecutor implements vscode.Disposable {
     this.lastOutput.set(artifactId, outputTail(session.accumulatedData));
     this.lastOutputTimes.delete(artifactId);
     this.unjournalRun(session.sessionId);
+    this.releaseBoardLive(session.sessionId);
     disposeStagedPrompt(session.promptFile, (e) => logger.warn(`[TerminalExecutor] prompt cleanup failed: ${errMsg(e)}`));
 
     this.persistSessionMetadata();
@@ -1377,6 +1477,7 @@ export class TerminalExecutor implements vscode.Disposable {
         this.lastOutput.set(artifactId, outputTail(session.accumulatedData));
         this.lastOutputTimes.delete(artifactId);
         this.unjournalRun(session.sessionId);
+        this.releaseBoardLive(session.sessionId);
         disposeStagedPrompt(session.promptFile, (e) => logger.warn(`[TerminalExecutor] prompt cleanup failed: ${errMsg(e)}`));
 
         // Update persisted metadata after terminal close.

@@ -185,3 +185,29 @@ describe('model per agent (flags read from each CLI --help, 2026-11-25)', () => 
     expect(getHarnessAdapter('cursor-agent')!.acceptsModel).toBeFalsy();
   });
 });
+
+describe('board MCP server per run', () => {
+  const board = { command: 'C:\\Program Files\\Code\\Code.exe', args: ['C:\\ext\\dist\\board-mcp.js', '--credentials', 'C:\\ws\\cred.json'], env: { ELECTRON_RUN_AS_NODE: '1' }, configFile: 'C:\\ws\\run.mcp.json' };
+
+  it('Claude Code loads the config file and, sandboxed, allows only the board tools on top of file tools', () => {
+    const args = buildHarnessLaunch(getHarnessAdapter('claude')!, { ...ctx('sandboxed', 'claude'), board }).args;
+    expect(args).toContain('--mcp-config');
+    expect(args[args.indexOf('--mcp-config') + 1]).toBe('C:\\ws\\run.mcp.json');
+    expect(args[args.indexOf('--allowedTools') + 1]).toBe('Read Write Edit Glob Grep mcp__aac_board');
+  });
+
+  it('Codex registers the server with -c overrides as TOML literal strings, before reading stdin', () => {
+    const args = buildHarnessLaunch(getHarnessAdapter('codex')!, { ...ctx('sandboxed', 'codex'), board }).args;
+    expect(args).toContain("mcp_servers.aac_board.command='C:\\Program Files\\Code\\Code.exe'");
+    expect(args).toContain("mcp_servers.aac_board.args=['C:\\ext\\dist\\board-mcp.js', '--credentials', 'C:\\ws\\cred.json']");
+    expect(args).toContain("mcp_servers.aac_board.env={ ELECTRON_RUN_AS_NODE = '1' }");
+    expect(args).toContain("mcp_servers.aac_board.default_tools_approval_mode='approve'");
+    expect(args).toContain('mcp_servers.aac_board.tool_timeout_sec=660');
+    expect(args.at(-1)).toBe('-');
+  });
+
+  it('only Claude Code and Codex take the board server; without it nothing changes', () => {
+    expect(HARNESS_ADAPTERS.filter((a) => a.boardTools).map((a) => a.id)).toEqual(['claude', 'codex']);
+    expect(buildHarnessLaunch(getHarnessAdapter('claude')!, ctx('sandboxed', 'claude')).args).not.toContain('--mcp-config');
+  });
+});

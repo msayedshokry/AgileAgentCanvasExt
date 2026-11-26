@@ -372,6 +372,8 @@ export async function handleAgenticKanbanMessage(
           activeSession?.stream,
           activeSession?.token
         );
+        // A person's story moved to done wakes the epic's lead (L8).
+        if (toStatus === 'done') void leadCoordinator()?.storyMovedToDone(artifactId);
 
         if (webview) {
           webview.postMessage({

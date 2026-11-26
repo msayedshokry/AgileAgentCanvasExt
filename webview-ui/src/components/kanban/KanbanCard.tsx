@@ -203,10 +203,10 @@ export function KanbanCard({ item, index, draggable, onDragStart, onClick, class
       <span className="kanban-card-key">{item.key}</span>
       {item.assignee && (
         <span
-          className="kanban-card-assignee"
+          className={`kanban-card-assignee${item.assignee.person ? ' kanban-card-assignee--person' : ''}`}
           style={{ '--avatar-color': getAvatarColor(item.assignee.name) } as React.CSSProperties}
-          title={`Assigned to ${item.assignee.name}`}
-          aria-label={`Assigned to ${item.assignee.name}`}
+          title={item.assignee.person ? `Assigned to ${item.assignee.name} (a person; no agent runs it)` : `Assigned to ${item.assignee.name}`}
+          aria-label={`Assigned to ${item.assignee.name}${item.assignee.person ? ', a person' : ''}`}
         >
           {getInitials(item.assignee.name)}
         </span>
@@ -243,7 +243,13 @@ export function KanbanCard({ item, index, draggable, onDragStart, onClick, class
       {/* Agent execution overlay */}
       {isQueued && (
         <span className="kanban-card-agent-badge kanban-card-agent-badge--queued">
-          Queued...
+          {/* "Waiting for Dev (1 of 1 busy)" when the card waits for its agent's capacity. */}
+          {item.agentState?.agentRole?.startsWith('Waiting for ') ? item.agentState.agentRole : 'Queued...'}
+        </span>
+      )}
+      {item.leadProgress && (
+        <span className="kanban-card-lead" title={`${item.leadProgress.lead} plans this epic and hands its stories out`}>
+          Lead: {item.leadProgress.lead} · {item.leadProgress.done}/{item.leadProgress.total} done
         </span>
       )}
       {isInterrupted && (

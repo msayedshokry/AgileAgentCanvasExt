@@ -14,6 +14,12 @@ export interface TeamAgentView {
   instructions?: string;
   /** The team's lead (chief of staff). */
   lead?: boolean;
+  /** Skill ids given to this agent. */
+  skills?: string[];
+  /** Runs it may have going at once (default 1). */
+  maxConcurrent?: number;
+  /** A person on the team: no CLI; their cards never start an agent run. */
+  kind?: 'person';
 }
 
 export interface InstalledCliView {
@@ -54,6 +60,9 @@ export function parseTeamMessage(message: { agents?: unknown; assignments?: unkn
       ...(isText(a.role) && a.role ? { role: a.role } : {}),
       ...(isText(a.instructions) && a.instructions ? { instructions: a.instructions } : {}),
       ...(a.lead === true ? { lead: true } : {}),
+      ...(Array.isArray(a.skills) ? { skills: a.skills.filter(isText) } : {}),
+      ...(typeof a.maxConcurrent === 'number' ? { maxConcurrent: a.maxConcurrent } : {}),
+      ...(a.kind === 'person' ? { kind: 'person' as const } : {}),
     }));
   const installed = (Array.isArray(message.installed) ? message.installed : [])
     .filter((c): c is InstalledCliView => !!c && isText(c.id) && isText(c.label))
@@ -63,6 +72,7 @@ export function parseTeamMessage(message: { agents?: unknown; assignments?: unkn
 
 /** "Claude Code · sonnet", or "· CLI default" when no model is set. */
 export function describeAgent(agent: TeamAgentView, installed: readonly InstalledCliView[]): string {
+  if (agent.kind === 'person') return 'Person · works their cards by hand';
   const cli = installed.find((c) => c.id === agent.harness);
   return `${cli?.label ?? `${agent.harness} (not installed)`} · ${agent.model ?? 'CLI default'}`;
 }
