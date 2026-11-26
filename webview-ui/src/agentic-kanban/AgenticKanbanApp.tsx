@@ -1014,6 +1014,7 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
       onStop={handleStopCard}
       onApprove={(item) => handleDrop(item.id, 'done')}
       onOpenCard={openOnBoard}
+      stories={card.isEpic ? displayItems.filter(i => i.epicKey === card.id && !i.isEpic) : undefined}
     />
   );
 

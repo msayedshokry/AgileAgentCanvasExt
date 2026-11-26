@@ -30,3 +30,6 @@
 }
 .epic-context-save:disabled { opacity: 0.45; cursor: default; }
 .epic-context-save:focus-visible { outline: 1px solid var(--vscode-focusBorder, var(--accent)); outline-offset: 2px; }
+.epic-context > .agentic-collapse-summary { justify-content: flex-start; padding-left: 0; padding-right: 0; }
+.epic-context .epic-context-count { margin-left: auto; }
+.card-page-side .epic-context .epic-context-form { padding: 0 0 var(--space-2); }

@@ -8,6 +8,7 @@ import { RunInsights } from './RunInsights';
 import type { AgentTeamView } from './agent-team-view';
 import { FollowUpComposer } from './FollowUpComposer';
 import { EpicContextEditor } from './EpicContextEditor';
+import { EpicBreakdown, EpicOverview } from './EpicOverview';
 import {
   AgentInfo,
   getInterruptionMessage,
@@ -46,6 +47,8 @@ interface AgenticDetailPanelProps {
   onApprove?: (item: KanbanItem) => void;
   /** Open another card (the epic in the breadcrumb). */
   onOpenCard?: (artifactId: string) => void;
+  /** An epic's stories, for its progress, story list and breakdown. */
+  stories?: readonly KanbanItem[];
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -108,6 +111,7 @@ export function AgenticDetailPanel({
   onStop,
   onApprove,
   onOpenCard,
+  stories = [],
 }: AgenticDetailPanelProps) {
   const [agentInfo, setAgentInfo] = useState<AgentInfo | null>(() => {
     const cached = infoCache?.current.get(item.id);
@@ -316,6 +320,7 @@ export function AgenticDetailPanel({
         <div className="card-page-main">
           <h2 className="card-page-title">{item.title}</h2>
           <CardBrief item={item} />
+          {item.isEpic && <EpicOverview stories={stories} onOpenCard={onOpenCard} />}
 
           {/* ── What the agent concluded, or why the card is stuck ── */}
           {latestVerdict ? (
@@ -394,14 +399,16 @@ export function AgenticDetailPanel({
                   <dd className="card-page-capital">{item.priority}</dd>
                 </>
               )}
-              {(item.leadProgress ?? item.childProgress) && (
+              {item.leadProgress && (
                 <>
-                  <dt>Stories</dt>
-                  <dd>{(item.leadProgress ?? item.childProgress)!.done} of {(item.leadProgress ?? item.childProgress)!.total} done</dd>
+                  <dt>Lead</dt>
+                  <dd>{item.leadProgress.lead} plans it and hands the stories out</dd>
                 </>
               )}
             </dl>
           </section>
+
+          {item.isEpic && <EpicBreakdown stories={stories} />}
 
           <section className="card-page-section">
             <h3 className="card-page-section-title">Agent</h3>
@@ -534,7 +541,7 @@ const COLUMN_LABEL: Record<string, string> = Object.fromEntries(KANBAN_COLUMNS.m
 function CardBrief({ item }: { item: KanbanItem }) {
   const { description, userStory, acceptanceCriteria } = item;
   if (!description && !userStory && !acceptanceCriteria?.length) {
-    return <p className="card-page-empty">No description yet.</p>;
+    return item.isEpic ? null : <p className="card-page-empty">No description yet.</p>;
   }
   return (
     <section className="card-page-brief" aria-label="What this card asks for">
