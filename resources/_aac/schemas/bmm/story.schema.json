@@ -44,9 +44,11 @@
           "description": "Story status. Kanban column mapping: Backlog(draft,backlog,not-started) → Ready(ready,ready-for-dev,approved) → In Progress(in-progress,implementing,blocked) → Review(review,in-review,ready-for-review) → Done(done,complete,completed,archived)",
           "enum": [
             "draft",
+            "backlog",
             "ready",
             "ready-for-dev",
             "in-progress",
+            "review",
             "in-review",
             "blocked",
             "done",
