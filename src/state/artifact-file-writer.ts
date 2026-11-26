@@ -296,7 +296,9 @@ export class ArtifactFileWriter {
 
                   },
 
-                  content: { ...story }
+                  // The story schema requires content.epicId; in-memory stories
+                  // often omit it because membership is implied by the parent epic.
+                  content: { epicId: epic.id, ...story }
 
               };
 

@@ -114,7 +114,28 @@ export async function writeJsonFile(targetUri: vscode.Uri, payload: Record<strin
         ioLogger.debug(`writeJsonFile: could not read/parse ${targetUri.fsPath}, writing fresh: ${e}`);
     }
 
+    finalPayload = withCreatedTimestamp(finalPayload);
     await vscode.workspace.fs.writeFile(targetUri, Buffer.from(JSON.stringify(finalPayload, null, 2), 'utf-8'));
+}
+
+/**
+ * The metadata schema requires `timestamps.created`. Callers only set
+ * `lastModified` and rely on the merge above to keep `created` from disk, so a
+ * brand-new file (or one written before this fix) would otherwise lack it.
+ */
+export function withCreatedTimestamp(payload: Record<string, unknown>): Record<string, unknown> {
+    const metadata = payload.metadata;
+    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return payload;
+    const meta = metadata as Record<string, unknown>;
+    const rawTimestamps = meta.timestamps;
+    const timestamps = rawTimestamps && typeof rawTimestamps === 'object' && !Array.isArray(rawTimestamps)
+        ? rawTimestamps as Record<string, unknown>
+        : {};
+    if (typeof timestamps.created === 'string' && timestamps.created) return payload;
+    const created = typeof timestamps.lastModified === 'string' && timestamps.lastModified
+        ? timestamps.lastModified
+        : new Date().toISOString();
+    return { ...payload, metadata: { ...meta, timestamps: { ...timestamps, created } } };
 }
 
 /**

@@ -1464,7 +1464,10 @@ export class ArtifactStore {
                     // already receives the result via schemaFixResult / schemaValidateResult,
                     // and re-showing this warning would create an infinite loop.
                     if (!this._fixInProgress) {
-                        const fileList = loadValidationIssues.map(i => i.file).join(', ');
+                        const MAX_LISTED_FILES = 3;
+                        const listed = loadValidationIssues.slice(0, MAX_LISTED_FILES).map(i => i.file).join(', ');
+                        const more = loadValidationIssues.length - MAX_LISTED_FILES;
+                        const fileList = more > 0 ? `${listed} and ${more} more` : listed;
                         vscode.window.showWarningMessage(
                             `${loadValidationIssues.length} file(s) have schema issues: ${fileList}. ` +
                             `Open the AgileAgentCanvas canvas and click "Fix Schemas" to auto-repair.`,

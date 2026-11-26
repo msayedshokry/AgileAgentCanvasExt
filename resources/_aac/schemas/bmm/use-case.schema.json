@@ -8,8 +8,8 @@
   "properties": {
     "id": {
       "type": "string",
-      "description": "Use case identifier (e.g., 'UC-01', 'UC-02')",
-      "pattern": "^UC-[0-9]+$"
+      "description": "Use case identifier (e.g., 'UC-01', or epic-scoped 'UC-1-2')",
+      "pattern": "^UC-[0-9]+(-[A-Za-z0-9]+)*$"
     },
     "title": {
       "type": "string",
