@@ -14,6 +14,7 @@ import {
   sanitizeId,
   resultFilePath,
   readVerdictFile,
+  verdictReason,
 } from './kanban-verdict';
 
 describe('kanban-verdict', () => {
@@ -116,5 +117,32 @@ describe('normalizeVerdict — board and lead blocks', () => {
     expect(v).not.toHaveProperty('board');
     expect(v).not.toHaveProperty('lead');
     expect(v).not.toHaveProperty('boardDropped');
+  });
+});
+
+describe('verdictReason', () => {
+  const card = { agentNotes: [
+    { author: 'Dev', text: 'older note', at: '2026-11-26 23:00' },
+    { author: 'Dev', text: 'npm test fails with Error: spawn EPERM', at: '2026-11-26 23:15' },
+  ] };
+
+  it('prefers the verdict summary', () => {
+    expect(verdictReason({ verdict: 'BLOCKED', summary: 'Need a decision' }, card)).toBe('Need a decision');
+  });
+
+  it("falls back to the verdict's board notes", () => {
+    expect(verdictReason({ verdict: 'BLOCKED', board: { questions: [], proposals: [], notes: 'Tests cannot run' } }, card)).toBe('Tests cannot run');
+  });
+
+  it("falls back to the card's latest agent note when the verdict says nothing", () => {
+    expect(verdictReason({ verdict: 'BLOCKED' }, card)).toBe('npm test fails with Error: spawn EPERM');
+  });
+
+  it('reads notes stored under metadata too', () => {
+    expect(verdictReason({ verdict: 'BLOCKED' }, { metadata: card })).toBe('npm test fails with Error: spawn EPERM');
+  });
+
+  it('says only how the agent exited when there is nothing else', () => {
+    expect(verdictReason({ verdict: 'BLOCKED' }, undefined)).toBe('Agent exited with BLOCKED');
   });
 });

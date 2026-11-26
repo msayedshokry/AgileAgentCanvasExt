@@ -12,6 +12,22 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import { hasBoardActions, sanitizeBoardActions, sanitizeLeadPlan, type BoardActions, type LeadPlan } from './harness/board-actions';
+import { readAgentNotes } from './harness/agent-brief';
+
+/**
+ * Why a run ended, in the agent's own words where it gave any. Agents often
+ * put the reason in a board note instead of the verdict summary; without this
+ * the user only sees "Agent exited with BLOCKED".
+ */
+export function verdictReason(verdict: Pick<KanbanVerdict, 'verdict' | 'summary' | 'board'>, card: unknown): string {
+  const summary = verdict.summary?.trim();
+  if (summary) return summary;
+  const boardNotes = verdict.board?.notes?.trim();
+  if (boardNotes) return boardNotes;
+  const latestNote = readAgentNotes(card).at(-1)?.text.trim();
+  if (latestNote) return latestNote;
+  return `Agent exited with ${verdict.verdict}`;
+}
 
 /** Possible verdict outcomes across both lane agents. */
 export type KanbanVerdictKind =

@@ -16,6 +16,8 @@ export type AgentFailureKind =
   | 'provider-error'
   | 'not-installed'
   | 'network'
+  /** The agent's sandbox refused a command it needed (e.g. `node --test` spawning workers). */
+  | 'sandbox-blocked'
   | 'stuck'
   | 'time-limit'
   | 'no-verdict'
@@ -58,6 +60,9 @@ const RULES: Rule[] = [
   { kind: 'provider-error', pattern: /\b50[0234]\b|internal server error|bad gateway|service unavailable|gateway timeout|\bapi_error\b/i, title: 'The model service had a server error', actions: ['retry', 'switch-agent'] },
   { kind: 'not-installed', pattern: /is not recognized as an internal or external command|command not found|not on PATH|ENOENT/i, title: 'The agent CLI is not installed or not on PATH', actions: ['install', 'switch-agent'] },
   { kind: 'network', pattern: /ECONNREFUSED|ETIMEDOUT|ENOTFOUND|getaddrinfo|network (?:error|is unreachable)|socket hang up|fetch failed/i, title: 'The agent could not reach its model service', actions: ['retry', 'open-output'] },
+  // Codex's Windows sandbox (permission posture "sandboxed") refuses to start
+  // child processes, so test runners like `node --test` die with spawn EPERM.
+  { kind: 'sandbox-blocked', pattern: /\bspawn (?:EPERM|EACCES)\b|\bEPERM\b|operation not permitted/i, title: 'The agent\'s sandbox blocked a command it needed (often the test run) — set Agents: Permission Posture to "full", or make the command sandbox-friendly', actions: ['open-output', 'switch-agent', 'move-back'] },
   { kind: 'stuck', pattern: /no agent output for \d+m|stopped as stuck/i, title: 'The agent went silent and was stopped as stuck', actions: ['retry', 'open-output', 'switch-agent'] },
   { kind: 'time-limit', pattern: /\(run time limit\)/i, title: 'The agent hit the run time limit', actions: ['open-output', 'retry', 'move-back'] },
   { kind: 'no-verdict', pattern: /without (?:writing )?a verdict|No verdict within|no structured verdict/i, title: 'The agent finished without reporting a result', actions: ['open-output', 'retry', 'move-back'] },

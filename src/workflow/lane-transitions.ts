@@ -21,7 +21,7 @@ import { BmadModel } from '../chat/ai-provider';
 import { harnessEngine } from '../harness/policy-engine';
 import { terminalExecutor } from './terminal-executor';
 import { runViaLanguageModel } from './harness/headless-lm-run';
-import { readVerdictFile, resultFilePath, getOutputFolder } from './kanban-verdict';
+import { readVerdictFile, resultFilePath, getOutputFolder, verdictReason } from './kanban-verdict';
 import type { KanbanVerdict } from './kanban-verdict';
 import { getA2AOutboundClient } from '../acp/agent-bus/a2a-outbound-client';
 import { isKanbanAutoAdvanceEnabled } from './kanban-settings';
@@ -344,11 +344,12 @@ export class LaneTransitionEngine {
         return;
       }
 
-      const summary = verdict.summary ?? `Agent exited with ${verdict.verdict}`;
+      const summary = verdictReason(verdict, this.store.findArtifactById(artifactId)?.artifact);
+      const failure = classifyAgentFailure(summary);
       try {
         kanbanProgress.fire({
           artifactId,
-          agentState: { status: 'interrupted', workflowId, failure: classifyAgentFailure(summary) },
+          agentState: { status: 'interrupted', workflowId, failure },
         });
       } catch {
         // emitter may be disposed
@@ -362,8 +363,10 @@ export class LaneTransitionEngine {
         if (currentStatus && currentStatus !== preDragStatus) {
           await this.store.updateArtifact(artifactType, artifactId, { status: preDragStatus });
         }
+        // A recognised cause carries the fix (e.g. the sandbox posture); add it.
+        const hint = failure && failure.kind !== 'unknown' ? ` ${failure.title}.` : '';
         vscode.window.showWarningMessage(
-          `AAC ${workflowId} on ${artifactId}: ${verdict.verdict} — ${summary}. Card reverted to ${preDragStatus}.`,
+          `AAC ${workflowId} on ${artifactId}: ${verdict.verdict} — ${summary.replace(/\.?\s*$/, '.')}${hint} Card reverted to ${preDragStatus}.`,
         );
       } catch (err) {
         logger.error(`[E2] Failed to revert ${artifactId} after ${verdict.verdict}: ${errMsg(err)}`);
