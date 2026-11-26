@@ -4,6 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import { vscode } from '../vscodeApi';
+import { Popover } from './Popover';
 import './AgentUx.css';
 
 export type AuthState = 'ready' | 'configured' | 'signed-out' | 'unknown';
@@ -40,7 +41,8 @@ function stateOf(status: AgentStatus): 'ok' | 'warn' | 'error' {
   return 'ok';
 }
 
-export function AgentStatusBar() {
+/** The coding agent the board runs on. `compact` shows a toolbar chip that opens the full panel. */
+export function AgentStatusBar({ compact = false }: { compact?: boolean } = {}) {
   const [status, setStatus] = useState<AgentStatus | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [busy, setBusy] = useState(true);
@@ -64,6 +66,7 @@ export function AgentStatusBar() {
   };
 
   if (!status) {
+    if (compact) return <span className="agent-chip agent-chip--loading" role="status">Checking agents…</span>;
     return (
       <div className="agent-status agent-status--loading" role="status" aria-live="polite">
         Checking which coding agents are installed…
@@ -75,8 +78,8 @@ export function AgentStatusBar() {
   const installed = status.harnesses.filter((h) => h.installed);
   const current = status.harnesses.find((h) => h.id === status.resolved.id);
 
-  return (
-    <section className={`agent-status agent-status--${tone}`} aria-label="Coding agent">
+  const panel = (
+    <section className={`agent-status agent-status--${tone}${compact ? ' agent-status--in-popover' : ''}`} aria-label="Coding agent">
       <div className="agent-status-row">
         <span className={`agent-status-dot agent-status-dot--${tone}`} aria-hidden="true" />
         <label className="agent-status-field">
@@ -181,5 +184,17 @@ export function AgentStatusBar() {
         </table>
       )}
     </section>
+  );
+  if (!compact) return panel;
+  const chipLabel = status.resolved.kind === 'none' ? 'No agent' : current?.label ?? status.resolved.label;
+  return (
+    <Popover
+      label={<><span className={`agent-status-dot agent-status-dot--${tone}`} aria-hidden="true" />{chipLabel}</>}
+      ariaLabel={`Coding agent: ${chipLabel}${tone === 'ok' ? '' : ', needs attention'}`}
+      title={status.blocker ?? status.resolved.reason}
+      triggerClassName={`agent-chip agent-chip--${tone}`}
+    >
+      {panel}
+    </Popover>
   );
 }

@@ -97,6 +97,8 @@ interface AutonomyBarProps {
   approvalRequest?: ApprovalRequest | null;
   /** False when the host shows these items in its own Inbox (the Agentic board does). */
   showInbox?: boolean;
+  /** Which part to render: everything, only the run controls (continuous, scheduler, budget), or only the goal box. */
+  part?: 'all' | 'controls' | 'goal';
 }
 
 // ── P1 #7: system-level items that need a person (budget, circuit, queue, systemic, approval) ──
@@ -225,7 +227,10 @@ export function AutonomyBar({
   onDismissSystemicIssue,
   approvalRequest = null,
   showInbox = true,
+  part = 'all',
 }: AutonomyBarProps) {
+  const showControls = part !== 'goal';
+  const showGoal = part !== 'controls';
   const [goalDraft, setGoalDraft] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [showPatterns, setShowPatterns] = useState(false);
@@ -408,6 +413,7 @@ export function AutonomyBar({
       </div>
       )}
 
+      {showControls && (<>
       {/* ── P1 #6: Continuous Mode toggle + display state ──────────────── */}
       <div className="autonomy-bar-group autonomy-bar-group--continuous">
         <label
@@ -529,6 +535,9 @@ export function AutonomyBar({
         )}
       </div>
 
+      </>)}
+
+      {showGoal && (<>
       {/* ── Goal submission ────────────────────────────────────────────── */}
       <div className="autonomy-bar-group autonomy-bar-group--goal">
         <input
@@ -560,8 +569,10 @@ export function AutonomyBar({
         )}
       </div>
 
+      </>)}
+
       {/* ── Systemic-issue banner (issue #4) ───────────────────────────── */}
-      {systemicIssue && systemicIssue.patterns.length > 0 && (
+      {showControls && systemicIssue && systemicIssue.patterns.length > 0 && (
         <div
           className={`autonomy-bar-group autonomy-bar-group--systemic autonomy-bar-systemic--${maxSeverity}`}
         >

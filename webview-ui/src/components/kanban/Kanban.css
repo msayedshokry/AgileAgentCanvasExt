@@ -2,28 +2,33 @@
    Shared Kanban Styles — used by SprintPlanningView + AgenticKanban
    ================================================================ */
 
-/* ── Board Layout ── */
+/* ── Board Layout ──
+ * Five columns that share the width, so the whole flow fits in a normal
+ * editor tab (about 1,000 px). Narrower than that the board scrolls
+ * sideways; each column scrolls its own cards. */
 .kanban-board,
 .agentic-kanban-board {
   display: grid;
-  grid-template-columns: repeat(5, minmax(220px, 1fr));
-  gap: var(--space-3);
-  padding: var(--space-4) var(--space-5);
-  min-height: 60vh;
+  grid-template-columns: repeat(5, minmax(180px, 1fr));
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  flex: 1;
+  min-height: 0;
   overflow-x: auto;
-  overflow-y: auto;
+  overflow-y: hidden;
   counter-reset: kanban-column;
 }
 
 /* ── Column ── */
 .kanban-column {
-  background: color-mix(in srgb, var(--kanban-col-accent, var(--ink-3)) 7%, transparent);
+  background: color-mix(in srgb, var(--ink) 3%, transparent);
   border: none;
   border-radius: var(--radius-zone);
   display: flex;
   flex-direction: column;
-  min-width: 200px;
-  padding: var(--space-3);
+  min-width: 0;
+  min-height: 0;
+  padding: var(--space-2) 6px;
 }
 
 /* Feature 2: WIP limit exceeded — red border + warning text */
@@ -52,17 +57,18 @@
   justify-content: space-between;
   align-items: center;
   gap: var(--space-2);
-  padding: 0 var(--space-1) var(--space-3);
+  padding: 2px 6px var(--space-2);
 }
 
 .kanban-column-label {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 6px;
   font-family: var(--font-ui);
-  font-size: var(--text-body);
+  font-size: 12px;
   font-weight: var(--weight-strong);
   color: var(--ink);
+  white-space: nowrap;
 }
 
 /* Column numeral (01, 02…) in the column's accent colour — the only hue on
@@ -79,11 +85,8 @@
 .kanban-column-count {
   font-family: var(--font-ui);
   font-size: 11px;
-  font-weight: var(--weight-strong);
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--kanban-col-accent, var(--ink-3)) 16%, transparent);
-  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-3);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -154,37 +157,41 @@
 
 .kanban-column-cards {
   flex: 1;
-  padding: 8px;
+  min-height: 0;
+  padding: 2px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .kanban-column-empty {
   text-align: center;
   color: var(--ink-3);
   padding: var(--space-4) var(--space-3);
-  border: 1.5px dashed color-mix(in srgb, var(--kanban-col-accent, var(--ink-3)) 30%, transparent);
+  border: 1px dashed var(--rule);
   border-radius: var(--radius-card);
   font-size: var(--text-small);
 }
 
-/* ── Card ── */
+/* ── Card ──
+ * Calm by default: paper card, hairline edge, small shadow. Colour appears
+ * only where it carries meaning (an agent working, a card that needs you,
+ * an epic). Anatomy: head (id + activity), title, one status line, chips,
+ * foot (assignee, progress, the card's one action). */
 .kanban-card {
-  --type-color: var(--vscode-charts-yellow);
   background: var(--surface-card);
   border: var(--rule-width) solid var(--card-edge);
   border-radius: var(--radius-card);
-  padding: var(--space-3);
+  padding: 10px 12px;
   cursor: grab;
-  box-shadow: var(--shadow-card);
-  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-base) var(--ease-out), opacity var(--dur-base) var(--ease-out);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--ink) 6%, transparent);
+  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-base) var(--ease-out), border-color var(--dur-fast) var(--ease-out), opacity var(--dur-base) var(--ease-out);
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  animation: cardSlideIn var(--dur-base) var(--ease-out) calc(var(--card-index, 0) * 30ms) backwards;
+  gap: 6px;
+  animation: cardSlideIn var(--dur-base) var(--ease-out) calc(var(--card-index, 0) * 20ms) backwards;
   user-select: none;
 }
 
@@ -194,15 +201,10 @@
   box-shadow: 0 0 0 1px var(--accent), var(--shadow-card-hover);
 }
 
-/* Feature 1: child story card — indented + smaller */
+/* Feature 1: child story card — indented under its expanded epic */
 .kanban-card--child {
-  margin-left: var(--space-4);
-  font-size: var(--text-small);
-  padding: var(--space-2) var(--space-3);
-}
-
-.kanban-card--child .kanban-card-key {
-  margin-top: calc(-1 * var(--space-2));
+  margin-left: var(--space-3);
+  padding: 8px 10px;
 }
 
 .kanban-card--child .kanban-card-title {
@@ -210,40 +212,40 @@
 }
 
 .kanban-card:hover {
-  transform: translateY(-1px);
+  border-color: var(--rule-strong);
   box-shadow: var(--shadow-card-hover);
+}
+
+.kanban-card:focus-visible {
+  outline: 2px solid var(--vscode-focusBorder, var(--accent));
+  outline-offset: 1px;
 }
 
 .kanban-card:active {
   cursor: grabbing;
-  opacity: 0.8;
 }
 
 /* Cluster D-2 #5 (kanban-card chrome borders) tokenizes the 4 HARDCODED
-   `.kanban-card--{epic,running,queued,interrupted}` border accents to
-   `var(--vscode-charts-{purple,orange,indigo,orange}, hex-fallback)` for
+   `.kanban-card--{running,queued,interrupted}` border accents to
+   `var(--vscode-charts-{orange,indigo,orange}, hex-fallback)` for
    HC theme + Light+ aesthetic consistency. Border colors do NOT have a
    direct WCAG 1.4.11 UI-component contrast floor (they decorate without
-   text overlap) but tokenization makes them theme-shift like the badges
-   (upstream `--vscode-charts-purple` `#B266FF` is constant across all 3
-   themes — visual unchanged post-tokenization; `--vscode-charts-orange`
-   Light+ `#B85C00` deepens; `--vscode-charts-indigo` Light+ `#4f46e5`
-   deepens). Contrast ratios vs the card's `--vscode-editor-background`
-   parent bg clear 3:1 UI-floor in all 3 themes (purple 4.89:1 Dark+,
-   3.41:1 Light+, 6.17:1 HC-Dark; orange 7.76:1 Dark+, 4.585:1 Light+,
-   9.84:1 HC-Dark; indigo 4.04:1 Dark+, 5.29:1 Light+, 5.04:1 HC-Dark).
-   No `@media` override required. */
+   text overlap) but tokenization makes them theme-shift like the badges.
+   Contrast ratios vs the card's `--vscode-editor-background` parent bg
+   clear 3:1 UI-floor in all 3 themes. No `@media` override required. */
+/* Epics look like every other card; a small stack icon beside the id and
+ * the progress ring say "epic". No coloured side stripe. */
 .kanban-card--epic {
-  border-left: 4px solid var(--vscode-charts-purple, #8b5cf6);
-  /* Band matches the a11y-locked purple bar and EPIC chip so the card
-   * reads as one colour. */
-  --type-color: var(--vscode-charts-purple, #8b5cf6);
+  background: var(--surface-card);
+}
+.kanban-card-epic-icon {
+  flex-shrink: 0;
+  color: var(--ink-2);
 }
 
 .kanban-card--locked {
   opacity: 0.6;
   cursor: not-allowed;
-  filter: grayscale(30%);
 }
 
 .kanban-card--running {
@@ -252,50 +254,59 @@
 
 .kanban-card--queued {
   border-color: var(--vscode-charts-indigo, #6366f1);
-  opacity: 0.75;
 }
 
 .kanban-card--interrupted {
   border-color: var(--vscode-charts-orange, #f97316);
-  opacity: 0.85;
+}
+
+/* Head: muted id on the left, activity dot on the right. */
+.kanban-card-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 16px;
 }
 
 .kanban-card-key {
-  margin: calc(-1 * var(--space-3)) calc(-1 * var(--space-3)) var(--space-1);
-  padding: 6px var(--space-3);
-  background: color-mix(in srgb, var(--type-color) var(--band-strength), transparent);
-  border-radius: calc(var(--radius-card) - 1px) calc(var(--radius-card) - 1px) 0 0;
   font-family: var(--font-mono);
-  font-size: var(--text-kicker);
-  font-weight: var(--weight-strong);
-  color: color-mix(in srgb, var(--type-color) 72%, var(--ink));
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 10.5px;
+  color: var(--ink-3);
+  letter-spacing: 0.02em;
 }
 
-/* Assignee: initials in the key band's corner. Ink on paper with a ring in
-   the agent's colour, so the text keeps its contrast whatever the colour. */
-.kanban-card-assignee {
-  position: absolute;
-  top: 3px;
-  right: var(--space-2);
-  width: 20px;
-  height: 20px;
+/* Activity: a spinner while an agent works, a ring while it waits, a solid
+ * dot when the card needs you. Shape differs as well as colour. */
+.kanban-card-activity {
+  margin-left: auto;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: var(--paper);
-  color: var(--ink);
-  box-shadow: inset 0 0 0 1.5px var(--avatar-color, var(--rule-strong));
-  font-family: var(--font-ui);
-  font-size: 9px;
-  font-weight: var(--weight-strong);
-  letter-spacing: 0;
-  line-height: 1;
+  flex-shrink: 0;
 }
-/* Epics keep their expand chevron in that corner. */
-.kanban-card--epic .kanban-card-assignee { right: 28px; }
-.kanban-card-assignee--person { border-radius: var(--radius-sm, 5px); }
+.kanban-card-activity--running {
+  border: 2px solid color-mix(in srgb, var(--vscode-charts-orange, #f59e0b) 30%, transparent);
+  border-top-color: var(--vscode-charts-orange, #f59e0b);
+  animation: kanban-spin 0.9s linear infinite;
+}
+.kanban-card-activity--queued {
+  border: 2px solid var(--vscode-charts-indigo, #6366f1);
+}
+.kanban-card-activity--stopped {
+  background: var(--vscode-charts-orange, #f97316);
+}
+@keyframes kanban-spin { to { transform: rotate(360deg); } }
+
+.kanban-card-title {
+  font-size: var(--text-body);
+  font-weight: var(--weight-strong);
+  line-height: 1.35;
+  color: var(--ink);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 
 /* What the running agent is doing now: one muted mono line, newest output. */
 .kanban-card-progress {
@@ -304,19 +315,125 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding-left: var(--space-2);
-  border-left: 2px solid var(--vscode-progressBar-background, var(--accent));
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--ink-2);
 }
 
-.kanban-card-title {
-  font-size: var(--text-body);
-  font-weight: var(--weight-strong);
-  line-height: var(--leading-title);
-  color: var(--ink);
+.kanban-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
 }
+.kanban-card-chips > * {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Foot: assignee on the left; progress, terminal and the action on the right. */
+.kanban-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 22px;
+}
+.kanban-card-foot-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.kanban-card-assignee {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+.kanban-card-assignee-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Avatar: ink on paper with a ring in the member's colour, so the initials
+   keep their contrast whatever the colour. People get a rounded square. */
+.kanban-card-avatar {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1.5px var(--avatar-color, var(--rule-strong));
+  font-size: 8.5px;
+  font-weight: var(--weight-strong);
+  line-height: 1;
+}
+.kanban-card-assignee--person .kanban-card-avatar { border-radius: 5px; }
+
+/* Epic progress: ring + done/total. */
+.kanban-card-lead {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+.kanban-card-ring-track { fill: none; stroke: var(--rule); stroke-width: 2; }
+.kanban-card-ring-fill { fill: none; stroke: var(--vscode-charts-green, #22c55e); stroke-width: 2; stroke-linecap: round; }
+
+/* The card's one action. Start shows on hover or focus; Stop always shows
+ * while an agent has the card, because that is when you look for it. */
+.kanban-card-action {
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: var(--rule-width) solid var(--rule-strong);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 11px;
+  font-weight: var(--weight-strong);
+  cursor: pointer;
+  transition: opacity var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
+}
+.kanban-card-action--start {
+  opacity: 0;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.kanban-card:hover .kanban-card-action--start,
+.kanban-card:focus-within .kanban-card-action--start,
+.kanban-card-action--start:focus-visible { opacity: 1; }
+.kanban-card-action--start:hover { background: color-mix(in srgb, var(--accent) 10%, var(--paper)); }
+.kanban-card-action:focus-visible { outline: 2px solid var(--vscode-focusBorder, var(--accent)); outline-offset: 1px; }
+@media (hover: none) { .kanban-card-action--start { opacity: 1; } }
+
+/* Epic expand chevron, in the head before the id. */
+.kanban-card-epic-chevron {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.kanban-card-epic-chevron:hover { background: var(--paper-wash); color: var(--ink); }
+.kanban-card-epic-chevron--expanded { transform: rotate(90deg); }
 
 .kanban-card-epic-tag {
   font-size: 10px;
@@ -668,64 +785,159 @@
   min-width: 0;
   height: 100%;
   overflow: hidden;
-  /* Same paper + texture as the canvas (tokens.css), so both views match
-   * even when the board is hosted in its own panel webview. */
+  /* Plain paper: the board is a work surface, so no texture behind the cards. */
   background-color: var(--paper);
-  background-image: var(--paper-texture);
-  background-size: var(--paper-texture-size);
 }
 
-/* ── Agentic Kanban Header ── */
+/* ── Agentic Kanban Header ──
+ * One bar. Views and filter on the left; everything else on the right as
+ * quiet buttons. Tone lives on the control (a dot, a count), never as an
+ * extra row under the bar. */
 .agentic-kanban-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-2) var(--space-5);
+  gap: var(--space-3);
+  padding: 8px var(--space-4);
   border-bottom: var(--rule-width) solid var(--rule);
+  min-height: 44px;
+  box-sizing: border-box;
 }
 
-.agentic-kanban-header h2 {
-  margin: 0;
-  font-family: var(--font-ui);
-  font-size: var(--text-small);
-  font-weight: var(--weight-strong);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-kicker);
-  color: var(--ink);
+.board-bar-start {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 420px;
 }
+
+.board-views {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+  flex-shrink: 0;
+}
+.board-view {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 10px;
+  border: none;
+  border-radius: calc(var(--radius) - 2px);
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 12px;
+  font-weight: var(--weight-strong);
+  cursor: pointer;
+}
+.board-view:hover { color: var(--ink); }
+.board-view.is-active {
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--ink) 12%, transparent);
+}
+.board-view:focus-visible { outline: 2px solid var(--vscode-focusBorder, var(--accent)); outline-offset: 1px; }
+.board-view-count {
+  min-width: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--vscode-charts-orange, #f59e0b) 18%, transparent);
+  color: var(--ink);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.agentic-kanban-search { min-width: 90px; }
 
 .agentic-kanban-toolbar {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
-.agentic-kanban-toolbar button {
+/* Every toolbar control shares one quiet button shape. */
+.agentic-kanban-toolbar button.board-btn,
+.agentic-kanban-toolbar .agent-chip,
+.agentic-kanban-toolbar .inbox-trigger {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   height: 28px;
   min-width: 28px;
-  padding: 0 var(--space-2);
+  padding: 0 10px;
   background: var(--paper);
   color: var(--ink-2);
   border: var(--rule-width) solid var(--rule);
   border-radius: var(--radius);
   font-family: var(--font-ui);
-  font-size: var(--text-small);
+  font-size: 12px;
   font-weight: var(--weight-strong);
   white-space: nowrap;
   cursor: pointer;
-  box-shadow: none;
   transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
-
-.agentic-kanban-toolbar button:hover {
+.agentic-kanban-toolbar button.board-btn:hover,
+.agentic-kanban-toolbar .agent-chip:hover,
+.agentic-kanban-toolbar .popover-trigger--open {
   background: var(--paper-wash);
   color: var(--ink);
   border-color: var(--rule-strong);
+}
+.agentic-kanban-toolbar button.board-btn--primary {
+  background: var(--accent-fill, var(--accent));
+  border-color: var(--accent);
+  color: var(--accent-ink, var(--paper));
+}
+.agentic-kanban-toolbar button.board-btn--primary:hover { background: var(--accent); color: var(--accent-ink, var(--paper)); }
+.agentic-kanban-toolbar button.board-btn--icon { padding: 0 8px; font-size: 15px; line-height: 1; letter-spacing: 1px; }
+.agentic-kanban-toolbar button:focus-visible { outline: 2px solid var(--vscode-focusBorder, var(--accent)); outline-offset: 1px; }
+
+/* Status dots on toolbar buttons: shape + colour. */
+.board-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--ink-3); }
+.board-dot--ok { background: var(--vscode-testing-iconPassed, #2ea043); }
+.board-dot--warn { background: var(--vscode-editorWarning-foreground, #cca700); }
+.board-dot--off { background: transparent; box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+
+/* The coding-agent chip (AgentStatusBar compact). */
+.agent-chip {
+  --agent-ok: var(--vscode-testing-iconPassed, #2ea043);
+  --agent-warn: var(--vscode-editorWarning-foreground, #cca700);
+  --agent-error: var(--vscode-editorError-foreground, #f14c4c);
+}
+.agent-chip--loading { font-size: 12px; color: var(--ink-3); padding: 0 6px; }
+.agentic-kanban-toolbar .agent-chip--warn { border-color: color-mix(in srgb, var(--agent-warn) 60%, var(--rule)); }
+.agentic-kanban-toolbar .agent-chip--error { border-color: var(--agent-error); color: var(--ink); }
+.agent-status--in-popover { border: none; padding: 0; background: transparent; min-width: min(560px, calc(100vw - 48px)); }
+
+/* Popover bodies for autopilot and goals: the AutonomyBar laid out as a stack. */
+.board-popover-autonomy .autonomy-bar,
+.board-popover-goal .autonomy-bar {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3);
+  padding: 0;
+  border: none;
+  background: transparent;
+  min-width: 300px;
+}
+.board-popover-goal { width: min(440px, calc(100vw - 48px)); }
+.board-popover-goal .autonomy-bar-group--goal { display: flex; flex-direction: column; align-items: stretch; gap: var(--space-2); }
+.board-popover-goal .autonomy-bar-goal-input { width: 100%; box-sizing: border-box; }
+.board-popover-hint { margin: 0 0 var(--space-2); font-size: 12px; color: var(--ink-2); line-height: 1.45; }
+
+@media (max-width: 760px) {
+  .agentic-kanban-header { flex-wrap: wrap; }
+  .board-bar-start { max-width: none; flex-basis: 100%; }
+  .agentic-kanban-toolbar { margin-left: 0; flex-wrap: wrap; }
 }
 
 /* ── Detail Panel ── */
@@ -1135,16 +1347,18 @@
   outline-offset: 1px;
 }
 
-/* ── Context Menu (Feature 3) ── */
+/* ── Context Menu (Feature 3) ──
+ * A paper panel with real depth; VS Code's menu colours when present. */
 .kanban-context-menu {
   position: fixed;
   z-index: 200;
-  background: var(--vscode-menu-background);
-  border: 1px solid var(--vscode-menu-border);
-  border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-  min-width: 160px;
-  padding: 4px 0;
+  background: var(--vscode-menu-background, var(--surface-card, var(--paper)));
+  color: var(--vscode-menu-foreground, var(--ink));
+  border: 1px solid var(--vscode-menu-border, var(--rule-strong));
+  border-radius: 8px;
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--ink) 16%, transparent), 0 2px 6px color-mix(in srgb, var(--ink) 8%, transparent);
+  min-width: 200px;
+  padding: 4px;
   animation: contextFadeIn 0.12s ease-out;
 }
 
@@ -1152,18 +1366,25 @@
   display: block;
   width: 100%;
   text-align: left;
-  padding: 6px 14px;
-  font-size: 12px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 12.5px;
   background: none;
   border: none;
-  color: var(--vscode-menu-foreground);
+  border-radius: 5px;
+  color: inherit;
   cursor: pointer;
   transition: background 0.1s ease;
 }
 
-.kanban-context-menu-item:hover {
-  background: var(--vscode-menu-selectionBackground);
+.kanban-context-menu-item:hover,
+.kanban-context-menu-item:focus-visible {
+  background: var(--vscode-menu-selectionBackground, var(--paper-wash));
+  color: var(--vscode-menu-selectionForeground, inherit);
+  outline: none;
 }
+
+.kanban-context-menu-item--primary { font-weight: var(--weight-strong); }
 
 .kanban-context-menu-item--danger {
   color: var(--vscode-charts-red, #ef4444);
@@ -1171,37 +1392,13 @@
 
 .kanban-context-menu-divider {
   height: 1px;
-  background: var(--vscode-menu-separatorBackground);
-  margin: 4px 8px;
+  background: var(--vscode-menu-separatorBackground, var(--rule));
+  margin: 4px 6px;
 }
 
 @keyframes contextFadeIn {
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
-}
-
-/* ── Epic chevron (Feature 1) ── */
-.kanban-card-epic-chevron {
-  position: absolute;
-  right: 8px;
-  top: 8px;
-  background: none;
-  border: none;
-  color: var(--vscode-descriptionForeground);
-  cursor: pointer;
-  font-size: 12px;
-  padding: 2px 6px;
-  border-radius: 3px;
-  transition: transform 0.2s ease, background 0.15s ease;
-  line-height: 1;
-}
-
-.kanban-card-epic-chevron:hover {
-  background: var(--vscode-toolbar-hoverBackground);
-}
-
-.kanban-card-epic-chevron--expanded {
-  transform: rotate(90deg);
 }
 
 /* ── Inline Edit (Advanced Feature 2) ── */
@@ -1635,10 +1832,41 @@
   .corpus-3d-phase-swatch--3 { background: #15803D; }
 }
 
-/* An epic the lead owns: who leads it and progress. */
-.kanban-card-lead {
-  display: block;
+
+
+/* The terminal link on a card is a real button. */
+button.kanban-card-agent-badge {
+  border: none;
+  font: inherit;
   font-size: 11px;
-  color: var(--ink-2);
-  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  cursor: pointer;
 }
+
+/* Thin, quiet scrollbars inside columns and the board. */
+.kanban-column-cards,
+.agentic-kanban-board {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--ink) 18%, transparent) transparent;
+}
+.kanban-column-cards::-webkit-scrollbar,
+.agentic-kanban-board::-webkit-scrollbar { width: 6px; height: 6px; }
+.kanban-column-cards::-webkit-scrollbar-thumb,
+.agentic-kanban-board::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--ink) 18%, transparent); border-radius: 3px; }
+.kanban-column-cards::-webkit-scrollbar-track,
+.agentic-kanban-board::-webkit-scrollbar-track { background: transparent; }
+
+/* The running card's progress line opens the agent's terminal. */
+button.kanban-card-progress--link {
+  border: none;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+button.kanban-card-progress--link:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+/* The action sits at the head's right edge; keep the head row compact. */
+.kanban-card-head .kanban-card-action { height: 20px; padding: 0 9px; margin-left: 6px; }
+.kanban-card-head .kanban-card-activity + .kanban-card-action { margin-left: 6px; }
+.kanban-card-head .kanban-card-key + .kanban-card-action { margin-left: auto; }

@@ -6,7 +6,8 @@ import { vscode } from '../vscodeApi';
 import '../components/kanban/Kanban.css';
 
 import { TerminalGrid, type TerminalGridSession } from './TerminalGrid';
-import { LiveTerminalStrip } from './LiveTerminalStrip';
+import { Popover } from './Popover';
+import { cardAction } from '../components/kanban/KanbanCard';
 import { AgenticDetailPanel } from './AgenticDetailPanel';
 import { ContextMenu } from './ContextMenu';
 import { useEvent } from './useEvent';
@@ -592,6 +593,7 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
 
   // ── Derived: enriched items + search dimming ──────────────────────────────
   const { displayItems, dimmedIds } = useMemo<{ displayItems: KanbanItem[]; dimmedIds: Set<string> }>(() => {
+    const epicTitles = new Map(items.filter(i => i.isEpic).map(i => [i.id, i.title]));
     const enriched: KanbanItem[] = items.map(item => {
       const base = pendingTransitions.has(item.id)
         ? { ...item, agentState: { ...item.agentState, status: 'queued' as const, agentRole: item.agentState?.agentRole } }
@@ -602,11 +604,15 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
       const withAssignee = assignee ? { ...withHarness, assignee: { id: assignee.id, name: assignee.name, ...(assignee.kind === 'person' ? { person: true } : {}) } } : withHarness;
       const progressLine = withAssignee.agentState?.status === 'running' ? progressById.get(item.id) : undefined;
       const withProgress = progressLine ? { ...withAssignee, progressLine } : withAssignee;
-      // An epic the lead owns shows the lead and how many of its stories are done.
-      const children = assignee?.lead ? items.filter(c => c.epicKey === item.id && !c.isEpic) : [];
+      // Every epic shows how many of its stories are done; one the lead owns also names the lead.
+      const children = item.isEpic ? items.filter(c => c.epicKey === item.id && !c.isEpic) : [];
+      const progress = { done: children.filter(c => c.status === 'done').length, total: children.length };
+      const withEpic = item.isEpic
+        ? { ...withProgress, ...(progress.total > 0 ? { childProgress: progress } : {}) }
+        : { ...withProgress, ...(item.epicKey && epicTitles.get(item.epicKey) ? { epicTitle: epicTitles.get(item.epicKey) } : {}) };
       const queued = assignee?.lead && item.isEpic
-        ? { ...withProgress, leadProgress: { lead: assignee.name, done: children.filter(c => c.status === 'done').length, total: children.length } }
-        : withProgress;
+        ? { ...withEpic, leadProgress: { lead: assignee.name, ...progress } }
+        : withEpic;
       // Merge dep badges from the extension's autonomy lifecycle into the
       // card so the KanbanCard "Blocked by N" badge stays in sync with the
       // live dependency graph. Cards without a badge entry show no badge.
@@ -644,16 +650,6 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
       })),
     [displayItems],
   );
-
-  // ponytail: persistent bottom strip watches the same set of running
-  // sessions. Hidden when empty (handled inside the component). Skips the
-  // TerminalGrid overlay tab so output is visible without switching views.
-  const liveStripIds = useMemo(() => terminalSessions.map(s => s.sessionId), [terminalSessions]);
-  const liveStripTitles = useMemo<Record<string, string>>(() => {
-    const map: Record<string, string> = {};
-    for (const s of terminalSessions) map[s.sessionId] = s.title;
-    return map;
-  }, [terminalSessions]);
 
   const epicIdsWithChildren = useMemo(() => {
     const ids = new Set<string>();
@@ -914,6 +910,14 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
   // Per-column right-click: open the context menu for the right-clicked card.
   // Hoisted out of the KanbanColumn JSX so the handler has stable identity
   // across re-renders (and so future changes have one place to edit).
+  // A card's Start runs it the same way as dragging it to In Progress; Stop
+  // ends the agent's run (the detail panel offers Undo for a few seconds).
+  const handleStartCard = useEvent((item: KanbanItem) => handleDrop(item.id, 'in-progress'));
+  const handleStopCard = useEvent((item: KanbanItem) => {
+    vscode.postMessage({ type: 'kanban:abandonExecution', artifactId: item.id, sessionId: item.agentState?.sessionId });
+    setToast({ message: `Stopping the agent on ${item.key}`, type: 'info' });
+  });
+
   const handleColumnContextMenu = useEvent((e: React.MouseEvent, item: KanbanItem) => {
     e.preventDefault();
     setContextMenu({ x: e.clientX, y: e.clientY, item, focusIndex: 0 });
@@ -946,6 +950,12 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
     [schedulerState, budgetStatus, systemicIssue],
   );
 
+  // Toolbar state: how many agents are running, and what autopilot is doing.
+  const runningCount = useMemo(() => items.filter(i => i.agentState?.status === 'running').length, [items]);
+  const autopilotOn = schedulerState?.continuousMode ?? false;
+  const autopilotTone: 'ok' | 'warn' | 'off' = budgetStatus?.anyExceeded ? 'warn' : autopilotOn ? 'ok' : 'off';
+  const autopilotLabel = budgetStatus?.anyExceeded ? 'Autopilot · cap hit' : autopilotOn ? 'Autopilot on' : 'Autopilot off';
+
   // ── Loading state ─────────────────────────────────────────────────────────
   if (loading) {
     return (
@@ -976,9 +986,102 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
 
   return (
     <div className="agentic-kanban" onKeyDown={handleKeyDown}>
+      {/* One bar: views and filter on the left; the agent, autopilot, goals,
+          team, Inbox and the rest on the right. Anything that needs you
+          surfaces in the Inbox or as a tone on its control, not as a row. */}
       <header className="agentic-kanban-header">
-        <h2>Agentic Execution Board</h2>
+        <div className="board-bar-start">
+          <div className="board-views" role="tablist" aria-label="Board view">
+            <button role="tab" aria-selected={view === 'board'} className={`board-view${view === 'board' ? ' is-active' : ''}`} onClick={() => setView('board')}>
+              Board
+            </button>
+            <button
+              role="tab"
+              aria-selected={view === 'terminals'}
+              className={`board-view${view === 'terminals' ? ' is-active' : ''}`}
+              onClick={() => setView('terminals')}
+              title="Watch every running agent's terminal"
+            >
+              Terminals{runningCount > 0 && <span className="board-view-count">{runningCount}</span>}
+            </button>
+          </div>
+          <input
+            ref={searchInputRef}
+            className="agentic-kanban-search"
+            type="text"
+            placeholder="Filter  /"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            aria-label="Filter cards by title, epic, or status"
+            aria-keyshortcuts="/"
+            style={{
+              background: 'var(--vscode-input-background)',
+              color: 'var(--vscode-input-foreground)',
+              border: '1px solid var(--rule)',
+              borderRadius: 'var(--radius)',
+              padding: '0 8px', height: '28px', boxSizing: 'border-box',
+              fontSize: '12px',
+              width: '100%',
+            }}
+          />
+          {searchQuery && (
+            <button
+              onClick={handleClearSearch}
+              style={{ background: 'transparent', color: 'var(--vscode-descriptionForeground)', border: 'none', cursor: 'pointer', fontSize: '12px', padding: '4px 6px' }}
+              aria-label="Clear filter"
+              title="Clear filter"
+            >
+              ✕
+            </button>
+          )}
+        </div>
         <div className="agentic-kanban-toolbar">
+          <AgentStatusBar compact />
+          <Popover
+            label={<><span className={`board-dot board-dot--${autopilotTone}`} aria-hidden="true" />{autopilotLabel}</>}
+            ariaLabel={`Autopilot: ${autopilotLabel}`}
+            title="Continuous runs, the scheduler and the spending cap"
+            triggerClassName="board-btn"
+          >
+            <div className="board-popover-autonomy">
+              <AutonomyBar
+                schedulerState={schedulerState}
+                budgetStatus={budgetStatus}
+                pendingGoal={pendingGoal}
+                onOpenGoalReview={() => setGoalReviewOpen(true)}
+                systemicIssue={systemicIssue}
+                onDismissSystemicIssue={() => setSystemicIssue(null)}
+                showInbox={false}
+                part="controls"
+              />
+            </div>
+          </Popover>
+          <Popover
+            label={pendingGoal ? `Goal · review ${pendingGoal.proposedStories.length}` : 'New goal'}
+            title="Describe a goal; it becomes stories (the lead plans it when you have one)"
+            triggerClassName="board-btn board-btn--primary"
+          >
+            <div className="board-popover-goal">
+              <p className="board-popover-hint">Describe what you want done. It is split into stories for you to approve.</p>
+              <AutonomyBar
+                schedulerState={schedulerState}
+                budgetStatus={budgetStatus}
+                pendingGoal={pendingGoal}
+                onOpenGoalReview={() => setGoalReviewOpen(true)}
+                systemicIssue={null}
+                onDismissSystemicIssue={() => undefined}
+                showInbox={false}
+                part="goal"
+              />
+            </div>
+          </Popover>
+          <button
+            className="agent-editor-trigger board-btn"
+            onClick={() => setAgentEditorOpen(true)}
+            title="Name agents and choose each one's CLI and model"
+          >
+            Agents
+          </button>
           <Inbox
             entries={inboxEntries}
             systemItems={systemInboxItems}
@@ -999,115 +1102,51 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
               setAnchorId(artifactId);
             }}
           />
-          <button
-            className="agent-editor-trigger"
-            onClick={() => setAgentEditorOpen(true)}
-            title="Name agents and choose each one's CLI and model"
-          >
-            Agents
-          </button>
-          <button
-            onClick={() => setView(v => v === 'terminals' ? 'board' : 'terminals')}
-            style={{
-              background: view === 'terminals' ? 'var(--paper-wash)' : 'var(--paper)',
-              color: view === 'terminals' ? 'var(--ink)' : 'var(--ink-2)',
-              border: view === 'terminals' ? '1px solid var(--ink)' : '1px solid var(--rule)',
-              borderRadius: 'var(--radius)',
-              padding: '0 8px', height: '28px',
-              fontSize: '12px', fontWeight: 600,
-              cursor: 'pointer',
-            }}
-            title="Watch all running agent terminals live"
-          >
-            {view === 'terminals' ? 'Board' : 'Terminals'}
-          </button>
-          <input
-            ref={searchInputRef}
-            className="agentic-kanban-search"
-            type="text"
-            placeholder="Press / to filter…"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            aria-label="Filter cards by title, epic, or status"
-            aria-keyshortcuts="/"
-            style={{
-              background: 'var(--vscode-input-background)',
-              color: 'var(--vscode-input-foreground)',
-              border: '1px solid var(--rule)',
-              borderRadius: 'var(--radius)',
-              padding: '0 8px', height: '28px', boxSizing: 'border-box',
-              fontSize: '12px',
-              width: '160px',
-            }}
-          />
-          {searchQuery && (
-            <button
-              onClick={handleClearSearch}
-              style={{ background: 'transparent', color: 'var(--vscode-descriptionForeground)', border: 'none', cursor: 'pointer', fontSize: '12px', padding: '4px 6px' }}
-              aria-label="Clear filter"
-              title="Clear filter"
-            >
-              ✕
-            </button>
-          )}
-          <select
-            className="agentic-kanban-sort"
-            value={sortBy}
-            onChange={e => setSortBy(e.target.value as 'title' | 'status' | 'type' | 'priority')}
-            title="Sort cards within columns"
-            aria-label="Sort cards"
-          >
-            <option value="title">By Title</option>
-            <option value="status">By Status</option>
-            <option value="type">By Type</option>
-            <option value="priority">By Priority</option>
-          </select>
-          <label
-            className="agentic-kanban-autoadvance"
-            title="ON: dropping into In-Progress runs the implement→review→done loop. With YOLO mode on, the per-drop confirm is also skipped."
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px' }}
-          >
-            <input
-              type="checkbox"
-              checked={autoAdvance}
-              onChange={(e) => {
-                const next = e.target.checked;
-                setAutoAdvance(next);
-                vscode.postMessage({ type: 'kanban:setAutoAdvance', enabled: next });
-              }}
-            />
-            Auto-advance
-          </label>
-          <button onClick={handleOpenTraceViewer}>
-            View Traces
-          </button>
-          <button onClick={handleRefreshBoard}>
-            Refresh
-          </button>
-          <button
-            onClick={() => vscode.postMessage({ type: 'visualPlan:generate', goal: '' })}
-            title="Generate a Visual Plan for the current project"
-          >
-            Visual plan
-          </button>
+          <Popover label="⋯" ariaLabel="More board actions" title="More" triggerClassName="board-btn board-btn--icon">
+            {(close) => (
+              <div className="popover-menu" role="menu">
+                <label className="popover-menu-item" title="Sort cards within each column">
+                  Sort
+                  <select
+                    className="agentic-kanban-sort"
+                    value={sortBy}
+                    onChange={e => setSortBy(e.target.value as 'title' | 'status' | 'type' | 'priority')}
+                    aria-label="Sort cards"
+                  >
+                    <option value="title">By title</option>
+                    <option value="status">By status</option>
+                    <option value="type">By type</option>
+                    <option value="priority">By priority</option>
+                  </select>
+                </label>
+                <label
+                  className="popover-menu-item agentic-kanban-autoadvance"
+                  title="ON: dropping into In-Progress runs the implement→review→done loop. With YOLO mode on, the per-drop confirm is also skipped."
+                >
+                  Auto-advance through review
+                  <input
+                    type="checkbox"
+                    checked={autoAdvance}
+                    onChange={(e) => {
+                      const next = e.target.checked;
+                      setAutoAdvance(next);
+                      vscode.postMessage({ type: 'kanban:setAutoAdvance', enabled: next });
+                    }}
+                  />
+                </label>
+                <div className="popover-menu-sep" role="separator" />
+                <button role="menuitem" className="popover-menu-item" onClick={() => { close(); handleOpenTraceViewer(); }}>View Traces</button>
+                <button role="menuitem" className="popover-menu-item" title="Generate a Visual Plan for the current project" onClick={() => { close(); vscode.postMessage({ type: 'visualPlan:generate', goal: '' }); }}>Visual plan</button>
+                <button role="menuitem" className="popover-menu-item" onClick={() => { close(); handleRefreshBoard(); }}>Refresh</button>
+              </div>
+            )}
+          </Popover>
         </div>
       </header>
 
-      <AgentStatusBar />
+      {traceBreakdown && traceBreakdown.totalEntries > 0 && <TracePanel breakdown={traceBreakdown} />}
 
-      <AutonomyBar
-        schedulerState={schedulerState}
-        budgetStatus={budgetStatus}
-        pendingGoal={pendingGoal}
-        onOpenGoalReview={() => setGoalReviewOpen(true)}
-        systemicIssue={systemicIssue}
-        onDismissSystemicIssue={() => setSystemicIssue(null)}
-        showInbox={false}
-      />
-
-      <TracePanel breakdown={traceBreakdown} />
-
-      <DiffPanel diff={commitDiff} onClose={() => setCommitDiff(null)} />
+      {commitDiff && <DiffPanel diff={commitDiff} onClose={() => setCommitDiff(null)} />}
 
       {pendingPlan && (
         <VisualPlanSections
@@ -1162,6 +1201,8 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
             onStartEdit={handleStartEdit}
             onSubmitEdit={handleSubmitEdit}
             onCancelEdit={handleCancelEdit}
+            onStart={handleStartCard}
+            onStop={handleStopCard}
           />
         ))}
       </div>
@@ -1225,8 +1266,11 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
           menu={contextMenu}
           onClose={() => setContextMenu(null)}
           onOpenDetail={() => { handleCardClick(contextMenu.item); setContextMenu(null); }}
+          onStart={cardAction(contextMenu.item) === 'start' ? () => { handleStartCard(contextMenu.item); setContextMenu(null); } : undefined}
+          onStop={cardAction(contextMenu.item) === 'stop' ? () => { handleStopCard(contextMenu.item); setContextMenu(null); } : undefined}
           onMoveBacklog={() => { handleDrop(contextMenu.item.id, 'backlog'); setContextMenu(null); }}
-          onMoveDone={() => { handleDrop(contextMenu.item.id, 'done'); setContextMenu(null); }}
+          onMoveReady={contextMenu.item.status !== 'ready-for-dev' ? () => { handleDrop(contextMenu.item.id, 'ready-for-dev'); setContextMenu(null); } : undefined}
+          onMoveDone={contextMenu.item.status === 'review' ? () => { handleDrop(contextMenu.item.id, 'done'); setContextMenu(null); } : undefined}
           onViewTrace={contextMenu.item.agentState?.sessionId
             ? () => { vscode.postMessage({ type: 'kanban:viewTrace', sessionId: contextMenu.item.agentState!.sessionId }); setContextMenu(null); }
             : undefined}
@@ -1236,8 +1280,6 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
         />
       )}
 
-      {/* ponytail: persistent live-output strip at the bottom of every view */}
-      <LiveTerminalStrip sessionIds={liveStripIds} titles={liveStripTitles} />
     </div>
   );
 }

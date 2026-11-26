@@ -29,6 +29,10 @@ export interface KanbanItem {
   };
   /** An epic the team's lead owns: who leads it and how many of its stories are done. */
   leadProgress?: { lead: string; done: number; total: number };
+  /** An epic's stories: how many are done (AgenticKanban only). */
+  childProgress?: { done: number; total: number };
+  /** Title of the story's epic, shown instead of its id (AgenticKanban only). */
+  epicTitle?: string;
   /** What the running agent is doing now: its latest output line (AgenticKanban only). */
   progressLine?: string;
   /** Named agent this card is assigned to (AgenticKanban only; see agent-team-view.ts). */

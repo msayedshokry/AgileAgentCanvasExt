@@ -1586,7 +1586,8 @@ const KANBAN_CARD_CHROME_SHAPE_LOCKS: Array<{
   { sel: '.kanban-card-epic-tag', prop: 'color', expr: 'var(--vscode-charts-purple, #8b5cf6)', hex: '#8b5cf6', what: 'fg tokenized to --vscode-charts-purple (purple EPIC chip); Light+ override rebinds to #7c3aed' },
   { sel: '.kanban-card-harness-badge--error', prop: 'color', expr: 'var(--vscode-charts-red, #ef4444)', hex: '#ef4444', what: 'fg tokenized to --vscode-charts-red (red error chip); conventional AA-large 3:1 for error messaging' },
   // 4 border accents (decorative chrome - no contrast-floor requirement)
-  { sel: '.kanban-card--epic', prop: 'border-left', expr: 'var(--vscode-charts-purple, #8b5cf6)', hex: '#8b5cf6', what: 'left border tokenized', shorthand: true },
+  // .kanban-card--epic's purple left stripe was removed on 2026-11-26 at the user's request;
+  // epics are marked by a neutral stack icon beside the id (see the no-stripe guard below).
   { sel: '.kanban-card--running', prop: 'border-color', expr: 'var(--vscode-charts-orange, #f59e0b)', hex: '#f59e0b', what: 'border-color tokenized' },
   { sel: '.kanban-card--queued', prop: 'border-color', expr: 'var(--vscode-charts-indigo, #6366f1)', hex: '#6366f1', what: 'border-color tokenized' },
   { sel: '.kanban-card--interrupted', prop: 'border-color', expr: 'var(--vscode-charts-orange, #f97316)', hex: '#f97316', what: 'border-color tokenized' },
@@ -1616,6 +1617,12 @@ describe('Cluster-D2-5 - kanban-card chrome SHAPE + cross-theme guards', () => {
       expect(value, 'HARDCODED ' + s.hex + ' hex-prefix is forbidden in ' + s.sel + ' ' + s.prop).not.toMatch(new RegExp('^' + s.hex + '\\b', 'i'));
     });
   }
+
+  it('epic cards carry no coloured side stripe (user decision 2026-11-26)', () => {
+    const rule = findRule(KANBAN_ROOT, '.kanban-card--epic');
+    const decls = rule ? (rule.nodes || []).filter((n: any) => n.type === 'decl') : [];
+    expect(decls.some((d: any) => /^border-left/.test(d.prop)), '.kanban-card--epic must not set a border-left stripe').toBe(false);
+  });
 
   // 1 SHAPE-light-override test: .kanban-card-epic-tag @media (prefers-color-scheme: light) -> color: #7c3aed
   // Locks the AA-text floor on the 10px small text. Without this override, upstream #B266FF Light+

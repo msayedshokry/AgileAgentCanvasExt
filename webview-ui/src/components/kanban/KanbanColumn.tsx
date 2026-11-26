@@ -40,6 +40,10 @@ interface KanbanColumnProps<T = KanbanItem> {
   onSubmitEdit?: (artifactId: string, newTitle: string) => void;
   /** Cancel edit */
   onCancelEdit?: () => void;
+  /** Start an agent on a card (its Start button). */
+  onStart?: (item: KanbanItem) => void;
+  /** Stop the agent on a card (its Stop button). */
+  onStop?: (item: KanbanItem) => void;
 }
 
 export function KanbanColumn<T extends KanbanItem = KanbanItem>({
@@ -64,6 +68,8 @@ export function KanbanColumn<T extends KanbanItem = KanbanItem>({
   onStartEdit,
   onSubmitEdit,
   onCancelEdit,
+  onStart,
+  onStop,
 }: KanbanColumnProps<T>) {
   // Roving tabindex — only one card per column is in the tab order.
   // Arrow Up/Down moves focus within the column.
@@ -194,6 +200,8 @@ export function KanbanColumn<T extends KanbanItem = KanbanItem>({
                 onStartEdit={onStartEdit}
                 onSubmitEdit={onSubmitEdit}
                 onCancelEdit={onCancelEdit}
+                onStart={onStart}
+                onStop={onStop}
               />
             )
           )

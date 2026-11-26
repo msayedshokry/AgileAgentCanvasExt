@@ -194,20 +194,20 @@ describe('AgenticKanbanApp — agent state on cards', () => {
   it('shows who is working on a running card', () => {
     renderBoard([story('story-running', 'in-progress', 'Busy Story')]);
     send({ type: 'agentStateUpdated', artifactId: 'story-running', agentState: { status: 'running', agentRole: 'Crafter' } });
-    expect(within(card('Busy Story')).getByText('Crafter is working...')).toBeInTheDocument();
+    expect(within(card('Busy Story')).getByText('Crafter is working…')).toBeInTheDocument();
   });
 
   it('shows a queued badge while a run is pending', () => {
     renderBoard([story('story-pending', 'ready-for-dev', 'Waiting Story')]);
     send({ type: 'agentStateUpdated', artifactId: 'story-pending', agentState: { status: 'queued' } });
-    expect(within(card('Waiting Story')).getByText('Queued...')).toBeInTheDocument();
+    expect(within(card('Waiting Story')).getByText('Starting…')).toBeInTheDocument();
   });
 
   it('keeps agent state when a later artifact refresh arrives', () => {
     renderBoard([story('story-keep', 'in-progress', 'Kept Story')]);
     send({ type: 'agentStateUpdated', artifactId: 'story-keep', agentState: { status: 'running', agentRole: 'Crafter' } });
     send({ type: 'updateArtifacts', artifacts: [story('story-keep', 'in-progress', 'Kept Story')] });
-    expect(within(card('Kept Story')).getByText('Crafter is working...')).toBeInTheDocument();
+    expect(within(card('Kept Story')).getByText('Crafter is working…')).toBeInTheDocument();
   });
 });
 
@@ -243,9 +243,12 @@ describe('AgenticKanbanApp — detail panel', () => {
 describe('AgenticKanbanApp — toolbar', () => {
   it('Refresh posts agenticKanban:refresh and View Traces posts openTraceViewer', () => {
     renderBoard([story('S-1')]);
-    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    // Both live in the toolbar's "More" menu, which closes after each action.
+    fireEvent.click(screen.getByRole('button', { name: 'More board actions' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Refresh' }));
     expect(posted('agenticKanban:refresh')).toHaveLength(1);
-    fireEvent.click(screen.getByRole('button', { name: 'View Traces' }));
+    fireEvent.click(screen.getByRole('button', { name: 'More board actions' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'View Traces' }));
     expect(posted('openTraceViewer')).toHaveLength(1);
   });
 });
@@ -327,7 +330,7 @@ describe('AgenticKanbanApp — dependency badges', () => {
     renderBoard([story('story-1', 'backlog', 'Blocked Story'), story('story-2', 'backlog', 'Free Story')]);
     send({ type: 'updateDependencyBadges', badges: [{ id: 'story-1', blockedBy: 2, hasCycle: false, blockerTitles: ['story-2', 'story-3'] }] });
     const badge = within(card('Blocked Story')).getByLabelText('Blocked by 2 stories');
-    expect(badge).toHaveTextContent('🔗 Blocked by 2');
+    expect(badge).toHaveTextContent('Blocked by 2');
     expect(badge).toHaveAttribute('title', 'Blocked by: story-2, story-3');
     expect(within(card('Free Story')).queryByText(/Blocked by/)).not.toBeInTheDocument();
   });
@@ -336,7 +339,7 @@ describe('AgenticKanbanApp — dependency badges', () => {
     renderBoard([story('story-1', 'backlog', 'Cyclic Story')]);
     send({ type: 'updateDependencyBadges', badges: [{ id: 'story-1', blockedBy: 1, hasCycle: true, blockerTitles: ['story-2'] }] });
     const badge = within(card('Cyclic Story')).getByLabelText('Blocked by 1 in a circular dependency');
-    expect(badge).toHaveTextContent('⛔ Blocked by 1');
+    expect(badge).toHaveTextContent('Blocked by 1');
     expect(badge).toHaveClass('kanban-card-dep-badge--cycle');
   });
 
@@ -356,6 +359,7 @@ describe('AgenticKanbanApp — autonomy messages', () => {
   it('shows the scheduler state the extension reports', () => {
     renderBoard([]);
     send({ type: 'schedulerState', state: 'paused', displayState: 'idle', nextUp: null, inProgress: [], enabled: true, pausedStories: [], continuousMode: false });
+    fireEvent.click(screen.getByRole('button', { name: /^Autopilot:/ }));
     expect(screen.getByRole('button', { name: /Resume/ })).toBeInTheDocument();
   });
 
@@ -367,10 +371,12 @@ describe('AgenticKanbanApp — autonomy messages', () => {
       totalArtifactsAnalyzed: 3,
       detectedAt: new Date().toISOString(),
     });
-    const banner = screen.getByRole('alert');
-    expect(banner).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Dismiss/i }));
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    // The run controls (and the banner with them) live in the Autopilot popover.
+    fireEvent.click(screen.getByRole('button', { name: /^Autopilot:/ }));
+    const panel = screen.getByRole('dialog', { name: /^Autopilot:/ });
+    expect(within(panel).getByRole('alert')).toBeInTheDocument();
+    fireEvent.click(within(panel).getByRole('button', { name: /Dismiss/i }));
+    expect(within(panel).queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('announces a branch created by the autonomous git hook', () => {

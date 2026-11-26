@@ -74,20 +74,31 @@
 }
 
 .inbox-list { list-style: none; margin: 0; padding: 0; }
+/* Rows split by hairlines; urgency is a small dot before the kind label,
+ * not a coloured side stripe. */
 .inbox-entry {
-  padding: var(--space-3) 0 var(--space-3) var(--space-3);
-  border-left: 2px solid var(--rule);
+  --entry-tone: var(--rule-strong);
+  padding: var(--space-3) 0;
 }
-.inbox-entry + .inbox-entry { margin-top: var(--space-2); }
+.inbox-entry + .inbox-entry { border-top: var(--rule-width) solid var(--rule); }
+.inbox-entry .inbox-kind { display: inline-flex; align-items: center; gap: 5px; }
+.inbox-entry .inbox-kind::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--entry-tone);
+  flex: none;
+}
 /* Colour says how urgent: stopped/approval block work, paused and autopilot can wait. */
 .inbox-entry--approval,
-.inbox-entry--stopped { border-left-color: var(--vscode-editorWarning-foreground, var(--accent)); }
+.inbox-entry--stopped { --entry-tone: var(--vscode-editorWarning-foreground, var(--accent)); }
 .inbox-entry--paused,
-.inbox-entry--autopilot { border-left-color: var(--rule-strong); }
+.inbox-entry--autopilot { --entry-tone: var(--rule-strong); }
 /* Board-wide items (budget, circuit breaker…) carry their own severity. */
-.inbox-entry--critical { border-left-color: var(--vscode-editorError-foreground, var(--danger)); }
-.inbox-entry--warning { border-left-color: var(--vscode-editorWarning-foreground, var(--accent)); }
-.inbox-entry--info { border-left-color: var(--rule-strong); }
+.inbox-entry--critical { --entry-tone: var(--vscode-editorError-foreground, var(--danger)); }
+.inbox-entry--warning { --entry-tone: var(--vscode-editorWarning-foreground, var(--accent)); }
+.inbox-entry--info { --entry-tone: var(--rule-strong); }
 
 .inbox-entry-head { display: flex; align-items: baseline; gap: var(--space-2); min-width: 0; }
 .inbox-kind {
@@ -146,8 +157,8 @@
 }
 
 /* An agent's questions or proposed card titles, and the answer box. */
-.inbox-entry--question { border-left-color: var(--vscode-editorWarning-foreground, var(--accent)); }
-.inbox-entry--proposal { border-left-color: var(--accent); }
+.inbox-entry--question { --entry-tone: var(--vscode-editorWarning-foreground, var(--accent)); }
+.inbox-entry--proposal { --entry-tone: var(--accent); }
 .inbox-details {
   margin: 0 0 var(--space-2);
   padding-left: var(--space-4);

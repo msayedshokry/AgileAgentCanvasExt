@@ -38,6 +38,9 @@ The Agentic board shows each card's work in one place and only interrupts you fo
 - Create, edit and delete agents in the **Agents** dialog on the board: a name, one of the installed CLIs, and a model. The model list comes from the CLI itself for Claude Code, Codex, OpenCode and Pi, without starting a model call; for other CLIs you type a model, and the Cursor and Copilot CLIs keep their own model setting.
 - A running card shows the agent's latest output line, and each Claude Code run records its tokens, shown per run and per card.
 - Message a card's agent from its detail panel. While the agent works, the message waits and is sent when the run ends; it reaches the agent as a fix request in the same conversation.
+- Cards are quieter: the id and an activity indicator on top, then the title, one status line, the epic's name and the assignee by name. Epics show a stack icon and a progress ring instead of a coloured stripe.
+- **Start** on a ready card (on hover) and **Stop** on a running one. Right-click offers Start or Stop, Open terminal, and moves; **Approve and mark done** appears only on cards in Review, so nothing skips review by accident.
+- One toolbar replaces five rows: Board and Terminals tabs, the filter, the coding agent, **Autopilot**, **New goal**, **Agents**, **Inbox** and a **⋯** menu. The five columns share the width, so the whole flow fits in a normal editor tab. The Inbox no longer opens off-screen.
 
 ### Feature: Agents that work with the board, and a lead agent
 

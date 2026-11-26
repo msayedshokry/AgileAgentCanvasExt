@@ -20,8 +20,15 @@ export interface ContextMenuProps {
   menu: { x: number; y: number; item: KanbanItem; focusIndex: number };
   onClose: () => void;
   onOpenDetail: () => void;
+  /** Provided when the card can start (see KanbanCard cardAction). */
+  onStart?: () => void;
+  /** Provided while an agent has the card. */
+  onStop?: () => void;
   onMoveBacklog: () => void;
-  onMoveDone: () => void;
+  /** Provided when the card is not already ready. */
+  onMoveReady?: () => void;
+  /** Provided only for cards in review: approving is the one way to done. */
+  onMoveDone?: () => void;
   /** Provided when the card has an active trace session. */
   onViewTrace?: () => void;
   /** Provided when the card has an active terminal. */
@@ -32,24 +39,26 @@ export function ContextMenu({
   menu,
   onClose,
   onOpenDetail,
+  onStart,
+  onStop,
   onMoveBacklog,
+  onMoveReady,
   onMoveDone,
   onViewTrace,
   onJumpToTerminal,
 }: ContextMenuProps) {
   // Build the action list. Dividers are rendered separately for visual
   // separation but are skipped during keyboard navigation.
-  const actions: Array<{ key: string; label: string; handler: () => void }> = [
-    { key: 'detail', label: 'Open Detail', handler: onOpenDetail },
-  ];
-  if (onViewTrace) actions.push({ key: 'trace', label: 'View Trace', handler: onViewTrace });
+  const actions: Array<{ key: string; label: string; handler: () => void; tone?: 'primary' | 'danger' }> = [];
+  if (onStart) actions.push({ key: 'start', label: 'Start agent', handler: onStart, tone: 'primary' });
+  if (onStop) actions.push({ key: 'stop', label: 'Stop agent', handler: onStop, tone: 'danger' });
+  if (onMoveDone) actions.push({ key: 'done', label: 'Approve and mark done', handler: onMoveDone, tone: 'primary' });
+  actions.push({ key: 'detail', label: 'Open details', handler: onOpenDetail });
+  if (onJumpToTerminal) actions.push({ key: 'terminal', label: 'Open terminal', handler: onJumpToTerminal });
+  if (onViewTrace) actions.push({ key: 'trace', label: 'View trace', handler: onViewTrace });
   actions.push({ key: 'divider1', label: '—', handler: () => {} });
+  if (onMoveReady) actions.push({ key: 'ready', label: 'Move to Ready for Dev', handler: onMoveReady });
   actions.push({ key: 'backlog', label: 'Move to Backlog', handler: onMoveBacklog });
-  actions.push({ key: 'done', label: 'Move to Done', handler: onMoveDone });
-  if (onJumpToTerminal) {
-    actions.push({ key: 'divider2', label: '—', handler: () => {} });
-    actions.push({ key: 'terminal', label: 'Jump to Terminal', handler: onJumpToTerminal });
-  }
 
   // Indices of non-divider actions — only these are reachable via keyboard.
   const navigableIdx = actions.reduce<number[]>((acc, a, i) => {
@@ -75,20 +84,6 @@ export function ContextMenu({
     onClose();
   });
 
-  // Guard: if the actions list contains only dividers (which shouldn't
-  // happen, but `onViewTrace`/`onJumpToTerminal` are optional and future
-  // actions may be too), the menu has nothing focusable.
-  if (navigableIdx.length === 0) {
-    return (
-      <div
-        className="kanban-context-menu-backdrop"
-        style={{ position: 'fixed', inset: 0, zIndex: 199 }}
-        onClick={onClose}
-        onContextMenu={handleBackdropClose}
-      />
-    );
-  }
-
   useEffect(() => {
     // Capture the element that had focus when the menu opened — used to
     // restore focus on Escape, but NOT on backdrop click.
@@ -108,6 +103,20 @@ export function ContextMenu({
     // a parent that re-renders the menu (e.g., a search query change).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Guard: if the actions list contains only dividers (which shouldn't
+  // happen, but `onViewTrace`/`onJumpToTerminal` are optional and future
+  // actions may be too), the menu has nothing focusable.
+  if (navigableIdx.length === 0) {
+    return (
+      <div
+        className="kanban-context-menu-backdrop"
+        style={{ position: 'fixed', inset: 0, zIndex: 199 }}
+        onClick={onClose}
+        onContextMenu={handleBackdropClose}
+      />
+    );
+  }
 
   const focusItem = (idx: number) => {
     setFocusIndex(idx);
@@ -149,7 +158,7 @@ export function ContextMenu({
       <div
         className="kanban-context-menu"
         ref={menuRef}
-        style={{ left: menu.x, top: menu.y }}
+        style={{ left: Math.max(8, Math.min(menu.x, window.innerWidth - 220)), top: Math.max(8, Math.min(menu.y, window.innerHeight - (actions.length * 30 + 16))) }}
         role="menu"
         aria-label="Card actions"
         onKeyDown={handleMenuKeyDown}
@@ -160,7 +169,7 @@ export function ContextMenu({
           ) : (
             <button
               key={action.key}
-              className="kanban-context-menu-item"
+              className={`kanban-context-menu-item${action.tone ? ` kanban-context-menu-item--${action.tone}` : ''}`}
               data-menu-index={i}
               onClick={action.handler}
               role="menuitem"

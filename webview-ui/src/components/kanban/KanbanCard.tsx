@@ -44,6 +44,33 @@ interface KanbanCardProps {
   onSubmitEdit?: (artifactId: string, newTitle: string) => void;
   /** Advanced Feature 2: inline editing — cancel */
   onCancelEdit?: () => void;
+  /** Start an agent on this card (shown on ready cards). */
+  onStart?: (item: KanbanItem) => void;
+  /** Stop the agent working on this card (shown while it runs or waits). */
+  onStop?: (item: KanbanItem) => void;
+}
+
+const STARTABLE = new Set(['backlog', 'ready-for-dev', 'ready', 'draft']);
+
+/** What the card offers as its one action: Start when it can run, Stop while an agent has it. */
+export function cardAction(item: KanbanItem): 'start' | 'stop' | undefined {
+  const s = item.agentState?.status;
+  if (s === 'running' || s === 'queued') return 'stop';
+  if (item.lockInfo?.locked || item.assignee?.person) return undefined;
+  return STARTABLE.has(item.status) ? 'start' : undefined;
+}
+
+/** Small ring showing how many of an epic's stories are done. */
+function ProgressRing({ done, total }: { done: number; total: number }) {
+  const r = 6;
+  const c = 2 * Math.PI * r;
+  const frac = total > 0 ? done / total : 0;
+  return (
+    <svg className="kanban-card-ring" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <circle cx="8" cy="8" r={r} className="kanban-card-ring-track" />
+      <circle cx="8" cy="8" r={r} className="kanban-card-ring-fill" strokeDasharray={`${c * frac} ${c}`} transform="rotate(-90 8 8)" />
+    </svg>
+  );
 }
 
 // Used to disambiguate single-click from double-click without setTimeout.
@@ -52,7 +79,7 @@ interface KanbanCardProps {
 // window we suppress the single-click handler entirely.
 const DOUBLE_CLICK_WINDOW_MS = 250;
 
-export function KanbanCard({ item, index, draggable, onDragStart, onClick, className, resumingArtifactId, cardTabIndex, dimmed, hasChildren, isExpanded, onToggleEpic, isChild, onContextMenu, isSelected, selectedCount, isEditing, onStartEdit, onSubmitEdit, onCancelEdit }: KanbanCardProps) {
+export function KanbanCard({ item, index, draggable, onDragStart, onClick, className, resumingArtifactId, cardTabIndex, dimmed, hasChildren, isExpanded, onToggleEpic, isChild, onContextMenu, isSelected, selectedCount, isEditing, onStartEdit, onSubmitEdit, onCancelEdit, onStart, onStop }: KanbanCardProps) {
   const isLocked = item.lockInfo?.locked;
   const isRunning = item.agentState?.status === 'running';
   const isQueued = item.agentState?.status === 'queued';
@@ -159,6 +186,16 @@ export function KanbanCard({ item, index, draggable, onDragStart, onClick, class
     vscode.postMessage({ type: 'kanban:jumpToTerminal', artifactId: item.id });
   });
 
+  const action = (onStart || onStop) && !isEditing ? cardAction(item) : undefined;
+  const handleActionClick = useEvent((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (action === 'start') onStart?.(item);
+    else if (action === 'stop') onStop?.(item);
+  });
+  const failure = item.agentState?.failure;
+  const waitingForAgent = isQueued && item.agentState?.agentRole?.startsWith('Waiting for ');
+  const epicLabel = item.epicTitle ?? item.epicKey;
+
   return (
     <div
       className={[
@@ -189,28 +226,42 @@ export function KanbanCard({ item, index, draggable, onDragStart, onClick, class
       {isDragging && (selectedCount ?? 0) > 1 && (
         <span className="kanban-drag-ghost-badge">{selectedCount}</span>
       )}
-      {/* Feature 1: epic chevron for expand/collapse */}
-      {item.isEpic && hasChildren && (
-        <button
-          className={`kanban-card-epic-chevron${isExpanded ? ' kanban-card-epic-chevron--expanded' : ''}`}
-          onClick={handleChevronClick}
-          aria-label={isExpanded ? 'Collapse epic' : 'Expand epic'}
-          tabIndex={-1}
-        >
-          ▶
-        </button>
-      )}
-      <span className="kanban-card-key">{item.key}</span>
-      {item.assignee && (
-        <span
-          className={`kanban-card-assignee${item.assignee.person ? ' kanban-card-assignee--person' : ''}`}
-          style={{ '--avatar-color': getAvatarColor(item.assignee.name) } as React.CSSProperties}
-          title={item.assignee.person ? `Assigned to ${item.assignee.name} (a person; no agent runs it)` : `Assigned to ${item.assignee.name}`}
-          aria-label={`Assigned to ${item.assignee.name}${item.assignee.person ? ', a person' : ''}`}
-        >
-          {getInitials(item.assignee.name)}
-        </span>
-      )}
+
+      {/* Head: id, then what an agent is doing with the card right now. */}
+      <div className="kanban-card-head">
+        {item.isEpic && hasChildren && (
+          <button
+            className={`kanban-card-epic-chevron${isExpanded ? ' kanban-card-epic-chevron--expanded' : ''}`}
+            onClick={handleChevronClick}
+            aria-label={isExpanded ? 'Collapse epic' : 'Expand epic'}
+            aria-expanded={isExpanded}
+            tabIndex={-1}
+          >
+            <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M3 2l4 3-4 3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </button>
+        )}
+        {item.isEpic && (
+          <svg className="kanban-card-epic-icon" width="12" height="12" viewBox="0 0 12 12" role="img" aria-label="Epic">
+            <title>Epic</title>
+            <rect x="1.5" y="4.5" width="9" height="6" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.2" />
+            <path d="M3 3h6M4.5 1.5h3" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+          </svg>
+        )}
+        <span className="kanban-card-key">{item.key}</span>
+        {isRunning && <span className="kanban-card-activity kanban-card-activity--running" role="img" aria-label="Agent working" title="Agent working" />}
+        {isQueued && <span className="kanban-card-activity kanban-card-activity--queued" role="img" aria-label="Waiting to start" title="Waiting to start" />}
+        {isInterrupted && <span className="kanban-card-activity kanban-card-activity--stopped" role="img" aria-label="Needs you" title="Needs you" />}
+        {action && (
+          <button
+            className={`kanban-card-action kanban-card-action--${action}`}
+            onClick={handleActionClick}
+            aria-label={action === 'start' ? `Start an agent on ${item.title}` : `Stop the agent on ${item.title}`}
+          >
+            {action === 'start' ? 'Start' : 'Stop'}
+          </button>
+        )}
+      </div>
+
       {isEditing ? (
         <input
           ref={editInputRef}
@@ -226,88 +277,103 @@ export function KanbanCard({ item, index, draggable, onDragStart, onClick, class
         <span className="kanban-card-title">{item.title}</span>
       )}
 
-      {item.epicKey && !item.isEpic && (
-        <span className="kanban-card-epic-tag">{item.epicKey}</span>
-      )}
-
-      {item.isEpic && <span className="kanban-card-type-tag">Epic</span>}
-
-      {/* Resume-in-progress spinner */}
-      {resumingArtifactId === item.id && (
+      {/* What needs saying about this card now: at most one line. */}
+      {resumingArtifactId === item.id ? (
         <span className="kanban-card-agent-badge kanban-card-agent-badge--resuming">
           <span className="kanban-card-resume-spinner" />
           Reconnecting…
         </span>
-      )}
-
-      {/* Agent execution overlay */}
-      {isQueued && (
+      ) : isInterrupted ? (
+        <span className="kanban-card-agent-badge kanban-card-agent-badge--interrupted" title={failure?.detail}>
+          {failure ? failure.title : `Interrupted — ${item.agentState?.agentRole ?? 'Agent'}`}
+        </span>
+      ) : isQueued ? (
         <span className="kanban-card-agent-badge kanban-card-agent-badge--queued">
           {/* "Waiting for Dev (1 of 1 busy)" when the card waits for its agent's capacity. */}
-          {item.agentState?.agentRole?.startsWith('Waiting for ') ? item.agentState.agentRole : 'Queued...'}
+          {waitingForAgent ? item.agentState!.agentRole : 'Starting…'}
         </span>
-      )}
-      {item.leadProgress && (
-        <span className="kanban-card-lead" title={`${item.leadProgress.lead} plans this epic and hands its stories out`}>
-          Lead: {item.leadProgress.lead} · {item.leadProgress.done}/{item.leadProgress.total} done
-        </span>
-      )}
-      {isInterrupted && (
-        <span
-          className="kanban-card-agent-badge kanban-card-agent-badge--interrupted"
-          title={item.agentState?.failure?.detail}
-        >
-          {item.agentState?.failure
-            ? `⚠ ${item.agentState.failure.title}`
-            : `Interrupted — ${item.agentState?.agentRole ?? 'Agent'}`}
-        </span>
-      )}
-      {hasTerminal && (
-        <span
-          className="kanban-card-agent-badge kanban-card-agent-badge--terminal"
-          onClick={handleTerminalClick}
-          title="Jump to running terminal"
-        >
-          Terminal active
-        </span>
-      )}
-      {isRunning && item.progressLine ? (
-        <span className="kanban-card-progress" title={item.progressLine}>
-          {item.progressLine}
-        </span>
-      ) : isRunning && item.agentState?.agentRole && !hasTerminal && (
-        <span className="kanban-card-agent-badge">
-          {item.agentState.agentRole} is working...
-        </span>
-      )}
+      ) : isRunning ? (
+        hasTerminal ? (
+          <button
+            className="kanban-card-progress kanban-card-progress--link"
+            onClick={handleTerminalClick}
+            title={`${item.progressLine ?? 'Working'} — open the agent's terminal`}
+          >
+            {item.progressLine ?? `${item.agentState?.agentRole ?? 'Agent'} is working…`}
+          </button>
+        ) : (
+          <span className="kanban-card-progress" title={item.progressLine}>
+            {item.progressLine ?? `${item.agentState?.agentRole ?? 'Agent'} is working…`}
+          </span>
+        )
+      ) : null}
 
-      {/* Lock overlay */}
-      {isLocked && (
-        <span className="kanban-card-lock-badge" title={`Locked by ${item.lockInfo?.agentName ?? 'unknown'}`}>
-          {item.lockInfo?.agentName ? `Locked: ${item.lockInfo.agentName}` : 'Locked'}
-        </span>
-      )}
+      {/* Chips: where the card belongs and anything blocking it. */}
+      {(epicLabel && !item.isEpic) || isLocked || (item.blockedBy ?? 0) > 0 || item.harnessResults?.some(r => !r.passed && r.severity === 'blocking') ? (
+        <div className="kanban-card-chips">
+          {epicLabel && !item.isEpic && (
+            <span className="kanban-card-epic-tag" title={item.epicKey}>{epicLabel}</span>
+          )}
+          {(item.blockedBy ?? 0) > 0 && (
+            <span
+              className={`kanban-card-dep-badge${item.hasCycle ? ' kanban-card-dep-badge--cycle' : ''}`}
+              title={
+                item.hasCycle
+                  ? `Circular dependency: blocked by ${item.blockedBy} story(ies) including ${(item.blockerTitles ?? []).slice(0, 3).join(', ')}`
+                  : `Blocked by: ${(item.blockerTitles ?? []).slice(0, 3).join(', ')}${(item.blockerTitles?.length ?? 0) > 3 ? '…' : ''}`
+              }
+              aria-label={`Blocked by ${item.blockedBy} ${item.hasCycle ? 'in a circular dependency' : 'stories'}`}
+            >
+              Blocked by {item.blockedBy}
+            </span>
+          )}
+          {item.harnessResults?.some(r => !r.passed && r.severity === 'blocking') && (
+            <span className="kanban-card-harness-badge kanban-card-harness-badge--error">Policy failed</span>
+          )}
+          {isLocked && (
+            <span className="kanban-card-lock-badge" title={`Locked by ${item.lockInfo?.agentName ?? 'unknown'}`}>
+              {item.lockInfo?.agentName ? `Locked: ${item.lockInfo.agentName}` : 'Locked'}
+            </span>
+          )}
+        </div>
+      ) : null}
 
-      {/* Harness failures */}
-      {item.harnessResults?.some(r => !r.passed && r.severity === 'blocking') && (
-        <span className="kanban-card-harness-badge kanban-card-harness-badge--error">
-          Policy failed
-        </span>
-      )}
-
-      {/* Issue #22: Dependency badge (Blocked by N) */}
-      {(item.blockedBy ?? 0) > 0 && (
-        <span
-          className={`kanban-card-dep-badge${item.hasCycle ? ' kanban-card-dep-badge--cycle' : ''}`}
-          title={
-            item.hasCycle
-              ? `⚠ Circular dependency: blocked by ${item.blockedBy} story(ies) including ${(item.blockerTitles ?? []).slice(0, 3).join(', ')}`
-              : `Blocked by: ${(item.blockerTitles ?? []).slice(0, 3).join(', ')}${(item.blockerTitles?.length ?? 0) > 3 ? '…' : ''}`
-          }
-          aria-label={`Blocked by ${item.blockedBy} ${item.hasCycle ? 'in a circular dependency' : 'stories'}`}
-        >
-          {item.hasCycle ? '⛔' : '🔗'} Blocked by {item.blockedBy}
-        </span>
+      {/* Foot: who has it, and an epic's progress. */}
+      {(item.assignee || item.childProgress || item.leadProgress) && (
+        <div className="kanban-card-foot">
+          {item.assignee ? (
+            <span
+              className={`kanban-card-assignee${item.assignee.person ? ' kanban-card-assignee--person' : ''}`}
+              title={item.assignee.person ? `Assigned to ${item.assignee.name} (a person; no agent runs it)` : `Assigned to ${item.assignee.name}`}
+            >
+              <span
+                className="kanban-card-avatar"
+                style={{ '--avatar-color': getAvatarColor(item.assignee.name) } as React.CSSProperties}
+                aria-hidden="true"
+              >
+                {getInitials(item.assignee.name)}
+              </span>
+              <span className="kanban-card-assignee-name">
+                <span className="visually-hidden">Assigned to </span>{item.assignee.name}
+                {item.assignee.person && <span className="visually-hidden">, a person</span>}
+              </span>
+            </span>
+          ) : <span />}
+          <span className="kanban-card-foot-end">
+            {(item.leadProgress ?? item.childProgress) && (() => {
+              const p = (item.leadProgress ?? item.childProgress)!;
+              return (
+                <span
+                  className="kanban-card-lead"
+                  title={item.leadProgress ? `${item.leadProgress.lead} plans this epic and hands its stories out` : `${p.done} of ${p.total} stories done`}
+                >
+                  <ProgressRing done={p.done} total={p.total} />
+                  {p.done}/{p.total}
+                </span>
+              );
+            })()}
+          </span>
+        </div>
       )}
     </div>
   );

@@ -22,10 +22,11 @@ const TEAM: AgentTeamView = {
 beforeEach(() => { posted.length = 0; });
 
 describe('card assignee', () => {
-  it('shows the assignee initials with an accessible name', () => {
+  it('shows the assignee by name, with initials in the avatar', () => {
     render(<KanbanCard item={{ ...ITEM, assignee: { id: 'dev', name: 'Dev Agent' } }} />);
-    const avatar = screen.getByLabelText('Assigned to Dev Agent');
-    expect(avatar.textContent).toBe('DA');
+    const assignee = screen.getByTitle('Assigned to Dev Agent');
+    expect(assignee.querySelector('.kanban-card-avatar')?.textContent).toBe('DA');
+    expect(assignee.textContent).toContain('Assigned to Dev Agent');
   });
 
   it('shows nothing for an unassigned card', () => {
@@ -45,7 +46,7 @@ describe('card progress line', () => {
 
   it('falls back to the generic badge before the agent prints anything', () => {
     render(<KanbanCard item={running} />);
-    expect(screen.getByText('dev is working...')).toBeTruthy();
+    expect(screen.getByText('dev is working…')).toBeTruthy();
   });
 });
 
@@ -84,6 +85,6 @@ describe('card — capacity wait and lead epics', () => {
 
   it('shows the lead and story progress on a lead epic', () => {
     render(<KanbanCard item={{ ...ITEM, isEpic: true, type: 'epic', leadProgress: { lead: 'Chief of Staff', done: 2, total: 5 } }} />);
-    expect(screen.getByText('Lead: Chief of Staff · 2/5 done')).toBeTruthy();
+    expect(screen.getByTitle('Chief of Staff plans this epic and hands its stories out').textContent).toBe('2/5');
   });
 });
