@@ -1,70 +1,65 @@
 /* ─── Inbox: what waits on a person ─────────────────────────────────────────
- * The trigger is quiet until something needs you; then the count carries the
- * accent. The panel floats over the board (it is a decision list, not a
- * column) and uses the board's paper/ink tokens. */
+ * A full view, worked like a mail client: the list on the left, the selected
+ * item (its question, fix and card) on the right. Urgency is a small dot
+ * before the kind label; the selected row is a soft fill, never a stripe. */
 
-.inbox { position: relative; }
-
-.inbox-trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  height: 28px;
-  padding: 0 var(--space-3);
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-  background: var(--paper);
-  color: var(--ink-2);
-  font-size: var(--text-small);
-  font-weight: var(--weight-strong);
-  cursor: pointer;
-  transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+.inbox-view {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
 }
-.inbox-trigger:hover { border-color: var(--rule-strong); color: var(--ink); }
-.inbox-trigger:focus-visible { outline: 2px solid var(--vscode-focusBorder, var(--accent)); outline-offset: 1px; }
-.inbox-trigger--active { border-color: var(--accent); color: var(--ink); }
-
-.inbox-count {
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 9px;
-  background: var(--accent-fill, var(--accent));
-  color: var(--accent-ink, var(--paper));
-  font-size: 11px;
-  line-height: 18px;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-
-.inbox-panel {
-  position: absolute;
-  top: calc(100% + var(--space-2));
-  right: 0;
-  z-index: 40;
-  width: min(420px, 90vw);
-  max-height: min(70vh, 560px);
-  overflow: auto;
+.inbox-view-list {
+  min-height: 0;
+  overflow-y: auto;
+  border-right: var(--rule-width) solid var(--rule);
   padding: var(--space-3);
-  background: var(--paper-raised, var(--paper));
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius-card, var(--radius));
-  box-shadow: var(--shadow-float);
-  transform-origin: top right;
-  animation: inbox-in var(--dur-base) var(--ease-out);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
-@keyframes inbox-in {
-  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+.inbox-view-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); padding: 0 var(--space-1); }
+.inbox-view-title { margin: 0; font-size: 15px; font-weight: var(--weight-strong); color: var(--ink); }
+.inbox-view-keys { font-size: 11px; color: var(--ink-3); white-space: nowrap; }
+kbd {
+  display: inline-block;
+  min-width: 14px;
+  padding: 0 4px;
+  margin: 0 1px;
+  border: var(--rule-width) solid var(--rule);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  font-family: var(--font-ui);
+  font-size: 10px;
+  line-height: 15px;
+  text-align: center;
+  color: var(--ink-2);
+  background: var(--paper);
 }
+.inbox-btn kbd { margin-left: 4px; background: transparent; color: inherit; border-color: currentColor; opacity: 0.7; }
 
-.inbox-heading {
-  margin: 0 0 var(--space-2);
-  font-size: var(--text-kicker, 11px);
-  letter-spacing: var(--tracking-kicker, 0.06em);
-  text-transform: uppercase;
-  color: var(--ink-3);
+.inbox-view-detail {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
-.inbox-panel .approval-banner { margin: 0 0 var(--space-3); }
+.inbox-detail-head {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: var(--rule-width) solid var(--rule);
+  background: color-mix(in srgb, var(--ink) 2%, var(--paper));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.inbox-detail-reason { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--ink); }
+.inbox-detail-card { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.inbox-empty--detail { margin: auto; color: var(--ink-3); }
+
+@media (max-width: 760px) {
+  .inbox-view { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .inbox-view-list { max-height: 40vh; border-right: none; border-bottom: var(--rule-width) solid var(--rule); }
+}
 
 .inbox-empty {
   margin: var(--space-2) 0;
@@ -78,9 +73,15 @@
  * not a coloured side stripe. */
 .inbox-entry {
   --entry-tone: var(--rule-strong);
-  padding: var(--space-3) 0;
+  padding: var(--space-2) var(--space-2);
+  border-radius: var(--radius);
 }
-.inbox-entry + .inbox-entry { border-top: var(--rule-width) solid var(--rule); }
+.inbox-entry[role="option"] { cursor: pointer; }
+.inbox-entry[role="option"]:hover { background: var(--paper-wash); }
+.inbox-entry.is-selected { background: color-mix(in srgb, var(--accent) 10%, var(--paper)); }
+.inbox-entry[role="option"]:focus-visible { outline: 2px solid var(--vscode-focusBorder, var(--accent)); outline-offset: -2px; }
+.inbox-entry[role="option"] .inbox-reason { margin-bottom: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inbox-list--system .inbox-entry + .inbox-entry { margin-top: 2px; }
 .inbox-entry .inbox-kind { display: inline-flex; align-items: center; gap: 5px; }
 .inbox-entry .inbox-kind::before {
   content: '';
@@ -130,6 +131,7 @@
 }
 
 .inbox-entry-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.inbox-btn { display: inline-flex; align-items: center; height: 26px; }
 .inbox-btn {
   height: 24px;
   padding: 0 var(--space-2);
@@ -152,8 +154,7 @@
 .inbox-btn--quiet { border-color: transparent; color: var(--ink-3); }
 
 @media (prefers-reduced-motion: reduce) {
-  .inbox-panel { animation: none; }
-  .inbox-trigger, .inbox-btn { transition: none; }
+  .inbox-btn { transition: none; }
 }
 
 /* An agent's questions or proposed card titles, and the answer box. */
@@ -177,3 +178,8 @@
 }
 .inbox-answer textarea:focus-visible { outline: 1px solid var(--vscode-focusBorder, var(--accent)); outline-offset: -1px; }
 .inbox-answer .inbox-btn { align-self: flex-end; }
+
+/* The card page beside the list: one column, properties under the thread. */
+.inbox-detail-card .card-page-body { grid-template-columns: minmax(0, 1fr); }
+.inbox-detail-card .card-page-side { position: static; min-height: auto; border-left: none; border-top: var(--rule-width) solid var(--rule); }
+.inbox-detail-card .card-page-main { padding: var(--space-4) var(--space-5); }

@@ -17,7 +17,9 @@ import { DiffPanel, type GitDiffMessage } from './DiffPanel';
 import { VisualPlanSections } from '../visual-plan/VisualPlanSections';
 import type { VisualPlan } from '../visual-plan/types';
 import type { ApprovalRequest } from './ApprovalBanner';
-import { Inbox } from './Inbox';
+import { InboxView, inboxCount } from './Inbox';
+import { BoardNav, type BoardView } from './BoardNav';
+import { CardList } from './CardList';
 import { buildInboxEntries, type InboxItem } from './inbox-model';
 import { AgentEditor } from './AgentEditor';
 import { assigneeFor, parseTeamMessage, EMPTY_TEAM_VIEW, type AgentTeamView } from './agent-team-view';
@@ -92,7 +94,9 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
   const [pendingTransitions, setPendingTransitions] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<KanbanToast | null>(null);
   const [loading, setLoading] = useState<boolean>(!initialArtifacts);
-  const [view, setView] = useState<'board' | 'terminals'>('board');
+  const [view, setView] = useState<BoardView>('board');
+  /** Epic the board is narrowed to from the sidebar, if any. */
+  const [epicFilter, setEpicFilter] = useState<string | null>(null);
   const [terminalInteractive, setTerminalInteractive] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -660,9 +664,15 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
   }, [displayItems]);
 
   // ── Grouped items by column (with epic grouping + sort) ───────────────────
+  // The sidebar can narrow the board to one epic: the epic and its stories.
+  const boardItems = useMemo(
+    () => (epicFilter ? displayItems.filter(i => i.id === epicFilter || i.epicKey === epicFilter) : displayItems),
+    [displayItems, epicFilter],
+  );
+
   const groupedItems = useMemo(() => {
     const epicToChildren = new Map<string, KanbanItem[]>();
-    for (const item of displayItems) {
+    for (const item of boardItems) {
       if (item.epicKey && item.type === 'story') {
         const children = epicToChildren.get(item.epicKey) || [];
         children.push(item);
@@ -670,7 +680,7 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
       }
     }
 
-    const sorted = [...displayItems].sort((a, b) => {
+    const sorted = [...boardItems].sort((a, b) => {
       if (sortBy === 'title') return a.title.localeCompare(b.title);
       if (sortBy === 'status') return a.status.localeCompare(b.status);
       if (sortBy === 'type') return a.type.localeCompare(b.type);
@@ -720,7 +730,7 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
     }
 
     return groups;
-  }, [displayItems, sortBy, expandedEpics]);
+  }, [boardItems, sortBy, expandedEpics]);
 
   // ── DnD: Drop handler with WIP enforcement, batch move, rollback tracking ─
   // useEvent: stable identity, reads current `items`/`wipLimits`/`groupedItems`
@@ -958,6 +968,55 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
   const autopilotTone: 'ok' | 'warn' | 'off' = budgetStatus?.anyExceeded ? 'warn' : autopilotOn ? 'ok' : 'off';
   const autopilotLabel = budgetStatus?.anyExceeded ? 'Autopilot · cap hit' : autopilotOn ? 'Autopilot on' : 'Autopilot off';
 
+  // ── Sidebar views ───────────────────────────────────────────────────────
+  // An agent paused on an approval checkpoint opens the Inbox, where the prompt is.
+  useEffect(() => {
+    if (approvalRequest) setView('inbox');
+  }, [approvalRequest?.artifactId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const workingItems = useMemo(() => displayItems.filter(i => i.agentState?.status === 'running' || i.agentState?.status === 'queued'), [displayItems]);
+  const reviewItems = useMemo(() => displayItems.filter(i => i.status === 'review'), [displayItems]);
+  const epicItems = useMemo(() => displayItems.filter(i => i.isEpic), [displayItems]);
+  const inboxTotal = inboxCount(inboxEntries, systemInboxItems, approvalRequest);
+  const filteredEpic = epicFilter ? epicItems.find(e => e.id === epicFilter) : undefined;
+  const viewTitle = view === 'inbox' ? 'Inbox' : view === 'working' ? 'Working' : view === 'review' ? 'In review'
+    : view === 'terminals' ? 'Terminals' : filteredEpic ? filteredEpic.title : 'Board';
+
+  const closeCard = () => { setSelectedIds(new Set()); setAnchorId(null); };
+  const openOnBoard = (artifactId: string) => {
+    setView('board');
+    setSelectedIds(new Set([artifactId]));
+    setAnchorId(artifactId);
+  };
+  const renderCardPage = (card: KanbanItem, onClose: () => void) => (
+    <AgenticDetailPanel
+      key={card.id}
+      item={card}
+      onClose={onClose}
+      onOpenTerminal={(item) => {
+        setView('terminals');
+        vscode.postMessage({ type: 'kanban:jumpToTerminal', artifactId: item.id });
+      }}
+      onTakeOver={(item) => {
+        // P1 #4: switch to terminals view and flash the agent's tile
+        setView('terminals');
+        setFocusedSessionId(item.id);
+        vscode.postMessage({ type: 'kanban:takeOverAgent', artifactId: item.id });
+      }}
+      terminalInteractive={terminalInteractive}
+      infoCache={agentInfoCache}
+      resumingArtifactId={resumingArtifactId}
+      onResumeStateChange={setResumingArtifactId}
+      chatSessionActive={chatSessionActive}
+      chatSessionModel={chatSessionModel}
+      team={team}
+      onEditTeam={() => setAgentEditorOpen(true)}
+      onStart={handleStartCard}
+      onStop={handleStopCard}
+      onApprove={(item) => handleDrop(item.id, 'done')}
+      onOpenCard={openOnBoard}
+    />
+  );
+
   // ── Loading state ─────────────────────────────────────────────────────────
   if (loading) {
     return (
@@ -993,20 +1052,7 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
           surfaces in the Inbox or as a tone on its control, not as a row. */}
       <header className="agentic-kanban-header">
         <div className="board-bar-start">
-          <div className="board-views" role="tablist" aria-label="Board view">
-            <button role="tab" aria-selected={view === 'board'} className={`board-view${view === 'board' ? ' is-active' : ''}`} onClick={() => setView('board')}>
-              Board
-            </button>
-            <button
-              role="tab"
-              aria-selected={view === 'terminals'}
-              className={`board-view${view === 'terminals' ? ' is-active' : ''}`}
-              onClick={() => setView('terminals')}
-              title="Watch every running agent's terminal"
-            >
-              Terminals{runningCount > 0 && <span className="board-view-count">{runningCount}</span>}
-            </button>
-          </div>
+          <h1 className="board-bar-title">{viewTitle}</h1>
           <input
             ref={searchInputRef}
             className="agentic-kanban-search"
@@ -1084,26 +1130,6 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
           >
             Agents
           </button>
-          <Inbox
-            entries={inboxEntries}
-            systemItems={systemInboxItems}
-            approval={approvalRequest}
-            onRespondApproval={(approved) => {
-              if (approvalRequest) {
-                vscode.postMessage({
-                  type: 'kanban:approvalResponse',
-                  artifactId: approvalRequest.artifactId,
-                  approved,
-                });
-              }
-              setApprovalRequest(null);
-            }}
-            onOpenCard={(artifactId) => {
-              setView('board');
-              setSelectedIds(new Set([artifactId]));
-              setAnchorId(artifactId);
-            }}
-          />
           <Popover label="⋯" ariaLabel="More board actions" title="More" triggerClassName="board-btn board-btn--icon">
             {(close) => (
               <div className="popover-menu" role="menu">
@@ -1146,6 +1172,19 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
         </div>
       </header>
 
+      <div className="board-shell">
+        <BoardNav
+          view={view}
+          onView={(v) => { setView(v); setSelectedIds(new Set()); setAnchorId(null); }}
+          inboxCount={inboxTotal}
+          workingCount={workingItems.length}
+          reviewCount={reviewItems.length}
+          runningCount={runningCount}
+          epics={epicItems}
+          epicFilter={epicFilter}
+          onEpicFilter={setEpicFilter}
+        />
+        <div className="board-main">
       {traceBreakdown && traceBreakdown.totalEntries > 0 && <TracePanel breakdown={traceBreakdown} />}
 
       {commitDiff && <DiffPanel diff={commitDiff} onClose={() => setCommitDiff(null)} />}
@@ -1176,33 +1215,30 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
           focusedSessionId={focusedSessionId}
           onFocusComplete={() => setFocusedSessionId(null)}
         />
-      ) : selectedItem ? (
-        <AgenticDetailPanel
-          item={selectedItem}
-          onClose={() => { setSelectedIds(new Set()); setAnchorId(null); }}
-          onOpenTerminal={(item) => {
-            setView('terminals');
-            vscode.postMessage({ type: 'kanban:jumpToTerminal', artifactId: item.id });
+      ) : view === 'inbox' ? (
+        <InboxView
+          entries={inboxEntries}
+          systemItems={systemInboxItems}
+          approval={approvalRequest}
+          onRespondApproval={(approved) => {
+            if (approvalRequest) {
+              vscode.postMessage({ type: 'kanban:approvalResponse', artifactId: approvalRequest.artifactId, approved });
+            }
+            setApprovalRequest(null);
           }}
-          onTakeOver={(item) => {
-            // P1 #4: switch to terminals view and flash the agent's tile
-            setView('terminals');
-            setFocusedSessionId(item.id);
-            vscode.postMessage({ type: 'kanban:takeOverAgent', artifactId: item.id });
+          onOpenCard={openOnBoard}
+          onApprove={(artifactId) => handleDrop(artifactId, 'done')}
+          renderCard={(artifactId) => {
+            const card = displayItems.find(i => i.id === artifactId);
+            return card ? renderCardPage(card, () => openOnBoard(artifactId)) : null;
           }}
-          terminalInteractive={terminalInteractive}
-          infoCache={agentInfoCache}
-          resumingArtifactId={resumingArtifactId}
-          onResumeStateChange={setResumingArtifactId}
-          chatSessionActive={chatSessionActive}
-          chatSessionModel={chatSessionModel}
-          team={team}
-          onEditTeam={() => setAgentEditorOpen(true)}
-          onStart={handleStartCard}
-          onStop={handleStopCard}
-          onApprove={(card) => handleDrop(card.id, 'done')}
-          onOpenCard={(id) => { setSelectedIds(new Set([id])); setAnchorId(id); }}
         />
+      ) : selectedItem ? (
+        renderCardPage(selectedItem, closeCard)
+      ) : view === 'working' ? (
+        <CardList title="Working" items={workingItems} empty="No agent is working on a card right now." onOpen={(c) => handleCardClick(c)} />
+      ) : view === 'review' ? (
+        <CardList title="In review" items={reviewItems} empty="Nothing waits for review." onOpen={(c) => handleCardClick(c)} />
       ) : (
       <div className="agentic-kanban-board">
         {KANBAN_COLUMNS.map(col => (
@@ -1236,6 +1272,8 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
         ))}
       </div>
       )}
+        </div>
+      </div>
 
       {agentEditorOpen && <AgentEditor team={team} onClose={() => setAgentEditorOpen(false)} />}
 

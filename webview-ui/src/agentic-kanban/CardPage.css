@@ -57,7 +57,7 @@
   cursor: pointer;
 }
 .card-page-back:hover { color: var(--ink); background: var(--paper-wash); }
-.card-page-crumbs { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 12.5px; }
+.card-page-crumbs { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1 1 auto; overflow: hidden; font-size: 12.5px; }
 .card-page-crumb {
   border: none;
   background: none;

@@ -431,3 +431,42 @@ describe('AgenticKanbanApp — harness policy results', () => {
     expect(within(card('Advisory Story')).queryByText('Policy failed')).not.toBeInTheDocument();
   });
 });
+
+// ── Sidebar ─────────────────────────────────────────────────────────────────
+
+describe('AgenticKanbanApp — sidebar', () => {
+  const nav = () => screen.getByRole('navigation', { name: 'Board navigation' });
+
+  it('lists running cards under Working and opens one as a page', () => {
+    renderBoard([story('S-1', 'in-progress', 'Busy Story'), story('S-2', 'backlog', 'Idle Story')]);
+    send({ type: 'agentStateUpdated', artifactId: 'S-1', agentState: { status: 'running', agentRole: 'Dev' } });
+    fireEvent.click(within(nav()).getByRole('button', { name: /Working/ }));
+    const list = screen.getByRole('region', { name: 'Working' });
+    expect(within(list).getAllByRole('button').map(b => b.textContent)).toEqual([expect.stringContaining('Busy Story')]);
+    fireEvent.click(within(list).getByRole('button', { name: /Busy Story/ }));
+    expect(screen.getByRole('heading', { name: 'Busy Story' })).toBeInTheDocument();
+  });
+
+  it('counts the Inbox and opens it as a view', () => {
+    renderBoard([story('S-1', 'in-progress', 'Asked Story')]);
+    send({ type: 'kanban:inbox', items: [{ artifactId: 'S-1', kind: 'stopped', reason: 'Signed out', since: Date.now() }] });
+    const inbox = within(nav()).getByRole('button', { name: /Inbox/ });
+    expect(inbox.textContent).toContain('1');
+    fireEvent.click(inbox);
+    expect(screen.getByRole('listbox', { name: 'Needs you' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Asked Story' })).toBeInTheDocument();
+  });
+
+  it('narrows the board to one epic and back', () => {
+    renderBoard([
+      { id: 'E-1', type: 'epic', status: 'in-progress', title: 'Auth' },
+      { ...story('S-1', 'backlog', 'Login'), parentId: 'E-1' } as TestArtifact,
+      story('S-2', 'backlog', 'Billing'),
+    ]);
+    fireEvent.click(within(nav()).getByRole('button', { name: /Auth/ }));
+    expect(screen.queryByRole('button', { name: /^Billing —/ })).not.toBeInTheDocument();
+    expect(card('Login')).toBeInTheDocument();
+    fireEvent.click(within(nav()).getByRole('button', { name: /^Board/ }));
+    expect(card('Billing')).toBeInTheDocument();
+  });
+});
