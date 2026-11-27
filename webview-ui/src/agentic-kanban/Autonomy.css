@@ -159,17 +159,22 @@
   background: var(--vscode-list-hoverBackground, rgba(127, 127, 127, 0.1));
 }
 
-/* Severity color accents */
-.inbox-item--critical {
-  border-left: 3px solid var(--vscode-errorForeground, #ef4444);
-}
+/* Severity dot: first flex child, aligned with the title's first line */
+.inbox-item--critical { --inbox-severity: var(--vscode-errorForeground, #ef4444); }
+.inbox-item--warning { --inbox-severity: var(--vscode-charts-orange, #f59e0b); }
+.inbox-item--info { --inbox-severity: var(--vscode-charts-blue, #6366f1); }
 
-.inbox-item--warning {
-  border-left: 3px solid var(--vscode-charts-orange, #f59e0b);
-}
-
-.inbox-item--info {
-  border-left: 3px solid var(--vscode-charts-blue, #6366f1);
+.inbox-item--critical::before,
+.inbox-item--warning::before,
+.inbox-item--info::before {
+  content: '';
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--inbox-severity);
 }
 
 .autonomy-inbox-item-icon {
@@ -889,7 +894,8 @@
    hazard. Locked by Autonomy.a11y.test.ts (P0/B-reduced-motion). */
 @media (prefers-reduced-motion: reduce) {
   .fleet-health--dead { animation: none; }
-  .autonomy-bar-systemic--critical { animation: none; }
+  .autonomy-bar-systemic--critical,
+  .autonomy-bar-systemic--critical .autonomy-bar-systemic-icon { animation: none; }
 }
 
 /* ── Role / workflow ── */
@@ -1105,22 +1111,26 @@
   border-radius: 4px;
   font-size: 11px;
   background: var(--vscode-badge-background, rgba(127, 127, 127, 0.08));
-  border-left: 3px solid var(--vscode-charts-green, #22c55e);
   transition: background 0.1s;
 }
 
-.safety-circuit--closed {
-  border-left-color: var(--vscode-charts-green, #22c55e);
+/* State is carried by the coloured state label (● / ⛔ / ⚠), not a side stripe. */
+.safety-circuit--closed .safety-circuit-state {
+  color: var(--vscode-charts-green, #22c55e);
 }
 
 .safety-circuit--open {
-  border-left-color: var(--vscode-errorForeground, #ef4444);
   background: var(--vscode-inputValidation-errorBackground, rgba(255, 0, 0, 0.06));
+}
+.safety-circuit--open .safety-circuit-state {
+  color: var(--vscode-errorForeground, #ef4444);
 }
 
 .safety-circuit--half-open {
-  border-left-color: var(--vscode-charts-orange, #f59e0b);
   background: var(--vscode-inputValidation-warningBackground, rgba(255, 150, 0, 0.06));
+}
+.safety-circuit--half-open .safety-circuit-state {
+  color: var(--vscode-charts-orange, #f59e0b);
 }
 
 .safety-circuit-state {
@@ -1284,8 +1294,17 @@
   border-radius: 4px;
   font-size: 11px;
   background: var(--vscode-inputValidation-errorBackground, rgba(255, 0, 0, 0.06));
-  border-left: 3px solid var(--vscode-errorForeground, #ef4444);
   transition: background 0.1s;
+}
+
+.safety-block::before {
+  content: '';
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--vscode-errorForeground, #ef4444);
 }
 
 .safety-block:hover {
@@ -1325,13 +1344,25 @@
   color: var(--vscode-descriptionForeground);
   background: var(--vscode-badge-background, rgba(127, 127, 127, 0.1));
   border: 1px solid transparent;
-  border-left: 3px solid var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.35));
   border-radius: 3px;
   padding: 1px 6px 1px 5px;
   white-space: nowrap;
   flex-shrink: 0;
   text-transform: lowercase;
   letter-spacing: 0.3px;
+}
+
+/* Type dot: follows the chip's text colour, so each colour bucket below
+   only has to set `color`. */
+.safety-block-type::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: 1px;
 }
 
 /* Per-type color modifiers — driven by `ARTIFACT_TYPE_VARIANTS` (a
@@ -1399,14 +1430,12 @@
 .safety-block-type--additional-req, .safety-block-type--nfr-assessment {
   color: var(--vscode-charts-blue, #6366f1);
   background: rgba(99, 102, 241, 0.12);
-  border-left-color: var(--vscode-charts-blue, #6366f1);
 }
 
 /* ── Tasks (green) ─── */
 .safety-block-type--task {
   color: var(--vscode-charts-green, #22c55e);
   background: rgba(34, 197, 94, 0.12);
-  border-left-color: var(--vscode-charts-green, #22c55e);
 }
 
 /* ── Epics + planning (purple) ─── */
@@ -1418,7 +1447,6 @@
 .safety-block-type--success-metrics {
   color: var(--vscode-charts-purple, #8b5cf6);
   background: rgba(139, 92, 246, 0.12);
-  border-left-color: var(--vscode-charts-purple, #8b5cf6);
 }
 
 /* ── Architecture (indigo) ─── */
@@ -1427,7 +1455,6 @@
 .safety-block-type--code-review, .safety-block-type--source-tree {
   color: var(--vscode-charts-indigo, #4f46e5);
   background: rgba(79, 70, 229, 0.12);
-  border-left-color: var(--vscode-charts-indigo, #4f46e5);
 }
 /* Indigo chip falls below 3:1 vs its own alpha-tinted bg on Dark+ editor
    (#1E1E1E) because the base #4f46e5 has too low luminance. Override at
@@ -1439,7 +1466,6 @@
   .safety-block-type--code-review, .safety-block-type--source-tree {
     color: #818cf8;
     background: rgba(129, 140, 248, 0.16);
-    border-left-color: #818cf8;
   }
 }
 
@@ -1454,7 +1480,6 @@
 .safety-block-type--epic-test-strategy {
   color: var(--vscode-charts-yellow, #ca8a04);
   background: rgba(202, 138, 4, 0.12);
-  border-left-color: var(--vscode-charts-yellow, #ca8a04);
 }
 
 /* ── Risk / quality gate (red — semantic to errorForeground) ─── */
@@ -1462,7 +1487,6 @@
 .safety-block-type--definition-of-done {
   color: var(--vscode-errorForeground, #ef4444);
   background: rgba(239, 68, 68, 0.12);
-  border-left-color: var(--vscode-errorForeground, #ef4444);
 }
 
 /* ── Ops + research (cyan) ─── */
@@ -1470,7 +1494,6 @@
 .safety-block-type--research {
   color: var(--vscode-charts-cyan, #0891b2);
   background: rgba(8, 145, 178, 0.12);
-  border-left-color: var(--vscode-charts-cyan, #0891b2);
 }
 /* Cyan chip drops to ~2.9:1 vs its own alpha-tinted bg on Light+ editor
    (#FFFFFF) — the base #0891b2 has too high luminance against a
@@ -1481,7 +1504,6 @@
   .safety-block-type--research {
     color: #0e7490;
     background: rgba(14, 116, 144, 0.14);
-    border-left-color: #0e7490;
   }
 }
 
@@ -1491,7 +1513,6 @@
 .safety-block-type--innovation-strategy {
   color: var(--vscode-charts-pink, #db2777);
   background: rgba(219, 39, 119, 0.12);
-  border-left-color: var(--vscode-charts-pink, #db2777);
 }
 /* Pink chip drops to ~2.9:1 vs its own alpha-tinted bg on Dark+ AND HC-Dark
    editor bgs. Override for both schemes to lift the chip fg/border toward
@@ -1504,7 +1525,6 @@
   .safety-block-type--innovation-strategy {
     color: #f472b6;
     background: rgba(244, 114, 182, 0.16);
-    border-left-color: #f472b6;
   }
 }
 
@@ -1545,11 +1565,9 @@
 .safety-block .safety-block-type--story, .safety-block .safety-block-type--requirement,
 .safety-block .safety-block-type--use-case, .safety-block .safety-block-type--use-cases,
 .safety-block .safety-block-type--additional-req, .safety-block .safety-block-type--nfr-assessment {
-  border-left-color: var(--vscode-charts-blue, #6366f1);
 }
 .safety-block .safety-block-type--risk, .safety-block .safety-block-type--risks,
 .safety-block .safety-block-type--definition-of-done {
-  border-left-color: var(--vscode-errorForeground, #ef4444);
 }
 .safety-block .safety-block-type--test-case, .safety-block .safety-block-type--test-cases,
 .safety-block .safety-block-type--test-strategy, .safety-block .safety-block-type--test-design,
@@ -1559,7 +1577,6 @@
 .safety-block .safety-block-type--traceability-matrix, .safety-block .safety-block-type--test-framework,
 .safety-block .safety-block-type--ci-pipeline, .safety-block .safety-block-type--automation-summary,
 .safety-block .safety-block-type--epic-test-strategy {
-  border-left-color: var(--vscode-charts-yellow, #ca8a04);
 }
 
 .safety-block-verb {
@@ -1731,25 +1748,26 @@
   padding: 8px 10px;
   margin-top: 4px;
   border-radius: 4px;
-  border-left: 4px solid;
   animation: systemic-slide-in 0.25s ease-out;
 }
 .autonomy-bar-systemic--low {
   background: var(--vscode-editorInfo-background, rgba(100, 100, 255, 0.08));
-  border-left-color: var(--vscode-charts-blue, #6366f1);
 }
+.autonomy-bar-systemic--low .autonomy-bar-systemic-icon { color: var(--vscode-charts-blue, #6366f1); }
 .autonomy-bar-systemic--medium {
   background: var(--vscode-editorWarning-background, rgba(255, 200, 0, 0.08));
-  border-left-color: var(--vscode-charts-yellow, #eab308);
 }
+.autonomy-bar-systemic--medium .autonomy-bar-systemic-icon { color: var(--vscode-charts-yellow, #eab308); }
 .autonomy-bar-systemic--high {
   background: var(--vscode-inputValidation-warningBackground, rgba(255, 150, 0, 0.1));
-  border-left-color: var(--vscode-charts-orange, #f59e0b);
 }
+.autonomy-bar-systemic--high .autonomy-bar-systemic-icon { color: var(--vscode-charts-orange, #f59e0b); }
 .autonomy-bar-systemic--critical {
   background: var(--vscode-inputValidation-errorBackground, rgba(255, 0, 0, 0.1));
-  border-left-color: var(--vscode-errorForeground);
-  animation: systemic-slide-in 0.25s ease-out, systemic-pulse 2s ease-in-out infinite;
+}
+.autonomy-bar-systemic--critical .autonomy-bar-systemic-icon {
+  color: var(--vscode-errorForeground);
+  animation: systemic-pulse 2s ease-in-out infinite;
 }
 
 @keyframes systemic-slide-in {
@@ -1757,8 +1775,8 @@
   to { opacity: 1; transform: translateY(0); }
 }
 @keyframes systemic-pulse {
-  0%, 100% { border-left-color: var(--vscode-errorForeground); }
-  50% { border-left-color: var(--vscode-errorForeground, rgba(255, 0, 0, 0.4)); }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
 }
 
 .autonomy-bar-systemic-toggle {
@@ -1837,10 +1855,6 @@
   font-size: 11px;
   background: var(--vscode-badge-background, rgba(127, 127, 127, 0.15));
 }
-.autonomy-bar-systemic-pattern--low { border-left: 2px solid var(--vscode-charts-blue, #6366f1); }
-.autonomy-bar-systemic-pattern--medium { border-left: 2px solid var(--vscode-charts-yellow, #eab308); }
-.autonomy-bar-systemic-pattern--high { border-left: 2px solid var(--vscode-charts-orange, #f59e0b); }
-.autonomy-bar-systemic-pattern--critical { border-left: 2px solid var(--vscode-errorForeground); }
 
 .autonomy-bar-systemic-severity {
   display: inline-block;
@@ -1985,8 +1999,8 @@
  * Per-workflow chip — mirrors the `.autonomy-bar-workflow-chip` pattern
  * so the budget and trace panels feel native to each other. Click on the
  * name expands a tool list (sibling span); click on the count toggles the
- * same expansion. Errors get a left-border accent; untagged rows get a
- * dashed left-border so they're visually demoted.
+ * same expansion. A leading dot marks the chip: blue, red when it has
+ * errors, a hollow dashed ring for untagged rows (visually demoted).
  */
 .trace-panel-workflow-chip {
   display: inline-flex;
@@ -1994,7 +2008,6 @@
   gap: 4px;
   padding: 2px 6px 2px 4px;
   border: 1px solid var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.25));
-  border-left: 3px solid var(--vscode-charts-blue, #6366f1);
   border-radius: 10px;
   font-size: 10px;
   font-family: var(--vscode-editor-font-family, monospace);
@@ -2010,17 +2023,29 @@
   transform: translateY(-1px);
 }
 
-.trace-panel-workflow-chip--errors {
-  border-left-color: var(--vscode-errorForeground);
+.trace-panel-workflow-chip::before {
+  content: '';
+  display: inline-block;
+  flex: none;
+  box-sizing: border-box;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--vscode-charts-blue, #6366f1);
+}
+.trace-panel-workflow-chip--errors::before {
+  background: var(--vscode-errorForeground);
 }
 .trace-panel-workflow-chip--errors:hover {
   border-color: var(--vscode-errorForeground);
 }
 
 .trace-panel-workflow-chip--untagged {
-  border-left-style: dashed;
-  border-left-color: var(--vscode-descriptionForeground);
   opacity: 0.85;
+}
+.trace-panel-workflow-chip--untagged::before {
+  background: transparent;
+  border: 1px dashed var(--vscode-descriptionForeground);
 }
 
 .trace-panel-workflow-chip-btn {

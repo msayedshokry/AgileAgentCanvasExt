@@ -117,6 +117,13 @@ Ported the useful parts of upstream Test Architect 1.27.2, Creative Intelligence
 - Dragging an epic into In Progress with no lead agent now says nothing ran and what to do (move its stories, or add a lead), instead of a plain "Moved".
 - While an agent edits code, the knowledge graph updates one run at a time, shown in the status bar, instead of stacking "graphify: updating graph" notifications. Edits inside agent worktrees, backups and board files no longer start an update.
 
+### Changed: A clearer card side panel, and no coloured side stripes
+
+- The card page's side panel now opens with what is happening in one sentence (waiting for your answer, who is working and for how long with their latest output line, why a run stopped, ready for review), with the run's own actions under it.
+- Properties have icons and include which CLI and model run the card; blocking cards are listed instead of folded away.
+- The last run reads as Step and Started instead of workflow ids, a stuck lock is called out only when it is stale, and checks have plain names ("All 3 checks pass").
+- Coloured stripes on the side of cards, rows, banners and filter buttons are replaced by small coloured dots or the item's own icon, across the board, the canvas and the visual plan.
+
 ### Fixed: Messages you send to an agent show on the card
 
 - A message you send from a card, and your answers to an agent's questions, now appear in the card's Activity as notes from You, right away, whether the message goes now or waits for the current run to end.

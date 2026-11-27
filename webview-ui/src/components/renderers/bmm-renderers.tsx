@@ -4683,7 +4683,8 @@ export function renderProjectContextDetails(props: RendererProps) {
             </>
           ) : (
             implementationRules.map((r: any, i: number) => (
-              <div key={i} style={{ padding: '2px 8px', marginBottom: '4px', borderLeft: `2px solid ${r.severity === 'must' ? 'var(--vscode-errorForeground)' : r.severity === 'should' ? 'var(--vscode-editorWarning-foreground)' : 'var(--vscode-widget-border)'}` }}>
+              <div key={i} style={{ padding: '2px 8px', marginBottom: '4px' }}>
+                <span className="severity-dot" aria-hidden="true" style={{ background: r.severity === 'must' ? 'var(--vscode-errorForeground)' : r.severity === 'should' ? 'var(--vscode-editorWarning-foreground)' : 'var(--vscode-widget-border)' }} />
                 {r.id && <span className="tag rr-mr-4">{r.id}</span>}
                 <strong>{r.rule || `Rule ${i + 1}`}</strong>
                 {r.category && <span className="tag rr-ml-4">{r.category}</span>}

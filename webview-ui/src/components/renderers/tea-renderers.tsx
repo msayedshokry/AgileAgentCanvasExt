@@ -88,7 +88,7 @@ export function renderTraceabilityMatrixDetails(props: RendererProps) {
       {detailedMapping.length > 0 && (
         <CollapsibleSection title="Detailed Mapping" count={detailedMapping.length} sectionId="tm-mapping">
           {detailedMapping.map((m: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px', borderLeft: `2px solid ${m.coverage === 'full' ? 'var(--vscode-testing-iconPassed)' : m.coverage === 'none' ? 'var(--vscode-errorForeground)' : 'var(--vscode-editorWarning-foreground)'}` }}>
+            <div key={i} style={{ padding: '4px 8px', marginBottom: '4px' }}>
               <div>
                 {m.criterionId && <span className="tag rr-mr-4">{m.criterionId}</span>}
                 {m.priority && <span className="tag rr-mr-4">{m.priority}</span>}
@@ -1200,7 +1200,8 @@ export function renderNfrAssessmentDetails(props: RendererProps) {
             <div className="rr-mt-4">
               <h4>Vulnerabilities ({assessments.security.vulnerabilities.length})</h4>
               {assessments.security.vulnerabilities.map((v: any, i: number) => (
-                <div key={i} style={{ padding: '2px 8px', marginBottom: '2px', borderLeft: `2px solid ${v.severity === 'critical' || v.severity === 'high' ? 'var(--vscode-errorForeground)' : 'var(--vscode-widget-border)'}` }}>
+                <div key={i} style={{ padding: '2px 8px', marginBottom: '2px' }}>
+                  <span className="severity-dot" aria-hidden="true" style={{ background: v.severity === 'critical' || v.severity === 'high' ? 'var(--vscode-errorForeground)' : 'var(--vscode-widget-border)' }} />
                   {v.id && <span className="tag rr-mr-4">{v.id}</span>}
                   {v.severity && <span className="tag" style={{ marginRight: '4px', backgroundColor: v.severity === 'critical' ? 'var(--vscode-errorForeground)' : undefined }}>{v.severity}</span>}
                   <strong>{v.vulnerability || `Vuln ${i + 1}`}</strong>
@@ -1273,7 +1274,7 @@ export function renderNfrAssessmentDetails(props: RendererProps) {
           {findingsSummary.overallScore != null && <div className="rr-text-xl rr-bold">Score: {findingsSummary.overallScore}</div>}
           {findingsSummary.gateDecision && <span className="tag" style={{ backgroundColor: statusColor(findingsSummary.gateDecision) }}>{findingsSummary.gateDecision}</span>}
           {findingsSummary.categories.map((cat: any, i: number) => (
-            <div key={i} style={{ padding: '4px 8px', marginTop: '4px', borderLeft: `2px solid ${statusColor(cat.status) || 'var(--vscode-widget-border)'}` }}>
+            <div key={i} style={{ padding: '4px 8px', marginTop: '4px' }}>
               <strong>{cat.category}</strong>
               {cat.status && <span className="tag" style={{ marginLeft: '4px', backgroundColor: statusColor(cat.status) }}>{cat.status}</span>}
               {cat.score != null && <span className="tag rr-ml-4">{cat.score}</span>}

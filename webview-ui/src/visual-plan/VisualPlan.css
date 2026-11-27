@@ -139,7 +139,6 @@
   font-size: 12px;
   color: var(--vscode-descriptionForeground);
   cursor: pointer;
-  border-left: 2px solid transparent;
 }
 
 .vp-outline-item:hover {
@@ -150,7 +149,6 @@
 .vp-outline-item--active {
   background: var(--vscode-list-activeSelectionBackground);
   color: var(--vscode-list-activeSelectionForeground);
-  border-left-color: var(--vscode-focusBorder);
 }
 
 .vp-outline-icon {
@@ -889,7 +887,7 @@
   color: var(--vscode-descriptionForeground);
   margin-top: 4px;
   padding-left: 12px;
-  border-left: 2px solid var(--vscode-panel-border);
+  border-left: 1px solid var(--vscode-panel-border);
 }
 
 /* ── Workflow progress bar ───────────────────────────────────────────────── */

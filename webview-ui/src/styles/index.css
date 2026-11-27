@@ -2214,23 +2214,41 @@ body.ac-force-dark {
   border-color: var(--vscode-focusBorder);
 }
 
-/* Type-specific accent on active type filter buttons — thin left border */
-.filter-btn.type-filter.active.product-brief,
-.filter-btn.type-filter.active.vision         { border-left: 3px solid var(--vscode-charts-purple); }
-.filter-btn.type-filter.active.prd            { border-left: 3px solid var(--vscode-charts-red); }
-.filter-btn.type-filter.active.requirement    { border-left: 3px solid var(--vscode-charts-blue); }
-.filter-btn.type-filter.active.nfr            { border-left: 3px solid color-mix(in srgb, var(--vscode-charts-blue) 70%, var(--vscode-charts-purple)); }
-.filter-btn.type-filter.active.additional-req { border-left: 3px solid color-mix(in srgb, var(--vscode-charts-blue) 50%, var(--vscode-charts-purple)); }
-.filter-btn.type-filter.active.risk           { border-left: 3px solid color-mix(in srgb, var(--vscode-charts-red) 80%, var(--vscode-charts-yellow)); }
-.filter-btn.type-filter.active.architecture   { border-left: 3px solid var(--vscode-charts-cyan); }
-.filter-btn.type-filter.active.architecture-decision { border-left: 3px solid color-mix(in srgb, var(--vscode-charts-cyan) 70%, var(--vscode-charts-green)); }
-.filter-btn.type-filter.active.system-component      { border-left: 3px solid color-mix(in srgb, var(--vscode-charts-cyan) 60%, var(--vscode-charts-orange)); }
-.filter-btn.type-filter.active.epic           { border-left: 3px solid var(--vscode-charts-green); }
-.filter-btn.type-filter.active.story          { border-left: 3px solid var(--vscode-charts-yellow); }
-.filter-btn.type-filter.active.task           { border-left: 3px solid color-mix(in srgb, var(--vscode-charts-yellow) 70%, var(--vscode-charts-green)); }
-.filter-btn.type-filter.active.use-case       { border-left: 3px solid var(--vscode-charts-orange); }
-.filter-btn.type-filter.active.test-strategy  { border-left: 3px solid var(--vscode-charts-blue); }
-.filter-btn.type-filter.active.test-case      { border-left: 3px solid var(--vscode-charts-red); }
+/* Type colour dot on type filter buttons: filled while the type is shown,
+   a hollow ring while hidden. Same box in both states, so toggling never
+   shifts the row. */
+.filter-btn.type-filter.product-brief,
+.filter-btn.type-filter.vision         { --type-dot: var(--vscode-charts-purple); }
+.filter-btn.type-filter.prd            { --type-dot: var(--vscode-charts-red); }
+.filter-btn.type-filter.requirement    { --type-dot: var(--vscode-charts-blue); }
+.filter-btn.type-filter.nfr            { --type-dot: color-mix(in srgb, var(--vscode-charts-blue) 70%, var(--vscode-charts-purple)); }
+.filter-btn.type-filter.additional-req { --type-dot: color-mix(in srgb, var(--vscode-charts-blue) 50%, var(--vscode-charts-purple)); }
+.filter-btn.type-filter.risk           { --type-dot: color-mix(in srgb, var(--vscode-charts-red) 80%, var(--vscode-charts-yellow)); }
+.filter-btn.type-filter.architecture   { --type-dot: var(--vscode-charts-cyan); }
+.filter-btn.type-filter.architecture-decision { --type-dot: color-mix(in srgb, var(--vscode-charts-cyan) 70%, var(--vscode-charts-green)); }
+.filter-btn.type-filter.system-component      { --type-dot: color-mix(in srgb, var(--vscode-charts-cyan) 60%, var(--vscode-charts-orange)); }
+.filter-btn.type-filter.epic           { --type-dot: var(--vscode-charts-green); }
+.filter-btn.type-filter.story          { --type-dot: var(--vscode-charts-yellow); }
+.filter-btn.type-filter.task           { --type-dot: color-mix(in srgb, var(--vscode-charts-yellow) 70%, var(--vscode-charts-green)); }
+.filter-btn.type-filter.use-case       { --type-dot: var(--vscode-charts-orange); }
+.filter-btn.type-filter.test-strategy  { --type-dot: var(--vscode-charts-blue); }
+.filter-btn.type-filter.test-case      { --type-dot: var(--vscode-charts-red); }
+
+.filter-btn.type-filter::before {
+  content: '';
+  display: inline-block;
+  box-sizing: border-box;
+  width: 7px;
+  height: 7px;
+  margin-right: 4px;
+  border-radius: 50%;
+  border: 1px solid var(--type-dot, var(--vscode-descriptionForeground));
+  background: var(--type-dot, var(--vscode-descriptionForeground));
+  vertical-align: 0;
+}
+.filter-btn.type-filter.inactive::before {
+  background: transparent;
+}
 
 .filter-bar-clear {
   padding: 2px 8px;
@@ -2487,7 +2505,10 @@ body.ac-force-dark {
 
 .sb-result-item.highlighted {
   background: var(--paper-wash);
-  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.sb-result-item.highlighted .sb-result-icon {
+  color: var(--accent);
 }
 
 .sb-result-icon {
@@ -3816,8 +3837,7 @@ body.ac-force-dark {
   padding: 10px 12px;
   margin-bottom: 8px;
   background: var(--vscode-textBlockQuote-background);
-  border-left: 3px solid var(--vscode-charts-blue);
-  border-radius: 0 4px 4px 0;
+  border-radius: 4px;
   font-size: 12px;
   line-height: 1.6;
 }
@@ -4077,22 +4097,46 @@ body.ac-force-dark {
 
 .risk-item.risk-low {
   background: rgba(34, 197, 94, 0.1);
-  border-left: 3px solid var(--vscode-charts-green);
+  --risk-dot: var(--vscode-charts-green);
 }
 
 .risk-item.risk-medium {
   background: rgba(234, 179, 8, 0.1);
-  border-left: 3px solid var(--vscode-charts-yellow);
+  --risk-dot: var(--vscode-charts-yellow);
 }
 
 .risk-item.risk-high {
   background: rgba(249, 115, 22, 0.1);
-  border-left: 3px solid var(--vscode-charts-orange);
+  --risk-dot: var(--vscode-charts-orange);
 }
 
 .risk-item.risk-critical {
   background: rgba(239, 68, 68, 0.1);
-  border-left: 3px solid var(--vscode-charts-red);
+  --risk-dot: var(--vscode-charts-red);
+}
+
+/* Severity dot, inline with the first line of the item */
+.risk-item:is(.risk-low, .risk-medium, .risk-high, .risk-critical) > :first-child::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--risk-dot);
+  vertical-align: 0;
+}
+
+/* Small coloured state dot used inline by the detail renderers
+   (colour set inline from the row's severity/state). */
+.severity-dot {
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  vertical-align: 0;
 }
 
 .risk-text {
@@ -4998,13 +5042,8 @@ body.ac-force-dark {
   padding: 10px 12px;
   border-radius: 6px;
   background: var(--vscode-textBlockQuote-background);
-  border-left: 3px solid var(--vscode-charts-red);
   font-size: 12.5px;
   line-height: 1.6;
-}
-
-.test-step:nth-child(odd) {
-  border-left-color: var(--vscode-charts-blue);
 }
 
 .test-step strong {
@@ -5420,12 +5459,14 @@ body.ac-force-dark {
   padding: 10px 12px;
   background: var(--vscode-textBlockQuote-background);
   border-radius: 6px;
-  border-left: 3px solid var(--vscode-editorWidget-border);
 }
 
 .task-item.completed {
-  border-left-color: var(--vscode-charts-green);
   opacity: 0.85;
+}
+
+.task-item.completed .task-check {
+  color: var(--vscode-charts-green);
 }
 
 .task-edit {
@@ -5870,7 +5911,17 @@ body.ac-force-dark {
   padding: 10px 12px;
   background: var(--vscode-textBlockQuote-background);
   border-radius: 6px;
-  border-left: 3px solid var(--vscode-charts-cyan);
+}
+
+.component-item > h5::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--vscode-charts-cyan);
+  vertical-align: 0;
 }
 
 /* ================================================
@@ -5910,12 +5961,21 @@ body.ac-force-dark {
 
 .constraint-item {
   background: rgba(239, 68, 68, 0.1);
-  border-left: 3px solid var(--vscode-charts-red);
+}
+
+.constraint-item > :first-child::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--vscode-charts-red);
+  vertical-align: 0;
 }
 
 .assumption-item {
   background: rgba(59, 130, 246, 0.1);
-  border-left: 3px solid var(--vscode-charts-blue);
 }
 
 /* ================================================
@@ -7738,12 +7798,7 @@ body.ac-force-dark {
   transform: translateY(-2px);
 }
 
-.sprint-card--epic {
-  border-left: 4px solid #f59e0b;
-}
-
 .sprint-card--retro {
-  border-left: 4px solid #64748b;
   opacity: 0.85;
 }
 
@@ -7990,20 +8045,16 @@ body.ac-force-dark {
   color: var(--vscode-descriptionForeground);
   background: rgba(245, 158, 11, 0.06);
   border-bottom: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
-  border-left: 3px solid #f59e0b;
   flex-shrink: 0;
+}
+.sprint-no-sprints-notice > .icon {
+  color: var(--vscode-charts-orange, #f59e0b);
 }
 .sprint-no-sprints-notice strong {
   color: var(--vscode-foreground);
 }
 
 /* ── Consistency badges (story/epic status mismatch) ───────────────── */
-.sprint-card--error {
-  border-left: 3px solid #ef4444;
-}
-.sprint-card--warn {
-  border-left: 3px solid #f59e0b;
-}
 
 .sprint-card-consistency-badge {
   display: inline-flex;
@@ -9349,7 +9400,6 @@ body.ac-force-dark {
   margin: 10px 12px 0;
   padding: 10px 12px;
   border-radius: 6px;
-  border-left: 4px solid var(--vscode-charts-orange, #f59e0b);
   background: var(--vscode-editorWidget-background);
   flex-shrink: 0;
 }
@@ -9673,20 +9723,31 @@ details[open] > .agentic-collapse-summary {
   margin: 8px 12px 0;
   padding: 10px 12px;
   border-radius: 6px;
-  border-left: 4px solid var(--vscode-charts-orange, #f59e0b);
   background: var(--vscode-editorWidget-background);
+  --tldr-accent: var(--vscode-charts-orange, #f59e0b);
 }
 .agentic-tldr--completed, .agentic-tldr--approved {
-  border-left-color: var(--vscode-charts-green, #22c55e);
+  --tldr-accent: var(--vscode-charts-green, #22c55e);
 }
 .agentic-tldr--needs_fixes {
-  border-left-color: var(--vscode-charts-yellow, #eab308);
+  --tldr-accent: var(--vscode-charts-yellow, #eab308);
 }
 .agentic-tldr--blocked, .agentic-tldr--unknown {
-  border-left-color: var(--vscode-charts-red, #ef4444);
+  --tldr-accent: var(--vscode-charts-red, #ef4444);
 }
 .agentic-tldr--interrupted {
-  border-left-color: var(--vscode-charts-purple, #8b5cf6);
+  --tldr-accent: var(--vscode-charts-purple, #8b5cf6);
+}
+.agentic-tldr-kind::before,
+.agentic-tldr > .agentic-tldr-summary:first-child::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--tldr-accent);
+  vertical-align: 0;
 }
 
 .agentic-tldr-header {
@@ -10190,16 +10251,15 @@ details[open] > .agentic-collapse-header {
   border-color: var(--vscode-focusBorder);
 }
 
-.agent-session-card--running { border-left: 3px solid var(--vscode-charts-blue, #4fc3f7); }
-.agent-session-card--completed { border-left: 3px solid var(--vscode-charts-green, #4caf50); opacity: 0.85; }
-.agent-session-card--failed { border-left: 3px solid var(--vscode-charts-red, #f44336); background: color-mix(in srgb, var(--vscode-charts-red) 8%, var(--vscode-editor-background)); }
+/* State is shown by the coloured dot inside .agent-session-pill; the card
+   itself only dims or tints. */
+.agent-session-card--completed { opacity: 0.85; }
+.agent-session-card--failed { background: color-mix(in srgb, var(--vscode-charts-red) 8%, var(--vscode-editor-background)); }
 .agent-session-card--cancelled,
-.agent-session-card--interrupted { border-left: 3px solid var(--vscode-charts-orange, #ff9800); background: color-mix(in srgb, var(--vscode-charts-orange) 8%, var(--vscode-editor-background)); }
-.agent-session-card--queued { border-left: 3px solid var(--vscode-charts-purple, #ab47bc); }
-.agent-session-card--degraded { border-left: 3px solid var(--vscode-charts-yellow, #ffc107); }
-.agent-session-card--dead { border-left: 3px solid #555; background: color-mix(in srgb, currentColor 4%, var(--vscode-editor-background)); }
+.agent-session-card--interrupted { background: color-mix(in srgb, var(--vscode-charts-orange) 8%, var(--vscode-editor-background)); }
+.agent-session-card--dead { background: color-mix(in srgb, currentColor 4%, var(--vscode-editor-background)); }
 .agent-session-card--healthy,
-.agent-session-card--idle { border-left: 3px solid var(--vscode-descriptionForeground); opacity: 0.75; }
+.agent-session-card--idle { opacity: 0.75; }
 
 .agent-session-card-top {
   display: flex;

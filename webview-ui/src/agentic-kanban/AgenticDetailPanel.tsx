@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { KANBAN_COLUMNS, normalizeToKanbanColumn, type KanbanItem } from '../components/kanban/KanbanTypes';
+import { type KanbanItem } from '../components/kanban/KanbanTypes';
 import { cardAction } from '../components/kanban/KanbanCard';
 import './CardPage.css';
 import { vscode } from '../vscodeApi';
@@ -7,13 +7,11 @@ import { useEvent } from './useEvent';
 import { AnswerQuestions, RunInsights } from './RunInsights';
 import type { AgentTeamView } from './agent-team-view';
 import { FollowUpComposer } from './FollowUpComposer';
-import { EpicContextEditor } from './EpicContextEditor';
-import { EpicBreakdown, EpicOverview } from './EpicOverview';
+import { EpicOverview } from './EpicOverview';
+import { CardSide } from './CardSide';
 import {
   AgentInfo,
   getInterruptionMessage,
-  getAvatarColor,
-  getInitials,
 } from './kanban-helpers';
 
 interface AgenticDetailPanelProps {
@@ -55,46 +53,6 @@ interface AgenticDetailPanelProps {
   answerElsewhere?: boolean;
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const cls = `kanban-agent-status kanban-agent-status--${status}`;
-  const label = status.charAt(0).toUpperCase() + status.slice(1).replace(/-/g, ' ');
-  return <span className={cls}>{label}</span>;
-}
-
-function AgentAvatar({ name, icon }: { name: string; icon?: string }) {
-  const bg = getAvatarColor(name);
-  const initials = getInitials(name);
-  return (
-    <div className="agentic-agent-avatar" style={{ background: bg }} title={name}>
-      {icon || initials}
-    </div>
-  );
-}
-
-/** Who runs this card: a named agent, or whatever the board defaults to. */
-function AssigneePicker({ artifactId, team, onEditTeam }: { artifactId: string; team: AgentTeamView; onEditTeam?: () => void }) {
-  return (
-    <div className="agent-assignee">
-      <select
-        className="agent-assignee-select"
-        aria-label="Assign this card to an agent"
-        value={team.assignments[artifactId] ?? ''}
-        onChange={e => vscode.postMessage({ type: 'kanban:assignAgent', artifactId, agentId: e.target.value || null })}
-      >
-        <option value="">Board default</option>
-        {team.agents.map(a => <option key={a.id} value={a.id}>{a.kind === 'person' ? `${a.name} (person)` : a.name}</option>)}
-      </select>
-      <button
-        className="agent-assignee-edit"
-        onClick={() => (onEditTeam ? onEditTeam() : vscode.postMessage({ type: 'kanban:editAgentTeam' }))}
-        title={team.rosterDefined ? 'Add or change agents, their CLI and model' : 'Name your agents and pick their CLI and model'}
-      >
-        {team.rosterDefined ? 'Edit team' : 'Name agents'}
-      </button>
-    </div>
-  );
-}
-
 const RESUME_TIMEOUT_MS = 15_000;
 const UNDO_DISMISS_MS = 8_000;
 
@@ -129,8 +87,6 @@ export function AgenticDetailPanel({
     return !(cached && cached.status === item.status);
   });
   const [pendingUndoArtifact, setPendingUndoArtifact] = useState<{ artifactId: string; sessionId?: string } | null>(null);
-  // P1 #4: quick command input for sending one-liners to the agent's pty
-  const [sendCommand, setSendCommand] = useState('');
   const undoTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const resumeTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const isResuming = resumingArtifactId === item.id;
@@ -140,12 +96,6 @@ export function AgenticDetailPanel({
   // so a reader can see "the simple ones" at a glance. useEvent gives
   // stable identity so React can skip re-attaching listeners on parent
   // re-renders, and ensures the closure always reads the latest `item`.
-
-  const handleViewTrace = useEvent((e: React.MouseEvent) => {
-    e.preventDefault();
-    const sessionId = item.agentState?.sessionId;
-    if (sessionId) vscode.postMessage({ type: 'kanban:viewTrace', sessionId });
-  });
 
   const handleViewTerminal = useEvent(() => {
     vscode.postMessage({ type: 'kanban:jumpToTerminal', artifactId: item.id });
@@ -208,8 +158,6 @@ export function AgenticDetailPanel({
   }, []);
 
   const isInterrupted = item.agentState?.status === 'interrupted';
-  const hasTerminal = !!item.agentState?.terminalId;
-  const status = item.agentState?.status || 'idle';
   const hasPendingUndo = pendingUndoArtifact?.artifactId === item.id;
 
   // Fetch agent info when the panel opens (or the cached entry's status
@@ -240,22 +188,10 @@ export function AgenticDetailPanel({
   }, [item.id, item.status, infoCache]);
 
   // ── Display values from agent info ──
-  const persona = agentInfo?.persona;
-  const terminalInfo = agentInfo?.terminalInfo;
   const latestVerdict = agentInfo?.latestVerdict;
-  const lockDetail = agentInfo?.lockDetail;
   const recentTrace = agentInfo?.recentTrace;
-  const harnessResults = item.harnessResults ?? [];
-
-  const agentDisplayName =
-    persona?.name || terminalInfo?.agentRole || item.agentState?.agentRole || 'Agent';
-  const agentTitle = persona?.title || terminalInfo?.workflowId || '';
-  const agentIcon = persona?.icon || '';
 
   const isRunning = item.agentState?.status === 'running';
-  const hasHarnessFailures = harnessResults.some(r => !r.passed && r.severity === 'blocking');
-  const hasAnyHarnessResults = harnessResults.length > 0;
-  const hasBlockers = (item.blockedBy ?? 0) > 0 || !!item.hasCycle;
 
   const formatTime = (iso: string) => {
     try {
@@ -266,23 +202,11 @@ export function AgenticDetailPanel({
     }
   };
 
-  const formatDuration = (ms: number) => {
-    const s = Math.floor(ms / 1000);
-    if (s < 60) return `${s}s`;
-    const m = Math.floor(s / 60);
-    if (m < 60) return `${m}m ${s % 60}s`;
-    const h = Math.floor(m / 60);
-    return `${h}h ${m % 60}m`;
-  };
-
-  const [showHarness, setShowHarness] = useState(hasHarnessFailures);
-  const [showBlockers, setShowBlockers] = useState(false);
   const composerRef = useRef<HTMLDivElement>(null);
   const action = cardAction(item);
   const inReview = item.status === 'review';
   /** A person works this card by hand: no agent to message, retry or resume. */
   const isPersonCard = !!item.assignee?.person;
-  const statusLabel = COLUMN_LABEL[normalizeToKanbanColumn(item.status)] ?? item.status;
 
   // "Request changes" is a message to the agent: focus the composer.
   const focusComposer = () => composerRef.current?.querySelector('textarea')?.focus();
@@ -399,164 +323,24 @@ export function AgenticDetailPanel({
           )}
         </div>
 
-        {/* ── Side: properties, the agent and its run, and what blocks the card ── */}
-        <aside className="card-page-side" aria-label="Card properties">
-          <section className="card-page-section">
-            <h3 className="card-page-section-title">Properties</h3>
-            <dl className="card-page-props">
-              <dt>Status</dt>
-              <dd><span className={`card-page-status card-page-status--${normalizeToKanbanColumn(item.status)}`}>{statusLabel}</span> <StatusBadge status={status} /></dd>
-              <dt>Assignee</dt>
-              <dd>{team ? <AssigneePicker artifactId={item.id} team={team} onEditTeam={onEditTeam} /> : (item.assignee?.name ?? 'Board default')}</dd>
-              {item.epicKey && !item.isEpic && (
-                <>
-                  <dt>Epic</dt>
-                  <dd><button className="card-page-link" onClick={() => onOpenCard?.(item.epicKey!)}>{item.epicTitle ?? item.epicKey}</button></dd>
-                </>
-              )}
-              {item.priority && (
-                <>
-                  <dt>Priority</dt>
-                  <dd className="card-page-capital">{item.priority}</dd>
-                </>
-              )}
-              {item.leadProgress && (
-                <>
-                  <dt>Lead</dt>
-                  <dd>{item.leadProgress.lead} plans it and hands the stories out</dd>
-                </>
-              )}
-            </dl>
-          </section>
-
-          {item.isEpic && <EpicBreakdown stories={stories} />}
-
-          <section className="card-page-section">
-            <h3 className="card-page-section-title">Agent</h3>
-            <div className="agentic-agent-row">
-              {loadingInfo && !agentInfo ? (
-                <span className="agentic-loading">Loading agent…</span>
-              ) : (
-                <>
-                  <AgentAvatar name={item.assignee?.name ?? agentDisplayName} icon={item.assignee ? undefined : agentIcon} />
-                  <div className="agentic-agent-info">
-                    <div className="agentic-agent-name">{item.assignee?.name ?? agentDisplayName}</div>
-                    {(item.assignee ? (item.assignee.person ? 'Person' : 'Assignee') : agentTitle) && (
-                      <div className="agentic-agent-title">{item.assignee ? (item.assignee.person ? 'Person' : 'Assignee') : agentTitle}</div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-            <div className="agentic-chips">
-              {terminalInfo?.workflowId && <span className="agentic-chip" title="Workflow">{terminalInfo.workflowId}</span>}
-              {terminalInfo?.provider && <span className="agentic-chip" title="Provider">{terminalInfo.provider}</span>}
-              {terminalInfo?.startedAt && (
-                <span className="agentic-chip" title="Started">
-                  <span className="agentic-chip-dot" /> {formatTime(terminalInfo.startedAt)}
-                </span>
-              )}
-              {lockDetail && (
-                <span className={`agentic-chip${lockDetail.isStale ? ' agentic-chip--stale' : ''}`} title={`Lock holder: ${lockDetail.holderAgent ?? 'unknown'}`}>
-                  Locked {formatDuration(lockDetail.ageMs)}{lockDetail.isStale ? ' · stale' : ''}
-                </span>
-              )}
-              {item.agentState?.sessionId && (
-                <button className="agentic-chip agentic-chip--link" onClick={handleViewTrace}>Trace →</button>
-              )}
-            </div>
-            {(hasTerminal || !!terminalInfo || isRunning) && (
-              <div className="card-page-terminal">
-                {(hasTerminal || !!terminalInfo) && (
-                  <button className="agentic-btn agentic-btn--ghost" onClick={handleViewTerminal}>View terminal output</button>
-                )}
-                {isRunning && onTakeOver && (
-                  <button
-                    className="agentic-btn agentic-btn--ghost"
-                    onClick={() => onTakeOver(item)}
-                    disabled={!terminalInteractive}
-                    title={terminalInteractive ? 'Take over — type into the agent terminal' : 'Enable embedded terminal in settings'}
-                  >
-                    Take over
-                  </button>
-                )}
-                {isRunning && terminalInteractive && (
-                  <div className="agentic-send-row">
-                    <input
-                      type="text"
-                      className="agentic-send-input"
-                      placeholder="Send command (Enter)"
-                      value={sendCommand}
-                      onChange={e => setSendCommand(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' && sendCommand.trim()) {
-                          vscode.postMessage({ type: 'terminal:input', sessionId: item.id, data: sendCommand + '\n' });
-                          setSendCommand('');
-                        }
-                      }}
-                    />
-                    <button
-                      className="agentic-btn agentic-btn--primary"
-                      disabled={!sendCommand.trim()}
-                      onClick={() => {
-                        if (sendCommand.trim()) {
-                          vscode.postMessage({ type: 'terminal:input', sessionId: item.id, data: sendCommand + '\n' });
-                          setSendCommand('');
-                        }
-                      }}
-                    >
-                      Send
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </section>
-
-          {item.isEpic && <EpicContextEditor epicId={item.id} />}
-
-          {hasAnyHarnessResults && (
-            <details className="agentic-collapse" open={showHarness} onToggle={e => setShowHarness((e.target as HTMLDetailsElement).open)}>
-              <summary className="agentic-collapse-summary">
-                Harness policies
-                {hasHarnessFailures && (
-                  <span className="agentic-collapse-badge agentic-collapse-badge--bad">
-                    {harnessResults.filter(r => !r.passed).length} failing
-                  </span>
-                )}
-              </summary>
-              <div className="agentic-collapse-body">
-                <ul className="agentic-harness-list">
-                  {harnessResults.map((r, idx) => (
-                    <li key={idx} className={`agentic-harness-item agentic-harness-item--${r.passed ? 'passed' : r.severity}`}>
-                      <span className="agentic-harness-mark">{r.passed ? '✓' : '✗'}</span>
-                      <span className="agentic-harness-policy">{r.policyId}</span>
-                      <span className={`agentic-harness-severity agentic-harness-severity--${r.severity}`}>{r.severity}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </details>
-          )}
-
-          {hasBlockers && (
-            <details className="agentic-collapse" open={showBlockers} onToggle={e => setShowBlockers((e.target as HTMLDetailsElement).open)}>
-              <summary className="agentic-collapse-summary">Blocked by{item.blockedBy ? ` (${item.blockedBy})` : ''}</summary>
-              <div className="agentic-collapse-body">
-                <ul className="agentic-blockers-list">
-                  {(item.blockerTitles ?? []).map((title, idx) => <li key={idx}>{title}</li>)}
-                  {item.hasCycle && <li className="agentic-blockers-cycle">Circular dependency</li>}
-                </ul>
-              </div>
-            </details>
-          )}
-        </aside>
+        <CardSide
+          item={item}
+          team={team}
+          onEditTeam={onEditTeam}
+          onOpenCard={onOpenCard}
+          stories={stories}
+          questions={pendingQuestions?.length ?? 0}
+          agentInfo={agentInfo}
+          loadingInfo={loadingInfo}
+          terminalInteractive={terminalInteractive}
+          onViewTerminal={handleViewTerminal}
+          onTakeOver={onTakeOver}
+        />
       </div>
     </article>
   );
 }
 
-const COLUMN_LABEL: Record<string, string> = Object.fromEntries(KANBAN_COLUMNS.map(c => [c.key, c.label]));
 
 const squash = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 /** Many artifacts store the formatted user story as the description too; don't show it twice. */

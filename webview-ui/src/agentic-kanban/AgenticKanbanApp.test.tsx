@@ -239,11 +239,11 @@ describe('AgenticKanbanApp — detail panel', () => {
     send({ type: 'agentStateUpdated', artifactId: 'with-trace', agentState: { status: 'running', sessionId: 'acp-session-4' } });
 
     fireEvent.click(card('Untraced Story'));
-    expect(screen.queryByRole('button', { name: 'Trace →' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Open the run trace' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByLabelText('Close detail panel'));
 
     fireEvent.click(card('Traced Story'));
-    fireEvent.click(screen.getByRole('button', { name: 'Trace →' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open the run trace' }));
     expect(posted('kanban:viewTrace')).toEqual([{ type: 'kanban:viewTrace', sessionId: 'acp-session-4' }]);
   });
 });
@@ -412,9 +412,9 @@ describe('AgenticKanbanApp — harness policy results', () => {
     expect(within(card('Clean Story')).queryByText('Policy failed')).not.toBeInTheDocument();
 
     fireEvent.click(card('Checked Story'));
-    expect(screen.getByText('1 failing')).toBeInTheDocument();
-    expect(screen.getAllByText('required-fields').length).toBeGreaterThan(0);
-    expect(screen.getByText('no-placeholders')).toBeInTheDocument();
+    expect(screen.getByText(/checks failing/)).toBeInTheDocument();
+    expect(screen.getAllByText('Required fields are filled').length).toBeGreaterThan(0);
+    expect(screen.getByText('No placeholder text')).toBeInTheDocument();
   });
 
   it('applies results that arrive before the card does', () => {

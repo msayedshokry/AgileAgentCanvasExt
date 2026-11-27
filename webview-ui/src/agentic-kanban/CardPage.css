@@ -83,7 +83,7 @@ button.card-page-crumb:hover { color: var(--ink); text-decoration: underline; te
   min-height: 0;
   overflow-y: auto;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: minmax(0, 1fr) 320px;
   grid-auto-rows: max-content;
   align-content: start;
   align-items: start;
@@ -105,11 +105,11 @@ button.card-page-crumb:hover { color: var(--ink); text-decoration: underline; te
   align-self: stretch;
   min-height: 100%;
   border-left: var(--rule-width, 1px) solid var(--rule);
-  padding: var(--space-4, 16px);
+  padding: var(--space-4, 16px) var(--space-4, 16px) var(--space-6, 32px);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4, 16px);
+  gap: var(--space-5, 20px);
   background: color-mix(in srgb, var(--ink) 2%, var(--paper));
 }
 @media (max-width: 860px) {
@@ -170,28 +170,6 @@ button.card-page-crumb:hover { color: var(--ink); text-decoration: underline; te
   text-transform: uppercase;
   color: var(--ink-3);
 }
-.card-page-props {
-  margin: 0;
-  display: grid;
-  grid-template-columns: 76px minmax(0, 1fr);
-  gap: 10px 8px;
-  align-items: center;
-  font-size: 12.5px;
-}
-.card-page-props dt { color: var(--ink-3); }
-.card-page-props dd { margin: 0; min-width: 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; color: var(--ink); }
-.card-page-props .agent-assignee { width: 100%; }
-.card-page-capital { text-transform: capitalize; }
-.card-page-link {
-  border: none;
-  background: none;
-  padding: 0;
-  font: inherit;
-  color: var(--vscode-textLink-foreground, var(--accent));
-  cursor: pointer;
-  text-align: left;
-}
-.card-page-link:hover { text-decoration: underline; text-underline-offset: 2px; }
 
 /* Status: a dot in the column's colour, then the column name. */
 .card-page-status { display: inline-flex; align-items: center; gap: 6px; font-weight: var(--weight-strong, 600); }
@@ -201,11 +179,6 @@ button.card-page-crumb:hover { color: var(--ink); text-decoration: underline; te
 .card-page-status--review::before { background: var(--vscode-charts-purple, #8b5cf6); }
 .card-page-status--done::before { background: var(--vscode-charts-green, #22c55e); }
 
-.card-page-side .agentic-agent-row { padding: 0; border: none; background: none; }
-.card-page-side .agentic-chips { padding: 0; }
-.card-page-terminal { display: flex; flex-direction: column; gap: 6px; }
-.card-page-side .agentic-collapse { border-top: var(--rule-width, 1px) solid var(--rule); }
-.card-page-side .agentic-collapse-summary { padding-left: 0; padding-right: 0; }
 
 /* ── Buttons on the page: one bordered secondary style, one filled primary. */
 .card-page .agentic-btn {
@@ -235,7 +208,6 @@ button.card-page-crumb:hover { color: var(--ink); text-decoration: underline; te
 .card-page .agentic-btn--primary:hover:not(:disabled) { background: var(--accent); }
 .card-page .card-page-stop { color: var(--vscode-editorError-foreground, #c4314b); }
 .card-page .agentic-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.card-page-terminal .agentic-btn { align-self: flex-start; }
 
 /* A live question from the agent: plain section, answer box under it. */
 .card-page-question { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) var(--space-4); border: var(--rule-width) solid var(--vscode-editorWarning-foreground, var(--accent)); border-radius: var(--radius-card); }
@@ -244,5 +216,119 @@ button.card-page-crumb:hover { color: var(--ink); text-decoration: underline; te
 .card-page-question textarea { min-height: 52px; resize: vertical; padding: 6px var(--space-2); background: var(--vscode-input-background, var(--paper)); color: var(--vscode-input-foreground, var(--ink)); border: 1px solid var(--vscode-input-border, var(--rule)); border-radius: var(--radius); font: inherit; }
 .card-page-question .agent-btn { align-self: flex-end; }
 .card-page-person-note { margin: 0; padding: var(--space-3) 0; font-size: 13px; color: var(--ink-2); border-top: var(--rule-width) solid var(--rule); }
-.card-page-side .agentic-collapse-summary { justify-content: flex-start; gap: 6px; }
-.card-page-side .agentic-collapse-summary .agentic-collapse-badge { margin-left: auto; }
+
+/* ── Side panel (CardSide) ────────────────────────────────────────────────
+ * Now → properties → agent → checks. Colour lives only in small dots and
+ * icons; rows share one rhythm (30px) so the eye can scan the labels. */
+.card-side { --side-label: 96px; font-size: 12.5px; }
+.card-side-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); display: inline-block; }
+.card-side-now--working .card-side-dot, .card-side-dot--working { background: var(--vscode-charts-orange, #f59e0b); }
+.card-side-now--waiting .card-side-dot, .card-side-dot--waiting { background: var(--vscode-editorWarning-foreground, #d29922); }
+.card-side-now--stopped .card-side-dot, .card-side-dot--stopped { background: var(--vscode-editorError-foreground, #f14c4c); }
+.card-side-now--review .card-side-dot { background: var(--vscode-charts-purple, #8b5cf6); }
+.card-side-now--done .card-side-dot, .card-side-dot--done { background: var(--vscode-charts-green, #22c55e); }
+
+/* Now: what is happening, one sentence, the run's own actions under it. */
+.card-side-now {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: var(--space-3, 12px);
+  border: var(--rule-width, 1px) solid var(--rule);
+  border-radius: var(--radius-card, 8px);
+  background: var(--paper);
+}
+.card-side-now--waiting { background: color-mix(in srgb, var(--vscode-editorWarning-foreground, #d29922) 7%, var(--paper)); }
+.card-side-now--stopped { background: color-mix(in srgb, var(--vscode-editorError-foreground, #f14c4c) 6%, var(--paper)); }
+.card-side-now--working .card-side-dot { animation: card-side-pulse 1.6s ease-in-out infinite; }
+@keyframes card-side-pulse { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .card-side-now--working .card-side-dot { animation: none; } }
+.card-side-now-title { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: var(--weight-strong, 600); color: var(--ink); line-height: 1.35; }
+.card-side-now-detail { margin: 0 0 0 16px; color: var(--ink-2); line-height: 1.45; }
+.card-side-now-detail--line {
+  font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-3);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.card-side-now-actions { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 0 16px; }
+.card-side-send { margin-left: 16px; }
+
+/* Properties: icon + label column, value column. */
+.card-side-props { margin: 0; display: flex; flex-direction: column; }
+.card-side-row {
+  display: grid; grid-template-columns: var(--side-label) minmax(0, 1fr);
+  align-items: center; gap: 8px; min-height: 30px; padding: 1px 6px; margin: 0 -6px;
+  border-radius: var(--radius, 6px);
+}
+.card-side-row:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+.card-side-row dt { display: flex; align-items: center; gap: 7px; color: var(--ink-3); }
+.card-side-row dd { margin: 0; min-width: 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; color: var(--ink); }
+.card-side-icon { flex: none; color: var(--ink-3); }
+.card-side-muted { color: var(--ink-3); }
+.card-side-mono { font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-2); }
+.card-side-capital { text-transform: capitalize; }
+
+.card-side-assignee { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; }
+.card-side-select {
+  flex: 1 1 auto; min-width: 0; height: 26px; padding: 0 6px; margin-left: -6px;
+  font: inherit; color: var(--ink);
+  background: transparent; border: var(--rule-width, 1px) solid transparent; border-radius: var(--radius, 6px);
+  cursor: pointer;
+}
+.card-side-select:hover, .card-side-select:focus-visible { background: var(--paper); border-color: var(--rule); }
+.card-side-link {
+  border: none; background: none; padding: 0; font: inherit; text-align: left; cursor: pointer;
+  color: var(--vscode-textLink-foreground, var(--accent));
+}
+.card-side-link:hover { text-decoration: underline; text-underline-offset: 2px; }
+.card-side-assignee .card-side-link { flex: none; font-size: 11.5px; }
+.card-side-section > .card-side-link { align-self: flex-start; }
+
+.card-side-priority { display: inline-flex; align-items: center; gap: 6px; }
+.card-side-priority rect { fill: color-mix(in srgb, var(--ink) 18%, transparent); }
+.card-side-priority rect.is-on { fill: var(--ink-2); }
+.card-side-priority[data-level="3"] rect.is-on { fill: var(--vscode-editorError-foreground, #f14c4c); }
+
+.card-side-blockers { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.card-side-blockers li { display: flex; align-items: center; gap: 6px; line-height: 1.35; }
+
+/* Agent: who, then the last run as label/value pairs. */
+.card-side-section { display: flex; flex-direction: column; gap: 10px; padding-top: var(--space-4, 16px); border-top: var(--rule-width, 1px) solid var(--rule); }
+.card-side-agent { display: flex; align-items: center; gap: 10px; }
+.card-side-avatar {
+  flex: none; width: 30px; height: 30px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 12px; font-weight: var(--weight-strong, 600);
+}
+.card-side-agent-text { display: flex; flex-direction: column; min-width: 0; }
+.card-side-agent-name { font-weight: var(--weight-strong, 600); color: var(--ink); }
+.card-side-run { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.card-side-run > div { display: grid; grid-template-columns: var(--side-label) minmax(0, 1fr); gap: 8px; }
+.card-side-run dt { color: var(--ink-3); }
+.card-side-run dd { margin: 0; color: var(--ink); }
+.card-side-warn { margin: 0; display: flex; gap: 8px; align-items: baseline; color: var(--ink-2); line-height: 1.45; }
+
+/* Checks: one line when everything passes; failures listed and open. */
+.card-side-checks { border-top: var(--rule-width, 1px) solid var(--rule); padding-top: var(--space-3, 12px); }
+.card-side-checks summary { display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; color: var(--ink-2); font-weight: var(--weight-strong, 600); }
+.card-side-checks summary::-webkit-details-marker { display: none; }
+.card-side-checks summary::after { content: "›"; margin-left: auto; color: var(--ink-3); transition: transform var(--dur-fast, 120ms) ease; }
+.card-side-checks[open] summary::after { transform: rotate(90deg); }
+.card-side-checks ul { margin: 10px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.card-side-checks li { display: flex; align-items: center; gap: 8px; color: var(--ink-2); }
+.card-side-checks li.is-fail { color: var(--ink); }
+.card-side-check-mark { width: 14px; text-align: center; color: var(--vscode-charts-green, #22c55e); }
+.card-side-checks li.is-fail .card-side-check-mark { color: var(--vscode-editorError-foreground, #f14c4c); }
+.card-side-tag { margin-left: auto; padding: 0 6px; border-radius: 999px; font-size: 10.5px; color: var(--ink-2); background: color-mix(in srgb, var(--ink) 8%, transparent); }
+
+/* Small bordered buttons and the terminal input. */
+.card-side-btn {
+  height: 26px; padding: 0 10px; font: inherit; font-size: 12px; font-weight: var(--weight-strong, 600);
+  color: var(--ink); background: var(--paper); cursor: pointer;
+  border: var(--rule-width, 1px) solid var(--rule-strong, var(--rule)); border-radius: var(--radius, 6px);
+}
+.card-side-btn:hover:not(:disabled) { background: var(--paper-wash); }
+.card-side-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.card-side-input {
+  width: 100%; box-sizing: border-box; height: 28px; padding: 0 8px; font-family: var(--font-mono); font-size: 12px;
+  color: var(--vscode-input-foreground, var(--ink)); background: var(--vscode-input-background, var(--paper));
+  border: var(--rule-width, 1px) solid var(--vscode-input-border, var(--rule)); border-radius: var(--radius, 6px);
+}
+.card-side :focus-visible { outline: 2px solid var(--vscode-focusBorder, var(--accent)); outline-offset: 1px; }

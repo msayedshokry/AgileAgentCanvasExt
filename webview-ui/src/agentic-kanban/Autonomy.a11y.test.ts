@@ -428,15 +428,12 @@ describe('Autonomy.css — P0/P1 fix presence (CSS-shape guards)', () => {
     return result;
   }
 
-  it('chip-indigo: bucket rule uses var(--vscode-charts-indigo, #fb) on color + border-left-color', () => {
+  it('chip-indigo: bucket rule uses var(--vscode-charts-indigo, #fb) on color (the type dot follows currentColor)', () => {
     const rule = findChipBucketRule('architecture');
     expect(rule, 'indigo bucket rule must exist').toBeTruthy();
     const color = declOf(rule, 'color');
-    const border = declOf(rule, 'border-left-color');
     expect(color, 'color decl must exist').toBeTruthy();
-    expect(border, 'border-left-color decl must exist').toBeTruthy();
     expect(color.value.trim()).toMatch(/var\(--vscode-charts-indigo\s*,/);
-    expect(border.value.trim()).toMatch(/var\(--vscode-charts-indigo\s*,/);
   });
 
   it('chip-indigo: @media (prefers-color-scheme: dark) override lifts chip color above the base #4f46e5 (lifts Dark+ chip past 3:1 UI-floor)', () => {
@@ -450,15 +447,12 @@ describe('Autonomy.css — P0/P1 fix presence (CSS-shape guards)', () => {
     expect(override).not.toBe('#4f46e5');
   });
 
-  it('chip-cyan: bucket rule uses var(--vscode-charts-cyan, #fb) on color + border-left-color', () => {
+  it('chip-cyan: bucket rule uses var(--vscode-charts-cyan, #fb) on color (the type dot follows currentColor)', () => {
     const rule = findChipBucketRule('sprint-status');
     expect(rule, 'cyan bucket rule must exist').toBeTruthy();
     const color = declOf(rule, 'color');
-    const border = declOf(rule, 'border-left-color');
     expect(color).toBeTruthy();
-    expect(border).toBeTruthy();
     expect(color.value.trim()).toMatch(/var\(--vscode-charts-cyan\s*,/);
-    expect(border.value.trim()).toMatch(/var\(--vscode-charts-cyan\s*,/);
   });
 
   it('chip-cyan: @media (prefers-color-scheme: light) override darkens chip color below the base #0891b2 (drops Light+ chip past 3:1 UI-floor)', () => {
@@ -467,15 +461,12 @@ describe('Autonomy.css — P0/P1 fix presence (CSS-shape guards)', () => {
     expect(override).not.toBe('#0891b2');
   });
 
-  it('chip-pink: bucket rule uses var(--vscode-charts-pink, #fb) on color + border-left-color', () => {
+  it('chip-pink: bucket rule uses var(--vscode-charts-pink, #fb) on color (the type dot follows currentColor)', () => {
     const rule = findChipBucketRule('ux-design');
     expect(rule, 'pink bucket rule must exist').toBeTruthy();
     const color = declOf(rule, 'color');
-    const border = declOf(rule, 'border-left-color');
     expect(color).toBeTruthy();
-    expect(border).toBeTruthy();
     expect(color.value.trim()).toMatch(/var\(--vscode-charts-pink\s*,/);
-    expect(border.value.trim()).toMatch(/var\(--vscode-charts-pink\s*,/);
   });
 
   it('chip-pink: @media (prefers-color-scheme: dark) override lifts chip color above the base #db2777 (lifts Dark+/HC-Dark chip past 3:1 UI-floor)', () => {
