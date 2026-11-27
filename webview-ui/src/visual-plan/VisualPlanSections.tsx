@@ -678,7 +678,7 @@ function QuestionItem({
             onChange={(e) => setAnswerText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
           />
-          <button onClick={handleSubmit}>Submit</button>
+          <button className="btn btn-primary btn-small" onClick={handleSubmit}>Submit</button>
           <button className="vp-question-answer-cancel" onClick={() => { setShowInput(false); setAnswerText(''); }}>Cancel</button>
         </div>
       )}
@@ -869,7 +869,7 @@ function CommentThread({
           onChange={(e) => setBody(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
         />
-        <button onClick={handleSend} disabled={!activeSectionId}>Send</button>
+        <button className="btn btn-primary btn-small" onClick={handleSend} disabled={!activeSectionId}>Send</button>
       </div>
     </div>
   );

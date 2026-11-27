@@ -121,20 +121,7 @@
   font-size: 12px;
 }
 
-.ideas-drawer-close {
-  background: transparent;
-  border: 0;
-  color: var(--ink-2);
-  font-size: 18px;
-  cursor: pointer;
-  padding: 0 6px;
-  border-radius: var(--radius);
-  line-height: 1;
-}
-.ideas-drawer-close:hover {
-  background: var(--paper-wash);
-  color: var(--ink);
-}
+/* .ideas-drawer-close: icon button, styles/buttons.css. */
 
 /* ── Quick capture form ──────────────────────────────────────────────────── */
 
@@ -198,7 +185,6 @@
 
 .ideas-capture-buttons { display: flex; gap: 6px; }
 
-.ideas-capture-buttons .btn-small { padding: 4px 10px; font-size: 12px; }
 .ideas-capture-buttons kbd {
   font-family: var(--font-mono);
   font-size: 10px;

@@ -363,21 +363,6 @@
 }
 /* Avatar: ink on paper with a ring in the member's colour, so the initials
    keep their contrast whatever the colour. People get a rounded square. */
-.kanban-card-avatar {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  background: var(--paper);
-  color: var(--ink);
-  box-shadow: inset 0 0 0 1.5px var(--avatar-color, var(--rule-strong));
-  font-size: 8.5px;
-  font-weight: var(--weight-strong);
-  line-height: 1;
-}
-.kanban-card-assignee--person .kanban-card-avatar { border-radius: 5px; }
 
 /* Epic progress: ring + done/total. */
 .kanban-card-lead {
@@ -839,8 +824,8 @@
   flex-shrink: 0;
 }
 
-/* Every toolbar control shares one quiet button shape. */
-.agentic-kanban-toolbar button.board-btn,
+/* Toolbar buttons (.board-btn, --primary) are styled by styles/buttons.css.
+ * The agent chip is a status trigger, drawn on the same secondary scale. */
 .agentic-kanban-toolbar .agent-chip {
   display: inline-flex;
   align-items: center;
@@ -848,32 +833,22 @@
   gap: 6px;
   height: 28px;
   min-width: 28px;
-  padding: 0 10px;
+  padding: 0 12px;
   background: var(--paper);
-  color: var(--ink-2);
-  border: var(--rule-width) solid var(--rule);
+  color: var(--ink);
+  border: var(--rule-width) solid var(--rule-strong);
   border-radius: var(--radius);
   font-family: var(--font-ui);
   font-size: 12px;
   font-weight: var(--weight-strong);
   white-space: nowrap;
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+  transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
-.agentic-kanban-toolbar button.board-btn:hover,
-.agentic-kanban-toolbar .agent-chip:hover,
-.agentic-kanban-toolbar .popover-trigger--open {
-  background: var(--paper-wash);
-  color: var(--ink);
-  border-color: var(--rule-strong);
-}
-.agentic-kanban-toolbar button.board-btn--primary {
-  background: var(--accent-fill, var(--accent));
-  border-color: var(--accent);
-  color: var(--accent-ink, var(--paper));
-}
-.agentic-kanban-toolbar button.board-btn--primary:hover { background: var(--accent); color: var(--accent-ink, var(--paper)); }
-.agentic-kanban-toolbar button.board-btn--icon { padding: 0 8px; font-size: 15px; line-height: 1; letter-spacing: 1px; }
+.agentic-kanban-toolbar .agent-chip:hover { background: var(--paper-wash); }
+.agentic-kanban-toolbar .agent-chip.popover-trigger--open { background: var(--paper-wash); border-color: var(--ink); }
+/* "⋯" overflow: square. */
+.board-btn.board-btn--icon { width: 28px; padding: 0; font-size: 15px; letter-spacing: 1px; }
 .agentic-kanban-toolbar button:focus-visible { outline: 2px solid var(--vscode-focusBorder, var(--accent)); outline-offset: 1px; }
 
 /* Status dots on toolbar buttons: shape + colour. */
@@ -1524,66 +1499,8 @@
   align-items: center;
 }
 
-.approval-banner-btn {
-  padding: 5px 14px;
-  font-size: 12px;
-  font-weight: 600;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.approval-banner-btn--approve {
-  /* Cluster D-2 #1: tokenize. Upstream --vscode-charts-green resolves to
-     `#3FA856` in Dark+/Light+ and `#3FB950` in HC-Dark — clearing WCAG
-     1.4.11 3:1 UI-floor comfortably in Dark+ (3.99:1 vs #1E1E1E) and
-     HC-Dark (9.42:1 vs #000000). The literal `#22c55e` is the fallback
-     for themes that omit the upstream token; in those themes see the
-     @media (prefers-color-scheme: light) override below for the Light+
-     lifting. Unsafe on Light+ without that override (upstream #3FA856
-     drops to 2.27:1 vs #FFFFFF editor bg — sub-3:1) — see audit-script
-     `scripts/a11y-surface-sweep.mjs` (Cluster D-2 #1) for the rationale
-     trace. */
-  background: var(--vscode-charts-green, #22c55e);
-  color: white;
-}
-
-.approval-banner-btn--approve:hover {
-  opacity: 0.85;
-}
-
-/* Cluster D-2 #1 Light+ + Dark+ override: the upstream --vscode-charts-green
-   resolves to `#3FA856` in BOTH Light+ and Dark+ — Light+ is ~2.27:1 and
-   Dark+ is ~2.94:1 vs `white`, sub-3:1 WCAG 1.4.11 UI-component floor.
-   HC-Dark's `#3FB950` clears comfortably (≈ 9.42:1 vs `#000000`).
-   Lift BOTH schemes to the Tailwind green-700 dark tone `#15803D`
-   (≈ 3.30:1 against #FFFFFF, ≈ 6.04:1 against `#1E1E1E`, ≈ 9.18:1 against
-   `#000000`). Cluster A bright-tier pattern: `var(--vscode-charts-green-bright,
-   #15803D)` so a future theme author can opt-in to a custom resolution by
-   declaring `--vscode-charts-green-bright` on their theme. HC-Dark reports
-   `prefers-color-scheme: dark` (Chrome) so the same override fires there.
-   Locked by `Autonomy.a11y.test.ts` (Cluster-D2-1 SHAPE- + cross-theme
-   contrast guards). */
-@media (prefers-color-scheme: light) {
-  .approval-banner-btn--approve {
-    background: var(--vscode-charts-green-bright, #15803D);
-  }
-}
-@media (prefers-color-scheme: dark) {
-  .approval-banner-btn--approve {
-    background: var(--vscode-charts-green-bright, #15803D);
-  }
-}
-
-.approval-banner-btn--deny {
-  background: var(--vscode-button-secondaryBackground);
-  color: var(--vscode-button-secondaryForeground);
-}
-
-.approval-banner-btn--deny:hover {
-  background: var(--vscode-button-secondaryHoverBackground);
-}
+/* .approval-banner-btn: Approve is the primary button, Deny secondary —
+ * both styled by styles/buttons.css. */
 
 @keyframes approvalBannerSlideIn {
   from {

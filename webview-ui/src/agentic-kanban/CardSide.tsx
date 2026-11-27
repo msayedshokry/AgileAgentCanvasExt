@@ -8,10 +8,10 @@ import { KANBAN_COLUMNS, normalizeToKanbanColumn, type KanbanItem } from '../com
 import { vscode } from '../vscodeApi';
 import type { AgentTeamView } from './agent-team-view';
 import type { AgentInfo } from './kanban-helpers';
-import { getAvatarColor, getInitials } from './kanban-helpers';
 import { cardState, checkLabel, runsOn, stepLabel } from './card-side-model';
 import { EpicBreakdown } from './EpicOverview';
 import { EpicContextEditor } from './EpicContextEditor';
+import { AgentAvatar } from './AgentAvatar';
 
 const COLUMN_LABEL: Record<string, string> = Object.fromEntries(KANBAN_COLUMNS.map(c => [c.key, c.label]));
 
@@ -194,9 +194,7 @@ export function CardSide({ item, team, onEditTeam, onOpenCard, stories, question
           ) : (
             <>
               <div className="card-side-agent">
-                <span className="card-side-avatar" style={{ background: getAvatarColor(agentName) }} aria-hidden="true">
-                  {item.assignee ? getInitials(agentName) : (persona?.icon || getInitials(agentName))}
-                </span>
+                <AgentAvatar name={agentName} id={item.assignee?.id} avatar={item.assignee?.avatar} size={32} />
                 <span className="card-side-agent-text">
                   <span className="card-side-agent-name">{agentName}</span>
                   {!item.assignee && persona?.title && <span className="card-side-muted">{persona.title}</span>}

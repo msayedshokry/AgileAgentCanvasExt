@@ -11,6 +11,7 @@ import * as path from 'path';
 import { isHarnessChoice } from './harness-resolver';
 import { getHarnessAdapter } from './harness-adapters';
 import { MAX_SKILLS_PER_AGENT, SKILL_ID } from './skill-catalog';
+import { isAgentAvatar } from './agent-avatars';
 
 export const AGENT_TEAM_FILE = 'agent-team.json';
 const ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,39}$/;
@@ -35,6 +36,8 @@ export interface TeamAgent {
   readonly maxConcurrent?: number;
   /** A person on the team (you, or someone you name): no CLI, never runs. Their `harness` is ''. */
   readonly kind?: 'person';
+  /** One emoji shown wherever the agent appears (agent-avatars.ts). */
+  readonly avatar?: string;
 }
 
 /** True for a person on the team: their cards never start an agent run. */
@@ -82,12 +85,13 @@ export interface ParsedTeam {
 function parseAgent(raw: unknown, index: number, seen: Set<string>): TeamAgent | string {
   const where = `agents[${index}]`;
   if (!raw || typeof raw !== 'object') return `${where}: not an object`;
-  const { id, name, harness, model, role, instructions, lead, skills, maxConcurrent, kind } = raw as Record<string, unknown>;
+  const { id, name, harness, model, role, instructions, lead, skills, maxConcurrent, kind, avatar } = raw as Record<string, unknown>;
   if (typeof id !== 'string' || !ID_PATTERN.test(id)) return `${where}: "id" must be lowercase letters, digits and dashes`;
   if (seen.has(id)) return `${where}: duplicate id "${id}"`;
   if (typeof name !== 'string' || !name.trim() || name.length > MAX_NAME) return `${where}: "name" must be 1-${MAX_NAME} characters`;
   if (kind !== undefined && kind !== 'person' && kind !== 'agent') return `${where}: "kind" must be "agent" or "person"`;
-  if (kind === 'person') return parsePerson(id, name.trim(), role, lead, where, seen);
+  if (avatar !== undefined && !isAgentAvatar(avatar)) return `${where}: "avatar" must be one emoji, such as "🦊"`;
+  if (kind === 'person') return parsePerson(id, name.trim(), role, lead, where, seen, avatar);
   if (typeof harness !== 'string' || harness === 'auto' || !isHarnessChoice(harness)) return `${where}: "harness" must be an installed-agent id such as "claude" or "codex"`;
   if (model !== undefined && model !== '' && (typeof model !== 'string' || !isValidModelId(model))) {
     return `${where}: "model" must be a model id such as "sonnet" or "opencode/big-pickle"`;
@@ -113,15 +117,16 @@ function parseAgent(raw: unknown, index: number, seen: Set<string>): TeamAgent |
     ...(lead === true ? { lead: true } : {}),
     ...(Array.isArray(skills) && skills.length ? { skills: [...new Set(skills as string[])] } : {}),
     ...(typeof maxConcurrent === 'number' && maxConcurrent !== DEFAULT_MAX_CONCURRENT ? { maxConcurrent } : {}),
+    ...(isAgentAvatar(avatar) ? { avatar } : {}),
   };
 }
 
-function parsePerson(id: string, name: string, role: unknown, lead: unknown, where: string, seen: Set<string>): TeamAgent | string {
+function parsePerson(id: string, name: string, role: unknown, lead: unknown, where: string, seen: Set<string>, avatar?: unknown): TeamAgent | string {
   if (role !== undefined && (typeof role !== 'string' || role.length > MAX_ROLE_CHARS)) return `${where}: "role" must be up to ${MAX_ROLE_CHARS} characters`;
   if (lead === true) return `${where}: a person cannot be the lead; the lead is an agent`;
   seen.add(id);
   const r = typeof role === 'string' ? role.trim() : '';
-  return { id, name, harness: '', kind: 'person', ...(r ? { role: r } : {}) };
+  return { id, name, harness: '', kind: 'person', ...(r ? { role: r } : {}), ...(isAgentAvatar(avatar) ? { avatar } : {}) };
 }
 
 /** The team's lead agent, if one is marked. */
@@ -148,7 +153,7 @@ export function agentIdFor(name: string, taken: ReadonlySet<string>): string {
  * assigned to installed CLIs by id; those become real agents so the
  * assignments survive the first save.
  */
-function materializeRoster(team: AgentTeam): TeamAgent[] {
+export function materializeRoster(team: AgentTeam): TeamAgent[] {
   if (team.agents.length > 0) return [...team.agents];
   const used = new Set(Object.values(team.assignments));
   return [...used].flatMap((id) => {

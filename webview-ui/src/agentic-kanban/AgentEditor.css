@@ -45,15 +45,6 @@
   padding: var(--space-2) 0;
   border-bottom: 1px solid var(--rule);
 }
-.agent-editor-avatar {
-  flex-shrink: 0;
-  width: 26px; height: 26px; border-radius: 50%;
-  display: grid; place-items: center;
-  background: var(--paper);
-  box-shadow: inset 0 0 0 1.5px var(--avatar-color, var(--rule-strong));
-  font-size: 10px; font-weight: var(--weight-strong);
-}
-.agent-editor-avatar--person { border-radius: var(--radius-sm, 6px); background: color-mix(in srgb, var(--avatar-color, var(--rule-strong)) 18%, var(--paper)); }
 .agent-editor-who { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .agent-editor-name { font-weight: var(--weight-strong); }
 .agent-editor-meta { font-size: 11px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -82,27 +73,13 @@
 .agent-editor-actions { justify-content: flex-end; padding-top: var(--space-2); }
 .agent-editor-foot .agent-editor-link { margin-left: auto; }
 
-.agent-editor .agent-editor-btn {
-  height: 26px; padding: 0 var(--space-3);
-  border: 1px solid var(--rule); border-radius: var(--radius);
-  background: transparent; color: var(--ink);
-  font-size: 12px; cursor: pointer;
-  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
-}
-.agent-editor .agent-editor-btn:hover:not(:disabled) { border-color: var(--rule-strong); background: var(--paper-wash); }
-.agent-editor .agent-editor-btn:disabled { opacity: 0.5; cursor: default; }
-.agent-editor .agent-editor-btn:focus-visible,
+/* .agent-editor-btn (+ --primary, --danger, --quiet) is styled by styles/buttons.css. */
 .agent-editor .agent-editor-link:focus-visible { outline: 2px solid var(--vscode-focusBorder, var(--accent)); outline-offset: 1px; }
-.agent-editor .agent-editor-btn--primary { border-color: var(--accent); background: var(--accent-fill, var(--accent)); color: var(--accent-ink, var(--paper)); }
-.agent-editor .agent-editor-btn--primary:hover:not(:disabled) { background: var(--accent); }
-.agent-editor .agent-editor-btn--danger { border-color: var(--vscode-errorForeground, var(--danger)); color: var(--vscode-errorForeground, var(--danger)); }
-.agent-editor .agent-editor-btn--quiet { border-color: transparent; color: var(--ink-3); }
 .agent-editor .agent-editor-link { border: none; background: none; padding: 0; color: var(--vscode-textLink-foreground, var(--accent)); font-size: 12px; cursor: pointer; }
 .agent-editor .agent-editor-link:hover { text-decoration: underline; }
 
 @media (prefers-reduced-motion: reduce) {
   .agent-editor { animation: none; }
-  .agent-editor .agent-editor-btn { transition: none; }
 }
 
 /* Role, instructions and the lead toggle. */
@@ -171,3 +148,39 @@
 .agent-editor-usage-table th:first-child { text-align: left; }
 .agent-editor-usage-table thead th { color: var(--ink-3); font-weight: var(--weight-strong); font-size: 11px; }
 .agent-editor-usage-table tbody th { color: var(--ink); font-weight: var(--weight-strong); }
+
+/* Build with AI: a quiet panel at the top of the agent form. */
+.agent-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px dashed var(--rule-strong, var(--rule));
+  border-radius: var(--radius-card, 8px);
+  background: color-mix(in srgb, var(--accent, #3794ff) 5%, var(--paper, transparent));
+}
+.agent-builder-label { font-size: 11px; font-weight: var(--weight-strong, 600); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-2); }
+.agent-builder textarea {
+  width: 100%; box-sizing: border-box; resize: vertical; min-height: 44px; padding: 6px 8px; font: inherit;
+  color: var(--vscode-input-foreground, var(--ink)); background: var(--vscode-input-background, var(--paper));
+  border: 1px solid var(--vscode-input-border, var(--rule)); border-radius: var(--radius, 6px);
+}
+.agent-builder-row { display: flex; align-items: center; gap: 10px; }
+.agent-builder-note { flex: 1 1 auto; font-size: 11.5px; color: var(--ink-3); line-height: 1.4; }
+.agent-builder-note.is-error { color: var(--vscode-editorError-foreground, #f14c4c); }
+
+/* My agents: saved agents you can add to this project. */
+.agent-library {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-card, 8px);
+  background: color-mix(in srgb, var(--ink) 3%, var(--paper));
+}
+.agent-library-head { display: flex; align-items: center; gap: 10px; }
+.agent-library-title { font-weight: var(--weight-strong, 600); color: var(--ink); }
+.agent-library-head .agent-editor-hint { flex: 1 1 auto; }
+.agent-library-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.agent-library-row { display: flex; align-items: center; gap: 10px; }
+.agent-library-row .agent-editor-who { flex: 1 1 auto; min-width: 0; }
+.agent-editor-save-lib { white-space: nowrap; }

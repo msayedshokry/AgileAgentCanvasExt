@@ -11,8 +11,9 @@ import { HARNESS_ADAPTERS, getHarnessAdapter } from '../workflow/harness/harness
 import { isOnPathCached } from '../workflow/harness/board-harness';
 import {
   AGENT_TEAM_FILE, AGENT_TEAM_TEMPLATE, agentIdFor, effectiveRoster, readAgentTeam, validateAgent, withAgent, withAssignment,
-  withoutAgent, writeAgentTeam,
+  withoutAgent, writeAgentTeam, materializeRoster,
 } from '../workflow/harness/agent-team';
+import { addFromLibrary, libraryFile, readLibrary, removeFromLibrary, saveToLibrary, writeLibrary } from '../workflow/harness/agent-library';
 import { discoverModels, supportsModelDiscovery } from '../workflow/harness/model-discovery';
 import { listSkills } from '../workflow/harness/skill-catalog';
 import { buildAgentBrief } from '../workflow/harness/agent-brief';
@@ -22,10 +23,15 @@ import { getOutputFolder } from '../workflow/kanban-verdict';
 import { leadCoordinator } from './lead-coordinator';
 import { createLogger } from '../utils/logger';
 import { errMsg } from '../utils/error';
+import { unusedAvatar } from '../workflow/harness/agent-avatars';
+import { agentBuilderPrompt, parseAgentDraft, type AgentDraft } from '../workflow/harness/agent-builder';
+import { selectModel, streamChatResponse } from '../chat/ai-provider';
+import { createHeadlessStream } from '../workflow/harness/headless-lm-run';
 
 const logger = createLogger('agent-team-messages');
 const HANDLED = new Set([
-  'kanban:getAgentTeam', 'kanban:assignAgent', 'kanban:editAgentTeam', 'kanban:listModels', 'kanban:saveAgent', 'kanban:deleteAgent',
+  'kanban:getAgentTeam', 'kanban:assignAgent', 'kanban:editAgentTeam', 'kanban:listModels', 'kanban:saveAgent', 'kanban:deleteAgent', 'kanban:draftAgent',
+  'kanban:getAgentLibrary', 'kanban:saveToLibrary', 'kanban:addFromLibrary', 'kanban:removeFromLibrary',
   'kanban:listSkills', 'kanban:getUsage', 'kanban:previewBrief',
 ]);
 
@@ -64,6 +70,30 @@ function postTeam(post: Post): void {
   });
 }
 
+/** Your saved agents (home folder), for "Add from my agents". */
+function postLibrary(post: Post): void {
+  post({ type: 'kanban:agentLibrary', agents: readLibrary(), file: libraryFile() });
+}
+
+/** Library actions: save a project agent, add a saved one to the project, remove one. */
+function libraryAction(type: string, id: string, post: Post): void {
+  const folder = getOutputFolder();
+  const library = readLibrary();
+  if (type === 'kanban:saveToLibrary') {
+    const agent = materializeRoster(readAgentTeam(folder).team).find((a) => a.id === id);
+    if (agent) writeLibrary(libraryFile(), saveToLibrary(library, agent));
+  } else if (type === 'kanban:addFromLibrary') {
+    const saved = library.find((a) => a.id === id);
+    if (saved) {
+      writeAgentTeam(folder, addFromLibrary(readAgentTeam(folder).team, saved));
+      postTeam(post);
+    }
+  } else if (type === 'kanban:removeFromLibrary') {
+    writeLibrary(libraryFile(), removeFromLibrary(library, id));
+  }
+  postLibrary(post);
+}
+
 /** Giving an epic to the lead starts the lead on it, unless the epic is parked in backlog or done. */
 function startLeadIfGiven(cardId: string, store?: CardLookup): void {
   const coordinator = leadCoordinator();
@@ -99,7 +129,10 @@ function saveAgent(raw: unknown, post: Post): void {
   const id = typeof input.id === 'string' && input.id
     ? input.id
     : agentIdFor(String(input.name ?? ''), new Set(team.agents.map((a) => a.id)));
-  const result = validateAgent({ ...input, id, model: typeof input.model === 'string' ? input.model.trim() : input.model });
+  // A new agent gets an avatar nobody on the team has; people keep their initials unless they pick one.
+  const isNew = !team.agents.some((a) => a.id === id);
+  const avatar = input.avatar ?? (isNew && input.kind !== 'person' ? unusedAvatar(team.agents.map((a) => a.avatar)) : undefined);
+  const result = validateAgent({ ...input, id, avatar, model: typeof input.model === 'string' ? input.model.trim() : input.model });
   if ('error' in result) {
     post({ type: 'kanban:agentError', error: result.error });
     return;
@@ -107,6 +140,37 @@ function saveAgent(raw: unknown, post: Post): void {
   writeAgentTeam(folder, withAgent(team, result.agent));
   post({ type: 'kanban:agentSaved', id: result.agent.id });
   postTeam(post);
+}
+
+/** Draft an agent from a one-line description with the configured AI model ("Build with AI"). */
+async function draftAgent(message: Record<string, unknown>, post: Post): Promise<void> {
+  const request = typeof message.request === 'string' ? message.request.trim().slice(0, 2000) : '';
+  if (!request) {
+    post({ type: 'kanban:agentDraft', error: 'Say what the agent should do first.' });
+    return;
+  }
+  const model = await selectModel();
+  if (!model) {
+    post({ type: 'kanban:agentDraft', error: 'No AI model is available. Sign in to GitHub Copilot, or set an AI provider in the extension settings.' });
+    return;
+  }
+  const ws = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  const skills = listSkills(ws).map(({ id, name, description }) => ({ id, name, description }));
+  const clis = installedClis().map(({ id, label }) => ({ id, label }));
+  const { team } = readAgentTeam(getOutputFolder());
+  const current = (message.draft && typeof message.draft === 'object' ? message.draft : {}) as AgentDraft;
+  const prompt = agentBuilderPrompt({ request, draft: current, team: team.agents.map((a) => ({ name: a.name, role: a.role })), skills, clis });
+  const cancel = new vscode.CancellationTokenSource();
+  try {
+    const { stream } = createHeadlessStream();
+    const raw = await streamChatResponse(model, [{ role: 'user', content: prompt }], stream, cancel.token);
+    const result = parseAgentDraft(String(raw ?? ''), { skills, clis });
+    post(result.ok ? { type: 'kanban:agentDraft', draft: result.draft } : { type: 'kanban:agentDraft', error: result.error });
+  } catch (err) {
+    post({ type: 'kanban:agentDraft', error: `The model could not draft the agent: ${errMsg(err)}` });
+  } finally {
+    cancel.dispose();
+  }
 }
 
 /** The brief a draft agent would get on its next run, built by the same code a run uses. */
@@ -143,6 +207,14 @@ export async function handleAgentTeamMessage(
       case 'kanban:getAgentTeam':
         postTeam(post);
         break;
+      case 'kanban:getAgentLibrary':
+        postLibrary(post);
+        break;
+      case 'kanban:saveToLibrary':
+      case 'kanban:addFromLibrary':
+      case 'kanban:removeFromLibrary':
+        if (typeof message.id === 'string') libraryAction(message.type, message.id, post);
+        break;
       case 'kanban:assignAgent': {
         if (typeof message.artifactId !== 'string') break;
         const agentId = typeof message.agentId === 'string' && message.agentId ? message.agentId : null;
@@ -170,6 +242,9 @@ export async function handleAgentTeamMessage(
         post({ type: 'kanban:skills', skills: listSkills(ws).map(({ id, name, description, source }) => ({ id, name, description, source })) });
         break;
       }
+      case 'kanban:draftAgent':
+        await draftAgent(message, post);
+        break;
       case 'kanban:previewBrief':
         post(previewBrief(message.agent));
         break;

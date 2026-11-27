@@ -98,51 +98,7 @@
   gap: 6px;
 }
 
-.product-tour-btn {
-  padding: 5px 12px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 120ms ease, opacity 120ms ease;
-}
-
-.product-tour-btn:focus-visible {
-  outline: 2px solid var(--tour-accent);
-  outline-offset: 2px;
-}
-
-.product-tour-btn--primary {
-  background: var(--vscode-button-background, #3b5bdb);
-  color: var(--vscode-button-foreground, #fff);
-}
-.product-tour-btn--primary:hover {
-  background: var(--vscode-button-hoverBackground);
-}
-
-.product-tour-btn--secondary {
-  background: var(--vscode-button-secondaryBackground, #3a3d41);
-  color: var(--vscode-button-secondaryForeground, #e6e6e6);
-}
-.product-tour-btn--secondary:hover {
-  background: var(--vscode-button-secondaryHoverBackground);
-}
-
-.product-tour-btn--ghost {
-  background: transparent;
-  border-color: var(--tour-border);
-  color: var(--tour-muted);
-}
-.product-tour-btn--ghost:hover {
-  color: var(--tour-fg);
-  background: var(--vscode-toolbar-hoverBackground, rgba(255, 255, 255, 0.06));
-}
-
-.product-tour-btn:active {
-  opacity: 0.85;
-}
+/* .product-tour-btn (+ --primary, --secondary, --ghost): styles/buttons.css. */
 
 @keyframes product-tour-in {
   from { opacity: 0; }

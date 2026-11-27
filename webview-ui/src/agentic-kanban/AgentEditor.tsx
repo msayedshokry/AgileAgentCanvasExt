@@ -5,11 +5,12 @@
 // brief preview is built by the same code a run uses. The Usage tab totals
 // runs, time and tokens per agent.
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { vscode } from '../vscodeApi';
-import { getAvatarColor, getInitials } from './kanban-helpers';
-import { describeAgent, type AgentTeamView, type TeamAgentView } from './agent-team-view';
+import { describeAgent, parseTeamMessage, type AgentTeamView, type TeamAgentView } from './agent-team-view';
 import './AgentEditor.css';
+import { AgentAvatar } from './AgentAvatar';
+import { AGENT_AVATARS } from './agent-avatar';
 
 interface DiscoveredModel { id: string; label: string; description?: string }
 interface ModelState { loading: boolean; models: DiscoveredModel[]; supported: boolean; error?: string }
@@ -20,6 +21,43 @@ interface Draft {
   skills: string[]; maxConcurrent: number;
   /** A person on the team: name and role only; their cards never start a run. */
   person?: boolean;
+  /** Emoji avatar; empty on a person means their initials. */
+  avatar?: string;
+}
+
+/** The avatar, large, beside the name; click it to choose another from the set. */
+function AvatarPicker({ name, value, taken, allowInitials, onChange }: {
+  name: string; value: string; taken: readonly string[]; allowInitials?: boolean; onChange: (avatar: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const pick = (avatar: string) => { onChange(avatar); setOpen(false); };
+  return (
+    <div className="avatar-picker">
+      <button type="button" className="avatar-picker-current" aria-expanded={open} aria-label="Choose an avatar" title="Choose an avatar" onClick={() => setOpen(o => !o)}>
+        <AgentAvatar name={name || 'New'} avatar={value || undefined} person={!value} size={44} />
+      </button>
+      {open && (
+        <div className="avatar-picker-grid" role="radiogroup" aria-label="Avatar">
+          {allowInitials && (
+            <button type="button" role="radio" aria-checked={!value} className="avatar-picker-option" title="Initials" onClick={() => pick('')}>
+              <AgentAvatar name={name || '?'} person size={26} />
+            </button>
+          )}
+          {AGENT_AVATARS.map(a => {
+            const usedByOther = taken.includes(a) && value !== a;
+            return (
+              <button key={a} type="button" role="radio" aria-checked={value === a} aria-label={a}
+                className={`avatar-picker-option${usedByOther ? ' is-used' : ''}`}
+                title={usedByOther ? 'Another member has this one' : undefined}
+                onClick={() => pick(a)}>
+                <span aria-hidden="true">{a}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 const IDLE_MODELS: ModelState = { loading: false, models: [], supported: true };
@@ -79,8 +117,9 @@ function SkillPicker({ selected, onChange }: { selected: string[]; onChange: (id
 }
 
 /** A person: you, or someone you name. The lead can hand them stories through the Inbox. */
-function PersonForm({ draft, onCancel }: { draft: Draft; onCancel: () => void }) {
+function PersonForm({ draft, taken, onCancel }: { draft: Draft; taken: readonly string[]; onCancel: () => void }) {
   const [name, setName] = useState(draft.name);
+  const [avatar, setAvatar] = useState(draft.avatar ?? '');
   const [role, setRole] = useState(draft.role);
   const [error, setError] = useState<string>();
   const nameRef = useRef<HTMLInputElement>(null);
@@ -95,14 +134,17 @@ function PersonForm({ draft, onCancel }: { draft: Draft; onCancel: () => void })
   }, [onCancel]);
   const save = () => {
     setError(undefined);
-    vscode.postMessage({ type: 'kanban:saveAgent', agent: { ...(draft.id ? { id: draft.id } : {}), name: name.trim(), kind: 'person', role: role.trim() } });
+    vscode.postMessage({ type: 'kanban:saveAgent', agent: { ...(draft.id ? { id: draft.id } : {}), name: name.trim(), kind: 'person', role: role.trim(), ...(avatar ? { avatar } : {}) } });
   };
   return (
     <form className="agent-editor-form" onSubmit={e => { e.preventDefault(); save(); }} aria-label={draft.id ? `Edit ${draft.name}` : 'New person'}>
-      <label className="agent-editor-field">
-        <span>Name</span>
-        <input ref={nameRef} value={name} maxLength={40} required onChange={e => setName(e.target.value)} />
-      </label>
+      <div className="agent-editor-identity">
+        <AvatarPicker name={name} value={avatar} taken={taken} allowInitials onChange={setAvatar} />
+        <label className="agent-editor-field agent-editor-field--grow">
+          <span>Name</span>
+          <input ref={nameRef} value={name} maxLength={40} required onChange={e => setName(e.target.value)} />
+        </label>
+      </div>
       <label className="agent-editor-field">
         <span>Role</span>
         <input value={role} maxLength={120} placeholder="What they do, in one line" onChange={e => setRole(e.target.value)} />
@@ -121,8 +163,70 @@ function PersonForm({ draft, onCancel }: { draft: Draft; onCancel: () => void })
   );
 }
 
-function AgentForm({ team, draft, onCancel }: { team: AgentTeamView; draft: Draft; onCancel: () => void }) {
+interface AiDraft { name?: string; role?: string; instructions?: string; skills?: string[]; harness?: string; model?: string }
+
+/** "Build with AI": say what the agent is for; the model fills the form for you to review. */
+function BuildWithAi({ form, onDraft }: { form: Draft; onDraft: (draft: AiDraft) => void }) {
+  const [request, setRequest] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<{ error: boolean; text: string }>();
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      const msg = event.data;
+      if (msg?.type !== 'kanban:agentDraft') return;
+      setBusy(false);
+      if (msg.error) { setNote({ error: true, text: String(msg.error) }); return; }
+      if (msg.draft && typeof msg.draft === 'object') {
+        onDraft(msg.draft as AiDraft);
+        setNote({ error: false, text: 'Drafted. Read every field before you save; ask again to change it.' });
+      }
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [onDraft]);
+  const ask = () => {
+    if (!request.trim() || busy) return;
+    setBusy(true);
+    setNote(undefined);
+    vscode.postMessage({
+      type: 'kanban:draftAgent', request: request.trim(),
+      draft: { name: form.name, role: form.role, instructions: form.instructions, skills: form.skills, harness: form.harness, model: form.model },
+    });
+  };
+  return (
+    <section className="agent-builder" aria-label="Build with AI">
+      <label className="agent-builder-label" htmlFor="agent-builder-request">Build with AI</label>
+      <textarea
+        id="agent-builder-request"
+        rows={2}
+        value={request}
+        maxLength={2000}
+        placeholder="What should this agent do? e.g. Review frontend pull requests for accessibility; never edit code."
+        onChange={e => setRequest(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); ask(); } }}
+      />
+      <div className="agent-builder-row">
+        <span className={`agent-builder-note${note?.error ? ' is-error' : ''}`} role="status">
+          {busy ? 'Drafting with your AI model…' : note?.text ?? 'Fills in name, role, instructions, skills and CLI. Nothing is saved until you press Add agent.'}
+        </span>
+        <button type="button" className="agent-editor-btn" onClick={ask} disabled={!request.trim() || busy}>
+          {busy ? 'Drafting…' : form.instructions || form.role ? 'Redraft with AI' : 'Draft with AI'}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function AgentForm({ team, draft, taken, onCancel }: { team: AgentTeamView; draft: Draft; taken: readonly string[]; onCancel: () => void }) {
   const [form, setForm] = useState<Draft>(draft);
+  const applyDraft = useCallback((d: AiDraft) => setForm(f => ({
+    ...f,
+    ...(d.name ? { name: d.name } : {}),
+    ...(d.role ? { role: d.role } : {}),
+    ...(d.instructions ? { instructions: d.instructions } : {}),
+    ...(d.skills ? { skills: d.skills.slice(0, MAX_SKILLS) } : {}),
+    ...(d.harness && team.installed.some(c => c.id === d.harness) ? { harness: d.harness, model: d.model ?? '' } : d.model ? { model: d.model } : {}),
+  })), [team.installed]);
   const [models, setModels] = useState<ModelState>(IDLE_MODELS);
   const [error, setError] = useState<string>();
   const [preview, setPreview] = useState<string | null>(null);
@@ -161,6 +265,7 @@ function AgentForm({ team, draft, onCancel }: { team: AgentTeamView; draft: Draf
     name: form.name.trim(), harness: form.harness, model: cli?.acceptsModel ? form.model.trim() : '',
     role: form.role.trim(), instructions: form.instructions.trim(), lead: form.lead,
     skills: form.skills, maxConcurrent: form.maxConcurrent,
+    ...(form.avatar ? { avatar: form.avatar } : {}),
   });
 
   const save = () => {
@@ -184,17 +289,30 @@ function AgentForm({ team, draft, onCancel }: { team: AgentTeamView; draft: Draf
 
   return (
     <form className="agent-editor-form" onSubmit={e => { e.preventDefault(); save(); }} aria-label={form.id ? `Edit ${draft.name}` : 'New agent'}>
-      <label className="agent-editor-field">
-        <span>Name</span>
-        <input ref={nameRef} value={form.name} maxLength={40} required onChange={e => setForm({ ...form, name: e.target.value })} />
-      </label>
-      <label className="agent-editor-field">
-        <span>CLI</span>
-        <select value={form.harness} onChange={e => setForm({ ...form, harness: e.target.value, model: '' })}>
-          {!cli && <option value={form.harness}>{form.harness} (not installed)</option>}
-          {team.installed.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
-        </select>
-      </label>
+      <BuildWithAi form={form} onDraft={applyDraft} />
+      <div className="agent-editor-identity">
+        <AvatarPicker name={form.name} value={form.avatar ?? ''} taken={taken} onChange={avatar => setForm({ ...form, avatar })} />
+        <label className="agent-editor-field agent-editor-field--grow">
+          <span>Name</span>
+          <input ref={nameRef} value={form.name} maxLength={40} required placeholder="e.g. Reviewer, Frontend dev" onChange={e => setForm({ ...form, name: e.target.value })} />
+        </label>
+      </div>
+      <div className="agent-editor-field agent-editor-field--top">
+        <span id="agent-editor-cli-label">Runs on</span>
+        <div className="agent-editor-cli" role="radiogroup" aria-labelledby="agent-editor-cli-label">
+          {!cli && (
+            <button type="button" role="radio" aria-checked className="agent-editor-cli-option is-missing">
+              {form.harness} · not installed
+            </button>
+          )}
+          {team.installed.map(c => (
+            <button key={c.id} type="button" role="radio" aria-checked={form.harness === c.id} className="agent-editor-cli-option"
+              onClick={() => setForm({ ...form, harness: c.id, model: form.harness === c.id ? form.model : '' })}>
+              {c.label}
+            </button>
+          ))}
+        </div>
+      </div>
       <label className="agent-editor-field">
         <span>Model</span>
         <input
@@ -274,15 +392,13 @@ function AgentForm({ team, draft, onCancel }: { team: AgentTeamView; draft: Draf
   );
 }
 
-function AgentRow({ agent, team, onEdit }: { agent: TeamAgentView; team: AgentTeamView; onEdit: () => void }) {
+function AgentRow({ agent, team, saved, onEdit }: { agent: TeamAgentView; team: AgentTeamView; saved: boolean; onEdit: () => void }) {
   const [confirming, setConfirming] = useState(false);
   const cards = Object.values(team.assignments).filter(id => id === agent.id).length;
   const capacity = agent.maxConcurrent ?? 1;
   return (
     <li className="agent-editor-row">
-      <span className={`agent-editor-avatar${agent.kind === 'person' ? ' agent-editor-avatar--person' : ''}`} style={{ '--avatar-color': getAvatarColor(agent.name) } as React.CSSProperties} aria-hidden="true">
-        {getInitials(agent.name)}
-      </span>
+      <AgentAvatar name={agent.name} id={agent.id} avatar={agent.avatar} person={agent.kind === 'person'} size={34} />
       <span className="agent-editor-who">
         <span className="agent-editor-name">{agent.name}{agent.lead && <span className="agent-editor-lead">Lead</span>}</span>
         {agent.role && <span className="agent-editor-role">{agent.role}</span>}
@@ -301,6 +417,14 @@ function AgentRow({ agent, team, onEdit }: { agent: TeamAgentView; team: AgentTe
         </span>
       ) : (
         <span className="agent-editor-row-actions">
+          <button
+            className="agent-editor-btn agent-editor-btn--quiet agent-editor-save-lib"
+            onClick={() => vscode.postMessage({ type: 'kanban:saveToLibrary', id: agent.id })}
+            aria-label={saved ? `Update ${agent.name} in my agents` : `Save ${agent.name} to my agents`}
+            title={saved ? 'Saved in your agents. Click to update the saved copy.' : 'Save to your agents to add it in other projects'}
+          >
+            {saved ? '★ Saved' : '☆ Save'}
+          </button>
           <button className="agent-editor-btn" onClick={onEdit} aria-label={`Edit ${agent.name}`}>Edit</button>
           <button className="agent-editor-btn agent-editor-btn--quiet" onClick={() => setConfirming(true)} aria-label={`Delete ${agent.name}`}>Delete</button>
         </span>
@@ -376,9 +500,58 @@ function UsagePanel() {
   );
 }
 
+/** Your saved agents (kept outside the project): add one to this project's team. */
+function MyAgents({ library, team, onClose }: { library: TeamAgentView[]; team: AgentTeamView; onClose: () => void }) {
+  const onTeam = new Set(team.rosterDefined ? team.agents.map(a => a.id) : []);
+  const available = library.filter(a => !onTeam.has(a.id));
+  return (
+    <section className="agent-library" aria-label="My agents">
+      <header className="agent-library-head">
+        <span className="agent-library-title">My agents</span>
+        <span className="agent-editor-hint agent-editor-hint--flush">Saved in your home folder; add them to any project.</span>
+        <button type="button" className="agent-editor-btn agent-editor-btn--quiet" onClick={onClose}>Done</button>
+      </header>
+      {library.length === 0 ? (
+        <p className="agent-editor-hint agent-editor-hint--flush">No saved agents yet. Use ☆ Save on an agent to keep it for other projects.</p>
+      ) : available.length === 0 ? (
+        <p className="agent-editor-hint agent-editor-hint--flush">All your saved agents are already on this team.</p>
+      ) : (
+        <ul className="agent-library-list">
+          {available.map(a => (
+            <li key={a.id} className="agent-library-row">
+              <AgentAvatar name={a.name} id={a.id} avatar={a.avatar} person={a.kind === 'person'} size={28} />
+              <span className="agent-editor-who">
+                <span className="agent-editor-name">{a.name}{a.lead && <span className="agent-editor-lead">Lead</span>}</span>
+                <span className="agent-editor-meta">{a.role ? `${a.role} · ` : ''}{describeAgent(a, team.installed)}</span>
+              </span>
+              <button type="button" className="agent-editor-btn agent-editor-btn--primary" aria-label={`Add ${a.name} to this project`}
+                onClick={() => vscode.postMessage({ type: 'kanban:addFromLibrary', id: a.id })}>Add</button>
+              <button type="button" className="agent-editor-btn agent-editor-btn--quiet" aria-label={`Remove ${a.name} from my agents`}
+                onClick={() => vscode.postMessage({ type: 'kanban:removeFromLibrary', id: a.id })}>Remove</button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 export function AgentEditor({ team, onClose }: { team: AgentTeamView; onClose: () => void }) {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [tab, setTab] = useState<'team' | 'usage'>('team');
+  const [library, setLibrary] = useState<TeamAgentView[]>([]);
+  const [showLibrary, setShowLibrary] = useState(false);
+
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.data?.type !== 'kanban:agentLibrary') return;
+      setLibrary(parseTeamMessage({ agents: event.data.agents, assignments: {} })?.agents ?? []);
+    };
+    window.addEventListener('message', onMessage);
+    vscode.postMessage({ type: 'kanban:getAgentLibrary' });
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+  const savedIds = new Set(library.map(a => a.id));
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -386,12 +559,17 @@ export function AgentEditor({ team, onClose }: { team: AgentTeamView; onClose: (
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
+  // Avatars other members already have; a new agent starts with one nobody uses.
+  const taken = team.rosterDefined ? team.agents.flatMap(a => (a.avatar ? [a.avatar] : [])) : [];
+  const takenBy = (id?: string) => (id ? team.agents.flatMap(a => (a.avatar && a.id !== id ? [a.avatar] : [])) : taken);
   const startNew = () => setDraft({
     name: '', harness: team.installed[0]?.id ?? 'claude', model: '', role: '', instructions: '', lead: false, skills: [], maxConcurrent: 1,
+    avatar: AGENT_AVATARS.find(a => !taken.includes(a)) ?? AGENT_AVATARS[0],
   });
   const edit = (a: TeamAgentView) => setDraft({
     id: a.id, name: a.name, harness: a.harness, model: a.model ?? '', role: a.role ?? '', instructions: a.instructions ?? '',
     lead: a.lead === true, skills: a.skills ?? [], maxConcurrent: a.maxConcurrent ?? 1, person: a.kind === 'person',
+    avatar: a.avatar ?? '',
   });
   const startPerson = () => setDraft({
     name: '', harness: '', model: '', role: '', instructions: '', lead: false, skills: [], maxConcurrent: 1, person: true,
@@ -419,20 +597,25 @@ export function AgentEditor({ team, onClose }: { team: AgentTeamView; onClose: (
 
             {team.rosterDefined && (
               <ul className="agent-editor-list">
-                {team.agents.map(a => <AgentRow key={a.id} agent={a} team={team} onEdit={() => edit(a)} />)}
+                {team.agents.map(a => <AgentRow key={a.id} agent={a} team={team} saved={savedIds.has(a.id)} onEdit={() => edit(a)} />)}
               </ul>
             )}
 
+            {showLibrary && !draft && <MyAgents library={library} team={team} onClose={() => setShowLibrary(false)} />}
+
             {draft ? (
               draft.person
-                ? <PersonForm key={draft.id ?? 'new-person'} draft={draft} onCancel={() => setDraft(null)} />
-                : <AgentForm key={draft.id ?? 'new'} team={team} draft={draft} onCancel={() => setDraft(null)} />
+                ? <PersonForm key={draft.id ?? 'new-person'} draft={draft} taken={takenBy(draft.id)} onCancel={() => setDraft(null)} />
+                : <AgentForm key={draft.id ?? 'new'} team={team} draft={draft} taken={takenBy(draft.id)} onCancel={() => setDraft(null)} />
             ) : (
               <div className="agent-editor-foot">
                 <button className="agent-editor-btn agent-editor-btn--primary" onClick={startNew} disabled={team.installed.length === 0}>
                   New agent
                 </button>
                 <button className="agent-editor-btn" onClick={startPerson}>Add person</button>
+                <button className="agent-editor-btn" aria-expanded={showLibrary} onClick={() => setShowLibrary(s => !s)}>
+                  Add from my agents{library.length ? ` (${library.length})` : ''}
+                </button>
                 {team.installed.length === 0 && <span className="agent-editor-hint">Install a coding-agent CLI first.</span>}
                 <button className="agent-editor-link" onClick={() => vscode.postMessage({ type: 'kanban:editAgentTeam' })}>Open team file</button>
               </div>

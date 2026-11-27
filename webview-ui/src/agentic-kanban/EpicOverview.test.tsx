@@ -48,7 +48,8 @@ describe('EpicOverview', () => {
 
   it('labels people and agents in the breakdown', () => {
     render(<EpicBreakdown stories={STORIES} />);
-    const rows = [...document.querySelectorAll('.epic-breakdown-row')].map((r) => r.textContent);
-    expect(rows).toEqual(['DDevAgent1/2', 'MMayaPerson0/1', 'Unassigned0/2']);
+    const rows = [...document.querySelectorAll('.epic-breakdown-row')].map((r) => r.querySelector('.epic-breakdown-name')?.textContent + '|' + r.querySelector('.epic-breakdown-tag')?.textContent);
+    expect(rows).toEqual(['Dev|Agent', 'Maya|Person', 'Unassigned|undefined']);
+    expect(document.querySelectorAll('.epic-breakdown-row .agent-avatar')[1]?.textContent).toBe('M');
   });
 });

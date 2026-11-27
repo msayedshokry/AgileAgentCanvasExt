@@ -84,6 +84,13 @@ const KANBAN_ROOT = postcss.parse(
   readFileSync(KANBAN_CSS_PATH, 'utf-8'),
   { from: KANBAN_CSS_PATH },
 );
+// The shared button system: every button variant (primary, secondary,
+// ghost, danger, icon) is defined once here and aliased by feature classes.
+const BUTTONS_CSS_PATH = path.resolve(CSS_DIR, '..', 'styles', 'buttons.css');
+const BUTTONS_ROOT = postcss.parse(
+  readFileSync(BUTTONS_CSS_PATH, 'utf-8'),
+  { from: BUTTONS_CSS_PATH },
+);
 
 // ── Theme resolution table. Values come from canonical VS Code Light+ / Dark+ /
 //    HC-Dark defaults; '' = unset in that theme (fallback hex fires). ──────
@@ -1015,11 +1022,16 @@ describe('P1/D: ApprovalsBanner + kanban-card chrome SHAPE guards', () => {
       if (sel.includes('.approval-banner-title')) hasTitle = true;
       if (sel.includes('.approval-banner-body')) hasBody = true;
       if (sel.includes('.approval-banner-actions')) hasActions = true;
-      if (sel.includes('.approval-banner-btn--approve')) hasBtnApprove = true;
-      if (sel.includes('.approval-banner-btn--deny')) hasBtnDeny = true;
+    });
+    // The banner's buttons are styled by the shared button system
+    // (styles/buttons.css): Approve is primary, Deny the secondary base.
+    BUTTONS_ROOT.walkRules((rule) => {
+      const sels = (rule.selector || '').split(',').map((x) => x.trim());
+      if (sels.includes('.approval-banner-btn--approve')) hasBtnApprove = true;
+      if (sels.includes('.approval-banner-btn')) hasBtnDeny = true;
     });
     expect(hasRoot && hasIcon && hasTitle && hasBody && hasActions && hasBtnApprove && hasBtnDeny,
-      'Kanban.css must contain the full ApprovalsBanner stylesheet (.approval-banner + icon + title + body + actions + btn--approve + btn--deny).').toBe(true);
+      'Kanban.css must contain the ApprovalsBanner stylesheet (.approval-banner + icon + title + body + actions) and styles/buttons.css must style its buttons (base + --approve).').toBe(true);
   });
 
   it('SHAPE-kanban-card-agent-badge-states: 8 status variants in Kanban.css', () => {
@@ -1049,87 +1061,36 @@ describe('P1/D: ApprovalsBanner + kanban-card chrome SHAPE guards', () => {
     expect(present.size, `All 6 .kanban-agent-status--* variants must be present in Kanban.css; missing: ${states.filter(s => !present.has(s)).join(', ')}`).toBe(states.length);
   });
 
-  // ── Cluster D-2 #1 — .approval-banner-btn--approve tokenization ─────
-  // The ApprovalsBanner APPROVE button is the first of the 14 catalog-FAIL
-  // rows to be tokenized. Post-tokenization the CSS declares
-  //   background: var(--vscode-charts-green, #22c55e);
-  // with TWO `@media (prefers-color-scheme: {light,dark})` overrides
-  // rebinding the bg to the Tailwind green-700 dark tone `#15803D` (as
-  // `var(--vscode-charts-green-bright, #15803D)` so theme authors can
-  // opt-in to a custom resolution). HC-Dark (Chrome reports
-  // `prefers-color-scheme: dark`) catches the same override. Final
-  // per-theme contrast (white-on-bg) clears the 3:1 WCAG 1.4.11
-  // UI-component floor comfortably:
-  //   Dark+   #15803D vs #FFFFFF  ≈ 3.30:1  ✓
-  //   Light+  #15803D vs #FFFFFF  ≈ 3.30:1  ✓
-  //   HC-Dark #15803D vs #FFFFFF  ≈ 3.30:1  ✓
-  // Locks the shape (token form + both @media overrides) AND the math
-  // (cross-theme per-override contrast) so a future regression that
-  // reverts to HARDCODED `#22c55e` (≈ 2.255:1 white-vs-bg, sub-3:1) or
-  // drops the override fails the build loudly.
-
-  it('Cluster-D2-1 SHAPE-approval-banner-btn-approve-tokenized: background must use var(--vscode-charts-green, #22c55e), not HARDCODED hex', () => {
-    const rule = findRule(KANBAN_ROOT, '.approval-banner-btn--approve');
-    expect(rule, '.approval-banner-btn--approve rule must exist in Kanban.css').toBeTruthy();
-    // Pin selector EXACTLY: a future edit that comma-joins this selector
-    // with a sibling class (e.g. `--primary`) would silently split the
-    // shape contract; the exact match rejects that evasive refactor.
-    expect(rule.selector, '.approval-banner-btn--approve selector must be the exact single-class form; no comma-join permitted').toBe('.approval-banner-btn--approve');
-    const bg = declOf(rule, 'background');
-    expect(bg, '.approval-banner-btn--approve must declare background').toBeTruthy();
-    expect(bg.value.trim(), 'background must be tokenized to var(--vscode-charts-green, #22c55e); the HARDCODED #22c55e is forbidden now that Cluster D-2 #1 has shipped').toMatch(/^var\(--vscode-charts-green\s*,\s*#22c55e\)$/);
-    expect(bg.value).not.toMatch(/^#22c55e\b/);
+  // ── Cluster D-2 #1 (superseded) — .approval-banner-btn--approve ─────
+  // Approve used to be a one-off green fill with white text, which needed
+  // per-scheme @media overrides to clear the 3:1 UI-component floor. It is
+  // now the shared primary button (styles/buttons.css): VS Code's own
+  // button pair (--vscode-button-background / -foreground via --accent-fill /
+  // --accent-ink), which every theme defines as a contrasting pair. These
+  // guards lock that it stays on those tokens and never regains a HARDCODED
+  // fill.
+  it('Cluster-D2-1 SHAPE-approval-banner-btn-approve-primary: Approve is the shared primary button', () => {
+    let primary = null;
+    BUTTONS_ROOT.walkRules((rule) => {
+      if (rule.parent && rule.parent.type === 'atrule') return;
+      const sels = (rule.selector || '').split(',').map((x) => x.trim());
+      if (sels.includes('.approval-banner-btn--approve') && sels.includes('.btn-primary')) primary = rule;
+    });
+    expect(primary, '.approval-banner-btn--approve must be listed with .btn-primary in styles/buttons.css').toBeTruthy();
+    const bg = declOf(primary, 'background');
+    const fg = declOf(primary, 'color');
+    expect(bg && bg.value.trim()).toMatch(/^var\(--accent-fill[,)]/);
+    expect(fg && fg.value.trim()).toMatch(/^var\(--accent-ink[,)]/);
   });
 
-  it('Cluster-D2-1 SHAPE-approval-banner-btn-approve-light-override: @media (prefers-color-scheme: light) rebinds background above 3:1 UI-floor vs white', () => {
-    let overrideFound = false;
-    KANBAN_ROOT.walkAtRules('media', (at) => {
-      if (!at.params || !/prefers-color-scheme:\s*light/.test(at.params)) return;
-      at.walkRules((rule) => {
-        if (!rule.selector || !rule.selector.includes('.approval-banner-btn--approve')) return;
-        rule.walkDecls((d) => {
-          if (d.prop === 'background' && d.value.trim().match(/#15803D/i)) overrideFound = true;
-        });
-      });
+  it('Cluster-D2-1 SHAPE-approval-banner-btn-approve-no-hardcoded-fill: Kanban.css declares no background for Approve', () => {
+    let hardcoded = false;
+    KANBAN_ROOT.walkRules((rule) => {
+      if (!rule.selector || !rule.selector.includes('.approval-banner-btn--approve')) return;
+      rule.walkDecls((d) => { if (d.prop === 'background' || d.prop === 'background-color') hardcoded = true; });
     });
-    expect(overrideFound, '@media (prefers-color-scheme: light) block must rebind .approval-banner-btn--approve background to the bright-tier #15803D; without this the upstream --vscode-charts-green resolves to #3FA856 in Light+ which renders at ~2.27:1 vs white (sub-3:1 WCAG 1.4.11 UI-component floor).').toBe(true);
+    expect(hardcoded, 'Approve takes its fill from the shared primary button; a per-file background would split it from every other primary action').toBe(false);
   });
-
-  it('Cluster-D2-1 SHAPE-approval-banner-btn-approve-dark-override: @media (prefers-color-scheme: dark) rebinds background above 3:1 UI-floor vs white (also catches HC-Dark via Chrome reporting prefers-color-scheme:dark)', () => {
-    let overrideFound = false;
-    KANBAN_ROOT.walkAtRules('media', (at) => {
-      if (!at.params || !/prefers-color-scheme:\s*dark/.test(at.params)) return;
-      at.walkRules((rule) => {
-        if (!rule.selector || !rule.selector.includes('.approval-banner-btn--approve')) return;
-        rule.walkDecls((d) => {
-          if (d.prop === 'background' && d.value.trim().match(/#15803D/i)) overrideFound = true;
-        });
-      });
-    });
-    expect(overrideFound, '@media (prefers-color-scheme: dark) block must rebind .approval-banner-btn--approve background to the bright-tier #15803D; without this the upstream --vscode-charts-green resolves to #3FA856 in Dark+ which renders at ~2.94:1 vs white (sub-3:1 WCAG 1.4.11 UI-component floor). HC-Dark also reports prefers-color-scheme:dark so the same override fires there.').toBe(true);
-  });
-
-  // Cross-theme contrast guards — locks white-on-effective-bg ≥ 3:1 UI-floor
-  // after both override schemes fire. Each theme must settle on #15803D
-  // (Light+ via @media light, Dark+/HC-Dark via @media dark). If a future
-  // edit moves one of the overrides or swaps the bright-tier hex, the
-  // corresponding test fires.
-  const APPROVE_BUTTON_CASES = [
-    { theme: 'Dark+',   bg: '#15803D', note: 'override path via @media (prefers-color-scheme: dark) — upstream #3FA856 would otherwise render at ~2.94:1' },
-    { theme: 'Light+',  bg: '#15803D', note: 'override path via @media (prefers-color-scheme: light) — upstream #3FA856 would otherwise render at ~2.27:1' },
-    { theme: 'HC-Dark', bg: '#15803D', note: 'override path via @media (prefers-color-scheme: dark) (Chrome reports HC-Dark as :dark) — upstream #3FB950 already clears comfortably but the override normalizes the floor with Dark+ for theme-author ergonomics' },
-  ] as const;
-
-  for (const c of APPROVE_BUTTON_CASES) {
-    it(`Cluster-D2-1 contract-approval-banner-btn-approve: white-on-bg clears 3:1 UI-floor in ${c.theme}`, () => {
-      const fg = '#FFFFFF';
-      const r = contrast(fg, c.bg);
-      expect(
-        r,
-        `.approval-banner-btn--approve ${c.note}. White-on-${c.bg} must clear ≥3:1 WCAG 1.4.11 UI-component floor in ${c.theme} (got ${r.toFixed(2)}:1).`,
-      ).toBeGreaterThanOrEqual(3.0);
-    });
-  }
 
   // ── Cluster D-2 #2 — .approval-banner-icon tokenization ──────────
   // Pre-fix HARDCODED `#f59e0b` rendered at ~2.13:1 vs Light+ `#FFFFFF`

@@ -40,7 +40,7 @@ export interface KanbanItem {
   /** What the running agent is doing now: its latest output line (AgenticKanban only). */
   progressLine?: string;
   /** Named agent this card is assigned to (AgenticKanban only; see agent-team-view.ts). */
-  assignee?: { id: string; name: string; /** A person, not an agent: the card never starts a run. */ person?: boolean };
+  assignee?: { id: string; name: string; /** A person, not an agent: the card never starts a run. */ person?: boolean; /** The member's emoji avatar. */ avatar?: string };
   /** Concurrency lock state (AgenticKanban only) */
   lockInfo?: {
     locked: boolean;

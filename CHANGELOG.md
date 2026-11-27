@@ -117,6 +117,18 @@ Ported the useful parts of upstream Test Architect 1.27.2, Creative Intelligence
 - Dragging an epic into In Progress with no lead agent now says nothing ran and what to do (move its stories, or add a lead), instead of a plain "Moved".
 - While an agent edits code, the knowledge graph updates one run at a time, shown in the status bar, instead of stacking "graphify: updating graph" notifications. Edits inside agent worktrees, backups and board files no longer start an update.
 
+### Changed: Agents get avatars, and buttons look the same everywhere
+
+- Every agent has an emoji avatar, shown on cards, the card page, the epic page and the agent list. A new agent gets one nobody on the team uses yet (the way Multica hands them out), and the agent editor lets you pick another from 24; a person can keep their initials. Agents saved before this get a stable avatar from their name.
+- In the agent editor the CLI is a row of choices instead of a dropdown, and the avatar sits beside the name.
+- **My agents:** save an agent (☆ Save in the agent list) to reuse it in other projects, then pick it under **Add from my agents** in any project. Saved agents live in your home folder (`~/.agileagentcanvas/agents.json`); adding one copies it into the project's team file, keeps the project's lead, and swaps a clashing id or avatar.
+- **Build with AI** in the agent editor: describe what the agent should do and your AI model drafts its name, role, instructions, skills and CLI into the form for you to review (like Multica's "Let AI write it"). Drafting again refines the current form; nothing is saved until you press Add agent.
+- Buttons share one style across the board, the canvas, the visual plan and the dialogs: a bordered secondary button, one filled main action per place, quiet text buttons for helpers, and the same size, focus ring and hover everywhere.
+
+### Fixed: Plans no longer flash in Brief / Vision while a project loads
+
+- A plan made for a card is drawn under that card. While a project was still loading, its cards weren't there yet, so the plan showed in Brief / Vision for a moment and then jumped away. Plans now appear once the project has loaded.
+
 ### Fixed: Updates show up without clearing the webview cache
 
 - The board and canvas load their script and styles from fixed file names, so after installing a new build they could keep showing the old UI from cache. Those files now load with their build time in the URL, so a reload always picks up the new version.

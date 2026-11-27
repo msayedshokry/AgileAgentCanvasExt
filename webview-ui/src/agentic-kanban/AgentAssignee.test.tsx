@@ -22,11 +22,25 @@ const TEAM: AgentTeamView = {
 beforeEach(() => { posted.length = 0; });
 
 describe('card assignee', () => {
-  it('shows the assignee by name, with initials in the avatar', () => {
-    render(<KanbanCard item={{ ...ITEM, assignee: { id: 'dev', name: 'Dev Agent' } }} />);
+  it('shows the assignee by name, with their avatar', () => {
+    render(<KanbanCard item={{ ...ITEM, assignee: { id: 'dev', name: 'Dev Agent', avatar: '🦉' } }} />);
     const assignee = screen.getByTitle('Assigned to Dev Agent');
-    expect(assignee.querySelector('.kanban-card-avatar')?.textContent).toBe('DA');
+    expect(assignee.querySelector('.agent-avatar')?.textContent).toBe('🦉');
     expect(assignee.textContent).toContain('Assigned to Dev Agent');
+  });
+
+  it('gives an agent without a saved avatar a stable one, and a person their initials', () => {
+    const { unmount } = render(<KanbanCard item={{ ...ITEM, assignee: { id: 'dev', name: 'Dev Agent' } }} />);
+    const first = screen.getByTitle('Assigned to Dev Agent').querySelector('.agent-avatar')?.textContent;
+    unmount();
+    render(<KanbanCard item={{ ...ITEM, assignee: { id: 'dev', name: 'Dev Agent' } }} />);
+    expect(screen.getByTitle('Assigned to Dev Agent').querySelector('.agent-avatar')?.textContent).toBe(first);
+    expect(first).not.toBe('DA');
+  });
+
+  it('shows initials for a person', () => {
+    render(<KanbanCard item={{ ...ITEM, assignee: { id: 'maya', name: 'Maya Lee', person: true } }} />);
+    expect(document.querySelector('.agent-avatar')?.textContent).toBe('ML');
   });
 
   it('shows nothing for an unassigned card', () => {

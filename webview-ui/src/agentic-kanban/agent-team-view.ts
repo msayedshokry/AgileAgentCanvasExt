@@ -20,6 +20,8 @@ export interface TeamAgentView {
   maxConcurrent?: number;
   /** A person on the team: no CLI; their cards never start an agent run. */
   kind?: 'person';
+  /** One emoji shown wherever the agent appears. */
+  avatar?: string;
 }
 
 export interface InstalledCliView {
@@ -63,6 +65,7 @@ export function parseTeamMessage(message: { agents?: unknown; assignments?: unkn
       ...(Array.isArray(a.skills) ? { skills: a.skills.filter(isText) } : {}),
       ...(typeof a.maxConcurrent === 'number' ? { maxConcurrent: a.maxConcurrent } : {}),
       ...(a.kind === 'person' ? { kind: 'person' as const } : {}),
+      ...(isText(a.avatar) && a.avatar ? { avatar: a.avatar } : {}),
     }));
   const installed = (Array.isArray(message.installed) ? message.installed : [])
     .filter((c): c is InstalledCliView => !!c && isText(c.id) && isText(c.label))

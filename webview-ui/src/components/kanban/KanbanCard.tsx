@@ -2,7 +2,7 @@ import type { KanbanItem } from './KanbanTypes';
 import { vscode } from '../../vscodeApi';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useEvent } from '../../agentic-kanban/useEvent';
-import { getAvatarColor, getInitials } from '../../agentic-kanban/kanban-helpers';
+import { AgentAvatar } from '../../agentic-kanban/AgentAvatar';
 
 // ─── KanbanCard ───────────────────────────────────────────────────────────────
 // Shared presentational card used by SprintPlanningView (read-only) and
@@ -346,13 +346,7 @@ export function KanbanCard({ item, index, draggable, onDragStart, onClick, class
               className={`kanban-card-assignee${item.assignee.person ? ' kanban-card-assignee--person' : ''}`}
               title={item.assignee.person ? `Assigned to ${item.assignee.name} (a person; no agent runs it)` : `Assigned to ${item.assignee.name}`}
             >
-              <span
-                className="kanban-card-avatar"
-                style={{ '--avatar-color': getAvatarColor(item.assignee.name) } as React.CSSProperties}
-                aria-hidden="true"
-              >
-                {getInitials(item.assignee.name)}
-              </span>
+              <AgentAvatar name={item.assignee.name} id={item.assignee.id} avatar={item.assignee.avatar} person={item.assignee.person} size={18} />
               <span className="kanban-card-assignee-name">
                 <span className="visually-hidden">Assigned to </span>{item.assignee.name}
                 {item.assignee.person && <span className="visually-hidden">, a person</span>}

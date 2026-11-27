@@ -97,21 +97,7 @@
   white-space: nowrap;
 }
 
-.vp-close-btn {
-  background: none;
-  border: none;
-  color: var(--vscode-descriptionForeground);
-  cursor: pointer;
-  padding: 2px;
-  border-radius: var(--radius);
-  font-size: 16px;
-  line-height: 1;
-}
-
-.vp-close-btn:hover {
-  background: var(--vscode-toolbar-hoverBackground);
-  color: var(--vscode-editor-foreground);
-}
+/* .vp-close-btn: icon button, styles/buttons.css. */
 
 /* ── Body (outline rail + content) ────────────────────────────────────────── */
 
@@ -446,25 +432,7 @@
   color: var(--vscode-textLink-foreground);
 }
 
-/* ── Copy button (shared) ────────────────────────────────────────────────── */
-
-.vp-copy-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  font-size: 10px;
-  background: transparent;
-  color: var(--vscode-descriptionForeground);
-  border: 1px solid var(--vscode-panel-border);
-  border-radius: var(--radius);
-  cursor: pointer;
-}
-
-.vp-copy-btn:hover {
-  background: var(--vscode-toolbar-hoverBackground);
-  color: var(--vscode-editor-foreground);
-}
+/* ── Copy button (shared): small ghost button, styles/buttons.css. ───────── */
 
 /* ── Diagram (node/edge SVGs) ─────────────────────────────────────────────── */
 
@@ -662,19 +630,7 @@
   margin-bottom: 12px;
 }
 
-.vp-task-select-all-btn {
-  font-size: 11px;
-  padding: 2px 8px;
-  background: transparent;
-  color: var(--vscode-textLink-foreground);
-  border: 1px solid var(--vscode-panel-border);
-  border-radius: var(--radius);
-  cursor: pointer;
-}
-
-.vp-task-select-all-btn:hover {
-  background: var(--vscode-toolbar-hoverBackground);
-}
+/* .vp-task-select-all-btn: small ghost button, styles/buttons.css. */
 
 .vp-task-select-count {
   font-size: 11px;
@@ -788,20 +744,9 @@
   border-bottom: 1px solid var(--vscode-panel-border);
 }
 
+/* .vp-question-answer-btn: small ghost button, styles/buttons.css. */
 .vp-question-answer-btn {
-  display: inline-block;
   margin-top: 6px;
-  font-size: 11px;
-  padding: 2px 10px;
-  background: transparent;
-  color: var(--vscode-textLink-foreground);
-  border: 1px solid var(--vscode-panel-border);
-  border-radius: var(--radius);
-  cursor: pointer;
-}
-
-.vp-question-answer-btn:hover {
-  background: var(--vscode-toolbar-hoverBackground);
 }
 
 .vp-question-answer-input {
@@ -821,29 +766,7 @@
   font-size: 12px;
 }
 
-.vp-question-answer-input button {
-  padding: 3px 10px;
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  border: none;
-  border-radius: var(--radius);
-  font-size: 11px;
-  cursor: pointer;
-}
-
-.vp-question-answer-input button:hover {
-  background: var(--vscode-button-hoverBackground);
-}
-
-.vp-question-answer-cancel {
-  background: transparent !important;
-  color: var(--vscode-descriptionForeground) !important;
-  border: 1px solid var(--vscode-panel-border) !important;
-}
-
-.vp-question-answer-cancel:hover {
-  background: var(--vscode-toolbar-hoverBackground) !important;
-}
+/* Submit (.btn-primary.btn-small) and .vp-question-answer-cancel: styles/buttons.css. */
 
 .vp-question-text {
   font-size: 13px;
@@ -1066,38 +989,7 @@
   flex-shrink: 0;
 }
 
-.vp-approve-btn {
-  padding: 6px 14px;
-  border: none;
-  border-radius: var(--radius);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.vp-approve-btn--approve {
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-}
-
-.vp-approve-btn--approve:hover {
-  background: var(--vscode-button-hoverBackground);
-}
-
-.vp-approve-btn--approve:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.vp-approve-btn--changes {
-  background: transparent;
-  color: var(--vscode-editor-foreground);
-  border: 1px solid var(--vscode-panel-border);
-}
-
-.vp-approve-btn--changes:hover {
-  background: var(--vscode-toolbar-hoverBackground);
-}
+/* .vp-approve-btn: Approve is primary, Request changes secondary (styles/buttons.css). */
 
 .vp-approve-hint {
   font-size: 11px;
@@ -1201,19 +1093,7 @@
   color: var(--vscode-input-placeholderForeground);
 }
 
-.vp-comment-input button {
-  padding: 4px 10px;
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  border: none;
-  border-radius: var(--radius);
-  font-size: 11px;
-  cursor: pointer;
-}
-
-.vp-comment-input button:hover {
-  background: var(--vscode-button-hoverBackground);
-}
+/* Send (.btn-primary.btn-small): styles/buttons.css. */
 
 /* ── Modal (in-canvas popup) ─────────────────────────────────────────────────
    Wider stage for visual-plan review. Closes on backdrop click or Esc
@@ -1280,42 +1160,8 @@
   gap: 6px;
 }
 
-.vp-modal-open-in-editor-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
-  background: var(--vscode-button-secondaryBackground);
-  color: var(--vscode-button-secondaryForeground);
-  border: 1px solid var(--vscode-panel-border);
-  border-radius: var(--radius);
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.vp-modal-open-in-editor-btn:hover {
-  background: var(--vscode-button-secondaryHoverBackground);
-}
-
-.vp-modal-close-btn {
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  color: var(--vscode-descriptionForeground);
-  border: none;
-  border-radius: var(--radius);
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.vp-modal-close-btn:hover {
-  background: var(--vscode-toolbar-hoverBackground);
-  color: var(--vscode-editor-foreground);
-}
+/* .vp-modal-open-in-editor-btn (secondary) and .vp-modal-close-btn (icon):
+ * styles/buttons.css. */
 
 /* ── Cycle controls (prev / next visual plan) ───────────────────────────── */
 
@@ -1329,29 +1175,7 @@
   background: var(--vscode-editor-background);
 }
 
-.vp-modal-cycle-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 22px;
-  background: transparent;
-  color: var(--vscode-descriptionForeground);
-  border: none;
-  border-radius: var(--radius);
-  cursor: pointer;
-  padding: 0;
-}
-
-.vp-modal-cycle-btn:hover {
-  background: var(--vscode-toolbar-hoverBackground);
-  color: var(--vscode-editor-foreground);
-}
-
-.vp-modal-cycle-btn:focus-visible {
-  outline: 2px solid var(--vscode-focusBorder);
-  outline-offset: 1px;
-}
+/* .vp-modal-cycle-btn: small icon button, styles/buttons.css. */
 
 .vp-modal-cycle-counter {
   font-size: 11px;

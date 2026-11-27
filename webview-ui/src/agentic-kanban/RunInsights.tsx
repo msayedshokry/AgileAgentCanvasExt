@@ -303,7 +303,7 @@ export function RunInsights({ item, trace = NO_TRACE, hideAnswer = false, hideFi
         >
           Preview prompt
         </button>
-        <button className="agent-btn" onClick={() => vscode.postMessage({ type: 'kanban:showOutput', artifactId: item.id })}>
+        <button className="agent-btn agent-btn--ghost" onClick={() => vscode.postMessage({ type: 'kanban:showOutput', artifactId: item.id })}>
           Last output
         </button>
       </div>

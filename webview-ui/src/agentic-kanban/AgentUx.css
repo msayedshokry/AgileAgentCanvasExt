@@ -137,34 +137,11 @@
 .agent-status-row-actions .agent-btn + .agent-btn { margin-left: 4px; }
 
 /* ── Buttons and pills ───────────────────────────────────────────────────── */
-/* Doubled class so these win over host rules such as `.agentic-detail-panel button`. */
-
-.agent-btn.agent-btn {
-  background: var(--vscode-button-secondaryBackground, transparent);
-  color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
-  border: 1px solid var(--vscode-button-border, var(--agent-border));
-  border-radius: var(--agent-radius);
-  padding: 3px 10px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: opacity var(--agent-fast) ease, transform var(--agent-fast) ease;
-}
-.agent-btn.agent-btn:hover { opacity: 0.85; }
-.agent-btn.agent-btn:active { transform: translateY(1px); }
-.agent-btn.agent-btn:focus-visible,
+/* .agent-btn and its --primary / --ghost / --danger variants are styled by
+ * styles/buttons.css; this file only places them. */
 .agent-status-link:focus-visible {
-  outline: 1px solid var(--vscode-focusBorder);
+  outline: 2px solid var(--vscode-focusBorder, var(--accent));
   outline-offset: 1px;
-}
-.agent-btn.agent-btn--primary {
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  border-color: transparent;
-}
-.agent-btn.agent-btn--danger {
-  color: var(--agent-error);
-  border-color: color-mix(in srgb, var(--agent-error) 50%, transparent);
-  background: transparent;
 }
 
 .agent-pill {
@@ -466,7 +443,6 @@
 .agent-assignee .agent-assignee-edit:hover { text-decoration: underline; }
 
 @media (prefers-reduced-motion: reduce) {
-  .agent-btn { transition: none; }
   .agent-timeline-item--running::before { animation: none; }
 }
 

@@ -11,6 +11,8 @@ import { RootApp } from './App';
 import { vscode } from './vscodeApi';
 import './styles/tokens.css';
 import './styles/index.css';
+// Last: the shared button system wins over per-feature button rules.
+import './styles/buttons.css';
 
 console.log('[webview:boot] Imports loaded, elapsed:', Date.now() - BOOT_START, 'ms');
 

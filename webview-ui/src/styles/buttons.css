@@ -1,0 +1,533 @@
+/* webview-ui/src/styles/buttons.css
+ *
+ * The one button system for every webview surface (canvas, Kanban board,
+ * card page, inbox, visual plan, modals). Imported last by main.tsx so these
+ * rules win over per-feature stylesheets at equal specificity; feature files
+ * keep only layout (margins, widths, flex, align-self) for their buttons.
+ *
+ * Canonical classes: .btn (secondary) + .btn-primary | .btn-ghost |
+ * .btn-danger, sizes .btn-small and .btn-icon. Older per-feature class names
+ * are aliased into the same selector lists below rather than renamed, so
+ * markup and tests keep working.
+ *
+ *   secondary  28px, hairline-strong border, paper fill, ink text
+ *   primary    the one main action in a place: accent fill
+ *   ghost      low-emphasis helpers: no fill, no border until hover
+ *   danger     destructive actions: secondary shape, error-coloured text
+ *   small      24px, for dense rows and inline editors
+ *   icon       square, ghost; close (×), remove, prev/next
+ *
+ * Only background, border and text colours transition; the press nudge is a
+ * transform. No coloured side stripes.
+ */
+
+/* ── Base: secondary ─────────────────────────────────────────────────────── */
+.btn,
+.agent-btn,
+.agentic-btn,
+.card-side-btn,
+.inbox-btn,
+.agent-editor-btn,
+.board-btn,
+.autonomy-bar-btn,
+.autonomy-inbox-btn,
+.safety-panel-btn,
+.goal-modal-btn,
+.cat-btn,
+.gfy-action-btn,
+.terminal-modal-btn,
+.agent-session-action-btn,
+.empty-state-sample-btn,
+.sprint-run-btn,
+.product-tour-btn,
+.approval-banner-btn,
+.safety-kill-btn,
+.safety-kill-cancel-btn,
+.safety-circuit-reset-btn,
+.epic-context-save,
+.vp-approve-btn,
+.vp-question-answer-btn,
+.vp-question-answer-cancel,
+.vp-task-select-all-btn,
+.vp-modal-open-in-editor-btn,
+.vp-copy-btn,
+.add-button,
+.add-item-button,
+.add-btn,
+.toolbar-fab-btn,
+.toolbar-ai-btn,
+.toolbar-ask-btn,
+.toolbar-ideas-btn,
+.toolbar-switch-btn,
+.toolbar-overflow-btn,
+.toolbar-theme-btn,
+/* Icon-only buttons share the base, then go square and ghost below. */
+.btn-icon,
+.close-btn,
+.popout-btn,
+.wfl-close-btn,
+.gfy-close-btn,
+.help-close-btn,
+.sb-close-btn,
+.sprint-close-btn,
+.ask-close-btn,
+.goal-modal-close,
+.ideas-drawer-close,
+.diff-panel-close-btn,
+.vp-close-btn,
+.vp-modal-close-btn,
+.vp-modal-cycle-btn,
+.icon-button,
+.remove-btn,
+.trace-panel-btn-icon,
+.autonomy-bar-btn-icon,
+.safety-block-dismiss-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-sizing: border-box;
+  height: 28px;
+  padding: 0 12px;
+  border: var(--rule-width, 1px) solid var(--rule-strong);
+  border-radius: var(--radius, 6px);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: var(--weight-strong, 600);
+  line-height: 1;
+  letter-spacing: normal;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: none;
+  opacity: 1;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.btn:hover:not(:disabled),
+.agent-btn:hover:not(:disabled),
+.agentic-btn:hover:not(:disabled),
+.card-side-btn:hover:not(:disabled),
+.inbox-btn:hover:not(:disabled),
+.agent-editor-btn:hover:not(:disabled),
+.board-btn:hover:not(:disabled),
+.autonomy-bar-btn:hover:not(:disabled),
+.autonomy-inbox-btn:hover:not(:disabled),
+.safety-panel-btn:hover:not(:disabled),
+.goal-modal-btn:hover:not(:disabled),
+.cat-btn:hover:not(:disabled),
+.gfy-action-btn:hover:not(:disabled),
+.terminal-modal-btn:hover:not(:disabled),
+.agent-session-action-btn:hover:not(:disabled),
+.product-tour-btn:hover:not(:disabled),
+.approval-banner-btn:hover:not(:disabled),
+.safety-kill-btn:hover:not(:disabled),
+.safety-kill-cancel-btn:hover:not(:disabled),
+.safety-circuit-reset-btn:hover:not(:disabled),
+.epic-context-save:hover:not(:disabled),
+.vp-approve-btn:hover:not(:disabled),
+.vp-question-answer-btn:hover:not(:disabled),
+.vp-question-answer-cancel:hover:not(:disabled),
+.vp-task-select-all-btn:hover:not(:disabled),
+.vp-modal-open-in-editor-btn:hover:not(:disabled),
+.vp-copy-btn:hover:not(:disabled),
+.add-button:hover:not(:disabled),
+.add-item-button:hover:not(:disabled),
+.add-btn:hover:not(:disabled),
+.toolbar-ai-btn:hover:not(:disabled),
+.toolbar-ask-btn:hover:not(:disabled),
+.toolbar-ideas-btn:hover:not(:disabled),
+.toolbar-switch-btn:hover:not(:disabled),
+.toolbar-overflow-btn:hover:not(:disabled),
+.toolbar-theme-btn:hover:not(:disabled) {
+  background: var(--paper-wash);
+}
+
+/* Toggle buttons that are currently open/pressed read as held down. */
+.toolbar-ideas-btn.open,
+.toolbar-overflow-btn.open,
+.autonomy-inbox-btn--open,
+.safety-panel-btn--open,
+.board-btn.popover-trigger--open {
+  background: var(--paper-wash);
+  border-color: var(--ink);
+}
+
+/* ── Primary: the one main action in a place ─────────────────────────────── */
+.btn-primary,
+.agent-btn--primary,
+.agentic-btn--primary,
+.inbox-btn--primary,
+.agent-editor-btn--primary,
+.board-btn--primary,
+.autonomy-bar-btn--primary,
+.autonomy-bar-btn--accent,
+.goal-modal-btn--primary,
+.cat-btn--primary,
+.gfy-action-btn--primary,
+.empty-state-sample-btn,
+.sprint-run-btn,
+.product-tour-btn--primary,
+.approval-banner-btn--approve,
+.epic-context-save,
+.vp-approve-btn--approve,
+.toolbar-fab-btn {
+  background: var(--accent-fill, var(--accent));
+  border-color: var(--accent-fill, var(--accent));
+  color: var(--accent-ink, var(--paper));
+}
+
+.btn-primary:hover:not(:disabled),
+.agent-btn--primary:hover:not(:disabled),
+.agentic-btn--primary:hover:not(:disabled),
+.inbox-btn--primary:hover:not(:disabled),
+.agent-editor-btn--primary:hover:not(:disabled),
+.board-btn--primary:hover:not(:disabled),
+.autonomy-bar-btn--primary:hover:not(:disabled),
+.autonomy-bar-btn--accent:hover:not(:disabled),
+.goal-modal-btn--primary:hover:not(:disabled),
+.cat-btn--primary:hover:not(:disabled),
+.gfy-action-btn--primary:hover:not(:disabled),
+.empty-state-sample-btn:hover:not(:disabled),
+.sprint-run-btn:hover:not(:disabled),
+.product-tour-btn--primary:hover:not(:disabled),
+.approval-banner-btn--approve:hover:not(:disabled),
+.epic-context-save:hover:not(:disabled),
+.vp-approve-btn--approve:hover:not(:disabled),
+.toolbar-fab-btn:hover:not(:disabled),
+.toolbar-fab-btn.open {
+  background: var(--vscode-button-hoverBackground, var(--accent));
+  border-color: var(--vscode-button-hoverBackground, var(--accent));
+  color: var(--accent-ink, var(--paper));
+}
+
+/* ── Ghost: low-emphasis helpers ─────────────────────────────────────────── */
+.btn-ghost,
+.btn-ai,
+.btn-dev,
+.btn-elicit,
+.btn-export-md,
+.agent-btn--ghost,
+.inbox-btn--quiet,
+.agent-editor-btn--quiet,
+.product-tour-btn--ghost,
+.vp-copy-btn,
+.vp-task-select-all-btn,
+.vp-question-answer-btn,
+.btn-icon,
+.close-btn,
+.popout-btn,
+.wfl-close-btn,
+.gfy-close-btn,
+.help-close-btn,
+.sb-close-btn,
+.sprint-close-btn,
+.ask-close-btn,
+.goal-modal-close,
+.ideas-drawer-close,
+.diff-panel-close-btn,
+.vp-close-btn,
+.vp-modal-close-btn,
+.vp-modal-cycle-btn,
+.icon-button,
+.remove-btn,
+.trace-panel-btn-icon,
+.autonomy-bar-btn-icon,
+.safety-block-dismiss-btn {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ink-2);
+}
+
+.btn-ghost:hover:not(:disabled),
+.btn-ai:hover:not(:disabled),
+.btn-dev:hover:not(:disabled),
+.btn-elicit:hover:not(:disabled),
+.btn-export-md:hover:not(:disabled),
+.agent-btn--ghost:hover:not(:disabled),
+.inbox-btn--quiet:hover:not(:disabled),
+.agent-editor-btn--quiet:hover:not(:disabled),
+.product-tour-btn--ghost:hover:not(:disabled),
+.vp-copy-btn:hover:not(:disabled),
+.vp-task-select-all-btn:hover:not(:disabled),
+.vp-question-answer-btn:hover:not(:disabled),
+.btn-icon:hover:not(:disabled),
+.close-btn:hover:not(:disabled),
+.popout-btn:hover:not(:disabled),
+.wfl-close-btn:hover:not(:disabled),
+.gfy-close-btn:hover:not(:disabled),
+.help-close-btn:hover:not(:disabled),
+.sb-close-btn:hover:not(:disabled),
+.sprint-close-btn:hover:not(:disabled),
+.ask-close-btn:hover:not(:disabled),
+.goal-modal-close:hover:not(:disabled),
+.ideas-drawer-close:hover:not(:disabled),
+.diff-panel-close-btn:hover:not(:disabled),
+.vp-close-btn:hover:not(:disabled),
+.vp-modal-close-btn:hover:not(:disabled),
+.vp-modal-cycle-btn:hover:not(:disabled),
+.icon-button:hover:not(:disabled),
+.trace-panel-btn-icon:hover:not(:disabled),
+.autonomy-bar-btn-icon:hover:not(:disabled) {
+  background: var(--paper-wash);
+  color: var(--ink);
+}
+
+/* A pressed icon toggle (e.g. the trace panel's filter) shows the accent. */
+.trace-panel-btn-icon[aria-pressed='true'] {
+  color: var(--accent);
+}
+
+/* ── Danger: destructive actions, error-coloured text ────────────────────── */
+.btn-danger,
+.agent-btn--danger,
+.agentic-btn--danger,
+.agent-editor-btn--danger,
+.autonomy-bar-btn--danger,
+.cat-btn--danger,
+.agent-session-action-btn--danger,
+.safety-kill-btn,
+.remove-btn,
+.safety-block-dismiss-btn {
+  color: var(--danger);
+}
+
+.btn-danger:hover:not(:disabled),
+.agent-btn--danger:hover:not(:disabled),
+.agentic-btn--danger:hover:not(:disabled),
+.agent-editor-btn--danger:hover:not(:disabled),
+.autonomy-bar-btn--danger:hover:not(:disabled),
+.cat-btn--danger:hover:not(:disabled),
+.agent-session-action-btn--danger:hover:not(:disabled),
+.safety-kill-btn:not(.safety-kill-btn--confirm):hover:not(:disabled),
+.remove-btn:hover:not(:disabled),
+.safety-block-dismiss-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* A confirming kill switch is a filled danger button. */
+.safety-kill-btn--confirm {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--vscode-editor-background, #fff);
+}
+.safety-kill-btn--confirm:hover:not(:disabled) {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--vscode-editor-background, #fff);
+}
+
+/* ── Small: dense rows, inline editors ───────────────────────────────────── */
+.btn-small,
+.agent-session-action-btn,
+.terminal-modal-btn,
+.safety-circuit-reset-btn,
+.vp-copy-btn,
+.vp-task-select-all-btn,
+.vp-question-answer-btn,
+.vp-question-answer-cancel,
+.add-button,
+.add-item-button,
+.add-btn,
+.toast-actions .btn {
+  height: 24px;
+  padding: 0 8px;
+  font-size: 11.5px;
+}
+
+/* ── Icon-only: square, ghost ────────────────────────────────────────────── */
+.btn-icon,
+.close-btn,
+.popout-btn,
+.wfl-close-btn,
+.gfy-close-btn,
+.help-close-btn,
+.sprint-close-btn,
+.ask-close-btn,
+.goal-modal-close,
+.ideas-drawer-close,
+.diff-panel-close-btn,
+.vp-close-btn,
+.vp-modal-close-btn {
+  width: 28px;
+  min-width: 28px;
+  padding: 0;
+  font-size: 16px;
+}
+
+.btn-icon.btn-small,
+.sb-close-btn,
+.vp-modal-cycle-btn,
+.icon-button,
+.remove-btn,
+.trace-panel-btn-icon,
+.autonomy-bar-btn-icon,
+.safety-block-dismiss-btn {
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0;
+  font-size: 13px;
+}
+
+/* ── States shared by every variant ──────────────────────────────────────── */
+.btn:active:not(:disabled),
+.agent-btn:active:not(:disabled),
+.agentic-btn:active:not(:disabled),
+.card-side-btn:active:not(:disabled),
+.inbox-btn:active:not(:disabled),
+.agent-editor-btn:active:not(:disabled),
+.board-btn:active:not(:disabled),
+.autonomy-bar-btn:active:not(:disabled),
+.goal-modal-btn:active:not(:disabled),
+.cat-btn:active:not(:disabled),
+.gfy-action-btn:active:not(:disabled),
+.terminal-modal-btn:active:not(:disabled),
+.agent-session-action-btn:active:not(:disabled),
+.empty-state-sample-btn:active:not(:disabled),
+.sprint-run-btn:active:not(:disabled),
+.product-tour-btn:active:not(:disabled),
+.approval-banner-btn:active:not(:disabled),
+.safety-kill-btn:active:not(:disabled),
+.safety-kill-cancel-btn:active:not(:disabled),
+.epic-context-save:active:not(:disabled),
+.vp-approve-btn:active:not(:disabled),
+.vp-question-answer-cancel:active:not(:disabled),
+.vp-modal-open-in-editor-btn:active:not(:disabled),
+.add-button:active:not(:disabled),
+.add-item-button:active:not(:disabled),
+.add-btn:active:not(:disabled),
+.toolbar-fab-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:focus-visible,
+.agent-btn:focus-visible,
+.agentic-btn:focus-visible,
+.card-side-btn:focus-visible,
+.inbox-btn:focus-visible,
+.agent-editor-btn:focus-visible,
+.board-btn:focus-visible,
+.autonomy-bar-btn:focus-visible,
+.autonomy-inbox-btn:focus-visible,
+.safety-panel-btn:focus-visible,
+.goal-modal-btn:focus-visible,
+.cat-btn:focus-visible,
+.gfy-action-btn:focus-visible,
+.terminal-modal-btn:focus-visible,
+.agent-session-action-btn:focus-visible,
+.empty-state-sample-btn:focus-visible,
+.sprint-run-btn:focus-visible,
+.product-tour-btn:focus-visible,
+.approval-banner-btn:focus-visible,
+.safety-kill-btn:focus-visible,
+.safety-kill-cancel-btn:focus-visible,
+.safety-circuit-reset-btn:focus-visible,
+.epic-context-save:focus-visible,
+.vp-approve-btn:focus-visible,
+.vp-question-answer-btn:focus-visible,
+.vp-question-answer-cancel:focus-visible,
+.vp-task-select-all-btn:focus-visible,
+.vp-modal-open-in-editor-btn:focus-visible,
+.vp-copy-btn:focus-visible,
+.add-button:focus-visible,
+.add-item-button:focus-visible,
+.add-btn:focus-visible,
+.toolbar-fab-btn:focus-visible,
+.toolbar-ai-btn:focus-visible,
+.toolbar-ask-btn:focus-visible,
+.toolbar-ideas-btn:focus-visible,
+.toolbar-switch-btn:focus-visible,
+.toolbar-overflow-btn:focus-visible,
+.toolbar-theme-btn:focus-visible,
+.btn-icon:focus-visible,
+.close-btn:focus-visible,
+.popout-btn:focus-visible,
+.wfl-close-btn:focus-visible,
+.gfy-close-btn:focus-visible,
+.help-close-btn:focus-visible,
+.sb-close-btn:focus-visible,
+.sprint-close-btn:focus-visible,
+.ask-close-btn:focus-visible,
+.goal-modal-close:focus-visible,
+.ideas-drawer-close:focus-visible,
+.diff-panel-close-btn:focus-visible,
+.vp-close-btn:focus-visible,
+.vp-modal-close-btn:focus-visible,
+.vp-modal-cycle-btn:focus-visible,
+.icon-button:focus-visible,
+.remove-btn:focus-visible,
+.trace-panel-btn-icon:focus-visible,
+.autonomy-bar-btn-icon:focus-visible,
+.safety-block-dismiss-btn:focus-visible,
+/* Menu items keep their own look but share the same focus ring. */
+.popover-menu-item:focus-visible,
+.toolbar-popover-item:focus-visible,
+.kanban-context-menu-item:focus-visible {
+  outline: 2px solid var(--vscode-focusBorder, var(--accent));
+  outline-offset: 1px;
+}
+
+.btn:disabled,
+.agent-btn:disabled,
+.agentic-btn:disabled,
+.card-side-btn:disabled,
+.inbox-btn:disabled,
+.agent-editor-btn:disabled,
+.board-btn:disabled,
+.autonomy-bar-btn:disabled,
+.autonomy-inbox-btn:disabled,
+.safety-panel-btn:disabled,
+.goal-modal-btn:disabled,
+.cat-btn:disabled,
+.gfy-action-btn:disabled,
+.terminal-modal-btn:disabled,
+.agent-session-action-btn:disabled,
+.empty-state-sample-btn:disabled,
+.sprint-run-btn:disabled,
+.product-tour-btn:disabled,
+.approval-banner-btn:disabled,
+.safety-kill-btn:disabled,
+.safety-kill-cancel-btn:disabled,
+.safety-circuit-reset-btn:disabled,
+.epic-context-save:disabled,
+.vp-approve-btn:disabled,
+.vp-question-answer-btn:disabled,
+.vp-question-answer-cancel:disabled,
+.vp-task-select-all-btn:disabled,
+.vp-modal-open-in-editor-btn:disabled,
+.vp-copy-btn:disabled,
+.add-button:disabled,
+.add-item-button:disabled,
+.add-btn:disabled,
+.toolbar-fab-btn:disabled,
+.toolbar-ai-btn:disabled,
+.toolbar-ask-btn:disabled,
+.toolbar-ideas-btn:disabled,
+.toolbar-switch-btn:disabled,
+.toolbar-overflow-btn:disabled,
+.toolbar-theme-btn:disabled,
+.btn-icon:disabled,
+.close-btn:disabled,
+.popout-btn:disabled,
+.vp-modal-cycle-btn:disabled,
+.icon-button:disabled,
+.remove-btn:disabled,
+.trace-panel-btn-icon:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* A button waiting on its own action (e.g. Resume while it reconnects). */
+.agentic-btn.is-loading,
+.btn-saving {
+  cursor: wait;
+  opacity: 0.85;
+}

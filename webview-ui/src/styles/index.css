@@ -298,31 +298,7 @@ body {
   gap: var(--space-1);
 }
 
-.toolbar-fab-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 28px;
-  padding: 0 var(--space-3);
-  background: var(--accent-fill);
-  color: var(--accent-ink);
-  border: var(--rule-width) solid var(--accent-fill);
-  border-radius: var(--radius);
-  font-family: var(--font-ui);
-  font-size: var(--text-small);
-  font-weight: var(--weight-strong);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background var(--dur-fast) var(--ease-out);
-}
-
-.toolbar-fab-btn:hover {
-  background: var(--vscode-button-hoverBackground);
-}
-
-.toolbar-fab-btn.open {
-  background: var(--vscode-button-hoverBackground);
-}
+/* .toolbar-fab-btn ("Add"): primary button, styles/buttons.css. */
 
 .toolbar-fab-icon {
   display: inline-flex;
@@ -334,60 +310,9 @@ body {
   font-weight: var(--weight-strong);
 }
 
-.toolbar-ai-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 28px;
-  min-width: 28px;
-  padding: 0 var(--space-2);
-  background: var(--paper);
-  color: var(--ink-2);
-  border: var(--rule-width) solid var(--rule);
-  border-radius: var(--radius);
-  font-family: var(--font-ui);
-  font-size: var(--text-small);
-  font-weight: var(--weight-strong);
-  white-space: nowrap;
-  cursor: pointer;
-  box-shadow: none;
-  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
-}
+/* .toolbar-ai-btn: secondary button, styles/buttons.css. */
 
-.toolbar-ai-btn:hover {
-  background: var(--paper-wash);
-  color: var(--ink);
-  border-color: var(--rule-strong);
-}
-
-/* Theme toggle button */
-.toolbar-theme-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 28px;
-  min-width: 28px;
-  padding: 0 var(--space-2);
-  background: var(--paper);
-  color: var(--ink-2);
-  border: var(--rule-width) solid var(--rule);
-  border-radius: var(--radius);
-  font-family: var(--font-ui);
-  font-size: var(--text-small);
-  font-weight: var(--weight-strong);
-  white-space: nowrap;
-  cursor: pointer;
-  box-shadow: none;
-  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
-}
-
-.toolbar-theme-btn:hover {
-  background: var(--paper-wash);
-  color: var(--ink);
-  border-color: var(--rule-strong);
-}
+/* .toolbar-theme-btn: secondary button, styles/buttons.css. */
 
 /* Overflow kebab — absorbs Export/Import/Schema/Sprint/Jira/Graphify/Catalogue/Ask/Help */
 .toolbar-overflow-wrapper {
@@ -395,33 +320,9 @@ body {
   display: inline-flex;
 }
 
+/* .toolbar-overflow-btn: secondary button, styles/buttons.css; anchors its badge. */
 .toolbar-overflow-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 28px;
-  min-width: 28px;
-  padding: 0 var(--space-2);
-  background: var(--paper);
-  color: var(--ink-2);
-  border: var(--rule-width) solid var(--rule);
-  border-radius: var(--radius);
-  font-family: var(--font-ui);
-  font-size: var(--text-small);
-  font-weight: var(--weight-strong);
-  white-space: nowrap;
-  cursor: pointer;
-  box-shadow: none;
-  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
   position: relative;
-}
-
-.toolbar-overflow-btn:hover,
-.toolbar-overflow-btn.open {
-  background: var(--paper-wash);
-  color: var(--ink);
-  border-color: var(--rule-strong);
 }
 
 .toolbar-overflow-badge {
@@ -441,31 +342,9 @@ body {
   pointer-events: none;
 }
 
+/* .toolbar-switch-btn: secondary button, styles/buttons.css. */
 .toolbar-switch-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 28px;
-  min-width: 28px;
-  padding: 0 var(--space-2);
-  background: var(--paper);
-  color: var(--ink-2);
-  border: var(--rule-width) solid var(--rule);
-  border-radius: var(--radius);
-  font-family: var(--font-ui);
-  font-size: var(--text-small);
-  font-weight: var(--weight-strong);
-  white-space: nowrap;
-  cursor: pointer;
-  box-shadow: none;
-  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
   max-width: 200px;
-}
-.toolbar-switch-btn:hover {
-  background: var(--paper-wash);
-  color: var(--ink);
-  border-color: var(--rule-strong);
 }
 
 .toolbar-folder-label {
@@ -2434,24 +2313,9 @@ body.ac-force-dark {
   flex-shrink: 0;
 }
 
+/* .sb-close-btn: icon button, styles/buttons.css. */
 .sb-close-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--vscode-button-secondaryForeground);
-  cursor: pointer;
-  font-size: 16px;
-  padding: 0;
   flex-shrink: 0;
-}
-
-.sb-close-btn:hover {
-  background: var(--vscode-button-secondaryBackground);
 }
 
 /* Results dropdown */
@@ -2794,29 +2658,9 @@ body.ac-force-dark {
   line-height: 1.5;
 }
 
+/* .empty-state-sample-btn: primary button, styles/buttons.css. */
 .empty-state-sample-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
   margin-top: 16px;
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 500;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  transition: background var(--transition-fast), box-shadow var(--transition-fast);
-}
-
-.empty-state-sample-btn:hover {
-  background: var(--vscode-button-hoverBackground);
-  box-shadow: 0 2px 8px rgba(0, 120, 215, 0.3);
-}
-
-.empty-state-sample-btn:active {
-  transform: scale(0.98);
 }
 
 /* Toast notifications */
@@ -2866,12 +2710,7 @@ body.ac-force-dark {
   flex-wrap: wrap;
 }
 
-.toast-actions .btn {
-  padding: 4px 12px;
-  font-size: 11px;
-  border-radius: 4px;
-  white-space: nowrap;
-}
+/* .toast-actions .btn: small, styles/buttons.css. */
 
 /* Validation error toast — stacks above the external-change toast */
 .toast-container-validation {
@@ -3213,26 +3052,8 @@ body.ac-force-dark {
   color: var(--ink-3);
 }
 
-.close-btn,
-.popout-btn {
-  background: none;
-  border: none;
-  color: var(--ink-2);
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius);
-  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
-}
+/* .close-btn / .popout-btn: icon buttons, styles/buttons.css. */
 
-.popout-btn { font-size: 14px; }
-
-.close-btn:hover,
-.popout-btn:hover {
-  background: var(--paper-wash);
-  color: var(--ink);
-}
 
 /* Standalone detail panel (pop-out tab) — fills the full editor tab */
 .detail-panel-standalone {
@@ -4283,61 +4104,8 @@ body.ac-force-dark {
 
 /* ================================================ */
 
-.btn {
-  padding: 6px var(--space-3);
-  border: var(--rule-width) solid transparent;
-  border-radius: var(--radius);
-  font-family: var(--font-ui);
-  font-size: var(--text-small);
-  font-weight: var(--weight-strong);
-  letter-spacing: 0.01em;
-  cursor: pointer;
-  transition:
-    background var(--dur-fast) var(--ease-out),
-    color var(--dur-fast) var(--ease-out),
-    border-color var(--dur-fast) var(--ease-out);
-}
-
-.btn:active {
-  transform: translateY(1px);
-}
-
-.btn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.btn-primary {
-  background: var(--accent-fill);
-  color: var(--accent-ink);
-  border-color: var(--accent-fill);
-}
-
-.btn-primary:hover {
-  background: var(--vscode-button-hoverBackground);
-  border-color: var(--vscode-button-hoverBackground);
-}
-
-.btn-secondary {
-  background: transparent;
-  color: var(--ink);
-  border-color: var(--rule-strong);
-}
-
-.btn-secondary:hover {
-  background: var(--paper-wash);
-}
-
-.btn-danger {
-  background: transparent;
-  color: var(--danger);
-  border-color: transparent;
-}
-
-.btn-danger:hover {
-  border-color: var(--danger);
-  background: color-mix(in srgb, var(--danger) 8%, transparent);
-}
+/* .btn, .btn-primary, .btn-secondary, .btn-danger, .btn-small, .btn-ghost,
+ * .btn-icon: the shared button system, styles/buttons.css. */
 
 /* Save feedback */
 @keyframes spin {
@@ -4361,9 +4129,6 @@ body.ac-force-dark {
   margin-right: 4px;
 }
 
-.btn-saving {
-  opacity: 0.85;
-}
 
 .save-success-badge {
   display: inline-flex;
@@ -4494,10 +4259,6 @@ body.ac-force-dark {
   line-height: 1.4;
 }
 
-.btn:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
 
 .ai-icon {
   font-size: 14px;
@@ -4670,35 +4431,7 @@ body.ac-force-dark {
   font-size: 13px;
 }
 
-.remove-btn {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 4px;
-  background: rgba(239, 68, 68, 0.2);
-  color: var(--vscode-charts-red);
-  font-size: 14px;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.remove-btn:hover {
-  background: rgba(239, 68, 68, 0.4);
-}
-
-.remove-btn:focus-visible {
-  outline: 2px solid var(--vscode-focusBorder);
-  outline-offset: 2px;
-}
-
-/* Small Button Variant */
-.btn-small {
-  padding: 4px 10px;
-  font-size: 11px;
-}
+/* .remove-btn: small danger icon button; .btn-small: styles/buttons.css. */
 
 /* Full Width Input */
 .full-width-input {
@@ -4727,35 +4460,7 @@ body.ac-force-dark {
   font-weight: 500;
 }
 
-/* AI Refine Button (DetailPanel) */
-.btn-ai {
-  background: transparent;
-  color: var(--ink);
-  border: var(--rule-width) solid transparent;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.btn-ai:hover {
-  background: var(--paper-wash);
-  border-color: var(--rule);
-}
-
-/* Start Dev Button (DetailPanel) */
-.btn-dev {
-  background: transparent;
-  color: var(--ink);
-  border: var(--rule-width) solid transparent;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.btn-dev:hover {
-  background: var(--paper-wash);
-  border-color: var(--rule);
-}
+/* .btn-ai / .btn-dev (DetailPanel footer): ghost buttons, styles/buttons.css. */
 
 .dev-icon {
   font-size: 14px;
@@ -6013,19 +5718,7 @@ body.ac-force-dark {
    ELICIT BUTTON — Detail Panel footer
    ================================================ */
 
-.btn-elicit {
-  background: transparent;
-  color: var(--ink);
-  border: var(--rule-width) solid transparent;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.btn-elicit:hover {
-  background: var(--paper-wash);
-  border-color: var(--rule);
-}
+/* .btn-elicit: ghost button, styles/buttons.css. */
 
 .elicit-icon {
   font-size: 14px;
@@ -6092,19 +5785,7 @@ body.ac-force-dark {
    EXPORT MD BUTTON — Detail Panel footer
    ================================================ */
 
-.btn-export-md {
-  background: transparent;
-  color: var(--ink);
-  border: var(--rule-width) solid transparent;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.btn-export-md:hover {
-  background: var(--paper-wash);
-  border-color: var(--rule);
-}
+/* .btn-export-md: ghost button, styles/buttons.css. */
 
 /* ================================================
    ELICITATION BUTTON — Artifact Card hover button
@@ -6235,25 +5916,7 @@ body.ac-force-dark {
   color: var(--vscode-descriptionForeground);
 }
 
-.wfl-close-btn {
-  background: none;
-  border: none;
-  color: var(--vscode-foreground);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  opacity: 0.7;
-  line-height: 1;
-  transition: opacity 0.1s, background 0.1s;
-}
-
-.wfl-close-btn:hover {
-  opacity: 1;
-  background: var(--vscode-toolbar-hoverBackground);
-}
+/* .wfl-close-btn: icon button, styles/buttons.css. */
 
 /* Search */
 .wfl-modal-search {
@@ -6520,24 +6183,7 @@ body.ac-force-dark {
   font-weight: 600;
 }
 
-.help-close-btn {
-  background: none;
-  border: none;
-  color: var(--vscode-foreground);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0.7;
-  transition: opacity 0.15s, background 0.15s;
-}
-
-.help-close-btn:hover {
-  opacity: 1;
-  background: var(--vscode-toolbar-hoverBackground, rgba(128, 128, 128, 0.15));
-}
+/* .help-close-btn: icon button, styles/buttons.css. */
 
 /* Content */
 .help-content {
@@ -6674,63 +6320,12 @@ body.ac-force-dark {
 }
 
 /* Ask / Chat button */
-.toolbar-ask-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 28px;
-  min-width: 28px;
-  padding: 0 var(--space-2);
-  background: var(--paper);
-  color: var(--ink-2);
-  border: var(--rule-width) solid var(--rule);
-  border-radius: var(--radius);
-  font-family: var(--font-ui);
-  font-size: var(--text-small);
-  font-weight: var(--weight-strong);
-  white-space: nowrap;
-  cursor: pointer;
-  box-shadow: none;
-  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
-}
-.toolbar-ask-btn:hover {
-  background: var(--paper-wash);
-  color: var(--ink);
-  border-color: var(--rule-strong);
-}
+/* .toolbar-ask-btn: secondary button, styles/buttons.css. */
 
 /* Ideas / Notes button — toggleable; matches Ask button chrome, lit when open */
+/* .toolbar-ideas-btn: secondary button, held down while open (styles/buttons.css). */
 .toolbar-ideas-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 28px;
-  min-width: 28px;
-  padding: 0 var(--space-2);
-  background: var(--paper);
-  color: var(--ink-2);
-  border: var(--rule-width) solid var(--rule);
-  border-radius: var(--radius);
-  font-family: var(--font-ui);
-  font-size: var(--text-small);
-  font-weight: var(--weight-strong);
-  white-space: nowrap;
-  cursor: pointer;
-  box-shadow: none;
-  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
   position: relative;
-}
-.toolbar-ideas-btn:hover  {
-  background: var(--paper-wash);
-  color: var(--ink);
-  border-color: var(--rule-strong);
-}
-.toolbar-ideas-btn.open   {
-  background: var(--paper-wash);
-  color: var(--ink);
-  border-color: var(--ink);
 }
 .toolbar-ideas-badge {
   position: absolute;
@@ -6816,25 +6411,7 @@ body.ac-force-dark {
   color: var(--vscode-descriptionForeground);
 }
 
-.ask-close-btn {
-  background: none;
-  border: none;
-  color: var(--vscode-foreground);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  opacity: 0.7;
-  line-height: 1;
-  transition: opacity 0.1s, background 0.1s;
-}
-
-.ask-close-btn:hover {
-  opacity: 1;
-  background: var(--vscode-toolbar-hoverBackground);
-}
+/* .ask-close-btn: icon button, styles/buttons.css. */
 
 /* Body */
 .ask-modal-body {
@@ -6889,20 +6466,7 @@ body.ac-force-dark {
   gap: 8px;
 }
 
-.ask-submit-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.ask-submit-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.ask-submit-btn:disabled:active {
-  transform: none;
-}
+/* .ask-submit-btn: primary button, styles/buttons.css. */
 
 /* Fix Schemas button — amber/warning color to draw attention */
 .toolbar-fix-btn {
@@ -7043,18 +6607,7 @@ body.ac-force-dark {
   letter-spacing: 0.02em;
 }
 
-.gfy-close-btn {
-  background: none;
-  border: none;
-  color: var(--vscode-foreground);
-  font-size: 18px;
-  cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 4px;
-  opacity: 0.7;
-  line-height: 1;
-}
-.gfy-close-btn:hover { opacity: 1; background: var(--vscode-toolbar-hoverBackground); }
+/* .gfy-close-btn: icon button, styles/buttons.css. */
 
 .gfy-modal-body {
   flex: 1;
@@ -7307,25 +6860,7 @@ body.ac-force-dark {
   gap: 6px;
 }
 
-.gfy-action-btn {
-  padding: 5px 12px;
-  border-radius: 4px;
-  border: 1px solid var(--vscode-button-border, transparent);
-  cursor: pointer;
-  font-size: 12px;
-  background: var(--vscode-button-secondaryBackground, rgba(128,128,128,0.15));
-  color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
-  transition: background 0.12s, opacity 0.12s;
-}
-.gfy-action-btn:hover { background: var(--vscode-button-secondaryHoverBackground, rgba(128,128,128,0.25)); }
-.gfy-action-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-
-.gfy-action-btn--primary {
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  border-color: transparent;
-}
-.gfy-action-btn--primary:hover { background: var(--vscode-button-hoverBackground); }
+/* .gfy-action-btn (+ --primary): styles/buttons.css. */
 
 /* Toolbar graphify button */
 .toolbar-graphify-btn {
@@ -7477,24 +7012,7 @@ body.ac-force-dark {
   letter-spacing: -0.01em;
 }
 
-.sprint-close-btn {
-  background: none;
-  border: none;
-  color: var(--vscode-foreground);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0.7;
-  line-height: 1;
-  transition: opacity 0.15s, background 0.15s;
-}
-.sprint-close-btn:hover {
-  opacity: 1;
-  background: var(--vscode-toolbar-hoverBackground, rgba(128, 128, 128, 0.15));
-}
+/* .sprint-close-btn: icon button, styles/buttons.css. */
 
 /* Body — contains meta strip + board */
 .sprint-body {
@@ -7878,25 +7396,7 @@ body.ac-force-dark {
   border-radius: 3px;
 }
 
-.sprint-run-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 18px;
-  border: none;
-  border-radius: 8px;
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, box-shadow 0.15s;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-.sprint-run-btn:hover {
-  background: var(--vscode-button-hoverBackground);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.28);
-}
+/* .sprint-run-btn: primary button, styles/buttons.css. */
 
 /* ── Sprint tab bar ────────────────────────────────────────────────── */
 
@@ -8226,18 +7726,9 @@ body.ac-force-dark {
   line-height: 1.5;
 }
 
-/* Run button */
+/* Run: primary button (styles/buttons.css). */
 .jira-run-btn {
-  background: #0052CC !important;
-  color: #fff !important;
   min-width: 80px;
-}
-.jira-run-btn:hover:not(:disabled) {
-  background: #0065FF !important;
-}
-.jira-run-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 /* Markdown result rendering */
@@ -8571,40 +8062,7 @@ body.ac-force-dark {
   flex: 1;
 }
 
-/* ── Shared buttons ──────────────────────────────────────────────────────── */
-.cat-btn {
-  background: var(--vscode-button-secondaryBackground, rgba(128,128,128,0.2));
-  border: 1px solid transparent;
-  border-radius: 5px;
-  color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
-  font-size: 12px;
-  padding: 5px 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.1s, opacity 0.1s;
-}
-.cat-btn:hover {
-  background: var(--vscode-button-secondaryHoverBackground, rgba(128,128,128,0.3));
-}
-.cat-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.cat-btn--primary {
-  background: var(--vscode-button-background, #4f46e5);
-  color: var(--vscode-button-foreground, #fff);
-  border-color: transparent;
-}
-.cat-btn--primary:hover {
-  background: var(--vscode-button-hoverBackground, #4338ca);
-}
-.cat-btn--danger {
-  background: rgba(248, 81, 73, 0.12);
-  color: var(--vscode-errorForeground, #f85149);
-}
-.cat-btn--danger:hover {
-  background: rgba(248, 81, 73, 0.2);
-}
+/* ── Buttons: .cat-btn (+ --primary, --danger) live in styles/buttons.css. ── */
 
 /* ── Empty state ─────────────────────────────────────────────────────────── */
 .cat-empty {
@@ -9216,23 +8674,7 @@ body.ac-force-dark {
   flex-shrink: 0;
 }
 
-.terminal-modal-btn {
-  padding: 4px 12px;
-  font-size: 11px;
-  font-weight: 500;
-  font-family: inherit;
-  border: 1px solid var(--vscode-button-border, transparent);
-  border-radius: 4px;
-  background: var(--vscode-button-secondaryBackground, #3a3d41);
-  color: var(--vscode-button-secondaryForeground, #cccccc);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s ease;
-}
-
-.terminal-modal-btn:hover {
-  background: var(--vscode-button-secondaryHoverBackground, #45494e);
-}
+/* .terminal-modal-btn: small secondary button, styles/buttons.css. */
 
 .terminal-modal-close {
   display: flex;
@@ -9581,23 +9023,13 @@ details[open] > .agentic-collapse-summary {
   overflow-y: auto;
   max-height: 50vh;
 }
+/* .agentic-btn look: styles/buttons.css. Sizing only here — natural width, never a
+ * full-row stretch unless --block. */
 .agentic-btn {
-  /* ponytail: flex auto + min-width keeps buttons at natural size. The
-   * earlier `flex: 1` made a lone button fill the entire row. */
   flex: 0 1 auto;
   min-width: 64px;
-  padding: 6px 10px;
-  border-radius: 4px;
-  border: 1px solid transparent;
-  background: var(--vscode-button-secondaryBackground);
-  color: var(--vscode-button-secondaryForeground);
-  font-size: 11px;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-family: inherit;
 }
 .agentic-btn--block { width: 100%; }
 
@@ -10036,54 +9468,10 @@ details[open] > .agentic-collapse-header {
   opacity: 0.85;
   justify-content: flex-start;
 }
-.agentic-btn {
-  /* ponytail: flex auto + min-width keeps buttons at natural size. Without
-   * `flex-grow: 0` a single button stretches to fill the entire row and
-   * looks like a giant CTA when it's really a secondary action. The main
-   * row (Resume/Abandon) gets primary sizing via .agentic-btn--primary. */
-  flex: 0 1 auto;
-  min-width: 64px;
-  padding: 6px 10px;
-  border-radius: 4px;
-  border: 1px solid transparent;
-  background: var(--vscode-button-secondaryBackground);
-  color: var(--vscode-button-secondaryForeground);
-  font-size: 11px;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.agentic-btn:hover:not(:disabled) {
-  background: var(--vscode-button-secondaryHoverBackground);
-}
-.agentic-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
+/* Resume is the primary action: it may grow when there is room. */
 .agentic-btn--primary {
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  /* Resume is the primary action — let it grow when there's room, but
-   * still shrinks to its natural size when alone. */
   flex: 1 1 auto;
   min-width: 96px;
-}
-.agentic-btn--primary:hover:not(:disabled) {
-  background: var(--vscode-button-hoverBackground);
-}
-.agentic-btn--danger {
-  background: rgba(239, 68, 68, 0.15);
-  color: var(--vscode-charts-red, #ef4444);
-  border-color: rgba(239, 68, 68, 0.4);
-}
-.agentic-btn--ghost {
-  background: none;
-  border-color: var(--vscode-widget-border);
-}
-.agentic-btn.is-loading {
-  cursor: wait;
 }
 
 .agentic-detail-send-command {
@@ -10450,28 +9838,7 @@ details[open] > .agentic-collapse-header {
   gap: 4px;
 }
 
-.agent-session-action-btn {
-  padding: 2px 8px;
-  font-size: 10px;
-  border: 1px solid var(--vscode-editorWidget-border);
-  border-radius: 4px;
-  background: var(--vscode-button-secondaryBackground);
-  color: var(--vscode-button-secondaryForeground);
-  cursor: pointer;
-  transition: background 0.12s;
-}
-
-.agent-session-action-btn:hover {
-  background: var(--vscode-button-secondaryHoverBackground);
-}
-
-.agent-session-action-btn--danger {
-  color: var(--vscode-charts-red, #f44336);
-}
-
-.agent-session-action-btn--danger:hover {
-  background: color-mix(in srgb, var(--vscode-charts-red) 12%, var(--vscode-button-secondaryBackground));
-}
+/* .agent-session-action-btn (+ --danger): small buttons, styles/buttons.css. */
 
 /* has-plan-chip -----------------------------------------------------------
  * Fires on a parent ArtifactCard when an attached visual plan exists

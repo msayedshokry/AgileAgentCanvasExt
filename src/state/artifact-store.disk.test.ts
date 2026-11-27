@@ -56,6 +56,7 @@ vi.mock('vscode', async () => {
 import * as vscode from 'vscode';
 import { ArtifactStore } from './artifact-store';
 import { schemaValidator } from './schema-validator';
+import { buildArtifacts } from '../canvas/artifact-transformer';
 
 const SAMPLE = path.resolve(__dirname, '../../resources/sample-project');
 
@@ -223,5 +224,22 @@ describe('ArtifactStore saving a loaded project', () => {
     await again.syncToFiles();
     expect(again.getEpics().map((e) => e.id).sort()).toEqual(ids);
     expect(ids.every((id) => !/^EPIC-\d{10,}$/.test(id))).toBe(true);
+  });
+});
+
+describe('Canvas cards while a project loads', () => {
+  it('leaves plans out until the project has loaded, then includes them', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aac-load-'));
+    fs.cpSync(SAMPLE, dir, { recursive: true });
+    const store = new ArtifactStore(fakeContext());
+    const plan = { id: 'plan-1', title: 'Plan for S-1', goal: 'g', status: 'ready', sections: [], tasks: [], sourceArtifactId: 'S-1' } as never;
+    const seen: number[] = [];
+    store.onDidChangeArtifacts(() => { seen.push(buildArtifacts(store, undefined, [plan]).filter((a: { type: string }) => a.type === 'visual-plan').length); });
+    await store.loadFromFolder(vscode.Uri.file(dir));
+    expect(store.isLoading()).toBe(false);
+    expect(seen.length).toBeGreaterThan(0);
+    expect(seen.slice(0, -1).every((n) => n === 0)).toBe(true);
+    expect(seen[seen.length - 1]).toBe(1);
+    fs.rmSync(dir, { recursive: true, force: true });
   });
 });

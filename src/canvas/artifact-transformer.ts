@@ -287,7 +287,11 @@ export function buildArtifacts(store: ArtifactStore, workspaceRoot?: string, pla
     // COLUMN 1b: DISCOVERY PHASE — Visual Plans (under Vision)
     // =========================================================================
 
-    if (plans && plans.length > 0) {
+    // While a project is still loading, its plans have no cards to sit under
+    // yet, so they would flash in Discovery and then jump away. The store
+    // sends one more update once loading is done.
+    const projectLoading = typeof store.isLoading === 'function' && store.isLoading();
+    if (plans && plans.length > 0 && !projectLoading) {
         for (const plan of plans) {
             const height = calculateCardHeight('visual-plan', plan.title, plan.goal, 30);
 

@@ -48,7 +48,20 @@ describe('AgentEditor', () => {
     fireEvent.change(screen.getByRole('combobox', { name: 'Model' }), { target: { value: 'sonnet' } });
     expect(screen.getByText('Sonnet 5.5 · Efficient for routine tasks')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Add agent' }));
-    expect(posted).toContainEqual({ type: 'kanban:saveAgent', agent: { name: 'Reviewer', harness: 'claude', model: 'sonnet', role: '', instructions: '', lead: false, skills: [], maxConcurrent: 1 } });
+    const saved = posted.find((m) => m.type === 'kanban:saveAgent') as { agent: Record<string, unknown> };
+    expect(saved.agent).toEqual({ name: 'Reviewer', harness: 'claude', model: 'sonnet', role: '', instructions: '', lead: false, skills: [], maxConcurrent: 1, avatar: expect.any(String) });
+  });
+
+  it('starts a new agent with an avatar nobody on the team has, and lets you pick another', () => {
+    const team: AgentTeamView = { ...TEAM, agents: TEAM.agents.map((a, i) => (i === 0 ? { ...a, avatar: '🦊' } : a)) };
+    render(<AgentEditor team={team} onClose={() => undefined} />);
+    fireEvent.click(screen.getByRole('button', { name: 'New agent' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Choose an avatar' }));
+    expect((screen.getByRole('radio', { name: '🦊' }) as HTMLElement).getAttribute('aria-checked')).toBe('false');
+    fireEvent.click(screen.getByRole('radio', { name: '🐼' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Name' }), { target: { value: 'Panda' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add agent' }));
+    expect((posted.find((m) => m.type === 'kanban:saveAgent') as { agent: { avatar: string } }).agent.avatar).toBe('🐼');
   });
 
   it('shows the save error and closes the form once saved', () => {
@@ -79,11 +92,10 @@ describe('AgentEditor', () => {
   it('takes a typed model for CLIs that cannot list theirs, and none for CLIs that set their own', () => {
     render(<AgentEditor team={TEAM} onClose={() => undefined} />);
     fireEvent.click(screen.getByRole('button', { name: 'New agent' }));
-    const cli = screen.getByRole('combobox', { name: 'CLI' });
-    fireEvent.change(cli, { target: { value: 'gemini' } });
+    fireEvent.click(screen.getByRole('radio', { name: 'Gemini CLI' }));
     expect(screen.getByText(/Gemini CLI can't list its models/)).toBeTruthy();
     expect(posted.filter((m) => m.type === 'kanban:listModels' && m.harness === 'gemini')).toEqual([]);
-    fireEvent.change(cli, { target: { value: 'cursor-agent' } });
+    fireEvent.click(screen.getByRole('radio', { name: 'Cursor CLI' }));
     expect((screen.getByRole('combobox', { name: 'Model' }) as HTMLInputElement).disabled).toBe(true);
     expect(screen.getByText(/Cursor CLI uses its own model setting/)).toBeTruthy();
   });
@@ -177,3 +189,60 @@ describe('AgentEditor — skills, capacity, preview and usage', () => {
   });
 });
 
+
+describe('AgentEditor — build with AI', () => {
+  it('sends your description with the current form, then fills the form with the draft for review', () => {
+    render(<AgentEditor team={TEAM} onClose={() => undefined} />);
+    fireEvent.click(screen.getByRole('button', { name: 'New agent' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Build with AI' }), { target: { value: 'Review frontend PRs; never edit code' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Draft with AI' }));
+    const sent = posted.find((m) => m.type === 'kanban:draftAgent') as { request: string; draft: { harness: string } };
+    expect(sent.request).toBe('Review frontend PRs; never edit code');
+    expect(sent.draft.harness).toBe('claude');
+    expect(screen.getByRole('button', { name: 'Drafting…' })).toBeTruthy();
+
+    deliver({ type: 'kanban:agentDraft', draft: { name: 'Frontend Reviewer', role: 'Reviews frontend PRs', instructions: 'Read the diff first.' } });
+    expect((screen.getByRole('textbox', { name: 'Name' }) as HTMLInputElement).value).toBe('Frontend Reviewer');
+    expect((screen.getByRole('textbox', { name: 'Role' }) as HTMLInputElement).value).toBe('Reviews frontend PRs');
+    expect(screen.getByText(/Read every field before you save/)).toBeTruthy();
+    expect(posted.filter((m) => m.type === 'kanban:saveAgent')).toEqual([]);
+  });
+
+  it('shows why a draft failed', () => {
+    render(<AgentEditor team={TEAM} onClose={() => undefined} />);
+    fireEvent.click(screen.getByRole('button', { name: 'New agent' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Build with AI' }), { target: { value: 'anything' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Draft with AI' }));
+    deliver({ type: 'kanban:agentDraft', error: 'No AI model is available.' });
+    expect(screen.getByText('No AI model is available.')).toBeTruthy();
+  });
+});
+
+describe('AgentEditor — my agents', () => {
+  const saved = { id: 'qa', name: 'QA Bot', harness: 'claude', role: 'Writes e2e tests', avatar: '🐝' };
+
+  it('saves a project agent to my agents, and marks it saved', () => {
+    render(<AgentEditor team={TEAM} onClose={() => undefined} />);
+    expect(posted).toContainEqual({ type: 'kanban:getAgentLibrary' });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Dev Agent to my agents' }));
+    expect(posted).toContainEqual({ type: 'kanban:saveToLibrary', id: 'dev' });
+    deliver({ type: 'kanban:agentLibrary', agents: [{ id: 'dev', name: 'Dev Agent', harness: 'claude' }] });
+    expect(screen.getByRole('button', { name: 'Update Dev Agent in my agents' }).textContent).toContain('Saved');
+  });
+
+  it('lists saved agents that are not on this team and adds one', () => {
+    render(<AgentEditor team={TEAM} onClose={() => undefined} />);
+    deliver({ type: 'kanban:agentLibrary', agents: [saved, { id: 'dev', name: 'Dev Agent', harness: 'claude' }] });
+    fireEvent.click(screen.getByRole('button', { name: /Add from my agents \(2\)/ }));
+    expect(screen.queryByRole('button', { name: 'Add Dev Agent to this project' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Add QA Bot to this project' }));
+    expect(posted).toContainEqual({ type: 'kanban:addFromLibrary', id: 'qa' });
+  });
+
+  it('explains the library when it is empty', () => {
+    render(<AgentEditor team={TEAM} onClose={() => undefined} />);
+    deliver({ type: 'kanban:agentLibrary', agents: [] });
+    fireEvent.click(screen.getByRole('button', { name: 'Add from my agents' }));
+    expect(screen.getByText(/No saved agents yet/)).toBeTruthy();
+  });
+});

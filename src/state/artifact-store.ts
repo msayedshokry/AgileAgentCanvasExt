@@ -977,6 +977,25 @@ export class ArtifactStore {
      * Handles various artifact types: epics, stories, use-cases, requirements
      */
     async loadFromFolder(folderUri: vscode.Uri): Promise<void> {
+        this._loading = true;
+        try {
+            await this.loadFromFolderOnce(folderUri);
+        } finally {
+            this._loading = false;
+        }
+        // Views skip half-loaded state (e.g. plans whose cards haven't loaded
+        // yet); tell them the project is complete now.
+        this._onDidChangeArtifacts.fire();
+    }
+
+    private _loading = false;
+
+    /** True while a project is being read from disk. */
+    isLoading(): boolean {
+        return this._loading;
+    }
+
+    private async loadFromFolderOnce(folderUri: vscode.Uri): Promise<void> {
         storeLogger.debug(`[ArtifactStore] loadFromFolder called with: ${folderUri.fsPath}`);
         
         // Clear ALL in-memory state before re-reading from disk.

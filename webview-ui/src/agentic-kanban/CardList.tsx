@@ -3,8 +3,8 @@
 // card page.
 
 import type { KanbanItem } from '../components/kanban/KanbanTypes';
-import { getAvatarColor, getInitials } from './kanban-helpers';
 import './BoardNav.css';
+import { AgentAvatar } from './AgentAvatar';
 
 interface CardListProps {
   title: string;
@@ -44,9 +44,7 @@ export function CardList({ title, items, empty, onOpen }: CardListProps) {
                 {item.epicTitle && <span className="card-list-epic">{item.epicTitle}</span>}
                 {item.assignee && (
                   <span className="card-list-who">
-                    <span className="kanban-card-avatar" style={{ '--avatar-color': getAvatarColor(item.assignee.name) } as React.CSSProperties} aria-hidden="true">
-                      {getInitials(item.assignee.name)}
-                    </span>
+                    <AgentAvatar name={item.assignee.name} id={item.assignee.id} avatar={item.assignee.avatar} person={item.assignee.person} size={18} />
                     {item.assignee.name}
                   </span>
                 )}

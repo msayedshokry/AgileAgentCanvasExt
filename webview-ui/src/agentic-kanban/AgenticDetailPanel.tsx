@@ -243,7 +243,7 @@ export function AgenticDetailPanel({
             <button className="agentic-btn agentic-btn--primary" onClick={() => onStart(item)}>Start agent</button>
           )}
           {action === 'stop' && onStop && (
-            <button className="agentic-btn agentic-btn--ghost card-page-stop" onClick={() => onStop(item)}>Stop agent</button>
+            <button className="agentic-btn agentic-btn--danger card-page-stop" onClick={() => onStop(item)}>Stop agent</button>
           )}
         </div>
       </header>

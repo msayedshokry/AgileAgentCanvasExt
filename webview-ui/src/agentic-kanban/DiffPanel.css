@@ -111,21 +111,9 @@
   font-weight: 400;
 }
 
+/* .diff-panel-close-btn: icon button, styles/buttons.css. */
 .diff-panel-close-btn {
-  background: transparent;
-  border: none;
-  color: var(--vscode-descriptionForeground);
-  font-size: 16px;
-  cursor: pointer;
-  padding: 0 4px;
-  line-height: 1;
   flex-shrink: 0;
-  border-radius: 3px;
-}
-
-.diff-panel-close-btn:hover {
-  background: var(--vscode-toolbar-hoverBackground);
-  color: var(--vscode-foreground);
 }
 
 /* ── Meta (empty state) ──────────────────────────────────────────────────── */

@@ -3,8 +3,8 @@
 // stories the board already has.
 
 import { KANBAN_COLUMNS, normalizeToKanbanColumn, type KanbanColumnKey, type KanbanItem } from '../components/kanban/KanbanTypes';
-import { getAvatarColor, getInitials } from './kanban-helpers';
 import './EpicOverview.css';
+import { AgentAvatar } from './AgentAvatar';
 
 export interface EpicProgress {
   done: number;
@@ -31,6 +31,7 @@ export interface MemberBreakdown {
   id: string;
   name: string;
   person: boolean;
+  avatar?: string;
   done: number;
   total: number;
 }
@@ -40,7 +41,7 @@ export function breakdownByAssignee(stories: readonly KanbanItem[]): MemberBreak
   const rows = new Map<string, MemberBreakdown>();
   for (const s of stories) {
     const id = s.assignee?.id ?? '';
-    const row = rows.get(id) ?? { id, name: s.assignee?.name ?? 'Unassigned', person: !!s.assignee?.person, done: 0, total: 0 };
+    const row = rows.get(id) ?? { id, name: s.assignee?.name ?? 'Unassigned', person: !!s.assignee?.person, avatar: s.assignee?.avatar, done: 0, total: 0 };
     row.total++;
     if (normalizeToKanbanColumn(s.status) === 'done') row.done++;
     rows.set(id, row);
@@ -101,9 +102,7 @@ export function EpicOverview({ stories, onOpenCard }: { stories: readonly Kanban
                     {s.agentState?.status === 'interrupted' && <span className="kanban-card-activity kanban-card-activity--stopped" aria-label="Needs you" role="img" />}
                     {s.assignee && (
                       <span className="epic-story-who" title={s.assignee.name}>
-                        <span className="kanban-card-avatar" style={{ '--avatar-color': getAvatarColor(s.assignee.name) } as React.CSSProperties} aria-hidden="true">
-                          {getInitials(s.assignee.name)}
-                        </span>
+                        <AgentAvatar name={s.assignee.name} id={s.assignee.id} avatar={s.assignee.avatar} person={s.assignee.person} size={20} />
                         <span className="visually-hidden">{s.assignee.name}</span>
                       </span>
                     )}
@@ -130,9 +129,7 @@ export function EpicBreakdown({ stories }: { stories: readonly KanbanItem[] }) {
           <li key={r.id || 'unassigned'} className="epic-breakdown-row">
             <span className="epic-breakdown-who">
               {r.id ? (
-                <span className={`kanban-card-avatar${r.person ? ' epic-avatar--person' : ''}`} style={{ '--avatar-color': getAvatarColor(r.name) } as React.CSSProperties} aria-hidden="true">
-                  {getInitials(r.name)}
-                </span>
+                <AgentAvatar name={r.name} id={r.id} avatar={r.avatar} person={r.person} size={22} />
               ) : <span className="epic-avatar-empty" aria-hidden="true" />}
               <span className="epic-breakdown-name">{r.name}</span>
               {r.id && <span className="epic-breakdown-tag">{r.person ? 'Person' : 'Agent'}</span>}

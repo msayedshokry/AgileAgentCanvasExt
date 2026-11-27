@@ -28,36 +28,12 @@
   position: relative;
 }
 
-/* Inbox button — pill with bell icon, count badge, and chevron */
+/* Inbox button: secondary button (styles/buttons.css) with a count badge. */
 .autonomy-inbox-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 26px;
-  padding: 0 var(--space-2);
-  background: var(--paper);
-  color: var(--ink);
-  border: var(--rule-width) solid var(--rule);
-  border-radius: var(--radius);
-  font-size: var(--text-small);
-  font-weight: var(--weight-strong);
-  cursor: pointer;
-  font-family: inherit;
-  transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
   position: relative;
 }
 
-.autonomy-inbox-btn:hover {
-  background: var(--paper-wash);
-  border-color: var(--rule-strong);
-}
-
-.autonomy-inbox-btn--open {
-  background: var(--vscode-list-activeSelectionBackground, rgba(0, 122, 204, 0.15));
-  border-color: var(--vscode-focusBorder, #007acc);
-}
-
-.autonomy-inbox-btn--critical {
+.autonomy-inbox-btn.autonomy-inbox-btn--critical {
   border-color: var(--vscode-charts-orange, #f59e0b);
   animation: inbox-pulse 2s ease-in-out infinite;
 }
@@ -404,59 +380,8 @@
 .autonomy-bar-state--paused { color: var(--vscode-charts-orange, #f59e0b); }
 .autonomy-bar-state--idle { color: var(--vscode-descriptionForeground); }
 
-.autonomy-bar-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 28px;
-  min-width: 28px;
-  padding: 0 var(--space-2);
-  background: var(--paper);
-  color: var(--ink-2);
-  border: var(--rule-width) solid var(--rule);
-  border-radius: var(--radius);
-  font-family: var(--font-ui);
-  font-size: var(--text-small);
-  font-weight: var(--weight-strong);
-  white-space: nowrap;
-  cursor: pointer;
-  box-shadow: none;
-  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
-}
-.autonomy-bar-btn:hover:not(:disabled) {
-  background: var(--paper-wash);
-  color: var(--ink);
-  border-color: var(--rule-strong);
-}
-.autonomy-bar-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.autonomy-bar-btn--toggle { padding: 3px 6px; }
-.autonomy-bar-btn--danger { color: var(--vscode-errorForeground); }
-.autonomy-bar-btn--primary {
-  background: var(--accent-fill);
-  color: var(--accent-ink);
-  border-color: var(--accent-fill);
-  font-weight: var(--weight-strong);
-}
-.autonomy-bar-btn--primary:hover:not(:disabled) {
-  background: var(--vscode-button-hoverBackground);
-  border-color: var(--vscode-button-hoverBackground);
-}
-.autonomy-bar-btn--accent {
-  background: var(--vscode-charts-blue, #6366f1);
-  color: white;
-  font-weight: 600;
-}
-.autonomy-bar-btn-icon {
-  background: transparent;
-  border: none;
-  color: var(--ink-3);
-  cursor: pointer;
-  padding: 2px 6px;
-  font-size: 14px;
-  border-radius: var(--radius);
-}
-.autonomy-bar-btn-icon:hover { color: var(--vscode-foreground); }
+/* .autonomy-bar-btn (+ --primary, --accent, --danger) and .autonomy-bar-btn-icon
+ * are styled by styles/buttons.css. */
 
 .autonomy-bar-meta {
   color: var(--vscode-descriptionForeground);
@@ -628,16 +553,7 @@
   font-style: italic;
 }
 .goal-modal-icon { font-size: 20px; }
-.goal-modal-close {
-  background: transparent;
-  border: none;
-  color: var(--vscode-foreground);
-  font-size: 24px;
-  cursor: pointer;
-  padding: 0 8px;
-  line-height: 1;
-}
-.goal-modal-close:hover { color: var(--vscode-errorForeground); }
+/* .goal-modal-close: icon button, styles/buttons.css. */
 
 .goal-modal-summary {
   display: flex;
@@ -724,27 +640,7 @@
   padding: 12px 16px;
   border-top: 1px solid var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.2));
 }
-.goal-modal-btn {
-  padding: 6px 16px;
-  border-radius: 3px;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  font-family: inherit;
-  border: 1px solid transparent;
-}
-.goal-modal-btn--secondary {
-  background: var(--vscode-button-secondaryBackground);
-  color: var(--vscode-button-secondaryForeground);
-}
-.goal-modal-btn--secondary:hover { background: var(--vscode-button-secondaryHoverBackground); }
-.goal-modal-btn--primary {
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  font-weight: 600;
-}
-.goal-modal-btn--primary:hover:not(:disabled) { background: var(--vscode-button-hoverBackground); }
-.goal-modal-btn--primary:disabled { opacity: 0.5; cursor: not-allowed; }
+/* .goal-modal-btn (+ --primary, --secondary): styles/buttons.css. */
 
 /* ─── Dependency badge (issue #22, on KanbanCard) ────────────────────────── */
 
@@ -973,33 +869,9 @@
   align-items: center;
 }
 
-.safety-panel-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 10px;
-  background: var(--vscode-badge-background, rgba(127, 127, 127, 0.2));
-  color: var(--vscode-foreground);
-  border: 1px solid var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.25));
-  border-radius: 14px;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
-}
-
-.safety-panel-btn:hover {
-  background: var(--vscode-list-hoverBackground, rgba(127, 127, 127, 0.2));
-  border-color: var(--vscode-focusBorder, #007acc);
-}
-
-.safety-panel-btn--open {
-  background: var(--vscode-list-activeSelectionBackground, rgba(0, 122, 204, 0.15));
-  border-color: var(--vscode-focusBorder, #007acc);
-}
-
-.safety-panel-btn--danger {
+/* .safety-panel-btn: secondary button (styles/buttons.css); pulses when a
+ * circuit is open. */
+.safety-panel-btn.safety-panel-btn--danger {
   border-color: var(--vscode-errorForeground, #ef4444);
   animation: safety-pulse 2s ease-in-out infinite;
 }
@@ -1183,23 +1055,7 @@
   white-space: nowrap;
 }
 
-.safety-circuit-reset-btn {
-  background: transparent;
-  border: 1px solid var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.3));
-  color: var(--vscode-textLink-foreground, #3794ff);
-  cursor: pointer;
-  font-size: 10px;
-  padding: 1px 6px;
-  border-radius: 3px;
-  font-family: inherit;
-  white-space: nowrap;
-  transition: background 0.1s, border-color 0.1s;
-}
-
-.safety-circuit-reset-btn:hover {
-  background: var(--vscode-list-hoverBackground, rgba(127, 127, 127, 0.15));
-  border-color: var(--vscode-focusBorder, #007acc);
-}
+/* .safety-circuit-reset-btn: small secondary button, styles/buttons.css. */
 
 /* ── Policy list ── */
 
@@ -1621,31 +1477,10 @@
   margin-left: auto;
 }
 
+/* .safety-block-dismiss-btn: small icon button (styles/buttons.css). */
 .safety-block-dismiss-btn {
-  background: transparent;
-  border: none;
-  color: var(--vscode-descriptionForeground);
-  cursor: pointer;
-  font-size: 12px;
-  padding: 0 4px;
   margin-left: 6px;
-  line-height: 1;
-  border-radius: 3px;
-  opacity: 0.5;
   flex-shrink: 0;
-  transition: opacity 0.15s, color 0.15s, background 0.15s;
-}
-
-.safety-block-dismiss-btn:hover {
-  opacity: 1;
-  color: var(--vscode-errorForeground, #ef4444);
-  background: var(--vscode-inputValidation-errorBackground, rgba(255, 0, 0, 0.12));
-}
-
-.safety-block-dismiss-btn:focus-visible {
-  outline: 2px solid var(--vscode-focusBorder, #007acc);
-  outline-offset: 1px;
-  opacity: 1;
 }
 
 /* Section header actions (meta count + Clear all link) */
@@ -1681,32 +1516,13 @@
 
 /* ── Kill switch ── */
 
+/* Kill switch: full-width danger button; filled while confirming
+ * (styles/buttons.css). */
 .safety-kill-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
   width: 100%;
-  padding: 10px 14px;
-  border-radius: 4px;
-  border: 2px solid var(--vscode-errorForeground, #ef4444);
-  background: var(--vscode-inputValidation-errorBackground, rgba(255, 0, 0, 0.08));
-  color: var(--vscode-errorForeground, #ef4444);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background 0.15s, transform 0.1s;
-}
-
-.safety-kill-btn:hover {
-  background: var(--vscode-inputValidation-errorBackground, rgba(255, 0, 0, 0.18));
-  transform: scale(1.02);
 }
 
 .safety-kill-btn--confirm {
-  background: var(--vscode-errorForeground, #ef4444);
-  color: white;
-  border-color: var(--vscode-errorForeground, #ef4444);
   animation: safety-kill-pulse 0.8s ease-in-out infinite;
 }
 
@@ -1721,22 +1537,8 @@
 }
 
 .safety-kill-cancel-btn {
-  display: block;
   width: 100%;
   margin-top: 4px;
-  padding: 6px 14px;
-  background: transparent;
-  border: 1px solid var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.2));
-  color: var(--vscode-foreground);
-  border-radius: 3px;
-  cursor: pointer;
-  font-size: 11px;
-  font-family: inherit;
-  transition: background 0.1s;
-}
-
-.safety-kill-cancel-btn:hover {
-  background: var(--vscode-list-hoverBackground, rgba(127, 127, 127, 0.15));
 }
 
 /* ─── Systemic-issue banner (issue #4) ──────────────────────────────────── */
@@ -1963,24 +1765,7 @@
   white-space: nowrap;
 }
 
-.trace-panel-btn-icon {
-  background: transparent;
-  border: none;
-  color: var(--vscode-descriptionForeground);
-  cursor: pointer;
-  padding: 2px 6px;
-  font-size: 13px;
-  line-height: 1;
-  border-radius: 3px;
-  transition: color 0.15s, background 0.15s;
-}
-.trace-panel-btn-icon:hover {
-  color: var(--vscode-foreground);
-  background: var(--vscode-list-hoverBackground, rgba(127, 127, 127, 0.15));
-}
-.trace-panel-btn-icon[aria-pressed='true'] {
-  color: var(--vscode-textLink-foreground, #3794ff);
-}
+/* .trace-panel-btn-icon: small icon button, styles/buttons.css. */
 
 /* Empty-state hint, sits on its own group below the status row. */
 .trace-panel-group--empty {

@@ -607,7 +607,7 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
       const harnessResults = harnessById.get(item.id);
       const assignee = assigneeFor(team, item.id);
       const withHarness = harnessResults ? { ...base, harnessResults } : base;
-      const withAssignee = assignee ? { ...withHarness, assignee: { id: assignee.id, name: assignee.name, ...(assignee.kind === 'person' ? { person: true } : {}) } } : withHarness;
+      const withAssignee = assignee ? { ...withHarness, assignee: { id: assignee.id, name: assignee.name, ...(assignee.kind === 'person' ? { person: true } : {}), ...(assignee.avatar ? { avatar: assignee.avatar } : {}) } } : withHarness;
       const progressLine = withAssignee.agentState?.status === 'running' ? progressById.get(item.id) : undefined;
       const withProgress = progressLine ? { ...withAssignee, progressLine } : withAssignee;
       // Every epic shows how many of its stories are done; one the lead owns also names the lead.

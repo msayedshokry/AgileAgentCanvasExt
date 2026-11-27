@@ -180,34 +180,9 @@ button.card-page-crumb:hover { color: var(--ink); text-decoration: underline; te
 .card-page-status--done::before { background: var(--vscode-charts-green, #22c55e); }
 
 
-/* ── Buttons on the page: one bordered secondary style, one filled primary. */
-.card-page .agentic-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  flex: 0 0 auto;
-  min-width: 0;
-  height: 28px;
-  padding: 0 12px;
-  border: var(--rule-width, 1px) solid var(--rule-strong);
-  border-radius: var(--radius, 6px);
-  background: var(--paper);
-  color: var(--ink);
-  font: inherit;
-  font-size: 12px;
-  font-weight: var(--weight-strong, 600);
-  cursor: pointer;
-}
-.card-page .agentic-btn:hover:not(:disabled) { background: var(--paper-wash); }
-.card-page .agentic-btn--primary {
-  background: var(--accent-fill, var(--accent));
-  border-color: var(--accent);
-  color: var(--accent-ink, var(--paper));
-}
-.card-page .agentic-btn--primary:hover:not(:disabled) { background: var(--accent); }
-.card-page .card-page-stop { color: var(--vscode-editorError-foreground, #c4314b); }
-.card-page .agentic-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+/* ── Buttons on the page: look comes from styles/buttons.css (secondary,
+ * primary, danger for Stop agent); only their sizing in the bar lives here. */
+.card-page .agentic-btn { flex: 0 0 auto; min-width: 0; }
 
 /* A live question from the agent: plain section, answer box under it. */
 .card-page-question { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) var(--space-4); border: var(--rule-width) solid var(--vscode-editorWarning-foreground, var(--accent)); border-radius: var(--radius-card); }
@@ -292,11 +267,6 @@ button.card-page-crumb:hover { color: var(--ink); text-decoration: underline; te
 /* Agent: who, then the last run as label/value pairs. */
 .card-side-section { display: flex; flex-direction: column; gap: 10px; padding-top: var(--space-4, 16px); border-top: var(--rule-width, 1px) solid var(--rule); }
 .card-side-agent { display: flex; align-items: center; gap: 10px; }
-.card-side-avatar {
-  flex: none; width: 30px; height: 30px; border-radius: 50%;
-  display: inline-flex; align-items: center; justify-content: center;
-  color: #fff; font-size: 12px; font-weight: var(--weight-strong, 600);
-}
 .card-side-agent-text { display: flex; flex-direction: column; min-width: 0; }
 .card-side-agent-name { font-weight: var(--weight-strong, 600); color: var(--ink); }
 .card-side-run { margin: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -318,14 +288,7 @@ button.card-page-crumb:hover { color: var(--ink); text-decoration: underline; te
 .card-side-checks li.is-fail .card-side-check-mark { color: var(--vscode-editorError-foreground, #f14c4c); }
 .card-side-tag { margin-left: auto; padding: 0 6px; border-radius: 999px; font-size: 10.5px; color: var(--ink-2); background: color-mix(in srgb, var(--ink) 8%, transparent); }
 
-/* Small bordered buttons and the terminal input. */
-.card-side-btn {
-  height: 26px; padding: 0 10px; font: inherit; font-size: 12px; font-weight: var(--weight-strong, 600);
-  color: var(--ink); background: var(--paper); cursor: pointer;
-  border: var(--rule-width, 1px) solid var(--rule-strong, var(--rule)); border-radius: var(--radius, 6px);
-}
-.card-side-btn:hover:not(:disabled) { background: var(--paper-wash); }
-.card-side-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+/* The terminal input (.card-side-btn is styled by styles/buttons.css). */
 .card-side-input {
   width: 100%; box-sizing: border-box; height: 28px; padding: 0 8px; font-family: var(--font-mono); font-size: 12px;
   color: var(--vscode-input-foreground, var(--ink)); background: var(--vscode-input-background, var(--paper));
